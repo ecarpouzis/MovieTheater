@@ -1,0 +1,145 @@
+## Conventions for this batch (34 shown of 35 matched; 338 in LEDGER.md; 1 shelf/shelves: pub:dark-horse ×1 · pub:ec-archives ×1 · kind:archive ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-020] (1 shelf/shelves) kind:archive kind:collected-line pub:dark-horse
+- Reprint LIBRARY / omnibus lines over a run split across publishers (Fear Agent Final Edition, Kabuki Library,
+  Madman Library) have no single run record → the collected line at 0.9 with an `N` naming the underlying run.
+[L-069] (1 shelf/shelves) kind:archive pass:item pub:dark-horse pub:ec-archives
+- Archive / reprint lines (EC Archives, Dark Horse archives) — RULING: when both legs also hold the ORIGINAL
+  series, the S line is the original (the run wins) and the `I` line is the archive printing we hold; only
+  when the original is in neither leg does the archive line carry the S at 0.9 with an `N` naming what it
+  reprints. Do not let the stored link decide which shape you write.
+[L-093] (1 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
+[L-238] (1 shelf/shelves) kind:archive kind:golden-age pub:dark-horse pub:ec-archives
+- ARCHIVE shape, stated once (after C-025): a shelf that is PURELY the collected trades of a Golden-Age original
+  (Dark Horse "EC Comics & Others Archives", Crime Does Not Pay, Frontline Combat, Magnus, War Against Crime, Savage
+  Sword of Conan) takes the archive LINE's own CV/GCD record — the S16653 line-wins ruling; the older "S = the original
+  when both legs hold it" line applies only when NO line record exists. The later, dated ruling wins.
+[L-270] (1 shelf/shelves) kind:archive kind:golden-age pass:item pub:ec-archives sig:probe
+- ITEM PASS (X-016..X-018): an archive line's `C` run is the reprinted Golden-Age ORIGINAL, and it is usually in
+  the catalogs even when the shelf's `N` said "no record" (Creepy cv 2194 / gcd 1640, Crime Does Not Pay 943 / 296,
+  Eerie 2300 / 1755, Frontline Combat 1443 / 834, Magnus 2157 / 1600, War Against Crime 11807 / 12814) — probe.
+[L-299] (1 shelf/shelves) pass:revisit pub:dark-horse pub:dc sig:probe sig:twin
+- R-024 (the item readers' shelf findings): GCD hides long runs behind a dropped article or suffix — "Flash" 3358
+  (1987-2006, 232 issues) and "James Bond" 207986 (2024) are invisible to the shelves' own keys; two packets' "no
+  GCD row" verdicts were wrong — probe without the article / the "007". A per-file CV id reused across a shelf's
+  books can be a wholly different comic's issue list (Portman "Demon!" 1978 on Shiga's four Demon volumes) — a
+  revisit re-verifies item-pass ids, never merely adds them. ComicVine's issue NAMES are strong `C` evidence
+  (Flash 2010 "Case One, Part N"; POTA's four arcs). One ripper folder can be split across two shelves by filename
+  wording (ten Usagi Saga deluxe files, 5 + 5). GCD indexes a deluxe line's 2nd-edition printing in the twin row.
+[L-054] (1 shelf/shelves) kind:archive kind:fan
+- Fan-made DCP "Archive Edition" compiles and story-only extracts → `R` (not a published edition), never linked.
+[L-164] (1 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-013] (1 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (1 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-043] (1 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (1 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-064] (1 shelf/shelves) pass:item sig:twin
+- GCD indexes PRINTINGS: the S line takes the first edition both legs agree on; the `I` line takes the printing
+  we hold (page counts match the edition's row). GCD issue ids for books come from `gcd_issue` — prefer the
+  issue id to the `s<series>` form; use `s<series>` only for twin/variant rows.
+[L-072] (1 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-085] (1 shelf/shelves) sig:barcode sig:trade-link sig:twin
+- `gcd_issue` carries the trade's page count AND ISBN: it matched our rips within ±10pp on 100+ books and told
+  two same-title count-1 rows apart (an 8pp ashcan is not a twin of the trade).
+[L-088] (1 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (1 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (1 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (1 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-101] (1 shelf/shelves) sig:twin
+- Page count tells GCD twins apart (a 32pp sampler vs the 256pp anthology); a count-0 GCD row (236534 "Cells at
+  Work! Lady") is an empty stub, not a leg.
+[L-118] (1 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (1 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (1 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (1 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (1 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (1 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (1 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (1 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (1 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (1 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (1 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (1 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (1 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (1 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+
++1 more matched entries not shown: L-310 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S5607 Doctor Solar - Man of the Atom  [split]  13 files / 4 collections  decided in R-063 (R)
+   decided: R 5607 | two co-equal runs (RESIDUE ruling: 2+ whole trades of a different run with its own record): the 2010 folder holds Dark Horse's Doctor Solar, Man of the Atom #1-8 (8 files) — the re-probe hit CV 34401 (Dark Horse 2010, 8, 2010-07..2011-09) = GCD 51414 (2010-2011, 8), per-file GCD 8/8 — plus the FCBD 2010 flip-book; the 1962 folder holds four Archives v01-v04 (CV 35644 / GCD 65566, 4 on both legs) that collect the 1962 Western run CV 2091 / GCD 1529 (31) #1-31; the per-file CV 2091 stamped on all 13 files is right only for the Archives' content
+   F 5607 split-needed | proposed: STAYS the 2010 run, items 22611-22618 + FCBD 22619 -> cv=34401 gcd=51414 (F needs-fetch cv=34401: no CvVolume row); MOVES items 22607-22610 (COL Doctor Solar, Man of the Atom Archives v01-v04, folder "...\Doctor Solar, Man of the Atom (1962)") -> key "Doctor Solar, Man of the Atom (1962)" with run cv=2091 gcd=1529 — no live shelf stores cv=2091 or gcd=1529 (who-stores: 0 Series rows, 0 S lines)
+   nearby: S19297 "Original Doctor Solar, Man of the Atom" 1f [title+1 — S cv=25773 gcd=26608 (B-068 0.95)] keys: "The Original Dr Solar, Man of the Atom"
+   keys now: "Doctor Solar - Man of the Atom" x9 · "Doctor Solar, Man of the Atom Archives" x4
+   groups (title x folder): 3
+   G1 "Doctor Solar, Man of the Atom Archives" in EC Comics & Others Archives (Dark Horse)\Doctor Solar, Man of the Atom (1962)\Doctor Solar, Man of the Atom (1962) — 4 file(s), 4 COL, pp 204-242; cv per-file 35644x4; gcd per-file 65566x4; key 'Doctor Solar, Man of the Atom Archives'
+      [22607] COL Doctor Solar, Man of the Atom Archives v01 (2010) (digital) (Mr Norrell-Empire).cbr (214pp)
+         own record cv 35644 / gcd s65566 "Doctor Solar, Man of the Atom Archives" (issue 945012) COLLECTS: gcd=1529 Doctor Solar, Man of the Atom (1962) #1-7
+      [22608] COL Doctor Solar, Man of the Atom Archives v02 (2014) (digital) (Mr Norrell-Empire).cbr (216pp)
+      [22609] COL Doctor Solar, Man of the Atom Archives v03 (2014) (digital) (Mr Norrell-Empire).cbr (204pp)
+      [22610] COL Doctor Solar, Man of the Atom Archives v04 (2015) (digital) (Mr Norrell-Empire).cbr (242pp)
+   G2 "Doctor Solar - Man of the Atom" in EC Comics & Others Archives (Dark Horse)\Doctor Solar, Man of the Atom (1962)\Doctor Solar, Man of the Atom (2010) — 8 file(s), numbers 1-8, pp 25-43; cv per-file 2091x8; gcd per-file 51414x8; key 'Doctor Solar - Man of the Atom'
+      e.g. Doctor Solar - Man of the Atom 001 (2010) (Digital) (G85-Empire).cbr
+        22611 #1 2010 43pp · 22612 #2 2010 25pp · 22613 #3 2010 25pp · 22614 #4 2010 25pp · 22615 #5 2011 25pp · 22616 #6 2011 25pp · 22617 #7 2011 25pp · 22618 #8 2011 25pp
+   G3 "Doctor Solar - Man of the Atom FCBD (2010) (G85-Empire)" in EC Comics & Others Archives (Dark Horse)\Doctor Solar, Man of the Atom (1962)\Doctor Solar, Man of the Atom (2010) — 1 file(s), pp 13-13; cv per-file 32907x1; gcd per-file 48271x1; key 'Doctor Solar - Man of the Atom'
+      [22619] Doctor Solar - Man of the Atom FCBD (2010) (G85-Empire).cbr (13pp)

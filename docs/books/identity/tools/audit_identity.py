@@ -92,7 +92,11 @@ CHECKS = [
                           OR d.Target LIKE '%S' || m.OldSeriesId
                           -- a clear-link decision's Target is the PROVIDER ('Cv'); its shelf is on the
                           -- evidence line ("F 12048 wrong-cv-link") — wave 5: S12048 merged into S63133
-                          OR d.EvidenceJson LIKE '%"line": "F ' || m.OldSeriesId || ' %')""", False),
+                          OR d.EvidenceJson LIKE '%"line": "F ' || m.OldSeriesId || ' %')
+       -- an item-targeted C / I line (Target 'item:<id> …') on a shelf merged away took effect on the ITEM: it now
+       -- sits on the shelf that absorbed the merge (wave 52: R-063's 17 C lines on S15100 -> S94686)
+       AND NOT (d.Target LIKE 'item:%' AND EXISTS (SELECT 1 FROM Item i JOIN SeriesMerge m ON m.NewSeriesId = i.SeriesId
+                WHERE i.Id = cast(substr(d.Target, 6, instr(d.Target || ' ', ' ') - 6) AS INTEGER)))""", False),
 
     ("LEAD an identity decision against a shelf a landed wave merged away (it took effect)", """
      SELECT d.Id, d.SeriesKey, d.Target FROM SeriesInferenceDecision d

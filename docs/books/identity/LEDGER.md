@@ -1643,3 +1643,17 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
 
 [L-338] pub:cinebook
 - Cinebook's "Valerian and Laureline By…" line is GCD 127475 "Valerian and Laureline" [en-gb] 2018-? (R-062).
+
+[L-339] pub:europe-comics kind:foreign
+- Europe Comics: "provider-missing in any language" was WRONG on 12 of 22 shelves (R-063). Probe the French title
+  with accents dropped (normalisation turns "é" into a space) and the Dutch Dupuis / Silvester or German Salleck
+  editions; link the original / other-language row per L-024 / L-068. Dupuis Dutch lines are often filed twice
+  (125966/125967 — the pair differs in ISBN, the second carries page counts). Europe Comics can split one French album
+  into two parts (Les Filles de Salem 132027 = Daughters of Salem Parts I-II).
+
+[L-340] pub:dark-horse pub:dynamite
+- Dark Horse / Dynamite trade shelves: the packet's own "GCD dump" line sometimes already names the run an earlier
+  reader called missing (Bettie Page 21042, Complete Emily 103671) — read it before re-stating provider-missing. Dark
+  Horse's Savage Sword of Conan volumes each reprint ONE Marvel run (CV 2701 / GCD 2187) → run-wins, C per volume
+  from GCD's notes. MOTU mini-comics: CV files the whole line as ONE 49-issue volume (20533) while GCD mints a series
+  per mini-comic — the L-056 split with CV on the spanning side: the CV id goes on the I line (R-063).

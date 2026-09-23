@@ -1,0 +1,598 @@
+## Conventions for this batch (33 shown of 156 matched; 338 in LEDGER.md; 35 shelf/shelves: kind:collected-line ×15 · kind:trade-only ×15 · folder:vn-year ×11 · pub:marvel ×10 · pub:image ×7 · folder:sequel-subfolder ×5 · folder:bucket ×4 · pub:zenescope ×4)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-030] (35 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-151] (35 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (35 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-193] (32 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-291] (16 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-033] (10 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-060] (10 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-087] (10 shelf/shelves) pub:cinebook pub:idw pub:image sig:collision
+- The Cinebook shape (one GCD series, a CV volume per book) recurs inside IDW/Image (Godzilla Rivals, Obscure
+  Cities, MLP Annual, Cyberforce Origins, Hinges, Image+, Bloodstrike, X-Files specials): siblings take
+  `merge-with`; where CV has no series-level volume the S line is `cv=-`.
+[L-124] (15 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-135] (15 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-142] (10 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-164] (15 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (15 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-244] (15 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (15 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (15 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+[L-248] (15 shelf/shelves) kind:collected-line
+- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
+  the sibling's landed S is evidence for the weak per-file matches on the others.
+[L-251] (15 shelf/shelves) kind:collected-line
+- Deluxe / Yearbook / Omnibus editions of the shelf's own ongoing with NO judged range get an `N` naming the
+  relationship, never an invented `C` range (the range is containment's to read).
+[L-258] (15 shelf/shelves) kind:collected-line sig:stamp
+- A degenerate packet block can stamp ONE GCD issue id onto every book of a shelf (Green Arrow S97350, six eras of
+  collected lines) — resolve only by each series' full issue list matched by title, never by the stamp.
+[L-269] (15 shelf/shelves) kind:collected-line kind:trade-only
+- An omnibus bundling several minis gets one `C` per mini at that mini's full range; an anthology TPB ("… and
+  Others") is not a numbered run and gets an `N`, not a forced `C`.
+[L-275] (15 shelf/shelves) kind:collected-line pass:item sig:probe sig:trade-link
+- A count-1/2/3 trade record the shelf's `N` called absent is often in the catalogs under a spelling the packet
+  never probed ("The Adventures of …", "Complete Collection", "Deluxe") — probe before writing no-record.
+[L-279] (15 shelf/shelves) kind:collected-line
+- Blade of the Immortal (S23118) is the canonical "line + run" shape: GCD's 31 collected-edition rows are the `I`
+  identities (cv=- — ComicVine mints only the floppy volume), and the floppy run CV 9069 is what every `C` names,
+  ranges #0-206 ascending across the 31 books. A single-leg shelf's books inherit the shelf's 0.9, never more.
+[L-281] (15 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-282] (15 shelf/shelves) kind:collected-line
+- A `gcd=-` / dump-only shelf's books inherit the shelf's 0.9 (Cells at Work! Lady, Dragon Head); an exact edition
+  can exist on GCD alone and be absent from ComicVine entirely (Cat Shit One Omnibus GCD 186621 → 0.9, cv=-).
+[L-285] (15 shelf/shelves) kind:collected-line pass:item sig:stamp
+- ITEM PASS (X-031..X-033): JoJo's Bizarre Adventure part-shelves are double-stamped — per-file CV is the whole-saga
+  hardcover omnibus volume (165667, one issue per PART) and per-file GCD the umbrella whole-saga series (27115) by
+  raw issue number; both wrong for all 37 books. Parts 1-3 have no CV softcover record (cv=-); Parts 4-5 do.
+[L-286] (15 shelf/shelves) kind:collected-line sig:probe
+- A shelf-level "no record" `N` can be wrong for an English product too (Innocent Omnibus: CV 157999 / GCD 206125
+  under "Innocent Omnibus") — probe the edition's own name before inheriting the shelf's gap.
+[L-287] (15 shelf/shelves) kind:collected-line pass:item
+- A series can be wrong on BOTH legs at once (Hunter x Hunter, Inuyashiki, Kakegurui Twin): the header pool by
+  ordinal is the only source; an omnibus with no dedicated record on either leg is `N no-record`, never a mapping.
+[L-289] (15 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-309] (15 shelf/shelves) kind:collected-line pass:item sig:probe
+- A collected line's own issue rows carry the trade's SUBTITLE as the issue title, so once one book of a line is
+  identified, `--issues <volume>` or `gcd_issue WHERE series_id=?` resolves the whole Vol. 01-N run in one query —
+  "own container id not probed" is never a valid no-record.
+[L-314] (15 shelf/shelves) kind:collected-line pass:item
+- `cvref.normName` drops "the / a / an / of / and" everywhere, not just leading articles — a word-preserving
+  normalizer misses ~90% of exact matches; replicate cvref's tokenizer when matching titles by script. A bare
+  trailing-number fallback (trade "01" → run issue #1) is safe only for mislabeled single-issue files, never for
+  "Vol." / "Book" / dash-subtitled titles (it matched an 824pp omnibus to issue #1). One CV issue id reused across
+  two differently titled books on a shelf is a sign of two eras, not one book. A digital "Collection Book NN"
+  bundle is a different catalog shape from a "Vol. NN" trade and is often uncatalogued — honest no-record.
+[L-014] (28 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-013] (27 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-043] (27 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+
++123 more matched entries not shown: L-050, L-072, L-088, L-089, L-095, L-096, L-116, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-191, L-029, L-319, L-272, L-242, L-298, L-302, L-313, L-064, L-085, L-101, L-310, L-113, L-031, L-076, L-109, L-115, L-117, L-130, L-132, L-196, L-295, L-296, L-306, L-307, L-308, L-324, L-327, L-328, L-329, L-332, L-028, L-036, L-127, L-136, L-152, L-158, L-167, L-168, L-173, L-228, L-175, L-290, L-016, L-026, L-032, L-047, L-114, L-174, L-326, L-007, L-217, L-065, L-099, L-123, L-194, L-262, L-330, L-006, L-045, L-104, L-106, L-111, L-112, L-119, L-176, L-178, L-182, L-183, L-184, L-185, L-187, L-212, L-222, L-237, L-245, L-274, L-288, L-293, L-297, L-333, L-098, L-100, L-276, L-277, L-278, L-280, L-283, L-284, L-304, L-027, L-034, L-046, L-086, L-090, L-169, L-265, L-323, L-097, L-252, L-041, L-150, L-192 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S102781 Grimm Tales of Terror 2016 Holiday Special (2016)  [tier B]   keys: Grimm Tales of Terror 2016 Holiday Special (2016)  years 2016-2016  1 files / 0 collections
+   split run: "Grimm Tales of Terror 2016 Holiday Special (2016)" run={"cv": 96142, "gcd": 110198} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [1] Zenescope\Grimm Tales of Terror\Specials & One Shots
+   files:   [116122] Grimm Tales Of Terror 2016 Holiday Special (2016)(Digital)(TLK-EMPIRE-HD).cbr (41pp)
+   ours:    ladder 2016
+   CV linked:      vol 96142 "Grimm Tales of Terror 2016 Holiday Special" 2016 Zenescope Entertainment 1 issues issue 562694  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 1/?; none cached
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       110198 "Grimm Tales of Terror 2016 Holiday Special" 2016-2016 Zenescope Entertainment [] 1 (via our own name without the filing suffix "Grimm Tales of Terror 2016 Holiday Special")   (dump lookup)
+
+== S102782 Grimm Tales of Terror 2018 Halloween Special (2018)  [tier B]   keys: Grimm Tales of Terror 2018 Halloween Special (2018)  years 2018-2018  1 files / 0 collections
+   split run: "Grimm Tales of Terror 2018 Halloween Special (2018)" run={"cv": 113478, "gcd": 129365} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [1] Zenescope\Grimm Tales of Terror\Specials & One Shots
+   files:   [116123] Grimm Tales of Terror 2018 Halloween Special (2018) (digital) (The Seeker-Empire).cbr (38pp)
+   ours:    ladder 2018
+   CV linked:      vol 113478 "Grimm Tales of Terror 2018 Halloween Special" 2018 Zenescope Entertainment 1 issues issue 684862  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 1/?; none cached
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       129365 "Grimm Tales of Terror 2018 Halloween Special" 2018-2018 Zenescope Entertainment [] 1 (via our own name without the filing suffix "Grimm Tales of Terror 2018 Halloween Special")   (dump lookup)
+
+== S102783 Grimm Tales of Terror: Special Edition  [tier B]   keys: Grimm Tales of Terror Special Edition (2017)  years 2017-2017  1 files / 0 collections
+   split run: "Grimm Tales of Terror Special Edition (2017)" run={"cv": 100162, "gcd": 115488} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [1] Zenescope\Grimm Tales of Terror\Specials & One Shots
+   files:   [116126] Grimm Tales of Terror Special Edition (2017) (Digital) (DR & Quinch-Empire).cbr (128pp)
+   ours:    judged item 116126 #8-9 conf 0.9
+   CV linked:      vol 100162 "Grimm Tales of Terror: Special Edition" 2017 Zenescope Entertainment 1 issues issue 588755; issue list NOT CACHED; yearΔ 0; ratio 0/1; none cached
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       115488 "Grimm Tales of Terror Special Edition" 2017-2017 Zenescope Entertainment [] 1   (dump lookup)
+
+== S8093 Grimm Tales of Terror  [tier B]   keys: Grimm Tales of Terror  years 2015-2018  3 files / 3 collections
+   split: the KEPT half of the P-004 split — moved out -> S102781 "Grimm Tales of Terror 2016 Holiday Special (2016)"; S102782 "Grimm Tales of Terror 2018 Halloween Special (2018)"; S102783 "Grimm Tales of Terror Special Edition (2017)"; re-identify what stayed
+   folders: [1] Zenescope\Grimm Tales of Terror\Grimm Tales of Terror v1 (2014) · [1] Zenescope\Grimm Tales of Terror\Grimm Tales of Terror v2 (2015) · [1] Zenescope\Grimm Tales of Terror\Grimm Tales of Terror v3 (2017)
+   files:   [117857] COL Grimm Tales of Terror Vol. 01 (2015) (Digital) (DR & Quinch-Empire).cbr (370pp) | [117858] COL Grimm Tales of Terror Vol. 02 (2016) (Digital) (DR & Quinch-Empire).cbr (348pp)
+            [117859] COL Grimm Tales of Terror Vol. 03 (2018) (Digital) (DR & Quinch-Empire).cbr (318pp)
+   CV linked:      vol 84313 "Grimm Tales of Terror" 2015 Zenescope Entertainment 4 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV local rip:   (= linked) · 85478 "Grimm Tales of Terror" 2015 Zenescope Entertainment 13 · 76097 "Grimm Tales of Terror" 2014 Zenescope Entertainment 13 · 98336 "Grimm Tales of Terror" 2017 Zenescope Entertainment 13 · 109766 "Grimm Tales of Terror" 2018 Zenescope Entertainment 13 · 162017 "Grimm Tales of Terror" 2025 Zenescope Entertainment 12   (rip lookup)
+   GCD dump:       82049 "Grimm Tales of Terror" 2014-2015 Zenescope Entertainment [] 13   (dump lookup)
+
+== S102796 Impaler v2 (2008)  [tier B]   keys: Impaler v2 (2008)  years 2006-2007  3 files / 0 collections
+   split run: "Impaler v2 (2008)" run={"cv": 24953, "gcd": 63587} (new shelf from P-004) — seed the S line from these ids, then verify them
+   flags: #284 label-ambiguous [Pending] item 32941 — Impaler v2 001-003 are single issues, not collections
+   folders: [3] Image\Impaler
+   files:   [32941] Impaler v2 001.cbr (27pp) | [32942] Impaler v2 002.cbr (32pp) | [32943] Impaler v2 003.cbr (29pp)
+   ours:    ladder 1-3
+   CV linked:      vol 24953 "Impaler" 2008 Image 5 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 3/?; none cached
+   CV per-file (v1): vol 24954 "Impaler" 2006 Image 6 on 3/3 files
+   CV local rip:   (= linked) · 76942 "Impaler" 2008 Image 1 issue 465416 (via our own name without the filing suffix "Impaler")   (rip lookup)
+   GCD dump:       50345 "Impaler" 2006-2007 Image [] 3 (via our own name without the filing suffix "Impaler") · 172527 "Impaler" 2008-2010 Image [] 2 (via our own name without the filing suffix "Impaler") · 63587 "Impaler" 2009-2010 Image [] 5 (via our own name without the filing suffix "Impaler")   (dump lookup)
+
+== S9318 Impaler  [tier B]   keys: Impaler  years 2006-2007  3 files / 0 collections
+   split: the KEPT half of the P-004 split — moved out -> S102796 "Impaler v2 (2008)"; re-identify what stayed
+   folders: [3] Image\Impaler
+   files:   [32938] Impaler 01.cbr (30pp) | [32939] Impaler 02.cbr (28pp) | [32940] Impaler 03.cbr (27pp)
+   ours:    ladder 1-3
+   CV linked:      vol 24954 "Impaler" 2006 Image 6 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); cached #1-3 (3); yearΔ ?; ratio 3/?; no judged range; v1 per-file: same volume on 3/3 files
+   CV candidates:  (= linked) · 24953 "Impaler" 2008 Image 5 s105 · 76942 "Impaler" 2008 Image 1 issue 465416 s90 · 27532 "Spawn: The Impaler" 1996 Image 3 s81 · 79722 "Impaler: Epilogue" 2015 Image 1 issue 477938 s74 · 5187 "Dracula: Vlad the Impaler" 1993 Topps Comics 3 s65 · 51064 "Dracula: Return of the Impaler" 1993 SLG Publishing 4 s64   (v1 search)
+   CV local rip:   (= linked) · 24953 "Impaler" 2008 Image 5 · 76942 "Impaler" 2008 Image 1 issue 465416   (rip lookup)
+   GCD dump:       50345 "Impaler" 2006-2007 Image [] 3 · 172527 "Impaler" 2008-2010 Image [] 2 · 63587 "Impaler" 2009-2010 Image [] 5   (dump lookup)
+
+== S102810 Killbox: Chicago (2017)  [tier A]   keys: Killbox: Chicago (2017)  years 2016-2016  2 files / 0 collections
+   split run: "Killbox: Chicago (2017)" run={"cv": 102313, "gcd": 115280} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [2] American Gothic Press\Killbox (2016)\02 Killbox - Chicago (2017)
+   files:   [6646] Killbox - Chicago 001 (2017) (digital) (Knight Ripper-Empire).cbr (24pp) | [6647] Killbox - Chicago 002 (2017) (digital) (Knight Ripper-Empire).cbr (20pp)
+   ours:    ladder 1-2
+   CV linked:      vol 102313 "Killbox: Chicago" 2017 American Gothic Press 4 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ 1; ratio 2/? = 0.50; none cached
+   CV per-file (v1): vol 89938 "Killbox" 2016 American Gothic Press ? on 2/2 files
+   CV local rip:   (= linked) · 108291 "Killbox: Chicago" 2018 American Gothic Press 1 issue 657245 (via our own name without the filing suffix "Killbox: Chicago") · 51062 "Killbox" 2002 Antarctic Press 3 (via CV name "Killbox")   (rip lookup)
+   GCD per-file:   series 115280 "Killbox Chicago" 2017-2017 American Gothic Press [limited series] 4 on 2/2 files; methods numx2
+   GCD dump:       (= per-file) · 100661 "Killbox" 2016-2016 American Gothic Press [] 4 (via CV name "Killbox") · 111903 "Killbox" 2016-? American Gothic Press [] 1 (via CV name "Killbox") · 46545 "Killbox" 2002-2003 Antarctic Press [] 3 (via CV name "Killbox")   (dump lookup)
+
+== S10349 Killbox  [tier A]   keys: Killbox  years 2016-2016  4 files / 0 collections
+   split: the KEPT half of the P-004 split — moved out -> S102810 "Killbox: Chicago (2017)"; re-identify what stayed
+   folders: [4] American Gothic Press\Killbox (2016)\01 Killbox (2016)
+   files:   [6642] Killbox 001 (2016) (Digital) (Knight Ripper-Empire).cbr (22pp) | [6643] Killbox 002 (2016) (Digital) (Knight Ripper-Empire).cbr (22pp)
+            [6644] Killbox 003 (2016) (Digital) (Knight Ripper-Empire).cbr (22pp) | [6645] Killbox 004 (2016) (Digital) (Knight Ripper-Empire).cbr (22pp)
+   ours:    ladder 1-4
+   CV linked:      vol 89938 "Killbox" 2016 American Gothic Press ? issues; cached #1-4 (4); yearΔ 0; ratio 4/? = 1.00; no judged range; v1 per-file: same volume on 4/4 files
+   CV candidates:  (= linked) · 51062 "Killbox" 2002 Antarctic Press ? s83 · 69199 "Killbox Primer" 2002 Antarctic Press ? s67 · 102313 "Killbox: Chicago" 2017 American Gothic Press ? s34 · 108291 "Killbox: Chicago" 2018 American Gothic Press ? s34 · 89271 "Oni Press Starter Pack 2016" 2016 Oni Press ? s15 · 143576 "American Gothic" 2012 Rebellion ? s11   (v1 search)
+   CV local rip:   (= linked) · 51062 "Killbox" 2002 Antarctic Press 3 · 69199 "Killbox Primer" 2002 Antarctic Press 1 issue 433367 (via CV candidate name "Killbox Primer")   (rip lookup)
+   GCD per-file:   series 100661 "Killbox" 2016-2016 American Gothic Press [Was ongoing series] 4 on 4/4 files; methods numx4
+   GCD dump:       (= per-file) · 111903 "Killbox" 2016-? American Gothic Press [] 1 · 46545 "Killbox" 2002-2003 Antarctic Press [] 3 · 46544 "Killbox: Primer" 2002-2002 Antarctic Press [] 1 (via CV candidate name "Killbox Primer")   (dump lookup)
+   bridges:        gcd 100661 -> LOCG 124825 "Killbox" support 4
+
+== S102835 Plastic  [tier B]   keys: Plastic (2017)  years 2017-2017  1 files / 0 collections
+   split run: "Plastic (2017)" run={"cv": 100832, "gcd": 113623} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [1] Image\Plastic (2017)
+   files:   [35833] Plastic (2017) (Digital) (XRA-Empire).cbr (145pp)
+   CV linked:      vol 100832 "Plastic" 2017 Image 5 issues; cached #1-5 (5); yearΔ 0; ratio 0/5; no judged range
+   CV local rip:   (= linked) · 105347 "Plastic" 2017 Image 1 issue 630599   (rip lookup)
+   GCD dump:       113623 "Plastic" 2017-2017 Image [] 5 · 117625 "Plastic" 2017-2017 Image [] 1   (dump lookup)
+
+== S13894 Plastic - Death and Dolls  [tier B]   keys: Plastic - Death and Dolls  years 2017-2017  5 files / 0 collections
+   split: the KEPT half of the P-004 split — moved out -> S102835 "Plastic (2017)"; re-identify what stayed
+   folders: [5] Image\Plastic (2017)\Plastic v2 - Death & Dolls (2024)
+   files:   [35834] Plastic - Death & Dolls 001 (2024) (Digital) (Mephisto-Empire).cbr (33pp) | [35835] Plastic - Death & Dolls 002 (2024) (Digital) (Mephisto-Empire).cbr (32pp)
+            [35836] Plastic - Death & Dolls 003 (2024) (Digital) (Mephisto-Empire).cbr (31pp) | [35837] Plastic - Death & Dolls 004 (2024) (Digital) (Mephisto-Empire).cbr (31pp)
+            [35838] Plastic - Death & Dolls 005 (2024) (Digital) (Mephisto-Empire).cbr (32pp)
+   ours:    ladder 1-5
+   CV linked:      vol 158489 "Plastic: Death & Dolls" 2024 Image 5 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 5/?; none cached
+   CV per-file (v1): vol 100832 "Plastic" 2017 Image 5 on 5/5 files
+   CV candidates:  (= linked) · 105347 "Plastic" 2017 Image 1 issue 630599 s70 · 66723 "Dolls" 2004 Viz 4 s63 · 28475 "Dolls" 1996 Sirius Entertainment 1 issue 175415 s45 · 140331 "Doll's Folkore" 2012 Kodansha 3 s39 · 141206 "Dolls Killer" 2011 Dolmen Editorial 1 issue 902826 s30 · 161401 "Danger Dolls" ? self published 8 s23   (v1 search)
+   CV local rip:   (= linked) · 105347 "Plastic" 2017 Image 1 issue 630599 (via CV name "Plastic")   (rip lookup)
+   GCD dump:       113623 "Plastic" 2017-2017 Image [] 5 (via CV name "Plastic") · 117625 "Plastic" 2017-2017 Image [] 1 (via CV name "Plastic") · 212965 "Plastic: Death & Dolls" 2024-2024 Image [] 5 (via our own name without the filing suffix "Plastic - Death & Dolls") · 222061 "Plastic: Death & Dolls" 2025-2025 Image [] 1 (via our own name without the filing suffix "Plastic - Death & Dolls")   (dump lookup)
+
+== S99605 S.H.I.E.L.D.  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: S.H.I.E.L.D v1 (2010)  years 2010-2018  19 files / 1 collections
+   split run: "S.H.I.E.L.D v1 (2010)" run=- (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [12] Marvel\_S.H.I.E.L.D + Nick Fury\S.H.I.E.L.D. v1 (2010)\Variant Covers · [6] Marvel\_S.H.I.E.L.D + Nick Fury\S.H.I.E.L.D. v1 (2010) · [1] Marvel\_S.H.I.E.L.D + Nick Fury\S.H.I.E.L.D. v2 (2011)
+   files:   S.H.I.E.L.D. 001 (2010) (Digital) (Zone-Empire).cbr … S.H.I.E.L.D. 006 (2011) (Digital) (Zone-Empire).cbr  (6 files, pp 20-37)
+            [93201] S.H.I.E.L.D. 01 (2010) (2nd Printing Variant) (Cover Only) (Scandog & ArtNet-DCP).cbz (1pp) | [93202] S.H.I.E.L.D. 01 (2010) (4th Printing Variant) (Cover ONLY) (ScanDog).cbr (1pp)
+            [93203] S.H.I.E.L.D. 01 (2010) (C2E2 Dustin Weaver Partial B&W Variant) (Cover ONLY) (ScanDog).cbr (1pp)
+            [93204] S.H.I.E.L.D. 01 (2010) (Weaver Leonardo da Vinci Variant) (Cover ONLY) [extracted] (2560px) (Minutemen-DTs).cbz (1pp)
+            [93205] S.H.I.E.L.D. 02 (2010) (2nd Printing Variant) (Cover ONLY) (ScanDog).cbr (1pp) | [93206] S.H.I.E.L.D. 02 (2010) (3rd Printing Variant) (Cover ONLY) (ScanDog).cbr (1pp)
+            [93207] S.H.I.E.L.D. 02 (2010) (Nostradamus Variant) (Cover ONLY) [extracted] (2560px) (Minutemen-DTs).cbz (1pp)
+            [93208] S.H.I.E.L.D. 03 (2010) (Isaac Newton Variant) (Cover ONLY) [extracted] (Minutemen-DTs).cbz (1pp)
+            [93209] S.H.I.E.L.D. 04 (2010) (Mona Lisa Vampire Variant) (Cover ONLY) [extracted] (Minutemen-DTs).cbz (2pp)
+            [93210] S.H.I.E.L.D. 04 (2010) (Zhang Heng Variant) (Cover ONLY) [extracted] (Minutemen-DTs).cbz (2pp)
+            [93211] S.H.I.E.L.D. 05 (2011) (Stark & Richards Variant) (Cover ONLY) [extracted] (Minutemen-DTs).cbz (1pp)
+            [93212] S.H.I.E.L.D. 06 (2011) (Nikola Tesla Variant) (Cover ONLY) [extracted] (Minutemen-DTs).cbz (2pp)
+            [93213] COL S.H.I.E.L.D. by Hickman & Weaver Vol. 01 - The Rebirth (2018) (Digital) (Zone-Empire).cbr (85pp)
+   ours:    ladder 1-6; 6 number(s) name more than one file: 1, 2, 3, 4, 5, 6
+   GCD says: [93213] gcd_reprint 1802358: s59046 S.H.I.E.L.D. (2011) #1-4 [10 stories]
+   CV linked:      vol 32430 "S.H.I.E.L.D." 2010 Marvel 6 issues; cached #1-6 (6); yearΔ 0; ratio 18/6 = 3.00; no judged range; v1 per-file: same volume on 18/19 files
+   CV local rip:   (= linked) · 40434 "S.H.I.E.L.D." 2011 Marvel 4 · 84349 "S.H.I.E.L.D" 2011 Panini España 11 · 79159 "S.H.I.E.L.D." 2015 Marvel 12 · 148907 "S.H.I.E.L.D." 2015 Panini Comics 12   (rip lookup)
+   GCD per-file:   series 46774 "S.H.I.E.L.D." 2010-2011 Marvel [Was ongoing] 6 on 15/19 files · series 70896 "S.H.I.E.L.D." [es] 2011-2012 Panini España [Fue Serie Regular] 11 on 3/19 files; methods numx18
+   GCD dump:       (= per-file) · 59046 "S.H.I.E.L.D." 2011-2012 Marvel [] 5 · 85526 "S.H.I.E.L.D." 2015-2016 Marvel [] 12 · 90470 "S.H.I.E.L.D." 2015-2016 Marvel [] 2 · 101469 "S.H.I.E.L.D." [de] 2015-? Panini Deutschland [] 3   (dump lookup)
+   bridges:        gcd 46774 -> LOCG 106345 "S.H.I.E.L.D." support 4
+
+== S102842 S.H.I.E.L.D. by Steranko: The Complete Collection (2013)  [tier B]   keys: S.H.I.E.L.D. by Steranko: The Complete Collection (2013)  years 2010-2010  1 files / 1 collections
+   split run: "S.H.I.E.L.D. by Steranko: The Complete Collection (2013)" run={"gcd": 78543} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\_S.H.I.E.L.D + Nick Fury\01 Nick Fury, Agent of S.H.I.E.L.D. v1 (1968)
+   files:   [93959] COL S.H.I.E.L.D. by Steranko - The Complete Collection (2013) (digital) (Minutemen-InnerDemons).cbr (489pp)
+   GCD says: [93959] gcd notes 1173294 (#[nn] of S.H.I.E.L.D. by Steranko: The Complete Collection): the Nick Fury stories from Strange Tales #151-168; Nick Fury, Agent of SHIELD #1-3, #5  |  gcd_reprint 1173294: s824 Strange Tales (1951) #151-168 [37 stories] · s1871 Nick Fury, Agent of SHIELD (1968) #1-7 [11 stories] · s27227 Marvel Masterworks: Nick Fury, Agent of S.H.I.E.L.D. (2007) #2 [6 stories] · s2126 SHIELD [Nick Fury and His Agents of SHIELD] (1973) #1-5 [5 stories]
+   CV per-file (v1): vol 32430 "S.H.I.E.L.D." 2010 Marvel 6 on 1/1 files
+   CV local rip:   (= per-file) · 40434 "S.H.I.E.L.D." 2011 Marvel 4 (via CV name "S.H.I.E.L.D.") · 84349 "S.H.I.E.L.D" 2011 Panini España 11 (via CV name "S.H.I.E.L.D.") · 79159 "S.H.I.E.L.D." 2015 Marvel 12 (via CV name "S.H.I.E.L.D.") · 148907 "S.H.I.E.L.D." 2015 Panini Comics 12 (via CV name "S.H.I.E.L.D.")   (rip lookup)
+   GCD dump:       46774 "S.H.I.E.L.D." 2010-2011 Marvel [] 6 (via CV name "S.H.I.E.L.D.") · 59046 "S.H.I.E.L.D." 2011-2012 Marvel [] 5 (via CV name "S.H.I.E.L.D.") · 70896 "S.H.I.E.L.D." [es] 2011-2012 Panini España [] 11 (via CV name "S.H.I.E.L.D.") · 78543 "S.H.I.E.L.D. by Steranko: The Complete Collection" 2013-2013 Marvel [] 1 (via our own name without the filing suffix "S.H.I.E.L.D. by Steranko: The Complete Collection") · 85526 "S.H.I.E.L.D." 2015-2016 Marvel [] 12 (via CV name "S.H.I.E.L.D.") · 90470 "S.H.I.E.L.D." 2015-2016 Marvel [] 2 (via CV name "S.H.I.E.L.D.")   (dump lookup)
+
+== S102841 S.H.I.E.L.D. by Lee & Kirby: The Complete Collection (2015)  [tier B]   keys: S.H.I.E.L.D. by Lee & Kirby: The Complete Collection (2015)  years 2015-2015  1 files / 1 collections
+   split run: "S.H.I.E.L.D. by Lee & Kirby: The Complete Collection (2015)" run={"cv": 85052, "gcd": 92741} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\_S.H.I.E.L.D + Nick Fury
+   files:   [93194] COL S.H.I.E.L.D. by Lee & Kirby - The Complete Collection (2015) (Digital) (Zone-Empire).cbr (253pp)
+   GCD says: [93194] gcd notes 1462877 (#[nn] of S.H.I.E.L.D. by Lee & Kirby: The Complete Collection.): Fantastic Four (Marvel, 1961 series) #21; Nick Fury stories from Strange Tales (Marvel, 1951 series) #135-150; the Captain America story from Tales of Suspense (Marvel, 1959 series) #78  |  gcd_reprint 1462877: s824 Strange Tales (1951) #135-150 [32 stories] · s1442 Tales of Suspense (1959) #78 [2 stories] · s1482 Fantastic Four (1961) #21 [2 stories] · s194426 S.H.I.E.L.D. Origins (2014) (unnumbered) [1 story]
+   CV linked:      vol 85052 "S.H.I.E.L.D. by Lee & Kirby: The Complete Collection" 2015 Marvel 1 issues issue 501997  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       92741 "S.H.I.E.L.D. by Lee & Kirby: The Complete Collection." 2015-2015 Marvel [] 1 (via our own name without the filing suffix "S.H.I.E.L.D. by Lee & Kirby: The Complete Collection")   (dump lookup)
+
+== S14894 S.H.I.E.L.D.  [tier C] · gap 5  keys: S.H.I.E.L.D.  years 2010-2015  3 files / 2 collections
+   split: the KEPT half of the P-004 split — moved out -> S99605 "S.H.I.E.L.D v1 (2010)"; S102842 "S.H.I.E.L.D. by Steranko: The Complete Collection (2013)"; S102841 "S.H.I.E.L.D. by Lee & Kirby: The Complete Collection (2015)"; re-identify what stayed
+   merge-with candidate: S14895 "S.H.I.E.L.D. - Secret History" (1 files) — the P-004 reader left this half here only because it could not move without that join; if it is the same run write `F 14894 merge-with=14895`, otherwise say why not in an N line
+   folders: [2] Marvel\_S.H.I.E.L.D + Nick Fury\S.H.I.E.L.D. v3 (2015) · [1] Marvel\__Skottie Young Covers
+   files:   [93215] COL S.H.I.E.L.D. Vol. 01 - Perfect Bullets (2015) (Digital) (Zone-Empire).cbr (147pp)
+            [93216] COL S.H.I.E.L.D. Vol. 02 - The Man Called D.E.A.T.H. (2016) (Digital) (Zone-Empire).cbr (134pp)
+            [52011] S.H.I.E.L.D. 001 (2015) (Skottie Young Variant) (digital) (Minutemen-Fantomex).cbr (1pp)
+   ours:    ladder 1; judged item 93215 #1-6 conf 0.97; judged item 93216 #7-12 conf 0.97
+   GCD says: [93215] gcd_reprint 1430814: s85526 S.H.I.E.L.D. (2015) #1-6 [17 stories]
+             [93216] gcd_reprint 1527945: s85526 S.H.I.E.L.D. (2015) #7-12 [7 stories]
+   CV linked:      vol 79159 "S.H.I.E.L.D." 2015 Marvel 12 issues; cached #1-12 (12); yearΔ 5; ratio 1/12 = 0.08; 2 of 2 judged fit
+   CV per-file (v1): vol 32430 "S.H.I.E.L.D." 2010 Marvel 6 on 1/3 files
+   CV local rip:   (= linked) · 40434 "S.H.I.E.L.D." 2011 Marvel 4 · 84349 "S.H.I.E.L.D" 2011 Panini España 11 · 148907 "S.H.I.E.L.D." 2015 Panini Comics 12   (rip lookup)
+   GCD per-file:   series 85526 "S.H.I.E.L.D." 2015-2016 Marvel [was ongoing series] 12 on 1/3 files; methods numx1
+   GCD dump:       (= per-file) · 46774 "S.H.I.E.L.D." 2010-2011 Marvel [] 6 · 59046 "S.H.I.E.L.D." 2011-2012 Marvel [] 5 · 70896 "S.H.I.E.L.D." [es] 2011-2012 Panini España [] 11 · 90470 "S.H.I.E.L.D." 2015-2016 Marvel [] 2 · 101469 "S.H.I.E.L.D." [de] 2015-? Panini Deutschland [] 3   (dump lookup)
+
+== S102852 Skyward  [tier B]   keys: Skyward (2013)  years 2013-2014  2 files / 2 collections
+   split run: "Skyward (2013)" run={"cv": 65933, "gcd": 76110} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [2] Action Lab\Skyward (2013)
+   files:   [5532] COL Skyward Vol. 01 - Into the Woods (2014) (digital-Empire).cbr (90pp) | [5533] COL Skyward Vol. 02 - Strange Creatures (2014) (digital-Empire).cbr (93pp)
+   ours:    ComicInfo Series: "Skyward"x2; ComicInfo Publisher: "Action Lab"x2
+   CV linked:      vol 65933 "Skyward" 2013 Action Lab 9 issues; cached #1-3 (3); yearΔ 0; ratio 0/9; no judged range
+   CV local rip:   (= linked) · 109973 "Skyward" 2018 Image 15 · 150234 "Skyward" 2019 Bragelonne 3 · 134770 "Skyward" 2021 Image 1 issue 839687   (rip lookup)
+   GCD dump:       76110 "Skyward" 2013-2014 Action Lab Comics [] 9 · 123752 "Skyward" 2018-? Image [] 15 · 129883 "Skyward" 2018-? Image [] 3 · 191398 "Skyward" [fr] 2019-2021 Bragelonne [] 3   (dump lookup)
+
+== S15754 Skyward  [tier B]   keys: Skyward  years 2018-2021  4 files / 4 collections
+   split: the KEPT half of the P-004 split — moved out -> S102852 "Skyward (2013)"; re-identify what stayed
+   flags: #102 conflated-series [Dismissed] item 32675 — two Skyward ladders each contribute a Vol. 01
+   folders: [4] Image\Skyward (2018)
+   files:   [32674] COL Skyward (Deluxe Edition) (2021) (Digital) (XRA-Empire).cbz (392pp) | [32675] COL Skyward Vol. 01 - My Low-G Life (2018) (Digital) (XRA-Empire).cbr (132pp)
+            [32676] COL Skyward Vol. 02 - Here There Be Dragonflies (2019) (Digital) (XRA-Empire).cbr (135pp) | [32677] COL Skyward Vol. 03 - Fix The World (2019) (Digital) (XRA-Empire).cbr (133pp)
+   ours:    judged item 32674 #1-15 conf 0.97; ComicInfo Series: "Skyward"x2; ComicInfo Publisher: "Image"x2
+   GCD says: [32675] gcd_reprint 1849449: s123752 Skyward (2018) #1-5 [5 stories]
+   CV linked:      vol 109973 "Skyward" 2018 Image 15 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV local rip:   (= linked) · 150234 "Skyward" 2019 Bragelonne 3 · 134770 "Skyward" 2021 Image 1 issue 839687 · 65933 "Skyward" 2013 Action Lab 9   (rip lookup)
+   GCD dump:       123752 "Skyward" 2018-? Image [] 15 · 129883 "Skyward" 2018-? Image [] 3 · 191398 "Skyward" [fr] 2019-2021 Bragelonne [] 3 · 76110 "Skyward" 2013-2014 Action Lab Comics [] 9   (dump lookup)
+
+== S16050 Spider-Gwen: The Ghost-Spider  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Spider-Gwen - The Ghost-Spider  years 2019-2025  47 files / 0 collections
+   split run: "Spider-Gwen - The Ghost-Spider" run=- (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [38] Marvel\#MARVEL CURRENT ONGOING TITLES\Spider-Gwen - The Ghost Spider v1 (2024)\Variant Covers · [9] Marvel\#MARVEL CURRENT ONGOING TITLES\Spider-Gwen - The Ghost Spider v1 (2024)
+   files:   [48459] Spider-Gwen - Ghost Spider 008 (2025) (Digital) (Shan-Empire).cbz (22pp) | [48460] Spider-Gwen - Ghost Spider 009 (2025) (Digital) (Shan-Empire).cbz (26pp)
+            [48461] Spider-Gwen - The Ghost Spider 001 (2024) (Digital) (Shan-Empire).cbz (32pp) | [48462] Spider-Gwen - The Ghost Spider 002 (2024) (Digital) (Shan-Empire).cbz (23pp)
+            [48463] Spider-Gwen - The Ghost Spider 003 (2024) (Digital) (Shan-Empire).cbz (33pp) | [48464] Spider-Gwen - The Ghost Spider 004 (2024) (Digital) (Shan-Empire).cbz (23pp)
+            [48465] Spider-Gwen - The Ghost Spider 005 (2024) (Digital) (dekabro-Empire).cbz (22pp) | [48466] Spider-Gwen - The Ghost Spider 006 (2024) (Digital) (Shan-Empire).cbz (24pp)
+            [48467] Spider-Gwen - The Ghost Spider 007 (2025) (Digital) (Shan-Empire).cbz (24pp)
+            [48468] Spider-Gwen - The Ghost-Spider 001 (2024) (Blank Cover Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48469] Spider-Gwen - The Ghost-Spider 001 (2024) (Blank Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48470] Spider-Gwen - The Ghost-Spider 001 (2024) (David Lopez Vampire Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48471] Spider-Gwen - The Ghost-Spider 001 (2024) (Ernanda Souza 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48472] Spider-Gwen - The Ghost-Spider 001 (2024) (Ernanda Souza Foil Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48473] Spider-Gwen - The Ghost-Spider 001 (2024) (Jenny Frison Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48474] Spider-Gwen - The Ghost-Spider 001 (2024) (Jenny Frison Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48475] Spider-Gwen - The Ghost-Spider 001 (2024) (Jenny Frison Virgin Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48476] Spider-Gwen - The Ghost-Spider 001 (2024) (Mark Brooks Ratio Virgin 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48477] Spider-Gwen - The Ghost-Spider 001 (2024) (Pablo Villalobos Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48478] Spider-Gwen - The Ghost-Spider 001 (2024) (Pablo Villalobos Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48479] Spider-Gwen - The Ghost-Spider 001 (2024) (Pablo Villalobos Virgin Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48480] Spider-Gwen - The Ghost-Spider 002 (2024) (1-in-25 Greg Land Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48481] Spider-Gwen - The Ghost-Spider 002 (2024) (1-in-50 Pablo Villalobos Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48482] Spider-Gwen - The Ghost-Spider 002 (2024) (Meghan Hetrick Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48483] Spider-Gwen - The Ghost-Spider 002 (2024) (Pablo Villalobos Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48484] Spider-Gwen - The Ghost-Spider 002 (2024) (Stephanie Hans Black Costume Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48485] Spider-Gwen - The Ghost-Spider 003 (2024) (Annie Wu Marvel Comics Presents Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48486] Spider-Gwen - The Ghost-Spider 003 (2024) (Pablo Villalobos Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48487] Spider-Gwen - The Ghost-Spider 003 (2024) (Pablo Villalobos Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48488] Spider-Gwen - The Ghost-Spider 003 (2024) (Ryan Stegman Deadpool & Wolverine Weapon X-Traction Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48489] Spider-Gwen - The Ghost-Spider 003 (2024) (Skottie Young's Big Marvel Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48490] Spider-Gwen - The Ghost-Spider 003 (2024) (Skottie Young's Big Marvel Virgin Black and Whi Te Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48491] Spider-Gwen - The Ghost-Spider 004 (2024) (Jeehyung Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48492] Spider-Gwen - The Ghost-Spider 004 (2024) (Jeehyung Lee Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48493] Spider-Gwen - The Ghost-Spider 004 (2024) (Pasqual Ferry Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48494] Spider-Gwen - The Ghost-Spider 005 (2024) (Inhyuk Lee Godzilla Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48495] Spider-Gwen - The Ghost-Spider 005 (2024) (Rian Gonzales Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48496] Spider-Gwen - The Ghost-Spider 006 (2024) (Audrey Mok Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48497] Spider-Gwen - The Ghost-Spider 006 (2024) (Gleb Melnikov Doom Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48498] Spider-Gwen - The Ghost-Spider 007 (2024) (Josemaria Casanovas Kraven Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48499] Spider-Gwen - The Ghost-Spider 007 (2024) (Mark Bagley Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48500] Spider-Gwen - The Ghost-Spider 007 (2024) (Nic Klein Stormbreakers Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48501] Spider-Gwen - The Ghost-Spider 007 (2024) (Todd Nauck The Thing! Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48502] Spider-Gwen - The Ghost-Spider 008 (2024) (Edwin Galmon Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48503] Spider-Gwen - The Ghost-Spider 008 (2024) (Ernanda Souza Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48504] Spider-Gwen - The Ghost-Spider 009 (2025) (Mirka Andolfo Madame Web Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48505] Spider-Gwen - The Ghost-Spider 009 (2025) (Zulema Scotto Lavina Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 1-9; 9 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9; ComicInfo Series: "Spider-Gwen: The Ghost-Spider"x1
+   CV linked:      vol 158228 "Spider-Gwen: The Ghost-Spider" 2024 Marvel 15 issues; cached #1-15 (15); yearΔ 5; ratio 47/15 = 3.13; no judged range
+   CV per-file (v1): vol 158228 "Spider-Gwen: The Ghost-Spider" 2024 Marvel 15 on 45/47 files · vol 114734 "Spider-Gwen: Ghost-Spider" 2018 Marvel 10 on 2/47 files
+   CV candidates:  (= linked) · 162080 "Spider-Gwen: The Ghost-Spider" 2024 Marvel 3 s105 · 153030 "Spider-Gwen: Ghost-Spider" 2023 Marvel 1 issue 1009038 s82 · 152774 "Spider-Gwen: Ghost-Spider Omnibus" 2023 Marvel 1 issue 1005274 s66 · 118870 "Spider-Gwen: Ghost-Spider: Spider-Geddon" 2019 Marvel 1 issue 708138 s65 · 121103 "Spider-Gwen: Ghost-Spider: Impossible Year" 2019 Marvel 1 issue 718143 s64 · 166312 "All-New Spider-Gwen: The Ghost-Spider" 2025 Marvel 10 s34   (v1 search)
+   CV local rip:   (= linked) · 153030 "Spider-Gwen: Ghost-Spider" 2023 Marvel 1 issue 1009038 (via CV name "Spider-Gwen: Ghost-Spider")   (rip lookup)
+   GCD per-file:   series 220207 "Spider-Gwen: The Ghost Spider" 2024-2025 Marvel [collected edition] 3 on 26/47 files · series 211216 "Spider-Gwen: The Ghost-Spider" 2024-2025 Marvel [was ongoing series] 15 on 19/47 files; methods numx37 · fulldump-rematchx8
+   GCD dump:       (= per-file) · 144337 "Spider Gwen: Ghost Spider" [es-mx] 2019-? Editorial Televisa [] 5 (via CV name "Spider-Gwen: Ghost-Spider") · 145093 "Spider-Gwen: Ghost-Spider" 2019-2019 Marvel [] 2 (via CV name "Spider-Gwen: Ghost-Spider") · 173561 "Spider-Gwen: Ghost Spider" [es] 2019-2021 Panini España [] ? (via CV name "Spider-Gwen: Ghost-Spider") · 131933 "Spider-Gwen: Ghost Spider" 2018-2019 Marvel [] 10 (via CV name "Spider-Gwen: Ghost-Spider")   (dump lookup)
+   bridges:        gcd 220207 -> LOCG 172928 "Spider-Gwen: The Ghost-Spider Vol. 3 – Uncharted TP" support 26 · gcd 220207 -> OL /works/OL42406430W "None" isbnSupport 26
+
+== S16053 Spider-Gwen: Ghost-Spider  [tier B]   keys: Spider-Gwen: Ghost-Spider  years 2018-2019  4 files / 4 collections
+   split: the KEPT half of the P-004 split — moved out -> S16050 "Spider-Gwen - The Ghost-Spider"; re-identify what stayed
+   flags: #420 label-ambiguous [Pending] item 118905 — items 93694 and 118905 are duplicate copies of Spider-Geddon
+   folders: [2] Marvel\_Spider-Gwen - Ghost Spider\02 Spider-Gwen - Ghost-Spider v1 (2018) · [1] Marvel\_Spider-Gwen - Ghost Spider\_Omnibus Editions · [1] _Marvel Major Event Chronology (digital)\2018.09 - Spider-Geddon\02 Tie-ins\Spider-Gwen - Ghost-Spider
+   files:   [93694] COL Spider-Gwen - Ghost-Spider Vol. 01 - Spider-Geddon (2019) (Digital) (Zone-Empire).cbr (112pp)
+            [93695] COL Spider-Gwen - Ghost-Spider Vol. 02 - Impossible Year (2019) (Digital) (Kileko-Empire).cbz (134pp)
+            [93995] COL Spider-Gwen - Ghost-Spider Omnibus (2023) (Digital) (Kileko-Empire).cbz (812pp)
+            [118905] COL Spider-Gwen - Ghost-Spider Vol. 01 - Spider-Geddon (2019) (Digital) (Zone-Empire).cbr (112pp)
+   ours:    judged item 93995 #1-10 conf 0.7; judged item 93695 #5-10 conf 0.85; ComicInfo Series: "Spider-Gwen: Ghost-Spider"x3; ComicInfo Publisher: "Marvel"x3
+   GCD says: [93694] gcd notes 2013667 (#1 of Spider-Gwen: Ghost-Spider): Spider-Gwen: Ghost-Spider (Marvel, 2018 series) #1-4; Spider-Geddon: Ghost-Spider Video Comic #1  |  gcd_reprint 2013667: s131933 Spider-Gwen: Ghost Spider (2018) #1-4 [16 stories]
+             [93695] gcd notes 2013666 (#2 of Spider-Gwen: Ghost-Spider): Spider-Gwen: Ghost-Spider (Marvel, 2018 series) #5-10  |  gcd_reprint 2013666: s131933 Spider-Gwen: Ghost Spider (2018) (unnumbered) [16 stories]
+             [118905] gcd notes 2013667 (#1 of Spider-Gwen: Ghost-Spider): Spider-Gwen: Ghost-Spider (Marvel, 2018 series) #1-4; Spider-Geddon: Ghost-Spider Video Comic #1  |  gcd_reprint 2013667: s131933 Spider-Gwen: Ghost Spider (2018) #1-4 [16 stories]
+   CV linked:      vol 114734 "Spider-Gwen: Ghost-Spider" 2018 Marvel 10 issues; cached #1-9 (4); yearΔ 0; ratio 0/10; 2 of 2 judged fit
+   CV candidates:  (= linked) · 153030 "Spider-Gwen: Ghost-Spider" 2023 Marvel 1 issue 1009038 s50 · 93150 "100% Marvel. Spider-Gwen" 2016 Panini España 4 s48 · 162080 "Spider-Gwen: The Ghost-Spider" 2024 Marvel 3 s42 · 166312 "All-New Spider-Gwen: The Ghost-Spider" 2025 Marvel 10 s41 · 158228 "Spider-Gwen: The Ghost-Spider" 2024 Marvel 15 s37 · 152774 "Spider-Gwen: Ghost-Spider Omnibus" 2023 Marvel 1 issue 1005274 s34   (v1 search)
+   CV local rip:   (= linked) · 153030 "Spider-Gwen: Ghost-Spider" 2023 Marvel 1 issue 1009038 · 93150 "100% Marvel. Spider-Gwen" 2016 Panini España 4 (via CV candidate name "100% Marvel. Spider-Gwen")   (rip lookup)
+   GCD dump:       131933 "Spider-Gwen: Ghost Spider" 2018-2019 Marvel [] 10 · 144337 "Spider Gwen: Ghost Spider" [es-mx] 2019-? Editorial Televisa [] 5 · 145093 "Spider-Gwen: Ghost-Spider" 2019-2019 Marvel [] 2 · 173561 "Spider-Gwen: Ghost Spider" [es] 2019-2021 Panini España [] ? · 203122 "Spider-Gwen: Ghost Spider" 2023-2023 Marvel [] 1 · 237461 "Spider-Gwen - Ghost Spider" [de] 2026-? Panini Deutschland [] 1   (dump lookup)
+
+== S102855 Star Trek III: The Search for Spock (1984)  [tier B]   keys: Star Trek III: The Search for Spock (1984) | Star Trek IV: The Voyage Home (1986)  years 1984-1986  2 files / 0 collections
+   split run: "Star Trek III: The Search for Spock (1984)" run=- (new shelf from P-004) — seed the S line from these ids, then verify them
+   split run: "Star Trek IV: The Voyage Home (1986)" run=- (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [2] Hanna-Barbera & Licenses\Star Trek\Movies
+   files:   [28703] Star Trek III The Search For Spock (1984).cbz (68pp) | [28704] Star Trek IV The Voyage Home (1986).cbz (68pp)
+   CV linked:      vol 3319 "Star Trek Movie Special" 1984 DC Comics 2 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       2846 "Star Trek Movie Special" 1984-1987 DC [] 2 (via CV name "Star Trek Movie Special") · 3824 "Star Trek Movie Special" 1989-1989 DC [] 1 (via CV name "Star Trek Movie Special")   (dump lookup)
+
+== S102857 Star Trek V: The Final Frontier  [tier B]   keys: Star Trek V: The Final Frontier (1989)  years 1989-1989  1 files / 0 collections
+   split run: "Star Trek V: The Final Frontier (1989)" run={"cv": 27688} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [1] Hanna-Barbera & Licenses\Star Trek\Movies
+   files:   [28705] Star Trek V The Final Frontier (1989).cbz (52pp)
+   CV linked:      vol 27688 "Star Trek V: The Final Frontier" 1989 DC Comics 1 issues issue 169343; issue list NOT CACHED; yearΔ 0; ratio 0/1; none cached
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+
+== S102858 Star Trek VI: The Undiscovered Country  [tier B]   keys: Star Trek VI: The Undiscovered Country (1991)  years 1991-1991  1 files / 0 collections
+   split run: "Star Trek VI: The Undiscovered Country (1991)" run={"cv": 19575, "gcd": 4213} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [1] Hanna-Barbera & Licenses\Star Trek\Movies
+   files:   [28706] Star Trek VI The Undiscovered Country (1991).cbz (69pp)
+   CV linked:      vol 19575 "Star Trek VI: The Undiscovered Country" 1992 DC Comics 1 issues issue 117071; issue list NOT CACHED; yearΔ 1; ratio 0/1; none cached
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       4213 "Star Trek VI: The Undiscovered Country" 1992-1992 DC [] 1 · 47580 "Star Trek VI: The Undiscovered Country" 1992-1992 DC [] 1   (dump lookup)
+
+== S102854 Star Trek #400 (2022)  [tier B]   keys: Star Trek #400 (2022)  years 2022-2022  1 files / 0 collections
+   split run: "Star Trek #400 (2022)" run={"gcd": 188900} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [1] IDW\Star Trek\_Trades and one-shots
+   files:   [31530] Star Trek 400 (2022) (digital) (The Seeker-Empire).cbr (53pp)
+   ours:    ladder 400
+   CV per-file (v1): vol 4212 "Star Trek" 1989 DC Comics 80 on 1/1 files
+   CV local rip:   145706 "Star Trek" 2022 IDW Publishing 32 (via CV name "Star Trek") · 145850 "Star Trek" 2022 IDW Publishing 2 (via CV name "Star Trek") · 157009 "Star Trek" 2023 IDW Publishing 3 (via CV name "Star Trek") · 53942 "Star Trek" 2012 IDW Publishing 13 (via CV name "Star Trek") · 42972 "Star Trek" 2011 IDW Publishing 60 (via CV name "Star Trek") · 53605 "Star Trek" 2000 Dino Comics 9 (via CV name "Star Trek")   (rip lookup)
+   GCD dump:       188900 "Star Trek #400" 2022-2022 IDW [] 1 (via our own name without the filing suffix "Star Trek #400") · 191349 "Star Trek" 2022-2025 IDW [] 32 (via CV name "Star Trek") · 202292 "Star Trek" 2023-? IDW [] 2 (via CV name "Star Trek") · 215254 "Star Trek" 2024-? IDW [] 5 (via CV name "Star Trek") · 212022 "Star Trek" [nl-be] 2016-2016 Mediageuzen [] ? (via CV name "Star Trek") · 72872 "Star Trek" 2012-2016 IDW [] 13 (via CV name "Star Trek")   (dump lookup)
+
+== S16391 Star Trek  [tier B]   keys: Star Trek  years 1994-1994  1 files / 0 collections
+   split: the KEPT half of the P-004 split — moved out -> S102855 "Star Trek III: The Search for Spock (1984)"; S102855 "Star Trek IV: The Voyage Home (1986)"; S102857 "Star Trek V: The Final Frontier (1989)"; S102858 "Star Trek VI: The Undiscovered Country (1991)"; S102854 "Star Trek #400 (2022)"; re-identify what stayed
+   folders: [1] Hanna-Barbera & Licenses\Star Trek\Movies
+   files:   [28702] Star Trek Generations (1994).cbz (69pp)
+   CV linked:      vol 19536 "Star Trek Generations" 1994 DC Comics 1 issues issue 116834  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV local rip:   53638 "Star Trek" 1994 Carlsen Verlag 13 · 53659 "Star Trek" 1995 Egmont Ehapa Verlag 5 · 4212 "Star Trek" 1989 DC Comics 80 · 53654 "Star Trek" 1989 Norbert Hethke Verlag 5 · 53605 "Star Trek" 2000 Dino Comics 9 · 3318 "Star Trek" 1984 DC Comics 56   (rip lookup)
+   GCD dump:       41382 "Star Trek" [de] 1994-1997 Carlsen Comics [DE] [] 13 · 112204 "Star Trek" [de] 1995-1996 Egmont Ehapa [] 5 · 39501 "Star Trek" [it] 1992-1992 Play Press [] 6 · 3823 "Star Trek" 1989-1996 DC [] 80 · 63870 "Star Trek" [de] 1989-1991 Norbert Hethke Verlag [] 5 · 85806 "Star Trek" [de] 2000-2001 Dino Verlag [] 9   (dump lookup)
+
+== S65741 Star Wars: Doctor Aphra  [tier B]   keys: Doctor Aphra | Doctor Aphra v1 (2017) | Star Wars: Doctor Aphra (2016)  years 2016-2023  9 files / 9 collections
+   split run: "Star Wars: Doctor Aphra (2016)" run=- (new shelf from P-004) — seed the S line from these ids, then verify them
+   flags: #104 conflated-series [Dismissed] item 103801 — the 2016 and the 2020 Doctor Aphra ladders share this Series · #437 label-ambiguous [Pending] item 103805 — items 104130/103805 and 103806/104047 are duplicate copies of the 2022 vols 3-4
+   folders: [7] Marvel-IDW Star Wars\Doctor Aphra\Doctor Aphra v1 (2017) · [2] Marvel-IDW Star Wars\Doctor Aphra\_Omnibus Editions
+   files:   [103796] COL Doctor Aphra Vol. 01 - Aphra (2017) (Digital) (Kileko-Empire).cbr (155pp)
+            [103797] COL Doctor Aphra Vol. 02 - Doctor Aphra and the Enormous Profit (2018) (Digital) (Kileko-Empire).cbr (144pp)
+            [103798] COL Doctor Aphra Vol. 03 - Remastered (2018) (Digital) (Kileko-Empire).cbr (126pp)
+            [103799] COL Doctor Aphra Vol. 04 - The Catastrophe Con (2019) (Digital) (Kileko-Empire).cbr (140pp)
+            [103800] COL Doctor Aphra Vol. 05 - Worst Among Equals (2019) (Digital) (Kileko-Empire).cbz (161pp)
+            [103801] COL Doctor Aphra Vol. 06 - Unspeakable Rebel Superweapon (2019) (Digital) (Kileko-Empire).cbz (109pp)
+            [103802] COL Doctor Aphra Vol. 07 - A Rogue's End (2020) (Digital) (Kileko-Empire).cbz (138pp) | [103810] COL Doctor Aphra Omnibus Book 01 (2023) (Digital) (F) (Kileko-Empire).cbz (1222pp)
+            [103811] COL Doctor Aphra Omnibus Book 02 (2023) (Digital) (Kileko-Empire).cbz (561pp)
+   ours:    ComicInfo Series: "Star Wars: Doctor Aphra"x4, "Star Wars: Doctor Aphra Omnibus"x1; ComicInfo Publisher: "Marvel"x5
+   GCD says: [103796] gcd_reprint 1717317: s110055 Doctor Aphra (2017) #1-6 [16 stories]
+             [103797] gcd_reprint 1780687: s110055 Doctor Aphra (2017) #9-13 [13 stories] · s116041 Star Wars Doctor Aphra Annual (2017) #1 [4 stories]
+             [103798] gcd_reprint 1824057: s110055 Doctor Aphra (2017) #14-19 [14 stories]
+             [103799] gcd_reprint 1891107: s110055 Doctor Aphra (2017) #20-25 [15 stories]
+             [103800] gcd notes 1980730 (#5 of Star Wars: Doctor Aphra): Doctor Aphra (Marvel, 2017 series) #26-31; Star Wars Doctor Aphra Annual (Marvel, 2017 series) #2  |  gcd_reprint 1980730: s110055 Doctor Aphra (2017) #26-31 [14 stories] · s116041 Star Wars Doctor Aphra Annual (2017) #2 [4 stories]
+             [103801] gcd_reprint 2067214: s110055 Doctor Aphra (2017) #32-36 [12 stories]
+             [103802] gcd_reprint 2267557: s110055 Doctor Aphra (2017) #37-40 [10 stories] · s116041 Star Wars Doctor Aphra Annual (2017) #3 [4 stories] · s153715 Star Wars: Empire Ascendant (2020) #1 [2 stories]
+             [103810] gcd_reprint 2246662: s110055 Doctor Aphra (2017) #1-40 [41 stories] · s86508 Darth Vader (2015) #3-4, #8, #21, #25 [5 stories] · s85861 Star Wars (2015) #13, #19, #31-32 [4 stories] · s116041 Star Wars Doctor Aphra Annual (2017) #1-3 [3 stories]
+             [103811] gcd_reprint 2564717: s159999 Star Wars: Doctor Aphra (2020) #1-25 [26 stories]
+   CV linked:      vol 96284 "Star Wars: Doctor Aphra" 2016 Marvel 40 issues; cached #1-40 (40); yearΔ 0; ratio 0/40; no judged range
+   CV candidates:  (= linked) · 103626 "Star Wars: Doctor Aphra Annual" 2016 Marvel 3 s92 · 102281 "Star Wars: Doctor Aphra: Aphra" 2017 Marvel 1 issue 603142 s87 · 134434 "Star Wars: Doctor Aphra Omnibus" 2021 Marvel 2 s35 · 126644 "Star Wars: Doctor Aphra" 2020 Marvel 40 s33 · 113735 "Star Wars: Doctor Aphra" 2018 Marvel 1 issue 685857 s33 · 112204 "Star Wars: Doctor Aphra: Remastered" 2018 Marvel 1 issue 676709 s32   (v1 search)
+   CV local rip:   (= linked) · 113735 "Star Wars: Doctor Aphra" 2018 Marvel 1 issue 685857 · 126644 "Star Wars: Doctor Aphra" 2020 Marvel 40 · 103626 "Star Wars: Doctor Aphra Annual" 2016 Marvel 3 (via CV candidate name "Star Wars: Doctor Aphra Annual") · 102281 "Star Wars: Doctor Aphra: Aphra" 2017 Marvel 1 issue 603142 (via CV candidate name "Star Wars: Doctor Aphra: Aphra")   (rip lookup)
+   GCD dump:       115048 "Star Wars: Doctor Aphra" 2017-2020 Marvel [] 7 · 129804 "Star Wars: Doctor Aphra" 2018-? Marvel [] 1 · 159999 "Star Wars: Doctor Aphra" 2020-2024 Marvel [] 40 · 174852 "Star Wars: Doctor Aphra" 2020-2024 Marvel [] 7 · 110055 "Doctor Aphra" 2017-2020 Marvel [] 40 · 116041 "Star Wars Doctor Aphra Annual" 2017-2019 Marvel [] 3 (via CV candidate name "Star Wars: Doctor Aphra Annual")   (dump lookup)
+
+== S16693 Star Wars: Doctor Aphra  [tier B]   keys: Doctor Aphra v2 (2020) | Star Wars: Doctor Aphra (2020) | Star Wars: Doctor Aphra (2020-)  years 2020-2024  8 files / 8 collections
+   split: the KEPT half of the P-004 split — moved out -> S65741 "Star Wars: Doctor Aphra (2016)"; re-identify what stayed
+   folders: [6] Marvel-IDW Star Wars\Doctor Aphra\Doctor Aphra v2 (2020) · [1] Marvel-IDW Star Wars\_Completed Series and Minis\Star Wars - Crimson Reign (2022) · [1] Marvel-IDW Star Wars\_Completed Series and Minis\Star Wars - War of the Bounty Hunters (2021)
+   files:   [103803] COL Doctor Aphra Vol. 01 - Fortune And Fate (2021) (Digital) (Kileko-Empire).cbz (114pp)
+            [103804] COL Doctor Aphra Vol. 02 - The Engine Job (2021) (Digital) (Kileko-Empire).cbz (116pp)
+            [103806] COL Doctor Aphra Vol. 04 - Crimson Reign (2022) (Digital) (Kileko-Empire).cbz (116pp)
+            [103807] COL Doctor Aphra Vol. 05 - The Spark Eternal (2022) (Digital) (Kileko-Empire).cbz (115pp)
+            [103808] COL Doctor Aphra Vol. 06 - Ascendant (2023) (Digital) (Kileko-Empire).cbz (134pp) | [103809] COL Doctor Aphra Vol. 07 - Dark Droids (2024) (Digital) (Kileko-Empire).cbz (209pp)
+            [104047] COL Star Wars - Doctor Aphra v04 - Crimson Reign (2022) (Digital) (Kileko-Empire).cbz (116pp)
+            [104130] COL 06 Doctor Aphra Vol. 03 - War of the Bounty Hunters (2022) (Digital) (Kileko-Empire).cbz (115pp)
+   ours:    ComicInfo Series: "Star Wars: Doctor Aphra"x4, "Star Wars: Doctor Aphra (2020-)"x1, "Star Wars: Doctor Aphra Vol. 3 - War Of The Bounty Hunters"x1; ComicInfo Publisher: "Marvel"x6
+   GCD says: [103803] gcd_reprint 2252732: s159999 Star Wars: Doctor Aphra (2020) #1-5 [18 stories]
+             [103804] gcd_reprint 2253652: s159999 Star Wars: Doctor Aphra (2020) #6-10 [17 stories]
+             [103806] gcd_reprint 2444812: s159999 Star Wars: Doctor Aphra (2020) #16-20 [17 stories]
+             [103807] gcd_reprint 2468435: s159999 Star Wars: Doctor Aphra (2020) #21-25 [17 stories]
+             [103808] gcd_reprint 2559515: s159999 Star Wars: Doctor Aphra (2020) #26-31 [17 stories]
+             [103809] gcd_reprint 2625774: s159999 Star Wars: Doctor Aphra (2020) #32-40 [40 stories] · s206958 Star Wars: Revelations (2024) #1 [2 stories]
+             [104047] gcd_reprint 2444812: s159999 Star Wars: Doctor Aphra (2020) #16-20 [17 stories]
+             [104130] gcd_reprint 2287381: s159999 Star Wars: Doctor Aphra (2020) #11-15 [17 stories]
+   CV linked:      vol 126644 "Star Wars: Doctor Aphra" 2020 Marvel 40 issues; cached #1-40 (40); yearΔ 0; ratio 0/40; no judged range
+   CV candidates:  (= linked) · 113735 "Star Wars: Doctor Aphra" 2018 Marvel 1 issue 685857 s97 · 102281 "Star Wars: Doctor Aphra: Aphra" 2017 Marvel 1 issue 603142 s96 · 112204 "Star Wars: Doctor Aphra: Remastered" 2018 Marvel 1 issue 676709 s89 · 96284 "Star Wars: Doctor Aphra" 2016 Marvel 40 s81 · 132113 "Star Wars Adventures Annual 2020" 2020 IDW Publishing 1 issue 819045 s64 · 121778 "Doctor Who Annual 2020" 2019 Ebury Publishing 1 issue 721295 s49   (v1 search)
+   CV local rip:   (= linked) · 113735 "Star Wars: Doctor Aphra" 2018 Marvel 1 issue 685857 · 96284 "Star Wars: Doctor Aphra" 2016 Marvel 40 · 112204 "Star Wars: Doctor Aphra: Remastered" 2018 Marvel 1 issue 676709 (via CV candidate name "Star Wars: Doctor Aphra: Remastered") · 102281 "Star Wars: Doctor Aphra: Aphra" 2017 Marvel 1 issue 603142 (via CV candidate name "Star Wars: Doctor Aphra: Aphra")   (rip lookup)
+   GCD dump:       159999 "Star Wars: Doctor Aphra" 2020-2024 Marvel [] 40 · 174852 "Star Wars: Doctor Aphra" 2020-2024 Marvel [] 7 · 129804 "Star Wars: Doctor Aphra" 2018-? Marvel [] 1 · 115048 "Star Wars: Doctor Aphra" 2017-2020 Marvel [] 7 · 110055 "Doctor Aphra" 2017-2020 Marvel [] 40 (via the parsed key without the filing suffix "Doctor Aphra")   (dump lookup)
+
+== S68210 The Michael Moorcock Library - The Chronicles of Corum  [tier D]   keys: The Michael Moorcock Library - The Chronicles of Corum  years 2018-2020  4 files / 4 collections
+   split run: "The Michael Moorcock Library - The Chronicles of Corum" run=- (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [4] Titan Comics\The Michael Moorcock Library\The Michael Moorcock Library - The Chronicles of Corum
+   files:   [110592] COL The Michael Moorcock Library - The Chronicles of Corum Vol. 01 - The Knight of Swords (2018) (Digital) (Bean-Empire).cbz (114pp)
+            [110593] COL The Michael Moorcock Library - The Chronicles of Corum Vol. 02 - The Queen of Swords (2018) (digital) (Oroboros-DCP).cbr (113pp)
+            [110594] COL The Michael Moorcock Library - The Chronicles of Corum Vol. 03 - King of the Swords (2019) (Digital) (Bean-Empire).cbz (113pp)
+            [110595] COL The Michael Moorcock Library - The Chronicles of Corum Vol. 04 - The Bull and The Spear (2020) (Digital) (Bean-Empire).cbz (113pp)
+   ours:    ComicInfo Series: "The Michael Moorcock Library: Chronicles of Corum"x1, "The Michael Moorcock Library: The Chronicles of Corum"x1; ComicInfo Publisher: "Titan"x2
+   GCD says: [110592] gcd_reprint 2498545: s3489 The Chronicles of Corum (1987) #1-4 [12 stories] · s2793 Elric (1983) #1 [1 story]
+             [110593] gcd_reprint 2498546: s3489 The Chronicles of Corum (1987) #1, #5-8 [10 stories] · s2793 Elric (1983) #1 [1 story]
+             [110594] gcd_reprint 2498547: s3489 The Chronicles of Corum (1987) #1, #9-12 [8 stories] · s2793 Elric (1983) #1 [1 story]
+             [110595] gcd_reprint 2498548: s7142 Corum: The Bull and the Spear (1989) #1-4 [10 stories] · s2793 Elric (1983) #1 [1 story]
+   GCD dump:       197191 "The Michael Moorcock Library - The Chronicles of Corum" [en-gb] 2018-2020 Titan [] 4   (dump lookup)
+
+== S19116 The Michael Moorcock Library The Multiverse  [tier B]   keys: The Michael Moocock Library (2015) v15 - Michael Moorcock's Multiverse, Volume 1  years 2023-2024  2 files / 2 collections
+   split run: "The Michael Moocock Library (2015) v15 - Michael Moorcock's Multiverse, Volume 1" run=- (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [2] Titan Comics\The Michael Moorcock Library
+   files:   [110597] COL The Michael Moorcock Library Vol. 15 - Michael Moorcock's Multiverse, v01 (Titan 2023) (webrip) (MagicMan-DCP).cbr (168pp)
+            [110596] COL The Michael Moorcock Library v16 - Michael Moorcock's Multiverse, v2 (Titan 2024) (webrip) (MagicMan-DCP).cbr (140pp)
+   ours:    ComicInfo Series: "The Michael Moorcock Library v16 - Michael Moorcock's Multiverse, v2"x1, "The Michael Moocock Library (2015) v15 - Michael Moorcock's Multiverse, Volume 1"x1; ComicInfo Publisher: "Titan Comics"x2
+   GCD says: [110597] gcd_reprint 2667056: s7171 Michael Moorcock's Multiverse (1997) #1-8 [21 stories] · s2793 Elric (1983) #1 [1 story]  |  ⚠ stored GCD row is another book: our vol 15 vs GCD #1 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [110596] gcd_reprint 2667057: s7171 Michael Moorcock's Multiverse (1997) #1, #6-12 [25 stories] · s2793 Elric (1983) #1 [1 story]  |  ⚠ stored GCD row is another book: our vol 16 vs GCD #2 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+   CV linked:      vol 156928 "The Michael Moorcock Library The Multiverse" ? Titan Comics 2 issues; cached #1-2 (2); yearΔ ?; ratio 0/2; no judged range
+   CV candidates:  (= linked) · 25596 "Michael Moorcock's Multiverse" 1999 DC Comics 1 issue 150947 s70 · 27788 "Michael Moorcock's Multiverse" 1997 DC Comics 12 s55 · 136926 "The Michael Moorcock Library: Elric: Stormbringer" 2021 Titan Comics 1 issue 861271 s50 · 81108 "The Michael Moorcock Library" 2015 Titan Comics 15 s45 · 80387 "Titan Comics 2015 Spring Preview" 2015 Titan Comics 1 issue 481058 s38 · 34913 "Michael Turner's Soulfire Volume 1" 2008 Aspen MLT 2 s32   (v1 search)
+   CV local rip:   (= linked) · 25596 "Michael Moorcock's Multiverse" 1999 DC Comics 1 issue 150947 (via CV candidate name "Michael Moorcock's Multiverse") · 27788 "Michael Moorcock's Multiverse" 1997 DC Comics 12 (via CV candidate name "Michael Moorcock's Multiverse")   (rip lookup)
+   GCD dump:       23056 "Michael Moorcock's Multiverse" 1999-1999 DC [] 1 (via CV candidate name "Michael Moorcock's Multiverse") · 7171 "Michael Moorcock's Multiverse" 1997-1998 DC [] 12 (via CV candidate name "Michael Moorcock's Multiverse")   (dump lookup)
+
+== S102867 The Michael Moorcock Library: Elric - The Eternal Champion Collection (2021)  [tier D]   keys: The Michael Moorcock Library: Elric - The Eternal Champion Collection (2021)  years 2021-2021  1 files / 0 collections
+   split run: "The Michael Moorcock Library: Elric - The Eternal Champion Collection (2021)" run={"gcd": 197193} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [1] Titan Comics\Elric
+   files:   [110363] The Michael Moorcock Library - Elric - The Eternal Champion (2021) (Digital) (Bean-Empire).cbz (67pp)
+   ours:    ComicInfo Series: "The Michael Moorcock Library: Elric - The Eternal Champion"x1; ComicInfo Publisher: "Titan"x1
+   GCD dump:       197193 "The Michael Moorcock Library - Elric: The Eternal Champion Collection" [en-gb] 2021-2021 Titan [] 1 (via our own name without the filing suffix "The Michael Moorcock Library: Elric - The Eternal Champion Collection")   (dump lookup)
+
+== S19120 The Michael Moorcock Library: Chronicles of Corum  [tier D]   keys: The Michael Moorcock Library: Chronicles of Corum  years 2018-2020  2 files / 2 collections
+   split: the KEPT half of the P-004 split — moved out -> S68210 "The Michael Moorcock Library - The Chronicles of Corum"; S19116 "The Michael Moocock Library (2015) v15 - Michael Moorcock's Multiverse, Volume 1"; S102867 "The Michael Moorcock Library: Elric - The Eternal Champion Collection (2021)"; re-identify what stayed
+   folders: [2] Titan Comics\The Michael Moorcock Library\The Michael Moorcock Library - Hawkmoon
+   files:   [110590] COL The Michael Moorcock Library - Hawkmoon Vol. 01 - The History of the Runestaff (2018) (Digital) (Bean-Empire).cbz (168pp)
+            [110591] COL The Michael Moorcock Library - Hawkmoon Vol. 02 - The History of the Runestaff (2020) (Digital) (Bean-Empire).cbz (129pp)
+   ours:    ComicInfo Series: "The Michael Moorcock Library: Hawkmoon - History of the Runestaff"x1, "The Michael Moorcock Library:"x1; ComicInfo Publisher: "Titan"x2
+   GCD says: [110590] gcd_reprint 2498553: s32885 The Jewel in the Skull (1978) (unnumbered) [3 stories] · s32895 The Crystal and the Amulet (1986) (unnumbered) [2 stories] · s2793 Elric (1983) #1 [1 story]
+             [110591] gcd_reprint 2498554: s2793 Elric (1983) #1 [1 story]
+   CV candidates:  81108 "The Michael Moorcock Library" 2015 Titan Comics 15 s70 · 136926 "The Michael Moorcock Library: Elric: Stormbringer" 2021 Titan Comics 1 issue 861271 s62 · 156928 "The Michael Moorcock Library The Multiverse" ? Titan Comics 2 s56 · 3909 "The Chronicles of Corum" 1987 First 12 s55 · 139695 "Corum " 2020 Cross Cult 4 s43 · 131844 "Titan" 2020 Oni Press 1 issue 817544 s15   (v1 search)
+   CV local rip:   81108 "The Michael Moorcock Library" 2015 Titan Comics 15 (via CV candidate name "The Michael Moorcock Library") · 136926 "The Michael Moorcock Library: Elric: Stormbringer" 2021 Titan Comics 1 issue 861271 (via CV candidate name "The Michael Moorcock Library: Elric: Stormbringer") · 156928 "The Michael Moorcock Library The Multiverse" ? Titan Comics 2 (via CV candidate name "The Michael Moorcock Library The Multiverse")   (rip lookup)
+
+== S102868 Ultimate Black Panther  [tier C] · gap 18  keys: Ultimate Black Panther (2024)  years 2006-2024  10 files / 0 collections
+   split run: "Ultimate Black Panther (2024)" run={"cv": 156647, "gcd": 208771} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [6] Marvel\#MARVEL CURRENT ONGOING TITLES\Ultimate Comics (2023)\Ultimate Black Panther v1 (2024)\Variant Covers · [4] Marvel\#MARVEL CURRENT ONGOING TITLES\Ultimate Comics (2023)\Ultimate Black Panther v1 (2024)
+   files:   [48624] Ultimate Black Panther 008 (2024) (Digital) (dekabro-Empire).cbz (26pp) | [48626] Ultimate Black Panther 010 (2025) (Digital) (Shan-Empire).cbz (27pp)
+            [48627] Ultimate Black Panther 011 (2025) (Digital) (Shan-Empire).cbz (26pp) | [48628] Ultimate Black Panther 012 (2025) (Digital) (Shan-Empire).cbz (26pp)
+            [48640] Ultimate Black Panther 001i [Marvel] (2024) Peach Momoko 3rd Printing Variant (Digital) (MikeNY76).cbr (1pp)
+            [48668] Ultimate Black Panther 011 (2024) (Josemaria Casanovas Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48669] Ultimate Black Panther 011 (2024) (Puppeteer Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48670] Ultimate Black Panther 011 (2024) (Sara Pichelli Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48671] Ultimate Black Panther 012 (2025) (Phil Noto Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48672] Ultimate Black Panther 012 (2025) (Stephanie Hans Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 8, 10-12; 2 number(s) name more than one file: 11, 12; ComicInfo Series: "Ultimate Black Panther"x1
+   CV linked:      vol 156647 "Ultimate Black Panther" 2024 Marvel 22 issues; issue list NOT CACHED; yearΔ 18; ratio 9/22 = 0.41; none cached
+   CV per-file (v1): vol 11502 "Black Panther" 2005 Marvel 41 on 8/10 files · vol 4045 "Black Panther" 1988 Marvel 4 on 1/10 files
+   CV local rip:   (= linked) · 170056 "Ultimate Black Panther" 2024 Panini España 1 issue 1152531 · 25638 "Black Panther" 2009 Marvel 12 (via CV name "Black Panther") · 53306 "Black Panther" 2000 Panini Verlag 2 (via CV name "Black Panther") · 6496 "Black Panther" 1998 Marvel 62 (via CV name "Black Panther")   (rip lookup)
+   GCD per-file:   series 208771 "Ultimate Black Panther" 2024-2026 Marvel [was ongoing series] 24 on 1/10 files; methods numx1
+   GCD dump:       (= per-file) · 219614 "Ultimate Black Panther" [en-gb] 2024-? Panini UK [] 1 · 12471 "Black Panther" 2005-2008 Marvel [] 41 (via CV name "Black Panther") · 33758 "Black Panther" 2009-2010 Marvel [] 12 (via CV name "Black Panther") · 102259 "Black Panther" [de] 2000-2000 Panini Deutschland [] 2 (via CV name "Black Panther") · 6989 "Black Panther" 1998-2003 Marvel [] 62 (via CV name "Black Panther")   (dump lookup)
+   bridges:        gcd 208771 -> LOCG 171524 "Ultimate Black Panther" support 1
+
+== S20597 Black Panther  [tier A]   keys: Black Panther (1988) | Ultimate Black Panther  years 1988-1988  4 files / 0 collections
+   split: the KEPT half of the P-004 split — moved out -> S102868 "Ultimate Black Panther (2024)"; re-identify what stayed
+   folders: [4] Marvel\_Black Panther\02 Black Panther v2 (1988)
+   files:   [53580] Black Panther 01 (of 04) (1988) (Digital) (Shadowcat-Empire).cbz (26pp) | [53581] Black Panther 02 (of 04) (1988) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [53582] Black Panther 03 (of 04) (1988) (Digital) (Shadowcat-Empire).cbz (24pp) | [53583] Black Panther 04 (of 04) (1988) (Digital) (Shadowcat-Empire).cbz (24pp)
+   ours:    ladder 1-4; ComicInfo Series: "Black Panther"x4; ComicInfo Volume: "1988"x4; ComicInfo Publisher: "Marvel"x4
+   CV linked:      vol 4045 "Black Panther" 1988 Marvel 4 issues; cached #1-4 (4); yearΔ 0; ratio 4/4 = 1.00; no judged range; v1 per-file: same volume on 4/4 files
+   CV candidates:  (= linked) · 107507 "Marvel Black Panther: The Ultimate Guide" 2018 DK Publishing 1 issue 650973 s83 · 124689 "Marvel-Verse: Black Panther" 2020 Marvel 1 issue 735590 s80 · 121240 "Marvel Tales: Black Panther" 2019 Marvel 1 issue 718760 s79 · 119953 "Black Panther" 2017 Panini Verlag 5 s65 · 59098 "Marvel Masterworks: Black Panther" 2010 Marvel 3 s64 · 120046 "Marvel Knights: Black Panther" 2018 Panini Verlag 1 issue 713114 s64   (v1 search)
+   CV local rip:   (= linked) · 6496 "Black Panther" 1998 Marvel 62 · 2896 "Black Panther" 1977 Marvel 15 · 53306 "Black Panther" 2000 Panini Verlag 2 · 11502 "Black Panther" 2005 Marvel 41 · 25638 "Black Panther" 2009 Marvel 12   (rip lookup)
+   GCD per-file:   series 3640 "Black Panther" 1988-1988 [] 4 (dump only) on 4/4 files; methods fulldump-rematchx4
+   GCD dump:       (= per-file) · 6989 "Black Panther" 1998-2003 Marvel [] 62 · 56284 "Μαύρος Πάνθηρας [Black Panther]" [el-gr] 1978-1979 Kabanas Hellas [] 8 · 2387 "Black Panther" 1977-1979 Marvel [] 15 · 102259 "Black Panther" [de] 2000-2000 Panini Deutschland [] 2 · 12471 "Black Panther" 2005-2008 Marvel [] 41   (dump lookup)
+
+== S102884 Zero  [tier C] · by 23  keys: Zero (1991)  years 1991-2013  2 files / 2 collections
+   split run: "Zero (1991)" run={"cv": 58139} (new shelf from P-004) — seed the S line from these ids, then verify them
+   flags: #115 conflated-series [Dismissed] item 40494 — a manga ZERO and the 2013 Image Zero share this Series
+   folders: [2] Manga\_Taiyo Matsumoto\Zero (1991)
+   files:   [40494] COL ZERO vol1.cbr (225pp) | [40495] COL ZERO vol2.cbr (220pp)
+   GCD says: [40494] gcd_reprint 1181306: s76639 Zero (2013) #1-5 [11 stories]
+   CV linked:      vol 58139 "Zero" 1991 Shogakukan 1 issues issue 1119754; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV per-file (v1): vol 67426 "Zero" 2013 Image ? on 1/2 files
+   CV local rip:   (= linked) · 41045 "Zero" 1994 DC Comics 1 issue 276717 · 144811 "Zero" 1999 Edizioni Star Comics 278 · 41537 "Zero" 1975 Zero Comics 3 · 57620 "Zero" 1974 Last Gasp 1 issue 387488   (rip lookup)
+   GCD per-file:   methods round2-seriesx2 ⚠  (⚠ copies a folder neighbour's series — verify); series 79173 "Zero" 2014-2015 Image [Collected Edition] 4 on 2/2 files
+   GCD dump:       (= per-file) · 167351 "Zero" 1976-1976 Zero Comics; Last Gasp [] 1 · 84764 "Zero" [nl] 2007-2007 XTRA [] 1 · 83470 "Zero" 1974-1979 Greenwood Organization [] 3 · 144312 "Zero" [de] 1973-1973 Fantasia Press [] 1 · 76639 "Zero" 2013-2015 Image [] 18   (dump lookup)
+   bridges:        gcd 79173 -> OL /works/OL21264469W "None" isbnSupport 4
+
+== S22785 Zero  [tier B]   keys: Zero  years 2013-2015  4 files / 4 collections
+   split: the KEPT half of the P-004 split — moved out -> S102884 "Zero (1991)"; re-identify what stayed
+   folders: [4] Image\Zero (2013)
+   files:   [34148] COL Zero Vol. 01 - An Emergency (2014) (Digital TPB) (Windrider-Empire).cbr (160pp) | [34149] COL Zero Vol. 02 - At the Heart of It All (2014) (TPB) (Digital-Empire).cbr (153pp)
+            [34150] COL Zero Vol. 03 - Tenderness of Wolves (2015) (Digital TPB) (Zone-Empire).cbr (141pp) | [34151] COL Zero Vol. 04 - Who by Fire (2015) (Digital TPB) (Zone-Empire).cbr (137pp)
+   ours:    judged item 34148 #1-5 conf 0.8; judged item 34149 #6-10 conf 0.8
+   GCD says: [34148] gcd_reprint 1181306: s76639 Zero (2013) #1-5 [11 stories]
+   CV linked:      vol 67426 "Zero" 2013 Image ? issues; cached #1-4 (4); yearΔ 0; ratio 0/?; 1 of 2 judged fit
+   CV candidates:  (= linked) · 144811 "Zero" 1999 Edizioni Star Comics ? s83 · 22816 "Image Zero" 1993 Image ? s80 · 57620 "Zero" 1974 Last Gasp ? s77 · 41537 "Zero" 1975 Zero Comics ? s77 · 36440 "Zero Zero" 1995 Fantagraphics ? s65 · 154502 "Zero" 2014 ECC Ediciones ? s35   (v1 search)
+   CV local rip:   (= linked) · 154502 "Zero" 2014 ECC Ediciones 2 · 115466 "Zero" 2018 self published 1 issue 692732 · 144811 "Zero" 1999 Edizioni Star Comics 278 · 41045 "Zero" 1994 DC Comics 1 issue 276717 · 58139 "Zero" 1991 Shogakukan 1 issue 1119754   (rip lookup)
+   GCD dump:       76639 "Zero" 2013-2015 Image [] 18 · 79173 "Zero" 2014-2015 Image [] 4 · 82607 "Zero" [es] 2014-? ECC Ediciones [] 1 · 201870 "Zero" [fr] 2018-2018 Pika Édition [] 1 · 84764 "Zero" [nl] 2007-2007 XTRA [] 1 · 167351 "Zero" 1976-1976 Zero Comics; Last Gasp [] 1   (dump lookup)
+   MU / External:  MU 30364334021 "Zero" 2000 Manhwa · MuSeriesLink 30364334021 status 1 conf 0.7692307692307693
+
+== S102809 Karl the Viking  [tier B]   keys: Karl the Viking (2022)  years 2022-2022  2 files / 2 collections
+   split run: "Karl the Viking (2022)" run={"cv": 146917} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [2] 2000AD\Karl the Viking
+   files:   [4497] COL Karl the Viking v01 - The Sword of Eingar (2022) (digital) (Mr Norrell-Empire).cbr (245pp)
+            [4498] COL Karl the Viking v02 - The Voyage of the Sea Raiders (2022) (digital) (Mr Norrell-Empire).cbr (244pp)
+   CV linked:      vol 146917 "Karl the Viking" 2022 Rebellion 2 issues; cached #1-2 (2); yearΔ 0; ratio 0/2; no judged range
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       87995 "Karl the Viking" [en-nl] 2008-2008 Don Lawrence Collection [] 4   (dump lookup)
+
+== S23592 Karl the Viking  [tier B]   keys: Karl the Viking  years 2008-2008  4 files / 4 collections
+   split: the KEPT half of the P-004 split — moved out -> S102809 "Karl the Viking (2022)"; re-identify what stayed
+   folders: [4] 2000AD\Karl the Viking
+   files:   [4493] COL Karl the Viking the Collection v01 - The Sword of Eingar (2008) (Trigo&MickRC) (SZ).cbr (129pp)
+            [4494] COL Karl the Viking the Collection v02 - The Powers of Helvud (2008) (Trigo&MickRC) (SZ).cbr (128pp)
+            [4495] COL Karl the Viking the Collection v03 - Island of the Monsters (2008) (Trigo&MickRC) (SZ).cbr (127pp)
+            [4496] COL Karl the Viking the Collection v04 - The Quest of the Long Ships (2008) (Trigo&MickRC) (SZ).cbr (126pp)
+   GCD says: [4493] gcd_reprint 1336007: s60571 Lion (1960) (unnumbered) [55 stories]
+             [4494] gcd_reprint 1336008: s60571 Lion (1960) (unnumbered) [55 stories]
+             [4495] gcd_reprint 1336009: s60571 Lion (1960) (unnumbered) [50 stories] · s35204 Lion Annual (1954) #1963, #1966 [2 stories]
+             [4496] gcd_reprint 1336010: s60571 Lion (1960) (unnumbered) [45 stories] · s35204 Lion Annual (1954) #1964-1965, #1969 [3 stories]
+   CV linked:      vol 46698 "Karl the Viking - The Collection" 2008 Don Lawrence Collection 4 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); cached #1-4 (4); yearΔ ?; ratio 0/?; no judged range
+   CV candidates:  (= linked) · 146917 "Karl the Viking" 2022 Rebellion 2 s78 · 7562 "Viking" 2009 Image 5 s55 · 168562 "Karl" 2017 Finix 4 s48 · 143191 "Karl" 1988 ak-Verlag 1 issue 927441 s40 · 101992 "Viking" 2017 Éditions Glénat 1 issue 600059 s40 · 38945 "Viking Glory: The Viking Prince" 1991 DC Comics 1 issue 261537 s37   (v1 search)
+   CV local rip:   (= linked) · 146917 "Karl the Viking" 2022 Rebellion 2 · 7562 "Viking" 2009 Image 5 (via CV candidate name "Viking") · 101992 "Viking" 2017 Éditions Glénat 1 issue 600059 (via CV candidate name "Viking")   (rip lookup)
+   GCD dump:       87995 "Karl the Viking" [en-nl] 2008-2008 Don Lawrence Collection [] 4 · 35800 "Viking" 2009-2010 Image [] 5 (via CV candidate name "Viking") · 61243 "Viking" 2009-2009 Image [] 1 (via CV candidate name "Viking") · 139064 "Viking!" [fr] 2006-2007 Editions Carabas [] 2 (via CV candidate name "Viking") · 103042 "Viking" [de] 2016-2016 Cross Cult [] 1 (via CV candidate name "Viking") · 233422 "Viking" [fr-us] 2016-2016 Hollywood Comics [] 1 (via CV candidate name "Viking")   (dump lookup)

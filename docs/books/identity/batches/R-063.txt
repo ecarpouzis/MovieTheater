@@ -1,0 +1,708 @@
+## Conventions for this batch (36 shown of 135 matched; 338 in LEDGER.md; 60 shelf/shelves: pub:dark-horse ×19 · pub:europe-comics ×18 · kind:new ×14 · pub:dynamite ×11 · kind:collected-line ×10 · kind:trade-only ×8 · pub:dstlry ×4 · folder:bucket ×4)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-030] (60 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-151] (60 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (60 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-265] (20 shelf/shelves) kind:foreign pub:delcourt pub:europe-comics pub:marvel
+- Delcourt / Soleil English-digital shelves pair the English CV volume with the French GCD original at 0.9 (the
+  Europe Comics shape) — except when GCD's same-name row is an unrelated book (Spin Angels → Marvel's GCD 53252).
+[L-014] (59 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-193] (59 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-013] (57 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-043] (57 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (57 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (57 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (57 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (57 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (57 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (57 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (57 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (57 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (57 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (57 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (57 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (57 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-204] (57 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (57 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (57 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (57 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (57 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (57 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (57 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-009] (18 shelf/shelves) kind:foreign pub:cinebook pub:europe-comics
+- Cinebook: one ~50pp album per file; both providers hold Dargaud / Splitter / Epsilon / Panini rows of the same
+  album — the PUBLISHER column is the only test. GCD's span = the file years.
+[L-024] (18 shelf/shelves) kind:foreign pub:europe-comics
+- Europe Comics (digital English imprint of Dargaud / Dupuis / Le Lombard): ComicVine has a volume per shelf; GCD has
+  NO Europe Comics rows. **Eric's ruling: the original-language GCD row is the right comic in the wrong language —
+  link it** (at 0.9, naming the language edition) rather than `gcd=-`; when the dump holds two language editions,
+  take the original publisher's.
+[L-068] (18 shelf/shelves) kind:foreign pub:ablaze pub:cinebook pub:europe-comics pub:lion-forge-magnetic pub:papercutz-nbm
+- Europe Comics may have an ENGLISH PRINT sister edition in GCD (SelfMadeHero, Cinebook, NBM, Fanfare,
+  Magnetic Press, Ablaze) — the same text, not a translation — which is the better second leg than the
+  original-language row.
+[L-102] (18 shelf/shelves) kind:foreign kind:manga pub:europe-comics
+- Where GCD has no English row for a manga, readers have linked the same work's Japanese original (else the
+  European edition) at 0.9 with the language named — the Europe Comics ruling extended to manga, CONFIRMED by
+  Eric 2026-09-10: the right comic in another language beats no leg.
+[L-229] (14 shelf/shelves) pub:disney pub:dynamite sig:collision
+- Same-run continuations split by a folder or a parsed-key token surface as cross-batch collisions → `merge-with`
+  after reading the partner (Disney Masters S21200→S5517, Red Sonja v5 S99463→S14482, Sheena S15521→S15518,
+  BSG Classic trade S2336 ↔ run S94559, Elvira #1 S6117 ↔ #2-5 S6116).
+[L-021] (9 shelf/shelves) pub:dark-horse pub:disney pub:dstlry pub:dynamite pub:fantagraphics pub:idw
+- The Disney folder is publisher-agnostic (Joe Books, Dark Horse, IDW, Dynamite, Fantagraphics, Yen Press on one
+  shelf) — the provider's publisher column is the only test. DSTLRY filenames' "(N covers)" is a cover count.
+[L-228] (9 shelf/shelves) pub:dark-horse pub:dynamite pub:zenescope sig:legacy-stamp sig:split
+- Franchise folders that are genuinely several runs → `R` + split-needed, not residue: James Bond (three ladders),
+  Charmed (reboot + two Zenescope seasons), Green Hornet (three eras), Savage Tales (three publishers on a bare
+  title), Terminator (1999 Dark Horse mini + 2024 Dynamite), Vampirella (ongoing + "Year One"), Kirby: Genesis
+  (main + Dragonsbane), Tomb Raider (two same-numbered relaunches).
+[L-243] (9 shelf/shelves) kind:collected-line pass:item pass:revisit pub:dark-horse pub:dynamite sig:trade-link
+- Under the one-leg ruling every Dark Horse / Dynamite chain-of-minis shelf in R-020..R-022 became `S cv=- gcd=<line>
+  0.9` + `F wrong-cv-link` (the stored id was the FIRST mini's run in every case) + minis on N + a `C` per trade —
+  except the issue-file chains (Baltimore, Lobster Johnson), the several-publisher shelf (Angel), a shelf mixing one
+  season's issues with another's books (Angel & Faith), and Ash (three count-1 records, no line on either leg).
+[L-164] (11 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+
++99 more matched entries not shown: L-291, L-023, L-234, L-135, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-321, L-113, L-020, L-085, L-124, L-281, L-064, L-101, L-310, L-016, L-032, L-114, L-188, L-219, L-233, L-029, L-060, L-070, L-139, L-007, L-175, L-217, L-025, L-063, L-069, L-093, L-112, L-123, L-158, L-191, L-194, L-223, L-238, L-270, L-272, L-299, L-330, L-065, L-099, L-262, L-054, L-031, L-033, L-041, L-066, L-076, L-087, L-109, L-115, L-116, L-117, L-127, L-132, L-136, L-142, L-192, L-196, L-230, L-231, L-236, L-295, L-296, L-298, L-302, L-306, L-307, L-308, L-313, L-327, L-328, L-329, L-332, L-097, L-150, L-252, L-274, L-288, L-293 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S4052 Come Find Me: An Autumnal Offering Ashcan  [tier B]   keys: Come Find Me Ashcan  years 2024-2024  1 files / 0 collections
+   folders: [1] DSTLRY\_Ashcans
+   files:   [20801] Come Find Me Ashcan (2024) (DSTLRY) (digital) (juventuz).cbz (34pp)
+   CV linked:      vol 159937 "Come Find Me: An Autumnal Offering Ashcan" 2024 DSTLRY 1 issues issue 1071075; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 160697 "Come Find Me: An Autumnal Offering" 2024 DSTLRY 1 issue 1075740 s72 · 79611 "Find" 2015 ComixTribe 1 issue 477160 s55 · 123136 "Come Into Me" 2019 Black Mask Studios 1 issue 729002 s44 · 99888 "Come Back To Me Again" 2017 Europe Comics 1 issue 587511 s42 · 128994 "Wonder Woman: Come Back to Me" 2020 DC Comics 1 issue 782560 s41 · 59907 "Call Me When You Find America" 1973 Holt, Rinehart and Winston 1 issue 397211 s41   (v1 search)
+   CV local rip:   (= linked) · 160697 "Come Find Me: An Autumnal Offering" 2024 DSTLRY 1 issue 1075740 (via CV candidate name "Come Find Me: An Autumnal Offering") · 79611 "Find" 2015 ComixTribe 1 issue 477160 (via CV candidate name "Find")   (rip lookup)
+   GCD dump:       154025 "Find" 2015-2015 ComixTribe [] 1 (via CV candidate name "Find")   (dump lookup)
+
+== S18233 The City Beneath Her Feet Ashcan  [tier B]   keys: The City Beneath Her Feet Ashcan  years 2024-2024  1 files / 0 collections
+   folders: [1] DSTLRY\_Ashcans
+   files:   [20802] The City Beneath Her Feet Ashcan (2024) (DSTLRY) (digital) (tomjoad).cbz (16pp)
+   CV linked:      vol 161212 "The City Beneath Her Feet Ashcan" ? DSTLRY 1 issues issue 1078857; cached #1-1 (1); yearΔ ?; ratio 0/1; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 161361 "The City Beneath Her Feet Ashcan/You Won't Feel a Thing Ashcan" 2024 DSTLRY 1 issue 1079700 s85 · 161626 "The City Beneath Her Feet" 2024 DSTLRY 2 s78 · 142470 "Royal City Ashcan" 2017 Image 1 issue 918778 s41 · 65141 "Beneath: The Prequel" 2013 Glass Eye Pix Comix 1 issue 417139 s41 · 139315 "Beneath the Trees" 2021 Magnetic Press 1 issue 887056 s41 · 125724 "The Cities Beneath" 2020 Syenagiri 1 issue 741148 s41   (v1 search)
+   CV local rip:   (= linked) · 161361 "The City Beneath Her Feet Ashcan/You Won't Feel a Thing Ashcan" 2024 DSTLRY 1 issue 1079700 (via CV candidate name "The City Beneath Her Feet Ashcan/You Won't Feel a Thing Ashcan") · 161626 "The City Beneath Her Feet" 2024 DSTLRY 2 (via CV candidate name "The City Beneath Her Feet")   (rip lookup)
+   GCD dump:       218588 "The City Beneath Her Feet" 2024-? DSTLRY [] 2 (via CV candidate name "The City Beneath Her Feet")   (dump lookup)
+
+== S20162 Through the Boughs: A Yuletide Offering Ashcan  [tier B]   keys: Through the Boughs - A Yuletide Offering Ashcan  years 2024-2024  1 files / 0 collections
+   folders: [1] DSTLRY\_Ashcans
+   files:   [20803] Through the Boughs - A Yuletide Offering Ashcan (2024) (DSTLRY) (digital) (tomjoad).cbz (18pp)
+   CV linked:      vol 161317 "Through the Boughs: A Yuletide Offering Ashcan" 2024 DSTLRY 1 issues issue 1079420; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 161640 "Through the Boughs: A Yuletide Offering" 2024 DSTLRY 1 issue 1081729 s85 · 91428 "Offering" 2016 Like A Virus Productions 1 issue 535864 s55 · 167699 "Yuletide" 2025 Oni Press 3 s43 · 159937 "Come Find Me: An Autumnal Offering Ashcan" 2024 DSTLRY 1 issue 1071075 s42 · 129508 "A Yuletide Seduction" 2020 Harlequin Comics 1 issue 793222 s41 · 114644 "The Yuletide Engagement" 2018 Harlequin Comics 1 issue 689604 s41   (v1 search)
+   CV local rip:   (= linked) · 161640 "Through the Boughs: A Yuletide Offering" 2024 DSTLRY 1 issue 1081729 (via CV candidate name "Through the Boughs: A Yuletide Offering") · 91428 "Offering" 2016 Like A Virus Productions 1 issue 535864 (via CV candidate name "Offering")   (rip lookup)
+   GCD dump:       218587 "Through the Boughs: A Yuletide Offering" 2024-2024 DSTLRY [] 1 (via CV candidate name "Through the Boughs: A Yuletide Offering")   (dump lookup)
+
+== S22674 The City Beneath Her Feet Ashcan/You Won't Feel a Thing Ashcan  [tier B]   keys: You Won't Feel A Thing Ashcan  years 2024-2024  1 files / 0 collections
+   folders: [1] DSTLRY\_Ashcans
+   files:   [20805] You Won't Feel A Thing Ashcan (2024) (DSTLRY) (digital) (tomjoad).cbz (15pp)
+   CV linked:      vol 161361 "The City Beneath Her Feet Ashcan/You Won't Feel a Thing Ashcan" 2024 DSTLRY 1 issues issue 1079700; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV per-file (v1): vol 162102 "You Won't Feel a Thing" 2025 DSTLRY 1 issue 1091766 on 1/1 files
+   CV candidates:  (= linked) · 126139 "You Sexy Thing!" 2020 Harlequin Comics 1 issue 744508 s41 · 75987 "Feel 100%" ? Unknown Publisher 1 issue 460676 s35 · 71497 "What Got You Here Won't Get You There" 2011 Round Table Comics 1 issue 444727 s30 · 151724 "BD Feel" 1990 Éditions Hara-Besq 2 s28 · 119245 "I Want To Feel You Because I Like You" 2019 MediBang! 1 issue 709563 s28 · 88642 "The Less You Know, The Better You Feel: The Political Cartoons of Mary Fleener" 2012 self published 1 issue 518394 s23   (v1 search)
+   CV local rip:   (= linked) · 126139 "You Sexy Thing!" 2020 Harlequin Comics 1 issue 744508 (via CV candidate name "You Sexy Thing!")   (rip lookup)
+   GCD dump:       220097 "You Won't Feel a Thing" 2025-? DSTLRY [] 1 (via CV name "You Won't Feel a Thing")   (dump lookup)
+
+== S681 Aliens/Predator: Panel to Panel  [tier B]   keys: Aliens/Predator Panel to Panel  years 2006-2006  1 files / 0 collections
+   folders: [1] Dark Horse\Aliens Vs. Predator
+   files:   [12803] Aliens - Predator Panel to Panel (2006) (digital) (The Magicians-Empire).cbr (176pp)
+   ours:    ComicInfo Series: "Aliens/Predator Panel to Panel"x1; ComicInfo Publisher: "Dark Horse"x1
+   CV linked:      vol 42444 "Aliens/Predator: Panel to Panel" 2006 Dark Horse Comics 1 issues issue 290122; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 20054 "Buffy The Vampire Slayer: Panel to Panel" 2007 Dark Horse Comics 1 issue 119733 s71 · 80730 "Buffy The Vampire Slayer: Panel To Panel: Seasons 8 & 9" 2015 Dark Horse Comics 1 issue 482651 s67 · 64189 "Star Wars: Panel to Panel" 2004 Dark Horse Comics 2 s66 · 151660 "Aliens/Predator" 2000 mg/publishing 6 s40 · 105012 "Panel Power!" 2017 Creator Owned Comics 1 issue 628831 s35 · 19934 "Dark Horse Presents Aliens" 1992 Dark Horse Comics 1 issue 119265 s30   (v1 search)
+   CV local rip:   (= linked) · 20054 "Buffy The Vampire Slayer: Panel to Panel" 2007 Dark Horse Comics 1 issue 119733 (via CV candidate name "Buffy The Vampire Slayer: Panel to Panel") · 80730 "Buffy The Vampire Slayer: Panel To Panel: Seasons 8 & 9" 2015 Dark Horse Comics 1 issue 482651 (via CV candidate name "Buffy The Vampire Slayer: Panel To Panel: Seasons 8 & 9")   (rip lookup)
+   GCD dump:       87471 "Buffy the Vampire Slayer: Panel to Panel: Seasons 8 & 9" 2015-2015 Dark Horse [] 1 (via CV candidate name "Buffy The Vampire Slayer: Panel To Panel: Seasons 8 & 9")   (dump lookup)
+
+== S2592 Billy the Kid's Old Timey Oddities  [tier D]   keys: Billy the Kid's Old Timey Oddities  years 2006-2013  3 files / 3 collections
+   flags: #42 conflated-series [Dismissed] item 13899 — three separately-numbered minis share this Series; gcd gives vol 3 #1-4
+   folders: [1] Dark Horse\Billy The Kid's Old Timey Oddities\Billy the Kid's Old Timey Oddities v1 (2005) · [1] Dark Horse\Billy The Kid's Old Timey Oddities\Billy the Kid's Old Timey Oddities v2 - The Ghastly Fiend of London (2010) · [1] Dark Horse\Billy The Kid's Old Timey Oddities\Billy the Kid's Old Timey Oddities v3 - The Orm of Loch Ness (2012)
+   files:   [13897] COL Billy the Kid's Old Timey Oddities Vol. 01 (2006) (digital) (Son of Ultron-Empire).cbr (106pp)
+            [13898] COL Billy the Kid's Old Timey Oddities Vol. 02 - ... and the Ghastly Fiend of London (2011) (digital) (Son of Ultron-Empire).cbr (114pp)
+            [13899] COL Billy the Kid's Old Timey Oddities Vol. 03 - ... and the Orm of Loch Ness (2013) (digital) (Son of Ultron-Empire).cbr (114pp)
+   ours:    judged item 13897 #1-4 conf 0.95; judged item 13898 #1-4 conf 0.95; judged item 13899 #1-4 conf 0.95
+   GCD says: [13897] gcd_reprint 713713: s14201 Billy the Kid's Old Timey Oddities (2005) #1-4 [9 stories]
+             [13898] gcd_reprint 2632521: s52295 Billy the Kid's Old Timey Oddities and the Ghastly Fiend of London (2010) #1-4 [5 stories] · s49764 Buzzard (2010) #1-3 [3 stories]
+             [13899] gcd_reprint 2632522: s69186 Billy the Kid's Old Timey Oddities and the Orm of Loch Ness (2012) #1-4 [5 stories]
+   CV candidates:  21394 "Billy the Kid's Old-Timey Oddities" 2005 Dark Horse Comics 4 s84 · 35464 "Billy the Kid's Old Timey Oddities and the Ghastly Fiend of London" 2010 Dark Horse Comics 4 s44 · 53099 "Billy The Kid’s Old Timey Oddities And The Orm Of Loch Ness" 2012 Dark Horse Comics 4 s44 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s39 · 76967 "The Authentic Accounts of Billy the Kid’s Old Timey Oddities Omnibus" 2014 Dark Horse Comics 1 issue 465808 s33 · 150840 "Billy the Kid's Old Timey Oddities and The Ghastly Fiend of London" 2011 Dark Horse Comics 1 issue 993137 s32   (v1 search)
+   CV local rip:   73049 "Billy the Kid's Old-Timey Oddities" 2006 Dark Horse Comics 1 issue 450370 · 21394 "Billy the Kid's Old-Timey Oddities" 2005 Dark Horse Comics 4 · 35464 "Billy the Kid's Old Timey Oddities and the Ghastly Fiend of London" 2010 Dark Horse Comics 4 (via CV candidate name "Billy the Kid's Old Timey Oddities and the Ghastly Fiend of London") · 150840 "Billy the Kid's Old Timey Oddities and The Ghastly Fiend of London" 2011 Dark Horse Comics 1 issue 993137 (via CV candidate name "Billy the Kid's Old Timey Oddities and the Ghastly Fiend of London") · 53099 "Billy The Kid’s Old Timey Oddities And The Orm Of Loch Ness" 2012 Dark Horse Comics 4 (via CV candidate name "Billy The Kid’s Old Timey Oddities And The Orm Of Loch Ness") · 64680 "Billy The Kid’s Old Timey Oddities And The Orm Of Loch Ness" 2013 Dark Horse Comics 1 issue 415223 (via CV candidate name "Billy The Kid’s Old Timey Oddities And The Orm Of Loch Ness")   (rip lookup)
+   GCD dump:       42666 "Billy the Kid's Old Timey Oddities" 2006-2013 Dark Horse [] 3 · 14201 "Billy the Kid's Old Timey Oddities" 2005-2005 Dark Horse [] 4 · 52295 "Billy the Kid's Old Timey Oddities and the Ghastly Fiend of London" 2010-2010 Dark Horse [] 4 (via CV candidate name "Billy the Kid's Old Timey Oddities and the Ghastly Fiend of London") · 69186 "Billy the Kid's Old Timey Oddities and the Orm of Loch Ness" 2012-2013 Dark Horse [] 4 (via CV candidate name "Billy The Kid’s Old Timey Oddities And The Orm Of Loch Ness")   (dump lookup)
+
+== S3165 Briggs Land  [tier D]   keys: Briggs Land  years 2017-2018  2 files / 2 collections
+   flags: #48 conflated-series [Dismissed] item 13341 — Briggs Land and Briggs Land: Lone Wolves share this Series, both numbered from #1
+   folders: [2] Dark Horse\Briggs Land (2016)
+   files:   [13340] COL Briggs Land Vol. 01 - State of Grace (2017) (digital) (Son of Ultron-Empire).cbr (161pp)
+            [13341] COL Briggs Land Vol. 02 - Lone Wolves (2018) (digital) (Son of Ultron-Empire).cbr (158pp)
+   ours:    judged item 13340 #1-6 conf 0.95; judged item 13341 #1-6 conf 0.95; ComicInfo Series: "Briggs Land"x1; ComicInfo Publisher: "Dark Horse"x1
+   GCD says: [13340] gcd_reprint 1692662: s105513 Briggs Land (2016) #1-6 [12 stories]
+             [13341] gcd_reprint 1778874: s114816 Briggs Land: Lone Wolves (2017) #1-6 [18 stories] · s113907 Free Comic Book Day 2017: General [Avatar] (2017) (unnumbered) [1 story]
+   CV candidates:  93181 "Briggs Land" 2016 Dark Horse Comics 6 s108 · 108239 "Briggs Land: Lone Wolves" 2018 Dark Horse Comics 1 issue 656670 s41 · 100810 "Briggs Land: State of Grace" 2017 Dark Horse Comics 1 issue 592551 s40 · 90868 "Dark Horse Day 2016 Sampler" 2016 Dark Horse Comics 1 issue 532996 s38 · 102107 "Briggs Land: Lone Wolves" 2017 Dark Horse Comics 6 s36 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s29   (v1 search)
+   CV local rip:   93181 "Briggs Land" 2016 Dark Horse Comics 6 · 100810 "Briggs Land: State of Grace" 2017 Dark Horse Comics 1 issue 592551 (via CV candidate name "Briggs Land: State of Grace") · 102107 "Briggs Land: Lone Wolves" 2017 Dark Horse Comics 6 (via CV candidate name "Briggs Land: Lone Wolves") · 108239 "Briggs Land: Lone Wolves" 2018 Dark Horse Comics 1 issue 656670 (via CV candidate name "Briggs Land: Lone Wolves")   (rip lookup)
+   GCD dump:       113569 "Briggs Land" 2017-2018 Dark Horse [] 2 · 105513 "Briggs Land" 2016-2017 Dark Horse [] 6 · 114816 "Briggs Land: Lone Wolves" 2017-2017 Dark Horse [] 6 (via CV candidate name "Briggs Land: Lone Wolves")   (dump lookup)
+
+== S4089 Conan: The Phantoms of the Black Coast  [tier B]   keys: Conan - The Phantoms of the Black Coast  years 2012-2014  1 files / 0 collections
+   folders: [1] Dark Horse\Conan\2012.10 - Conan and the Phantoms of the Black Coast
+   files:   [13819] Conan - The Phantoms of the Black Coast (2014) (digital) (Son of Ultron-Empire).cbr (130pp)
+   CV linked:      vol 53601 "Conan: The Phantoms of the Black Coast" 2012 Dark Horse Comics 5 issues; cached #1-5 (5); yearΔ 0; ratio 0/5; no judged range
+   CV per-file (v1): vol 71443 "Conan: The Phantoms of the Black Coast" 2014 Dark Horse Comics 1 issue 444497 on 1/1 files
+   CV candidates:  (= linked) · 55560 "Conan: Queen of the Black Coast" 2013 Dark Horse Comics 1 issue 378882 s71 · 116556 "True Believers: Conan the Barbarian: Queen of the Black Coast!" 2019 Marvel 1 issue 697646 s62 · 117568 "Age of Conan: Bêlit, Queen of the Black Coast" 2019 Marvel 5 s38 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s26 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics 3 s26 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s18   (v1 search)
+   CV local rip:   (= linked) · 55560 "Conan: Queen of the Black Coast" 2013 Dark Horse Comics 1 issue 378882 (via CV candidate name "Conan: Queen of the Black Coast")   (rip lookup)
+   GCD dump:       189111 "Conan: The Phantoms of the Black Coast" 2014-2014 Dark Horse [] 1   (dump lookup)
+
+== S6133 The Complete Emily the Strange: All Things Strange  [tier C] · gap 7  keys: Emily the Strange - All Things Strange | The Art of Emily the Strange  years 2009-2016  2 files / 1 collections
+   folders: [2] Dark Horse\Emily the Strange (2006)
+   files:   [13561] 00 The Art of Emily the Strange (2009) (digital) (Son of Ultron-Empire).cbr (108pp)
+            [13562] COL 01 The Complete Emily the Strange - All Things Strange (2016) (digital) (Son of Ultron-Empire).cbr (418pp)
+   ours:    ladder 0
+   CV linked:      vol 91885 "The Complete Emily the Strange: All Things Strange" 2016 Dark Horse Comics 1 issues issue 537907; cached #1-1 (1); yearΔ 7; ratio 1/1 = 1.00; no judged range
+   CV per-file (v1): vol 23170 "Emily the Strange" 2005 Dark Horse Comics 4 on 1/2 files
+   CV candidates:  (= linked) · 73052 "Emily the Strange" 2006 Dark Horse Comics 2 s93 · 11178 "Strange" 2004 Marvel 6 s52 · 39387 "Strange" 1970 Editions Lug 358 s42 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s35 · 19083 "Emily the Strange" 2007 Dark Horse Comics 4 s33 · 111712 "The Strange" 2018 Drawn & Quarterly 1 issue 673996 s30   (v1 search)
+   CV local rip:   (= linked) · 30547 "Art of Emily the Strange" 2009 Dark Horse Comics 1 issue 187899 · 29665 "Strange" 2010 Marvel 4 (via CV candidate name "Strange") · 19083 "Emily the Strange" 2007 Dark Horse Comics 4 (via CV name "Emily the Strange") · 73052 "Emily the Strange" 2006 Dark Horse Comics 2 (via CV name "Emily the Strange")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 87100 "Emily and the Strangers" 2014-2017 Dark Horse [collected edition] 3 on 1/2 files
+   GCD dump:       103671 "The Complete Emily the Strange: All Things Strange" 2016-2016 Dark Horse [] 1 · 38663 "Emily the Strange" 2009-2010 Dark Horse [] 4 (via CV name "Emily the Strange") · 51994 "Strange" [fr] 2009-2012 Organic Comix [] 8 (via CV candidate name "Strange") · 41544 "Strange" 2010-2010 Marvel [] 4 (via CV candidate name "Strange") · 30049 "Emily the Strange" [no] 2007-2007 Bladkompaniet / Schibsted [] 2 (via CV name "Emily the Strange") · 31669 "Emily the Strange" 2007-2008 Dark Horse [] 4 (via CV name "Emily the Strange")   (dump lookup)
+   bridges:        gcd 87100 -> LOCG 112046 "Emily and the Strangers" support 2 · gcd 87100 -> OL /works/OL17552305W "None" isbnSupport 3
+
+== S8493 Heart In A Box  [tier B]   keys: Heart in a Box  years 2015-2015  1 files / 0 collections
+   folders: [1] Dark Horse\Heart in a Box (2015)
+   files:   [13998] Heart in a Box (2015) (Digital) (Zone-Empire).cbr (152pp)
+   CV linked:      vol 82283 "Heart In A Box" 2015 Dark Horse Comics 7 issues; cached #1-7 (7); yearΔ 0; ratio 0/7; no judged range
+   CV per-file (v1): vol 84587 "Heart In A Box" 2015 Dark Horse Comics 1 issue 500255 on 1/1 files
+   CV candidates:  (= linked) · 130299 "Heart in a Box" 2016 Tokyopop GmbH 1 issue 798991 s50 · 86680 "BOOM! Box 2015 Mix Tape" 2015 Boom! Studios 1 issue 508489 s41 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s35 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s24 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics 3 s22 · 91633 "Dark Horse Insider" 1996 Dark Horse Comics 12 s21   (v1 search)
+   CV local rip:   (= linked) · 130299 "Heart in a Box" 2016 Tokyopop GmbH 1 issue 798991   (rip lookup)
+   GCD dump:       92498 "Heart in a Box" 2015-2015 Dark Horse [] 1 · 104363 "Heart in a Box" [de] 2016-? Tokyopop (de) [] 1 · 134388 "Heart in a box" [fr] 2016-2016 Glénat [] 1 · 174400 "Heart in a Box" 2021-2021 Dark Horse [] 1   (dump lookup)
+
+== S66460 Hellboy - The Complete Short Stories  [tier D]   keys: Hellboy - The Complete Short Stories  years 2018-2018  2 files / 2 collections
+   folders: [2] Dark Horse\Hellboy, B.P.R.D. & Related\_Hellboy (1994)\Hellboy - A Miscellany
+   files:   [15060] COL Hellboy - The Complete Short Stories Vol. 01 (2018) (digital) (Son of Ultron-Empire).cbr (369pp)
+            [15061] COL Hellboy - The Complete Short Stories Vol. 02 (2018) (digital) (Son of Ultron-Empire).cbr (369pp)
+   GCD says: [15060] gcd notes 1816404 (#1 of Hellboy: The Complete Short Stories): Dark Horse Presents Annual (Dark Horse, 1998 series) #1999; he Midnight Circus (Dark Horse, 2013 series); Dark Hose Presents (Dark Horse, 1986 series) #151; Hellboy in Mexico (Dark Horse, 2010 series); Dark Horse Presents (Dark Horse, 2011   |  gcd_reprint 1816404: s99717 Hellboy in Mexico (2016) (unnumbered) [4 stories] · s57599 Dark Horse Presents (2011) (unnumbered) [3 stories] · s77240 Hellboy: The Midnight Circus (2013) (unnumbered) [3 stories] · s32725 Hellboy (1994) (unnumbered) [3 stories]
+   CV local rip:   111532 "Hellboy: The Complete Short Stories" 2018 Dark Horse Comics 2   (rip lookup)
+   GCD dump:       125913 "Hellboy: The Complete Short Stories" 2018-2018 Dark Horse [] 2   (dump lookup)
+
+== S9150 Hunters: Eye For Eye, Tooth For Tooth  [tier B]   keys: Hunters: Eye for Eye, Tooth for Tooth  years 2020-2020  1 files / 0 collections
+   folders: [1] Dark Horse\Hunters (TV) (2020)
+   files:   [14153] Hunters - Eye for Eye, Tooth for Tooth (2020) (digital) (Son of Ultron-Empire).cbr (8pp)
+   ours:    ComicInfo Series: "Hunters: Eye for Eye, Tooth for Tooth"x1; ComicInfo Publisher: "Amazon Studios"x1
+   CV linked:      vol 125131 "Hunters: Eye For Eye, Tooth For Tooth" 2020 Dark Horse Comics 1 issues issue 737811; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 119158 "RuinWorld: Eye For An Eye" 2019 Boom! Studios 1 issue 709149 s51 · 55916 "The Tooth" 2011 Oni Press 1 issue 380725 s44 · 49735 "Red Eye, Black Eye" 2007 Alternative Comics 1 issue 341230 s43 · 130766 "The Eye" 2002 ? 1 issue 805123 s41 · 118196 "Tooth & Claw" 2019 Hex Publishers 1 issue 705659 s40 · 56200 "Tooth and Nail" 2013 Alterna Comics 1 issue 381686 s38   (v1 search)
+   CV local rip:   (= linked) · 55916 "The Tooth" 2011 Oni Press 1 issue 380725 (via CV candidate name "The Tooth") · 119158 "RuinWorld: Eye For An Eye" 2019 Boom! Studios 1 issue 709149 (via CV candidate name "RuinWorld: Eye For An Eye")   (rip lookup)
+   GCD dump:       221076 "The Tooth" 2025-2025 Dark Horse [] 1 (via CV candidate name "The Tooth")   (dump lookup)
+
+== S9313 Immortals Fenyx Rising: A Traveler's Guide to the Golden Isle  [tier B]   keys: Immortals Fenyx Rising - A Traveler's Guide to the Golden Isle  years 2022-2022  1 files / 0 collections
+   folders: [1] Dark Horse\Immortals Fenyx Rising
+   files:   [14443] Immortals Fenyx Rising - A Traveler's Guide to the Golden Isle (2022) (digital) (The Magicians-Empire).cbr (98pp)
+   CV linked:      vol 146005 "Immortals Fenyx Rising: A Traveler's Guide to the Golden Isle" 2022 Dark Horse Comics 1 issues issue 954540; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 133338 "The Art of Immortals: Fenyx Rising" 2021 Dark Horse Comics 1 issue 825430 s56 · 141869 "Immortals Fenyx Rising: From Great Beginnings" 2021 Dark Horse Comics 1 issue 911038 s50 · 39898 "Travelers" 1999 Kenzer and Company 9 s40 · 156205 "The Traveler's Guide to Flogoria" 2023 Scout Comics 6 s32 · 133252 "The Time Traveler's Guide To Dating" 2021 Finish Films Inc. 6 s26 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s26   (v1 search)
+   CV local rip:   (= linked) · 133338 "The Art of Immortals: Fenyx Rising" 2021 Dark Horse Comics 1 issue 825430 (via CV candidate name "The Art of Immortals: Fenyx Rising") · 141869 "Immortals Fenyx Rising: From Great Beginnings" 2021 Dark Horse Comics 1 issue 911038 (via CV candidate name "Immortals Fenyx Rising: From Great Beginnings")   (rip lookup)
+   GCD dump:       178737 "Immortals Fenyx Rising: From Great Beginnings" 2021-2021 Dark Horse [] 1 (via CV candidate name "Immortals Fenyx Rising: From Great Beginnings")   (dump lookup)
+
+== S11840 The Iron Master (Masters of the Universe)  [tier D]   keys: Masters of the Universe - The Iron Master  years 1984-1984  1 files / 0 collections
+   folders: [1] Dark Horse\Masters of the Universe
+   files:   [14509] Masters of the Universe - The Iron Master (1984) (Ladybird) (pdf-rip) (TheRastaCrew).cbr (48pp)
+   CV candidates:  20533 "Masters of the Universe" 1981 H. H. Windsor 49 s55 · 87688 "Masters of the Universe" 1987 Semic Press Oy/Egmont Kustannus 24 s55 · 31493 "Masters of the Universe" 2003 Dino Comics 5 s55 · 31218 "Masters of the Universe" 1987 Egmont Ehapa Verlag 26 s55 · 30610 "Masters of the Universe" 1987 JuniorPress BV 10 s55 · 84665 "Masters of the Universe" 1984 Condor Verlag 10 s55   (v1 search)
+   CV local rip:   84665 "Masters of the Universe" 1984 Condor Verlag 10 (via CV candidate name "Masters of the Universe") · 85207 "Masters of the Universe" 1984 Federal 4 (via CV candidate name "Masters of the Universe") · 85157 "Masters of the Universe" 1983 Mattel Norge 2 (via CV candidate name "Masters of the Universe") · 85183 "Masters of the Universe" 1985 Condor Verlag 4 (via CV candidate name "Masters of the Universe") · 3117 "Masters of the Universe" 1982 DC Comics 3 (via CV candidate name "Masters of the Universe") · 3646 "Masters of the Universe" 1986 Marvel 13 (via CV candidate name "Masters of the Universe")   (rip lookup)
+   GCD dump:       53076 "Masters of the Universe" [de] 1984-1986 Condor [] 10 (via CV candidate name "Masters of the Universe") · 94935 "Masters of the Universe" [en-au] 1984-? Federal [] 4 (via CV candidate name "Masters of the Universe") · 53077 "Masters of the Universe" [de] 1985-1986 Condor [] 2 (via CV candidate name "Masters of the Universe") · 62372 "Masters of the Universe" [no] 1983-1987 Mattel Norge [] 9 (via CV candidate name "Masters of the Universe") · 2631 "Masters of the Universe" 1982-1983 DC [] 3 (via CV candidate name "Masters of the Universe") · 3196 "Masters of the Universe" 1986-1988 Marvel [] 13 (via CV candidate name "Masters of the Universe")   (dump lookup)
+   MU / External:  ExternalWork 323 "The Iron Master (Masters of the Universe)" openlibrary /works/OL6828179W
+
+== S102550 The Art of Masters of the Universe: Origins and Masterverse (2023)  [tier B]   keys: The Art of Masters of the Universe: Origins and Masterverse (2023)  years 2023-2023  1 files / 0 collections
+   folders: [1] Dark Horse\Masters of the Universe\_Art Books
+   files:   [14513] The Art of Masters of the Universe - Origins and Masterverse (2023) (digital) (The Magicians-Empire).cbr (182pp)
+   CV per-file (v1): vol 148325 "Masters of the Universe: Masterverse" 2023 Dark Horse Comics 4 on 1/1 files
+   CV local rip:   (= per-file) · 155980 "Masters of the Universe: Masterverse" 2024 Panini Verlag 1 issue 1039644 (via CV name "Masters of the Universe: Masterverse") · 158321 "Masters of the Universe: Masterverse" ? Dark Horse Comics 1 issue 1057350 (via CV name "Masters of the Universe: Masterverse")   (rip lookup)
+   GCD dump:       196798 "Masters of the Universe: Masterverse" 2023-2023 Dark Horse [] 4 (via CV name "Masters of the Universe: Masterverse") · 205021 "Masters of the Universe: Masterverse" 2023-2023 Dark Horse [] 1 (via CV name "Masters of the Universe: Masterverse") · 208345 "Masters of the Universe - Masterverse" [de] 2024-2024 Panini Deutschland [] 1 (via CV name "Masters of the Universe: Masterverse")   (dump lookup)
+
+== S11832 Masters of the Universe - Battle in the Clouds  [tier D]   keys: Masters of the Universe - Battle in the Clouds  years 1981-1981  1 files / 0 collections
+   folders: [1] Dark Horse\Masters of the Universe\_Old, Pre-DH Stuff
+   files:   [14515] Masters of the Universe - Battle in the Clouds (1981) (mini comic) (c2c) (Minutemen-The Unresurrected).cbr (27pp)
+   CV candidates:  20533 "Masters of the Universe" 1981 H. H. Windsor 49 s55 · 87688 "Masters of the Universe" 1987 Semic Press Oy/Egmont Kustannus 24 s55 · 31493 "Masters of the Universe" 2003 Dino Comics 5 s55 · 31218 "Masters of the Universe" 1987 Egmont Ehapa Verlag 26 s55 · 30610 "Masters of the Universe" 1987 JuniorPress BV 10 s55 · 84665 "Masters of the Universe" 1984 Condor Verlag 10 s55   (v1 search)
+   CV local rip:   20533 "Masters of the Universe" 1981 H. H. Windsor 49 (via CV candidate name "Masters of the Universe") · 3117 "Masters of the Universe" 1982 DC Comics 3 (via CV candidate name "Masters of the Universe") · 85030 "Masters of the Universe" 1982 Western Publishing 1 issue 501937 (via CV candidate name "Masters of the Universe") · 85157 "Masters of the Universe" 1983 Mattel Norge 2 (via CV candidate name "Masters of the Universe") · 84665 "Masters of the Universe" 1984 Condor Verlag 10 (via CV candidate name "Masters of the Universe") · 85207 "Masters of the Universe" 1984 Federal 4 (via CV candidate name "Masters of the Universe")   (rip lookup)
+   GCD dump:       27246 "Masters of the Universe: Battle in the Clouds" 1982-1982 Mattel [] 1 · 2631 "Masters of the Universe" 1982-1983 DC [] 3 (via CV candidate name "Masters of the Universe") · 14999 "Masters of the Universe" 1982-1982 Western [] 1 (via CV candidate name "Masters of the Universe") · 62372 "Masters of the Universe" [no] 1983-1987 Mattel Norge [] 9 (via CV candidate name "Masters of the Universe") · 53076 "Masters of the Universe" [de] 1984-1986 Condor [] 10 (via CV candidate name "Masters of the Universe") · 94935 "Masters of the Universe" [en-au] 1984-? Federal [] 4 (via CV candidate name "Masters of the Universe")   (dump lookup)
+
+== S13497 Overwatch  [tier B]   keys: Overwatch | Overwatch - New Blood | Overwatch Anthology: Expanded Edition | The Art of Overwatch  years 2016-2023  19 files / 1 collections
+   folders: [16] Dark Horse\Overwatch (2016)\Overwatch v1 (2016) · [2] Dark Horse\Overwatch (2016) · [1] Dark Horse\Overwatch (2016)\Overwatch - New Blood (2021)
+   files:   [13833] Overwatch - New Blood (2023) (digital) (Son of Ultron-Empire).cbr (127pp) | [12835] COL Overwatch Anthology - Expanded Edition (2021) (digital) (Son of Ultron-Empire).cbr (215pp)
+            [12836] Overwatch 001 - McCree Train Hopper (2016) (digital) (Son of Ultron-Empire).cbr (11pp)
+            [12837] Overwatch 002 - Reinhardt Dragon Slayer (2016) (digital) (Son of Ultron-Empire).cbr (11pp)
+            [12838] Overwatch 003 - Junkrat & Roadhog Going Legit (2016) (digital) (Son of Ultron-Empire).cbr (11pp)
+            [12839] Overwatch 004 - Symmetra - A Better World (2016) (Digital) (Pirate-Empire).cbr (11pp)
+            [12840] Overwatch 005 - Pharah - Mission Statement (2016) (Digital) (Pirate-Empire).cbr (11pp) | [12841] Overwatch 006 - Torbjörn - Destroyer (2016) (Digital) (Pirate-Empire).cbr (11pp)
+            [12842] Overwatch 007 - Ana Amari - Legacy (2016) (Fixed) (Digital) (Pirate-Empire).cbr (11pp) | [12843] Overwatch 008 - Ana - Old Soldiers (2016) (Digital) (Pirate-Empire).cbr (11pp)
+            [12844] Overwatch 009 -  Junkenstein (2016) (Digital) (Pirate-Empire).cbr (9pp) | [12845] Overwatch 010 - Reflections (2016) (Digital) (Pirate-Empire).cbr (12pp)
+            [12846] Overwatch 011 - Binary (2017) (digital-Empire).cbr (12pp) | [12847] Overwatch 012 - Uprising (2017) (digital-Empire).cbr (12pp)
+            [12848] Overwatch 013 - Doomfist - Masquerade (2017) (Digital) (Pirate-Empire).cbr (13pp) | [12849] Overwatch 014 - Junkertown - Wasted Land (2017) (digital-Empire).cbr (10pp)
+            [12850] Overwatch 015 - Zarya - Searching (2017) (digital-Empire).cbr (12pp) | [12851] Overwatch 016 - Retribution (2018) (digital-Empire).cbr (10pp)
+            [12852] The Art of Overwatch (2017) (Digital) (danke-Empire).cbz (352pp)
+   ours:    ladder 1-16; judged item 12835 #1-16 conf 0.85; ComicInfo Series: "Overwatch Anthology: Expanded Edition"x1; ComicInfo Publisher: "Dark Horse"x1
+   CV linked:      vol 89992 "Overwatch" 2016 Dark Horse Comics 16 issues; cached #1-16 (16); yearΔ 0; ratio 16/16 = 1.00; 1 of 1 judged fit; v1 per-file: same volume on 19/19 files
+   CV candidates:  (= linked) · 150235 "Overwatch: New Blood" 2023 Dark Horse Comics 1 issue 988370 s65 · 141220 "Overwatch Anthology: Expanded Edition" 2022 Dark Horse Comics 1 issue 903091 s65 · 104648 "The Art of Overwatch" 2017 Dark Horse Comics 1 issue 624965 s65 · 49682 "Dark Horse New Recruits" 2005 Dark Horse Comics 1 issue 340614 s56 · 140127 "Overwatch: New Blood" 2021 Dark Horse Comics 5 s50 · 90868 "Dark Horse Day 2016 Sampler" 2016 Dark Horse Comics 1 issue 532996 s45   (v1 search)
+   CV local rip:   (= linked) · 104648 "The Art of Overwatch" 2017 Dark Horse Comics 1 issue 624965 · 140127 "Overwatch: New Blood" 2021 Dark Horse Comics 5 · 141220 "Overwatch Anthology: Expanded Edition" 2022 Dark Horse Comics 1 issue 903091 · 150235 "Overwatch: New Blood" 2023 Dark Horse Comics 1 issue 988370   (rip lookup)
+   GCD dump:       178731 "Overwatch Anthology: Expanded Edition" 2021-2021 Dark Horse [] 1 · 187071 "Overwatch: New Blood" 2022-2022 Dark Horse [] 5 · 198053 "Overwatch: New Blood" 2023-2023 Dark Horse [] 1   (dump lookup)
+
+== S17989 Art of Over the Garden Wall  [tier B]   keys: The Art of Over the Garden Wall  years 2017-2017  1 files / 0 collections
+   folders: [1] Dark Horse\The Art of Over the Garden Wall (2017)
+   files:   [13909] The Art of Over the Garden Wall (2017) (Digital) (danke-Empire).cbz (175pp)
+   CV linked:      vol 104262 "Art of Over the Garden Wall" 2017 Dark Horse Comics 1 issues issue 621566; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 94133 "Over the Garden Wall" 2016 Boom! Studios 1 issue 549562 s82 · 100090 "Over The Garden Wall" 2017 Boom! Studios 5 s70 · 84123 "Over the Garden Wall" 2015 Boom! Studios 4 s70 · 104495 "Over the Garden Wall 2017 Special" 2017 Boom! Studios 1 issue 622966 s62 · 77953 "Over the Garden Wall Special" 2014 Boom! Studios 1 issue 469540 s59 · 89944 "Over the Garden Wall Ongoing" 2016 Boom! Studios 20 s45   (v1 search)
+   CV local rip:   (= linked) · 100090 "Over The Garden Wall" 2017 Boom! Studios 5 (via CV candidate name "Over the Garden Wall") · 94133 "Over the Garden Wall" 2016 Boom! Studios 1 issue 549562 (via CV candidate name "Over the Garden Wall") · 84123 "Over the Garden Wall" 2015 Boom! Studios 4 (via CV candidate name "Over the Garden Wall")   (rip lookup)
+   GCD dump:       120059 "Over the Garden Wall" 2017-2018 Boom! Studios [] 5 (via CV candidate name "Over the Garden Wall") · 217083 "Over the Garden Wall" 2016-2016 Boom! Studios [] 1 (via CV candidate name "Over the Garden Wall") · 217084 "Over the Garden Wall" 2016-2016 Boom! Studios [] 1 (via CV candidate name "Over the Garden Wall") · 91983 "Over the Garden Wall" 2015-2015 Boom! Studios [] 4 (via CV candidate name "Over the Garden Wall")   (dump lookup)
+
+== S19808 The Toys of He-Man and the Masters of the Universe  [tier B]   keys: The Toys of He-Man and the Masters of the Universe - Part  years 2021-2021  2 files / 0 collections
+   folders: [2] Dark Horse\The Toys of He-Man and the Masters of the Universe (2021)
+   files:   [14710] The Toys of He-Man and the Masters of the Universe - Part 01 (2021) (digital-Empire).cbr (388pp)
+            [14711] The Toys of He-Man and the Masters of the Universe - Part 02 (2021) (digital-Empire).cbr (375pp)
+   ours:    ladder 1-2
+   CV linked:      vol 135729 "The Toys of He-Man and the Masters of the Universe" 2021 Dark Horse Comics 1 issues issue 845916; cached #1-1 (1); yearΔ 0; ratio 2/1 = 2.00; no judged range; v1 per-file: same volume on 2/2 files
+   CV candidates:  (= linked) · 81349 "The Art of He-Man and the Masters of the Universe" 2015 Dark Horse Comics 1 issue 486120 s81 · 65194 "He-Man and the Masters of the Universe" 2013 DC Comics 2 s80 · 130860 "He-Man and the Masters of the Universe" 2020 DC Comics 1 issue 806727 s75 · 150305 "He-Man and the Masters of the Universe" 2011 DC Comics 8 s67 · 50154 "He-Man and the Masters of the Universe" 2012 DC Comics 6 s67 · 59980 "He-Man and the Masters of the Universe" 2013 DC Comics 19 s65   (v1 search)
+   CV local rip:   (= linked) · 130860 "He-Man and the Masters of the Universe" 2020 DC Comics 1 issue 806727 (via CV candidate name "He-Man and the Masters of the Universe") · 59980 "He-Man and the Masters of the Universe" 2013 DC Comics 19 (via CV candidate name "He-Man and the Masters of the Universe") · 65194 "He-Man and the Masters of the Universe" 2013 DC Comics 2 (via CV candidate name "He-Man and the Masters of the Universe") · 50154 "He-Man and the Masters of the Universe" 2012 DC Comics 6 (via CV candidate name "He-Man and the Masters of the Universe") · 150305 "He-Man and the Masters of the Universe" 2011 DC Comics 8 (via CV candidate name "He-Man and the Masters of the Universe")   (rip lookup)
+   GCD dump:       227931 "He-Man and the Masters of the Universe" 2025-? Dark Horse [] 5 (via CV candidate name "He-Man and the Masters of the Universe") · 73684 "He-Man and the Masters of the Universe" 2013-2015 DC [] 19 (via CV candidate name "He-Man and the Masters of the Universe") · 90301 "He-Man and the Masters of the Universe" 2013-2015 DC [] 5 (via CV candidate name "He-Man and the Masters of the Universe") · 66586 "He-Man and the Masters of the Universe" 2012-2013 DC [] 6 (via CV candidate name "He-Man and the Masters of the Universe") · 172713 "He-Man and the Masters of the Universe" 2012-2016 DC [] 5 (via CV candidate name "He-Man and the Masters of the Universe") · 172714 "He-Man and the Masters of the Universe" 2011-2012 Dark Horse [] 3 (via CV candidate name "He-Man and the Masters of the Universe")   (dump lookup)
+
+== S18001 The Art of Tiny Tina's Wonderlands  [tier D]   keys: The Art of Tiny Tina's Wonderlands  years 2023-2023  1 files / 0 collections
+   folders: [1] Dark Horse\Tiny Tina's Wonderlands
+   files:   [14727] The Art of Tiny Tina's Wonderlands (2023) (digital) (DrVink).cbz (179pp)
+   CV candidates:  159264 "Tiny Tina's Wonderlands: Land of the Giants" 2024 Dark Horse Comics 3 s66 · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 s30 · 49682 "Dark Horse New Recruits" 2005 Dark Horse Comics 1 issue 340614 s30 · 142472 "Dark Horse Legend Ashcan" 1996 Dark Horse Comics 1 issue 938079 s30 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s26 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics 3 s26   (v1 search)
+   CV local rip:   159264 "Tiny Tina's Wonderlands: Land of the Giants" 2024 Dark Horse Comics 3 (via CV candidate name "Tiny Tina's Wonderlands: Land of the Giants") · 49682 "Dark Horse New Recruits" 2005 Dark Horse Comics 1 issue 340614 (via CV candidate name "Dark Horse New Recruits") · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 (via CV candidate name "Dark Horse Maverick 2000")   (rip lookup)
+   GCD dump:       214431 "Tiny Tina's Wonderlands: Land of the Giants" 2024-2024 Dark Horse [] 3 (via CV candidate name "Tiny Tina's Wonderlands: Land of the Giants") · 221772 "Tiny Tina's Wonderlands: Land of the Giants" 2025-2025 Dark Horse [] 1 (via CV candidate name "Tiny Tina's Wonderlands: Land of the Giants") · 32958 "Dark Horse New Recruits" 2005-2005 Dark Horse [] 1 (via CV candidate name "Dark Horse New Recruits") · 14822 "Dark Horse Maverick 2000" 2000-2000 Dark Horse [] 1 (via CV candidate name "Dark Horse Maverick 2000")   (dump lookup)
+
+== S19983 The World of Tom Clancy's The Division  [tier B]   keys: The World of Tom Clancy's The Division  years 2019-2019  1 files / 0 collections
+   folders: [1] Dark Horse\Tom Clancy's The Division
+   files:   [14115] The World of Tom Clancy's The Division (2019) (digital) (The Magicians-Empire).cbr (139pp)
+   CV linked:      vol 117770 "The World of Tom Clancy's The Division" 2019 Dark Horse Comics 1 issues issue 703878; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 140913 "Tom Clancy's The Division: Remission" 2022 Dark Horse Comics 1 issue 901781 s63 · 120327 "Tom Clancy's The Division: Extremis Malis" 2019 Dark Horse Comics 1 issue 714270 s62 · 116387 "Tom Clancy's The Division: Extremis Malis" 2019 Dark Horse Comics 3 s50 · 78054 "Tom Clancy's Splinter Cell: Echoes" 2014 Dynamite Entertainment 1 issue 469856 s31 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s26 · 75363 "Tom Clancy's Splinter Cell: Echoes" 2014 Dynamite Entertainment 4 s19   (v1 search)
+   CV local rip:   (= linked) · 116387 "Tom Clancy's The Division: Extremis Malis" 2019 Dark Horse Comics 3 (via CV candidate name "Tom Clancy's The Division: Extremis Malis") · 120327 "Tom Clancy's The Division: Extremis Malis" 2019 Dark Horse Comics 1 issue 714270 (via CV candidate name "Tom Clancy's The Division: Extremis Malis") · 140913 "Tom Clancy's The Division: Remission" 2022 Dark Horse Comics 1 issue 901781 (via CV candidate name "Tom Clancy's The Division: Remission")   (rip lookup)
+   GCD dump:       137293 "Tom Clancy's The Division: Extremis Malis" 2019-2019 Dark Horse [] 3 (via CV candidate name "Tom Clancy's The Division: Extremis Malis") · 149061 "Tom Clancy's The Division: Extremis Malis" 2019-2019 Dark Horse [] 1 (via CV candidate name "Tom Clancy's The Division: Extremis Malis") · 179091 "Tom Clancy's The Division: Remission" 2021-2021 Dark Horse [] 1 (via CV candidate name "Tom Clancy's The Division: Remission") · 210052 "Tom Clancy's The Division - Extremis Malis" [fr] 2022-2022 Black River [] 1 (via CV candidate name "Tom Clancy's The Division: Extremis Malis")   (dump lookup)
+
+== S63679 The Curse of the Wendigo: Collected Edition  [tier B]   keys: The Curse of the Wendigo  years 2015-2015  1 files / 0 collections
+   folders: [1] Delcourt\The Curse of the Wendigo
+   files:   [19992] The Curse of the Wendigo - Collected Edition (2015) (webrip) (MagicMan-DCP).cbr (48pp)
+   CV linked:      vol 84341 "The Curse of the Wendigo: Collected Edition" 2015 Delcourt 1 issues issue 499362; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 1/1 files
+   CV local rip:   (= linked) · 83106 "The Curse of the Wendigo" 2015 Delcourt 2 · 79644 "Curse of the Wendigo" 2011 Dynamite Entertainment 1 issue 477338   (rip lookup)
+   GCD dump:       158295 "Curse of the Wendigo" 2012-2012 Dynamite Entertainment [] 1 · 159297 "Curse of the Wendigo" 2008-2008 BQE Press [] 1   (dump lookup)
+
+== S19717 The Swindling Indies  [tier D]   keys: The Swindling Indies  years 2019-2019  1 files / 0 collections
+   folders: [1] Delcourt\The Swindling Indies (2019)
+   files:   [19994] The Swindling Indies (2019) (Scanlation) (phillywilly).cbr (162pp)
+   CV candidates:  119352 "Free Comic Book Day 2019 - Indies" 2019 Delcourt 1 issue 709948 s60 · 117354 "Aspen: The Year Ahead 2019" 2019 Aspen MLT 1 issue 701958 s46 · 118622 "Sonic the Hedgehog Annual 2019" 2019 IDW Publishing 1 issue 707387 s46 · 121880 "Valiant 2019 Fall Preview" 2019 DMG/Valiant Entertainment 1 issue 721737 s30 · 118280 "Valiant Spring 2019 Preview" 2019 DMG/Valiant Entertainment 1 issue 705853 s30 · 118772 "Riverdale FCBD Edition 2019" 2019 Archie Comics 1 issue 707862 s30   (v1 search)
+   CV local rip:   117354 "Aspen: The Year Ahead 2019" 2019 Aspen MLT 1 issue 701958 (via CV candidate name "Aspen: The Year Ahead 2019") · 118622 "Sonic the Hedgehog Annual 2019" 2019 IDW Publishing 1 issue 707387 (via CV candidate name "Sonic the Hedgehog Annual 2019") · 119352 "Free Comic Book Day 2019 - Indies" 2019 Delcourt 1 issue 709948 (via CV candidate name "Free Comic Book Day 2019 - Indies")   (rip lookup)
+   GCD dump:       144743 "Sonic the Hedgehog Annual 2019" 2019-2019 IDW [] 1 (via CV candidate name "Sonic the Hedgehog Annual 2019") · 206735 "Aspen: The Year Ahead 2019" 2019-2019 Aspen [] 1 (via CV candidate name "Aspen: The Year Ahead 2019")   (dump lookup)
+
+== S21192 Walt Disney Uncle Scrooge and Donald Duck - A Matter of Serious Gravity  [tier D]   keys: Walt Disney Uncle Scrooge and Donald Duck - A Matter of Serious Gravity  years 2015-2015  1 files / 0 collections
+   folders: [1] Disney\_Donald Duck Family\Uncle Scrooge\Uncle Scrooge (2015) (IDW)\Annuals and Specials
+   files:   [21769] Walt Disney Uncle Scrooge and Donald Duck - A Matter of Serious Gravity (2014, FCBD) (digital) (Son of Ultron-Empire).cbr (37pp)
+   CV candidates:  73601 "Walt Disney Uncle Scrooge and Donald Duck: A Matter of Some Gravity" 2014 Fantagraphics 1 issue 452088 s81 · 47454 "Walt Disney Uncle Scrooge" 1976 Western Publishing 1 issue 326082 s72 · 47468 "Walt Disney Donald Duck" 1976 Western Publishing 1 issue 326437 s72 · 49167 "Walt Disney's Donald Duck and Uncle Scrooge" 2005 Gemstone 1 issue 336688 s58 · 41487 "Walt Disney The Best of Uncle Scrooge and Donald Duck" 1966 Western Publishing 1 issue 281130 s55 · 47967 "Walt Disney Treasury: Donald Duck" 2011 Boom! Studios 2 s51   (v1 search)
+   CV local rip:   47454 "Walt Disney Uncle Scrooge" 1976 Western Publishing 1 issue 326082 (via CV candidate name "Walt Disney Uncle Scrooge") · 73601 "Walt Disney Uncle Scrooge and Donald Duck: A Matter of Some Gravity" 2014 Fantagraphics 1 issue 452088 (via CV candidate name "Walt Disney Uncle Scrooge and Donald Duck: A Matter of Some Gravity") · 47468 "Walt Disney Donald Duck" 1976 Western Publishing 1 issue 326437 (via CV candidate name "Walt Disney Donald Duck")   (rip lookup)
+   GCD dump:       34190 "Walt Disney Uncle Scrooge" 1976-1976 Western [] 1 (via CV candidate name "Walt Disney Uncle Scrooge") · 1542 "Walt Disney Uncle Scrooge" 1963-1984 Western [] 170 (via CV candidate name "Walt Disney Uncle Scrooge") · 34188 "Walt Disney Donald Duck" 1976-1976 Western [] 1 (via CV candidate name "Walt Disney Donald Duck")   (dump lookup)
+
+== S5537 Disney Strange World - The Graphic Novel  [tier D]   keys: Disney Strange World - The Graphic Novel  years 2023-2023  1 files / 0 collections
+   folders: [1] Disney\_Movies+Shows\Strange World
+   files:   [21797] Disney Strange World - The Graphic Novel (2023) (digital) (Li'l Salem-Empire).cbr (68pp)
+   CV candidates:  109401 "Graphic Disney" 1991 Abril 3 s58 · 126263 "Disney Wish: The Graphic Novel" 2024 Random House 1 issue 1048925 s54 · 149358 "Disney Encanto: The Graphic Novel " 2022 Random House 1 issue 982080 s54 · 149355 "Disney • Pixar Lightyear: The Graphic Novel " 2022 Random House 1 issue 982071 s53 · 107644 "Disney Alice in Wonderland: The Graphic Novel Collection" 2018 Joe Books 1 issue 652683 s51 · 153358 "Disney/Pixar Elemental: The Graphic Novel" 2023 Random House 1 issue 1012280 s43   (v1 search)
+   CV local rip:   126263 "Disney Wish: The Graphic Novel" 2024 Random House 1 issue 1048925 (via CV candidate name "Disney Wish: The Graphic Novel") · 149358 "Disney Encanto: The Graphic Novel " 2022 Random House 1 issue 982080 (via CV candidate name "Disney Encanto: The Graphic Novel ") · 109401 "Graphic Disney" 1991 Abril 3 (via CV candidate name "Graphic Disney")   (rip lookup)
+   GCD dump:       199124 "Disney Strange World: The Graphic Novel" 2023-2023 Penguin Random House [] 1 · 185003 "Disney Encanto: The Graphic Novel" 2022-2022 Random House [] 1 (via CV candidate name "Disney Encanto: The Graphic Novel ") · 43732 "Graphic Disney" [pt-br] 1991-1992 Editora Abril [] 3 (via CV candidate name "Graphic Disney")   (dump lookup)
+
+== S17588 Tangled: The Series - Let Down Your Hair  [tier A]   keys: Tangled: The Series - Let Down Your Hair  years 2018-2018  1 files / 1 collections
+   folders: [1] Disney\_Movies+Shows\Tangled (2018)
+   files:   [20418] COL Tangled - The Series Vol. 01 - Let Down Your Hair (2018) (digital) (Salem-Empire).cbr (80pp)
+   ours:    ComicInfo Series: "Tangled: The Series - Let Down Your Hair"x1; ComicInfo Publisher: "IDW"x1
+   CV linked:      vol 112559 "Tangled: The Series - Let Down Your Hair" 2018 IDW Publishing 1 issues issue 678376; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 59436 "Your Hair" 2013 self published 1 issue 395461 s81 · 114225 "Tangled: The Series: Hair-Raising Adventures" 2018 IDW Publishing 3 s57 · 108987 "Disney's Tangled the Series" 2018 Disney 2 s53 · 47208 "Kiss Your Hair" 2009 801 Media 1 issue 324007 s50 · 103959 "Let Your Smile Bloom" 2017 FAKKU Books 1 issue 618868 s47 · 122745 "Tangled: The Series: Hair and Now" 2019 IDW Publishing 1 issue 726668 s22   (v1 search)
+   CV local rip:   (= linked) · 59436 "Your Hair" 2013 self published 1 issue 395461 (via CV candidate name "Your Hair") · 114225 "Tangled: The Series: Hair-Raising Adventures" 2018 IDW Publishing 3 (via CV candidate name "Tangled: The Series: Hair-Raising Adventures") · 120356 "Tangled: The Series: Hair-Raising Adventures" 2019 IDW Publishing 1 issue 714213 (via CV candidate name "Tangled: The Series: Hair-Raising Adventures")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 131437 "Tangled: The Series: Hair-Raising Adventures" 2018-2018 IDW [limited series] 3 on 1/1 files
+   GCD dump:       (= per-file) · 149218 "Tangled: The Series: Hair-Raising Adventures" 2019-2019 IDW [] 1 (via CV candidate name "Tangled: The Series: Hair-Raising Adventures")   (dump lookup)
+
+== S21640 Why Don't You Love Me  [tier D]   keys: Why Don't You Love Me  years 2023-2023  1 files / 0 collections
+   folders: [1] Drawn & Quarterly
+   files:   [20569] Why Don't You Love Me (2023) (D&Q) (Digital) (Dipole-Empire).cbz (214pp)
+   CV candidates:  149179 "Why Don't You Eat Me, My Dear Wolf?" 2023 Seven Seas Entertainment 1 issue 980346 s59 · 142024 "The Me You Love In The Dark" 2022 Image 1 issue 912847 s47 · 145571 "The Me you Love in the Dark " 2022 Splitter 1 issue 951276 s47 · 138055 "The Me You Love in the Dark" 2021 Image 5 s32 · 110614 "Drawn & Quarterly Presents Berlin" 2018 Drawn & Quarterly 1 issue 669075 s30 · 46273 "The Best of Drawn & Quarterly" 1993 Drawn & Quarterly 1 issue 318802 s30   (v1 search)
+   CV local rip:   149179 "Why Don't You Eat Me, My Dear Wolf?" 2023 Seven Seas Entertainment 1 issue 980346 (via CV candidate name "Why Don't You Eat Me, My Dear Wolf?") · 142024 "The Me You Love In The Dark" 2022 Image 1 issue 912847 (via CV candidate name "The Me You Love In The Dark") · 145571 "The Me you Love in the Dark " 2022 Splitter 1 issue 951276 (via CV candidate name "The Me You Love In The Dark") · 138055 "The Me You Love in the Dark" 2021 Image 5 (via CV candidate name "The Me You Love In The Dark")   (rip lookup)
+   GCD dump:       195502 "Why Don't You Love Me?" [en-ca] 2023-2023 Drawn & Quarterly [] 1 · 198496 "Why Don’t You Eat Me, My Dear Wolf?" 2023-2023 Seven Seas Entertainment [] 1 (via CV candidate name "Why Don't You Eat Me, My Dear Wolf?") · 182276 "The Me You Love in the Dark" 2022-? Image [] 1 (via CV candidate name "The Me You Love In The Dark") · 187436 "The Me You Love in the Dark" [de] 2022-2022 Splitter Verlag [] 1 (via CV candidate name "The Me You Love In The Dark") · 174971 "The Me You Love in the Dark" 2021-2021 Image [] 5 (via CV candidate name "The Me You Love In The Dark")   (dump lookup)
+
+== S20906 Vampirella - Army of Darkness  [tier D]   keys: Vampirella - Army of Darkness  years 2016-2016  2 files / 2 collections
+   flags: #517 label-ambiguous [Pending] item 22217 — items 20863 and 22217 are duplicate copies of Vol. 01
+   folders: [1] Dynamite\Army of Darkness\Crossovers · [1] Dynamite\Vampirella\_Minis, Trades and One-shots
+   files:   [20863] COL Vampirella - Army of Darkness Vol. 01 (2016) (Digital) (DR & Quinch-Empire).cbr (106pp)
+            [22217] COL Vampirella - Army of Darkness v01 (2016) (Digital) (DR & Quinch-Empire).cbr (106pp)
+   CV candidates:  78049 "Army of Darkness" 2014 Dynamite Entertainment 1 issue 469846 s78 · 19006 "Army of Darkness" 2007 Dynamite Entertainment 27 s70 · 45874 "Army of Darkness" 2012 Dynamite Entertainment 13 s70 · 18863 "Army of Darkness" 2006 Dynamite Entertainment 9 s70 · 6977 "Army of Darkness" 1992 Dark Horse Comics 3 s63 · 91844 "Army of Darkness" 1998 Kult Editionen 1 issue 537714 s63   (v1 search)
+   CV local rip:   89393 "Vampirella/Army of Darkness" 2016 Dynamite Entertainment 1 issue 523279 · 83169 "Vampirella/Army of Darkness" 2015 Dynamite Entertainment 4 · 78049 "Army of Darkness" 2014 Dynamite Entertainment 1 issue 469846 (via CV candidate name "Army of Darkness") · 78551 "Army of Darkness" 2014 Dynamite Entertainment 5 (via CV candidate name "Army of Darkness") · 45874 "Army of Darkness" 2012 Dynamite Entertainment 13 (via CV candidate name "Army of Darkness") · 19006 "Army of Darkness" 2007 Dynamite Entertainment 27 (via CV candidate name "Army of Darkness")   (rip lookup)
+   GCD dump:       99348 "Vampirella / Army of Darkness" 2016-2016 Dynamite Entertainment [] 1 · 90669 "Vampirella / Army of Darkness" 2015-2015 Dynamite Entertainment [] 4 · 84502 "Army of Darkness" 2014-2014 Dynamite Entertainment [] 1 (via CV candidate name "Army of Darkness") · 85020 "Army of Darkness" 2014-2015 Dynamite Entertainment [] 5 (via CV candidate name "Army of Darkness") · 155135 "Army of Darkness" 2013-? Dynamite Entertainment [] 3 (via CV candidate name "Army of Darkness") · 63312 "Army of Darkness" 2012-2013 Dynamite Entertainment [] 13 (via CV candidate name "Army of Darkness")   (dump lookup)
+
+== S103065 Bettie Page: Queen of the Nile (2021)  [tier B]   keys: Bettie Page: Queen of the Nile (2021)  years 2021-2021  1 files / 1 collections
+   folders: [1] Dynamite\Bettie Page (2017)
+   files:   [20908] COL Bettie Page - Queen of the Nile (2021) (Digital) (DR & Quinch-Empire).cbr (106pp)
+   ours:    ComicInfo Series: "Bettie Page: Queen of the Nile"x1; ComicInfo Publisher: "Dynamite"x1
+   GCD says: [20908] gcd_reprint 2219113: s42159 Bettie Page: Queen of the Nile (2000) (unnumbered) [1 story]
+   CV linked:      vol 19396 "Bettie Page: Queen of the Nile" 2000 Dark Horse Comics 3 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV local rip:   (= linked) · 135730 "Bettie Page: Queen of the Nile" 2021 Dynamite Entertainment 1 issue 845917 (via our own name without the filing suffix "Bettie Page: Queen of the Nile")   (rip lookup)
+   GCD dump:       172130 "Bettie Page: Queen of the Nile" 2021-2021 Dynamite Entertainment [] 1 (via our own name without the filing suffix "Bettie Page: Queen of the Nile") · 42159 "Bettie Page: Queen of the Nile" 2000-2000 Dark Horse [] 1 (via our own name without the filing suffix "Bettie Page: Queen of the Nile") · 21042 "Bettie Page: Queen of the Nile" 1999-2000 Dark Horse [] 3 (via our own name without the filing suffix "Bettie Page: Queen of the Nile")   (dump lookup)
+
+== S9847 Jim Butcher's The Dresden Files Omnibus  [tier B]   keys: Jim Butcher's The Dresden Files Omnibus | Jim Butcher's The Dresden FilesBook  years 2015-2017  2 files / 2 collections
+   folders: [2] Dynamite\Jim Butcher's The Dresden Files\Omnibus Editions
+   files:   [21206] COL Jim Butcher's The Dresden Files - Omnibus Book 01 (2015) (Digital) (F) (DR & Quinch-Empire).cbr (528pp)
+            [21207] COL Jim Butcher's The Dresden Files - Omnibus Book 02 (2017) (Digital) (DR & Quinch-Empire).cbr (423pp)
+   ours:    ComicInfo Series: "Jim Butcher's The Dresden Files Omnibus"x1; ComicInfo Publisher: "Dynamite Entertainment"x1
+   CV linked:      vol 82865 "Jim Butcher's The Dresden Files Omnibus" 2015 Dynamite Entertainment 2 issues; cached #1-2 (2); yearΔ 0; ratio 0/2; no judged range
+   CV candidates:  (= linked) · 77897 "Jim Butcher's The Dresden Files: War Cry" 2014 Dynamite Entertainment 1 issue 469270 s78 · 108736 "Jim Butcher's The Dresden Files: Dog Men" 2018 Dynamite Entertainment 1 issue 660031 s78 · 69350 "Jim Butcher's Dresden Files: Ghoul Goblin" 2013 Dynamite Entertainment 1 issue 433861 s68 · 39630 "Jim Butcher's The Dresden Files: Fool Moon" 2010 Dynamite Entertainment 8 s63 · 89786 "Jim Butcher's The Dresden Files: Wild Card" 2016 Dynamite Entertainment 6 s63 · 80002 "Jim Butcher's The Dresden Files: Down Town" 2015 Dynamite Entertainment 6 s63   (v1 search)
+   CV local rip:   (= linked) · 74522 "Jim Butcher's The Dresden Files: War Cry" 2014 Dynamite Entertainment 5 (via CV candidate name "Jim Butcher's The Dresden Files: War Cry") · 77897 "Jim Butcher's The Dresden Files: War Cry" 2014 Dynamite Entertainment 1 issue 469270 (via CV candidate name "Jim Butcher's The Dresden Files: War Cry") · 102116 "Jim Butcher's The Dresden Files: Dog Men" 2017 Dynamite Entertainment 6 (via CV candidate name "Jim Butcher's The Dresden Files: Dog Men") · 108736 "Jim Butcher's The Dresden Files: Dog Men" 2018 Dynamite Entertainment 1 issue 660031 (via CV candidate name "Jim Butcher's The Dresden Files: Dog Men")   (rip lookup)
+   GCD dump:       81416 "Jim Butcher's The Dresden Files: War Cry" 2014-2014 Dynamite Entertainment [] 5 (via CV candidate name "Jim Butcher's The Dresden Files: War Cry") · 85467 "Jim Butcher's The Dresden Files: War Cry" 2014-2014 Dynamite Entertainment [] 1 (via CV candidate name "Jim Butcher's The Dresden Files: War Cry") · 114901 "Jim Butcher's The Dresden Files: Dog Men" 2017-2017 Dynamite Entertainment [] 6 (via CV candidate name "Jim Butcher's The Dresden Files: Dog Men") · 121752 "Jim Butcher's The Dresden Files: Dog Men" 2018-2018 Dynamite Entertainment [] 1 (via CV candidate name "Jim Butcher's The Dresden Files: Dog Men")   (dump lookup)
+
+== S17907 The Adventures of Red Sonja  [tier C] · gap 9  keys: The Adventures of Red Sonja  years 2006-2023  13 files / 5 collections
+   flags: #460 label-ambiguous [Pending] item 21961 — items 21557 and 21961 are duplicate copies of Vol. 01
+   folders: [11] Dynamite\Red Sonja\_Trades, minis and one-shots\The Adventures of Red Sonja (2005) · [1] Dynamite\Red Sonja\_Trades, minis and one-shots\Red Sonja (Marvel Series) (1975) · [1] Dynamite\Red Sonja\_Trades, minis and one-shots\The Adventures of Red Sonja Omnibus (2023)
+   files:   [21961] COL The Adventures of Red Sonja Vol. 01 (2007, 2nd print) (Digital-Empire).cbr (137pp)
+            The Adventures of Red Sonja 015 (2015) (Digital) (TLK-EMPIRE-HD).cbr … The Adventures of Red Sonja 022 (2015) (Digital) (TLK-EMPIRE-HD).cbr  (8 files, pp 20-20)
+            [21557] COL The Adventures of Red Sonja Vol. 01 (2007, 2nd print) (Digital) (DR & Quinch-Empire).cbr (137pp)
+            [21558] COL The Adventures of Red Sonja Vol. 02 (2007) (2 covers) (Digital) (DR & Quinch-Empire).cbr (136pp)
+            [21559] COL The Adventures of Red Sonja Vol. 03 (2007) (Digital) (DR & Quinch-Empire).cbr (154pp)
+            [21976] COL The Adventures of Red Sonja Omnibus (2023) (Digital) (DR & Quinch-Empire).cbr (649pp)
+   ours:    ladder 15-22; ComicInfo Series: "The Adventures of Red Sonja"x3; ComicInfo Publisher: "Dynamite Entertainment"x3
+   CV linked:      vol 96453 "The Adventures of Red Sonja" 2015 Dynamite Entertainment 22 issues; cached #1-22 (22); yearΔ 9; ratio 8/22 = 0.36; no judged range; v1 per-file: same volume on 11/13 files
+   CV candidates:  (= linked) · 20521 "The Adventures of Red Sonja" 2006 Dynamite Entertainment ? s45 · 153938 "The Adventures of Red Sonja Omnibus" 2023 Dynamite Entertainment ? s34 · 115054 "The Further Adventures of Red Sonja" 2018 Dynamite Entertainment ? s34 · 96671 "Red Sonja" 2016 Dynamite Entertainment ? s30 · 87337 "Red Sonja" 2016 Dynamite Entertainment ? s30 · 122645 "Red Sonja" 2019 Dynamite Entertainment ? s30   (v1 search)
+   CV local rip:   (= linked) · 20521 "The Adventures of Red Sonja" 2006 Dynamite Entertainment 3 · 153938 "The Adventures of Red Sonja Omnibus" 2023 Dynamite Entertainment 1 issue 1021391 (via CV candidate name "The Adventures of Red Sonja Omnibus")   (rip lookup)
+   GCD dump:       203543 "The Adventures of Red Sonja Omnibus" 2023-2023 Dynamite Entertainment [] 1 (via CV candidate name "The Adventures of Red Sonja Omnibus") · 213504 "Adventures of Red Sonja Omnibus" 2024-2024 Dynamite Entertainment [] 1 (via CV candidate name "The Adventures of Red Sonja Omnibus")   (dump lookup)
+
+== S17976 The Art of Goosebumps  [tier D]   keys: The Art of Goosebumps  years 2021-2021  1 files / 0 collections
+   folders: [1] Dynamite\The Art of Goosebumps (2021)
+   files:   [21991] The Art of Goosebumps (2021) (Digital) (DR & Quinch-Empire).cbr (194pp)
+   CV candidates:  136039 "The Dynamite Art of John Cassaday" 2021 Dynamite Entertainment 1 issue 849052 s87 · 131184 "The Dynamite Art of Lucio Parrillo" 2020 Dynamite Entertainment 1 issue 810557 s84 · 77249 "The Art of Vampirella: The Dynamite Years" 2014 Dynamite Entertainment 1 issue 467045 s81 · 49784 "Dynamite Art of Alex Ross" 2011 Dynamite Entertainment 1 issue 341490 s66 · 147661 "The Dynamite Art of Jay Anacleto" 2022 Dynamite Entertainment 1 issue 966535 s32 · 51863 "Goosebumps Graphix" 2006 Scholastic Book Services 3 s30   (v1 search)
+   CV local rip:   136039 "The Dynamite Art of John Cassaday" 2021 Dynamite Entertainment 1 issue 849052 (via CV candidate name "The Dynamite Art of John Cassaday") · 131184 "The Dynamite Art of Lucio Parrillo" 2020 Dynamite Entertainment 1 issue 810557 (via CV candidate name "The Dynamite Art of Lucio Parrillo") · 77249 "The Art of Vampirella: The Dynamite Years" 2014 Dynamite Entertainment 1 issue 467045 (via CV candidate name "The Art of Vampirella: The Dynamite Years")   (rip lookup)
+
+== S17980 The Art of Howard Chaykin  [tier B]   keys: The Art of Howard Chaykin  years 2012-2012  1 files / 0 collections
+   folders: [1] Dynamite\The Art of Howard Chaykin (2012)
+   files:   [21992] The Art of Howard Chaykin (2012) (Digital) (DR & Quinch-Empire).cbr (259pp)
+   CV linked:      vol 49881 "The Art of Howard Chaykin" 2012 Dynamite Entertainment 1 issues issue 342354; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 49784 "Dynamite Art of Alex Ross" 2011 Dynamite Entertainment 1 issue 341490 s63 · 59007 "Howard Chaykin: Power & Glory" 2009 Dynamite Entertainment 1 issue 393879 s62 · 131184 "The Dynamite Art of Lucio Parrillo" 2020 Dynamite Entertainment 1 issue 810557 s23 · 136039 "The Dynamite Art of John Cassaday" 2021 Dynamite Entertainment 1 issue 849052 s23 · 147661 "The Dynamite Art of Jay Anacleto" 2022 Dynamite Entertainment 1 issue 966535 s23 · 77249 "The Art of Vampirella: The Dynamite Years" 2014 Dynamite Entertainment 1 issue 467045 s22   (v1 search)
+   CV local rip:   (= linked) · 49784 "Dynamite Art of Alex Ross" 2011 Dynamite Entertainment 1 issue 341490 (via CV candidate name "Dynamite Art of Alex Ross") · 59007 "Howard Chaykin: Power & Glory" 2009 Dynamite Entertainment 1 issue 393879 (via CV candidate name "Howard Chaykin: Power & Glory")   (rip lookup)
+
+== S17983 The Art of Luis Garcia  [tier B]   keys: The Art of Luis Garcia  years 2020-2022  1 files / 0 collections
+   folders: [1] Dynamite\The Art of Luis Garcia (2022)
+   files:   [21993] The Art of Luis Garcia (2022) (Digital) (DR & Quinch-Empire).cbr (241pp)
+   ours:    ComicInfo Series: "The Art of Luis Garcia"x1; ComicInfo Publisher: "Dynamite Entertainment"x1
+   CV linked:      vol 171275 "The Art of Luis Garcia" 2020 Dynamite Entertainment 1 issues; issue list NOT CACHED; yearΔ 0; ratio 0/1; none cached
+   CV candidates:  (= linked) · 147661 "The Dynamite Art of Jay Anacleto" 2022 Dynamite Entertainment 1 issue 966535 s78 · 131184 "The Dynamite Art of Lucio Parrillo" 2020 Dynamite Entertainment 1 issue 810557 s75 · 136039 "The Dynamite Art of John Cassaday" 2021 Dynamite Entertainment 1 issue 849052 s75 · 77249 "The Art of Vampirella: The Dynamite Years" 2014 Dynamite Entertainment 1 issue 467045 s72 · 49784 "Dynamite Art of Alex Ross" 2011 Dynamite Entertainment 1 issue 341490 s60 · 59563 "Adventures of Superman: José Luis García-López" 2013 DC Comics 2 s37   (v1 search)
+   CV local rip:   131184 "The Dynamite Art of Lucio Parrillo" 2020 Dynamite Entertainment 1 issue 810557 (via CV candidate name "The Dynamite Art of Lucio Parrillo") · 147661 "The Dynamite Art of Jay Anacleto" 2022 Dynamite Entertainment 1 issue 966535 (via CV candidate name "The Dynamite Art of Jay Anacleto")   (rip lookup)
+
+== S18007 The Art of The Boys: The Covers by Darick Robertson  [tier B]   keys: The Art of the Boys - The Covers  years 2015-2015  1 files / 0 collections
+   folders: [1] Dynamite\The Boys (2006)
+   files:   [21703] The Art of the Boys - The Covers by Darick Robertson (2014) (digital) (The Magicians-Empire).cbr (108pp)
+   CV linked:      vol 80331 "The Art of The Boys: The Covers by Darick Robertson" 2015 Dynamite Entertainment 1 issues issue 480796; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 77249 "The Art of Vampirella: The Dynamite Years" 2014 Dynamite Entertainment 1 issue 467045 s21 · 68137 "The Art of Archie: The Covers" 2013 Archie Comics 1 issue 428339 s16 · 131184 "The Dynamite Art of Lucio Parrillo" 2020 Dynamite Entertainment 1 issue 810557 s12 · 136039 "The Dynamite Art of John Cassaday" 2021 Dynamite Entertainment 1 issue 849052 s12 · 147661 "The Dynamite Art of Jay Anacleto" 2022 Dynamite Entertainment 1 issue 966535 s12 · 118116 "Bettie Page: The Dynamite Covers" 2019 Dynamite Entertainment 1 issue 705444 s6   (v1 search)
+   CV local rip:   (= linked) · 77249 "The Art of Vampirella: The Dynamite Years" 2014 Dynamite Entertainment 1 issue 467045 (via CV candidate name "The Art of Vampirella: The Dynamite Years") · 68137 "The Art of Archie: The Covers" 2013 Archie Comics 1 issue 428339 (via CV candidate name "The Art of Archie: The Covers")   (rip lookup)
+
+== S19741 The Terminator  [tier C] · gap 25  keys: The Terminator  years 1999-2024  7 files / 0 collections
+   folders: [4] Dynamite\The Terminator\The Terminator (2024) · [3] Dynamite\The Terminator
+   files:   [22084] The Terminator 001 (2024) (4 covers) (digital) (Son of Ultron-Empire).cbr (35pp) | [22085] The Terminator 002 (2024) (4 covers) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [22086] The Terminator 003 (2024) (4 covers) (digital) (Son of Ultron-Empire).cbr (33pp) | [22087] The Terminator 004 (2025) (4 covers) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [22088] The Terminator - Death Valley (2024) (digital) (Son of Ultron-Empire).cbr (113pp) | [22089] The Terminator - One Shot (2024) (digital) (Son of Ultron-Empire).cbr (52pp)
+            [22090] The Terminator - Suicide Run (2024) (digital) (Son of Ultron-Empire).cbr (13pp)
+   ours:    ladder 1-4
+   CV linked:      vol 160331 "The Terminator" 2024 Dynamite Entertainment 10 issues; cached #1-2 (2); yearΔ 25; ratio 4/10 = 0.40; no judged range
+   CV per-file (v1): vol 24191 "Terminator: The Dark Years" 1999 Dark Horse Comics 4 on 5/7 files · vol 160331 "The Terminator" 2024 Dynamite Entertainment 10 on 2/7 files
+   CV candidates:  (= linked) · 91633 "Dark Horse Insider" 1996 Dark Horse Comics 12 s33 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s21 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s21 · 49682 "Dark Horse New Recruits" 2005 Dark Horse Comics 1 issue 340614 s21 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics 3 s20 · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 s19   (v1 search)
+   CV local rip:   (= linked) · 24189 "The Terminator" 1998 Dark Horse Comics 1 issue 143624 · 24190 "Terminator" 1998 Dark Horse Comics 4 · 4469 "The Terminator" 1990 Dark Horse Comics 4 · 26241 "The Terminator" 1988 Now Comics 17 · 56432 "The Terminator?" 1986 Chick Publications 1 issue 383114   (rip lookup)
+   GCD per-file:   series 216352 "The Terminator" 2024-2025 Dynamite Entertainment [was ongoing series] 10 on 4/7 files; methods numx4
+   GCD dump:       225061 "Terminator" [hu] 1999-1999 Szukits [] 3 · 55328 "The Terminator" 1998-1998 Dark Horse [] 4 · 56961 "Terminator" [de] 2000-2000 mg publishing [] 4 · 52227 "Terminator" [de] 1991-1992 Norbert Hethke Verlag [] 4 · 56021 "The Terminator" [en-gb] 1991-1992 Trident [] 12 · 146007 "Terminator" [fr] 1991-1992 Zenda [] 5   (dump lookup)
+
+== S18003 The Art of Vampirella: The Warren Years  [tier B]   keys: The Art of Vampirella - The Warren Years )  years 2014-2014  1 files / 0 collections
+   folders: [1] Dynamite\Vampirella\_Minis, Trades and One-shots
+   files:   [22216] The Art of Vampirella - The Warren Years (2013) (Digital) (DR & Quinch-Empire)).cbr (219pp)
+   CV linked:      vol 71324 "The Art of Vampirella: The Warren Years" 2014 Dynamite Entertainment 1 issues issue 443994; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 43158 "The Art of Vampirella" 2011 Dynamite Entertainment 1 issue 294338 s85 · 77249 "The Art of Vampirella: The Dynamite Years" 2014 Dynamite Entertainment 1 issue 467045 s80 · 71460 "The Best of Pantha: The Warren Years" 2014 Dynamite Entertainment 1 issue 444541 s70 · 71805 "Vampirella: The Essential Warren Years" 2014 Dynamite Entertainment 1 issue 445832 s63 · 131184 "The Dynamite Art of Lucio Parrillo" 2020 Dynamite Entertainment 1 issue 810557 s52 · 136039 "The Dynamite Art of John Cassaday" 2021 Dynamite Entertainment 1 issue 849052 s52   (v1 search)
+   CV local rip:   (= linked) · 43158 "The Art of Vampirella" 2011 Dynamite Entertainment 1 issue 294338 (via CV candidate name "The Art of Vampirella") · 77249 "The Art of Vampirella: The Dynamite Years" 2014 Dynamite Entertainment 1 issue 467045 (via CV candidate name "The Art of Vampirella: The Dynamite Years")   (rip lookup)
+
+== S20916 Vampirella Bites  [tier B]   keys: Vampirella Bites  years 2014-2014  1 files / 1 collections
+   folders: [1] Dynamite\Vampirella\_Minis, Trades and One-shots
+   files:   [22235] COL Vampirella Bites v01 (2014) (Digital) (DR & Quinch-Empire).cbr (120pp)
+   CV linked:      vol 76544 "Vampirella Bites" 2014 Dynamite Entertainment 1 issues issue 462909; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 68741 "Bites" 2013 Independent Publisher Group 1 issue 431508 s55 · 77249 "The Art of Vampirella: The Dynamite Years" 2014 Dynamite Entertainment 1 issue 467045 s54 · 105778 "Vampirella: The Dynamite Years Omnibus" 2017 Dynamite Entertainment 4 s44 · 82595 "Killing Bites" 2014 Shogakukan 26 s29 · 85054 "School Bites" 2015 Broadsword Comics 8 s29 · 48666 "Johnny Dynamite" 2003 AiT/Planet Lar 1 issue 334678 s15   (v1 search)
+   CV local rip:   (= linked) · 68741 "Bites" 2013 Independent Publisher Group 1 issue 431508 (via CV candidate name "Bites") · 77249 "The Art of Vampirella: The Dynamite Years" 2014 Dynamite Entertainment 1 issue 467045 (via CV candidate name "The Art of Vampirella: The Dynamite Years")   (rip lookup)
+
+== S15100 Savage Sword Of Conan  [tier B]   keys: Savage Sword Of Conan  years 1974-2021  27 files / 26 collections
+   flags: #488 label-ambiguous [Pending] item 22521 — items 22520 and 22521 are duplicate copies of Vol. 09
+   folders: [23] EC Comics & Others Archives (Dark Horse)\Conan (1970)\1974 - The Savage Sword of Conan (Marvel Reprints) · [3] Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Savage Sword of Conan v1 (1974)\Omnibus Editions · [1] Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Savage Sword of Conan v1 (1974)\Annuals and Specials
+   files:   [22512] COL The Savage Sword of Conan Vol. 01 (2007) (digital) (Son of Ultron II-Empire).cbr (543pp)
+            [22513] COL The Savage Sword of Conan Vol. 02 (2008) (digital) (Son of Ultron II-Empire).cbr (546pp)
+            [22514] COL The Savage Sword of Conan Vol. 03 (2008) (digital) (Son of Ultron-Empire).cbr (528pp)
+            [22515] COL The Savage Sword of Conan Vol. 04 (2008) (digital) (Son of Ultron-Empire).cbr (542pp)
+            [22516] COL The Savage Sword of Conan Vol. 05 (2009) (digital) (Son of Ultron II-Empire).cbr (541pp)
+            [22517] COL The Savage Sword of Conan Vol. 06 (2009) (digital) (Son of Ultron-Empire).cbr (545pp)
+            [22518] COL The Savage Sword of Conan Vol. 07 (2010) (Digital) (Minutemen-Endriago).cbz (559pp)
+            [22519] COL The Savage Sword of Conan Vol. 08 (2010) (digital) (Son of Ultron-Empire).cbr (529pp)
+            [22520] COL The Savage Sword of Conan Vol. 09 (2011) (digital) (Minutemen-Endriago).cbz (518pp)
+            [22521] COL The Savage Sword of Conan Vol. 09 (2011) (digital) (Son of Ultron-Empire).cbr (520pp)
+            [22522] COL The Savage Sword of Conan Vol. 10 (2011) (digital) (Minutemen-Endriago).cbz (517pp)
+            [22523] COL The Savage Sword of Conan Vol. 11 (2012) (digital) (Son of Ultron-Empire).cbr (528pp)
+            [22524] COL The Savage Sword of Conan Vol. 12 (2012) (digital) (Minutemen-Endriago).cbz (523pp)
+            [22525] COL The Savage Sword of Conan Vol. 13 (2013) (Digital) (Minutemen-Endriago).cbz (509pp) | [22526] COL The Savage Sword of Conan Vol. 14 (2013) (Digital) (Bean-Empire).cbz (527pp)
+            [22527] COL The Savage Sword of Conan Vol. 15 (2013) (Digital) (Minutemen-Endriago).cbz (527pp) | [22528] COL The Savage Sword of Conan Vol. 16 (2014) (Digital) (Bean-Empire).cbz (526pp)
+            [22529] COL The Savage Sword of Conan Vol. 17 (2014) (Digital) (Bean-Empire).cbz (526pp) | [22530] COL The Savage Sword of Conan Vol. 18 (2015) (Digital) (Bean-Empire).cbz (560pp)
+            [22531] COL The Savage Sword of Conan Vol. 19 (2015) (Digital) (Bean-Empire).cbz (561pp) | [22532] COL The Savage Sword of Conan Vol. 20 (2015) (Digital) (Bean-Empire).cbz (570pp)
+            [22533] COL The Savage Sword of Conan Vol. 21 (2016) (Digital) (Bean-Empire).cbz (590pp) | [22534] COL The Savage Sword of Conan Vol. 22 (2016) (Digital) (Bean-Empire).cbz (506pp)
+            [79932] Savage Sword of Conan Special 001 (1975) (Digital) (Shadowcat-Empire).cbz (31pp)
+            [78090] COL Savage Sword of Conan - The Original Marvel Years Omnibus Book 04 (2021) (Digital) (Mephisto-Empire).cbr (942pp)
+            [78091] COL Savage Sword of Conan - The Original Marvel Years Omnibus Book v05 (2021) (Digital) (Mephisto-Empire).cbr (738pp)
+            [78092] COL Savage Sword of Conan - The Original Marvel Years Omnibus Book v06 (2022) (Digital) (Mephisto-Empire).cbr (957pp)
+   ours:    ladder 1; ComicInfo Series: "Savage Sword Of Conan Special"x1; ComicInfo Volume: "1975"x1; ComicInfo Publisher: "Marvel"x1
+   CV per-file (v1): vol 2701 "The Savage Sword of Conan" 1974 Marvel 235 on 26/27 files
+   CV candidates:  (= per-file) · 133866 "The Savage Sword of Conan the Barbarian" 1974 Yaffa / Page 4 s72 · 47760 "Savage Sword of Conan" 1977 Marvel UK/Panini UK 93 s65 · 133719 "Savage Sword of Conan" 2019 Panini Verlag 2 s35 · 117080 "The Savage Sword of Conan" 2019 Marvel 12 s34 · 30357 "Savage Sword of Conan Special" 1975 Marvel 1 issue 187089 s34 · 20391 "The Savage Sword of Conan" 1975 Marvel UK/Panini UK 18 s34   (v1 search)
+   CV local rip:   (= per-file) · 20391 "The Savage Sword of Conan" 1975 Marvel UK/Panini UK 18 · 47760 "Savage Sword of Conan" 1977 Marvel UK/Panini UK 93 · 21975 "The Savage Sword of Conan" 2007 Dark Horse Comics 22 · 120279 "The Savage Sword Of Conan " 2017 Hachette 4 · 117080 "The Savage Sword of Conan" 2019 Marvel 12   (rip lookup)
+   GCD dump:       2187 "The Savage Sword of Conan" 1974-1995 Marvel [] 235 · 79162 "Savage Sword of Conan" [en-gb] 1975-1975 Marvel UK [] 18 · 44805 "The Savage Sword of Conan" [en-gb] 1977-1985 Marvel UK [] 93 · 28720 "Savage Sword of Conan" 2007-2016 Dark Horse [] 22 · 140323 "Savage Sword of Conan" 2019-2020 Marvel [] 12 · 150308 "Savage Sword of Conan" [de] 2019-2020 Panini Deutschland [] 2   (dump lookup)
+
+== S5607 Doctor Solar - Man of the Atom  [tier C] · gap 48  keys: Doctor Solar - Man of the Atom  years 1962-2010  13 files / 4 collections
+   folders: [9] EC Comics & Others Archives (Dark Horse)\Doctor Solar, Man of the Atom (1962)\Doctor Solar, Man of the Atom (2010) · [4] EC Comics & Others Archives (Dark Horse)\Doctor Solar, Man of the Atom (1962)\Doctor Solar, Man of the Atom (1962)
+   files:   [22607] COL Doctor Solar, Man of the Atom Archives v01 (2010) (digital) (Mr Norrell-Empire).cbr (214pp)
+            [22608] COL Doctor Solar, Man of the Atom Archives v02 (2014) (digital) (Mr Norrell-Empire).cbr (216pp)
+            [22609] COL Doctor Solar, Man of the Atom Archives v03 (2014) (digital) (Mr Norrell-Empire).cbr (204pp)
+            [22610] COL Doctor Solar, Man of the Atom Archives v04 (2015) (digital) (Mr Norrell-Empire).cbr (242pp)
+            Doctor Solar - Man of the Atom 001 (2010) (Digital) (G85-Empire).cbr … Doctor Solar - Man of the Atom 008 (2011) (Digital) (G85-Empire).cbr  (8 files, pp 25-43)
+            [22619] Doctor Solar - Man of the Atom FCBD (2010) (G85-Empire).cbr (13pp)
+   ours:    ladder 1-8; judged item 22607 #1-7 conf 0.85; judged item 22608 #8-14 conf 0.85; judged item 22609 #15-22 conf 0.85; judged item 22610 #23-31 conf 0.85
+   CV per-file (v1): vol 2091 "Doctor Solar, Man of the Atom" 1962 Western Publishing 31 on 13/13 files
+   CV local rip:   (= per-file) · 34401 "Doctor Solar, Man of the Atom" 2010 Dark Horse Comics 8 · 48999 "Doctor Solar, Man Of The Atom" 2011 Dark Horse Comics 2   (rip lookup)
+   GCD per-file:   series 51414 "Doctor Solar, Man of the Atom" 2010-2011 Dark Horse [was ongoing series] 8 on 8/13 files; methods numx8
+   GCD dump:       (= per-file) · 1529 "Doctor Solar, Man of the Atom" 1962-1982 Western [] 31 · 31583 "Doctor Solar, Man of the Atom" 2004-2007 Dark Horse [] 4 · 77850 "Doctor Solar, Man of the Atom" 2011-2012 Dark Horse [] 2   (dump lookup)
+   bridges:        gcd 51414 -> LOCG 117103 "Doctor Solar, Man of the Atom" support 8
+
+== S21 1066: William the Conqueror  [tier B]   keys: 1066 - William the Conqueror  years 2015-2015  1 files / 0 collections
+   folders: [1] Europe Comics\1066 - William the Conqueror (2015)
+   files:   [23811] 1066 - William the Conqueror (2015) (Europe Comics) (digital) (Lynx-Empire).cbr (75pp)
+   ours:    ladder 1066
+   CV linked:      vol 95968 "1066: William the Conqueror" 2015 Europe Comics 1 issues issue 561774; cached #1-1 (1); yearΔ 0; ratio 1/1 = 1.00; no judged range
+   CV candidates:  (= linked) · 80982 "Rise of the Conqueror" 2015 Red Element 2 s51 · 22786 "Newuniversal: Conqueror" 2008 Marvel 1 issue 136751 s45 · 36411 "Conqueror" 1984 Harrier 10 s42 · 3140 "Kull the Conqueror" 1982 Marvel 2 s39 · 55194 "Conqueror Comics" 1945 Albrecht Publishing Company 1 issue 376018 s37 · 64980 "Defenders of Europe" 2011 Emmetre Edizioni 2 s19   (v1 search)
+   CV local rip:   (= linked) · 80982 "Rise of the Conqueror" 2015 Red Element 2 (via CV candidate name "Rise of the Conqueror") · 22786 "Newuniversal: Conqueror" 2008 Marvel 1 issue 136751 (via CV candidate name "Newuniversal: Conqueror")   (rip lookup)
+   GCD dump:       31811 "newuniversal: Conqueror" 2008-2008 Marvel [] 1 (via CV candidate name "Newuniversal: Conqueror")   (dump lookup)
+
+== S207 A Lapse In Judgment  [tier B]   keys: A Lapse in Judgment  years 2020-2020  1 files / 0 collections
+   folders: [1] Europe Comics\A Lapse in Judgment (2020)
+   files:   [23812] A Lapse in Judgment (2020) (Europe Comics) (webrip) (MagicMan-DCP).cbr (156pp)
+   CV linked:      vol 124389 "A Lapse In Judgment" 2020 Europe Comics 1 issues issue 734273; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 125697 "Zombie Tramp: A Dead Girl in Europe" 2020 Action Lab 1 issue 740937 s55 · 45644 "Judgment Day: Final Judgment" 1997 Awesome Comics 1 issue 314391 s40 · 10910 "Judgment Day" 1993 Lightning Comics 8 s23 · 63050 "Three Days in Europe" 2002 Oni Press 5 s18 · 6604 "Day of Judgment" 1999 DC Comics 5 s18 · 64980 "Defenders of Europe" 2011 Emmetre Edizioni 2 s17   (v1 search)
+   CV local rip:   (= linked) · 125697 "Zombie Tramp: A Dead Girl in Europe" 2020 Action Lab 1 issue 740937 (via CV candidate name "Zombie Tramp: A Dead Girl in Europe") · 45644 "Judgment Day: Final Judgment" 1997 Awesome Comics 1 issue 314391 (via CV candidate name "Judgment Day: Final Judgment")   (rip lookup)
+   GCD dump:       5926 "Judgment Day: Final Judgment" 1997-1997 Awesome [] 1 (via CV candidate name "Judgment Day: Final Judgment")   (dump lookup)
+
+== S248 A Taste for Blood  [tier B]   keys: A Taste for Blood  years 2022-2022  1 files / 0 collections
+   folders: [1] Europe Comics\A Taste for Blood (2022)
+   files:   [23815] A Taste for Blood (2022) (digital) (Mr Norrell-Empire).cbr (111pp)
+   CV linked:      vol 146700 "A Taste for Blood" 2022 Europe Comics 1 issues issue 958747; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 135489 "A Taste of Fantasy" 2021 Harlequin Comics 1 issue 843928 s55 · 77150 "Bad Taste" 2014 Sarcasm Unlimited 2 s38 · 143254 "Action Comics 2022 Annual" 2022 DC Comics 1 issue 928348 s30 · 146565 "Detective Comics 2022 Annual" 2022 DC Comics 1 issue 957908 s30 · 90662 "Aylmer "Taste of Canada" Comics" 1966 Aylmer Foods 1 issue 531485 s28 · 64980 "Defenders of Europe" 2011 Emmetre Edizioni 2 s17   (v1 search)
+   CV local rip:   (= linked) · 135489 "A Taste of Fantasy" 2021 Harlequin Comics 1 issue 843928 (via CV candidate name "A Taste of Fantasy") · 77150 "Bad Taste" 2014 Sarcasm Unlimited 2 (via CV candidate name "Bad Taste")   (rip lookup)
+
+== S3141 Brancusi Versus United States  [tier B]   keys: Brancusi versus United States  years 2023-2023  1 files / 0 collections
+   folders: [1] Europe Comics\Brancusi versus United States (2023)
+   files:   [23835] Brancusi versus United States (2023) (digital) (Mr Norrell-Empire).cbr (128pp)
+   CV linked:      vol 149164 "Brancusi Versus United States" 2023 Europe Comics 1 issues issue 980273; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 143940 "The United States of Captain America" 2022 Marvel 1 issue 934863 s53 · 71498 "The United States Constitution" 2012 Round Table Comics 1 issue 444728 s52 · 57996 "Our United States" 1949 J.C. Penny Company, Inc. 1 issue 388700 s46 · 64919 "Your United States" 1946 Lloyd Jacquet Studios 1 issue 415980 s46 · 62973 "The Cartoon History of the United States" 1991 HarperCollins 1 issue 409244 s42 · 137256 "The United States of Captain America" 2021 Marvel 5 s38   (v1 search)
+   CV local rip:   (= linked) · 143940 "The United States of Captain America" 2022 Marvel 1 issue 934863 (via CV candidate name "The United States of Captain America") · 137256 "The United States of Captain America" 2021 Marvel 5 (via CV candidate name "The United States of Captain America") · 71498 "The United States Constitution" 2012 Round Table Comics 1 issue 444728 (via CV candidate name "The United States Constitution")   (rip lookup)
+   GCD dump:       173711 "The United States of Captain America" 2021-2021 Marvel [] 5 (via CV candidate name "The United States of Captain America") · 180271 "The United States of Captain America" 2021-2021 Marvel [] 1 (via CV candidate name "The United States of Captain America") · 77841 "The United States Constitution" 2008-2008 Farrar, Straus, and Giroux [] 1 (via CV candidate name "The United States Constitution")   (dump lookup)
+
+== S5057 Dead and Unburied  [tier B]   keys: Dead and Unburied  years 2019-2021  2 files / 0 collections
+   folders: [2] Europe Comics\Dead and Unburied (2021)
+   files:   [23063] Dead and Unburied 001 - Zombie at Large (2019) (digital) (Mr Norrell-Empire).cbr (49pp)
+            [23064] Dead and Unburied 002 - Undercover Cadaver (2021) (digital) (Mr Norrell-Empire).cbr (49pp)
+   ours:    ladder 1-2
+   CV linked:      vol 121977 "Dead and Unburied" 2019 Europe Comics 2 issues; cached #1-2 (2); yearΔ 0; ratio 2/2 = 1.00; no judged range; v1 per-file: same volume on 2/2 files
+   CV candidates:  (= linked) · 125697 "Zombie Tramp: A Dead Girl in Europe" 2020 Action Lab 1 issue 740937 s34 · 107553 "2021" 2012 Soleil 2 s24 · 64980 "Defenders of Europe" 2011 Emmetre Edizioni 2 s24 · 137551 "Action Comics 2021 Annual" 2021 DC Comics 1 issue 870541 s23 · 140253 "Detective Comics 2021 Annual" 2021 DC Comics 1 issue 895879 s23 · 75941 "Female Force: Women of Europe" 2014 TidalWave Productions 1 issue 460630 s18   (v1 search)
+   CV local rip:   (= linked) · 125697 "Zombie Tramp: A Dead Girl in Europe" 2020 Action Lab 1 issue 740937 (via CV candidate name "Zombie Tramp: A Dead Girl in Europe") · 107553 "2021" 2012 Soleil 2 (via CV candidate name "2021")   (rip lookup)
+   GCD dump:       128345 "2021" [en-gb] 2018-2018 Titan [] 1 (via CV candidate name "2021") · 117101 "2021" [fr] 2012-2013 Soleil [] 2 (via CV candidate name "2021")   (dump lookup)
+
+== S9349 In Search of the Unicorn  [tier B]   keys: In Search of the Unicorn  years 2018-2018  2 files / 0 collections
+   folders: [2] Europe Comics\In Search of the Unicorn (2018)
+   files:   [23124] In Search of the Unicorn 01 - The Land of the Moors (2018) (Europe Comics) (Digital-Empire).cbr (50pp)
+            [23125] In Search of the Unicorn 02 - The White Smiths (2018) (Europe Comics) (Digital-Empire).cbr (54pp)
+   ours:    ladder 1-2
+   CV linked:      vol 109877 "In Search of the Unicorn" 2018 Europe Comics 3 issues; cached #1-3 (3); yearΔ 0; ratio 2/3 = 0.67; no judged range; v1 per-file: same volume on 2/2 files
+   CV candidates:  (= linked) · 114126 "The Librarians: In Search Of…" 2018 Dynamite Entertainment 1 issue 687189 s70 · 106100 "In Search of Peter Pan" 2017 Europe Comics 1 issue 638264 s69 · 61769 "In Search of The Far Side" 1984 Andrews McMeel Publishing 1 issue 404521 s56 · 52480 "In Search of Shirley" 1993 NBM 2 s54 · 78959 "In Search of Lost Dragons" 2014 Dynamite Entertainment 1 issue 474139 s53 · 76034 "In Search of Sacred Cows" 1968 The Boston Globe 1 issue 460796 s44   (v1 search)
+   CV local rip:   (= linked) · 114126 "The Librarians: In Search Of…" 2018 Dynamite Entertainment 1 issue 687189 (via CV candidate name "The Librarians: In Search Of…") · 106100 "In Search of Peter Pan" 2017 Europe Comics 1 issue 638264 (via CV candidate name "In Search of Peter Pan")   (rip lookup)
+
+== S9404 Incredible!  [tier B]   keys: Incredible!  years 2020-2020  1 files / 0 collections
+   folders: [1] Europe Comics\Incredible! (2020)
+   files:   [23883] Incredible! (2020) (digital) (Mr Norrell-Empire).cbr (198pp)
+   CV linked:      vol 131067 "Incredible!" 2020 Europe Comics 1 issues issue 809763; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 124651 "The Incredible Rockhead: The Complete Comics Collection" 2020 Stone Arch Books 1 issue 735433 s84 · 75941 "Female Force: Women of Europe" 2014 TidalWave Productions 1 issue 460630 s25 · 125474 "2020 Rescue" 2020 Marvel 2 s23 · 170225 "2020 Visions" 2020 Dantes Verlag 2 s23 · 64980 "Defenders of Europe" 2011 Emmetre Edizioni 2 s17 · 63050 "Three Days in Europe" 2002 Oni Press 5 s6   (v1 search)
+   CV local rip:   (= linked) · 124651 "The Incredible Rockhead: The Complete Comics Collection" 2020 Stone Arch Books 1 issue 735433 (via CV candidate name "The Incredible Rockhead: The Complete Comics Collection") · 75941 "Female Force: Women of Europe" 2014 TidalWave Productions 1 issue 460630 (via CV candidate name "Female Force: Women of Europe")   (rip lookup)
+
+== S10708 Lena  [tier B]   keys: Lena - Into the Fire | Lena and the Three Women | Lena's Odyssey  years 2020-2020  3 files / 0 collections
+   folders: [2] Europe Comics\Lena's Odyssey (2006) · [1] Europe Comics\Lena - Into the Fire (2020)
+   files:   [23894] Lena - Into the Fire (2020) (digital) (Mr Norrell-Empire).cbr (57pp) | [23195] 01 Lena's Odyssey (2020) (digital) (Mr Norrell-Empire).cbr (57pp)
+            [23196] 02 Lena and the Three Women (2020) (digital) (Mr Norrell-Empire).cbr (58pp)
+   ours:    ladder 1-2; ComicInfo Series: "Lena's Odyssey"x1, "Lena and the Three Women"x1; ComicInfo Publisher: "Europe Comics"x2
+   CV linked:      vol 125071 "Lena" 2020 Europe Comics 3 issues; cached #1-3 (3); yearΔ 0; ratio 2/3 = 0.67; no judged range
+   CV candidates:  (= linked) · 129116 "Stranger Things: Into the Fire" 2020 Dark Horse Comics 1 issue 784502 s73 · 113739 "WWE: NXT Takeover - Into the Fire" 2018 Boom! Studios 1 issue 685701 s69 · 124099 "Stranger Things: Into the Fire" 2020 Dark Horse Comics 4 s61 · 138665 "Lena" 2007 Salleck Publications 2 s56 · 48222 "The Odyssey" 2002 Avatar Press 1 issue 333016 s55 · 59686 "How to Break into Comics" 2002 self published 1 issue 396237 s32   (v1 search)
+   CV local rip:   (= linked) · 138665 "Lena" 2007 Salleck Publications 2 · 124099 "Stranger Things: Into the Fire" 2020 Dark Horse Comics 4 (via CV candidate name "Stranger Things: Into the Fire") · 129116 "Stranger Things: Into the Fire" 2020 Dark Horse Comics 1 issue 784502 (via CV candidate name "Stranger Things: Into the Fire") · 113739 "WWE: NXT Takeover - Into the Fire" 2018 Boom! Studios 1 issue 685701 (via CV candidate name "WWE: NXT Takeover - Into the Fire")   (rip lookup)
+   GCD dump:       93643 "Lena" [de] 2015-? Salleck [] 2 · 60021 "Lena" [nl-be] 2011-2011 Dargaud Benelux [] 1 · 8657 "Lena" [sv-se] 1967-1967 Centerförlaget [] 7 · 154360 "Stranger Things: Into the Fire" 2020-2020 Dark Horse [] 4 (via CV candidate name "Stranger Things: Into the Fire") · 130473 "WWE: NXT Takeover - Into the Fire" 2018-2018 Boom! Studios [] 1 (via CV candidate name "WWE: NXT Takeover - Into the Fire")   (dump lookup)
+
+== S11922 Menji and the Sea Dragon  [tier B]   keys: Menji  years 2022-2023  2 files / 0 collections
+   folders: [2] Europe Comics\Menji and the Sea Dragon (2022)
+   files:   [23235] Menji 001 - ...and the Sea Dragon (2022) (digital) (Mr Norrell-Empire).cbr (51pp)
+            [23236] Menji 002 - ...and the Ruins of Mount Mystery (2023) (digital) (Mr Norrell-Empire).cbr (49pp)
+   ours:    ladder 1-2
+   CV linked:      vol 142009 "Menji and the Sea Dragon" 2022 Europe Comics 1 issues issue 912902; cached #1-1 (1); yearΔ 0; ratio 2/1 = 2.00; no judged range
+   CV candidates:  (= linked) · 154114 "Menji and the Ruins of Mount Mystery" 2023 Europe Comics 1 issue 1024770 s37 · 64980 "Defenders of Europe" 2011 Emmetre Edizioni 2 s24 · 143254 "Action Comics 2022 Annual" 2022 DC Comics 1 issue 928348 s23 · 146565 "Detective Comics 2022 Annual" 2022 DC Comics 1 issue 957908 s23 · 142203 "Brazil 2022" 1990 Himalaya 1 issue 915269 s10 · 142205 "Brazil 2022" 1990 Loempia 1 issue 915272 s10   (v1 search)
+   CV local rip:   (= linked) · 154114 "Menji and the Ruins of Mount Mystery" 2023 Europe Comics 1 issue 1024770 (via CV candidate name "Menji and the Ruins of Mount Mystery") · 64980 "Defenders of Europe" 2011 Emmetre Edizioni 2 (via CV candidate name "Defenders of Europe")   (rip lookup)
+
+== S13161 Of Gods and Men  [tier B]   keys: Of Gods and Men  years 2019-2019  4 files / 0 collections
+   folders: [4] Europe Comics\Of Gods and Men (2019)
+   files:   [23278] Of Gods and Men 01 - The End of the Beginning (2019) (Europe Comics) (Digital-Empire).cbr (56pp)
+            [23279] Of Gods and Men 02 - Between Day and Night (2019) (Europe Comics) (Digital-Empire).cbr (64pp)
+            [23280] Of Gods and Men 03 - A Small Town in America (2019) (Europe Comics) (Digital-Empire).cbr (68pp)
+            [23281] Of Gods and Men 04 - A Castle in Bavaria (2019) (Europe Comics) (Digital-Empire).cbr (60pp)
+   ours:    ladder 1-4
+   CV linked:      vol 119113 "Of Gods and Men" 2019 Europe Comics ? issues; cached #1-4 (4); yearΔ 0; ratio 4/?; no judged range; v1 per-file: same volume on 4/4 files
+   CV candidates:  (= linked) · 109256 "Of Gods and Men" 2018 Wishful Thinking Entertainment ? s87 · 42583 "Thor: Gods and Men" 2011 Marvel ? s54 · 103937 "Gods Of Men - Shadow Of The Sentinel" 2017 self published ? s53 · 87641 "X-Men: Colossus: God's Country" 2016 Marvel ? s23 · 64980 "Defenders of Europe" 2011 Emmetre Edizioni ? s23 · 121619 "Hill House Comics 2019 Sampler" 2019 DC Comics ? s15   (v1 search)
+   CV local rip:   (= linked) · 109256 "Of Gods and Men" 2018 Wishful Thinking Entertainment 1 issue 663265 · 42583 "Thor: Gods and Men" 2011 Marvel 1 issue 291034 (via CV candidate name "Thor: Gods and Men")   (rip lookup)
+
+== S13251 One of Those Days  [tier B]   keys: One of those Days  years 2020-2020  1 files / 0 collections
+   folders: [1] Europe Comics\One of those Days (2020)
+   files:   [23922] One of those Days (2020) (digital) (Mr Norrell-Empire).cbr (108pp)
+   CV linked:      vol 128012 "One of Those Days" 2020 Europe Comics 1 issues issue 768657; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 131716 "One of Those Days" 2020 Random House 1 issue 816294 s105 · 80949 "Is This "One of Those Days," Daddy?: A For Better or For Worse Collection" 1982 Andrews McMeel Publishing 1 issue 483534 s67 · 67980 "Happy Days One Hundred Years of Comics" 1975 Jupiter Books 1 issue 427860 s58 · 27018 "Drafted: One Hundred Days" 2009 Devil's Due 1 issue 163387 s52 · 35517 "Serenity: Those Left Behind: One for One" 2010 Dark Horse Comics 1 issue 234774 s49 · 111371 "Those Summer Days" 2018 Kodansha Comics USA 5 s41   (v1 search)
+   CV local rip:   (= linked) · 131716 "One of Those Days" 2020 Random House 1 issue 816294 · 80949 "Is This "One of Those Days," Daddy?: A For Better or For Worse Collection" 1982 Andrews McMeel Publishing 1 issue 483534 (via CV candidate name "Is This "One of Those Days," Daddy?: A For Better or For Worse Collection")   (rip lookup)
+   GCD dump:       166373 "One of Those Days" 2020-2020 Penguin Random House [] 1 · 43857 "One of Those Days" [sv-se] 2001-2001 Pål Lövendahl [] 1   (dump lookup)
+
+== S18185 The Butcher  [tier B]   keys: The Butcher  years 2021-2022  3 files / 0 collections
+   folders: [3] Europe Comics\The Butcher (2021)
+   files:   [23384] The Butcher 001 - Demon's Scent (2021) (digital) (Mr Norrell-Empire).cbr (30pp) | [23385] The Butcher 002 - The Bird in the Cage (2021) (digital) (Mr Norrell-Empire).cbr (30pp)
+            [23386] The Butcher 003 - Hunter and Prey (2022) (digital) (Mr Norrell-Empire).cbr (35pp)
+   ours:    ladder 1-3
+   CV linked:      vol 137733 "The Butcher" 2021 Europe Comics 3 issues; cached #1-3 (3); yearΔ 0; ratio 3/3 = 1.00; no judged range; v1 per-file: same volume on 3/3 files
+   CV candidates:  (= linked) · 41069 "The Butcher" 1990 DC Comics 5 s85 · 123249 "The Butcher of Paris" 2019 Dark Horse Comics 5 s78 · 21038 "The Darkness: Butcher" 2008 Image 1 issue 125919 s70 · 55387 "Butcher Street" 2013 Arcana Studio 1 issue 377160 s42 · 137551 "Action Comics 2021 Annual" 2021 DC Comics 1 issue 870541 s18 · 140253 "Detective Comics 2021 Annual" 2021 DC Comics 1 issue 895879 s18   (v1 search)
+   CV local rip:   (= linked) · 41069 "The Butcher" 1990 DC Comics 5 · 132408 "The Butcher of Paris" 2020 Dark Horse Comics 1 issue 820121 (via CV candidate name "The Butcher of Paris") · 123249 "The Butcher of Paris" 2019 Dark Horse Comics 5 (via CV candidate name "The Butcher of Paris")   (rip lookup)
+   GCD dump:       34488 "The Butcher" [es] 1991-1991 Zinco [] 5 · 14772 "The Butcher" 1990-1990 DC [] 5 · 167176 "The Butcher of Paris" 2020-2020 Dark Horse [] 1 (via CV candidate name "The Butcher of Paris") · 153290 "The Butcher of Paris" 2019-2020 Dark Horse [] 5 (via CV candidate name "The Butcher of Paris")   (dump lookup)
+
+== S18372 The Daughters of Salem  [tier B]   keys: The Daughters of Salem. How we sent our children to their deaths  years 2019-2019  2 files / 0 collections
+   folders: [2] Europe Comics\The Daughters of Salem (2019)
+   files:   [23389] The Daughters of Salem. How we sent our children to their deaths 01 (2019) (Europe Comics) (Digital-Empire).cbr (106pp)
+            [23390] The Daughters of Salem. How we sent our children to their deaths 02 (2019) (Europe Comics) (Digital-Empire).cbr (101pp)
+   ours:    ladder 1-2
+   CV linked:      vol 116612 "The Daughters of Salem" 2019 Europe Comics 2 issues; cached #1-2 (2); yearΔ 0; ratio 2/2 = 1.00; no judged range; v1 per-file: same volume on 2/2 files
+   CV candidates:  (= linked) · 101448 "Message Sent" 2017 NXSeven Entertainment 3 s40 · 108106 "The Lie and How We Told It" 2018 Fantagraphics 1 issue 655579 s37 · 107998 "How We Stay Sane @ Work" 2018 Project Shiro Studios 1 issue 654624 s36 · 50051 "Onward Towards Our Noble Deaths" 2011 Drawn & Quarterly 1 issue 343307 s34 · 57017 "We Are On Our Own" 2006 Drawn & Quarterly 1 issue 385646 s32 · 94032 "Our Comic Book Children" 1950 Queen's Work 1 issue 549070 s30   (v1 search)
+   CV local rip:   (= linked) · 108106 "The Lie and How We Told It" 2018 Fantagraphics 1 issue 655579 (via CV candidate name "The Lie and How We Told It") · 101448 "Message Sent" 2017 NXSeven Entertainment 3 (via CV candidate name "Message Sent")   (rip lookup)
+   GCD dump:       120431 "The Lie and How We Told It" 2018-2018 Fantagraphics [] 1 (via CV candidate name "The Lie and How We Told It")   (dump lookup)
+
+== S19450 The Regiment – The True Story of the SAS  [tier B]   keys: The Regiment. The True Story of the SAS  years 2018-2019  2 files / 0 collections
+   folders: [2] Europe Comics\The Regiment. The True Story of the SAS (2018)
+   files:   [23443] The Regiment. The True Story of the SAS - 01 (2018) (Europe Comics) (Digital-Empire).cbr (67pp)
+            [23444] The Regiment. The True Story of the SAS - 02 (2019) (Europe Comics) (Digital-Empire).cbr (59pp)
+   ours:    ladder 1-2
+   CV linked:      vol 115230 "The Regiment – The True Story of the SAS" 2018 Europe Comics 3 issues; cached #1-3 (3); yearΔ 0; ratio 2/3 = 0.67; no judged range; v1 per-file: same volume on 2/2 files
+   CV candidates:  (= linked) · 41413 "SAS" 2006 Éditions Glénat 6 s51 · 122904 "The Regiment - The True Story of the SAS" 2019 Cinebook 3 s43 · 105241 "The Regiment - L'Histoire vraie du SAS" 2017 Le Lombard 1 issue 630071 s40 · 101122 "The Jernegan Solution: a True Story" 2015 Ninth Art Press 1 issue 593908 s39 · 48535 "True Story, Swear to God" 2003 AiT/Planet Lar 2 s38 · 57323 "My True Story" 1994 Fantagraphics 1 issue 386569 s38   (v1 search)
+   CV local rip:   (= linked) · 122904 "The Regiment - The True Story of the SAS" 2019 Cinebook 3 · 41413 "SAS" 2006 Éditions Glénat 6 (via CV candidate name "SAS")   (rip lookup)
+   GCD dump:       135145 "SAS" [fr] 2006-2008 Glénat [] 6 (via CV candidate name "SAS")   (dump lookup)
+
+== S19682 The Stars of History: Marilyn Monroe  [tier B]   keys: The Stars of History - Marilyn Monroe  years 2020-2020  1 files / 0 collections
+   folders: [1] Europe Comics\The Stars of History (2020)
+   files:   [23454] The Stars of History - Marilyn Monroe (2020) (digital) (Mr Norrell-Empire).cbr (104pp)
+   CV linked:      vol 132055 "The Stars of History: Marilyn Monroe" 2020 Europe Comics 1 issues issue 818826; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 128712 "The Stars of History: Charlie Chaplin" 2020 Europe Comics 1 issue 780151 s83 · 79700 "Monroe" 1992 Conquest Press 1 issue 477818 s58 · 60311 "Tribute: Marilyn Monroe" 2013 TidalWave Productions 1 issue 399071 s51 · 119840 "Marilyn Manor" 2019 IDW Publishing 1 issue 712240 s47 · 129197 "Marilyn" 1955 Amalgamated Press 158 s42 · 138499 "Holy Wood: Portrait fantasmé de Marilyn Monroe" 2016 la Boîte à Bulles 1 issue 881578 s41   (v1 search)
+   CV local rip:   (= linked) · 79700 "Monroe" 1992 Conquest Press 1 issue 477818 (via CV candidate name "Monroe") · 128712 "The Stars of History: Charlie Chaplin" 2020 Europe Comics 1 issue 780151 (via CV candidate name "The Stars of History: Charlie Chaplin")   (rip lookup)
+   GCD dump:       128474 "Monroe" [fr-be] 2005-2005 Casterman [] 1 (via CV candidate name "Monroe") · 48187 "Monroe" 1992-1992 Conquest Press [] 1 (via CV candidate name "Monroe")   (dump lookup)
+
+== S19982 The World of Thorgal: Wolfcub  [tier B]   keys: The World of Thorgal - Wolfcub  years 2020-2021  7 files / 0 collections
+   folders: [7] Europe Comics\Thorgal\Thorgal Wolfcub (2020)
+   files:   [23516] The World of Thorgal - Wolfcub 001 - Raissa (2020) (digital) (Mr Norrell-Empire).cbr (50pp)
+            [23517] The World of Thorgal - Wolfcub 002 - The Severed Hand of the God Tyr (2020) (digital) (Mr Norrell-Empire).cbr (50pp)
+            [23518] The World of Thorgal - Wolfcub 003 - The Realm of Chaos (2021) (digital) (Mr Norrell-Empire).cbr (50pp)
+            [23519] The World of Thorgal - Wolfcub 004 - Crow (2021) (digital) (Mr Norrell-Empire).cbr (50pp)
+            [23520] The World of Thorgal - Wolfcub 005 - Skald (2021) (digital) (Mr Norrell-Empire).cbr (50pp)
+            [23521] The World of Thorgal - Wolfcub 006 - The Queen of the Dark Elves (2021) (digital) (Mr Norrell-Empire).cbr (50pp)
+            [23522] The World of Thorgal - Wolfcub 007 - Nidhogg (2021) (digital) (Mr Norrell-Empire).cbr (50pp)
+   ours:    ladder 1-7
+   CV linked:      vol 130272 "The World of Thorgal: Wolfcub" 2020 Europe Comics ? issues; cached #1-7 (7); yearΔ 0; ratio 7/?; no judged range; v1 per-file: same volume on 7/7 files
+   CV candidates:  (= linked) · 130273 "The World of Thorgal: Kriss of Valnor" 2020 Europe Comics ? s75 · 104339 "The World of Thorgal: The Young Years" 2017 Europe Comics ? s71 · 126472 "Thorgal" 2015 Norma Editorial ? s51 · 130113 "Thorgal" 2013 Hachette ? s50 · 127975 "Thorgal" 2011 Splitter ? s49 · 72160 "Thorgal" 2000 Egmont Polska ? s46   (v1 search)
+   CV local rip:   (= linked) · 130273 "The World of Thorgal: Kriss of Valnor" 2020 Europe Comics 8 (via CV candidate name "The World of Thorgal: Kriss of Valnor") · 104339 "The World of Thorgal: The Young Years" 2017 Europe Comics 6 (via CV candidate name "The World of Thorgal: The Young Years")   (rip lookup)
+
+== S21713 Wings of War: Adler  [tier B]   keys: Wings of War. Adler  years 2019-2021  4 files / 0 collections
+   folders: [3] Europe Comics\Wings of War · [1] Europe Comics\Wings of War\Wings of War. Adler (2019)
+   files:   [23994] Wings of War. Adler 004 - Here or There (2021) (digital) (Mr Norrell-Empire).cbr (51pp)
+            [23570] Wings of War. Adler 001 - Truth or Lies (2019) (Europe Comics) (Digital-Empire).cbr (52pp)
+            [23571] Wings of War. Adler 002 - Good or Evil (2019) (Europe Comics) (Digital-Empire).cbr (52pp)
+            [23572] Wings of War. Adler 003 - You or Me (2019) (Europe Comics) (Digital-Empire).cbr (51pp)
+   ours:    ladder 1-4
+   CV linked:      vol 116616 "Wings of War: Adler" 2019 Europe Comics ? issues; cached #1-4 (4); yearΔ 0; ratio 4/?; no judged range; v1 per-file: same volume on 4/4 files
+   CV candidates:  (= linked) · 116617 "Wings of War: Eagle" 2019 Europe Comics ? s74 · 19598 "War Wings" 1968 Charlton ? s57 · 56066 "Wings" 1992 Mu Press ? s43 · 137766 "Adler" 1987 Le Lombard ? s42 · 100145 "Wings" 1982 Shinshokan ? s42 · 19568 "Wings Comics" 1940 Fiction House ? s22   (v1 search)
+   CV local rip:   (= linked) · 116617 "Wings of War: Eagle" 2019 Europe Comics 4 (via CV candidate name "Wings of War: Eagle") · 19598 "War Wings" 1968 Charlton 1 issue 117535 (via CV candidate name "War Wings")   (rip lookup)
+   GCD dump:       11458 "War Wings" 1968-1968 Charlton [] 1 (via CV candidate name "War Wings")   (dump lookup)
+
+== S21714 Wings of War: Eagle  [tier B]   keys: Wings of War. Eagle  years 2019-2021  4 files / 0 collections
+   folders: [3] Europe Comics\Wings of War · [1] Europe Comics\Wings of War\Wings of War. Eagle (2019)
+   files:   [23995] Wings of War. Eagle 004 - Redemption (2021) (digital) (Mr Norrell-Empire).cbr (51pp)
+            [23573] Wings of War. Eagle 001 - The Eye of the Storm (2019) (Europe Comics) (Digital-Empire).cbr (52pp)
+            [23574] Wings of War. Eagle 002 - The Game of Deception (2019) (Europe Comics) (Digital-Empire).cbr (52pp)
+            [23575] Wings of War. Eagle 003 - The Roots of Evil (2019) (Europe Comics) (Digital-Empire).cbr (51pp)
+   ours:    ladder 1-4
+   CV linked:      vol 116617 "Wings of War: Eagle" 2019 Europe Comics ? issues; cached #1-4 (4); yearΔ 0; ratio 4/?; no judged range; v1 per-file: same volume on 4/4 files
+   CV candidates:  (= linked) · 116616 "Wings of War: Adler" 2019 Europe Comics ? s74 · 19598 "War Wings" 1968 Charlton ? s57 · 140511 "Eagle" 2008 Glénat Spain ? s49 · 56066 "Wings" 1992 Mu Press ? s43 · 37583 "Eagle" 1982 IPC Magazines Ltd. ? s42 · 36098 "Eagle" 1986 Apple ? s42   (v1 search)
+   CV local rip:   (= linked) · 116616 "Wings of War: Adler" 2019 Europe Comics 4 (via CV candidate name "Wings of War: Adler") · 19598 "War Wings" 1968 Charlton 1 issue 117535 (via CV candidate name "War Wings")   (rip lookup)
+   GCD dump:       11458 "War Wings" 1968-1968 Charlton [] 1 (via CV candidate name "War Wings")   (dump lookup)
+
+== S9553 Invisible Wounds - Graphic Journalism  [tier D]   keys: Invisible Wounds - Graphic Journalism  years 2022-2022  1 files / 0 collections
+   folders: [1] Fantagraphics
+   files:   [25110] Invisible Wounds - Graphic Journalism by Jess Ruliffson (2022) (Fantagraphics) (digital) (DrVink-DCP).cbz (182pp)
+   ours:    ComicInfo Publisher: "Fantagraphics"x1
+   CV candidates:  61979 "Journalism" 2013 St. Martin's Press 1 issue 407031 s55 · 100891 "Wounds" 2017 Caliber Comics 1 issue 592781 s55 · 149088 "Invisible: A Graphic Novel" 2022 Scholastic Book Services 1 issue 979661 s43 · 154249 "Action Journalism" 2023 Oni Press 1 issue 1026017 s35 · 22362 "Exit Wounds" 2007 Drawn & Quarterly 1 issue 134353 s35 · 85960 "Old Wounds" 2015 Pop!  Goes The Icon 1 issue 505632 s35   (v1 search)
+   CV local rip:   100891 "Wounds" 2017 Caliber Comics 1 issue 592781 (via CV candidate name "Wounds") · 61979 "Journalism" 2013 St. Martin's Press 1 issue 407031 (via CV candidate name "Journalism") · 149088 "Invisible: A Graphic Novel" 2022 Scholastic Book Services 1 issue 979661 (via CV candidate name "Invisible: A Graphic Novel")   (rip lookup)
+   GCD dump:       192188 "Invisible Wounds: Graphic Journalism" 2022-2022 Fantagraphics [] 1 · 91967 "Journalism" 2012-2012 Henry Holt and Co. [] 1 (via CV candidate name "Journalism") · 92178 "Journalism" [en-gb] 2012-2012 Jonathan Cape [] 1 (via CV candidate name "Journalism")   (dump lookup)
+
+== S13768 Petar and Liza  [tier D]   keys: Petar and Liza  years 2024-2024  1 files / 0 collections
+   folders: [1] Fantagraphics
+   files:   [25156] Petar & Liza (2024) (Fantagraphics) (Digital) (Dipole-Empire).cbz (170pp)
+   CV candidates:  160248 "Marvel and Fantagraphics Present Stories from the Atlas Comics Library: FCBD 2024" 2024 Fantagraphics 1 issue 1072573 s39 · 77023 "Female Force: Liza Minnelli" 2014 TidalWave Productions 1 issue 466060 s32 · 145550 "Happy Birthday Fantagraphics" 2006 Fantagraphics 1 issue 951210 s30 · 101262 "Fantagraphics World's Greatest Cartoonists" 2017 Fantagraphics 1 issue 594537 s30 · 105939 "Fantagraphics Studio Edition: Jaime Hernandez" 2017 Fantagraphics 1 issue 636192 s30 · 124401 "Ed Piskor: The Fantagraphics Studio Edition" 2020 Fantagraphics 1 issue 734345 s30   (v1 search)
+   CV local rip:   160248 "Marvel and Fantagraphics Present Stories from the Atlas Comics Library: FCBD 2024" 2024 Fantagraphics 1 issue 1072573 (via CV candidate name "Marvel and Fantagraphics Present Stories from the Atlas Comics Library: FCBD 2024") · 77023 "Female Force: Liza Minnelli" 2014 TidalWave Productions 1 issue 466060 (via CV candidate name "Female Force: Liza Minnelli") · 145550 "Happy Birthday Fantagraphics" 2006 Fantagraphics 1 issue 951210 (via CV candidate name "Happy Birthday Fantagraphics")   (rip lookup)
+   GCD dump:       211775 "Marvel and Fantagraphics Present Stories from the Atlas Comics Library: FCBD 2024" 2024-2024 Fantagraphics [] 1 (via CV candidate name "Marvel and Fantagraphics Present Stories from the Atlas Comics Library: FCBD 2024") · 213197 "Petar & Liza" 2024-2024 Fantagraphics [] 1 (via our own name without the filing suffix "Petar & Liza") · 188783 "Petar & Liza" [nl] 2022-2022 Concerto Books [] 1 (via our own name without the filing suffix "Petar & Liza") · 207197 "Petar & Liza" [fr] 2022-2022 Actes Sud [] 1 (via our own name without the filing suffix "Petar & Liza") · 110354 "Female Force Liza Minnelli" 2014-2014 Bluewater / Storm / Stormfront / Tidalwave [] 1 (via CV candidate name "Female Force: Liza Minnelli") · 122770 "Happy Birthday Fantagraphics" 2006-2006 Fantagraphics [] 1 (via CV candidate name "Happy Birthday Fantagraphics")   (dump lookup)
+   MU / External:  ExternalWork 380 "Petar and Liza" openlibrary /works/OL37625241W
