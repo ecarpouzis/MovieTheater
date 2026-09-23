@@ -1,0 +1,1150 @@
+## Conventions for this batch (29 shown of 163 matched; 328 in LEDGER.md; 14 shelf/shelves: folder:vn-year ×12 · folder:events ×11 · folder:sequel-subfolder ×9 · pub:marvel ×7 · pub:dc ×6 · kind:collected-line ×6 · folder:variant-covers ×5 · folder:bucket ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-191] (14 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-281] (14 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-124] (12 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-272] (12 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-175] (11 shelf/shelves) folder:bucket folder:events pass:item
+- In the chronology folders the RUN rule stands over the bucket rule: `S` = the numbered run, the tie-in's collected
+  record goes on the `I` line (B-072/073, ~90 shelves); the book's own record is the S only where no numbered run exists.
+[L-034] (7 shelf/shelves) folder:events pub:marvel sig:round2
+- `_X-Men Complete Chronology` / `_Marvel Major Event Chronology` folders re-file the same books a second and
+  third time — every ratio 2.00 there, never a second run. Crossover blocks get handed one member's series by
+  `round2-folder` (four Age of Apocalypse shelves → "X-Man", a 76-issue hull).
+[L-136] (7 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-169] (7 shelf/shelves) folder:events pub:marvel sig:trade-link
+- `_Marvel Major Event Chronology (digital)` is one folder per tie-in holding that tie-in's collected edition: the
+  count-1-trade-as-stored-link artefact runs at 86 of 202 shelves there, the highest rate in any single folder.
+[L-242] (7 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-319] (7 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-031] (6 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-033] (6 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-060] (6 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (6 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-127] (6 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-142] (6 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-290] (9 shelf/shelves) folder:sequel-subfolder pass:item sig:stamp
+- A spin-off filed in its own subfolder on the parent's shelf gets the PARENT's v01 ids stamped by the per-file
+  matcher (Rent-a-(Really Shy!)-Girlfriend on Rent-A-Girlfriend) — `N no-record` (or the shelf note), never the
+  parent's record; it is a misfiling for the lead.
+[L-076] (5 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (5 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (5 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (5 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-132] (5 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-133] (5 shelf/shelves) pub:marvel sig:probe
+- GCD splits a compound word ComicVine joins: "X-Men: Clan Destine" (5570) is invisible to a "ClanDestine" probe,
+  and 32535 "ClanDestine vs. The X-Men" is the collected edition, not the mini.
+[L-196] (5 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-211] (5 shelf/shelves) folder:vn-year pub:dc sig:collision sig:stale-flag
+- An `overlap-in-series` flag on a franchise with many `vN` sibling shelves (Deathstroke, Harley Quinn, Green Lantern,
+  Justice League, JLD, Legion, Lobo) describes the CROSS-SHELF Vol. 01 collision, not conflation on the one shelf —
+  confirmed 14 of 14 in C-013..C-015; the stale-flag note must name the sibling shelf.
+[L-245] (5 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-295] (5 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (5 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-298] (5 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+
++134 more matched entries not shown: L-306, L-307, L-308, L-313, L-327, L-328, L-164, L-291, L-011, L-014, L-015, L-040, L-082, L-093, L-128, L-130, L-135, L-174, L-181, L-186, L-195, L-199, L-237, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-193, L-310, L-016, L-032, L-064, L-085, L-101, L-113, L-114, L-028, L-036, L-173, L-197, L-210, L-212, L-214, L-123, L-150, L-007, L-013, L-027, L-043, L-050, L-052, L-065, L-072, L-088, L-089, L-095, L-096, L-097, L-099, L-118, L-121, L-125, L-129, L-157, L-159, L-163, L-177, L-194, L-204, L-217, L-252, L-253, L-255, L-256, L-262, L-264, L-265, L-267, L-273, L-274, L-288, L-292, L-293, L-294, L-297, L-299, L-312, L-316, L-324, L-200, L-018, L-022, L-029, L-046, L-055, L-059, L-077, L-080, L-111, L-119, L-137, L-162, L-182, L-187, L-198, L-203, L-205, L-206, L-207, L-215, L-216, L-218, L-220, L-254, L-257, L-260, L-263, L-302, L-311, L-315, L-325, L-054 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S22811 Zombie Tramp  [split]  1 files / 0 collections  decided in R-033 (R)
+   decided: R 22811 | two works still share this shelf after P-003 (lead correction, wave 19): item 5994 'Zombie Tramp Easter Special (2017)' (26pp; CV 100546 / GCD 113304 per the reader's check) AND item 5672 'Zombie Tramp Vol. 01 (2013)' (129pp), a trade of the original 2013 Zombie Tramp — P-003's plan never named 5672, so the shelf is not the one-shot alone
+   F 22811 split-needed | proposed runs: item 5994 -> Zombie Tramp: Easter Special (2017) CV 100546 / GCD 113304; item 5672 -> the 2013 Zombie Tramp run its Vol. 01 collects (find its record; the 2014 ongoing is S101631). Flag 116 (conflated-series, item 5672) stays OPEN: it is true
+   named: S101631 Zombie Tramp  57 files  keys: "Zombie Tramp v3 (2014)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S102723 "Zombie Tramp: Year One (2016)" 1f [shares cv=75908 — S cv=75908 gcd=81994 (R-032 0.7)] keys: "Zombie Tramp: Year One (2016)"
+   nearby: S22815 "Zombie Tramp: Origins" 3f [title+1 — S cv=102566 gcd=115263 (A-002 0.95)] keys: "Zombie Tramp Origins"
+   keys now: "Zombie Tramp Easter Special" x1
+   groups (title x folder): 1
+   G1 "Zombie Tramp Easter Special (2017) (Digital) (TheArchivist-Empire)" in Action Lab\Zombie Tramp\Zombie Tramp v3 (2014)\Annuals and Specials — 1 file(s), pp 26-26; cv per-file 100546x1; gcd per-file 113304x1; key 'Zombie Tramp Easter Special'
+      [5994] Zombie Tramp Easter Special (2017) (Digital) (TheArchivist-Empire).cbr (26pp)
+
+== S8477 He-Man and the Masters of the Universe  [split]  4 files / 4 collections  decided in R-034 (R)
+   decided: R 8477 | the open overlap flag 601 is TRUE: of our four DC trades, Vol. 03 (156pp), Vol. 04 What Lies Within (136pp) and Vol. 05 The Blood of Greyskull (158pp) collect the 2013 ongoing — GCD's own rows 1429070/1429071/1429072 reprint s73684 #1-6, #7-12, #13-19, and CV 59980 / GCD 73684 (DC 2013-2015, 19) agree on title, publisher, years and count — but the 157pp "Vol. 01 (2020)" is the trade of the six-issue 2012 mini (GCD 90301 #1 row 1429068, 164pp, reprints s66586 #1-6; CV 50154 / GCD 66586, DC 2012-2013, 6, both from #1), a whole different run with its own records that no other shelf holds; GCD's collected line 90301 (5 volumes, Vol. 02 Origins of Eternia absent here) spans both but has no CV twin, and the run wins over the line (L-186 is for lines of like minis, not an ongoing beside its prequel)
+   F 8477 split-needed | proposed: item 27689 (Vol. 01, 157pp) -> key "He-Man and the Masters of the Universe v1 (2012)" run cv=50154 gcd=66586 (the 2012 six-issue mini); items 27691-27693 (Vol. 03-05) stay as the 2013 ongoing, cv=59980 gcd=73684 — once split, the kept half is S cv=59980 gcd=73684 0.95 and the flag is resolved by the split, not stale
+   nearby: S19808 "The Toys of He-Man and the Masters of the Universe" 2f [title+1 — S cv=135729 (B-019 0.9)] keys: "The Toys of He-Man and the Masters of the Universe - Part"
+   nearby: S59544 "The Art of He-Man and the Masters of the Universe" 2f [title+1 — S cv=150391 gcd=135108 (B-057 0.9)] keys: "Marvel's Avengers Endgame Prelude"
+   nearby: S17978 "The Art of He-Man and the Masters of the Universe" 1f [title+1 — S cv=81349 (B-017 0.9)] keys: "The Art of He-Man and the Masters of the Universe"
+   keys now: "He-Man and the Masters of the Universe" x4
+   groups (title x folder): 1
+   G1 "He-Man and the Masters of the Universe" in Hanna-Barbera & Licenses\He-Man - Masters of the Universe\He-Man and the Masters of the Universe v1-v2 (2012) — 4 file(s), 4 COL, pp 136-158; cv per-file 130860x1, 65194x1, 80294x1; gcd per-file 90301x3; key 'He-Man and the Masters of the Universe'
+      [27689] COL He-Man and the Masters of the Universe Vol. 01 (2020) (Digital) (Bean-Empire).cbz (157pp)
+      [27691] COL He-Man and the Masters of the Universe Vol. 03 (2014) (Digital) (Bean-Empire).cbz (156pp)
+         own record cv 65194 / gcd s90301 "He-Man and the Masters of the Universe" (issue 1429070) COLLECTS: gcd=73684 He-Man and the Masters of the Universe (2013) #1-6
+      [27692] COL He-Man and the Masters of the Universe Vol. 04 - What Lies Within (2015) (Digital) (Bean-Empire).cbz (136pp)
+         own record cv 80294 / gcd s90301 "He-Man and the Masters of the Universe" (issue 1429071) COLLECTS: gcd=73684 He-Man and the Masters of the Universe (2013) #7-12
+      [27693] COL He-Man and the Masters of the Universe Vol. 05 - The Blood of Greyskull (2015) (Digital) (Bean-Empire).cbz (158pp)
+         own record cv 82691 / gcd s90301 "He-Man and the Masters of the Universe" (issue 1429072) COLLECTS: gcd=73684 He-Man and the Masters of the Universe (2013) #13-19
+
+== S19456 The Resurrection of Ra s Al Ghul part  [split]  3 files / 0 collections  decided in R-033 (R)
+   decided: R 19456 | three crossover chapters from TWO different runs: "03 838_The_Resurrection_of_Ra_s_Al_Ghul_part_3" and "07 839_…part_7" are Detective Comics #838 and #839, and "04 671_…part_4" is Batman #671 (the 838/671/839 prefixes are the issue numbers; "Countdown 23/22/19" is the week banner) — no single run holds all three, and the per-file CV 31003 is the 2008 collected edition "Batman: The Resurrection of Ra's al Ghul", not a run; the two merge-with candidates each take part of the shelf
+   F 19456 split-needed | items 17684 and 17688 (Detective Comics #838, #839) join S5409 "Detective Comics" (CV 18058 / GCD 87, C-008); item 17685 (Batman #671) joins S64223 "Batman" (CV 796 / GCD 141, C-011, itself merging into S95393)
+   named: S5409 Detective Comics  966 files  keys: "Detective Comics" | "Detective Comics (1937)" | "Detective Comics v1 (1937)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S64223 Batman  845 files  keys: "A Robins Tale" | "All they do is watch us kill part" | "As the Crow Flies part" | "Batman (1940)" | "Batman v1 (1940)" | "Bombastic Battle" | "Face the Face - Conclusion" | "Franchise part" | "The Resurrection of Ra s Al Ghul A Prelude Countdown"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S95393 (not a file-holding shelf today)
+   nearby: S2033 "Batman: The Resurrection Of Ra's Al Ghul" 1f [shares cv=31003 — S cv=31003 gcd=30783 (B-011 0.95)] keys: "Batman - The Resurrection of Ra's Al Ghul"
+   keys now: "The Resurrection of Ra s Al Ghul part" x3
+   groups (title x folder): 3
+   G1 "671_The_Resurrection_of_Ra_s_Al_Ghul_part_4__Countdown_22" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\83 Resurrection of Ra's Al Ghul — 1 file(s), numbers 4, pp 24-24; cv per-file 31003x1; key 'The Resurrection of Ra s Al Ghul part'
+      [17685] 04 671_The_Resurrection_of_Ra_s_Al_Ghul_part_4__Countdown_22_.cbr (24pp)
+   G2 "838_The_Resurrection_of_Ra_s_Al_Ghul_part_3__Countdown_23" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\83 Resurrection of Ra's Al Ghul — 1 file(s), numbers 3, pp 33-33; cv per-file 31003x1; key 'The Resurrection of Ra s Al Ghul part'
+      [17684] 03 838_The_Resurrection_of_Ra_s_Al_Ghul_part_3__Countdown_23_.cbr (33pp)
+   G3 "839_The_Resurrection_of_Ra_s_Al_Ghul_part_7__Countdown_19" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\83 Resurrection of Ra's Al Ghul — 1 file(s), numbers 7, pp 24-24; cv per-file 31003x1; key 'The Resurrection of Ra s Al Ghul part'
+      [17688] 07 839_The_Resurrection_of_Ra_s_Al_Ghul_part_7__Countdown_19_.cbr (24pp)
+
+== S5981 Earth  [split]  77 files / 12 collections  decided in C-008 (R)
+   decided: R 5981 | open overlap-in-series flag (item 54880): "Earth 2" (2012 ongoing, #0-32 + Annuals), "Earth 2: World's End" (2014-2015 weekly maxi, #1-26 + 2 trade vols) and "Earth 2: Society" (2015-2017 ongoing, 4 trade vols) are three separate, co-equal Earth 2-family runs sharing one shelf, each contributing its own "Vol. 01"
+   F 5981 split-needed | Earth 2 main ongoing (2012, items #0-32 + Annuals + the 6 "Vol." trades, e.g. 18088-18648, 54886-54893); Earth 2: World's End (2014-2015, items 18817-18835 + 2 trade vols 54884-54885); Earth 2: Society (2015-2017, 4 trade vols 54880-54883)
+   N 5981 cv=- gcd=- (Earth 2 main ongoing — no clean per-file id surfaced, needs-fetch)
+   N 5981 cv=- gcd=- (Earth 2: World's End — needs-fetch)
+   N 5981 cv=- gcd=- (Earth 2: Society — needs-fetch)
+   nearby: S2358 "Batwing: Futures End" 1f [shares gcd=82557 — S cv=76719 gcd=82557 (A-007 0.95)] keys: "Batwing - Futures End"
+   nearby: S19992 "The Wrong Earth" 12f [title+1 — S cv=113523 gcd=139718 (C-059 0.9)] keys: "The Wrong Earth" · S8897 "Higher Earth" 9f [title+1 — S cv=48908 gcd=65460 (A-005 0.95)] keys: "Higher Earth"
+   nearby: S5985 "Earth-Prime" 6f [title+1 — S cv=142129 (B-012 0.9)] keys: "Earth-Prime" · S5983 "Earth X" 3f [title+1 — S cv=6354 gcd=6183 (B-051 0.9)] keys: "Earth X" | "Earth X Trilogy Companion"
+   nearby: S13376 "Open Earth" 2f [title+1 — S cv=113928 gcd=215957 (B-030 0.95)] keys: "Open Earth" · S15830 "Snowball Earth" 2f [title+1 — S cv=157702 gcd=211502 (B-046 0.95)] keys: "Snowball Earth"
+   nearby: S5982 "Earth Boy" 1f [title+1 — S cv=134684 gcd=171224 (B-016 0.95)] keys: "Earth Boy" · S9708 "JLA: Earth-2" 1f [title+1 — S cv=18121 gcd=11685 (D-002 0.95)] keys: "JLA - Earth"
+   nearby: S15545 "Shifting Earth" 1f [title+1 — S cv=145394 gcd=187989 (B-003 0.95)] keys: "Shifting Earth" · S15719 "Skin & Earth" 1f [title+1 — S cv=102775 gcd=115433 (A-014 0.9)] keys: "Skin & Earth"
+   nearby: S20743 "Under-Earth" 1f [title+1 — S cv=131828 gcd=166330 (B-068 0.95)] keys: "Under-Earth"
+   keys now: "Earth" x77
+   groups (title x folder): 10
+   G1 "Earth 2" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\004 Earth 2 v1 - The Gathering — 13 file(s), numbers 0-12, pp 20-27; cv per-file 163869x13; key 'Earth'
+      e.g. Earth 2 # 0.cbr
+        18088 #0 20pp · 18089 #1 27pp · 18090 #10 22pp · 18091 #11 25pp · 18092 #12 20pp · 18093 #2 22pp · 18094 #3 25pp · 18095 #4 24pp · 18096 #5 22pp · 18097 #6 22pp · 18098 #7 21pp
+        18099 #8 22pp · 18100 #9 21pp
+   G2 "Earth 2" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\102 Earth 2 - War — 21 file(s), numbers 13-32, pp 20-31; cv per-file 163869x21; key 'Earth'
+      e.g. Earth 2 # 13.cbr
+        18625 #13 23pp · 18626 #14 20pp · 18629 #15 22pp · 18630 #16 20pp · 18631 #17 26pp · 18632 #18 21pp · 18633 #19 24pp · 18634 #20 23pp · 18635 #21 23pp · 18636 #22 22pp · 18637 #23 22pp
+        18638 #24 24pp · 18639 #25 31pp · 18640 #26 31pp · 18641 #27 29pp · 18642 #28 24pp · 18643 #29 23pp · 18644 #30 24pp · 18645 #31 28pp · 18646 #32 25pp
+      [18628] Earth 2 # 15.2.cbr (23pp)
+   G3 "Earth 2 Annual" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\102 Earth 2 - War — 2 file(s), numbers 1-2, pp 34-41; cv per-file 163869x2; key 'Earth'
+      [18647] Earth 2 Annual # 1.cbr (34pp)
+      [18648] Earth 2 Annual # 2.cbr (41pp)
+   G4 "Earth" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\116 The Futures End - New 52 — 1 file(s), numbers 1, pp 24-24; cv per-file 163869x1; gcd per-file 82557x1; key 'Earth'
+      [18791] Earth 2 - Futures End # 1.cbr (24pp)
+   G5 "Earth" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\117 Earth 2 - World's End — 26 file(s), numbers 1-26, pp 22-45; cv per-file 163869x26; key 'Earth'
+      e.g. Earth 2 - World's End # 1.cbz
+        18817 #1 45pp · 18818 #10 24pp · 18819 #11 23pp · 18820 #12 24pp · 18821 #13 24pp · 18822 #14 24pp · 18823 #15 23pp · 18824 #16 24pp · 18825 #17 22pp · 18826 #18 27pp · 18827 #19 26pp
+        18828 #2 23pp · 18829 #20 24pp · 18830 #21 23pp · 18831 #22 26pp · 18832 #23 25pp · 18833 #24 25pp · 18834 #25 23pp · 18835 #26 37pp · 18836 #3 23pp · 18837 #4 23pp · 18838 #5 23pp
+        18839 #6 24pp · 18840 #7 24pp · 18841 #8 24pp · 18842 #9 24pp
+   G6 "Earth" in DC\Earth 2\Earth 2 - Society (2015) — 4 file(s), 4 COL, pp 127-171; cv per-file 163869x4; key 'Earth'
+      [54880] COL Earth 2 - Society Vol. 01 - Planetfall (2016) (digital) (Son of Ultron-Empire).cbr (171pp)
+      [54881] COL Earth 2 - Society Vol. 02 - Indivisible (2016) (digital) (Son of Ultron-Empire).cbr (127pp)
+      [54882] COL Earth 2 - Society Vol. 03 - A Whole New World (2017) (digital) (Son of Ultron-Empire).cbr (130pp)
+      [54883] COL Earth 2 - Society Vol. 04 - Life After Death (2017) (digital) (Son of Ultron-Empire).cbr (133pp)
+   G7 "Earth" in DC\Earth 2\Earth 2 - World's End — 2 file(s), 2 COL, pp 265-339; cv per-file 163869x2; key 'Earth'
+      [54884] COL Earth 2 - World's End v01 (2015) (digital) (Son of Ultron-Empire).cbr (265pp)
+      [54885] COL Earth 2 - World's End v02 (2015) (digital) (Son of Ultron-Empire).cbr (339pp)
+   G8 "Earth 2" in DC\Earth 2\Earth 2 v1 (2012) — 6 file(s), 6 COL, pp 139-168; cv per-file 163869x6; key 'Earth'
+      [54886] COL Earth 2 Vol. 01 - The Gathering (2013) (Digital) (AnHeroGold-Empire).cbz (151pp)
+      [54887] COL Earth 2 Vol. 02 - The Tower of Fate (2013) (digital) (Son of Ultron-Empire).cbr (159pp)
+      [54888] COL Earth 2 Vol. 03 - Battle Cry (2014) (digital) (Son of Ultron-Empire).cbr (139pp)
+      [54889] COL Earth 2 Vol. 04 - The Dark Age (2014) (digital) (Son of Ultron-Empire).cbr (142pp)
+      [54890] COL Earth 2 Vol. 05 - The Kryptonian (2015) (digital) (Son of Ultron-Empire).cbr (168pp)
+      [54891] COL Earth 2 Vol. 06 - Collision (2015) (digital) (Son of Ultron-Empire).cbr (139pp)
+   G9 "Earth 2 015.1 Desaad (2013) (Digital) (Nahga-Empire)" in DC\Earth 2\Earth 2 v1 (2012)\Specials — 1 file(s), numbers 15, pp 24-24; cv per-file 163869x1; key 'Earth'
+      [54892] Earth 2 015.1 Desaad (2013) (Digital) (Nahga-Empire).cbr (24pp)
+   G10 "Earth 2 015.2 Solomon Grundy (2013) (Digital) (Nahga-Empire)" in DC\Earth 2\Earth 2 v1 (2012)\Specials — 1 file(s), numbers 15, pp 23-23; cv per-file 163869x1; key 'Earth'
+      [54893] Earth 2 015.2 Solomon Grundy (2013) (Digital) (Nahga-Empire).cbr (23pp)
+
+== S65789 Super Friends  [split]  78 files / 2 collections  decided in C-010 (R)
+   decided: R 65789 | three separate Super Friends comics share one shelf: the 1976-1981 v1 ongoing (47 issues, CV 2847/GCD 2335, 47/78 files), the 2008-2010 "Super Friends" all-ages (29 issues, CV 21000/GCD 30086, 29/78 files), and the 2020 "Saturday Morning Comics" 2-volume collected line (CV 127754/GCD 160652, 2/78 files) — no single identity, each cleanly separated by its own folder and per-file legs (47+29+2=78 exactly)
+   F 65789 split-needed | run A: Super Friends 1976-1981, CV 2847/GCD 2335, 47 issues; run B: Super Friends 2008-2010, CV 21000/GCD 30086, 29 issues; run C: The Super Friends - Saturday Morning Comics 2020, CV 127754/GCD 160652, 2-volume collected line
+   N 65789 cv=2847 gcd=2335 — run A (1976-1981, 47 issues, folder "Super Friends v1 (1977)")
+   N 65789 cv=21000 gcd=30086 — run B (2008-2010, 29 issues, folder "DC Super Friends v1 (2008)")
+   N 65789 cv=127754 gcd=160652 — run C (2020 Saturday Morning Comics, 2-volume collected line)
+   nearby: S67356 "Limited Collectors' Edition" 2f [shares gcd=2100 (collected by item 57484) — S cv=29993 gcd=2100 (C-020 0.95)] keys: "Limited Collectors' Edition"
+   keys now: "Super Friends (1976)" x56 · "Super Friends (2008)" x20 · "The Super Friends - Saturday Morning Comics" x1 · "Super Friends - Saturday Morning Comics" x1
+   groups (title x folder): 3
+   G1 "Super Friends" in DC\Super Friends\DC Super Friends v1 (2008) — 29 file(s), numbers 1-29, pp 19-22; cv per-file 21000x20, 2847x9; gcd per-file 30086x29; key 'Super Friends (2008)' | 'Super Friends (1976)'
+      e.g. Super Friends 001 (2008) (digital) (Minutemen-Slayer).cbr
+        57408 #1 2008 22pp key="Super Friends (2008)" · 57409 #2 2008 22pp key="Super Friends (2008)" · 57410 #3 2008 22pp key="Super Friends (2008)" · 57411 #4 2008 22pp key="Super Friends (2008)"
+        57412 #5 2008 22pp key="Super Friends (2008)" · 57413 #6 2008 22pp key="Super Friends (2008)" · 57414 #7 2008 22pp key="Super Friends (2008)" · 57415 #8 2008 22pp key="Super Friends (2008)"
+        57416 #9 2009 22pp key="Super Friends (2008)" · 57417 #10 2009 22pp key="Super Friends (2008)" · 57418 #11 2009 22pp key="Super Friends (2008)"
+        57419 #12 2009 22pp key="Super Friends (2008)" · 57420 #13 2009 21pp key="Super Friends (2008)" · 57421 #14 2009 21pp key="Super Friends (2008)"
+        57422 #15 2009 21pp key="Super Friends (2008)" · 57423 #16 2009 21pp key="Super Friends (2008)" · 57424 #17 2009 21pp key="Super Friends (2008)"
+        57425 #18 2009 21pp key="Super Friends (2008)" · 57426 #19 2009 21pp key="Super Friends (2008)" · 57427 #20 2009 19pp key="Super Friends (2008)" · 57428 #21 2010 21pp · 57429 #22 2010 21pp
+        57430 #23 2010 21pp · 57431 #24 2010 21pp · 57432 #25 2010 21pp · 57433 #26 2010 21pp · 57434 #27 2010 21pp · 57435 #28 2010 21pp · 57436 #29 2010 21pp
+   G2 "Super Friends" in DC\Super Friends\Super Friends v1 (1977) — 47 file(s), numbers 1-47, pp 13-26; cv per-file 2847x47; gcd per-file 2335x47; key 'Super Friends (1976)'
+      e.g. Super Friends 001 (1977) (Digital) (Shadowcat-Empire).cbz
+        57437 #1 1977 17pp · 57438 #2 1977 13pp · 57439 #3 1977 18pp · 57440 #4 1977 18pp · 57441 #5 1977 18pp · 57442 #6 1977 18pp · 57443 #7 1977 18pp · 57444 #8 1978 18pp · 57445 #9 1978 18pp
+        57446 #10 1978 18pp · 57447 #11 1978 18pp · 57448 #12 1978 18pp · 57449 #13 1978 18pp · 57450 #14 1978 18pp · 57451 #15 1979 18pp · 57452 #16 1979 18pp · 57453 #17 1979 18pp
+        57454 #18 1979 18pp · 57455 #19 1979 18pp · 57456 #20 1979 18pp · 57457 #21 1979 18pp · 57458 #22 1979 18pp · 57459 #23 1979 18pp · 57460 #24 1979 18pp · 57462 #26 1980 18pp
+        57463 #27 1980 19pp · 57464 #28 1980 18pp · 57465 #29 1980 18pp · 57466 #30 1980 18pp · 57467 #31 1980 18pp · 57468 #32 1980 18pp · 57469 #33 1980 18pp · 57470 #34 1980 18pp
+        57471 #35 1980 18pp · 57472 #36 1980 26pp · 57473 #37 1980 26pp · 57474 #38 1980 26pp · 57475 #39 1981 26pp · 57476 #40 1981 26pp · 57477 #41 1981 26pp · 57478 #42 1981 26pp
+        57479 #43 1981 26pp · 57480 #44 1981 26pp · 57481 #45 1981 26pp · 57482 #46 1981 26pp · 57483 #47 1981 26pp
+      [57461] Super Friends 025 (1979) (Digital) (Shadowcat-Empire.cbz (18pp)
+   G3 "The Super Friends - Saturday Morning Comics" in DC\Super Friends\The Super Friends - Saturday Morning Comics (2020) — 2 file(s), 2 COL, pp 493-522; cv per-file 127754x2; gcd per-file 160652x2; key 'The Super Friends - Saturday Morning Comics' | 'Super Friends - Saturday Morning Comics'
+      [57484] COL The Super Friends - Saturday Morning Comics Vol. 01 (2020) (digital) (Son of Ultron-Empire).cbr (522pp)  key="The Super Friends - Saturday Morning Comics"
+         own record cv 127754 / gcd s160652 "The Super Friends: Saturday Morning Comics" (issue 2118325) COLLECTS: gcd=2335 Super Friends (1976) #1-26 · gcd=2100 Limited Collectors' Edition (1972) (unnumbered) · gcd=87346 Aquateers Meet the Super Friends (1979) (unnumbered) · gcd=24071 Super Friends! (2001) (unnumbered)
+      [57485] COL The Super Friends - Saturday Morning Comics Vol. 02 (2020) (digital) (Son of Ultron-Empire).cbr (493pp)  key="Super Friends - Saturday Morning Comics"
+         own record cv 127754 / gcd s160652 "The Super Friends: Saturday Morning Comics" (issue 2179114) COLLECTS: gcd=2335 Super Friends (1976) #27-47 · gcd=2100 Limited Collectors' Edition (1972) (unnumbered) · gcd=23885 Super Friends!: Truth, Justice and Peace (2003) (unnumbered) · gcd=10101 Super Friends Special (1981) #1
+
+== S14317 Rom  [split]  87 files / 0 collections  decided in C-040 (R)
+   decided: R 14317 | two co-equal ROM runs share this shelf: Marvel's original 1979-1986 series (CV 3010/GCD 2516, 75 issues, plus its own GCD 2662 Rom Annual) and IDW's 2016-2017 relaunch (CV 92485/GCD 104631, 14 issues, plus its own 2017 Annual) — the IDW files are 14 whole issues, not residue, a genuine second run
+   F 14317 split-needed | Marvel ROM Spaceknight (1979) = CV 3010/GCD 2516 (+ Annual GCD 2662); IDW ROM (2016) = CV 92485/GCD 104631 (+ Annual 2017); several files from "_X-Men Complete Chronology V2" and "_Marvel Facsimile Editions" are duplicate/facsimile rips of #1, not a third run
+   nearby: S14319 "ROM" 16f [shares cv=92485, shares gcd=104631 — S cv=92485 gcd=104631 (D-011 0.9)] keys: "ROM (2016)" | "ROM 001s" | "ROM 002s"
+   keys now: "ROM (1979)" x54 · "ROM Spaceknight (1979)" x26 · "ROM" x2 · "ROM Annual" x2 · "ROM Annual (1979)" x2 · "Rom Annual (1979)" x1
+   groups (title x folder): 8
+   G1 "ROM" in IDW Hasbro\ROM (2016) — 1 file(s), numbers 0, pp 24-24; cv per-file 3010x1; key 'ROM'
+      [32254] ROM 000 (2016, FCBD) (digital) (Knight Ripper-Empire).cbr (24pp)
+   G2 "ROM Annual" in IDW Hasbro\ROM (2016)\Annuals and Specials — 1 file(s), numbers 2017, pp 47-47; cv per-file 3010x1; key 'ROM'
+      [32253] ROM Annual 2017 (2017) (digital) (F) (Knight Ripper-Empire).cbr (47pp)
+   G3 "ROM" in Marvel\ROM - Spaceknight v1 (1979) — 75 file(s), numbers 1-75, pp 20-43; cv per-file 3010x75; gcd per-file 2516x75; key 'ROM (1979)' | 'ROM Spaceknight (1979)'
+      e.g. ROM 001 (1979, 2023) (Facsimile Edition) (Digital) (Walkabout-Empire).cbz
+        102437 #1 1979 35pp · 102438 #2 1980 20pp key="ROM Spaceknight (1979)" · 102439 #3 1980 20pp key="ROM Spaceknight (1979)" · 102440 #4 1980 20pp key="ROM Spaceknight (1979)"
+        102441 #5 1980 20pp key="ROM Spaceknight (1979)" · 102442 #6 1980 20pp key="ROM Spaceknight (1979)" · 102443 #7 1980 20pp key="ROM Spaceknight (1979)"
+        102444 #8 1980 20pp key="ROM Spaceknight (1979)" · 102445 #9 1980 20pp key="ROM Spaceknight (1979)" · 102446 #10 1980 20pp key="ROM Spaceknight (1979)"
+        102447 #11 1980 20pp key="ROM Spaceknight (1979)" · 102448 #12 1980 25pp key="ROM Spaceknight (1979)" · 102449 #13 1980 24pp key="ROM Spaceknight (1979)"
+        102450 #14 1981 25pp key="ROM Spaceknight (1979)" · 102451 #15 1981 25pp key="ROM Spaceknight (1979)" · 102452 #16 1981 25pp key="ROM Spaceknight (1979)" · 102453 #17 1981 24pp
+        102454 #18 1981 24pp · 102455 #19 1981 25pp key="ROM Spaceknight (1979)" · 102456 #20 1981 24pp key="ROM Spaceknight (1979)" · 102457 #21 1981 23pp key="ROM Spaceknight (1979)"
+        102458 #22 1981 24pp key="ROM Spaceknight (1979)" · 102459 #23 1981 24pp key="ROM Spaceknight (1979)" · 102460 #24 1981 24pp key="ROM Spaceknight (1979)"
+        102461 #25 1981 40pp key="ROM Spaceknight (1979)" · 102462 #26 1982 24pp key="ROM Spaceknight (1979)" · 102463 #27 1982 23pp key="ROM Spaceknight (1979)"
+        102464 #28 1982 25pp key="ROM Spaceknight (1979)" · 102465 #29 1982 25pp key="ROM Spaceknight (1979)" · 102466 #30 1982 25pp · 102467 #31 1982 24pp · 102468 #32 1982 24pp
+        102469 #33 1982 25pp · 102470 #34 1982 25pp · 102471 #35 1982 24pp · 102472 #36 1982 25pp · 102473 #37 1982 25pp · 102474 #38 1983 25pp · 102475 #39 1983 25pp · 102476 #40 1983 25pp
+        102477 #41 1983 25pp · 102478 #42 1983 25pp · 102479 #43 1983 25pp · 102480 #44 1983 25pp · 102481 #45 1983 25pp · 102482 #46 1983 25pp · 102483 #47 1983 25pp · 102484 #48 1983 25pp
+        102485 #49 1983 24pp · 102486 #50 1984 43pp · 102487 #51 1984 25pp · 102488 #52 1984 24pp · 102489 #53 1984 23pp · 102490 #54 1984 23pp · 102491 #55 1984 24pp · 102492 #56 1984 25pp
+        102493 #57 1984 22pp · 102494 #58 1984 23pp · 102495 #59 1984 24pp · 102496 #60 1984 25pp · 102497 #61 1984 24pp · 102498 #62 1985 25pp · 102499 #63 1985 25pp · 102500 #64 1985 24pp
+        102501 #65 1985 22pp · 102502 #66 1985 23pp · 102503 #67 1985 24pp · 102504 #68 1985 25pp · 102505 #69 1985 25pp · 102506 #70 1985 23pp · 102507 #71 1985 24pp · 102508 #72 1985 24pp
+        102509 #73 1985 25pp · 102510 #74 1986 25pp · 102511 #75 1986 25pp
+   G4 "ROM Annual" in Marvel\ROM - Spaceknight v1 (1979)\Annuals and Specials — 3 file(s), numbers 1-2, 4, pp 40-42; cv per-file 3148x2, 3010x1; gcd per-file 2662x3; key 'ROM Annual' | 'ROM Annual (1979)'
+      [102430] ROM Annual 001 (1982) (digital) (Marika-Empire).cbz (42pp)  key="ROM Annual"
+      [102431] ROM Annual 002 (1983) (digital) (Marika-Empire).cbz (42pp)  key="ROM Annual"
+      [102433] ROM Annual 004 (1985) (digital) (Marika-Empire).cbz (40pp)  key="ROM Annual (1979)"
+   G5 "Rom Annual" in Marvel\ROM - Spaceknight v1 (1979)\Annuals and Specials — 1 file(s), numbers 3, pp 41-41; cv per-file 3010x1; gcd per-file 2662x1; key 'Rom Annual (1979)'
+      [102432] Rom Annual 003 (1984) (digital) (Marika-Empire).cbz (41pp)
+   G6 "ROM" in Marvel\_Marvel Facsimile Editions — 1 file(s), numbers 1, pp 35-35; cv per-file 3010x1; key 'ROM (1979)'
+      [83078] ROM 001 (Facsimile Edition) (1979, 2023) (Digital) (Walkabout-Empire).cbz (35pp)
+   G7 "ROM" in Marvel\_X-Men\_X-Men Complete Chronology V2\0017 Untitled — 4 file(s), numbers 17-18, 31-32, pp 25-25; cv per-file 3010x4; gcd per-file 2516x4; key 'ROM (1979)'
+      e.g. 006 ROM 017 (1981) (Old National).cbr
+        86782 #17 1981 25pp · 86783 #18 1981 25pp · 86810 #31 1982 25pp · 86811 #32 1982 25pp
+   G8 "ROM Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0037 The Spirit Bear — 1 file(s), numbers 3, pp 51-51; cv per-file 3010x1; gcd per-file 2662x1; key 'ROM Annual (1979)'
+      [86950] 005 ROM Annual 003 (1984) (c2c) (MrWoodman).cbr (51pp)
+
+== S2233 Batman: Gotham Knights  [split]  95 files / 5 collections  decided in R-035 (R)
+   decided: R 2233 | two co-equal comics, not a run with residue: the 2000 Batman: Gotham Knights ongoing (ladder 1-74 = CV 7207 "Batman: Gotham Knights" DC 2000, 74 and GCD 7770 DC 2000-2006, 75; the event-folder #25-32 floppies and the Transference / Contested trades are its own) shares the shelf with Batman: Gotham by Gaslight - The Kryptonian Age #1-6 (2024-2025, 38-39pp) and its 16 variant covers — CV 158462 (DC 2024, 6) / GCD 212823 (DC 2024-2025, 6), a whole six-issue mini with its own records — plus three Gotham by Gaslight books (two rips of the 2020 Deluxe Edition, CV 130859 / GCD 164679, and the 116pp "Gotham by Gaslight & Master of the Future", GCD 31862 / CV 52306) and two 1pp covers of the 2024 Facsimile Edition (GCD 212821)
+   F 2233 split-needed | proposed: items 59228-59233 (Kryptonian Age #1-6) and 59234-59249 (their variant covers) -> key "Batman: Gotham by Gaslight - The Kryptonian Age (2024)" run cv=158462 gcd=212823; items 62735, 62859 (Deluxe Edition, 203/202pp) -> "Batman: Gotham by Gaslight: The Deluxe Edition (2020)" cv=130859 gcd=164679; item 62857 (116pp) -> "Gotham by Gaslight (2006)" gcd=31862 cv=52306; items 59250, 59251 (1pp covers of the 2024 facsimile) -> "Batman: Gotham by Gaslight 1 (Facsimile Edition) (2024)" gcd=212821; what stays is the ongoing, S 2233 cv=7207 gcd=7770 0.95
+   nearby: S4204 "Convergence Shazam" 2f [shares gcd=88649 (collected by item 62735) — S cv=81583 gcd=88649 (A-008 0.95)] keys: "Convergence - Shazam!"
+   nearby: S4267 "Countdown Presents: The Search for Ray Palmer: Gotham By Gaslight" 1f [shares gcd=27498 (collected by item 62735) — S cv=20299 gcd=27498 (A-007 0.95)] keys: "Countdown Presents: The Search for Ray Palmer: Gotham by Gaslight"
+   nearby: S7820 "Batman: Gotham Knights – Gilded City" 1f [shares cv=145690 — S cv=145690 gcd=191147 (R-035 0.95)] keys: "Batman - Gotham Knights - Gilded City" | "Gotham Knights"
+   keys now: "Batman: Gotham Knights" x66 · "Batman - Gotham" x27 · "Gotham Kights" x1 · "Batman: Gotham Knights: Transference" x1
+   groups (title x folder): 11
+   G1 "Gotham Knights" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\01 bruce wayne murderer — 2 file(s), numbers 25-26, pp 32-32; cv per-file 145690x2; key 'Batman: Gotham Knights'
+      [16971] 04 Gotham Knights 025.cbr (32pp)
+      [16978] 10 Gotham Knights 026.cbr (32pp)
+   G2 "02a Gotham Knights" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\02 bruce wayne fugitive — 1 file(s), numbers 27, pp 23-23; cv per-file 145690x1; key 'Batman: Gotham Knights'
+      [16984] 02a Gotham Knights 27.cbr (23pp)
+   G3 "Gotham Kights" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\02 bruce wayne fugitive — 1 file(s), numbers 31, pp 23-23; key 'Gotham Kights'
+      [16999] 17 Gotham Kights 31.cbr (23pp)
+   G4 "Gotham Knights" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\02 bruce wayne fugitive — 3 file(s), numbers 28, 30, 32, pp 23-24; cv per-file 145690x3; key 'Batman: Gotham Knights'
+      [16989] 07 Gotham Knights 28.cbr (23pp)
+      [16996] 14 Gotham Knights 30.cbr (24pp)
+      [17004] 22 Gotham Knights 32.cbr (23pp)
+   G5 "Batman - Gotham by Gaslight - The Kryptonian Age" in DC\_Batman\Batman - Gotham by Gaslight - The Kryptonian Age (2024) — 6 file(s), numbers 1-6, pp 38-39; cv per-file 7207x6; gcd per-file 7770x1; key 'Batman - Gotham'
+      e.g. Batman - Gotham by Gaslight - The Kryptonian Age 001 (2024) (digital) (Son of Ultron-Empire).cbr
+        59228 #1 2024 39pp · 59229 #2 2024 38pp · 59230 #3 2024 38pp · 59231 #4 2024 38pp · 59232 #5 2024 39pp · 59233 #6 2025 39pp
+   G6 "Batman - Gotham by Gaslight" in DC\_Batman\Batman - Gotham by Gaslight - The Kryptonian Age (2024)\_Variant Covers — 2 file(s), numbers 1, pp 1-1; cv per-file 7207x2; key 'Batman - Gotham'
+      [59250] Batman - Gotham by Gaslight 001 (2024) (Facsimile Edition 2024 Blank Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+      [59251] Batman - Gotham by Gaslight 001 (2024) (Facsimile Edition 2024 Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   G7 "Batman - Gotham by Gaslight - The Kryptonian Age" in DC\_Batman\Batman - Gotham by Gaslight - The Kryptonian Age (2024)\_Variant Covers — 16 file(s), numbers 1-5, pp 1-1; cv per-file 7207x16; key 'Batman - Gotham'
+      e.g. Batman - Gotham by Gaslight - The Kryptonian Age 001 (2024) (1-in-25 Jock Variant) (Digital) (MikeNY76-Empire).cbz
+        59234 #1 2024 1pp · 59235 #1 2024 1pp · 59236 #1 2024 1pp · 59237 #1 2024 1pp · 59238 #1 2024 1pp · 59239 #1 2024 1pp · 59240 #1 2024 1pp · 59241 #2 2024 1pp · 59242 #2 2024 1pp
+        59243 #2 2024 1pp · 59244 #3 2024 1pp · 59245 #3 2024 1pp · 59246 #4 2024 1pp · 59247 #4 2024 1pp · 59248 #5 2024 1pp · 59249 #5 2024 1pp
+   G8 "Batman - Gotham Knights" in DC\_Batman\_Completed Series\Batman - Gotham Knights v1 (2000) — 61 file(s), 2 COL, numbers 13, 15-24, 26-53, 55-74, pp 22-296; cv per-file 7207x59, 123844x1, 133943x1; gcd per-file 7770x59, 154231x1, 169742x1; key 'Batman: Gotham Knights' | 'Batman: Gotham Knights: Transference'
+      e.g. Batman - Gotham Knights 013 (2001) (digital-Empire).cbr
+        61800 #13 2001 32pp · 61801 #15 2001 31pp · 61802 #16 2001 30pp · 61803 #17 2001 31pp · 61804 #18 2001 30pp · 61805 #19 2001 31pp · 61806 #20 2001 29pp · 61807 #21 2001 27pp
+        61808 #22 2001 29pp · 61809 #23 2002 30pp · 61810 #24 2002 31pp · 61811 #26 2002 31pp · 61812 #27 2002 31pp · 61813 #28 2002 30pp · 61814 #29 2002 29pp · 61815 #30 2002 30pp
+        61816 #31 2002 31pp · 61817 #32 2002 31pp · 61818 #33 2002 31pp · 61819 #34 2002 31pp · 61820 #35 2003 31pp · 61821 #36 2003 31pp · 61822 #37 2003 31pp · 61823 #38 2003 31pp
+        61824 #39 2003 31pp · 61825 #40 2003 29pp · 61826 #41 2003 30pp · 61827 #42 2003 30pp · 61828 #43 2003 31pp · 61829 #44 2003 31pp · 61830 #45 2003 31pp · 61831 #46 2003 31pp
+        61832 #47 2004 32pp · 61833 #48 2004 30pp · 61834 #49 2004 30pp · 61835 #50 2004 31pp · 61836 #51 2004 31pp · 61837 #52 2004 30pp · 61838 #53 2004 31pp · 61839 #55 2004 31pp
+        61840 #56 2004 23pp · 61841 #57 2004 22pp · 61842 #58 2004 23pp · 61843 #59 2005 22pp · 61844 #60 2005 23pp · 61845 #61 2005 23pp · 61846 #62 2005 23pp · 61847 #63 2005 23pp
+        61848 #64 2005 23pp · 61849 #65 2005 23pp · 61850 #66 2005 23pp · 61851 #67 2005 23pp · 61852 #68 2005 23pp · 61853 #69 2005 23pp · 61854 #70 2005 23pp · 61855 #71 2006 23pp
+        61856 #72 2006 23pp · 61857 #73 2006 23pp · 61858 #74 2006 23pp
+      [61859] COL Batman - Gotham Knights Vol. 01 - Transference (2019) (digital) (Son of Ultron-Empire).cbr (296pp)  key="Batman: Gotham Knights: Transference"
+         own record cv 123844 / gcd s154231 "Batman: Gotham Knights: Transference" (issue 2051889) COLLECTS: gcd=7770 Batman: Gotham Knights (2000) #1-12
+      [61860] COL Batman - Gotham Knights Vol. 02 - Contested (2020) (digital) (Son of Ultron-Empire).cbr (287pp)
+         own record cv 133943 / gcd s169742 "Batman: Gotham Knights: Contested" (issue 2199741) COLLECTS: gcd=7770 Batman: Gotham Knights (2000) #14-24, #32
+   G9 "Batman - Gotham by Gaslight the Deluxe Edition (2020) (digital) (F) (Li'l Ultron-Empire)" in DC\_Batman\_Trades, and Graphic Novels — 1 file(s), 1 COL, pp 203-203; cv per-file 130859x1; gcd per-file 164679x1; key 'Batman - Gotham'
+      [62735] COL Batman - Gotham by Gaslight the Deluxe Edition (2020) (digital) (F) (Li'l Ultron-Empire).cbr (203pp)
+         own record cv 130859 / gcd s164679 "Batman: Gotham by Gaslight The Deluxe Edition" (issue 2152835) COLLECTS: gcd=3793 Gotham by Gaslight: An Alternative History of the Batman (1989) (unnumbered) · gcd=88649 Convergence Shazam (2015) #1-2 · gcd=27498 Countdown Presents: The Search for Ray Palmer: Gotham by Gaslight (2008) #1 · gcd=4187 Batman: Master of the Future (1991) (unnumbered)
+   G10 "Batman - Gotham by Gaslight & Batman - Master of the Future (1989, 2013 Edition) (digital TPB) (Minutemen-Faessla)" in DC\_Batman\_Trades, and Graphic Novels\Batman by Mike Mignola — 1 file(s), 1 COL, pp 116-116; cv per-file 52306x1; gcd per-file 31862x1; key 'Batman - Gotham'
+      [62857] COL Batman - Gotham by Gaslight & Batman - Master of the Future (1989, 2013 Edition) (digital TPB) (Minutemen-Faessla).cbz (116pp)
+         own record cv 52306 / gcd s31862 "Gotham by Gaslight" (issue 541448) COLLECTS: gcd=3793 Gotham by Gaslight: An Alternative History of the Batman (1989) (unnumbered) · gcd=4187 Batman: Master of the Future (1991) (unnumbered)
+   G11 "Batman Gotham by Gaslight the Deluxe Edition (2020) (digital) (Li'l Ultron-Empire)" in DC\_Batman\_Trades, and Graphic Novels\Batman by Mike Mignola — 1 file(s), 1 COL, pp 202-202; cv per-file 130859x1; gcd per-file 164679x1; key 'Batman - Gotham'
+      [62859] COL Batman Gotham by Gaslight the Deluxe Edition (2020) (digital) (Li'l Ultron-Empire).cbr (202pp)
+         own record cv 130859 / gcd s164679 "Batman: Gotham by Gaslight The Deluxe Edition" (issue 2152835) COLLECTS: gcd=3793 Gotham by Gaslight: An Alternative History of the Batman (1989) (unnumbered) · gcd=88649 Convergence Shazam (2015) #1-2 · gcd=27498 Countdown Presents: The Search for Ray Palmer: Gotham by Gaslight (2008) #1 · gcd=4187 Batman: Master of the Future (1991) (unnumbered)
+
+== S12860 New X-Men  [split]  97 files / 1 collections  decided in C-056 (R)
+   decided: R 12860 | two unrelated "New X-Men" identities share this shelf: the 2001-2004 Morrison-era retitle of X-Men continuing legacy numbering #114-156 (CV 9121/GCD 9855, 43/97 files) and the wholly separate 2004-2008 all-new ongoing #1-46 (CV 18078/GCD 17799, majority 52/97 files); neither is residue
+   F 12860 split-needed | both catalogs independently mint separate records for the two eras; no shared numbering; label-ambiguous flag on item 116656 is informational (v02 020-023 are single issues, not collections)
+   nearby: S94675 "New X-Men" 3f [shares cv=18078 (R clause), shares gcd=17799 — S cv=18078 gcd=17799 (B-061 0.95)] keys: "New X-Men v2 (2004)"
+   nearby: S747 "All-New X-Men" 58f [title+1 — S cv=53919 gcd=69860 (C-052 0.95)] keys: "All-New X-Men" | "Guardians of the Galaxy / All-New X-Men: The Trial of Jean Grey" | "Guardians of the Galaxy.5 - All-New X-Men - The Trial of Jean Grey"
+   nearby: S8779 "New X-Men: Hellions" 8f [title+1 — S cv=18173 gcd=26288 (C-037 0.9)] keys: "Hellions" | "New X-Men: Hellions"
+   nearby: S12864 "New X-Men Companion" 1f [title+1 — S cv=120135 gcd=148722 (B-061 0.95)] keys: "New X-Men Companion"
+   keys now: "New X-Men" x96 · "New X-Men v1 (2001) (Morrison)" x1
+   groups (title x folder): 28
+   G1 "New X-Men Omnibus (2001) (Digital) (Kileko-Empire)" in Marvel\_X-Men\X-Men\03 New X-Men v1 (2001) (Morrison)\Omnibus Edition — 1 file(s), 1 COL, pp 1051-1051; cv per-file 30122x1; gcd per-file 197337x1; key 'New X-Men v1 (2001) (Morrison)'
+      [86009] COL New X-Men Omnibus (2001) (Digital) (Kileko-Empire).cbz (1051pp)
+         own record cv 30122 / gcd s197337 "New X-Men Omnibus" (issue 2501242) COLLECTS: gcd=9855 New X-Men (2001) #114-154 · gcd=16586 X-Men 2001 (2001) (unnumbered)
+   G2 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0481 E is for Extinction — 4 file(s), numbers 114-117, pp 23-25; cv per-file 9121x4; gcd per-file 9855x4; key 'New X-Men'
+      e.g. 003 New X-Men 114 (2001) (Digital) (Zone-Empire).cbr
+        89353 #114 2001 23pp · 89354 #115 2001 25pp · 89355 #116 2001 25pp · 89356 #117 2001 24pp
+   G3 "New X-Men Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0481 E is for Extinction — 1 file(s), numbers 1, pp 43-43; cv per-file 9121x1; gcd per-file 52092x1; key 'New X-Men'
+      [89357] 007 New X-Men Annual 001 (2001) (Digital) (Zone-Empire).cbr (43pp)
+   G4 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0495 Germ Free Zone — 4 file(s), numbers 118-121, pp 24-25; cv per-file 9121x4; gcd per-file 9855x4; key 'New X-Men'
+      e.g. 001 New X-Men 118 (2001) (Digital) (Zone-Empire).cbr
+        89420 #118 2001 25pp · 89421 #119 2001 24pp · 89422 #120 2002 24pp · 89423 #121 2002 24pp
+   G5 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0507 Imperial — 5 file(s), numbers 122-126, pp 24-34; cv per-file 9121x5; gcd per-file 9855x5; key 'New X-Men'
+      e.g. 001 New X-Men 122 (2002) (Digital) (Zone-Empire).cbr
+        89480 #122 2002 24pp · 89481 #123 2002 24pp · 89482 #124 2002 25pp · 89483 #125 2002 24pp · 89484 #126 2002 34pp
+   G6 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0520 Weapon XII — 4 file(s), numbers 127-130, pp 23-24; cv per-file 9121x4; gcd per-file 9855x4; key 'New X-Men'
+      e.g. 001 New X-Men 127 (2002) (Digital) (Zone-Empire).cbr
+        89541 #127 2002 23pp · 89542 #128 2002 23pp · 89543 #129 2002 24pp · 89544 #130 2002 23pp
+   G7 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0524 New Worlds — 3 file(s), numbers 131-133, pp 22-26; cv per-file 9121x3; gcd per-file 9855x3; key 'New X-Men'
+      [89562] 001 New X-Men 131 (2002) (Digital) (Zone-Empire).cbr (22pp)
+      [89563] 002 New X-Men 132 (2003) (Digital) (Zone-Empire).cbr (24pp)
+      [89564] 003 New X-Men 133 (2003) (Digital) (Zone-Empire).cbr (26pp)
+   G8 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0536 Untitled — 1 file(s), numbers 134, pp 25-25; cv per-file 9121x1; gcd per-file 9855x1; key 'New X-Men'
+      [89615] 002 New X-Men 134 (2003) (Digital) (Zone-Empire).cbr (25pp)
+   G9 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0537 Riot at Xavier's — 4 file(s), numbers 135-138, pp 24-26; cv per-file 9121x4; gcd per-file 9855x4; key 'New X-Men'
+      e.g. 001 New X-Men 135 (2003) (Digital) (Zone-Empire).cbr
+        89621 #135 2003 24pp · 89622 #136 2003 24pp · 89623 #137 2003 24pp · 89624 #138 2003 26pp
+   G10 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0550 Murder at the Mansion — 3 file(s), numbers 139-141, pp 24-25; cv per-file 9121x3; gcd per-file 9855x3; key 'New X-Men'
+      [89674] 001 New X-Men 139 (2003) (Digital) (Zone-Empire).cbr (25pp)
+      [89675] 002 New X-Men 140 (2003) (Digital) (Zone-Empire).cbr (24pp)
+      [89676] 003 New X-Men 141 (2003) (Digital) (Zone-Empire).cbr (25pp)
+   G11 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0558 Assault on Weapon Plus — 4 file(s), numbers 142-145, pp 22-24; cv per-file 9121x4; gcd per-file 9855x4; key 'New X-Men'
+      e.g. 001 New X-Men 142 (2003) (Digital) (Zone-Empire).cbr
+        89705 #142 2003 24pp · 89706 #143 2003 22pp · 89707 #144 2003 23pp · 89708 #145 2003 22pp
+   G12 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0577 Planet X — 5 file(s), numbers 146-150, pp 22-34; cv per-file 9121x5; gcd per-file 9855x5; key 'New X-Men'
+      e.g. 001 New X-Men 146 (2003) (Digital) (Zone-Empire).cbr
+        89784 #146 2003 25pp · 89785 #147 2003 22pp · 89786 #148 2003 24pp · 89787 #149 2004 25pp · 89788 #150 2004 34pp
+   G13 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0594 Here Comes Tomorrow — 4 file(s), numbers 151-154, pp 23-27; cv per-file 9121x4; gcd per-file 9855x4; key 'New X-Men'
+      e.g. 001 New X-Men 151 (2004) (Digital) (Zone-Empire).cbr
+        89864 #151 2004 24pp · 89865 #152 2004 23pp · 89866 #153 2004 24pp · 89867 #154 2004 27pp
+   G14 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0603 Bright New Mourning — 2 file(s), numbers 155-156, pp 22-27; cv per-file 9121x2; gcd per-file 9855x2; key 'New X-Men'
+      [89903] 001 New X-Men 155 (2004) (Digital) (Zone-Empire).cbr (22pp)
+      [89904] 002 New X-Men 156 (2004) (Digital) (Zone-Empire).cbr (27pp)
+   G15 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0612 Choosing Sides — 6 file(s), numbers 1-6, pp 22-24; cv per-file 9121x6; gcd per-file 17799x6; key 'New X-Men'
+      e.g. 001 New X-Men 001 (2004) (Digital) (AnPymGold-Empire).cbr
+        89940 #1 2004 22pp · 89941 #2 2004 24pp · 89942 #3 2004 24pp · 89943 #4 2004 22pp · 89944 #5 2004 24pp · 89945 #6 2004 24pp
+   G16 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0642 Haunted — 3 file(s), numbers 7-9, pp 23-24; cv per-file 9121x3; gcd per-file 17799x3; key 'New X-Men'
+      [90083] 001 New X-Men 007 (2005) (Digital) (AnPymGold-Empire).cbr (24pp)
+      [90084] 002 New X-Men 008 (2005) (Digital) (AnPymGold-Empire).cbr (23pp)
+      [90085] 003 New X-Men 009 (2005) (Digital) (AnPymGold-Empire).cbr (23pp)
+   G17 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0657 Too Much Information — 3 file(s), numbers 10-12, pp 21-24; cv per-file 9121x3; gcd per-file 17799x3; key 'New X-Men'
+      [90144] 001 New X-Men 010 (2005) (Digital) (AnPymGold-Empire).cbr (21pp)
+      [90145] 002 New X-Men 011 (2005) (Digital) (AnPymGold-Empire).cbr (23pp)
+      [90146] 003 New X-Men 012 (2005) (Digital) (AnPymGold-Empire).cbr (24pp)
+   G18 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0660 Untitled — 2 file(s), numbers 14-15, pp 24-24; cv per-file 9121x2; gcd per-file 17799x2; key 'New X-Men'
+      [90160] 005 New X-Men 014 (2005) (Digital) (AnPymGold-Empire).cbr (24pp)
+      [90161] 006 New X-Men 015 (2005) (Digital) (AnPymGold-Empire).cbr (24pp)
+   G19 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0671 Mojo Rising — 1 file(s), numbers 13, pp 22-22; cv per-file 9121x1; gcd per-file 17799x1; key 'New X-Men'
+      [90203] 001 New X-Men 013 (2005) (Digital) (AnPymGold-Empire).cbr (22pp)
+   G20 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0679 House of M — 4 file(s), numbers 16-19, pp 22-24; cv per-file 9121x4; gcd per-file 17799x4; key 'New X-Men'
+      e.g. 039 New X-Men 016 (2005) (Digital) (AnPymGold-Empire).cbr
+        90278 #16 2005 24pp · 90279 #17 2005 23pp · 90280 #18 2005 22pp · 90281 #19 2005 24pp
+   G21 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0688 Decimation - Childhood's End — 4 file(s), numbers 20-23, pp 22-25; cv per-file 9121x4; gcd per-file 17799x4; key 'New X-Men'
+      e.g. 001 New X-Men 020 (2006) (Digital) (AnPymGold-Empire).cbr
+        90326 #20 2006 24pp · 90327 #21 2006 22pp · 90328 #22 2006 25pp · 90329 #23 2006 25pp
+   G22 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0713 Crusade — 4 file(s), numbers 24-27, pp 23-24; cv per-file 9121x4; gcd per-file 17799x4; key 'New X-Men'
+      e.g. 001 New X-Men 024 (2006) (Digital) (AnPymGold-Empire).cbr
+        90440 #24 2006 24pp · 90441 #25 2006 23pp · 90442 #26 2006 24pp · 90443 #27 2006 24pp
+   G23 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0727 Nimrod — 5 file(s), numbers 28-32, pp 13-38; cv per-file 9121x5; gcd per-file 17799x5; key 'New X-Men'
+      e.g. 001 New X-Men 028 (2006) (Digital) (AnPymGold-Empire).cbr
+        90541 #28 2006 23pp · 90542 #29 2006 23pp · 90543 #30 2006 13pp · 90544 #31 2006 38pp · 90545 #32 2007 24pp
+   G24 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0740 Mercury Falling — 4 file(s), numbers 33-36, pp 24-24; cv per-file 9121x4; gcd per-file 17799x4; key 'New X-Men'
+      e.g. 001 New X-Men 033 (2007) (Digital) (AnPymGold-Empire).cbr
+        90647 #33 2007 24pp · 90648 #34 2007 24pp · 90649 #35 2007 24pp · 90650 #36 2007 24pp
+   G25 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0752 The Quest for Magik — 5 file(s), numbers 37-41, pp 23-33; cv per-file 9121x5; gcd per-file 17799x5; key 'New X-Men'
+      e.g. 001 New X-Men 037 (2007) (Digital) (AnPymGold-Empire).cbr
+        90712 #37 2007 23pp · 90713 #38 2007 23pp · 90714 #39 2007 24pp · 90715 #40 2007 32pp · 90716 #41 2007 33pp
+   G26 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0756 Endangered Species — 4 file(s), numbers 40-43, pp 24-33; cv per-file 9121x4; gcd per-file 17799x4; key 'New X-Men'
+      e.g. 007 New X-Men 040 (2007) (F) (digital-Empire).cbr
+        90734 #40 2007 32pp · 90738 #41 2007 33pp · 90742 #42 2007 33pp · 90747 #43 2007 24pp
+   G27 "New X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0768 Messiah Complex — 3 file(s), numbers 44-46, pp 24-28; cv per-file 9121x3; gcd per-file 17799x3; key 'New X-Men'
+      [90817] 004 New X-Men 044 (2008) (Digital) (AnPymGold-Empire).cbr (24pp)
+      [90821] 008 New X-Men 045 (2008) (Digital) (AnPymGold-Empire).cbr (24pp)
+      [90825] 012 New X-Men 046 (2008) (Digital) (AnPymGold-Empire).cbr (28pp)
+   G28 "New X-Men" in _Marvel Major Event Chronology (digital)\2005.08 - House of M\04 Aftermath - Decimation\New X-Men — 4 file(s), numbers 20-23, pp 23-25; cv per-file 9121x4; gcd per-file 17799x4; key 'New X-Men'
+      e.g. New X-Men v02 020 (2006) (digital-Empire).cbz
+        116656 #20 2006 24pp · 116657 #21 2006 23pp · 116658 #22 2006 25pp · 116659 #23 2006 25pp
+
+== S17167 Superman  [split]  96 files / 0 collections  decided in C-017 (R)
+   decided: R 17167 | this DC-Events reading-order shelf mixes files from at least four different Superman eras with no single per-file dominance (max 9/96 GCD matches): v2 1987-2006 (GCD 3386, 231 issues, items "Superman v2 0xx-2xx"), v4 2011-2016 New 52 (GCD 59921, 57 issues, items "Superman 001-052"), an Italian Play Press edition (GCD 28776, dump-only, 3 files), and material from the original 1939-1986 continuous-numbering series (issues 650-699/691/698-699, matching CV local-rip 773 "Superman" 1939 DC 488); CV per-file stamped ALL 96 files to the unrelated "Superman Year One" (119775, 3 issues) — a total hull mismatch
+   F 17167 split-needed | run A = GCD 3386 "Superman" 1987-2006 DC (v2); run B = GCD 59921 "Superman" 2011-2016 DC (v4); run C = CV 773 "Superman" 1939 DC (original continuous numbering, items #650-699/691/698-699); minor Italian Play Press residue (GCD 28776, 3 files)
+   F 17167 wrong-cv-link | CV per-file matcher stamped the unrelated "Superman: Year One" (119775, a 3-issue 2019 mini) across all 96 files
+   N 17167 cv=- gcd=3386 | run B (v2 1987-2006)
+   N 17167 cv=- gcd=59921 | run C (v4 2011-2016)
+   N 17167 cv=773 gcd=- | original 1939 continuous-numbering material (issues 650-699 range)
+   nearby: S65813 "Superman" 327f [shares cv=773, shares gcd=16530 — S cv=773 gcd=16530 (C-019 0.95)] keys: "Superman (1939)" | "Superman 005F" | "Superman v1 (1939)" | "Superman v1 (2006)"
+   nearby: S100135 "Superman" 190f [shares gcd=3386 — S cv=3816 gcd=3386 (C-019 0.95)] keys: "Aftermath Superman" | "Superman v2 (1987)"
+   nearby: S100136 "Superman" 13f [shares gcd=59921 — S cv=42986 gcd=59921 (C-019 0.9)] keys: "Superman v3 (2011)"
+   nearby: S65814 "Superman Year One" 3f [shares cv=119775 — S cv=119775 gcd=147743 (R-036 0.95)] keys: "Superman (2019)"
+   nearby: S100139 "Superman" 57f [title — S cv=148476 gcd=196803 (B-013 0.95)] keys: "Superman - The Dark Path" | "Superman v6 (2023)" | "Superman v6 (2024)"
+   nearby: S100137 "Superman" 7f [title — S cv=91298 (C-019 0.9)] keys: "Superman v4 (2016)" · S100138 "Superman" 5f [title — S cv=112206 gcd=126785 (B-013 0.95)] keys: "Superman v5 (2018)"
+   nearby: S102888 "Absolute Superman (2024)" 3f [title — S cv=160860 gcd=217177 (R-036 0.95)] keys: "Absolute Superman (2024)"
+   nearby: S17169 "Superman '78" 1f [title — S cv=138503 gcd=175403 (C-019 0.95)] keys: "Superman '78" · S103018 "Superman Annual (2012)" 1f [title — S cv=51617 gcd=68234 (R-036 0.95)] keys: "Superman Annual (2012)"
+   nearby: S17327 "Superman: The Man of Steel" 147f [title+1 — S cv=4571 gcd=4215 (C-019 0.9)] keys: "Superman - The Man of Steel Annual (1991)" | "Superman - The Man of Steel v1 (1991)" | "Superman MOS" | "Superman: The Man of Steel" (+1 more: lookup.py --shelf 17327)
+   nearby: S2302 "Batman/Superman" 40f [title+1 — S cv=64203 gcd=75117 (B-008 0.95)] keys: "Batman - Superman" | "Batman-Superman v1 (2013)" | "BatmanSuperman"
+   nearby: S17289 "Superman/Batman" 40f [title+1 — S cv=10938 gcd=11863 (C-020 0.9)] keys: "Superman Batman" | "Superman/Batman"
+   nearby: S17230 "Superman Adventures" 36f [title+1 — S cv=5767 gcd=5531 (C-019 0.95)] keys: "Superman Adventures" · S17236 "Superman Beyond" 20f [title+1 — S cv=42288 (B-014 0.9)] keys: "Superman Beyond"
+   nearby: S17239 "Superman: The Golden Age Dailies" 16f [title+1 — S cv=100065 gcd=117286 (C-019 0.95)] keys: "Superman - The Golden Age Dailies" | "Superman Dailies" · (+25 more by title)
+   keys now: "Superman" x96
+   groups (title x folder): 41
+   G1 "Superman" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\033 Milennium — 1 file(s), numbers 14, pp 25-25; cv per-file 119775x1; gcd per-file 74812x1; key 'Superman'
+      [15497] 10 Superman v2 014  Last Stand.cbz (25pp)
+   G2 "Superman" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\050 Funeral For a Friend — 1 file(s), numbers 76, pp 24-24; cv per-file 119775x1; gcd per-file 28776x1; key 'Superman'
+      [15633] 05 Superman v2 076  Metropolis Mailbag II.cbz (24pp)
+   G3 "Superman" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\057 Trinity — 1 file(s), numbers 80, pp 23-23; cv per-file 119775x1; gcd per-file 28776x1; key 'Superman'
+      [15672] 06 Superman v2 080  Deadly Alliance.cbz (23pp)
+   G4 "Superman" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\058 Return of Superman — 1 file(s), numbers 83, pp 23-23; cv per-file 119775x1; gcd per-file 28776x1; key 'Superman'
+      [15680] 03 Superman v2 083  On the Edge.cbz (23pp)
+   G5 "Superman" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\072 Fast Friends_ — 1 file(s), numbers 105, pp 25-25; cv per-file 119775x1; gcd per-file 3386x1; key 'Superman'
+      [15774] 08 Superman v2 105  Misperceptions.cbz (25pp)
+   G6 "Superman" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\102 Our Worlds at War — 1 file(s), numbers 173, pp 21-21; cv per-file 119775x1; gcd per-file 3386x1; key 'Superman'
+      [16031] 05 Superman v2 173  The Red Badge of Courage.cbz (21pp)
+   G7 "Superman" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\21 Superman - Emperor Joker — 2 file(s), numbers 160-161, pp 23-24; cv per-file 119775x2; key 'Superman'
+      [16937] 01 Superman v2 160.Cbr (23pp)
+      [16942] 06 Superman v2 161.Cbr (24pp)
+   G8 "Superman" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\47 Superman - Sacrifice (After OMAC project 3) — 2 file(s), numbers 218-219, pp 23-23; cv per-file 119775x2; key 'Superman'
+      [17155] 00 Superman v2 218.cbr (23pp)
+      [17156] 01 Superman v2 219.cbr (23pp)
+   G9 "Superman__Vol._2___217" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\64 Superman - The Journey — 1 file(s), numbers 217, pp 23-23; cv per-file 119775x1; key 'Superman'
+      [17279] Superman__Vol._2___217.cbr (23pp)
+   G10 "Superman__Vol._2___221" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\64 Superman - The Journey — 1 file(s), numbers 221, pp 23-23; cv per-file 119775x1; key 'Superman'
+      [17280] Superman__Vol._2___221.cbr (23pp)
+   G11 "Superman__Vol._2___222" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\64 Superman - The Journey — 1 file(s), numbers 222, pp 24-24; cv per-file 119775x1; key 'Superman'
+      [17281] Superman__Vol._2___222.cbr (24pp)
+   G12 "Superman__Vol._2___223" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\64 Superman - The Journey — 1 file(s), numbers 223, pp 22-22; cv per-file 119775x1; key 'Superman'
+      [17282] Superman__Vol._2___223.cbr (22pp)
+   G13 "Superman__Vol._2___224" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\64 Superman - The Journey — 1 file(s), numbers 224, pp 23-23; cv per-file 119775x1; key 'Superman'
+      [17283] Superman__Vol._2___224.cbr (23pp)
+   G14 "Superman__Vol._2___225" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\64 Superman - The Journey — 1 file(s), numbers 225, pp 23-23; cv per-file 119775x1; key 'Superman'
+      [17284] Superman__Vol._2___225.cbr (23pp)
+   G15 "Superman" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\09 Superman - Infinite Crisis — 1 file(s), numbers 226, pp 22-22; cv per-file 119775x1; key 'Superman'
+      [17416] 01 Superman v2 226.cbr (22pp)
+   G16 "Superman" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\10 Supergirl - Candor — 1 file(s), numbers 223, pp 22-22; cv per-file 119775x1; key 'Superman'
+      [17422] 03 Superman v2 223.cbr (22pp)
+   G17 "Superman" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Superman - Up, Up and Away — 4 file(s), numbers 650-653, pp 24-25; cv per-file 119775x4; key 'Superman'
+      e.g. 01 Superman v1 650.cbr
+        17514 #650 24pp · 17516 #651 25pp · 17518 #652 25pp · 17520 #653 24pp
+   G18 "Superman 1000000 (1998) (digital) (OkC.O.M.P.U.T.O.-Novus)" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) — 1 file(s), pp 25-25; cv per-file 119775x1; key 'Superman'
+      [18031] 16 Superman 1000000 (1998) (digital) (OkC.O.M.P.U.T.O.-Novus).cbz (25pp)
+   G19 "Superman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\011 Superman - Every end has a beginning — 1 file(s), numbers 0, pp 21-21; cv per-file 119775x1; key 'Superman'
+      [19909] Superman 000 - November 2012.cbr (21pp)
+   G20 "Superman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\043 Superman - Superboy - Supergirl — 7 file(s), numbers 1-6, 9, pp 22-28; cv per-file 119775x7; key 'Superman'
+      [18339] 001 Superman 001 - November 2011.cbr (28pp)
+      [18340] 002 Superman 002 - December 2011.cbr (22pp)
+      [18341] 003 Superman 003 - January 2012.cbr (24pp)
+      [18342] 004 Superman 004 - February 2012.cbr (23pp)
+      [18343] 005 Superman 005 - March 2012.cbr (24pp)
+      [18344] 006 Superman 006 - April 2012.cbr (27pp)
+      [18347] 010 Superman 009 - July 2012.cbr (22pp)
+   G21 "Superman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\049 Superman (7-12) — 6 file(s), numbers 7-12, pp 22-26; cv per-file 119775x6; key 'Superman'
+      [18366] Superman 007 - May 2012.cbr (22pp)
+      [18367] Superman 008 - June 2012.cbr (26pp)
+      [18368] Superman 009 - July 2012.cbr (22pp)
+      [18369] Superman 010 - August 2012.cbr (24pp)
+      [18370] Superman 011 - September 2012.cbr (23pp)
+      [18371] Superman 012 - October 2012.cbr (23pp)
+   G22 "Superman Annual" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\069 Superman - Supergirl — 1 file(s), numbers 1, pp 35-35; cv per-file 119775x1; key 'Superman'
+      [18404] 001 Superman Annual 001 - October 2012.cbr (35pp)
+   G23 "Superman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\087 Superman - Supergirl — 7 file(s), numbers 18-23, 23.2, pp 20-24; cv per-file 119775x7; key 'Superman'
+      [18439] 001 Superman 018 - May 2013.cbr (24pp)
+      [18440] 002 Superman 019 - June 2013.cbr (23pp)
+      [18441] 003 Superman 020 - July 2013.cbr (20pp)
+      [18447] 009 Superman 021 - August 2013.cbr (22pp)
+      [18448] 010 Superman 022 - September 2013.cbr (21pp)
+      [18449] 011 Superman 023 - October 2013.cbr (23pp)
+      [18450] 012 Superman 023.2 - November 2013.cbr (21pp)
+   G24 "Superman Annual" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\087 Superman - Supergirl — 1 file(s), numbers 2, pp 37-37; cv per-file 119775x1; key 'Superman'
+      [18451] 013 Superman Annual 002 - September 2013.cbr (37pp)
+   G25 "Superman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\088 Psi War — 2 file(s), numbers 23-24, pp 23-23; cv per-file 119775x2; key 'Superman'
+      [18463] 001 Superman 023 - October 2013.cbr (23pp)
+      [18465] 003 Superman 024 - December 2013.cbr (23pp)
+   G26 "Superman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\089 Forever Evil 3 — 1 file(s), numbers 23.3, pp 23-23; cv per-file 119775x1; key 'Superman'
+      [18467] 002 Superman 023.3 - November 2013.cbr (23pp)
+   G27 "Superman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\090 Krypton Returns — 1 file(s), numbers 25, pp 23-23; cv per-file 119775x1; key 'Superman'
+      [18471] 004 Superman 025 - January 2014.cbr (23pp)
+   G28 "Superman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\092 Forever Evil 4 — 1 file(s), numbers 23.1, pp 24-24; cv per-file 119775x1; key 'Superman'
+      [18487] 002 Superman 023.1 - November 2013.cbr (24pp)
+   G29 "Superman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\095 Superman — 2 file(s), numbers 26-27, pp 21-22; cv per-file 119775x2; key 'Superman'
+      [18570] 005 Superman 026 - February 2014.cbr (22pp)
+      [18571] 006 Superman 027 - March 2014.cbr (21pp)
+   G30 "Superman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\096 Doomed Prelude — 3 file(s), numbers 28-30, pp 21-23; cv per-file 119775x3; key 'Superman'
+      [18580] 009 Superman 028 - April 2014.cbr (22pp)
+      [18581] 010 Superman 029 - May 2014.cbr (23pp)
+      [18582] 011 Superman 030 - June 2014.cbr (21pp)
+   G31 "Superman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\097 Doomed — 1 file(s), numbers 31, pp 21-21; cv per-file 119775x1; key 'Superman'
+      [18587] 005 Superman 031 - July 2014.cbr (21pp)
+   G32 "Superman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\106 Superman - The men of tomorrow — 7 file(s), numbers 32-38, pp 26-31; cv per-file 119775x7; key 'Superman'
+      e.g. Superman # 32.cbr
+        18659 #32 28pp · 18660 #33 29pp · 18661 #34 27pp · 18662 #35 26pp · 18663 #36 27pp · 18664 #37 28pp · 18665 #38 31pp
+   G33 "Superman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\115 Superman - Powerless — 2 file(s), numbers 39-40, pp 27-28; cv per-file 119775x2; key 'Superman'
+      [18727] Superman # 39.cbr (27pp)
+      [18728] Superman # 40.cbr (28pp)
+   G34 "Superman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\120 Truth — 4 file(s), numbers 41-44, pp 27-30; cv per-file 119775x4; gcd per-file 59921x4; key 'Superman'
+      e.g. 04 Superman # 41 (2015) (Digital) (HD) (Thornn-Empire).cbr
+        18945 #41 2015 28pp · 18949 #42 2015 30pp · 18953 #43 2015 27pp · 18957 #44 2015 27pp
+   G35 "Superman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\125 Superman - Savage Dawn — 3 file(s), numbers 48-50, pp 24-43; cv per-file 119775x3; gcd per-file 59921x3; key 'Superman'
+      [19002] 04 Superman 048 (2016) (Digital) (Thornn-Empire).cbr (26pp)
+      [19005] 07 Superman 049 (2016) (Digital) (Thornn-Empire).cbr (24pp)
+      [19008] 10 Superman 050 (2016) (Digital) (Thornn-Empire).cbr (43pp)
+   G36 "Superman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\127 The Final Days of Superman (2016) — 2 file(s), numbers 51-52, pp 24-30; cv per-file 119775x2; gcd per-file 59921x2; key 'Superman'
+      [19021] 01 Superman 051 (2016) (Digital) (Thornn-Empire).cbr (24pp)
+      [19028] 08 Superman 052 (2016) (Digital) (Thornn-Empire).cbr (30pp)
+   G37 "Superman" in DC\#DC Events\004 Major DC Events - Rebirth\004 Superman Reborn (2017) — 2 file(s), numbers 18-19, pp 21-25; cv per-file 119775x2; gcd per-file 113675x2; key 'Superman'
+      [19092] Superman 018 (2017) (Webrip) (The Last Kryptonian-DCP).cbr (25pp)
+      [19093] Superman 019 (2017) (Webrip) (The Last Kryptonian-DCP).cbr (21pp)
+   G38 "Superman" in DC\_Superman\21 House of Brainiac (2024)\Variant Covers — 15 file(s), numbers 13-15, pp 1-1; cv per-file 119775x15; key 'Superman'
+      e.g. Superman 013 (2024) (1-in-25 Jerry Gaylord Variant) (Digital) (MikeNY76-Empire).cbz
+        70611 #13 2024 1pp · 70612 #13 2024 1pp · 70613 #13 2024 1pp · 70614 #13 2024 1pp · 70615 #13 2024 1pp · 70616 #13 2024 1pp · 70617 #13 2024 1pp · 70618 #14 2024 1pp · 70619 #14 2024 1pp
+        70620 #14 2024 1pp · 70621 #14 2024 1pp · 70623 #15 2024 1pp · 70624 #15 2024 1pp · 70625 #15 2024 1pp · 70626 #15 2024 1pp
+   G39 "Absolute Superman" in DC\_Superman\Absolute Superman v1  (2024) — 1 file(s), numbers 4, pp 28-28; cv per-file 119775x1; key 'Superman'
+      [70688] Absolute Superman 004 (2025) (Webrip) (The Last Kryptonian-DCP).cbr (28pp)
+   G40 "Superman" in DC\_Superman\_Completed Series\09 Superman - New Krypton (2009)\04 Superman - Codename Patriot (2009) — 1 file(s), numbers 691, pp 18-18; cv per-file 119775x1; gcd per-file 16530x1; key 'Superman'
+      [72545] Superman 691 (2009) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (18pp)
+   G41 "Superman" in DC\_Superman\_Completed Series\09 Superman - New Krypton (2009)\06 Superman - Last Stand of New Krypton (2010) — 2 file(s), numbers 698-699, pp 21-23; cv per-file 119775x2; gcd per-file 16530x2; key 'Superman'
+      [72552] 05 Superman 698 (2010) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (21pp)
+      [72558] 11 Superman 699 (2010) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (23pp)
+
+== S11631 Marvel Two-in-One  [split]  101 files / 9 collections  decided in C-039 (R)
+   decided: R 11631 | this shelf mixes the 1974-1983 legacy "Marvel Two-in-One" ongoing (CV2696/GCD2182, 100 issues, majority of files + Annuals + Masterworks reprints) with the SEPARATE 2017-2018 "Marvel Two-In-One" mini (CV107157, 12 issues, its own 2 trades "Vol.01-02" + 1 loose issue) — per the RESIDUE ruling, two or more whole trades of a different run are co-equal, not residue; the overlap-in-series flag ("the 2017 relaunch restarts at #1") is TRUE of this shelf
+   F 11631 split-needed | 1974-1983 legacy = CV2696/GCD2182 (100 issues); 2017-2018 mini = CV107157 (12 issues, GCD id not confirmed this pass)
+   nearby:
+   nearby: S47159 "Marvel Team-Up" 196f [shares gcd=2056 (collected by item 83325) — S cv=2576 gcd=2056 (C-046 0.95)] keys: "Marvel Masterworks - Marvel Team-Up" | "Marvel Masterworks - Marvel Team-Up (1972)" | "Marvel Team-Up" | "Marvel Team-Up (1972)" (+8 more: lookup.py --shelf 47159)
+   nearby: S11412 "Marvel Feature" 6f [shares gcd=1991 (collected by item 83324) — S cv=2515 gcd=1991 (A-021 0.95)] keys: "Marvel Feature"
+   nearby: S1612 "The Avengers Annual" 1f [shares gcd=1807 (collected by item 83327) — S cv=2350 gcd=1807 (C-054 0.9)] keys: "Avengers King Size Annual"
+   keys now: "Marvel Two-In-One" x84 · "Marvel Masterworks - Marvel Two-In-One" x7 · "Marvel Two-In-One Annual" x6 · "Marvel Two-in-One" x3 · "Marvel Two-in-One Annual" x1
+   groups (title x folder): 9
+   G1 "Marvel Two-In-One" in Marvel\Marvel Two-in-One\Marvel Two-in-One v1 (1974) — 80 file(s), numbers 1-9, 11-74, 80, 83, 86-88, 99, pp 17-25; cv per-file 2696x80; gcd per-file 2182x80; key 'Marvel Two-In-One'
+      [101481] Marvel Two-In-One 001 - Man-Thing (1974) (Digital) (Shadowcat-Empire).cbz (20pp)
+      [101482] Marvel Two-In-One 002 - Sub-Mariner (1974) (Digital) (Shadowcat-Empire).cbz (20pp)
+      [101483] Marvel Two-In-One 003 - Daredevil (1974) (Digital) (Kileko-Empire).cbr (20pp)
+      [101484] Marvel Two-In-One 004 - Captain America (1974) (Digital) (AnHeroGold-Empire).cbz (18pp)
+      [101485] Marvel Two-In-One 005 - Guardians of the Galaxy (1974) (Digital) (AnHeroGold-Empire).cbz (19pp)
+      [101486] Marvel Two-In-One 006 - Dr. Strange (1974) (Digital) (AnHeroGold-Empire).cbz (19pp)
+      [101487] Marvel Two-In-One 007 - Valkyrie (1975) (Digital) (AnHeroGold-Empire).cbz (18pp)
+      [101488] Marvel Two-In-One 008 - Ghost Ride (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+      [101489] Marvel Two-In-One 009 - Thor (1975) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101490] Marvel Two-In-One 011 - Golem (1975) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101491] Marvel Two-In-One 012 - Iron Man (1975) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101492] Marvel Two-In-One 013 - Power Man (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101493] Marvel Two-In-One 014 - Son of Satan (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101494] Marvel Two-In-One 015 - Morbius (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101495] Marvel Two-In-One 016 - Ka-Zar (1976) (Digital) (Shadowcat-Empire).cbz (20pp)
+      [101496] Marvel Two-In-One 017 - Spider-Man (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101497] Marvel Two-In-One 018 - Scarecrow (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101498] Marvel Two-In-One 019 - Tigra (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101499] Marvel Two-In-One 020 - Liberty Legion (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101500] Marvel Two-In-One 021 - Doc Savage (1976) (Digital) (Shadowcat-Empire).cbz (20pp)
+      [101501] Marvel Two-In-One 022 - Thor (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101502] Marvel Two-In-One 023 - Thor (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101503] Marvel Two-In-One 024 - Black Goliath (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101504] Marvel Two-In-One 025 - Iron Fist (1977) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101505] Marvel Two-In-One 026 - Nick Fury (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101506] Marvel Two-In-One 027 - Deathlok (1977) (Digital) (AnHeroGold-Empire).cbz (18pp)
+      [101507] Marvel Two-In-One 028 - Sub-Mariner (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101508] Marvel Two-In-One 029 - Shang Chi (1977) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101509] Marvel Two-In-One 030 - Spider-Woman (1977) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101510] Marvel Two-In-One 031 - Mystery Menace (1977) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101511] Marvel Two-In-One 032 - Invisible Girl (1977) (Digital) (Shadowcat-Empire).cbz (17pp)
+      [101512] Marvel Two-In-One 033 - Mordred the Mystic (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101513] Marvel Two-In-One 034 - Nighthawk (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101514] Marvel Two-In-One 035 - Skull the Slayer (1978) (Digital) (AnHeroGold-Empire).cbz (18pp)
+      [101515] Marvel Two-In-One 036 - Mr. Fantastic (1978) (Digital) (AnHeroGold-Empire).cbz (18pp)
+      [101516] Marvel Two-In-One 037 - Matt Murdock (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101517] Marvel Two-In-One 038 - Daredevil (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101518] Marvel Two-In-One 039 - The Vision (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101519] Marvel Two-In-One 040 - Black Panther (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101520] Marvel Two-In-One 041 - Brother Voodoo (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101521] Marvel Two-In-One 042 - Captain America (1978) (Digital) (Shadowcat-Empire).cbz (17pp)
+      [101522] Marvel Two-In-One 043 - Man-Thing (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101523] Marvel Two-In-One 044 - Hercules (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101524] Marvel Two-In-One 045 - Captain Marvel (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101525] Marvel Two-In-One 046 - Hulk (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101526] Marvel Two-In-One 047 - Yancy Street Gang (1979) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101527] Marvel Two-In-One 048 - Jack of Hearts (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101528] Marvel Two-In-One 049 - Dr. Strange (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101529] Marvel Two-In-One 050 - The Thing vs. The Thing (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101530] Marvel Two-In-One 051 - Beast, Mr. Marvel, Fury, Wonder Man (1979) (Digital) (Shadowcat-Empire).cbz (17pp)
+      [101531] Marvel Two-In-One 052 - Moon Knight (1979) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+      [101532] Marvel Two-In-One 053 - Quasar (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101533] Marvel Two-In-One 054 - Deathlok (1979) (Digital) (AnHeroGold-Empire).cbz (18pp)
+      [101534] Marvel Two-In-One 055 - Giant Man (1979) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101535] Marvel Two-In-One 055 - Giant-man (1979) (Digital) (AnPymGold-Empire).cbz (18pp)
+      [101536] Marvel Two-In-One 056 - Thundra (1979) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101537] Marvel Two-In-One 057 - Wundarr (1979) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101538] Marvel Two-In-One 058 - Aquarian (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101539] Marvel Two-In-One 059 - Human Torch (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101540] Marvel Two-In-One 060 - Impossible Man (1980) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101541] Marvel Two-In-One 061 - Starhawk (1980) (Digital) (AnHeroGold-Empire).cbz (18pp)
+      [101542] Marvel Two-In-One 062 - Moon Dragon (1980) (Digital) (AnHeroGold-Empire).cbz (18pp)
+      [101543] Marvel Two-In-One 063 - Warlock (1980) (Digital) (AnHeroGold-Empire).cbz (17pp)
+      [101544] Marvel Two-In-One 064 - Stingray (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101545] Marvel Two-In-One 065 - Triton (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101546] Marvel Two-In-One 066 - Scarlet Witch (1980) (Digital) (Shadowcat-Empire).cbz (17pp)
+      [101547] Marvel Two-In-One 067 - Hyperion (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [101548] Marvel Two-In-One 068 - Angel (1980) (Digital) (Shadowcat-Empire).cbz (18pp)
+      [101549] Marvel Two-In-One 069 - Guardians of the Glaxy (1980) (Digital) (AnHeroGold-Empire).cbz (22pp)
+      [101550] Marvel Two-In-One 070 - (Secret Guest) (1980) (Digital) (Shadowcat-Empire).cbz (22pp)
+      [101551] Marvel Two-In-One 071 - Mister Fantastic (1981) (Digital) (Shadowcat-Empire).cbz (23pp)
+      [101552] Marvel Two-In-One 072 - The Inhumans (1981) (Digital) (Shadowcat-Empire).cbz (23pp)
+      [101553] Marvel Two-In-One 073 - Quasar (1981) (Digital) (Shadowcat-Empire).cbz (23pp)
+      [101554] Marvel Two-In-One 074 - The Puppet Master (1981) (Digital) (Shadowcat-Empire).cbz (23pp)
+      [101556] Marvel Two-In-One 080 - Ghost Rider (1981) (Digital) (Shadowcat-Empire).cbz (24pp)
+      [101557] Marvel Two-In-One 083 - Sasquatch (1982) (Digital) (Shadowcat-Empire).cbz (22pp)
+      [101558] Marvel Two-In-One 086 - Sandman (1982) (Digital) (Shadowcat-Empire).cbz (24pp)
+      [101559] Marvel Two-In-One 087 - Ant-Man (1982) (Digital) (Zone-Empire).cbr (24pp)
+      [101560] Marvel Two-In-One 088 - She Hulk (1982) (Digital) (Shadowcat-Empire).cbz (23pp)
+      [101562] Marvel Two-In-One 099 - ROM (1983) (digital) (Marika-Empire).cbz (25pp)
+   G2 "Marvel Two-in-One" in Marvel\Marvel Two-in-One\Marvel Two-in-One v1 (1974) — 2 file(s), numbers 78, 91, pp 23-23; cv per-file 2696x2; gcd per-file 2182x2; key 'Marvel Two-in-One'
+      [101555] Marvel Two-in-One 078 - Wonder Man (1981) (Digital-Empire).cbz (23pp)
+      [101561] Marvel Two-in-One 091 - (Just Thing) (1982) (Digital-Empire).cbz (23pp)
+   G3 "Marvel Two-In-One Annual" in Marvel\Marvel Two-in-One\Marvel Two-in-One v1 (1974)\Annuals — 6 file(s), numbers 1-4, 6-7, pp 36-53; cv per-file 2696x4, 2865x2; gcd per-file 2353x6; key 'Marvel Two-In-One Annual'
+      [101474] Marvel Two-In-One Annual 001 - Liberty Legion (1976) (Digital) (Shadowcat-Empire).cbz (36pp)
+      [101475] Marvel Two-In-One Annual 002 - Spider-Man (1977) (Digital) (Zone-Empire).cbr (36pp)
+      [101476] Marvel Two-In-One Annual 003 - Nova (1978) (Digital) (Zone-Empire).cbr (36pp)
+      [101477] Marvel Two-In-One Annual 004 (1979) (c2c) (BWT-DCP).cbr (53pp)
+      [101479] Marvel Two-In-One Annual 006 (1981) (c2c) (BWT-DCP).cbr (53pp)
+      [101480] Marvel Two-In-One Annual 007 (1982) (c2c) (Blasty-DCP).cbr (52pp)
+   G4 "Marvel Two-in-One Annual" in Marvel\Marvel Two-in-One\Marvel Two-in-One v1 (1974)\Annuals — 1 file(s), numbers 5, pp 35-35; cv per-file 2696x1; gcd per-file 2353x1; key 'Marvel Two-in-One Annual'
+      [101478] Marvel Two-in-One Annual 005 (1980) (Digital-Empire).cbz (35pp)
+   G5 "Marvel Two-in-One" in Marvel\_Avengers\_One Shots and Minis — 1 file(s), numbers 75, pp 39-39; cv per-file 2696x1; key 'Marvel Two-in-One'
+      [53473] Marvel Two-in-One 075 (Avengers).cbr (39pp)
+   G6 "Marvel Two-In-One" in Marvel\_Fantastic Four\10 Marvel Two-In-One v1 (2018) — 2 file(s), 2 COL, pp 138-161; cv per-file 112329x1, 116703x1; gcd per-file 2182x2; key 'Marvel Two-In-One'
+      [79780] COL Marvel Two-In-One Vol. 01 - Fate of the Four (2018) (Digital) (Zone-Empire).cbr (138pp)
+      [79781] COL Marvel Two-In-One Vol. 02 - Next of Kin (2019) (Digital) (Zone-Empire).cbr (161pp)
+   G7 "marvel_two-in-one_005" in Marvel\_Marvel Cosmic\Guardians of the Galaxy\Misc — 1 file(s), pp 20-20; cv per-file 2696x1; key 'Marvel Two-In-One'
+      [82859] marvel_two-in-one_005.cbr (20pp)
+   G8 "Marvel Masterworks - Marvel Two-In-One" in Marvel\_Marvel Masterworks\Marvel Two-In-One v1 (1974) — 7 file(s), 7 COL, pp 244-303; cv per-file 69218x7; gcd per-file 77624x7; key 'Marvel Masterworks - Marvel Two-In-One'
+      [83324] COL Marvel Masterworks - Marvel Two-In-One Vol. 01 (2013) (Digital-Empire).cbr (244pp)
+         own record cv 69218 / gcd s77624 "Marvel Masterworks: Marvel Two-in-One" (issue 1158700) COLLECTS: gcd=2182 Marvel Two-in-One (1974) #1-10 · gcd=1991 Marvel Feature (1971) #11-12
+      [83325] COL Marvel Masterworks - Marvel Two-In-One Vol. 02 (2017) (Digital) (Zone-Empire).cbr (292pp)
+         own record cv 69218 / gcd s77624 "Marvel Masterworks: Marvel Two-in-One" (issue 1734630) COLLECTS: gcd=2182 Marvel Two-in-One (1974) #11-20 · gcd=2353 Marvel Two-in-One Annual (1976) #1 · gcd=1572 Fantastic Four Annual (1963) #11 · gcd=2056 Marvel Team-Up (1972) #47
+      [83326] COL Marvel Masterworks - Marvel Two-In-One Vol. 03 (2018) (Digital) (Kileko-Empire).cbr (300pp)
+         own record cv 69218 / gcd s77624 "Marvel Masterworks: Marvel Two-in-One" (issue 1793046) COLLECTS: gcd=2182 Marvel Two-in-One (1974) #21-36
+      [83327] COL Marvel Masterworks - Marvel Two-In-One Vol. 04 (2019) (Digital) (Zone-Empire).cbr (301pp)
+         own record cv 69218 / gcd s77624 "Marvel Masterworks: Marvel Two-in-One" (issue 2177741) COLLECTS: gcd=2182 Marvel Two-in-One (1974) #37-46 · gcd=2353 Marvel Two-in-One Annual (1976) #2-3 · gcd=1807 The Avengers Annual (1967) #7
+      [83328] COL Marvel Masterworks - Marvel Two-In-One Vol. 05 (2020) (Digital-Empire).cbr (303pp)
+         own record cv 69218 / gcd s77624 "Marvel Masterworks: Marvel Two-in-One" (issue 2177785) COLLECTS: gcd=2182 Marvel Two-in-One (1974) #47-60 · gcd=161534 The Project Pegasus Saga Starring The Thing (1988) (unnumbered) · gcd=4433 The Adventures of the Thing (1992) #1, #3 · gcd=2353 Marvel Two-in-One Annual (1976) #4
+      [83329] COL Marvel Masterworks - Marvel Two-In-One Vol. 06 (2021) (Digital-Empire).cbr (299pp)
+         own record cv 69218 / gcd s77624 "Marvel Masterworks: Marvel Two-in-One" (issue 2350519) COLLECTS: gcd=2182 Marvel Two-in-One (1974) #61-74
+      [83330] COL Marvel Masterworks - Marvel Two-In-One Vol. 07 (2024) (Digital-Empire).cbr (290pp)
+         own record cv 69218 / gcd s77624 "Marvel Masterworks: Marvel Two-in-One" (issue 2611327) COLLECTS: gcd=2182 Marvel Two-in-One (1974) #75-82 · gcd=2353 Marvel Two-in-One Annual (1976) #5-6
+   G9 "Marvel Two-In-One" in _Marvel Major Event Chronology (digital)\2018.04 - The Return of Wolverine\00 End Credit Scenes — 1 file(s), numbers 3, pp 25-25; cv per-file 107157x1; gcd per-file 2182x1; key 'Marvel Two-In-One'
+      [118377] 05 Marvel Two-In-One 003 (2018) (Digital) (Zone-Empire).cbr (25pp)
+
+== S21879 Wolverine & the X-Men  [split]  107 files / 2 collections  decided in R-032 (R)
+   decided: R 21879 | the shelf holds TWO co-equal runs that share numbers #1-12: the 2011 Wolverine & the X-Men (CV 43539 / GCD 61815, 42 + the 27AU point issue, 2011-2014) — about 90 files, many duplicate rips from X-Men Chronology folders, plus the 2014 Annual (CV 69573 / GCD 77849) and the 894pp Jason Aaron Omnibus P-003 joined here — AND thirteen issues of the 2014 relaunch "Wolverine and the X-Men 001 (2014) … 012 (2015)" (CV 72113 / GCD 79392, 12, 2014-2015; items 92637-92642, 92759-92764, 118034) plus a second rip of its Vol. 02 Death of Wolverine trade (118863); the relaunch has its own shelf S94818 (key "Wolverine and the X-Men v2 (2014)", holding its Vol. 01/02 trades 85480/85481); the 2011 identity (CV 43539 / GCD 61815) stands once those fourteen items leave
+   F 21879 split-needed | items 92637 92638 92639 92640 92641 92642 92759 92760 92761 92762 92763 92764 118034 (Wolverine and the X-Men 2014 #1-12, CV 72113 / GCD 79392) and 118863 (its Vol. 02 trade, duplicate of 85481) join S94818; the rest stays as Wolverine & the X-Men 2011, CV 43539 / GCD 61815
+   named: S94818 Wolverine and the X-Men v2 (2014)  2 files  keys: "Wolverine and the X-Men v2 (2014)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S912 "Amazing X-Men" 29f [shares gcd=77507 — S cv=68919 gcd=77507 (C-057 0.9)] keys: "Amazing X-Men"
+   nearby: S1657 "Avengers Vs. X-Men" 15f [shares gcd=64737 — S cv=47331 gcd=64737 (A-027 0.9)] keys: "Avengers vs. X-Men"
+   keys now: "Wolverine and the X-Men" x56 · "Wolverine and the X-Men v1 (2011)" x44 · "Wolverine and The X-Men" x5 · "Wolverine and the X-Men 027AU" x2
+   groups (title x folder): 20
+   G1 "Wolverine & The X-Men by Jason Aaron Omnibus (2014) (Digital) (Kileko-Empire)" in Marvel\_Wolverine\08 Wolverine and the X-Men v1 (2011)\Omnibus Edition — 1 file(s), 1 COL, pp 894-894; cv per-file 74656x1; gcd per-file 180762x1; key 'Wolverine and the X-Men v1 (2011)'
+      [97999] COL Wolverine & The X-Men by Jason Aaron Omnibus (2014) (Digital) (Kileko-Empire).cbz (894pp)
+         own record cv 74656 / gcd s180762 "Wolverine & the X-Men by Jason Aaron Omnibus" (issue 2305094) COLLECTS: gcd=61815 Wolverine & the X-Men (2011) #1-35, #38-42 · gcd=77849 Wolverine & the X-Men Annual (2014) #1
+   G2 "Wolverine and the X-Men" in Marvel\_X-Men\Wolverine and the X-Men\Wolverine and the X-Men v1 (2011) — 42 file(s), numbers 1-42, pp 20-32; cv per-file 43539x42; gcd per-file 61815x42; key 'Wolverine and the X-Men v1 (2011)'
+      e.g. Wolverine and the X-Men 001 (2011) (F) (Digital) (Zone-Empire).cbr
+        85438 #1 2011 32pp · 85439 #2 2012 25pp · 85440 #3 2012 24pp · 85441 #4 2012 25pp · 85442 #5 2012 24pp · 85443 #6 2012 25pp · 85444 #7 2012 25pp · 85445 #8 2012 24pp · 85446 #9 2012 23pp
+        85447 #10 2012 20pp · 85448 #11 2012 24pp · 85449 #12 2012 24pp · 85450 #13 2012 23pp · 85451 #14 2012 24pp · 85452 #15 2012 24pp · 85453 #16 2012 25pp · 85454 #17 2012 25pp
+        85455 #18 2012 25pp · 85456 #19 2012 25pp · 85457 #20 2013 25pp · 85458 #21 2013 24pp · 85459 #22 2013 24pp · 85460 #23 2013 23pp · 85461 #24 2013 24pp · 85462 #25 2013 20pp
+        85463 #26 2013 22pp · 85464 #27 2013 22pp · 85465 #28 2013 24pp · 85466 #29 2013 23pp · 85467 #30 2013 23pp · 85468 #31 2013 25pp · 85469 #32 2013 24pp · 85470 #33 2013 23pp
+        85471 #34 2013 23pp · 85472 #35 2013 24pp · 85473 #36 2013 23pp · 85474 #37 2013 21pp · 85475 #38 2014 22pp · 85476 #39 2014 22pp · 85477 #40 2014 24pp · 85478 #41 2014 23pp
+        85479 #42 2014 31pp
+   G3 "Wolverine and the X-Men 027AU (2013) (Digital) (Zone-Empire)" in Marvel\_X-Men\Wolverine and the X-Men\Wolverine and the X-Men v1 (2011)\Annuals and Specials — 1 file(s), pp 23-23; cv per-file 43539x1; key 'Wolverine and the X-Men 027AU'
+      [85436] Wolverine and the X-Men 027AU (2013) (Digital) (Zone-Empire).cbr (23pp)
+   G4 "Wolverine and the X-Men Annual" in Marvel\_X-Men\Wolverine and the X-Men\Wolverine and the X-Men v1 (2011)\Annuals and Specials — 1 file(s), numbers 1, pp 31-31; cv per-file 69573x1; gcd per-file 77849x1; key 'Wolverine and the X-Men v1 (2011)'
+      [85437] Wolverine and the X-Men Annual 001 (2014) (Digital) (Zone-Empire).cbr (31pp)
+   G5 "Wolverine and the X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0956 Wolverine & The X-Men Regenesis — 3 file(s), numbers 1-3, pp 23-31; cv per-file 43539x3; gcd per-file 61815x3; key 'Wolverine and the X-Men'
+      [91942] 001 Wolverine and the X-Men 001 (2011) (digital) (Minutemen-PhD).cbr (31pp)
+      [91943] 002 Wolverine and the X-Men 002 (2012) (digital) (Minutemen-PhD).cbr (24pp)
+      [91944] 003 Wolverine and the X-Men 003 (2012) (digital) (Minutemen-PhD).cbr (23pp)
+   G6 "Wolverine and the X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0969 Mutatis Mutandis — 5 file(s), numbers 4-8, pp 23-24; cv per-file 43539x5; gcd per-file 61815x5; key 'Wolverine and the X-Men'
+      e.g. 001 Wolverine and the X-Men 004 (2012) (digital) (Minutemen-PhD).cbr
+        91999 #4 2012 24pp · 92000 #5 2012 23pp · 92001 #6 2012 24pp · 92002 #7 2012 24pp · 92003 #8 2012 23pp
+   G7 "Wolverine and the X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0988 AvX — 10 file(s), numbers 9-18, pp 19-24; cv per-file 43539x10; gcd per-file 61815x6, 64737x4; key 'Wolverine and the X-Men'
+      e.g. 004 Wolverine and the X-Men 009 (2012) (digital) (Minutemen-PhD).cbr
+        92086 #9 2012 22pp · 92096 #10 2012 19pp · 92108 #11 2012 23pp · 92127 #12 2012 23pp · 92128 #13 2012 22pp · 92134 #14 2012 23pp · 92137 #15 2012 23pp · 92138 #16 2012 24pp
+        92146 #17 2012 24pp · 92147 #18 2012 24pp
+   G8 "Wolverine and the X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\1004 More Pencils More Books More Teacher's Dirty Looks — 2 file(s), numbers 19-20, pp 24-24; cv per-file 43539x2; gcd per-file 61815x2; key 'Wolverine and the X-Men'
+      [92213] 001 Wolverine and the X-Men 019 (2012) (digital) (Minutemen-Acan).cbr (24pp)
+      [92214] 002 Wolverine and the X-Men 020 (2013) (digital) (Minutemen-Acan).cbr (24pp)
+   G9 "Wolverine and the X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\1011 The Greatest Freakshow on Earth — 4 file(s), numbers 21-24, pp 22-23; cv per-file 43539x4; gcd per-file 61815x4; key 'Wolverine and the X-Men'
+      e.g. 001 Wolverine and the X-Men 021 (2013) (digital) (Minutemen-Acan).cbr
+        92241 #21 2013 23pp · 92242 #22 2013 23pp · 92243 #23 2013 22pp · 92244 #24 2013 23pp
+   G10 "Wolverine and the X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\1023 Savage Learning — 5 file(s), numbers 25-29, pp 19-23; cv per-file 43539x5; gcd per-file 61815x5; key 'Wolverine and the X-Men'
+      e.g. 001 Wolverine and the X-Men 025 (2013) (digital) (Minutemen-Acan).cbr
+        92303 #25 2013 19pp · 92304 #26 2013 21pp · 92305 #27 2013 21pp · 92306 #28 2013 23pp · 92307 #29 2013 22pp
+   G11 "Wolverine and the X-Men 027AU (2013) (digital) (Minutemen-Acan)" in Marvel\_X-Men\_X-Men Complete Chronology V2\1031 Age of Ultron — 1 file(s), numbers 12, pp 22-22; cv per-file 43539x1; key 'Wolverine and the X-Men 027AU'
+      [92356] 012 Wolverine and the X-Men 027AU (2013) (digital) (Minutemen-Acan).cbr (22pp)
+   G12 "Wolverine and the X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\1045 The Hellfire Saga — 6 file(s), numbers 30-35, pp 22-24; cv per-file 43539x6; gcd per-file 61815x6; key 'Wolverine and the X-Men'
+      e.g. 001 Wolverine and the X-Men 030 (2013) (digital) (Minutemen-PhD).cbr
+        92423 #30 2013 22pp · 92424 #31 2013 24pp · 92425 #32 2013 23pp · 92426 #33 2013 22pp · 92427 #34 2013 22pp · 92428 #35 2013 23pp
+   G13 "Wolverine and the X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\1058 Battle of the Atom — 2 file(s), numbers 36-37, pp 20-22; cv per-file 43539x2; gcd per-file 61815x2; key 'Wolverine and the X-Men'
+      [92497] 005 Wolverine and the X-Men 036 (2013) (digital) (Minutemen-PhD).cbr (22pp)
+      [92501] 009 Wolverine and the X-Men 037 (2013) (digital) (Minutemen-PhD).cbr (20pp)
+   G14 "Wolverine and the X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\1072 Wolverine and the X-Men Untitled — 5 file(s), numbers 38-42, pp 21-30; cv per-file 43539x5; gcd per-file 61815x5; key 'Wolverine and the X-Men'
+      e.g. 002 Wolverine and the X-Men 038 (2014) (digital) (Minutemen-PhD).cbr
+        92564 #38 2014 21pp · 92565 #39 2014 21pp · 92566 #40 2014 23pp · 92567 #41 2014 22pp · 92568 #42 2014 30pp
+   G15 "Wolverine and the X-Men Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\1072 Wolverine and the X-Men Untitled — 1 file(s), numbers 1, pp 30-30; cv per-file 69573x1; gcd per-file 77849x1; key 'Wolverine and The X-Men'
+      [92563] 001 Wolverine and the X-Men Annual 01 (2014) (digital) (Minutemen-PhD).cbr (30pp)
+   G16 "Wolverine and the X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\1085 Tomorrow Never Learns — 6 file(s), numbers 1-6, pp 21-22; cv per-file 43539x6; key 'Wolverine and the X-Men'
+      e.g. 001 Wolverine and the X-Men 001 (2014) (digital) (Minutemen-Faessla).cbz
+        92637 #1 2014 22pp · 92638 #2 2014 22pp · 92639 #3 2014 21pp · 92640 #4 2014 22pp · 92641 #5 2014 22pp · 92642 #6 2014 22pp
+   G17 "Wolverine and the X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\1108 Wolverine and the X-Men - Death of Wolverine — 6 file(s), numbers 7-12, pp 22-29; cv per-file 43539x6; key 'Wolverine and the X-Men'
+      e.g. 001 Wolverine and the X-Men 007 (2014) (digital) (Minutemen-Faessla).cbz
+        92759 #7 2014 22pp · 92760 #8 2014 22pp · 92761 #9 2014 22pp · 92762 #10 2014 29pp · 92763 #11 2014 22pp · 92764 #12 2015 22pp
+   G18 "Wolverine & The X-Men" in _Marvel Major Event Chronology (digital)\2011.07 - X-Men - Schism - Regenesis\03 Regenesis\Team Gold (Wolverine) — 4 file(s), numbers 1-4, pp 24-32; cv per-file 43539x4; gcd per-file 52076x4; key 'Wolverine and The X-Men'
+      e.g. Wolverine & The X-Men 001 (2011) (Digital-Empire).cbr
+        117653 #1 2011 32pp · 117654 #2 2012 26pp · 117655 #3 2012 24pp · 117656 #4 2012 25pp
+   G19 "Wolverine and the X-Men" in _Marvel Major Event Chronology (digital)\2014.10 - AXIS\02 Tie-ins\X-Men — 1 file(s), numbers 12, pp 23-23; cv per-file 43539x1; gcd per-file 77507x1; key 'Wolverine and the X-Men'
+      [118034] Wolverine and the X-Men 012 (2015) (Digital) (Zone-Empire).cbr (23pp)
+   G20 "Wolverine and the X-Men" in _Marvel Major Event Chronology (digital)\2014.11 - X-Men - Death of Wolverine\02 Tie-ins\Wolverine and the X-Men — 1 file(s), 1 COL, pp 142-142; cv per-file 79793x1; key 'Wolverine and the X-Men'
+      [118863] COL Wolverine and the X-Men Vol. 02 - Death of Wolverine (2015) (Digital) (Kileko-Empire).cbz (142pp)
+
+== S22374 X-Men: Legacy  [split]  107 files / 7 collections  decided in C-054 (R)
+   decided: R 22374 | two co-equal "X-Men: Legacy" volumes share this shelf: the 2008-2012 ongoing (#208-275/300, CV 20691 cached #208-275 / GCD 29823 "was ongoing series" 69 issues, 72/107 files) and the SEPARATE 2013 relaunch starting at #1 (CV 53922 count 25 / GCD 69872 "was ongoing series" 25 issues, 29/107 files); the per-file CV link degenerately stamps 20691 across both
+   F 22374 split-needed | 2008 ongoing (#208-275/300) vs 2013 relaunch (#1-24) are two different volumes
+   N 22374 | run A: cv=20691 gcd=29823 (2008-2012, #208-275/300); run B: cv=53922 gcd=69872 (2013-2014, #1-24)
+   nearby: S12840 "New Mutants" 70f [shares gcd=36520 (collected by item 86225) — S cv=26327 gcd=36520 (C-056 0.95)] keys: "New Mutants (2009)" | "New Mutants v3 (2009)" | "New Mutants: War Children"
+   nearby: S94742 "X-Force" 38f [shares gcd=29506 (collected by item 86225) — S cv=20511 gcd=29506 (C-056 0.9)] keys: "X-Force v3 (2008)"
+   nearby: S22376 "X-Men: Legacy" 4f [shares cv=53922 (R clause), shares gcd=69872 — S cv=53922 gcd=69872 (B-061 0.95)] keys: "X-Men Legacy: Legion"
+   nearby: S22299 "X-Men: Second Coming" 3f [shares gcd=46027 (collected by item 86225) — S cv=32271 gcd=46027 (A-027 0.9)] keys: "X-Men - Second Coming" | "X-Men - Second Coming - Prepare"
+   nearby: S22494 "X-Men Legacy: Back to School" 1f [shares cv=50403, shares gcd=218420 — S cv=50403 gcd=218420 (B-061 0.9)] keys: "X-Men: Legacy - Back to School"
+   nearby: S22497 "X-Men Legacy: Necrosha" 1f [title+1 — S cv=46566 gcd=222787 (A-026 0.7)] keys: "X-Men: Legacy — Necrosha"
+   keys now: "X-Men Legacy" x59 · "X-men Legacy" x48
+   groups (title x folder): 32
+   G1 "X-Men Legacy" in Marvel\_X-Men\X-Men Legacy\Trades — 7 file(s), 7 COL, pp 102-354; cv per-file 36998x1, 31611x1, 35716x1; gcd per-file 233266x1, 230812x1, 227085x1; key 'X-Men Legacy'
+      [86222] COL X-Men Legacy Vol. 04 - Salvage (2010) (Digital) (Kileko-Empire).cbr (170pp)
+         own record cv 36998 / gcd s233266 "X-Men: Legacy - Salvage" (issue 2813359) COLLECTS: gcd=29823 X-Men: Legacy (2008) #219-225 · gcd=233690 X-Men: Legacy - Salvage (2009) (unnumbered)
+      [86224] COL X-Men Legacy Vol. 06 - Emplate (2010) (Digital) (Kileko-Empire).cbr (115pp)
+         own record cv 31611 / gcd s230812 "X-Men Legacy: Emplate" (issue 2795830) COLLECTS: gcd=29823 X-Men: Legacy (2008) #228-230 · gcd=231027 X-Men Legacy: Emplate (2010) (unnumbered) · gcd=39631 X-Men Legacy Annual (2009) #1
+      [86225] COL X-Men Legacy Vol. 08 - Second Coming (2010) (Digital) (Zone-Empire).cbr (354pp)
+         own record cv 35716 / gcd s227085 "X-Men: Second Coming" (issue 2766236) COLLECTS: gcd=46027 X-Men: Second Coming (2010) #1-2 · gcd=29506 X-Force (2008) #26-28 · gcd=29823 X-Men: Legacy (2008) #235-237 · gcd=36520 New Mutants (2009) #12-14
+      [86226] COL X-Men Legacy Vol. 09 - Collision (2011) (Digital) (Kileko-Empire).cbr (102pp)
+         own record cv 39444 / gcd s226007 "X-Men: Legacy - Collision" (issue 2756403) COLLECTS: gcd=29823 X-Men: Legacy (2008) #238-241 · gcd=226008 X-Men: Legacy - Collision (2011) (unnumbered)
+      [86227] COL X-Men Legacy Vol. 10 - Aftermath (2013).cbr (118pp)
+         own record cv 42402 / gcd s223056 "X-Men Legacy: Aftermath" (issue 2729340) COLLECTS: gcd=29823 X-Men: Legacy (2008) #242-244, #248-249
+      [86228] COL X-Men Legacy Vol. 12 - Lost Legions (2015) (Digital) (Kileko-Empire).cbr (115pp)
+         own record cv 43254 / gcd s222157 "X-Men Legacy: Lost Legions" (issue 2719353) COLLECTS: gcd=29823 X-Men: Legacy (2008) #250-253 · gcd=222541 X-Men Legacy: Lost Legions (2011) (unnumbered)
+      [86230] COL X-Men Legacy Vol. 14 - Back to School (2015).cbr (143pp)
+         own record cv 50403 / gcd s218420 "X-Men: Legacy - Back to School" (issue 2685474) COLLECTS: gcd=29823 X-Men: Legacy (2008) #260.1, #261-265 · gcd=218632 X-Men: Legacy - Back to School (2012) (unnumbered)
+   G2 "X-men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0772 Divided We Stand — 7 file(s), numbers 208-214, pp 23-24; cv per-file 20691x7; gcd per-file 29823x7; key 'X-men Legacy'
+      e.g. 005 X-men Legacy 208 (2008) (Digital) (AnPymGold - Empire).cbr
+        90850 #208 2008 23pp · 90856 #209 2008 24pp · 90864 #210 2008 24pp · 90871 #211 2008 24pp · 90872 #212 2008 23pp · 90880 #213 2008 23pp · 90881 #214 2008 24pp
+   G3 "X-men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0783 Manifest Destiny — 2 file(s), numbers 215-216, pp 23-24; cv per-file 20691x2; gcd per-file 29823x2; key 'X-men Legacy'
+      [90947] 007 X-men Legacy 215 (2008) (Digital) (AnPymGold - Empire).cbr (24pp)
+      [90950] 010 X-men Legacy 216 (2008) (Digital) (AnPymGold - Empire).cbr (23pp)
+   G4 "X-men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0786 Original Sin — 2 file(s), numbers 217-218, pp 24-25; cv per-file 20691x2; gcd per-file 29823x2; key 'X-men Legacy'
+      [90993] 003 X-men Legacy 217 (2008) (Digital) (AnPymGold - Empire).cbr (25pp)
+      [90995] 005 X-men Legacy 218 (2009) (Digital) (AnPymGold - Empire).cbr (24pp)
+   G5 "X-men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0803 Salvage — 7 file(s), numbers 219-225, pp 23-25; cv per-file 20691x7; gcd per-file 29823x7; key 'X-men Legacy'
+      e.g. 001 X-men Legacy 219 (2009) (Digital) (AnPymGold - Empire).cbr
+        91100 #219 2009 23pp · 91101 #220 2009 24pp · 91102 #221 2009 23pp · 91103 #222 2009 24pp · 91104 #223 2009 24pp · 91105 #224 2009 23pp · 91106 #225 2009 25pp
+   G6 "X-men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0831 Dark X-Men - The Beginning — 2 file(s), numbers 226-227, pp 24-25; cv per-file 20691x2; gcd per-file 29823x2; key 'X-men Legacy'
+      [91253] 004 X-men Legacy 226 (2009) (Digital) (AnPymGold - Empire).cbr (25pp)
+      [91254] 005 X-men Legacy 227 (2009) (Digital) (AnPymGold - Empire).cbr (24pp)
+   G7 "X-Men Legacy Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0836 Devil At The Crossroads — 1 file(s), numbers 1, pp 39-39; cv per-file 20691x1; key 'X-Men Legacy'
+      [91274] 001 X-Men Legacy Annual 001 (2009) (Digital) (Cypher-Empire).cbr (39pp)
+   G8 "X-men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0836 Devil At The Crossroads — 3 file(s), numbers 228-230, pp 24-31; cv per-file 20691x3; gcd per-file 29823x3; key 'X-men Legacy'
+      [91275] 002 X-men Legacy 228 (2009) (Digital) (AnPymGold - Empire).cbr (24pp)
+      [91276] 003 X-men Legacy 229 (2010) (Digital) (AnPymGold - Empire).cbr (24pp)
+      [91277] 004 X-men Legacy 230 (2010) (Digital) (AnPymGold - Empire).cbr (31pp)
+   G9 "X-Men - Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0845 X-Necrosha — 1 file(s), numbers 232, pp 24-24; cv per-file 20691x1; gcd per-file 29823x1; key 'X-Men Legacy'
+      [91333] 010 X-Men - Legacy 232 (2010) (digital) (Minutemen-Faessla).cbz (24pp)
+   G10 "X-men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0845 X-Necrosha — 3 file(s), numbers 231, 233-234, pp 24-26; cv per-file 20691x3; gcd per-file 29823x3; key 'X-men Legacy'
+      [91331] 008 X-men Legacy 231 (2010) (Digital) (AnPymGold - Empire).cbr (24pp)
+      [91334] 011 X-men Legacy 233 (2010) (Digital) (AnPymGold - Empire).cbr (25pp)
+      [91340] 017 X-men Legacy 234 (2010) (Digital) (AnPymGold - Empire).cbr (26pp)
+   G11 "X-men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0865 Second Coming — 3 file(s), numbers 235-237, pp 24-25; cv per-file 20691x3; gcd per-file 29823x3; key 'X-men Legacy'
+      [91448] 005 X-men Legacy 235 (2010) (Digital) (AnPymGold - Empire).cbr (25pp)
+      [91452] 009 X-men Legacy 236 (2010) (Digital) (AnPymGold - Empire).cbr (24pp)
+      [91456] 013 X-men Legacy 237 (2010) (Digital) (AnPymGold - Empire).cbr (24pp)
+   G12 "X-men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0878 Collision — 4 file(s), numbers 238-241, pp 24-25; cv per-file 20691x4; gcd per-file 29823x4; key 'X-men Legacy'
+      e.g. 001 X-men Legacy 238 (2010) (Digital) (AnPymGold - Empire).cbr
+        91538 #238 2010 25pp · 91539 #239 2010 25pp · 91540 #240 2010 24pp · 91541 #241 2010 25pp
+   G13 "X-men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0894 Fables of the Reconstruction — 3 file(s), numbers 242-244, pp 24-30; cv per-file 20691x3; gcd per-file 29823x3; key 'X-men Legacy'
+      [91638] 001 X-men Legacy 242 (2011) (Digital) (AnPymGold - Empire).cbr (24pp)
+      [91639] 002 X-men Legacy 243 (2011) (Digital) (AnPymGold - Empire).cbr (25pp)
+      [91640] 003 X-men Legacy 244 (2011) (Digital) (AnPymGold - Empire).cbr (30pp)
+   G14 "X-men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0906 Age of X — 3 file(s), numbers 245-247, pp 25-25; cv per-file 20691x3; gcd per-file 29823x3; key 'X-men Legacy'
+      [91685] 002 X-men Legacy 245 (2011) (Digital) (AnPymGold - Empire).cbr (25pp)
+      [91687] 004 X-men Legacy 246 (2011) (Digital) (AnPymGold - Empire).cbr (25pp)
+      [91690] 007 X-men Legacy 247 (2011) (Digital) (AnPymGold - Empire).cbr (25pp)
+   G15 "X-men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0926 Age Of X Aftermath — 2 file(s), numbers 248-249, pp 22-23; cv per-file 20691x2; gcd per-file 29823x2; key 'X-men Legacy'
+      [91811] 001 X-men Legacy 248 (2011) (Digital) (AnPymGold - Empire).cbr (23pp)
+      [91812] 002 X-men Legacy 249 (2011) (Digital) (AnPymGold - Empire).cbr (22pp)
+   G16 "X-men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0932 Lost Legions — 4 file(s), numbers 250-253, pp 23-55; cv per-file 20691x4; gcd per-file 29823x4; key 'X-men Legacy'
+      e.g. 001 X-men Legacy 250 (2011) (Digital) (AnPymGold - Empire).cbr
+        91834 #250 2011 55pp · 91835 #251 2011 23pp · 91836 #252 2011 23pp · 91837 #253 2011 23pp
+   G17 "X-Men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0942 Five Miles South of the Universe — 2 file(s), numbers 256, 258, pp 22-23; cv per-file 20691x2; gcd per-file 29823x2; key 'X-Men Legacy'
+      [91889] 003 X-Men Legacy 256 (2011) (digital-hd) (Kleio-Empire).cbz (23pp)
+      [91891] 005 X-Men Legacy 258 (2012) (digital-hd) (Kleio-Empire).cbz (22pp)
+   G18 "X-men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0942 Five Miles South of the Universe — 3 file(s), numbers 254-255, 257, pp 22-23; cv per-file 20691x3; gcd per-file 29823x3; key 'X-men Legacy'
+      [91887] 001 X-men Legacy 254 (2011) (Digital) (AnPymGold - Empire).cbr (22pp)
+      [91888] 002 X-men Legacy 255 (2011) (Digital) (AnPymGold - Empire).cbr (22pp)
+      [91890] 004 X-men Legacy 257 (2011) (Digital) (AnPymGold - Empire).cbr (23pp)
+   G19 "X-Men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0960 Half A Step — 2 file(s), numbers 259-260, pp 24-24; cv per-file 20691x2; gcd per-file 29823x2; key 'X-Men Legacy'
+      [91960] 001 X-Men Legacy 259 (2012) (digital) (Minutemen-Faessla).cbz (24pp)
+      [91961] 002 X-Men Legacy 260 (2012) (digital) (Minutemen-Faessla).cbz (24pp)
+   G20 "X-Men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0972 Lost Tribes — 6 file(s), numbers 1, 261-265, pp 23-23; cv per-file 20691x6; gcd per-file 29823x5, 69872x1; key 'X-Men Legacy'
+      e.g. 002 X-Men Legacy 261 (2012) (digital-hd) (Kleio-Empire).cbz
+        92011 #261 2012 23pp · 92012 #262 2012 23pp · 92013 #263 2012 23pp · 92014 #264 2012 23pp · 92015 #265 2012 23pp
+      [92010] 001 X-Men Legacy 260.1 (2012) (digital) (Minutemen-Faessla).cbz (23pp)
+   G21 "X-Men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0988 AvX — 5 file(s), numbers 266-270, pp 22-23; cv per-file 20691x5; gcd per-file 29823x5; key 'X-Men Legacy'
+      e.g. 015 X-Men Legacy 266 (2012) (digital) (Minutemen-Faessla).cbz
+        92097 #266 2012 23pp · 92098 #267 2012 22pp · 92112 #268 2012 23pp · 92132 #269 2012 23pp · 92133 #270 2012 23pp
+   G22 "X-Men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0994 Untitled — 3 file(s), numbers 271-273, pp 23-24; cv per-file 20691x3; gcd per-file 29823x3; key 'X-Men Legacy'
+      [92165] 001 X-Men Legacy 271 (2012) (Digital) (Zone-Empire).cbr (23pp)
+      [92166] 002 X-Men Legacy 272 (2012) (Digital) (Zone-Empire).cbr (23pp)
+      [92167] 003 X-Men Legacy 273 (2012) (Digital) (Zone-Empire).cbr (24pp)
+   G23 "X-Men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\0999 Untitled — 2 file(s), numbers 274-275, pp 24-24; cv per-file 20691x2; gcd per-file 29823x2; key 'X-Men Legacy'
+      [92182] 001 X-Men Legacy 274 (2012) (Digital) (Zone-Empire).cbr (24pp)
+      [92183] 002 X-Men Legacy 275 (2012) (Digital) (Zone-Empire).cbr (24pp)
+   G24 "X-Men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\1017 Prodigal — 6 file(s), numbers 1-6, pp 22-23; cv per-file 20691x6; gcd per-file 69872x6; key 'X-Men Legacy'
+      e.g. 001 X-Men Legacy 001 (2012) (digital) (Minutemen-InnerDemons).cbr
+        92273 #1 2012 22pp · 92274 #2 2013 23pp · 92275 #3 2012 23pp · 92276 #4 2012 23pp · 92277 #5 2013 23pp · 92278 #6 2013 22pp
+   G25 "X-Men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\1029 Holy Ghosts — 3 file(s), numbers 7-9, pp 23-23; cv per-file 20691x3; gcd per-file 69872x3; key 'X-Men Legacy'
+      [92337] 001 X-Men Legacy 007 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp)
+      [92338] 002 X-Men Legacy 008 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp)
+      [92339] 003 X-Men Legacy 009 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp)
+   G26 "X-Men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\1035 Invasive Exotic — 3 file(s), numbers 10-12, pp 23-23; cv per-file 20691x3; gcd per-file 69872x3; key 'X-Men Legacy'
+      [92379] 001 X-Men Legacy 010 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp)
+      [92380] 002 X-Men Legacy 011 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp)
+      [92381] 003 X-Men Legacy 012 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp)
+   G27 "X-Men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\1041 Hope and Glory — 2 file(s), numbers 13-14, pp 22-22; cv per-file 20691x2; gcd per-file 69872x2; key 'X-Men Legacy'
+      [92402] 001 X-Men Legacy 013 (2013) (digital) (Minutemen-InnerDemons).cbr (22pp)
+      [92403] 002 X-Men Legacy 014 (2013) (digital) (Minutemen-InnerDemons).cbr (22pp)
+   G28 "X-Men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\1052 Wear The Grudge Like a Crown — 4 file(s), numbers 15-18, pp 19-23; cv per-file 20691x4; gcd per-file 69872x4; key 'X-Men Legacy'
+      e.g. 001 X-Men Legacy 015 (2013) (digital) (Minutemen-InnerDemons).cbr
+        92456 #15 2013 22pp · 92457 #16 2013 23pp · 92458 #17 2013 19pp · 92459 #18 2013 22pp
+   G29 "X-Men Legacy" in Marvel\_X-Men\_X-Men Complete Chronology V2\1068 For We Are Many — 7 file(s), numbers 19-24, 300, pp 20-32; cv per-file 20691x7; gcd per-file 69872x7; key 'X-Men Legacy'
+      e.g. 001 X-Men Legacy 019 (2014) (digital) (Minutemen-InnerDemons).cbr
+        92539 #19 2014 23pp · 92540 #20 2014 20pp · 92541 #21 2014 22pp · 92542 #22 2014 21pp · 92543 #23 2014 20pp · 92544 #24 2014 23pp · 92545 #300 2014 32pp
+   G30 "X-Men Legacy" in Marvel\__Skottie Young Covers — 1 file(s), numbers 1, pp 1-1; cv per-file 20691x1; gcd per-file 69872x1; key 'X-Men Legacy'
+      [52042] X-Men Legacy 001 (2013) (Skottie Young 'Baby' Variant) (Cover ONLY) (ScanDog+ArtNet).cbz (1pp)
+   G31 "X-Men - Legacy" in _Marvel Major Event Chronology (digital)\2008.06 - Secret Invasion\03 Tie-ins\_Variant Covers — 1 file(s), numbers 211, pp 2-2; cv per-file 20691x1; gcd per-file 29823x1; key 'X-Men Legacy'
+      [116995] X-Men - Legacy 211 (2008) (Skrully Incentive Variant) (Minutemen-RainsDesire).cbr (2pp)
+   G32 "X-Men Legacy" in _Marvel Major Event Chronology (digital)\2009.12 - X-Men - Necrosha — 3 file(s), numbers 231-233, pp 24-25; cv per-file 20691x3; gcd per-file 29823x3; key 'X-Men Legacy'
+      [117299] 10 X-Men Legacy 231 (2010) (digital-hd) (Kleio-Empire).cbz (24pp)
+      [117300] 11 X-Men Legacy 232 (2010) (digital-hd) (Kleio-Empire).cbz (24pp)
+      [117302] 13 X-Men Legacy 233 (2010) (digital-hd) (Kleio-Empire).cbz (25pp)
+
+== S64672 Fantastic Four  [split]  107 files / 16 collections  decided in C-046 (R)
+   decided: R 64672 | this shelf mixes three Fantastic Four identities: the dominant v7 ongoing (CV 145912/GCD 192395, 2022-2025, 33 issues cached #1-30, ~85+ issue files + its own "by Ryan North" Vol.01/03/04 trades + 2023 Annual), the prior v6 ongoing (CV 112685/GCD 127448, 2018-2022, 48 issues — confirmed by direct lookup.py, count and years matching exactly) represented here ONLY by 11 "COL Fantastic Four Vol.01-11" trades (79784-79794; its own GCD collected-edition row 141720, count 11, matches exactly) plus two misfiled single issues (118479-118480, #029-030, 2021), and Hickman's 2009 Fantastic Four run reprinted in two "Complete Collection" Book 03/04 trades (79741-79742) — eleven whole trades of a different completed run is a co-equal identity per the residue ruling ("two or more whole trades of a DIFFERENT run... even at 6:2"), not shelf residue
+   F 64672 split-needed | proposed: v7 (2022-2025) cv=145912 gcd=192395 as the dominant identity (~85+ files + its own trades); v6 (2018-2022) cv=112685 gcd=127448 for items 79784-79794 (COL Vol.01-11) + 118479-118480 (issues 029-030); Hickman's 2009 run (items 79741-79742, Complete Collection Book 03-04) needs its own ids, not resolved this pass
+   N 64672 if-not-split | should the lead prefer one S line over an R: v7 is dominant at cv=145912 gcd=192395, with the v6 trades/issues and Hickman book as named residue instead
+   nearby: S64669 "Fantastic Four" 547f [shares cv=2045, shares gcd=1482 (collected by item 79785) — S cv=2045 gcd=1482 (C-044 0.9)] keys: "Fantastic Four" | "Fantastic Four (1961)" | "Fantastic Four v1 (1961)"
+   nearby: S64673 "Fantastic Four" 3f [shares cv=165358 — S cv=165358 gcd=225304 (A-024 0.9)] keys: "Fantastic Four (2025)"
+   nearby: S102549 "Tales Through the Marvel Universe (2019)" 1f [shares gcd=137838 (collected by item 79789) — S cv=116505 gcd=137838 (R-031 0.95)] keys: "Tales Through the Marvel Universe (2019)"
+   nearby: S94595 "Fantastic Four" 98f [title — S cv=6211 gcd=11218 (C-044 0.9)] keys: "Fantastic Four v1 (2003)" | "Fantastic Four v3 (1998)"
+   nearby: S94599 "Fantastic Four v4 (2013)" 16f [title — S gcd=69567 (C-044 0.9)] keys: "Fantastic Four v4 (2013)"
+   nearby: S64670 "Fantastic Four 2099" 8f [title — S cv=18413 gcd=7607 (A-022 0.95)] keys: "Fantastic Four (1996)"
+   nearby: S94596 "Fantastic Four" 4f [title — S cv=71949 gcd=79254 (B-055 0.9)] keys: "Fantastic Four v1 (2015)" | "Fantastic Four v5 (2014)"
+   nearby: S6517 "Fantastic Four by Jonathan Hickman: The Complete Collection" 1f [title — S cv=112949 gcd=127952 (B-055 0.9)] keys: "Fantastic Four by Jonathan Hickman: The Complete Collection"
+   nearby: S6518 "Fantastic Four by Ryan North" 1f [title — S cv=152130 gcd=201989 (B-049 0.9)] keys: "Fantastic Four by Ryan North"
+   nearby: S64671 "Fantastic Four Annual No. 6 Facsimile Edition" 1f [title — S cv=124632 gcd=155420 (A-024 0.95)] keys: "Fantastic Four (2019)"
+   nearby: S94597 "Fantastic Four v2 (1996)" 1f [title — S gcd=10251 (C-044 0.9)] keys: "Fantastic Four v2 (1996)"
+   nearby: S6526 "Fantastic Four: Foes" 6f [title+1 — S cv=11090 gcd=12023 (A-023 0.95)] keys: "Fantastic Four: Foes"
+   nearby: S12810 "New Fantastic Four " 5f [title+1 — S cv=143757 gcd=186333 (A-020 0.95)] keys: "New Fantastic Four"
+   nearby: S20617 "Ultimate Fantastic Four" 5f [title+1 — S cv=10379 gcd=11256 (A-025 0.95)] keys: "Ultimate Fantastic Four Collection"
+   nearby: S6466 "Fantastic Four/Inhumans" 2f [title+1 — S cv=38881 gcd=91535 (B-056 0.9)] keys: "Fantastic Four - Inhumans" · (+4 more by title)
+   keys now: "Fantastic Four v7 (2023)" x90 · "Fantastic Four v6 (2018)" x12 · "Fantastic Four (2022)" x5
+   groups (title x folder): 9
+   G1 "Fantastic Four" in Marvel\#MARVEL CURRENT ONGOING TITLES\Fantastic Four v7 (2023) — 6 file(s), numbers 23-28, pp 23-35; cv per-file 2045x6; gcd per-file 1482x5, 192395x1; key 'Fantastic Four v7 (2023)'
+      e.g. Fantastic Four 023 (2024) (Digital) (Shan-Empire).cbz
+        47686 #23 2024 25pp · 47687 #24 2024 23pp · 47688 #25 2024 35pp · 47689 #26 2024 24pp · 47690 #27 2025 24pp · 47691 #28 2025 25pp
+   G2 "Fantastic Four by Ryan North" in Marvel\#MARVEL CURRENT ONGOING TITLES\Fantastic Four v7 (2023) — 3 file(s), 3 COL, pp 112-151; cv per-file 165358x2, 145912x1; gcd per-file 18171x1, 62349x1; key 'Fantastic Four v7 (2023)'
+      [47692] COL Fantastic Four by Ryan North Vol. 01 - Whatever Happened to the Fantastic Four (2023) (Digital-Empire).cbr (151pp)
+      [47694] COL Fantastic Four by Ryan North Vol. 03 - The Impossible Is Probable (2024) (Digital) (Shan-Empire).cbz (144pp)
+         own record cv 165358 / gcd s18171 "Fantastic Four" (issue 296775) COLLECTS: gcd=11218 Fantastic Four (1998) (unnumbered)  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [47695] COL Fantastic Four by Ryan North Vol. 04 - Fortune Favors the Fantastic (2024) (Digital) (Shan-Empire).cbz (112pp)
+   G3 "Fantastic Four Annual" in Marvel\#MARVEL CURRENT ONGOING TITLES\Fantastic Four v7 (2023)\Annuals and Specials — 1 file(s), numbers 1, pp 30-30; cv per-file 145912x1; key 'Fantastic Four v7 (2023)'
+      [47684] Fantastic Four Annual 001 (2023) (Digital) (Zone-Empire).cbr (30pp)
+   G4 "Fantastic Four" in Marvel\#MARVEL CURRENT ONGOING TITLES\Fantastic Four v7 (2023)\Variant Covers — 80 file(s), numbers 1-2, 4-8, 11, 16-28, pp 1-1; cv per-file 145912x41, 2045x39; gcd per-file 1482x27, 211458x15, 192395x13; key 'Fantastic Four v7 (2023)'
+      e.g. Fantastic Four 001 (2022) (1-in-100 J. Scott Campbell Anniversary Virgin Variant) (Digital) (MikeNY76-Empire).cbz
+        47706 #1 2022 1pp · 47707 #1 2022 1pp · 47708 #1 2022 1pp · 47709 #1 2022 1pp · 47710 #1 2022 1pp · 47711 #1 2022 1pp · 47712 #1 2022 1pp · 47713 #1 2022 1pp · 47714 #1 2022 1pp
+        47715 #1 2022 1pp · 47716 #1 2022 1pp · 47717 #2 2022 1pp · 47718 #2 2022 1pp · 47719 #2 2022 1pp · 47720 #2 2022 1pp · 47722 #4 2023 1pp · 47723 #4 2023 1pp · 47724 #4 2023 1pp
+        47726 #5 2023 1pp · 47727 #5 2023 1pp · 47728 #5 2023 1pp · 47729 #5 2023 1pp · 47732 #6 2023 1pp · 47733 #6 2023 1pp · 47734 #6 2023 1pp · 47735 #7 2023 1pp · 47736 #7 2023 1pp
+        47737 #7 2023 1pp · 47738 #7 2023 1pp · 47739 #7 2023 1pp · 47740 #7 2023 1pp · 47741 #7 2023 1pp · 47743 #8 2023 1pp · 47744 #8 2023 1pp · 47745 #8 2023 1pp · 47746 #8 2023 1pp
+        47749 #17 2024 1pp · 47751 #18 2024 1pp · 47753 #19 2024 1pp · 47754 #20 2024 1pp · 47755 #20 2024 1pp · 47756 #20 2024 1pp · 47757 #21 2024 1pp · 47758 #21 2024 1pp · 47759 #21 2024 1pp
+        47760 #21 2024 1pp · 47761 #21 2024 1pp · 47762 #22 2024 1pp · 47763 #22 2024 1pp · 47764 #22 2024 1pp · 47765 #23 2024 1pp · 47766 #23 2024 1pp · 47767 #23 2024 1pp · 47768 #24 2024 1pp
+        47769 #24 2024 1pp · 47770 #24 2024 1pp · 47771 #25 2024 1pp · 47772 #25 2024 1pp · 47773 #25 2024 1pp · 47774 #25 2024 1pp · 47775 #26 2024 1pp · 47776 #26 2024 1pp · 47777 #26 2024 1pp
+        47778 #27 2024 1pp · 47779 #27 2024 1pp · 47780 #27 2024 1pp · 47781 #27 2024 1pp · 47782 #27 2024 1pp · 47783 #28 2025 1pp · 47784 #28 2025 1pp
+      [47704] Fantastic Four 001 (2018) Mike Mayhew Gotham Central Variant (PeteThePIPster-Novus).cbz (1pp)
+      [47705] Fantastic Four 001 (2018) Mike Mayhew Gotham Central Virgin Variant (PeteThePIPster-Novus).cbz (1pp)
+      [47725] Fantastic Four 004 (2023) Alex Ross Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47730] Fantastic Four 005 (2023) Alex Ross Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47731] Fantastic Four 005 (2023) Bachalo Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47742] Fantastic Four 007 (2023) Greg Land Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47747] Fantastic Four 011 (2023) Greg Land Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47748] Fantastic Four 016 (2024) David Marquez Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47750] Fantastic Four 017 (2024) Lee Garbett Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47752] Fantastic Four 018 (2024) Phil Noto Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+   G5 "Fantastic Four Annual" in Marvel\_Fantastic Four\00 Annuals and Specials — 1 file(s), numbers 27, pp 54-54; cv per-file 145912x1; gcd per-file 1482x1; key 'Fantastic Four (2022)'
+      [79174] Fantastic Four Annual 027 (1994) (Digital) (Shadowcat-Empire).cbz (54pp)
+   G6 "Fantastic Four by Jonathan Hickman - The Complete Collection" in Marvel\_Fantastic Four\06 Hickman's Fantastic Four (2009)\Complete Collection — 2 file(s), 2 COL, pp 350-450; cv per-file 145912x2; gcd per-file 173994x1; key 'Fantastic Four (2022)'
+      [79741] COL Fantastic Four by Jonathan Hickman - The Complete Collection Book 03 (2021) (Digital) (F) (EJGriffin-Empire).cbz (450pp)
+         own record cv 145912 / gcd s173994 "Fantastic Four" (issue 2239976) COLLECTS: gcd=127448 Fantastic Four (2018) (unnumbered)  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [79742] COL Fantastic Four by Jonathan Hickman - The Complete Collection Book 04 (2023) (Digital) (EJGriffin-Empire).cbz (350pp)
+   G7 "Fantastic Four" in Marvel\_Fantastic Four\11 Fantastic Four v6 (2018) — 11 file(s), 11 COL, pp 102-180; cv per-file 145912x6, 2045x3, 142786x2; gcd per-file 141720x9, 147504x1, 173994x1; key 'Fantastic Four v6 (2018)'
+      [79784] COL Fantastic Four Vol. 01 - Fourever (2019) (Digital) (Zone-Empire).cbr (112pp)
+         own record cv 2045 / gcd s141720 "Fantastic Four" (issue 1932002) COLLECTS: gcd=127448 Fantastic Four (2018) #1-4
+      [79785] COL Fantastic Four Vol. 02 - Mr. and Mrs. Grimm (2019) (Digital) (Zone-Empire).cbr (119pp)
+         own record cv 2045 / gcd s141720 "Fantastic Four" (issue 1968255) COLLECTS: gcd=127448 Fantastic Four (2018) (unnumbered) · gcd=135471 Fantastic Four Wedding Special (2019) #1 · gcd=1482 Fantastic Four (1961) #8
+      [79786] COL Fantastic Four Vol. 03 - The Herald of Doom (2019) (Digital) (Zone-Empire).cbr (140pp)
+      [79787] COL Fantastic Four Vol. 04 - Thing vs. Immortal Hulk (2020) (Digital) (EJGriffin).cbz (116pp)
+         own record cv 142786 / gcd s141720 "Fantastic Four" (issue 2180757) COLLECTS: gcd=127448 Fantastic Four (2018) (unnumbered) · gcd=149947 Fantastic Four: 4 Yancy Street (2019) #1 · gcd=153120 Fantastic Four: Negative Zone (2020) #1
+      [79788] COL Fantastic Four Vol. 05 - Point of Origin (2020) (Digital) (EJGriffin-Empire).cbz (143pp)
+         own record cv 142786 / gcd s141720 "Fantastic Four" (issue 2186366) COLLECTS: gcd=127448 Fantastic Four (2018) (unnumbered)
+      [79789] COL Fantastic Four Vol. 06 - Empyre (2021) (Digital) (EJGriffin-Empire).cbz (128pp)
+         own record cv 145912 / gcd s173994 "Fantastic Four" (issue 2239979) COLLECTS: gcd=127448 Fantastic Four (2018) (unnumbered) · gcd=137838 Marvel Comics Presents (2019) #2
+      [79790] COL Fantastic Four Vol. 07 - The Forever Gate (2021) (Digital) (EJGriffin-Empire).cbz (142pp)
+         own record cv 145912 / gcd s141720 "Fantastic Four" (issue 2233867) COLLECTS: gcd=127448 Fantastic Four (2018) (unnumbered)
+      [79791] COL Fantastic Four Vol. 08 - The Bride of Doom (2022) (Digital) (EJGriffin-Empire).cbz (180pp)
+         own record cv 145912 / gcd s141720 "Fantastic Four" (issue 2273144) COLLECTS: gcd=127448 Fantastic Four (2018) #32
+      [79792] COL Fantastic Four Vol. 09 - Eternal Flame (2022) (Digital-Empire).cbr (157pp)
+         own record cv 145912 / gcd s141720 "Fantastic Four" (issue 2372075) COLLECTS: gcd=127448 Fantastic Four (2018) (unnumbered) · gcd=167218 Fantastic Four: Road Trip (2021) (unnumbered) · gcd=156496 Fantastic Four: Grimm Noir (2020) #1
+      [79793] COL Fantastic Four Vol. 10 - Reckoning War Part I (2022) (Digital) (EJGriffin-Empire).cbz (128pp)
+         own record cv 145912 / gcd s141720 "Fantastic Four" (issue 2422605) COLLECTS: gcd=127448 Fantastic Four (2018) #42 · gcd=180956 Fantastic Four: Reckoning War Alpha (2022) #1 · gcd=182931 Reckoning War: Trial of the Watcher (2022) (unnumbered)
+      [79794] COL Fantastic Four Vol. 11 - Reckoning War Part II (2023) (Digital) (EJGriffin-Empire).cbz (102pp)
+         own record cv 145912 / gcd s141720 "Fantastic Four" (issue 2447615) COLLECTS: gcd=127448 Fantastic Four (2018) (unnumbered)
+   G8 "Fantastic Four" in Marvel\_Fantastic Four\11 Fantastic Four v6 (2018)\Annuals and Specials — 1 file(s), numbers 6, pp 94-94; cv per-file 2045x1; gcd per-file 147504x1; key 'Fantastic Four v6 (2018)'
+      [79782] Fantastic Four 006 - Director's Cut (2019) (Digital) (Zone-Empire).cbr (94pp)
+   G9 "Fantastic Four" in _Marvel Major Event Chronology (digital)\2020.11 - King in Black\02 Tie-ins\Fantastic Four — 2 file(s), numbers 29-30, pp 23-24; cv per-file 145912x2; gcd per-file 1482x2; key 'Fantastic Four (2022)'
+      [118479] Fantastic Four 029 (2021) (Digital) (Zone-Empire).cbr (24pp)
+      [118480] Fantastic Four 030 (2021) (Digital) (Zone-Empire).cbr (23pp)
+
+== S16072 Spider-Man  [split]  126 files / 24 collections  decided in C-037 (R)
+   decided: R 16072 | this shelf buckets at least eight distinct Spider-Man runs/lines with no shared CV/GCD id: the 2024 Ultimate Spider-Man v3 relaunch (majority of files, GCD per-file split across Panini DE/FR co-editions with no English row surfaced in this packet), Spider-Man 1602 (2009, 5-issue mini, items 99677-99681), Spider-Man 2099's 1992 run (CV18354/GCD4477) plus its "Classic" reprint line (GCD76211) plus the SEPARATE 2014 run (CV75557/GCD81678) plus the SEPARATE 2015-2017 continuation (CV85312/GCD93077) plus the 2022 Exodus mini (CV143301/GCD185566) plus the 2023 Dark Genesis mini (CV150027/GCD200232), Ultimate Spider-Man (2000, CV7257/GCD7825, issues 117465-117477/97968/97969 plus its own Omnibus/Vol.01-06 trades), "The Amazing Spider-Man" legacy spanning volume (CV2127, paired with GCD1570 for the 1963-1998 era or GCD11288 for the 1999-2014 legacy-numbered era depending on issue number) which the Dan Slott/Bagley/Tombstone/Death-of-the-Stacys trades collect, and loose 616 Spider-Man issues from three further decades (1991, 1995-1996, 2016-2017) — no single id spans this bucket
+   F 16072 split-needed | see R clause; the runs found are named there with ids confirmed via lookup.py/gcd_issue this repair pass
+   N 53936 no-record | "Spider-Man 2099 - Exodus (2022)" collects the whole 5-issue Exodus mini (CV143301/GCD185566); probed "Spider-Man 2099 Exodus" for the TPB's own id — only the mini's own series-level id and a count-1 near-duplicate (148948) were found, too ambiguous to pick one as the trade's own record
+   N 53937 no-record | "Spider-Man 2099 - Dark Genesis (2023)" — probed "Spider-Man 2099 Dark Genesis"; only the mini's own series-level id found, no distinct TPB-level id
+   N 93907 no-record | "COL Dan Slott Spider-Man Vol.01 - Brand New Day" — probed "Amazing Spider-Man Brand New Day" (found only CV89951, the LARGER 4-issue "Complete Collection" spanning both our Vol.01/02, not this book alone); no single-volume id confirmed for this trade's own record
+   N 93908 no-record | probed "Amazing Spider-Man Brand New Day" — same result as item 93907, no single-volume id for Vol.02 alone
+   N 95793 no-record | "COL Spider-Man by David Michelinie & Mark Bagley Omnibus Book 01" — probed "Spider-Man Michelinie Bagley Omnibus" and variants; no dedicated CV/GCD id found for this specific omnibus
+   nearby:
+   nearby: S19654 "The Spectacular Spider-Man" 271f [shares gcd=2359 (collected by item 95948) — S cv=2870 gcd=2359 (C-050 0.95)] keys: "Peter Parker, The Spectacular Spider-Man" | "Peter Parker, the Spectacular Spider-Man" | "The Spectacular Spider-Man" | "The Spectacular Spider-Man cvv2870"
+   nearby: S66237 "Web of Spider-Man" 155f [shares gcd=3059 (collected by item 52116) — S cv=3519 gcd=3059 (R-028 0.9)] keys: "The Amazing Spider-Man Epic Collection 28: Web of Life, Web of Death (1985)" | "Web Of Spider-Man" | "Web of Spider-Man (1985)" | "Web of Spider-Man Super Special" (+2 more: lookup.py --shelf 66237)
+   nearby: S99972 "Spider-Man" 61f [shares gcd=4049 — S cv=4421 gcd=4049 (B-059 1.0)] keys: "Spider-Man v1 (1990)"
+   nearby: S5749 "Doom 2099" 45f [shares gcd=4690 (collected by item 52118) — S cv=18445 gcd=4690 (R-035 0.95)] keys: "Doom" | "Doom 2099"
+   nearby: S22330 "X-Men 2099" 30f [shares gcd=4752 (collected by item 52118) — S cv=18073 gcd=4752 (R-047 0.9)] keys: "X-Men 2099" | "X-Men 2099 Oasis"
+   nearby: S20622 "Ultimate Spider-Man" 27f [shares cv=7257 (R clause), shares gcd=7825 (R clause) — S cv=7257 gcd=7825 (C-051 0.9)] keys: "Ultimate Spider-Man"
+   nearby: S4752 "The Amazing Spider-Man" 15f [shares cv=2127 (R clause), shares gcd=11288 (R clause) — S cv=2127 gcd=11288 (R-045 0.9)] keys: "Dan Slott Spider-Man"
+   nearby: S16131 "Spider-Man 2099" 15f [shares cv=18354 (R clause), shares gcd=4477 (R clause) — S cv=18354 gcd=4477 (C-040 0.9)] keys: "Spider-Man 2099" | "Spider-Man 2099 Classic" | "Spider-Man 2099 vs. Venom 2099"
+   nearby: S15334 "The Sensational Spider-Man" 11f [shares gcd=5557 (collected by item 93763) — S cv=5788 gcd=5557 (B-059 0.95)] keys: "Sensational Spider-Man"
+   nearby: S63 "2099 Unlimited" 10f [shares gcd=4667 (collected by item 52116) — S cv=18463 gcd=4667 (A-022 0.95)] keys: "2099 Unlimited"
+   nearby: S15708 "Ultimate Six" 8f [shares gcd=18989 (collected by item 97130) — S cv=19405 gcd=18989 (C-064 0.95)] keys: "Six"
+   nearby: S1692 "Avenging Spider-Man" 4f [shares gcd=61993 (collected by item 52132) — S cv=43884 gcd=61993 (C-042 0.9)] keys: "Avenging Spider-Man" | "Avenging Spider-Man: The Complete Collection"
+   nearby: S15133 "Scarlet Spider" 4f [shares gcd=62834 (collected by item 52132) — S cv=45101 gcd=62834 (B-059 0.95)] keys: "Scarlet Spider"
+   nearby: S16203 "The Amazing Spider-Man: Brand New Day: The Complete Collection" 4f [shares cv=89951 (N line) — S cv=89951 gcd=100626 (A-025 0.9)] keys: "Spider-Man: Brand New Day — The Complete Collection"
+   nearby: S34224 "The Spectacular Spider-Man Annual" 2f [shares gcd=2518 (collected by item 95948) — S cv=3012 gcd=2518 (C-055 0.95)] keys: "Spectacular Spider-Man Annual"
+   nearby: S14406 "Ravage 2099" 1f [shares gcd=4471 (collected by item 52118) — S cv=18470 gcd=4471 (C-040 0.95)] keys: "Ravage 2099"
+   nearby: S16089 "Spider-Man: Death of the Stacys" 1f [shares gcd=27784 — S cv=33398 gcd=27784 (B-071 0.95)] keys: "Spider-Man - Death of the Stacys"
+   nearby: S16178 "Spider-Man by Todd Dezago & Mike Wieringo" 1f [shares cv=101637, shares gcd=114316 — S cv=101637 gcd=114316 (B-059 0.95)] keys: "Spider-Man by Todd Dezago & Mike Wieringo"
+   nearby: S99973 "Spider-Man v4 (2022)" 30f [title] keys: "Spider-Man v4 (2022)"
+   nearby: S64133 "Amazing Spider-Man (1963)" 869f [title+1] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "The Amazing Spider-Man (1963)"
+   nearby: S95053 "Amazing Spider-man v6 (2022)" 154f [title+1 — S gcd=200583 (C-035 0.9)] keys: "Amazing Spider-man v6 (2022)"
+   nearby: S16224 "Spider-Man: Reign 2" 23f [title+1 — S cv=158696 gcd=213443 (A-020 0.95)] keys: "Spider-Man - Reign" | "Spider-Man: Reign 2"
+   nearby: S17160 "Superior Spider-Man" 20f [title+1 — S cv=55552 gcd=71030 (R-045 0.95)] keys: "Superior Spider-Man" | "Superior Spider-Man 006AU"
+   nearby: S95051 "The Amazing Spider-Man" 16f [title+1 — S cv=112161 gcd=126774 (R-044 0.9)] keys: "Amazing Spider-Man v5 (2018)"
+   nearby: S99971 "Spider-Man Unlimited" 15f [title+1 — S cv=11306 gcd=12252 (C-050 0.9)] keys: "Spider-Man Unlimited v3 (2004)"
+   nearby: S94799 "Superior Spider-Man" 14f [title+1 — S cv=154675 gcd=205719 (C-050 0.9)] keys: "Superior Spider-Man v3 (2024)"
+   nearby: S34339 "The Amazing Spider-Man" 13f [title+1] keys: "Amazing Spider-Man" | "The Amazing Spider-Man"
+   nearby: S16193 "Spider-Man/Deadpool" 11f [title+1 — S cv=87182 gcd=105778 (C-050 0.9)] keys: "Spider-Man - Deadpool" | "Spider-Man/Deadpool"
+   nearby: S20604 "Ultimate Comics Spider-Man" 11f [title+1 — S cv=42821 gcd=60934 (C-064 0.9)] keys: "Ultimate Comics Spider-Man"
+   nearby: S95052 "The Amazing Spider-Man" 11f [title+1 — S cv=73420 gcd=80405 (R-045 0.9)] keys: "Amazing Spider-man v3 (2014)" · (+34 more by title)
+   keys now: "Spider-Man" x126
+   groups (title x folder): 31
+   G1 "Ultimate Spider-Man" in Marvel\#MARVEL CURRENT ONGOING TITLES\Ultimate Comics (2023)\Ultimate Spider-Man v3 (2024) — 7 file(s), numbers 7-13, pp 25-31; cv per-file 43261x7; gcd per-file 197254x3, 217058x1; key 'Spider-Man'
+      e.g. Ultimate Spider-Man 007 (2024) (Digital) (Shan-Empire).cbz
+        48673 #7 2024 25pp · 48674 #8 2024 29pp · 48675 #9 2024 29pp · 48676 #10 2024 29pp · 48677 #11 2025 29pp · 48678 #12 2025 31pp · 48679 #13 2025 28pp
+   G2 "Ultimate Spider-Man" in Marvel\#MARVEL CURRENT ONGOING TITLES\Ultimate Comics (2023)\Ultimate Spider-Man v3 (2024)\Variant Covers — 53 file(s), numbers 1-13, pp 1-1; cv per-file 43261x53; gcd per-file 217059x21, 217058x15, 197254x15; key 'Spider-Man'
+      e.g. Ultimate Spider-Man 001 (2024) (David Marquez Variant) (Digital) (MikeNY76-Empire).cbz
+        48681 #1 2024 1pp · 48682 #1 2024 1pp · 48683 #1 2024 1pp · 48684 #1 2024 1pp · 48685 #1 2024 1pp · 118015 #2 2024 1pp · 118016 #2 2024 1pp · 48691 #2 2024 1pp · 48693 #3 2024 1pp
+        48694 #3 2024 1pp · 48695 #3 2024 1pp · 48696 #3 2024 1pp · 48698 #4 2024 1pp · 48699 #4 2024 1pp · 48700 #4 2024 1pp · 48702 #5 2024 1pp · 48703 #5 2024 1pp · 48704 #5 2024 1pp
+        48705 #5 2024 1pp · 48706 #5 2024 1pp · 48707 #6 2024 1pp · 48708 #6 2024 1pp · 48709 #6 2024 1pp · 48710 #6 2024 1pp · 48711 #6 2024 1pp · 48712 #6 2024 1pp · 48713 #6 2024 1pp
+        48714 #7 2024 1pp · 48715 #7 2024 1pp · 48716 #7 2024 1pp · 48717 #8 2024 1pp · 48718 #8 2024 1pp · 48719 #9 2024 1pp · 48720 #9 2024 1pp · 48721 #9 2024 1pp · 48722 #9 2024 1pp
+        48723 #10 2024 1pp · 48724 #10 2024 1pp · 48725 #11 2024 1pp · 48726 #11 2024 1pp · 48727 #11 2024 1pp · 48728 #12 2024 1pp · 48729 #12 2024 1pp · 48730 #12 2024 1pp · 48731 #12 2024 1pp
+        48732 #13 2025 1pp · 48733 #13 2025 1pp
+      [48686] Ultimate Spider-Man 001 (2024) Marco Checchetto 5Th Printing Variant (Digital) (MikeNY76).cbz (1pp)
+      [48687] Ultimate Spider-Man 001 (2024) Nic Klein Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [48688] Ultimate Spider-Man 001 (2024) Tony Daniel Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [48692] Ultimate Spider-Man 002 (2024) Dike Ruan Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [48697] Ultimate Spider-Man 003 (2024) Greg Land Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [48701] Ultimate Spider-Man 004 (2024) Kael Ngu Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+   G3 "Spider-Man 1602" in Marvel\Marvel 1602\04 Marvel 1602 - Spider-Man (2009) — 5 file(s), numbers 1-5, pp 23-25; cv per-file 43261x4, 114411x1; gcd per-file 182457x1; key 'Spider-Man'
+      e.g. Spider-Man 1602 001 (2009) (Digital) (AnHeroGold-Empire).cbz
+        99677 #1 2009 25pp · 99678 #2 2010 25pp · 99679 #3 2010 24pp · 99680 #4 2010 25pp · 99681 #5 2010 23pp
+   G4 "Spider-Man 2099 Classic" in Marvel\_2099 Marvel\Spider-Man 2099\01 Spider-Man 2099 v1 (1992) — 3 file(s), 3 COL, pp 213-286; cv per-file 43261x3; gcd per-file 76211x3; key 'Spider-Man'
+      [52116] COL 02 Spider-Man 2099 Classic Vol. 02 (2013) (Digital) (Asgard-Empire).cbr (213pp)
+         own record cv 43261 / gcd s76211 "Spider-Man 2099 Classic" (issue 1138937) COLLECTS: gcd=4477 Spider-Man 2099 (1992) #11-14 · gcd=4667 2099 Unlimited (1993) #1-3 · gcd=5042 Spider-Man 2099 Annual (1994) #1 · gcd=3059 Web of Spider-Man (1985) #90
+      [52118] COL 03 Spider-Man 2099 Classic Vol. 03 - The Fall Of The Hammer (2015) (Digital) (Asgard-Empire).cbr (273pp)
+         own record cv 43261 / gcd s76211 "Spider-Man 2099 Classic" (issue 1314225) COLLECTS: gcd=4477 Spider-Man 2099 (1992) #15-22 · gcd=4471 Ravage 2099 (1992) #15 · gcd=4752 X-Men 2099 (1993) #5 · gcd=4690 Doom 2099 (1993) #14
+      [52119] COL 04 Spider-Man 2099 Classic Vol. 04 (2017) (Digital) (Asgard-Empire).cbr (286pp)
+         own record cv 43261 / gcd s76211 "Spider-Man 2099 Classic" (issue 1691804) COLLECTS: gcd=4477 Spider-Man 2099 (1992) #23-33 · gcd=4667 2099 Unlimited (1993) #8
+   G5 "Spider-Man 2099" in Marvel\_2099 Marvel\Spider-Man 2099\02 Spider-Man 2099 v2-v3 (2015) — 6 file(s), 6 COL, pp 120-160; cv per-file 79896x1, 83392x1, 89950x1; gcd per-file 201660x2, 79271x1, 67090x1; key 'Spider-Man'
+      [52129] COL Spider-Man 2099 Vol. 01 - Out of Time (2015) (digital) (Minutemen-Slayer).cbr (120pp)
+      [52130] COL Spider-Man 2099 Vol. 02 - Spider-Verse (2015) (digital) (Minutemen-Slayer).cbr (160pp)
+      [52131] COL Spider-Man 2099 Vol. 03 - Smack To The Future (2016) (Digital) (Kileko-Empire).cbr (129pp)
+         own record cv 89950 / gcd s79271 "Spider-Man" (issue 2033738) COLLECTS: gcd=4049 Spider-Man (1990) #1-5  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [52132] COL Spider-Man 2099 Vol. 04 - Gods And Women (2016) (Digital) (Kileko-Empire).cbr (120pp)
+         own record cv 92576 / gcd s67090 "Spider-Man" (issue 1013904) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #674-676 · gcd=62834 Scarlet Spider (2012) #1 · gcd=61993 Avenging Spider-Man (2012) #5
+      [52134] COL Spider-Man 2099 Vol. 06 - Apocalypse Soon (2017) (Digital) (Kileko-Empire).cbr (122pp)
+      [52135] COL Spider-Man 2099 Vol. 07 - Back To Future Shock! (2017) (Digital) (Kileko-Empire).cbr (151pp)
+         own record cv 104638 / gcd s217058 "Spider-Man" (issue 2672426) COLLECTS: gcd=197254 Spider-Man (2023) #1-3  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+   G6 "Spider-Man" in Marvel\_2099 Marvel\Spider-Man 2099\03 Spider-Man 2099 - Exodus (2022) — 1 file(s), numbers 2099, pp 182-182; cv per-file 43261x1; key 'Spider-Man'
+      [53936] Spider-Man 2099 - Exodus (2022) (Digital-Empire).cbr (182pp)
+   G7 "Spider-Man" in Marvel\_2099 Marvel\Spider-Man 2099\04 Spider-Man 2099 - Dark Genesis v1 (2023) — 1 file(s), numbers 2099, pp 121-121; cv per-file 43261x1; key 'Spider-Man'
+      [53937] Spider-Man 2099 - Dark Genesis (2023) (Digital-Empire).cbr (121pp)
+   G8 "Spider-Man Annual" in Marvel\_Spider-Man (Miles Morales)\Miles Morales - Spider-Man v1 (2019)\Annuals and Specials — 1 file(s), numbers 1, pp 33-33; cv per-file 43261x1; gcd per-file 137545x1; key 'Spider-Man'
+      [95827] Spider-Man Annual 001 (2019) (Digital) (Zone-Empire).cbr (33pp)
+   G9 "Spider-Man - One Moment In Time (2011) (Digital) (Kileko-Empire)" in Marvel\_Spider-Man\_Misc Trades — 1 file(s), pp 155-155; cv per-file 43261x1; key 'Spider-Man'
+      [93755] Spider-Man - One Moment In Time (2011) (Digital) (Kileko-Empire).cbz (155pp)
+   G10 "Spider-Man Special - Black and Blue and Read All Over (2006) (Digital) (Shadowcat-Empire)" in Marvel\_Spider-Man\_Misc Trades — 1 file(s), pp 43-43; cv per-file 43261x1; key 'Spider-Man'
+      [93767] Spider-Man Special - Black and Blue and Read All Over (2006) (Digital) (Shadowcat-Empire).cbz (43pp)
+   G11 "Spider-Man by Todd Dezago & Mike Wieringo" in Marvel\_Spider-Man\_Misc Trades — 1 file(s), 1 COL; cv per-file 101637x1; gcd per-file 114316x1; key 'Spider-Man'
+      [93763] COL Spider-Man by Todd Dezago & Mike Wieringo v01 (2017) (Digital) (Relic-Empire).cbz (?pp)
+         own record cv 101637 / gcd s114316 "Spider-Man by Todd Dezago and Mike Wieringo" (issue 1704703) COLLECTS: gcd=5557 The Sensational Spider-Man (1996) #7-24
+   G12 "Spider-Man #-1 (1997) (digital) (Marika-Empire)" in Marvel\_Spider-Man\__Amazing Spider-Man\00 Annuals and Specials — 1 file(s), pp 24-24; cv per-file 43261x1; gcd per-file 4049x1; key 'Spider-Man'
+      [93898] Spider-Man #-1 (1997) (digital) (Marika-Empire).cbz (24pp)
+   G13 "Spider-Man - Death of the Stacys (2007) (Digital) (F) (Kileko-Empire)" in Marvel\_Spider-Man\__Amazing Spider-Man\00 TPBs — 1 file(s), pp 157-157; cv per-file 43261x1; gcd per-file 27784x1; key 'Spider-Man'
+      [94003] Spider-Man - Death of the Stacys (2007) (Digital) (F) (Kileko-Empire).cbz (157pp)
+   G14 "Dan Slott Spider-Man" in Marvel\_Spider-Man\__Amazing Spider-Man\00 TPBs\Dan Slott Era — 4 file(s), 4 COL, pp 130-196; cv per-file 43261x2, 31703x1, 58601x1; gcd per-file 113428x1, 76442x1; key 'Spider-Man'
+      [93907] COL Dan Slott Spider-Man Vol. 01 - Brand New Day Vol. 01 - Brand New Day (2008) (Digital) (F2) (Kileko-Empire).cbz (196pp)
+      [93908] COL Dan Slott Spider-Man Vol. 02 - Brand New Day Vol. 02 (2009) (Digital) (F2) (Kileko-Empire).cbz (167pp)
+      [93911] COL Dan Slott Spider-Man Vol. 05 - New Ways To Die (2009) (Digital) (F) (Kileko-Empire).cbz (175pp)
+         own record cv 31703 / gcd s113428 "Spider-Man: New Ways to Die" (issue 2384608) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #568-573 · gcd=69156 Marvel Spotlight: Spider-Man - Brand New Day (2008) (unnumbered)
+      [93931] COL Dan Slott Spider-Man Vol. 32 - Dying Wish (2013) (Digital) (F) (Kileko-Empire).cbz (130pp)
+   G15 "Spider-Man" in Marvel\_Spider-Man\__Completed Series\Spectacular Spider-Man\02 The Spectacular Spider-Man v1 (1988)\Trades — 1 file(s), 1 COL, pp 367-367; cv per-file 90722x1; gcd per-file 102633x1; key 'Spider-Man'
+      [95948] COL Spider-Man Vol. 01 - Tombstone (2016) (Digital) (Kileko-Empire).cbr (367pp)
+         own record cv 90722 / gcd s102633 "Spider-Man: Tombstone" (issue 1575786) COLLECTS: gcd=2359 The Spectacular Spider-Man (1976) #137-150 · gcd=2518 The Spectacular Spider-Man Annual (1979) #8 · gcd=3059 Web of Spider-Man (1985) #36
+   G16 "Spider-Man 2099 Meets Spider-Man (1995) (Digital) (Asgard-Empire)" in Marvel\_Spider-Man\__OGNs, Minis & One-shots — 1 file(s), numbers 2099, pp 45-45; cv per-file 43261x1; key 'Spider-Man'
+      [95729] Spider-Man 2099 Meets Spider-Man (1995) (Digital) (Asgard-Empire).cbr (45pp)
+   G17 "Spider-Man" in Marvel\_Spider-Man\__OGNs, Minis & One-shots\Spider-Man - Maximum Clonage (1995) — 1 file(s), numbers 61, pp 21-21; cv per-file 43261x1; gcd per-file 4049x1; key 'Spider-Man'
+      [95694] 04 Spider-Man 061 (1995) (Digital) (Shadowcat-Empire).cbz (21pp)
+   G18 "Spider-Man by David Michelinie & Mark Bagley Omnibus" in Marvel\_Spider-Man\__Omnibus Editions — 1 file(s), 1 COL, pp 1022-1022; cv per-file 43261x1; gcd per-file 217059x1; key 'Spider-Man'
+      [95793] COL Spider-Man by David Michelinie & Mark Bagley Omnibus Book 01 (2024) (Digital-Empire).cbr (1022pp)
+   G19 "Ultimate Spider-Man" in Marvel\_Ultimate Comics\Ultimate Spider-Man (2000)\01 Ultimate Spider-Man (2000) — 5 file(s), 5 COL, pp 115-181; cv per-file 43261x1, 35782x1, 35783x1; gcd per-file 158816x1, 35112x1, 158817x1; key 'Spider-Man'
+      [97095] COL Ultimate Spider-Man Vol. 01 - Power & Responsibility (2009) (Digital) (Kileko-Empire).cbr (181pp)
+         own record cv 43261 / gcd s158816 "Ultimate Spider-Man: Power and Responsibility" (issue 2101339) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #1-7
+      [97096] COL Ultimate Spider-Man Vol. 02 - Learning Curve (2006) (Digital) (Asgard-Empire).cbr (135pp)
+      [97097] COL Ultimate Spider-Man Vol. 03 - Double Trouble (2006) (Digital) (Asgard-Empire).cbr (170pp)
+      [97099] COL Ultimate Spider-Man Vol. 05 - Public Scrutiny (2003) (Digital) (Kileko-Empire).cbr (115pp)
+      [97100] COL Ultimate Spider-Man Vol. 06 - Venom (2007) (Digital) (Asgard-Empire).cbr (165pp)
+         own record cv 35802 / gcd s158817 "Ultimate Spider-Man: Venom" (issue 2101340) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #33-39
+   G20 "Ultimate Spider-Man" in Marvel\_Ultimate Comics\Ultimate Spider-Man (2000)\01 Ultimate Spider-Man (2000)\Annuals and Specials — 1 file(s), numbers 0, pp 15-15; cv per-file 43261x1; key 'Spider-Man'
+      [97968] Ultimate Spider-Man 00.5 (2002) (digital-Empire).cbr (15pp)
+   G21 "Ultimate Spider-Man" in Marvel\_Ultimate Comics\Ultimate Spider-Man (2000)\05 Ultimate Spider-Man 200 (2014) (Digital) — 1 file(s), numbers 200, pp 27-27; cv per-file 43261x1; key 'Spider-Man'
+      [97969] Ultimate Spider-Man 200 (2014) (Digital) (Zone-Empire).cbr (27pp)
+   G22 "Ultimate Spider-Man Omnibus" in Marvel\_Ultimate Comics\Ultimate Spider-Man (2000)\_Omnibus Editions — 3 file(s), 3 COL, pp 848-918; cv per-file 49871x3; gcd per-file 76302x3; key 'Spider-Man'
+      [97129] COL Ultimate Spider-Man Omnibus Book 01 (2022) (digital).cbz (899pp)
+         own record cv 49871 / gcd s76302 "Ultimate Spider-Man Omnibus" (issue 1139852) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #1-39
+      [97130] COL Ultimate Spider-Man Omnibus Book 02 (2023) (hd-webrip) (JTR).cbz (848pp)
+         own record cv 49871 / gcd s76302 "Ultimate Spider-Man Omnibus" (issue 2481451) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #40-71 · gcd=18989 Ultimate Six (2003) #1-7
+      [97131] COL Ultimate Spider-Man Omnibus Book 03 (2023) (hd-webrip) (JTR).cbz (918pp)
+         own record cv 49871 / gcd s76302 "Ultimate Spider-Man Omnibus" (issue 2585409) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #72-111 · gcd=18910 Ultimate Spider-Man Annual (2005) #1-2
+   G23 "Ultimate Spider-Man Annual" in Marvel\_Ultimate Comics\_Ultimate Annuals — 1 file(s), numbers 3, pp 31-31; cv per-file 43261x1; key 'Spider-Man'
+      [97268] Ultimate Spider-Man Annual 03 (2008) (digital) (Minutemen-InnerDemons).cbr (31pp)
+   G24 "Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0143 Sabotage — 1 file(s), numbers 16, pp 20-20; cv per-file 43261x1; gcd per-file 4049x1; key 'Spider-Man'
+      [87706] 004 Spider-Man 016 (1991) (digital) (Minutemen-Endriago).cbz (20pp)
+   G25 "Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0158 Unnamed — 1 file(s), numbers 25, pp 24-24; cv per-file 43261x1; gcd per-file 4049x1; key 'Spider-Man'
+      [87786] 011 Spider-Man 025 (1992) (Digital) (Shadowcat-Empire).cbz (24pp)
+   G26 "Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught — 1 file(s), numbers 72, pp 18-18; cv per-file 43261x1; gcd per-file 4049x1; key 'Spider-Man'
+      [88438] 028 Spider-Man 072 (1996) (digital) (Minutemen-Bluntman).cbr (18pp)
+   G27 "Spider-Man 2099" in Marvel\__Skottie Young Covers — 2 file(s), numbers 1, pp 1-1; cv per-file 43261x2; gcd per-file 101377x2; key 'Spider-Man'
+      [52018] Spider-Man 2099 001 (2014) (Skottie Young SDCC Variant Only) (digital) (Minutemen-Mastodon).cbz (1pp)
+      [52019] Spider-Man 2099 01 (2014) (Skottie Young Variant Cover) (Ghosts-Novus-HD).cbz (1pp)
+   G28 "Ultimate Spider-Man" in _Marvel Major Event Chronology (digital)\2009.02 - Ultimatum (Ultimate)\02 Ultimatum — 3 file(s), numbers 129-131, pp 20-22; cv per-file 43261x3; key 'Spider-Man'
+      [117176] 01 Ultimate Spider-Man 129 (2009) (digital) (Son of Ultron-Empire).cbr (22pp)
+      [117178] 03 Ultimate Spider-Man 130 (2009) (digital) (Son of Ultron-Empire).cbr (22pp)
+      [117182] 07 Ultimate Spider-Man 131 (2009) (digital) (Son of Ultron-Empire).cbr (20pp)
+   G29 "Ultimate Spider-Man" in _Marvel Major Event Chronology (digital)\2011.02 - Death of Spider-man (Ultimate)\Extras\Ultimate Spider-Man Vol. 01 - Power and Responsibility — 7 file(s), numbers 1-7, pp 21-47; cv per-file 43261x7; gcd per-file 43298x4, 175050x3; key 'Spider-Man'
+      e.g. Ultimate Spider-Man 001 (2000) (digital) (Son of Ultron-Empire).cbr
+        117465 #1 2000 47pp · 117466 #2 2000 24pp · 117467 #3 2001 23pp · 117468 #4 2001 23pp · 117469 #5 2001 22pp · 117470 #6 2001 25pp · 117471 #7 2001 21pp
+   G30 "Ultimate Spider-Man" in _Marvel Major Event Chronology (digital)\2011.02 - Death of Spider-man (Ultimate)\Variant Covers — 5 file(s), numbers 153-155, pp 1-1; cv per-file 43261x5; key 'Spider-Man'
+      e.g. Ultimate Spider-Man 153 (2011) (2nd Printing Variant) (Cover ONLY) (ScanDog & ArtNet-DCP).cbz
+        117473 #153 2011 1pp · 117475 #154 2011 1pp · 117476 #155 2011 1pp · 117477 #155 2011 1pp
+      [117474] Ultimate Spider-Man 153-155 (2011) (2nd Printing Variants Cover Poster Join) (Covers ONLY) (ScanDog & ArtNet-DCP).cbz (1pp)
+   G31 "Spider-Man" in _Marvel Major Event Chronology (digital)\2016.06 - Civil War II\02 Tie-Ins\Spider-Man — 5 file(s), numbers 6-10, pp 22-24; cv per-file 43261x5; gcd per-file 96682x5; key 'Spider-Man'
+      e.g. Spider-Man 006 (2016) (2 covers) (Digital) (Zone-Empire).cbr
+        118215 #6 2016 22pp · 118216 #7 2016 22pp · 118217 #8 2016 23pp · 118218 #9 2017 22pp · 118219 #10 2017 24pp
