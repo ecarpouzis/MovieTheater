@@ -1,0 +1,203 @@
+## Conventions for this batch (23 shown of 80 matched; 328 in LEDGER.md; 11 shelf/shelves: kind:trade-only ×11 · kind:collected-line ×11 · pub:marvel ×11 · kind:new ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-029] (11 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
+- On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
+  collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
+[L-031] (11 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-033] (11 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-076] (11 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (11 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (11 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (11 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-119] (11 shelf/shelves) pub:marvel
+- GCD filing quirks that recovered legs: drop "Comics" from a title, "and" for "&", "Digest" appended, reversed
+  or reordered name lists ("Deadpool / Amazing Spider-Man / Hulk: Identity Wars").
+[L-130] (11 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-132] (11 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-142] (11 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-196] (11 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (11 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (11 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-297] (11 shelf/shelves) pass:item pub:marvel
+- ComicVine's issue-number field follows LEGACY print numbering (Amazing Spider-Man 2015 v4 #792-801 under CV
+  85076 / GCD 92892) — a `C` range in the 790s is still that volume.
+[L-298] (11 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-306] (11 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (11 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (11 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-313] (11 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-327] (11 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (11 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+[L-135] (11 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+
++57 more matched entries not shown: L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-127, L-136, L-013, L-014, L-030, L-043, L-050, L-064, L-072, L-085, L-088, L-089, L-095, L-096, L-101, L-118, L-125, L-151, L-157, L-159, L-160, L-163, L-177, L-193, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-310, L-016, L-032, L-113, L-114, L-172, L-174 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S103850 Amazing Spider-Man Epic Collection: Great Responsibility (2016)  [tier D]   keys: Amazing Spider-Man Epic Collection: Great Responsibility (2016)  years 2016-2016  1 files / 1 collections
+   split run: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" run={"cv": 97134} (new shelf from P-017) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95798] COL Amazing Spider-Man Epic Collection Vol. 02 - Great Responsibility (2016) (Digital) (Shadowcat-Empire).cbz (494pp)
+   GCD says: [95798] gcd notes 1660431 (#2 of Amazing Spider-Man Epic Collection): The Amazing Spider-Man (Marvel, 1963 series) #18-38; The Amazing Spider-Man Annual (Marvel, 1964 series) #2  |  gcd_reprint 1660431: s1570 The Amazing Spider-Man (1963) #18-38 [46 stories] · s1635 The Amazing Spider-Man Annual (1964) #2 [7 stories] · s52975 Marvel Masterworks: The Amazing Spider-Man (2009) #1-4 [4 stories]
+   CV local rip:   97134 "Amazing Spider-Man Epic Collection: Great Responsibility" 2016 Marvel 1 issue 570027 (via our own name without the filing suffix "Amazing Spider-Man Epic Collection: Great Responsibility")   (rip lookup)
+
+== S103853 Amazing Spider-Man Epic Collection: Spider-Man No More (2018)  [tier D]   keys: Amazing Spider-Man Epic Collection: Spider-Man No More (2018)  years 2018-2018  1 files / 1 collections
+   split run: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" run={"cv": 110903} (new shelf from P-017) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95799] COL Amazing Spider-Man Epic Collection Vol. 03 - Spider-Man No More (2018) (Digital) (Zone-Empire).cbr (397pp)
+   ours:    ComicInfo Series: "Amazing Spider-Man Epic Collection"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [95799] gcd notes 1808311 (#3 of Amazing Spider-Man Epic Collection): The Amazing Spider-Man (Marvel, 1963 series) #39-52; The Amazing Spider-Man Annual (Marvel, 1964 series) #3-4; Not Brand Echh #2  |  gcd_reprint 1808311: s1570 The Amazing Spider-Man (1963) #39-52 [28 stories] · s1635 The Amazing Spider-Man Annual (1964) #3-4 [11 stories] · s1811 Not Brand Echh (1967) #2 [2 stories] · s52975 Marvel Masterworks: The Amazing Spider-Man (2009) #5 [1 story]
+   CV local rip:   110903 "Amazing Spider-Man Epic Collection: Spider-Man No More" 2018 Marvel 1 issue 670105 (via our own name without the filing suffix "Amazing Spider-Man Epic Collection: Spider-Man No More")   (rip lookup)
+
+== S103855 Amazing Spider-Man Epic Collection: The Goblin Lives (2019)  [tier D]   keys: Amazing Spider-Man Epic Collection: The Goblin Lives (2019)  years 2019-2019  1 files / 1 collections
+   split run: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" run={"cv": 119744} (new shelf from P-017) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95800] COL Amazing Spider-Man Epic Collection Vol. 04 - The Goblin Lives (2019) (Digital) (Zone-Empire).cbr (495pp)
+   ours:    ComicInfo Series: "Amazing Spider-Man Epic Collection"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [95800] gcd notes 1978761 (#4 of Amazing Spider-Man Epic Collection): The Amazing Spider-Man (Marvel, 1963 series) #53-67; The Spectacular Spider-Man (Marvel, 1968 series) #1-2; Marvel Super-Heroes (Marvel, 1967 series) #14; Not Brand Echh (Marvel, 1967 series) #6, #11  |  gcd_reprint 1978761: s1570 The Amazing Spider-Man (1963) #53-67 [31 stories] · s1873 The Spectacular Spider-Man (1968) #1-2 [8 stories] · s1811 Not Brand Echh (1967) #6, #11 [4 stories] · s1810 Marvel Super-Heroes (1967) #14 [2 stories]
+   CV local rip:   119744 "Amazing Spider-Man Epic Collection: The Goblin Lives" 2019 Marvel 1 issue 711938 (via our own name without the filing suffix "Amazing Spider-Man Epic Collection: The Goblin Lives")   (rip lookup)
+
+== S103854 Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)  [tier D]   keys: Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)  years 2021-2021  1 files / 1 collections
+   split run: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" run={"cv": 139777} (new shelf from P-017) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95802] COL Amazing Spider-Man Epic Collection Vol. 06 - The Death of Captain Stacy (2021) (Digital-Empire).cbr (438pp)
+   GCD says: [95802] gcd_reprint 2268841: s1570 The Amazing Spider-Man (1963) #86-104 [20 stories]
+   CV local rip:   139777 "The Amazing Spider-Man Epic Collection: The Death of Captain Stacy" 2021 Marvel 1 issue 890995 (via our own name without the filing suffix "Amazing Spider-Man Epic Collection: The Death of Captain Stacy")   (rip lookup)
+
+== S103856 Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)  [tier D]   keys: Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)  years 2017-2017  1 files / 1 collections
+   split run: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" run={"cv": 101161} (new shelf from P-017) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95803] COL Amazing Spider-Man Epic Collection Vol. 07 - The Goblin's Last Stand (2017) (Digital) (Shadowcat-Empire).cbz (448pp)
+   GCD says: [95803] gcd_reprint 1696226: s1570 The Amazing Spider-Man (1963) #105-123 [39 stories] · s66209 Spider-Man: The Death of Gwen Stacy (1999) (unnumbered) [2 stories] · s1635 The Amazing Spider-Man Annual (1964) #9 [1 story] · s27784 Spider-Man: Death of the Stacys (2007) (unnumbered) [1 story]
+   CV local rip:   101161 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand" 2017 Marvel 1 issue 594105 (via our own name without the filing suffix "Amazing Spider-Man Epic Collection: The Goblin's Last Stand")   (rip lookup)
+
+== S103848 Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)  [tier D]   keys: Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)  years 2024-2024  1 files / 1 collections
+   split run: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" run={"cv": 158331} (new shelf from P-017) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95806] COL Amazing Spider-Man Epic Collection Vol. 10 - Big Apple Battleground (2024) (Digital) (Shan-Empire).cbz (519pp)
+   GCD says: [95806] gcd notes 2633948 (#10 of Amazing Spider-Man Epic Collection): The Amazing Spider-Man (Marvel, 1963 series) #165-185; The Amazing Spider-Man Annual (Marvel, 1964 series) #11; Nova (Marvel, 1976 series) #12  |  gcd_reprint 2633948: s1570 The Amazing Spider-Man (1963) #165-185 [44 stories] · s158698 FOOM Magazine (1973) #17-18, #22 [18 stories] · s1635 The Amazing Spider-Man Annual (1964) #11-12 [5 stories] · s2180 Marvel Treasury Edition (1974) #14 [3 stories]
+   CV local rip:   158331 "The Amazing Spider-Man Epic Collection: Big Apple Battleground" 2024 Marvel 1 issue 1057258 (via our own name without the filing suffix "Amazing Spider-Man Epic Collection: Big Apple Battleground")   (rip lookup)
+
+== S103849 Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)  [tier D]   keys: Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)  years 2014-2014  1 files / 1 collections
+   split run: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" run={"cv": 74202} (new shelf from P-017) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95807] COL Amazing Spider-Man Epic Collection Vol. 15 - Ghosts of the Past (2014) (Digital) (Zone-Empire).cbr (473pp)
+   ours:    ComicInfo Series: "Amazing Spider-Man Epic Collection"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [95807] gcd_reprint 1181282: s1570 The Amazing Spider-Man (1963) #259-272 [31 stories] · s1747 Marvel Tales (1966) #273-282 [10 stories] · s3059 Web of Spider-Man (1985) #1, #6 [5 stories] · s1635 The Amazing Spider-Man Annual (1964) #18-19 [4 stories]
+   CV local rip:   74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 (via our own name without the filing suffix "Amazing Spider-Man Epic Collection: Ghosts of the Past")   (rip lookup)
+
+== S103851 Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)  [tier D]   keys: Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)  years 2017-2017  1 files / 1 collections
+   split run: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" run={"cv": 101919} (new shelf from P-017) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95808] COL Amazing Spider-Man Epic Collection Vol. 17 - Kraven's Last Hunt (2017) (Digital) (Zone-Empire).cbr (497pp)
+   GCD says: [95808] gcd_reprint 1710057: s1570 The Amazing Spider-Man (1963) #289-294 [13 stories] · s3059 Web of Spider-Man (1985) #29-32 [8 stories] · s69795 Marvel Age (1983) #54 [7 stories] · s46980 The Amazing Spider-Man: The Wedding (1991) (unnumbered) [6 stories]
+   CV local rip:   101919 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt" 2017 Marvel 1 issue 599856 (via our own name without the filing suffix "Amazing Spider-Man Epic Collection: Kraven's Last Hunt")   (rip lookup)
+
+== S103847 Amazing Spider-Man Epic Collection: Assassin Nation (2019)  [tier D]   keys: Amazing Spider-Man Epic Collection: Assassin Nation (2019)  years 2019-2019  1 files / 1 collections
+   split run: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" run={"cv": 119132} (new shelf from P-017) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95810] COL Amazing Spider-Man Epic Collection Vol. 19 - Assassin Nation (2019) (Digital) (Zone-Empire).cbr (481pp)
+   ours:    ComicInfo Series: "Amazing Spider-Man Epic Collection"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [95810] gcd notes 1964905 (#19 of Amazing Spider-Man Epic Collection): The Amazing Spider-Man (Marvel, 1963 series) #311-325; The Amazing Spider-Man Annual (Marvel, 1964 series) #23  |  gcd_reprint 1964905: s1570 The Amazing Spider-Man (1963) #311-325 [31 stories] · s1635 The Amazing Spider-Man Annual (1964) #23 [9 stories] · s28497 Marvel Graphic Novel: The Amazing Spider-Man "Parallel Lives" (1989) (unnumbered) [7 stories] · s2657 Marvel Fanfare (1982) #41, #45, #50 [3 stories]
+   CV local rip:   119132 "Amazing Spider-Man Epic Collection: Assassin Nation" 2019 Marvel 1 issue 709196 (via our own name without the filing suffix "Amazing Spider-Man Epic Collection: Assassin Nation")   (rip lookup)
+
+== S103852 Amazing Spider-Man Epic Collection: Lifetheft (2021)  [tier D]   keys: Amazing Spider-Man Epic Collection: Lifetheft (2021)  years 2021-2021  1 files / 1 collections
+   split run: "Amazing Spider-Man Epic Collection: Lifetheft (2021)" run={"cv": 142111} (new shelf from P-017) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95817] COL Amazing Spider-Man Epic Collection Vol. 26 - Lifetheft (2021) (Digital-Empire).cbr (482pp)
+   GCD says: [95817] gcd_reprint 2273650: s1570 The Amazing Spider-Man (1963) #381-393 [13 stories] · s175761 The Amazing Spider-Man 30th Anniversary Poster Magazine (1992) #1 [1 story] · s54499 The Amazing Spider-Man Ashcan Edition (1994) (unnumbered) [1 story] · s3059 Web of Spider-Man (1985) #112 [1 story]
+   CV local rip:   142111 "Amazing Spider-Man Epic Collection: Lifetheft" 2021 Marvel 1 issue 914401 (via our own name without the filing suffix "Amazing Spider-Man Epic Collection: Lifetheft")   (rip lookup)
+
+== S871 Amazing Spider-Man Epic Collection  [tier D]   keys: Amazing Spider-Man Epic Collection  years 2014-2014  1 files / 1 collections
+   split: the KEPT half of the P-017 split — moved out -> S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"; S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"; S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"; S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"; S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"; S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"; S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"; S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"; S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"; S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)"; re-identify what stayed
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95797] COL Amazing Spider-Man Epic Collection Vol. 01 - Great Power (2014) (Digital) (Zone-Empire).cbr (505pp)
+   ours:    judged item 95797 #1-17 conf 0.95; ComicInfo Series: "Amazing Spider-Man Epic Collection"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [95797] gcd notes 1205404 (#1 of Amazing Spider-Man Epic Collection): Amazing Fantasy (Marvel, 1962 series) #15; The Amazing Spider-Man (Marvel, 1963 series) #1-17; The Amazing Spider-Man Annual (Marvel, 1964 series) #1  |  gcd_reprint 1205404: s1570 The Amazing Spider-Man (1963) #1-17 [39 stories] · s1635 The Amazing Spider-Man Annual (1964) #1 [28 stories] · s1514 Amazing Fantasy (1962) #15 [3 stories] · s1637 Marvel Tales Annual (1964) #1 [2 stories]
+   CV candidates:  77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 s87 · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 s85 · 113053 "Amazing Spider-Man Epic Collection: Venom" 2018 Marvel 1 issue 682647 s34 · 119132 "Amazing Spider-Man Epic Collection: Assassin Nation" 2019 Marvel 1 issue 709196 s33 · 80960 "Amazing Spider-Man Epic Collection: Round Robin" 2015 Marvel 1 issue 483670 s33 · 97134 "Amazing Spider-Man Epic Collection: Great Responsibility" 2016 Marvel 1 issue 570027 s33   (v1 search)
+   CV local rip:   74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 (via CV candidate name "The Amazing Spider-Man Epic Collection: Ghosts of the Past") · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 (via CV candidate name "The Amazing Spider-Man Epic Collection: Great Power") · 113053 "Amazing Spider-Man Epic Collection: Venom" 2018 Marvel 1 issue 682647 (via CV candidate name "Amazing Spider-Man Epic Collection: Venom")   (rip lookup)
+   GCD dump:       74602 "Amazing Spider-Man Epic Collection" 2013-? Marvel [] 26   (dump lookup)
