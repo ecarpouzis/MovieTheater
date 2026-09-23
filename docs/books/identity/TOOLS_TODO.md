@@ -163,4 +163,4 @@
     S102444 Cosplayers and S9439 Infinity, both named only there); print a trade's COLLECTED-run ids beside its own
     record (gcd_reprint); a shelf line `pending_join: [sid]` for "stays only because it cannot move without a join",
     carried into the next R packet as a merge-with prompt.
-30. lookup.py drops "of" from probes ("Legion of Monsters", "Heart of Darkness" → 0 CV hits) — fix the stopword list.
+30. lookup.py drops "of" from probes ("Legion of Monsters", "Heart of Darkness" → 0 CV hits) — fix the stopword list.. check_identity --all's undeclared-merge rule must also compare an S line's cv against the STORED Series.CvVolumeId of REFUSED shelves (and their aliases' Matched v1 SeriesKeyLinks): wave 17's S15478 (cv=22340) merged undeclared into refused S47160, whose v1 keys still carry 22340. The merge was right (the trade joined its run), but it must be declared.
