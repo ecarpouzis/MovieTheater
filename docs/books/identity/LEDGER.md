@@ -1783,3 +1783,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   CV-only records (GCD holds only later printings); Europe Comics' SHI is an unrelated comic under one title. Oni: the
   trades of the minis have their own count-1 CV/GCD records (L-143 shape). One distinctive word probed with
   --contains ("Booger") can find what the full title misses (R-088).
+
+[L-359] pub:titan pub:valiant kind:strip sig:probe
+- Titan: licensed runs can be filed under a SHORTENED name on both legs ("Templars" = Assassin's Creed: Templars,
+  "Tekken: Blood Feud") — probe the title's last word with --contains. Acclaim / Valiant: GCD spells "&" ("Captain
+  Johner & the Aliens") and drops the franchise word ("X-O Database"). Strips: Penny Arcade, Wallace the Brave and
+  Prince Valiant pair with their own BOOK lines at 0.9, like Rip Kirby (L-355) — the year-file shelf merges into the
+  book-line shelf. ASM Omnibus Book 01 (2022) is GCD 58631's "#1 [Fifth Edition]" row. A split key must differ
+  from the files' current key AFTER normalisation (L-336) (R-089/R-090).
