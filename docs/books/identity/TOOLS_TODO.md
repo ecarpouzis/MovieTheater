@@ -167,6 +167,7 @@
 
 # Added 2026-09-23 after TODO 30's finding
 32. **S.2 signal: probe-blind provider-missing.** Until TODO 30, ~34k of 154k CV volumes (names with of/the/and/a) could not be found by an exact probe, so earlier `F provider-missing` / `cv=-` lines may have missed a volume that exists. Re-probe every winning `cv=-` / provider-missing shelf with the fixed index (read-only, chunked) and feed the hits to the S.2 worklist (and triage_09 as signal (g)).
+    **DONE 2026-09-23:** `tools/reprobe_cvmissing.py` (read-only, chunked, resumable; the packet's own probe set against the fixed vs the old keying, reporting only volumes the old index could not see). Full run: 3,341 shelves probed, 1,429 with a new hit, 855 with a NEAR one (640 by the shelf's own spelling) -> `reprobe.tsv` / `reprobe-near.tsv` (signal g) -> `next_batch --s2-file`.
 # Added 2026-09-23 after R-032
 33. **Keep split pairs together.** After a split, a KEPT half usually still stores the CV volume of the run that moved
     off it, so the new shelf's "run wins" S collides (R-032 had to withhold 10 cv ids, L-151). (a) `check_splits
