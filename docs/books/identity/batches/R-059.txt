@@ -1,0 +1,312 @@
+## Conventions for this batch (24 shown of 82 matched; 328 in LEDGER.md; 18 shelf/shelves: pub:marvel ×18 · kind:collected-line ×18 · kind:trade-only ×18 · kind:new ×6)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-029] (18 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
+- On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
+  collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
+[L-031] (18 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-033] (18 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-076] (18 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (18 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (18 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (18 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-127] (18 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-132] (18 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-136] (18 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-142] (18 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-196] (18 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (18 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (18 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-298] (18 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-306] (18 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (18 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (18 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-313] (18 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-327] (18 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (18 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+[L-119] (13 shelf/shelves) pub:marvel
+- GCD filing quirks that recovered legs: drop "Comics" from a title, "and" for "&", "Digest" appended, reversed
+  or reordered name lists ("Deadpool / Amazing Spider-Man / Hulk: Identity Wars").
+[L-130] (12 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-135] (18 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+
++58 more matched entries not shown: L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-297, L-309, L-314, L-013, L-014, L-016, L-030, L-032, L-043, L-050, L-064, L-072, L-085, L-088, L-089, L-095, L-096, L-101, L-113, L-114, L-118, L-125, L-151, L-157, L-159, L-160, L-163, L-177, L-193, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-310, L-187, L-106, L-111, L-112 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S871 Amazing Spider-Man Epic Collection  [tier D]   keys: Amazing Spider-Man Epic Collection  years 2014-2024  11 files / 11 collections
+   folders: [11] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95797] COL Amazing Spider-Man Epic Collection Vol. 01 - Great Power (2014) (Digital) (Zone-Empire).cbr (505pp)
+            [95798] COL Amazing Spider-Man Epic Collection Vol. 02 - Great Responsibility (2016) (Digital) (Shadowcat-Empire).cbz (494pp)
+            [95799] COL Amazing Spider-Man Epic Collection Vol. 03 - Spider-Man No More (2018) (Digital) (Zone-Empire).cbr (397pp)
+            [95800] COL Amazing Spider-Man Epic Collection Vol. 04 - The Goblin Lives (2019) (Digital) (Zone-Empire).cbr (495pp)
+            [95802] COL Amazing Spider-Man Epic Collection Vol. 06 - The Death of Captain Stacy (2021) (Digital-Empire).cbr (438pp)
+            [95803] COL Amazing Spider-Man Epic Collection Vol. 07 - The Goblin's Last Stand (2017) (Digital) (Shadowcat-Empire).cbz (448pp)
+            [95806] COL Amazing Spider-Man Epic Collection Vol. 10 - Big Apple Battleground (2024) (Digital) (Shan-Empire).cbz (519pp)
+            [95807] COL Amazing Spider-Man Epic Collection Vol. 15 - Ghosts of the Past (2014) (Digital) (Zone-Empire).cbr (473pp)
+            [95808] COL Amazing Spider-Man Epic Collection Vol. 17 - Kraven's Last Hunt (2017) (Digital) (Zone-Empire).cbr (497pp)
+            [95810] COL Amazing Spider-Man Epic Collection Vol. 19 - Assassin Nation (2019) (Digital) (Zone-Empire).cbr (481pp)
+            [95817] COL Amazing Spider-Man Epic Collection Vol. 26 - Lifetheft (2021) (Digital-Empire).cbr (482pp)
+   ours:    judged item 95797 #1-17 conf 0.9; judged item 95798 #18-38 conf 0.9; judged item 95799 #39-52 conf 0.9; judged item 95800 #53-67 conf 0.9; judged item 95802 #86-104 conf 0.9; judged item 95803 #105-123 conf 0.9; judged item 95806 #165-185 conf 0.9; judged item 95807 #259-272 conf 0.9; judged item 95808 #289-294 conf 0.9; judged item 95810 #311-325 conf 0.9; judged item 95817 #381-393 conf 0.9; ComicInfo Series: "Amazing Spider-Man Epic Collection"x5; ComicInfo Publisher: "Marvel"x5
+   GCD says: [95797] gcd notes 1205404 (#1 of Amazing Spider-Man Epic Collection): Amazing Fantasy (Marvel, 1962 series) #15; The Amazing Spider-Man (Marvel, 1963 series) #1-17; The Amazing Spider-Man Annual (Marvel, 1964 series) #1  |  gcd_reprint 1205404: s1570 The Amazing Spider-Man (1963) #1-17 [39 stories] · s1635 The Amazing Spider-Man Annual (1964) #1 [28 stories] · s1514 Amazing Fantasy (1962) #15 [3 stories] · s1637 Marvel Tales Annual (1964) #1 [2 stories]
+             [95798] gcd notes 1660431 (#2 of Amazing Spider-Man Epic Collection): The Amazing Spider-Man (Marvel, 1963 series) #18-38; The Amazing Spider-Man Annual (Marvel, 1964 series) #2  |  gcd_reprint 1660431: s1570 The Amazing Spider-Man (1963) #18-38 [46 stories] · s1635 The Amazing Spider-Man Annual (1964) #2 [7 stories] · s52975 Marvel Masterworks: The Amazing Spider-Man (2009) #1-4 [4 stories]
+             [95799] gcd notes 1808311 (#3 of Amazing Spider-Man Epic Collection): The Amazing Spider-Man (Marvel, 1963 series) #39-52; The Amazing Spider-Man Annual (Marvel, 1964 series) #3-4; Not Brand Echh #2  |  gcd_reprint 1808311: s1570 The Amazing Spider-Man (1963) #39-52 [28 stories] · s1635 The Amazing Spider-Man Annual (1964) #3-4 [11 stories] · s1811 Not Brand Echh (1967) #2 [2 stories] · s52975 Marvel Masterworks: The Amazing Spider-Man (2009) #5 [1 story]
+             [95800] gcd notes 1978761 (#4 of Amazing Spider-Man Epic Collection): The Amazing Spider-Man (Marvel, 1963 series) #53-67; The Spectacular Spider-Man (Marvel, 1968 series) #1-2; Marvel Super-Heroes (Marvel, 1967 series) #14; Not Brand Echh (Marvel, 1967 series) #6, #11  |  gcd_reprint 1978761: s1570 The Amazing Spider-Man (1963) #53-67 [31 stories] · s1873 The Spectacular Spider-Man (1968) #1-2 [8 stories] · s1811 Not Brand Echh (1967) #6, #11 [4 stories] · s1810 Marvel Super-Heroes (1967) #14 [2 stories]
+             [95802] gcd_reprint 2268841: s1570 The Amazing Spider-Man (1963) #86-104 [20 stories]
+             [95803] gcd_reprint 1696226: s1570 The Amazing Spider-Man (1963) #105-123 [39 stories] · s66209 Spider-Man: The Death of Gwen Stacy (1999) (unnumbered) [2 stories] · s1635 The Amazing Spider-Man Annual (1964) #9 [1 story] · s27784 Spider-Man: Death of the Stacys (2007) (unnumbered) [1 story]
+             [95806] gcd notes 2633948 (#10 of Amazing Spider-Man Epic Collection): The Amazing Spider-Man (Marvel, 1963 series) #165-185; The Amazing Spider-Man Annual (Marvel, 1964 series) #11; Nova (Marvel, 1976 series) #12  |  gcd_reprint 2633948: s1570 The Amazing Spider-Man (1963) #165-185 [44 stories] · s158698 FOOM Magazine (1973) #17-18, #22 [18 stories] · s1635 The Amazing Spider-Man Annual (1964) #11-12 [5 stories] · s2180 Marvel Treasury Edition (1974) #14 [3 stories]
+             [95807] gcd_reprint 1181282: s1570 The Amazing Spider-Man (1963) #259-272 [31 stories] · s1747 Marvel Tales (1966) #273-282 [10 stories] · s3059 Web of Spider-Man (1985) #1, #6 [5 stories] · s1635 The Amazing Spider-Man Annual (1964) #18-19 [4 stories]
+             [95808] gcd_reprint 1710057: s1570 The Amazing Spider-Man (1963) #289-294 [13 stories] · s3059 Web of Spider-Man (1985) #29-32 [8 stories] · s69795 Marvel Age (1983) #54 [7 stories] · s46980 The Amazing Spider-Man: The Wedding (1991) (unnumbered) [6 stories]
+             [95810] gcd notes 1964905 (#19 of Amazing Spider-Man Epic Collection): The Amazing Spider-Man (Marvel, 1963 series) #311-325; The Amazing Spider-Man Annual (Marvel, 1964 series) #23  |  gcd_reprint 1964905: s1570 The Amazing Spider-Man (1963) #311-325 [31 stories] · s1635 The Amazing Spider-Man Annual (1964) #23 [9 stories] · s28497 Marvel Graphic Novel: The Amazing Spider-Man "Parallel Lives" (1989) (unnumbered) [7 stories] · s2657 Marvel Fanfare (1982) #41, #45, #50 [3 stories]
+             [95817] gcd_reprint 2273650: s1570 The Amazing Spider-Man (1963) #381-393 [13 stories] · s175761 The Amazing Spider-Man 30th Anniversary Poster Magazine (1992) #1 [1 story] · s54499 The Amazing Spider-Man Ashcan Edition (1994) (unnumbered) [1 story] · s3059 Web of Spider-Man (1985) #112 [1 story]
+   CV candidates:  77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 s87 · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 s85 · 113053 "Amazing Spider-Man Epic Collection: Venom" 2018 Marvel 1 issue 682647 s34 · 119132 "Amazing Spider-Man Epic Collection: Assassin Nation" 2019 Marvel 1 issue 709196 s33 · 80960 "Amazing Spider-Man Epic Collection: Round Robin" 2015 Marvel 1 issue 483670 s33 · 97134 "Amazing Spider-Man Epic Collection: Great Responsibility" 2016 Marvel 1 issue 570027 s33   (v1 search)
+   CV local rip:   74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 (via CV candidate name "The Amazing Spider-Man Epic Collection: Ghosts of the Past") · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 (via CV candidate name "The Amazing Spider-Man Epic Collection: Great Power") · 113053 "Amazing Spider-Man Epic Collection: Venom" 2018 Marvel 1 issue 682647 (via CV candidate name "Amazing Spider-Man Epic Collection: Venom")   (rip lookup)
+   GCD dump:       74602 "Amazing Spider-Man Epic Collection" 2013-? Marvel [] 26   (dump lookup)
+
+== S872 Spider-Man Epic Collection: Cosmic Adventures  [tier B]   keys: Amazing Spider-Man Epic Collection: Cosmic Adventures  years 2013-2013  1 files / 1 collections
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95811] COL Amazing Spider-Man Epic Collection Vol. 20 - Cosmic Adventures (2014) (F) (Digital) (Shadowcat-Empire).cbz (501pp)
+   ours:    ComicInfo Series: "Amazing Spider-Man Epic Collection: Cosmic Adventures"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [95811] gcd_reprint 1115971: s1570 The Amazing Spider-Man (1963) #326-333 [18 stories] · s2359 The Spectacular Spider-Man (1976) #158-160 [7 stories] · s1635 The Amazing Spider-Man Annual (1964) #24 [7 stories] · s3060 Web of Spider-Man Annual (1985) #6 [6 stories]
+   CV linked:      vol 69427 "Spider-Man Epic Collection: Cosmic Adventures" 2013 Marvel 1 issues issue 434071; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 s82 · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 s80 · 38931 "Marvel Adventures Spider-Man: Amazing" 2010 Marvel 1 issue 261470 s71 · 27407 "Spider-Man: The Cosmic Adventures" 1993 Marvel 1 issue 166939 s65 · 113053 "Amazing Spider-Man Epic Collection: Venom" 2018 Marvel 1 issue 682647 s29 · 119132 "Amazing Spider-Man Epic Collection: Assassin Nation" 2019 Marvel 1 issue 709196 s28   (v1 search)
+   CV local rip:   (= linked) · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 (via CV candidate name "The Amazing Spider-Man Epic Collection: Ghosts of the Past") · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 (via CV candidate name "The Amazing Spider-Man Epic Collection: Great Power")   (rip lookup)
+
+== S873 Amazing Spider-Man Epic Collection: Invasion of the Spider-Slayers  [tier B]   keys: Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers  years 2023-2023  1 files / 1 collections
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95815] COL Amazing Spider-Man Epic Collection Vol. 24 - Invasion of the Spider-Slayers (2022) (Digital-Empire).cbr (423pp)
+   ours:    ComicInfo Series: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [95815] gcd_reprint 2473084: s1570 The Amazing Spider-Man (1963) #368-377 [31 stories] · s1635 The Amazing Spider-Man Annual (1964) #27 [7 stories] · s4478 Spider-Man / Dr. Strange: The Way to Dusty Death (1992) (unnumbered) [3 stories] · s31621 Spider-Man: Invasion of the Spider-Slayers (1995) (unnumbered) [2 stories]
+   CV linked:      vol 147274 "Amazing Spider-Man Epic Collection: Invasion of the Spider-Slayers" 2023 Marvel 1 issues issue 964071; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 27429 "Spider-Man: Invasion of the Spider-Slayers" 1995 Marvel 1 issue 167079 s91 · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 s87 · 28153 "Secret Invasion: Amazing Spider-Man" 2009 Marvel 1 issue 172978 s71 · 22769 "Secret Invasion: The Amazing Spider-Man" 2008 Marvel 3 s60 · 156184 "Amazing Spider-Man Epic Collection: the Clone Saga" 2024 Marvel 1 issue 1041189 s25 · 152561 "Amazing Spider-Man Epic Collection: Spider-Man or Spider-Clone? " 2023 Marvel 1 issue 1003987 s18   (v1 search)
+   CV local rip:   (= linked) · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 (via CV candidate name "The Amazing Spider-Man Epic Collection: Ghosts of the Past") · 28153 "Secret Invasion: Amazing Spider-Man" 2009 Marvel 1 issue 172978 (via CV candidate name "Secret Invasion: Amazing Spider-Man") · 27429 "Spider-Man: Invasion of the Spider-Slayers" 1995 Marvel 1 issue 167079 (via CV candidate name "Spider-Man: Invasion of the Spider-Slayers")   (rip lookup)
+   GCD dump:       31621 "Spider-Man: Invasion of the Spider-Slayers" 1995-1995 Marvel [] 1 (via CV candidate name "Spider-Man: Invasion of the Spider-Slayers")   (dump lookup)
+
+== S874 Amazing Spider-Man Epic Collection: Man-Wolf at Midnight  [tier B]   keys: Amazing Spider-Man Epic Collection: Man-Wolf At Midnight  years 2022-2022  1 files / 1 collections
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95804] COL Amazing Spider-Man Epic Collection Vol. 08 - Man-Wolf At Midnight (2022) (Digital) (Kileko-Empire).cbz (414pp)
+   ours:    ComicInfo Series: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [95804] gcd_reprint 2418485: s1570 The Amazing Spider-Man (1963) #124-142 [20 stories] · s2173 Giant-Size Super-Heroes Featuring Spider-Man (1974) #1 [1 story]
+   CV linked:      vol 144798 "Amazing Spider-Man Epic Collection: Man-Wolf at Midnight" 2022 Marvel 1 issues issue 944335; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 s76 · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 s74 · 113053 "Amazing Spider-Man Epic Collection: Venom" 2018 Marvel 1 issue 682647 s23 · 119132 "Amazing Spider-Man Epic Collection: Assassin Nation" 2019 Marvel 1 issue 709196 s22 · 152561 "Amazing Spider-Man Epic Collection: Spider-Man or Spider-Clone? " 2023 Marvel 1 issue 1003987 s21 · 156184 "Amazing Spider-Man Epic Collection: the Clone Saga" 2024 Marvel 1 issue 1041189 s21   (v1 search)
+   CV local rip:   (= linked) · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 (via CV candidate name "The Amazing Spider-Man Epic Collection: Ghosts of the Past") · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 (via CV candidate name "The Amazing Spider-Man Epic Collection: Great Power")   (rip lookup)
+
+== S875 The Amazing Spider-Man Epic Collection: Maximum Carnage  [tier B]   keys: Amazing Spider-Man Epic Collection: Maximum Carnage  years 2020-2020  1 files / 1 collections
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95816] COL Amazing Spider-Man Epic Collection Vol. 25 - Maximum Carnage (2020) (Digital) (Zone-Empire).cbr (419pp)
+   ours:    ComicInfo Series: "Amazing Spider-Man Epic Collection: Maximum Carnage"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [95816] gcd_reprint 2219553: s2359 The Spectacular Spider-Man (1976) #201-203 [9 stories] · s4049 Spider-Man (1990) #35-37 [9 stories] · s3059 Web of Spider-Man (1985) #101-103 [9 stories] · s1570 The Amazing Spider-Man (1963) #378-380 [9 stories]
+   CV linked:      vol 124287 "The Amazing Spider-Man Epic Collection: Maximum Carnage" 2020 Marvel 1 issues issue 733873; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 38267 "Spider-Man: Maximum Carnage" 1993 Marvel 1 issue 256217 s90 · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 s82 · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 s80 · 113053 "Amazing Spider-Man Epic Collection: Venom" 2018 Marvel 1 issue 682647 s29 · 119132 "Amazing Spider-Man Epic Collection: Assassin Nation" 2019 Marvel 1 issue 709196 s28 · 80960 "Amazing Spider-Man Epic Collection: Round Robin" 2015 Marvel 1 issue 483670 s28   (v1 search)
+   CV local rip:   (= linked) · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 (via CV candidate name "The Amazing Spider-Man Epic Collection: Ghosts of the Past") · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 (via CV candidate name "The Amazing Spider-Man Epic Collection: Great Power") · 38267 "Spider-Man: Maximum Carnage" 1993 Marvel 1 issue 256217 (via CV candidate name "Spider-Man: Maximum Carnage")   (rip lookup)
+   GCD dump:       103276 "Spider-Man - Maximum Carnage" [de] 2016-2016 Panini Deutschland [] 2 (via CV candidate name "Spider-Man: Maximum Carnage") · 106058 "Spider-Man - Maximum Carnage" [de] 2016-2016 Panini Deutschland [] 2 (via CV candidate name "Spider-Man: Maximum Carnage") · 31938 "Spider-Man: Maximum Carnage" 1994-1994 Marvel [] 1 (via CV candidate name "Spider-Man: Maximum Carnage")   (dump lookup)
+
+== S876 The Amazing Spider-Man Epic Collection: Return of the Sinister Six  [tier B]   keys: Amazing Spider-Man Epic Collection: Return of the Sinister Six  years 2016-2016  1 files / 1 collections
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95812] COL Amazing Spider-Man Epic Collection Vol. 21 - Return of the Sinister Six (2016) (F) (Digital) (Shadowcat-Empire).cbz (501pp)
+   ours:    ComicInfo Series: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [95812] gcd_reprint 1536981: s1570 The Amazing Spider-Man (1963) #334-350 [40 stories] · s25818 Spider-Man: Spirits of the Earth (1990) (unnumbered) [5 stories] · s74077 Spider-Man: Sinister Six (2009) (unnumbered) [2 stories] · s31384 Spider-Man: Venom Returns (1993) (unnumbered) [2 stories]
+   CV linked:      vol 87931 "The Amazing Spider-Man Epic Collection: Return of the Sinister Six" 2016 Marvel 1 issues issue 514432; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 29734 "Spider-Man: Sinister Six" 2009 Marvel 1 issue 183023 s96 · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 s82 · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 s76 · 72919 "Spider-Man: Revenge of the Sinister Six" 2012 Marvel 1 issue 450021 s75 · 32368 "Marvel Adventures Spider-Man: The Sinister Six" 2005 Marvel 1 issue 203732 s65 · 113053 "Amazing Spider-Man Epic Collection: Venom" 2018 Marvel 1 issue 682647 s22   (v1 search)
+   CV local rip:   (= linked) · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 (via CV candidate name "The Amazing Spider-Man Epic Collection: Ghosts of the Past") · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 (via CV candidate name "The Amazing Spider-Man Epic Collection: Great Power") · 29734 "Spider-Man: Sinister Six" 2009 Marvel 1 issue 183023 (via CV candidate name "Spider-Man: Sinister Six")   (rip lookup)
+   GCD dump:       145740 "Spider-Man: Sinister Six" 2019-2019 Marvel [] 1 (via CV candidate name "Spider-Man: Sinister Six") · 74077 "Spider-Man: Sinister Six" 2009-2009 Marvel [] 1 (via CV candidate name "Spider-Man: Sinister Six")   (dump lookup)
+
+== S877 Amazing Spider-Man Epic Collection: Round Robin  [tier B]   keys: Amazing Spider-Man Epic Collection: Round Robin  years 2015-2015  1 files / 1 collections
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95813] COL Amazing Spider-Man Epic Collection Vol. 22 - Round Robin (2015) (F) (Digital) (Shadowcat-Empire).cbz (475pp)
+   ours:    ComicInfo Series: "Amazing Spider-Man Epic Collection: Round Robin"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [95813] gcd_reprint 1252529: s1570 The Amazing Spider-Man (1963) #351-360 [22 stories] · s1635 The Amazing Spider-Man Annual (1964) #25 [8 stories] · s3060 Web of Spider-Man Annual (1985) #7 [7 stories] · s2518 The Spectacular Spider-Man Annual (1979) #11 [5 stories]
+   CV linked:      vol 80960 "Amazing Spider-Man Epic Collection: Round Robin" 2015 Marvel 1 issues issue 483670; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 27311 "Spider-Man: Round Robin" 1994 Marvel 1 issue 166432 s91 · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 s82 · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 s80 · 113053 "Amazing Spider-Man Epic Collection: Venom" 2018 Marvel 1 issue 682647 s29 · 119132 "Amazing Spider-Man Epic Collection: Assassin Nation" 2019 Marvel 1 issue 709196 s28 · 97134 "Amazing Spider-Man Epic Collection: Great Responsibility" 2016 Marvel 1 issue 570027 s28   (v1 search)
+   CV local rip:   (= linked) · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 (via CV candidate name "The Amazing Spider-Man Epic Collection: Ghosts of the Past") · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 (via CV candidate name "The Amazing Spider-Man Epic Collection: Great Power") · 27311 "Spider-Man: Round Robin" 1994 Marvel 1 issue 166432 (via CV candidate name "Spider-Man: Round Robin")   (rip lookup)
+
+== S878 Amazing Spider-Man Epic Collection: Spider-Man or Spider-Clone?   [tier B]   keys: Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?  years 2023-2023  1 files / 1 collections
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95805] COL Amazing Spider-Man Epic Collection Vol. 09 - Spider-Man or Spider-Clone (2023) (Digital-Empire).cbr (465pp)
+   ours:    ComicInfo Series: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [95805] gcd notes 2557633 (#9 of Amazing Spider-Man Epic Collection): The Amazing Spider-Man (Marvel, 1963 series) #143-164; The Amazing Spider-Man Annual (Marvel, 1964 series) #10  |  gcd_reprint 2557633: s1570 The Amazing Spider-Man (1963) #143-164 [46 stories] · s2261 Marvel Special Edition Featuring The Spectacular Spider-Man (1975) #1 [5 stories] · s1635 The Amazing Spider-Man Annual (1964) #10 [2 stories] · s13528 The Official Marvel Index to the Amazing Spider-Man (1985) #1 [1 story]
+   CV linked:      vol 152561 "Amazing Spider-Man Epic Collection: Spider-Man or Spider-Clone? " 2023 Marvel 1 issues issue 1003987; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 27332 "Spider-Man: Clone Genesis" 1995 Marvel 1 issue 166480 s49 · 32701 "The Amazing Spider-Man: The Complete Clone Saga Epic" 2010 Marvel 5 s46 · 32903 "Spider-Man: The Clone Journal" 1995 Marvel 1 issue 211817 s46 · 170282 "Amazing Spider-Man Epic Collection: Spider-Man - Threat or Menace?" 2026 Marvel 1 s39 · 25144 "Spider-Man: The Clone Saga" 2009 Marvel 6 s36 · 110903 "Amazing Spider-Man Epic Collection: Spider-Man No More" 2018 Marvel 1 issue 670105 s30   (v1 search)
+   CV local rip:   (= linked) · 32701 "The Amazing Spider-Man: The Complete Clone Saga Epic" 2010 Marvel 5 (via CV candidate name "The Amazing Spider-Man: The Complete Clone Saga Epic") · 27332 "Spider-Man: Clone Genesis" 1995 Marvel 1 issue 166480 (via CV candidate name "Spider-Man: Clone Genesis")   (rip lookup)
+   GCD dump:       173034 "Spider-Man - Clone genesis" [fr] 1996-1996 Semic S.A. [] 1 (via CV candidate name "Spider-Man: Clone Genesis") · 50637 "Spider-Man: Clone Genesis" 1995-1995 Marvel [] 1 (via CV candidate name "Spider-Man: Clone Genesis")   (dump lookup)
+
+== S879 Amazing Spider-Man Epic Collection: the Clone Saga  [tier B]   keys: Amazing Spider-Man Epic Collection: The Clone Saga  years 2024-2024  1 files / 1 collections
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95818] COL Amazing Spider-Man Epic Collection Vol. 27 - The Clone Saga (2024) (Digital) (dekabro-Empire).cbz (447pp)
+   ours:    ComicInfo Series: "Amazing Spider-Man Epic Collection: The Clone Saga"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [95818] gcd notes 2599963 (#27 of Amazing Spider-Man Epic Collection): Web of Spider-Man (Marvel, 1985 series) #117-119; The Amazing Spider-Man (Marvel, 1963 series) #394-396; Spider-Man (Marvel, 1990 series) #51-53; Spectacular Spider-Man (Marvel, 1976 series) #217-219; Spider-Man Unlimited (Marvel, 1993 seri  |  gcd_reprint 2599963: s3059 Web of Spider-Man (1985) #114-119 [15 stories] · s2359 The Spectacular Spider-Man (1976) #215-219 [13 stories] · s4049 Spider-Man (1990) #48-53 [13 stories] · s1570 The Amazing Spider-Man (1963) #391, #393-396 [11 stories]
+   CV linked:      vol 156184 "Amazing Spider-Man Epic Collection: the Clone Saga" 2024 Marvel 1 issues issue 1041189; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 s83 · 25144 "Spider-Man: The Clone Saga" 2009 Marvel 6 s81 · 32701 "The Amazing Spider-Man: The Complete Clone Saga Epic" 2010 Marvel 5 s75 · 34091 "Spider-Man: The Real Clone Saga" 2010 Marvel 1 issue 222241 s74 · 41275 "Spider-Man: The Original Clone Saga" 2011 Marvel 1 issue 278684 s74 · 35948 "Ultimate Spider-Man: Clone Saga" 2007 Marvel 1 issue 237651 s70   (v1 search)
+   CV local rip:   (= linked) · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 (via CV candidate name "The Amazing Spider-Man Epic Collection: Ghosts of the Past") · 32701 "The Amazing Spider-Man: The Complete Clone Saga Epic" 2010 Marvel 5 (via CV candidate name "The Amazing Spider-Man: The Complete Clone Saga Epic") · 25144 "Spider-Man: The Clone Saga" 2009 Marvel 6 (via CV candidate name "Spider-Man: The Clone Saga")   (rip lookup)
+   GCD dump:       40950 "Spider-Man: The Clone Saga" 2009-2010 Marvel [] 6 (via CV candidate name "Spider-Man: The Clone Saga")   (dump lookup)
+
+== S880 Amazing Spider-Man Epic Collection: The Hero Killers  [tier B]   keys: Amazing Spider-Man Epic Collection: The Hero Killers  years 2022-2023  1 files / 1 collections
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95814] COL Amazing Spider-Man Epic Collection Vol. 23 - The Hero Killers (2023) (Digital-Empire).cbz (474pp)
+   ours:    ComicInfo Series: "Amazing Spider-Man Epic Collection: The Hero Killers"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [95814] gcd_reprint 2481448: s1570 The Amazing Spider-Man (1963) #361-367 [24 stories] · s69795 Marvel Age (1983) #114 [13 stories] · s1635 The Amazing Spider-Man Annual (1964) #26 [7 stories] · s17721 The Amazing Spider-Man: Soul of the Hunter (1992) (unnumbered) [5 stories]
+   CV linked:      vol 147630 "Amazing Spider-Man Epic Collection: The Hero Killers" 2022 Marvel 1 issues issue 966014; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 s85 · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 s83 · 156184 "Amazing Spider-Man Epic Collection: the Clone Saga" 2024 Marvel 1 issue 1041189 s30 · 119744 "Amazing Spider-Man Epic Collection: The Goblin Lives" 2019 Marvel 1 issue 711938 s30 · 113053 "Amazing Spider-Man Epic Collection: Venom" 2018 Marvel 1 issue 682647 s23 · 119132 "Amazing Spider-Man Epic Collection: Assassin Nation" 2019 Marvel 1 issue 709196 s22   (v1 search)
+   CV local rip:   (= linked) · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 (via CV candidate name "The Amazing Spider-Man Epic Collection: Ghosts of the Past") · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 (via CV candidate name "The Amazing Spider-Man Epic Collection: Great Power")   (rip lookup)
+
+== S881 Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet  [tier B]   keys: Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet  years 2020-2020  1 files / 1 collections
+   flags: #110 conflated-series [Dismissed] item 95801 — Series "Epic Collection: Ghosts of the Past" holds Vol. 05 - The Secret of the Petrified T
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95801] COL Amazing Spider-Man Epic Collection Vol. 05 - The Secret of the Petrified Tablet (2020) (Digital) (Zone-Empire).cbr (463pp)
+   ours:    judged item 95801 #68-85 conf 0.95; ComicInfo Series: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [95801] gcd notes 2078831 (#5 of Amazing Spider-Man Epic Collection): Amazing Spider-Man (Marvel, 1963 series) #68-85; Amazing Spider-Man Annual (Marvel, 1964 series) #5  |  gcd_reprint 2078831: s1570 The Amazing Spider-Man (1963) #68-85 [37 stories] · s1635 The Amazing Spider-Man Annual (1964) #5-6 [8 stories] · s52975 Marvel Masterworks: The Amazing Spider-Man (2009) #8 [1 story]
+   CV linked:      vol 124993 "Amazing Spider-Man Epic Collection: The Secret of the Petrified Tablet" 2020 Marvel 1 issues issue 737189  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV candidates:  (= linked) · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 s85 · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 s73 · 113053 "Amazing Spider-Man Epic Collection: Venom" 2018 Marvel 1 issue 682647 s22 · 156184 "Amazing Spider-Man Epic Collection: the Clone Saga" 2024 Marvel 1 issue 1041189 s18 · 119744 "Amazing Spider-Man Epic Collection: The Goblin Lives" 2019 Marvel 1 issue 711938 s18 · 152561 "Amazing Spider-Man Epic Collection: Spider-Man or Spider-Clone? " 2023 Marvel 1 issue 1003987 s18   (v1 search)
+   CV local rip:   (= linked) · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 (via CV candidate name "The Amazing Spider-Man Epic Collection: Ghosts of the Past") · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 (via CV candidate name "The Amazing Spider-Man Epic Collection: Great Power")   (rip lookup)
+
+== S882 Amazing Spider-Man Epic Collection: Venom  [tier B]   keys: Amazing Spider-Man Epic Collection: Venom  years 2018-2018  1 files / 1 collections
+   folders: [1] Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014)
+   files:   [95809] COL Amazing Spider-Man Epic Collection Vol. 18 - Venom (2018) (Digital) (Kileko-Empire).cbr (507pp)
+   ours:    ComicInfo Series: "Amazing Spider-Man Epic Collection: Venom"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [95809] gcd notes 1841575 (#18 of Amazing Spider-Man Epic Collection): The Amazing Spider-Man (Marvel, 1963 series) #295-310; The Amazing Spider-Man Annual (Marvel, 1964 series) #22; Web of Spider-Man (Marvel, 1985 series) #3; The Spectacular Spider-Man (Marvel, 1976 series) #133  |  gcd_reprint 1841575: s1570 The Amazing Spider-Man (1963) #295-310 [33 stories] · s1635 The Amazing Spider-Man Annual (1964) #22 [8 stories] · s2359 The Spectacular Spider-Man (1976) #133 [2 stories] · s3059 Web of Spider-Man (1985) #33 [2 stories]
+   CV linked:      vol 113053 "Amazing Spider-Man Epic Collection: Venom" 2018 Marvel 1 issues issue 682647; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 s90 · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 s88 · 119132 "Amazing Spider-Man Epic Collection: Assassin Nation" 2019 Marvel 1 issue 709196 s36 · 80960 "Amazing Spider-Man Epic Collection: Round Robin" 2015 Marvel 1 issue 483670 s36 · 156184 "Amazing Spider-Man Epic Collection: the Clone Saga" 2024 Marvel 1 issue 1041189 s35 · 119744 "Amazing Spider-Man Epic Collection: The Goblin Lives" 2019 Marvel 1 issue 711938 s35   (v1 search)
+   CV local rip:   (= linked) · 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" 2014 Marvel 1 issue 453652 (via CV candidate name "The Amazing Spider-Man Epic Collection: Ghosts of the Past") · 77149 "The Amazing Spider-Man Epic Collection: Great Power" 2014 Marvel 1 issue 466509 (via CV candidate name "The Amazing Spider-Man Epic Collection: Great Power")   (rip lookup)
+
+== S9611 Iron Man Epic Collection: Battle Royal  [tier B]   keys: Iron Man Epic Collection: Battle Royal  years 2022-2022  1 files / 1 collections
+   folders: [1] Marvel\_Iron Man\_Iron Man Epic Collections
+   files:   [82143] COL Iron Man Epic Collection Vol. 05 - Battle Royal (2022) (Digital-Empire).cbr (444pp)
+   ours:    ComicInfo Series: "Iron Man Epic Collection: Battle Royal"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [82143] gcd_reprint 2409856: s1867 Iron Man (1968) #47-67 [22 stories]
+   CV linked:      vol 144793 "Iron Man Epic Collection: Battle Royal" 2022 Marvel 1 issues issue 944346; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 108102 "Iron Man Epic Collection: Doom" 2018 Marvel 1 issue 655504 s69 · 150441 "Iron Man Epic Collection: The Crossing" 2023 Marvel 1 issue 989798 s68 · 72418 "Iron Man Epic Collection: War Games" 2014 Marvel 1 issue 447996 s68 · 79615 "Iron Man Epic Collection: Stark Wars" 2015 Marvel 1 issue 477164 s68 · 89265 "Iron Man Epic Collection: Duel of Iron" 2016 Marvel 1 issue 522431 s67 · 77896 "Iron Man Epic Collection: The Golden Avenger" 2014 Marvel 1 issue 469269 s67   (v1 search)
+   CV local rip:   (= linked) · 150441 "Iron Man Epic Collection: The Crossing" 2023 Marvel 1 issue 989798 (via CV candidate name "Iron Man Epic Collection: The Crossing") · 108102 "Iron Man Epic Collection: Doom" 2018 Marvel 1 issue 655504 (via CV candidate name "Iron Man Epic Collection: Doom")   (rip lookup)
+
+== S9612 Iron Man Epic Collection: Duel of Iron  [tier B]   keys: Iron Man Epic Collection: Duel of Iron  years 2016-2016  1 files / 1 collections
+   folders: [1] Marvel\_Iron Man\_Iron Man Epic Collections
+   files:   [82146] COL Iron Man Epic Collection Vol. 11 - Duel of Iron (2016) (Digital) (F) (Zone-Empire).cbr (501pp)
+   ours:    ComicInfo Series: "Iron Man Epic Collection: Duel of Iron"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [82146] gcd_reprint 1476563: s1867 Iron Man (1968) #178-195 [19 stories] · s2396 Iron Man Annual (1976) #6-7 [2 stories]
+   CV linked:      vol 89265 "Iron Man Epic Collection: Duel of Iron" 2016 Marvel 1 issues issue 522431; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 83138 "Iron Fist Epic Collection: The Fury of Iron Fist" 2015 Marvel 1 issue 494320 s68 · 108102 "Iron Man Epic Collection: Doom" 2018 Marvel 1 issue 655504 s63 · 150441 "Iron Man Epic Collection: The Crossing" 2023 Marvel 1 issue 989798 s62 · 32284 "Iron Man: Iron Monger" 2010 Marvel 1 issue 202613 s60 · 134649 "Iron Man: Big Iron" 2021 Marvel 1 issue 839155 s60 · 156314 "Iron Man: Iron Metropolitan" 2014 Marvel UK/Panini UK 1 issue 1041983 s60   (v1 search)
+   CV local rip:   (= linked) · 83138 "Iron Fist Epic Collection: The Fury of Iron Fist" 2015 Marvel 1 issue 494320 (via CV candidate name "Iron Fist Epic Collection: The Fury of Iron Fist") · 108102 "Iron Man Epic Collection: Doom" 2018 Marvel 1 issue 655504 (via CV candidate name "Iron Man Epic Collection: Doom")   (rip lookup)
+
+== S9613 Iron Man Epic Collection: Stark Wars  [tier B]   keys: Iron Man Epic Collection: Stark Wars  years 2015-2015  1 files / 1 collections
+   folders: [1] Marvel\_Iron Man\_Iron Man Epic Collections
+   files:   [82147] COL Iron Man Epic Collection Vol. 13 - Stark Wars (2015) (Digital-Empire).cbr (497pp)
+   ours:    ComicInfo Series: "Iron Man Epic Collection: Stark Wars"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [82147] gcd_reprint 1251187: s1867 Iron Man (1968) #215-232 [18 stories] · s2396 Iron Man Annual (1976) #9 [1 story] · s73783 Iron Man: Armor Wars Prologue (2010) (unnumbered) [1 story]
+   CV linked:      vol 79615 "Iron Man Epic Collection: Stark Wars" 2015 Marvel 1 issues issue 477164; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 161792 "Iron Man Modern Era Epic Collection: Stark Disassembled" 2024 Marvel 1 issue 1086744 s77 · 146332 "Iron Man Epic Collection: The Return of Tony Stark" 2022 Marvel 1 issue 956612 s76 · 118382 "Iron Man Epic Collection: The Man Who Killed Tony Stark" 2019 Marvel 1 issue 706407 s75 · 108102 "Iron Man Epic Collection: Doom" 2018 Marvel 1 issue 655504 s69 · 150441 "Iron Man Epic Collection: The Crossing" 2023 Marvel 1 issue 989798 s68 · 89265 "Iron Man Epic Collection: Duel of Iron" 2016 Marvel 1 issue 522431 s67   (v1 search)
+   CV local rip:   (= linked) · 146332 "Iron Man Epic Collection: The Return of Tony Stark" 2022 Marvel 1 issue 956612 (via CV candidate name "Iron Man Epic Collection: The Return of Tony Stark") · 161792 "Iron Man Modern Era Epic Collection: Stark Disassembled" 2024 Marvel 1 issue 1086744 (via CV candidate name "Iron Man Modern Era Epic Collection: Stark Disassembled")   (rip lookup)
+
+== S9614 Iron Man Epic Collection: The Fury of the Firebrand  [tier B]   keys: Iron Man Epic Collection: The Fury Of The Firebrand  years 2020-2020  1 files / 1 collections
+   folders: [1] Marvel\_Iron Man\_Iron Man Epic Collections
+   files:   [82142] COL Iron Man Epic Collection Vol. 04 - The Fury of the Firebrand (2020) (Digital-Empire).cbr (468pp)
+   ours:    ComicInfo Series: "Iron Man Epic Collection: The Fury Of The Firebrand"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [82142] gcd notes 2150796 (#4 of Iron Man Epic Collection): Iron Man (Marvel, 1968 series) #25-46; Daredevil (Marvel, 1964 series) #73  |  gcd_reprint 2150796: s1867 Iron Man (1968) #25-46 [45 stories] · s1942 Iron Man Special (1970) #1-2 [2 stories] · s1636 Daredevil (1964) #73 [2 stories]
+   CV linked:      vol 129903 "Iron Man Epic Collection: The Fury of the Firebrand" 2020 Marvel 1 issues issue 796441; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 83138 "Iron Fist Epic Collection: The Fury of Iron Fist" 2015 Marvel 1 issue 494320 s67 · 155069 "Iron Man Epic Collection: War of the Super Villains" 2023 Marvel 1 issue 1032859 s67 · 89265 "Iron Man Epic Collection: Duel of Iron" 2016 Marvel 1 issue 522431 s64 · 150441 "Iron Man Epic Collection: The Crossing" 2023 Marvel 1 issue 989798 s63 · 108102 "Iron Man Epic Collection: Doom" 2018 Marvel 1 issue 655504 s62 · 77896 "Iron Man Epic Collection: The Golden Avenger" 2014 Marvel 1 issue 469269 s61   (v1 search)
+   CV local rip:   (= linked) · 155069 "Iron Man Epic Collection: War of the Super Villains" 2023 Marvel 1 issue 1032859 (via CV candidate name "Iron Man Epic Collection: War of the Super Villains") · 83138 "Iron Fist Epic Collection: The Fury of Iron Fist" 2015 Marvel 1 issue 494320 (via CV candidate name "Iron Fist Epic Collection: The Fury of Iron Fist")   (rip lookup)
+
+== S9615 Iron Man Epic Collection: The Golden Avenger  [tier B]   keys: Iron Man Epic Collection: The Golden Avenger  years 2014-2014  1 files / 1 collections
+   folders: [1] Marvel\_Iron Man\_Iron Man Epic Collections
+   files:   [82139] COL Iron Man Epic Collection Vol. 01 - The Golden Avenger (2014) (Digital-Empire).cbr (520pp)
+   ours:    ComicInfo Series: "Iron Man Epic Collection: The Golden Avenger"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [82139] gcd notes 1207731 (#1 of Iron Man Epic Collection): Tales of Suspense (Marvel, 1959 series) #39-72  |  gcd_reprint 1207731: s1442 Tales of Suspense (1959) #39-72 [36 stories]
+   CV linked:      vol 77896 "Iron Man Epic Collection: The Golden Avenger" 2014 Marvel 1 issues issue 469269; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 22880 "Iron Man: Golden Avenger" 2008 Marvel 1 issue 137411 s85 · 150441 "Iron Man Epic Collection: The Crossing" 2023 Marvel 1 issue 989798 s71 · 31478 "Iron Man: Tales of the Golden Avenger" 2010 Marvel 1 issue 196460 s70 · 155069 "Iron Man Epic Collection: War of the Super Villains" 2023 Marvel 1 issue 1032859 s68 · 108102 "Iron Man Epic Collection: Doom" 2018 Marvel 1 issue 655504 s63 · 72418 "Iron Man Epic Collection: War Games" 2014 Marvel 1 issue 447996 s62   (v1 search)
+   CV local rip:   (= linked) · 22880 "Iron Man: Golden Avenger" 2008 Marvel 1 issue 137411 (via CV candidate name "Iron Man: Golden Avenger") · 150441 "Iron Man Epic Collection: The Crossing" 2023 Marvel 1 issue 989798 (via CV candidate name "Iron Man Epic Collection: The Crossing")   (rip lookup)
+   GCD dump:       214600 "Iron Man: Golden Avenger" 2008-2008 Marvel [] 1 (via CV candidate name "Iron Man: Golden Avenger")   (dump lookup)
+
+== S9616 Iron Man Epic Collection: War Machine  [tier B]   keys: Iron Man Epic Collection: War Machine  years 2020-2020  1 files / 1 collections
+   folders: [1] Marvel\_Iron Man\_Iron Man Epic Collections
+   files:   [82150] COL Iron Man Epic Collection Vol. 17 - War Machine (2020) (Digital-Empire).cbr (469pp)
+   ours:    ComicInfo Series: "Iron Man Epic Collection: War Machine"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [82150] gcd notes 2118378 (#17 of Iron Man Epic Collection): Iron Man (Marvel, 1968 series) #278-289; Iron Man Annual (Marvel, 1976 series) #12-13; Darkhawk Annual (Marvel, 1992 series) #1; Avengers West Coast Annual (Marvel, 1990 series) #7; Marvel Holiday Special (Marvel, 1992 series) #2  |  gcd_reprint 2118378: s1867 Iron Man (1968) #278-289 [27 stories] · s2396 Iron Man Annual (1976) #12-13 [14 stories] · s69795 Marvel Age (1983) #116, #119 [3 stories] · s4710 Marvel Holiday Special (1992) (unnumbered) [2 stories]
+   CV linked:      vol 126294 "Iron Man Epic Collection: War Machine" 2020 Marvel 1 issues issue 745815; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 30279 "Iron Man: War Machine" 2008 Marvel 1 issue 186557 s85 · 72418 "Iron Man Epic Collection: War Games" 2014 Marvel 1 issue 447996 s79 · 155069 "Iron Man Epic Collection: War of the Super Villains" 2023 Marvel 1 issue 1032859 s76 · 63089 "Iron Man: War Machine" 2010 Panini Verlag 1 issue 409568 s70 · 108102 "Iron Man Epic Collection: Doom" 2018 Marvel 1 issue 655504 s69 · 150441 "Iron Man Epic Collection: The Crossing" 2023 Marvel 1 issue 989798 s68   (v1 search)
+   CV local rip:   (= linked) · 72418 "Iron Man Epic Collection: War Games" 2014 Marvel 1 issue 447996 (via CV candidate name "Iron Man Epic Collection: War Games") · 63089 "Iron Man: War Machine" 2010 Panini Verlag 1 issue 409568 (via CV candidate name "Iron Man: War Machine") · 30279 "Iron Man: War Machine" 2008 Marvel 1 issue 186557 (via CV candidate name "Iron Man: War Machine")   (rip lookup)
+   GCD dump:       101822 "Iron Man - War Machine" [de] 2010-? Panini Deutschland [] 1 (via CV candidate name "Iron Man: War Machine") · 73784 "Iron Man: War Machine" 2008-2008 Marvel [] 1 (via CV candidate name "Iron Man: War Machine")   (dump lookup)
