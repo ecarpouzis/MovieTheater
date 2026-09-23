@@ -1,0 +1,876 @@
+## Conventions for this batch (36 shown of 150 matched; 328 in LEDGER.md; 9 shelf/shelves: folder:sequel-subfolder ×6 · folder:events ×6 · folder:vn-year ×5 · pub:marvel ×4 · kind:trade-only ×3 · pub:dc ×3 · kind:foreign ×2 · folder:variant-covers ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (4 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-119] (4 shelf/shelves) pub:marvel
+- GCD filing quirks that recovered legs: drop "Comics" from a title, "and" for "&", "Digest" appended, reversed
+  or reordered name lists ("Deadpool / Amazing Spider-Man / Hulk: Identity Wars").
+[L-130] (4 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-136] (4 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-142] (4 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-175] (6 shelf/shelves) folder:bucket folder:events pass:item
+- In the chronology folders the RUN rule stands over the bucket rule: `S` = the numbered run, the tie-in's collected
+  record goes on the `I` line (B-072/073, ~90 shelves); the book's own record is the S only where no numbered run exists.
+[L-191] (6 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-242] (4 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-281] (6 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-290] (6 shelf/shelves) folder:sequel-subfolder pass:item sig:stamp
+- A spin-off filed in its own subfolder on the parent's shelf gets the PARENT's v01 ids stamped by the per-file
+  matcher (Rent-a-(Really Shy!)-Girlfriend on Rent-A-Girlfriend) — `N no-record` (or the shelf note), never the
+  parent's record; it is a misfiling for the lead.
+[L-297] (4 shelf/shelves) pass:item pub:marvel
+- ComicVine's issue-number field follows LEGACY print numbering (Amazing Spider-Man 2015 v4 #792-801 under CV
+  85076 / GCD 92892) — a `C` range in the 790s is still that volume.
+[L-298] (4 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-124] (5 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-272] (5 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-011] (3 shelf/shelves) folder:events pub:dc
+- DC event folders: the leading number is a READING-ORDER position, and the same book is filed again under its own
+  title folder — n issues × 2 files is one run.
+[L-015] (3 shelf/shelves) folder:events pub:dc
+- DC `#DC Events` read-order folders hold a SECOND rip of issues that also live on the title's own shelf — the
+  source of nearly every DC ratio 2.00; residue, not a second run. Event umbrellas (GCD "Convergence", 9) get
+  handed to two-issue tie-in shelves — the hull shape.
+[L-030] (9 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-034] (3 shelf/shelves) folder:events pub:marvel sig:round2
+- `_X-Men Complete Chronology` / `_Marvel Major Event Chronology` folders re-file the same books a second and
+  third time — every ratio 2.00 there, never a second run. Crossover blocks get handed one member's series by
+  `round2-folder` (four Age of Apocalypse shelves → "X-Man", a 76-issue hull).
+[L-040] (3 shelf/shelves) folder:bucket folder:events pub:dc pub:papercutz-nbm pub:scout pub:titan pub:valiant sig:twin
+- NBM / Papercutz album lines and Scout one-shots carry TWIN adjacent GCD rows for one book (120209/120210) —
+  cap at 0.9 and name both. Titan's Doctor Who "Year N" volumes number continuously across a Doctor (a ladder
+  starting at #6 is complete). A publisher's read-order crossover folder (Titan `Lost Dimension`, Valiant
+  `_Chronological Valiant`) = DC's `#DC Events` shape.
+[L-051] (3 shelf/shelves) pub:bongo pub:dc pub:small-press sig:probe
+- GCD spellings that hide a hit: Bongo's annual is plainly "Treehouse of Horror" (5435); Miller's 1983 series is
+  "Rōnin" (2721); Comico's Primer is "Primer" (14288). DC's Blackest Night revival issues sit in the ORIGINAL
+  series (Power of SHAZAM! 5246 runs 1995-2010).
+[L-052] (3 shelf/shelves) pub:dc sig:stamp sig:twin
+- The per-file CV matcher picks the LEGACY volume for every New 52 shelf (Batman 1940, Wonder Woman 1942, Nightwing
+  1996, Catwoman 1993) because it matched by issue number — the stored link on a 2011 shelf that names a 1940
+  volume is `wrong-cv-link`, the 2011 volume is in the rip.
+[L-055] (3 shelf/shelves) pub:dc pub:small-press sig:probe
+- ComicVine splits ONE line across two spellings of its own ("Batman Arkham: X" vs "Batman: Arkham: X"). GCD
+  prefixes titles the packet probes without ("Batman: Catwoman Defiant", "The Blue Beetle" for the 2006 series).
+[L-059] (3 shelf/shelves) pub:dc
+- A truncated parsed key reaching a different comic ("Riddle", "Batman - Death", "Once Upon") is `wrong-cv-link`.
+[L-082] (3 shelf/shelves) pub:dc sig:comicinfo
+- A Glorith-HD rip's ComicInfo `Web` id CAN be a ComicVine ISSUE id of the stored volume (599834, DC 100-Page
+  Spectacular) — Glorith's Web ids are never GCD ids, but check them against the CV rip.
+[L-093] (3 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
+[L-127] (3 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-151] (9 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (9 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-169] (3 shelf/shelves) folder:events pub:marvel sig:trade-link
+- `_Marvel Major Event Chronology (digital)` is one folder per tie-in holding that tie-in's collected edition: the
+  count-1-trade-as-stored-link artefact runs at 86 of 202 shelves there, the highest rate in any single folder.
+[L-193] (9 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-195] (3 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- Trade SUBTITLES tell two same-title relaunches apart when the per-file matcher cannot (Batman Beyond 2015 = Brave
+  New Worlds / City of Yesterday / Wired for Death; 2016 = Escaping the Grave / Rise of the Demon / The Long Payback).
+[L-197] (3 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- The per-file matcher's "wrong RELAUNCH" trap: it stamps the LATER same-title volume onto files dated to the earlier
+  era by issue-number coincidence (Wonder Woman 2016, Batman 2016, JLA v2/v3, Firestorm, Hawk and Dove v5, Atari Force
+  v2, Adventure Comics 2010) — the tell is files whose years or numbers predate or exceed the stamped volume's own.
+[L-198] (3 shelf/shelves) pub:dc
+- ComicVine keeps ONE spanning volume across era-retitled arcs (L.E.G.I.O.N. / R.E.B.E.L.S., Deathstroke "The Hunted",
+  Green Lantern 1960, Detective, Action, All-Star) while GCD names each era its own row — majority GCD era + `N` the
+  rest; no split for that alone.
+[L-199] (3 shelf/shelves) folder:bucket folder:events pub:dc
+- DC's "#DC Events" chronology folders resolve once the cross-referenced-run pattern is seen: a crossover reprint
+  bucket or a tie-in folder filed adjacent to the main run takes the main run's identity with the tie-ins named.
+[L-206] (3 shelf/shelves) pub:dc sig:probe
+- GCD's "&" spelling hides a run from every "and" probe (Batman & the Outsiders 2019: CV 118841 / GCD 144938, 17
+  issues) — probe both spellings.
+[L-207] (3 shelf/shelves) pub:dc
+- GCD 60830 "Detective Comics" spans the New 52 AND Rebirth; CV splits them (42594 New 52, 91098 Rebirth) — a New 52
+  sibling shelf must take CV 42594 and be declared before landing, or the shared GCD row misleads.
+
++114 more matched entries not shown: L-210, L-211, L-212, L-214, L-222, L-237, L-245, L-256, L-257, L-319, L-014, L-016, L-027, L-029, L-031, L-032, L-060, L-068, L-106, L-111, L-112, L-113, L-114, L-116, L-133, L-144, L-187, L-216, L-218, L-220, L-241, L-265, L-269, L-291, L-313, L-324, L-325, L-327, L-328, L-013, L-043, L-050, L-072, L-085, L-088, L-089, L-095, L-096, L-118, L-123, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-007, L-064, L-065, L-097, L-099, L-101, L-128, L-150, L-164, L-181, L-194, L-217, L-252, L-262, L-274, L-288, L-293, L-310, L-028, L-036, L-077, L-121, L-129, L-137, L-138, L-172, L-173, L-174, L-261, L-299, L-311, L-315, L-054, L-135, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-041, L-192 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S103846 The Amazing Spider-Man v2 (1999)  [tier C] · gap 56  keys: The Amazing Spider-Man v2 (1999)  years 1965-1968  46 files / 0 collections
+   split run: "The Amazing Spider-Man v2 (1999)" run={"cv": 78701, "gcd": 11288} (new shelf from P-016) — seed the S line from these ids, then verify them
+   folders: [39] Marvel\_Spider-Man\__Amazing Spider-Man\02 Amazing Spider-Man v2 (1999) · [6] _Marvel Major Event Chronology (digital)\2005.12 - Spider-man - The Other\Extra\Amazing Spider-man - Coming Home (2001) (digital-hd-Empire) · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0463 Maximum Security
+   files:   Amazing Spider-Man 020 (2000) (Digital) (AnPymGold - Empire).cbz … Amazing Spider-Man 029 (2001) (Digital) (AnPymGold - Empire).cbz  (10 files, pp 20-40)
+            [94480] Amazing Spider-Man 030 (2001) (digital) (Minutemen-InnerDemons).cbr (22pp) | [94481] Amazing Spider-Man 031 (2001) (digital-hd-Empire).cbr (22pp)
+            [94482] Amazing Spider-Man 032 (2001) (digital-hd-Empire).cbr (22pp) | [94483] Amazing Spider-Man 033 (2001) (digital-hd-Empire).cbr (21pp)
+            [94484] Amazing Spider-Man 034 (2001) (digital-hd-Empire).cbr (23pp) | [94485] Amazing Spider-Man 035 (2001) (digital-hd-Empire).cbr (24pp)
+            [94486] Amazing Spider-Man 036 (2001) (digital) (Minutemen-Faessla).cbz (20pp)
+            Amazing Spider-Man 037 (2002) (digital-hd-Empire).cbr … Amazing Spider-Man 045 (2002) (digital-hd-Empire).cbr  (9 files, pp 21-23)
+            [94496] Amazing Spider-Man 046 (2002) (digital) (Minutemen-InnerDemons).cbr (23pp) | [94497] Amazing Spider-Man 047 (2003) (digital) (Minutemen-InnerDemons).cbr (22pp)
+            [94498] Amazing Spider-Man 048 (2003) (digital) (Minutemen-InnerDemons).cbr (23pp) | [94499] Amazing Spider-Man 049 (2003) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            [94500] Amazing Spider-Man 050 (2003) (digital) (Minutemen-InnerDemons).cbr (23pp) | [94501] Amazing Spider-Man 051 (2003) (Digital) (Kileko-Empire).cbr (22pp)
+            [94502] Amazing Spider-Man 052 (2003) (Digital) (Kileko-Empire).cbr (24pp) | [94503] Amazing Spider-Man 053 (2003) (Digital) (Kileko-Empire).cbr (22pp)
+            [94504] Amazing Spider-Man 054 (2003) (Digital) (AnPymGold - Empire).cbz (22pp) | [94505] Amazing Spider-Man 055 (2003) (Digital) (AnPymGold - Empire).cbz (22pp)
+            [94506] Amazing Spider-Man 056 (2003) (Digital) (AnPymGold - Empire).cbz (22pp) | [94507] Amazing Spider-Man 057 (2003) (Digital) (AnPymGold - Empire).cbz (23pp)
+            [94508] Amazing Spider-Man 058 (2003) (Digital) (AnPymGold - Empire).cbz (22pp) | [89259] 006 Amazing Spider-Man 024 (2000) (Digital) (AnPymGold - Empire).cbz (23pp)
+            Amazing Spider-Man 030 (2001) (digital-hd-Empire).cbr … Amazing Spider-Man 035 (2001) (digital-hd-Empire).cbr  (6 files, pp 21-24)
+   ours:    ladder 20-58; 7 number(s) name more than one file: 24, 30, 31, 32, 33, 34, 35
+   CV per-file (v1): vol 2127 "The Amazing Spider-Man" 1963 Marvel 651 on 46/46 files
+   CV local rip:   (= per-file) · 34326 "The Amazing Spider-Man" 1979 Marvel 1 issue 224088 (via our own name without the filing suffix "The Amazing Spider-Man") · 56505 "The Amazing Spider-Man" 1979 Simon and Schuster 1 issue 383545 (via our own name without the filing suffix "The Amazing Spider-Man") · 151406 "The Amazing Spider-Man" 1980 Pocket Books 1 issue 995531 (via our own name without the filing suffix "The Amazing Spider-Man") · 22719 "The Amazing Spider-Man" 1982 Marvel 1 issue 136279 (via our own name without the filing suffix "The Amazing Spider-Man") · 78701 "The Amazing Spider-Man" 1999 Marvel 58 (via our own name without the filing suffix "The Amazing Spider-Man")   (rip lookup)
+   GCD per-file:   methods round2-seriesx43 ⚠  (⚠ copies a folder neighbour's series — verify); series 172683 "Amazing Spider-Man" [en-gb] 2021-? Panini UK [ongoing] 68 on 43/46 files
+   GCD dump:       1570 "The Amazing Spider-Man" 1963-1998 Marvel [] 443 (via our own name without the filing suffix "The Amazing Spider-Man") · 24842 "The Amazing Spider-Man" 1969-1969 Marvel [] 1 (via our own name without the filing suffix "The Amazing Spider-Man") · 149585 "The Amazing Spider-Man" [en-ph] 1974-1974 Goodwill Bookstore [] 2 (via our own name without the filing suffix "The Amazing Spider-Man") · 18606 "The Amazing Spider-Man" [en-au] 1975-1976 Newton Comics [] 17 (via our own name without the filing suffix "The Amazing Spider-Man") · 72382 "The Amazing Spider-Man" [en-au] 1975-1975 Newton Comics [] 1 (via our own name without the filing suffix "The Amazing Spider-Man") · 182246 "The Amazing Spider-Man" [en-za] 1976-1976 Republican Press [] 3 (via our own name without the filing suffix "The Amazing Spider-Man")   (dump lookup)
+   bridges:        gcd 172683 -> LOCG 100043 "The Amazing Spider-Man" support 320
+
+== S4752 The Amazing Spider-Man  [tier C] · 811 files  keys: Amazing Spider-Man (1963) | Amazing Spider-man (1963) | Dan Slott Spider-Man | The Amazing Spider-Man (1963)  years 1963-2022  811 files / 19 collections
+   split: the KEPT half of the P-016 split — moved out -> S103846 "The Amazing Spider-Man v2 (1999)"; re-identify what stayed
+   folders: [441] Marvel\_Spider-Man\__Amazing Spider-Man\01 Amazing Spider-Man v1 (1963) · [203] Marvel\_Spider-Man\__Amazing Spider-Man\03 Amazing Spider-Man v1 (2003) · [39] Marvel\_Spider-Man\__Amazing Spider-Man\00 Annuals and Specials · [19] Marvel\_Spider-Man\__Amazing Spider-Man\00 TPBs\Dan Slott Era · [15] _Marvel Major Event Chronology (digital)\2007.11 - Spider-man - One More Day\Extra\Spider-man - Brand New Day · [13] _Marvel Major Event Chronology (digital)\1975.02 - Spider-man - The Clone Saga I · [9] Marvel\_Spider-Man\__Amazing Spider-Man\03 Amazing Spider-Man v1 (2003)\Variant Covers · [6] _Marvel Major Event Chronology (digital)\2007.11 - Spider-man - One More Day\Extra · [5] Marvel\_Marvel Facsimile Editions\Variant Covers · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0719 Civil War - Phase One · [5] _Marvel Major Event Chronology (digital)\1973.06 - Spider-man - The Death of Gwen Stacy\Extras · [5] _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Amazing Spider-man · [4] Marvel\_Marvel Facsimile Editions · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0728 Civil War - Phase Two · [4] _Marvel Major Event Chronology (digital)\2012.11 - Spider-man - Dying Wish · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0087 Inferno After Effects · [3] _Marvel Major Event Chronology (digital)\1975.02 - Spider-man - The Clone Saga I\Extra · [3] _Marvel Major Event Chronology (digital)\1986.02 - Daredevil - Born Again\Extra\Amazing Spider-Man 050-52 (1967) · [3] _Marvel Major Event Chronology (digital)\1993.05 - Spider-man - Maximum Carnage\Extra\03 Amazing Spider-man - Carnage (1992) (Digital) (AnPymGold-Empire) · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0008 Second Genesis · [2] _Marvel Major Event Chronology (digital)\1987.10 - Spider-man - Kraven's Last Hunt\Extra · [2] _Marvel Major Event Chronology (digital)\1993.05 - Spider-man - Maximum Carnage\Extra\01 Amazing Spider-man - Venom (1988) (Digital) (AnPymGold-Empire) · [1] Marvel\_Spider-Man\__OGNs, Minis & One-shots\Spider-Man - Maximum Clonage (1995) · [1] Marvel\_Venom\11 Venom - Sinner Takes All (1995)\Bride of Venom (First She-Venom Appearance) · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0006 Various Cameos · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0012 Proteus · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0059 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0078 Evolutionary war · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0093 Atlantis Attacks · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0311 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0723 Civil War - X-Men · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0915 Identity Wars · [1] _Marvel Major Event Chronology (digital)\2006.07 - Civil War\03 Civil War - Spider-Man Unmasked
+   files:   [83015] Amazing Spider-Man 238 - Facsimile Edition (2022) (Digital) (Shadowcat-Empire).cbz (36pp)
+            [83016] Amazing Spider-Man 252 - Facsimile Edition (2019) (Digital) (Shadowcat-Empire).cbz (36pp)
+            [83018] Amazing Spider-Man 254 - Facsimile Edition (2024) (digital) (Marika-Empire).cbz (37pp)
+            [83027] Amazing Spider-Man 347 - Facsimile Edition (2020) (Digital) (Shadowcat-Empire).cbz (36pp)
+            [83101] Amazing Spider-Man 257 (2024) (Facsimile Edition Tony Daniel Variant) (Digital) (MikeNY76).cbz (1pp)
+            [83102] Amazing Spider-Man 260 (2024) (Facsimile Edition Skan Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [83103] Amazing Spider-Man 261 (2024) (Facsimile Edition Alan Quah Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [83104] Amazing Spider-Man 262 (2024) (Facsimile Edition Ben Harvey Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [83105] Amazing Spider-Man 263 (2024) (Facsimile Edition Inhyuk Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [93849] Amazing Spider-Man Annual 001 (1964) (Digital) (TLK-EMPIRE-HD).cbr (74pp) | [93850] Amazing Spider-Man Annual 002 (1965) (Digital) (Shadowcat-Empire).cbz (27pp)
+            [93851] Amazing Spider-Man Annual 003 (1966) (Digital) (TLK-EMPIRE-HD).cbr (23pp) | [93852] Amazing Spider-Man Annual 004 (1967) (Digital) (TLK-EMPIRE-HD).cbr (52pp)
+            [93853] Amazing Spider-Man Annual 005 (1968) (Digital) (TLK-EMPIRE-HD).cbr (49pp) | [93854] Amazing Spider-Man Annual 006 (1969) (Digital) (Shadowcat-Empire).cbz (54pp)
+            [93855] Amazing Spider-Man Annual 007 (1970).cbr (67pp) | [93856] Amazing Spider-Man Annual 008 (1971).cbr (66pp)
+            [93857] Amazing Spider-Man Annual 009 (1973) (c2c) (edits) (Delboy2k7-DCP).cbz (52pp) | [93858] Amazing Spider-Man Annual 010 (1976) (Digital) (TLK-EMPIRE-HD).cbr (37pp)
+            [93859] Amazing Spider-Man Annual 011 (1977) (Digital) (Zone-Empire).cbr (36pp) | [93860] Amazing Spider-Man Annual 012 (1978) (Digital-Empire).cbz (44pp)
+            [93861] Amazing Spider-Man Annual 013 (1979) (Digital) (Shadowcat-Empire).cbz (36pp) | [93862] Amazing Spider-Man Annual 014 (1980) (Digital) (Shadowcat-Empire).cbz (36pp)
+            [93863] Amazing Spider-Man Annual 015 (1981).cbz (31pp) | [93864] Amazing Spider-Man Annual 016 (1982) (Digital) (Shadowcat-Empire).cbz (39pp)
+            [93865] Amazing Spider-Man Annual 017 (1983) (Digital) (Shadowcat-Empire).cbz (40pp) | [93866] Amazing Spider-Man Annual 018 (1984) (Digital-Empire).cbz (40pp)
+            [93867] Amazing Spider-Man Annual 019 (1985) (Digital) (Shadowcat-Empire).cbz (41pp) | [93868] Amazing Spider-Man Annual 020 (1986) (Digital) (Shadowcat-Empire).cbz (40pp)
+            [93869] Amazing Spider-Man Annual 021 (1987) (Digital) (AnHeroGold-Empire).cbz (44pp) | [93870] Amazing Spider-Man Annual 022 (1988) (Digital) (Shadowcat-Empire).cbz (52pp)
+            [93872] Amazing Spider-Man Annual 024 (1990) (Digital) (Shadowcat-Empire).cbz (56pp) | [93873] Amazing Spider-Man Annual 025 (1991) (Digital) (AnHeroGold-Empire).cbz (55pp)
+            [93874] Amazing Spider-Man Annual 026 (1992) (Digital) (AnHeroGold-Empire).cbz (55pp) | [93877] Amazing Spider-Man Annual 029 (1995).cbr (56pp)
+            [93878] Amazing Spider-Man Annual 030 (1996).cbr (56pp) | [93881] Amazing Spider-Man Annual 032 (1999) (Digital) (Shadowcat-Empire).cbz (37pp)
+            [93882] Amazing Spider-Man Annual 033 (2000) (Digital) (Shadowcat-Empire).cbz (40pp) | [93883] Amazing Spider-Man Annual 034 (2001) (Digital) (Shadowcat-Empire).cbz (39pp)
+            [93884] Amazing Spider-Man Annual 035 (2008) (greengiant-DCP).cbr (39pp) | [93885] Amazing Spider-Man Annual 036 (2009) (Digital) (Zone-Empire).cbr (39pp)
+            [93886] Amazing Spider-Man Annual 037 (2010) (Digital) (AnPymGold-Empire).cbz (40pp) | [93887] Amazing Spider-Man Annual 038 (2011) (digital) (Minutemen-Faessla).cbz (34pp)
+            [93888] Amazing Spider-Man Annual 039 (2012) (digital) (Minutemen-Faessla).cbz (44pp) | [93889] Amazing Spider-Man Annual 040 (2015) (digital) (Minutemen-InnerDemons).cbr (29pp)
+            [93890] Amazing Spider-Man Annual 041 (2017) (digital) (Minutemen-Faessla).cbz (36pp) | [93891] Amazing Spider-Man Annual 042 (2018) (Digital) (Zone-Empire).cbr (41pp)
+            [93848] Amazing Spider-man 010 (Alternate Ditko Cover Only) (Nodge).cbr (1pp)
+            [93907] COL Dan Slott Spider-Man Vol. 01 - Brand New Day Vol. 01 - Brand New Day (2008) (Digital) (F2) (Kileko-Empire).cbz (196pp)
+            [93908] COL Dan Slott Spider-Man Vol. 02 - Brand New Day Vol. 02 (2009) (Digital) (F2) (Kileko-Empire).cbz (167pp)
+            [93909] COL Dan Slott Spider-Man Vol. 03 - Brand New Day Vol. 03 (2009) (Digital-SD) (Kileko-Empire).cbr (127pp)
+            [93910] COL Dan Slott Spider-Man Vol. 04 - Kraven's First Hunt (2009) (Digital) (Zone-Empire).cbr (102pp)
+            [93911] COL Dan Slott Spider-Man Vol. 05 - New Ways To Die (2009) (Digital) (F) (Kileko-Empire).cbz (175pp)
+            [93912] COL Dan Slott Spider-Man Vol. 07 - Death and Dating (2009) (Digital) (Kileko-Empire).cbr (171pp)
+            [93913] COL Dan Slott Spider-Man Vol. 09 - 24-7 (2010) (Digital) (Kileko-Empire).cbr (153pp)
+            [93914] COL Dan Slott Spider-Man Vol. 11 - Died In Your Arms Tonight (2012) (Digital) (Zone-Empire).cbr (174pp)
+            [93916] COL Dan Slott Spider-Man Vol. 14 - The Gauntlet Vol. 01 - Electro and Sandman (2010) (Digital) (Kileko-Empire).cbr (177pp)
+            [93917] COL Dan Slott Spider-Man Vol. 15 - The Gauntlet Vol. 02 - Rhino and Mysterio (2010) (Digital) (Kileko-Empire).cbr (136pp)
+            [93921] COL Dan Slott Spider-Man Vol. 22 - Big Time (2011) (Digital) (Zone-Empire).cbr (147pp)
+            [93923] COL Dan Slott Spider-Man Vol. 24 - The Fantastic Spider-Man (2012) (Digital) (Kileko-Empire).cbr (165pp)
+            [93924] COL Dan Slott Spider-Man Vol. 25 - The Return of Anti-Venom (2012) (Digital) (Kileko-Empire).cbr (102pp)
+            [93925] COL Dan Slott Spider-Man Vol. 26 - Spider-Island (2011) (Digital) (TheHand-Empire).cbr (390pp)
+            [93926] COL Dan Slott Spider-Man Vol. 27 - Flying Blind (2012) (Digital) (Kileko-Empire).cbr (122pp)
+            [93928] COL Dan Slott Spider-Man Vol. 28 - Trouble On The Horizon (2012) (Digital) (Kileko-Empire).cbr (113pp)
+            [93929] COL Dan Slott Spider-Man Vol. 30 - Lizard - No Turning Back (2012) (Digital) (Kileko-Empire).cbr (117pp)
+            [93930] COL Dan Slott Spider-Man Vol. 31 - Danger Zone (2012) (Digital) (Kileko-Empire).cbr (202pp)
+            [93931] COL Dan Slott Spider-Man Vol. 32 - Dying Wish (2013) (Digital) (F) (Kileko-Empire).cbz (130pp)
+            Amazing Spider-Man 001 (1963) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 007 (1963) (Digital) (Shadowcat-Empire).cbz  (7 files, pp 25-27)
+            [94036] Amazing Spider-Man 008 (1964) (Digital) (TLK-EMPIRE-HD).cbr (27pp)
+            Amazing Spider-Man 009 (1964) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 050 (1967) (Digital) (Shadowcat-Empire).cbz  (42 files, pp 22-26)
+            Amazing Spider-Man 051 (1967) (Digital) (TLK-EMPIRE-HD).cbr … Amazing Spider-Man 070 (1969) (Digital) (TLK-EMPIRE-HD).cbr  (20 files, pp 22-22)
+            [94099] Amazing Spider-Man 071 (1969) (Digital) (Waverider-Empire).cbz (21pp)
+            Amazing Spider-Man 072 (1969) (Digital) (AnHeroGold-Empire).cbr … Amazing Spider-Man 077 (1969) (Digital) (AnHeroGold-Empire).cbr  (6 files, pp 21-21)
+            [94106] Amazing Spider-Man 078 (1969) (Digital) (Zone-Empire).cbr (22pp) | [94107] Amazing Spider-Man 079 (1969) (Digital) (Zone-Empire).cbr (22pp)
+            [94108] Amazing Spider-Man 080 (1970) (Digital) (Zone-Empire).cbr (22pp) | [94109] Amazing Spider-Man 081 (1970) (Digital) (Zone-Empire).cbr (22pp)
+            Amazing Spider-Man 082 (1970) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 097 (1971) (Digital) (AnHeroGold-Empire).cbz  (16 files, pp 20-21)
+            Amazing Spider-Man 098 (1971) (Digital) (Zone-Empire).cbr … Amazing Spider-Man 109 (1972) (Digital) (Zone-Empire).cbr  (12 files, pp 21-37)
+            Amazing Spider-Man 110 (1972) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 120 (1973) (Digital) (AnHeroGold-Empire).cbz  (11 files, pp 21-21)
+            [94149] Amazing Spider-Man 121 (1973) (Digital) (Zone-Empire).cbr (22pp) | [94150] Amazing Spider-Man 122 (1973) (Digital) (Zone-Empire).cbr (22pp)
+            Amazing Spider-Man 123 (1973) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 131 (1974) (Digital) (AnHeroGold-Empire).cbz  (9 files, pp 20-20)
+            Amazing Spider-Man 132 (1974) (Digital) (Zone-Empire).cbr … Amazing Spider-Man 155 (1976) (Digital) (Zone-Empire).cbr  (24 files, pp 19-21)
+            [94184] Amazing Spider-Man 156 (1976) (Digital) (AnHeroGold-Empire).cbz (19pp) | [94185] Amazing Spider-Man 157 (1976) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94186] Amazing Spider-Man 158 (1976) (Digital) (AnHeroGold-Empire).cbz (18pp) | [94187] Amazing Spider-Man 159 (1976) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94188] Amazing Spider-Man 160 (1976) (Digital) (AnHeroGold-Empire).cbz (18pp) | [94189] Amazing Spider-Man 161 (1976) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [94190] Amazing Spider-Man 162 (1976) (Digital) (TLK-EMPIRE-HD).cbr (20pp)
+            Amazing Spider-Man 163 (1977) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 171 (1977) (Digital) (AnHeroGold-Empire).cbz  (9 files, pp 18-19)
+            Amazing Spider-Man 172 (1977) (Digital) (Zone-Empire).cbr … Amazing Spider-Man 180 (1978) (Digital) (Zone-Empire).cbr  (9 files, pp 19-20)
+            Amazing Spider-Man 181 (1978) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 188 (1978) (Digital) (AnHeroGold-Empire).cbz  (8 files, pp 18-19)
+            [94217] Amazing Spider-Man 189 (1979) (Digital) (TLK-EMPIRE-HD).cbr (20pp) | [94218] Amazing Spider-Man 190 (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [94219] Amazing Spider-Man 191 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp) | [94220] Amazing Spider-Man 192 (1979) (Digital) (AnHeroGold-Empire).cbz (19pp)
+            [94221] Amazing Spider-Man 193 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp) | [94222] Amazing Spider-Man 194 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94223] Amazing Spider-Man 195 (1979) (Digital) (AnHeroGold-Empire).cbz (19pp) | [94224] Amazing Spider-Man 196 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94225] Amazing Spider-Man 197 (1979) (Digital) (AnHeroGold-Empire).cbz (19pp) | [94226] Amazing Spider-Man 198 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94227] Amazing Spider-Man 199 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp) | [94228] Amazing Spider-Man 200 (1980) (Digital) (AnHeroGold-Empire).cbz (37pp)
+            [94229] Amazing Spider-Man 201 (1980) (Digital) (AnHeroGold-Empire).cbz (17pp) | [94230] Amazing Spider-Man 202 (1980) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94231] Amazing Spider-Man 203 (1980) (Digital) (AnHeroGold-Empire).cbz (19pp) | [94232] Amazing Spider-Man 204 (1980) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94233] Amazing Spider-Man 205 (1980) (Digital) (AnHeroGold-Empire).cbz (19pp) | [94234] Amazing Spider-Man 206 (1980) (Digital) (AnHeroGold-Empire).cbz (19pp)
+            Amazing Spider-Man 207 (1980) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 223 (1981) (Digital) (Shadowcat-Empire).cbz  (17 files, pp 18-24)
+            [94252] Amazing Spider-Man 224 (1982) (Digital) (AnHeroGold-Empire).cbz (23pp) | [94253] Amazing Spider-Man 225 (1982) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            [94254] Amazing Spider-Man 226 (1982) (Digital) (AnHeroGold-Empire).cbz (23pp) | [94255] Amazing Spider-Man 227 (1982) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [94256] Amazing Spider-Man 228 (1982) (Digital) (AnHeroGold-Empire).cbz (23pp) | [94257] Amazing Spider-Man 229 (1982) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94258] Amazing Spider-Man 230 (1982) (Digital) (Shadowcat-Empire).cbz (24pp)
+            Amazing Spider-Man 231 (1982) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 252 (1984) (Digital) (AnHeroGold-Empire).cbz  (22 files, pp 22-24)
+            Amazing Spider-Man 253 (1984) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 283 (1986) (Digital) (Shadowcat-Empire).cbz  (31 files, pp 23-39)
+            [94312] Amazing Spider-Man 284 (1987) (Digital-Empire).cbr (23pp)
+            Amazing Spider-Man 285 (1987) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 329 (1990) (Digital) (Shadowcat-Empire).cbz  (45 files, pp 23-42)
+            [94358] Amazing Spider-Man 330 (1990) (Digital) (AnHeroGold-Empire).cbz (23pp) | [94359] Amazing Spider-Man 331 (1990) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [94360] Amazing Spider-Man 332 (1990) (Digital) (AnHeroGold-Empire).cbz (24pp) | [94361] Amazing Spider-Man 333 (1990) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            Amazing Spider-Man 334 (1990) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 349 (1991) (Digital) (Shadowcat-Empire).cbz  (16 files, pp 23-25)
+            [94378] Amazing Spider-Man 350 (1991) (digital-Empire).cbr (39pp) | [94379] Amazing Spider-Man 351 (1991) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94380] Amazing Spider-Man 352 (1991) (Digital) (Shadowcat-Empire).cbz (24pp) | [94381] Amazing Spider-Man 353 (1991) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94382] Amazing Spider-Man 354 (1991) (Digital) (Shadowcat-Empire).cbz (25pp) | [94383] Amazing Spider-Man 355 (1991) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94384] Amazing Spider-Man 356 (1991) (Digital) (Shadowcat-Empire).cbz (24pp) | [94385] Amazing Spider-Man 357 (1992) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [94386] Amazing Spider-Man 358 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94387] Amazing Spider-Man 359 (1992) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94388] Amazing Spider-Man 360 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94389] Amazing Spider-Man 361 (1992) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94390] Amazing Spider-Man 362 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94391] Amazing Spider-Man 363 (1992) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94392] Amazing Spider-Man 364 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94393] Amazing Spider-Man 365 (1992) (Digital) (Shadowcat-Empire).cbz (69pp)
+            [94394] Amazing Spider-Man 366 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94395] Amazing Spider-Man 367 (1992) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94396] Amazing Spider-Man 368 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94397] Amazing Spider-Man 369 (1992) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94398] Amazing Spider-Man 370 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94399] Amazing Spider-Man 371 (1992) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94400] Amazing Spider-Man 372 (1993) (Digital) (Shadowcat-Empire).cbz (25pp) | [94401] Amazing Spider-Man 373 (1993) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94402] Amazing Spider-Man 374 (1993) (Digital) (Shadowcat-Empire).cbz (24pp) | [94403] Amazing Spider-Man 375 (1993) (digital) (Marika-Empire).cbz (54pp)
+            [94404] Amazing Spider-Man 376 (1993) (Digital) (Shadowcat-Empire).cbz (24pp) | [94405] Amazing Spider-Man 377 (1993) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94406] Amazing Spider-Man 378 (1993) (Digital) (Shadowcat-Empire).cbz (25pp) | [94407] Amazing Spider-Man 379 (1993) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94408] Amazing Spider-Man 380 (1993) (Digital) (Shadowcat-Empire).cbz (24pp) | [94409] Amazing Spider-Man 381 (1993) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94410] Amazing Spider-Man 382 (1993) (Digital) (Shadowcat-Empire).cbz (24pp) | [94411] Amazing Spider-Man 383 (1993) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94412] Amazing Spider-Man 384 (1993) (Digital) (Shadowcat-Empire).cbz (24pp) | [94413] Amazing Spider-Man 385 (1994) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94414] Amazing Spider-Man 386 (1994) (Digital) (Shadowcat-Empire).cbz (24pp) | [94415] Amazing Spider-Man 387 (1994) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94416] Amazing Spider-Man 388 (1994) (Digital) (Shadowcat-Empire).cbz (56pp) | [94417] Amazing Spider-Man 389 (1994) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94418] Amazing Spider-Man 390 (1994) (Digital) (Shadowcat-Empire).cbz (24pp) | [94419] Amazing Spider-Man 391 (1994) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94420] Amazing Spider-Man 392 (1994) (Digital) (Shadowcat-Empire).cbz (25pp) | [94421] Amazing Spider-Man 393 (1994) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94422] Amazing Spider-Man 394 (1994) (digital) (Marika-Empire).cbz (36pp) | [94423] Amazing Spider-Man 395 (1994) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94424] Amazing Spider-Man 396 (1994) (Digital) (Shadowcat-Empire).cbz (25pp) | [94425] Amazing Spider-Man 397 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94426] Amazing Spider-Man 398 (1995) (Digital) (Shadowcat-Empire).cbz (25pp) | [94427] Amazing Spider-Man 399 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94428] Amazing Spider-Man 400 (1995) (Digital) (Shadowcat-Empire).cbz (53pp) | [94429] Amazing Spider-Man 401 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94430] Amazing Spider-Man 402 (1995) (Digital) (Shadowcat-Empire).cbz (23pp) | [94431] Amazing Spider-Man 403 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94432] Amazing Spider-Man 404 (1995) (Digital) (Shadowcat-Empire).cbz (24pp) | [94433] Amazing Spider-Man 405 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94434] Amazing Spider-Man 406 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            Amazing Spider-Man 407 (1996) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 414 (1996) (Digital) (AnHeroGold-Empire).cbz  (8 files, pp 22-24)
+            [94443] Amazing Spider-Man 415 (1996) (Digital) (Shadowcat-Empire).cbz (23pp) | [94444] Amazing Spider-Man 416 (1996) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [94445] Amazing Spider-Man 417 (1996) (Digital) (AnHeroGold-Empire).cbz (23pp) | [94446] Amazing Spider-Man 418 (1996) (Digital) (AnHeroGold-Empire).cbz (21pp)
+            Amazing Spider-Man 419 (1997) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 438 (1998) (Digital) (Shadowcat-Empire).cbz  (20 files, pp 22-41)
+            [94467] Amazing Spider-Man 439 (1998) (Digital) (Shadowcat-Empire.cbz (24pp) | [94468] Amazing Spider-Man 440 (1998) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94469] Amazing Spider-Man 441 (1998) (Digital) (Shadowcat-Empire).cbz (24pp)
+            Amazing Spider-Man 500 (2003) (digital) (Minutemen-Faessla).cbz … Amazing Spider-Man 518 (2005) (digital) (Minutemen-Faessla).cbz  (19 files, pp 21-38)
+            Amazing Spider-Man 519 (2005) (digital) (Minutemen-Endriago).cbz … Amazing Spider-Man 524 (2005) (digital) (Minutemen-Endriago).cbz  (6 files, pp 21-24)
+            Amazing Spider-Man 525 (2005) (Digital-HD) (Kleio-Empire).cbz … Amazing Spider-Man 545 (2006) (Digital-HD) (Kleio-Empire).cbz  (20 files, pp 21-40)
+            Amazing Spider-Man 546 (2008) (Digital-HD) (Monafekk-Empire).cbr … Amazing Spider-Man 589 (2009) (Digital-HD) (Monafekk-Empire).cbr  (44 files, pp 24-42)
+            [94602] Amazing Spider-Man 590 (2009) (Digital) (F) (Monafekk-Empire).cbr (25pp) | [94603] Amazing Spider-Man 591 (2009) (Digital) (F) (Monafekk-Empire).cbr (27pp)
+            Amazing Spider-Man 592 (2009) (Digital-HD) (Monafekk-Empire).cbr … Amazing Spider-Man 599 (2009) (Digital-HD) (Monafekk-Empire).cbr  (8 files, pp 24-28)
+            [94612] Amazing Spider-Man 600 (2009) (Digital) (G85-Empire).cbr (104pp) | [94613] Amazing Spider-Man 601 (2009) (Digital) (G85-Empire).cbr (30pp)
+            [94614] Amazing Spider-Man 602 (2009) (Digital) (G85-Empire).cbr (26pp) | [94615] Amazing Spider-Man 603 (2009) (Digital) (G85-Empire).cbr (26pp)
+            [94616] Amazing Spider-Man 604 (2009) (Digital) (G85-Empire).cbr (27pp) | [94617] Amazing Spider-Man 605 (2009) (Digital) (G85-Empire).cbr (51pp)
+            [94618] Amazing Spider-Man 606 (2009) (Digital) (G85-Empire).cbr (25pp) | [94619] Amazing Spider-Man 607 (2009) (Digital) (G85-Empire).cbr (26pp)
+            [94620] Amazing Spider-Man 608 (2009) (Digital) (G85-Empire).cbr (26pp) | [94621] Amazing Spider-Man 609 (2009) (Digital) (G85-Empire).cbr (26pp)
+            [94622] Amazing Spider-Man 610 (2010) (Digital) (G85-Empire).cbr (26pp) | [94623] Amazing Spider-Man 611 (2010) (Digital) (G85-Empire).cbr (24pp)
+            [94624] Amazing Spider-Man 612 (2010) (Digital) (G85-Empire).cbr (34pp) | [94625] Amazing Spider-Man 613 (2010) (Digital) (G85-Empire).cbr (26pp)
+            [94626] Amazing Spider-Man 614 (2010) (Digital) (G85-Empire).cbr (27pp) | [94627] Amazing Spider-Man 615 (2010) (Digital) (G85-Empire).cbr (26pp)
+            [94628] Amazing Spider-Man 616 (2010) (Digital) (G85-Empire).cbr (24pp) | [94629] Amazing Spider-Man 617 (2010) (Digital) (G85-Empire).cbr (37pp)
+            [94630] Amazing Spider-Man 618 (2010) (Digital) (G85-Empire).cbr (24pp) | [94631] Amazing Spider-Man 619 (2010) (Digital) (G85-Empire).cbr (26pp)
+            [94632] Amazing Spider-Man 620 (2010) (Digital) (G85-Empire).cbr (25pp) | [94633] Amazing Spider-Man 621 (2010) (Digital) (G85-Empire).cbr (26pp)
+            [94634] Amazing Spider-Man 622 (2010) (Digital) (G85-Empire).cbr (36pp) | [94635] Amazing Spider-Man 623 (2010) (Digital) (G85-Empire).cbr (26pp)
+            [94636] Amazing Spider-Man 624 (2010) (Digital) (G85-Empire).cbr (26pp) | [94637] Amazing Spider-Man 625 (2010) (Digital) (G85-Empire).cbr (27pp)
+            [94638] Amazing Spider-Man 626 (2010) (Digital) (G85-Empire).cbr (25pp) | [94639] Amazing Spider-Man 627 (2010) (Digital) (G85-Empire).cbr (25pp)
+            [94640] Amazing Spider-Man 628 (2010) (Digital) (G85-Empire).cbr (33pp) | [94641] Amazing Spider-Man 629 (2010) (Digital) (G85-Empire).cbr (29pp)
+            [94642] Amazing Spider-Man 630 (2010) (Digital) (G85-Empire).cbr (24pp) | [94643] Amazing Spider-Man 631 (2010) (Digital) (G85-Empire).cbr (24pp)
+            [94644] Amazing Spider-Man 632 (2010) (Digital) (G85-Empire).cbr (25pp) | [94645] Amazing Spider-Man 633 (2010) (Digital) (G85-Empire).cbr (27pp)
+            [94646] Amazing Spider-Man 634 (2010) (Digital) (G85-Empire).cbr (38pp) | [94647] Amazing Spider-Man 635 (2010) (Digital) (G85-Empire).cbr (37pp)
+            [94648] Amazing Spider-Man 636 (2010) (Digital) (G85-Empire).cbr (38pp) | [94649] Amazing Spider-Man 637 (2010) (Digital) (G85-Empire).cbr (49pp)
+            [94650] Amazing Spider-Man 638 (2010) (Digital) (G85-Empire).cbr (46pp) | [94651] Amazing Spider-Man 639 (2010) (Digital) (G85-Empire).cbr (35pp)
+            [94652] Amazing Spider-Man 640 (2010) (digital) (Minutemen-InnerDemons).cbr (29pp) | [94653] Amazing Spider-Man 641 (2010) (Digital) (G85-Empire).cbr (45pp)
+            [94654] Amazing Spider-Man 642 (2010) (Digital) (G85-Empire).cbr (27pp) | [94655] Amazing Spider-Man 643 (2010) (Digital) (G85-Empire).cbr (27pp)
+            [94656] Amazing Spider-Man 644 (2010) (Digital) (G85-Empire).cbr (27pp) | [94657] Amazing Spider-Man 645 (2010) (Digital) (G85-Empire).cbr (27pp)
+            [94658] Amazing Spider-Man 646 (2010) (Digital) (G85-Empire).cbr (25pp) | [94659] Amazing Spider-Man 647 (2010) (Digital) (G85-Empire).cbr (61pp)
+            [94660] Amazing Spider-Man 648 (2011) (Digital) (G85-Empire).cbr (50pp) | [94661] Amazing Spider-Man 649 (2011) (Digital) (G85-Empire).cbr (34pp)
+            [94662] Amazing Spider-Man 650 (2011) (Digital) (G85-Empire).cbr (34pp) | [94663] Amazing Spider-Man 651 (2011) (Digital) (G85-Empire).cbr (32pp)
+            [94664] Amazing Spider-Man 652 (2011) (Digital) (G85-Empire).cbr (33pp) | [94665] Amazing Spider-Man 653 (2011) (Digital) (G85-Empire).cbr (34pp)
+            [94666] Amazing Spider-Man 654 (2011) (Digital) (G85-Empire).cbr (34pp) | [94667] Amazing Spider-Man 654.1 (2011) (Digital) (G85-Empire).cbr (24pp)
+            Amazing Spider-Man 655 (2011) (Digital) (G85-Empire).cbr … Amazing Spider-Man 665 (2011) (Digital) (G85-Empire).cbr  (11 files, pp 29-38)
+            Amazing Spider-Man 666 (2011) (digital) (Minutemen-Faessla).cbz … Amazing Spider-Man 679 (2012) (digital) (Minutemen-Faessla).cbz  (14 files, pp 20-33)
+            [94693] Amazing Spider-Man 679.1 (2012) (digital) (Minutemen-Faessla).cbz (24pp)
+            Amazing Spider-Man 680 (2012) (digital) (Minutemen-Faessla).cbz … Amazing Spider-Man 687 (2012) (digital) (Minutemen-Faessla).cbz  (8 files, pp 20-24)
+            [94702] Amazing Spider-Man 688 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp) | [94703] Amazing Spider-Man 689 (2012) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            [94704] Amazing Spider-Man 690 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp) | [94705] Amazing Spider-Man 691 (2012) (digital) (Minutemen-InnerDemons).cbr (22pp)
+            [94706] Amazing Spider-Man 692 (2012) (digital) (Minutemen-InnerDemons).cbr (56pp) | [94707] Amazing Spider-Man 693 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp)
+            [94708] Amazing Spider-Man 694 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp) | [94709] Amazing Spider-Man 695 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp)
+            [94710] Amazing Spider-Man 696 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp) | [94711] Amazing Spider-Man 697 (2013) (digital) (Minutemen-InnerDemons).cbr (24pp)
+            [94712] Amazing Spider-Man 698 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp) | [94713] Amazing Spider-Man 699 (2013) (digital) (Minutemen-InnerDemons).cbr (22pp)
+            [94714] Amazing Spider-Man 699.1 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp) | [94715] Amazing Spider-Man 700 (2013) (digital) (Minutemen-InnerDemons).cbr (97pp)
+            [94716] Amazing Spider-Man 555 (Variant) (2008) (Digital) (MikeNY76-Empire).cbz (1pp) | [94717] Amazing Spider-Man 568 (Variant) (2008) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [94718] Amazing Spider-Man 600 (Ross Cover) (2009) (Digital) (MikeNY76-Empire).cbz (1pp) | [94719] Amazing Spider-Man 612 (Variant) (2009) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [94720] Amazing Spider-Man 613 (Variant) (2009) (Digital) (MikeNY76-Empire).cbz (1pp) | [94721] Amazing Spider-Man 638 (Variant) (2010) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [94722] Amazing Spider-Man 639 (Variant) (2010) (Digital) (MikeNY76-Empire).cbz (1pp) | [94723] Amazing Spider-Man 700.2 (Variant) (2013) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [94724] Amazing Spider-Man 700.3 (Variant) (2013) (Digital) (MikeNY76-Empire).cbz (1pp) | [95693] 03 Amazing Spider-Man 404 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [97980] Amazing Spider-Man 375 (1993) (Digital) (AnPymGold-Empire).cbz (29pp) | [86622] 007 Amazing Spider-Man 092 (1971) (Digital) (AnPymGold - Empire).cbz (20pp)
+            [86659] 014 Amazing Spider-Man 161 (1976) (Digital) (AnPymGold - Empire).cbz (18pp) | [86660] 015 Amazing Spider-Man 162 (1976) (Digital) (AnPymGold - Empire).cbz (19pp)
+            [86742] 017 Amazing Spider-Man 203 (1980) (Digital) (AnHeroGold-Empire).cbz (19pp) | [87120] 001 Amazing Spider-Man 282 (1986) (Digital) (AnPymGold - Empire).cbz (24pp)
+            [87238] 005 Amazing Spider-Man Annual 022 (1988) (Digital) (Shadowcat-Empire).cbz (52pp) | [87304] Amazing Spider-Man 311 (1989) (Digital) (AnPymGold - Empire).cbz (24pp)
+            [87305] Amazing Spider-Man 312 (1989) (Digital) (AnPymGold - Empire).cbz (23pp) | [87306] Amazing Spider-Man 313 (1989) (Digital) (AnPymGold - Empire).cbz (23pp)
+            [87349] 004 Amazing Spider-Man Annual 023 (1989) (Digital) (Shadowcat-Empire).cbz (57pp) | [87479] 014 Amazing Spider-Man 326 (1989) (Digital) (AnPymGold - Empire).cbz (24pp)
+            [87514] 049 Amazing Spider-Man 327 (1989) (Digital) (AnPymGold - Empire).cbz (23pp) | [87518] 053 Amazing Spider-Man 328 (1990) (Digital) (AnPymGold - Empire).cbz (24pp)
+            [87530] 065 Amazing Spider-Man 329 (1990) (Digital) (AnPymGold - Empire).cbz (24pp) | [88436] 026 Amazing Spider-Man 415 (1996) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [88550] 006 Amazing Spider-Man 420 (1997) (Digital) (AnPymGold-Empire).cbz (22pp) | [90463] 004 Amazing Spider-Man 529 (2006) (digital-hd) (Kleio-Empire).cbz (23pp)
+            [90464] 005 Amazing Spider-Man 530 (2006) (digital-hd) (Kleio-Empire).cbz (23pp) | [90465] 006 Amazing Spider-Man 531 (2006) (digital-hd) (Kleio-Empire).cbz (23pp)
+            [90471] 012 Amazing Spider-Man 532 (2006) (digital) (Minutemen-Faessla).cbz (23pp) | [90477] 018 Amazing Spider-Man 533 (2006) (digital) (Minutemen-Faessla).cbz (24pp)
+            [90514] 016 Amazing Spider-Man 534 (2006) (digital) (Minutemen-Faessla).cbz (23pp) | [90546] 001 Amazing Spider-Man 535 (2006) (digital) (Minutemen-Faessla).cbz (21pp)
+            [90565] 020 Amazing Spider-Man 536 (2006) (digital) (Minutemen-Faessla).cbz (24pp) | [90583] 038 Amazing Spider-Man 537 (2007) (digital) (Minutemen-Endriago).cbz (23pp)
+            [90591] 046 Amazing Spider-Man 538 (2007) (digital-hd) (Kleio-Empire).cbz (23pp) | [91734] 001 Amazing Spider-Man Annual 038 (2011) (Digital) (Zone-Empire).cbr (34pp)
+            [116295] Amazing Spider-Man 014 (1964) (Digital) (TLK-EMPIRE-HD).cbr (26pp) | [116296] Amazing Spider-Man 031 (1965) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [116297] Amazing Spider-Man 039 (1966) (Digital) (TLK-EMPIRE-HD).cbr (22pp) | [116298] Amazing Spider-Man 053 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [116299] Amazing Spider-Man 059 (1968) (Digital) (TLK-EMPIRE-HD).cbr (22pp) | [116321] Amazing Spider-Man 139 (1974) (Digital) (F) (AnPymGold - Empire).cbz (18pp)
+            Amazing Spider-Man 140 (1975) (Digital) (AnPymGold - Empire).cbz … Amazing Spider-Man 151 (1975) (Digital) (AnPymGold - Empire).cbz  (12 files, pp 18-19)
+            [116334] Amazing Spider-Man 129 (1974) (Digital) (AnHeroGold-Empire).cbz (20pp) | [116335] Amazing Spider-Man 136 (1974) (Digital) (AnPymGold - Empire).cbz (18pp)
+            [116336] Amazing Spider-Man 137 (1974) (Digital) (AnPymGold - Empire).cbz (18pp) | [116394] Amazing Spider-Man 050 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [116395] Amazing Spider-Man 051 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp) | [116396] Amazing Spider-Man 052 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [116400] Amazing Spider-Man 015 (1964) (Digital) (TLK-EMPIRE-HD).cbr (26pp) | [116401] Amazing Spider-Man 018 (1964) (Digital) (TLK-EMPIRE-HD).cbr (26pp)
+            [116453] Amazing Spider-Man 299 (1988) (Digital) (AnPymGold - Empire).cbz (23pp) | [116454] Amazing Spider-Man 300 (1988) (Digital) (AnPymGold - Empire).cbz (41pp)
+            [116455] Amazing Spider-Man 361 (1992) (Digital) (AnPymGold-Empire).cbz (24pp) | [116456] Amazing Spider-Man 362 (1992) (Digital) (AnPymGold-Empire).cbz (23pp)
+            [116457] Amazing Spider-Man 363 (1992) (Digital) (AnPymGold-Empire).cbz (24pp) | [116708] 05 Amazing Spider-Man 538 (2007) (digital-hd) (Kleio-Empire).cbz (23pp)
+            [116916] Amazing Spider-Man 025 (1965) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [116917] Amazing Spider-Man 042 (1966) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [116918] Amazing Spider-Man 043 (1966) (Digital) (TLK-EMPIRE-HD).cbr (22pp) | [116919] Amazing Spider-Man 257 (1984) (Digital) (AnPymGold - Empire).cbz (23pp)
+            [116920] Amazing Spider-Man 258 (1984) (Digital) (AnPymGold - Empire).cbz (24pp) | [116921] Amazing Spider-Man 259 (1984) (Digital) (AnPymGold - Empire).cbz (23pp)
+            Amazing Spider-Man 547 (2008) (Digital-HD) (Monafekk-Empire).cbr … Amazing Spider-Man 599 (2009) (Digital-HD) (Monafekk-Empire).cbr  (20 files, pp 24-28)
+            [117718] 01 The Amazing Spider-Man 698 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp) | [117719] 02 The Amazing Spider-Man 699 (2013) (digital) (Minutemen-InnerDemons).cbr (22pp)
+            [117720] 03 The Amazing Spider-Man 699.1 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp) | [117721] 04 The Amazing Spider-Man 700 (2013) (digital) (Minutemen-InnerDemons).cbr (97pp)
+   ours:    ladder 1-441, 500-700; 132 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12; ComicInfo Series: "Amazing Spider-Man"x4, "Spider-Man"x4, "Amazing Spider-Man Annual"x1, "The Amazing Spider-Man"x1; ComicInfo Volume: "1963"x7; ComicInfo Count: "681"x2; ComicInfo Publisher: "Marvel"x10, "Marvel Comics"x1; ComicInfo Web: "64599"x1, "64433"x1
+   GCD says: [93907] gcd_reprint 858684: s11288 The Amazing Spider-Man (1999) #546-551 [21 stories] · s24030 Free Comic Book Day 2007 (Spider-Man) (2007) #1 [3 stories] · s5303 Venom Super Special (1995) #1 [2 stories] · s33240 Spider-Man: Swing Shift Director's Cut (2008) #1 [1 story]
+             [93908] gcd_reprint 858685: s11288 The Amazing Spider-Man (1999) #552-558 [15 stories]
+             [93909] gcd_reprint 1070757: s11288 The Amazing Spider-Man (1999) #559-563 [12 stories]
+             [93910] gcd_reprint 2267354: s11288 The Amazing Spider-Man (1999) #564-567 [10 stories] · s37037 Spider-Man: Brand New Day - Extra (2008) #1 [2 stories]
+             [93911] gcd notes 2384608 (#[nn] of Spider-Man: New Ways to Die): The Amazing Spider-Man (Marvel, 1999 series) #568-573  |  gcd_reprint 2384608: s11288 The Amazing Spider-Man (1999) #568-573 [25 stories] · s69156 Marvel Spotlight: Spider-Man - Brand New Day (2008) (unnumbered) [3 stories]
+             [93912] gcd_reprint 2729480: s11288 The Amazing Spider-Man (1999) #578-583 [16 stories] · s36686 Amazing Spider-Man Annual (2008) (unnumbered) [3 stories] · s59906 Spider-Man: Death and Dating (2009) (unnumbered) [1 story]
+             [93913] gcd_reprint 2656521: s11288 The Amazing Spider-Man (1999) #589-594 [12 stories] · s40934 Amazing Spider-Man: Extra! (2008) #2-3 [2 stories]
+             [93914] gcd_reprint 2127405: s11288 The Amazing Spider-Man (1999) #600-601 [3 stories] · s31600 Amazing Spider-Man Family (2008) #7 [2 stories] · s36686 Amazing Spider-Man Annual (2008) #36 [1 story]
+             [93916] gcd_reprint 2775144: s11288 The Amazing Spider-Man (1999) #612-616 [17 stories] · s42178 Dark Reign: The List - Amazing Spider-Man (2010) #1 [5 stories] · s40659 Web of Spider-Man (2009) #2 [2 stories] · s228574 Spider-Man: The Gauntlet (2010) #1 [1 story]  |  ⚠ stored GCD row is another book: our title 'Dan Slott Spider-Man' has dan/slott, GCD's series 'Spider-Man: The Gauntlet' does not; our vol 14 vs GCD #1 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [93917] gcd_reprint 2775610: s11288 The Amazing Spider-Man (1999) #619 [1 story]  |  ⚠ stored GCD row is another book: our title 'Dan Slott Spider-Man' has dan/slott, GCD's series 'Spider-Man: The Gauntlet' does not; our vol 15 vs GCD #2 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [93921] gcd notes 1108253 (#[nn] of Spider-Man: Big Time): *Amazing Spider-Man* #648-651  |  gcd_reprint 1108253: s11288 The Amazing Spider-Man (1999) #648-651 [6 stories]
+             [93923] gcd_reprint 2724338: s11288 The Amazing Spider-Man (1999) #658-662 [6 stories]
+             [93924] gcd_reprint 2722680: s11288 The Amazing Spider-Man (1999) #663-665 [4 stories] · s58366 Free Comic Book Day 2011 (Spider-Man) (2011) #1 [1 story]
+             [93925] gcd_reprint 2281283: s11288 The Amazing Spider-Man (1999) #666-673 [10 stories] · s56418 Venom (2011) #6-9 [8 stories] · s69142 Spider-Island Spotlight (2011) (unnumbered) [6 stories] · s60768 Amazing Spider-Man: Infested (2011) #1 [1 story]
+             [93926] gcd notes 2350381 (#[nn] of Spider-Man: Flying Blind): The Amazing Spider-Man (Marvel, 1999 series) #674-677; Daredevil (Marvel, 2011 series) #8  |  gcd_reprint 2350381: s11288 The Amazing Spider-Man (1999) #674-677 [5 stories] · s60120 Daredevil (2011) #8 [1 story]
+             [93928] gcd notes 2355985 (#[nn] of Spider-Man: Trouble on the Horizon): The Amazing Spider-Man (Marvel, 1999 series) #678-681  |  gcd_reprint 2355985: s11288 The Amazing Spider-Man (1999) #678-679, #679.1, #680-681 [5 stories] · s181587 Spider-Man: Trouble on the Horizon (2012) (unnumbered) [1 story]
+             [93929] gcd notes 2360649 (#[nn] of Spider-Man: Lizard - No Turning Back): The Amazing Spider-Man (Marvel, 1999 series) #688-691; Untold Tales of Spider-Man (Marvel, 1995 series) #9  |  gcd_reprint 2360649: s11288 The Amazing Spider-Man (1999) #688-691 [5 stories] · s5302 Untold Tales of Spider-Man (1995) #9 [1 story]
+             [93930] gcd_reprint 2016543: s11288 The Amazing Spider-Man (1999) #692-697 [21 stories] · s61993 Avenging Spider-Man (2012) #11 [2 stories]
+   CV linked:      vol 2127 "The Amazing Spider-Man" 1963 Marvel 651 issues; cached #1-700.5 (651); yearΔ 0; ratio 792/651 = 1.22; no judged range
+   CV per-file (v1): vol 2127 "The Amazing Spider-Man" 1963 Marvel 651 on 752/811 files · vol 73420 "The Amazing Spider-Man" 2014 Marvel 28 on 1/811 files
+   CV candidates:  134429 "Fantastic Four by Dan Slott" 2021 Marvel ? s52 · 147012 "Marvel-Verse: Spider-Man" 2021 Marvel ? s35 · 18094 "Marvel Adventures: Spider-Man" 2005 Marvel ? s33 · 115545 "Marvel Action: Spider-Man" 2018 Marvel ? s33 · 67919 "Marvel Knights: Spider-Man" 2013 Marvel ? s33 · 26559 "Marvel Mangaverse: Spider-Man" 2002 Marvel ? s33   (v1 search)
+   CV local rip:   (= linked) · 34326 "The Amazing Spider-Man" 1979 Marvel 1 issue 224088 · 56505 "The Amazing Spider-Man" 1979 Simon and Schuster 1 issue 383545 · 151406 "The Amazing Spider-Man" 1980 Pocket Books 1 issue 995531 · 22719 "The Amazing Spider-Man" 1982 Marvel 1 issue 136279 · 78701 "The Amazing Spider-Man" 1999 Marvel 58   (rip lookup)
+   GCD per-file:   methods fulldump-rematchx615 · round2-seriesx89 ⚠ · numx7  (⚠ copies a folder neighbour's series — verify); series 1570 "The Amazing Spider-Man" 1963-1998 Marvel [was ongoing series] 443 on 379/811 files · series 11288 "The Amazing Spider-Man" 1999-2014 Marvel [was ongoing series] 267 on 241/811 files · series 172683 "Amazing Spider-Man" [en-gb] 2021-? Panini UK [ongoing] 68 on 89/811 files · series 76442 "Spider-Man" [de] 2013-2016 Panini Deutschland [] 36 on 1/811 files
+   GCD dump:       (= per-file) · 24842 "The Amazing Spider-Man" 1969-1969 Marvel [] 1 · 149585 "The Amazing Spider-Man" [en-ph] 1974-1974 Goodwill Bookstore [] 2 · 18606 "The Amazing Spider-Man" [en-au] 1975-1976 Newton Comics [] 17 · 72382 "The Amazing Spider-Man" [en-au] 1975-1975 Newton Comics [] 1 · 182246 "The Amazing Spider-Man" [en-za] 1976-1976 Republican Press [] 3   (dump lookup)
+   bridges:        gcd 1570 -> LOCG 100043 "The Amazing Spider-Man" support 2 · gcd 11288 -> LOCG 126492 "The Amazing Spider-Man" support 3 · gcd 172683 -> LOCG 100043 "The Amazing Spider-Man" support 320
+
+== S96415 Detective Comics  [tier C] · 5 number(s) x2+, 2 parsed key(s), ratio 0.91  keys: Detective Comics (2011) | Detective Comics v2 (2011)  years 1938-2014  53 files / 1 collections
+   split run: "Detective Comics v2 (2011)" run={"cv": 42594, "gcd": 60830} (new shelf from P-016) — seed the S line from these ids, then verify them
+   folders: [11] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\108 Detective Comics - 19 - 29 · [8] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\024 Batman Detective Comics Vol. 1 Faces of Death · [6] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\032 Batman Detective Comics Vol. 2 Scare Tactics · [6] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\118 Batman - Superheavy Part 1 · [6] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\126 Batman - Superheavy - Part 2 - Bloom · [5] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\113 Detective Comics - Icarus · [2] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\062 Batman Detective Comics Vol. 3 Emperor Penguin 2 · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\001 Forever Evil 1 · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\002 Zero Year Secret City · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\028 Batman Night of the Owls · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\058 Batman Detective Comics Vol. 3 Emperor Penguin 1 · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\082 Batman Detective Comics Vol. 3 Emperor Penguin 2 · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\123 Robin War (2016) · [1] DC\_Batman\_Completed Series\03 Detective Comics v2 (2011) · [1] DC\_Batman\_Trades, and Graphic Novels · [1] DC\_Harley Quinn\_Minis, One-Shots & Trades
+   files:   [18056] 002 Detective Comics 000 - November 2012.cbr (33pp) | [18063] 005 Detective Comics 025 - January 2014.cbr (32pp) | [18228] Detective Comics 001 - November 2011.cbr (27pp)
+            [18229] Detective Comics 002 - December 2011.cbr (20pp) | [18230] Detective Comics 003 - January 2012.cbr (22pp) | [18231] Detective Comics 004 - February 2012.cbr (22pp)
+            [18232] Detective Comics 005 - March 2012.cbr (21pp) | [18233] Detective Comics 006 - April 2012.cbr (21pp) | [18234] Detective Comics 007 - May 2012.cbz (22pp)
+            [18235] Detective Comics 008 - June 2012.cbr (31pp) | [18257] 003 Detective Comics 009 - July 2012.cbr (31pp) | [18280] 001 Detective Comics 010 - August 2012.cbr (30pp)
+            [18281] 002 Detective Comics 011 - September 2012.cbr (30pp) | [18282] 003 Detective Comics 012 - October 2012.cbr (29pp)
+            [18283] 004 Detective Comics Annual 001 - October 2012.cbr (36pp) | [18284] 005 Detective Comics 013 - December 2012.cbr (31pp) | [18285] 006 Detective Comics 014 - January 2013.cbr (30pp)
+            [19913] Detective Comics 015 - February 2013.cbr (30pp) | [18394] Detective Comics 016 - March 2013.cbr (30pp) | [18395] Detective Comics 017 - April 2013.cbr (31pp)
+            [19922] Detective Comics 018 - May 2013.cbr (33pp) | [18671] Detective Comics # 19.cbr (72pp) | [18672] Detective Comics # 20.cbr (33pp) | [18673] Detective Comics # 21.cbr (33pp)
+            [18674] Detective Comics # 22.cbr (33pp) | [18675] Detective Comics # 23.cbr (32pp) | [18676] Detective Comics # 24.cbr (26pp) | [18677] Detective Comics # 25.cbr (32pp)
+            [18678] Detective Comics # 26.cbr (25pp) | [18679] Detective Comics # 27.cbr (85pp) | [18680] Detective Comics # 28.cbr (25pp) | [18681] Detective Comics # 29.cbr (24pp)
+            [18714] Detective Comics # 30.cbr (22pp) | [18715] Detective Comics # 31.cbr (24pp) | [18716] Detective Comics # 32.cbr (21pp) | [18717] Detective Comics # 33.cbr (27pp)
+            [18718] Detective Comics # 34.cbr (16pp) | [18847] 05 Detective Comics # 41 (2015) (digital-Empire).cbr (26pp)
+            [18848] 06 Detective Comics # 42 (2015) (2 covers) (digital-empire).cbr (27pp) | [18849] 07 Detective Comics # 43 (2015) (2 covers) (Digital) (Cypher 2.0-Empire).cbr (26pp)
+            [18850] 08 Detective Comics # 44 (2015) (2 covers) (Digital) (Cypher 2.0-Empire).cbr (27pp) | [18851] 09 Detective Comics # 45 (2015) (2 covers) (Digital) (Cypher 2.0-Empire).cbr (28pp)
+            [18852] 10 Detective Comics 046 (2016) (2 covers) (Digital) (Cypher 2.0-Empire).cbr (29pp) | [18986] 03 Detective Comics 047 (2016) (Digital) (Cypher 2.0-Empire).cbr (26pp)
+            [19009] 01 Detective Comics 047 (2016) (Digital) (Cypher 2.0-Empire).cbr (26pp) | [19010] 02 Detective Comics 048 (2016) (2 covers) (Digital) (TLK-EMPIRE-HD).cbr (28pp)
+            [19011] 03 Detective Comics 049 (2016) (2 covers) (Digital) (TLK-EMPIRE-HD).cbr (28pp) | [19012] 04 Detective Comics 050 (2016) (4 covers) (Digital) (TLK-EMPIRE-HD).cbr (46pp)
+            [19013] 05 Detective Comics 051 (2016) (2 covers) (Digital) (TLK-EMPIRE-HD).cbr (27pp) | [19014] 06 Detective Comics 052 (2016) (2 covers) (Digital) (TLK-EMPIRE-HD).cbr (27pp)
+            [61308] COL Detective Comics Vol. 01 - Faces of Death (2012) (Digital) (Nahga-Empire).cbr (168pp)
+            [62889] Detective Comics 027 Special Edition (Batman 75 Day Comic) (2014) (digital-Empire).cbr (34pp)
+            [65838] Detective Comics 023.2 - Featuring Harley Quinn (2013) (digital-empire).cbr (23pp)
+   ours:    ladder 0-34, 41-52; 5 number(s) name more than one file: 1, 23, 25, 27, 47; ComicInfo Series: "Detective Comics"x1; ComicInfo Volume: "2011"x1; ComicInfo Publisher: "DC Comics"x1
+   CV linked:      vol 42594 "Detective Comics" 2011 DC Comics 57 issues; cached #0-52 (57); yearΔ 73; ratio 52/57 = 0.91; no judged range
+   CV per-file (v1): vol 18058 "Detective Comics" 1937 DC Comics 883 on 51/53 files · vol 42594 "Detective Comics" 2011 DC Comics 57 on 1/53 files
+   CV local rip:   (= linked) · 45453 "Detective Comics" 1955 Frew Publications 3 · 42281 "Detective Comics" 2001 Panini Verlag 8 · 91098 "Detective Comics" 2016 DC Comics 170 · 168759 "Detective Comics" 2017 Panini Brasil 13   (rip lookup)
+   GCD per-file:   series 60830 "Detective Comics" 2011-? DC [ongoing series] 233 on 16/53 files; methods numx16
+   GCD dump:       87 "Detective Comics" 1937-2011 DC [] 883 · 67430 "Detective Comics" [en-gb] 1947-1947 Kosmos [] 1 · 16502 "Detective Comics" [en-ca] 1948-1948 National Comics Publications of Canada Ltd [] 10 · 32380 "Detective Comics" [en-ca] 1949-1949 Simcoe Publishing & Distribution [] 1 · 89405 "Detective Comics" [en-gb] 1950-? L. Miller & Son [] 8 · 70891 "Detective Comics" [en-au] 1955-1955 Frew Publications [] 3   (dump lookup)
+   bridges:        gcd 60830 -> LOCG 124642 "Detective Comics" support 81
+
+== S94865 Detective Comics  [tier C] · 102 files  keys: Detective Comics v1 (2016)  years 1970-2025  102 files / 15 collections
+   split run: "Detective Comics v1 (2016)" run={"cv": 91098, "gcd": 60830} (new shelf from P-016) — seed the S line from these ids, then verify them
+   flags: #584 overlap-in-series [Dismissed] item 61408 — five separate Vol. 01s (2012, 2017, 2021, 2023, 2024) sit in one Series numbered #1-1093
+   folders: [45] DC\_Batman\10 Detective Comics v1.4 (2022)\Variant Covers · [16] DC\_Batman\_Completed Series\07 Detective Comics v1.2 (2019)\Variant Covers · [15] DC\_Batman\10 Detective Comics v1.4 (2022) · [7] DC\_Batman\_Completed Series\06 Detective Comics v1.1 (2016) · [7] DC\_Batman\_Completed Series\07 Detective Comics v1.3 (2021) · [4] DC\_Batman\_Completed Series\07 Detective Comics v1.2 (2019) · [2] DC\#DC Events\004 Major DC Events - Rebirth\002 Night of the Monster Men (2017) · [2] DC\_Batman\_Completed Series\08 Batman v3.1 (2020)\Batman Vol. 05 - Fear State Tie Ins (2021) · [1] DC\#DC Events\004 Major DC Events - Rebirth\001 DC Rebirth (2016) · [1] DC\_Batman\10 Detective Comics v1.4 (2022)\Annuals and Specials · [1] DC\_Batman\_Completed Series\07 Detective Comics v1.2 (2019)\Annuals and Specials · [1] DC\_Batman\_Completed Series\07 Detective Comics v1.3 (2021)\Annuals and Specials
+   files:   [19060] Detective Comics 934 (2016) (2 covers) (Digital) (TLK-EMPIRE-HD).cbr (29pp) | [19074] 03 Detective Comics 941 (2016) (2 covers) (Digital) (TLK-EMPIRE-HD).cbr (25pp)
+            [19077] 06 Detective Comics 942 (2016) (2 covers) (Digital) (TLK-EMPIRE-HD).cbr (25pp) | [59990] Detective Comics 027 Special Edition (2024) (digital) (Son of Ultron-Empire).cbr (27pp)
+            [59109] Detective Comics 1081 (2024) (Digital) (Zone-Empire).cbr (33pp) | [59110] Detective Comics 1082 (2024) (Digital) (Zone-Empire).cbr (33pp)
+            [59111] Detective Comics 1083 (2024) (Digital) (Zone-Empire).cbr (33pp) | [59112] Detective Comics 1084 (2024) (Digital) (Zone-Empire).cbr (35pp)
+            [59113] Detective Comics 1085 (2024) (Digital-Empire).cbz (34pp)
+            Detective Comics 1086 (2024) (Digital) (Zone-Empire).cbr … Detective Comics 1092 (2025) (Digital) (Zone-Empire).cbr  (7 files, pp 27-35)
+            [59121] Detective Comics 1093 (2025) (Webrip) (The Last Kryptonian-DCP).cbr (27pp)
+            [59124] COL Detective Comics Vol. 03 - Gotham Nocturne - Act II (2024) (digital) (Son of Ultron-Empire).cbr (180pp)
+            [59125] COL Detective Comics Vol. 04 - Gotham Nocturne - Intermezzo - Batman, Outlaw (2024) (digital) (Son of Ultron-Empire).cbr (195pp)
+            [59126] Detective Comics 1068 (2023) (InHyuk Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59127] Detective Comics 1068 (2023) (Ivan Reis Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59128] Detective Comics 1069 (2023) (Ivan Reis Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59129] Detective Comics 1070 (2023) (Ivan Reis Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59130] Detective Comics 1071 (2023) (Ivan Reis Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59131] Detective Comics 1081 (2024) (1-in-25 Sebastián Fiumara Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59132] Detective Comics 1081 (2024) (1-in-50 Evan Cagle Black & White Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59133] Detective Comics 1081 (2024) (InHyuk Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59134] Detective Comics 1081 (2024) (Riccardo Federici Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59135] Detective Comics 1082 (2024) (1-in-25 Sebastián Fiumara Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59136] Detective Comics 1082 (2024) (1-in-50 Evan Cagle Black & White Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59137] Detective Comics 1082 (2024) (Francesco Francavilla Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59138] Detective Comics 1082 (2024) (Riccardo Federici Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59139] Detective Comics 1083 (2024) (1-in-25 Sebastián Fiumara Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59140] Detective Comics 1083 (2024) (Kelley Jones Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59141] Detective Comics 1083 (2024) (Riccardo Federici Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59142] Detective Comics 1084 (2024) (1-in-25 Sebastián Fiumara Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59143] Detective Comics 1084 (2024) (Guillem March Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59144] Detective Comics 1084 (2024) (Javier Fernández Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59145] Detective Comics 1084 (2024) (Jim Lee Artist Spotlight Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59146] Detective Comics 1084 (2024) (Maria Wolf Ape-ril Fools' Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59147] Detective Comics 1085 (2024) (1-in-25 Sebastián Fiumara Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59148] Detective Comics 1085 (2024) (Gene Ha AAPI Heritage Month Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59149] Detective Comics 1085 (2024) (Javier Fernández Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59150] Detective Comics 1085 (2024) (Steve Beach Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59152] Detective Comics 1086 (2024) (1-in-25 SebastiÃ¡n Fiumara Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59151] Detective Comics 1086 (2024) (1-in-25 Sebastián Fiumara Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59153] Detective Comics 1086 (2024) (Javier Fernandez Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59154] Detective Comics 1086 (2024) (Javier Fernández Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59155] Detective Comics 1086 (2024) (Seb McKinnon Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59156] Detective Comics 1087 (2024) (1-in-25 Sebastian Fiumara Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59157] Detective Comics 1087 (2024) (Guillem March Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59158] Detective Comics 1087 (2024) (Kelley Jones Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59159] Detective Comics 1088 (2024) (1-in-25 Sebastian Fiumara Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59160] Detective Comics 1088 (2024) (Chris Samnee Batman 85Th Anniversary Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59161] Detective Comics 1088 (2024) (Mike Perkins Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59162] Detective Comics 1088 (2024) (Stevan Subic Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59163] Detective Comics 1089 (2024) (1-in-25 Sebastian Fiumara Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59164] Detective Comics 1089 (2024) (Guillem March Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59165] Detective Comics 1089 (2024) (Jose Luis Garcia-Lopez & Joe Prado Hispanic Heritage Month Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59166] Detective Comics 400 (2024) (Facsimile Edition Blank Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59167] Detective Comics 400 (2024) (Facsimile Edition Neal Adams Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59168] Detective Comics 411 (2024) (Facsimile Edition (2024) (Blank Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59169] Detective Comics 411 (2024) (Facsimile Edition (2024) (Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [59170] Detective Comics 411 (2024) (The Comic Corner C2E2 Woo Chul Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [61408] COL Detective Comics Vol. 01 - Rise of the Batmen (2017) (Digital) (Zone-Empire).cbr (159pp)
+            [61409] COL Detective Comics Vol. 02 - The Victim Syndicate (2017) (Digital) (Zone-Empire).cbr (143pp)
+            [61410] COL Detective Comics Vol. 03 - League of Shadows (2017) (Digital) (F) (Zone-Empire).cbr (166pp)
+            [61411] COL Detective Comics Vol. 04 - Deus Ex Machina (2018) (Digital) (Shadowcat-Empire).cbz (122pp)
+            [61412] COL Detective Comics Vol. 05 - A Lonely Place of Living (2018) (Digital) (Zone-Empire).cbr (114pp)
+            [61413] COL Detective Comics Vol. 06 - Fall of the Batmen (2018) (Digital) (Zone-Empire).cbr (164pp)
+            [61414] COL Detective Comics Vol. 07 - Batmen Eternal (2018) (Digital) (Zone-Empire).cbr (152pp) | [61418] Detective Comics Annual 003 (2020) (Digital) (Zone-Empire).cbr (42pp)
+            [61419] Detective Comics 1000 (2019) (Digital) (Zone-Empire).cbr (95pp) | [61425] COL Detective Comics Vol. 04 - Cold Vengeance (2021) (Digital) (EJGriffin-Empire).cbz (186pp)
+            [61426] COL Detective Comics Vol. 05 - The Joker War (2021) (Digital) (EJGriffin-Empire).cbz (254pp)
+            [61427] COL Detective Comics Vol. 06 - Road to Ruin (2021) (Digital) (EJGriffin-Empire).cbz (138pp)
+            [61428] Detective Comics 1000 (2019) (Bernie Wrightson 1970s Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [61429] Detective Comics 1000 (2019) (Bruce Timm 1940s Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [61430] Detective Comics 1000 (2019) (Frank Miller 1980s Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [61431] Detective Comics 1000 (2019) (Greg Capullo 2010s Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [61432] Detective Comics 1000 (2019) (Jim Steranko 1960s Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [61433] Detective Comics 1000 (2019) (Jock 2000s Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [61434] Detective Comics 1000 (2019) (Michael Cho 1950s Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [61435] Detective Comics 1000 (2019) (Steve Rude 1930s Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [61436] Detective Comics 1000 (2019) (Tim Sale 1990s Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [61437] Detective Comics 1047 (2022) (Lee Bermejo Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [61438] Detective Comics 1048 (2022) (Lee Bermejo Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [61439] Detective Comics 1049 (2022) (Lee Bermejo Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [61440] Detective Comics 1050 (2022) (Lee Bermejo Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [61441] Detective Comics 1063 (2022) (Jim Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [61442] Detective Comics 1065 (2022) (Jim Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [61443] Detective Comics 1067 (2022) (Jim Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [61444] COL 01 Detective Comics Vol. 01 - The Neighborhood (2021) (digital) (Son of Ultron-Empire).cbr (204pp)
+            [61446] COL 03 Detective Comics Vol. 03 - Arkham Rising (2022) (digital) (Son of Ultron-Empire).cbr (133pp)
+            [61449] COL 06 Detective Comics Vol. 04 - Riddle Me This (2023) (Digital) (EJGriffin-Empire).cbz (114pp) | [61999] Detective Comics 2022 Annual (2023) (Digital) (Zone-Empire).cbr (43pp)
+            Detective Comics 1040 (2021) (Digital) (Zone-Empire).cbr … Detective Comics 1045 (2022) (Digital) (Zone-Empire).cbr  (6 files, pp 33-38)
+   ours:    ladder 3, 27, 400, 411, 934, 941-942, 1000, 1040-1045, 1047-1050, 1063, 1065, 1067-1071, 1081-1093, 2022; 13 number(s) name more than one file: 400, 411, 1000, 1068, 1081, 1082, 1083, 1084, 1085, 1086, 1087, 1088; judged item 61408 #934-940 conf 0.98; judged item 61409 #943-949 conf 0.98; judged item 61410 #950-956 conf 0.98; judged item 61411 #957-962 conf 0.98; judged item 61412 #963-968 conf 0.98; judged item 61413 #969-974 conf 0.97; judged item 61414 #975-981 conf 0.98; judged item 61425 #1012-1019 conf 0.98; judged item 61426 #1020-1027 conf 0.9; judged item 61427 #1028-1033 conf 0.98; judged item 61444 #1034-1039 conf 0.98; judged item 61446 #1044-1046 conf 0.97; judged item 61449 #1059-1061 conf 0.98; judged item 59124 #1071-1075 conf 0.98; judged item 59125 #1076-1080 conf 0.98; ComicInfo Series: "Detective Comics"x10, "Detective Comics Annual"x1; ComicInfo Volume: "2016"x11; ComicInfo Publisher: "DC"x11
+   CV linked:      vol 91098 "Detective Comics" 2016 DC Comics 170 issues; cached #934-1104 (171); yearΔ 46; ratio 87/170 = 0.51; 15 of 15 judged fit
+   CV per-file (v1): vol 18058 "Detective Comics" 1937 DC Comics 883 on 84/102 files
+   CV local rip:   (= linked) · 45453 "Detective Comics" 1955 Frew Publications 3 · 42281 "Detective Comics" 2001 Panini Verlag 8 · 42594 "Detective Comics" 2011 DC Comics 57 · 168759 "Detective Comics" 2017 Panini Brasil 13   (rip lookup)
+   GCD per-file:   methods numx79 · round2-seriesx5 ⚠  (⚠ copies a folder neighbour's series — verify); series 60830 "Detective Comics" 2011-? DC [ongoing series] 233 on 79/102 files · series 87 "Detective Comics" 1937-2011 DC [was ongoing series] 883 on 5/102 files
+   GCD dump:       149798 "Detective Comics" [en-ph] 1971-1974 Goodwill Bookstore [] 1 · 149680 "Detective Comics" [en-ph] 1974-1978 National Book Store [] 8 · 185620 "Detective Comics" [en-za] 1961-1961 Atlas Publications [] 3 · 157227 "Detective Comics" [en-ph] 1959-1960 Chronicle Publications [] 28 · 182253 "Detective Comics" [en-za] 1959-1961 Mimosa Comics [] 7 · 70891 "Detective Comics" [en-au] 1955-1955 Frew Publications [] 3   (dump lookup)
+   bridges:        gcd 60830 -> LOCG 124642 "Detective Comics" support 81 · gcd 87 -> LOCG 102374 "Detective Comics" support 912
+
+== S5409 Detective Comics  [tier C] · 910 files  keys: Detective Comics | Detective Comics (1937) | Detective Comics v1 (1937)  years 1937-2012  910 files / 0 collections
+   split: the KEPT half of the P-016 split — moved out -> S96415 "Detective Comics v2 (2011)"; S94865 "Detective Comics v1 (2016)"; re-identify what stayed
+   flags: #227 label-ambiguous [Pending] item 60339 — ten 22-39 pp Detective Comics single issues carry a collection format
+   folders: [881] DC\_Batman\_Completed Series\01 Detective Comics v1 (1937) · [13] DC\_Batman\_Completed Series\01 Detective Comics v1 (1937)\Annuals and Specials · [8] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\02 bruce wayne fugitive · [2] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\01 bruce wayne murderer · [2] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\96 Final Crisis Aftermath\01 RIP Tie-ins · [1] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\12 Final Night\The Final Night Reading Order · [1] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\75 Fifty Two - The Companion · [1] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) · [1] DC\_DC Facsimilie Editions
+   files:   [16853] 014 Detective Comics 703 (1996-11) (DeadmanWade-DCP) (digital).cbr (24pp) | [16968] 01 Detective Comics 766.cbr (31pp) | [16975] 08 Detective Comics 767.cbr (32pp)
+            [16982] 01a Detective Comics 768.cbr (23pp) | 04 Detective Comics 769.cbr … 21 Detective Comics 775.cbr  (7 files, pp 23-33) | [17598] Detective Comics 350(Elongated Man).cbr (10pp)
+            [17873] 01 Detective_Comics_851__2008___both_covers___GCPD-OCD_.cbr (26pp) | [17875] 03 Detective_Comics_852__2009___Minutemen-Graves_.cbr (25pp)
+            [18033] 18 Detective Comics 1000000 (1998-11) (digital) (OkC.O.M.P.U.T.O.-Novus).cbz (22pp) | [60562] Detective Comics 000 (1994) (Digital) (Shadowcat-Empire).cbz (23pp)
+            Detective Comics Annual 001 (1988) (Digital) (Shadowcat-Empire).cbz … Detective Comics Annual 008 (1995) (Digital) (Shadowcat-Empire).cbz  (8 files, pp 39-57)
+            [60571] Detective Comics Annual 009 (1996) (noads).cbr (39pp) | [60572] Detective Comics Annual 010 (1997) (noads).cbr (53pp)
+            [60573] Detective Comics Annual 011 (2009) (Digital) (Shadowcat-Empire).cbz (32pp) | [60574] Detective Comics Annual 012 (2011) (Digital) (Shadowcat-Empire).cbz (48pp)
+            Detective Comics 001 (1937) (Microfiche).cbr … Detective Comics 015 (1938) (Microfiche).cbr  (15 files, pp 68-68) | [59666] Detective Comics 016 (1938) (Microfiche & Scan).cbz (68pp)
+            Detective Comics 017 (1938) (Microfiche).cbr … Detective Comics 026 (1939) (Microfiche).cbr  (10 files, pp 68-68)
+            Detective Comics 027 (1939) (Batman story only) (Digital) (Monafekk-Empire).cbz … Detective Comics 033 (1939) (Batman story only) (Digital) (Monafekk-Empire).cbz  (7 files, pp 9-15)
+            [59684] Detective Comics 034 (1940) (Digital) (Shadowcat-Empire).cbz (37pp) | [59685] Detective Comics 035 (1940) (Digital) (Shadowcat-Empire).cbz (58pp)
+            [59686] Detective Comics 036 (1940) (Digital) (Shadowcat-Empire).cbz (60pp) | [59687] Detective Comics 037 (1940) (Digital) (Shadowcat-Empire).cbz (63pp)
+            [59688] Detective Comics 038 (1940) (digital-Empire).cbz (59pp) | [59689] Detective Comics 039 (1940) (Digital) (Shadowcat-Empire).cbz (62pp)
+            [59690] Detective Comics 040 (1940) (Digital) (Shadowcat-Empire).cbz (57pp) | [59691] Detective Comics 041 (1940) (Digital) (Shadowcat-Empire).cbz (59pp)
+            [59692] Detective Comics 042 (1940) (Digital) (Shadowcat-Empire).cbz (61pp) | [59693] Detective Comics 043 (1940) (Digital) (Shadowcat-Empire).cbz (59pp)
+            [59694] Detective Comics 044 (1940) (Digital) (Shadowcat-Empire).cbz (59pp) | [59695] Detective Comics 045 (1941) (Digital) (Shadowcat-Empire).cbz (52pp)
+            [59696] Detective Comics 046 (1941) (Digital) (Shadowcat-Empire).cbz (59pp) | [59697] Detective Comics 047 (1941) (Digital) (Shadowcat-Empire).cbz (60pp)
+            [59698] Detective Comics 048 (1941) (Digital) (Shadowcat-Empire).cbz (53pp) | [59699] Detective Comics 049 (1941) (Digital) (Shadowcat-Empire).cbz (59pp)
+            [59700] Detective Comics 050 (1941) (Digital) (Shadowcat-Empire).cbz (14pp) | [59701] Detective Comics 051 (1941) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [59702] Detective Comics 052 (1941) (Digital) (Shadowcat-Empire).cbz (13pp) | [59703] Detective Comics 053 (1941) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [59704] Detective Comics 054 (1941) (Digital) (Shadowcat-Empire).cbz (14pp) | [59705] Detective Comics 055 (1941) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [59706] Detective Comics 056 (1941) (Digital) (Shadowcat-Empire).cbz (14pp) | [59707] Detective Comics 057 (1941) (Digital) (Shadowcat-Empire).cbz (15pp)
+            [59708] Detective Comics 058 (1941) (Digital) (Shadowcat-Empire).cbz (15pp) | [59709] Detective Comics 059 (1942) (Digital) (Shadowcat-Empire).cbz (15pp)
+            [59710] Detective Comics 060 (1942) (Digital) (Shadowcat-Empire).cbz (15pp) | [59711] Detective Comics 061 (1942) (Digital) (Shadowcat-Empire).cbz (15pp)
+            [59712] Detective Comics 062 (1942) (Digital) (Shadowcat-Empire).cbz (15pp) | [59713] Detective Comics 063 (1942) (Digital) (Shadowcat-Empire).cbz (15pp)
+            [59714] Detective Comics 064 (1942) (Digital) (Shadowcat-Empire).cbz (26pp) | [59715] Detective Comics 065 (1942) (Digital) (Shadowcat-Empire).cbz (27pp)
+            [59716] Detective Comics 066 (1942) (Digital) (Shadowcat-Empire).cbz (26pp) | [59717] Detective Comics 067 (1942) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [59718] Detective Comics 068 (1942) (Digital) (Shadowcat-Empire).cbz (27pp) | [59719] Detective Comics 069 (1942) (Digital) (Shadowcat-Empire).cbz (27pp)
+            [59720] Detective Comics 070 (1942) (Digital) (Shadowcat-Empire).cbz (27pp) | [59721] Detective Comics 071 (1943) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [59722] Detective Comics 072 (1943) (Digital) (Shadowcat-Empire).cbz (26pp) | [59723] Detective Comics 073 (1943) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [59724] Detective Comics 074 (1943) (Digital) (Shadowcat-Empire).cbz (14pp) | [59725] Detective Comics 075 (1943) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [59726] Detective Comics 076 (1943) (Digital) (Shadowcat-Empire).cbz (13pp) | [59727] Detective Comics 077 (1943) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [59728] Detective Comics 078 (1943) (Digital) (Shadowcat-Empire).cbz (14pp) | [59729] Detective Comics 079 (1943) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [59730] Detective Comics 080 (1943) (Digital) (Shadowcat-Empire).cbz (13pp) | [59731] Detective Comics 081 (1943) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [59732] Detective Comics 082 (1943) (Digital) (Shadowcat-Empire).cbz (13pp) | [59733] Detective Comics 083 (1944) (Digital) (Shadowcat-Empire).cbz (54pp)
+            [59734] Detective Comics 084 (1944) (Digital) (Shadowcat-Empire).cbz (55pp) | [59735] Detective Comics 085 (1944) (Digital) (Shadowcat-Empire).cbz (53pp)
+            [59736] Detective Comics 086 (1944) (Digital) (Shadowcat-Empire).cbz (54pp) | [59737] Detective Comics 087 (1944) (Digital) (Shadowcat-Empire).cbz (54pp)
+            [59738] Detective Comics 088 (1944) (Digital) (Shadowcat-Empire).cbz (54pp) | [59739] Detective Comics 089 (1944) (Digital) (Shadowcat-Empire).cbz (53pp)
+            [59740] Detective Comics 090 (1944) (Digital) (Shadowcat-Empire).cbz (45pp) | [59741] Detective Comics 091 (1944) (Digital) (Shadowcat-Empire).cbz (46pp)
+            [59742] Detective Comics 092 (1944) (Digital) (Shadowcat-Empire).cbz (45pp) | [59743] Detective Comics 093 (1944) (Digital) (Shadowcat-Empire).cbz (42pp)
+            [59744] Detective Comics 094 (1945) (Digital) (Shadowcat-Empire).cbz (45pp) | [59745] Detective Comics 095 (1945) (Digital) (Shadowcat-Empire).cbz (46pp)
+            [59746] Detective Comics 096 (1945) (Digital) (Shadowcat-Empire).cbz (13pp) | [59747] Detective Comics 097 (1945) (Digital) (Shadowcat-Empire).cbz (44pp)
+            [59748] Detective Comics 098 (1945) (Digital) (Shadowcat-Empire).cbz (45pp) | [59749] Detective Comics 099 (1945) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [59750] Detective Comics 100 (1945) (Digital) (Shadowcat-Empire).cbz (13pp) | [59751] Detective Comics 101 (1945) (Digital) (Shadowcat-Empire).cbz (43pp)
+            [59752] Detective Comics 102 (1945) (Digital) (Shadowcat-Empire).cbz (43pp) | [59753] Detective Comics 103 (1945) (Digital) (Shadowcat-Empire).cbz (43pp)
+            [59754] Detective Comics 104 (1945) (Digital) (Shadowcat-Empire).cbz (42pp) | [59755] Detective Comics 105 (1945) (Digital) (Shadowcat-Empire).cbz (44pp)
+            [59756] Detective Comics 106 (1945) (Digital) (Shadowcat-Empire).cbz (45pp) | [59757] Detective Comics 107 (1946) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [59758] Detective Comics 108 (1946) (Digital) (Shadowcat-Empire).cbz (43pp) | [59759] Detective Comics 109 (1946) (Digital) (Shadowcat-Empire).cbz (45pp)
+            [59760] Detective Comics 110 (1946) (Digital) (Shadowcat-Empire).cbz (45pp) | [59761] Detective Comics 111 (1946) (Digital) (Shadowcat-Empire).cbz (44pp)
+            [59762] Detective Comics 112 (1946) (Digital) (Shadowcat-Empire).cbz (43pp) | [59763] Detective Comics 113 (1946) (Digital) (Shadowcat-Empire).cbz (41pp)
+            [59764] Detective Comics 114 (1946) (Digital) (Shadowcat-Empire).cbz (44pp) | [59765] Detective Comics 115 (1946) (Digital) (Shadowcat-Empire).cbz (44pp)
+            [59766] Detective Comics 116 (1946) (Digital) (Shadowcat-Empire).cbz (44pp) | [59767] Detective Comics 117 (1947) (Digital) (Shadowcat-Empire).cbz (45pp)
+            [59768] Detective Comics 118 (1947) (Digital) (Shadowcat-Empire).cbz (42pp) | [59769] Detective Comics 119 (1947) (Digital) (Shadowcat-Empire).cbz (42pp)
+            [59770] Detective Comics 120 (1947) (Digital) (Shadowcat-Empire).cbz (46pp) | [59771] Detective Comics 121 (1947) (Digital) (Shadowcat-Empire).cbz (44pp)
+            [59772] Detective Comics 122 (1947) (Digital) (Shadowcat-Empire).cbz (43pp) | [59773] Detective Comics 123 (1947) (Digital) (Shadowcat-Empire).cbz (41pp)
+            [59774] Detective Comics 124 (1947) (Digital) (Shadowcat-Empire).cbz (41pp) | [59775] Detective Comics 125 (1947) (Digital) (Shadowcat-Empire).cbz (40pp)
+            [59776] Detective Comics 126 (1947) (Digital) (Shadowcat-Empire).cbz (42pp) | [59777] Detective Comics 127 (1947) (Digital) (Shadowcat-Empire).cbz (42pp)
+            [59778] Detective Comics 128 (1947) (Digital) (Shadowcat-Empire).cbz (44pp) | [59779] Detective Comics 129 (1947) (Digital) (Shadowcat-Empire).cbz (42pp)
+            [59780] Detective Comics 130 (1947) (Digital) (Shadowcat-Empire).cbz (41pp) | [59781] Detective Comics 131 (1948) (Digital) (Shadowcat-Empire).cbz (41pp)
+            [59782] Detective Comics 132 (1948) (Digital) (Shadowcat-Empire).cbz (44pp) | [59783] Detective Comics 133 (1948-03) 52p c2c (Flattermann).cbr (53pp)
+            [59784] Detective Comics 134 (1948-04) Batman only (R) .cbr (13pp) | [59785] Detective Comics 135 (1948-05) Batman only (R).cbr (13pp)
+            [59786] Detective Comics 136 (1948-06) (c2c) (Superscan).cbz (53pp) | [59787] Detective Comics 137 (1948) (c2c).cbr (52pp) | [59788] Detective Comics 138 (1948) (c2c).cbr (52pp)
+            [59789] Detective Comics 139 (1948) (c2c) (ABPC).cbr (52pp) | [59790] Detective Comics 140 (1948) (digital-Empire).cbr (40pp) | [59791] Detective Comics 141 (1948) (c2c).cbr (52pp)
+            [59792] Detective Comics 142 (1948) (c2c).cbr (52pp) | [59793] Detective Comics 143 (1949-01) (c2c).cbr (52pp) | [59794] Detective Comics 144 (1949) (c2c) (ABPC).cbr (52pp)
+            [59795] Detective Comics 145 (1949) (c2c) (ABPC).cbr (52pp) | [59796] Detective Comics 146 (1949) (c2c).cbr (52pp) | [59797] Detective Comics 147 (1949) (c2c).cbr (51pp)
+            [59798] Detective Comics 148 (1949) (c2c).cbz (52pp) | [59799] Detective Comics 149 (1949) (c2c).cbz (52pp) | [59800] Detective Comics 150 (1949) (c2c).cbr (51pp)
+            [59801] Detective Comics 151 (1949) (inc-36p) (noads) (Darkmark-DCP).cbr (37pp) | [59802] Detective Comics 152 (1949) (c2c).cbz (52pp)
+            [59803] Detective Comics 153 (1949 (c2c)).cbz (52pp) | [59804] Detective Comics 154 (1949) (c2c).cbz (52pp) | [59805] Detective Comics 155 (DC) (Jan 1950) (c2c) (Superscan).cbz (53pp)
+            [59806] Detective Comics 156 (1949) (c2c).cbr (52pp) | [59807] Detective Comics 157 (1950) (c2c) (ABPC).cbr (52pp) | [59808] Detective Comics 158 (1950).cbr (51pp)
+            [59809] Detective Comics 159 (1950).cbz (52pp) | [59810] Detective Comics 160 (1950) (c2c).cbz (52pp) | [59811] Detective Comics 161 (1950).cbr (50pp)
+            [59812] Detective Comics 162 (1950) (c2c).cbr (52pp) | [59813] Detective Comics 163 (1950).cbz (50pp) | [59814] Detective Comics 164 (1950) (c2c).cbz (52pp)
+            [59815] Detective Comics 165 (1950).cbz (50pp) | [59816] Detective Comics 166 (1950).cbr (52pp) | [59817] Detective Comics 167 (1951).cbz (52pp)
+            [59818] Detective Comics 168 (1951) (c2c) (Flattermann).cbr (53pp) | [59819] Detective Comics 169 (1951) (c2c).cbz (52pp) | [59820] Detective Comics 170 (1951) (c2c) (F).cbr (52pp)
+            [59821] Detective Comics 171 (1951) (c2c) (Snardermann).cbz (53pp) | [59822] Detective Comics 172 (1951) (c2c) (BobC-BHComics).cbz (52pp)
+            [59823] Detective Comics 173 (1951) (c2c) (BobC-BHComics).cbz (52pp) | [59824] Detective Comics 174 (1951) (c2c) (Superscan).cbz (53pp)
+            [59825] Detective Comics 175 (1951) (c2c).cbz (52pp) | [59826] Detective Comics 176 (1951) (c2c).cbr (52pp) | [59827] Detective Comics 177 (1951) (c2c).cbz (44pp)
+            [59828] Detective Comics 178 (1951) (c2c).cbr (44pp) | [59829] Detective Comics 179 (1952) (c2c) (ABPC).cbr (44pp) | [59830] Detective Comics 180 (1952) (c2c) (KingDaubach-DCP).cbr (46pp)
+            [59831] Detective Comics 181 (1952) (c2c) (ABPC).cbr (44pp) | [59832] Detective Comics 182 (1952) (c2c).cbr (41pp) | [59833] Detective Comics 183 (1952) (c2c).cbr (44pp)
+            [59834] Detective Comics 184 (1952) (c2c) (ABPC).cbr (44pp) | [59835] Detective Comics 185 (1952) (c2c) (Flattermann).cbr (45pp) | [59836] Detective Comics 186 (1952) (c2c).cbr (44pp)
+            [59837] Detective Comics 187 (1952) (c2c).cbr (44pp) | [59838] Detective Comics 188 (1952) (c2c).cbz (44pp) | [59839] Detective Comics 189 (1952) (c2c) (ABPC).cbr (44pp)
+            [59840] Detective Comics 190 (1952).cbr (42pp) | [59841] Detective Comics 191 (1953) (c2c).cbr (44pp) | [59842] Detective Comics 192 (1953) (c2c) (Flattermann).cbr (45pp)
+            [59843] Detective Comics 193 (1953) (noads).cbr (32pp) | [59844] Detective Comics 194 (1953) (c2c).cbr (44pp) | [59845] Detective Comics 195 (1953) (c2c).cbr (44pp)
+            [59846] Detective Comics 196 (1953) (c2c) (ABPC).cbr (44pp) | [59847] Detective Comics 197 (1953) (c2c).cbr (44pp) | [59848] Detective Comics 198 (1953) (c2c).cbz (44pp)
+            [59849] Detective Comics 199 (1953) (noads).cbr (35pp) | [59850] Detective Comics 200 (1953) (Digital) (Shadowcat-Empire).cbz (37pp)
+            [59851] Detective Comics 201 (1953) (noads).cbr (35pp) | [59852] Detective Comics 202 (1953) (c2c).cbr (44pp) | [59853] Detective Comics 203 (1954) (c2c) (Punkrat).cbr (44pp)
+            [59854] Detective Comics 204 (1954) (c2c).cbr (44pp) | [59855] Detective Comics 205 (1954) (c2c) (Flattermann).cbr (45pp) | [59856] Detective Comics 206 (1954) (c2c) (Superscan).cbz (45pp)
+            [59857] Detective Comics 207 (1954) (noads).cbr (35pp) | [59858] Detective Comics 208 (1954) (c2c) (Flattermann).cbr (45pp) | [59859] Detective Comics 209 (1954) (c2c) (ABPC).cbr (44pp)
+            [59860] Detective Comics 210 (1954) (c2c).cbz (44pp) | [59861] Detective Comics 211 (1954) (c2c) (Flattermann).cbr (44pp) | [59862] Detective Comics 212 (1954) (noads).cbr (27pp)
+            [59863] Detective Comics 213 (1954) (c2c) (Flattermann).cbr (37pp) | [59864] Detective Comics 214 (1955) (c2c).cbz (36pp) | [59865] Detective Comics 215 (1955) (c2c).cbr (36pp)
+            [59866] Detective Comics 216 (1955) (c2c) (Flattermann).cbr (37pp) | [59867] Detective Comics 217 (1955) (c2c).cbr (36pp)
+            [59868] Detective Comics 218 (1955) (c2c) (Flattermann).cbr (37pp) | [59869] Detective Comics 219 (1955) (c2c) (Snardermann).cbz (36pp)
+            [59870] Detective Comics 220 (1955) (c2c) (Snardermann).cbz (36pp) | [59871] Detective Comics 221 (1955) (c2c) (Snardermann).cbz (36pp)
+            [59872] Detective Comics 222 (1955) (c2c).cbz (36pp) | [59873] Detective Comics 223 (1955) (c2c) (Snardermann).cbz (37pp) | [59874] Detective Comics 224 (1956) (noads).cbr (34pp)
+            [59875] Detective Comics 225 (1955) (c2c) (Flattermann).cbr (37pp) | [59876] Detective Comics 226 (1956) (c2c).cbr (36pp)
+            [59877] Detective Comics 227 (1956) (c2c) (Flattermann).cbr (37pp) | [59878] Detective Comics 228 (1956) (c2c) (Flattermann).cbr (37pp)
+            [59879] Detective Comics 229 (1956) (c2c).cbr (36pp) | Detective Comics 230 (1956) (c2c) (Flattermann).cbr … Detective Comics 241 (1957) (c2c) (Flattermann).cbr  (12 files, pp 36-37)
+            [59892] Detective Comics 242 (1957) (noads).cbr (27pp) | Detective Comics 243 (1957) (c2c) (Flattermann).cbr … Detective Comics 252 (1958) (c2c) (Flattermann).cbr  (10 files, pp 37-37)
+            [59903] Detective Comics 253 (1958) (c2c) (Team-DCP).cbr (37pp) | [59904] Detective Comics 254 (1958) (c2c) (Flattermann).cbr (36pp) | [59905] Detective Comics 255 (1958) (c2c).cbr (37pp)
+            [59906] Detective Comics 256 (1958) (c2c).cbr (34pp) | [59907] Detective Comics 257 (1958) (c2c) (Flattermann).cbr (37pp)
+            [59908] Detective Comics 258 (1958) (c2c) (Flattermann).cbr (37pp) | [59909] Detective Comics 259 (1958) (c2c).cbz (36pp)
+            [59910] Detective Comics 260 (1958) (c2c) (Flattermann).cbr (37pp) | [59911] Detective Comics 261 (1958) (c2c).cbr (39pp)
+            [59912] Detective Comics 263 (1959) (c2c) (Flattermann).cbr (37pp) | [59913] Detective Comics 263 (1959) (c2c).cbr (36pp)
+            [59914] Detective Comics 264 (1959) (c2c) (Flattermann).cbr (37pp) | [59915] Detective Comics 265 (1959) (c2c) (Flattermann).cbr (37pp)
+            [59916] Detective Comics 266 (1959) (c2c) (Flattermann).cbr (37pp) | [59917] Detective Comics 267 (1959) (c2c).cbr (38pp)
+            Detective Comics 268 (1959) (c2c) (Flattermann).cbr … Detective Comics 275 (1960) (c2c) (Flattermann).cbr  (8 files, pp 37-37) | [59926] Detective Comics 276 (1960) (c2c).cbz (36pp)
+            [59927] Detective Comics 277 (1960) (c2c).cbz (36pp) | Detective Comics 278 (1960) (c2c) (Flattermann).cbr … Detective Comics 283 (1960) (c2c) (Flattermann).cbr  (6 files, pp 37-37)
+            [59934] Detective Comics 284 (1960) (c2c) (F).cbr (36pp) | Detective Comics 285 (1960) (c2c) (Flattermann).cbr … Detective Comics 295 (1961) (c2c) (Flattermann).cbr  (11 files, pp 37-37)
+            [59946] Detective Comics 296 (1961) (c2c).cbr (36pp) | [59947] Detective Comics 297 (1961) (c2c) (Flattermann).cbr (37pp)
+            Detective Comics 298 (1962) (Digital) (Shadowcat-Empire).cbz … Detective Comics 320 (1963) (Digital) (Shadowcat-Empire).cbz  (23 files, pp 27-31)
+            Detective Comics 321 (1963) (digital-Empire).cbr … Detective Comics 334 (1964) (digital-Empire).cbr  (14 files, pp 26-29)
+            Detective Comics 335 (1965) (Digital) (Shadowcat-Empire).cbz … Detective Comics 352 (1966) (Digital) (Shadowcat-Empire).cbz  (18 files, pp 25-28)
+            [60033] Detective Comics 353 (1966) (digital-Empire).cbr (25pp) | [60034] Detective Comics 354 (1966) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [60035] Detective Comics 355 (1966) (Digital) (Shadowcat-Empire).cbz (25pp) | [60036] Detective Comics 356 (1966) (digital) (Shadowcat-Empire).cbz (25pp)
+            Detective Comics 357 (1967) (Digital) (Shadowcat-Empire).cbz … Detective Comics 391 (1969) (Digital) (Shadowcat-Empire).cbz  (35 files, pp 24-30)
+            [60072] Detective Comics 392 (1969) (c2c) (Flattermann).cbr (36pp) | [60073] Detective Comics 393 (1970) (Digital-Empire).cbz (24pp)
+            [60074] Detective Comics 394 (1969) (Digital) (Shadowcat-Empire).cbz (25pp) | [60075] Detective Comics 395 (1970) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [60076] Detective Comics 396 (1970) (Digital) (Shadowcat-Empire).cbz (29pp) | [60077] Detective Comics 397 (1970) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [60078] Detective Comics 398 (1970) (Digital) (Shadowcat-Empire).cbz (26pp) | [60079] Detective Comics 399 (1970) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [60080] Detective Comics 400 (1970) (Digital) (Shadowcat-Empire).cbz (25pp) | [60081] Detective Comics 401 (1970) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60082] Detective Comics 402 (1970) (Digital) (Shadowcat-Empire).cbz (25pp) | [60083] Detective Comics 403 (1970) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [60084] Detective Comics 404 (1970) (Digital) (Shadowcat-Empire).cbz (23pp) | [60085] Detective Comics 405 (1971) (Digital) (Shadowcat-Empire).cbz (29pp)
+            [60086] Detective Comics 406 (1971) (Digital) (Shadowcat-Empire).cbz (23pp) | [60087] Detective Comics 407 (1971) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60088] Detective Comics 408 (1971) (Digital) (Shadowcat-Empire).cbz (24pp) | [60089] Detective Comics 409 (1971) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60090] Detective Comics 410 (1971) (Digital) (Shadowcat-Empire).cbz (23pp) | [60091] Detective Comics 411 (1971) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60092] Detective Comics 412 (1971) (Digital) (Shadowcat-Empire).cbz (23pp) | [60093] Detective Comics 413 (1971) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60094] Detective Comics 414 (1971) (Digital) (Shadowcat-Empire).cbz (39pp) | [60095] Detective Comics 415 (1971) (Digital) (Shadowcat-Empire).cbz (38pp)
+            [60096] Detective Comics 416 (1971) (Digital) (Shadowcat-Empire).cbz (38pp) | [60097] Detective Comics 417 (1972) (Digital) (Shadowcat-Empire).cbz (38pp)
+            [60098] Detective Comics 418 (1972) (Digital) (Shadowcat-Empire).cbz (39pp) | [60099] Detective Comics 419 (1972) (Digital) (Shadowcat-Empire).cbz (38pp)
+            [60100] Detective Comics 420 (1972) (Digital) (Shadowcat-Empire).cbz (38pp) | [60101] Detective Comics 421 (1972) (Digital) (Shadowcat-Empire).cbz (38pp)
+            [60102] Detective Comics 422 (1972) (Digital) (Shadowcat-Empire).cbz (39pp) | [60103] Detective Comics 423 (1972) (Digital) (Shadowcat-Empire).cbz (38pp)
+            [60104] Detective Comics 424 (1972) (Digital) (Shadowcat-Empire).cbz (37pp) | [60105] Detective Comics 425 (1972) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [60106] Detective Comics 426 (1972) (Digital) (Shadowcat-Empire).cbz (25pp) | [60107] Detective Comics 427 (1972) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [60108] Detective Comics 428 (1972) (Digital) (Shadowcat-Empire).cbz (25pp) | [60109] Detective Comics 429 (1972) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [60110] Detective Comics 430 (1973) (Digital) (Shadowcat-Empire).cbz (24pp) | [60111] Detective Comics 431 (1973) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [60112] Detective Comics 432 (1973) (Digital) (Shadowcat-Empire).cbz (24pp) | [60113] Detective Comics 433 (1973) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [60114] Detective Comics 434 (1973) (Digital) (Shadowcat-Empire).cbz (24pp) | [60115] Detective Comics 435 (1973) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [60116] Detective Comics 436 (1973) (Digital) (Shadowcat-Empire).cbz (24pp) | [60117] Detective Comics 437 (1973) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [60118] Detective Comics 438 (1974) (Digital) (Shadowcat-Empire).cbz (84pp) | [60119] Detective Comics 439 (1974) (Digital) (Shadowcat-Empire).cbz (85pp)
+            [60120] Detective Comics 440 (1974) (Digital) (Shadowcat-Empire).cbz (84pp) | [60121] Detective Comics 441 (1974) (Digital) (Shadowcat-Empire).cbz (82pp)
+            [60122] Detective Comics 442 (1974) (Digital) (Shadowcat-Empire).cbz (83pp) | [60123] Detective Comics 443 (1974) (Digital) (Shadowcat-Empire).cbz (81pp)
+            [60124] Detective Comics 444 (1975) (Digital) (Shadowcat-Empire).cbz (80pp) | [60125] Detective Comics 445 (1975) (Digital) (Shadowcat-Empire).cbz (81pp)
+            [60126] Detective Comics 446 (1975) (Digital) (Shadowcat-Empire).cbz (19pp) | [60127] Detective Comics 447 (1975) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [60128] Detective Comics 448 (1975) (Digital) (Shadowcat-Empire).cbz (19pp) | [60129] Detective Comics 449 (1975) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [60130] Detective Comics 450 (1975) (Digital) (Shadowcat-Empire).cbz (19pp) | [60131] Detective Comics 451 (1975) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [60132] Detective Comics 452 (1975) (Digital) (Shadowcat-Empire).cbz (19pp) | [60133] Detective Comics 453 (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [60134] Detective Comics 454 (1976) (Digital) (Shadowcat-Empire).cbz (19pp) | [60135] Detective Comics 455 (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [60136] Detective Comics 456 (1976) (Digital) (Shadowcat-Empire).cbz (19pp) | [60137] Detective Comics 457 (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [60138] Detective Comics 458 (1976) (Digital) (Shadowcat-Empire).cbz (19pp) | [60139] Detective Comics 459 (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [60140] Detective Comics 460 (1976) (Digital) (Shadowcat-Empire).cbz (17pp) | [60141] Detective Comics 461 (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [60142] Detective Comics 462 (1976) (Digital) (Shadowcat-Empire).cbz (18pp) | [60143] Detective Comics 463 (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [60144] Detective Comics 464 (1976) (Digital) (Shadowcat-Empire).cbz (18pp) | [60145] Detective Comics 465 (1977) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [60146] Detective Comics 466 (1977) (Digital) (Shadowcat-Empire).cbz (18pp) | [60147] Detective Comics 467 (1977) (Digital) (Shadowcat-Empire).cbz (17pp)
+            [60148] Detective Comics 468 (1977) (Digital) (Shadowcat-Empire).cbz (18pp) | [60149] Detective Comics 469 (1977) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [60150] Detective Comics 470 (1977) (Digital) (Shadowcat-Empire).cbz (18pp)
+            Detective Comics 471 (1977) (Digital) (AnHeroGold-Empire).cbz … Detective Comics 476 (1978) (Digital) (AnHeroGold-Empire).cbz  (6 files, pp 18-19)
+            [60157] Detective Comics 477 (1978) (Digital) (Shadowcat-Empire).cbz (19pp) | [60158] Detective Comics 478 (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [60159] Detective Comics 479 (1978) (Digital) (Shadowcat-Empire).cbz (26pp) | [60160] Detective Comics 480 (1978) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [60161] Detective Comics 481 (1979) (Digital) (Shadowcat-Empire).cbz (66pp) | [60162] Detective Comics 482 (1979) (Digital) (Shadowcat-Empire).cbz (62pp)
+            [60163] Detective Comics 483 (1979) (Digital) (Shadowcat-Empire).cbz (57pp) | [60164] Detective Comics 484 (1979) (Digital) (Shadowcat-Empire).cbz (67pp)
+            [60165] Detective Comics 485 (1979) (Digital) (Shadowcat-Empire).cbz (67pp) | [60166] Detective Comics 486 (1979) (Digital) (Shadowcat-Empire).cbz (53pp)
+            [60167] Detective Comics 487 (1980) (Digital) (Shadowcat-Empire).cbz (52pp) | [60168] Detective Comics 488 (1980) (Digital) (Shadowcat-Empire).cbz (52pp)
+            [60169] Detective Comics 489 (1980) (Digital) (Shadowcat-Empire).cbz (52pp) | [60170] Detective Comics 490 (1980) (Digital) (Shadowcat-Empire).cbz (52pp)
+            [60171] Detective Comics 491 (1980) (Digital) (Shadowcat-Empire).cbz (52pp) | [60172] Detective Comics 492 (1980) (Digital) (Shadowcat-Empire).cbz (52pp)
+            [60173] Detective Comics 493 (1980) (Digital) (Shadowcat-Empire).cbz (52pp) | [60174] Detective Comics 494 (1980) (digital-Empire).cbr (48pp)
+            [60175] Detective Comics 495 (1980) (Digital) (Shadowcat-Empire).cbz (52pp) | [60176] Detective Comics 496 (1981) (Digital) (Shadowcat-Empire).cbz (27pp)
+            [60177] Detective Comics 497 (1981) (Digital) (Shadowcat-Empire).cbz (26pp) | [60178] Detective Comics 498 (1981) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [60179] Detective Comics 499 (1981) (Digital) (Shadowcat-Empire).cbz (26pp) | [60180] Detective Comics 500 (1981) (Digital) (Shadowcat-Empire).cbz (82pp)
+            [60181] Detective Comics 501 (1981) (Digital) (Shadowcat-Empire).cbz (26pp) | [60182] Detective Comics 502 (1981) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [60183] Detective Comics 503 (1981) (Digital) (Shadowcat-Empire).cbz (26pp) | [60184] Detective Comics 504 (1981) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [60185] Detective Comics 505 (1981) (Digital) (Shadowcat-Empire).cbz (26pp) | [60186] Detective Comics 506 (1981) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [60187] Detective Comics 507 (1981) (Digital) (Shadowcat-Empire).cbz (28pp) | [60188] Detective Comics 508 (1981) (Digital) (Shadowcat-Empire).cbz (28pp)
+            [60189] Detective Comics 509 (1981) (Digital) (Shadowcat-Empire).cbz (28pp) | [60190] Detective Comics 510 (1982) (Digital) (Shadowcat-Empire).cbz (28pp)
+            [60191] Detective Comics 511 (1982) (Digital) (Shadowcat-Empire).cbz (28pp) | [60192] Detective Comics 512 (1982) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [60193] Detective Comics 513 (1982) (Digital) (Shadowcat-Empire).cbz (27pp) | [60194] Detective Comics 514 (1982) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [60195] Detective Comics 515 (1982) (Digital) (Shadowcat-Empire).cbz (27pp) | [60196] Detective Comics 516 (1982) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [60197] Detective Comics 517 (1982) (Digital) (Shadowcat-Empire).cbz (27pp) | [60198] Detective Comics 518 (1982) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [60199] Detective Comics 519 (1982) (Digital) (Shadowcat-Empire).cbz (24pp) | [60200] Detective Comics 520 (1983) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [60201] Detective Comics 521 (1983) (Digital) (Shadowcat-Empire).cbz (24pp) | [60202] Detective Comics 522 (1983) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [60203] Detective Comics 523 (1983) (Digital) (Shadowcat-Empire).cbz (24pp) | [60204] Detective Comics 524 (1983) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [60205] Detective Comics 525 (1983) (Digital) (Shadowcat-Empire).cbz (24pp) | [60206] Detective Comics 526 (1983) (Digital) (AnHeroGold-Empire).cbz (56pp)
+            Detective Comics 527 (1983) (Digital) (Shadowcat-Empire).cbz … Detective Comics 545 (1985) (Digital) (Shadowcat-Empire).cbz  (19 files, pp 23-25)
+            [60226] Detective Comics 546 (1985) (c2c) (FBScan).cbr (35pp)
+            Detective Comics 547 (1985) (Digital) (Shadowcat-Empire).cbz … Detective Comics 558 (1986) (Digital) (Shadowcat-Empire).cbz  (12 files, pp 22-25)
+            [60239] Detective Comics 559 (1985) (digital-Empire).cbr (23pp) | [60240] Detective Comics 560 (1986) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60241] Detective Comics 561 (1986) (Digital) (Shadowcat-Empire).cbz (23pp) | [60242] Detective Comics 562 (1986) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60243] Detective Comics 563 (1986) (c2c) (Phil&Doc).cbr (35pp) | [60244] Detective Comics 564 (1986) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60245] Detective Comics 565 (1986) (Digital) (Shadowcat-Empire).cbz (23pp) | [60246] Detective Comics 566 (1986) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60247] Detective Comics 567 (1986) (Digital) (Shadowcat-Empire).cbz (23pp) | [60248] Detective Comics 568 (1986) (Digital) (TLK-EMPIRE).cbr (24pp)
+            [60249] Detective Comics 569 (1987) (Digital) (Shadowcat-Empire).cbz (23pp) | [60250] Detective Comics 570 (1987) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60251] Detective Comics 571 (1987) (Digital) (Shadowcat-Empire).cbz (23pp) | [60252] Detective Comics 572 (1987) (Digital) (Shadowcat-Empire).cbz (56pp)
+            [60253] Detective Comics 573 (1987) (Digital) (Shadowcat-Empire).cbz (23pp) | [60254] Detective Comics 574 (1987) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60255] Detective Comics 575 (1987) (Digital) (AnHeroGold-Empire).cbz (23pp) | [60256] Detective Comics 576 (1987) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [60257] Detective Comics 577 (1987) (Digital) (AnHeroGold-Empire).cbz (22pp) | [60258] Detective Comics 578 (1987) (Digital) (AnHeroGold-Empire).cbz (24pp)
+            [60259] Detective Comics 579 (1987) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (24pp) | [60260] Detective Comics 580 (1988) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60261] Detective Comics 581 (1988) (Digital) (Shadowcat-Empire).cbz (23pp) | [60262] Detective Comics 582 (1988) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60263] Detective Comics 583 (1988) (Digital) (Shadowcat-Empire).cbz (23pp) | [60264] Detective Comics 584 (1988) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60265] Detective Comics 585 (1988) (Digital) (Shadowcat-Empire).cbz (23pp) | [60266] Detective Comics 586 (1988) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60267] Detective Comics 587 (1988) (Digital) (Shadowcat-Empire).cbz (23pp) | [60268] Detective Comics 588 (1988) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60269] Detective Comics 589 (1988) (Digital) (Shadowcat-Empire).cbz (38pp) | [60270] Detective Comics 590 (1988) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60271] Detective Comics 591 (1988) (Digital) (Shadowcat-Empire).cbz (23pp) | [60272] Detective Comics 592 (1988) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60273] Detective Comics 593 (1988) (Digital) (Shadowcat-Empire).cbz (23pp) | [60274] Detective Comics 594 (1988) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60275] Detective Comics 595 (1989) (Digital) (Shadowcat-Empire).cbz (39pp) | [60276] Detective Comics 596 (1989) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [60277] Detective Comics 597 (1989) (Digital) (Shadowcat-Empire).cbz (23pp) | [60278] Detective Comics 598 (1989) (Digital) (Shadowcat-Empire).cbz (78pp)
+            [60279] Detective Comics 599 (1989) (Digital) (Shadowcat-Empire).cbz (29pp) | [60280] Detective Comics 600 (1989) (Digital) (Shadowcat-Empire).cbz (62pp)
+            [60281] Detective Comics 601 (1989) (Digital) (Shadowcat-Empire).cbz (23pp) | [60282] Detective Comics 602 (1989) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60283] Detective Comics 603 (1989) (Digital) (Shadowcat-Empire).cbz (22pp) | [60284] Detective Comics 604 (1989) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60285] Detective Comics 605 (1989) (Digital) (Shadowcat-Empire).cbz (23pp) | [60286] Detective Comics 606 (1989) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60287] Detective Comics 607 (1989) (Digital) (Shadowcat-Empire).cbz (23pp) | [60288] Detective Comics 608 (1989) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60289] Detective Comics 609 (1989) (Digital) (Shadowcat-Empire).cbz (23pp) | [60290] Detective Comics 610 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60291] Detective Comics 611 (1990) (Digital) (Shadowcat-Empire).cbz (23pp) | [60292] Detective Comics 612 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60293] Detective Comics 613 (1990) (Digital) (Shadowcat-Empire).cbz (22pp) | [60294] Detective Comics 614 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60295] Detective Comics 615 (1990) (Digital) (Shadowcat-Empire).cbz (23pp) | [60296] Detective Comics 616 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60297] Detective Comics 617 (1990) (Digital) (Shadowcat-Empire).cbz (22pp) | [60298] Detective Comics 618 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60299] Detective Comics 619 (1990) (Digital) (Shadowcat-Empire).cbz (23pp) | [60300] Detective Comics 620 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60301] Detective Comics 621 (1990) (Digital) (Shadowcat-Empire).cbz (23pp) | [60302] Detective Comics 622 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60303] Detective Comics 623 (1990) (Digital) (Shadowcat-Empire).cbz (23pp) | [60304] Detective Comics 624 (1991) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60305] Detective Comics 625 (1991) (Digital) (Shadowcat-Empire).cbz (23pp) | [60306] Detective Comics 626 (1991) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60307] Detective Comics 627 (1991) (Digital) (Shadowcat-Empire).cbz (66pp) | [60308] Detective Comics 628 (1991) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60309] Detective Comics 629 (1991) (Digital) (Shadowcat-Empire).cbz (23pp) | [60310] Detective Comics 630 (1991) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60311] Detective Comics 631 (1991) (Digital) (Shadowcat-Empire).cbz (23pp) | [60312] Detective Comics 632 (1991) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60313] Detective Comics 633 (1991) (Digital) (Shadowcat-Empire).cbz (23pp) | [60314] Detective Comics 634 (1991) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60315] Detective Comics 635 (1991) (Digital) (Shadowcat-Empire).cbz (23pp) | [60316] Detective Comics 636 (1991) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [60317] Detective Comics 637 (1991) (Digital) (Shadowcat-Empire).cbz (23pp) | [60318] Detective Comics 638 (1991) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60319] Detective Comics 639 (1991) (Digital) (Shadowcat-Empire).cbz (23pp) | [60320] Detective Comics 640 (1992) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60321] Detective Comics 641 (1992) (Digital) (Shadowcat-Empire).cbz (22pp) | [60322] Detective Comics 642 (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (24pp)
+            [60323] Detective Comics 643 (1992) (Digital) (Shadowcat-Empire).cbz (23pp) | [60324] Detective Comics 644 (1992) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60325] Detective Comics 645 (1992) (Digital) (Shadowcat-Empire).cbz (22pp) | [60326] Detective Comics 646 (1992) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60327] Detective Comics 647 (1992) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            Detective Comics 648 (1992) (Digital) (Shadowcat-Empire).cbz … Detective Comics 658 (1993) (Digital) (Shadowcat-Empire).cbz  (11 files, pp 21-24)
+            Detective Comics 659 (1993) (digital-TPB).cbr … Detective Comics 666 (1993) (digital-TPB).cbr  (8 files, pp 22-23)
+            Detective Comics 667 (1993) (Digital) (Shadowcat-Empire).cbz … Detective Comics 675 (1994) (Digital) (Shadowcat-Empire).cbz  (9 files, pp 22-24)
+            [60356] Detective Comics 676 (1994) (digital-TPB).cbr (39pp) | [60357] Detective Comics 677 (1994) (digital-TPB).cbr (22pp)
+            [60358] Detective Comics 678 (1994) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            Detective Comics 679 (1994) (Digital) (Shadowcat-Empire).cbz … Detective Comics 685 (1995) (Digital) (Shadowcat-Empire).cbz  (7 files, pp 22-23)
+            [60366] Detective Comics 686 (1995) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            Detective Comics 687 (1995) (Digital) (Shadowcat-Empire).cbz … Detective Comics 718 (1998) (Digital) (Shadowcat-Empire).cbz  (32 files, pp 21-38)
+            [60399] Detective Comics 719 (1998) (Digital) (Monafekk-Empire).cbz (24pp) | [60400] Detective Comics 720 (1998) (Digital) (Monafekk-Empire).cbz (23pp)
+            [60401] Detective Comics 721 (1998) (Digital) (Shadowcat-Empire).cbz (22pp) | [60402] Detective Comics 722 (1998) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [60403] Detective Comics 723 (2013) (Digital) (Shadowcat-Empire).cbz (23pp) | [60404] Detective Comics 724 (2013) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [60405] Detective Comics 725 (1998) (Digital) (AnHeroGold-Empire).cbz (23pp) | [60406] Detective Comics 726 (1998) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            [60407] Detective Comics 727 (1998) (digital-Empire).cbz (23pp) | [60408] Detective Comics 728 (1999) (digital-Empire).cbz (23pp)
+            [60409] Detective Comics 729 (1999) (digital-Empire).cbz (23pp) | [60410] Detective Comics 730 (1999) (Digital) (Monafekk-Empire).cbz (25pp)
+            [60411] Detective Comics 731 (1999) (Digital) (Monafekk-Empire).cbz (24pp) | [60412] Detective Comics 732 (1999) (digital-Empire).cbz (23pp)
+            [60413] Detective Comics 733 (1999) (digital-Empire).cbz (22pp) | [60414] Detective Comics 734 (1999) (digital-Empire).cbz (23pp)
+            [60415] Detective Comics 735 (1999) (digital-Empire).cbz (22pp) | [60416] Detective Comics 736 (1999) (digital-Empire).cbz (20pp)
+            [60417] Detective Comics 737 (1999) (digital-Empire).cbz (23pp) | [60418] Detective Comics 738 (1999) (digital-Empire).cbz (22pp)
+            [60419] Detective Comics 739 (1999) (digital-Empire).cbz (22pp) | [60420] Detective Comics 740 (2000) (digital-Empire).cbz (23pp)
+            [60421] Detective Comics 741 (2000) (digital-Empire).cbz (31pp) | [60422] Detective Comics 742 (2000) (digital-Empire).cbz (31pp)
+            [60423] Detective Comics 743 (2000) (digital-Empire).cbz (31pp) | [60424] Detective Comics 744 (2000) (digital-Empire).cbz (31pp)
+            [60425] Detective Comics 745 (2000) (digital-Empire).cbz (30pp) | [60426] Detective Comics 746 (2000) (digital-Empire).cbz (31pp)
+            [60427] Detective Comics 747 (2000) (digital-Empire).cbz (31pp) | [60428] Detective Comics 748 (2000) (digital-Empire).cbz (30pp)
+            [60429] Detective Comics 749 (2000) (digital-Empire).cbz (31pp) | [60430] Detective Comics 750 (2000) (digital-Empire).cbz (55pp)
+            [60431] Detective Comics 751 (2000) (digital-Empire).cbz (31pp) | [60432] Detective Comics 752 (2001) (digital-Empire).cbz (30pp)
+            [60433] Detective Comics 753 (2001) (digital-Empire).cbz (31pp) | [60434] Detective Comics 754 (2001) (digital-Empire).cbz (30pp)
+            [60435] Detective Comics 755 (2001) (digital-Empire).cbz (31pp) | [60436] Detective Comics 756 (2001) (digital-Empire).cbz (31pp)
+            [60437] Detective Comics 757 (2001) (digital-Empire).cbz (31pp) | [60438] Detective Comics 758 (2001) (digital-Empire).cbz (31pp)
+            [60439] Detective Comics 759 (2001) (digital-Empire).cbz (31pp) | [60440] Detective Comics 760 (2001) (digital-Empire).cbz (31pp)
+            [60441] Detective Comics 761 (2001) (digital-Empire).cbz (31pp) | [60442] Detective Comics 762 (2001) (digital-Empire).cbz (31pp)
+            [60443] Detective Comics 763 (2001) (digital-Empire).cbz (31pp) | [60444] Detective Comics 764 (2002) (digital-Empire).cbz (30pp)
+            [60445] Detective Comics 765 (2002) (digital-Empire).cbz (30pp) | [60446] Detective Comics 766 (2002) (digital-Empire).cbz (29pp)
+            [60447] Detective Comics 767 (2002) (digital-Empire).cbz (30pp) | [60448] Detective Comics 768 (2002) (digital-Empire).cbz (24pp)
+            [60449] Detective Comics 769 (2002) (digital-Empire).cbz (31pp) | [60450] Detective Comics 770 (2002) (HD) (digital-Empire).cbr (32pp)
+            Detective Comics 771 (2002) (digital-Empire).cbz … Detective Comics 784 (2003) (digital-Empire).cbz  (14 files, pp 23-39)
+            [60465] Detective Comics 785 (2003) (Digital) (AnHeroGold-Empire).cbz (32pp) | [60466] Detective Comics 786 (2003) (Digital) (AnHeroGold-Empire).cbz (32pp)
+            Detective Comics 787 (2003) (digital-Empire).cbz … Detective Comics 795 (2004) (digital-Empire).cbz  (9 files, pp 31-32)
+            [60476] Detective Comics 796 (2004) (Digital) (AnHeroGold-Empire).cbz (32pp) | [60477] Detective Comics 797 (2004) (digital-Empire).cbz (30pp)
+            [60478] Detective Comics 798 (2004) (digital-Empire).cbz (32pp) | [60479] Detective Comics 799 (2004) (digital-Empire).cbz (32pp)
+            Detective Comics 800 (2005) (Digital) (AnHeroGold-Empire).cbz … Detective Comics 808 (2005) (Digital) (AnHeroGold-Empire).cbz  (9 files, pp 31-40)
+            [60489] Detective Comics 809 (2005) (HD) (digital-Empire).cbr (31pp) | [60490] Detective Comics 810 (2005) (HD) (digital-Empire).cbr (31pp)
+            Detective Comics 811 (2005) (Digital) (AnHeroGold-Empire).cbz … Detective Comics 842 (2008) (Digital) (AnHeroGold-Empire).cbz  (32 files, pp 21-24)
+            [60523] Detective Comics 843 (2008) (digital-Empire).cbz (24pp) | [60524] Detective Comics 844 (2008) (Digital) (AnHeroGold-Empire).cbz (24pp)
+            [60525] Detective Comics 845 (2008) (Digital) (AnHeroGold-Empire).cbz (24pp) | [60526] Detective Comics 846 (2008) (Digital) (AnHeroGold-Empire).cbz (24pp)
+            [60527] Detective Comics 847 (2008) (Digital) (AnHeroGold-Empire).cbz (24pp) | [60528] Detective Comics 848 (2008) (Digital) (AnHeroGold-Empire).cbz (24pp)
+            [60529] Detective Comics 849 (2008) (digital-Empire).cbz (24pp) | [60530] Detective Comics 850 (2009) (Digital) (AnHeroGold-Empire).cbz (39pp)
+            [60531] Detective Comics 851 (2009) (Digital) (AnHeroGold-Empire).cbz (23pp) | [60532] Detective Comics 852 (2009) (Digital) (AnHeroGold-Empire).cbz (24pp)
+            [60533] Detective Comics 853 (2009) (Digital) (AnHeroGold-Empire).cbz (28pp) | [60534] Detective Comics 854 (2009) (2 covers) (digital-Empire).cbr (26pp)
+            [60535] Detective Comics 855 (2009) (2 covers) (digital-Empire).cbr (27pp) | [60536] Detective Comics 856 (2009) (digital-Empire).cbr (25pp)
+            [60537] Detective Comics 857 (2009) (digital-Empire).cbr (24pp) | [60538] Detective Comics 858 (2009) (2 covers) (digital-Empire).cbr (29pp)
+            [60539] Detective Comics 859 (2010) (2 covers) (digital-Empire).cbr (31pp) | [60540] Detective Comics 860 (2010) (2 covers) (digital-Empire).cbr (30pp)
+            [60541] Detective Comics 861 (2010) (Digital) (AnHeroGold-Empire).cbz (28pp) | [60542] Detective Comics 862 (2010) (Digital) (AnHeroGold-Empire).cbz (30pp)
+            [60543] Detective Comics 863 (2010) (Digital) (AnHeroGold-Empire).cbz (27pp)
+            Detective Comics 864 (2010) (digital-Empire).cbz … Detective Comics 870 (2010) (digital-Empire).cbz  (7 files, pp 29-33)
+            Detective Comics 871 (2011) (Digital) (Zone-Empire).cbr … Detective Comics 878 (2011) (Digital) (Zone-Empire).cbr  (8 files, pp 22-33)
+            [60559] Detective Comics 879 (2011) (Digital) (AnHeroGold-Empire).cbz (22pp) | [60560] Detective Comics 880 (2011) (Digital) (Zone-Empire).cbr (21pp)
+            [60561] Detective Comics 881 (2011) (Digital) (Zone-Empire).cbr (32pp) | [63922] Detective Comics 475 - Facsimile Edition (2020) (Digital) (Shadowcat-Empire).cbz (36pp)
+   ours:    ladder 0-261, 263-881; 28 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12; ComicInfo Series: "Detective Comics"x426, "Detective Comics Annual"x10; ComicInfo Volume: "1937"x418; ComicInfo Count: "888"x3; ComicInfo Publisher: "DC"x433, "DC Comics"x3
+   CV linked:      vol 18058 "Detective Comics" 1937 DC Comics 883 issues; cached #0-881 (883); yearΔ 0; ratio 909/883 = 1.03; no judged range
+   CV per-file (v1): vol 18058 "Detective Comics" 1937 DC Comics 883 on 909/910 files · vol 42594 "Detective Comics" 2011 DC Comics 57 on 1/910 files
+   CV local rip:   (= linked) · 45453 "Detective Comics" 1955 Frew Publications 3 · 42281 "Detective Comics" 2001 Panini Verlag 8 · 91098 "Detective Comics" 2016 DC Comics 170 · 168759 "Detective Comics" 2017 Panini Brasil 13   (rip lookup)
+   GCD per-file:   methods numx874 · round2-seriesx7 ⚠  (⚠ copies a folder neighbour's series — verify); series 87 "Detective Comics" 1937-2011 DC [was ongoing series] 883 on 873/910 files · series 16502 "Detective Comics" [en-ca] 1948-1948 National Comics Publications of Canada Ltd [] 10 on 4/910 files · series 149680 "Detective Comics" [en-ph] 1974-1978 National Book Store [was ongoing series] 8 on 3/910 files · series 60830 "Detective Comics" 2011-? DC [ongoing series] 233 on 1/910 files
+   GCD dump:       (= per-file) · 67430 "Detective Comics" [en-gb] 1947-1947 Kosmos [] 1 · 32380 "Detective Comics" [en-ca] 1949-1949 Simcoe Publishing & Distribution [] 1 · 89405 "Detective Comics" [en-gb] 1950-? L. Miller & Son [] 8 · 70891 "Detective Comics" [en-au] 1955-1955 Frew Publications [] 3   (dump lookup)
+   bridges:        gcd 87 -> LOCG 102374 "Detective Comics" support 912 · gcd 16502 -> LOCG 102374 "Detective Comics" support 4 · gcd 149680 -> LOCG 102374 "Detective Comics" support 3
+
+== S103678 Geronimo Stilton  [tier B]   keys: Geronimo Stilton (2009)  years 2009-2017  19 files / 19 collections
+   split run: "Geronimo Stilton (2009)" run={"cv": 30524, "gcd": 62181} (new shelf from P-016) — seed the S line from these ids, then verify them
+   folders: [18] Papercutz\Geronimo Stilton · [1] Papercutz
+   files:   [109238] COL Geronimo Stilton v01 - Discovery of America The  HC Papercutz 2007 c2c (Brainiac48).cbz (65pp)
+            [109239] COL Geronimo Stilton v02 - The Secret of the Sphinx HC Papercutz 2009 (Brainiac.NW).cbr (64pp)
+            [109240] COL Geronimo Stilton v03 - The Coliseum Con HC Papercutz 2009 (Brainiac.NW).cbr (64pp)
+            [109241] COL Geronimo Stilton v04 - Following the Trail of Marco Polo (2010) (Papercutz) (Juvenile Vapors-DCP).cbr (58pp)
+            [109242] COL Geronimo Stilton v05 - The Great Ice Age (2010) (Juvenile Vapors-DCP).cbr (59pp)
+            [109243] COL Geronimo Stilton v06 - Who Stole the Mona Lisa (2010) (JuvenileVapors-DCP).cbr (59pp)
+            [109244] COL Geronimo Stilton v08 - Play It Again Mozart (2011) (JuvieVapors-DCP).cbr (59pp)
+            [109245] COL Geronimo Stilton v09 - The Weird Book Machine (2011) (JuvieVapors-DCP).cbr (59pp)
+            [109246] COL Geronimo Stilton v10 - Geronimo Stilton Saves the Olympics (2012) (JV-DCP).cbr (57pp) | [109247] COL Geronimo Stilton v11 - We'll Always Have Paris (2012) (JV-DCP).cbr (57pp)
+            [109248] COL Geronimo Stilton v12 - The First Samurai (2013) (JV-DCP).cbr (57pp) | [109249] COL Geronimo Stilton v13 - The Fastest Train in the West (2013) (JV-DCP).cbr (59pp)
+            [109250] COL Geronimo Stilton v14 - The First Mouse on the Moon (2014) (JV-DCP).cbr (57pp) | [109251] COL Geronimo Stilton v15 - All for Stilton, Stilton for All (2014) (JV-DCP).cbr (59pp)
+            [109252] COL Geronimo Stilton v16 - Lights, Camera, Stilton! (2015) (JV-DCP).cbr (59pp) | [109253] COL Geronimo Stilton v17 - The Mystery of the Pirate Ship (2016) (JV-DCP).cbr (58pp)
+            [109254] COL Geronimo Stilton v18 - First to the Last Place on Earth (2016) (jv-DCP).cbr (61pp) | [109255] COL Geronimo Stilton v19 - Lost in Translation (2017) (jv-DCP).cbr (59pp)
+            [109310] COL The Discovery of America HC Papercutz 2007 c2c (Brainiac48).cbr (64pp)
+   GCD says: [109240] gcd_reprint 898658: s62181 Geronimo Stilton (2009) #4 [1 story]
+             [109253] gcd_reprint 1760016: s74183 Thea Stilton (2013) #5 [1 story]
+   CV linked:      vol 30524 "Geronimo Stilton" 2009 NBM 19 issues; cached #1-19 (19); yearΔ 0; ratio 0/19; no judged range
+   CV local rip:   (= linked) · 108629 "Geronimo Stilton" 2007 Bakermat 1 issue 659325   (rip lookup)
+   GCD dump:       62181 "Geronimo Stilton" 2009-? NBM [] 19 · 225647 "Geronimo Stilton" [hu] 2010-2017 Cartaphilus [] 10 · 53765 "Geronimo Stilton" [nl-be] 2007-? Bakermat [] 6 · 53766 "Geronimo Stilton" [nl-be] 2007-? Bakermat [] 6   (dump lookup)
+
+== S7408 Geronimo Stilton and the Kingdom of Fantasy  [tier B]   keys: Geronimo Stilton and the Kingdom of Fantasy  years 2009-2012  11 files / 0 collections
+   split: the KEPT half of the P-016 split — moved out -> S103678 "Geronimo Stilton (2009)"; re-identify what stayed
+   folders: [11] Graphic Novels\_Schoolastic & Graphix\Geronimo Stilton\Geronimo Stilton and the Kingdom of Fantasy (2009)
+   files:   [26884] Geronimo Stilton and the Kingdom of Fantasy 01 - The Kingdom of Fantasy (2009) (jv-DCP).cbr (297pp)
+            [26885] Geronimo Stilton and the Kingdom of Fantasy 02 - The Quest for Paradise (2010) (jv-DCP).cbr (267pp)
+            [26886] Geronimo Stilton and the Kingdom of Fantasy 03 - The Amazing Voyage (2011) (jv-DCP).cbr (288pp)
+            [26887] Geronimo Stilton and the Kingdom of Fantasy 04 - The Dragon Prophecy (2012) (jv-DCP).cbr (302pp)
+            [26888] Geronimo Stilton and the Kingdom of Fantasy 05 - The Volcano of Fire (2013) (jv-DCP).cbr (301pp)
+            [26889] Geronimo Stilton and the Kingdom of Fantasy 06 - The Search for Treasure (2014) (jv-DCP).cbr (284pp)
+            [26890] Geronimo Stilton and the Kingdom of Fantasy 07 - The Enchanted Charms (2015) (jv-DCP).cbr (281pp)
+            [26891] Geronimo Stilton and the Kingdom of Fantasy 08 - The Hour of Magic (2016) (jv-DCP).cbr (288pp)
+            [26892] Geronimo Stilton and the Kingdom of Fantasy 09 - The Wizard's Wand (2016) (jv-DCP).cbr (279pp)
+            [26893] Geronimo Stilton and the Kingdom of Fantasy 10 - The Ship of Secrets (2017) (jv-DCP).cbr (275pp)
+            [26894] Geronimo Stilton and the Kingdom of Fantasy 11 - The Guardian of the Realm (2018) (jv-DCP).cbr (291pp)
+   ours:    ladder 1-11
+   CV per-file (v1): vol 30524 "Geronimo Stilton" 2009 NBM 19 on 11/11 files
+   CV local rip:   (= per-file) · 108629 "Geronimo Stilton" 2007 Bakermat 1 issue 659325 (via CV name "Geronimo Stilton")   (rip lookup)
+   GCD per-file:   series 62181 "Geronimo Stilton" 2009-? NBM [] 19 on 1/11 files; methods fulldump-rematchx1
+   GCD dump:       (= per-file) · 225647 "Geronimo Stilton" [hu] 2010-2017 Cartaphilus [] 10 (via CV name "Geronimo Stilton") · 53765 "Geronimo Stilton" [nl-be] 2007-? Bakermat [] 6 (via CV name "Geronimo Stilton") · 53766 "Geronimo Stilton" [nl-be] 2007-? Bakermat [] 6 (via CV name "Geronimo Stilton")   (dump lookup)
+   bridges:        gcd 62181 -> LOCG 115976 "Geronimo Stilton Vol. 8: Play it Again, Mozart HC" support 10 · gcd 62181 -> OL /works/OL17532875W "Geronimo Stilton graphic novel -- 11" isbnSupport 10
+
+== S16089 Spider-Man: Death of the Stacys  [tier B]   keys: Spider-Man - Death of the Stacys  years 2007-2007  2 files / 0 collections
+   folders: [1] Marvel\_Spider-Man\__Amazing Spider-Man\00 TPBs · [1] _Marvel Major Event Chronology (digital)\1973.06 - Spider-man - The Death of Gwen Stacy
+   files:   [94003] Spider-Man - Death of the Stacys (2007) (Digital) (F) (Kileko-Empire).cbz (157pp) | [116306] Spider-Man - Death of the Stacys (2007) (Digital) (Kileko-Empire).cbr (145pp)
+   ours:    judged item 94003 #88-122 conf 0.97; ComicInfo Series: "Spider-Man"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 33398 "Spider-Man: Death of the Stacys" 2007 Marvel 1 issues issue 216545; cached #1-1 (1); yearΔ 0; ratio 0/1; 0 of 1 judged fit
+   CV candidates:  (= linked) · 43375 "Ultimate Comics Spider-Man: Death of Spider-Man" 2011 Marvel 1 issue 297574 s63 · 31700 "Spider-Man: Death and Dating" 2009 Marvel 1 issue 198661 s52 · 26559 "Marvel Mangaverse: Spider-Man" 2002 Marvel 1 issue 158826 s43 · 80333 "Marvel Megamorphs - Spider-Man" 2005 Marvel 1 issue 480822 s43 · 31431 "Spider-Man: Death and Destiny" 2000 Marvel 3 s40 · 115545 "Marvel Action: Spider-Man" 2018 Marvel 12 s28   (v1 search)
+   CV local rip:   (= linked) · 31700 "Spider-Man: Death and Dating" 2009 Marvel 1 issue 198661 (via CV candidate name "Spider-Man: Death and Dating") · 43375 "Ultimate Comics Spider-Man: Death of Spider-Man" 2011 Marvel 1 issue 297574 (via CV candidate name "Ultimate Comics Spider-Man: Death of Spider-Man")   (rip lookup)
+   GCD dump:       27784 "Spider-Man: Death of the Stacys" 2007-2007 Marvel [] 1 · 221370 "Spider-Man: Death of the Stacys" 2012-2012 Marvel [] 1 · 59906 "Spider-Man: Death and Dating" 2009-2009 Marvel [] 1 (via CV candidate name "Spider-Man: Death and Dating") · 223095 "Spider-Man: Death and Dating" 2009-2009 Marvel [] 1 (via CV candidate name "Spider-Man: Death and Dating") · 223770 "Ultimate Comics Spider-Man: Death of Spider-Man" 2011-2011 Marvel [] 1 (via CV candidate name "Ultimate Comics Spider-Man: Death of Spider-Man")   (dump lookup)
+
+== S103779 Spider-Man: One Moment in Time (2011)  [tier B]   keys: Spider-Man: One Moment in Time (2011)  years 2011-2011  1 files / 0 collections
+   folders: [1] Marvel\_Spider-Man\_Misc Trades
+   files:   [93755] Spider-Man - One Moment In Time (2011) (Digital) (Kileko-Empire).cbz (155pp)
+   ours:    judged item 93755 #638-641 conf 0.97; ComicInfo Series: "Spider-Man"x1; ComicInfo Publisher: "Marvel"x1
+   CV per-file (v1): vol 43261 "Spider-Man" 2000 Panini France 149 on 1/1 files
+   CV local rip:   114411 "Spider-Man" 2011 Egmont Estonia 2 (via CV name "Spider-Man") · 48892 "Spider-Man" 2012 Panini Verlag 1 issue 335638 (via CV name "Spider-Man") · 133121 "Spider-Man" 2012 Panini France 12 (via CV name "Spider-Man") · 87487 "Spider-Man" 2013 Panini Verlag 36 (via CV name "Spider-Man") · 83666 "Spider-Man" 2015 Panini France 11 (via CV name "Spider-Man") · 132425 "Spider-Man" 2007 Bladkompaniet A.S. 27 (via CV name "Spider-Man")   (rip lookup)
+   GCD dump:       75393 "Spider-Man: One Moment in Time" 2011-2011 Marvel [] 1 (via our own name without the filing suffix "Spider-Man: One Moment in Time") · 75523 "Spider-Man" [es-ar] 2011-2013 Ovni Press [] ? (via CV name "Spider-Man") · 182457 "Spider-Man" [et-ee] 2011-2011 Egmont Estonia [] 2 (via CV name "Spider-Man") · 9779 "Spider-Man" [sv-se] 2010-2013 Egmont [] 24 (via CV name "Spider-Man") · 67090 "Spider-Man" [fr] 2012-2013 Panini France [] 12 (via CV name "Spider-Man") · 67151 "Spider-Man: One Moment in Time" 2010-2010 Marvel [] 1 (via our own name without the filing suffix "Spider-Man: One Moment in Time")   (dump lookup)
