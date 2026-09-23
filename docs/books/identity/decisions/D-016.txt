@@ -1,0 +1,451 @@
+# D-016 — tier D, 120 shelves. The batch is dominated by ONE shape: a 1970s-80s underground-comix album
+# line whose ripper numbered every issue "TNN" and gave each issue its OWN shelf. Zap Comix (16 shelves),
+# the Fabulous Furry Freak Brothers (14), Fat Freddy's Cat (7), Hup (4), Mystic Funnies (3), Snatch (3),
+# Underground Classics (3), Fat Freddy's Comics & Stories (2), Big Ass Comics (2) — 54 of the 120 shelves
+# are 9 comics. Every one of those clusters resolved cleanly because BOTH catalogs index the run and the
+# GCD first-printing PAGE COUNT matched our rip issue-for-issue (52pp vs our 52-53pp, 36pp vs our 35-37pp).
+# Each cluster takes the run's ids on every member shelf, with the lowest-numbered shelf as the survivor
+# and `F merge-with=` on the rest — the tier-D "one issue of a long run is always a merge" rule at scale.
+# The packet's "CV candidates" block was useless throughout (it probes the parsed key, so "Zap Comix T02"
+# reached "Comix" in Norwegian and "Hup T2" reached "T2: Nuclear Twilight"); every id below came from a
+# re-probe of the file's own title plus the GCD issue table.
+# The other half is 2020-2025 Oni Press / self-published / webcomic singletons past the static rip's
+# horizon: 30 shelves took R + provider-missing with nothing in either catalog, which is the normal
+# tier-D verdict, not a deferral.
+
+# ── Misc\Monkey vs. Lemur
+S 12292 cv=63742 gcd=- 0.9 | CV 63742 "Monkey vs Lemur" (Silent Devil Productions 2006, count 1, issue 411907) carries our file's own title, publisher and year for the single 41pp 2006 file; a GCD probe for "Monkey vs Lemur" returns zero rows and the dump's only near name is "Monkey vs. Robot" (Top Shelf 2000), a different comic
+F 12292 provider-missing | GCD indexes no Silent Devil "Monkey vs Lemur" at all; the packet's "Infinite Crisis" hits are the parsed key's "Crisis With Infinite Critters" reaching DC's event
+I 106882 cv=411907 gcd=- 0.9 | the one-shot's own record: issue 411907 is CV volume 63742's only issue, our 41pp 2006 CookieMonster-DCP rip is the whole of it
+
+# ── Misc\Monsters of Metal (2022) (Opus) — one Opus Comics anthology, two issues, two shelves
+S 12316 cv=- gcd=203061 1.0 | the file's own EAN-13 0085930100723 is the UPC core of GCD 203061's issue barcodes (08593010072300111 / …00121 / …00141 / …00171), and ComicInfo Publisher "Opus Comics" is that row's publisher — GCD 203061 "Monsters of Metal" 2022 Opus Comics is the series; ComicVine indexes no Monsters of Metal volume at all
+F 12316 provider-missing | no ComicVine volume for Opus Comics' Monsters of Metal; the rip's "Krampus!" hits are Image's 2013 mini
+I 106885 cv=- gcd=s203061 0.9 | "Krampus in Concert" is one issue of GCD 203061, but the seven issue rows there carry no titles and all read 44pp, so the claim stays at the series rather than guess which row our 30pp rip is
+S 12317 cv=- gcd=203061 1.0 | the same series: this file's EAN-13 is again 0085930100723, the UPC core of GCD 203061's issue barcodes, and ComicInfo says Opus Comics; "My Bloody Valentine" is a second issue of that 2022 anthology, not a second comic
+F 12317 merge-with=12316 | S12316 ("Krampus in Concert") and this shelf are two issues of one Opus Comics series, GCD 203061 — the ripper's subtitle-per-file naming split one comic into two shelves
+I 106886 cv=- gcd=s203061 0.9 | "My Bloody Valentine" is one issue of GCD 203061; the row titles are blank and all seven read 44pp against our 31pp rip, so the claim stays at the series
+
+# ── Misc\Necroscope
+S 12745 cv=9351 gcd=10133 0.95 | CV 9351 "Necroscope" (Caliber Comics 1997, count 2) and GCD 10133 "Necroscope" (Caliber Press 1997-1998, count 2) agree on publisher, year and a two-issue count, GCD's #1/#2 are 36pp against our 29pp and 30pp rips, and our ladder 1-2 is the whole run; the Malibu 1992 "Necroscope" (CV 54058 / GCD 27230, count 5) is the earlier adaptation
+S 12746 cv=24336 gcd=56668 0.95 | CV 24336 "Necroscope Book II: Wamphyri" (Malibu 1993, count 3) and GCD 56668 (Malibu 1993-1994, count 3) agree on title, publisher, year and count, and GCD's #1-#3 are 36pp against our 27pp and 26pp files; our ladder is 1-2 of 3
+F 12746 partial-rip | this shelf holds #1 and #2 of the three-issue mini; #3 is on the sibling shelf S12747
+F 12746 merge-with=12747 | B-064 landed S12747 on the same pair (cv=24336 / gcd=56668) for the mini's #3, the third file of this Misc\Necroscope folder — one three-issue comic split into two shelves by the ripper's "II - Wamphryi 0N" naming
+
+# ── Misc\Nexus
+S 12900 cv=- gcd=187634 0.9 | GCD 187634 "Nexus: Triplets" (Splatto Comics 2021, count 1) is the only record of this book in either catalog and carries our file's exact title; ComicVine's Nexus volumes are the Capital/First/Dark Horse/Rude Dude runs and none is named Triplets, so cv=- rather than the parent run
+F 12900 provider-missing | the ComicVine rip holds no "Nexus: Triplets" volume; our file is the 2024 Preview Edition of that 2021 book, a printing neither catalog indexes
+I 106921 cv=- gcd=2421313 0.9 | the book's own record: issue 2421313 is GCD 187634's only issue; it carries no page count so our 28pp Preview-Edition rip cannot be checked against it
+S 12899 cv=139487 gcd=176883 0.95 | CV 139487 "Nexus: The Newspaper Strips" (Dark Horse 2021, count 1, issue 888883 named "Volume One: The Coming of Gourmando") and GCD 176883 (Dark Horse 2021, count 1, issue at 192pp with ISBN 9781506714363) agree on title, publisher, year, count and the volume subtitle our filename carries; our 201pp rip is within 9pp of the indexed 192pp
+I 106919 cv=888883 gcd=2268823 isbn=9781506714363 0.95 | the book itself: CV issue 888883 "Volume One: The Coming of Gourmando" and GCD issue 2268823, 192pp / ISBN 9781506714363, against our 201pp KS-edition rip
+N 12899 volume 2 is a different publisher's line — CV 158056 / GCD 212599 "Nexus: The Newspaper Strips Volume 2 - Battle for Thuneworld" (Rude Dude Productions 2024, count 5) — and is not on this shelf
+
+# ── Misc\Night of the Were-Elk (2024) (Creepy Ink)
+R 12935 | "Night of the Were-Elk 01 (of 06) (2024)" from Creepy Ink is in neither catalog: exact and substring probes of "Were-Elk" and "Night of the Were-Elk" return zero rows in the ComicVine rip and zero in the GCD dump, and the packet's candidates ("The Night" Titan 2019, "Elk Mountain" Valor 2019) are different comics of other publishers
+F 12935 provider-missing | a 2024 small-press mini past the static rip's and the dump's horizon; the filename's "(of 06)" is the only length evidence we have
+
+# ── Misc\Nobody Can Eat 50 Eggs
+S 13033 cv=85375 gcd=- 0.9 | CV 85375 "Nobody Can Eat 50 Eggs" (Mullet Turtle Comics 2015, count 10 in the rip) carries our folder's exact title and its count of 10 sits just above our nine files v1-v9 (2013-2016); a GCD probe for "Nobody Can Eat 50 Eggs" returns zero rows, so gcd=-
+F 13033 provider-missing | GCD indexes no Mullet Turtle Comics series of this name; the dump's only "Can Can" hits are Editorial Bruguera's Spanish weeklies
+N 13033 the label-ambiguous flag is right: v1-v9 are single issues, not collections, and only v2 (93pp) is marked COL — a double-size issue, not a trade; the ladder reads "50" because the parser took the title's own number
+
+# ── Misc\OZ — Richard Neville's London underground magazine, 1967-1973
+R 13118 | this is OZ, the London counterculture magazine (48 issues 1967-1973), plus its loose poster and insert scans: neither catalog indexes it. `gcd_series` rows named exactly "Oz" are Caliber's 1994 comic (5131/5391), Transfuzion 2008 (211239), Clair de Lune (152222), Caliber 2018 (120531) and Panini Brasil (192357); no GCD publisher named Oz Publications exists and the ComicVine rip's only "Oz" volumes are Caliber's and the Marvel/Antarctic Wizard-of-Oz adaptations
+F 13118 provider-missing | a magazine, not a comic series; the twelve numbers naming more than one file are the 1pp cover/poster/insert PDFs (OZ11a stickers cover, hendrixfront, joplin, rupert1 …) filed beside each issue, residue and not a second run
+
+# ── Misc\P. Craig Russell Library of Opera Adaptations
+S 68234 cv=58688 gcd=71251 0.9 | CV 58688 "P. Craig Russell Library of Opera Adaptations" (NBM 2003, count 3) and GCD 71251 (NBM 2003-2004, count 3) agree on title, publisher, years and count, and GCD's #2 140pp / #3 148pp bracket our 132pp and 145pp files; 0.9 because GCD mints the NBM twin — 210789, same name and years, the $24.95 hardcover round against 71251's $17.95 paperback
+I 107039 cv=391807 gcd=1052385 isbn=1561633739 0.9 | Vol. 02: CV issue 391807 (#2 of volume 58688, October 2003) and GCD issue 1052385, 140pp / ISBN 1-56163-373-9, against our 132pp c2c rip; the hardcover twin row's #2 is 2621182
+I 107040 cv=392002 gcd=1052386 isbn=9781561633890 0.9 | Vol. 03: CV issue 392002 (#3 of volume 58688) and GCD issue 1052386, 148pp / ISBN 9781561633890, against our 145pp rip — 3pp apart, the closest of the two GCD rounds (the hardcover twin's #3 is 152pp, 2621183)
+
+# ── Misc\Phoibos (2018)
+R 13815 | "Phoibos 001 (2018) (WebComic)" is in neither catalog: exact and substring probes of "Phoibos" return zero rows in both the ComicVine rip and the GCD dump, and every packet candidate is an unrelated 2018 annual or FCBD book matched only on the year in the parsed key
+F 13815 provider-missing | a self-published 2018 webcomic; ComicVine and GCD index neither it nor its publisher
+
+# ── Misc\Punchline (2017) (Antarctic Press)
+S 20328 cv=165194 gcd=218982 0.9 | CV 165194 "Tomorrow Girl x PunchLine: No Tomorrows" (Antarctic Press 2024, count 1, issue 1117045) and GCD 218982 (Antarctic Press 2024, count 1) agree on title, publisher, year and count, and ComicInfo says Series "Tomorrow Girl x Punchline", Volume 2024, Count 1, Publisher Antarctic Press; 0.9 because GCD carries the twin 218901 of the same name and year under its Indy Comics brand group
+I 107105 cv=1117045 gcd=2688917 0.9 | the graphic novel itself: CV issue 1117045 is volume 165194's only issue and GCD issue 2688917 is 218982's only issue; neither row carries a page count to check against our 49pp LeDuch rip
+S 14180 cv=- gcd=213246 0.9 | GCD 213246 "Punchline Swimsuit Issue Winter Edition" (Antarctic Press 2024, count 1) is the only 2024 Punchline swimsuit record in either catalog, and our ComicInfo asserts Series "Punchline Swimsuit Issue", Volume 2024, Count 1, Publisher Antarctic Press — the publisher, year and count all agree; 0.9 because GCD's name adds "Winter Edition" which our file does not
+F 14180 provider-missing | the ComicVine rip has no Punchline swimsuit volume; its "PunchLine" hits are the 2017 Lone Star, 2018 Antarctic and 2020 DC series
+I 107976 cv=- gcd=2639415 0.9 | the one-shot's own record: issue 2639415 is GCD 213246's only issue, barcode 61072116053400111; it carries no page count to check against our 44pp rip
+
+# ── Misc\R. Crumb — one album per shelf, all of them real underground comics with records in both legs
+S 2448 cv=29440 gcd=15752 0.9 | CV 29440 "Best Buy Comics" (1979, count 1, issue 181708) and GCD 15752 "Best Buy Comics" (Apex Novelties 1979-1979, count 1, 36pp) agree on title, year and a count of one, and GCD's 36pp is exactly our file's page count; 0.9 because the publisher columns disagree — CV says Last Gasp, GCD says Apex for 1979 and files Last Gasp's 1988 reprint as its own row 15747 (also 36pp, ISBN 0-86719-197-X)
+I 107111 cv=181708 gcd=264238 0.9 | the book itself: CV issue 181708 is volume 29440's only issue and GCD issue 264238 is the February 1979 Apex printing at 36pp, matching our 36pp rip; the 1988 Last Gasp printing is GCD issue 264230
+S 2525 cv=35860 gcd=15753 0.95 | CV 35860 "Big Ass Comics" (Rip Off Press 1969, count 2) and GCD 15753 (Rip Off Press 1969-1971, count 2) agree on title, publisher, start year and count, GCD's #1 and #2 are 28pp each against our 29pp files, and the ripper's T1/T2 are those two issues
+I 107113 cv=237182 gcd=264239 0.95 | T1 is issue #1: CV issue 237182 (July 1969) and GCD issue 264239 (June 1969, 28pp) against our 29pp rip
+S 2526 cv=35860 gcd=15753 0.95 | the same two-issue comic: T2 is Big Ass Comics #2, CV issue 237226 (September 1971) inside volume 35860 and GCD issue 264240 (August 1971, 28pp) inside series 15753, against our 29pp file
+F 2526 merge-with=2525 | S2525 (T1) and this shelf are issues #1 and #2 of one 2-issue Rip Off Press comic; the ripper's "T1"/"T2" suffix is what split them
+I 107114 cv=237226 gcd=264240 0.95 | T2 is issue #2: CV issue 237226 and GCD issue 264240 at 28pp against our 29pp rip
+S 5394 cv=48801 gcd=17732 0.95 | CV 48801 "Despair" (Print Mint 1969, count 1, issue 335435) and GCD 17732 "Despair" (The Print Mint Inc 1969-1969, count 1, 28pp) agree on title, publisher, year and a count of one, and GCD's 28pp is our 29pp file; the ripper's "T1" is an ordinal, not a second issue — Despair ran once
+I 107117 cv=335435 gcd=290851 0.95 | the book itself: CV issue 335435 is volume 48801's only issue and GCD issue 290851 is the 1969 first printing at 28pp against our 29pp rip; GCD issue 2107886 is the 1976 second printing
+S 6064 cv=48955 gcd=53030 0.95 | CV 48955 "El Perfecto Comics" (Print Mint 1973, count 1, issue 335889) and GCD 53030 (The Print Mint Inc 1973-1973, count 1, 36pp) agree on title, publisher, year and count, and GCD's 36pp is exactly our file's page count
+I 107118 cv=335889 gcd=796363 0.95 | the book itself: CV issue 335889 and GCD issue 796363, the 1973 first printing at 36pp against our 36pp rip (GCD 2108537 is the 1975 printing)
+R 12425 | "Mr. Snoid On Top - Robert Crumb" (19pp) matches no record in either catalog. The only Snoid comic book indexed anywhere is "Snoid Comics" (CV 47421 / GCD 17179, Kitchen Sink 1980), whose three printings all read 36pp — arithmetic refuses our 19pp file; `gcd_issue.title` and `cv_iss.name` LIKE '%Snoid%' reach only The Complete Crumb Comics #13 "The Season of the Snoid" and a Spanish Cúpula volume, neither of which this is
+F 12425 provider-missing | a Crumb minicomic or booklet neither catalog holds under this title; "Snoid Comics" is rejected on page count
+S 14728 cv=55184 gcd=53144 0.95 | CV 55184 "R. Crumb's Comics and Stories" (Rip Off Press 1969, count 1, issue 375984) and GCD 53144 (Rip Off Press 1969-1969, count 1, 12pp) agree on title, publisher, year and a count of one, and GCD's 12pp is our 13pp file — this comic really was that thin
+I 107148 cv=375984 gcd=785284 0.95 | the book itself: CV issue 375984 is volume 55184's only issue and GCD issue 785284 is the June 1969 printing at 12pp against our 13pp rip
+S 68129 cv=34651 gcd=34754 0.9 | the LINE is the identity: CV 34651 "The Complete Crumb Comics" (Fantagraphics 1987, count 17) and GCD 34754 (Fantagraphics 1987-2005, 18 rows covering #1-#17 plus an expanded fourth printing of #1) agree on title, publisher, start year and a seventeen-volume span; 0.9 because GCD mints the twin 56304 of the same name and years at count 17, and because our single file names no volume
+F 68129 merge-with=4419 | B-028 landed S4419 on the same line (cv=34651 / gcd=34754) for volumes 1, 2, 4-7 and 9-17 of the same Misc\R. Crumb folder, with volumes 3 and 8 on its sibling S4425 — so all seventeen numbers are already held and this unnumbered file is a second rip of one of them
+N 107151 no-record | the one 132pp file is called only "The Complete Crumb.cbr" — no volume number, no year. GCD 34754's volumes read 128pp (#13, #14, #16), 133.88pp (#10 1997 printing), 136pp (#15) and 141.92pp (#12), so four candidates sit within 6pp of 132 and none can be picked; the volume needs the book opened, which this pass does not do
+
+# ── Misc\R. Crumb\Robert Crumb & Others - Snatch Comics
+S 15811 cv=47284 gcd=26141 0.95 | CV 47284 "Snatch Comics" (Apex Novelties 1968, count 3) and GCD 26141 (Apex Novelties 1968-1969, count 3) agree on title, publisher, start year and count, all three GCD issues read 36pp against our three 36pp files, and the ripper's T1/T2/T3 are #1/#2/#3
+I 107122 cv=324490 gcd=370711 0.95 | T1 is issue #1: CV issue 324490 (October 1968) and GCD issue 370711 (1968-10, 36pp) against our 36pp rip
+S 15812 cv=47284 gcd=26141 0.95 | the same three-issue comic: T2 is Snatch Comics #2, CV issue 324491 (January 1969) in volume 47284 and GCD issue 370712 (1969-01, 36pp) in series 26141, against our 36pp file
+F 15812 merge-with=15811 | S15811 (T1), this shelf (T2) and S15813 (T3) are the three issues of one Apex Novelties comic
+I 107123 cv=324491 gcd=370712 0.95 | T2 is issue #2: CV issue 324491 and GCD issue 370712 at 36pp against our 36pp rip
+S 15813 cv=47284 gcd=26141 0.95 | the same comic again: T3 is Snatch Comics #3, CV issue 324492 (August 1969) and GCD issue 370713 (1969-08, 36pp), the last of the three-issue Apex run
+F 15813 merge-with=15811 | third issue of the one comic S15811 carries
+I 107124 cv=324492 gcd=370713 0.95 | T3 is issue #3: CV issue 324492 and GCD issue 370713 at 36pp against our 36pp rip
+
+# ── Misc\R. Crumb\Robert Crumb & Others - Zap Comics - v0-15 — ONE comic, sixteen shelves
+S 22749 cv=30068 gcd=85876 0.9 | CV 30068 "Zap Comix" (1968, count 17, cached #0-#16) is the single spanning volume, and GCD 85876 "Zap Comix" (Last Gasp 1982-2005) is the only GCD row that covers our whole T00-T15 ladder — its #0-#15 page counts (28, 28, 52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 52) match our sixteen files (29, 28, 52, 52, 52, 53, 52, 52, 52, 51, 52, 53, 52, 52, 53, 52) number for number; 0.9 because GCD splits the run by publisher era and this row is the Last Gasp reprint line for #0-#9
+N 22749 the earlier GCD eras of the same run are 1892 (Apex Novelties 1967-1969, #0-#2), 85877 (The Print Mint 1969-1978, #0-#9) and 85872 (Print Mint; Last Gasp 1979-1981, #0/#1/#9); 85876 is taken because it alone spans #0-#15, and our unlabelled T00-T15 rips name no printing
+I 107125 cv=222940 gcd=1307779 0.9 | T00 is Zap #0: CV issue 222940 and GCD issue 1307779 (28pp) against our 29pp rip; the printing is unknown so this is the Last Gasp row
+S 36354 cv=30068 gcd=85876 0.9 | T01 is Zap Comix #1: CV issue 185244 inside volume 30068 and GCD issue 1307780 (28pp) inside series 85876, against our 28pp file — one issue of the sixteen-issue run S22749 carries
+F 36354 merge-with=22749 | one issue of one comic; the ripper's "T01" suffix made it a shelf
+I 107126 cv=185244 gcd=1307780 0.9 | Zap #1, CV issue 185244 / GCD issue 1307780 at 28pp against our 28pp rip
+S 47130 cv=30068 gcd=85876 0.9 | T02 is Zap Comix #2: CV issue 185245 and GCD issue 1307781 (52pp, ISBN 086719183X) against our 52pp file — the same run as S22749
+F 47130 merge-with=22749 | one issue of the Zap Comix run
+I 107127 cv=185245 gcd=1307781 0.9 | Zap #2, CV issue 185245 / GCD issue 1307781 at 52pp against our 52pp rip
+S 47131 cv=30068 gcd=85876 0.9 | T03 is Zap Comix #3: CV issue 185246 and GCD issue 1307782 (52pp) against our 52pp file — the same run as S22749
+F 47131 merge-with=22749 | one issue of the Zap Comix run
+I 107128 cv=185246 gcd=1307782 0.9 | Zap #3, CV issue 185246 / GCD issue 1307782 at 52pp against our 52pp rip
+S 47132 cv=30068 gcd=85876 0.9 | T04 is Zap Comix #4: CV issue 185255 and GCD issue 1307783 (52pp, ISBN 0867191856) against our 52pp file — the same run as S22749
+F 47132 merge-with=22749 | one issue of the Zap Comix run
+I 107129 cv=185255 gcd=1307783 0.9 | Zap #4, CV issue 185255 / GCD issue 1307783 at 52pp against our 52pp rip
+S 47133 cv=30068 gcd=85876 0.9 | T05 is Zap Comix #5: CV issue 185256 and GCD issue 1307784 (52pp) against our 53pp file — the same run as S22749
+F 47133 merge-with=22749 | one issue of the Zap Comix run
+I 107130 cv=185256 gcd=1307784 0.9 | Zap #5, CV issue 185256 / GCD issue 1307784 at 52pp against our 53pp rip
+S 47134 cv=30068 gcd=85876 0.9 | T06 is Zap Comix #6: CV issue 185306 and GCD issue 1307785 (52pp, ISBN 0867191872) against our 52pp file — the same run as S22749
+F 47134 merge-with=22749 | one issue of the Zap Comix run
+I 107131 cv=185306 gcd=1307785 0.9 | Zap #6, CV issue 185306 / GCD issue 1307785 at 52pp against our 52pp rip
+S 47135 cv=30068 gcd=85876 0.9 | T07 is Zap Comix #7: CV issue 185307 and GCD issue 1307786 (52pp, ISBN 0867191880) against our 52pp file — the same run as S22749
+F 47135 merge-with=22749 | one issue of the Zap Comix run
+I 107132 cv=185307 gcd=1307786 0.9 | Zap #7, CV issue 185307 / GCD issue 1307786 at 52pp against our 52pp rip
+S 47136 cv=30068 gcd=85876 0.9 | T08 is Zap Comix #8: CV issue 185308 and GCD issue 1307787 (52pp, ISBN 0867191899) against our 52pp file — the same run as S22749
+F 47136 merge-with=22749 | one issue of the Zap Comix run
+I 107133 cv=185308 gcd=1307787 0.9 | Zap #8, CV issue 185308 / GCD issue 1307787 at 52pp against our 52pp rip
+S 47137 cv=30068 gcd=85876 0.9 | T09 is Zap Comix #9: CV issue 185327 and GCD issue 1307788 (52pp, January 1980) against our 51pp file — the same run as S22749
+F 47137 merge-with=22749 | one issue of the Zap Comix run
+I 107134 cv=185327 gcd=1307788 0.9 | Zap #9, CV issue 185327 / GCD issue 1307788 at 52pp against our 51pp rip
+S 47138 cv=30068 gcd=85876 0.9 | T10 is Zap Comix #10: CV issue 185328 and GCD issue 202443 (52pp, December 1982, ISBN 0867191503) against our 52pp file — the same run as S22749, and #10 is where Last Gasp becomes the original publisher
+F 47138 merge-with=22749 | one issue of the Zap Comix run
+I 107135 cv=185328 gcd=202443 0.9 | Zap #10, CV issue 185328 / GCD issue 202443 at 52pp against our 52pp rip
+S 47139 cv=30068 gcd=85876 0.9 | T11 is Zap Comix #11: CV issue 232880 and GCD issue 202444 (52pp, February 1985, ISBN 0-86719-182-1) against our 53pp file — the same run as S22749
+F 47139 merge-with=22749 | one issue of the Zap Comix run
+I 107136 cv=232880 gcd=202444 0.9 | Zap #11, CV issue 232880 / GCD issue 202444 at 52pp against our 53pp rip
+S 47140 cv=30068 gcd=85876 0.9 | T12 is Zap Comix #12: CV issue 185335 and GCD issue 202445 (52pp, 1989, ISBN 0-86719-190-2) against our 52pp file — the same run as S22749
+F 47140 merge-with=22749 | one issue of the Zap Comix run
+I 107137 cv=185335 gcd=202445 0.9 | Zap #12, CV issue 185335 / GCD issue 202445 at 52pp against our 52pp rip
+S 47141 cv=30068 gcd=85876 0.9 | T13 is Zap Comix #13: CV issue 232881 and GCD issue 202446 (52pp, 1994) against our 52pp file — the same run as S22749
+F 47141 merge-with=22749 | one issue of the Zap Comix run
+I 107138 cv=232881 gcd=202446 0.9 | Zap #13, CV issue 232881 / GCD issue 202446 at 52pp against our 52pp rip
+S 47142 cv=30068 gcd=85876 0.9 | T14 is Zap Comix #14: CV issue 232882 and GCD issue 202447 (52pp, 1998, ISBN 0-86719-266-6) against our 53pp file — the same run as S22749
+F 47142 merge-with=22749 | one issue of the Zap Comix run
+I 107139 cv=232882 gcd=202447 0.9 | Zap #14, CV issue 232882 / GCD issue 202447 at 52pp against our 53pp rip
+S 47143 cv=30068 gcd=85876 0.9 | T15 is Zap Comix #15: CV issue 232883 and GCD issue 371672 (52pp, 2005, ISBN 0867196351) against our 52pp file — the last issue our rip holds of the run S22749 carries (CV's #16 of 2016 is not on disk)
+F 47143 merge-with=22749 | one issue of the Zap Comix run
+I 107140 cv=232883 gcd=371672 0.9 | Zap #15, CV issue 232883 / GCD issue 371672 at 52pp against our 52pp rip
+
+# ── Misc\R. Crumb\Robert Crumb - Hup Comics — one 4-issue comic, four shelves
+S 9153 cv=39526 gcd=16919 0.95 | CV 39526 "Hup" (Last Gasp 1986, count 4) and GCD 16919 "Hup" (Last Gasp 1986-1992, count 4) agree on title, publisher, start year and count, all four GCD issues read 36pp against our four 37pp files, and T1-T4 are #1-#4
+I 107141 cv=267196 gcd=276206 0.95 | T1 is Hup #1: CV issue 267196 and GCD issue 276206 (May 1987, 36pp) against our 37pp rip
+S 9154 cv=39526 gcd=16919 0.95 | the same four-issue comic: T2 is Hup #2, CV issue 267198 (April 1987) in volume 39526 and GCD issue 276207 (July 1987, 36pp) in series 16919, against our 37pp file
+F 9154 merge-with=9153 | S9153, this shelf, S9155 and S9156 are the four issues of one Last Gasp comic
+I 107142 cv=267198 gcd=276207 0.95 | T2 is Hup #2: CV issue 267198 / GCD issue 276207 at 36pp against our 37pp rip
+S 9155 cv=39526 gcd=16919 0.95 | T3 is Hup #3: CV issue 267199 (November 1989) and GCD issue 276208 (November 1989, 36pp, ISBN 0867192038) against our 37pp file — the same run as S9153
+F 9155 merge-with=9153 | third issue of the one Hup comic
+I 107143 cv=267199 gcd=276208 0.95 | T3 is Hup #3: CV issue 267199 / GCD issue 276208 at 36pp against our 37pp rip
+S 9156 cv=39526 gcd=16919 0.95 | T4 is Hup #4: CV issue 267200 (1993) and GCD issue 276209 (June 1992, 36pp) against our 37pp file — the last of the four-issue run S9153 carries
+F 9156 merge-with=9153 | fourth issue of the one Hup comic
+I 107144 cv=267200 gcd=276209 0.95 | T4 is Hup #4: CV issue 267200 / GCD issue 276209 at 36pp against our 37pp rip
+
+# ── Misc\R. Crumb\Robert Crumb - Mystic Funnies — one 3-issue comic GCD splits across three publisher rows
+S 12623 cv=54729 gcd=17231 0.9 | CV 54729 "Mystic Funnies" (count 3: #1 1997, #2 1999 "Bad Karma", #3 2002) is the spanning volume for our three 37pp files, and GCD 17231 "Mystic Funnies" (Fantagraphics 2001-2007, count 3) is the only GCD row holding more than one of the three issues; 0.9 because GCD splits the comic by publisher — 17230 (Alex Wood 1997, #1 at 36pp), 17077 (Last Gasp 1999, #2 at 36pp) and 17231 (Fantagraphics, #1/#2-2nd-printing/#3) — so no single row is the whole run
+N 12623 the three first printings live in three different GCD series: #1 = issue 277597 in series 17230, #2 = issue 277034 in series 17077, #3 = issue 277598 in series 17231; the `I` lines below take those originals while the S line takes the widest row
+I 107145 cv=397629 gcd=277597 0.9 | T1 is Mystic Funnies #1: CV issue 397629 (December 1997) and GCD issue 277597, the 1997 first printing at 36pp, against our 37pp rip
+S 12624 cv=54729 gcd=17231 0.9 | the same three-issue comic: T2 is Mystic Funnies #2, CV issue 372606 "Bad Karma" (April 1999) in volume 54729, first printed as GCD issue 277034 (Last Gasp 1999, 36pp) against our 37pp file
+F 12624 merge-with=12623 | S12623 (T1), this shelf (T2) and S12625 (T3) are the three issues of one Crumb comic
+I 107146 cv=372606 gcd=277034 0.9 | T2 is Mystic Funnies #2: CV issue 372606 and GCD issue 277034, the April 1999 Last Gasp printing at 36pp, against our 37pp rip
+S 12625 cv=54729 gcd=17231 0.9 | T3 is Mystic Funnies #3: CV issue 411974 (March 2002) and GCD issue 277598 (Fantagraphics, March 2002, 36pp) against our 37pp file — the last of the three-issue run S12623 carries
+F 12625 merge-with=12623 | third issue of the one Mystic Funnies comic
+I 107147 cv=411974 gcd=277598 0.9 | T3 is Mystic Funnies #3: CV issue 411974 and GCD issue 277598 at 36pp against our 37pp rip
+
+# ── Misc\Rising Stars — two Wizard-distributed fragments of a run already landed as S14699 (C-059)
+S 14700 cv=6476 gcd=6315 0.9 | our one 22pp file is "Rising Stars #0.5", which is the Wizard-exclusive #1/2: GCD indexes it as series 39707 "Rising Stars" (Image; Wizard 2000, count 1, issue 680950 numbered "#1/2" at 28pp) and ComicVine keeps it inside the run itself as issue 46191 "#½" of volume 6476, the 27-issue run C-059 landed on S14699 with GCD 6315
+F 14700 merge-with=14699 | one promotional issue of the Rising Stars run, not a comic of its own; S14699 already carries cv=6476 / gcd=6315 for the #0-24 ladder in the same Misc\Rising Stars folder
+I 107212 cv=46191 gcd=680950 0.9 | the book itself: CV issue 46191 (#½, August 1999) of volume 6476 and GCD issue 680950 (#1/2, 28pp) of the Image;Wizard row 39707, against our 22pp rip
+S 14703 cv=6476 gcd=6315 0.9 | our one 18pp "Rising Stars - Wizard Edition" is the Wizard-distributed #0 preview: GCD files it as series 6256 "Rising Stars" (Top Cow; Wizard 1999, count 1, issue 62636 numbered #0 at 20pp) and ComicVine as issue 122213 "#0 Preview" (March 1999) inside volume 6476, the run landed on S14699
+F 14703 merge-with=14699 | a preview issue of the Rising Stars run; the same folder's main shelf S14699 holds #0-24 on cv=6476 / gcd=6315
+I 107239 cv=122213 gcd=62636 0.9 | the book itself: CV issue 122213 (#0 "Preview", March 1999) and GCD issue 62636 (#0, 20pp, Top Cow;Wizard) against our 18pp rip
+
+# ── Misc\SPX
+S 14918 cv=51103 gcd=27493 0.95 | CV 51103 "SPX 2003 Anthology" (Comic Book Legal Defense Fund 2003, count 1, issue 349600) and GCD 27493 "The SPX 2003 Anthology" (Comic Book Legal Defense Fund 2003-2003, count 1, 294pp, ISBN 978-0972-179430) agree on title, publisher, year and a count of one — our file names that book exactly
+F 14918 partial-rip | the file is "SPX 2003 Anthology (Jamie Hernandez Cover Only)" at 2pp: a cover-only scan of a 294pp anthology, which still identifies its comic
+I 107456 cv=349600 gcd=391375 0.9 | the book's own record: CV issue 349600 is volume 51103's only issue and GCD issue 391375 is the 294pp 2003 printing; 0.9 because our 2pp file is only its cover
+
+# ── Misc\Something Awful
+R 15872 | "Something Awful.cbz" (14pp, no year, no publisher, no ComicInfo) matches nothing: exact and substring probes of "Something Awful" return zero rows in both the ComicVine rip and the GCD dump, and the packet's candidates ("Something" Strictly Underground 1998, "The Awful Truth" Chick 2011, "Disturbingly Awful Mad") are each a different comic reached by half the title
+F 15872 provider-missing | almost certainly a webrip from the Something Awful site; neither catalog indexes it and the file carries no assertion of its own to probe with
+
+# ── Misc\Stan Lee's Lucky Man (2019)
+S 16374 cv=112691 gcd=- 0.9 | CV 112691 "Lucky Man: The Bracelet Chronicles" (T-Publications 2018, count 3, issues 679361/684957/714017 dated 2018-08 to 2019-07) is T Pub's Stan Lee's Lucky Man comic: publisher matches our ComicInfo "T Pub" on all three files, the count of 3 matches our ladder 1-3, and the last issue's 2019 date matches our filenames' year
+F 16374 provider-missing | GCD indexes no T Pub series at all — probes for "Lucky Man" and "Bracelet" return only Marvel's "Bullets and Bracelets" and a Brazilian .hack manga
+N 16374 ComicVine files the series under its subtitle "The Bracelet Chronicles" while our ComicInfo Series says "Stan Lee's Lucky Man"; Open Library work OL21677326W (ExternalWork 209) is the same property
+
+# ── Misc\SteamPunk
+R 16826 | "Steam Punk - Idiosincratica.cbz" (10pp, no year, no publisher) matches nothing: probes of "Idiosincratica", "Steam Punk" and "Steampunk" return no row of that name in either catalog, and the packet's hits ("Steam" Dark Horse 2020, "Punk Mambo" Valiant) are other comics reached by one word of the key
+F 16826 provider-missing | a 10pp Spanish-titled small-press or web piece; neither the ComicVine rip nor the GCD dump holds it
+
+# ── Misc\Steve Lichman
+R 16842 | "Steve Lichman-Dave Raposa-01.cbz" matches nothing: exact and substring probes of "Steve Lichman" return zero rows in both catalogs, and the packet's "Steve Canyon" candidates are Milton Caniff's strip, a different comic reached by the first name alone
+F 16842 provider-missing | Steve Lichman is Dave Rapoza and Dave Reyes' self-published webcomic book; neither catalog indexes it, and our file carries no page count either
+
+# ── Misc\Stone (2022)
+R 16865 | "COL Stone Omnibus Book 01 (2022)" (235pp) matches nothing: `gcd_series` rows named exactly "Stone" are Glénat 1984, Image 1998/1999, Semic, Panini Deutschland and Tokyopop's 2004 "STONe", and no GCD series beginning "Stone" and starting 2018 or later is an omnibus (Stonebreaker, Stonehenge, Stone Fruit, Stone Star, Stones, Stone King, Stoneheart); the ComicVine rip's "Stone" volumes are the same 1998-2004 set
+F 16865 provider-missing | a 2022 omnibus past the static rip's and the dump's horizon; without a publisher or creator in the filename there is nothing further to probe
+
+# ── Misc\Street Fighter
+R 20765 | "Undisputed Street Fighter (2017)" at 279pp is UDON's 30th-anniversary retrospective art book, not a comic: probes of "Undisputed" return only Gold Medal's "The Undisputed Andy Capp", and no Street Fighter anniversary or retrospective row exists in either catalog — the packet's Street Fighter hits are the Malibu 1994, Image/UDON 2003 and Urban Comics French runs
+F 20765 provider-missing | a licensed non-comic art book; ComicVine and GCD both index Street Fighter comics only
+
+# ── Misc\Sundown Arizona
+S 23938 cv=28971 gcd=20199 0.95 | GCD 20199's own series note settles it: 'Covers of #1 and #3 say "Sundown Arizona", but book name everywhere else is just "Sundown"'. That row is Arcana 2005-2005, count 3, dates August to December 2005, and CV 28971 "Sundown" (Arcana Studio 2005, count 3) agrees on publisher, year and count — our three files T01-T03 at 26-27pp are its #1-#3
+N 23938 the ripper's "Sundown Arizona T0N" names come off the covers of #1 and #3, which is exactly what the GCD note records; no separate "Sundown Arizona" series exists in either catalog
+
+# ── Misc\Tag
+S 10293 cv=23931 gcd=27192 1.0 | the collection asserts it: item 107620's EAN-13 0894340001212 is the UPC core of GCD issue 386409's barcode 89434000121200111, #1 of GCD 27192 "Tag: Cursed" (Boom! Studios 2007, count 5), and items 107621/107622 carry 0894340001465 and 0894340001533, the cores of #2 (386410) and #3 (386411); CV 23931 "Tag: Cursed" (Boom! Studios 2007, count 5) agrees on title, publisher, year and count against our ladder 1-5
+N 10293 CV 56019 "Tag: Cursed" 2007 Boom! count 1 (issue 381078) is the collected record beside the run, the count-1-trade artefact; the run wins and no trade is on this shelf
+
+# ── Misc\Tank Girl (1988)\01 Tank Girl Classic (2012)\Tank Girl Vol. 01 - Color edition
+S 17614 cv=56274 gcd=- 0.7 | the file sits in a subfolder of the folder whose fourteen files B-064 landed as S17613 = CV 56274 "Tank Girl Classic" (Titan Comics 2012, count 14, issues 381891-381904), so this "Tank Girl GN" is a collected edition of that same 2012 Titan reprint line; 0.7 because the file carries no page count, no year and no ComicInfo, and "Color edition" could instead name Titan's later Full Colour Classics Book 01
+F 17614 merge-with=17613 | one edition of the comic S17613 already carries; its folder is literally inside S17613's "01 Tank Girl Classic (2012)" folder
+F 17614 provider-missing | GCD indexes no "Tank Girl Classic" series — B-064 recorded the same gap on S17613; the dump reaches Titan's later Full Colour Classics line (127367) but not this 2012 reprint
+N 17614 the alternative reading is CV 110540 / GCD 127367 "Tank Girl Full Colour Classics" Book 01, which B-064 landed on S17597; a page count off the file would tell the two apart
+
+# ── Misc\Tank Girl (1988)\06 Visions of Booga (2008)
+R 4674 | "DCP Archive Edition - Tank Girl. Visions of Booga (2008 IDW) 101p (compiled by Kritter-DCP)" is a fan compile, not a published edition: the DCP archive edition announces itself in its own filename and its 100pp is the four issues of IDW's mini stitched together. The published records are CV 21909 / GCD 31876 "Tank Girl: Visions of Booga" (IDW 2008, count 4) and GCD 116724 (IDW 2008, count 1, the trade), and linking a DCP compile to either would claim a printing nobody published
+F 4674 not-a-run | a DCP Archive Edition compile; per the standing ruling these are never linked
+
+# ── Misc\The All-New Adventures of Magnum P.I. (2020)
+R 17920 | "The All-New Adventures of Magnum P.I. 001 (2020) (c2c)" at 12pp is in neither catalog: the ComicVine rip's Magnum hits are Stafford Pemberton's 1981 "Magnum P.I. Annual", Editorial Columba's Nippur Magnum and a dozen unrelated Magnum titles, and a GCD probe for "Magnum" returns no 2020 Magnum P.I. row at all
+F 17920 provider-missing | a 2020 fan or web continuation of the TV property; 12pp c2c, no publisher in the filename, nothing in either catalog
+
+# ── Misc\The Death Tally (2023)
+R 18383 | "The Death Tally" #1-4 (2023-2024, ComicInfo Publisher "Self Published") is in neither catalog: exact and substring probes of "Death Tally" return zero rows in both the ComicVine rip and the GCD dump, and the packet's candidates (MonkeyBrain's "Tally Marks", Dark Horse's ".Self") are reached by one word of the key
+F 18383 provider-missing | a 2023-24 self-published four-issue mini past both catalogs' horizon; ComicInfo asserts Series "The Death Tally", Volume 2023, Publisher Self Published and our ladder 1-4 is complete
+
+# ── Misc\The Dresden Files
+S 5864 cv=21417 gcd=35901 0.9 | our one file "Dresden_Files_04_(of_4)_(2008)" at 34pp is a second rip of Welcome to the Jungle #4: A-029 landed S9839 in this same folder as CV 21417 "Jim Butcher's The Dresden Files Welcome to the Jungle" (Dabel Brothers 2008, count 4) / GCD 35901 (Dabel Brothers 2008, count 4) with a complete ladder 1-4 and noted a duplicate Minutemen scan of #3 beside the folder's own files; this is the same ripper and the same "(of 4) (2008)" shape
+F 5864 merge-with=9839 | a duplicate rip of one issue of the run S9839 carries, not a comic of its own
+N 5864 the competing reading is Storm Front (CV 23697 / GCD 35902, Dabel 2008-2009, count 4), whose #4 is 32pp against Welcome to the Jungle #4's 40pp; the year decides it for Welcome to the Jungle (all four of its issues are 2008, Storm Front #4 is April 2009) and the folder decides it too — Storm Front has no shelf here while S9839 does
+
+# ── Misc\The Lestrygonians (2023)
+R 18951 | "The Lestrygonians 001 (2023)" (ComicInfo Publisher "Sparky's Books") is in neither catalog: exact and substring probes of "Lestrygonian" return zero rows in both, and every packet candidate is a 2023 annual or calendar matched on the year alone
+F 18951 provider-missing | a 2023 small-press first issue; Open Library work OL34062745W (ExternalWork 607) is the only outside record we hold
+
+# ── Misc\The Matrix
+R 24055 | eleven files, each one separately published Matrix web comic by a named artist (A Life Less Empty, A Path Among Stones, An Asset To The System, Butterfly, Deja Vu …) at 7-21pp. No numbered run exists: both catalogs index only the two printed collections that reprint them — CV 27029 "The Matrix Comics" (Burlyman Entertainment 2003, count 2, no cached issues) and GCD 14995 (Burlyman Entertainment 2003-2004, count 2) — plus the 2019 anniversary edition (CV 123144 / GCD 153382) and the Panini German and Brazilian editions. Linking eleven web shorts to a two-volume print collection would claim a record none of them is
+F 24055 provider-missing | the individual whatisthematrix.com comics are in neither catalog; the print collections that reprint them are named above and are different objects
+
+# ── Misc\The Tick\Specials and Annuals
+S 19787 cv=105836 gcd=117955 0.95 | CV 105836 "The Tick: Halloween ComicFest 2017" (New England Comics 2017, count 1, issue 634649) and GCD 117955 "The Tick: Halloween Comicfest 2017" (New England Comics 2017-2017, count 1, 32pp, barcode 68946606798900001) agree on title, publisher, year and count, and GCD's 32pp is our 33pp file
+I 108067 cv=634649 gcd=1746322 0.95 | the one-shot itself: CV issue 634649 is volume 105836's only issue and GCD issue 1746322 is the November 2017 printing at 32pp against our 33pp rip
+
+# ── Misc\Trekker (1987)
+S 66499 cv=158575 gcd=220040 0.95 | CV 158575 "Trekker - The Complete Journey" (Scufprint Press 2020, count 2, issues 1060526 "Volume One" and 1060527 "Volume II") and GCD 220040 "Trekker: The Complete Journey" (Scufprint Press 2020-?, count 2) agree on title, publisher, year and a two-volume count, which is exactly our v01 (523pp) and v02 (525pp)
+I 108096 cv=1060526 gcd=2712126 0.95 | v01: CV issue 1060526 "Volume One" of volume 158575 and GCD issue 2712126 of series 220040; neither row carries a page count to check our 523pp rip against
+I 108097 cv=1060527 gcd=2712127 0.95 | v02: CV issue 1060527 "Volume II" and GCD issue 2712127, the second of the two-volume Scufprint line, against our 525pp rip
+S 20454 cv=156423 gcd=220037 0.9 | CV 156423 "Trekker: Reckoning on Rigel" (Scufprint Press 2021, count 1, issue 1042564 named "Reckoning on Rigel / Everybody Comes To Rik'z") and GCD 220037 (Scufprint Press 2021-2021, count 1) agree on title, publisher, year and count; 0.9 because our file is the 2022 Ashcan Edition at 79pp, a printing neither catalog gives a row of its own
+I 109734 cv=1042564 gcd=2702025 0.9 | the book itself: CV issue 1042564 and GCD issue 2702025, the 2021 Scufprint printing, against our 2022 Ashcan Edition rip at 79pp — the edition we hold is not separately indexed
+
+# ── Misc\Underground\Gilbert Shelton Collection\Fat Freddy — Fat Freddy's Comics & Stories, two issues
+S 20558 cv=53822 gcd=17295 0.95 | CV 53822 "Fat Freddy's Comics & Stories" (Rip Off Press 1983, count 2, issues 366526 and 366560) and GCD 17295 (Rip Off Press 1983-1985, count 2, both issues 36pp) agree on title, publisher, start year and count, and our T1/T2 at 36pp and 37pp are those two issues
+I 108138 cv=366526 gcd=277756 0.95 | T1 is issue #1: CV issue 366526 (1983) and GCD issue 277756 (1983, 36pp) against our 36pp rip
+S 20559 cv=53822 gcd=17295 0.95 | the same two-issue comic: T2 is Fat Freddy's Comics & Stories #2, CV issue 366560 (1985) in volume 53822 and GCD issue 277757 (1985, 36pp) in series 17295, against our 37pp file
+F 20559 merge-with=20558 | S20558 (T1) and this shelf (T2) are the two issues of one Rip Off Press comic
+I 108139 cv=366560 gcd=277757 0.95 | T2 is issue #2: CV issue 366560 / GCD issue 277757 at 36pp against our 37pp rip
+
+# ── Misc\Underground\Gilbert Shelton Collection\Fat Freddy's Cat — one 7-issue comic, seven shelves
+S 20560 cv=25987 gcd=17294 0.95 | CV 25987 "Adventures of Fat Freddy's Cat" (Rip Off Press 1977, count 7) and GCD 17294 "Fat Freddy's Cat" (Rip Off Press 1977-1993, #1-#7) agree on publisher, start year and a seven-issue count, and the arithmetic is exact: GCD's first printings read 52, 52, 52, 52, 52, 36, 36pp and our T1-T7 read 53, 53, 53, 53, 53, 37, 37pp
+N 20560 GCD 17294 also carries "[Revised nth Printing]" rows at 36pp for #1-#5; our 53pp files are the 52pp originals, which is why the `I` lines take the 1977-1980 first printings. GCD 46412 / 66644 / 76788 "(The) Adventures of Fat Freddy's Cat" are the Rip Off, Hassle Free and Knockabout collected books, not this run
+I 108140 cv=153615 gcd=277749 0.95 | T1 is #1 "I Led Nine Lives!": CV issue 153615 (February 1977) and GCD issue 277749 (February 1977, 52pp) against our 53pp rip
+S 20561 cv=25987 gcd=17294 0.95 | the same seven-issue comic: T2 is Fat Freddy's Cat #2, CV issue 153616 (February 1977) in volume 25987 and GCD issue 277750 (February 1977, 52pp) in series 17294, against our 53pp file
+F 20561 merge-with=20560 | one issue of the run S20560 carries; the ripper's "T2" suffix made it a shelf
+I 108141 cv=153616 gcd=277750 0.95 | T2 is #2: CV issue 153616 / GCD issue 277750 at 52pp against our 53pp rip
+S 20562 cv=25987 gcd=17294 0.95 | T3 is Fat Freddy's Cat #3: CV issue 368208 (September 1977) and GCD issue 277751 (September 1977, 52pp) against our 53pp file — the same run as S20560
+F 20562 merge-with=20560 | one issue of the Fat Freddy's Cat run
+I 108142 cv=368208 gcd=277751 0.95 | T3 is #3: CV issue 368208 / GCD issue 277751 at 52pp against our 53pp rip
+S 20563 cv=25987 gcd=17294 0.95 | T4 is Fat Freddy's Cat #4: CV issue 153617 (August 1978) and GCD issue 277752 (August 1978, 52pp) against our 53pp file — the same run as S20560
+F 20563 merge-with=20560 | one issue of the Fat Freddy's Cat run
+I 108143 cv=153617 gcd=277752 0.95 | T4 is #4: CV issue 153617 / GCD issue 277752 at 52pp against our 53pp rip
+S 20564 cv=25987 gcd=17294 0.95 | T5 is Fat Freddy's Cat #5: CV issue 153618 (November 1980) and GCD issue 277753 (November 1980, 52pp) against our 53pp file — the same run as S20560
+F 20564 merge-with=20560 | one issue of the Fat Freddy's Cat run
+I 108144 cv=153618 gcd=277753 0.95 | T5 is #5: CV issue 153618 / GCD issue 277753 at 52pp against our 53pp rip
+S 20565 cv=25987 gcd=17294 0.95 | T6 is Fat Freddy's Cat #6 "The War of the Cockroaches": CV issue 153717 (1986) and GCD issue 277754 (1986, 36pp) against our 37pp file — and the drop from 52pp to 36pp at #6 is why this rip's page counts pin the ladder
+F 20565 merge-with=20560 | one issue of the Fat Freddy's Cat run
+I 108145 cv=153717 gcd=277754 0.95 | T6 is #6: CV issue 153717 / GCD issue 277754 at 36pp against our 37pp rip
+S 20566 cv=25987 gcd=17294 0.95 | T7 is Fat Freddy's Cat #7: CV issue 153718 (1993) and GCD issue 277755 (1993, 36pp, barcode 978086166100800199) against our 37pp file — the last issue of the run S20560 carries
+F 20566 merge-with=20560 | one issue of the Fat Freddy's Cat run
+I 108146 cv=153718 gcd=277755 0.95 | T7 is #7: CV issue 153718 / GCD issue 277755 at 36pp against our 37pp rip
+
+# ── Misc\Underground\Gilbert Shelton Collection\The Fabulous Furry Freak Brothers — one comic, fourteen shelves
+S 20568 cv=40267 gcd=15815 0.95 | CV 40267 "The Fabulous Furry Freak Brothers" (Rip Off Press 1971, count 14, cached #0-#13) and GCD 15815 (Rip Off Press 1971-2003, #1-#13) agree on title, publisher, start year and the ladder our T00-T13 files hold; the first printings' page counts (52, 52, 36, 52, 52, 52, 52, 36, 36, 36, 36, 36, 36 for #1-#13) match our files (53, 53, 35, 52, 52, 52, 52, 35, 26, 37, 37, 37, 37) issue for issue but one
+N 20568 GCD 15815 has no #0 row — ComicVine alone indexes it (issue 337556), and Rip Off's Underground Classics #1 (GCD issue 640898, CV 37051 issue 247169 titled "The Fabulous Furry Freak Brothers # 0") is its reprint. GCD's foreign rows 56068/67639 (Knockabout, Hassle Free, en-gb), 82498/102658 (German) and 83774 (Brazilian) are rejected on publisher
+I 108147 cv=337556 gcd=- 0.9 | T00 is Freak Brothers #0: CV issue 337556 of volume 40267 is its only item-level record, GCD 15815 indexing no #0; our 28pp rip has nothing to check against
+S 20569 cv=40267 gcd=15815 0.95 | T01 is Freak Brothers #1: CV issue 270828 and GCD issue 264687 (January 1971, 52pp) against our 53pp file — one issue of the run S20568 carries
+F 20569 merge-with=20568 | one issue of the Fabulous Furry Freak Brothers run
+I 108148 cv=270828 gcd=264687 0.95 | #1: CV issue 270828 / GCD issue 264687 at 52pp against our 53pp rip
+S 20570 cv=40267 gcd=15815 0.95 | T02 is Freak Brothers #2: CV issue 270829 and GCD issue 264688 (March 1972, 52pp) against our 53pp file — the same run as S20568
+F 20570 merge-with=20568 | one issue of the Fabulous Furry Freak Brothers run
+I 108149 cv=270829 gcd=264688 0.95 | #2: CV issue 270829 / GCD issue 264688 at 52pp against our 53pp rip
+S 20571 cv=40267 gcd=15815 0.95 | T03 is Freak Brothers #3 "A Year Passes Like Nothing": CV issue 270830 and GCD issue 264689 (1973, 36pp) against our 35pp file — the same run as S20568, and #3's drop to 36pp is what pins it
+F 20571 merge-with=20568 | one issue of the Fabulous Furry Freak Brothers run
+I 108150 cv=270830 gcd=264689 0.95 | #3: CV issue 270830 / GCD issue 264689 at 36pp against our 35pp rip
+S 20572 cv=40267 gcd=15815 0.95 | T04 is Freak Brothers #4: CV issue 270987 and GCD issue 264690 (November 1975, 52pp) against our 52pp file — the same run as S20568
+F 20572 merge-with=20568 | one issue of the Fabulous Furry Freak Brothers run
+I 108151 cv=270987 gcd=264690 0.95 | #4: CV issue 270987 / GCD issue 264690 at 52pp against our 52pp rip
+S 20573 cv=40267 gcd=15815 0.95 | T05 is Freak Brothers #5 "Grass Roots": CV issue 270988 and GCD issue 264691 (May 1977, 52pp) against our 52pp file — the same run as S20568
+F 20573 merge-with=20568 | one issue of the Fabulous Furry Freak Brothers run
+I 108152 cv=270988 gcd=264691 0.95 | #5: CV issue 270988 / GCD issue 264691 at 52pp against our 52pp rip
+S 20574 cv=40267 gcd=15815 0.95 | T06 is Freak Brothers #6: CV issue 270989 and GCD issue 264692 (June 1980, 52pp) against our 52pp file — the same run as S20568
+F 20574 merge-with=20568 | one issue of the Fabulous Furry Freak Brothers run
+I 108153 cv=270989 gcd=264692 0.95 | #6: CV issue 270989 / GCD issue 264692 at 52pp against our 52pp rip
+S 20575 cv=40267 gcd=15815 0.95 | T07 is Freak Brothers #7: CV issue 270990 and GCD issue 264693 (1982, 52pp) against our 52pp file — the same run as S20568
+F 20575 merge-with=20568 | one issue of the Fabulous Furry Freak Brothers run
+I 108154 cv=270990 gcd=264693 0.95 | #7: CV issue 270990 / GCD issue 264693 at 52pp against our 52pp rip
+S 20576 cv=40267 gcd=15815 0.95 | T08 is Freak Brothers #8 (Idiots Abroad part 1): CV issue 270991 and GCD issue 264694 (1984, 36pp) against our 35pp file — the same run as S20568
+F 20576 merge-with=20568 | one issue of the Fabulous Furry Freak Brothers run
+I 108155 cv=270991 gcd=264694 0.95 | #8: CV issue 270991 / GCD issue 264694 at 36pp against our 35pp rip
+S 20577 cv=40267 gcd=15815 0.9 | T09 is Freak Brothers #9 (Idiots Abroad part 2): CV issue 270992 and GCD issue 264695 (1985, 36pp) against our 26pp file — the same run as S20568, at 0.9 because this one rip is 10pp short of the indexed issue
+F 20577 merge-with=20568 | one issue of the Fabulous Furry Freak Brothers run
+I 108156 cv=270992 gcd=264695 0.9 | #9: CV issue 270992 / GCD issue 264695 at 36pp against our 26pp rip — the only file of the fourteen whose page count misses, so the rip is probably incomplete
+S 20578 cv=40267 gcd=15815 0.95 | T10 is Freak Brothers #10 (Idiots Abroad part 3): CV issue 271000 and GCD issue 264696 (April 1987, 36pp) against our 37pp file — the same run as S20568
+F 20578 merge-with=20568 | one issue of the Fabulous Furry Freak Brothers run
+I 108157 cv=271000 gcd=264696 0.95 | #10: CV issue 271000 / GCD issue 264696 at 36pp against our 37pp rip
+S 20579 cv=40267 gcd=15815 0.95 | T11 is Freak Brothers #11: CV issue 271015 and GCD issue 264697 (1990, 36pp) against our 37pp file — the same run as S20568
+F 20579 merge-with=20568 | one issue of the Fabulous Furry Freak Brothers run
+I 108158 cv=271015 gcd=264697 0.95 | #11: CV issue 271015 / GCD issue 264697 at 36pp against our 37pp rip
+S 20580 cv=40267 gcd=15815 0.95 | T12 is Freak Brothers #12: CV issue 271016 and GCD issue 264698 (1992, 36pp) against our 37pp file — the same run as S20568
+F 20580 merge-with=20568 | one issue of the Fabulous Furry Freak Brothers run
+I 108159 cv=271016 gcd=264698 0.95 | #12: CV issue 271016 / GCD issue 264698 at 36pp against our 37pp rip
+S 20581 cv=40267 gcd=15815 0.95 | T13 is Freak Brothers #13: CV issue 271017 and GCD issue 264699 (1997, 36pp) against our 37pp file — the last issue of the run S20568 carries
+F 20581 merge-with=20568 | one issue of the Fabulous Furry Freak Brothers run
+I 108160 cv=271017 gcd=264699 0.95 | #13: CV issue 271017 / GCD issue 264699 at 36pp against our 37pp rip
+
+# ── Misc\Underground\Gilbert Shelton Collection\Underground Classics — three issues of Rip Off's reprint line
+S 20583 cv=37051 gcd=37183 0.95 | CV 37051 "Underground Classics" (Rip Off Press 1985, count 14) and GCD 37183 (Rip Off Press 1985-1992, count 15) agree on title, publisher and start year, and the ripper's own "T05 Wonder Wart-hog vol 1" names the line's #5: CV issue 313442 is literally titled "Wonder Warthog Vol.1" (October 1987) and GCD issue 640902 is #5 (1987) at 36pp against our 36pp file
+I 108163 cv=313442 gcd=640902 0.95 | Underground Classics #5: CV issue 313442 "Wonder Warthog Vol.1" and GCD issue 640902 at 36pp against our 36pp rip
+S 20584 cv=37051 gcd=37183 0.95 | the same line: "T07 Wonder Wart-hog vol 2" is Underground Classics #7, CV issue 419775 (1988) in volume 37051 and GCD issue 640904 (1988, 36pp) in series 37183, against our 35pp file
+F 20584 merge-with=20583 | one issue of the Underground Classics line S20583 carries
+I 108164 cv=419775 gcd=640904 0.9 | Underground Classics #7: CV issue 419775 and GCD issue 640904 at 36pp against our 35pp rip; 0.9 because ComicVine titles none of #6-#12 so the Wonder Wart-hog vol 2 label rests on the number alone
+S 20585 cv=37051 gcd=37183 0.95 | the same line: "T12 Not For Children" is Underground Classics #12, CV issue 419766 (1990) and GCD issue 640909 (1990, 36pp) against our 36pp file
+F 20585 merge-with=20583 | one issue of the Underground Classics line S20583 carries
+I 108165 cv=419766 gcd=640909 0.9 | Underground Classics #12: CV issue 419766 and GCD issue 640909 at 36pp against our 36pp rip; 0.9 because the "Not For Children" subtitle is not in either catalog's issue title
+
+# ── Misc\Uruk - The Last City (2022)
+R 20843 | "Uruk - The Last City 000 (2022)" (ComicInfo Series "Uruk. The Last City", Publisher "yelly.studio") at 14pp is in neither catalog: exact and substring probes of "Uruk" and "The Last City" return only a Kadokawa Shoten manga (CV 153962 "Druaga no Tō: The Aegis of Uruk") and IDW's Transformers Windblade one-shot
+F 20843 provider-missing | a 2022 studio-published #0 issue; ComicVine and GCD index neither the book nor yelly.studio
+
+# ── Misc\Zombies Vs Cheerleaders\Specials and One Shots
+R 22834 | two files, two different Zenescope one-shots, each with its own record in both catalogs and no spanning row: "Zombies Vs Cheerleaders 2015 Halloween Special" is CV 85181 (Zenescope 2015, count 1, issue 502293) and sits inside GCD 83355 "Zombies vs Cheerleaders: Halloween Special" (Zenescope 2014-2015, count 2 — the 2014 and 2015 specials as one row), while "2015 St Pattys Day Special" is CV 80473 (Zenescope 2015, count 1) and GCD 86930 (Zenescope 2015, count 1). The ladder reads "2015" twice because the parser took the year for an issue number; the Moonstone 2010 seven-issue ongoing and 3 Finger Prints' 2013 revival are other comics again
+F 22834 split-needed | proposed: the Halloween file to CV 85181 / GCD 83355, the St Patty's Day file to CV 80473 / GCD 86930; a shelf holding one Halloween and one St Patrick's Day one-shot is the Archie-holiday shape and no record covers both
+N 22834 cv=- gcd=- for the shelf as it stands; the two pairs above are the ids a split would apply
+
+# ── Misc\_Art Spiegelman
+R 368 | "Abstract Thought Is a Warm Puppy by Art Spiegelman (The New Yorker 2024.07.28 (Originally 2000.02.07))" is a five-page strip lifted out of a magazine issue, not a comic series: the ladder "28" is the day of the cover date, and neither catalog indexes The New Yorker at all — the packet's hits are Determined Productions' "Happiness Is...A Warm Puppy" (CV 67122 / GCD 21131) and Glénat's "Puppy", both other books
+F 368 not-a-run | a reader extract from a magazine; nothing to link
+
+# ── Misc\_Aspen Comics\Fathom
+S 11982 cv=65470 gcd=- 0.9 | CV 65470 "Fathom Omnibus" (Aspen MLT 2013, count 3: issues 418124 "Part One", 418125 "Part Two", 696384 "Part Three") is the omnibus LINE, and our two 2013 files are named "Omnibus Part 01" and "Part 02" at 568pp and 484pp — the line's own volume numbering; the reprint-library shape means no single run record can be the identity, and GCD indexes no Aspen Fathom omnibus
+F 11982 provider-missing | GCD's only "Fathom Omnibus" row is 98794, Juniorpress' Dutch two-volume edition; the dump has no Aspen omnibus series
+N 11982 the underlying runs the omnibus gathers are Michael Turner's Fathom vol. 1 (CV 18086 / GCD 17676, Aspen 2005, 12), vol. 2 (CV 22498 / GCD 32415, 2008, 11), vol. 3 (CV 40435 / GCD 59093, 2011, 10) and vol. 4 (CV 65632 / GCD 75746, 2013, 8); none may be linked to this shelf
+I 108422 cv=418124 gcd=- 0.9 | Part 01: CV issue 418124 "Part One" of volume 65470; GCD has no row for the book, so cv alone
+I 108423 cv=418125 gcd=- 0.9 | Part 02: CV issue 418125 "Part Two" of volume 65470; GCD has no row for the book
+
+# ── Misc\_John Carpenter\John Carpenter's Tales for a HalloweeNight
+S 9918 cv=85637 gcd=166813 0.95 | CV 85637 "John Carpenter's Tales For A HalloweeNight" (Storm King Comics 2015, volumes 1-6 cached as issues 504426-805024) and GCD 166813 (Storm King Productions 2015-?, count 9) agree on title, publisher and start year, and GCD's per-volume page counts place our three books exactly: v01 100pp vs our 98pp, v02 180pp vs our 177pp, v06 188pp vs our 186pp; ComicInfo says Series "John Carpenter's Tales for a Halloween Night", Publisher "Storm King Comics" on all three
+F 9918 partial-rip | this shelf holds volumes 01, 02 and 06 of the nine-volume annual anthology line; v03-v05, v07 and v08 are on the sibling shelf S9916 and v09 is on neither
+F 9918 merge-with=9916 | A-029 landed S9916 on the same pair (cv=85637 / gcd=166813) for volumes 03-05, 07 and 08 of this same John Carpenter's Tales for a HalloweeNight folder — one nine-volume line split into two shelves
+I 108468 cv=504426 gcd=2167900 isbn=9780985325893 0.95 | v01: CV issue 504426 "Volume 1" and GCD issue 2167900, 100pp / ISBN 978-0-9853258-9-3, against our 98pp rip
+I 108469 cv=552262 gcd=2167901 isbn=9780997059922 0.95 | v02: CV issue 552262 "Volume 2" and GCD issue 2167901, 180pp / ISBN 978-0-9970599-2-2, against our 177pp rip
+I 108473 cv=805024 gcd=2167905 isbn=9781733282154 0.95 | v06: CV issue 805024 "Volume 6" and GCD issue 2167905, 188pp / ISBN 978-1-7332821-5-4, against our 186pp rip
+
+# ── Misc\_Paul Kirchner
+R 8894 | five files, each announcing itself as an extract: "High Times 005 Partial (4 pages - Dope Rider in Meanwhile, Back At The Ranch)" and so on, 5pp apiece, cut out of High Times magazine issues 5, 6, 7, 12 and 34. Neither catalog indexes High Times, and a four-page strip lifted from a magazine is not a comic the ledger links; the packet's hits ("Best of High Times: Comix", Antarctic's "Legends From Darkwood: High Times and Small Crimes") are other books
+F 8894 not-a-run | reader extracts from a magazine, explicitly labelled "Partial"
+S 73845 cv=76896 gcd=90272 1.0 | the file asserts it: item 108497's EAN-13 9782848410357 is exactly GCD issue 1676751's ISBN (978-2-84841-035-7), The Bus #2 of GCD 90272 "The Bus" ([en-fr] Éditions Tanibis 2012-?, count 2), and CV 76896 "The Bus" (Editions Tanibis 2014, count 2: issues 465114 "Vol. 1" and 505642 "Vol. 2") is the same two-volume line; the arithmetic closes it too — GCD's #1 is 96pp and #2 is 56pp, and our combined v01-02 rip is 151pp
+I 108497 cv=505642 gcd=1676751 isbn=9782848410357 1.0 | the ISBN on the page is volume 2's: CV issue 505642 "Vol. 2" and GCD issue 1676751, 56pp / ISBN 978-2-84841-035-7
+N 73845 the one file holds BOTH volumes (96 + 56 = 152pp against our 151pp), so volume 1's own records — CV issue 465114 and GCD issue 1448310 (96pp, ISBN 9782848410227) — are also in it; GCD 112390 "The Bus" (Random House 1987, count 1) is Kirchner's earlier US collection and a different edition
+
+# ── Misc\_Paul Pope
+R 23770 | three fragments, none of them a comic: "Paul Pope - Car Crash [from Oni Double Feature]" is one story pulled out of an anthology issue, "HR from THB promotional card (1995)" is a 1pp promo card scan and "Welcome to Mars B cover only (1996)" is a 1pp cover. The packet's candidates ("Paul Pope: Monsters & Titans" CV 72483, "The Life of Pope John Paul II" CV 23873 / GCD 2655) are other books reached by the creator's name
+F 23770 not-a-run | reader extracts, a promo card and a cover-only scan; the shelf is a creator folder, not a publishing run
+
+# ── Misc\_Skottie Young
+R 15726 | "COL Skottie Young - Daily Grind - v01 (2014)" at 102pp is in neither catalog: exact and substring probes of "Daily Grind" return zero rows in both the ComicVine rip and the GCD dump, and the rip's Skottie Young volumes are Marvel's art book, the Deadpool trades and the colouring book
+F 15726 provider-missing | a self-published sketchbook collection; neither catalog indexes Young's own imprint
+R 15727 | "COL Skottie Young - Stuff - v01 (2010)" at 49pp is in neither catalog: the ComicVine rip's "Young" volumes are Ninth Ediciones' and Star Comics' Italian series and the GCD dump's are Futuropolis' French and Star Comics' Italian rows, none of them this sketchbook, and no "Skottie Young - Stuff" row exists anywhere
+F 15727 provider-missing | a self-published sketchbook collection, like S15726 in the same creator folder
+
+# ── Monkeybrain
+S 925 cv=87198 gcd=- 0.9 | CV 87198 "Amelia Cole Versus The End of Everything" (MonkeyBrain Comics 2016, count 6) is the digital serial: its issues are numbered #25-#30 "Part 1"-"Part 6", continuing the Amelia Cole line's own count, and our single 20pp file "Amelia Cole Verses the End of Everything 001 (2016)" is Part 1 = issue 510564; the run wins over CV 91873 (count 1) which is the collection
+F 925 provider-missing | GCD's only row is 124451 "Amelia Cole versus the End of Everything" (IDW 2016, count 1), the print collection — the MonkeyBrain digital-first serial itself is a total GCD hole, as it is for every MonkeyBrain title
+F 925 partial-rip | this shelf holds only Part 1 of the six digital chapters; Parts 2-6 (CV issues 516151, 521396, 527218, 533106, 537998) are on the sibling shelf S929
+F 925 merge-with=929 | C-060 landed S929 on the same volume 87198 for the #2-6 ladder of this same Amelia Cole folder — one six-chapter serial split into two shelves by the ripper's "Verses"/"Versus" spelling
+I 108515 cv=510564 gcd=- 0.9 | the chapter itself: CV issue 510564 (#25 "Part 1", January 2016) of volume 87198, our 20pp Son of Ultron rip; GCD indexes no chapter of this serial
+S 66446 cv=65494 gcd=- 0.9 | CV 65494 "Captain Ultimate" (MonkeyBrain Comics 2013, count 6, issues 418271-461829 dated 2013-07 to 2014-08) matches our six files exactly: ladder 1-6, years 2013-2014, publisher MonkeyBrain; CV 78113 (2014, count 1) is the collected record beside it
+F 66446 provider-missing | GCD indexes only Mesj Media's Dutch edition (83652, [nl] 2014) and Soup Dad Comics' 2016 revival (114104) — the MonkeyBrain digital-first serial has no GCD row, the same hole as S925
+
+# ── Oni Press — flat root folder of 2016-2024 graphic novels
+R 6935 | "Frankie and the Beastly Bog Song (2024) (digital) (Salem-Empire)" at 39pp is in neither catalog: probes of "Frankie%Bog", "Beastly Bog" and "Bog Song" return zero rows in both, and the packet's hits are Oni's convention samplers matched on the publisher folder name plus Dynamite France's "Beastly"
+F 6935 provider-missing | a 2024 Oni book past the static rip's and the dump's horizon; Open Library work OL37577342W (ExternalWork 609) is the only outside record
+R 9039 | "How Could You (2024) (digital) (Mr Norrell-Empire)" at 225pp is in neither catalog: exact and substring probes of "How Could You" return zero rows in both the ComicVine rip and the GCD dump, and the candidates ("It Could Happen To You" NBM, "If You Could See Love" Yen, "If I Could Reach You" Kodansha) are three other books
+F 9039 provider-missing | a 2024 Oni graphic novel past both catalogs' horizon; Open Library work OL1943353W (ExternalWork 610) is all we hold
+S 14435 cv=22196 gcd=37570 0.95 | the first edition both legs hold is the identity: CV 22196 "12 Reasons Why I Love Her" (Oni Press 2006, count 1, issue 133438 "GN") and GCD 37570 (Oni Press 2006-2006, count 1, issue 645950 at 156pp, ISBN 1-932664-51-3) agree on title, publisher, year and count, and ComicInfo asserts Series "12 Reasons Why I Love Her", Publisher "Oni Press"
+I 108630 cv=516150 gcd=- 0.9 | the printing we hold is the 2016 Tenth Anniversary Edition: CV 88185 "12 Reasons Why I Love Her: Tenth Anniversary Edition" (Oni Press 2016, count 1) and its only issue 516150 "HC", matching our filename and our 186pp rip against the 2006 edition's 156pp; GCD indexes no 2016 row, so gcd=-
+S 1324 cv=- gcd=214649 0.9 | GCD 214649 "Army of One" (Oni Press 2024-?, count 3) is the line, and its three issues carry BOOK ISBNs (978-1549307980, 978-1637155110, 978-1637156346) — so it is a three-volume graphic-novel line, not a floppy run, and our "COL Army of One v01 (2024)" at 127pp is its first volume; ComicVine indexes no Oni "Army of One" volume at all (its hits are Marvel's Punisher and Ms. Marvel books)
+F 1324 provider-missing | the ComicVine rip has no Oni Press "Army of One"; the GCD line row is the only record of it
+I 109751 cv=- gcd=2729459 isbn=9781549307980 0.9 | v01's own record: GCD issue 2729459 is #1 of series 214649 with ISBN 978-1549307980; the row carries no page count to check our 127pp rip against
+
+# ── Oni Press\Blue Monday (2000)\Blue Monday Vol. 03 - Inbetween Days (2003)
+R 95825 | three files, three separately published one-shots, each with its own record in BOTH catalogs and no spanning run: "Dead Man's Party (2002)" is CV 24406 / GCD 14284 (Oni Press 2002, count 1), "Lovecats (2002)" is CV 28312 / GCD 95497 (Oni Press 2002, count 1) and "Nobody's Fool (2003)" is CV 24407 / GCD 14544 (Oni Press 2003, count 1). The folder is named after the trade that collects them — CV 28397 "Blue Monday: Inbetween Days" (Oni Press 2003, count 1) — but the files are 30-35pp floppies, not that trade, and GCD indexes no Inbetween Days row at all
+F 95825 split-needed | proposed runs: Dead Man's Party cv=24406 gcd=14284, Lovecats cv=28312 gcd=95497, Nobody's Fool cv=24407 gcd=14544 — three co-equal one-shots of the Blue Monday family, whose earlier minis (The Kids Are Alright CV 28294 / GCD 95496, Absolute Beginners CV 9336 / GCD 10117) sit on other shelves
+N 95825 the collecting trade is CV 28397 "Blue Monday: Inbetween Days" (Oni Press 2003, count 1), which no GCD row matches; it is not on this shelf
+R 5990 | "COL Eat Your Heart Out v01 (2024) (digital) (Son of Ultron-Empire)" at 112pp is in neither catalog: probes of "Eat Your Heart" return only Dark Horse's 1998 "ZombieWorld: Eat Your Heart Out" (CV 23776 / GCD 23558) and a Budget Books Blondie annual, and no 2024 Oni row of this name exists in either the rip or the dump
+F 5990 provider-missing | a 2024 Oni book past both catalogs' horizon
+
+# ── Oni Press\Letter 44 (2013)
+S 10725 cv=68344 gcd=77120 0.95 | the RUN wins: CV 68344 "Letter 44" (Oni Press 2013, count 35) and GCD 77120 "Letter 44" (Oni Press 2013-2017, count 36) agree on title, publisher, start year and a 35-36 issue count, and our six trades' judged ranges sum to exactly that run — #1-6 + #7-12 + #13-18 + #19-24 + #25-29 + #30-35 = 35 issues; the collected LINE beside it (CV's six count-1 volumes 76108/80914/87169/98347/106130/108950 and GCD 118630 at count 6) is the trades' own record and goes on the `I` lines
+I 108784 cv=461052 gcd=1759176 0.95 | Vol. 01 "Escape Velocity": CV issue 461052 "Volume 1" of volume 76108 and GCD issue 1759176 "Escape Velocity" of the collected line 118630, July 2014, against our 159pp rip
+I 108785 cv=483437 gcd=1759177 0.95 | Vol. 02 "Redshift": CV issue 483437 "Volume II" of volume 80914 and GCD issue 1759177 "Redshift", March 2015, barcode 978162010206051999, against our 158pp rip
+I 108786 cv=510553 gcd=1759178 0.95 | Vol. 03 "Dark Matter": CV issue 510553 "Volume III" of volume 87169 and GCD issue 1759178 "Dark Matter", January 2016, barcode 978162010272551999, against our 154pp rip
+I 108787 cv=578541 gcd=1759179 0.95 | Vol. 04 "Saviors": CV issue 578541 "Volume IV" of volume 98347 and GCD issue 1759179 "Saviors", January 2017, barcode 978162010355551999, against our 158pp rip
+I 108788 cv=638697 gcd=1759180 0.95 | Vol. 05 "Blueshift": CV issue 638697 "Volume 5" of volume 106130 and GCD issue 1759180 "Blueshift", November 2017, barcode 978162010446051999, against our 131pp rip
+I 108789 cv=661230 gcd=1788927 0.95 | Vol. 06 "The End": CV issue 661230 "Volume VI" of volume 108950 and GCD issue 1788927 "The End", February 2018, barcode 978162010468251999, against our 141pp rip
+N 10725 GCD also carries 127035 "Letter 44 Deluxe Edition" (Oni 2018-2019, count 3), 118946 the Square One Edition, 134578 Glénat's French line and 226219 Image's 2025 Compendium — none of them is this shelf
+
+# ── Oni Press\Mika and the Howler (2023)
+R 12071 | "Mika and the Howler (2023) (digital) (DrVink)" at 32pp (ComicInfo Publisher "Oni Press") is in neither catalog: probes of "Mika and the" return zero rows in both, and the only "Mika" rows are Juniorpress' Dutch 1983 series (CV 127468 / GCD 158021) and Semic's Swedish one — different comics reached by the first word
+F 12071 provider-missing | a 2023 Oni book past both catalogs' horizon; Open Library work OL31142889W (ExternalWork 632) is the only outside record
+
+# ── Oni Press\Missing You (2023)
+R 12210 | "Missing You (2023) (digital) (DrVink)" at 119pp (ComicInfo Publisher "Oni Press") is in neither catalog: exact and substring probes of "Missing You" return zero rows in both the rip and the dump, and the "Missing" hits are Autocratik Press 1997 (CV 101738 / GCD 199043) and a Casterman French album
+F 12210 provider-missing | a 2023 Oni book past both catalogs' horizon; Open Library work OL28402687W (ExternalWork 633) is all we hold
+
+# ── Oni Press\Quinnelope (2023)
+R 14304 | "COL Quinnelope and The Cookie King Catastrophe (2023) (Oni Press)" at 258pp is in neither catalog: the GCD dump's only Quinnelope row is 228116 "Quinnelope and the Unicorn Utopia" (Oni Press 2025, count 1), a different book of the line, and the ComicVine rip has no Quinnelope volume at all; the packet's "Cookie" hits are Shueisha's magazine and ACG's 1946 series
+F 14304 provider-missing | a 2023 Oni book past both catalogs' horizon even though the dump reaches the line's 2025 entry; Open Library work OL44589703W (ExternalWork 612)
+R 14305 | "COL Quinnelope and The Mystery of the Missing Moon (2024) (Oni Press)" at 274pp is in neither catalog: as with S14304 the dump holds only the 2025 "Unicorn Utopia" (GCD 228116) of this line and ComicVine holds nothing, while the candidates ("Missing" Autocratik, McDonald's "Mystery of the Missing McNugget") are other books
+F 14305 provider-missing | a 2024 Oni book past both catalogs' horizon; Open Library work OL44578428W (ExternalWork 613)
+
+# ── Oni Press\Scullion - A Dishwasher's Guide to Mistaken Identity (2020)
+S 15200 cv=128455 gcd=- 0.9 | CV 128455 "Scullion: A Dishwasher's Guide to Mistaken identity" (Oni Press 2020, count 1, issue 775808 "GN") carries our file's full title, publisher and year, and ComicInfo asserts Series "Scullion", Publisher "Oni Press"; a GCD probe for "Scullion" returns zero rows
+F 15200 provider-missing | GCD indexes no book of this title; the dump has no Scullion row in any language
+I 109820 cv=775808 gcd=- 0.9 | the book itself: CV issue 775808 "GN" is volume 128455's only issue, our 169pp Relic-Empire rip; no GCD row exists to pair it with
+
+# ── Oni Press\Sheets Trilogy (2018)
+R 10762 | "03 Lights (2023) (Digital-Empire)" at 363pp is book three of Brenna Thummler's Sheets trilogy, and neither catalog holds it: GCD indexes "Sheets" itself (128029, Lion Forge 2018) and "FCBD 2019: A Sheets Story" (144889) but no "Lights", and no GCD series named Lights published 2022-2024 exists; the ComicVine rip has "Sheets" (112850), "A Sheets Story" (118737) and "Sheets: Collector's Edition" (139219) but no Lights volume
+F 10762 provider-missing | the trilogy's third book, 2023, past both catalogs' horizon while its first book is indexed — the tier-D shape where a line's later volumes fall off the rip; Open Library work OL36715600W (ExternalWork 617)

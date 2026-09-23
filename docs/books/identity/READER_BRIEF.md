@@ -1095,6 +1095,41 @@ F 16797 misfiled | items 82880-82882 ("11 Starlord 1.cbr" … 36-37pp) sit under
   translation of a Japanese title. ComicVine carries Japanese originals GCD lacks — probe the Japanese title before
   conceding a scanlation shelf. Marvel renumbers sub-series into one volume (Ultimate Comics Avengers 1/2/3 = #1-18).
 
+- TIER D (D-016..D-018): a ripper's per-issue suffix gives every issue of one LINE its own shelf (61 Garfield shelves
+  = one Ballantine line CV 39429 / GCD 70018) — survivor takes the S, the rest merge-with. On small-press
+  singletons the PUBLISHER LIST beats every name probe (`gcd_series WHERE publisher_id=?` + `cv_vol.publisherName`);
+  GCD's first-printing page count pins an unlabelled album rip; `gcd_series.notes` can name the shelf outright —
+  read notes before refusing on a title mismatch. Top Shelf post-2016 is filed under IDW in GCD (ISBN 1-60309) and
+  absent from ComicVine. Year-by-year web-strip archives are provider-missing however famous (the catalogs hold the
+  strip's BOOKS). Papercutz / NBM kids lines span in both legs under NBM — probe the LINE. A barcode UPC core shared
+  by every file identifies the SERIES (1.0 on the S, `gcd=s<series>` on the I). A book whose only record is a
+  volume-level CV row with no cached issue and no GCD series is covered by `N <item> no-record` naming the volume.
+
+- TIER D (D-019..D-020, R-027): GCD writes "Gen 13" with a space (and "Gen 13: Interactive"); the GCD PUBLISHER column
+  on 1970s-80s paperback strip books is the parent house (Charter / Jove / Ace → "Berkley Books", ISBN 0-441; Tempo
+  → "Grosset and Dunlap", 0-448) — never reject on it, read the ISBN prefix; GCD can put the COVER YEAR inside a one-
+  shot's series NAME ("Cerebus Not the World Tour Book 1995"), defeating exact and --contains probes — list the
+  publisher's series. An "origin part 1 / part 2" pair is usually "0" and "00" of the ORIGINAL run. A webcomic's
+  volume divisions need not map onto its printed books (pair at 0.9 as a format split, N not forced I). Zenescope
+  one-shots carry 6-7 GCD variant rows — the base row (with a page count) is the I id. Year-by-year strip archives
+  are provider-missing even where the catalogs hold the strip's BOOKS. A second rip of a landed book copies the
+  sibling's ids verbatim; moving both to the run is a second-read edit, never a one-sided one.
+
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+
 ## Report back (≤ 25 lines)
 Per batch `{shelves, S by confidence, R, F by flag, I}`; conventions learned (one line each — they go into this
 ledger); systemic findings (wrong-link clusters, a packet block that misled, a shelf tiered wrong); any

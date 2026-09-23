@@ -1,0 +1,109 @@
+# R-027 — a revisit of six shelves, one question each. Five of the six questions were answerable and the
+# sixth (S66293) was already right.
+#
+# The two biggest findings are both "the probe was blocked by a token nobody thought was part of the title":
+#
+# (1) S3723. B-063 gave "Cerebus - Not The World Tour Book 1995" (56pp) the record of the DIFFERENT book
+#     "Cerebus World Tour Book" (CV 20422 / GCD 5337, whose only issue is 84pp) and D-015 then had to
+#     WITHHOLD that id from S3725, which is the book it actually describes. The right row was in the dump all
+#     along: GCD 152233 "Cerebus Not the World Tour Book 1995" (Aardvark-Vanaheim 1995, count 1). It is
+#     invisible to every name probe because GCD put the YEAR INSIDE THE TITLE — `norm_name` of our key is
+#     "cerebus not world tour book" and of GCD's row "cerebus not world tour book 1995", so the exact match
+#     fails and a `--contains` on our key fails too, the probe being the shorter string. Listing GCD's series
+#     by PUBLISHER (`gcd_series WHERE publisher_id = Aardvark-Vanaheim`, 113 rows) found it in one query.
+#     Writing `S 3723 cv=- gcd=152233` + `wrong-cv-link` clears the stored 20422 and frees it for S3725.
+#
+# (2) S12988. The two halves of "Ninjak 00a/00b (origin part 1/2)" belong to NEITHER shelf the lead named.
+#     ComicVine's 1994 Ninjak volume (CV 5348, count 28) holds issue 141691 numbered "0" and titled "Hope
+#     and Glory" AND issue 141693 numbered "00" and titled "Hope And Glory - Part II: Bitter Beginnings",
+#     both cover-dated June 1995, and GCD 5065 holds the same pair (#0 issue 266833 and #00 issue 266834,
+#     36pp each, June 1995). The `_Chronological Valiant` read-order positions prove it independently: 251
+#     and 252 sit immediately before position 276, "Ninjak 01", which is on S65364 "Ninjak (1994)". So
+#     B-068's `N 12988` (111652 left on Ninja-K 2017) is wrong, and so is D-018's `S 35768 cv=80599
+#     gcd=87401` + `merge-with=98889` (111539 sent to the Ninjak 2015 run) — CV 80599's #0 is issue 621607,
+#     "Prelude To Ninja-K", cover-dated 2017-09-30, a different comic twenty-two years later.
+#
+# CONVENTION LEARNED (for the ledger): GCD sometimes puts the COVER YEAR inside a one-shot's series NAME
+# ("Cerebus Not the World Tour Book 1995"), which defeats both the exact probe and `--contains` from our
+# side; when a small-press one-shot returns nothing, list the PUBLISHER's series (the tier-D publisher-list
+# rule) before writing no-record.
+# CONVENTION LEARNED: an "origin part 1 / part 2" pair of files is usually a two-part one-shot the catalogs
+# number "0" and "00" in the ORIGINAL run, not a split of one modern issue — and a chronology folder's
+# neighbouring read-order positions say which run, because the pair sits immediately before that run's #1.
+#
+# SYSTEMIC FINDING for the lead (needs its own revisit): S35768 "Ninjak 00b" is decided in D-018 as the
+# Ninjak 2015 run (cv=80599 gcd=87401 0.7) with `F 35768 merge-with=98889`. On the evidence above it is
+# Ninjak (1994) #00 — CV 5348 issue 141693 / GCD 5065 issue 266834 — and belongs with S65364, exactly as
+# item 111652 does. I cannot re-decide S35768 here (it is not in this batch's `.ids`), so it is presented.
+
+# ── S66293 Wolverine (1989) — R-026's verdict restated; I re-checked it and it is right ──────────────────
+# I re-read the shelf and agree with R-026 in full: 189 of the 203 files are the 1988-2003 ongoing, but items
+# 98096-98099 are four WHOLE books of a different run's collected line, which the residue ruling makes
+# co-equal ("Two or more whole trades of a DIFFERENT run with its own record are a co-equal run — R + split
+# even at 6:2"), and seven more files are Wolverine vol 3 (2003) single issues. The overlap-in-series flag is
+# therefore TRUE, not stale, and C-055's `N 66293 stale-flag` is the verdict this supersedes. The lines below
+# are R-026's, restated unchanged.
+R 66293 | 189 of the 203 files are "Wolverine 001-189 (1988-2003)" of the Marvel ongoing CV 4250 (1988 Marvel, 192) / GCD 3865 (1988-2003 Marvel, 190) — 32 of them asserting ComicInfo Volume 1988 and Count 189 — but items 98096-98099 are FOUR whole books of "Wolverine by Jason Aaron: The Complete Collection" (CV 69789 / GCD 77972, 2013-2014 Marvel, 4), a co-equal run by the residue ruling, and seven further files are Wolverine vol 3 (2003) issues; the stored CV 69993 is Panini Comics' Italian edition (445 issues) and no record spans the shelf
+F 66293 split-needed | proposed runs: the 1988-2003 ongoing cv 4250 / gcd 3865 (189 issue files, ladder 1-189); and the Jason Aaron collected line cv 69789 / gcd 77972 (items 98096-98099), which collects Wolverine (2010) cv 35263 / gcd 52076, Wolverine Weapon X (2009) cv 26150 / gcd 36479 and Wolverine (2003) cv 10809 / gcd 11723
+F 66293 wrong-cv-link | stored CV 69993 "Wolverine" 1989 Panini Comics count 445 is the Italian edition, rejected on publisher and language; GCD's own majority pick (129 of 203 files) is 3865, the English 1988-2003 Marvel run
+F 66293 misfiled | items 90317 and 90689-90694 ("Wolverine v3 032 (B&W)" and "v3 050-055 (B&W)", 24-33pp) are Wolverine vol 3 (2003) issues whose own shelf is S101456 "Wolverine v3 (2003)"; items 83129-83130 are 1pp variant covers of the 2024 "Wolverine No. 88 Facsimile Edition", whose shelf is S21775
+I 97629 cv=- gcd=s65580 isbn=978-1-302-94651-7 0.9 | "COL Wolverine Omnibus Book 03 (2023)" 1226pp is GCD 65580 "Wolverine Omnibus" #3 (1272pp), indexed as three variant rows (2481452 / 2482298 / 2482318, ISBNs 978-1-302-94651-7, -94652-4, -94839-9), so the series form is the honest id; ComicVine mints no omnibus volume
+I 97997 cv=- gcd=2305092 isbn=978-1-302-93164-3 0.95 | "COL Wolverine by Claremont & Miller - Deluxe Edition (2021)" 159pp is GCD 180761 "Wolverine by Claremont & Miller: Deluxe Edition" 2021 Marvel, one 164pp issue with ISBN 978-1-302-93164-3; ComicVine's 67792 is the 2009 edition, not this one
+I 98096 cv=435873 gcd=1166699 isbn=978-0-7851-8541-3 0.95 | "Wolverine by Jason Aaron - The Complete Collection Book 01 (2013)" 383pp: CV 69789 issue 435873 is "Vol. 1" and GCD 77972 #1 is 396pp, ISBN 978-0-7851-8541-3, 2013
+I 98097 cv=449283 gcd=1192799 isbn=978-0-7851-8576-5 0.95 | Book 02 (2014) 321pp: CV 69789 issue 449283 is "Vol. 2" and GCD 77972 #2 is 324pp, ISBN 978-0-7851-8576-5 — three pages apart from our rip
+I 98098 cv=472433 gcd=2223287 isbn=978-0-7851-8908-4 0.95 | Book 03 (2014) 437pp: CV 69789 issue 472433 is "Vol. 3" and GCD 77972 #3 is 460pp, ISBN 978-0-7851-8908-4
+I 98099 cv=471553 gcd=2479593 isbn=978-0-7851-8909-1 0.95 | Book 04 (2014) 396pp: CV 69789 issue 471553 is "Vol. 4" and GCD 77972 #4 is 412pp, ISBN 978-0-7851-8909-1
+C 97629 cv=4250 gcd=3865 #31-59 0.95 | the Omnibus Book 03's reprint rows are Wolverine (1988) #31-59 — CV 4250 (1988 Marvel, 192) / GCD 3865 (1988-2003 Marvel, 190) — which is exactly this book's judged range #31-59
+C 97629 gcd=3654 #85-108 0.9 | the same omnibus collects Marvel Comics Presents (GCD 3654, 1988-1995 Marvel, 175) #85-108, the Wolverine serial running through that anthology — a different run in its own numbering
+C 97629 gcd=4254 #4-7 0.9 | and X-Men (GCD 4254, 1991-2001 Marvel, 118) #4-7, the Wolverine/Omega Red arc, again a run of its own
+C 97629 gcd=2657 #54-55 0.9 | and Marvel Fanfare (GCD 2657, 1982-1992 Marvel, 60) #54-55, two more issues of a separate series inside the same 1272pp book
+C 97997 cv=3157 gcd=2671 #1-4 0.95 | the Claremont & Miller Deluxe Edition collects the whole 1982 four-issue mini "Wolverine" — CV 3157 (1982 Marvel, 4) / GCD 2671 (1982 Marvel, 4) — matching the judged range #1-4
+C 97997 gcd=2605 #172-173 0.9 | it also collects Uncanny X-Men (GCD 2605, 1981-2011 Marvel, 405) #172-173, the two-part sequel to that mini, in the parent title's own numbering
+C 98096 cv=26150 gcd=36479 #1-5 0.95 | Aaron Book 01's reprint rows include Wolverine Weapon X #1-5 entire — CV 26150 (2009 Marvel, 16) / GCD 36479 (2009-2010 Marvel, 16) — the "Adamantium Men" arc
+C 98096 cv=23486 gcd=32294 #1-4 0.9 | and the whole four-issue "Wolverine: Manifest Destiny" (CV 23486, 2008 Marvel, 4 / GCD 32294, 2008-2009 Marvel, 4), a mini with its own record
+C 98097 cv=26150 gcd=36479 #6-16 0.95 | Aaron Book 02 finishes Wolverine Weapon X with #6-16 (CV 26150 / GCD 36479, 2009-2010 Marvel, 16), which is this book's judged range #6-16 exactly
+C 98098 cv=35263 gcd=52076 #1-9 0.95 | Aaron Book 03's reprint rows are Wolverine (2010) #1-9 including #5.1 — CV 35263 (2010 Marvel, 40) / GCD 52076 (2010-2013 Marvel, 39) — the relaunch this shelf does not otherwise hold
+C 98098 gcd=48355 #1-6 0.9 | the same book collects the whole six-issue "Astonishing Spider-Man & Wolverine" (GCD 48355, 2010-2011 Marvel, 6), its own limited series
+C 98099 cv=35263 gcd=52076 #10-20 0.95 | Aaron Book 04 collects Wolverine (2010) #10-20 of CV 35263 (2010 Marvel, 40) / GCD 52076 (2010-2013 Marvel, 39), ending the volume's first numbering
+N 66293 Book 04 also collects that run's legacy-renumbered tail #300-304 (the same GCD 52076 / CV 35263 rows) — one C line may state only one range per run, so the tail is recorded here rather than as a second range
+N 66293 Aaron Book 01 further reprints scattered issues of Wolverine vol 3 (2003) — #56, #62-65, #73-74 (CV 10809 / GCD 11723, 81 issues) — and Wolverine (1988) #175; a scattered set is not a range, so no C line is written for it
+N 66293 the overlap-in-series flag is NOT stale: by the residue ruling four whole trades of the Jason Aaron 2010 run are a co-equal run, and the v3 (2003) issue files are a third comic — the split above is what clears it
+N 66293 the label-ambiguous flag on item 90317 is correct — the seven "Wolverine v3" files are single issues, not collections — and they are the misfiled group named above
+N 66293 re-verified in R-027: the stored CV 69993 is still the Italian Panini edition, the ladder still runs 1-189 for the ongoing, and the four Jason Aaron books are still whole volumes of a separate collected line — R-026's split stands unchanged
+
+# ── S8696 / S8697 — the two Lorna albums D-009 refused ───────────────────────────────────────────────────
+# D-009 wrote `R 8696` and `R 8697` with `provider-missing` after probing "Lorna" and reaching Marvel's 1953
+# jungle titles and Silver Sprocket's 2019 book. The lead is right: BOTH albums are in BOTH catalogs under
+# their own full names, and a `--contains "Lorna"` listing shows six English Heavy Metal Azpiri albums
+# (Mouse Club 1996, Lorna and Her Robot 2000, Leviathan 2000, The Ark 2001/2002, The Eye of Dart-An-Gor
+# 2005, The Black Castle 2008) — an exact probe returning only foreign editions is not a finding.
+S 8696 cv=37426 gcd=51538 0.95 | two independent legs on one album: CV 37426 "Lorna: Leviathan" (Heavy Metal 2000, count 1, issue 248870) and GCD 51538 "Lorna: Leviathan" (Heavy Metal 2000-2000, count 1, issue 769751) agree on title, publisher, year and a count of one, and our single 57pp file "Heavy_Metal-Alfonso_Azpiri-Lorna_Leviathan.cbr" is that ~50pp Azpiri album; the shelf's "1977" year is the parent Heavy Metal Magazine folder's, not the album's
+I 29401 cv=248870 gcd=769751 isbn=- 0.9 | the book's own record: CV issue 248870 of volume 37426 and GCD issue 769751 of series 51538; GCD records neither a page count nor an ISBN for the row, so the match rests on the title, the publisher and the year against our 57pp rip
+S 8697 cv=31447 gcd=51542 0.95 | two independent legs on one album: CV 31447 "Lorna: Mouse Club" (Heavy Metal 1996, count 1, issue 222941) and GCD 51542 "Lorna: Mouse Club" (Heavy Metal 1996-1996, count 1, issue 769748 at 64pp / ISBN 1-882931-22-X) agree on title, publisher, year and count, and 64pp sits against our 58pp file "Heavy_Metal-Alfonso_Azpiri-Lorna-Mouse_Club_(Heavy_Metal).cbr"
+I 29400 cv=222941 gcd=769748 isbn=188293122X 0.95 | the book's own record: CV issue 222941 of volume 31447 and GCD issue 769748 of series 51542, 64pp / ISBN 1-882931-22-X, against our 58pp rip
+
+# ── S3723 — Cerebus: the pair read, and each book given its own record ───────────────────────────────────
+S 3723 cv=- gcd=152233 0.9 | the pair reads cleanly once GCD's own row for THIS book is found: our file is item 105403 "Cerebus - Not The World Tour Book 1995.cbz" (56pp) and GCD 152233 is "Cerebus Not the World Tour Book 1995" (Aardvark-Vanaheim 1995, count 1, issue 2035981 at 84pp, noted "5,000 copies printed"), a different 1995 Aardvark publication from GCD 5337 "Cerebus World Tour Book" (issue 56250, also 84pp) — which is item 105405 "Cerebus World Tour Book.cbr" (85pp) on S3725. cv=- because ComicVine indexes no "Not the World Tour Book" volume at all (0 rows for either spelling); 0.9 on one leg plus our own title and year, with our 56pp rip running 28 pages under the row
+F 3723 wrong-cv-link | the stored CV 20422 "Cerebus World Tour Book" (1995 Aardvark, count 1, issue 122225) is the OTHER book — S3725's 85pp file, whose 84pp GCD row 5337 it matches — and B-063 gave it to this shelf by title similarity; clearing it here is what frees 20422 for S3725
+F 3723 provider-missing | ComicVine has no record of "Cerebus: Not the World Tour Book"; GCD 152233 carries the only one
+I 105403 cv=- gcd=2035981 isbn=- 0.9 | the book's own record: GCD issue 2035981 of series 152233, 1995, 84pp with a 5,000-copy print note, against our 56pp rip — the only item-level record of this book in either catalog
+N 3723 this releases D-015's withheld id: `N 3725 withheld cv=20422` can now be written plainly, because this shelf no longer claims it. S3725's own pair is CV 20422 (issue 122225) / GCD 5337 (issue 56250, 84pp) against its 85pp file, and S3725 needs a revisit line of its own to take the cv id it was denied
+N 3723 the reason five earlier passes missed GCD 152233 is that the year is inside the series NAME: `norm_name` gives our key "cerebus not world tour book" and the row "cerebus not world tour book 1995", so the exact probe fails and `--contains` fails too because the probe is the shorter string; listing Aardvark-Vanaheim's 113 GCD series by publisher_id found it at once
+
+# ── S18258 — The Comics Journal: the magazine keeps the S, the three Library books get their records ──────
+S 18258 cv=35609 gcd=65424 0.9 | the shelf is the MAGAZINE and 46 of its 49 files are issues of it: CV 35609 "The Comics Journal" (Fantagraphics 1976) caches #27-309 and GCD 65424 "The Comics Journal" (Fantagraphics 1977-?, ongoing, 280 issues) is the same run, our ladder 27-309 sitting wholly inside it with ComicInfo Series "The Comics Journal" and Publisher "Fantagraphics" on ten files; 0.9 because three files are a different comic — the Comics Journal Library trades — and eleven numbers name two files each, which is duplicate rips (#32-34, 53, 67, 179, 303-306, 308) and costs nothing
+I 24967 cv=435672 gcd=1915832 isbn=9781606996089 0.95 | this corrects C-026's `N 18258` and X-017's `N 24967 no-record`: "The Comics Journal Library" IS in both catalogs — CV 56281 (Fantagraphics 2002, count 10) and GCD 139416 (Fantagraphics 2002-2016, count 10) — and Vol. 08 "The EC Artists 01" is CV issue 435672 "The EC Artists" (December 2013) and GCD issue 1915832, ISBN 978-1-60699-608-9, against our 240pp rip
+I 24968 cv=472052 gcd=1915833 isbn=9781606997888 0.95 | Vol. 09 "Zap - The Interviews": CV issue 472052 "Zap: The Interviews" of volume 56281 and GCD issue 1915833 of series 139416, ISBN 978-1-60699-788-8, January 2015, against our 261pp rip — the second of the three no-record verdicts this corrects
+I 24969 cv=557313 gcd=1915834 isbn=9781606999455 0.95 | Vol. 10 "The EC Artists 02": CV issue 557313 "Volume 10: The EC Artists, Part 2" of volume 56281 and GCD issue 1915834 of series 139416, ISBN 978-1-60699-945-5, September 2016, against our 282pp rip
+N 18258 the Comics Journal Library line (CV 56281 / GCD 139416, ten volumes whose subtitles match volume for volume) has its OWN shelf, S68127, which D-017 landed on exactly these ids with the same three books in a second rip; the three trades here are that line's books filed under the magazine's `\Trades` subfolder, so they are residue on this shelf and not its identity
+N 18258 the Library line is not coextensive with this shelf and cannot carry its S: 46 of the 49 files are magazine issues #27-309 of a 280-issue run, against three books of a ten-volume reprint line
+
+# ── S12988 — Ninja-K: the shelf restated, and item 111652 placed ─────────────────────────────────────────
+S 12988 cv=106133 gcd=118631 0.9 | B-068's identity stands: CV 106133 "Ninja-K" (DMG/Valiant Entertainment 2017, count 14) and GCD 118631 "Ninja-K" (Valiant Entertainment 2017-2018, count 28 — exactly twice ComicVine's, the Valiant Pre-Order Edition doubling artefact) are one fourteen-issue run, and our three trades' judged ranges #1-5, #6-9 and #10-14 tile it exactly with the Deluxe Edition collecting #1-14; 0.9 for the doubled GCD count
+F 12988 misfiled | item 111652 "251. Ninjak 00a (origin part 1)" 25pp is not a Ninja-K issue: it is Ninjak (1994) #0 "Hope and Glory" — CV 5348 issue 141691 / GCD 5065 issue 266833, June 1995 — whose shelf is S65364 "Ninjak (1994)" (landed in C-062 on cv=5348 gcd=5065). CV 106133 caches #1-14 with no #0 at all, and the read-order positions settle it: 251 and 252 sit immediately before position 276, "Ninjak 01", which is on S65364
+I 110879 cv=- gcd=1801642 isbn=- 0.95 | item 110879 "COL Ninja-K v01 - The Ninja Files" 178pp is GCD 123896 #1 of that subtitle at 164pp, the collected line's first volume; ComicVine mints no count-1 volume for it
+I 110880 cv=688200 gcd=1856743 isbn=- 0.95 | item 110880 "v02 - The Coalition" 113pp is CV 114257 "Ninja-K: The Coalition" (Valiant 2018, count 1) issue 688200 and GCD 123896 #2 at 116pp
+I 110881 cv=701275 gcd=1930804 isbn=9781682153093 0.95 | item 110881 "v03 - Fallout" 128pp is CV 117220 "Ninja-K: Fallout" (Valiant 2019, count 1) issue 701275 and GCD 123896 #3 "Fallout!" at 128pp, ISBN 9781682153093
+I 111976 cv=716261 gcd=2112912 isbn=- 0.9 | item 111976 "COL Ninja-K Deluxe Edition (2019)" 396pp is CV 120655 "Ninja-K Deluxe Edition" (Valiant 2019, count 1) issue 716261 and GCD 159819 issue 2112912 — X-054's correction of the per-file pick, which had reached 123896, the non-deluxe trade line; restated here so the shelf's four books are answered in one place
+N 12988 the other half of the pair is item 111539 "252. Ninjak 00b (origin part 2)" 25pp, which is Ninjak (1994) #00 "Hope And Glory - Part II: Bitter Beginnings" — CV 5348 issue 141693 / GCD 5065 issue 266834, June 1995, 36pp. It sits on S35768, which D-018 decided as the Ninjak 2015 run (cv=80599 gcd=87401 0.7) with merge-with=98889; that is wrong on the same evidence, because CV 80599's only #0 is issue 621607 "Prelude To Ninja-K", cover-dated 2017-09-30. Both halves belong with S65364, and S35768 needs a revisit line this batch cannot write
+N 12988 the 2017 one-shot Ninjak #0 that IS "Prelude to Ninja-K" is on disk separately as item 111979 "Ninjak 000 (2017) (digital) (Son of Ultron-Empire)" 40pp on shelf S98890, which C-062 landed on GCD 116633 — so nothing of the 2017 #0 is missing and the 00a/00b pair is not a rip of it

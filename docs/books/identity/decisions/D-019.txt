@@ -1,0 +1,399 @@
+# D-019 — tier D, 120 shelves, all of them inside `Webcomics and Strips\`: the newspaper-strip and
+# webcomic wing of the library. Three shapes account for 118 of the 120.
+#
+# (1) A LINE both catalogs index as one series, cut into one shelf per BOOK by the ripper's subtitle.
+#     Four of them here: the Ballantine Garfield paperbacks (CV 39429 / GCD 70018 — D-018's finding,
+#     seven more books of it land here on S7193), The Order of the Stick (CV 86843 / GCD 92548, the
+#     issue NUMBER is the book's place in the line and the issue NAME is our filename), Hermes Press's
+#     The Phantom: The Complete Newspaper Dailies (CV 44892 / GCD 50260, whose per-volume page counts
+#     match our rips within 8pp volume for volume), and Stand Still Stay Silent's Hiveworks books.
+#     In each the survivor takes the S and the siblings take `F merge-with`.
+#
+# (2) A ONE-BOOK shelf whose book has its own count-1 record. The whole Heathcliff folder is this: GCD
+#     indexes each Windmill/Tempo/Charter/Jove paperback as its own series and ComicVine indexes almost
+#     none of them. The reading that made it work is the ISBN PREFIX: every "Charter", "Jove" and "Ace"
+#     file carries an 0-441 ISBN and GCD files all three imprints under publisher "Berkley Books", and
+#     every "Tempo" file carries an 0-448 ISBN, which is Grosset & Dunlap — Tempo was their paperback
+#     line. So a file that says "(Charter 1984)" against a GCD row that says "Berkley Books 1984" is the
+#     same object, not a mismatch, and the disagreement the packet shows is an imprint, never a comic.
+#     GCD also mints a TWIN for most of these (a Tempo first printing plus a Berkley reissue a year
+#     later: Strikes Again! 210536/210537, Triple Threat 59665/210530, Rides Again 85083/176815) — the
+#     FILE's stated publisher and year pick the row, and the twin is named.
+#
+# (3) A YEAR-BY-YEAR (or date-range) STRIP ARCHIVE, which is provider-missing however famous the strip.
+#     29 Peanuts.YYYY files, 29 Family Circus years, 25 Ziggy years, 11 Zippy the Pinhead years, 7
+#     Office Hours years, 5 Olive & Popeye, 3 Legalization Nation, 3 Monologuist volumes, 2 Popeye's
+#     Cartoon Club, 2 Bloom County 2015 date ranges and one Outland date range: 63 shelves. The
+#     catalogs index the strip's BOOKS, and in several cases hold them plainly (The Complete Peanuts
+#     CV 20938 / GCD 15711, 26 volumes of TWO years each; IDW's Bloom County CV 94388 / GCD 110459) —
+#     those are different objects from a rip of one calendar year at one page per day, and the page
+#     counts say so outright: the Peanuts.1954+ files run 322-366pp, i.e. one image per daily strip.
+#     D-018 ruled this shape for Achewood and FoxTrot; it is applied unchanged.
+#
+# Fourth, smaller finding: 22 of the Peanuts shelves are Simon Spotlight / Ballantine KIDS' TIE-IN
+# picture books (10-37pp: "It's Springtime, Snoopy!", "Here Comes the Easter Beagle!", "Hug a Tree,
+# Snoopy!") and not one of the 22 titles returns a single hit in either catalog under any spelling —
+# a total hole in both, exactly as the licensed-non-comics rule says. The one exception is DK's
+# reference book "The Peanuts Book: A Visual History" (S19338), which BOTH legs carry.
+#
+# CONVENTION LEARNED (for the ledger): the GCD PUBLISHER column on a 1970s-80s paperback strip
+# collection is the parent house, not the imprint on the cover — Charter / Jove / Ace all file under
+# "Berkley Books" (ISBN 0-441) and Tempo files under "Grosset and Dunlap" (ISBN 0-448). Reject nothing
+# on that column alone; read the ISBN prefix.
+# CONVENTION LEARNED: a webcomic's own volume divisions need not map onto its printed books at all
+# (Stand Still Stay Silent: our 5 webrip volumes of Adventure 1 against Hiveworks' 4 books at
+# 336/268/314/228pp) — pair the shelf with the published edition at 0.9 as a format split and write an
+# `N` instead of forcing per-book `I` lines onto a mapping that does not exist.
+
+# ── Garfield\Garfield Books (Ballentine Books) — seven more books of D-018's line (survivor S7193)
+S 7261 cv=39429 gcd=70018 0.95 | the Ballantine line D-018 landed on S7193: this shelf's file is "His 4th Book", which is #4 of CV 39429 "Garfield" (Ballantine Books 1980, count 75) — ComicVine names that issue "Garfield Weighs In" — and of GCD 70018 "Garfield" (Random House 1980-?), whose 132pp row for it is issue 564007 against our 132pp rip
+F 7261 merge-with=7193 | one book of the numbered Ballantine Garfield paperback line whose survivor shelf is S7193 (D-018); the ripper's "Garfield <subtitle> - His NNth Book" gave every book its own shelf
+I 113854 cv=266316 gcd=564007 isbn=0345302621 0.95 | book #4 "Garfield Weighs In": CV issue 266316 of volume 39429 and GCD issue 564007 of series 70018, 132pp / ISBN 0-345-30262-1, against our 132pp rip
+S 7262 cv=39429 gcd=70018 0.95 | the same numbered line: "His 71st Book" is #71 of CV 39429 "Garfield" (Ballantine Books 1980, count 75), named "Garfield What Leftovers?" there, and GCD 70018's row for it is issue 2495798 at 100pp / ISBN 978-0593156445 against our 98pp rip — the line drops from 132pp to 100pp at #37, which is why the later books are thinner
+F 7262 merge-with=7193 | one book of the numbered Ballantine Garfield paperback line whose survivor shelf is S7193 (D-018)
+I 114043 cv=977032 gcd=2495798 isbn=9780593156445 0.95 | book #71 "Garfield What Leftovers?": CV issue 977032 of volume 39429 and GCD issue 2495798 of series 70018, 100pp / ISBN 978-0593156445, against our 98pp rip
+S 7263 cv=39429 gcd=70018 0.95 | the same numbered line: "His 48th Book" is #48 of CV 39429 "Garfield" (Ballantine Books 1980, count 75), named "Garfield Will Eat for Food", and GCD 70018's row for it is issue 1034580 with ISBN 0345491769; our 129pp rip sits in the line's 100-132pp band
+F 7263 merge-with=7193 | one book of the numbered Ballantine Garfield paperback line whose survivor shelf is S7193 (D-018)
+I 114024 cv=266573 gcd=1034580 isbn=0345491769 0.95 | book #48 "Garfield Will Eat for Food": CV issue 266573 of volume 39429 and GCD issue 1034580 of series 70018, ISBN 0345491769, against our 129pp rip
+S 7264 cv=39429 gcd=70018 0.95 | the same numbered line: "His 15th Book" is #15 of CV 39429 "Garfield" (Ballantine Books 1980, count 75), spelled "Garfield World-Wide" there, and GCD 70018's row for it is issue 1034095 at 132pp / ISBN 0-345-35158-4 against our 132pp rip
+F 7264 merge-with=7193 | one book of the numbered Ballantine Garfield paperback line whose survivor shelf is S7193 (D-018)
+I 113866 cv=266327 gcd=1034095 isbn=0345351584 0.95 | book #15 "Garfield World-Wide": CV issue 266327 of volume 39429 and GCD issue 1034095 of series 70018, 132pp / ISBN 0-345-35158-4, against our 132pp rip; GCD carries two later printings of the same ISBN (1609628, 2531965)
+S 7265 cv=39429 gcd=70018 0.95 | the same numbered line and its FIRST book: "His 1st Book" is #1 of CV 39429 "Garfield" (Ballantine Books 1980, count 75), named "Garfield At Large", and GCD 70018's row for it is issue 564004 at 132pp / ISBN 0-345-28779-7 against our 132pp rip
+F 7265 merge-with=7193 | one book of the numbered Ballantine Garfield paperback line whose survivor shelf is S7193 (D-018)
+I 113851 cv=266312 gcd=564004 isbn=0345287797 0.95 | book #1 "Garfield At Large": CV issue 266312 of volume 39429 and GCD issue 564004 of series 70018, 132pp / ISBN 0-345-28779-7, against our 132pp rip
+S 7266 cv=39429 gcd=70018 0.95 | the same numbered line: "His 22nd Book" is #22 of CV 39429 "Garfield" (Ballantine Books 1980, count 75), spelled "Garfield By the Pound", and GCD 70018's row for it is issue 1034554; our 130pp rip sits in the line's 132pp first band
+F 7266 merge-with=7193 | one book of the numbered Ballantine Garfield paperback line whose survivor shelf is S7193 (D-018)
+I 113873 cv=266338 gcd=1034554 isbn=- 0.9 | book #22 "Garfield By the Pound": CV issue 266338 of volume 39429 and GCD issue 1034554 of series 70018, which carries neither a page count nor an ISBN, so the match is the number and the title against our 130pp rip
+S 7267 cv=39429 gcd=70018 0.95 | the same numbered line: "His 59th Book" is #59 of CV 39429 "Garfield" (Ballantine Books 1980, count 75), named "Garfield the Big Cheese", and GCD 70018's row for it is issue 1687752 at 100pp / ISBN 9780345526045; our 129pp rip is the line's usual over-count of the 100pp later books
+F 7267 merge-with=7193 | one book of the numbered Ballantine Garfield paperback line whose survivor shelf is S7193 (D-018)
+I 114031 cv=652556 gcd=1687752 isbn=9780345526045 0.95 | book #59 "Garfield the Big Cheese": CV issue 652556 of volume 39429 and GCD issue 1687752 of series 70018, 100pp / ISBN 9780345526045, against our 129pp rip
+
+# ── Garfield\Garfield Year by Year — a different, genuinely two-volume line
+S 66452 cv=113704 gcd=143177 0.95 | CV 113704 "Garfield Complete Works" (Ballantine Books 2018, count 2, issues named "Volume 1: 1978-1979" and "Volume 2: 1980-1981") and GCD 143177 "Garfield: Complete Works" (Random House 2018-?, count 2, rows titled "1978 & 1979" at 264pp and "1980 & 1981" at 324pp) agree on publisher, year and count, and the page counts match our two files at 260pp and 323pp
+I 114067 cv=685717 gcd=1942422 isbn=9780425287125 0.95 | v01 1978 & 1979: CV issue 685717 of volume 113704 and GCD issue 1942422 of series 143177, 264pp / ISBN 978-0425287125, against our 260pp rip
+I 114068 cv=703784 gcd=1942423 isbn=9780425287132 0.95 | v02 1980 & 1981: CV issue 703784 of volume 113704 and GCD issue 1942423 of series 143177, 324pp / ISBN 978-0425287132, against our 323pp rip
+
+# ── Girl Genius (2002)\Extras
+R 7580 | the ten files are the EXTRAS sections lifted out of the Girl Genius printed volumes ("Girl Genius Volume 04 Extras" … "Volume 13 Extras", 2-54pp) — at 2, 5, 6 and 8 pages they cannot be volumes of anything, and the volumes they came out of are GCD 12100 / 46692 / 50897 and CV 21642 / 21643, which are decided elsewhere; a reader's extract of a book's back matter is not a published comic the ledger links
+F 7580 not-a-run | a bucket of back-matter extracts (2-54pp) pulled from the numbered Girl Genius volumes, not a comic in its own right
+
+# ── Heathcliff — one book per shelf, GCD-only, imprints filed under the parent house
+R 8507 | "Heathcliff - America's Craziest Cat! (Windmill 1981)" 132pp is a real Windmill Books paperback and neither catalog holds it: GCD lists 40+ Heathcliff series (Grosset and Dunlap, Tempo, Ace, Berkley, Tor, Jove, Marvel) and no Windmill row at all — gcd_publisher's only Windmill is "Windmill Comics" 2008 — and a LIKE on gcd_issue.title and cv_iss.name for "Craziest Cat" returns nothing; ComicVine's 21 Heathcliff volumes do not include it
+F 8507 provider-missing | Windmill Books' 1981 Heathcliff paperbacks are indexed by neither catalog; the title is absent from gcd_series, gcd_issue.title, cv_vol and cv_iss
+S 8508 cv=- gcd=142292 0.9 | GCD 142292 "Heathcliff and the Good Life" (Tor Books 1988, count 1, issue 1936056, ISBN 0812568192 — the 0-8125 prefix is Tor) is the only record of this book in either catalog and its publisher is the one our filename states, "(Tor 1982)"; ComicVine has no volume of that title among its 21 Heathcliff rows, and 1982 is the strips' copyright year rather than Tor's imprint date
+F 8508 provider-missing | ComicVine indexes no "Heathcliff and the Good Life" volume; GCD carries the only record
+I 114144 cv=- gcd=1936056 isbn=0812568192 0.9 | the book's own record: GCD issue 1936056 of series 142292, Tor Books 1988, ISBN 0-8125-6819-2, with no page count to set against our 132pp rip
+S 8510 cv=- gcd=209026 0.9 | GCD 209026 "Heathcliff Banquet" (Tempo Books 1980, count 1, issue 2609658, ISBN 0448126346 — the 0-448 prefix is Grosset & Dunlap, whose paperback line Tempo was) matches our filename's publisher AND year exactly, "(Tempo 1980)"; Open Library also holds the work as /works/OL3402783W, and ComicVine has no Heathcliff Banquet volume
+F 8510 provider-missing | ComicVine indexes no "Heathcliff Banquet"; GCD 209026 is the only catalog record
+I 114146 cv=- gcd=2609658 isbn=0448126346 0.9 | the book's own record: GCD issue 2609658 of series 209026, Tempo Books 1980, ISBN 0-448-12634-6, no page count against our 132pp rip
+S 8512 cv=- gcd=102080 0.9 | GCD 102080 "Heathcliff Cleans House" (Berkley Books 1985-?, count 1 but two printing rows, 1572640 at ISBN 0-441-32233-6 September 1985 and 2716980 at ISBN 0441322484 December 1985, both 132pp) is the only record of the book; our "(Jove 1989)" rip is a later Jove reissue and Jove, Charter and Ace all file under Berkley in GCD on the 0-441 prefix, so the imprint difference is not a different comic
+F 8512 provider-missing | ComicVine indexes no "Heathcliff Cleans House"; the Jove 1989 printing we hold is in neither catalog
+I 114148 cv=- gcd=s102080 0.7 | the printing we hold is the Jove 1989 reissue, which GCD does not index: series 102080 carries only the two 1985 Berkley printings (1572640 / 2716980, both 132pp against our 130pp), so the series is named and no issue row is claimed
+S 8515 cv=- gcd=97413 0.9 | GCD 97413 "Heathcliff Pigs Out" (Berkley Books 1984-1988, count 1, issue 1538079 at 132pp / ISBN 0441322107, May 1984) matches our "(Charter 1984)" file's year and its 132pp exactly, and the 0-441 ISBN prefix is the Charter/Berkley house; ComicVine has "Heathcliff Dines Out" but no Pigs Out among its 21 Heathcliff volumes
+F 8515 provider-missing | ComicVine indexes no "Heathcliff Pigs Out"; GCD 97413 is the only record
+I 114151 cv=- gcd=1538079 isbn=0441322107 0.95 | the book's own record: GCD issue 1538079 of series 97413, 132pp / ISBN 0-441-32210-7, May 1984, against our 132pp "(Charter 1984)" rip; the row's second issue 1538270 is the January 1988 reprinting
+S 8516 cv=- gcd=176815 0.9 | of GCD's two "Heathcliff Rides Again" rows the YEAR decides: 85083 is Grosset and Dunlap 1977 and 176815 is Berkley Books 1984, and our file says "(Charter 1984)" — Charter being the 0-441 Berkley imprint — so 176815's issue 2268276 (132pp / ISBN 0-441-32401-0, January 1984) is the book; ComicVine holds neither
+F 8516 provider-missing | ComicVine indexes no "Heathcliff Rides Again"; GCD's two rows are the 1977 Grosset and Dunlap original and the 1984 Berkley edition we hold
+I 114152 cv=- gcd=2268276 isbn=0441324010 0.9 | the printing we hold: GCD issue 2268276 of series 176815, 132pp / ISBN 0-441-32401-0, January 1984, against our 132pp rip; the sibling row 2268246 is the same book without an ISBN
+S 8517 cv=47649 gcd=142290 0.95 | two independent legs on one book: CV 47649 "Heathcliff Round 3" (Berkley Books 1983, count 1, issue 327790) and GCD 142290 "Heathcliff Round 3" (Berkley Books 1984, count 1, issue 1936054 at 132pp / ISBN 044132228X) agree on title, publisher and count, and the 132pp row matches our 132pp "(Charter 1984)" rip; the filename's "Round 3" is the book's title, not a ladder position
+I 114153 cv=327790 gcd=1936054 isbn=044132228X 0.95 | the book's own record: CV issue 327790 of volume 47649 and GCD issue 1936054 of series 142290, 132pp / ISBN 0-441-32228-X, against our 132pp rip
+S 8518 cv=- gcd=176816 0.9 | GCD 176816 "Heathcliff Smooth Sailing" (Berkley Books 1987, count 1, issue 2268247 at 132pp, January 1987) matches our "(Charter 1987)" file's year and page count exactly, Charter being Berkley's 0-441 imprint; ComicVine has no such volume among its 21 Heathcliff rows
+F 8518 provider-missing | ComicVine indexes no "Heathcliff Smooth Sailing"; GCD 176816 is the only record
+I 114154 cv=- gcd=2268247 isbn=- 0.9 | the book's own record: GCD issue 2268247 of series 176816, 132pp, January 1987, against our 132pp rip; the row carries no ISBN
+S 8520 cv=- gcd=210536 0.9 | GCD mints twins for this book — 210536 (Tempo Books 1983) and 210537 (Berkley Books, September 1984) — and our file says "(Tempo 1983)", so 210536's issue 2619992 at 132pp / ISBN 0441322034 is the printing named; Open Library holds the work as /works/OL18163209W and ComicVine has only the different book "Heathcliff Does it Again"
+F 8520 provider-missing | ComicVine indexes no "Heathcliff Strikes Again!"; GCD's twin 210537 is the 1984 Berkley reissue of the same book
+I 114156 cv=- gcd=2619992 isbn=0441322034 0.9 | the printing we hold: GCD issue 2619992 of series 210536, Tempo Books 1983, 132pp / ISBN 0-441-32203-4, against our 132pp rip
+S 8522 cv=- gcd=59665 0.9 | GCD's twins again: 59665 "Heathcliff Triple Threat" (Grosset and Dunlap, issue 853260, December 1977, 132pp / ISBN 0-448-14356-9) and 210530 (Berkley Books 1984). Our file says "(Tempo 1977)" and Tempo Books was Grosset & Dunlap's paperback line on the 0-448 prefix, so the 1977 row is ours; ComicVine's "Triple Threat Comics" 1945 and "Captain America: Triple Threat" are different comics
+F 8522 provider-missing | ComicVine indexes no "Heathcliff Triple Threat"; GCD's twin 210530 is the 1984 Berkley reissue
+I 114158 cv=- gcd=853260 isbn=0448143569 0.95 | the printing we hold: GCD issue 853260 of series 59665, December 1977, 132pp / ISBN 0-448-14356-9, against our 132pp "(Tempo 1977)" rip
+S 8523 cv=- gcd=209029 0.9 | GCD 209029 "Heathcliff: Wanted" (Tempo Books 1979, count 1, issue 2609666 at 132pp / ISBN 0448164876) is the only Heathcliff "Wanted" in either catalog; our file's "(Charter 1983)" is a later Berkley-imprint reissue GCD does not index, and the 0-448 prefix on the row confirms the Grosset & Dunlap/Tempo original
+F 8523 provider-missing | ComicVine indexes no Heathcliff "Wanted" (its hits are Millar's Wanted and foreign editions of it), and the Charter 1983 reissue we hold is in neither catalog
+I 114159 cv=- gcd=2609666 isbn=0448164876 0.7 | the book's record is GCD issue 2609666 of series 209029 (Tempo 1979, 132pp / ISBN 0-448-16487-6) against our 128pp rip, but our file states Charter 1983 and that printing is not indexed, so the printing-level claim is held at a doubt
+S 8524 cv=- gcd=210529 0.9 | GCD 210529 "Wicked Loving Heathcliff" (1982, count 1, issue 2619984, ISBN 0441886507) is the only record of this book; GCD's publisher column says Grosset and Dunlap but the 0-441 ISBN prefix is Ace, which is exactly what our filename says — "(Ace 1982)" — so the year, the publisher by ISBN and the title all line up
+F 8524 provider-missing | ComicVine indexes no "Wicked Loving Heathcliff" among its 21 Heathcliff volumes; GCD 210529 carries the only record
+I 114160 cv=- gcd=2619984 isbn=0441886507 0.9 | the book's own record: GCD issue 2619984 of series 210529, 1982, ISBN 0-441-88650-7 (an Ace prefix, matching our file's "(Ace 1982)"), with no page count against our 132pp rip
+S 8525 cv=- gcd=209030 0.9 | GCD 209030 "Heathcliff Working Out" (Berkley Books 1985, count 1) matches our "(Charter 1985)" file's year, Charter being Berkley's 0-441 imprint, and its two rows share one ISBN 0441322360 — a duplicated printing record, not two books; Open Library holds the work as /works/OL3402767W and ComicVine has only the different "Heathcliff Dines Out"
+F 8525 provider-missing | ComicVine indexes no "Heathcliff Working Out"; GCD 209030 is the only record
+I 114161 cv=- gcd=2716973 isbn=0441322360 0.9 | the book's own record: GCD issue 2716973 of series 209030, November 1985, 132pp / ISBN 0-441-32236-0, against our 132pp rip; the sibling row 2609667 carries the same ISBN with no page count and is the duplicate
+
+# ── Legalization Nation (Box Brown) (2021)
+R 10643 | three yearly webrips of Box Brown's Instagram strip ("Legalization Nation (2021-2022)", "(2023)", "(2024)", 52-54pp each) and neither catalog indexes the strip: a LIKE on "Legalization" returns only Brown's First Second BOOK "Cannabis: The Illegalization of Weed in America" (CV 118081 / GCD 143551, 2019, one volume) — a different object from a year of strips, and the packet's own candidates were "Strips", "2021" and "Rat Queens Webcomics"
+F 10643 provider-missing | a year-by-year webcomic archive; the catalogs hold Box Brown's printed books, not the strip
+
+# ── Mutts
+S 20450 cv=- gcd=210559 0.9 | GCD 210559 "Treats [A Mutts Treasury]" (Andrews McMeel 2024, count 1, issue 2620083, ISBN 978-1524880934) names the book our file names, in the publisher and year our file states, and GCD spells every Mutts treasury with the subtitle bracketed the same way (Playtime 145496, Bonk! 147704, #LoveMutts 118125); ComicVine's 39 Mutts volumes stop before the 2024 treasuries
+F 20450 provider-missing | ComicVine has no "Treats" volume — 2024 Andrews McMeel treasuries are past the rip's horizon; GCD 210559 is the only record
+I 114170 cv=- gcd=2620083 isbn=9781524880934 0.9 | the book's own record: GCD issue 2620083 of series 210559, Andrews McMeel 2024, ISBN 978-1-5248-8093-4, with no page count against our 209pp rip
+
+# ── Nancy by Olivia Jaimes (2018) — two books, one record each, no spanning line
+S 12701 cv=- gcd=200401 0.9 | GCD 200401 "Nancy: Wins at Friendship" (Andrews McMeel 2023, count 1, issue 2529337 at 180pp / ISBN 9781524880927) agrees with the file's own ComicInfo Publisher "Andrews McMeel Publishing", with its 2023 year and with our 176pp rip; Open Library holds the work as /works/OL31155286W and ComicVine has no volume of this title
+F 12701 provider-missing | ComicVine indexes no "Nancy Wins at Friendship"; its Nancy hits are the 1954/1957 Dell comics, Actes Sud's French edition and the 2019 first collection
+I 114220 cv=- gcd=2529337 isbn=9781524880927 0.9 | the book's own record: GCD issue 2529337 of series 200401, 180pp / ISBN 978-1-5248-8092-7, against our 176pp rip
+S 12704 cv=145494 gcd=150784 0.95 | two independent legs: CV 145494 "Nancy" (Andrews McMeel Publishing 2019, count 1, issue 950560) and GCD 150784 "Nancy" (Andrews McMeel 2019-?, count 1, issue 2020496 at 152pp / ISBN 9781524853259) are one book, the first Olivia Jaimes collection, and the 152pp row matches our 145pp rip; the file's ComicInfo says Series "Nancy by Olivia Jaimes", Publisher "Andrews McMeel"
+I 114219 cv=950560 gcd=2020496 isbn=9781524853259 0.95 | the book's own record: CV issue 950560 of volume 145494 and GCD issue 2020496 of series 150784, 152pp / ISBN 978-1-5248-5325-9, against our 145pp rip
+
+# ── Office Hours
+R 13165 | seven yearly rips of the "Office Hours" newspaper gag panel (1962, 1963, 1964, 1965, 1966, 1969, 1970 Dailies, 309-314pp each = one image per weekday) tagged "(DCP Webrips)"; GCD's only "Office Hours" is 69398, a one-book 1931 Lane [en-gb] title, and ComicVine has no volume of the name at all — a strip archive by calendar year, which the catalogs do not index
+F 13165 provider-missing | the "Office Hours" daily panel has no series record in either catalog; GCD 69398 (Lane 1931) is a different book
+
+# ── Order of the Stick — one line, CV 86843 / GCD 92548, one shelf per book (survivor S13405)
+S 13405 cv=86843 gcd=92548 0.95 | CV 86843 "The Order of the Stick" (Giant in the Playground 2005, count 10) and GCD 92548 "The Order of the Stick" (Giant in the Playground 2005-?, count 9) are one numbered book line whose issue NAMES are our filenames book for book (#1 Dungeon Crawlin' Fools, #2 No Cure for the Paladin Blues, #3 War and XPs, #0 On the Origin of PCs, #-1 Start of Darkness, #6 Utterly Dwarfed), and GCD's page counts match our rips within 4pp; this shelf is #1, GCD issue 1460067 at 164pp against our 164pp file
+I 114234 cv=509033 gcd=1460067 isbn=9780985413910 0.95 | book #1 "Dungeon Crawlin' Fools": CV issue 509033 of volume 86843 and GCD issue 1460067 of series 92548, 164pp / ISBN 978-0-9854139-1-0, exactly our 164pp rip
+S 13406 cv=86843 gcd=92548 0.95 | the same line: this shelf is #2 "No Cure for the Paladin Blues" of CV 86843 (Giant in the Playground 2005, count 10) and GCD 92548 (count 9), whose row 1460068 is 248pp / ISBN 978-097665803-0 against our 248pp file — an exact page match on both legs' own numbering
+F 13406 merge-with=13405 | one book of The Order of the Stick line whose survivor shelf is S13405; the ripper's "Order of the Stick - <subtitle>" gave every book its own shelf
+I 114235 cv=509034 gcd=1460068 isbn=9780976658030 0.95 | book #2 "No Cure for the Paladin Blues": CV issue 509034 of volume 86843 and GCD issue 1460068 of series 92548, 248pp / ISBN 978-0-9766580-3-0, exactly our 248pp rip
+S 13407 cv=86843 gcd=92548 0.9 | the same line: this shelf is #6 "Utterly Dwarfed" of CV 86843 (Giant in the Playground 2005, count 10, issue 985386, cover date December 2019) and GCD 92548 (count 9, row 2436245, December 2019, ISBN 978-0-9854139-6-5); 0.9 rather than 0.95 because GCD carries no page count for this book to set against our 356pp file
+F 13407 merge-with=13405 | one book of The Order of the Stick line whose survivor shelf is S13405
+I 114236 cv=985386 gcd=2436245 isbn=9780985413965 0.9 | book #6 "Utterly Dwarfed": CV issue 985386 of volume 86843 and GCD issue 2436245 of series 92548, December 2019, ISBN 978-0-9854139-6-5; GCD records no page count for it, so our 356pp rip cannot be checked against the row
+S 13408 cv=86843 gcd=92548 0.95 | the same line: this shelf is #3 "War and XPs" of CV 86843 (Giant in the Playground 2005, count 10, issue 509035) and GCD 92548 (count 9, row 1460069 at 292pp / ISBN 978-0-9766580-5-4), and 292pp is exactly our file's page count
+F 13408 merge-with=13405 | one book of The Order of the Stick line whose survivor shelf is S13405
+I 114237 cv=509035 gcd=1460069 isbn=9780976658054 0.95 | book #3 "War and XPs": CV issue 509035 of volume 86843 and GCD issue 1460069 of series 92548, 292pp / ISBN 978-0-9766580-5-4, exactly our 292pp rip
+S 19293 cv=86843 gcd=92548 0.95 | the same line, counted from zero: both legs give the prequels their own numbers, #0 "On the Origin of PCs" (CV issue 985388, cover date August 2005; GCD row 1460349 at 76pp / ISBN 978-098541392-7) and #-1 "Start of Darkness" — our 72pp 2005 file is that #0 within 4pp of GCD's count
+F 19293 merge-with=13405 | one book of The Order of the Stick line whose survivor shelf is S13405
+I 114239 cv=985388 gcd=1460349 isbn=9780985413927 0.95 | book #0 "On the Origin of PCs": CV issue 985388 of volume 86843 and GCD issue 1460349 of series 92548, 76pp / ISBN 978-0-9854139-2-7, against our 72pp rip
+S 19294 cv=86843 gcd=92548 0.95 | the same line's other prequel: #-1 "Start of Darkness", CV issue 985387 of volume 86843 (cover date May 2007) and GCD row 1460350 of series 92548 at 116pp / ISBN 978-0-9766580-4-7, against our 112pp 2007 file — both legs number it -1 and both name it exactly as our filename does
+F 19294 merge-with=13405 | one book of The Order of the Stick line whose survivor shelf is S13405
+I 114240 cv=985387 gcd=1460350 isbn=9780976658047 0.95 | book #-1 "Start of Darkness": CV issue 985387 of volume 86843 and GCD issue 1460350 of series 92548, 116pp / ISBN 978-0-9766580-4-7, against our 112pp rip
+R 19296 | "The Order of the Stick - Coloring Book! (2012)" 37pp is a Giant in the Playground novelty and it is NOT in the line: CV 86843's ten issues are #½, #-1, #0, #1-6 and #D (Snips, Snails and Dragon Tales) with no coloring book, GCD 92548's nine rows are the same set, and a probe for "Coloring Book" returns only Last Gasp's "The #@@*! Coloring Book" (CV 149099 / GCD 84803) and DC/Image coloring books — different comics
+F 19296 provider-missing | the OOTS colouring book is indexed by neither catalog; both legs' Order of the Stick series hold only the nine numbered books
+
+# ── Popeye
+R 13210 | five files are two calendar years of King Features' "Olive & Popeye" web strip ripped twice over ("(2022) (Clark Kent)" and "(2022) (DCP Webrips)" both 36pp, "(2023)" twice at 104pp, "(2024)" at 105pp) — duplicate rips of a yearly web archive, not two runs; neither catalog indexes it, the 2019+ Popeye records being Fantagraphics' Segar Sundays (CV 139195 / GCD 179342) and Massive's "Eye Lie Popeye" (CV 160174 / GCD 214830), different comics
+F 13210 provider-missing | the "Olive & Popeye" King Features webcomic has no record in either catalog; the 2022-2024 Popeye rows are Fantagraphics reprint books and Massive's floppy series
+R 13959 | two yearly rips of King Features' "Popeye's Cartoon Club" web project ("(2019)" 48pp, "(2020)" 42pp) and a LIKE on "Cartoon Club" returns zero rows in cv_vol and zero in gcd_series; the packet's candidates were the generic "Strips" volumes and "Rat Queens Webcomics", and no Popeye record of 2019-2020 exists on either leg
+F 13959 provider-missing | "Popeye's Cartoon Club" is indexed by neither catalog; it is a web-only yearly guest-artist strip series
+
+# ── Skeezix and Uncle Walt
+R 15715 | "Skeezix and Uncle Walt [Reilly & Lee] (1924)" 120pp is one of Reilly & Lee's 1920s Gasoline Alley reprint books and neither catalog holds the line: GCD's five Skeezix rows are the 1929 "Skeezix Color Book" (74797), Drawn & Quarterly's "Walt & Skeezix" (20829, 7 volumes 2005-2019), Sunday Press's "Sundays with Walt and Skeezix" (35494), "Walt Before Skeezix" (81897) and a 2019 French edition — all later objects, and ComicVine's four are the same set
+F 15715 provider-missing | the Reilly & Lee 1924-1934 Gasoline Alley book series is in neither catalog; both hold only the 1929 colour book and the modern D&Q reprints
+
+# ── Stand Still Stay Silent — one webcomic, two shelves, the Hiveworks books on both legs
+S 14922 cv=166770 gcd=214746 0.9 | the shelf is a webrip of Minna Sundberg's "Stand Still Stay Silent" and both legs hold its published English edition: CV 166770 "Stand Still, Stay Silent" (Hiveworks 2018, count 2) and GCD 214746 "Stand Still Stay Silent" (Hiveworks Comics 2018-2022, count 4 at 336/268/314/228pp). 0.9 as a format split — our five files are the webcomic's own divisions (prologue 68pp + Adventure 1 in four volumes at 208/233/242/222pp), which do not map onto the books; the packet offered only Akileos' French edition (CV 169188 / GCD 146460), which the language column rejects in favour of the Hiveworks rows
+N 14922 our five files are the webcomic's own prologue-plus-four-volume division of Adventure 1 and Hiveworks' four books divide the same material differently (336/268/314/228pp against our 68/208/233/242/222pp), so no per-book `I` line can be written without inventing a mapping; the French Akileos edition GCD 146460 / CV 169188 is the same work in another language and is not the shelf's identity
+S 14921 cv=166770 gcd=214746 0.9 | the same comic, one folder along: "02 Adventure 2" holds three chapter rips (SSSS 2 - Ch1/Ch2/Ch3 at 32/38/20pp) of Minna Sundberg's "Stand Still Stay Silent", whose published English edition is CV 166770 (Hiveworks 2018, count 2) and GCD 214746 (Hiveworks Comics 2018-2022, count 4, its 2021 and 2023 books covering Adventure 2); 0.9 as the same format split, chapter rips against printed volumes
+F 14921 merge-with=14922 | the same comic as S14922 — one webcomic split into two shelves by the ripper's "SSSS_Ch1" versus "SSSS 2 - ChN" filename wording, Adventure 1 on one and Adventure 2 on the other
+
+# ── The Born Loser
+R 18162 | "The Born Loser's Guide to Life (Topper 1990)" 116pp has no record in either catalog: ComicVine returns zero volumes containing "Born Loser" at all, and GCD's five are three Tempo Books titles of 1975-1977, Beaumont's "The Adventures of the Born Loser" (98686, 1979) and Beaumont's "The Born Loser" (92225, 1981-?, 2 issues) — none of them a 1990 Topper book, and a "Guide to Life" probe finds only D.R. & Quinch, Akbar and Jeff, the Worrier's and Baggywrinkles
+F 18162 provider-missing | Topper Books' 1990 Born Loser collection is indexed by neither catalog; GCD holds only the 1975-1981 Tempo and Beaumont books
+
+# ── The Family Circus
+R 18559 | 29 yearly webrips ("The Family Circus (1996) (Sundays)" 52pp through "(2024)", the 1999-2024 files at 363-366pp = one panel per day) and neither catalog indexes the strip by year: GCD's 40+ Family Circus rows are Gold Medal, Fawcett Columbine and Andrews McMeel BOOKS titled by their catchphrases ("I Need a Hug", "Pasghetti and Meat Bulbs!"), ComicVine has three volumes, and the one 1996-2024 candidate offered was "The Circus" — a different comic entirely
+F 18559 provider-missing | a year-by-year strip archive; both catalogs hold the Family Circus paperback books, which are different objects from a calendar year of panels
+
+# ── The Phantom (1936)\Hermes Press — the Sundays Archive and the Dailies line (survivor S19349)
+S 19346 cv=81990 gcd=90447 0.9 | CV 81990 "The Phantom Sundays Archive: Full Half Pages" (Hermes Press 2015, count 1) has one issue, 488749, named "Vol. 1: 1939-1942" — exactly our file's year span — and GCD 90447 (Hermes Press 2015-?, count 1, issue 1430720 at 168pp / ISBN 978-1-61345-081-9) is the same book with GCD's own title wording, "Full Size Newspaper Strips" where the file's ComicInfo says "Full Size Half Pages"; 168pp against our 161pp rip, and ComicInfo Publisher says Hermes Press. 0.9 for the title wording
+I 114538 cv=488749 gcd=1430720 isbn=9781613450819 0.9 | the book's own record: CV issue 488749 "Vol. 1: 1939-1942" of volume 81990 and GCD issue 1430720 of series 90447, 168pp / ISBN 978-1-61345-081-9, against our 161pp rip
+S 19349 cv=44892 gcd=50260 0.95 | CV 44892 "The Phantom: The Complete Newspaper Dailies" (Hermes Press 2009, count 33, its issues named "Volume One: 1936-1938" … "Volume Thirty-Three: 1988-1989") and GCD 50260 (Hermes Press 2010-?, count 35, its rows titled by the same year spans with page counts) are one collected LINE, and the seven shelves this folder was cut into are seven of its volumes; this shelf is v03 1939-1940, GCD row 865287 at 280pp / ISBN 1-932563-61-X against our 273pp rip
+I 114540 cv=308994 gcd=865287 isbn=193256361X 0.95 | v03 1939-1940: CV issue 308994 "Volume Three: 1939-1941" of volume 44892 and GCD issue 865287 of series 50260, 280pp / ISBN 1-932563-61-X, against our 273pp rip
+S 19350 cv=44892 gcd=50260 0.95 | the same Hermes line, volume 5: CV 44892's issue 394764 is "Volume Five: 1943-1944" and GCD 50260's row 1100067 is titled "1943-1944" at 280pp / ISBN 978-1-61345-030-7, both matching our file's "v05 - 1943 - 1944 (2013)" and its 273pp; the file's ComicInfo Publisher is Hermes Press
+F 19350 merge-with=19349 | one volume of the Hermes Press "Complete Newspaper Dailies" line whose survivor shelf is S19349; the ripper's per-volume year span in ComicInfo Series cut one folder into seven shelves
+I 114541 cv=394764 gcd=1100067 isbn=9781613450307 0.95 | v05 1943-1944: CV issue 394764 of volume 44892 and GCD issue 1100067 of series 50260, 280pp / ISBN 978-1-61345-030-7, against our 273pp rip
+S 19351 cv=44892 gcd=50260 0.95 | the same Hermes line, volume 6: CV issue 428937 "Volume Six: 1944-1946" and GCD row 1163860 titled "1944-1946" at 264pp / ISBN 978-1-61345-044-4 — and 264pp is within 7pp of our 257pp file, which is the line's thinnest volume so far, exactly as the row says
+F 19351 merge-with=19349 | one volume of the Hermes Press "Complete Newspaper Dailies" line whose survivor shelf is S19349
+I 114542 cv=428937 gcd=1163860 isbn=9781613450444 0.95 | v06 1944-1946: CV issue 428937 of volume 44892 and GCD issue 1163860 of series 50260, 264pp / ISBN 978-1-61345-044-4, against our 257pp rip
+S 19352 cv=44892 gcd=50260 0.95 | the same Hermes line, volume 7: CV issue 476861 "Volume Seven: 1946-1947" and GCD row 1330945 titled "1946-1947" at 312pp / ISBN 978-1-61345-082-6; our file is 305pp, the fattest on the shelf, which is what the row's 312pp predicts
+F 19352 merge-with=19349 | one volume of the Hermes Press "Complete Newspaper Dailies" line whose survivor shelf is S19349
+I 114543 cv=476861 gcd=1330945 isbn=9781613450826 0.95 | v07 1946-1947: CV issue 476861 of volume 44892 and GCD issue 1330945 of series 50260, 312pp / ISBN 978-1-61345-082-6, against our 305pp rip
+S 19353 cv=44892 gcd=50260 0.95 | the same Hermes line, volume 8: CV issue 496983 "Volume Eight: 1947 - 1949" and GCD row 1450330 titled "1947-1949" at 230pp / ISBN 978-1-61345-089-5 against our 225pp file — the two thin volumes 8 and 9 (230pp and 232pp) match our two 225pp files and nothing else on the line does
+F 19353 merge-with=19349 | one volume of the Hermes Press "Complete Newspaper Dailies" line whose survivor shelf is S19349
+I 114544 cv=496983 gcd=1450330 isbn=9781613450895 0.95 | v08 1947-1949: CV issue 496983 of volume 44892 and GCD issue 1450330 of series 50260, 230pp / ISBN 978-1-61345-089-5, against our 225pp rip
+S 19354 cv=44892 gcd=50260 0.95 | the same Hermes line, volume 9: CV issue 511596 "Volume Nine: 1949-1950" and GCD row 1540324 titled "1949-1950" at 232pp / ISBN 978-1-61345-096-3 against our 225pp file, the year span in ComicInfo Series matching both legs' own labels
+F 19354 merge-with=19349 | one volume of the Hermes Press "Complete Newspaper Dailies" line whose survivor shelf is S19349
+I 114545 cv=511596 gcd=1540324 isbn=9781613450963 0.95 | v09 1949-1950: CV issue 511596 of volume 44892 and GCD issue 1540324 of series 50260, 232pp / ISBN 978-1-61345-096-3, against our 225pp rip
+S 66495 cv=44892 gcd=50260 0.95 | the same Hermes line, the two volumes the ripper left untagged: v01 1936-1937 (274pp) is CV issue 308992 "Volume One: 1936-1938" and GCD row 764978 at 280pp / ISBN 1-932563-41-5, and v10 1950-1951 is CV issue 559036 "Volume Ten: 1950-1951" and GCD row 1670125 at 280pp / ISBN 978-1-61345-106-9
+F 66495 merge-with=19349 | two volumes of the Hermes Press "Complete Newspaper Dailies" line whose survivor shelf is S19349
+I 114539 cv=308992 gcd=764978 isbn=1932563415 0.95 | v01 1936-1937: CV issue 308992 of volume 44892 and GCD issue 764978 of series 50260, 280pp / ISBN 1-932563-41-5, against our 274pp rip; the 2014 second printing (row 1201121, 296pp) is the fatter edition and not ours
+I 114546 cv=559036 gcd=1670125 isbn=9781613451069 0.9 | v10 1950-1951: CV issue 559036 of volume 44892 and GCD issue 1670125 of series 50260, 280pp / ISBN 978-1-61345-106-9; our file's page count was not read, so the match rests on the volume number and year span alone
+
+# ── The Spirit
+S 21692 cv=43624 gcd=10120 0.95 | CV 43624 "The Spirit Archives" (DC Comics 2000, count 26, its issues named "Volume 1" … "Volume 26") and GCD 10120 "Will Eisner's The Spirit Archives" (DC 2000-2009, count 26) agree on publisher, start year and count exactly, and GCD's per-volume page counts (248, 232, 232, 232, 232, 236, 232, 232) track our eight rips (218, 208, 209, 212, 209, 209, 209, 209) at a constant ~23-30pp of front and back matter the rip drops
+F 21692 partial-rip | we hold volumes 1-8 of the 26-volume archive line; volumes 9-26 are not on disk
+I 114547 cv=299877 gcd=94407 isbn=1563896737 0.95 | v01 (1940): CV issue 299877 of volume 43624 and GCD issue 94407 of series 10120, 248pp / ISBN 1-56389-673-7, against our 218pp rip; GCD's row 1640386 carries the same ISBN and is the duplicate
+I 114548 cv=299878 gcd=94408 isbn=1563896753 0.95 | v02 (1941 first half): CV issue 299878 of volume 43624 and GCD issue 94408 of series 10120, 232pp / ISBN 1-56389-675-3, against our 208pp rip
+I 114549 cv=299879 gcd=94409 isbn=1563896761 0.95 | v03 (1941 second half): CV issue 299879 of volume 43624 and GCD issue 94409 of series 10120, 232pp / ISBN 1-56389-676-1, against our 209pp rip
+I 114550 cv=299880 gcd=113812 isbn=1563897148 0.95 | v04 (1942 first half): CV issue 299880 of volume 43624 and GCD issue 113812 of series 10120, 232pp / ISBN 1-56389-714-8, against our 212pp rip
+I 114551 cv=299881 gcd=113813 isbn=1563897318 0.95 | v05 (1942 second half): CV issue 299881 of volume 43624 and GCD issue 113813 of series 10120, 232pp / ISBN 1-56389-731-8, against our 209pp rip
+I 114552 cv=299882 gcd=213123 isbn=156389744X 0.95 | v06 (1943 first half): CV issue 299882 of volume 43624 and GCD issue 213123 of series 10120, 236pp / ISBN 1-56389-744-X, against our 209pp rip
+I 114553 cv=299883 gcd=213124 isbn=1563898071 0.95 | v07 (1943 second half): CV issue 299883 of volume 43624 and GCD issue 213124 of series 10120, 232pp / ISBN 1-56389-807-1, against our 209pp rip
+I 114554 cv=299884 gcd=213125 isbn=1563898209 0.95 | v08 (1944 first half): CV issue 299884 of volume 43624 and GCD issue 213125 of series 10120, 232pp / ISBN 1-56389-820-9, against our 209pp rip
+
+# ── Ziggy (1971)
+R 22794 | 25 yearly webrips ("Ziggy (1997) (DCP Webrips)" … "(2024)", 364-366pp each = one panel per day) with the packet offering only GCD 123722, a German Tomus Verlag "Ziggy" of 1985-1986; the catalogs hold Ziggy's BOOKS by their own titles (GCD's 40+ New American Library / Andrews McMeel rows, "Ziggy Faces Life", "1-800-Ziggy", "The Ziggy Treasury" 58001) and index no year of the strip
+F 22794 provider-missing | a year-by-year strip archive; both catalogs hold the Ziggy paperback books, not a calendar year of panels
+S 22795 cv=- gcd=104819 0.9 | GCD 104819 "Plants Are Some of My Favorite People! [Ziggy]" (New American Library 1978, count 1, issue 1610197 numbered Y8055 at 86pp / ISBN 0-451-08055-6) is the only record of this Ziggy book in either catalog; our rip is the Exley UK edition of 1976, which neither leg indexes, and ComicVine holds no Ziggy book of this title among its ten Ziggy volumes
+F 22795 provider-missing | ComicVine has no "Plants Are Some Of My Favorite People" volume, and the Exley 1976 printing we hold is in neither catalog
+I 115968 cv=- gcd=s104819 0.7 | the printing we hold is stated on the file as "(Exley 1976)" and GCD series 104819 holds only the New American Library 1978 Signet row (issue 1610197, 86pp against our 70pp), so the series is named and no issue row is claimed
+
+# ── Zippy the Pinhead
+R 22800 | 11 yearly webrips ("Zippy the Pinhead (2013) (DCP Webrips)" … "(2023)", 365-366pp each = one strip per day); ComicVine's 28 Zippy volumes and GCD's rows are Griffith's Last Gasp and Fantagraphics BOOKS ("Zippy Stories", "Zippy Quarterly" CV 46637 at 18 issues, "Zippy Annual") and neither indexes a calendar year of the strip, the packet's own best offers being Marvel's 1993 "Pinhead" and the 1941 "Zippy"
+F 22800 provider-missing | a year-by-year strip archive; the catalogs hold Zippy's published collections and the Fantagraphics comic, not the daily archive
+
+# ── _Anders Nilsen
+R 997 | three volumes of "Anders Nilsen's The Monologuist Web Archive" tagged "(webrip) (COUNTERpaul)" and covering 2008-2009, 2010-2011 and 2012-2013 — a date-range archive of a web strip; a LIKE on "Monologuist" returns zero rows in cv_vol and zero in gcd_series, and the packet's candidates were DC's "The Web" and Dutch/German books called "Anders"
+F 997 not-a-run | a ripper's date-range compile of a web strip, assembled by COUNTERpaul rather than published as three volumes by anyone
+
+# ── _Berkeley Breathed
+R 13468 | "Outland (Jan 1990 - March 1995)" 262pp is a date-range compile of the Outland Sunday strip with no publisher, no ripper credit and no volume number; GCD 115601 "Outland" is a 1982 French Humanoïdes Associés album of the film and ComicVine's Outland hits are Dark Horse's "Outlanders" manga. The published edition of these strips is on the next shelf — IDW's Complete Library, GCD 67073 / CV 68210, 1989-1995 at 312pp — and a 262pp strip archive of a narrower range is a different object
+F 13468 provider-missing | a date-range web/strip archive of Outland; the catalogs hold IDW's 2012 Complete Library (S66669), which this file is not
+N 13468 the published collection of the same strips is IDW's "Berkeley Breathed's Outland The Complete Library (Sunday Comics: 1989-1995)", GCD 67073 / CV 68210, landed on S66669 in this batch at 307pp against this file's 262pp
+S 66669 cv=68210 gcd=67073 0.95 | two independent legs on one book: CV 68210 "Berkeley Breathed's Outland: The Complete Digital Collection" (IDW Publishing 2013, count 1, issue 367753) and GCD 67073 "Berkeley Breathed's Outland The Complete Library (Sunday Comics: 1989-1995)" (IDW 2012, count 1, issue 966937 at 312pp / ISBN 978-1-61377-176-1) are the same IDW volume, and 312pp is within 5pp of our 307pp rip; our filename reproduces GCD's title and year span word for word
+I 114611 cv=367753 gcd=966937 isbn=9781613771761 0.95 | the book's own record: CV issue 367753 of volume 68210 and GCD issue 966937 of series 67073, 312pp / ISBN 978-1-61377-176-1, against our 307pp rip
+S 66670 cv=53941 gcd=70662 0.95 | two independent legs on one book: CV 53941 "Opus Complete Sunday Strips From 2003-2008" (IDW Publishing 2012, count 1, issue 428485) and GCD 70662 "Berkeley Breathed's Opus: Sunday Comics 2003-2008" (IDW 2012, count 1, issue 1041893 at 280pp / ISBN 978-1613774083) are the same IDW volume, publisher year and strip span agreeing, and 280pp is within 9pp of our 271pp rip
+I 114612 cv=428485 gcd=1041893 isbn=9781613774083 0.95 | the book's own record: CV issue 428485 of volume 53941 and GCD issue 1041893 of series 70662, 280pp / ISBN 978-1613774083, against our 271pp rip
+R 2996 | two date-range rips of the revived Bloom County strip ("Bloom County 2015 (2015-07-13 to 2015-09-30)" 61pp and "(2015-10-01 to 2015-12-25)" 65pp) — quarter-year web archives of the Facebook strip, which is why one ladder number names two files. Both catalogs hold the printed collections of these strips (CV 94388 "Bloom County Episode XI: A New Hope" 2016, GCD 110459 "Bloom County" IDW 2016-2018 count 3) and those are whole books, not a dated run of ninety strips
+F 2996 provider-missing | date-range archives of the 2015 revived strip; the catalogs index IDW's books, and per the ledger GCD files all three modern Bloom County books as the one 3-issue series 110459
+S 66443 cv=56275 gcd=- 0.9 | CV 56275 "The Bloom County Digital Library" (IDW Publishing 2012, count 9) has nine issues named "Volume One: 1980-1981", "Volume Two: 1982" … "Volume Nine: 1989" — our nine files' year labels in order, volume for volume — and the shelf is that digital line; gcd=- because GCD indexes only the FIVE-volume print line "The Bloom County Library" (48927, IDW 2009-2011, its rows spanning 1980-1982, 1982-1984, 1984-1986, 1986-1987, 1987-1989) and a count of 5 cannot describe nine books
+F 66443 provider-missing | GCD has no record of IDW's nine-volume digital library; its 48927 is the five-volume print edition of the same strips at different year splits
+N 66443 the print sister edition is GCD 48927 "The Bloom County Library" (IDW 2009-2011, five volumes at 296/310/280/296/296pp); the digital/print split is the Injustice-chapters shape, so the lower print count is not residue
+I 114615 cv=381909 gcd=- isbn=- 0.9 | v01 1980-1981: CV issue 381909 "Volume One: 1980-1981" of volume 56275, the only item-level record of this digital volume; GCD's print line splits 1980-1982 into one book instead
+I 114616 cv=381910 gcd=- isbn=- 0.9 | v02 1982: CV issue 381910 "Volume Two: 1982" of volume 56275; GCD's print row for 1982-1984 covers different years and gives no per-year match
+I 114617 cv=381911 gcd=- isbn=- 0.9 | v03 1983: CV issue 381911 "Volume Three: 1983" of volume 56275; the print line has no single-year 1983 book, so no GCD issue row can be named
+I 114618 cv=381912 gcd=- isbn=- 0.9 | v04 1984: CV issue 381912 "Volume Four: 1984" of volume 56275; GCD's 1984-1986 print row spans three years and is not this book
+I 114619 cv=381913 gcd=- isbn=- 0.9 | v05 1985: CV issue 381913 "Volume Five: 1985" of volume 56275; no GCD row covers 1985 alone
+I 114620 cv=381914 gcd=- isbn=- 0.9 | v06 1986: CV issue 381914 "Volume Six: 1986" of volume 56275; our 328pp file is the shelf's one short volume and GCD's print rows are all 280-310pp two-year books
+I 114621 cv=381915 gcd=- isbn=- 0.9 | v07 1987: CV issue 381915 "Volume Seven: 1987" of volume 56275; GCD's 1986-1987 and 1987-1989 print rows both straddle it
+I 114622 cv=381916 gcd=- isbn=- 0.9 | v08 1988: CV issue 381916 "Volume Eight: 1988" of volume 56275; no GCD row covers 1988 alone
+I 114623 cv=381917 gcd=- isbn=- 0.9 | v09 1989: CV issue 381917 "Volume Nine: 1989" of volume 56275, the line's last and our 233pp file, the thinnest of the nine as a part-year would be
+
+# ── _Bill Watterson
+S 6328 cv=136904 gcd=- 0.9 | CV 136904 "Exploring Calvin and Hobbes: An Exhibition Catalogue" (Andrews McMeel Publishing 2015, count 1, issue 860850) names this book exactly, and our file is "Exploring Calvin and Hobbes (2014) (Digital) (Kileko-Empire)" 187pp — the Billy Ireland exhibition catalogue, published late 2014 for the 2015 imprint year; gcd=- because a LIKE on "Exploring Calvin" returns nothing in gcd_series and GCD's only non-strip Calvin row is McFarland's academic "Imagination and Meaning in Calvin and Hobbes" (161306)
+F 6328 provider-missing | GCD does not index the Andrews McMeel exhibition catalogue; ComicVine carries the only record
+I 114650 cv=860850 gcd=- isbn=- 0.9 | the book's own record: CV issue 860850 of volume 136904, the exhibition catalogue's only item-level record in either catalog
+R 3352 | twelve files, twelve DIFFERENT published books, and no spanning record on either leg. The eleven "Complete Collection - 01 … 11 (REMIX)" files are the eleven Andrews McMeel Calvin and Hobbes collections in order and BOTH catalogs mint one count-1 record per book — CV 21805/GCD 34125 (Calvin and Hobbes), 7354/34126 (Something Under the Bed is Drooling), 8268/34127 (Yukon Ho!), 7792/34128 (Weirdos from Another Planet!), 7371/34129 (The Revenge of the Baby-Sat), 8264/34130 (Scientific Progress Goes "Boink"), 7579/32589 (Snow Goons), 7632/34135 (The Days Are Just Packed), 7576/34136 (Homicidal Psycho Jungle Cat), 8910/25403 (There's Treasure Everywhere), 7378/34138 (It's a Magical World) — plus the twelfth file, the treasury "The Essential Calvin and Hobbes" (CV 8915 / GCD 34133). The only multi-volume candidates are the 3-volume boxed "Complete Calvin and Hobbes" (CV 39869 / GCD 15334) and GCD 131357's 4-volume set, neither of which is coextensive with twelve books, so linking either would hand eleven comics one record
+F 3352 split-needed | one shelf per book: 01 cv=21805 gcd=34125, 02 cv=7354 gcd=34126, 03 cv=8268 gcd=34127, 04 cv=7792 gcd=34128, 05 cv=7371 gcd=34129, 06 cv=8264 gcd=34130, 07 cv=7579 gcd=32589, 08 cv=7632 gcd=34135, 09 cv=7576 gcd=34136, 10 cv=8910 gcd=25403, 11 cv=7378 gcd=34138, and the treasury cv=8915 gcd=34133
+N 3352 the eleven REMIX files run 163-176pp against the books' own 132pp (books 01-07) and 180pp (books 08-10): the remixer reflows one strip per page, so the page count does not place these rips the way it places a page-for-page scan — the filename's number and subtitle do, and they are the eleven books in publication order
+I 114628 cv=164887 gcd=575045 isbn=0836220889 0.95 | book 01 "Calvin and Hobbes" (1987): CV issue 164887 of volume 21805 and GCD issue 575045 of series 34125, 132pp / ISBN 0-8362-2088-9; our 163pp REMIX reflows the same book
+I 114629 cv=164888 gcd=575046 isbn=0836218256 0.95 | book 02 "Something Under the Bed is Drooling" (1988): CV issue 164888 of volume 7354 and GCD issue 575046 of series 34126, 132pp / ISBN 0-8362-1825-6, against our 166pp REMIX
+I 114630 cv=164890 gcd=575047 isbn=0836218353 0.95 | book 03 "Yukon Ho!" (1989): CV issue 164890 of volume 8268 and GCD issue 575047 of series 34127, 132pp / ISBN 0-8362-1835-3, against our 164pp REMIX; GCD's 111052 (Sphere) and 61468 (Scholastic) are the UK and school-club editions
+I 114631 cv=164894 gcd=575048 isbn=0836218620 0.95 | book 04 "Weirdos from Another Planet!" (1990): CV issue 164894 of volume 7792 and GCD issue 575048 of series 34128, 132pp / ISBN 0-8362-1862-0, against our 167pp REMIX
+I 114632 cv=164896 gcd=575049 isbn=0836218663 0.95 | book 05 "The Revenge of the Baby-Sat" (1991): CV issue 164896 of volume 7371 and GCD issue 575049 of series 34129, 132pp / ISBN 0-8362-1866-3, against our 172pp REMIX
+I 114633 cv=164897 gcd=2079792 isbn=0836218787 0.95 | book 06 "Scientific Progress Goes 'Boink'" (1991): CV issue 164897 of volume 8264 and GCD issue 2079792 of series 34130, 132pp / ISBN 0-8362-1878-7, against our 173pp REMIX
+I 114634 cv=164898 gcd=552626 isbn=0836218833 0.95 | book 07 "Attack of the Deranged Mutant Killer Monster Snow Goons" (1992): CV issue 164898 of volume 7579 and GCD issue 552626 of series 32589, 132pp / ISBN 0-8362-1883-3, against our 172pp REMIX
+I 114635 cv=164900 gcd=575055 isbn=0836217357 0.95 | book 08 "The Days Are Just Packed" (1993): CV issue 164900 of volume 7632 and GCD issue 575055 of series 34135, 180pp / ISBN 0-8362-1735-7, against our 176pp REMIX — the first of the three fat books
+I 114636 cv=164901 gcd=575056 isbn=0836217691 0.95 | book 09 "Homicidal Psycho Jungle Cat" (1994): CV issue 164901 of volume 7576 and GCD issue 575056 of series 34136, 180pp / ISBN 0-8362-1769-1, against our 175pp REMIX
+I 114637 cv=164904 gcd=363195 isbn=0836213122 0.95 | book 10 "There's Treasure Everywhere" (1996): CV issue 164904 of volume 8910 and GCD issue 363195 of series 25403, 180pp / ISBN 0-8362-1312-2, against our 176pp REMIX
+I 114638 cv=164905 gcd=575067 isbn=0836221362 0.95 | book 11 "It's a Magical World" (1996): CV issue 164905 of volume 7378 and GCD issue 575067 of series 34138, 172pp / ISBN 0-8362-2136-2, against our 166pp REMIX — the last collection
+I 114642 cv=164889 gcd=575053 isbn=0836218051 0.95 | the treasury "The Essential Calvin and Hobbes" (1988): CV issue 164889 of volume 8915 and GCD issue 575053 of series 34133, 260pp / ISBN 0-8362-1805-1, against our 335pp Kileko-Empire rip, which reflows it as the REMIX files do
+R 3356 | "Calvin and Hobbes Complete Collection - M - Miscellaneous (REMIX) (FIXED v1.2)" 105pp is the remixer's own leftovers bucket, lettered M beside S (Sunday Pages) and X (10th Anniversary) rather than numbered with the eleven books; no published Calvin and Hobbes book is called Miscellaneous, and the packet's candidates were the 1987 first collection and the Sphere and Panini foreign editions of it
+F 3356 not-a-run | a fan compiler's miscellany of strips left over from the eleven numbered books, not a published edition
+S 3357 cv=7675 gcd=171999 0.9 | CV 7675 "Calvin and Hobbes Sunday Pages 1985-1995" (Andrews McMeel Publishing 2001, count 1, issue 164906) and GCD 171999 "Calvin and Hobbes: Sunday Pages 1985-1995" (Andrews McMeel 2001, count 1, issue 2218304 at 100pp / ISBN 0740721356) are one published book and the remixer's lettered "S - The Sunday Pages" file is it; 0.9 because our 85pp rip is 15pp under the row's 100pp, the REMIX having dropped the exhibition commentary
+I 114640 cv=164906 gcd=2218304 isbn=0740721356 0.9 | the book's own record: CV issue 164906 of volume 7675 and GCD issue 2218304 of series 171999, 100pp / ISBN 0-7407-2135-6, against our 85pp rip
+S 3362 cv=7869 gcd=34137 0.9 | CV 7869 "Calvin and Hobbes Tenth Anniversary Book" (Andrews McMeel Publishing 1995, count 1, issue 164902) and GCD 34137 "The Calvin and Hobbes Tenth Anniversary Book" (Andrews McMeel 1995, count 1, issue 575057 at 212pp / ISBN 0-8362-0438-7) are one book and 212pp is within 6pp of our 206pp file; 0.9 because GCD mints twins for it — 115910 (ISBN 0-8362-0440-9, the hardcover) and 172213 (Scholastic 1995)
+I 114641 cv=164902 gcd=575057 isbn=0836204387 0.9 | the book's own record: CV issue 164902 of volume 7869 and GCD issue 575057 of series 34137, 212pp / ISBN 0-8362-0438-7, against our 206pp rip; GCD's twin rows are 115910 (0-8362-0440-9) and Scholastic's 172213
+S 3354 cv=7576 gcd=34136 0.95 | CV 7576 "Homicidal Psycho Jungle Cat" (Andrews McMeel Publishing 1994, count 1, issue 164901) and GCD 34136 (Andrews McMeel 1994, count 1, issue 575056 at 180pp / ISBN 0-8362-1769-1) agree on title, publisher, year and count, and 180pp is exactly our "COL Calvin and Hobbes v06 - Homicidal Psycho Jungle Cat (1994) (Digital) (Kileko-Empire)" file's page count; GCD's 56811 is the 2002 reprint at 182pp and 111732 the Warner UK edition
+I 114647 cv=164901 gcd=575056 isbn=0836217691 0.95 | the book's own record: CV issue 164901 of volume 7576 and GCD issue 575056 of series 34136, 180pp / ISBN 0-8362-1769-1, exactly our 180pp rip
+S 3355 cv=7378 gcd=34138 0.95 | CV 7378 "It's a Magical World" (Andrews McMeel Publishing 1996, count 1, issue 164905) and GCD 34138 (Andrews McMeel 1996, count 1, issue 575067 at 172pp / ISBN 0-8362-2136-2) agree on title, publisher, year and count, and 172pp is within 3pp of our 169pp Kileko-Empire rip; the Warner UK (111804) and Scholastic (156618) 1997 rows are rejected on publisher and year
+I 114648 cv=164905 gcd=575067 isbn=0836221362 0.95 | the book's own record: CV issue 164905 of volume 7378 and GCD issue 575067 of series 34138, 172pp / ISBN 0-8362-2136-2, against our 169pp rip
+S 3359 cv=7632 gcd=34135 0.95 | CV 7632 "The Days Are Just Packed" (Andrews McMeel Publishing 1993, count 1, issue 164900) and GCD 34135 (Andrews McMeel 1993, count 1, issue 575055 at 180pp / ISBN 0-8362-1735-7) agree on title, publisher, year and count, and 180pp is exactly our 1993 Kileko-Empire file; GCD's 155921 is the Scholastic school-club edition of the same year
+I 114646 cv=164900 gcd=575055 isbn=0836217357 0.95 | the book's own record: CV issue 164900 of volume 7632 and GCD issue 575055 of series 34135, 180pp / ISBN 0-8362-1735-7, exactly our 180pp rip
+S 3361 cv=8910 gcd=25403 0.95 | CV 8910 "There's Treasure Everywhere" (Andrews McMeel Publishing 1996, count 1, issue 164904) and GCD 25403 (Andrews McMeel 1996, count 1, issue 363195 at 180pp / ISBN 0-8362-1312-2) agree on title, publisher, year and count, and 180pp is within 2pp of our 178pp Kileko-Empire rip; CV 149903 and GCD 111799 are the Warner Books UK edition
+I 114649 cv=164904 gcd=363195 isbn=0836213122 0.95 | the book's own record: CV issue 164904 of volume 8910 and GCD issue 363195 of series 25403, 180pp / ISBN 0-8362-1312-2, against our 178pp rip
+
+# ── _Charles Schulz-Peanuts: the Simon Spotlight / Ballantine kids' tie-in picture books
+R 258 | "A Valentine for Linus! (2018) (GreenGiant-DCP)" 19pp is one of Simon Spotlight's Peanuts kids' picture books and a LIKE on "Valentine for Linus" returns zero rows in cv_vol and zero in gcd_series; Open Library holds it as /works/OL20166033W and the packet's candidates were Europe Comics' "Valentine", Thrillbent's "Valentine" and the Italian "Linus" magazine — none of them this book
+F 258 provider-missing | Simon Spotlight's Peanuts picture-book line is indexed by neither catalog; only Open Library records the title
+R 9686 | "It's Springtime, Snoopy! (2021) (GreenGiant-DCP)" 21pp is another Simon Spotlight Peanuts picture book and a LIKE on "Springtime, Snoopy" returns nothing in either catalog; Open Library has it as /works/OL22033559W, while the packet offered German, Brazilian, Hungarian and Titan "Snoopy" volumes and the 1958/1974 Holt Rinehart books
+F 9686 provider-missing | a Simon Spotlight Peanuts kids' picture book; neither catalog indexes the line
+R 9689 | "It's a New World, Charlie Brown! (2016) (digital-Empire)" 22pp returns zero hits on "new world, Charlie Brown" in cv_vol and gcd_series; Open Library has /works/OL22317589W and the nearest catalog records are BOOM!'s "Peanuts: It's Tokyo, Charlie Brown!" (CV 53544 / GCD 110959) and Holt's 1962 "It's a Dog's Life, Charlie Brown" — different books
+F 9689 provider-missing | a Peanuts kids' tie-in picture book absent from both catalogs
+R 10306 | "Kick the Football, Charlie Brown! (2016) (GreenGiant-DCP)" 26pp returns zero hits on "Kick the Football" in either catalog; the packet's candidates were Holt's 1967 "Unsinkable Charlie Brown", 1968 "You're You, Charlie Brown" and Fantagraphics' 2014 "Batter Up, Charlie Brown!", all different books of other decades
+F 10306 provider-missing | a Peanuts kids' tie-in picture book absent from both catalogs
+R 13641 | "Peanuts - Adventures with Linus and Friends! (2023) (GreenGiant-DCP)" 160pp is a Peanuts kids' graphic-novel collection and a LIKE on "Adventures with Linus" returns nothing in either catalog; the packet reached the Italian "Linus" magazine (CV 27415, 688 issues) and BOOM!'s "Linus: A Peanuts Collection" (CV 120740), a different 2019 book
+F 13641 provider-missing | a 2023 Peanuts kids' collection past the rip's horizon and absent from the GCD dump
+R 13642 | "Peanuts - Be Thankful, Be Giving (2020) (GreenGiant-DCP)" 13pp returns zero hits on "Be Thankful, Be Giving" in cv_vol and gcd_series; at thirteen pages it is one of the shortest Simon Spotlight readers, and the packet's best offers were DK's "Peanuts Be More Snoopy" and four editions of "Nagahama to Be, or Not to Be"
+F 13642 provider-missing | a Peanuts kids' reader absent from both catalogs
+R 13647 | "Peanuts - Happy Thanksgiving, Snoopy! (2018) (GreenGiant-DCP)" 24pp returns zero hits on "Thanksgiving, Snoopy" in either catalog; the packet offered AHOY's 2025 "Thanksgiving" (CV 167818 / GCD 228923) and BOOM!'s "Peanuts: The Snoopy Special" (CV 86246 / GCD 94525), neither of them this book
+F 13647 provider-missing | a Peanuts kids' holiday picture book absent from both catalogs
+R 13648 | "Peanuts - Here Comes the Easter Beagle! (2018) (GreenGiant-DCP)" 21pp returns zero hits on "Easter Beagle" in cv_vol and gcd_series; Open Library has it as /works/OL31995739W and the packet reached Chick Publications' "Here Comes the Judge!" and a 1957 "Here Comes the Parade"
+F 13648 provider-missing | a Peanuts kids' holiday picture book absent from both catalogs
+R 13649 | "Peanuts - Hug a Tree, Snoopy! (2022) (GreenGiant-DCP)" 28pp returns zero hits on "Hug a Tree" in either catalog; the packet offered BOOM!'s "Snoopy: A Peanuts Collection", Andrews McMeel's "Snoopy To the Rescue" and six foreign-language "Snoopy" volumes, all different books
+F 13649 provider-missing | a Peanuts kids' picture book absent from both catalogs
+R 13651 | "Peanuts - If I Gave the World My Blanket (2021) (GreenGiant-DCP)" 25pp returns zero hits on "Gave the World My Blanket" in either catalog; the packet reached the four BOOM! "Peanuts" comic volumes (CV 51282/50186/44056, GCD 68079/67354/61884) and Cross Cult's German edition — the comic series, not this Simon Spotlight book
+F 13651 provider-missing | a Peanuts kids' picture book absent from both catalogs
+R 13652 | "Peanuts - It's Hockey Time, Franklin! (2017) (GreenGiant-DCP)" 22pp returns zero hits on "Hockey Time" in cv_vol and gcd_series; the packet's candidates were Western's 1967 "It's About Time", BOOM!'s "It's Tokyo, Charlie Brown!" and two unrelated hockey comics
+F 13652 provider-missing | a Peanuts kids' picture book absent from both catalogs
+R 13654 | "Peanuts - Meet the Easter Beagle! (2017) (GreenGiant-DCP)" 10pp returns zero hits on "Easter Beagle" in either catalog; at ten pages it is a board-book reader, and the packet reached Simon and Schuster's "Meet the Peanuts Gang!" (CV 81861) and BOOM!'s "The Beagle Has Landed, Charlie Brown!" (CV 74746 / GCD 110958), different books
+F 13654 provider-missing | a Peanuts kids' board-book reader absent from both catalogs
+R 13662 | "Peanuts - Snoopy Goes to School (2020) (GreenGiant-DCP)" 29pp returns zero hits on "Snoopy Goes to School" in cv_vol and gcd_series; the packet offered Scholastic's "Graphix Goes to School" (CV 109388 / GCD 112426), Hodder's 1982 "Peanuts at School" and "Franklin Goes to School", none of them this book
+F 13662 provider-missing | a Peanuts kids' picture book absent from both catalogs
+R 13663 | "Peanuts - Snoopy's Book of Joy (2022) (GreenGiant-DCP)" 26pp returns zero hits on "Book of Joy" in either catalog; the packet reached Hallmark's 2000 "The Joy of a Peanuts Christmas" (GCD 27401) and three manga volumes called "Joy", all different books
+F 13663 provider-missing | a Peanuts kids' gift book absent from both catalogs
+R 13664 | "Peanuts - Snoopy's Christmas Surprise (2018) (GreenGiant-DCP)" 19pp returns zero hits on "Snoopy's Christmas" in cv_vol and gcd_series; the packet's candidates were Random House's 2002 "A Peanuts Christmas" (CV 57135 / GCD 56602), a 1965 "Peter Penguin's Christmas Surprise" and three Harlequin romances
+F 13664 provider-missing | a Peanuts kids' holiday picture book absent from both catalogs
+R 13667 | "Peanuts - Woodstock's First Flight! (2020) (GreenGiant-DCP)" 20pp returns zero hits on "Woodstock's First Flight" in either catalog; Open Library has it as /works/OL31369292W, and the only Woodstock records are Marvel's 1994 "Woodstock, 1969-1994", Random House's "Woodstock: A Bird's-Eye View" (GCD 213511) and Andrews McMeel's "Woodstock: Master of Disguise"
+F 13667 provider-missing | a Peanuts kids' picture book absent from both catalogs
+R 13668 | "Peanuts - Woodstock's Sunny Day (2019) (GreenGiant-DCP)" 14pp returns zero hits on the title in either catalog; a "Sunny Day" probe reaches Ape's "Sesame Street: Another Sunny Day", Tokyopop's "Bergamot & Sunny Day" and a Taïfu French album, and the Woodstock rows are the 1994 Marvel one-shot and the Random House bird book
+F 13668 provider-missing | a Peanuts kids' reader absent from both catalogs
+R 15817 | "Snoopy Soars to Space - Peanuts Graphic Novels (2023) (GreenGiant-DCP)" 160pp, whose ComicInfo names Publisher "Simon Spotlight", returns zero hits on "Soars to Space" in cv_vol and gcd_series; the packet matched only on the words "Graphic Novels" and reached Süddeutsche Zeitung's German book series (CV 109402 / GCD 60514, 65342)
+F 15817 provider-missing | Simon Spotlight's 2023 Peanuts graphic-novel line is indexed by neither catalog
+R 15818 | "Snoopy for President! (2016) (GreenGiant-DCP)" 25pp returns zero hits on "Snoopy for President" in either catalog; Open Library has it as /works/OL25378236W and the packet offered only the 1958 and 1974 Holt Rinehart "Snoopy" books and five foreign-language Snoopy series
+F 15818 provider-missing | a Peanuts kids' picture book absent from both catalogs
+S 19338 cv=130486 gcd=228542 0.95 | two independent legs on one book: CV 130486 "The Peanuts Book" (DK Publishing 2020, count 1, issue 802652 numbered HC) and GCD 228542 "The Peanuts Book: A Visual History of the Iconic Comic Strip" (DK [Dorling Kindersley] 2020, count 1, issue 2775302, ISBN 9781465497857) are the same DK reference volume, publisher and year agreeing and GCD's title reproducing our filename word for word against our 189pp rip
+I 114751 cv=802652 gcd=2775302 isbn=9781465497857 0.95 | the book's own record: CV issue 802652 of volume 130486 and GCD issue 2775302 of series 228542, ISBN 978-1-4654-9785-7; GCD records no page count for it, so our 189pp rip is placed by title, publisher and year
+R 19644 | "The Snoopy Show - Happiness Is a Dancing Dog (2022) (GreenGiant-DCP)" 37pp is a Simon Spotlight tie-in to the Apple TV+ series and returns zero hits on "Snoopy Show" in cv_vol and gcd_series; the packet reached the Kodansha manga "Happiness" in five languages and Determined Productions' 1979 "Happiness Is... A Warm Puppy"
+F 19644 provider-missing | a 2022 streaming-series kids' tie-in; neither catalog indexes the Snoopy Show books
+R 20274 | "Peanuts - To Mom and Dad with Love (2023) (GreenGiant-DCP)" 37pp, ComicInfo Publisher "Simon Spotlight", returns zero hits on "Mom and Dad with Love" in either catalog; Open Library has it as /works/OL28411335W and the packet reached Dupuis' French "Dad" albums and Fantagraphics' "Hobo Mom"
+F 20274 provider-missing | a 2023 Simon Spotlight Peanuts gift book absent from both catalogs
+R 21635 | "Who's Your Valentine, Charlie Brown (2017) (GreenGiant-DCP)" 12pp returns zero hits on "Your Valentine, Charlie Brown" in cv_vol and gcd_series; Open Library has /works/OL25411242W and the packet offered Fantagraphics' "A Valentine for Charlie Brown" (CV 79290 / GCD 85809), Scholastic's 1978 "It's Your First Kiss, Charlie Brown" and Coronet's 1969 "We're on Your Side, Charlie Brown"
+F 21635 provider-missing | a Peanuts kids' holiday reader absent from both catalogs
+
+# ── _Charles Schulz-Peanuts\Peanuts (By Year) — 29 calendar-year strip archives
+R 13676 | "Peanuts.1951.cbr" 292pp is one calendar year of the daily strip at roughly one image per strip, and neither catalog indexes the strip by year: the collected line both legs hold is Fantagraphics' "The Complete Peanuts" (CV 20938 / GCD 15711, 26 volumes of TWO years each, plus Canongate's 74662 and Panini's 38565), whose 344pp Volume One covers 1950-1952 and cannot be this file
+F 13676 provider-missing | a calendar-year strip archive; the catalogs hold the two-year Complete Peanuts volumes, not single years
+R 13677 | "Peanuts.1952.cbr" 357pp — one calendar year of dailies at one strip per page (357 ≈ 365 minus Sundays already counted), the same shape as the other 28 files in "Peanuts (By Year)"; no record in either catalog, whose only spanning line is Fantagraphics' two-years-per-volume Complete Peanuts (CV 20938 / GCD 15711)
+F 13677 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13678 | "Peanuts.1953.cbr" 353pp — one calendar year of the daily strip, page count confirming one image per strip; the catalogs index the BOOKS (Complete Peanuts CV 20938 / GCD 15711 at two years a volume, Holt Rinehart's 1952 and 1954 collections, Coronet's 89-volume UK line) and no year of the strip
+F 13678 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13679 | "Peanuts.1954.cbr" 327pp — one calendar year of the daily strip; both catalogs' 1954 Peanuts records are United Feature Syndicate's one-off book (CV 57453 / GCD 19424) and neither indexes a year of strips, the spanning Complete Peanuts line (CV 20938 / GCD 15711) being 26 two-year volumes
+F 13679 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13680 | "Peanuts.1955.cbr" 322pp — one calendar year of dailies, the same rip series as the other 28; no catalog record exists for a single year, and the Complete Peanuts volumes (CV 20938 / GCD 15711) pair 1954-1956 into one 344pp book that is not this file
+F 13680 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13681 | "Peanuts.1956.cbr" 353pp — one calendar year of the daily strip at one image per strip; neither catalog indexes the strip by year, their Peanuts rows being Dell's 1960 comic (CV 2020 / GCD 1455), Western's 1963 (CV 2159 / GCD 1602), the Coronet UK books and Fantagraphics' two-year Complete Peanuts
+F 13681 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13682 | "Peanuts.1957.cbr" 361pp — one calendar year of dailies; the catalogs' 1957 Peanuts record is Dell's comic series (CV 31429 "Peanuts" 1957, 28 issues / GCD 1256), a different object entirely, and no year-archive record exists on either leg
+F 13682 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13683 | "Peanuts.1958.cbr" 361pp — one calendar year of the daily strip; no record on either leg, and the only multi-year candidates are Fantagraphics' Complete Peanuts (CV 20938 / GCD 15711, two years a volume) and Coronet's 89-book UK line (CV 133549 / GCD 96572), neither of which is a calendar year
+F 13683 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13684 | "Peanuts.1959.cbr" 351pp — one calendar year of dailies, the shape of all 29 files in this folder; neither catalog indexes it, Fantagraphics' Complete Peanuts volume for 1959-1960 (of CV 20938 / GCD 15711) spanning two years in one 344pp book
+F 13684 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13686 | "Peanuts.1961.cbr" 357pp — one calendar year of the daily strip; there is no 1960 file on the shelf and no catalog record for a single year on either leg, the spanning line being the 26-volume two-year Complete Peanuts (CV 20938 / GCD 15711)
+F 13686 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13687 | "Peanuts.1962.cbr" 339pp — one calendar year of dailies; no record in cv_vol or gcd_series for a Peanuts year archive, and Fantagraphics' Complete Peanuts (CV 20938 / GCD 15711) pairs 1961-1962 into one volume that this file is not
+F 13687 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13688 | "Peanuts.1963.cbr" 358pp — one calendar year of the daily strip; the catalogs' 1963 Peanuts record is Western Publishing's four-issue comic (CV 2159 / GCD 1602) and no leg holds a year archive
+F 13688 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13689 | "Peanuts.1964.cbr" 365pp — one calendar year of dailies at exactly one image per day; no record on either leg, the only spanning candidates being Fantagraphics' two-year Complete Peanuts volumes (CV 20938 / GCD 15711) and Coronet's UK books
+F 13689 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13690 | "Peanuts.1965.cbr" 322pp — one calendar year of the daily strip; neither catalog indexes a year of Peanuts, and the packet reached only the Italian "Linus" magazine and A.W. Bruna's Dutch "Peanuts" (CV 138188), different objects
+F 13690 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13691 | "Peanuts.1966.cbr" 364pp — one calendar year of dailies; no record in either catalog for a year archive, Fantagraphics' Complete Peanuts (CV 20938 / GCD 15711) pairing 1965-1966 into one book
+F 13691 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13692 | "Peanuts.1967.cbr" 362pp — one calendar year of the daily strip; the catalogs' 1967 Peanuts record is Coronet's 89-volume UK paperback line (CV 133549 / GCD 96572, 1967-1994), a series of books and not a year of strips
+F 13692 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13693 | "Peanuts.1968.cbr" 363pp — one calendar year of dailies; no leg indexes a Peanuts year archive, the spanning line being the 26-volume two-year Complete Peanuts (CV 20938 / GCD 15711) whose 1967-1968 volume is a different object
+F 13693 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13694 | "Peanuts.1969.cbr" 364pp — one calendar year of the daily strip at one image per day; neither catalog holds a record of it, and Coronet's "We're on Your Side, Charlie Brown" (GCD 33133, 1969) is a single book of selected strips, not the year
+F 13694 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13695 | "Peanuts.1970.cbr" 362pp — one calendar year of dailies; no record on either leg, the packet's 1970 candidates being A.W. Bruna's Dutch "Peanuts" (CV 138188, 12 issues) and Holt's "You Can Do It, Charlie Brown" (GCD 84093)
+F 13695 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13696 | "Peanuts.1971.cbr" 362pp — one calendar year of the daily strip; neither catalog indexes a Peanuts year, and Fantagraphics' Complete Peanuts (CV 20938 / GCD 15711) pairs 1971-1972 into one volume that this file is not
+F 13696 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13697 | "Peanuts.1972.cbr" 365pp — one calendar year of dailies at exactly one image per day; no record in cv_vol or gcd_series for a year archive of the strip
+F 13697 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13698 | "Peanuts.1973.cbr" 365pp — one calendar year of the daily strip; no leg holds a record, the only spanning lines being Fantagraphics' two-year Complete Peanuts (CV 20938 / GCD 15711) and Coronet's UK books (CV 133549 / GCD 96572)
+F 13698 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13699 | "Peanuts.1974.cbr" 365pp — one calendar year of dailies; neither catalog indexes it, their 1974 Peanuts records being Holt Rinehart's "Snoopy" (CV 63204) and other single books of selected strips
+F 13699 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13700 | "Peanuts.1975.cbr" 365pp — one calendar year of the daily strip; no record on either leg, and the packet's 1975 candidates were Scholastic's "It's a Mystery, Charlie Brown" (CV 66277) and similar single books
+F 13700 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13701 | "Peanuts.1976.cbr" 366pp — one calendar year of dailies, 366 for the leap year, which is the clearest possible statement that this is one image per day and not a book
+F 13701 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13702 | "Peanuts.1977.cbr" 359pp — one calendar year of the daily strip; neither catalog indexes a Peanuts year, the spanning line being Fantagraphics' 26-volume two-year Complete Peanuts (CV 20938 / GCD 15711)
+F 13702 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13703 | "Peanuts.1978.cbr" 362pp — one calendar year of dailies; no record on either leg, and Scholastic's 1978 "It's Your First Kiss, Charlie Brown" (CV 84076 / GCD 75438) is a single book of selected strips
+F 13703 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13704 | "Peanuts.1979.cbr" 365pp — one calendar year of the daily strip at one image per day; no catalog record exists for a single year of Peanuts on either leg
+F 13704 provider-missing | a calendar-year strip archive absent from both catalogs
+R 13705 | "Peanuts.1980.cbr" 365pp — one calendar year of dailies, the last of the 29 files in "Peanuts (By Year)"; neither catalog holds a year archive, and Fantagraphics' Complete Peanuts (CV 20938 / GCD 15711) pairs 1979-1980 into one volume
+F 13705 provider-missing | a calendar-year strip archive absent from both catalogs
