@@ -1633,3 +1633,13 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
 - Before proposing a split key, check the items' CURRENT key (`lookup.py --shelf`) and `--who-stores` both the run's
   cv and the key: a key already aliased to the parent (a re-merged wave-2 split-out) "would not move" — respell it
   (P-016 "The Amazing Spider-Man v2 (1999)"); a key already owned by a live run shelf is a JOIN (P-016 Detective v2).
+
+[L-337] pub:dc sig:probe
+- DC: GCD and CV both file relaunches under "&" ("Batgirl & the Birds of Prey", "Red Hood & the Outlaws", "Batman &
+  the Signal") — probe the "&" AND "and" spellings before provider-missing. GCD's collected-edition series for DC
+  relaunch trades are separate same-name rows of 2-5 issues (77516, 115808, 74348, 113651, 33019) whose per-book
+  "collects" notes give exact C ranges. A "GCD says" row on a JLA trade can be a German Panini edition (78606) — void
+  it on an N line (R-062).
+
+[L-338] pub:cinebook
+- Cinebook's "Valerian and Laureline By…" line is GCD 127475 "Valerian and Laureline" [en-gb] 2018-? (R-062).

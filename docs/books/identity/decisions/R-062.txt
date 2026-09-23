@@ -1,0 +1,337 @@
+# R-062 — S.2 re-probe (TOOLS_TODO 32): 60 shelves that previously won with cv=- and/or F provider-missing. Two groups:
+# ComiXology Originals / Boom / Cinebook / CBLDF one-book shelves (1362..24257), and DC (94646..22774) — mostly "vN (year)"
+# folder shelves whose CV id was invisible to the old name index, plus DC one-shots/trades whose GCD row hid behind a
+# longer or shorter title. reprobe-near.tsv held only ONE hit for this batch (S22774 -> CV 166011, rejected: it is the
+# print "Volume One..Four" collected line); the yield came from the packets' own "CV local rip" lines, which now list the
+# right DC relaunch volumes (57485, 18207, 42806, 161691, 4556, 82720, 99040, 42952, 92966, 145041, 107493), and from
+# `--gcd-series --contains` probes (Plate Tectonics 215892, Raising a Reader! 91998, Valerian and Laureline 127475,
+# Superman and Justice League America 103353, Batgirl & the Birds of Prey 102916, Nightwing: Rebirth Deluxe Edition 117860,
+# Legends of the DCU: Crisis 6167, Girl Taking Over FCBD 200020, Batman 428: Robin Lives! 206659).
+# Surprises: S94646 had carried GCD 78606, which is Panini Deutschland's German JLA, not DC's 2013 run (72153); several X-batch
+# I lines named a SERIAL's issue #1 as a trade's own record (Ask for Mercy, Book of Evil, Youth) — corrected here.
+
+S 103210 cv=39882 gcd=57809 0.9 | the RUN, now with both legs: CV 39882 "Planet of the Apes" (Boom! 2011, 16, arcs "The Long War"/"The Devil's Pawn"/"Children of Fire"/"The Half Man") and GCD 57809 (Boom! 2011-2012, 16) agree, and GCD's own roll-ups put Vol. 01-04 on #1-4, #5-8, #9-12, #13-16; the R-038 withholding is void — S13863 now stores cv=98531 and Series.CvVolumeId=39882 is on 0 rows; 0.9 because Vol. 05 collects the 2013 Special/Giant/Spectacular one-shots, not the run
+I 10549 cv=336651 gcd=1531567 isbn=9781608866601 0.95 | Vol. 01: CV 49156 issue 336651 "The Long War" and GCD 96844 row #1 1531567 (116pp vs our 113pp), the trade line's first book
+I 10550 cv=336652 gcd=1531568 isbn=9781608866694 0.95 | Vol. 02: CV 49156 issue 336652 "The Devil's Pawn" and GCD 96844 row #2 1531568 (116pp vs our 116pp)
+I 10551 cv=360898 gcd=1531569 isbn=9781608862719 0.95 | Vol. 03: CV 49156 issue 360898 "Children of Fire" and GCD 96844 row #3 1531569 (116pp vs our 116pp)
+I 10552 cv=382925 gcd=1531570 isbn=978-1-60886-297-9 0.95 | Vol. 04: CV 49156 issue 382925 "The Half Man" and GCD 96844 row #4 1531570 (148pp vs our 143pp)
+I 10553 cv=453461 gcd=1531571 isbn=9781608863709 0.95 | Vol. 05: CV 49156 issue 453461 "The Utopians" and GCD 96844 row #5 1531571 (116pp vs our 114pp)
+C 10552 cv=51200 gcd=67547 #1-1 0.9 | Vol. 04 also collects Planet of the Apes Annual (Boom 2012, one issue, CV 51200 / GCD 67547) #1, per GCD row 1531570's reprint roll-up beside #13-16
+C 10553 cv=57188 gcd=71940 #1-1 0.9 | Vol. 05 collects Planet of the Apes Special (Boom 2013, one issue, CV 57188 / GCD 71940) #1, per GCD row 1531571's reprint roll-up
+C 10553 cv=67708 gcd=81799 #1-1 0.9 | Vol. 05 collects Planet of the Apes Giant (Boom 2013, one issue, CV 67708 / GCD 81799) #1, per GCD row 1531571's reprint roll-up
+C 10553 cv=65955 gcd=75828 #1-1 0.9 | Vol. 05 collects Planet of the Apes Spectacular (Boom 2013, one issue, CV 65955 / GCD 75828) #1, per GCD row 1531571's reprint roll-up
+N 10550 GCD's roll-up lists #2 besides #5-8 (a reprinted cover or story); the book's range is #5-8
+
+S 13902 cv=123117 gcd=215892 0.95 | provider-missing WITHDRAWN: `--gcd-series "Plate Tectonics" --contains` finds GCD 215892 "Plate Tectonics" (Boom! Studios 2019, 1, row 2661184 ISBN 978-1-68415-345-9); CV 123117 "Plate Tectonics: An Illustrated Memoir" 2019 Archaia (1) is the same book — Archaia is Boom's imprint and our ComicInfo says Publisher "BOOM! Studios"; one 259pp 2019 file, count 1 on both legs
+I 10575 cv=728956 gcd=2661184 isbn=978-1-68415-345-9 0.95 | the single 259pp 2019 book = CV 123117 issue 728956 (HC, 2019-11-28) = GCD 215892 row 2661184 (2019-12)
+
+R 16852 | one 220pp 2017 Abrams ComicArts art book, ComicInfo Series "Steven Universe: Art & Origins": still in neither catalog — re-probes `"Steven Universe: Art" --contains` (CV 0, GCD 0) and `--gcd-series "Art & Origins"/"Art and Origins" --contains` (0) find nothing; GCD's 15 Steven Universe series are all Boom! comics and CV's are Boom! issues, a different product
+F 16852 provider-missing | re-probed after TODO 30: a 2017 Abrams licensed art book absent from both catalogs
+
+S 19807 cv=97771 gcd=- 0.9 | one leg plus the collection's own assertion: CV 97771 "The Tower of the Comic Book Freaks" 2017 Caliber Comics (1, issue 574926) matches the single 269pp file, its (2017) and ComicInfo Publisher "Caliber Comics"
+F 19807 provider-missing | re-probed: `--gcd-series "Comic Book Freaks" --contains` and `"Tower of the" --year 2017 --contains` return 0 GCD series
+I 11045 cv=574926 gcd=- 0.9 | the single 269pp 2017 book is CV 97771's one issue 574926; GCD holds no row
+
+S 20877 cv=111620 gcd=127475 0.95 | provider-missing WITHDRAWN: GCD 127475 "Valerian and Laureline" [en-gb] (Cinebook 2018-?, 1) has one row, #1 2018-08-08, 56pp, ISBN 978-1849184014 — Cinebook's "by..." line, whose #1 CV 111620 "Valerian and Laureline By..." (Cinebook 2018, 2) names "Shingouzlooz Inc."; our single 55pp 2018 "Valerian - Shingouzlooz Inc." sits 1pp off GCD's count
+I 11922 cv=673151 gcd=1834831 isbn=978-1849184014 0.95 | CV 111620 issue 673151 "#1 Shingouzlooz Inc." (2018-05-01) and GCD 127475 row 1834831 (#1, 2018-08-08, 56pp vs our 55pp)
+
+S 1362 cv=111306 gcd=- 0.9 | the run wins on one leg: CV 111306 "Ask For Mercy: The Key To Forever" 2018 Comicraft (6) is the six-part digital serial our 156pp "Book 01" collects, ComicInfo Publisher Comicraft; CV 118833 (2019, count 1, issue 708033) is that book's own trade record
+F 1362 provider-missing | re-probed `--gcd-series "Ask for Mercy" --contains`: GCD's only row is 199369, Dark Horse 2023-?, 2 (#1 2023-04, #2 2024-09) — a print repackaging, not the Comicraft Season One serial
+I 11500 cv=708033 gcd=- 0.95 | "COL 01 Ask for Mercy - Book 01 - The Key to Forever (2019)" 156pp is CV 118833 "Ask For Mercy: The Key To Forever" 2019 Comicraft count 1, issue 708033; X-005's cvi 671704 was the SERIAL's #1, not this trade
+N 11500 GCD 199369 #1 (2522573, Dark Horse 2023) is the later print edition of this book, a different edition from our 2019 Comicraft digital trade — not claimed on the I line
+
+S 1364 cv=129417 gcd=- 0.9 | the run wins on one leg: our "Book 03 - World of Disquiet" (143pp) collects CV 129417 "Ask For Mercy Season Three: World of Disquiet" 2020 Comicraft (6); CV 136542 (2021, count 1, issue 856473) is that book's trade record
+F 1364 provider-missing | re-probed: GCD indexes only Dark Horse's spanning "Ask for Mercy" (199369, 2 print volumes 2023-2024)
+I 11503 cv=856473 gcd=- 0.95 | "Book 03 - World of Disquiet (2021)" 143pp = CV 136542 "Ask For Mercy Season Three: World of Disquiet" 2021 Comicraft count 1, issue 856473; X-005's cvi 809751 was the serial's #3
+
+S 1365 cv=120233 gcd=- 0.9 | the run wins on one leg: our "Book 02 - The Heart of the Earth" (138pp) collects Season Two, CV 120233 "Ask For Mercy Season Two: The Center of Everything That Is" 2019 Comicraft (5); the per-file 127940 "... Season Two: The Heart of the Earth" (2020, count 1, issue 768384) is the trade's own record
+F 1365 provider-missing | re-probed: GCD indexes only Dark Horse's spanning "Ask for Mercy" (199369)
+I 11502 cv=768384 gcd=- 0.95 | "Book 02 - The Heart of the Earth (2020)" 138pp = CV 127940 "Ask For Mercy Season Two: The Heart of the Earth" 2020 Comicraft count 1, issue 768384 — the exact subtitle on our file
+
+S 1366 cv=118832 gcd=- 0.9 | one leg plus our own naming: CV 118832 "Ask For Mercy: Ask For Budgie" 2019 Comicraft (1, issue 708032) matches our single 27pp one-shot, its (2019) and ComicInfo Series; "ladder 2" is the reading-order prefix
+F 1366 provider-missing | re-probed: GCD indexes only Dark Horse's spanning "Ask for Mercy" (199369)
+I 11501 cv=708032 gcd=- 0.95 | the 27pp 2019 one-shot is CV 118832's single issue 708032
+
+S 3093 cv=146095 gcd=- 0.9 | one leg plus the collection's own assertion: CV 146095 "Book of Evil" 2022 Best Jackett Press (4) is the serial our 167pp "COL Book of Evil v01 (2023)" collects, ComicInfo Series "Book of Evil (Comixology Originals)" / Publisher "Best Jackett Press"; the trade's own record is not in our data (CV holds only Splitter's German 158242)
+F 3093 provider-missing | re-probed `--gcd-series "Book of Evil" --contains`: only 211459 (Splitter Verlag 2024, German)
+N 11931 no-record | X-005's cvi 955033 is issue #1 of the 4-issue serial CV 146095, not this 167pp v01 trade; no English trade record for "Book of Evil v01" exists in the CV rip or the GCD dump
+
+S 3156 cv=121148 gcd=- 0.9 | the run wins on one leg: CV 121148 "Breaklands" 2019 Justin Jordan (5) is the digital Season One our 120pp "Breaklands Season 01 - The Chase (2020)" collects; GCD 170526 (Dark Horse 2021, 1) is that trade's print edition, whose note says "collects the comic series Breaklands #1-5"
+F 3156 provider-missing | re-probed `--gcd-series "Breaklands" --contains`: GCD holds only 170526, the trade, no row for the five-part serial
+I 11507 cv=742586 gcd=2206151 isbn=978-1506724416 0.9 | the Season One trade: CV 125846 "Breaklands Season One: The Chase" 2020 issue 742586 ("Volume 1") and GCD 170526 row 2206151 (Dark Horse 2021-03-10, collects Breaklands #1-5); 0.9 as GCD's row is the later print
+
+S 3157 cv=132198 gcd=- 0.9 | the RUN wins: our 119pp "Breaklands Season 02 - The Citadel (2021)" collects Season Two, CV 132198 "Breaklands Season Two" Justin Jordan 2020, 5 (#1-5); the trade's own record is CV 136293 "Breaklands Season Two: The Citadel" issue 853440 ("Volume 2", 2021-05)
+F 3157 needs-fetch cv=132198 | "Breaklands Season Two" has no CvVolume row — named from the local rip
+F 3157 provider-missing | re-probed: GCD's only Breaklands row is 170526, the Season One print trade
+I 11508 cv=853440 gcd=- isbn=- 0.95 | CV 136293 "Breaklands Season Two: The Citadel" 2021, issue 853440 "Volume 2", is this 119pp Season 02 - The Citadel
+
+S 6086 cv=128431 gcd=- 0.9 | CV 128431 "Elephantmen: Theo Laroux Meets the Elephantmen" 2020 Comicraft (5) matches our ladder 1-5 of "(of 05)" files exactly, ComicInfo Comicraft on all six items; the sixth item is the run's own trade (costs nothing), capped at 0.9 only because a single leg carries it
+F 6086 provider-missing | re-probed `--gcd-series "Elephantmen" --contains`: 16 series, all Image (18797, 60886, 122941 ...) or the Dark Horse "Elephantmen 2261 Omnibus" 200617 — none is the Comicraft Season Three serial
+I 11532 cv=827122 gcd=- 0.9 | the collected edition: CV 133535 "Elephantmen: 2261: Theo Laroux Meets the Elephantmen" 2021 count 1, issue 827122 "Book 3", our 123pp "Elephantmen 2261 Vol. 03" file
+
+S 6085 cv=115880 gcd=- 0.9 | one leg plus our own naming and year: CV 115880 "Elephantmen 2261: Holiday Special" 2018 Comicraft (1, issue 694950) matches the single 37pp file and ComicInfo Series; the "ladder 2261" is the title's year
+F 6085 provider-missing | re-probed `--gcd-series "Elephantmen" --contains`: no Holiday Special row among GCD's 16 Elephantmen series
+I 11529 cv=694950 gcd=- 0.9 | the 37pp 2018 one-shot is CV 115880's single issue 694950
+
+S 6088 cv=111307 gcd=- 0.9 | the RUN wins: our 116pp "COL Elephantmen 2261 Vol. 01 - The Death of Shorty (2018)" collects CV 111307 "Elephantmen 2261: The Death of Shorty" (Comicraft 2018, 5, #1-5 "Part One: Yvette".."Part Five: Tully"); the trade's own record is CV 118677 issue 707567 ("Season One")
+F 6088 provider-missing | re-probed: GCD holds no row for the Comicraft Elephantmen 2261 minis or their trades, only the Dark Horse omnibus 200617
+I 11530 cv=707567 gcd=- isbn=- 0.95 | CV 118677 "Elephantmen 2261: The Death of Shorty" 2019, issue 707567 "Season One" (2019-05), is this Vol. 01 trade
+
+S 16864 cv=132202 gcd=- 0.9 | the RUN wins: CV 132202 "Stone Star" 2020 Swords & Sassery (5) is season two's digital serial, which our "Stone Star Vol. 02 - In the Spotlight" (2021, 122pp) collects; GCD 173836 "Stone Star" (Dark Horse 2021-?, 2: "Fight or Flight", "In the Spotlight") is the print trade line, carried on the I line
+F 16864 provider-missing | re-probed `--gcd-series "Stone Star" --contains`: only 173836, the Dark Horse trade line — no row for the digital serial
+I 11601 cv=867796 gcd=2571701 isbn=9781506733197 0.95 | the book's own record: CV 137360 "Stone Star Season Two: In the Spotlight" 2021's issue 867796 and GCD 173836's #2 row 2571701, titled "In the Spotlight"
+
+S 17135 cv=111309 gcd=- 0.9 | the run wins on one leg: CV 111309 "Superfreaks" 2018 Big Head Little Arms (5, now the stored link) is the digital serial our 153pp "COL Superfreaks v01 - The New Wave" collects; CV 112410 (count 1) is that book's own record
+F 17135 provider-missing | re-probed `--gcd-series "Superfreak" --contains`: only 107896 "Teenage Superfreaks" (Plem Plem 2011, German), a different comic
+I 11976 cv=677617 gcd=- 0.95 | "COL Superfreaks v01 - The New Wave (2018)" 153pp = CV 112410 "Superfreaks: The New Wave" 2018 count 1, issue 677617
+
+S 24257 cv=- gcd=171229 0.9 | GCD 171229 "Youth" (Dark Horse 2021-?, 3) is the three-volume line our three books are — rows #[nn] 2021 (136pp), #2 "Badlands" 2023, #3 "Hellbound" 2024 against our Season 01 True Fantasy (126pp), Season 02 Badlands, Season 03; ComicVine keeps only the seasons' 4-chapter serials (126878, 135180) and a count-1 DH trade (134750), none counting three
+N 24257 CV 126878 "Youth" 2020 (4, Chapters One-Four) and CV 135180 2021 (4, Chapters Five-Eight) are the per-season ComiXology serials; no CV volume describes the three-book line
+I 11616 cv=839617 gcd=2212198 isbn=978-1-50672-461-4 0.95 | "COL Youth Season 01 - True Fantasy (2021)" 126pp = CV 134750 issue 839617 "Volume One: True Fantasy" = GCD 171229 row 2212198 (2021-03-24, 136pp); X-005's cvi 760415 was the serial's Chapter One
+I 11617 cv=- gcd=2484198 isbn=9781506730998 0.9 | "Youth Season 02 - Badlands (2022)" 131pp = GCD 171229 #2 "Badlands" (2023-01-25); CV holds only the chapters (135180 #1 "Chapter Five: Badlands")
+I 11618 cv=- gcd=2627446 isbn=1-50673-714-5 0.9 | "Youth Season 03 (2023)" 112pp = GCD 171229 #3 "Hellbound" (2024-05-01), the line's third book; our file names no subtitle, hence 0.9
+
+S 14370 cv=65456 gcd=91998 0.95 | provider-missing WITHDRAWN: `--gcd-series "Raising a Reader" --contains` finds GCD 91998 "Raising a Reader!" (Comic Book Legal Defense Fund 2013-2014, 1, row 1450749 2013, 16pp); CV 65456 (2013, 1) is the same title and our single 13pp 2013 file sits 3pp under GCD's count (covers)
+I 11486 cv=418079 gcd=1450749 0.95 | the 13pp 2013 giveaway = CV 65456 issue 418079 (2013-07-17) = GCD 91998 row 1450749 (2013, 16pp)
+
+S 94646 cv=57485 gcd=72153 0.95 | re-probe yield: CV 57485 "Justice League of America" (DC 2013, 18, no CvVolume row) and GCD 72153 (DC 2013-2014, 18) agree on publisher, year and count; our #6-7 (Sept/Oct 2013, in the Trinity War read-order folder) and the two trades judged #1-7 + #8-14 sit inside #1-18; the per-file CV 2014 is the 1960 legacy volume
+F 94646 needs-fetch cv=57485 | CV 57485 is named from the rip only; no CvVolume row
+F 94646 wrong-cv-link | per-file CV 2014 "Justice League of America" (1960, 261) stamped on 4/4 files is the wrong-decade legacy volume
+N 94646 C-008's gcd=78606 (also on the key link "Justice League of America v3 (2013)" [gcd=78606 Manual]) is Panini Deutschland's 2014 German JLA (4 issues) — the English DC run is GCD 72153; the key link needs re-pointing
+I 67323 cv=432316 gcd=1156919 isbn=978-1-4012-4236-7 0.9 | "COL Justice League of America Vol. 01 - World's Most Dangerous (2013)" 208pp = CV 68916 issue 432316 ("Volume 1", 2013-11) = GCD 77516 #1 "World's Most Dangerous" (2013-11-06 HC, 232pp); the packet's stored GCD row 1013463 is JLA 2007 Vol. 9 "Omega", another book
+C 67323 cv=57485 gcd=72153 #1-7 0.9 | World's Most Dangerous collects Justice League of America (DC 2013, 18 issues, CV 57485 / GCD 72153) #1-7, the judged range; 208pp fits seven issues
+I 67324 cv=464965 gcd=1252405 isbn=978-1-4012-4726-3 0.9 | "COL Justice League of America Vol. 02 - Survivors of Evil (2014)" 184pp = CV 76858 issue 464965 ("Volume 2", 2014-09) = GCD 77516 #2 "Survivors of Evil" (2014-09-10, 200pp); the stored row 1178841 is Panini's German #2 (100pp), not this book
+C 67324 cv=57485 gcd=72153 #8-14 0.9 | Survivors of Evil collects Justice League of America (DC 2013, CV 57485 / GCD 72153) #8-14, the judged range; 184pp fits seven issues
+N 67324 the packet's "GCD says" s72153 #3-5 comes from the stored row 1178841 (Panini Deutschland JLA #2), another book's roll-up — void
+
+S 2158 cv=107493 gcd=119839 0.95 | re-probe yield: CV 107493 "Batman & the Signal" (DC 2018, 3: "Gotham By Day Part One-Three") and GCD 119839 "Batman and the Signal" (DC 2018, limited series, 3) agree, matching our ladder 1-3 of "(of 03)" files and ComicInfo Volume 2018 / Publisher DC; item 63977 is the run's own trade (costs nothing)
+F 2158 needs-fetch cv=107493 | "Batman & the Signal" is named from the rip only — the ampersand spelling kept the old index blind to it
+F 2158 wrong-cv-link | stored cv=117256 "The Signal" 2017 Abstruct Entertainment (6) is another publisher's book entirely
+I 63977 cv=680697 gcd=1838364 isbn=978-1-4012-7967-7 0.95 | "Batman and the Signal (2018)" 148pp = CV 112937 "Batman and the Signal" 2018 TPB issue 680697 (2018-08-22) = GCD 127944 row 1838364 (2018-08-22, 164pp)
+C 63977 cv=107493 gcd=119839 #1-3 0.9 | the trade collects Batman & the Signal (DC 2018, 3 issues, CV 107493 / GCD 119839) #1-3 — the whole mini; 148pp against three ~26-31pp issues plus extras
+
+S 2171 cv=91589 gcd=- 0.9 | CV 91589 "Batman v Superman: Dawn of Justice - Upstairs/Downstairs" (DC 2016, 1, issue 536204) is our single 28pp promotional comic, matching by title, publisher and year
+F 2171 provider-missing | re-probed `--gcd-series "Dawn of Justice"` / `"Batman v Superman"` / `"Upstairs"` --contains: GCD holds only General Mills 98223 (4) and the Dawn of Justice Day special 98661, not this book
+I 19371 cv=536204 gcd=- 0.9 | the 28pp 2016 promo is CV 91589's single issue 536204
+
+S 2172 cv=91545 gcd=- 0.9 | our five 21-22pp "Dawn of Justice Chapter 01-05" files match CV 91545 "Warner Bros. Pictures Presents Batman v Superman: Dawn of Justice" (DC 2016, 5, cached #1-5) exactly by count, ladder 1-5
+F 2172 provider-missing | re-probed `--gcd-series "Dawn of Justice" --contains`: 98223 is the four-part General Mills cereal comics ("Playground Heroes", "Field Trip" …, 28pp) and 98661 a one-issue special — neither is the five Warner chapters; the per-file round2-folder 98661 is rejected
+
+S 4615 cv=71702 gcd=- 0.9 | CV 71702 "DC Super-Pets: The Amazing Mini-Mutts" (Capstone Press 2012, 1, issue 445442) is our single 55pp file, title and publisher line matching; our (2013) is a later printing
+F 4615 provider-missing | re-probed `--gcd-series "Super-Pets"` / `"Mini-Mutts"` / `"Amazing Mini"` --contains: GCD's five Super-Pets rows are 2022-2024 DC League of Super-Pets books, none Capstone
+I 54774 cv=445442 gcd=- 0.9 | the 55pp chapter book is CV 71702's single issue 445442
+
+S 46238 cv=25595 gcd=6167 1.0 | provider-missing WITHDRAWN: the packet's own dump line names GCD 6167 "Legends of the DCU: Crisis on Infinite Earths" (DC 1999, 1, row 62578 dated 1998-12-30, 72pp); ComicInfo Web "150946" on the Marika-Empire rip is CV 25595's own issue 150946 "The Untold Story" — the collection asserts it and both legs agree; the two files are the same issue ripped twice (58pp each)
+I 64002 cv=150946 gcd=62578 1.0 | the Marika-Empire remix rip carries ComicInfo Web 150946 = CV 25595 issue 150946; GCD 6167 row 62578 is the same one-shot
+I 56240 cv=150946 gcd=62578 0.95 | the DobisP.R.-Novus-HD rip of the same 58pp one-shot, ComicInfo Series/Volume/Count identical to item 64002
+N 46238 the per-file GCD 5982 (80-Page Giant) and 141 (Batman) are round2-folder stamps from the neighbouring folders, both wrong
+
+S 15192 cv=71108 gcd=78746 0.9 | the RUN wins (brief ruling; the trade's shelf holds no issues and the run is stored nowhere else — --who-stores 71108/78746 = 0): our 207pp "Scribblenauts Unmasked - A DC Comics Adventure (2015)" is the TPB of "Scribblenauts Unmasked: A Crisis of Imagination", CV 71108 (DC 2014, 9) = GCD 78746 (DC 2014, 9); the book's own records are CV 80009 (TPB, 2015-02-28) and GCD 110691 (2015-02-11, 212pp), which name it two ways; 0.9 because no note states the range
+F 15192 needs-fetch cv=71108 | "Scribblenauts Unmasked: A Crisis of Imagination" 2014 (9) is named from the rip only
+I 56682 cv=479244 gcd=1660467 isbn=978-1-4012-4926-7 0.95 | the 207pp TPB = CV 80009 issue 479244 (TPB, 2015-02-28) = GCD 110691 row 1660467 (2015-02-11, 212pp); CV titles it "A Crisis of Imagination", GCD "A DC Comics Adventure" (our filename) — one ISBN-era book, dates two weeks apart
+N 56682 range not asserted: 212pp against nine 36pp print issues (~22pp story each) fits #1-9 of CV 71108 / GCD 78746, but no collects note exists, so no C line; the 18-chapter digital volume CV 69756 is the same story in digital chapters
+
+S 100188 cv=2624 gcd=2108 0.95 | the withheld id released: CV 2624 "Sword of Sorcery" (DC 1973, 5) and GCD 2108 (DC 1973, 5) agree on publisher, year and count, per-file CV and GCD both on 5/5 files, and our ladder 1-5 is the whole run; B-009 withheld 2624 only while S17426 stored it — S17426 now carries cv=52242 and Series.CvVolumeId=2624 is on 0 rows
+
+S 94858 cv=18207 gcd=21522 0.95 | re-probe yield: CV 18207 "The Brave and the Bold" (DC 2007, 35, no CvVolume row) and GCD 21522 (DC 2007-2010, 35) agree on publisher, start year and count; our ladder 7-35 (29 files, 22-23pp) fits and GCD per-file sits on 29/30; the 30th file is the run's own trade "Vol. 01 - The Lords of Luck" (costs nothing); CV per-file 1683 is the 1955 legacy volume
+F 94858 needs-fetch cv=18207 | CV 18207 is named from the rip only
+F 94858 wrong-cv-link | per-file CV 1683 "The Brave and the Bold" (1955, 200) stamped on 30/30 files is the legacy volume
+I 57998 cv=338228 gcd=556207 isbn=978-1-4012-1588-0 0.9 | "COL The Brave and the Bold Vol. 01 - The Lords of Luck (2024)" 151pp = CV 49422 "The Brave and the Bold: The Lords of Luck" issue 338228 = GCD 33019 #1 "The Lords of Luck" (TPB 2008-12-10, 164pp; the 2007 HC is 27744 #1 394094); X-007's gcd 2746447 is Panini España's 2025 series — wrong; our "(2024)" is the digital date
+C 57998 cv=18207 gcd=21522 #1-6 0.95 | The Lords of Luck collects The Brave and the Bold (DC 2007, 35 issues, CV 18207 / GCD 21522) #1-6 — GCD row 556207's note "collects The Brave and the Bold (DC, 2007 series) #1-6"
+
+S 1172 cv=156405 gcd=- 0.9 | CV 156405 "Aquaman: Through Fire and Water" 2024 DC (1, issue 1042414) matches our single 23pp 2024 one-shot on publisher, year and count
+F 1172 provider-missing | re-probed `--gcd-series "Through Fire and Water" --contains` (0) and `"Aquaman" --year 2024 --contains` (19 series, none this title); the per-file 205249 is a round2-folder neighbour
+I 58597 cv=1042414 gcd=- 0.9 | the 23pp one-shot is CV 156405's single issue 1042414
+
+R 17139 | our single file is "Supergirl - Daughter of Krypton (Backstories) (2016)" (128pp), a Capstone/DC "Backstories" prose-and-picture book; re-probes `"Daughter of Krypton" --contains` (CV 53202 Last Daughter 2012, 79422 Red Daughter 2015 — other books) and `"Backstories" --contains` (0 / 0) find no record; the per-file CV 79422 is wrong
+F 17139 provider-missing | re-probed after TODO 30: neither ComicVine nor the GCD dump holds the DC Backstories line
+
+R 21962 | one 125pp DC "Backstories" volume (2016), "Wonder Woman - Amazon Warrior": re-probes `"Amazon Warrior" --contains` return only AC's 1989 "Amazon Warriors", DK's 2017 Ultimate Guide 101647 and the 2021 80 Years deluxe 138903/176029 — different books; nothing holds this one
+F 21962 provider-missing | re-probed after TODO 30: the DC Backstories line is absent from both catalogs
+
+S 1878 cv=93179 gcd=102916 0.95 | provider-missing WITHDRAWN: the "GCD says" roll-ups name s102916 "Batgirl & the Birds of Prey" (DC 2016-2018, 22) — GCD files the run under "&", which the dump probe on "and" missed; it and CV 93179 "Batgirl and the Birds of Prey" (DC 2016, 22) agree, and our three trades tile #1-6, #7-13, #14-22 per GCD's own notes
+I 58986 cv=590761 gcd=1688634 isbn=978-1-4012-6867-1 0.95 | Vol. 01 "Who Is Oracle?" = CV 100560 issue 590761 = GCD 113189 #1 1688634 (2017-04-05, 180pp vs our 176pp)
+C 58986 cv=93179 gcd=102916 #1-6 0.95 | Who Is Oracle? collects Batgirl & the Birds of Prey (DC 2016, 22, CV 93179 / GCD 102916) #1-6 per GCD row 1688634's roll-up
+C 58986 cv=92351 gcd=104345 #1-1 0.9 | Who Is Oracle? also collects Batgirl & the Birds of Prey: Rebirth (DC 2016, one-shot, CV 92351 / GCD 104345) #1, per GCD row 1688634's roll-up
+I 58987 cv=644464 gcd=1762542 isbn=978-1-4012-7380-4 0.95 | Vol. 02 "Source Code" = CV 100560 issue 644464 = GCD 113189 #2 1762542
+C 58987 cv=93179 gcd=102916 #7-13 0.95 | Source Code collects Batgirl & the Birds of Prey (DC 2016, CV 93179 / GCD 102916) #7-13 per GCD row 1762542's roll-up
+I 58988 cv=677249 gcd=1825115 isbn=978-1-4012-7781-9 0.95 | Vol. 03 "Full Circle" = CV 100560 issue 677249 = GCD 113189 #3 1825115
+C 58988 cv=93179 gcd=102916 #14-22 0.95 | Full Circle collects Batgirl & the Birds of Prey (DC 2016, CV 93179 / GCD 102916) #14-22 per GCD row 1825115's roll-up
+
+S 1943 cv=155359 gcd=206659 0.9 | the Faux-simile now has a record: our "Batman - Faux-simile Edition 428 (2024) (2nd Printing Jim Aparo Variant)" in the "From the DC Vault - Death in the Family - Robin Lives!" folder is DC's "Batman 428: Robin Lives!" — CV 155359 (DC 2024, 1, issue 1034530 "A Death in the Family - Chapter 5 (Robin Lives!)") = GCD 206659 (DC 2024, 1, 36pp); 0.9 because the file is only the 1pp variant cover
+F 1943 needs-fetch cv=155359 | "Batman 428: Robin Lives!" is named from the rip only
+F 1943 partial-rip | item 59631 is a single 1pp second-printing variant COVER, not the 36pp book
+I 59631 cv=1034530 gcd=2588385 0.9 | the cover belongs to CV 155359 issue 1034530 / GCD 206659 row 2588385 (2023-12-12, 36pp), the one-shot itself
+
+S 2128 cv=81960 gcd=89283 0.95 | provider-missing WITHDRAWN: `"Unwrapped" --contains` finds CV 81960 "Batman: The Dark Knight Unwrapped By David Finch Deluxe Edition" (DC 2015, 1, HC issue 488624 2015-05-31), which with GCD 89283 "Batman The Dark Knight Unwrapped: David Finch" (DC 2015, 1, 296pp, 2015-05-13) is our 267pp 2015 book — two legs on title, publisher, date and count
+F 2128 needs-fetch cv=81960 | named from the rip only
+I 62881 cv=488624 gcd=1353578 isbn=978-1-4012-4884-0 0.95 | the 267pp HC = CV 81960 issue 488624 = GCD 89283 row 1353578 (296pp)
+
+S 95488 cv=42806 gcd=61066 0.95 | re-probe yield: CV 42806 "Birds of Prey" (DC 2011, 35, no CvVolume row) and GCD 61066 (DC 2011-2014, 35) agree; our #0 and five trades judged #1-7, #8-12, #13-17, #25-34 sit inside and GCD's roll-ups place all five on s61066; the per-file 6498 (1999) and 52139 (the trade line) are not the run
+F 95488 needs-fetch cv=42806 | CV 42806 is named from the rip only
+F 95488 wrong-cv-link | per-file CV stamps 6498 (the 1999 legacy run, 4/6 files) and 52139 (the 5-volume trade line, 2/6) are not the 2011 run
+I 63025 cv=357124 gcd=1171049 isbn=978-1-4012-3699-1 0.95 | Vol. 01 "Trouble in Mind" = CV 52139 issue 357124 = GCD 78085 #1 1171049 (164pp vs our 159pp)
+C 63025 cv=42806 gcd=61066 #1-7 0.95 | Trouble in Mind collects Birds of Prey (DC 2011, 35, CV 42806 / GCD 61066) #1-7, GCD row 1171049's roll-up and the judged range agreeing
+I 63026 cv=397535 gcd=1171098 isbn=978-1-4012-3813-1 0.95 | Vol. 02 "Your Kiss Might Kill" = CV 52139 issue 397535 = GCD 78085 #2 1171098 (148pp vs our 141pp)
+C 63026 cv=42806 gcd=61066 #8-12 0.95 | Your Kiss Might Kill collects Birds of Prey (DC 2011, CV 42806 / GCD 61066) #8-12 (plus #0, our separate file) per GCD row 1171098
+I 63027 cv=437472 gcd=1171109 isbn=9781401244040 0.95 | Vol. 03 "A Clash of Daggers" = CV 52139 issue 437472 = GCD 78085 #3 1171109 (164pp vs our 158pp)
+C 63027 cv=42806 gcd=61066 #13-17 0.95 | A Clash of Daggers collects Birds of Prey (DC 2011, CV 42806 / GCD 61066) #13-17 per GCD row 1171109 (plus Batgirl Annual 2012 #1)
+I 63028 cv=459657 gcd=1240633 isbn=978-1-4012-4635-8 0.95 | Vol. 04 "The Cruelest Cut" = CV 52139 issue 459657 = GCD 78085 #4 1240633 (204pp vs our 194pp)
+C 63028 cv=42806 gcd=61066 #18-24 0.9 | The Cruelest Cut collects Birds of Prey (DC 2011, CV 42806 / GCD 61066) #18-24 and #26 per GCD row 1240633; the larger stretch is stated, #26 on the N line
+N 63028 also collects Birds of Prey (2011) #26 (GCD roll-up 1240633: "#18-24, #26") and Talon #9 — #25 sits in Vol. 05
+I 63029 cv=476769 gcd=1660406 isbn=978-1-4012-5083-6 0.95 | Vol. 05 "Soul Crisis" = CV 52139 issue 476769 = GCD 78085 #5 1660406 (236pp vs our 230pp)
+C 63029 cv=42806 gcd=61066 #27-34 0.9 | Soul Crisis collects Birds of Prey (DC 2011, CV 42806 / GCD 61066) #25 and #27-34 per GCD row 1660406; the judged #25-34 would swallow #26 (in Vol. 04), so the larger stretch #27-34 is stated
+N 63029 also collects Birds of Prey (2011) #25 and Birds of Prey: Futures End #1 (GCD roll-up 1660406)
+
+S 2620 cv=127364 gcd=- 0.9 | CV 127364 "Birds of Prey: Sirens of Justice" (DC 2020, 2, cached #1-2) matches our two 16-17pp digital-first files exactly, ladder 1-2, ComicInfo Series on both
+F 2620 provider-missing | re-probed `--gcd-series "Sirens of Justice" --contains`: 0 series
+
+S 23094 cv=143963 gcd=- 0.9 | our four files are the four "Black Adam - The Justice Society Files" one-shots, which ComicVine keeps as ONE volume, CV 143963 (DC 2022, 4, ratio 4/4); GCD mints one series per character, so no single GCD series stands for the shelf
+F 23094 provider-missing | re-probed `--gcd-series "Justice Society Files" --contains`: 186668 (Hawkman), 187678 (Cyclone), 188859 (Atom Smasher), 190058 (Dr. Fate) + 195415 the collected book — no spanning series
+I 63108 cv=- gcd=2428668 0.95 | the one-shot's own record: GCD issue 2428668 in series 188859, the 52-page Atom Smasher special
+I 63109 cv=- gcd=2421769 0.95 | the one-shot's own record: GCD issue 2421769 in series 187678, the 52-page Cyclone special
+I 63110 cv=- gcd=2436118 0.95 | the one-shot's own record: GCD issue 2436118 in series 190058, the 52-page Dr. Fate special
+I 63111 cv=- gcd=2416035 0.95 | the one-shot's own record: GCD issue 2416035 in series 186668, the 52-page Hawkman special
+
+S 96030 cv=161691 gcd=217919 0.95 | re-probe yield: CV 161691 "Challengers of the Unknown" (DC 2025, 5, no CvVolume row) and GCD 217919 (DC 2025, limited series, 5) agree on publisher, year and count; our "v5 (2025)" #1-2 (27-29pp) sit inside and GCD per-file matches both files
+F 96030 needs-fetch cv=161691 | named from the rip only
+F 96030 wrong-cv-link | per-file CV stamped the legacy 1958 volume (1866) on 2/2 files
+
+S 7586 cv=151439 gcd=200020 0.95 | the sampler's OWN GCD row found: `--gcd-series "Girl Taking Over" --contains` gives GCD 200020 "Girl Taking Over: A Lois Lane Story FCBD Special Edition 2023" (DC 2023, 1, 36pp) beside CV 151439 of the same name (DC 2023, 1); our single 34pp file; B-011's gcd=199160 is the complete 212pp graphic novel, a different book
+I 64008 cv=995666 gcd=2526975 0.95 | the 34pp FCBD sampler = CV 151439 issue 995666 = GCD 200020 row 2526975 (2023-05-06, 36pp)
+
+S 4538 cv=129031 gcd=162322 0.95 | CV 129031 "DC Cybernetic Summer" 2020 DC 1 and GCD 162322 same name 2020 DC 1 agree on publisher, year and count, ComicInfo asserts the Series on the single 82pp anthology; A-010's provider-missing F was about the round2-folder per-file stamp (146018 Dog Days of Summer), not a missing leg — not restated
+I 64038 cv=783151 gcd=2130919 0.95 | the 82pp anthology = CV 129031 issue 783151 = GCD 162322 #1 2130919 (2020-07-28, 84pp)
+
+S 7815 cv=140257 gcd=178468 0.95 | CV 140257 "Gotham City Villains Anniversary Giant" 2021 DC 1 and GCD 178468 same name DC 1 agree on publisher and count, ComicInfo asserts the Series on the single 106pp giant; the per-file 188557 is a round2-folder neighbour — the old provider-missing F is not restated
+I 64075 cv=895898 gcd=2281339 0.95 | the 106pp giant = CV 140257 issue 895898 = GCD 178468 #1 2281339 (2021-11-30, 100pp)
+
+S 4995 cv=150453 gcd=200495 0.95 | CV 150453 "Dawn of DC Primer Special Edition 2023" 2023 DC 1 and GCD 200495 same name 2023 DC 1 agree on publisher, year and count, ComicInfo asserts the Series on the single 24pp primer; the per-file 192048 is a round2-folder neighbour — the old provider-missing F is not restated
+I 64076 cv=989800 gcd=2530340 0.95 | the 24pp primer = CV 150453 issue 989800 = GCD 200495 #1 2530340 (2023-05-16, 36pp)
+
+S 103454 cv=100719 gcd=- 0.9 | "DC Super Hero Girls 001-012 - Out of the Bottle (2017)" (24-25pp digital chapters) = CV 100719 (DC 2017, 12); GCD holds only the print OGN that collects them (127297, row 1830515, 132pp); the per-file GCD 173115 is ECC's Spanish line
+F 103454 provider-missing | re-probed `--gcd-series "Out of the Bottle" --contains`: only 127297, the 2018 OGN — no digital-chapter series
+F 103454 needs-fetch cv=100719 | named from the rip only
+
+S 7008 cv=128075 gcd=- 0.9 | CV 128075 "From Beyond the Unknown" (DC 2020, 2, cached #1-2) matches our two 17pp digital-first files exactly, ladder 1-2, ComicInfo Series on both
+F 7008 provider-missing | re-probed `--gcd-series "From Beyond the Unknown" --contains`: 1900 (DC 1969-1973, 25), 150925 (National Book Store) and the 2020 Giant 156257 — no two-part 2020 digital series
+
+S 98027 cv=4556 gcd=4200 1.0 | re-probe yield: CV 4556 "Justice Society of America" (DC 1991, 8) and GCD 4200 (DC 1991, 8-issue limited series) agree on publisher, year and count; ComicInfo asserts Volume "1991" on all 8 files and our ladder 1-8 is the whole mini; the per-file CV 18052 is the 2007 ongoing
+F 98027 wrong-cv-link | per-file CV stamped the 2007 volume (18052, 54) across all 8 files — the wrong-relaunch trap
+
+S 94647 cv=82720 gcd=90178 0.95 | re-probe yield: CV 82720 "Justice League of America" (DC 2015, 10, no CvVolume row) and GCD 90178 (DC 2015-2016, 10) agree on publisher, year and count; our single "Justice League of America v4 005 (2016)" (29pp) in the "v4 (2015)" folder is #5 of it; the per-file CV 2014 (1960) and GCD 101804 (Panini's German) are not this run
+F 94647 needs-fetch cv=82720 | named from the rip only
+
+S 94648 cv=99040 gcd=112291 0.9 | re-probe yield: CV 99040 "Justice League of America" (DC 2017, 29, no CvVolume row) and GCD 112291 (DC 2017-2018, 29) agree; GCD's own notes put our five trades on #1-6, #7-11, #12-17, #18-21, #22-29 — the whole run; 0.9 because item 67985 is the 2018 Annual #1 (GCD 119009), a different comic
+F 94648 needs-fetch cv=99040 | named from the rip only
+F 94648 wrong-cv-link | per-file CV 2014 (the 1960 legacy volume) stamped on 6/6 files
+I 67327 cv=613743 gcd=1727040 isbn=978-1-4012-7353-8 0.95 | Vol. 01 "The Extremists" 163pp = CV 103393 issue 613743 ("Volume 1") = GCD 115808 #1 1727040 (172pp)
+C 67327 cv=99040 gcd=112291 #1-6 0.95 | The Extremists collects Justice League of America (DC 2017, 29, CV 99040 / GCD 112291) #1-6 per GCD row 1727040's note
+C 67327 cv=98749 gcd=111974 #1-1 0.95 | The Extremists also collects Justice League of America: Rebirth (DC 2017, one-shot, CV 98749 / GCD 111974) #1 per GCD row 1727040's note
+I 67328 cv=636348 gcd=1749330 isbn=978-1-4012-7449-8 0.95 | Vol. 02 "Curse of the Kingbutcher" 125pp = CV 105956 issue 636348 = GCD 115808 #2 1749330 (132pp); the packet's stored row 711105 ("Sanctuary", JLA 2006) is another book
+C 67328 cv=99040 gcd=112291 #7-11 0.95 | Curse of the Kingbutcher collects Justice League of America (DC 2017, CV 99040 / GCD 112291) #7-11 per GCD row 1749330's note
+I 67329 cv=662071 gcd=1789683 isbn=978-1-4012-7784-0 0.95 | Vol. 03 "Panic in the Microverse" 142pp = CV 109105 issue 662071 = GCD 115808 #3 1789683 (148pp)
+C 67329 cv=99040 gcd=112291 #12-17 0.95 | Panic in the Microverse collects Justice League of America (DC 2017, CV 99040 / GCD 112291) #12-17 per GCD row 1789683's note
+I 67330 cv=675960 gcd=1822561 isbn=978-1-4012-8058-1 0.95 | Vol. 04 "Surgical Strike" 137pp = CV 112041 issue 675960 = GCD 115808 #4 1822561 (140pp)
+C 67330 cv=99040 gcd=112291 #18-21 0.95 | Surgical Strike collects Justice League of America (DC 2017, CV 99040 / GCD 112291) #18-21 per GCD row 1822561's note
+C 67330 cv=- gcd=119009 #1-1 0.95 | Surgical Strike also collects Justice League of America Annual (DC 2018 series, GCD 119009, one issue) #1 per GCD row 1822561's note
+I 67331 cv=686358 gcd=1851581 isbn=978-1-4012-8449-7 0.95 | Vol. 05 "Deadly Fable" 187pp = CV 113887 issue 686358 = GCD 115808 #5 1851581 (204pp)
+C 67331 cv=99040 gcd=112291 #22-29 0.95 | Deadly Fable collects Justice League of America (DC 2017, CV 99040 / GCD 112291) #22-29 per GCD row 1851581's note
+I 67985 cv=- gcd=1762630 0.9 | "Justice League of America Annual 001 (2018)" 43pp = GCD 119009 #1 row 1762630 (2017-11-29, 52pp); no CV volume for the annual surfaced
+
+S 17259 cv=89178 gcd=103353 0.95 | provider-missing WITHDRAWN: GCD files the line WITHOUT the article — `--gcd-series "Superman and Justice League" --contains` finds 103353 "Superman and Justice League America" (DC 2016, 2: 244pp, 284pp), which with CV 89178 "Superman and the Justice League America" (DC 2016, 2) is our two volumes, each ripped twice (231/232pp, 273/274pp — the open label-ambiguous flag's duplicates, which cost nothing)
+I 67615 cv=521317 gcd=1583424 isbn=978-1-4012-6097-2 0.95 | Vol. 01 231pp = CV 89178 issue 521317 ("Volume 1") = GCD 103353 #1 1583424 (2016-03-23, 244pp)
+I 72883 cv=521317 gcd=1583424 isbn=978-1-4012-6097-2 1.0 | Glorith-HD rip of Vol. 1 (232pp): its ComicInfo Web 521317 IS CV 89178's issue #1; GCD 103353 #1
+I 67616 cv=547259 gcd=1618894 isbn=978-1-4012-6384-3 0.95 | Vol. 02 273pp = CV 89178 issue 547259 ("Volume 2") = GCD 103353 #2 1618894 (2016-08-31, 284pp)
+I 72884 cv=547259 gcd=1618894 isbn=978-1-4012-6384-3 1.0 | Glorith-HD rip of Vol. 2 (274pp): ComicInfo Web 547259 IS CV 89178's issue #2; the stored GCD row 1947587 (Elseworlds: Superman) is another book
+C 67616 cv=- gcd=3804 #69-77 0.9 | Vol. 02 collects Justice League America (DC 1989-1996, GCD 3804) #69-77 per GCD row 1618894's note (plus Justice League America Annual #6)
+C 72884 cv=- gcd=3804 #69-77 0.9 | the duplicate Vol. 02 rip collects Justice League America (DC 1989 series, GCD 3804) #69-77 per GCD row 1618894's note
+N 67615 Vol. 01's range is not stated by GCD row 1583424 (no note); it precedes #69 of Justice League America (1989), but no number is asserted — no C line
+
+S 98217 cv=42952 gcd=59311 0.95 | re-probe yield: CV 42952 "Legion of Super-Heroes" (DC 2011, 24, no CvVolume row) and GCD 59311 (DC 2011-2013, 24) agree on publisher, year and count; our three trades judged #1-7, #8-14, #15-23 and ComicInfo Volume 2011 fit; the per-file CV 4201 (1989) and 61645 (Panini) are not this run
+F 98217 needs-fetch cv=42952 | named from the rip only
+F 98217 wrong-cv-link | per-file CV stamped the 1989 volume 4201 (2/3) and Panini Verlag's 61645 (1/3)
+I 68047 cv=350807 gcd=1111043 isbn=9781401235017 0.95 | Vol. 01 "Hostile World" 161pp = CV 51246 issue 350807 = GCD 74348 #1 1111043 (164pp); X-011's gcd 1032686 is in Panini Deutschland's 69864 — wrong
+C 68047 cv=42952 gcd=59311 #1-7 0.95 | Hostile World collects Legion of Super-Heroes (DC 2011, 24, CV 42952 / GCD 59311) #1-7, the judged range
+I 68048 cv=401370 gcd=1111047 isbn=978-1-4012-4097-4 0.95 | Vol. 02 "The Dominators" 187pp = CV 60972 issue 401370 = GCD 74348 #2 1111047 (196pp)
+C 68048 cv=42952 gcd=59311 #8-14 0.95 | The Dominators collects Legion of Super-Heroes (DC 2011, CV 42952 / GCD 59311) #8-14 (+#0) per GCD row 1111047's roll-up
+I 68049 cv=445166 gcd=1179211 isbn=978-1-4012-4332-6 0.95 | Vol. 03 "The Fatal Five" 198pp = CV 71607 issue 445166 = GCD 74348 #3 1179211 (212pp)
+C 68049 cv=42952 gcd=59311 #15-23 0.95 | The Fatal Five collects Legion of Super-Heroes (DC 2011, CV 42952 / GCD 59311) #15-23 per GCD row 1179211's roll-up
+
+S 12962 cv=92569 gcd=104515 0.9 | the RUN wins (brief: a line that reprints ONE run → the run): the three Deluxe Editions sit in "04 Nightwing v4.1 (2016)\Deluxe Editions" and GCD 117860 "Nightwing: Rebirth Deluxe Edition" (DC 2017, 3) notes say Book 1 collects Nightwing (2016) #1-15 and Book 3 #29-43 — the run is CV 92569 / GCD 104515, stored on S94872; 0.9 because item 19065 is the Nightwing: Rebirth #1 one-shot
+F 12962 merge-with=94872 | S94872 "Nightwing" (174 files) stores CV 92569 and GCD 104515 (C-016); these deluxe books are editions of that run, filed in its folder
+F 12962 wrong-cv-link | stored cv 105545 "Nightwing: Rebirth Deluxe Edition" (3) is the collected-edition line record, now on the I lines
+I 68582 cv=632475 gcd=1745603 isbn=9781401273750 0.95 | Book 01 380pp = CV 105545 issue 632475 ("Book 1") = GCD 117860 #1 1745603 (392pp)
+C 68582 cv=92569 gcd=104515 #1-15 0.95 | Book 1 collects Nightwing (DC 2016, CV 92569 / GCD 104515) #1-15 per GCD row 1745603's note
+C 68582 cv=92193 gcd=104136 #1-1 0.95 | Book 1 also collects Nightwing: Rebirth (DC 2016, one-shot, CV 92193 / GCD 104136) #1 per GCD row 1745603's note
+I 68583 cv=670096 gcd=1808287 isbn=978-1-4012-7892-2 0.95 | Book 02 300pp = CV 105545 issue 670096 ("Book 2") = GCD 117860 #2 1808287 (320pp)
+C 68583 cv=92569 gcd=104515 #16-28 0.9 | Book 2 collects Nightwing (DC 2016, CV 92569 / GCD 104515) #16-28 — the stretch between Book 1's #15 and Book 3's #29 per GCD's notes; row 1808287 itself carries no note
+I 68584 cv=698588 gcd=1912364 isbn=978-1-4012-8567-8 0.95 | Book 03 344pp = CV 105545 issue 698588 ("Book 3") = GCD 117860 #3 1912364 (360pp)
+C 68584 cv=92569 gcd=104515 #29-43 0.95 | Book 3 collects Nightwing (DC 2016, CV 92569 / GCD 104515) #29-43 per GCD row 1912364's note
+I 19065 cv=539219 gcd=1602198 1.0 | "Nightwing - Rebirth 001 (2016) (2 covers)" 27pp = CV 92193 issue 539219 = GCD 104136 #1 1602198 (2016-07-13, 44pp), the one-shot
+
+S 99456 cv=92966 gcd=105112 0.9 | re-probe yield: CV 92966 "Red Hood & the Outlaws" (DC 2016, 26, no CvVolume row — the "&" hid it) and GCD 105112 "Red Hood and the Outlaws" (DC 2016-2018, 26) agree; GCD's roll-ups put our four trades on #1-6, #7-11, #12-18, #19-25; 0.9 because item 69318 is "Red Hood 051 (2021)", the retitled continuation's #51 (CV 132671 / GCD 166928), past both counts
+F 99456 needs-fetch cv=92966 | named from the rip only
+F 99456 wrong-cv-link | per-file CV stamped the 2011 volume 42919 on all 5 files
+I 69310 cv=593238 gcd=1693491 isbn=978-1-4012-6875-6 0.95 | Vol. 01 "Dark Trinity" 151pp = CV 100998 issue 593238 = GCD 113651 #1 1693491 (172pp)
+C 69310 cv=92966 gcd=105112 #1-6 0.95 | Dark Trinity collects Red Hood and the Outlaws (DC 2016, 26, CV 92966 / GCD 105112) #1-6 per GCD row 1693491's roll-up
+C 69310 cv=92572 gcd=104516 #1-1 0.95 | Dark Trinity also collects Red Hood and the Outlaws: Rebirth (DC 2016, one-shot, CV 92572 / GCD 104516) #1 per GCD row 1693491
+I 69311 cv=626265 gcd=1741360 isbn=9781401273996 0.95 | Vol. 02 "Who Is Artemis?" 118pp = CV 104810 issue 626265 = GCD 113651 #2 1741360 (132pp)
+C 69311 cv=92966 gcd=105112 #7-11 0.95 | Who Is Artemis? collects Red Hood and the Outlaws (DC 2016, CV 92966 / GCD 105112) #7-11 per GCD row 1741360's note
+I 69312 cv=666790 gcd=1800700 isbn=978-1-4012-7837-3 0.95 | Vol. 03 "Bizarro Reborn" 189pp = CV 109967 issue 666790 = GCD 113651 #3 1800700 (212pp)
+C 69312 cv=92966 gcd=105112 #12-18 0.95 | Bizarro Reborn collects Red Hood and the Outlaws (DC 2016, CV 92966 / GCD 105112) #12-18 per GCD row 1800700's roll-up
+C 69312 cv=103830 gcd=116112 #1-1 0.95 | Bizarro Reborn also collects Red Hood and the Outlaws Annual (DC 2017, CV 103830 / GCD 116112) #1 per GCD row 1800700
+I 69313 cv=690800 gcd=1863728 isbn=978-1-4012-8488-6 0.95 | Vol. 04 "Good Night, Gotham" 172pp = CV 114907 issue 690800 = GCD 113651 #4 1863728 (188pp)
+C 69313 cv=92966 gcd=105112 #19-25 0.95 | Good Night, Gotham collects Red Hood and the Outlaws (DC 2016, CV 92966 / GCD 105112) #19-25 per GCD row 1863728's roll-up
+I 69318 cv=819314 gcd=2169326 0.95 | "Red Hood 051 (2021)" 26pp = CV 132671 "Red Hood" #51 issue 819314 = GCD 166928 #51 2169326 — the legacy-numbered continuation, not the 26-issue run
+
+S 17315 cv=89566 gcd=- 0.9 | CV 89566 "Superman: Reign of the Supermen" 2016 DC Comics (1, issue 524844) is the 2016 edition our ComicInfo names ("Superman: Reign of the Supermen (2016 Edition)", Volume 2016) on the single 326pp file
+F 17315 provider-missing | re-probed `--gcd-series "Reign of the Supermen" --contains`: 0 series
+I 72693 cv=524844 gcd=- 0.9 | CV issue 524844 (#1 TPB, 2016-04-30) is the only issue of volume 89566
+
+S 103782 cv=60518 gcd=- 0.9 | the 2013-2014 digital-first weekly: CV 60518 "Adventures of Superman" (DC 2013, 51 chapters) holds our ladder 6-51 (46 Minutemen-PhD chapters, 22-23pp); the per-file CV 3778 is the 1987 legacy ongoing and GCD 74653 (17 × 40-44pp) is the PRINT edition packaging three chapters per issue
+F 103782 needs-fetch cv=60518 | CV 60518 is named from the rip only
+F 103782 provider-missing | re-probed `--gcd-series "Adventures of Superman" --year 2013 --contains`: 74653 (print, 17), 87574 (trades, 3) and two artist collections — no series numbers the 51 digital chapters
+I 72989 cv=450544 gcd=1332169 isbn=978-1-4012-4688-4 0.95 | "COL Adventures of Superman v01 (2014)" 167pp = CV 73098 #1 issue 450544 "Volume One" and GCD 87574 row #1 1332169 (172pp)
+
+S 18388 cv=112576 gcd=- 0.9 | CV 112576 "The Death of Superman" (DC 2018, 12, cached #1-12) matches our twelve 25-27pp "Part 01 - 001..012 (2018)" chapters, ratio 12/12; 0.9 because item 16823 is the 1993 TPB, a different edition collecting the original issues
+F 18388 provider-missing | re-probed `--gcd-series "Death of Superman" --contains`: 10 one-volume books (1993 TPB 23254, 2013 110340, 30th Anniversary …) — no 12-part 2018 series
+I 16823 cv=163588 gcd=351253 isbn=1563890976 0.9 | "COL 01 - The Death of Superman TPB" 165pp = CV 27027 issue 163588 (1993 TPB) = GCD 23254 row 351253 (172pp); C-019/X-012's no-record is superseded
+C 16823 cv=- gcd=3386 #73-75 0.9 | the 1993 TPB collects Superman (DC 1987 series, GCD 3386) #73-75 per GCD row 351253's reprint roll-up
+C 16823 cv=- gcd=4215 #17-19 0.9 | the 1993 TPB collects Superman: The Man of Steel (DC 1991 series, GCD 4215) #17-19 per GCD row 351253's reprint roll-up
+C 16823 cv=- gcd=97 #683-684 0.9 | the 1993 TPB collects Action Comics (DC 1938 series, GCD 97) #683-684 per GCD row 351253's reprint roll-up
+C 16823 cv=- gcd=3345 #496-497 0.9 | the 1993 TPB collects Adventures of Superman (DC 1987 series, GCD 3345) #496-497 per GCD row 351253's reprint roll-up
+C 16823 cv=- gcd=3804 #69-69 0.9 | the 1993 TPB collects Justice League America (DC 1989 series, GCD 3804) #69 per GCD row 351253's reprint roll-up
+
+S 18587 cv=126496 gcd=- 0.9 | CV 126496 "The Flash: Fastest Man Alive" (DC 2020) has all ten chapters cached #1-10, and our ten 16-17pp digital-first files are a complete ladder 1-10 with ComicInfo Series "Flash: Fastest Man Alive"
+F 18587 provider-missing | re-probed `--gcd-series "Fastest Man Alive" --contains`: seven series (2006 print 18440, two 2007-08 trades, 2019 deluxe, 2022 mini 189123, 2023 trade 200494) — none the 2020 digital chapters
+
+S 94803 cv=145041 gcd=189123 0.95 | re-probe yield: CV 145041 "The Flash: The Fastest Man Alive" (DC 2022, 3, no CvVolume row) and GCD 189123 (DC 2022-2023, limited series, 3) agree; our only file is the run's own trade (127pp, 2023), GCD 200494's note "collects The Flash: The Fastest Man Alive (DC, 2022 series) #1-3"; the per-file 18103 is the 2006 run
+F 94803 needs-fetch cv=145041 | named from the rip only (C-020's needs-fetch had no id)
+N 94803 CV 145041's one per-file link sits on S18590 (the 2006 run, cv=18103 / gcd=18440) — a stray stamp there, not a merge
+I 75976 cv=995427 gcd=2530339 isbn=978-1-77951-790-6 0.95 | "The Flash - The Fastest Man Alive (2023)" 127pp = CV 151387 issue 995427 (TPB, 2023-05) = GCD 200494 row 2530339 (2023-05-16, 140pp)
+C 75976 cv=145041 gcd=189123 #1-3 0.95 | the trade collects The Flash: The Fastest Man Alive (DC 2022, 3, CV 145041 / GCD 189123) #1-3 per GCD row 2530339's note
+
+S 18862 cv=137371 gcd=- 0.9 | CV 137371 "The Joker Presents: A Puzzlebox: Director's Cut" (DC 2021) has all fourteen cached #1-14 and our fourteen 18-22pp files are a complete ladder 1-14 named exactly that
+F 18862 provider-missing | re-probed `--gcd-series "Puzzlebox" --contains`: 174591 (the 7-issue print run, 44pp) and its two collections 189184/202236 — no Director's Cut chapters
+
+S 22001 cv=147365 gcd=191857 0.95 | re-probe yield: CV 147365 "Tales of The Amazons" (DC 2022, 1, TPB issue 964069, no CvVolume row) and GCD 191857 "Tales of the Amazons" (DC 2022, 1, 184pp, collects Artemis: Wanted #1, Olympus: Rebirth #1, Nubia: Coronation Special #1) are the same 2022 collection as our 169pp "Wonder Woman Vol. 02.2 - Tales of the Amazons"
+F 22001 needs-fetch cv=147365 | named from the rip only
+F 22001 wrong-cv-link | per-file CV 28296 "Tales of the Amazons" (1981 Murray Comics Australian reprint) is a same-title coincidence
+I 76150 cv=964069 gcd=2446280 isbn=978-1-77951-693-0 0.95 | the 169pp 2022 collection = CV 147365 issue 964069 (TPB) = GCD 191857 row 2446280 (2022-11-01, 184pp)
+C 76150 cv=144084 gcd=187125 #1-1 0.95 | Tales of the Amazons collects Artemis: Wanted (DC 2022, one-shot, CV 144084 / GCD 187125) #1 per GCD row 2446280's note
+C 76150 cv=144713 gcd=188326 #1-1 0.95 | Tales of the Amazons collects Olympus: Rebirth (DC 2022, one-shot, CV 144713 / GCD 188326) #1 per GCD row 2446280's note
+C 76150 cv=142717 gcd=184536 #1-1 0.95 | Tales of the Amazons collects Nubia: Coronation Special (DC 2022, one-shot, CV 142717 / GCD 184536) #1 per GCD row 2446280's note
+N 76150 GCD's roll-up also lists Wonder Woman (2016) #781-785 [5 stories] — short back-up/preview pieces, not a collected range; no C line
+
+S 21995 cv=100392 gcd=- 0.9 | CV 100392 "Wonder Woman and the Justice League America" (DC 2017, 2: issues 589817, 626270) is this two-volume line; our Vol. 01 (twice: Glorith-HD with ComicInfo Web 589817, and Son of Ultron 276pp) and Vol. 02 (233pp) are its two books
+F 21995 provider-missing | re-probed `--gcd-series "Wonder Woman and the Justice League"` / `"Wonder Woman & the Justice League"` --contains: 0 series; the per-file 140 (All-Star Comics) is round2-folder
+I 76280 cv=589817 gcd=- 1.0 | the Glorith-HD rip's ComicInfo Web 589817 IS CV 100392's issue #1 (Vol. 01, 276pp)
+I 76346 cv=589817 gcd=- 0.9 | Vol. 01 (Son of Ultron rip, 276pp) = CV 100392 issue #1 589817, the same book as item 76280
+I 76347 cv=626270 gcd=- 0.9 | Vol. 02 (233pp) = CV 100392 issue #2 626270
+N 21995 the two volumes reprint Justice League America (DC 1989) — ranges not asserted by any note in our data, so no C lines
+
+S 22774 cv=144484 gcd=- 0.9 | thirteen 48-76pp "Zatanna & the Ripper 001-013" Webtoon chapters with episode subtitles = CV 144484 (2022 Line Webtoon, 14, cached #1-14), ladder 1-13
+N 22774 re-probe hit REJECTED: CV 166011 "Zatanna & The Ripper" (DC 2023, 4) is the print COLLECTED line — its issues are "Volume One" (2023-10) … "Volume Four" (2024-11) — the same four books as GCD 204518 (2023-2024, 4); it numbers volumes, not our chapters
+F 22774 provider-missing | GCD's only record is 204518 (2023-2024, 4), the four collected volumes — no 14-chapter GCD series
+F 22774 mobile-rip | every file is a "(digital-mobile)" Webtoon rip, vertical-scroll pages, which is why one chapter runs 48-76pp
