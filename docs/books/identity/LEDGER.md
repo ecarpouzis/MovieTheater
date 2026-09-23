@@ -1750,3 +1750,12 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   or subtitle match (L-024). Norma is Royo's HOME publisher (the original, not a third territory). Scholastic prose
   chapter-book lines (Geronimo / Thea Stilton spin-offs) are absent under their Italian titles too: provider-missing
   is final. Quarto's Saturday AM GCD rows are still 0-row stubs (R-081).
+
+[L-355] pub:image pub:idw kind:manga sig:probe
+- Image: GCD splits one run BY PUBLISHER while CV keeps one volume (Battle Chasers 10169/10170/10171; G.I. Joe 2001 =
+  9845 Image + 12003 Devil's Due). EC/DC's MAD magazine is CV 9318 / GCD 10092 (probe "Mad" --year 1952); MAD books
+  spell "Super Heroes" as two words. IDW one-shots carry the year in the series name ("Yearbook 2019"); IDW's Library
+  of American Comics strip lines exist on BOTH legs ("Rip Kirby: The First Modern Detective") — L-164 is wrong for Rip
+  Kirby. Manga: the hyphen / macron romanisation finds Japanese originals on CV ("Kami-sama no Iu Toori", "G-Senjō");
+  the accent finds Yen's English volumes ("Éclair Orange"); dump-only Japanese GCD series (Kingdom 175348) have usable
+  issue rows. A "⚠ stored GCD row is another book" is void when the filename carries the line number (R-083).
