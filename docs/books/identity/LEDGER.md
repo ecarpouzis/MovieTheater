@@ -1776,7 +1776,7 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Order 213614) — match by the file's year. A packet's "years a-b" can come from per-file stamps (read filenames). In a
   `lookup.py --batch` file a multi-word name must be QUOTED or only its first word is probed.
 
-[L-358] pub:onisig:probe
+[L-358] pub:oni sig:probe
 - NBM: the Dungeon cycles have a CV and GCD record per CYCLE; the bare "Dungeon" 51364/19068 is the 28pp floppy
   serialisation. GCD numbers NBM's Nancy Drew and Dungeon albums by volume ordinal with matching titles. Malibu's 1993
   "Street Fighter" (18369/15154) is filed by rippers as "Street Fighter II (of 3)". Crusade's Tucci Shi books have
