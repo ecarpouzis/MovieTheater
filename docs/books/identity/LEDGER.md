@@ -1708,3 +1708,14 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
   Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
   picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
+
+[L-348] pub:dc sig:probe
+- DC (R-073): the rip holds count-1 CV trade records under "Title: Subtitle" (Justice League Vol. 1-8, Teen Titans 2014,
+  Young Justice 2019, Doom Rising, Oz Effect) — probe the SUBTITLE with --contains. One-shots filed by event name ("Flash
+  Special" = the 50th anniversary special, "Joker: Last Laugh Secret Files"). CV keeps Daring New Adventures of Supergirl
+  #1-13 + Supergirl #14-23 as ONE volume (3113); GCD splits 2626 / 2722 — a C line per leg.
+
+[L-349] pub:dark-horse sig:probe
+- Dark Horse FCBD flipbooks are filed on BOTH legs as "A/B - Free Comic Book Day 2006 Special"; Polar is a GCD album line
+  (88420) while CV mints a volume per album. D&Q / accented names match ONLY with the accent ("Castrée", not "Castree");
+  CV's volume start year can be wrong while its issue date is right (Blabber: volume 2021, issue 2011) (R-073).
