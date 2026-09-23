@@ -1,0 +1,522 @@
+# R-036 — revisit of the split lane's P-005, first half: each NEW shelf P-005 created, read beside the KEPT shelf it
+# came from. Every split-reader run id was re-probed with lookup.py (--id / --issues / --gcd-issues / --collects /
+# names) before it went on an S line. Conventions: the "_Trades, Minis and One-shots" / "Trades, and Graphic Novels"
+# buckets hold books whose own count-1 record (minted by BOTH providers) is the identity (L-124); a "<Title> vN (year)"
+# folder holding only trades is the RUN's folder (the run takes the S, the trades take I lines). Many one-shot and
+# 1-issue CV volumes in this batch have no CvVolume row, so their S lines carry F needs-fetch.
+
+# ================= Stillwater =================
+S 103014 cv=130377 gcd=164193 0.95 | split-reader ids CONFIRMED: the three COL Stillwater Vol. 01-03 trades (139/131/172pp, ComicInfo "Image - Skybound", folder Image\Stillwater (2020)) collect Zdarsky and Perez's Image ongoing — CV 130377 (Image 2020, 18 issues, #1-18 cached) and GCD 164193 (Image 2020-2023, 18) agree on publisher, years and count; three trades of ~6 issues each is 18; the RUN wins over the GCD collected line 181205 (3) and CV's per-trade volumes
+I 37240 cv=838232 gcd=2330420 isbn=- 0.95 | Vol. 01 Rage, Rage: CV 134593 "Stillwater: Rage, Rage" issue 838232 (Vol. 1, 2021-03) and GCD 181205 row #1 2330420 — the collected line's first book
+I 37241 cv=924073 gcd=2330421 isbn=- 0.95 | Vol. 02 Always Loyal: CV 142975 "Stillwater: Always Loyal" issue 924073 (Vol. 2, 2022-02) and GCD 181205 row #2 2330421
+I 37242 cv=993930 gcd=2527104 isbn=- 0.95 | Vol. 03 Border Crossing: CV 151113 "Stillwater: Border Crossing" issue 993930 (Vol. 3, 2023-05) and GCD 181205 row #3 2527104 (2023-05-03)
+S 16856 cv=89290 gcd=- 0.9 | the KEPT half is Action Lab's four-issue mini: "Stillwater 01-04 (of 04) (2016)" in Action Lab\Stillwater (2016), ComicInfo Action Lab, ladder 1-4 fills CV 89290 (Action Lab 2016, 4, #1-4 cached, per-file 4/4); the stored cv 89290 is this half's own and stays; GCD holds no 2016 Action Lab Stillwater (probes "Stillwater" --year 2016 and --gcd-series both return 0)
+F 16856 provider-missing | GCD has no series for Action Lab's 2016 Stillwater mini; the dump's three Stillwater series are Image 2020 (164193, 181205) and Delcourt 2022 (200299)
+
+# ================= Strange Academy =================
+S 103015 cv=145695 gcd=191962 0.95 | split-reader ids CONFIRMED, the RUN wins: our one 141pp "COL Strange Academy Vol. 04 - Finals (2023)" collects the six-issue mini — CV 145695 "Strange Academy: Finals" (Marvel 2022, 6, #1-6 cached) and GCD 191962 (Marvel 2022-2023, 6 rows #1-6) agree on title, publisher, years and count; 141pp is six issues; GCD's reprint row names s191962; the dismissed flag #106 is history
+F 103015 needs-fetch cv=145695 | "Strange Academy: Finals" 2022 is named from the rip and has no CvVolume row
+I 79978 cv=1004106 gcd=2557632 isbn=978-1-302-93253-4 0.95 | the trade's own records: CV 152587 "Strange Academy: Finals" (2023) issue 1004106 (TPB, 2023-07-28) and GCD 174401 row #4 2557632 "Finals" (2023-07-26, 148pp against our 141pp)
+S 103016 cv=157150 gcd=209977 0.95 | split-reader ids CONFIRMED: "Strange Academy - The Deadly Field Trip (2024)" (119pp) is an original graphic novel with its own count-1 record in both legs — CV 157150 (Marvel 2024, 1 issue 1047300 TPB) and GCD 209977 (Marvel, 1 row 2616708, 124pp, 2024-03-06); no issue run exists, so the book's own record is the identity
+F 103016 needs-fetch cv=157150 | "Strange Academy: The Deadly Field Trip" is named from the rip and has no CvVolume row
+I 79982 cv=1047300 gcd=2616708 isbn=978-1-302-95483-3 0.95 | the OGN's own records: CV 157150 issue 1047300 (2024-03-05) and GCD 209977 row 2616708 (124pp against our 119pp, ISBN 978-1-302-95483-3)
+S 16888 cv=125477 gcd=156773 0.95 | the KEPT half is the main ongoing: trades Vol. 01-03 (judged #1-6, #7-12) plus the Year One / Year Two big editions reprint Strange Academy (2020) — CV 125477 (Marvel 2020, 18) and GCD 156773 (Marvel 2020-2022, 18) agree on publisher, years and count; GCD's own row for Vol. 01 reprints s156773 #1-6; the Year One/Two editions are the run's own reprints (no residue cost)
+I 79001 cv=985028 gcd=2488954 isbn=978-1-302-94966-2 0.95 | Strange Academy: Year One: CV 149651 issue 985028 (TPB, 2023) and GCD 196113 row 2488954 (308pp against our 298pp)
+I 79002 cv=1042428 gcd=2601206 isbn=978-1-302-95300-3 0.95 | Strange Academy: Year Two: CV 156395 issue 1042428 (TPB, 2024-01-25) and GCD 208075 row 2601206 (292pp against our 280pp)
+I 79003 cv=828996 gcd=2248276 isbn=978-1-302-91950-4 0.95 | Vol. 01 First Class: CV 133905 issue 828996 (Volume 1) and GCD 174401 row #1 2248276 "First Class" (164pp against our 152pp)
+I 79004 cv=891003 gcd=2268868 isbn=978-1-302-91951-1 0.95 | Vol. 02 Bright Side: CV 139780 issue 891003 (Volume 2) and GCD 174401 row #2 2268868 "Bright Side" (148pp against our 141pp)
+N 79004 the packet's "GCD says" row 2277409 for this book is a German Panini book ("Klassenfahrt nach Asgard") — void; the book's own GCD row is 2268868
+I 79005 cv=950076 gcd=2422594 isbn=- 0.95 | Vol. 03 Wish-Craft: CV 145422 issue 950076 (Volume 3) and GCD 174401 row #3 2422594 "Wish-Craft" (148pp against our 141pp); GCD repeats #2's ISBN on this row, so no ISBN is taken
+
+# ================= Super Sons =================
+S 17096 cv=130863 gcd=142948 0.9 | the YA trilogy is published as books, not issues: GCD 142948 "Super Sons" (DC 2019-2020, 3 books: #1 The Polarshield Project 180pp, #2 The Foxglove Mission 164pp, #3 Escape to Landis 164pp) is the line and our three COL Vol. 01-03 (173/159/157pp) are exactly those books; CV mints a volume per book (117999, 122179, 130863), the stored 130863 is book 3's — kept as in B-007; no residue
+I 19642 cv=704798 gcd=1941552 isbn=978-1-4012-8639-2 0.95 | Book 1 The Polarshield Project: CV 117999 issue 704798 (Book 1) and GCD 142948 row #1 1941552 (180pp against our 173pp)
+I 19643 cv=723740 gcd=2026743 isbn=978-1-4012-8640-8 0.95 | Book 2 The Foxglove Mission: CV 122179 issue 723740 (Book 2) and GCD 142948 row #2 2026743 (164pp against our 159pp)
+I 19644 cv=806729 gcd=2152836 isbn=978-1-4012-8641-5 0.95 | Book 3 Escape to Landis: CV 130863 issue 806729 (Book 3) and GCD 142948 row #3 2152836 (164pp against our 157pp)
+S 103019 cv=- gcd=111680 0.9 | split reader left run=-; the 255pp "COL Superman - Batman - Saga of the Super Sons (2017)" (ComicInfo "(New Edition)") is the 2017 reprint edition: GCD 111680 "Superman / Batman: Saga of the Super Sons" (DC 2017, 1 row 1669286, 260pp) is its own record; ComicVine holds only the 2007 first edition (CV 39857, issue 268831) and no 2017 volume, so cv=-
+I 70101 cv=- gcd=1669286 isbn=978-1-4012-6968-5 0.95 | the 2017 edition's own GCD row 1669286 (2017-01-25, 260pp against our 255pp); the 2007 edition is GCD 27702 / CV 39857, a different printing
+N 70101 no C: the book reprints the Bronze-Age World's Finest Comics "Super Sons" stories, a non-contiguous set this pass cannot state as one range
+S 17094 cv=98910 gcd=112144 0.9 | the KEPT half is the 2017-2018 monthly: trades Vol. 01-03 judged #1-5, #6-10, #13-16 plus Vol. 02.5 "Super Sons of Tomorrow" (the crossover holding #11-12) — CV 98910 (DC 2017, 16) and GCD 112144 (DC 2017-2018, 16) agree on publisher, years and count; GCD's own row for Vol. 01 reprints s112144 #1-5; 0.9 because the Tomorrow crossover also carries Superman / Teen Titans chapters
+I 70095 cv=628569 gcd=1742426 isbn=9781401274016 0.95 | Vol. 01 When I Grow Up: CV 104978 issue 628569 (Volume 1) and GCD 117393 row #1 1742426 (132pp against our 129pp, "collects Super Sons #1-5")
+I 70096 cv=662075 gcd=1789674 isbn=978-1-4012-7846-5 0.95 | Vol. 02 Planet of the Capes: CV 109125 issue 662075 (Volume 2) and GCD 117393 row #2 1789674 (132pp against our 122pp)
+I 70097 cv=675129 gcd=1820230 isbn=978-1-4012-8239-4 0.95 | Super Sons of Tomorrow: CV 111849 issue 675129 (TPB 2018-06-27) and GCD 126245 row 1820230 (132pp against our 125pp)
+N 70097 the packet's "GCD says" row 2026743 for this book is The Foxglove Mission (GCD 142948 #2) — a stored stamp from another book, void
+I 70098 cv=686365 gcd=1851582 isbn=978-1-4012-8446-6 0.95 | Vol. 03 Parent Trap: CV 113903 issue 686365 (Volume 3) and GCD 117393 row #3 1851582 (140pp against our 136pp)
+
+# ================= Swamp Thing =================
+S 100163 cv=3465 gcd=2999 0.9 | split reader left run=-; the shelf is Swamp Thing vol. 2 as one numbering: issues 74-171 (dupes 140-143 cost nothing) fill CV 3465 (DC, #46-171 cached, 126) and GCD 2999 (DC 1985-1996, #39-171, 133); both providers cut the same 1982 volume at its title change (GCD 2636 "The Saga of Swamp Thing" #1-38, CV 38005 #1-45), which the key alias "Saga of the Swamp Thing" already rides; residue = Annuals 1-7 (0.9)
+I 73131 cv=183519 gcd=666215 isbn=978-1-4012-2082-2 0.95 | Saga of the Swamp Thing Book One: CV 29810 issue 183519 and GCD 38630 row #1 666215 (216pp against our 203pp)
+C 73131 cv=38005 gcd=2636 #20-27 0.95 | Book One collects The Saga of Swamp Thing (DC 1982, GCD 2636 38 issues / CV 38005) #20-27 per GCD's own reprint row 666215 — the pre-rename numbering both legs count alike
+I 73132 cv=184776 gcd=691876 isbn=978-1-4012-2532-2 0.95 | Book Two: CV 29810 issue 184776 and GCD 38630 row #2 691876 (232pp against our 216pp)
+C 73132 cv=38005 gcd=2636 #28-34 0.95 | Book Two collects The Saga of Swamp Thing (DC 1982, GCD 2636 / CV 38005) #28-34 per GCD reprint row 691876, plus Swamp Thing Annual (1985) #2
+I 73133 cv=220560 gcd=763302 isbn=978-1-4012-2766-1 0.95 | Book Three: CV 29810 issue 220560 and GCD 38630 row #3 763302 (216pp against our 206pp)
+C 73133 cv=38005 #35-42 0.95 | Book Three collects #35-42 of the 1982 volume, which CV 38005 "The Saga of Swamp Thing" (#1-45 cached) counts as one run; GCD reprint row 763302 splits it at the rename
+C 73133 gcd=2636 #35-38 0.95 | the GCD leg of Book Three's first half: The Saga of Swamp Thing (GCD 2636, 1982-1985, 38 issues) #35-38 per reprint row 763302
+C 73133 gcd=2999 #39-42 0.95 | the GCD leg of Book Three's second half: Swamp Thing (GCD 2999, 1985-1996, 133 issues) #39-42 per reprint row 763302
+I 73134 cv=259149 gcd=799508 isbn=978-1-4012-3018-0 0.95 | Book Four: CV 29810 issue 259149 and GCD 38630 row #4 799508 (232pp against our 214pp)
+C 73134 gcd=2999 #43-50 0.95 | Book Four collects Swamp Thing (GCD 2999, 1985-1996, 133 issues) #43-50 per GCD reprint row 799508
+C 73134 cv=38005 #43-45 0.95 | the CV leg of Book Four's first three issues: CV 38005 "The Saga of Swamp Thing" (1982) runs to #45, so #43-45 count there
+C 73134 cv=3465 #46-50 0.95 | the CV leg of Book Four's last five issues: CV 3465 "Swamp Thing" (1986, #46-171) holds #46-50
+I 73135 cv=277555 gcd=893498 isbn=978-1-4012-3095-1 0.95 | Book Five: CV 29810 issue 277555 and GCD 38630 row #5 893498 (176pp against our 164pp)
+C 73135 cv=3465 gcd=2999 #51-56 0.95 | Book Five collects Swamp Thing (CV 3465 / GCD 2999, 1985-1996) #51-56 per GCD reprint row 893498 — the shelf's own run
+I 73136 cv=301679 gcd=893509 isbn=978-1-4012-3298-6 0.95 | Book Six: CV 29810 issue 301679 and GCD 38630 row #6 893509 (216pp against our 198pp)
+C 73136 cv=3465 gcd=2999 #57-64 0.95 | Book Six collects Swamp Thing (CV 3465 / GCD 2999, 1985-1996) #57-64 per GCD reprint row 893509 — the shelf's own run
+I 73137 cv=1070970 gcd=2653236 isbn=978-1-77952-811-7 0.9 | Swamp Thing by Rick Veitch Book One: Wild Things: CV 159912 issue 1070970 (Book One) and GCD 214551 row #1 2653236 (356pp against our 307pp — a real gap, hence 0.9)
+C 73137 cv=3465 gcd=2999 #65-73 0.95 | Wild Things collects Swamp Thing (CV 3465 / GCD 2999, 1985-1996) #65-73 per GCD's own notes on row 2653236, plus Annual #3, Hellblazer #4-5 and Secret Origins #23
+S 17377 cv=6760 gcd=7271 0.95 | the KEPT half is two 2014 trades in "03 Swamp Thing v3 (Vertigo) (2000)" judged #1-9 and #10-20: Swamp Thing (2000) — CV 6760 (DC 2000, 20, #1-20 cached) and GCD 7271 (DC 2000-2001, 20 rows) agree on year and count, and 9+11 = 20; the Morrison-era dupes and Annual 07 moved to S100163; flag #654 is Dismissed
+F 17377 needs-fetch cv=6760 | Swamp Thing (2000) is named from the rip and has no CvVolume row
+I 73141 cv=441396 gcd=1659891 isbn=978-1-4012-4304-3 0.95 | Swamp Thing by Brian K. Vaughan Vol. 1: CV 70698 issue 441396 (Volume One, 2014) and GCD 110591 row #1 1659891 (244pp against our 241pp)
+I 73142 cv=460301 gcd=1659892 isbn=978-1-4012-4598-6 0.95 | Swamp Thing by Brian K. Vaughan Vol. 2: CV 70698 issue 460301 (Volume Two, 2014) and GCD 110591 row #2 1659892 (268pp against our 262pp)
+
+# ================= Tank Girl =================
+S 103021 cv=37020 gcd=46217 0.95 | split-reader ids CONFIRMED: "Tank Girl - Dark Nuggets (2009)" (34pp) is Image's one-shot — CV 37020 (Image 2009, 1 issue 246989) and GCD 46217 (Image 2009, 1 row 741427) agree on title, publisher and year; the per-file 37019 (1991 Dark Horse) was a title stamp
+F 103021 needs-fetch cv=37020 | Tank Girl: Dark Nuggets is named from the rip and has no CvVolume row
+I 107676 cv=246989 gcd=741427 isbn=- 0.95 | the one-shot's own records: CV 37020 issue 246989 and GCD 46217 row 741427 (2009-12)
+S 103022 cv=32569 gcd=46877 0.95 | split-reader ids CONFIRMED: "Tank Girl - Dirty Helmets (2010)" (34pp) — CV 32569 (Image 2010, 1 issue 206629) and GCD 46877 (Image 2010, 1 row 745232) agree on title, publisher and year
+F 103022 needs-fetch cv=32569 | Tank Girl: Dirty Helmets is named from the rip and has no CvVolume row
+I 107677 cv=206629 gcd=745232 isbn=- 0.95 | the one-shot's own records: CV 32569 issue 206629 and GCD 46877 row 745232
+S 103023 cv=35195 gcd=115672 0.95 | split-reader ids CONFIRMED: "Tank Girl - Hairy Heroes (2010)" (30pp) — CV 35195 (Image 2010, 1 issue 232077) and GCD 115672 (Image 2010, 1 row 1724109) agree on title, publisher and year
+F 103023 needs-fetch cv=35195 | Tank Girl: Hairy Heroes is named from the rip and has no CvVolume row
+I 107678 cv=232077 gcd=1724109 isbn=- 0.95 | the one-shot's own records: CV 35195 issue 232077 and GCD 115672 row 1724109
+S 102887 cv=82473 gcd=89900 0.95 | split-reader ids CONFIRMED, the RUN wins: our one 114pp "21st Century Tank Girl (2015)" (ComicInfo Titan) collects Titan's three-issue mini — CV 82473 "Tank Girl: 21st Century Tank Girl" (Titan 2015, 3, #1-3 cached) and GCD 89900 (Titan 2015, 3 rows) agree on title, publisher, year and count
+F 102887 needs-fetch cv=82473 | Tank Girl: 21st Century Tank Girl is named from the rip and has no CvVolume row
+I 107982 cv=505189 gcd=1515900 isbn=- 0.95 | the trade's own records: CV 85846 "21st Century Tank Girl" issue 505189 and GCD 95178 row 1515900 (2015-12-02)
+S 102934 cv=117742 gcd=142498 0.9 | split-reader ids CONFIRMED: "Dirty Old Tank Girl (2019)" (244pp, ComicInfo Titan) is a Titan book with its own count-1 record in both legs — CV 117742 (Titan 2019, 1 issue 703894 TPB) and GCD 142498 (Titan 2019, 1 row 1939124, 2019-03-20); no issue run for it surfaced, so the book's record is the identity (0.9: no page count to check)
+F 102934 needs-fetch cv=117742 | Dirty Old Tank Girl is named from the rip and has no CvVolume row
+I 107986 cv=703894 gcd=1939124 isbn=- 0.95 | the book's own records: CV 117742 issue 703894 (TPB, 2019-03-20) and GCD 142498 row 1939124 (2019-03-20) — same date on both
+S 102976 cv=131364 gcd=172431 0.95 | split-reader ids CONFIRMED, the RUN wins: our 132pp "King Tank Girl (2022)" (ComicInfo Titan) is the Titan collection of the five-issue Albatross mini — CV 131364 (Exploding Albatross 2020, 5, #1-5 cached) and GCD 172431 (Albatross 2020, 5) agree on title, publisher, year and count; 132pp is five issues
+F 102976 needs-fetch cv=131364 | King Tank Girl (2020) is named from the rip and has no CvVolume row
+I 107989 cv=996085 gcd=- isbn=- 0.95 | the trade's own record: CV 151531 "King Tank Girl" (Titan 2022) issue 996085 (TPB, 2022-12); GCD has no row for the Titan edition (only the 2024 German Kult Comics 209101)
+R 17591 | the KEPT half is one 63pp file "Tank Girl - Coletanea Animal.cbr" — a Brazilian "coletânea" of Tank Girl strips as run in the anthology Animal; no provider holds it: "Coletanea Animal" returns 0 hits in both legs, CV 133269 / GCD 85353 "Animal" (VHD Diffusion 1988-1991, 22 issues) is the whole anthology magazine, not this collection, and the per-file CV 37019 (Dark Horse 1991, 4) is a title stamp
+N 17591 the book's own record is not in our data; every other file the shelf held now sits on its own one-shot / trade shelf (S103021-S103023, S102887, S102934, S102976)
+
+# ================= Teen Titans =================
+S 100220 cv=43004 gcd=61186 0.9 | split reader left run=-; the New 52 Teen Titans v4: floppies #15, #16, #18, #23.1, #23.2 (the Villains Month issues are this run's own numbering) and five trades whose GCD rows reprint s61186 #1-7, #8-14, #0+#15-17, #18-23, #24-30 — CV 43004 (DC 2011, 33, #0-30 cached) and GCD 61186 (DC 2011-2014, 33) agree on publisher, years and count; residue = Annual 01 (0.9)
+I 73375 cv=356139 gcd=1171053 isbn=978-1-4012-3698-4 0.95 | Vol. 01 It's Our Right to Fight: CV 51909 issue 356139 (Vol. 1) and GCD 78089 row #1 1171053 (172pp against our 161pp)
+I 73376 cv=412215 gcd=1171104 isbn=978-1-4012-4103-2 0.95 | Vol. 02 The Culling: CV 63875 issue 412215 (Volume 2) and GCD 78089 row #2 1171104 (196pp against our 176pp)
+I 73377 cv=437477 gcd=1171116 isbn=978-1-4012-4321-0 0.95 | Vol. 03 Death of the Family: CV 70057 issue 437477 (Volume 3) and GCD 78089 row #3 1171116 (164pp against our 147pp)
+I 73378 cv=459665 gcd=1243202 isbn=978-1-4012-4624-2 0.95 | Vol. 04 Light and Dark: CV 75715 issue 459665 (Volume 4) and GCD 78089 row #4 1243202 (148pp against our 124pp)
+I 73379 cv=478598 gcd=1660442 isbn=978-1-4012-5053-9 0.95 | Vol. 05 The Trial of Kid Flash: CV 79876 issue 478598 (Volume 5) and GCD 78089 row #5 1660442 (260pp against our 224pp)
+S 103024 cv=141577 gcd=180527 0.95 | split-reader ids CONFIRMED: "Teen Titans Go! - DC Super Hero Girls - Exchange Students! (2022)" (164pp) is an original graphic novel with its own count-1 record in both legs — CV 141577 (DC 2022, 1 issue 906358 GN) and GCD 180527 (DC 2022, 1 row 2302375, 172pp)
+F 103024 needs-fetch cv=141577 | Teen Titans Go!/DC Super Hero Girls: Exchange Students is named from the rip and has no CvVolume row
+I 73426 cv=906358 gcd=2302375 isbn=978-1-77950-891-1 0.95 | the OGN's own records: CV 141577 issue 906358 and GCD 180527 row 2302375 (172pp against our 164pp)
+S 103026 cv=144468 gcd=186453 0.95 | split-reader ids CONFIRMED: "Teen Titans Go! - Undead (2022)" (155pp, ComicInfo "Teen Titans Go!: Undead?!") — CV 144468 (DC 2022, 1 issue 941752) and GCD 186453 (DC 2022, 1 row 2414914, 164pp) are the OGN's own records
+F 103026 needs-fetch cv=144468 | Teen Titans Go! Undead?! is named from the rip and has no CvVolume row
+I 73427 cv=941752 gcd=2414914 isbn=978-1-77950-785-3 0.95 | the OGN's own records: CV 144468 issue 941752 and GCD 186453 row 2414914 (164pp against our 155pp)
+S 103025 cv=156635 gcd=207479 0.95 | split-reader ids CONFIRMED: "COL Teen Titans Go! To the Library! (2023)" (153pp, ComicInfo same title) — CV 156635 (DC 2024, 1 issue 1043757) and GCD 207479 (DC 2023, 1 row 2593715, 164pp) are the book's own records
+F 103025 needs-fetch cv=156635 | Teen Titans Go! to the Library! is named from the rip and has no CvVolume row
+I 73428 cv=1043757 gcd=2593715 isbn=978-1-77950-388-6 0.95 | the book's own records: CV 156635 issue 1043757 and GCD 207479 row 2593715 (2024-01-02, 164pp against our 153pp)
+S 17665 cv=20247 gcd=28540 0.95 | the KEPT half is one 143pp "COL Teen Titans - Year One (2024)" in "Teen Titans - Year One (2008)", judged #1-6: the RUN wins — CV 20247 "Teen Titans: Year One" (DC 2008, 6, #1-6 cached) and GCD 28540 (DC 2008, 6 rows) agree on publisher, year and count, and 143pp is six issues; the 2024 edition's own record is not in our data (GCD 32446 / CV 52368 are the 2008 TPB, 110847 the 2016 printing, 231337 a 2025 single-issue edition)
+F 17665 needs-fetch cv=20247 | Teen Titans: Year One (2008) is named from the rip and has no CvVolume row
+N 73991 no-record | the 2024 digital edition of the Teen Titans: Year One trade has no row in either leg: GCD 32446 (2008 TPB, 148pp) and 110847 (2016 printing, 148pp) and CV 52368 (2008 TPB) are earlier printings
+
+# ================= The Dark Tower =================
+S 102931 cv=20800 gcd=29890 0.95 | split-reader ids CONFIRMED, the RUN wins: our 140pp "COL The Dark Tower Vol. 02 - The Long Road Home (2008)" collects the five-issue mini — CV 20800 (Marvel 2008, 5, #1-5 cached) and GCD 29890 (Marvel 2008, 5) agree on title, publisher, year and count
+F 102931 needs-fetch cv=20800 | Dark Tower: The Long Road Home is named from the rip and has no CvVolume row
+I 103966 cv=420788 gcd=691862 isbn=978-0-7851-2709-3 0.9 | the HC's own records: CV 66095 issue 420788 (HC/TPB 2008) and GCD 40818 row 691862 (168pp against our 140pp — the digital drops the extras)
+S 102932 cv=22982 gcd=31883 0.95 | split-reader ids CONFIRMED, the RUN wins: our 159pp "COL The Dark Tower Vol. 03 - Treachery (2009)" collects the six-issue mini — CV 22982 "The Dark Tower: Treachery" (Marvel 2008, 6) and GCD 31883 (Marvel 2008-2009, 6) agree on title, publisher, years and count
+F 102932 needs-fetch cv=22982 | The Dark Tower: Treachery is named from the rip and has no CvVolume row
+I 103967 cv=- gcd=641484 isbn=978-0-7851-3574-6 0.9 | the HC's own GCD row: GCD 37257 row 641484 (2009-04-22, 182pp against our 159pp); ComicVine holds no volume for the Treachery collection
+S 102930 cv=6230 gcd=37665 0.95 | split-reader ids CONFIRMED, the RUN wins: our 197pp "COL The Dark Tower Vol. 05 - The Fall of Gilead (2010)" collects the six-issue mini — CV 6230 "Dark Tower: Fall of Gilead" (Marvel 2009, 6) and GCD 37665 (Marvel 2009, 6) agree on title, publisher, year and count
+F 102930 needs-fetch cv=6230 | Dark Tower: Fall of Gilead is named from the rip and has no CvVolume row
+N 103969 no-record | the 2010 collection's own record is not in our data: GCD 104511 is the 2011 printing (212pp) and ComicVine has no Fall of Gilead collection volume
+S 102927 cv=22281 gcd=135449 0.95 | split-reader ids CONFIRMED: "The Dark Tower - End-World Almanac 01" (36pp) is the 2008 one-shot — CV 22281 (Marvel 2008, 1 issue 133983) and GCD 135449 (Marvel 2008, 1 row 1880450) agree on title, publisher and year
+F 102927 needs-fetch cv=22281 | Dark Tower: End-World Almanac is named from the rip and has no CvVolume row
+I 103237 cv=133983 gcd=1880450 isbn=- 0.95 | the one-shot's own records: CV 22281 issue 133983 and GCD 135449 row 1880450 (2008-07-02)
+S 102928 cv=26246 gcd=133699 0.95 | split-reader ids CONFIRMED: "The Dark Tower - Guide to Gilead (2009)" (35pp) — CV 26246 (Marvel 2009, 1 issue 155709) and GCD 133699 "Dark Tower - Guide to Gilead" (Marvel 2009, 1 row 1872544, 36pp) agree on title, publisher, year and pages
+F 102928 needs-fetch cv=26246 | Dark Tower: Guide To Gilead is named from the rip and has no CvVolume row
+I 103238 cv=155709 gcd=1872544 isbn=- 0.95 | the one-shot's own records: CV 26246 issue 155709 and GCD 133699 row 1872544 (2009-04-08, 36pp against our 35pp)
+S 102929 cv=20562 gcd=- 0.9 | split-reader cv CONFIRMED, gcd CORRECTED: "The Dark Tower - Gunslinger's Guidebook (2007)" (50pp) is CV 20562 (Marvel 2007, 1 issue 123149); the reader's GCD 26009 has ZERO issue rows (count "?") — an empty stub is not a leg (L-157)
+F 102929 needs-fetch cv=20562 | Dark Tower: Gunslinger's Guidebook is named from the rip and has no CvVolume row
+F 102929 provider-missing | GCD 26009 "Dark Tower: Gunslinger's Guidebook" is an empty stub (0 issue rows); no other GCD series names the book
+I 103239 cv=123149 gcd=- isbn=- 0.9 | the one-shot's own CV record: CV 20562 issue 123149; GCD's series 26009 has no issue row to link
+S 18341 cv=18161 gcd=21863 0.95 | the KEPT half is our 219pp "COL The Dark Tower Vol. 01 - The Gunslinger Born (2007)", judged #1-7: the RUN wins — CV 18161 (Marvel 2007, 7) and GCD 21863 (Marvel 2007, 7) agree on title, publisher, year and count; the stored cv 18161 is this half's own and stays
+I 103965 cv=- gcd=640434 isbn=978-0-7851-2144-2 0.9 | the 2007 HC's own GCD row: GCD 37136 row 640434 (2007-11-21, 248pp against our 219pp); ComicVine holds only the 2010 printing (CV 33607 issue 218187)
+
+# ================= Tomb Raider =================
+S 103036 cv=88221 gcd=97501 0.95 | split-reader ids CONFIRMED, the RUN wins: our two trades in "Tomb Raider v3 (2016)" (Spore 137pp, Choice and Sacrifice 142pp; GCD's own row for Vol. 02 reprints s97501 #7-12) collect the 2016 relaunch — CV 88221 (Dark Horse 2016, 12) and GCD 97501 (Dark Horse 2016-2017, 12) agree on publisher, years and count
+I 13421 cv=555478 gcd=1641154 isbn=978-1506700106 0.95 | Vol. 01 Spore: CV 95245 issue 555478 (Vol. 1) and GCD 108590 row #1 1641154 "Spore"
+I 13422 cv=594924 gcd=1698350 isbn=978-1-50670-162-2 0.95 | Vol. 02 Choice and Sacrifice: CV 101418 issue 594924 (Vol. 2) and GCD 108590 row #2 1698350 "Choice and Sacrifice" (reprints s97501 #7-12)
+S 103037 cv=120328 gcd=149062 0.9 | split-reader ids CONFIRMED: the two "COL Tomb Raider Omnibus Book 01/02" (471/441pp, ComicInfo "Tomb Raider Omnibus") are a collected line whose books each gather a different Dark Horse run — CV 120328 (Dark Horse 2019, 2) and GCD 149062 (Dark Horse 2019-2020, 2 rows 482/472pp) agree on title, years and count; no single issue run spans them, so the line is the identity (0.9: GCD carries no reprint notes)
+I 13416 cv=714269 gcd=2005001 isbn=9781506714219 0.95 | Omnibus Book 01: CV 120328 issue 714269 (Volume 1) and GCD 149062 row #1 2005001 (482pp against our 471pp)
+C 13416 cv=71943 gcd=79251 #1-18 0.9 | Omnibus Book 01 (471pp) holds the 2014 Tomb Raider ongoing — CV 71943 / GCD 79251 (Dark Horse 2014-2015, 18 issues): 18 issues of ~24pp plus covers is the page count; GCD's row carries no notes, hence 0.9
+I 13417 cv=731951 gcd=2051877 isbn=9781506714226 0.95 | Omnibus Book 02: CV 120328 issue 731951 (Volume 2) and GCD 149062 row #2 2051877 (472pp against our 441pp)
+N 13417 no C: Book 02 opens with the 2016 relaunch (CV 88221 / GCD 97501) but at 441pp holds more than its 12 issues and neither leg states the contents
+S 20313 cv=71943 gcd=79251 0.95 | the KEPT half is three trades in "Tomb Raider v2 (2014)" (Season of the Witch, Secrets and Lies, Queen of Serpents; GCD rows reprint s79251 #7-12 and #13-18) collecting the 2014 ongoing — CV 71943 (Dark Horse 2014, 18) and GCD 79251 (Dark Horse 2014-2015, 18) agree on publisher, years and count; stored cv 71943 is this half's own; flag #669 is Dismissed
+I 13418 cv=470400 gcd=1355340 isbn=978-1-61655-491-0 0.95 | v01 Season of the Witch: CV 78193 issue 470400 (Vol. 1) and GCD 89355 row #1 1355340
+I 13419 cv=488619 gcd=1355374 isbn=978-1-61655-639-6 0.95 | v02 Secrets and Lies: CV 81958 issue 488619 (Vol. 2) and GCD 89355 row #2 1355374 (reprints s79251 #7-12)
+I 13420 cv=505484 gcd=1498211 isbn=978-1616558185 0.95 | v03 Queen of Serpents: CV 85970 issue 505484 (Volume 3) and GCD 89355 row #3 1498211 (reprints s79251 #13-18)
+
+# ================= Captain America: Theater of War (seven one-shots) =================
+S 102913 cv=25178 gcd=33342 0.95 | split-reader ids CONFIRMED: "Captain America - Theater of War - America First! (2009)" (55pp) is its own one-shot — CV 25178 (Marvel 2009, 1 issue 148593) and GCD 33342 (Marvel 2009, 1 row 560167, 68pp) agree on title, publisher and year
+F 102913 needs-fetch cv=25178 | named from the rip, no CvVolume row
+I 77401 cv=148593 gcd=560167 isbn=- 0.95 | the one-shot's own records: CV 25178 issue 148593 and GCD 33342 row 560167
+S 102914 cv=25516 gcd=33513 0.95 | split-reader ids CONFIRMED: "Captain America - Theater of War - America the Beautiful (2009)" (37pp) — CV 25516 (Marvel 2009, 1 issue 150521) and GCD 33513 (Marvel 2009, 1 row 564211) agree on title, publisher and year
+F 102914 needs-fetch cv=25516 | named from the rip, no CvVolume row
+I 77402 cv=150521 gcd=564211 isbn=- 0.95 | the one-shot's own records: CV 25516 issue 150521 and GCD 33513 row 564211
+S 102915 cv=28503 gcd=40657 0.95 | split-reader ids CONFIRMED: "Captain America - Theater of War - Ghosts of My Country (2009)" (37pp) — CV 28503 (Marvel 2009, 1 issue 175623) and GCD 40657 (Marvel 2009, 1 row 690725, 44pp) agree on title, publisher and year
+F 102915 needs-fetch cv=28503 | named from the rip, no CvVolume row
+I 77403 cv=175623 gcd=690725 isbn=- 0.95 | the one-shot's own records: CV 28503 issue 175623 and GCD 40657 row 690725
+S 102917 cv=27396 gcd=38943 0.95 | split-reader ids CONFIRMED: "Captain America - Theater of War - To Soldier On (2009)" (37pp) — CV 27396 (Marvel 2009, 1 issue 166894) and GCD 38943 (Marvel 2009, 1 row 670283, 44pp) agree on title, publisher and year
+F 102917 needs-fetch cv=27396 | named from the rip, no CvVolume row
+I 77406 cv=166894 gcd=670283 isbn=- 0.95 | the one-shot's own records: CV 27396 issue 166894 and GCD 38943 row 670283
+S 102912 cv=26304 gcd=36139 0.95 | split-reader ids CONFIRMED: "Captain America - Theater of War - A Brother in Arms (2009)" (37pp) — CV 26304 (Marvel 2009, 1 issue 156195) and GCD 36139 (Marvel 2009, 1 row 623622) agree on title, publisher and year
+F 102912 needs-fetch cv=26304 | named from the rip, no CvVolume row
+I 77400 cv=156195 gcd=623622 isbn=- 0.95 | the one-shot's own records: CV 26304 issue 156195 and GCD 36139 row 623622
+S 102916 cv=30232 gcd=40901 0.95 | split-reader ids CONFIRMED: "Captain America - Theater of War - Prisoners of Duty (2010)" (33pp) — CV 30232 (Marvel 2010, 1 issue 186403) and GCD 40901 (Marvel 2010, 1 row 692001) agree on title, publisher and year
+F 102916 needs-fetch cv=30232 | named from the rip, no CvVolume row
+I 77405 cv=186403 gcd=692001 isbn=- 0.95 | the one-shot's own records: CV 30232 issue 186403 and GCD 40901 row 692001
+S 23136 cv=23548 gcd=32370 0.95 | the KEPT half is "Captain America - Theater of War - Operation Zero-Point (2008)" (39pp) — CV 23548 (Marvel 2008, 1 issue 141312) and GCD 32370 (Marvel 2008, 1 row 545965, 52pp) agree on title, publisher and year; the six sibling one-shots now sit on S102912-S102917
+I 77404 cv=141312 gcd=545965 isbn=- 0.95 | the one-shot's own records: CV 23548 issue 141312 and GCD 32370 row 545965 (2008-10-29)
+
+# ================= Batman Noir (DC's oversized black-and-white editions, a bucket of one-book records) =================
+S 102900 cv=84571 gcd=92481 0.95 | split-reader ids CONFIRMED: "COL Batman Noir - Hush (2015)" (291pp) sits in the "_Trades, and Graphic Novels" bucket and is its own book — CV 84571 (DC 2015, 1 issue 500264) and GCD 92481 (DC 2015, 1 row 1458096, 320pp) are the edition's records (L-124: a bucket's count-1 record wins); what it collects goes on the C line
+F 102900 needs-fetch cv=84571 | Batman Noir: Hush is named from the rip and has no CvVolume row
+I 62873 cv=500264 gcd=1458096 isbn=978-1-4012-5803-0 0.95 | the edition's own records: CV 84571 issue 500264 and GCD 92481 row 1458096 (2015-09-16, 320pp against our 291pp)
+C 62873 cv=796 gcd=141 #608-619 0.95 | Batman Noir: Hush collects Batman (DC 1940, CV 796 / GCD 141) #608-619, the twelve-part Hush, per GCD's reprint row 1458096
+S 102901 cv=88191 gcd=97427 0.95 | split-reader ids CONFIRMED: "COL Batman Noir - The Black Mirror (2016)" (275pp, ComicInfo "Batman Noir: The Black Mirror") — CV 88191 (DC 2016, 1 issue 516051) and GCD 97427 (DC 2016, 1 row 1537780, 296pp) are the edition's own records
+F 102901 needs-fetch cv=88191 | Batman Noir: The Black Mirror is named from the rip and has no CvVolume row
+I 62874 cv=516051 gcd=1537780 isbn=978-1-4012-5968-6 0.95 | the edition's own records: CV 88191 issue 516051 and GCD 97427 row 1537780 (296pp against our 275pp)
+C 62874 cv=18058 gcd=87 #871-881 0.95 | The Black Mirror collects Detective Comics (DC 1937, CV 18058 / GCD 87) #871-881 per GCD's reprint row 1537780
+S 102902 cv=82397 gcd=89757 0.95 | split-reader ids CONFIRMED: "COL Batman Noir - The Dark Knight Returns (2015)" (206pp) — CV 82397 (DC 2015, 1 issue 490942) and GCD 89757 (DC 2015, 1 row 1379269, 216pp) are the edition's own records
+F 102902 needs-fetch cv=82397 | Batman Noir: The Dark Knight Returns is named from the rip and has no CvVolume row
+I 62875 cv=490942 gcd=1379269 isbn=978-1-4012-5514-5 0.95 | the edition's own records: CV 82397 issue 490942 and GCD 89757 row 1379269 (216pp against our 206pp)
+C 62875 cv=3593 gcd=3140 #1-4 0.95 | The Dark Knight Returns collects Batman: The Dark Knight (DC 1986, CV 3593 / GCD 3140, 4 issues) #1-4 per GCD's reprint row 1379269
+S 102903 cv=109437 gcd=123196 0.95 | split-reader ids CONFIRMED: "COL Batman Noir - The Dark Knight Strikes Again (2018)" (238pp) — CV 109437 (DC 2018, 1 issue 664257) and GCD 123196 (DC 2018, 1 row 1796343, 256pp) are the edition's own records
+F 102903 needs-fetch cv=109437 | Batman Noir: The Dark Knight Strikes Again is named from the rip and has no CvVolume row
+I 62876 cv=664257 gcd=1796343 isbn=978-1-4012-7804-5 0.95 | the edition's own records: CV 109437 issue 664257 and GCD 123196 row 1796343 (256pp against our 238pp)
+C 62876 cv=9221 gcd=9985 #1-3 0.95 | The Dark Knight Strikes Again collects The Dark Knight Strikes Again (DC 2001-2002, CV 9221 / GCD 9985, 3 issues) #1-3 per GCD's reprint row 1796343
+S 102904 cv=92730 gcd=104708 0.95 | split-reader ids CONFIRMED: "Batman Noir - The Killing Joke (2016)" (113pp) — CV 92730 (DC 2016, 1 issue 542599) and GCD 104708 (DC 2016, 1 row 1608189, 120pp) are the edition's own records
+F 102904 needs-fetch cv=92730 | Batman Noir: The Killing Joke is named from the rip and has no CvVolume row
+I 62877 cv=542599 gcd=1608189 isbn=978-1-4012-6364-5 0.95 | the edition's own records: CV 92730 issue 542599 and GCD 104708 row 1608189 (120pp against our 113pp)
+C 62877 cv=19967 #1-1 0.9 | The Killing Joke edition reprints the 1988 one-shot Batman: The Killing Joke (CV 19967, DC 1988, 1 issue); GCD 3571 numbers it [nn], so only the CV leg states it
+S 102905 cv=77418 gcd=110635 0.95 | split-reader ids CONFIRMED: "COL Batman Noir - The Long Halloween (2014)" (359pp) — CV 77418 (DC 2014, 1 issue 467631) and GCD 110635 (DC 2014, 1 row 1660165, 392pp) are the edition's own records
+F 102905 needs-fetch cv=77418 | Batman Noir: The Long Halloween is named from the rip and has no CvVolume row
+I 62878 cv=467631 gcd=1660165 isbn=978-1-4012-4883-3 0.95 | the edition's own records: CV 77418 issue 467631 and GCD 110635 row 1660165 (392pp against our 359pp)
+C 62878 cv=6822 gcd=7339 #1-13 0.95 | The Long Halloween collects Batman: The Long Halloween (DC 1996-1997, CV 6822 / GCD 7339, 13 issues) #1-13 per GCD's reprint row 1660165
+S 24285 cv=62380 gcd=110362 0.95 | the KEPT half is "COL Batman Noir - Eduardo Risso - The Deluxe Edition (2013)" (225pp, ComicInfo "Batman Noir: Eduardo Risso"): its own records are CV 62380 (DC 2013, 1 issue 406968 HC) and GCD 110362 (DC 2013, 1 row 1658407, 232pp); the stored CV 133691 is Urban Comics' French "Batman: Le Chevalier Noir" line and is re-linked
+F 24285 wrong-cv-link | stored CV 133691 "Batman: Le Chevalier Noir" (Urban Comics 2013, 4) is a French collected line, not DC's Batman Noir; the right id is CV 62380
+F 24285 needs-fetch cv=62380 | Batman Noir: Eduardo Risso: The Deluxe Edition is named from the rip and has no CvVolume row
+I 62872 cv=406968 gcd=1658407 isbn=978-1-4012-3890-2 0.95 | the edition's own records: CV 62380 issue 406968 (HC 2013-05) and GCD 110362 row 1658407 (232pp against our 225pp)
+C 62872 cv=27010 gcd=38095 #1-12 0.95 | the Risso edition collects the Batman strip of Wednesday Comics (DC 2009, CV 27010 / GCD 38095, 12 issues) #1-12 per GCD's reprint row 1658407
+C 62872 cv=796 gcd=141 #620-625 0.95 | and Batman (DC 1940, CV 796 / GCD 141) #620-625, "Broken City", per the same reprint row
+C 62872 cv=40364 gcd=59040 #1-3 0.95 | and Flashpoint: Batman Knight of Vengeance (DC 2011, CV 40364 / GCD 59040, 3 issues) #1-3, per the same reprint row (plus Gotham Knights #8)
+
+# ================= Cyber Force =================
+S 102920 cv=20268 gcd=16234 0.95 | split-reader ids CONFIRMED: "Cyber Force v2 Annual 01 (1995)" and "02 (1996)" (31/32pp) fill Cyberforce Annual — CV 20268 (Image 1995, 2, #1-2 cached, per-file 2/2) and GCD 16234 (Image 1995-1996, 2 rows 36pp) agree on publisher, years and count; the per-file GCD 123035 was a round2 copy
+S 102919 cv=159196 gcd=214263 0.95 | split-reader ids CONFIRMED: "Cyber Force - Shootout (2024)" (32pp) is its own one-shot — CV 159196 (Image 2024, 1 issue 1066374) and GCD 214263 (Image 2024, 1 row 2650103) agree on title, publisher and date (2024-08-07 on both)
+F 102919 needs-fetch cv=159196 | Cyber Force: Shootout is named from the rip and has no CvVolume row
+I 36348 cv=1066374 gcd=2650103 isbn=- 0.95 | the one-shot's own records: CV 159196 issue 1066374 and GCD 214263 row 2650103, both 2024-08-07
+S 35140 cv=67751 gcd=123035 0.9 | the KEPT half is four "COL Cyber Force - Rebirth Vol. 01-04" trades, and CV 67751 "Cyber Force: Rebirth" (Image 2013, 4 volumes) and GCD 123035 "Cyber Force Rebirth" (Image 2013-2018, 4 rows 164/156/148/148pp) are that collected line; Vol. 01-02 collect the 2012 Cyber Force #1-11 (GCD rows reprint s69632 #1-5 and #6-11) but Vol. 03-04 (2018) hold material past that 11-issue run, so no issue run spans the shelf; the stored CV 18360 is the 1992 mini
+F 35140 wrong-cv-link | stored CV 18360 "Cyber Force" (Image 1992, 5) is the original mini; not one file here is an issue or a collection of it
+I 36389 cv=427096 gcd=1793852 isbn=978-1-60706-671-2 0.95 | Rebirth Vol. 01: CV 67751 issue 427096 (Volume One) and GCD 123035 row #1 1793852 (164pp against our 162pp)
+C 36389 cv=53102 gcd=69632 #1-5 0.95 | Rebirth Vol. 01 collects Cyber Force (Image 2012-2015, CV 53102 / GCD 69632, 11 issues) #1-5 per GCD's reprint row 1793852
+I 36390 cv=487239 gcd=1793853 isbn=978-1-63215-118-6 0.95 | Rebirth Vol. 02: CV 67751 issue 487239 (Volume Two) and GCD 123035 row #2 1793853 (156pp against our 153pp)
+C 36390 cv=53102 gcd=69632 #6-11 0.95 | Rebirth Vol. 02 collects Cyber Force (Image 2012-2015, CV 53102 / GCD 69632) #6-11 per GCD's reprint row 1793853
+N 36390 the judged range #5-8 (conf 0.7) is contradicted by GCD's own row (#6-11) and by the arithmetic (Vol. 01 already holds #1-5)
+I 36391 cv=663603 gcd=1793854 isbn=978-1-5343-0475-8 0.95 | Rebirth Vol. 03: CV 67751 issue 663603 (Volume Three: Artifacts) and GCD 123035 row #3 1793854 (148pp against our 148pp)
+N 36391 no C: the judged #9-11 (conf 0.7) cannot be of the 2012 run (Vol. 02 ends at #11) and neither leg states what Vol. 03 collects
+I 36392 cv=685658 gcd=1849367 isbn=978-1-5343-0502-1 0.95 | Rebirth Vol. 04: CV 67751 issue 685658 (Volume Four) and GCD 123035 row #4 1849367 (148pp against our 149pp)
+N 36392 no C: neither leg states what Rebirth Vol. 04 collects
+
+# ================= Superman =================
+S 102888 cv=160860 gcd=217177 0.95 | split-reader ids CONFIRMED: "Absolute Superman 001-003 (2025)" in "Absolute Superman v1 (2024)" — CV 160860 (DC 2025, 13+) and GCD 217177 (DC 2025-?, 19) agree on title and publisher, and the ladder 1-3 sits inside both; counts above our holdings on a running series are staleness, not residue; the per-file 119775 (Superman Year One) was a stamp
+F 102888 needs-fetch cv=160860 | Absolute Superman is named from the rip and has no CvVolume row
+S 103018 cv=51617 gcd=68234 0.95 | split-reader ids CONFIRMED: "01 Superman Annual 003 (2016)" (42pp, filed in the New 52 read order's "125 Superman - Savage Dawn") is Superman Annual (2012) #3 "Savage Dawn" — CV 51617 (DC 2012, 3; #3 = issue 509690 "Savage Dawn") and GCD 68234 (DC 2012-2016, 3; #3 row 1516909, 52pp) agree
+F 103018 needs-fetch cv=51617 | Superman Annual (2012) is named from the rip and has no CvVolume row
+S 65814 cv=119775 gcd=147743 0.95 | the KEPT half is DC Black Label's "Superman - Year One 01-03 (of 03) (2019)" (65-67pp each, ComicInfo "Superman: Year One" / Volume 2019) — CV 119775 (DC 2019, 3, #1-3 cached, per-file 3/3) and GCD 147743 (DC 2019, 3 rows 68pp) agree on title, year, count and pages; stored cv 119775 is this half's own
+
+# ================= Arsenal =================
+S 102891 cv=35272 gcd=14726 0.95 | split-reader ids CONFIRMED: "Arsenal Special 001 (1996)" (37pp, ComicInfo "Arsenal Special" / DC) is the one-shot — CV 35272 (DC 1996, 1 issue 232573) and GCD 14726 (DC 1996, 1 row 256097, 52pp) agree on title, publisher and year; the per-file GCD 123028 (a Serbian Arsenal) was a title stamp
+I 64874 cv=232573 gcd=256097 isbn=- 0.95 | the one-shot's own records: CV 35272 issue 232573 and GCD 14726 row 256097 (1996-05-30)
+S 102989 cv=82470 gcd=89988 0.95 | split-reader ids CONFIRMED, the RUN wins: floppy "Red Hood-Arsenal 007 (2016)" plus trades Vol. 01-02 whose GCD rows reprint s89988 #1-6 and #7-13 — CV 82470 "Red Hood/Arsenal" (DC 2015, 13) and GCD 89988 (DC 2015-2016, 13) agree on publisher, years and count; 6+7 = 13; flag #28 is Dismissed
+I 69308 cv=522413 gcd=1549579 isbn=978-1-4012-6154-2 0.95 | Vol. 01 Open for Business: CV 89274 issue 522413 (Volume 1) and GCD 98740 row #1 1549579 (164pp against our 142pp)
+I 69309 cv=552983 gcd=1637902 isbn=978-1-4012-6489-5 0.95 | Vol. 02 Dancing with the Devil's Daughter: CV 94815 issue 552983 (Volume 2) and GCD 98740 row #2 1637902 (196pp against our 171pp)
+S 1331 cv=6144 gcd=5952 0.95 | the KEPT half is "Arsenal 01-04 (of 04) (1998-1999)" (ComicInfo "Arsenal" / DC on 4/4) — CV 6144 (DC 1998, 4, #1-4 cached, per-file 4/4) and GCD 5952 (DC 1998-1999, 4, per-file 4/4) agree on publisher, years and count, and "(of 04)" matches; stored cv 6144 is this half's own
+
+# ================= Battlestar Galactica (Dynamite) =================
+S 2342 cv=61319 gcd=74421 0.95 | the new-shelf entry is this shelf's own two trades, "COL (Classic) Battlestar Galactica v01 - Memorial (2013)" and "v02 - The Adama Gambit (2014)", which collect the 2013 twelve-issue ongoing — CV 61319 (Dynamite 2013, 12) and GCD 74421 (Dynamite 2013-2014, 12) agree on title, publisher, years and count; GCD's own Vol. 1 row reprints s74421 #1-5; decision as B-022
+I 20896 cv=435071 gcd=2711642 isbn=- 0.95 | v01 Memorial: CV 69574 issue 435071 (Volume One) and GCD 221229 row #1 2711642 "Memorial" (reprints s74421 #1-5)
+I 20897 cv=475951 gcd=2711643 isbn=- 0.95 | v02 The Adama Gambit: CV 79408 issue 475951 (Volume Two) and GCD 221229 row #2 2711643 "The Adama Gambit"
+S 102885 cv=69349 gcd=79111 0.95 | split-reader ids CONFIRMED, the RUN wins: our 97pp "Battlestar Galactica - Starbuck (2016)" collects the four-issue mini — CV 69349 "(Classic) Battlestar Galactica: Starbuck" (Dynamite 2013, 4) and GCD 79111 "Battlestar Galactica: Starbuck" (Dynamite 2013-2014, 4 rows) agree on title, publisher, years and count; 97pp is four issues
+F 102885 needs-fetch cv=69349 | (Classic) Battlestar Galactica: Starbuck (2013) is named from the rip and has no CvVolume row
+I 21838 cv=523274 gcd=1553371 isbn=978-1606908617 0.95 | the trade's own records: CV 89354 "(Classic) Battlestar Galactica: Starbuck" (2016) issue 523274 (TPB) and GCD 99346 row 1553371 (2016-04-06)
+S 102886 cv=78552 gcd=85022 0.95 | split-reader ids CONFIRMED, the RUN wins: our 193pp "(Classic) Battlestar Galactica - The Death of Apollo (2015)" collects the six-issue mini — CV 78552 (Dynamite 2014, 6, #1-6 cached) and GCD 85022 (Dynamite 2014-2015, 6) agree on title, publisher, years and count
+F 102886 needs-fetch cv=78552 | (Classic) Battlestar Galactica: The Death of Apollo is named from the rip and has no CvVolume row
+I 21839 cv=- gcd=1458268 isbn=978-1606906941 0.95 | the trade's own GCD row: GCD 92506 row 1458268 (2015-09-16); ComicVine has no volume for the Death of Apollo collection
+S 102908 cv=23519 gcd=34088 0.95 | split-reader ids CONFIRMED, the RUN wins: our 135pp "COL Battlestar Galactica - Ghosts Vol. 01 (2009)" collects the four-issue mini (GCD's own row reprints s34088 #1-4) — CV 23519 (Dynamite 2008, 4) and GCD 34088 (Dynamite 2008, 4) agree on title, publisher, year and count
+F 102908 needs-fetch cv=23519 | Battlestar Galactica: Ghosts is named from the rip and has no CvVolume row
+I 20898 cv=488850 gcd=1431998 isbn=- 0.95 | the trade's own records: CV 82010 issue 488850 (TPB 2009) and GCD 90593 row 1431998
+S 102910 cv=7557 gcd=37937 0.95 | split-reader ids CONFIRMED, the RUN wins: our 101pp "COL Battlestar Galactica - The Final Five Vol 1 TPB (2009)" collects the four-issue mini (GCD's own row reprints s37937 #1-4) — CV 7557 (Dynamite 2009, 4) and GCD 37937 (Dynamite 2009, 4) agree
+F 102910 needs-fetch cv=7557 | Battlestar Galactica: The Final Five is named from the rip and has no CvVolume row
+I 20900 cv=488851 gcd=1431997 isbn=- 0.95 | the trade's own records: CV 82011 issue 488851 (TPB 2009) and GCD 90592 row 1431997
+S 102909 cv=20836 gcd=34089 0.95 | split-reader ids CONFIRMED: "Battlestar Galactica - Pegasus (2007)" (36pp) is the one-shot — CV 20836 (Dynamite 2007, 1 issue 124873) and GCD 34089 (Dynamite 2007, 1 row 574627) agree on title, publisher and year
+I 20899 cv=124873 gcd=574627 isbn=- 0.95 | the one-shot's own records: CV 20836 issue 124873 and GCD 34089 row 574627
+S 102907 cv=103688 gcd=221224 0.9 | split reader gave gcd only; CORRECTED by adding the CV leg: "Battlestar Galactica One-Shot (2016)" (19pp) is CV 103688 "Battlestar Galactica One-Shot" (Dynamite, 1 issue 616644 dated 2016-12-31) and GCD 221224 "Battlestar Galactica" (Dynamite 2016, 1 row 2711575); 0.9 because GCD's row carries no title or pages to confirm the 19pp file
+I 20901 cv=616644 gcd=2711575 isbn=- 0.9 | the one-shot's own records: CV 103688 issue 616644 and GCD 221224 row 2711575 (UPC 725130250438)
+S 2334 cv=98725 gcd=112026 0.9 | the KEPT half is one 327pp "COL Battlestar Galactica Omnibus Book 01 (2017)" in the Classic folder: CV 98725 "Battlestar Galactica Classic Omnibus" (Dynamite 2017, 2 volumes) and GCD 112026 (Dynamite 2017-2018, 2 rows) are that omnibus line, and our Book 01 is its #1; neither leg states its contents, so the line is the identity (0.9)
+F 2334 needs-fetch cv=98725 | Battlestar Galactica Classic Omnibus is named from the rip and has no CvVolume row
+I 20895 cv=580769 gcd=1674024 isbn=978-1524101275 0.95 | Omnibus Book 01's own records: CV 98725 issue 580769 (Volume One, 2017-02) and GCD 112026 row #1 1674024
+N 20895 no C: neither leg states which Classic BSG runs Omnibus Book 01 collects
+
+# ================= Chicken Devil =================
+S 102918 cv=145525 gcd=190679 0.95 | split-reader ids CONFIRMED: "Chicken Devil - Chicken Devils 001-004 (2022-2023)" in "Chicken Devil v2 - Chicken Devils (2022)" — CV 145525 "Chicken Devils" (Aftershock 2022, 4) and GCD 190679 "Chicken Devil Volume 2" (AfterShock 2022-2023, 4 rows) agree on publisher, years and count; the per-file CV 139451 / GCD 177091 were the v1 mini's stamps (round2)
+F 102918 needs-fetch cv=145525 | Chicken Devils is named from the rip and has no CvVolume row
+S 3808 cv=139451 gcd=177091 0.95 | the KEPT half is "Chicken Devil 001-004 (2021-2022)" (ComicInfo Aftershock 4/4) — CV 139451 (Aftershock 2021, 4, per-file 4/4) and GCD 177091 (AfterShock 2021-2022, 4, per-file 4/4 by num) agree on publisher, years and count; stored cv 139451 is this half's own
+
+# ================= Doctor Who (Titan) =================
+S 102935 cv=104936 gcd=117480 0.95 | split-reader ids CONFIRMED: "05/07 Doctor Who Special 001-002 (2017)" (37/30pp) in the Lost Dimension read-order folder — CV 104936 "Doctor Who Special" (Titan 2017, 2; #1 "The Lost Dimension, Part 5", #2 "Part 7") and GCD 117480 "Doctor Who: Special" (Titan 2017, 2 rows 40/32pp) agree on title, year, count and pages
+S 102936 cv=81694 gcd=89007 0.95 | split-reader ids CONFIRMED: "Doctor Who FCBD (2015)" (27pp) — CV 81694 "Doctor Who: Free Comic Book Day" (Titan 2015, 1 issue 487479) and GCD 89007 (Titan 2015, 1 row 1349467, 32pp) agree on title, publisher and year
+F 102936 needs-fetch cv=81694 | Doctor Who: Free Comic Book Day (2015) is named from the rip and has no CvVolume row
+I 110346 cv=487479 gcd=1349467 isbn=- 0.95 | the FCBD issue's own records: CV 81694 issue 487479 and GCD 89007 row 1349467 (2015-06)
+S 5654 cv=83813 gcd=91789 0.95 | the KEPT half is "Doctor Who 2015 Event The Four Doctors 001-005 (2015)" (31pp each) — CV 83813 "Doctor Who Event 2015: Four Doctors" (Titan 2015, 5) and GCD 91789 "Doctor Who Event 2015: The Four Doctors" (Titan 2015, 5 rows) agree on title, publisher, year and count; ladder 1-5 fills both; the per-file IDW 25119 was a title stamp
+F 5654 needs-fetch cv=83813 | Doctor Who Event 2015: Four Doctors is named from the rip and has no CvVolume row
+
+# ================= Eternals =================
+S 96743 cv=133080 gcd=168396 0.9 | split reader left run=-; the 2021 Gillen ongoing: floppies #10-12 plus Vol. 01-02 whose GCD rows reprint s168396 #1-6 and #7-12 — CV 133080 (Marvel 2021, 12) and GCD 168396 (Marvel 2021-2022, 12) agree on publisher, years and count; residue = Vol. 00 "A History Written in Blood" (collects What If? and three one-shots), hence 0.9; the old C-044 merge-with=6234 is not repeated: S6234 is the Heretic one-shot (cv=-), a different book
+I 79145 cv=984871 gcd=2499549 isbn=- 0.95 | Vol. 00 A History Written in Blood: CV 149634 issue 984871 (TPB 2023) and GCD 197270 row 2499549 (116pp against our 113pp)
+C 79145 cv=2918 gcd=2410 #24-28 0.95 | Vol. 00 collects What If? (Marvel 1977-1984, CV 2918 / GCD 2410, 47 issues) #24-28 per GCD's reprint row 2499549
+C 79145 cv=138933 gcd=176211 #1-1 0.95 | and Eternals: Thanos Rises (Marvel 2021 one-shot, CV 138933 / GCD 176211) #1 per the same reprint row
+C 79145 cv=141918 gcd=182932 #1-1 0.95 | and Eternals: The Heretic (Marvel 2022 one-shot, CV 141918 / GCD 182932) #1 per the same reprint row
+C 79145 cv=139433 gcd=177114 #1-1 0.95 | and Eternals: Celestia (Marvel 2021 one-shot, CV 139433 / GCD 177114) #1 per the same reprint row
+I 79146 cv=883356 gcd=2258785 isbn=978-1-302-92547-5 0.95 | Vol. 01 Only Death Is Eternal: CV 138725 issue 883356 (Volume 1) and GCD 175610 row #1 2258785 (164pp against our 154pp)
+I 79147 cv=962622 gcd=2426196 isbn=978-1-302-92548-2 0.95 | Vol. 02 Hail Thanos: CV 147205 issue 962622 (Volume 2) and GCD 175610 row #2 2426196 (140pp against our 152pp)
+S 102940 cv=123702 gcd=153549 0.95 | split reader gave gcd only; CORRECTED by adding the CV leg: "Eternals 001 - Facsimile Edition" (35pp) in Marvel Facsimile Editions is its own book (L-089) — CV 123702 "Eternals No. 1 Facsimile Edition" (Marvel, 1 issue 731479) and GCD 153549 (Marvel 2020, 1 row 2046597, 36pp, "of the entire The Eternals #1") agree on title and pages
+F 102940 needs-fetch cv=123702 | Eternals No. 1 Facsimile Edition is named from the rip and has no CvVolume row
+I 83044 cv=731479 gcd=2046597 isbn=- 0.95 | the facsimile's own records: CV 123702 issue 731479 and GCD 153549 row 2046597 (2019-12-18, 36pp against our 35pp)
+S 6232 cv=21937 gcd=31809 0.95 | the KEPT half is the 2008 Eternals: floppies #7-9 (2009, in an X-Men chronology "Manifest Destiny" folder) and "COL Eternals - To Defy the Apocalypse (2021)" (248pp), whose GCD row reprints s31809 #1-9 + Annual #1 — CV 21937 (Marvel 2008, 9, #1-9 cached) and GCD 31809 (Marvel 2008, 9, per-file 3/3) agree on year and count; the stored CV 2858 is the 1976 Kirby original
+F 6232 wrong-cv-link | stored CV 2858 "The Eternals" (Marvel 1976, 19) is Kirby's original series; this half is the 2008 series (CV 21937); the 1976 facsimile moved to S102940
+F 6232 needs-fetch cv=21937 | Eternals (2008) is named from the rip and has no CvVolume row
+I 79993 cv=827687 gcd=2251257 isbn=978-1-302-92339-6 0.95 | To Defy the Apocalypse's own records: CV 133626 issue 827687 (TPB 2021-02) and GCD 174712 row 2251257 (260pp against our 248pp)
+
+# ================= Flashpoint: The World of Flashpoint =================
+S 102943 cv=46596 gcd=69850 0.95 | split-reader ids CONFIRMED: "Flashpoint - The World of Flashpoint Featuring Batman (2012)" (258pp) is a tie-in collection with its own count-1 record in both legs — CV 46596 (DC 2012, 1 issue 321656 TPB) and GCD 69850 (DC 2012, 1 row 1032484, 276pp); it gathers four minis, so no run is its identity
+F 102943 needs-fetch cv=46596 | named from the rip, no CvVolume row
+I 19308 cv=321656 gcd=1032484 isbn=978-1-4012-3405-8 0.95 | the collection's own records: CV 46596 issue 321656 and GCD 69850 row 1032484 (276pp against our 258pp)
+C 19308 cv=40364 gcd=59040 #1-3 0.95 | Featuring Batman collects Flashpoint: Batman Knight of Vengeance (DC 2011, CV 40364 / GCD 59040, 3) #1-3 per GCD's notes on row 1032484
+C 19308 cv=40683 gcd=59301 #1-3 0.95 | and Flashpoint: Deadman and the Flying Graysons (DC 2011, CV 40683 / GCD 59301, 3) #1-3; also Deathstroke & the Curse of the Ravager #1-3 and Secret Seven #1-3 per the same notes
+S 102944 cv=46930 gcd=69852 0.95 | split-reader ids CONFIRMED: "Flashpoint - The World of Flashpoint Featuring Green Lantern (2012)" (201pp) — CV 46930 (DC 2012, 1 issue 323092 TPB) and GCD 69852 (DC 2012, 1 row 1032482, 236pp) are the collection's own records
+F 102944 needs-fetch cv=46930 | named from the rip, no CvVolume row
+I 19309 cv=323092 gcd=1032482 isbn=978-1-4012-3406-5 0.95 | the collection's own records: CV 46930 issue 323092 and GCD 69852 row 1032482 (236pp against our 201pp)
+C 19309 cv=40928 gcd=59525 #1-3 0.95 | Featuring Green Lantern collects Flashpoint: Hal Jordan (DC 2011, CV 40928 / GCD 59525, 3) #1-3 per GCD's notes on row 1032482
+C 19309 cv=40367 gcd=59039 #1-3 0.95 | and Flashpoint: Abin Sur - The Green Lantern (DC 2011, CV 40367 / GCD 59039, 3) #1-3; also Frankenstein & the Creatures of the Unknown #1-3 and Green Arrow Industries #1
+S 102945 cv=46597 gcd=69849 0.95 | split-reader ids CONFIRMED: "Flashpoint - The World of Flashpoint Featuring Superman (2012)" (238pp) — CV 46597 (DC 2012, 1 issue 321657 TPB) and GCD 69849 (DC 2012, 1 row 1032481, 260pp) are the collection's own records
+F 102945 needs-fetch cv=46597 | named from the rip, no CvVolume row
+I 19310 cv=321657 gcd=1032481 isbn=978-1-4012-3434-8 0.95 | the collection's own records: CV 46597 issue 321657 and GCD 69849 row 1032481 (260pp against our 238pp)
+C 19310 cv=40926 gcd=59526 #1-3 0.95 | Featuring Superman collects Flashpoint: Project Superman (DC 2011, CV 40926 / GCD 59526, 3) #1-3 per GCD's notes on row 1032481
+C 19310 cv=40366 gcd=59042 #1-3 0.95 | and Flashpoint: The World of Flashpoint (DC 2011, CV 40366 / GCD 59042, 3) #1-3 — S6813's run; also Canterbury Cricket #1 and Booster Gold #44-47
+S 102946 cv=46931 gcd=69851 0.95 | split-reader ids CONFIRMED: "Flashpoint - The World of Flashpoint Featuring The Flash (2012)" (237pp) — CV 46931 (DC 2012, 1 issue 323093 TPB) and GCD 69851 (DC 2012, 1 row 1032483, 260pp) are the collection's own records
+F 102946 needs-fetch cv=46931 | named from the rip, no CvVolume row
+I 19311 cv=323093 gcd=1032483 isbn=978-1-4012-3408-9 0.95 | the collection's own records: CV 46931 issue 323093 and GCD 69851 row 1032483 (260pp against our 237pp)
+C 19311 cv=40769 gcd=59409 #1-3 0.95 | Featuring The Flash collects Flashpoint: Kid Flash Lost (DC 2011, CV 40769 / GCD 59409, 3) #1-3 per GCD's notes on row 1032483
+C 19311 cv=40522 gcd=59184 #1-3 0.95 | and Flashpoint: Citizen Cold (DC 2011, CV 40522 / GCD 59184, 3) #1-3; also Legion of Doom #1-3, Grodd of War #1 and Reverse-Flash #1
+S 102947 cv=46598 gcd=64868 0.95 | split-reader ids CONFIRMED: "Flashpoint - The World of Flashpoint Featuring Wonder Woman (2012)" (247pp) — CV 46598 (DC 2012, 1 issue 321658 TPB) and GCD 64868 (DC 2012, 1 row 935433, 276pp) are the collection's own records
+F 102947 needs-fetch cv=46598 | named from the rip, no CvVolume row
+I 19312 cv=321658 gcd=935433 isbn=978-1-4012-3410-2 0.95 | the collection's own records: CV 46598 issue 321658 and GCD 64868 row 935433 (276pp against our 247pp)
+C 19312 cv=40688 gcd=59302 #1-3 0.95 | Featuring Wonder Woman collects Flashpoint: Wonder Woman and the Furies (DC 2011, CV 40688 / GCD 59302, 3) #1-3 per GCD's reprint rows on 935433
+C 19312 cv=40524 gcd=59187 #1-3 0.95 | and Flashpoint: Emperor Aquaman (DC 2011, CV 40524 / GCD 59187, 3) #1-3; also Lois Lane and the Resistance #1-3 and The Outsider #1-3
+S 6813 cv=40366 gcd=59042 0.95 | the KEPT half is "Flashpoint - The World of Flashpoint 01-03 (of 3) (2011)" — CV 40366 (DC 2011, 3, per-file 3/3) and GCD 59042 (DC 2011, 3, per-file 3/3) agree on publisher, year and count, and "(of 3)" matches; stored cv 40366 is this half's own
+
+# ================= G.I. Joe: Master & Apprentice (Devil's Due) =================
+S 102948 cv=32922 gcd=27570 0.95 | split-reader ids CONFIRMED: "G.I.Joe - Master & Apprentice v2 01-04 (of 04) (2005)" in "G.I. Joe - Master & Apprentice 2 (2005 Series)" — CV 32922 "G.I. Joe: Master & Apprentice 2" (Devil's Due 2005, 4) and GCD 27570 (Devil's Due 2005, 4) agree on title, publisher, year and count; the per-file CV 32920 is the 2004 mini's stamp
+F 102948 needs-fetch cv=32922 | G.I. Joe: Master & Apprentice 2 is named from the rip and has no CvVolume row
+N 102948 the open label-ambiguous flag #248 is accurate and harmless: all four files here are 35-37pp single issues of this mini, not collections
+S 7131 cv=32920 gcd=34621 0.95 | the KEPT half is "G.I.Joe - Master & Apprentice v1 01-04 (of 04) (2004)" — CV 32920 "G.I. Joe: Master and Apprentice" (Devil's Due 2004, 4, per-file 4/4) and GCD 34621 "G.I. Joe: Master & Apprentice" (Devil's Due 2004, 4) agree on title, publisher, year and count; "(of 04)" matches
+F 7131 needs-fetch cv=32920 | G.I. Joe: Master and Apprentice is named from the rip and has no CvVolume row
+
+# ================= Robyn Hood (Zenescope) =================
+S 14768 cv=76553 gcd=82408 0.9 | split reader left run=-; the shelf is the 2014 Robyn Hood ongoing's trade line twice over: "COL ... Robyn Hood Vol. 01-04" (Riot Girls, Monsters in the Dark, Attitude Adjustment, Uprising) and a second rip of the same four ("COL Robyn Hood vol1-vol4", duplicates cost nothing) — CV 76553 (Zenescope 2014, 20) and GCD 82408 (Zenescope 2014-2016, 20) agree on publisher, years and count; 0.9 for the misfiled Van Helsing crossover (decision as B-071)
+F 14768 misfiled | item 116000 "Van Helsing vs. Robyn Hood (2018)" (117pp, from the Van Helsing folder) is the 2018 four-issue crossover CV 107519 / GCD 120229, not a volume of the 2014 ongoing
+I 115929 cv=480747 gcd=2159698 isbn=978-1-9396839-9-1 0.95 | Vol. 01 Riot Girls: CV 80317 issue 480747 (Volume One) and GCD 126425 row #1 2159698 "Riot Girls" (152pp against our 179pp)
+I 116175 cv=480747 gcd=2159698 isbn=978-1-9396839-9-1 0.9 | the second rip "COL Robyn Hood vol1 - Riot Girls" (171pp) is the same book: CV 80317 issue 480747, GCD 126425 row #1 2159698
+I 115930 cv=498083 gcd=2159699 isbn=978-1-9422750-7-7 0.95 | Vol. 02 Monsters in the Dark: CV 83999 issue 498083 (Volume Two) and GCD 126425 row #2 2159699 (160pp against our 176pp)
+I 116176 cv=498083 gcd=2159699 isbn=978-1-9422750-7-7 0.9 | the second rip "COL Robyn Hood vol2 - Monsters in the Dark" (174pp) is the same book: CV 83999 issue 498083, GCD 126425 row #2 2159699
+I 115931 cv=508967 gcd=2159700 isbn=978-1942275152 0.95 | Vol. 03 Attitude Adjustment: CV 86782 issue 508967 (Volume Three) and GCD 126425 row #3 2159700 (164pp against our 162pp)
+I 116177 cv=508967 gcd=2159700 isbn=978-1942275152 0.9 | the second rip "COL Robyn Hood vol3 - Attitude Adjustment" (160pp) is the same book: CV 86782 issue 508967, GCD 126425 row #3 2159700
+I 115932 cv=559023 gcd=2159701 isbn=978-1-9422753-1-2 0.95 | Vol. 04 Uprising: CV 95833 "Robyn Hood: Uprising" issue 559023 (Volume Four) and GCD 126425 row #4 2159701 (152pp against our 183pp)
+I 116178 cv=559023 gcd=2159701 isbn=978-1-9422753-1-2 0.9 | the second rip "COL Robyn Hood vol4 - Uprising" (188pp) is the same book: CV 95833 issue 559023, GCD 126425 row #4 2159701
+I 116000 cv=682591 gcd=- isbn=- 0.9 | the misfiled crossover's own record: CV 113093 "Van Helsing vs. Robyn Hood" issue 682591 (TPB 2018-08-28); GCD has only the four issues (120229), no row for the collection
+C 116000 cv=107519 gcd=120229 #1-4 0.9 | Van Helsing vs. Robyn Hood (Zenescope 2018, CV 107519 / GCD 120229, 4 issues) #1-4: a 117pp trade of the four-issue crossover
+S 102961 cv=60929 gcd=74362 0.95 | split-reader ids CONFIRMED, the RUN wins: our 158pp "COL Grimm Fairy Tales - Robyn Hood Vol 2 TPB (2013)" in "02 Robyn Hood - Wanted (2013)" collects the five-issue Wanted mini — CV 60929 (Zenescope 2013, 5) and GCD 74362 (Zenescope 2013, 5) agree on title, publisher, year and count; the per-file GCD 126425 was a round2 copy
+F 102961 needs-fetch cv=60929 | Grimm Fairy Tales presents Robyn Hood: Wanted is named from the rip and has no CvVolume row
+I 115992 cv=432386 gcd=1515654 isbn=9781939683045 0.95 | the TPB's own records: CV 68938 "...Robyn Hood: Wanted" issue 432386 (TPB 2013-10) and GCD 95131 row #2 1515654 "Wanted" (156pp against our 158pp)
+S 102960 cv=72429 gcd=79677 0.95 | split-reader ids CONFIRMED, the RUN wins: our 150pp "COL Grimm Fairy Tales presents Robyn Hood - Legend (2014)" collects the five-issue Legend mini — CV 72429 (Zenescope 2014, 5) and GCD 79677 (Zenescope 2014, 5) agree on title, publisher, year and count
+F 102960 needs-fetch cv=72429 | Grimm Fairy Tales presents Robyn Hood: Legend is named from the rip and has no CvVolume row
+I 115993 cv=465905 gcd=2773470 isbn=978-1-939683-88-5 0.95 | the TPB's own records: CV 76995 issue 465905 (TPB 2014-09-30) and GCD 95131 row #3 2773470 "Legend" (148pp against our 150pp)
+S 102959 cv=59400 gcd=73470 0.95 | split-reader ids CONFIRMED: "Grimm Fairy Tales presents Robyn Hood vs. Red Riding Hood 01 (2013)" (42pp) is the one-shot — CV 59400 (Zenescope 2013, 1 issue 395403) and GCD 73470 (Zenescope 2013, 1 row 1099339, 52pp) agree on title, publisher and year; the per-file GCD 126425 was a round2 copy
+F 102959 needs-fetch cv=59400 | Grimm Fairy Tales presents: Robyn Hood vs. Red Riding Hood is named from the rip and has no CvVolume row
+I 115933 cv=395403 gcd=1099339 isbn=- 0.95 | the one-shot's own records: CV 59400 issue 395403 and GCD 73470 row 1099339 (2013-04-03)
+S 8040 cv=52691 gcd=68935 0.95 | the KEPT half is our 172pp "COL Grimm Fairy Tales - Robyn Hood Vol 1 TPB (2013)" in "01 Grimm Fairy Tales Presents Robyn Hood (2012)", the RUN wins: the 2012 five-issue mini — CV 52691 (Zenescope 2012, 5, #1-5 cached) and GCD 68935 (Zenescope 2012-2013, 5) agree on title, publisher, years and count; stored cv 52691 is this half's own; flag #76 is Dismissed
+I 115991 cv=388612 gcd=1515653 isbn=978-1937068790 0.95 | the TPB's own records: CV 57969 "Grimm Fairy Tales presents Robyn Hood" (2013) issue 388612 (TPB) and GCD 95131 row #1 1515653 "Robyn Hood Origin" (160pp against our 172pp)
+
+# ================= Harlan Ellison's Dream Corridor (Dark Horse) =================
+S 102963 cv=40205 gcd=5360 0.95 | split-reader ids CONFIRMED: "Harlan Ellison's Dream Corridor - Special (1st Edition)" and "(2nd Edition)" (64/69pp) are two printings of one book — CV 40205 (Dark Horse 1995, 1 issue 270397) and GCD 5360 (Dark Horse 1995, 1 row 56362, 64pp) agree on title, publisher, year and pages; the second printing costs nothing
+I 14416 cv=270397 gcd=56362 isbn=- 0.95 | the special's own records: CV 40205 issue 270397 and GCD 5360 row 56362 (1995-01, 64pp against our 64pp)
+I 14417 cv=270397 gcd=56362 isbn=- 0.9 | the 2nd Edition printing (69pp) of the same special: CV 40205 issue 270397, GCD 5360 row 56362; neither leg keeps a separate row for the reprint
+S 102962 cv=40222 gcd=5608 0.95 | split-reader ids CONFIRMED: "Harlan Ellison's Dream Corridor Quarterly 01" (69pp) — CV 40222 (Dark Horse 1996, 1 issue 270441) and GCD 5608 (Dark Horse 1996, 1 row 59117, 68pp) agree on title, publisher, year and pages
+F 102962 needs-fetch cv=40222 | Harlan Ellison's Dream Corridor Quarterly is named from the rip and has no CvVolume row
+I 14418 cv=270441 gcd=59117 isbn=1-56971-169-0 0.95 | the quarterly's own records: CV 40222 issue 270441 and GCD 5608 row 59117 (1996-08, 68pp against our 69pp)
+S 8342 cv=37552 gcd=5359 0.95 | the KEPT half is "Harlan Ellison's Dream Corridor 01-05 (of 05) (1995)" — CV 37552 (Dark Horse 1995, #1-5 cached, per-file 5/5) and GCD 5359 (Dark Horse 1995, 5, per-file 5/5) agree on title, publisher, year and count; "(of 05)" matches; stored cv 37552 is this half's own
+
+# ================= Hercules (Marvel) =================
+S 102964 cv=3344 gcd=2872 0.95 | split-reader ids CONFIRMED: "Hercules 01-04 (of 04) (1984)" in "02 Hercules v2 (1984)" (ComicInfo "Hercules: Prince of Power" / Volume 1984) — CV 3344 "Hercules" (Marvel 1984, 4) and GCD 2872 (Marvel 1984, 4) agree on publisher, year and count
+F 102964 needs-fetch cv=3344 | Hercules (1984) is named from the rip and has no CvVolume row
+S 8821 cv=3139 gcd=2653 0.95 | the KEPT half is "Hercules 01-04 (of 04) (1982)" in "01 Hercules v1 (1982)" (ComicInfo Volume 1982) — CV 3139 "Hercules" (Marvel 1982, 4) and GCD 2653 (Marvel 1982, 4) agree on publisher, year and count; the Prince-of-Power one-shots (43093, 86692, 72777, 74076) are other books
+F 8821 needs-fetch cv=3139 | Hercules (1982) is named from the rip and has no CvVolume row
+
+# ================= Iron Fist =================
+S 102965 cv=2766 gcd=2252 0.95 | split-reader ids CONFIRMED: floppies "Iron Fist 014-015 (1977)" (from the X-Men chronology) and the 527pp "Iron Fist Epic Collection Vol. 01 - The Fury of Iron Fist (2015)" are the 1975 original — CV 2766 (Marvel 1975, 15) and GCD 2252 (Marvel 1975-1977, 15) agree on publisher, years and count; the Epic is that run's own collection (no residue cost)
+I 81993 cv=494320 gcd=1310227 isbn=978-0-7851-9164-3 0.95 | the Epic Collection's own records: CV 83138 issue 494320 (Volume 1) and GCD 86055 row #1 1310227 "The Fury of Iron Fist" (532pp against our 527pp)
+N 81993 no C: neither leg states the Epic's contents (it opens with Marvel Premiere, a different series), so no range is written
+S 9560 cv=100082 gcd=112909 0.95 | the KEPT half is the 2017-2018 Iron Fist: floppies #78-80 (2018) and trades Vol. 01 (GCD row reprints s112909 #1-5) and Vol. 02 — CV 100082 (Marvel 2017, 15 = #1-7 + legacy #73-80, all cached) and GCD 112909 (Marvel 2017-2018, 15) agree on publisher, years and count, and #78-80 sit inside the legacy stretch; the stored CV 2766 is the moved 1975 run
+F 9560 wrong-cv-link | stored CV 2766 "Iron Fist" (Marvel 1975) is the run that moved to S102965 (with the Epic Collection and #14-15); this half is the 2017 series CV 100082
+F 9560 merge-with=97886 | S97886 ("Iron Fist v6 (2018)", Iron Fist 001-003 (2018)) already stores cv=100082 / gcd=112909 and declared merge-with=9560 in C-045: one run, #1-3 there and #78-80 here
+I 81462 cv=619628 gcd=1732377 isbn=978-1-302-90776-1 0.95 | Vol. 01 The Trial of the Seven Masters: CV 104061 issue 619628 (Volume 1) and GCD 116562 row #1 1732377 (116pp against our 114pp)
+I 81463 cv=663574 gcd=1793043 isbn=978-1-302-90777-8 0.95 | Vol. 02 Sabretooth - Round Two: CV 109322 issue 663574 (Volume 2) and GCD 116562 row #2 1793043 (164pp against our 154pp)
+
+# ================= Magic: The Gathering (IDW) =================
+S 102977 cv=115861 gcd=135767 0.95 | split-reader ids CONFIRMED: "Magic - The Gathering - Chandra 001-004 (2018-2019)" (ComicInfo "Magic: The Gathering: Chandra" / IDW) — CV 115861 (IDW 2018, 4) and GCD 135767 (IDW 2018-2019, 4, per-file 4/4) agree on title, publisher, years and count
+F 102977 needs-fetch cv=115861 | Magic: The Gathering: Chandra is named from the rip and has no CvVolume row
+S 11193 cv=- gcd=74141 0.9 | the KEPT half is four "COL Magic - The Gathering Vol. 01-04" trades (Vol. 02 The Spell Thief, 03 Path of Vengeance, 04 Theros) and GCD 74141 "Magic: The Gathering" (IDW 2012-2014, 4 rows titled The Spell Thief / Path of Vengeance / Theros) is exactly that trade line, each book collecting a different mini (stated on C lines); no CV volume spans the four (CV 54319 holds only Vol. 1-2); the stored CV 45576 is the first mini alone
+F 11193 wrong-cv-link | stored CV 45576 "Magic The Gathering" (IDW 2011-2012, 4 issues) is the first mini, which only Vol. 01 collects; no single CV record spans the four-trade line
+F 11193 stale-flag=91 | the conflated-series flag's four ladders are this one trade line: the shelf now holds only GCD 74141's Vol. 01-04 (121/113/104/116pp), each collecting its own mini (C lines below); the Chandra issues moved to S102977
+I 30978 cv=370416 gcd=1109086 isbn=978-1-61377-228-7 0.95 | Vol. 01: CV 54319 issue 370416 (Volume 1) and GCD 74141 row #1 1109086
+C 30978 cv=45576 gcd=63117 #1-4 0.95 | Vol. 01 (121pp) collects Magic: The Gathering (IDW 2011-2012, CV 45576 / GCD 63117, 4 issues) #1-4
+I 30979 cv=370359 gcd=1109091 isbn=978-1-61377-414-4 0.95 | Vol. 02 The Spell Thief: CV 54319 issue 370359 ("The Spell Thief") and GCD 74141 row #2 1109091
+C 30979 cv=49980 gcd=66494 #1-4 0.95 | Vol. 02 (113pp) collects Magic: The Gathering - The Spell Thief (IDW 2012, CV 49980 / GCD 66494, 4 issues) #1-4
+I 30980 cv=400189 gcd=1109158 isbn=978-1-61377-637-7 0.95 | Vol. 03 Path of Vengeance: CV 60562 issue 400189 (Volume 3) and GCD 74141 row #3 1109158
+C 30980 cv=54467 gcd=70260 #1-4 0.95 | Vol. 03 (104pp) collects Magic: The Gathering - Path of Vengeance (IDW 2012-2013, CV 54467 / GCD 70260, 4 issues) #1-4
+I 30981 cv=451114 gcd=2760110 isbn=978-1613779088 0.95 | Vol. 04 Theros: CV 73247 issue 451114 (Volume 4) and GCD 74141 row #4 2760110 (124pp against our 116pp)
+C 30981 cv=68129 gcd=77020 #1-5 0.95 | Vol. 04 (116pp) collects Magic: The Gathering - Theros (IDW 2013-2014, CV 68129 / GCD 77020, 5 issues) #1-5
+
+# ================= Marvel Action (IDW) =================
+S 102978 cv=131841 gcd=166427 0.95 | split-reader ids CONFIRMED: "Marvel Action - Chillers 001-004 (2020-2021)" — CV 131841 "Marvel Action: Chillers" (IDW 2020, 4) and GCD 166427 (IDW 2020, 4) agree on title, publisher, year and count; the per-file CV 47375 (1981 Marvel UK) and GCD 169173 (Origins, round2) were stamps
+F 102978 needs-fetch cv=131841 | Marvel Action: Chillers is named from the rip and has no CvVolume row
+S 11357 cv=133616 gcd=169173 0.95 | the KEPT half is "Marvel Action Origins 001-004 (2020-2021)" — CV 133616 "Marvel Action: Origins" (IDW 2021, 4) and GCD 169173 (IDW 2020-2021, 4, per-file 4/4) agree on title, publisher, years and count; the old stored CV 47375 was cleared in C-039
+F 11357 needs-fetch cv=133616 | Marvel Action: Origins is named from the rip and has no CvVolume row
+
+# ================= Quantum and Woody (Acclaim / Valiant) =================
+S 102983 cv=77573 gcd=83666 0.95 | split-reader ids CONFIRMED, the RUN wins: our 146pp "COL Quantum and Woody by Priest & Bright Vol. 04 - Q2 - The Return (2016)" collects the five-issue Q2 mini — CV 77573 "Q2: The Return of Quantum and Woody" (Valiant 2014, 5) and GCD 83666 (Valiant 2014-2015, 5) agree on title, publisher, years and count
+F 102983 needs-fetch cv=77573 | Q2: The Return of Quantum and Woody is named from the rip and has no CvVolume row
+I 111067 cv=527129 gcd=1709289 isbn=9781682151099 0.95 | the trade's own records: CV 82728 "Quantum and Woody by Priest & Bright" issue 527129 (Volume 4: Q2-The Return) and GCD 112709 row #4 1709289 "Q2 - The Return" (148pp against our 146pp)
+S 102985 cv=79728 gcd=86113 0.95 | split-reader ids CONFIRMED, the RUN wins: our 159pp "COL 05 Quantum and Woody v04 - Quantum and Woody Must Die! (2015)" collects the four-issue mini — CV 79728 "Quantum and Woody: Must Die" (Valiant 2015, 4) and GCD 86113 "Quantum and Woody Must Die!" (Valiant 2015, 4 rows) agree on title, publisher, year and count
+F 102985 needs-fetch cv=79728 | Quantum and Woody: Must Die is named from the rip and has no CvVolume row
+I 110899 cv=497444 gcd=- isbn=- 0.9 | the trade's own record: CV 83835 "Quantum and Woody: Must Die" issue 497444 (Volume 4, 2015-08); GCD has no row for the trade
+S 102984 cv=80297 gcd=125897 0.9 | split-reader ids CONFIRMED: the two "COL Quantum and Woody - Deluxe Edition - Book 01/02" (371/318pp) are a collected line — CV 80297 (Valiant 2015, 2: Book One / Book Two) and GCD 125897 (Valiant 2015-2018, 2 rows 376/304pp) agree on title, years and count; Book 01 collects the 2013 series and Book 02 two four-issue minis, so no one run is the identity
+F 102984 needs-fetch cv=80297 | Quantum and Woody Deluxe Edition is named from the rip and has no CvVolume row
+I 110900 cv=480663 gcd=1815849 isbn=9781939346681 0.95 | Book 01's own records: CV 80297 issue 480663 (Book One) and GCD 125897 row #1 1815849 (376pp against our 371pp)
+C 110900 cv=65067 gcd=75436 #1-12 0.9 | Book 01 collects Quantum and Woody (Valiant 2013-2014, CV 65067 / GCD 75436, 13 issues) #1-12 plus #0 per GCD's row 1815849 ("#1-12, #0", series unnamed there; the 13-issue 2013 run is the only fit)
+I 110901 cv=672895 gcd=1815850 isbn=9781682152676 0.95 | Book 02's own records: CV 80297 issue 672895 (Book Two) and GCD 125897 row #2 1815850 (304pp against our 318pp)
+N 110901 no C: GCD row 1815850 says only "? #1-4; ? #1-4" — two unnamed four-issue minis this pass cannot name
+S 102949 cv=35348 gcd=12967 0.95 | split-reader ids CONFIRMED: "Quantum & Woody Special - GOAT - H.A.E.D.U.S (1998)" (45pp) is the one-shot — CV 35348 "The Goat" (Acclaim 1998, 1 issue 232994 "The Goat: Heavily Armored Espionage Deadly Uber Sheep") and GCD 12967 "GOAT: H.A.E.D.U.S." (Acclaim 1998, 1 row 231478, 52pp) agree on title, publisher and year
+F 102949 needs-fetch cv=35348 | The Goat (1998) is named from the rip and has no CvVolume row
+I 111063 cv=232994 gcd=231478 isbn=- 0.95 | the one-shot's own records: CV 35348 issue 232994 and GCD 12967 row 231478 (1998-04)
+S 14264 cv=6031 gcd=5826 0.95 | the KEPT half is "COL Quantum and Woody by Priest & Bright Vol. 01-03" (Klang, Switch, And So...; 202/206/218pp) which reprint the 1997 Acclaim run — CV 6031 "Quantum & Woody" (Acclaim 1997, 23) and GCD 5826 (Acclaim 1997-2000, 23) agree on publisher, years and count; the RUN wins over the Priest & Bright trade line (CV 82728 / GCD 112709); stored cv 6031 is this half's own; flag #632 is Dismissed
+I 111064 cv=492205 gcd=1680861 isbn=9781939346780 0.95 | Vol. 01 Klang: CV 82728 issue 492205 (Volume 1) and GCD 112709 row #1 1680861 "Klang" (212pp against our 202pp)
+I 111065 cv=501605 gcd=1680862 isbn=9781939346803 0.95 | Vol. 02 Switch: CV 82728 issue 501605 (Volume 2) and GCD 112709 row #2 1680862 "Switch" (188pp against our 206pp)
+I 111066 cv=504331 gcd=1709288 isbn=9781939346865 0.95 | Vol. 03 And So...: CV 82728 issue 504331 (Volume 3) and GCD 112709 row #3 1709288 "And So..." (228pp against our 218pp)
+
+# ================= Revolutionary War (Marvel UK revival, eight one-shots) =================
+S 102991 cv=70899 gcd=78614 0.95 | split-reader ids CONFIRMED: "Revolutionary War 02 (of 8) - Dark Angel (2014)" (24pp) is its own one-shot — CV 70899 (Marvel 2014, 1 issue 442173) and GCD 78614 (Marvel 2014, 1 row 1173606) agree on title, publisher and year; the ripper's "02 (of 8)" is reading order
+F 102991 needs-fetch cv=70899 | named from the rip, no CvVolume row
+I 102422 cv=442173 gcd=1173606 isbn=- 0.95 | the one-shot's own records: CV 70899 issue 442173 and GCD 78614 row 1173606 (2014-01-15)
+S 102993 cv=71322 gcd=78804 0.95 | split-reader ids CONFIRMED: "Revolutionary War 03 (of 8) - Knights of Pendragon (2014)" — CV 71322 (Marvel 2014, 1 issue 443986) and GCD 78804 (Marvel 2014, 1 row 1175584) agree on title, publisher and year
+F 102993 needs-fetch cv=71322 | named from the rip, no CvVolume row
+I 102423 cv=443986 gcd=1175584 isbn=- 0.95 | the one-shot's own records: CV 71322 issue 443986 and GCD 78804 row 1175584 (2014-01-29)
+S 102992 cv=71611 gcd=78999 0.95 | split-reader ids CONFIRMED: "Revolutionary War 04 (of 8) - Death's Head II (2014)" — CV 71611 (Marvel 2014, 1 issue 445181) and GCD 78999 (Marvel 2014, 1 row 1179309) agree on title, publisher and year
+F 102992 needs-fetch cv=71611 | named from the rip, no CvVolume row
+I 102424 cv=445181 gcd=1179309 isbn=- 0.95 | the one-shot's own records: CV 71611 issue 445181 and GCD 78999 row 1179309 (2014-02-12)
+S 102996 cv=71950 gcd=79255 0.95 | split-reader ids CONFIRMED: "Revolutionary War 05 (of 8) - SuperSoldiers (2014)" — CV 71950 (Marvel 2014, 1 issue 446488) and GCD 79255 "Revolutionary War: Supersoldiers" (Marvel 2014, 1 row 1182936) agree on title, publisher and year
+F 102996 needs-fetch cv=71950 | named from the rip, no CvVolume row
+I 102425 cv=446488 gcd=1182936 isbn=- 0.95 | the one-shot's own records: CV 71950 issue 446488 and GCD 79255 row 1182936 (2014-02-26)
+S 102994 cv=72273 gcd=79504 0.95 | split-reader ids CONFIRMED: "Revolutionary War 06 (of 8) - Motormouth (2014)" — CV 72273 (Marvel 2014, 1 issue 447513) and GCD 79504 (Marvel 2014, 1 row 1187831) agree on title, publisher and year
+F 102994 needs-fetch cv=72273 | named from the rip, no CvVolume row
+I 102426 cv=447513 gcd=1187831 isbn=- 0.95 | the one-shot's own records: CV 72273 issue 447513 and GCD 79504 row 1187831 (2014-03-12)
+S 102997 cv=72419 gcd=79665 0.95 | split-reader ids CONFIRMED: "Revolutionary War 07 (of 8) - Warheads (2014)" — CV 72419 (Marvel 2014, 1 issue 448001) and GCD 79665 (Marvel 2014, 1 row 1189824) agree on title, publisher and year
+F 102997 needs-fetch cv=72419 | named from the rip, no CvVolume row
+I 102427 cv=448001 gcd=1189824 isbn=- 0.95 | the one-shot's own records: CV 72419 issue 448001 and GCD 79665 row 1189824 (2014-03-19)
+S 102995 cv=72581 gcd=79795 0.95 | split-reader ids CONFIRMED: "Revolutionary War 08 (of 8) - Omega (2014)" — CV 72581 (Marvel 2014, 1 issue 448975) and GCD 79795 (Marvel 2014, 1 row 1192716) agree on title, publisher and year
+F 102995 needs-fetch cv=72581 | named from the rip, no CvVolume row
+I 102428 cv=448975 gcd=1192716 isbn=- 0.95 | the one-shot's own records: CV 72581 issue 448975 and GCD 79795 row 1192716 (2014-03-26)
+S 14643 cv=70706 gcd=78393 0.95 | the KEPT half is "Revolutionary War 01 (of 8) - Alpha (2014)" (24pp) — CV 70706 "Revolutionary War: Alpha" (Marvel 2014, 1 issue 441419) and GCD 78393 (Marvel 2014, 1 row 1172726, 32pp) agree on title, publisher and year; the per-file CV 156579 (Panini UK collection) was a stamp
+F 14643 needs-fetch cv=70706 | Revolutionary War: Alpha is named from the rip and has no CvVolume row
+I 102421 cv=441419 gcd=1172726 isbn=- 0.95 | the one-shot's own records: CV 70706 issue 441419 and GCD 78393 row 1172726 (2014-01-08)
+
+# ================= Secret / Secret Six =================
+S 103005 cv=79543 gcd=94985 0.95 | split-reader ids CONFIRMED: "COL Secret v01-v03 [Uasaha] (Yen Press)" (224/212/229pp) is Yeo Beop-Ryong's manhwa published as volumes — CV 79543 "Secret" (Yen Press 2015, 3) and GCD 94985 (Yen Press 2015, 3 rows) agree on title, publisher, year and count; the per-file CV 38697 (Dark Horse's The Secret) was a title stamp
+I 43841 cv=476681 gcd=1514500 isbn=- 0.95 | Vol. 1: CV 79543 issue 476681 (Vol. 1) and GCD 94985 row #1 1514500
+I 43842 cv=492969 gcd=1514501 isbn=- 0.95 | Vol. 2: CV 79543 issue 492969 (Vol. 2) and GCD 94985 row #2 1514501
+I 43843 cv=506534 gcd=1514502 isbn=- 0.95 | Vol. 3: CV 79543 issue 506534 (Vol. 3) and GCD 94985 row #3 1514502 (2015-12-09)
+S 103004 cv=47816 gcd=63053 0.95 | split-reader ids CONFIRMED, the RUN wins: "COL Secret Vol. 01 - Never Get Caught (2014)" in Image\Secret (2012) collects Hickman and Bodenheim's Image series — CV 47816 "Secret" (Image 2012, 7) and GCD 63053 (Image 2012-2014, 7) agree on title, publisher, years and count; flag #97 is Dismissed
+F 103004 needs-fetch cv=47816 | Secret (Image 2012) is named from the rip and has no CvVolume row
+I 33945 cv=451799 gcd=2743573 isbn=9781607066224 0.9 | the trade's own records: CV 73433 "Secret: Never Get Caught" issue 451799 (TPB 2014-04-30) and GCD 224428 row 2743573 (2014-04-30, 144pp against our 186pp — a real gap, hence 0.9)
+S 15231 cv=18046 gcd=18991 0.95 | the KEPT half is "Ultimate Secret 01-04 (of 04) (2005)" from the Ultimate Galactus Trilogy chronology folder — CV 18046 "Ultimate Secret" (Marvel 2005, 4) and GCD 18991 (Marvel 2005, 4) agree on title, publisher, year and count; the per-file CV 38697 (Dark Horse's The Secret) was a bare-title stamp
+F 15231 needs-fetch cv=18046 | Ultimate Secret is named from the rip and has no CvVolume row
+S 103006 cv=78534 gcd=85018 0.95 | split-reader ids CONFIRMED, the RUN wins: "COL Secret Six Vol. 01 - Friends in Low Places" and "Vol. 02 - The Gauntlet" (ComicInfo Volume 2014) whose GCD rows reprint s85018 #1-6 and #7-14 collect the 2014 run — CV 78534 (DC 2014, 14) and GCD 85018 (DC 2015-2016, 14) agree on publisher and count, and 6+8 = 14; flag #638 is Dismissed
+F 103006 needs-fetch cv=78534 | Secret Six (2014) is named from the rip and has no CvVolume row
+I 69588 cv=514419 gcd=1533295 isbn=978-1-4012-5485-8 0.95 | Vol. 01 Friends in Low Places: CV 87964 issue 514419 (Volume 1) and GCD 97158 row #1 1533295 (164pp against our 159pp)
+I 69589 cv=571645 gcd=1661612 isbn=978-1-4012-6453-6 0.95 | Vol. 02 The Gauntlet: CV 97431 issue 571645 (Volume 2) and GCD 97158 row #2 1661612 (188pp against our 179pp)
+S 15276 cv=22841 gcd=31829 0.9 | the KEPT half is Gail Simone's 2008 ongoing: floppies #17-18 (Blackest Night read order) and the 2015 trades Vol. 02-04 whose GCD rows reprint s31829 #1-14, #15-24, #25-36 — CV 22841 (DC 2008, 36) and GCD 31829 (DC 2008-2011, 36) agree on publisher, years and count, and 14+10+12 = 36; residue = Vol. 01 Villains United (the 2005-2006 minis), hence 0.9; the stored CV 22437 is the 2006 mini
+F 15276 wrong-cv-link | stored CV 22437 "Secret Six" (DC 2006, 6) is the six-issue 2006 mini, which only Vol. 01 reprints; the run on this shelf is the 2008 ongoing CV 22841
+F 15276 needs-fetch cv=22841 | Secret Six (2008) is named from the rip and has no CvVolume row
+I 69584 cv=479246 gcd=1430065 isbn=978-1-4012-5075-1 0.95 | Vol. 01 Villains United: CV 80011 issue 479246 (Volume 1: Villains United) and GCD 90340 row #1 1430065 (332pp against our 326pp)
+C 69584 cv=18403 gcd=13998 #1-6 0.95 | Vol. 01 collects Villains United (DC 2005, CV 18403 / GCD 13998, 6 issues) #1-6 per GCD's reprint row 1430065
+C 69584 cv=22437 gcd=17961 #1-6 0.95 | and Secret Six (DC 2006-2007, CV 22437 / GCD 17961, 6 issues) #1-6 per the same row, plus the Villains United Infinite Crisis Special
+I 69585 cv=493029 gcd=1430066 isbn=978-1-4012-5537-4 0.95 | Vol. 02 Money for Murder: CV 80011 issue 493029 (Volume 2) and GCD 90340 row #2 1430066 (340pp against our 336pp; reprints s31829 #1-14)
+N 69585 the packet's "GCD says" row 1430065 for this book is Vol. 01's — a stored stamp from another book, void; the book's own row is 1430066
+I 69586 cv=502098 gcd=1466232 isbn=978-1-4012-5861-0 0.95 | Vol. 03 Cat's Cradle: CV 85135 issue 502098 (Volume 3) and GCD 90340 row #3 1466232 (268pp against our 258pp)
+I 69587 cv=526029 gcd=1559115 isbn=978-1-4012-6090-3 0.95 | Vol. 04 Caution to the Wind: CV 89803 issue 526029 (Volume 4) and GCD 90340 row #4 1559115 (324pp against our 310pp)
+
+# ================= Solo =================
+S 103007 cv=11239 gcd=12180 0.95 | split-reader ids CONFIRMED, the RUN wins: our 605pp "COL Solo - The Deluxe Edition (2013)" collects DC's twelve-issue anthology — GCD's own row 1106916 reprints s12180 #1-12; CV 11239 "Solo" (DC 2004, 12) and GCD 12180 (DC 2004-2006, 12) agree on publisher, years and count
+I 57125 cv=408983 gcd=1106916 isbn=978-1-4012-3889-6 0.95 | the Deluxe Edition's own records: CV 62874 issue 408983 (HC 2013-06) and GCD 73920 row 1106916 (616pp against our 605pp)
+S 103008 cv=124268 gcd=154707 0.95 | split-reader ids CONFIRMED: Titan's "Solo 01/02 - The Survivors of Chaos" (110/87pp) are the two albums of Oscar Martin's Solo line — CV 124268 "Oscar Martin's Solo: The Survivors of Chaos" (Titan 2020, 2 volumes) and GCD 154707 (Titan, 2 rows incl. #2 88pp) agree on title, publisher and count
+F 103008 needs-fetch cv=124268 | Oscar Martin's Solo: The Survivors of Chaos is named from the rip and has no CvVolume row
+I 110554 cv=733781 gcd=2055398 isbn=- 0.95 | Vol. 01: CV 124268 issue 733781 (Volume One, 2020-01-16) and GCD 154707 row 2055398 (2020-01-15)
+I 110555 cv=864290 gcd=2722800 isbn=978-1782763352 0.95 | Vol. 02: CV 124268 issue 864290 (Volume Two, 2021-06) and GCD 154707 row #2 2722800 (2021-06, 88pp against our 87pp)
+S 15861 cv=94818 gcd=104763 0.95 | the KEPT half is "Solo 001-005 (2016-2017)" in Marvel\Solo v1 (2016) — CV 94818 "Solo" (Marvel 2016, 5) and GCD 104763 (Marvel 2016-2017, 5, per-file 5/5) agree on publisher, years and count; the stored CV 11239 is DC's 2004 anthology, which moved to S103007
+F 15861 wrong-cv-link | stored CV 11239 "Solo" (DC 2004, 12) is the DC anthology whose Deluxe Edition moved to S103007; this half is Marvel's 2016 five-issue mini CV 94818
+
+# ================= Sonic the Hedgehog (IDW) =================
+S 103009 cv=158620 gcd=213214 0.95 | split-reader ids CONFIRMED: "Sonic the Hedgehog - Spring Broken! (2024)" (31pp) is the one-shot — CV 158620 (IDW 2024, 1 issue 1061051) and GCD 213214 (IDW 2024, 1 row 2638078, 32pp) agree on title, publisher and date (2024-06-26 on both); the 1pp Adam Bryce Thomas variant cover (31323) costs nothing
+F 103009 needs-fetch cv=158620 | Sonic the Hedgehog: Spring Broken! is named from the rip and has no CvVolume row
+I 31289 cv=1061051 gcd=2638078 isbn=- 0.95 | the one-shot's own records: CV 158620 issue 1061051 and GCD 213214 row 2638078 (2024-06-26)
+S 103010 cv=155400 gcd=206599 0.95 | split-reader ids CONFIRMED: "Sonic the Hedgehog - Winter Jam (2024)" (30pp, ComicInfo "Sonic the Hedgehog: Winter Jam" / IDW) — CV 155400 (IDW 2023, 1 issue 1034900) and GCD 206599 (IDW 2023, 1 row 2587799, 32pp) agree on title, publisher and pages
+F 103010 needs-fetch cv=155400 | Sonic the Hedgehog: Winter Jam is named from the rip and has no CvVolume row
+I 31290 cv=1034900 gcd=2587799 isbn=- 0.95 | the one-shot's own records: CV 155400 issue 1034900 and GCD 206599 row 2587799 (2023-12-13)
+S 15906 cv=156202 gcd=207669 0.95 | the KEPT half is "Sonic the Hedgehog - Fang the Hunter 001-004 (2024)" plus a second rip of #1 (31288, from the Annuals folder — a duplicate costs nothing) — CV 156202 (IDW 2024, 4) and GCD 207669 (IDW 2024, 4, per-file 4/4) agree on title, publisher, year and count; stored cv 156202 is this half's own
+N 15906 the shelf still carries a 0-file key "Sonic the Hedgehog - Spring Broken!" linked to cv=156202 / gcd=207669 — a leftover of the pre-split key set, now owned in substance by S103009
+
+# ================= Spencer & Locke (Action Lab) =================
+S 103012 cv=118614 gcd=144606 0.95 | split-reader ids CONFIRMED: "Spencer & Locke 2 001-004 (2019)" in "02 Spencer & Locke 2 (2019)" — CV 118614 (Action Lab 2019, 4) and GCD 144606 (Action Lab 2019, 4) agree on title, publisher, year and count; the per-file CV 100666 is the 2017 mini's stamp
+F 103012 needs-fetch cv=118614 | Spencer & Locke 2 is named from the rip and has no CvVolume row
+S 16028 cv=100666 gcd=113435 0.95 | the KEPT half is "Spencer & Locke 001-004 (2017)" in "01 Spencer & Locke (2017)" — CV 100666 (Action Lab 2017, 4, per-file 4/4) and GCD 113435 "Spencer and Locke" (Action Lab 2017, 4, per-file 4/4) agree on title, publisher, year and count; stored cv 100666 is this half's own
+F 16028 needs-fetch cv=100666 | Spencer & Locke (2017) is named from the rip and has no CvVolume row
+
+# ================= The Land That Time Forgot (American Mythology) =================
+S 103032 cv=131674 gcd=166316 0.95 | split-reader ids CONFIRMED: "The Land That Time Forgot - Fearless 01-02 (of 03) (2020-2021)" (ComicInfo same title / American Mythology) — CV 131674 (2020, 3) and GCD 166316 (2020-2021, 3, per-file 2/2) agree on title, publisher, years and count; we hold #1-2 of the three
+S 102939 cv=109314 gcd=123007 0.95 | split-reader ids CONFIRMED: "Edgar Rice Burroughs The Land that Time Forgot, See-Ta the Savage 01-02 (2018)" — CV 109314 (American Mythology 2018, 2, per-file 2/2) and GCD 123007 (2018, 2, per-file 2/2) agree on title, publisher, year and count
+S 103031 cv=115892 gcd=135791 0.95 | split-reader ids CONFIRMED: "04 The Land that Time Forgot 001 Fear on Four Worlds Part 4 (2018)" (36pp) is the Land That Time Forgot chapter of the Fear on Four Worlds crossover — CV 115892 (American Mythology 2018, 1 issue 694958 "Fear On Four Worlds Part IV") and GCD 135791 "...The Land That Time Forgot: Fear on Four Worlds" (2018, 1 row 1882881, 36pp) agree on title, year and pages
+I 6682 cv=694958 gcd=1882881 isbn=- 0.95 | the one-shot's own records: CV 115892 issue 694958 and GCD 135791 row 1882881 (2018-12-12, 36pp against our 36pp)
+S 18897 cv=92375 gcd=104473 0.95 | the KEPT half is "The Land that Time Forgot 001-003 (2016)" — CV 92375 (American Mythology 2016, #1-3 cached, per-file 3/3) and GCD 104473 "Edgar Rice Burroughs' the Land That Time Forgot" (2016, 3) agree on publisher, year and count; the per-file GCD 166316 (Fearless) was a round2 copy; stored cv 92375 is this half's own
+
+# ================= The Manhattan Projects (Image) =================
+S 103033 cv=80748 gcd=87409 0.95 | split-reader ids CONFIRMED: "The Manhattan Projects - The Sun Beyond the Stars 001-004 (2015-2016)" — CV 80748 (Image 2015, 4) and GCD 87409 (Image 2015-2016, 4) agree on title, publisher, years and count; the per-file CV 46365 is the parent run's stamp
+F 103033 needs-fetch cv=80748 | The Manhattan Projects: The Sun Beyond the Stars is named from the rip and has no CvVolume row
+S 19059 cv=46365 gcd=63054 0.9 | the KEPT half is the 2012 run's trades: Book 01 and Book 02 (HC, judged #1-10, #11-20) and Vol. 05 (judged #21-25, GCD row "collects #21-25") — CV 46365 (Image 2012, 25) and GCD 63054 (Image 2012-2014, 25 rows) agree on publisher, years and count, and 10+10+5 = 25; residue = Vol. 06, which collects the Sun Beyond the Stars sequel (S103033's run), hence 0.9
+I 34796 cv=467076 gcd=- isbn=- 0.9 | Book 01 (HC): CV 77263 "The Manhattan Projects" (2014 deluxe line) issue 467076 (Volume 1, 2014-10); GCD has no row for the deluxe HC
+I 34797 cv=513685 gcd=- isbn=- 0.9 | Book 02 Science, Bad (HC): CV 77263 issue 513685 (Volume 2, 2016-02); GCD has no row for the deluxe HC
+I 34798 cv=474657 gcd=2717245 isbn=978-1-63215-184-1 0.95 | Vol. 05: CV 79034 "The Manhattan Projects: The Cold War" issue 474657 (Volume 5) and GCD 68758 row #5 2717245 ("collects #21-25")
+I 34799 cv=525059 gcd=- isbn=- 0.9 | Vol. 06: CV 89609 "The Manhattan Projects: The Sun Beyond The Stars" issue 525059 (Volume 6, 2016-04); GCD has no row for this trade
+C 34799 cv=80748 gcd=87409 #1-4 0.9 | Vol. 06 (137pp) collects The Manhattan Projects: The Sun Beyond the Stars (Image 2015-2016, CV 80748 / GCD 87409, 4 issues) #1-4 — CV's own Volume 6 record is titled after that mini
+
+# ================= The Orville (Dark Horse) =================
+R 19306 | now co-equal 2:2 — the shelf holds two 2021 two-part minis: "The Orville - Artifacts Part 01-02 (of 02)" = CV 139747 "The Orville: Artifacts" (Oct-Nov 2021, 2) / GCD 177037 (2021-10-20, 2021-11-24), and "Digressions Part 01-02 (of 02)" = CV 135870 (May-Jun 2021, 2: "Digressions Part 1/2 of 2") / GCD 172267 (2021-05-05, 2021-06-02); no record spans both, which is why #1 and #2 each name two files; the old C-023 merge-with=19305 is withdrawn — S19305 is the 2020 Launch Day/Heroes mini, a different run
+F 19306 split-needed | proposed runs: Artifacts (items 15172-15173) -> cv=139747 gcd=177037; Digressions (items 15174-15175) -> cv=135870 gcd=172267, the shelf's stored cv
+S 19305 cv=130051 gcd=163559 0.9 | the KEPT half is "The Orville - Launch Day Part 01-02" and "Heroes Part 01-02 (of 02) (2020)" — CV 130051 "The Orville" (Dark Horse 2020, 4: Launch Day 1-2, Heroes 1-2) and GCD 163559 (Dark Horse 2020, 4 rows Sep-Dec 2020, per-file 4/4) agree on publisher, year, count and order; residue = the Library Edition Book 01, which also collects three other minis, hence 0.9; no merge-with to S19306 (a different run)
+F 19305 needs-fetch cv=130051 | The Orville (2020) is named from the rip and has no CvVolume row
+I 16000 cv=959010 gcd=2447332 isbn=978-1-50671-137-9 0.95 | the Library Edition's own records: CV 146738 issue 959010 (Volume 1, 2022-11) and GCD 192008 row #1 2447332 (288pp against our 286pp)
+C 16000 cv=120224 gcd=148845 #1-4 0.95 | Library Edition Book 01 collects The Orville (Dark Horse 2019, CV 120224 / GCD 148845, 4: New Beginnings 1-2, The Word of Avis 1-2) #1-4 per GCD reprint row 2447332
+C 16000 cv=130051 gcd=163559 #1-4 0.95 | and The Orville (Dark Horse 2020, CV 130051 / GCD 163559: Launch Day 1-2, Heroes 1-2) #1-4 — this shelf's own run — per the same row
+C 16000 cv=139747 gcd=177037 #1-2 0.95 | and The Orville: Artifacts (Dark Horse 2021, CV 139747 / GCD 177037, 2) #1-2 per the same row
+C 16000 cv=135870 gcd=172267 #1-2 0.95 | and The Orville: Digressions (Dark Horse 2021, CV 135870 / GCD 172267, 2) #1-2 per the same row
