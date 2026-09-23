@@ -25,6 +25,7 @@ no-record`". The shelf-must-be-decided rule a `C` line carries is satisfied ther
 import os
 import re
 import sys
+from collections import defaultdict
 
 import idbase
 
@@ -433,6 +434,110 @@ def parse(path, ck, errors):
     return out
 
 
+RX_JOURNAL = re.compile(r"^(.+)-\d{8}-\d{6}\.jsonl$")
+
+
+def landed_batches():
+    """Batch names apply_identity --apply has written an undo journal for (`undo/<batch>-<stamp>.jsonl`) — the
+    batches that have LANDED. The same reading triage_09 uses for 'when did each batch land'."""
+    out = set()
+    if os.path.isdir(idbase.UNDO):
+        for f in os.listdir(idbase.UNDO):
+            m = RX_JOURNAL.match(f)
+            if m and not f.startswith(("split-", "wave", "repair-", "reseat-")):
+                out.add(m.group(1))
+    return out
+
+
+def refused_partner_rule(ck, files, checked):
+    """TOOLS_TODO 31: an `S cv=<V>` merges UNDECLARED into a live REFUSED shelf that still carries V.
+
+    The stored-CvVolumeId rule above lets a refused partner go (TOOLS_TODO 10) — sound only when the refusal
+    clears the partner's link, and apply clears it only for `R` + `wrong-cv-link`, or when the refusal lands in
+    the SAME apply as the claim (its "frees" arm). A refusal landed in an earlier wave keeps its
+    `Series.CvVolumeId` and its Matched/Manual `SeriesKeyLink` rows, so the resolve maps both keys to `cv:V` and
+    merges them: wave 17's S15478 (cv=22340) went into S47160, refused in an earlier batch and still stored
+    22340 on six alias keys. The merge was right; it was not declared.
+
+    Partner = a live shelf whose WINNING decision (over every decision file, plus any named here) is `R`, not
+    cleared by wrong-cv-link, whose stored CvVolumeId is V or one of whose parsed keys (SeriesAlias /
+    Series.ParsedKey) carries a Provider=0 Matched/Manual SeriesKeyLink to V. Exempt: `F <sid> merge-with=<P>`
+    (either direction), or the partner refused in the same file as the claim. A LANDED S line — its shelf is
+    merged away / emptied (this checker's `landed` notion), or its batch has an undo journal — is history
+    and printed as info; every other hit is a FAIL. -> the number of failures."""
+    all_paths = {os.path.normcase(os.path.abspath(p)): p for p in files}
+    if os.path.isdir(idbase.DECISIONS):
+        for f in os.listdir(idbase.DECISIONS):
+            if f.endswith(".txt"):
+                p = os.path.join(idbase.DECISIONS, f)
+                all_paths.setdefault(os.path.normcase(os.path.abspath(p)), p)
+    fd, fw, _s, _d = idbase.scan_decisions(sorted(all_paths.values()))
+    key_of = {os.path.normcase(os.path.abspath(p)): p for p in fd}
+    fw = {sid: os.path.normcase(os.path.abspath(p)) for sid, p in fw.items()}
+
+    refused, targets = set(), defaultdict(set)
+    for p, rec in fd.items():
+        np_ = os.path.normcase(os.path.abspath(p))
+        for sid, fls in rec.get("flags_full", {}).items():
+            for fl in fls:
+                if fl.startswith("merge-with=") and fl.split("=", 1)[1].lstrip("S").isdigit():
+                    targets[sid].add(int(fl.split("=", 1)[1].lstrip("S")))
+        for sid in rec["sids"]:
+            if fw.get(sid) != np_ or rec["kinds"].get(sid) != "R" or sid not in ck.shelves:
+                continue
+            if any(fl.split("=")[0] == "wrong-cv-link" for fl in rec.get("flags_full", {}).get(sid, ())):
+                continue                            # apply rule 1 clears its link: no partner
+            refused.add(sid)
+    if not refused:
+        return 0
+    carries = defaultdict(dict)                     # V -> {partner: how}
+    q = ",".join("?" * len(refused))
+    for sid, vid in ck.con.execute(f"SELECT Id, CvVolumeId FROM Series WHERE CvVolumeId IS NOT NULL AND Id IN ({q})",
+                                   sorted(refused)):
+        carries[int(vid)][sid] = "stored CvVolumeId"
+    for sid, key, vid in ck.con.execute(f"""
+            SELECT a.SeriesId, a.ParsedKey, k.ProviderKey FROM SeriesKeyLink k
+            JOIN (SELECT SeriesId, ParsedKey FROM SeriesAlias WHERE ParsedKey IS NOT NULL
+                  UNION SELECT Id, ParsedKey FROM Series WHERE ParsedKey IS NOT NULL) a ON a.ParsedKey = k.ParsedKey
+            WHERE k.Provider = 0 AND k.Status IN ({idbase.ST_MATCHED}, {idbase.ST_MANUAL})
+              AND k.ProviderKey IS NOT NULL AND a.SeriesId IN ({q})""", sorted(refused)):
+        if str(vid).strip().isdigit():
+            carries[int(vid)].setdefault(sid, f"Matched/Manual SeriesKeyLink on its key '{key}'")
+
+    journaled = landed_batches()
+    fails, infos = [], []
+    for p, rec in checked.items():
+        np_ = os.path.normcase(os.path.abspath(p))
+        base = os.path.splitext(os.path.basename(p))[0]
+        for sid, vid in rec["cv"].items():
+            if fw.get(sid) != np_ or vid not in carries:
+                continue
+            for partner, how in sorted(carries[vid].items()):
+                if partner == sid or fw.get(partner) == np_:
+                    continue                        # refused in this same file: apply's "frees" arm clears it
+                if partner in targets.get(sid, ()) or sid in targets.get(partner, ()):
+                    continue                        # declared
+                hit = (sid, vid, partner, how, base)
+                (infos if (sid not in ck.shelves or base in journaled) else fails).append(hit)
+    name = lambda s: (ck.con.execute("SELECT coalesce(DisplayNameOverride, Name) FROM Series WHERE Id=?",
+                                     (s,)).fetchone() or ("?",))[0]
+    for sid, vid, partner, how, base in fails:
+        print(f"        FAIL cv={vid} on S{sid} ({base}) is the {how} of REFUSED shelf S{partner} '{name(partner)}' — "
+              f"a refusal does not clear its link, so the resolve MERGES S{sid} into it (wave 17: S15478 -> "
+              f"S47160). Declare 'F {sid} merge-with={partner}' if it is the same comic; otherwise write cv=- and "
+              f"'N {sid} withheld cv={vid} — … S{partner} …', or re-decide S{partner} in the same file")
+    if infos:
+        print(f"        info: {len(infos)} LANDED S line(s) matched a refused shelf's link with no merge-with "
+              f"(TOOLS_TODO 31) — history: those waves already ran their resolve")
+        for sid, vid, partner, how, base in infos[:20]:
+            gone = ck.merged.get(sid)
+            print(f"          {base:<10} S{sid} cv={vid} -> refused S{partner} ({how})"
+                  f"{'; S' + str(sid) + ' merged into S' + str(gone) if gone else ''}")
+        if len(infos) > 20:
+            print(f"          ... and {len(infos) - 20} more")
+    return len(fails)
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     every = "--all" in sys.argv
@@ -549,6 +654,8 @@ def main():
                       f"'F {sorted(sids)[0]} merge-with={sorted(undeclared)[0]}' if it is the SAME comic; if the partner is a "
                       f"different comic, write the S line with cv=- and 'N {sorted(sids)[0]} withheld cv={vid} — … S{sorted(undeclared)[0]} …' "
                       f"(withheld_pairs.py queues both sides for a revisit batch)")
+        total += refused_partner_rule(ck, files, _decides)
+
         # Rule 1 of the applier CLEARS the stored Cv link of any shelf that is refused (or linked to
         # nothing) while carrying `wrong-cv-link`. That clear is what stops wave 2's fusion, so it must be
         # visible here, beside the collision rule it interacts with, rather than only in the apply log.

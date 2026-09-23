@@ -23,9 +23,12 @@ shelf from it. Your answer is exactly that list. Each packet shows:
 - `named:` — shelves the F line mentions, with their keys: a run that belongs WITH one of them joins it by using
   that shelf's key (S6791's 1963 issues gathering S66349's).
 - `nearby:` — live shelves the F line did NOT name but a run here may belong to: `shares cv=/gcd=` (their S line
-  or stored cv holds an id the F line or the per-file links name) first, then same title words (`title`, or
-  `title+1` = one extra word). A run whose record is already another shelf's S identity is a JOIN (Elric S6101 →
-  S6105; X-Men: Red S22296's 2022 run → S94820), not a new shelf.
+  or stored cv holds an id the F line, the per-file links, the `decided:` clause `(R clause)`, an `N line`, or a
+  trade's collected run `(collected by item N)` names), `named S<id> in the decision's R/N lines`, then same title
+  words (`title`, or `title+1` = one extra word). A run whose record is already another shelf's S identity is a
+  JOIN (Elric S6101 → S6105; X-Men: Red S22296's 2022 run → S94820; the Infinity HC → S9439), not a new shelf.
+- under a collection: `own record cv … / gcd s… COLLECTS: gcd=<series> <name> #a-b` — GCD's reprint roll-up of
+  the trade's own record: the RUN it collects, which is usually the shelf it belongs with.
 - `keys now:` — the ParsedSeriesKeys the files carry today (a moved item's new key must differ from its own).
 - `G1 … Gn` — the items grouped by filename title x folder, with numbers, pages and v1's per-file CV/GCD links.
   Inside a group, same-worded numbered files print as `id #num year pp` tokens under one example filename.
@@ -44,7 +47,9 @@ shelf from it. Your answer is exactly that list. Each packet shows:
   one-shot or special takes its OWN name — `Aquaman Secret Files & Origins 2003 (2003)`, `Uncanny X-Men Special
   (2014)` — never the parent's key with `#0`. Never an existing shelf's key unless the F line names that shelf
   or the shelf line carries a lead-approved `"join": [<sid>]` (for a `nearby:` shelf the F line missed — ask
-  the lead in your report if you cannot get the approval in-session; do not add it on your own). Two spellings
+  the lead in your report if you cannot get the approval in-session; do not add it on your own). What STAYS only
+  because it cannot move without an unapproved join goes on the shelf line as `"pending_join": [<sid>]` — it
+  moves nothing, and the next identity batch prints it as a `merge-with candidate:`. Two spellings
   that differ only in case or punctuation are ONE key to the resolver and the checker refuses them.
 - Many items at once (a 900-file shelf is not typed item by item):
   `{"group": "G6", "files": 66, "key": …, "run": …}` moves the packet's group G6 whole (`files` = the count the

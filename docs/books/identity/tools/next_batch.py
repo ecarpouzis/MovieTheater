@@ -4,7 +4,7 @@
 `python next_batch.py --redo A-002 A-005 ...`                     regenerate emitted batches, same ids
 `python next_batch.py --revisit 17809 1448 [--note "why"]`        re-read named shelves after a ruling changed
 `python next_batch.py --revisit-file revisit.txt [--note "why"]`  the same, taking the sids from a sheet (a
-                                   `check_splits --landed` sheet also puts `split run:` / `split:` lines in the packets)
+                                   `check_splits --landed` sheet also puts `split run:` / `split:` / `merge-with candidate:` lines in the packets)
 `python next_batch.py --items [--books 150] [--dry-run]`          an `X-NNN` batch of BOOKS on decided shelves
 `python next_batch.py --s2-file triage.tsv [--shelves 60]`        the S.2 pass: triaged 0.9s, as `R-NNN` batches
 `python next_batch.py --splits [--shelves 40] [--only 9845,6791]` the split lane: `F split-needed` shelves, `P-NNN`
@@ -387,6 +387,24 @@ if revisit or opt.get("revisit-file"):
                         note = (f"   split run: \"{col[1].strip()}\" {col[2].strip()} (new shelf from {batch}) — "
                                 f"seed the S line from these ids, then verify them")
                     split_notes.setdefault(int(head), []).append(note)
+                    # TOOLS_TODO 29: the P- shelf line's `pending_join` — what stayed here stays only because it
+                    # could not move without a join; the re-identification is where that join is decided
+                    for c in col[5:]:
+                        c = c.strip()
+                        if not c.startswith("pending_join="):
+                            continue
+                        for x in c.split("=", 1)[1].split(","):
+                            x = x.strip().lstrip("S")
+                            if not x.isdigit():
+                                continue
+                            o = ev.series.get(int(x))
+                            split_notes[int(head)].append(
+                                f"   merge-with candidate: S{x}"
+                                + (f" \"{o['name']}\" ({ev.size.get(int(x), 0)} files)" if o else
+                                   " (no longer a file-holding shelf — find where it went)")
+                                + f" — the {batch} reader left this half here only because it could not move "
+                                  f"without that join; if it is the same run write `F {head} merge-with={x}`, "
+                                  f"otherwise say why not in an N line")
     sids += [int(x) for x in revisit]
     seen, ordered = set(), []
     for s in sids:                                   # first mention wins; the file's order is the lead's

@@ -30,6 +30,12 @@ inducks, marvel; a value may be a list when a leg splits the run, as GCD does St
 A shelf line may carry `"join": [sid, …]` (TOOLS_TODO 28b): a LEAD-APPROVED join the F line does not name —
 a key may then land on those shelves too, and the missed-join WARN is silenced for them.
 
+A shelf line may carry `"pending_join": [sid, …]` (TOOLS_TODO 29): what STAYS on this shelf stays only because
+it cannot move without a join the lead has not approved (P-002's Cosplayers: Perfect Collection stays on S34939
+while its run's shelf is S102444). It moves nothing and approves nothing; each sid must be a live comic shelf
+other than this one. `--landed` carries it onto the kept half's sheet row (`pending_join=<sid>,…`), and
+`next_batch.py --revisit-file` prints it in that shelf's R packet as `merge-with candidate: S<sid>`.
+
 Group and range lines (TOOLS_TODO 28c) move many items in one line, so a 900-file shelf is not hand-typed:
   • `group`: `G<n>` exactly as the packet numbers it (splitbase.group_items — the packet's own function).
     `files` (optional, recommended) must equal the group's size, so a group that drifted since the packet refuses.
@@ -70,7 +76,7 @@ import idbase
 import splitbase
 
 FIELDS_ITEM = {"itemId", "key", "run"}
-FIELDS_SHELF = {"shelf", "split", "why", "join"}
+FIELDS_SHELF = {"shelf", "split", "why", "join", "pending_join"}
 FIELDS_GROUP = {"group", "from", "files", "key", "run"}
 FIELDS_RANGE = {"range", "match", "folder", "except", "dupes", "from", "key", "run"}
 MIN_WHY = 40
@@ -275,6 +281,26 @@ class Ctx:
         self.rows_cache = {}
         self._ck = None
         self._named = {}
+        self._split_new = None
+
+    def rejoined_via(self, key, now):
+        """The new shelf a landed split made for `key` (split_land.ps1's `undo/split-wave*-newshelves.tsv`), when
+        landed merges carry it into `now` — else None."""
+        if self._split_new is None:
+            self._split_new = {}
+            if os.path.isdir(idbase.UNDO):
+                for f in sorted(os.listdir(idbase.UNDO)):
+                    if f.startswith("split-wave") and f.endswith("-newshelves.tsv"):
+                        for raw in open(os.path.join(idbase.UNDO, f), encoding="utf-8"):
+                            col = raw.rstrip("\r\n").split("\t")
+                            if len(col) > 4 and col[4] == "new" and col[0].lstrip("S").isdigit():
+                                self._split_new[col[1]] = int(col[0].lstrip("S"))
+        s = self._split_new.get(key)
+        first, seen = s, set()
+        while s is not None and s != now and s in self.near.merged and s not in seen:
+            seen.add(s)
+            s = self.near.merged[s]
+        return first if (s == now and first != now) else None
 
     def checker(self):
         if self._ck is None:
@@ -341,7 +367,7 @@ def _check_file(path, cx, errors, seen_items=None, seen_norm=None, warnings=None
     batch = read_ids(path, errors)
     idname = os.path.basename(ids_path(path))
     lines = read_lines(path, errors)
-    shelf_line, joins = {}, {}
+    shelf_line, joins, pj_errors = {}, {}, []
     for k, o in lines:
         if "shelf" not in o:
             continue
@@ -371,6 +397,19 @@ def _check_file(path, cx, errors, seen_items=None, seen_norm=None, warnings=None
                 if bad:
                     errors.append(f"line {k}: S{sid} `join` names {bad} — not a live comic shelf other than itself")
                 joins[sid] = {x for x in j if x != sid}
+        if "pending_join" in o:
+            # TOOLS_TODO 29: a note for the NEXT identity batch, not a move — so it is checked for being a real,
+            # live, other shelf and nothing else (a stale id would print a merge-with prompt at a dead shelf)
+            pj = o["pending_join"]
+            if not isinstance(pj, list) or not pj or not all(_int(x) for x in pj):
+                errors.append(f"line {k}: S{sid} `pending_join` must be a non-empty list of shelf ids")
+            else:
+                bad = [x for x in pj if x == sid or x not in ev.series]
+                if bad:
+                    # held back until the file is known not to be LANDED: after the landing the kept half or
+                    # the target may have merged, and a landed file's note is history, not a defect
+                    pj_errors.append(f"line {k}: S{sid} `pending_join` names {bad} — not a live comic shelf "
+                                     f"other than itself")
         shelf_line[sid] = (k, o)
     moves = expand_moves(cx.ev.con, lines, batch, errors, cx.rows_cache)
 
@@ -384,14 +423,28 @@ def _check_file(path, cx, errors, seen_items=None, seen_norm=None, warnings=None
             and cx.item[o["itemId"]][1] == o.get("key")]
     if moves and len(done) == len(moves):
         src_of = key_sources(path)
+        rejoined = set()
         for lk, o in moves:
             now = cx.item[o["itemId"]][0]
             if now in src_of.get(o["key"], ()):
+                # ...unless the NEW shelf the landing made for this key was merged back into its source by a
+                # later identity decision (wave 17: R-031's `F 102501 merge-with=3171` returned P-002's
+                # "Brilliant (2022)" to S3171 — a reprint of that run after all). The split's own sheet names the
+                # new shelf, and SeriesMerge records where it went; that is a decision taking effect, not a
+                # split that never resolved.
+                back = cx.rejoined_via(o["key"], now)
+                if back:
+                    if (o["key"], now) not in rejoined:
+                        rejoined.add((o["key"], now))
+                        warnings.append(f"{lk}: item {o['itemId']} is back on S{now} — its split shelf S{back} was "
+                                        f"merged into S{now} by a later decision (history, not a failure)")
+                    continue
                 errors.append(f"{lk}: item {o['itemId']} carries its new key but still sits on S{now}, the shelf "
                               f"it was split from — run books-resolve --series")
         return {"shelves": len(shelf_line), "split": sum(1 for _k, o in shelf_line.values() if o.get("split") is True),
                 "kept": sum(1 for _k, o in shelf_line.values() if o.get("split") is False),
                 "items": len(moves), "keys": len({o["key"] for _lk, o in moves}), "joins": 0, "landed": True}
+    errors.extend(pj_errors)
     if done:
         errors.append(f"PARTIALLY LANDED: {len(done)} of {len(moves)} moves already carry their new key "
                       f"(first: {done[0][0]}, item {done[0][1]['itemId']}) — finish the landing or walk it back")
@@ -596,8 +649,19 @@ def landed(paths, out=None):
     alias = dict(con.execute("SELECT ParsedKey, SeriesId FROM SeriesAlias"))
     live = {r[0] for r in con.execute(idbase.SHELF_SQL)}
     rows, kept = [], []
+    merged = dict(con.execute("SELECT OldSeriesId, NewSeriesId FROM SeriesMerge WHERE NewSeriesId IS NOT NULL "
+                              "ORDER BY MergedAt"))
+
+    def now_of(s):
+        """a shelf id followed through landed merges to the shelf that holds it today"""
+        seen_ = set()
+        while s not in live and s in merged and s not in seen_:
+            seen_.add(s)
+            s = merged[s]
+        return s
+
     for p in paths:
-        seen, split_src = {}, []
+        seen, split_src, pending = {}, [], {}
         b = os.path.basename(p)
         for raw in open(p, encoding="utf-8"):
             t = raw.strip()
@@ -607,6 +671,12 @@ def landed(paths, out=None):
             if "shelf" in o:
                 if o.get("split") is True:
                     split_src.append(o["shelf"])
+                if isinstance(o.get("pending_join"), list) and o["pending_join"]:
+                    # TOOLS_TODO 29: the kept half's merge-with prompt; a split:false shelf with one is listed
+                    # too (as `kept`, nothing moved) — it is the whole shelf that waits on the join
+                    pending[o["shelf"]] = [x for x in o["pending_join"] if isinstance(x, int)]
+                    if o.get("split") is not True:
+                        split_src.append(o["shelf"])
                 continue
             if "key" not in o or o["key"] in seen:
                 continue
@@ -626,24 +696,29 @@ def landed(paths, out=None):
             n = con.execute("SELECT count(*) FROM Item i WHERE i.SeriesId = ? AND i.Kind = 0 "
                             "AND coalesce(i.IsExcluded,0) = 0", (src,)).fetchone()[0]
             gone = [f"S{s} \"{k}\"" if s else f"(no shelf) \"{k}\"" for s, k in new_of if src in src_of.get(k, ())]
-            kept.append((src if src in live and n else None, src, n, b, gone))
+            if not gone and src in pending:
+                gone = ["nothing (split: false)"]
+            pj = [now_of(x) for x in pending.get(src, [])]
+            kept.append((src if src in live and n else None, src, n, b, gone, list(dict.fromkeys(pj))))
     for sid, key, run, n, b in rows:
         print(f"  {('S' + str(sid)) if sid else '(no shelf yet)':<9} {n:>4} item(s)  {key}  run={json.dumps(run) if run else '-'}  [{b}]")
-    for sid, src, n, b, _g in kept:
-        print(f"  {('S' + str(sid)) if sid else '(gone)':<9} {n:>4} item(s)  (kept half of S{src})  [{b}]")
+    for sid, src, n, b, _g, pj in kept:
+        print(f"  {('S' + str(sid)) if sid else '(gone)':<9} {n:>4} item(s)  (kept half of S{src})  [{b}]"
+              + (f"  pending join -> {', '.join('S' + str(x) for x in pj)}" if pj else ""))
     missing = [r for r in rows if not r[0] or not r[3]]
     print(f"{len(rows)} key(s); {len(missing)} not yet on a shelf of their own (run books-resolve --series); "
           f"{len(kept)} kept half/halves, {sum(1 for k in kept if not k[0])} holding no files")
     if out:
         with open(out, "w", encoding="utf-8") as f:
             f.write("# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file\n")
-            f.write("# S<sid>\t<key>\trun=<json|->\t<P- file>\tnew|kept\n")
+            f.write("# S<sid>\t<key>\trun=<json|->\t<P- file>\tnew|kept[\tpending_join=<sid>,…]\n")
             for sid, key, run, n, b in rows:
                 if sid:
                     f.write(f"S{sid}\t{key}\trun={json.dumps(run) if run else '-'}\t{b}\tnew\n")
-            for sid, src, n, b, gone in kept:
+            for sid, src, n, b, gone, pj in kept:
                 if sid:
-                    f.write(f"S{sid}\tmoved out -> {'; '.join(gone) or '(unknown: no undo CSV)'}\trun=-\t{b}\tkept\n")
+                    f.write(f"S{sid}\tmoved out -> {'; '.join(gone) or '(unknown: no undo CSV)'}\trun=-\t{b}\tkept"
+                            + (f"\tpending_join={','.join(str(x) for x in pj)}" if pj else "") + "\n")
         print(f"sheet -> {out}")
     return 1 if missing else 0
 

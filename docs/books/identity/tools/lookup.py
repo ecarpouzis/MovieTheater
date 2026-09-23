@@ -8,7 +8,8 @@ probed with a spelling of YOUR choosing, exact first and then as a substring.
     python lookup.py --gcd-series "<name>" [--year YYYY] [--contains]   the same, for the series matching a name
     python lookup.py --batch <file>                 many of the above in one call, one query per line
 
-Exact = the normalised name matches (the packet's own rule). --contains = the normalised name CONTAINS the
+Exact = the normalised name matches (the packet's own rule; both indexes are keyed by `idbase.norm_name`, so a
+probe keeps its "of" / "the" / "and" exactly as the record's name does — TOOLS_TODO 30). --contains = the normalised name CONTAINS the
 probe, capped at 25 hits per source, sorted by year. --year keeps hits within ±1 of the year.
 This is a lookup whose results you read; it decides nothing.
 

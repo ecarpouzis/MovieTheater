@@ -145,13 +145,19 @@ class Ctx:
     # cvref.db IS the usable ComicVine rip lookup: 153,805 volumes with `normName` and an index on it
     # (ix_vol_norm). comicdb_comicvine_20260122.db is 14.5 GB of raw_api_response keyed by id — good for
     # resolving ONE id, useless for a name search — so it is opened only when an id needs a name.
+    #
+    # Keyed by OUR `norm_name(name)`, not by cvref's stored `normName` (TOOLS_TODO 30). cvref's normalizer drops
+    # "of" / "the" / "and" / "a" ANYWHERE in the name ('Legion of Monsters' is stored 'legion monsters'), while
+    # every probe here — lookup.py and the packet's rip hits alike — is `norm_name`, which keeps them: so every
+    # title carrying one of those words (~34k of 154k volumes) was unreachable by an exact probe and returned
+    # 0 CV hits. The GCD index was always keyed by `norm_name`, which is why only the CV side went blind.
     def cv_index(self):
         if self._cv_index is None:
             self._cv_index = defaultdict(list)
             if self.cvref is not None:
                 for row in self.cvref.execute(
                         "SELECT volId, name, normName, year, issueCount, publisherName FROM cv_vol"):
-                    self._cv_index[row[2] or norm_name(row[1])].append(row)
+                    self._cv_index[norm_name(row[1]) if row[1] else (row[2] or "")].append(row)
         return self._cv_index
 
     def cv_issue_ids(self, vid, cap=4):

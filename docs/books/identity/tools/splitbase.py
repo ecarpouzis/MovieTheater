@@ -217,6 +217,10 @@ class NearIndex:
                 self.s_ids[("cv", rec["cv"][sid])].add(sid)
             if rec["gcd"].get(sid):
                 self.s_ids[("gcd", rec["gcd"][sid])].add(sid)
+        # the resolver's own record of merges, so a shelf the R clause names by an id a landed wave has since
+        # merged away (Cosplayers S4251 -> S34939 -> S102444) is followed to the shelf that holds it today
+        self.merged = dict(ev.con.execute("SELECT OldSeriesId, NewSeriesId FROM SeriesMerge "
+                                          "WHERE NewSeriesId IS NOT NULL ORDER BY MergedAt"))
         self.stored_cv = defaultdict(set)
         self.exact, self.plus1 = defaultdict(set), defaultdict(set)
         for sid, s in ev.series.items():
@@ -239,19 +243,38 @@ class NearIndex:
         b, conf = self.s_of[sid]
         return f"S {' '.join(ids)} ({b} {conf or '?'})"
 
-    def nearby(self, sid, want_ids, titles, skip=(), cap=12):
+    def live_of(self, sid):
+        """`sid`, or the shelf a chain of landed merges carried it into; None when that is not a live shelf."""
+        seen = set()
+        while sid not in self.ev.series and sid in self.merged and sid not in seen:
+            seen.add(sid)
+            sid = self.merged[sid]
+        return sid if sid in self.ev.series else None
+
+    def nearby(self, sid, want_ids, titles, skip=(), cap=12, refs=(), sources=None):
         """-> [token, ...]: live shelves (not `sid`, not `skip`) whose S line or stored cv holds one of
-        `want_ids`, then shelves whose title words equal a run title's (or add one word to it). Id hits first,
-        all of them; title hits capped at `cap`, largest first, with the overflow counted."""
+        `want_ids`, or that the decision's own prose names as `S<id>` (`refs`, followed through merges), then
+        shelves whose title words equal a run title's (or add one word to it). Id hits first, all of them;
+        title hits capped at `cap`, largest first, with the overflow counted. `sources` {(leg, id): label}
+        says where an id came from ("R clause", "N line", "collected by item 117741") — TOOLS_TODO 29."""
         ev, skip = self.ev, set(skip) | {sid}
+        sources = sources or {}
         why = defaultdict(list)
+
+        def src(key):
+            return f" ({sources[key]})" if key in sources else ""
+
         for leg, v in sorted(want_ids):
             for o in self.s_ids.get((leg, v), ()):
-                why[o].append(f"{leg}={v}")
+                why[o].append(f"shares {leg}={v}{src((leg, v))}")
             if leg == "cv":
                 for o in self.stored_cv.get(v, ()):
-                    if f"cv={v}" not in why[o]:
-                        why[o].append(f"stored cv={v}")
+                    if not any(t.startswith(f"shares cv={v}") for t in why[o]):
+                        why[o].append(f"shares stored cv={v}{src((leg, v))}")
+        for r in refs:
+            o = self.live_of(r)
+            if o is not None and o not in skip:
+                why[o].append(f"named S{r} in the decision's R/N lines" + (f" (now S{o})" if o != r else ""))
         by_id = [o for o in why if o not in skip and o in ev.series]
         tw = {title_words(t) for t in titles} - {frozenset()}
         title_hit = defaultdict(str)
@@ -264,7 +287,7 @@ class NearIndex:
         by_title.sort(key=lambda o: (title_hit[o] != "title", -ev.size.get(o, 0), o))
         out = []
         for o in sorted(by_id, key=lambda o: (-ev.size.get(o, 0), o)):
-            out.append(f"S{o} \"{ev.series[o]['name']}\" {ev.size.get(o, 0)}f [shares {', '.join(why[o])}"
+            out.append(f"S{o} \"{ev.series[o]['name']}\" {ev.size.get(o, 0)}f [{', '.join(why[o])}"
                        f"{' — ' + self.s_line(o) if o in self.s_of else ''}]")
         for o in by_title[:cap]:
             out.append(f"S{o} \"{ev.series[o]['name']}\" {ev.size.get(o, 0)}f [{title_hit[o]}"
@@ -275,6 +298,7 @@ class NearIndex:
 
 
 _NEAR = {}
+_NOTES = {}
 
 
 def near_index(ev):
@@ -285,9 +309,48 @@ def near_index(ev):
     return _NEAR[id(ev)]
 
 
+def gcd_notes(ev):
+    """One gcdnotes.Notes per Evidence — the GCD dump (read-only) and every item's GCD ISSUE id, loaded once."""
+    if id(ev) not in _NOTES:
+        import gcdnotes
+        _NOTES.clear()
+        _NOTES[id(ev)] = gcdnotes.Notes(idbase.open_gcd_dump(), ev.con)
+    return _NOTES[id(ev)]
+
+
+def collected_runs(ev, iid, cap=4):
+    """TOOLS_TODO 29: what a trade COLLECTS, as run ids — the item's own GCD issue record (the reader's `I` line,
+    else v1's link; gcdnotes.Notes.item_gcd_issues) rolled up by ORIGIN series through `gcd_reprint`, plus any
+    series the "Collects …" notes link by id. -> (own, [(gcdSeriesId, "name (year)", ranges)], stamped) or None.
+
+    P-002 missed S9439 (Infinity) because the 1046pp HC's own record is CV 70940 / GCD s177302 — the HC — and
+    the RUN it collects, GCD 75977 (S9439's S identity), was printed nowhere. `own` = (gcdIssueId, seriesId,
+    series name). `stamped` = the stored row is another book (TOOLS_TODO 25): the roll-up is printed with a
+    warning and its ids are NOT probed, because they describe some other book's contents."""
+    notes = gcd_notes(ev)
+    gid = notes.item_gcd_issues().get(iid)
+    if gid is None:
+        return None
+    row = notes.issue(gid)
+    if not row:
+        return None
+    import gcdnotes
+    runs = [(sid, nm, rg) for sid, nm, rg, _n in notes.reprints(gid)]
+    have = {r[0] for r in runs}
+    for e in gcdnotes.parse_notes(row["notes"]):
+        if e["sid"] and e["sid"] not in have and e["sid"] != row["seriesId"]:
+            runs.append((e["sid"], e["name"] or "?", e["ranges"]))
+            have.add(e["sid"])
+    runs = [r for r in runs if r[0] != row["seriesId"]][:cap]
+    if not runs:
+        return None
+    return (gid, row["seriesId"], row["series"]), runs, bool(notes.stamped(iid, row))
+
+
 def packet(sid, ev, rec, landing=None):
     """One shelf's split packet: the winning decision (R/S + the split-needed F + every other F + the N lines on
-    the shelf or its books), the shelves the F line names, the `nearby:` shelves it did not name (TOOLS_TODO 28a),
+    the shelf or its books), the shelves the F line names, the `nearby:` shelves it did not name (TOOLS_TODO 28a;
+    probing the R/S clause and N lines too, and each trade's collected runs, printed under it — TOOLS_TODO 29),
     the keys the files carry, and every item grouped by title x folder with its numbers — the same grouping
     `propose_split.py` prints.
 
@@ -337,7 +400,30 @@ def packet(sid, ev, rec, landing=None):
     for f in dl["f"]:
         want |= leg_ids(f)
     want |= {("cv", v) for v in cv.values()} | {("gcd", v) for v in gcd.values()}
-    near = near_index(ev).nearby(sid, want, [g[0] for g, _rs in order] + [s["name"] or ""], skip=named)
+    # TOOLS_TODO 29: the decided R/S clause and the N lines are probed too — P-002 missed S102444 (Cosplayers,
+    # "CV 72946" in the R clause) and S9439 (Infinity) because only the F line was read — and so are the runs a
+    # trade COLLECTS (gcd_reprint / the notes), which is where the Infinity HC's run id lives. `sources` labels
+    # each id the F lines and per-file links did not already supply, so the reader sees why a shelf is nearby.
+    sources = {}
+    for label, texts in (("R clause", [dl["head"] or ""]), ("N line", dl["n"])):
+        for t in texts:
+            for k in leg_ids(t) - want:
+                sources.setdefault(k, label)
+    collected = {}
+    for r in rows:
+        if r[4]:
+            got = collected_runs(ev, r[0])
+            if got:
+                collected[r[0]] = got
+                if not got[2]:
+                    for g_sid, _nm, _rg in got[1]:
+                        sources.setdefault(("gcd", g_sid), f"collected by item {r[0]}")
+    want |= set(sources)
+    refs = []
+    for t in [dl["head"] or ""] + dl["n"]:
+        refs += [int(x) for x in RX_SREF.findall(t) if int(x) != sid and int(x) not in named]
+    near = near_index(ev).nearby(sid, want, [g[0] for g, _rs in order] + [s["name"] or ""], skip=named,
+                                 refs=list(dict.fromkeys(refs)), sources=sources)
     if near:
         L.extend(_wrap(near, "   nearby: ", width=220))
     L.append("   keys now: " + " · ".join(f'"{k or "(none)"}" x{n}' for k, n in keys.most_common()))
@@ -382,7 +468,19 @@ def packet(sid, ev, rec, landing=None):
                 continue
             other = f'  key="{r[6]}"' if len(gkeys) > 1 and r[6] != modal else ""
             L.append(f"      [{r[0]}]{' COL' if r[4] else ''} {r[1]} ({r[3] or '?'}pp){other}")
+            if r[0] in collected:
+                (gid, own_sid, own_name), runs, stamped = collected[r[0]]
+                own = f"cv {cv[r[0]]} / " if r[0] in cv else ""
+                L.append(f"         own record {own}gcd s{own_sid} \"{own_name}\" (issue {gid}) COLLECTS: "
+                         + " · ".join(f"gcd={g} {nm} {_ranges(rg)}" for g, nm, rg in runs)
+                         + ("  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed"
+                            if stamped else ""))
     return L
+
+
+def _ranges(rg):
+    return ", ".join(f"#{idbase.fmt_num(a)}" if a == b else f"#{idbase.fmt_num(a)}-{idbase.fmt_num(b)}"
+                     for a, b in rg) if rg else "(unnumbered)"
 
 
 RX_BRACKETS = re.compile(r"\([^)]*\)|\[[^\]]*\]")

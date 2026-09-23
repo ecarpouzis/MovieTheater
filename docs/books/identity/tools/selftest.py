@@ -905,7 +905,10 @@ def _cs(*argv):
 
 
 if XMR in split_pop:
-    xblk = splitbase.packet(XMR, ev, split_pop[XMR])
+    # Rendered against C-037, the decision these fixtures were written from: wave 17's R-031 re-decided S22296
+    # and its F line now NAMES S94820 ("JOIN S94820"), which rightly takes it off nearby: and silences the WARN.
+    _c037 = os.path.join(idbase.DECISIONS, "C-037.txt")
+    xblk = splitbase.packet(XMR, ev, {"file": _c037, "kind": "R"} if os.path.exists(_c037) else split_pop[XMR])
     near = [l for l in xblk if l.lstrip().startswith("nearby:")]
     check(any(f"S{XMR_JOIN} " in l and "shares cv=142134" in l for l in near),
           f"(a) S{XMR}'s packet names S{XMR_JOIN} on its nearby: line (it holds the F line's CV 142134 as its S)",
@@ -929,10 +932,21 @@ if XMR in split_pop:
     p = write_split("P-910", [SH, {"group": "G1", "files": len(g1), "key": "X-Men Red v2 (2022)", "run": RUN},
                               dict(rng, key="X-Men Red v2 (2022)")], ids1)
     r = _cs(p)
-    check(r.returncode == 0 and "0 failure(s)" in r.stdout and "MISSED JOIN" in r.stdout
-          and f"live shelf S{XMR_JOIN}" in r.stdout,
-          f"(b) a run whose cv is S{XMR_JOIN}'s S identity passes with a WARN naming the probable missed join",
+    check(r.returncode == 0 and "0 failure(s)" in r.stdout,
+          f"(c) P-910's group + range lines pass (S{XMR_JOIN} is named by R-031's F line since wave 17)",
           r.stdout[-600:])
+    # (b) the missed-join WARN, on a shelf whose F line names no join: Storm Front S9845 stating a run whose cv
+    # is S9439's S identity (Infinity, CV 66319) — and the same move by S9439's own key is REFUSED unapproved
+    if SPLIT_SID in split_pop and 9439 in ev.series:
+        r = _cs(write_split("P-912", [P900[0]] + [dict(o, run={"cv": 66319}) for o in P900[1:]]))
+        check(r.returncode == 0 and "0 failure(s)" in r.stdout and "MISSED JOIN" in r.stdout
+              and "live shelf S9439" in r.stdout,
+              "(b) a run whose cv is S9439's S identity passes with a WARN naming the probable missed join",
+              r.stdout[-600:])
+        _ik = ev.series[9439]["parsedKey"] or "Infinity"
+        r = _cs(write_split("bad-join-unapproved", [P900[0]] + [dict(o, key=_ik) for o in P900[1:]]))
+        check(r.returncode != 0 and "no `join` approves" in r.stdout,
+              "bad-join-unapproved: refused for its own rule ('no `join` approves')", r.stdout[-400:])
     vj = os.path.join(OUT, "P-910.verb.jsonl")
     r = _cs("--project", p, "--out", vj)
     got = [json.loads(x) for x in open(vj, encoding="utf-8")] if os.path.exists(vj) else []
@@ -946,7 +960,6 @@ if XMR in split_pop:
     check(r.returncode == 0 and "0 failure(s), 0 warning(s)" in r.stdout and "1 approved join(s)" in r.stdout,
           f"(b) the same run JOINING S{XMR_JOIN} by its key passes clean with a lead-approved `join`", r.stdout[-400:])
     bads12 = [
-        ("bad-join-unapproved", [SH, {"group": "G1", "key": jk}], ids1, "no `join` approves"),
         ("bad-range-ambiguous", [SH, dict(rng, key="X-Men Red v2 (2022)", folder=None)], ids1, "AMBIGUOUS"),
         ("bad-range-nothing", [SH, {"range": "#900", "match": "X-Men Red", "key": "X-Men Red v2 (2022)"}], ids1,
          "matches no numbered issue file"),
@@ -1013,6 +1026,146 @@ check(r.returncode == 0 and "'processed': 5" in r.stdout and "'remaining'" in r.
       "(f) the population mode does a bounded chunk and prints {processed, remaining, nextCursor, counts}",
       r.stdout[-300:])
 check(_snapshot() == _before12, "part 12 wrote nothing to state.json or batches/")
+
+# ── part 13: after P-002 / wave 17 (TOOLS_TODO 29, 30, 31) ────────────────────────────────────────────
+print("\nafter P-002 — R/N ids and collected runs in nearby:, pending_join, lookup's 'of', the refused-partner merge")
+_before13 = _snapshot()
+LONG13 = ("this shelf is the run that volume describes, and the two legs agree on start year and issue count, "
+          "so the id belongs here")
+
+# 29a: ids and shelves named only in the decided R clause / the N lines are probed (P-002 missed S102444, S9439)
+if 1527 in ev.series and 9439 in ev.series and 102444 in ev.series:
+    fx = os.path.join(OUT, "C-929.txt")
+    with open(fx, "w", encoding="utf-8") as f:
+        f.write("# selftest: a split shelf whose R clause names what its F line does not\n"
+                "R 1527 | the 1046pp HC collects the 2013 Infinity event, CV 66319; the stored serial link is the "
+                "one sibling shelf S4251 holds\n"
+                "F 1527 split-needed | proposed runs: the 2000 mini stays, the HC moves\n")
+    b29 = splitbase.packet(1527, ev, {"file": fx, "kind": "R"})
+    near29 = " ".join(l for l in b29 if l.lstrip().startswith("nearby:"))
+    check("S9439 " in near29 and "cv=66319 (R clause)" in near29,
+          "29a: an id named only in the R clause (CV 66319) puts S9439 on nearby:", near29[:400])
+    check("S102444 " in near29 and "named S4251" in near29 and "(now S102444)" in near29,
+          "29a: a shelf the R clause names (S4251) is followed through landed merges to S102444", near29[:400])
+    # 29b: a trade's COLLECTED runs print beside its own record, and are probed
+    b29 = splitbase.packet(9439, ev, {"file": fx, "kind": "R"})
+    txt29 = "\n".join(b29)
+    check("own record cv 71516 / gcd s177302" in txt29 and "COLLECTS: gcd=75977 Infinity (2013) #1-6" in txt29,
+          "29b: the Infinity HC (item 117741) prints its own record AND the run it collects (gcd_reprint)",
+          txt29[-600:])
+    _own = splitbase.near_index(ev).s_ids.get(("gcd", 70263), set()) - {9439}
+    near29 = " ".join(l for l in b29 if l.lstrip().startswith("nearby:"))
+    check(not _own or any(f"S{o} " in near29 for o in _own) and "collected by item 117741" in near29,
+          "29b: a run the HC collects (Avengers 2013, gcd 70263) brings its shelf onto nearby:", near29[:400])
+else:
+    check(False, "29: S1527 / S9439 / S102444 are live (the fixtures need them)")
+
+# 29c: pending_join — accepted, moves nothing, and must name a live shelf other than itself
+if SPLIT_SID in split_pop:
+    r = run_split(write_split("P-929", [dict(P900[0], pending_join=[9439])] + P900[1:]))
+    check(r.returncode == 0 and "0 failure(s)" in r.stdout, "29c: a shelf line with pending_join passes", r.stdout[-300:])
+    for name, pj in (("bad-pj-self", [SPLIT_SID]), ("bad-pj-dead", [999999991]), ("bad-pj-shape", "9439")):
+        r = run_split(write_split(name, [dict(P900[0], pending_join=pj)] + P900[1:]))
+        check(r.returncode != 0 and "`pending_join`" in r.stdout, f"29c: {name} refused", r.stdout[-300:])
+# 29d: --landed carries it onto the kept half's sheet row, and --revisit-file prints the merge-with prompt
+pjdir = os.path.join(OUT, "pj")
+os.makedirs(pjdir, exist_ok=True)
+pjp = os.path.join(pjdir, "P-001.jsonl")          # the name must stay P-001: the undo CSV is found by it
+with open(pjp, "w", encoding="utf-8") as f:
+    for raw in open(os.path.join(idbase.DECISIONS, "P-001.jsonl"), encoding="utf-8"):
+        o = json.loads(raw) if raw.strip() else None
+        if o and o.get("shelf") == 121:
+            o["pending_join"] = [9439]
+        if o:
+            f.write(json.dumps(o, ensure_ascii=False) + "\n")
+sheet = os.path.join(OUT, "landed-pj.tsv")
+r = _cs("--landed", pjp, "--out", sheet)
+rows = [l.rstrip("\n").split("\t") for l in open(sheet, encoding="utf-8") if not l.startswith("#")] \
+    if os.path.exists(sheet) else []
+k121 = [c for c in rows if c[0] == "S121" and len(c) > 4 and c[4] == "kept"]
+check(k121 and k121[0][-1] == "pending_join=9439", "29d: --landed writes pending_join onto S121's kept row", str(k121))
+with open(os.path.join(OUT, "landed-pj-one.tsv"), "w", encoding="utf-8") as f:
+    f.write("\t".join(k121[0]) + "\n" if k121 else "")
+rdir = os.path.join(OUT, "emit-revisit-pj")
+r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "next_batch.py"), "--revisit-file",
+                    os.path.join(OUT, "landed-pj-one.tsv"), "--out", rdir],
+                   capture_output=True, text=True, encoding="utf-8", errors="replace")
+body = "".join(open(os.path.join(rdir, f), encoding="utf-8").read() for f in os.listdir(rdir) if f.endswith(".txt")) \
+    if os.path.isdir(rdir) else ""
+check("merge-with candidate: S9439" in body and "F 121 merge-with=9439" in body,
+      "29d: the kept half's R packet carries `merge-with candidate: S9439`", body[-400:] or r.stdout[-300:])
+
+# 30: CV probes keep "of" — cvref stores 'legion monsters', and the index is now keyed the way probes are
+qf = os.path.join(OUT, "lookup-of.txt")
+with open(qf, "w", encoding="utf-8") as f:
+    f.write('"Legion of Monsters"\n"Heart of Darkness"\n')
+r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "lookup.py"), "--batch", qf],
+                   capture_output=True, text=True, encoding="utf-8", errors="replace")
+check('22154 "Legion of Monsters"' in r.stdout and '43345 "Legion of Monsters"' in r.stdout,
+      "30: lookup 'Legion of Monsters' finds the CV volumes (was 0 hits)", r.stdout[:400])
+check('45960 "Heart of Darkness"' in r.stdout and '71507 "Heart of Darkness"' in r.stdout,
+      "30: lookup 'Heart of Darkness' finds the CV volumes (was 0 hits)", r.stdout[-400:])
+
+# 31: an S cv= equal to a live REFUSED shelf's stored cv / Matched key link is an undeclared merge
+_d13, _w13, _s13, _dd13 = idbase.scan_decisions()
+
+
+def _refused_ok(s):
+    rec = _d13[_w13[s]]
+    return (s in ev.shelf_set and rec["kinds"].get(s) == "R"
+            and "wrong-cv-link" not in rec["flags"].get(s, ()))
+
+
+P31 = 47160 if 47160 in _w13 and _refused_ok(47160) and ev.series[47160]["cvVolumeId"] else \
+    next((s for s in sorted(_w13) if _refused_ok(s) and ev.series[s]["cvVolumeId"]), None)
+OTHER31 = 1527
+
+
+def _ci(tag, body, ids):
+    with open(os.path.join(OUT, tag + ".ids"), "w", encoding="utf-8") as f:
+        f.write("\n".join(str(i) for i in ids) + "\n")
+    p = os.path.join(OUT, tag + ".txt")
+    with open(p, "w", encoding="utf-8") as f:
+        f.write("# selftest: refused-partner fixture (TOOLS_TODO 31)\n" + body)
+    return subprocess.run([sys.executable, os.path.join(idbase.HERE, "check_identity.py"), "--all", p],
+                          capture_output=True, text=True, encoding="utf-8", errors="replace")
+
+
+if P31 and OTHER31 in ev.series:
+    V31 = ev.series[P31]["cvVolumeId"]
+    msg = f"of REFUSED shelf S{P31}"
+    r = _ci("R-930", f"S {OTHER31} cv={V31} gcd=- 0.9 | {LONG13}\n", [OTHER31])
+    check(r.returncode != 0 and msg in r.stdout and "stored CvVolumeId" in r.stdout,
+          f"31a: S{OTHER31} cv={V31} = the stored cv of refused S{P31} FAILS as an undeclared merge", r.stdout[-500:])
+    r = _ci("R-931", f"S {OTHER31} cv={V31} gcd=- 0.9 | {LONG13}\n"
+                     f"F {OTHER31} merge-with={P31} | the refused shelf holds the floppies of this same run\n", [OTHER31])
+    check(msg not in r.stdout, "31b: declared with F merge-with=, it passes the rule", r.stdout[-400:])
+    r = _ci("R-932", f"S {OTHER31} cv={V31} gcd=- 0.9 | {LONG13}\n"
+                     f"R {P31} | refused again in the same file, so the apply's frees arm clears its stored link\n",
+            [OTHER31, P31])
+    check(msg not in r.stdout, "31c: the partner refused in the SAME file (cleared at apply) is not a partner",
+          r.stdout[-400:])
+    if P31 == 47160 and 15478 not in ev.shelf_set:
+        r = _ci("R-933", f"S 15478 cv={V31} gcd=12538 0.95 | {LONG13}\n", [15478])
+        check(msg not in r.stdout and "LANDED S line(s) matched a refused shelf" in r.stdout and "S15478" in r.stdout,
+              "31d: wave 17's own S15478 line (merged away since) is reported as landed history, not a failure",
+              r.stdout[-500:])
+    # the key-link arm: a refused shelf whose parsed key still carries a Matched/Manual cv link to W
+    _kl = con.execute("""SELECT a.SeriesId, k.ProviderKey FROM SeriesKeyLink k
+                         JOIN SeriesAlias a ON a.ParsedKey = k.ParsedKey
+                         WHERE k.Provider = 0 AND k.Status IN (1, 5) AND k.ProviderKey IS NOT NULL""").fetchall()
+    _kl = next(((s, int(w)) for s, w in _kl if s in _w13 and s != OTHER31 and _refused_ok(s)
+                and ev.series[s]["cvVolumeId"] != int(w)), None) if _kl else None
+    if _kl:
+        r = _ci("R-934", f"S {OTHER31} cv={_kl[1]} gcd=- 0.9 | {LONG13}\n", [OTHER31])
+        check(f"of REFUSED shelf S{_kl[0]}" in r.stdout and "SeriesKeyLink on its key" in r.stdout,
+              f"31e: cv={_kl[1]} on a Matched key link of refused S{_kl[0]} (stored cv differs) FAILS too",
+              r.stdout[-500:])
+    else:
+        print("  (31e skipped: no refused shelf carries a key link that differs from its stored cv today)")
+else:
+    check(False, "31: a live refused shelf with a stored cv exists (the fixtures need one)")
+check(_snapshot() == _before13, "part 13 wrote nothing to state.json or batches/")
 
 print(f"\n{len(failures)} failure(s)")
 if not KEEP:

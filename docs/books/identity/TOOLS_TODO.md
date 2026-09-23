@@ -164,3 +164,6 @@
     record (gcd_reprint); a shelf line `pending_join: [sid]` for "stays only because it cannot move without a join",
     carried into the next R packet as a merge-with prompt.
 30. lookup.py drops "of" from probes ("Legion of Monsters", "Heart of Darkness" → 0 CV hits) — fix the stopword list.. check_identity --all's undeclared-merge rule must also compare an S line's cv against the STORED Series.CvVolumeId of REFUSED shelves (and their aliases' Matched v1 SeriesKeyLinks): wave 17's S15478 (cv=22340) merged undeclared into refused S47160, whose v1 keys still carry 22340. The merge was right (the trade joined its run), but it must be declared.
+
+# Added 2026-09-23 after TODO 30's finding
+32. **S.2 signal: probe-blind provider-missing.** Until TODO 30, ~34k of 154k CV volumes (names with of/the/and/a) could not be found by an exact probe, so earlier `F provider-missing` / `cv=-` lines may have missed a volume that exists. Re-probe every winning `cv=-` / provider-missing shelf with the fixed index (read-only, chunked) and feed the hits to the S.2 worklist (and triage_09 as signal (g)).
