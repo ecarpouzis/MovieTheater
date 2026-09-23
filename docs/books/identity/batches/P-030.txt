@@ -1,0 +1,174 @@
+## Conventions for this batch (34 shown of 39 matched; 359 in LEDGER.md; 1 shelf/shelves: pub:marvel ×1 · folder:bucket ×1 · folder:events ×1 · folder:variant-covers ×1 · folder:vn-year ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-028] (1 shelf/shelves) folder:variant-covers pub:marvel
+- Marvel `\Variant Covers` 1pp packs (always of #1) are the whole of every ratio 1.2–2.0 on modern Marvel shelves.
+[L-033] (1 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-034] (1 shelf/shelves) folder:events pub:marvel sig:round2
+- `_X-Men Complete Chronology` / `_Marvel Major Event Chronology` folders re-file the same books a second and
+  third time — every ratio 2.00 there, never a second run. Crossover blocks get handed one member's series by
+  `round2-folder` (four Age of Apocalypse shelves → "X-Man", a 76-issue hull).
+[L-036] (1 shelf/shelves) folder:skottie folder:variant-covers pub:marvel
+- A shelf that is ONLY 1pp variant covers (Skottie Young) still identifies its comic → run ids + `F partial-rip`.
+[L-060] (1 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (1 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-119] (1 shelf/shelves) pub:marvel
+- GCD filing quirks that recovered legs: drop "Comics" from a title, "and" for "&", "Digest" appended, reversed
+  or reordered name lists ("Deadpool / Amazing Spider-Man / Hulk: Identity Wars").
+[L-121] (1 shelf/shelves) folder:bucket pub:marvel
+- `_2099 Marvel` shelves carry a truncated key ("Doom", "Ghost Rider") that reaches the 20th-century namesake;
+  the folder's "<Title> 2099" is the identity and both providers hold it.
+[L-127] (1 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-129] (1 shelf/shelves) folder:bucket pub:marvel sig:probe
+- GCD hides behind the definite article too ("Spider-Man vs. The Black Cat" 40812) and behind ComicVine's
+  spelling of a one-shot the parsed key never reached (four Thunderbolts one-shots) — probe the CV name in GCD.
+[L-130] (1 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-133] (1 shelf/shelves) pub:marvel sig:probe
+- GCD splits a compound word ComicVine joins: "X-Men: Clan Destine" (5570) is invisible to a "ClanDestine" probe,
+  and 32535 "ClanDestine vs. The X-Men" is the collected edition, not the mini.
+[L-136] (1 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-142] (1 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-169] (1 shelf/shelves) folder:events pub:marvel sig:trade-link
+- `_Marvel Major Event Chronology (digital)` is one folder per tie-in holding that tie-in's collected edition: the
+  count-1-trade-as-stored-link artefact runs at 86 of 202 shelves there, the highest rate in any single folder.
+[L-173] (1 shelf/shelves) folder:skottie folder:variant-covers pub:marvel sig:collision
+- `Marvel\__Skottie Young Covers` holds a 1pp variant shelf for nearly every 2015 Secret Wars mini, each already linked
+  to that mini's volume — the commonest stored-link collision on Secret Wars shelves (merge-with when it is the mini).
+[L-174] (1 shelf/shelves) pub:marvel sig:legacy-stamp sig:stamp
+- A legacy-renumbered run is its own volume in both legs (Captain Marvel #125-129 = CV 105506 / GCD 117972; GotG
+  #146-150 = GCD 118041); the per-file matcher reaches the 1960s/1990s namesake by issue number every time.
+[L-242] (1 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-319] (1 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-343] (1 shelf/shelves) pub:dark-horse pub:idw pub:marvel sig:probe
+- More GCD name shapes (R-067): Dark Horse High Republic Adventures inserts "(Phase III)" and uses a comma form
+  ("…Adventures, The Nameless Terror"); IDW / Disney / Marvel Illustrated drop a leading "The" or "A Graphic Novel";
+  Marvel's Dark Tower strips punctuation ("Drawing of Three"). GCD indexes NO Marvel Infinity Comics (gcd=- stands).
+  An Image-style deluxe / "Complete" edition of ONE run merges into the run shelf (Department of Truth).
+[L-357] (1 shelf/shelves) pub:image pub:marvel sig:probe
+- Marvel (R-086): CV mints one volume per creator "Book" line (Ms. Marvel Book 1-5 = CV 83966 / GCD 91839); "Trial of
+  Venom" = Spider-Man Special Edition #1; Deadpool #900 is Deadpool Team-Up #900 on GCD (40644) though CV puts it in
+  Deadpool 2008; Osborn Journal is filed under a bracketed alternate title. Image / Millarworld: CV 65439 "American
+  Jesus" and 85113 "Jupiter's Circle" are the trade LINES (issues named "Book One/Two"), not the minis — their conflated
+  flags are stale (L-318); Dark Horse's 2024 Millarworld reissues are a NEW GCD line beside the Image originals (Magic
+  Order 213614) — match by the file's year. A packet's "years a-b" can come from per-file stamps (read filenames). In a
+  `lookup.py --batch` file a multi-word name must be QUOTED or only its first word is probed.
+[L-007] (1 shelf/shelves) folder:bucket
+- Crossovers published as separate one-shots (Fear on Four Worlds) are separate GCD records per title.
+[L-124] (1 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-175] (1 shelf/shelves) folder:bucket folder:events pass:item
+- In the chronology folders the RUN rule stands over the bucket rule: `S` = the numbered run, the tie-in's collected
+  record goes on the `I` line (B-072/073, ~90 shelves); the book's own record is the S only where no numbered run exists.
+[L-191] (1 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-217] (1 shelf/shelves) folder:bucket sig:collision sig:comicinfo
+- A generic-title bucket shelf ("Robin" S14733) holding scattered issues of an already-dedicated volume takes
+  `merge-with` that volume's shelf even when its ComicInfo tags match on their own.
+[L-272] (1 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-281] (1 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-016] (1 shelf/shelves) sig:comicinfo
+- Glorith rips' ComicInfo `Web` ids are NOT GCD issue ids in our dump (29 checked: missing or unrelated). Never
+  claim 1.0 from one. A ComicInfo `Volume` holding a 6-digit number IS a ComicVine volume id (Lex and the City =
+  162184) — a genuine 1.0 assertion.
+[L-032] (1 shelf/shelves) sig:comicinfo
+- A Marika-Empire rip's ComicInfo `Web` id IS a ComicVine ISSUE id (21/21 resolve to the stored volume) — the
+  1.0 shape. The ripper decides: Glorith's Web ids are not GCD issue ids. Check one against the rip before
+  claiming 1.0 on a new ripper.
+[L-064] (1 shelf/shelves) pass:item sig:twin
+- GCD indexes PRINTINGS: the S line takes the first edition both legs agree on; the `I` line takes the printing
+  we hold (page counts match the edition's row). GCD issue ids for books come from `gcd_issue` — prefer the
+  issue id to the `s<series>` form; use `s<series>` only for twin/variant rows.
+[L-085] (1 shelf/shelves) sig:barcode sig:trade-link sig:twin
+- `gcd_issue` carries the trade's page count AND ISBN: it matched our rips within ±10pp on 100+ books and told
+  two same-title count-1 rows apart (an 8pp ashcan is not a twin of the trade).
+[L-101] (1 shelf/shelves) sig:twin
+- Page count tells GCD twins apart (a 32pp sampler vs the 256pp anthology); a count-0 GCD row (236534 "Cells at
+  Work! Lady") is an empty stub, not a leg.
+[L-113] (1 shelf/shelves) sig:comicinfo sig:stamp
+- ComicInfo `Volume` holding a 4-digit ComicVine volume id (not a year) is a 1.0 assertion like the 6-digit
+  case (Ka-Zar v2 1974: `Volume 2692` + `Count 20` = CV 2692) and disproves the per-file matcher's pick.
+
++5 more matched entries not shown: L-114, L-193, L-194, L-310, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S5134 Deadpool Team-Up  [split]  39 files / 3 collections  decided in R-089 (R)
+   decided: R 5134 | two co-equal runs with their own records on both legs, plus a one-shot: (1) the legacy-numbered Deadpool Team-Up = CV 29329 (Marvel 2009, 17 cached #883-899) / GCD 40644 (Marvel 2009-2011, 18 rows #883-900) — issue files #883-899 (11 chronology rips + 6 Minutemen), Vol. 01-03 trades (roll-ups s40644 #894-899 / #889-893 / #883-888) and "001 Deadpool 900 (2009)" 107pp = GCD 40644 #900; (2) the 2024 mini "Deadpool Team-Up 001-004 (2024-2025)" + 13 1pp variant covers in "Deadpool Team-Up (2024)" = CV 159482 (Marvel 2024, 5) / GCD 214853 (2024-2025, 5; per-file on 17/39) — four whole issues of a different run are not residue; (3) "003 Deadpool Team-Up 001 (1997)" 38pp = the 1998 one-shot CV 18602 / GCD 6027
+   F 5134 split-needed | items 47584-47600 (2024 #1-4 + 13 variant covers) -> "Deadpool Team-Up (2024)" cv=159482 gcd=214853; item 88826 -> "Deadpool Team-Up (1998)" cv=18602 gcd=6027; the 2009 issues #883-899, the three trades and Deadpool #900 (91348) stay as cv=29329 gcd=40644 (who-stores: 159482 / 18602 on no shelf)
+   N 5134 cv=29329 gcd=40644 — the S line once the 2024 mini and the 1998 one-shot move
+   nearby: S64541 "Deadpool" 87f [shares cv=22955 — S cv=22955 gcd=32043 (R-035 0.9)] keys: "Deadpool (2008)" | "Deadpool v2 (2008)" | "Deadpool v3 (2008)"
+   nearby: S5114 "Deadpool Corps: Rank and Foul" 2f [shares gcd=57081 (collected by item 78634) — S cv=32182 gcd=57081 (A-023 0.95)] keys: "Deadpool Corps - Rank and Foul"
+   nearby: S64540 "Deadpool" 124f [title — S cv=6000 gcd=5791 (C-043 0.9)] keys: "Deadpool (1997)" | "Deadpool - Flashback" | "Deadpool v1 (1997)"
+   nearby: S96324 "Deadpool" 66f [title — S cv=53726 gcd=69743 (C-043 0.9)] keys: "Deadpool v3 (2013)" | "Deadpool v4 (2012)"
+   nearby: S64542 "Deadpool" 58f [title — S cv=157504 gcd=210709 (C-046 0.95)] keys: "Deadpool (2024)" | "Deadpool v10 (2024)"
+   nearby: S102375 "Deadpool" 9f [title — S cv=85750 gcd=93585 (C-064 0.95)] keys: "Deadpool v5 (2015)" · S102372 "Deadpool" 8f [title — S cv=59624 gcd=5003 (C-043 0.95)] keys: "Deadpool v1 (1994)"
+   nearby: S10377 "Deadpool" 4f [title — S cv=122987 gcd=152889 (A-023 0.9)] keys: "Deadpool by Kelly Thompson (2023)" | "Deadpool v8 (2020)" | "King Deadpool"
+   nearby: S5145 "Deadpool" 2f [title — S cv=145766 gcd=192494 (B-055 0.95)] keys: "Deadpool by Alyssa Wong" · S5080 "Deadpool" 1f [title — S cv=79775 gcd=207018 (R-035 0.95)] keys: "Deadpool"
+   nearby: S102757 "Deadpool #1000 (2010)" 1f [title — S gcd=52109 (R-035 0.9)] keys: "Deadpool #1000 (2010)"
+   nearby: S3322 "Cable & Deadpool" 67f [title+1 — S cv=18070 gcd=17566 (C-056 0.95)] keys: "Cable & Deadpool" | "Cable and Deadpool" | "Deadpool & Cable Ultimate Collection Book 1" | "Deadpool & Cable Ultimate Collection Book 2" (+3 more: lookup.py --shelf 3322)
+   nearby: S5111 "Deadpool Classic" 25f [title+1 — S cv=21748 gcd=60236 (C-043 0.9)] keys: "Deadpool Classic" | "Deadpool Classic Companion"
+   nearby: S5113 "Deadpool Corps" 15f [title+1 — S cv=32441 gcd=46836 (A-027 0.9)] keys: "Deadpool Corps" · (+17 more by title)
+   keys now: "Deadpool Team-Up" x39
+   groups (title x folder): 8
+   G1 "Deadpool Team-Up" in Marvel\#MARVEL CURRENT ONGOING TITLES\Deadpool Team-Up (2024) — 4 file(s), numbers 1-4, pp 19-26; cv per-file 29329x4; gcd per-file 214853x4; key 'Deadpool Team-Up'
+      e.g. Deadpool Team-Up 001 (2024) (Digital) (Kileko-Empire).cbz
+        47584 #1 2024 26pp · 47585 #2 2024 19pp · 47586 #3 2024 21pp · 47587 #4 2025 20pp
+   G2 "Deadpool Team-Up" in Marvel\#MARVEL CURRENT ONGOING TITLES\Deadpool Team-Up (2024)\Variant Covers — 13 file(s), numbers 1-4, pp 1-1; cv per-file 29329x13; gcd per-file 214853x13; key 'Deadpool Team-Up'
+      e.g. Deadpool Team-Up 001 (2024) (Amanda Conner Variant) (Digital) (MikeNY76-Empire).cbz
+        47588 #1 2024 1pp · 47589 #1 2024 1pp · 47590 #1 2024 1pp · 47591 #1 2024 1pp · 47592 #1 2024 1pp · 47593 #1 2024 1pp · 47594 #1 2024 1pp · 47595 #2 2024 1pp · 47596 #2 2024 1pp
+        47597 #2 2024 1pp · 47598 #3 2024 1pp · 47599 #3 2024 1pp · 47600 #4 2024 1pp
+   G3 "Deadpool Team-Up" in Marvel\_Deadpool\_Trades, minis and one-Shots\Deadpool Team-Up v2 (2010) — 3 file(s), 3 COL, pp 124-164; cv per-file 35184x1, 37448x1, 41097x1; gcd per-file 78133x3; key 'Deadpool Team-Up'
+      [78633] COL Deadpool Team-Up Vol. 01 - Good Buddies (2010) (Digital) (Kileko-Empire).cbr (151pp)
+         own record cv 35184 / gcd s78133 "Deadpool Team-Up" (issue 1171157) COLLECTS: gcd=78134 Deadpool Team-Up (2010) #1 · gcd=40644 Deadpool Team-Up (2009) #894-899
+      [78634] COL Deadpool Team-Up Vol. 02 - Special Relationship (2010) (Digital) (Kileko-Empire).cbr (124pp)
+         own record cv 37448 / gcd s78133 "Deadpool Team-Up" (issue 1171158) COLLECTS: gcd=40644 Deadpool Team-Up (2009) #889-893 · gcd=57081 Deadpool Corps: Rank and Foul (2010) #1 · gcd=78134 Deadpool Team-Up (2010) #2
+      [78635] COL Deadpool Team-Up Vol. 03 - BFFs (2014) (Digital) (F) (Kileko-Empire).cbz (164pp)
+         own record cv 41097 / gcd s78133 "Deadpool Team-Up" (issue 1171159) COLLECTS: gcd=40644 Deadpool Team-Up (2009) #883-888 · gcd=78134 Deadpool Team-Up (2010) #3
+   G4 "Deadpool Team-Up" in Marvel\_X-Men\_X-Men Complete Chronology V2\0365 PayBack — 1 file(s), numbers 1, pp 38-38; cv per-file 18602x1; gcd per-file 6027x1; key 'Deadpool Team-Up'
+      [88826] 003 Deadpool Team-Up 001 (1997) (digital-hd) (Kleio-Empire).cbz (38pp)
+   G5 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0847 Deadpool - Team-Up — 1 file(s), numbers 900, pp 107-107; cv per-file 22955x1; gcd per-file 40644x1; key 'Deadpool Team-Up'
+      [91348] 001 Deadpool 900 (2009) (Digital) (AnPymGold-Empire).cbz (107pp)
+   G6 "Deadpool Team-Up" in Marvel\_X-Men\_X-Men Complete Chronology V2\0847 Deadpool - Team-Up — 6 file(s), numbers 894-899, pp 24-26; cv per-file 29329x6; gcd per-file 40644x6; key 'Deadpool Team-Up'
+      e.g. 002 Deadpool Team-Up 899 (2010) (Digital) (AnHeroGold-Empire).cbz
+        91349 #899 2010 25pp · 91350 #898 2010 24pp · 91351 #897 2010 26pp · 91352 #896 2010 24pp · 91353 #895 2010 24pp · 91354 #894 2010 25pp
+   G7 "Deadpool Team-Up" in Marvel\_X-Men\_X-Men Complete Chronology V2\0871 Deadpool - Team Up Pt. 2 — 5 file(s), numbers 889-893, pp 23-25; cv per-file 29329x5; gcd per-file 40644x5; key 'Deadpool Team-Up'
+      e.g. 001 Deadpool Team-Up 893 (2010) (Digital) (AnHeroGold-Empire).cbz
+        91488 #893 2010 25pp · 91489 #892 2010 24pp · 91490 #891 2010 24pp · 91491 #890 2010 25pp · 91492 #889 2010 23pp
+   G8 "Deadpool Team-Up" in Marvel\_X-Men\_X-Men Complete Chronology V2\0892 Deadpool Team Up Pt.3 — 6 file(s), numbers 883-888, pp 22-26; cv per-file 29329x6; gcd per-file 40644x6; key 'Deadpool Team-Up'
+      e.g. 001 Deadpool Team-Up 888 (2010) (Minutemen-XxxX).cbr
+        91612 #888 2010 26pp · 91613 #887 2011 25pp · 91614 #886 2011 25pp · 91615 #885 2011 25pp · 91616 #884 2011 24pp · 91617 #883 2011 22pp

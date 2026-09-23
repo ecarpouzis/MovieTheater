@@ -1791,3 +1791,12 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Prince Valiant pair with their own BOOK lines at 0.9, like Rip Kirby (L-355) — the year-file shelf merges into the
   book-line shelf. ASM Omnibus Book 01 (2022) is GCD 58631's "#1 [Fifth Edition]" row. A split key must differ
   from the files' current key AFTER normalisation (L-336) (R-089/R-090).
+
+[L-360] pub:image pub:dc sig:probe
+- Wildstorm / Image: "Gen 13" needs the SPACE on both legs; every Gen13 one-shot has a count-1 record on both legs, so
+  a "Gen13 Assorted" bucket is a split, not provider-missing; CV 5667 is the whole #0-77 run while GCD splits it 5417
+  (Image) / 14809 (DC). DC/Wildstorm World of Warcraft rips named "v2 #NNN - Title (MM-DD-YYYY)" are the 2008 ongoing
+  (CV 19669), their date = GCD's on-sale date. Blackthorne 3-D titles live on CV only as issues of "Blackthorne 3-D
+  Series" (12050); GCD gives each title its own series (Gumby in 3-D = 38332). NBM Dungeon: Zenith is CV 52034 / GCD
+  55263; the 2021 GCD "Dungeon: X" rows are the re-edition line. Crusade's 2020-22 Tucci Shi books are CV-only (GCD rows
+  are 2024-25 reprints) (R-091/R-092).

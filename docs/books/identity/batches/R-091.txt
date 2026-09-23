@@ -1,0 +1,572 @@
+## Conventions for this batch (33 shown of 109 matched; 359 in LEDGER.md; 46 shelf/shelves: pub:oni ×20 · kind:collected-line ×17 · kind:trade-only ×16 · kind:new ×8 · folder:vn-year ×4 · pub:papercutz-nbm ×3 · pub:ahoy ×3 · kind:foreign ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-143] (20 shelf/shelves) kind:kids pub:boom pub:idw pub:oni pub:scout sig:trade-link
+- Oni Press and Scout Comics are the IDW/BOOM count-1-trade shape at full strength: 31 shelves in B-064..066 carried
+  the stored link to the same-title count-1 collected record instead of the run (Alabaster Shadows, Blood Feud, Cemetery
+  Kids, Cult of the Lamb, Princess Ugg, Terrible Lizard, Black Cotton, Canopus, Smoketown, Stabbity Bunny, White Ash …).
+[L-358] (20 shelf/shelves) pub:oni sig:probe
+- NBM: the Dungeon cycles have a CV and GCD record per CYCLE; the bare "Dungeon" 51364/19068 is the 28pp floppy
+  serialisation. GCD numbers NBM's Nancy Drew and Dungeon albums by volume ordinal with matching titles. Malibu's 1993
+  "Street Fighter" (18369/15154) is filed by rippers as "Street Fighter II (of 3)". Crusade's Tucci Shi books have
+  CV-only records (GCD holds only later printings); Europe Comics' SHI is an unrelated comic under one title. Oni: the
+  trades of the minis have their own count-1 CV/GCD records (L-143 shape). One distinctive word probed with
+  --contains ("Booger") can find what the full title misses (R-088).
+[L-030] (46 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-151] (46 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (46 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-013] (42 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (42 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-043] (42 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (42 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (42 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (42 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (42 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (42 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (42 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (42 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (42 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (42 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (42 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (42 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (42 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (42 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (42 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (42 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (42 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (42 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (42 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (42 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (42 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (42 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (42 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (42 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
+[L-291] (19 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-135] (17 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+
++76 more matched entries not shown: L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-064, L-085, L-101, L-310, L-113, L-016, L-032, L-114, L-068, L-191, L-124, L-281, L-144, L-241, L-298, L-325, L-272, L-097, L-252, L-274, L-288, L-290, L-293, L-352, L-354, L-009, L-024, L-046, L-051, L-055, L-102, L-123, L-128, L-139, L-140, L-148, L-149, L-181, L-200, L-227, L-229, L-243, L-265, L-271, L-336, L-339, L-007, L-065, L-099, L-175, L-194, L-217, L-262, L-330, L-074, L-083, L-150, L-250 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S24292 Dungeon Monstres  [tier B]   keys: Dungeon Monstres  years 2008-2015  8 files / 8 collections
+   split run: "Dungeon Monstres" run={"cv": 51654, "gcd": 55267} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [5] Graphic Novels\_NBM\Dungeon Monstres (2008) · [3] Misc\Dungeon (1998 - 2014)
+   files:   [26645] COL Dungeon Monstres v01 - The Crying Giant (2008) (itsGucci).cbr (98pp) | [26646] COL Dungeon Monstres v02 - The Dark Lord (2008) (itsGucci).cbr (99pp)
+            [26647] COL Dungeon Monstres v03 - Heartbreaker (2010) (Santa Anna).cbr (99pp) | [26648] COL Dungeon Monstres v04 - Night of the Ladykiller (2011) (c2c) (phillywilly-Empire).cbr (100pp)
+            [26649] COL Dungeon Monstres v05 - My Son the Killer (2015) (c2c) (phillywilly-Empire).cbr (100pp) | [105573] COL Dungeon - 05 2008 - Monstres v1 - The Crying Giant.cbr (98pp)
+            [105574] COL Dungeon - 05 2008 - Monstres v2 - The Dark Lord.cbr (99pp) | [105575] COL Dungeon - 05 2010 - Monstres v3 - Heartbreaker.cbr (99pp)
+   CV linked:      vol 51654 "Dungeon Monstres" 2008 NBM 6 issues; cached #1-6 (6); yearΔ 0; ratio 0/6; no judged range
+   CV candidates:  (= linked) · 38009 "Disney Junior Graphic Novels" 2006 Disney 3 s20 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s0 · 86527 "Disney Graphic Novels" 2015 NBM 4 s0 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s0 · 39361 "Disney Libri Graphic Novels" 2010 Walt Disney Company Italia 3 s0   (v1 search)
+   CV local rip:   (= linked) · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 38009 "Disney Junior Graphic Novels" 2006 Disney 2 (via CV candidate name "Disney Junior Graphic Novels")   (rip lookup)
+   GCD dump:       55267 "Dungeon Monstres" 2008-2016 NBM [] 6 · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S103907 Dungeon: The Early Years (2005)  [tier C] · several runs number from #1  keys: Dungeon: The Early Years (2005)  years 1998-1998  2 files / 2 collections
+   split run: "Dungeon: The Early Years (2005)" run={"cv": 51884, "gcd": 55264} (new shelf from P-029) — seed the S line from these ids, then verify them
+   flags: #65 conflated-series [Pending] item 105563 — five Dungeon cycles, each with its own v1/v2/v3, share one Series
+   folders: [2] Misc\Dungeon (1998 - 2014)
+   files:   [105563] COL Dungeon - 01 2005 - The Early Years v1 - The Night Shirt.cbr (98pp) | [105564] COL Dungeon - 01 2009 - The Early Years v2 - Innocence Lost.cbr (98pp)
+   CV local rip:   51884 "Dungeon: The Early Years" 2005 NBM 3 (via our own name without the filing suffix "Dungeon: The Early Years")   (rip lookup)
+   GCD dump:       176399 "Dungeon: The Early Years" 2021-? NBM [] 3 (via our own name without the filing suffix "Dungeon: The Early Years")   (dump lookup)
+
+== S103908 Dungeon: Twilight (2006)  [tier D]   keys: Dungeon: Twilight (2006)  years 1998-1998  3 files / 3 collections
+   split run: "Dungeon: Twilight (2006)" run={"cv": 51771, "gcd": 55269} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [3] Misc\Dungeon (1998 - 2014)
+   files:   [105568] COL Dungeon - 03 2006 - Twilight v1 - Dragon Cemetery.cbr (97pp) | [105569] COL Dungeon - 03 2006 - Twilight v2 - Armageddon.cbr (97pp)
+            [105570] COL Dungeon - 03 2010 - Twilight v3 - The New Centurions.cbr (103pp)
+   CV local rip:   51771 "Dungeon Twilight" 2006 NBM 4 (via our own name without the filing suffix "Dungeon: Twilight")   (rip lookup)
+   GCD dump:       55269 "Dungeon Twilight" 2006-? NBM [] 4 (via our own name without the filing suffix "Dungeon: Twilight") · 185847 "Dungeon: Twilight" 2022-? NBM [] 1 (via our own name without the filing suffix "Dungeon: Twilight")   (dump lookup)
+
+== S103906 Dungeon: Parade (2006)  [tier D]   keys: Dungeon: Parade (2006)  years 1998-1998  2 files / 2 collections
+   split run: "Dungeon: Parade (2006)" run={"cv": 51968, "gcd": 55268} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [2] Misc\Dungeon (1998 - 2014)
+   files:   [105571] COL Dungeon - 04 2006 - Parade v1 - A Dungeon Too Many.cbr (66pp) | [105572] COL Dungeon - 04 2007 - Parade v2 - Day of the Toads.cbr (66pp)
+   CV local rip:   51968 "Dungeon Parade" 2006 NBM 2 (via our own name without the filing suffix "Dungeon: Parade")   (rip lookup)
+   GCD dump:       55268 "Dungeon Parade" 2006-? NBM [] 2 (via our own name without the filing suffix "Dungeon: Parade")   (dump lookup)
+
+== S5909 Dungeon  [tier D]   keys: Dungeon  years 1998-1998  3 files / 3 collections
+   split: the KEPT half of the P-029 split — moved out -> S24292 "Dungeon Monstres"; S103907 "Dungeon: The Early Years (2005)"; S103908 "Dungeon: Twilight (2006)"; S103906 "Dungeon: Parade (2006)"; re-identify what stayed
+   folders: [3] Misc\Dungeon (1998 - 2014)
+   files:   [105565] COL Dungeon - 02 2003 - Zenith v1 - Duck Heart.cbr (98pp) | [105566] COL Dungeon - 02 2003 - Zenith v2 - The Barbarian Princess.cbr (99pp)
+            [105567] COL Dungeon - 02 2009 - Zenith v3 - Back in Style.cbr (98pp)
+   CV local rip:   51364 "Dungeon" 2002 NBM 8   (rip lookup)
+   GCD dump:       19068 "Dungeon" 2002-2003 NBM [] 8 · 176565 "Dungeon" 1988-2007 TSR [] ?   (dump lookup)
+
+== S103910 Gumby (2006)  [tier B]   keys: Gumby (2006)  years 2006-2007  3 files / 0 collections
+   split run: "Gumby (2006)" run={"cv": 22325, "gcd": 25554} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [3] Misc\Gumby\Gumby (2006) (Wildcard)
+   files:   [106176] Gumby 001 (2006) (metaldave-DCP).cbr (40pp) | [106177] Gumby 002 (2006) (metaldave-DCP).cbr (40pp) | [106178] Gumby 003 (2007) (metaldave-DCP).cbr (45pp)
+   ours:    ladder 1-3
+   CV local rip:   22325 "Gumby" 2006 Wildcard Production 3 (via our own name without the filing suffix "Gumby") · 102595 "Gumby" 2017 NBM 3 (via our own name without the filing suffix "Gumby") · 105947 "Gumby" 2017 NBM 1 issue 636318 (via our own name without the filing suffix "Gumby")   (rip lookup)
+   GCD per-file:   series 25554 "Gumby" 2006-2007 Wildcard Ink [was ongoing series] 3 on 3/3 files; methods numx3
+   GCD dump:       (= per-file) · 179830 "Gumby" 2017-2017 NBM [] 3 (via our own name without the filing suffix "Gumby") · 119724 "Gumby" 2018-? NBM [] 1 (via our own name without the filing suffix "Gumby")   (dump lookup)
+
+== S103912 Gumby Free Comic Book Day 2007 (2007)  [tier D]   keys: Gumby Free Comic Book Day 2007 (2007)  years 2007-2007  1 files / 0 collections
+   split run: "Gumby Free Comic Book Day 2007 (2007)" run={"cv": 22328, "gcd": 24206} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Misc\Gumby\Gumby (2006) (Wildcard)
+   files:   [106179] Gumby 2007 FCBD (2007) (Team-DCP).cbr (37pp)
+   ours:    ladder 2007
+   CV local rip:   22328 "Gumby Free Comic Book Day 2007" 2007 Wildcard Production 1 issue 134251 (via our own name without the filing suffix "Gumby Free Comic Book Day 2007")   (rip lookup)
+
+== S103913 Gumby Free Comic Book Day 2008 (2008)  [tier D]   keys: Gumby Free Comic Book Day 2008 (2008)  years 2008-2008  1 files / 0 collections
+   split run: "Gumby Free Comic Book Day 2008 (2008)" run={"cv": 22329, "gcd": 30679} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Misc\Gumby\Gumby (2006) (Wildcard)
+   files:   [106180] Gumby 2008 FCBD (2008) (Oroboros-DCP).cbr (37pp)
+   ours:    ladder 2008
+   CV local rip:   22329 "Gumby Free Comic Book Day 2008" 2008 Wildcard Production 1 issue 134252 (via our own name without the filing suffix "Gumby Free Comic Book Day 2008")   (rip lookup)
+
+== S103911 Gumby (2017)  [tier B]   keys: Gumby (2017)  years 2017-2017  2 files / 0 collections
+   split run: "Gumby (2017)" run={"cv": 102595, "gcd": 179830} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Misc\Gumby\Gumby (2017) (Papercutz) · [1] Papercutz\Gumby (2017)
+   files:   [107942] Gumby 01 (2017) (Digital) (Bean-Empire).cbz (31pp) | [109861] Gumby 01 (2017) (Digital) (Bean-Empire).cbz (31pp)
+   ours:    ladder 1; 1 number(s) name more than one file: 1
+   CV local rip:   102595 "Gumby" 2017 NBM 3 (via our own name without the filing suffix "Gumby") · 105947 "Gumby" 2017 NBM 1 issue 636318 (via our own name without the filing suffix "Gumby") · 22325 "Gumby" 2006 Wildcard Production 3 (via our own name without the filing suffix "Gumby")   (rip lookup)
+   GCD per-file:   series 179830 "Gumby" 2017-2017 NBM [was ongoing series] 3 on 2/2 files; methods numx2
+   GCD dump:       (= per-file) · 119724 "Gumby" 2018-? NBM [] 1 (via our own name without the filing suffix "Gumby") · 25554 "Gumby" 2006-2007 Wildcard Ink [] 3 (via our own name without the filing suffix "Gumby")   (dump lookup)
+
+== S8184 Gumby Classics Volume 1  [tier C] · gap 20  keys: Gumby  years 1986-1988  7 files / 0 collections
+   split: the KEPT half of the P-029 split — moved out -> S103910 "Gumby (2006)"; S103912 "Gumby Free Comic Book Day 2007 (2007)"; S103913 "Gumby Free Comic Book Day 2008 (2008)"; S103911 "Gumby (2017)"; re-identify what stayed
+   folders: [7] Misc\Gumby\Gumby 3-D (1986) (Blackthorne)
+   files:   [106182] Gumby 3-D 001 (1986) (c2c) (Pyramid).cbz (37pp) | [106183] Gumby 3-D 002 (1986) (misprinted page fixed in scan) (c2c) (Pyramid).cbz (37pp)
+            [106184] Gumby 3-D 003 (1987) (c2c) (Pyramid).cbz (37pp) | [106185] Gumby 3-D 004 (1987) (c2c) (Pyramid).cbz (37pp) | [106186] Gumby 3-D 005 (1988) (c2c) (Pyramid).cbz (37pp)
+            [106187] Gumby 3-D 006 (1987) (c2c) (Pyramid).cbz (37pp) | [106188] Gumby 3-D 007 (1988) (c2c) (Pyramid).cbz (37pp)
+   ours:    ladder 1-7; barcode item 106185 [{"type": "EAN13", "data": "0015001735509", "page": "Gumby 3; barcode item 106186 [{"type": "EAN13", "data": "0015001735509", "page": "Gumby 3; barcode item 106187 [{"type": "EAN13", "data": "0015001735509", "page": "Gumby 3; barcode item 106188 [{"type": "EAN13", "data": "0015001738609", "page": "Gumby 3
+   CV candidates:  22325 "Gumby" 2006 Wildcard Production ? s30 · 102595 "Gumby" 2017 NBM ? s30 · 105947 "Gumby" 2017 NBM ? s30 · 22328 "Gumby Free Comic Book Day 2007" 2007 Wildcard Production ? s15 · 22329 "Gumby Free Comic Book Day 2008" 2008 Wildcard Production ? s15 · 58025 "Punk's Misc. Debris" 1994 Absolute Comics ? s0   (v1 search)
+   CV local rip:   22325 "Gumby" 2006 Wildcard Production 3 · 102595 "Gumby" 2017 NBM 3 · 105947 "Gumby" 2017 NBM 1 issue 636318   (rip lookup)
+   GCD per-file:   methods round2-seriesx3 ⚠  (⚠ copies a folder neighbour's series — verify); series 25554 "Gumby" 2006-2007 Wildcard Ink [was ongoing series] 3 on 3/7 files
+   GCD dump:       (= per-file) · 179830 "Gumby" 2017-2017 NBM [] 3 · 119724 "Gumby" 2018-? NBM [] 1   (dump lookup)
+   MU / External:  ExternalWork 65 "Gumby Classics Volume 1" openlibrary /works/OL34351919W
+
+== S97924 Jirni v2 (2015)  [tier B]   keys: Jirni v2 (2015)  years 2013-2013  1 files / 1 collections
+   split run: "Jirni v2 (2015)" run={"cv": 83698, "gcd": 91357} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Misc\Jirni\Jirni v2 (2015)
+   files:   [107945] COL Jirni Vol. 02 (2016) (Digital) (Thornn-Empire) .cbr (128pp)
+   CV per-file (v1): vol 60017 "Jirni" 2013 Aspen MLT 5 on 1/1 files
+   CV local rip:   (= per-file) · 72018 "Jirni" 2014 Aspen MLT 1 issue 446675 (via our own name without the filing suffix "Jirni") · 74532 "Jirni" 2014 Aspen MLT 1 issue 455530 (via our own name without the filing suffix "Jirni") · 83698 "Jirni" 2015 Aspen MLT 5 (via our own name without the filing suffix "Jirni") · 109324 "Jirni" 2018 Aspen MLT 5 (via our own name without the filing suffix "Jirni") · 115438 "Jirni" 2018 Aspen MLT 1 issue 692584 (via our own name without the filing suffix "Jirni")   (rip lookup)
+   GCD dump:       73688 "Jirni" 2013-2013 Aspen [] 5 (via our own name without the filing suffix "Jirni") · 81123 "Jirni" 2014-2014 Aspen [] 1 (via our own name without the filing suffix "Jirni") · 91357 "Jirni" 2015-2017 Aspen [] 5 (via our own name without the filing suffix "Jirni") · 123176 "Jirni" 2018-2018 Aspen [] 5 (via our own name without the filing suffix "Jirni") · 207435 "Jirni" [fr] 2021-? Alayone Comics [] 1 (via our own name without the filing suffix "Jirni")   (dump lookup)
+
+== S9890 Jirni  [tier B]   keys: Jirni  years 2013-2013  1 files / 1 collections
+   split: the KEPT half of the P-029 split — moved out -> S97924 "Jirni v2 (2015)"; re-identify what stayed
+   folders: [1] Misc\Jirni\Jirni v1 (2013)
+   files:   [107944] COL Jirni Vol. 01 (2014) (Digital) (Strunka).cbr (127pp)
+   ours:    judged item 107944 #1-5 conf 0.9
+   CV linked:      vol 60017 "Jirni" 2013 Aspen MLT 5 issues; cached #1-5 (5); yearΔ 0; ratio 0/5; 1 of 1 judged fit
+   CV local rip:   (= linked) · 72018 "Jirni" 2014 Aspen MLT 1 issue 446675 · 74532 "Jirni" 2014 Aspen MLT 1 issue 455530 · 83698 "Jirni" 2015 Aspen MLT 5 · 109324 "Jirni" 2018 Aspen MLT 5 · 115438 "Jirni" 2018 Aspen MLT 1 issue 692584   (rip lookup)
+   GCD dump:       73688 "Jirni" 2013-2013 Aspen [] 5 · 81123 "Jirni" 2014-2014 Aspen [] 1 · 91357 "Jirni" 2015-2017 Aspen [] 5 · 123176 "Jirni" 2018-2018 Aspen [] 5 · 207435 "Jirni" [fr] 2021-? Alayone Comics [] 1   (dump lookup)
+
+== S103928 Second Coming: Only Begotten Son (2020)  [tier B]   keys: Second Coming: Only Begotten Son (2020)  years 2019-2020  7 files / 0 collections
+   split run: "Second Coming: Only Begotten Son (2020)" run={"cv": 132602, "gcd": 168724} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [6] Misc\Second Coming (2019) (Ahoy) · [1] Ahoy Comics\Second Coming (2019)
+   files:   [6540] Second Coming v02 - Only Begotten Son 006 (2021) (digital) (Son of Ultron-Empire).cbr (29pp)
+            Second Coming - Only Begotten Son 001 (2020) (digital) (Son of Ultron-Empire).cbr … Second Coming - Only Begotten Son 006 (2021) (digital) (Son of Ultron-Empire).cbr  (6 files, pp 29-32)
+   ours:    ladder 1-6; 1 number(s) name more than one file: 6; ComicInfo Series: "Second Coming: Only Begotten Son"x7; ComicInfo Publisher: "AHOY Comics"x7
+   CV per-file (v1): vol 120149 "Second Coming" 2019 Ahoy Comics 6 on 7/7 files
+   CV local rip:   (= per-file) · 125332 "Second Coming" 2020 Ahoy Comics 1 issue 738877 (via CV name "Second Coming") · 132602 "Second Coming: Only Begotten Son" 2020 Ahoy Comics 6 (via our own name without the filing suffix "Second Coming: Only Begotten Son") · 139975 "Second Coming: Only Begotten Son" 2021 Ahoy Comics 1 issue 892529 (via our own name without the filing suffix "Second Coming: Only Begotten Son")   (rip lookup)
+   GCD per-file:   series 168724 "Second Coming: Only Begotten Son" 2020-2021 AHOY Comics [limited series] 6 on 7/7 files; methods numx7
+   GCD dump:       (= per-file) · 148910 "Second Coming" 2019-2020 AHOY Comics [] 6 (via CV name "Second Coming") · 177766 "Second Coming" 2020-? AHOY Comics [] 2 (via CV name "Second Coming") · 205282 "Second Coming" [de] 2023-? Dantes Verlag [] 3 (via CV name "Second Coming") · 205283 "Second Coming" [de] 2023-? Dantes Verlag [] 3 (via CV name "Second Coming")   (dump lookup)
+   bridges:        gcd 168724 -> LOCG 141609 "Second Coming" support 14
+
+== S103927 Second Coming v3 (2023)  [tier B]   keys: Second Coming v3 (2023)  years 2023-2023  6 files / 0 collections
+   split run: "Second Coming v3 (2023)" run={"cv": 149410, "gcd": 198674} (new shelf from P-029) — seed the S line from these ids, then verify them
+   flags: #398 label-ambiguous [Pending] item 6541 — the Second Coming v2/v3 items are single issues, not collections
+   folders: [6] Ahoy Comics\Second Coming (2019)\Second Coming v3 - Trinity (2023)
+   files:   Second Coming v3 001 - Trinity (2023) (digital) (Son of Ultron-Empire).cbr … Second Coming v3 006 - Trinity (2023) (digital) (Son of Ultron-Empire).cbr  (6 files, pp 30-31)
+   ours:    ladder 1-6; ComicInfo Series: "Second Coming: Trinity"x5, "Second Coming Trinity"x1; ComicInfo Publisher: "AHOY Comics"x6
+   CV per-file (v1): vol 149410 "Second Coming: Trinity" 2023 Ahoy Comics 6 on 6/6 files
+   CV local rip:   (= per-file) · 125332 "Second Coming" 2020 Ahoy Comics 1 issue 738877 (via our own name without the filing suffix "Second Coming") · 120149 "Second Coming" 2019 Ahoy Comics 6 (via our own name without the filing suffix "Second Coming")   (rip lookup)
+   GCD per-file:   series 198674 "Second Coming: Trinity" 2023-2023 AHOY Comics [limited series] 6 on 6/6 files; methods numx6
+   GCD dump:       (= per-file) · 205282 "Second Coming" [de] 2023-? Dantes Verlag [] 3 (via our own name without the filing suffix "Second Coming") · 205283 "Second Coming" [de] 2023-? Dantes Verlag [] 3 (via our own name without the filing suffix "Second Coming") · 177766 "Second Coming" 2020-? AHOY Comics [] 2 (via our own name without the filing suffix "Second Coming") · 148910 "Second Coming" 2019-2020 AHOY Comics [] 6 (via our own name without the filing suffix "Second Coming")   (dump lookup)
+   bridges:        gcd 198674 -> LOCG 141609 "Second Coming" support 6
+
+== S65606 Second Coming  [tier A]   keys: Second Coming: Only Begotten Son (2019)  years 2019-2020  7 files / 1 collections
+   split: the KEPT half of the P-029 split — moved out -> S103928 "Second Coming: Only Begotten Son (2020)"; S103927 "Second Coming v3 (2023)"; re-identify what stayed
+   folders: [6] Misc\Second Coming (2019) (Ahoy) · [1] Ahoy Comics\Second Coming (2019)
+   files:   [6539] COL Second Coming v01 (2019) (digital) (Son of Ultron-Empire).cbr (171pp)
+            Second Coming 001 (2019) (digital) (Son of Ultron-Empire).cbr … Second Coming 006 (2020) (digital) (Son of Ultron-Empire).cbr  (6 files, pp 34-44)
+   ours:    ladder 1-6; ComicInfo Series: "Second Coming"x7; ComicInfo Publisher: "AHOY Comics"x7
+   CV linked:      vol 120149 "Second Coming" 2019 Ahoy Comics 6 issues; cached #1-6 (6); yearΔ 0; ratio 6/6 = 1.00; no judged range; v1 per-file: same volume on 6/7 files
+   CV local rip:   (= linked) · 125332 "Second Coming" 2020 Ahoy Comics 1 issue 738877 · 132602 "Second Coming: Only Begotten Son" 2020 Ahoy Comics 6 (via the parsed key without the filing suffix "Second Coming: Only Begotten Son") · 139975 "Second Coming: Only Begotten Son" 2021 Ahoy Comics 1 issue 892529 (via the parsed key without the filing suffix "Second Coming: Only Begotten Son")   (rip lookup)
+   GCD per-file:   series 168724 "Second Coming: Only Begotten Son" 2020-2021 AHOY Comics [limited series] 6 on 2/7 files; methods numx2
+   GCD dump:       (= per-file) · 148910 "Second Coming" 2019-2020 AHOY Comics [] 6 · 177766 "Second Coming" 2020-? AHOY Comics [] 2 · 205282 "Second Coming" [de] 2023-? Dantes Verlag [] 3 · 205283 "Second Coming" [de] 2023-? Dantes Verlag [] 3   (dump lookup)
+   bridges:        gcd 168724 -> LOCG 141609 "Second Coming" support 14
+
+== S103930 Shi: Omnibus (2022)  [tier D]   keys: Shi: Omnibus (2022)  years 2022-2022  1 files / 1 collections
+   split run: "Shi: Omnibus (2022)" run={"cv": 146737, "gcd": 194657} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Misc\Shi (1994)
+   files:   [107352] COL Shi - Omnibus Edition Book 01 (2022) (digital) (Son of Ultron-Empire).cbr (458pp)
+   CV local rip:   146737 "Shi: Omnibus" 2022 Crusade 1 issue 959008 (via our own name without the filing suffix "Shi: Omnibus")   (rip lookup)
+   GCD dump:       194657 "Shi Omnibus" 2023-? Crusade Comics [] 1 (via our own name without the filing suffix "Shi: Omnibus")   (dump lookup)
+
+== S103931 Shi: Return of the Warrior (2020)  [tier D]   keys: Shi: Return of the Warrior (2020)  years 2020-2020  1 files / 0 collections
+   split run: "Shi: Return of the Warrior (2020)" run={"cv": 145791} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Misc\Shi (1994)\Shi - Return of the Warrior (2020)
+   files:   [107353] Shi (001) - Return of the Warrior (2020) (digital) (Li'l Ultron-Empire).cbr (50pp)
+   ours:    ladder 1
+   CV local rip:   145791 "SHI: Return of the Warrior" 2020 Crusade 1 issue 953215 (via our own name without the filing suffix "Shi: Return of the Warrior")   (rip lookup)
+   GCD dump:       216336 "Shi: Return of the Warrior" 2024-? Crusade Comics [] 2 (via our own name without the filing suffix "Shi: Return of the Warrior")   (dump lookup)
+
+== S103929 Shi: Haikyo (2021)  [tier D]   keys: Shi: Haikyo (2021)  years 2021-2021  1 files / 0 collections
+   split run: "Shi: Haikyo (2021)" run={"cv": 145792} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Misc\Shi (1994)\Shi - Return of the Warrior (2020)
+   files:   [107354] Shi (002) - Haikyo (2021) (digital) (Li'l Ultron-Empire).cbr (66pp)
+   ours:    ladder 2
+   CV local rip:   145792 "SHI: HAIKYO" 2021 Crusade 1 issue 953214 (via our own name without the filing suffix "Shi: Haikyo")   (rip lookup)
+   GCD dump:       225005 "Shi: Haikyo" 2025-? Crusade Comics [] 1 (via our own name without the filing suffix "Shi: Haikyo")   (dump lookup)
+
+== S103932 Shi: Sakura (2022)  [tier D]   keys: Shi: Sakura (2022)  years 2022-2022  1 files / 0 collections
+   split run: "Shi: Sakura (2022)" run={"cv": 145935} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Misc\Shi (1994)\Shi - Return of the Warrior (2020)
+   files:   [107355] Shi (003) - Sakura (2022) (digital) (Son of Ultron-Empire).cbr (75pp)
+   ours:    ladder 3
+   CV local rip:   145935 "Shi: Sakura" 2022 Crusade 1 issue 954121 (via our own name without the filing suffix "Shi: Sakura")   (rip lookup)
+
+== S103933 Shi: Senryaku Omnibus (2023)  [tier B]   keys: Shi: Senryaku Omnibus (2023)  years 2023-2023  1 files / 1 collections
+   split run: "Shi: Senryaku Omnibus (2023)" run={"gcd": 212956} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Misc\Shi (1994)
+   files:   [107356] COL Shi - Senryaku Omnibus (2023) (digital) (Son of Ultron-Empire).cbr (192pp)
+   CV per-file (v1): vol 105251 "Shi" 2017 Splitter 6 on 1/1 files
+   CV local rip:   (= per-file) · 97823 "Shi" 2017 Dargaud 6 (via CV name "Shi") · 104325 "Shi" 2017 Europe Comics 4 (via CV name "Shi") · 149320 "Shi" 1998 Infinity Verlag 12 (via CV name "Shi") · 149321 "Shi" 1998 Infinity Verlag 2 (via CV name "Shi")   (rip lookup)
+   GCD dump:       212956 "Shi: Senryaku Omnibus" 2024-2024 Crusade Comics [] 1 (via our own name without the filing suffix "Shi: Senryaku Omnibus") · 206274 "Shi" [fr-be] 2019-2019 Bruno Graff [] 1 (via CV name "Shi") · 116816 "Shi" [de] 2017-? Splitter Verlag [] 6 (via CV name "Shi") · 124228 "Shi" [nl-be] 2017-? Dargaud Benelux [] 6 (via CV name "Shi") · 132649 "Shi" [fr] 2017-? Dargaud [] 6 (via CV name "Shi") · 53247 "Shi" [de] 1998-1988 Infinity Verlag [] 14 (via CV name "Shi")   (dump lookup)
+
+== S103934 Shi: The Way of the Warrior - Original Art Edition (2024)  [tier B]   keys: Shi: The Way of the Warrior - Original Art Edition (2024)  years 2017-2017  1 files / 0 collections
+   split run: "Shi: The Way of the Warrior - Original Art Edition (2024)" run=- (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Misc\Shi (1994)
+   files:   [107357] Shi - The Way of the Warrior 001 - Original Art Edition (2024) (digital) (Son of Ultron-Empire).cbr (117pp)
+   ours:    ladder 1
+   CV per-file (v1): vol 105251 "Shi" 2017 Splitter 6 on 1/1 files
+   CV local rip:   (= per-file) · 97823 "Shi" 2017 Dargaud 6 (via CV name "Shi") · 104325 "Shi" 2017 Europe Comics 4 (via CV name "Shi") · 149320 "Shi" 1998 Infinity Verlag 12 (via CV name "Shi") · 149321 "Shi" 1998 Infinity Verlag 2 (via CV name "Shi")   (rip lookup)
+   GCD dump:       116816 "Shi" [de] 2017-? Splitter Verlag [] 6 (via CV name "Shi") · 124228 "Shi" [nl-be] 2017-? Dargaud Benelux [] 6 (via CV name "Shi") · 132649 "Shi" [fr] 2017-? Dargaud [] 6 (via CV name "Shi") · 206274 "Shi" [fr-be] 2019-2019 Bruno Graff [] 1 (via CV name "Shi") · 53247 "Shi" [de] 1998-1988 Infinity Verlag [] 14 (via CV name "Shi") · 113011 "Shi" [de] 1998-1999 Infinity Verlag [] 8 (via CV name "Shi")   (dump lookup)
+
+== S58200 Shi  [tier B]   keys: SHI  years 2017-2019  3 files / 0 collections
+   split: the KEPT half of the P-029 split — moved out -> S103930 "Shi: Omnibus (2022)"; S103931 "Shi: Return of the Warrior (2020)"; S103929 "Shi: Haikyo (2021)"; S103932 "Shi: Sakura (2022)"; S103933 "Shi: Senryaku Omnibus (2023)"; S103934 "Shi: The Way of the Warrior - Original Art Edition (2024)"; re-identify what stayed
+   folders: [3] Europe Comics\SHI (2018)
+   files:   [23318] SHI 01 - In the Beginning There Was Fury (2018) (Digital) (Europe Comics).cbr (66pp) | [23319] SHI 02 - The Demon King (2018) (Europe Comics) (Digital-Empire).cbr (59pp)
+            [23320] SHI 03 - Revenge! (2019) (Europe Comics) (Digital-Empire).cbr (60pp)
+   ours:    ladder 1-3
+   CV linked:      vol 104325 "Shi" 2017 Europe Comics 4 issues; cached #1-3 (3); yearΔ 0; ratio 3/4 = 0.75; no judged range
+   CV candidates:  (= linked) · 97823 "Shi" 2017 Dargaud 6 s95 · 105251 "Shi" 2017 Splitter 6 s95 · 149321 "Shi" 1998 Infinity Verlag 2 s89 · 149320 "Shi" 1998 Infinity Verlag 12 s84 · 101342 "Lucky Comics FCBD 2018" 2018 Lucky Comics 1 issue 594774 s18 · 64980 "Defenders of Europe" 2011 Emmetre Edizioni 2 s18   (v1 search)
+   CV local rip:   (= linked) · 97823 "Shi" 2017 Dargaud 6 · 105251 "Shi" 2017 Splitter 6 · 149320 "Shi" 1998 Infinity Verlag 12 · 149321 "Shi" 1998 Infinity Verlag 2   (rip lookup)
+   GCD dump:       116816 "Shi" [de] 2017-? Splitter Verlag [] 6 · 124228 "Shi" [nl-be] 2017-? Dargaud Benelux [] 6 · 132649 "Shi" [fr] 2017-? Dargaud [] 6 · 206274 "Shi" [fr-be] 2019-2019 Bruno Graff [] 1 · 53247 "Shi" [de] 1998-1988 Infinity Verlag [] 14 · 113011 "Shi" [de] 1998-1999 Infinity Verlag [] 8   (dump lookup)
+
+== S103935 Street Fighter (1993)  [tier B]   keys: Street Fighter (1993)  years 1994-1994  3 files / 0 collections
+   split run: "Street Fighter (1993)" run={"cv": 18369, "gcd": 15154} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [3] Misc\Street Fighter\Street Fighter II\Street Fighter II (1993) (Malibu)
+   files:   [107550] Street Fighter II 01 (of 3) (1993) (Malibu) (Kman00001).cbr (26pp) | [107551] Street Fighter II 02 (of 3) (1993) (Malibu) (Kman00001).cbr (26pp)
+            [107552] Street Fighter II 03 (of 3) (1993) (Malibu) (Kman00001).cbr (28pp)
+   ours:    ladder 1-3
+   CV per-file (v1): vol 23232 "Street Fighter II" 1994 Tokuma Comics 8 on 3/3 files
+   CV local rip:   (= per-file) · 18369 "Street Fighter" 1994 Malibu 3 (via our own name without the filing suffix "Street Fighter") · 49906 "Street Fighter" 1994 Editora Escala 20 (via our own name without the filing suffix "Street Fighter") · 18305 "Street Fighter" 2003 UDON 15 (via our own name without the filing suffix "Street Fighter") · 136851 "Street Fighter" 2017 Urban Comics 2 (via our own name without the filing suffix "Street Fighter") · 162587 "Street Fighter" 2022 Moztros Producciones 7 (via our own name without the filing suffix "Street Fighter")   (rip lookup)
+   GCD per-file:   series 58932 "Street Fighter II" [de] 1994-1995 Bastei Verlag [] 4 on 3/3 files; methods numx3
+   GCD dump:       15154 "Street Fighter" 1993-1993 Malibu [] 3 (via our own name without the filing suffix "Street Fighter") · 104261 "Street Fighter" [it] 1995-1995 Play Press [] 1 (via our own name without the filing suffix "Street Fighter") · 53268 "Street Fighter" 2003-2004 Image [] 7 (via our own name without the filing suffix "Street Fighter") · 76364 "Street Fighter" 2004-2005 Devil's Due Publishing [] 8 (via our own name without the filing suffix "Street Fighter") · 147386 "Street Fighter" [fr] 2004-2005 Albin Michel [] 5 (via our own name without the filing suffix "Street Fighter") · 192190 "Street Fighter" [es-mx] 2006-2006 Grupo Editorial Vid [] 14 (via our own name without the filing suffix "Street Fighter")   (dump lookup)
+   bridges:        gcd 58932 -> LOCG 111714 "Street Fighter II" support 5
+
+== S65776 Street Fighter II  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Street Fighter II (1994)  years 1994-1994  3 files / 0 collections
+   split: the KEPT half of the P-029 split — moved out -> S103935 "Street Fighter (1993)"; re-identify what stayed
+   folders: [3] Misc\Street Fighter\Street Fighter II\Street Fighter II (1994) (Tokuma)
+   files:   [107553] Street Fighter II 001 (1994) (Tokuma Comics) (Carpodacus).cbr (34pp) | [107554] Street Fighter II 002 (1994) (Tokuma Comics) (Carpodacus).cbr (35pp)
+            [107555] Street Fighter II 006 (1994) (Tokuma Comics) (Carpodacus).cbr (34pp)
+   ours:    ladder 1-2, 6
+   CV linked:      vol 23232 "Street Fighter II" 1994 Tokuma Comics 8 issues; cached #1-6 (4); yearΔ 0; ratio 3/8 = 0.38; no judged range; v1 per-file: same volume on 3/3 files
+   CV local rip:   (= linked) · 19806 "Street Fighter II" 2005 UDON 7   (rip lookup)
+   GCD per-file:   series 58932 "Street Fighter II" [de] 1994-1995 Bastei Verlag [] 4 on 2/3 files · series 119324 "Street Fighter II" 1994-1994 Tokuma Comics [limited series] 8 on 1/3 files; methods numx3
+   GCD dump:       (= per-file) · 135259 "Street Fighter II" [fr] 1995-1995 Glénat [] 4 · 37756 "Street Fighter II" [en-ca] 2005-2006 Udon Comics [] 7 · 162731 "Street Fighter II" [fr] 2018-2018 Urban Comics [] 3   (dump lookup)
+   bridges:        gcd 58932 -> LOCG 111714 "Street Fighter II" support 5 · gcd 119324 -> LOCG 111714 "Street Fighter II" support 1
+
+== S103904 Brides of Helheim (2014)  [tier C] · several runs number from #1  keys: Brides of Helheim (2014)  years 2015-2015  1 files / 1 collections
+   split run: "Brides of Helheim (2014)" run={"cv": 77279, "gcd": 83265} (new shelf from P-029) — seed the S line from these ids, then verify them
+   flags: #80 conflated-series [Pending] item 108730 — two Helheim minis share this Series, both numbered from #1
+   folders: [1] Oni Press\Helheim
+   files:   [108730] COL Helheim Vol. 02 - Brides of Helheim (2015) (digital) (Son of Ultron-Empire).cbr (139pp)
+   ours:    ComicInfo Series: "Helheim"x1; ComicInfo Publisher: "Oni Press"x1
+   GCD says: [108730] gcd_reprint 2121334: s83265 Brides of Helheim (2014) #1-6 [6 stories]
+   CV local rip:   77279 "Brides of Helheim" 2014 Oni Press 6 (via our own name without the filing suffix "Brides of Helheim")   (rip lookup)
+   GCD dump:       83265 "Brides of Helheim" 2014-2015 Oni Press [] 6 (via our own name without the filing suffix "Brides of Helheim")   (dump lookup)
+
+== S8726 Helheim  [tier B]   keys: Helheim  years 2013-2013  1 files / 1 collections
+   split: the KEPT half of the P-029 split — moved out -> S103904 "Brides of Helheim (2014)"; re-identify what stayed
+   folders: [1] Oni Press\Helheim
+   files:   [108729] COL Helheim Vol. 01 - The Witch War (2014) (Digital-Empire).cbr (158pp)
+   ours:    judged item 108729 #1-6 conf 0.9
+   GCD says: [108729] gcd_reprint 2121333: s72637 Helheim (2013) #1-6 [6 stories]
+   CV linked:      vol 58440 "Helheim" 2013 Oni Press 6 issues; cached #1-2 (2); yearΔ 0; ratio 0/6; 1 of 1 judged fit
+   CV candidates:  (= linked) · 85432 "Helheim: Brides of Helheim" 2015 Oni Press 1 issue 503632 s80 · 77279 "Brides of Helheim" 2014 Oni Press 6 s76 · 33785 "The Oni Press Free-For-All" 2010 Oni Press 1 issue 219616 s23 · 90902 "Oni Press Pride Spectacular" 2016 Oni Press 1 issue 533122 s23 · 34859 "Oni Press Color Special 2002" 2002 Oni Press 1 issue 229093 s23 · 35127 "Oni Press Color Special 2001" 2001 Oni Press 1 issue 231796 s23   (v1 search)
+   CV local rip:   (= linked) · 77279 "Brides of Helheim" 2014 Oni Press 6 (via CV candidate name "Brides of Helheim") · 85432 "Helheim: Brides of Helheim" 2015 Oni Press 1 issue 503632 (via CV candidate name "Helheim: Brides of Helheim")   (rip lookup)
+   GCD dump:       72637 "Helheim" 2013-2013 Oni Press [] 6 · 161182 "Helheim" 2014-2015 Oni Press [] 2 · 83265 "Brides of Helheim" 2014-2015 Oni Press [] 6 (via CV candidate name "Brides of Helheim")   (dump lookup)
+
+== S103915 Hopeless Savages: Ground Zero (2002)  [tier C] · several runs number from #1  keys: Hopeless Savages: Ground Zero (2002)  years 2015-2015  1 files / 1 collections
+   split run: "Hopeless Savages: Ground Zero (2002)" run={"cv": 22010, "gcd": 51446} (new shelf from P-029) — seed the S line from these ids, then verify them
+   flags: #82 conflated-series [Pending] item 108742 — three Hopeless Savages minis share this Series, each numbered from #1
+   folders: [1] Oni Press\Hopeless Savages (2002)
+   files:   [108742] COL Hopeless Savages Vol. 02 - Ground Zero (2004) (Digital) (Relic-Empire).cbz (116pp)
+   ours:    ComicInfo Series: "Hopeless Savages"x1; ComicInfo Publisher: "Oni Press"x1
+   CV local rip:   30856 "Hopeless Savages: Ground Zero" 2003 Oni Press 1 issue 190624 (via our own name without the filing suffix "Hopeless Savages: Ground Zero") · 22010 "Hopeless Savages: Ground Zero" 2002 Oni Press 4 (via our own name without the filing suffix "Hopeless Savages: Ground Zero")   (rip lookup)
+   GCD dump:       122671 "Hopeless Savages: Ground Zero" 2003-2003 Oni Press [] 1 (via our own name without the filing suffix "Hopeless Savages: Ground Zero") · 51446 "Hopeless Savages: Ground Zero" 2002-2002 Oni Press [] 4 (via our own name without the filing suffix "Hopeless Savages: Ground Zero")   (dump lookup)
+
+== S103937 Too Much Hopeless Savages (2003)  [tier D]   keys: Too Much Hopeless Savages (2003)  years 2015-2015  1 files / 1 collections
+   split run: "Too Much Hopeless Savages (2003)" run={"cv": 30859, "gcd": 84230} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Oni Press\Hopeless Savages (2002)
+   files:   [108743] COL Hopeless Savages Vol. 03 - Too Much Hopeless Savages (2004) (Digital) (Relic-Empire).cbz (114pp)
+   ours:    ComicInfo Series: "Hopeless Savages"x1; ComicInfo Publisher: "Oni Press"x1
+   CV local rip:   30858 "Too Much Hopeless Savages" 2004 Oni Press 1 issue 190626 (via our own name without the filing suffix "Too Much Hopeless Savages") · 30859 "Too Much Hopeless Savages" 2003 Oni Press 4 (via our own name without the filing suffix "Too Much Hopeless Savages")   (rip lookup)
+   GCD dump:       129669 "Too Much Hopeless Savages" 2004-2004 Oni Press [] 1 (via our own name without the filing suffix "Too Much Hopeless Savages") · 84230 "Too Much Hopeless Savages!" 2003-2004 Oni Press [] 4 (via our own name without the filing suffix "Too Much Hopeless Savages")   (dump lookup)
+
+== S103914 Hopeless Savages: Break (2015)  [tier D]   keys: Hopeless Savages: Break (2015)  years 2015-2015  1 files / 0 collections
+   split run: "Hopeless Savages: Break (2015)" run={"cv": 86235, "gcd": 122614} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Oni Press\Hopeless Savages (2002)
+   files:   [108740] Hopeless Savages Break (2015) (Digital) (Relic-Empire).cbz (153pp)
+   ours:    ComicInfo Series: "Hopeless Savages"x1; ComicInfo Publisher: "Oni Press"x1
+   CV local rip:   86235 "Hopeless Savages: Break" 2015 Oni Press 1 issue 506724 (via our own name without the filing suffix "Hopeless Savages: Break")   (rip lookup)
+   GCD dump:       122614 "Hopeless Savages: Break" 2015-2015 Oni Press [] 1 (via our own name without the filing suffix "Hopeless Savages: Break")   (dump lookup)
+
+== S8973 Hopeless Savages  [tier B]   keys: Hopeless Savages  years 2001-2001  1 files / 1 collections
+   split: the KEPT half of the P-029 split — moved out -> S103915 "Hopeless Savages: Ground Zero (2002)"; S103937 "Too Much Hopeless Savages (2003)"; S103914 "Hopeless Savages: Break (2015)"; re-identify what stayed
+   folders: [1] Oni Press\Hopeless Savages (2002)
+   files:   [108741] COL Hopeless Savages Vol. 01 (2003) (Digital) (Relic-Empire).cbz (133pp)
+   ours:    judged item 108741 #1-4 conf 0.7; ComicInfo Series: "Hopeless Savages"x1; ComicInfo Publisher: "Oni Press"x1
+   GCD says: [108741] gcd_reprint 552913: s10114 Hopeless Savages (2001) #1-4 [9 stories]
+   CV linked:      vol 9335 "Hopeless Savages" 2001 Oni Press 4 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); cached #1-3 (3); yearΔ ?; ratio 0/?; 1 of 1 judged fit
+   CV candidates:  (= linked) · 30857 "Hopeless Savages" 2002 Oni Press 1 issue 190625 s108 · 22010 "Hopeless Savages: Ground Zero" 2002 Oni Press 4 s103 · 30859 "Too Much Hopeless Savages" 2003 Oni Press 4 s48 · 86235 "Hopeless Savages: Break" 2015 Oni Press 1 issue 506724 s37 · 30858 "Too Much Hopeless Savages" 2004 Oni Press 1 issue 190626 s36 · 30856 "Hopeless Savages: Ground Zero" 2003 Oni Press 1 issue 190624 s36   (v1 search)
+   CV local rip:   (= linked) · 30857 "Hopeless Savages" 2002 Oni Press 1 issue 190625 · 22010 "Hopeless Savages: Ground Zero" 2002 Oni Press 4 (via CV candidate name "Hopeless Savages: Ground Zero") · 30856 "Hopeless Savages: Ground Zero" 2003 Oni Press 1 issue 190624 (via CV candidate name "Hopeless Savages: Ground Zero")   (rip lookup)
+   GCD dump:       10114 "Hopeless Savages" 2001-2001 Oni Press [] 4 · 32700 "Hopeless Savages" 2002-2002 Oni Press [] 1 · 51446 "Hopeless Savages: Ground Zero" 2002-2002 Oni Press [] 4 (via CV candidate name "Hopeless Savages: Ground Zero") · 122671 "Hopeless Savages: Ground Zero" 2003-2003 Oni Press [] 1 (via CV candidate name "Hopeless Savages: Ground Zero")   (dump lookup)
+
+== S103926 Rick and Morty: Youth in Rickvolt v1 (2024)  [tier C] · gap 9  keys: Rick and Morty: Youth in Rickvolt v1 (2024)  years 2015-2024  4 files / 0 collections
+   split run: "Rick and Morty: Youth in Rickvolt v1 (2024)" run={"cv": 159355, "gcd": 214286} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [4] Oni Press\Rick and Morty (2015)\Rick and Morty - Youth in Rickvolt (2024)
+   files:   [108881] Rick and Morty - Youth in Rickvolt 001 (2024) (digital) (Knight Ripper-Empire).cbr (25pp)
+            [108882] Rick and Morty - Youth in Rickvolt 002 (2024) (digital) (Knight Ripper-Empire).cbr (25pp)
+            [108883] Rick and Morty - Youth in Rickvolt 003 (2024) (digital) (Knight Ripper-Empire).cbr (24pp)
+            [108884] Rick and Morty - Youth in Rickvolt 004 (2024) (digital) (Knight Ripper-Empire).cbr (25pp)
+   ours:    ladder 1-4
+   CV per-file (v1): vol 159355 "Rick and Morty: Youth in Rickvolt" 2024 Oni Press 4 on 3/4 files · vol 81059 "Rick and Morty" 2015 Oni Press 60 on 1/4 files
+   CV local rip:   (= per-file) · 86120 "Rick and Morty" 2015 Oni Press 12 (via CV name "Rick and Morty") · 95832 "Rick and Morty" 2016 Oni Press 8 (via CV name "Rick and Morty") · 148307 "Rick and Morty" 2023 Oni Press 12 (via CV name "Rick and Morty")   (rip lookup)
+   GCD per-file:   series 214286 "Rick and Morty Youth in Rickvolt" 2024-2024 Oni Press [was limited series] 4 on 4/4 files; methods numx4
+   GCD dump:       88050 "Rick and Morty" 2015-2020 Oni Press [] 60 (via CV name "Rick and Morty") · 117828 "Rick and Morty" 2015-2021 Oni Press [] 12 (via CV name "Rick and Morty") · 117827 "Rick and Morty" 2016-2020 Oni Press [] 5 (via CV name "Rick and Morty") · 131755 "Rick and Morty" [de] 2018-? Panini Deutschland [] 13 (via CV name "Rick and Morty") · 151920 "Rick and Morty" [fr] 2018-2022 Bragelonne [] 12 (via CV name "Rick and Morty") · 195369 "Rick and Morty" [pt-br] 2018-2020 Panini Brasil [] 4 (via CV name "Rick and Morty")   (dump lookup)
+
+== S103918 Rick and Morty: Corporate Assets v1 (2021)  [tier C] · gap 6  keys: Rick and Morty: Corporate Assets v1 (2021)  years 2015-2022  4 files / 0 collections
+   split run: "Rick and Morty: Corporate Assets v1 (2021)" run={"cv": 141972, "gcd": 179458} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [4] Oni Press\Rick and Morty (2015)\_Completed Series\Rick and Morty - Corporate Assets (2021)
+   files:   [108895] Rick and Morty - Corporate Assets 001 (2021) (Digital) (mv-DCP).cbr (26pp) | [108896] Rick and Morty - Corporate Assets 002 (2021) (Digital) (mv-DCP).cbr (25pp)
+            [108897] Rick and Morty - Corporate Assets 003 (2022) (Digital) (mv-DCP).cbr (26pp) | [108898] Rick and Morty - Corporate Assets 004 (2022) (Digital) (mv-DCP).cbr (26pp)
+   ours:    ladder 1-4; ComicInfo Series: "Rick and Morty: Corporate Assets"x4; ComicInfo Publisher: "Oni Press"x4
+   CV per-file (v1): vol 141972 "Rick and Morty: Corporate Assets" 2021 Oni Press 4 on 3/4 files · vol 81059 "Rick and Morty" 2015 Oni Press 60 on 1/4 files
+   CV local rip:   (= per-file) · 86120 "Rick and Morty" 2015 Oni Press 12 (via CV name "Rick and Morty") · 95832 "Rick and Morty" 2016 Oni Press 8 (via CV name "Rick and Morty") · 148307 "Rick and Morty" 2023 Oni Press 12 (via CV name "Rick and Morty")   (rip lookup)
+   GCD per-file:   series 179458 "Rick and Morty: Corporate Assets" 2021-2022 Oni Press [limited series] 4 on 4/4 files; methods numx4
+   GCD dump:       88050 "Rick and Morty" 2015-2020 Oni Press [] 60 (via CV name "Rick and Morty") · 117828 "Rick and Morty" 2015-2021 Oni Press [] 12 (via CV name "Rick and Morty") · 117827 "Rick and Morty" 2016-2020 Oni Press [] 5 (via CV name "Rick and Morty") · 131755 "Rick and Morty" [de] 2018-? Panini Deutschland [] 13 (via CV name "Rick and Morty") · 151920 "Rick and Morty" [fr] 2018-2022 Bragelonne [] 12 (via CV name "Rick and Morty") · 195369 "Rick and Morty" [pt-br] 2018-2020 Panini Brasil [] 4 (via CV name "Rick and Morty")   (dump lookup)
+
+== S103917 Rick and Morty Presents: The Hotel Immortal (2021)  [tier D]   keys: Rick and Morty Presents: The Hotel Immortal (2021)  years 2021-2021  1 files / 0 collections
+   split run: "Rick and Morty Presents: The Hotel Immortal (2021)" run={"cv": 137580, "gcd": 179486} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Oni Press\Rick and Morty (2015)\Rick and Morty Presents (2018)
+   files:   [108888] Rick and Morty Presents - The Hotel Immortal 01 (2021) (Digital) (Relic-Empire).cbz (34pp)
+   ours:    ladder 1; ComicInfo Series: "Rick and Morty Presents"x1; ComicInfo Publisher: "Oni Press"x1
+   CV local rip:   137580 "Rick and Morty Presents: The Hotel Immortal" 2021 Oni Press 1 issue 871204 (via our own name without the filing suffix "Rick and Morty Presents: The Hotel Immortal")   (rip lookup)
+   GCD dump:       179486 "Rick and Morty Presents: The Hotel Immortal" 2021-2021 Oni Press [] 1 (via our own name without the filing suffix "Rick and Morty Presents: The Hotel Immortal")   (dump lookup)
+
+== S103924 Rick and Morty: New Year, New Rick Special (2025)  [tier D]   keys: Rick and Morty: New Year, New Rick Special (2025)  years 2025-2025  1 files / 0 collections
+   split run: "Rick and Morty: New Year, New Rick Special (2025)" run={"cv": 161849, "gcd": 219248} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Oni Press\Rick and Morty (2015)
+   files:   [108880] Rick and Morty - New Year, New Rick Special 001 (2025) (digital) (Knight Ripper-Empire).cbr (36pp)
+   ours:    ladder 1
+   CV local rip:   161849 "Rick and Morty: New Year, New Rick Special" 2025 Oni Press 1 issue 1088618 (via our own name without the filing suffix "Rick and Morty: New Year, New Rick Special")   (rip lookup)
+   GCD dump:       219248 "Rick and Morty New Year New Rick Special" 2025-2025 Oni Press [] 1 (via our own name without the filing suffix "Rick and Morty: New Year, New Rick Special")   (dump lookup)
+
+== S103922 Rick and Morty: Kingdom Balls (2024)  [tier B]   keys: Rick and Morty: Kingdom Balls (2024)  years 2025-2025  1 files / 0 collections
+   split run: "Rick and Morty: Kingdom Balls (2024)" run={"cv": 157855, "gcd": 211386} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Oni Press\Rick and Morty (2015)
+   files:   [108879] Rick and Morty - Kingdom Balls (2025) (digital) (Knight Ripper-Empire).cbr (110pp)
+   CV per-file (v1): vol 81059 "Rick and Morty" 2015 Oni Press 60 on 1/1 files
+   CV local rip:   (= per-file) · 157855 "Rick and Morty: Kingdom Balls" 2024 Oni Press 4 (via our own name without the filing suffix "Rick and Morty: Kingdom Balls") · 148307 "Rick and Morty" 2023 Oni Press 12 (via CV name "Rick and Morty") · 95832 "Rick and Morty" 2016 Oni Press 8 (via CV name "Rick and Morty") · 86120 "Rick and Morty" 2015 Oni Press 12 (via CV name "Rick and Morty")   (rip lookup)
+   GCD dump:       219742 "Rick and Morty Kingdom Balls" 2025-2025 Oni Press [] 1 (via our own name without the filing suffix "Rick and Morty: Kingdom Balls") · 211386 "Rick and Morty Kingdom Balls" 2024-2024 Oni Press [] 4 (via our own name without the filing suffix "Rick and Morty: Kingdom Balls") · 203514 "Rick and Morty" 2023-2023 Oni Press [] 12 (via CV name "Rick and Morty") · 131755 "Rick and Morty" [de] 2018-? Panini Deutschland [] 13 (via CV name "Rick and Morty") · 151920 "Rick and Morty" [fr] 2018-2022 Bragelonne [] 12 (via CV name "Rick and Morty") · 195369 "Rick and Morty" [pt-br] 2018-2020 Panini Brasil [] 4 (via CV name "Rick and Morty")   (dump lookup)
+
+== S103919 Rick and Morty: Ever After (2020)  [tier D]   keys: Rick and Morty: Ever After (2020)  years 2021-2021  1 files / 0 collections
+   split run: "Rick and Morty: Ever After (2020)" run={"cv": 131493, "gcd": 165668} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Oni Press\Rick and Morty (2015)\_Completed Series\Rick and Morty - Ever After (2021)
+   files:   [109810] Rick and Morty - Ever After (2021) (Digital) (Relic-Empire).cbz (105pp)
+   ours:    ComicInfo Series: "Rick and Morty Ever After"x1; ComicInfo Publisher: "Oni Press"x1
+   CV local rip:   136601 "Rick and Morty: Ever After" 2021 Oni Press 1 issue 857515 (via our own name without the filing suffix "Rick and Morty: Ever After") · 131493 "Rick and Morty: Ever After" 2020 Oni Press 4 (via our own name without the filing suffix "Rick and Morty: Ever After")   (rip lookup)
+   GCD dump:       165668 "Rick and Morty: Ever After" 2020-2021 Oni Press [] 4 (via our own name without the filing suffix "Rick and Morty: Ever After")   (dump lookup)
+
+== S103920 Rick and Morty: Heart of Rickness (2023)  [tier B]   keys: Rick and Morty: Heart of Rickness (2023)  years 2024-2024  1 files / 0 collections
+   split run: "Rick and Morty: Heart of Rickness (2023)" run={"cv": 152221, "gcd": 203260} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Oni Press\Rick and Morty (2015)\_Completed Series\Rick and Morty - Heart of Rickness (2023)
+   files:   [109811] Rick and Morty - Heart of Rickness (2024) (digital) (Knight Ripper-Empire).cbr (110pp)
+   CV per-file (v1): vol 81059 "Rick and Morty" 2015 Oni Press 60 on 1/1 files
+   CV local rip:   (= per-file) · 148307 "Rick and Morty" 2023 Oni Press 12 (via CV name "Rick and Morty") · 152221 "Rick and Morty: Heart of Rickness" 2023 Oni Press 4 (via our own name without the filing suffix "Rick and Morty: Heart of Rickness") · 95832 "Rick and Morty" 2016 Oni Press 8 (via CV name "Rick and Morty") · 86120 "Rick and Morty" 2015 Oni Press 12 (via CV name "Rick and Morty")   (rip lookup)
+   GCD dump:       210005 "Rick and Morty: Heart of Rickness" 2024-2024 Oni Press [] 1 (via our own name without the filing suffix "Rick and Morty: Heart of Rickness") · 203260 "Rick and Morty: Heart of Rickness" 2023-2023 Oni Press [] 4 (via our own name without the filing suffix "Rick and Morty: Heart of Rickness") · 203514 "Rick and Morty" 2023-2023 Oni Press [] 12 (via CV name "Rick and Morty") · 131755 "Rick and Morty" [de] 2018-? Panini Deutschland [] 13 (via CV name "Rick and Morty") · 151920 "Rick and Morty" [fr] 2018-2022 Bragelonne [] 12 (via CV name "Rick and Morty") · 195369 "Rick and Morty" [pt-br] 2018-2020 Panini Brasil [] 4 (via CV name "Rick and Morty")   (dump lookup)
+
+== S103921 Rick and Morty: Infinity Hour (2022)  [tier B]   keys: Rick and Morty: Infinity Hour (2022)  years 2023-2023  1 files / 0 collections
+   split run: "Rick and Morty: Infinity Hour (2022)" run={"cv": 141973, "gcd": 193622} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Oni Press\Rick and Morty (2015)\_Completed Series\Rick and Morty - Infinity Hour (2022)
+   files:   [109812] Rick and Morty - Infinity Hour (2023) (digital) (Knight Ripper-Empire).cbr (111pp)
+   CV per-file (v1): vol 81059 "Rick and Morty" 2015 Oni Press 60 on 1/1 files
+   CV local rip:   (= per-file) · 148307 "Rick and Morty" 2023 Oni Press 12 (via CV name "Rick and Morty") · 141973 "Rick and Morty: Infinity Hour" 2022 Oni Press 4 (via our own name without the filing suffix "Rick and Morty: Infinity Hour") · 95832 "Rick and Morty" 2016 Oni Press 8 (via CV name "Rick and Morty") · 86120 "Rick and Morty" 2015 Oni Press 12 (via CV name "Rick and Morty")   (rip lookup)
+   GCD dump:       203514 "Rick and Morty" 2023-2023 Oni Press [] 12 (via CV name "Rick and Morty") · 193622 "Rick and Morty: Infinity Hour" 2022-2022 Oni Press [] 4 (via our own name without the filing suffix "Rick and Morty: Infinity Hour") · 131755 "Rick and Morty" [de] 2018-? Panini Deutschland [] 13 (via CV name "Rick and Morty") · 151920 "Rick and Morty" [fr] 2018-2022 Bragelonne [] 12 (via CV name "Rick and Morty") · 195369 "Rick and Morty" [pt-br] 2018-2020 Panini Brasil [] 4 (via CV name "Rick and Morty") · 229229 "Rick and Morty" [hu] 2018-2020 Pesti Könyv [] 10 (via CV name "Rick and Morty")   (dump lookup)
+
+== S103923 Rick and Morty: Lil' Poopy Superstar (2016)  [tier D]   keys: Rick and Morty: Lil' Poopy Superstar (2016)  years 2017-2017  1 files / 0 collections
+   split run: "Rick and Morty: Lil' Poopy Superstar (2016)" run={"cv": 92199, "gcd": 104311} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Oni Press\Rick and Morty (2015)\_Completed Series\Rick and Morty - Lil' Poopy Superstar (2016)
+   files:   [109813] Rick and Morty - Lil' Poopy Superstar (2017) (Digital) (Kileko-Empire).cbr (123pp)
+   CV local rip:   99051 "Rick and Morty: Lil' Poopy Superstar" 2017 Oni Press 1 issue 582596 (via our own name without the filing suffix "Rick and Morty: Lil' Poopy Superstar") · 92199 "Rick and Morty: Lil' Poopy Superstar" 2016 Oni Press 5 (via our own name without the filing suffix "Rick and Morty: Lil' Poopy Superstar")   (rip lookup)
+   GCD dump:       104311 "Rick and Morty: Lil' Poopy Superstar" 2016-2016 Oni Press [] 5 (via our own name without the filing suffix "Rick and Morty: Lil' Poopy Superstar")   (dump lookup)
+
+== S103925 Rick and Morty: Pocket Like You Stole It (2017)  [tier D]   keys: Rick and Morty: Pocket Like You Stole It (2017)  years 2018-2018  1 files / 0 collections
+   split run: "Rick and Morty: Pocket Like You Stole It (2017)" run={"cv": 102611, "gcd": 115262} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Oni Press\Rick and Morty (2015)\_Completed Series\Rick and Morty - Pocket Like You Stole It (2017)
+   files:   [109814] Rick and Morty - Pocket Like You Stole It (2018) (Digital) (Relic-Empire).cbz (129pp)
+   ours:    ComicInfo Series: "Rick and Morty: Pocket Like You Stole It"x1; ComicInfo Publisher: "Oni Press"x1
+   CV local rip:   109334 "Rick and Morty: Pocket Like You Stole It" 2018 Oni Press 1 issue 663637 (via our own name without the filing suffix "Rick and Morty: Pocket Like You Stole It") · 102611 "Rick and Morty: Pocket Like You Stole It" 2017 Oni Press 5 (via our own name without the filing suffix "Rick and Morty: Pocket Like You Stole It")   (rip lookup)
+   GCD dump:       123026 "Rick and Morty: Pocket Like You Stole It" 2018-2018 Oni Press [] 1 (via our own name without the filing suffix "Rick and Morty: Pocket Like You Stole It") · 115262 "Rick and Morty: Pocket Like You Stole It" 2017-2017 Oni Press [] 5 (via our own name without the filing suffix "Rick and Morty: Pocket Like You Stole It")   (dump lookup)
+
+== S103936 The Art of Rick and Morty (2017)  [tier D]   keys: The Art of Rick and Morty (2017)  years 2017-2017  1 files / 0 collections
+   split run: "The Art of Rick and Morty (2017)" run={"cv": 104264} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [1] Oni Press\Rick and Morty (2015)\_Trades, Minis and One-shots
+   files:   [108914] The Art of Rick and Morty (2017) (Digital) (danke-Empire).cbz (206pp)
+   CV local rip:   104264 "The Art of Rick and Morty" 2017 Dark Horse Comics 2 (via our own name without the filing suffix "The Art of Rick and Morty")   (rip lookup)
+
+== S14669 Rick and Morty Presents  [tier D]   keys: Rick and Morty Presents  years 2019-2024  6 files / 6 collections
+   split: the KEPT half of the P-029 split — moved out -> S103926 "Rick and Morty: Youth in Rickvolt v1 (2024)"; S103918 "Rick and Morty: Corporate Assets v1 (2021)"; S103917 "Rick and Morty Presents: The Hotel Immortal (2021)"; S103924 "Rick and Morty: New Year, New Rick Special (2025)"; S103922 "Rick and Morty: Kingdom Balls (2024)"; S103919 "Rick and Morty: Ever After (2020)"; S103920 "Rick and Morty: Heart of Rickness (2023)"; S103921 "Rick and Morty: Infinity Hour (2022)"; S103923 "Rick and Morty: Lil' Poopy Superstar (2016)"; S103925 "Rick and Morty: Pocket Like You Stole It (2017)"; S103936 "The Art of Rick and Morty (2017)"; re-identify what stayed
+   folders: [6] Oni Press\Rick and Morty (2015)\Rick and Morty Presents (2018)
+   files:   [108889] COL Rick and Morty Presents Vol. 01 (2019) (digital) (d'argh-Empire).cbr (132pp) | [108890] COL Rick and Morty Presents Vol. 02 (2020) (Digital) (Relic-Empire).cbz (129pp)
+            [108891] COL Rick and Morty Presents Vol. 03 (2021) (Digital) (Relic-Empire).cbz (131pp) | [108892] COL Rick and Morty Presents Vol. 04 (2022) (Digital) (danke-Empire).cbz (129pp)
+            [108893] COL Rick and Morty Presents Vol. 05 (2023) (digital) (Knight Ripper-Empire).cbr (152pp)
+            [108894] COL Rick and Morty Presents Vol. 06 (2024) (digital) (Knight Ripper-Empire).cbr (110pp)
+   ours:    judged item 108889 #1-5 conf 0.85; judged item 108890 #6-10 conf 0.85; judged item 108891 #11-15 conf 0.85; judged item 108892 #16-20 conf 0.85; judged item 108893 #21-25 conf 0.85; judged item 108894 #26-30 conf 0.85; ComicInfo Series: "Rick and Morty Presents"x2; ComicInfo Publisher: "Oni Press"x2
+   GCD says: [108889] gcd_reprint 1974207: s135453 Rick and Morty Presents: Pickle Rick (2018) #1 [1 story] · s129885 Rick and Morty Presents: Sleepy Gary (2018) (unnumbered) [1 story] · s126463 Rick and Morty Presents: Krombopulos Michael (2018) #1 [1 story] · s122737 Rick and Morty Presents: The Vindicators (2018) #1 [1 story]
+   CV candidates:  86120 "Rick and Morty" 2015 Oni Press 12 s93 · 81059 "Rick and Morty" 2015 Oni Press 60 s85 · 119394 "Rick and Morty Presents" 2019 Oni Press 6 s65 · 122695 "Rick and Morty Presents: Unity" 2019 Oni Press 1 issue 726327 s34 · 134209 "Rick and Morty Presents: Jerryboree" 2021 Oni Press 1 issue 832369 s34 · 129293 "Rick and Morty Presents: Birdperson" 2020 Oni Press 1 issue 788666 s34   (v1 search)
+   CV local rip:   119394 "Rick and Morty Presents" 2019 Oni Press 6 · 95832 "Rick and Morty" 2016 Oni Press 8 (via CV candidate name "Rick and Morty") · 81059 "Rick and Morty" 2015 Oni Press 60 (via CV candidate name "Rick and Morty") · 86120 "Rick and Morty" 2015 Oni Press 12 (via CV candidate name "Rick and Morty") · 148307 "Rick and Morty" 2023 Oni Press 12 (via CV candidate name "Rick and Morty")   (rip lookup)
+   GCD dump:       146243 "Rick and Morty Presents" 2019-? Oni Press [] 6 · 131755 "Rick and Morty" [de] 2018-? Panini Deutschland [] 13 (via CV candidate name "Rick and Morty") · 151920 "Rick and Morty" [fr] 2018-2022 Bragelonne [] 12 (via CV candidate name "Rick and Morty") · 195369 "Rick and Morty" [pt-br] 2018-2020 Panini Brasil [] 4 (via CV candidate name "Rick and Morty") · 229229 "Rick and Morty" [hu] 2018-2020 Pesti Könyv [] 10 (via CV candidate name "Rick and Morty") · 117827 "Rick and Morty" 2016-2020 Oni Press [] 5 (via CV candidate name "Rick and Morty")   (dump lookup)
+
+== S103909 Exodus: The Life After (2015)  [tier B]   keys: Exodus: The Life After (2015)  years 2014-2015  10 files / 0 collections
+   split run: "Exodus: The Life After (2015)" run={"cv": 85755, "gcd": 93847} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [10] Oni Press\The Life After (2014)\02 Exodus - Life After (2015)
+   files:   Exodus - The Life After 001 (2015) (digital) (d'argh-Empire).cbr … Exodus - The Life After 010 (2016) (digital) (d'argh-Empire).cbr  (10 files, pp 25-28)
+   ours:    ladder 1-10
+   CV per-file (v1): vol 75578 "The Life After" 2014 Oni Press 10 on 10/10 files
+   CV local rip:   (= per-file) · 79719 "The Life After" 2015 Oni Press 4 (via CV name "The Life After") · 85755 "Exodus: The Life After" 2015 Oni Press 10 (via our own name without the filing suffix "Exodus: The Life After")   (rip lookup)
+   GCD per-file:   series 93847 "Exodus: The Life After" 2015-2016 Oni Press [limited series] 10 on 10/10 files; methods numx10
+   GCD dump:       (= per-file) · 81681 "The Life After" 2014-2015 Oni Press [] 10 (via CV name "The Life After") · 169401 "The Life After" 2015-2017 Oni Press [] 4 (via CV name "The Life After")   (dump lookup)
+   bridges:        gcd 93847 -> LOCG 113584 "The Life After" support 10
+
+== S6322 The Life After  [tier A]   keys: Exodus - The Life After | The Life After  years 2014-2015  6 files / 1 collections
+   split: the KEPT half of the P-029 split — moved out -> S103909 "Exodus: The Life After (2015)"; re-identify what stayed
+   folders: [6] Oni Press\The Life After (2014)\01 The Life After (2014)
+   files:   [108993] The Life After 006 (2015) (Digital-Empire).cbr (24pp) | [108994] The Life After 007 (2015) (Digital-Empire).cbr (24pp)
+            [108995] The Life After 008 (2015) (Digital-Empire).cbr (25pp) | [108996] The Life After 009 (2015) (Digital-Empire).cbr (22pp)
+            [108997] The Life After 010 (2015) (Digital-Empire).cbr (27pp) | [108998] COL The Life After Vol. 01 (2015) (F) (Digital-Empire).cbr (124pp)
+   ours:    ladder 6-10; judged item 108998 #1-5 conf 0.85; ComicInfo Series: "The Life After"x1; ComicInfo Publisher: "Oni Press"x1
+   GCD says: [108998] gcd_reprint 2196914: s81681 The Life After (2014) #1-5 [15 stories] · s169401 The Life After (2015) #1 [1 story]
+   CV linked:      vol 75578 "The Life After" 2014 Oni Press 10 issues; cached #1-10 (10); yearΔ 0; ratio 5/10 = 0.50; 1 of 1 judged fit; v1 per-file: same volume on 5/6 files
+   CV local rip:   (= linked) · 79719 "The Life After" 2015 Oni Press 4 · 85755 "Exodus: The Life After" 2015 Oni Press 10   (rip lookup)
+   GCD per-file:   series 81681 "The Life After" 2014-2015 Oni Press [was ongoing] 10 on 5/6 files; methods numx5
+   GCD dump:       (= per-file) · 169401 "The Life After" 2015-2017 Oni Press [] 4 · 93847 "Exodus: The Life After" 2015-2016 Oni Press [] 10   (dump lookup)
+   bridges:        gcd 81681 -> LOCG 113584 "The Life After" support 5
+
+== S102066 Nancy Drew  [tier B]   keys: Nancy Drew (2005)  years 2005-2010  21 files / 21 collections
+   split run: "Nancy Drew (2005)" run={"cv": 49207, "gcd": 62176} (new shelf from P-029) — seed the S line from these ids, then verify them
+   folders: [21] Papercutz\Nancy Drew (2005)
+   files:   [109271] COL Nancy Drew v01 - The Demon of River Heights (2005) (DCP-Digital).cbr (99pp) | [109272] COL Nancy Drew v02 - Writ In Stone (2005) (DCP-Digital).cbr (95pp)
+            [109273] COL Nancy Drew v03 - The Haunted Dollhouse (2005) (DCP-Digital).cbr (96pp) | [109274] COL Nancy Drew v04 - The Girl Who Wasn't There (2005) (DCP-Digital).cbr (94pp)
+            [109275] COL Nancy Drew v05 - The Fake Heir (2006) (DCP-Digital).cbr (93pp) | [109276] COL Nancy Drew v06 - Mr. Cheeters is Missing (2006) (DCP Digital).cbr (94pp)
+            [109277] COL Nancy Drew v07 - The Charmed Bracelet (2006) (DCP Digital).cbr (99pp) | [109278] COL Nancy Drew v08 - Global Warning (2006) (DCP Digital).cbr (97pp)
+            [109279] COL Nancy Drew v09 - Ghost in the Machinery (2012) (digital) (Tithe-Empire).cbr (109pp) | [109280] COL Nancy Drew v10 - The Disoriented Express (2007) (JV-DCP).cbr (112pp)
+            [109281] COL Nancy Drew v11 - Monkey Wrench Blues (2007) (JV-DCP).cbr (113pp) | [109282] COL Nancy Drew v12 - Dress Reversal (2008) (JV-DCP).cbr (103pp)
+            [109283] COL Nancy Drew v13 - Doggone Town (2008) (JV-DCP).cbr (95pp) | [109284] COL Nancy Drew v14 - Sleight of Dan (2008) (JV-DCP).cbr (94pp)
+            [109285] COL Nancy Drew v15 - Tiger Counter (2008) (webrip-DCP).cbr (99pp) | [109286] COL Nancy Drew v16 - What Goes Up... (2009) (webrip-DCP).cbr (99pp)
+            [109287] COL Nancy Drew v17 - Night of the Living Chatchke (2009) (webrip-DCP).cbr (97pp) | [109288] COL Nancy Drew v18 - City Under the Basement (2009) (webrip-DCP).cbr (97pp)
+            [109289] COL Nancy Drew v19 - Cliffhanger (2009) (webrip-DCP).cbr (86pp) | [109290] COL Nancy Drew v20 - High School Musical Mystery (2010) (JV-DCP).cbr (85pp)
+            [109291] COL Nancy Drew v21 - High School Musical Mystery Part II - The Lost Verse (2010) (JV-DCP).cbr (91pp)
+   GCD says: [109272] gcd_reprint 898724: s62176 Nancy Drew (2005) #3 [1 story]
+   CV linked:      vol 49207 "Nancy Drew" 2005 NBM 21 issues; cached #1-21 (21); yearΔ 0; ratio 0/21; no judged range
+   CV local rip:   (= linked) · 111545 "Nancy Drew" 2018 Dynamite Entertainment 5   (rip lookup)
+   GCD dump:       62176 "Nancy Drew" 2005-2010 NBM [] 21 · 125898 "Nancy Drew" 2018-2018 Dynamite Entertainment [] 5 · 154691 "Nancy Drew" 2020-? Dynamite Entertainment [] 1   (dump lookup)
+
+== S12671 Nancy Drew  [tier A]   keys: Nancy Drew | Nancy Drew (2018)  years 2018-2018  6 files / 1 collections
+   split: the KEPT half of the P-029 split — moved out -> S102066 "Nancy Drew (2005)"; re-identify what stayed
+   folders: [5] Dynamite\Nancy Drew and the Hardy Boys\Nancy Drew v1 (2018) · [1] Dynamite\Nancy Drew and the Hardy Boys\_Omnibus Edition
+   files:   [21313] Nancy Drew 001 (2018) (3 covers) (digital) (Son of Ultron-Empire).cbr (26pp) | [21314] Nancy Drew 002 (2018) (3 covers) (digital) (Son of Ultron-Empire).cbr (25pp)
+            [21315] Nancy Drew 003 (2018) (3 covers) (digital) (Son of Ultron-Empire).cbr (26pp) | [21316] Nancy Drew 004 (2018) (3 covers) (digital) (Son of Ultron-Empire).cbr (22pp)
+            [21317] Nancy Drew 005 (2018) (3 covers) (digital) (Son of Ultron-Empire).cbr (25pp) | [21943] COL Nancy Drew Omnibus Book 01 (2022) (digital) (Son of Ultron-Empire).cbr (263pp)
+   ours:    ladder 1-5; ComicInfo Series: "Nancy Drew Omnibus"x1; ComicInfo Publisher: "Dynamite Entertainment"x1
+   CV linked:      vol 111545 "Nancy Drew" 2018 Dynamite Entertainment ? issues; cached #1-5 (5); yearΔ 0; ratio 5/? = 1.00; no judged range; v1 per-file: same volume on 6/6 files
+   CV candidates:  (= linked) · 49207 "Nancy Drew" 2005 NBM ? s83 · 105974 "Nancy Drew and the Hardy Boys: The Big Lie" 2017 Dynamite Entertainment ? s80 · 71550 "Nancy Drew Diaries" 2014 NBM ? s70 · 49077 "Detektiv Nancy Drew" 2007 Hjemmet ? s68 · 53116 "Nancy Drew and the Clue Crew" 2012 NBM ? s66 · 49248 "Nancy Drew: The New Case Files" 2010 NBM ? s66   (v1 search)
+   CV local rip:   (= linked) · 49207 "Nancy Drew" 2005 NBM 21 · 99286 "Nancy Drew and the Hardy Boys: The Big Lie" 2017 Dynamite Entertainment 6 (via CV candidate name "Nancy Drew and the Hardy Boys: The Big Lie") · 105974 "Nancy Drew and the Hardy Boys: The Big Lie" 2017 Dynamite Entertainment 1 issue 636406 (via CV candidate name "Nancy Drew and the Hardy Boys: The Big Lie")   (rip lookup)
+   GCD per-file:   series 125898 "Nancy Drew" 2018-2018 Dynamite Entertainment [was ongoing series] 5 on 5/6 files; methods numx5
+   GCD dump:       (= per-file) · 154691 "Nancy Drew" 2020-? Dynamite Entertainment [] 1 · 62176 "Nancy Drew" 2005-2010 NBM [] 21 · 112596 "Nancy Drew and the Hardy Boys: The Big Lie" 2017-2017 Dynamite Entertainment [] 6 (via CV candidate name "Nancy Drew and the Hardy Boys: The Big Lie") · 118632 "Nancy Drew and the Hardy Boys: The Big Lie" 2017-2017 Dynamite Entertainment [] 1 (via CV candidate name "Nancy Drew and the Hardy Boys: The Big Lie")   (dump lookup)
+   bridges:        gcd 125898 -> LOCG 137431 "Nancy Drew" support 5

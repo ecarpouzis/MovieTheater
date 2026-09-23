@@ -1,0 +1,707 @@
+## Conventions for this batch (34 shown of 90 matched; 359 in LEDGER.md; 69 shelf/shelves: kind:strip ×58 · pub:dc ×7 · kind:golden-age ×6 · kind:new ×4 · folder:vn-year ×3 · kind:foreign ×2 · pub:zenescope ×2 · folder:events ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-164] (58 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-165] (58 shelf/shelves) kind:strip pass:item
+- GCD files all three modern Bloom County books as ONE 3-issue series (110459): each shelf takes `gcd=-` and the row id on
+  its `I` line, or the three shelves merge.
+[L-030] (69 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-151] (69 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (69 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-013] (68 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (68 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-043] (68 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (68 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (68 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (68 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (68 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (68 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (68 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (68 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (68 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (68 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (68 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (68 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (68 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (68 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (68 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (68 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (68 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (68 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (68 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (68 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (68 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (68 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (68 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (68 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
+[L-212] (7 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-222] (7 shelf/shelves) pub:dc sig:collision
+- Second-rip fragments of shelves already read in earlier batches (Flash Secret Files, Spectre 1992, Teen Titans
+  2003/2016, Wonder Woman 1942/2016, Zatanna 1993, Donna Troy) surface as `--all` collisions — `merge-with` after
+  grepping the partner's name and count.
+[L-237] (7 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+
++56 more matched entries not shown: L-245, L-191, L-281, L-123, L-018, L-033, L-034, L-111, L-124, L-142, L-150, L-162, L-167, L-169, L-220, L-228, L-255, L-263, L-272, L-319, L-097, L-175, L-252, L-274, L-288, L-290, L-291, L-293, L-352, L-354, L-060, L-106, L-112, L-116, L-119, L-127, L-136, L-138, L-174, L-187, L-211, L-297, L-306, L-315, L-113, L-016, L-032, L-041, L-065, L-085, L-099, L-114, L-192, L-194, L-262, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S13664 Peanuts - Snoopy's Christmas Surprise  [tier D]   keys: Peanuts - Snoopy's Christmas Surprise  years 2018-2018  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts
+   files:   [114727] Peanuts - Snoopy's Christmas Surprise (2018) (GreenGiant-DCP).cbr (19pp)
+   CV candidates:  57135 "Peanuts Christmas" 2002 Random House 1 issue 385992 s70 · 134979 "Surprise, Surprise!" 2021 Harlequin Comics 1 issue 840868 s70 · 78929 "Peter Penguin's Christmas Surprise" 1965 E. S. London 1 issue 473950 s43 · 122286 "A Christmas Baby Surprise" 2019 Harlequin Comics 1 issue 724095 s43 · 84886 "A Surprise Christmas Proposal" 2015 Harlequin Comics 1 issue 501343 s43 · 138425 "Peanuts: Snoopy's Lief En Leed" ? Amsterdam Boek 1 issue 881374 s42   (v1 search)
+   CV local rip:   134979 "Surprise, Surprise!" 2021 Harlequin Comics 1 issue 840868 (via CV candidate name "Surprise, Surprise!") · 57135 "Peanuts Christmas" 2002 Random House 1 issue 385992 (via CV candidate name "Peanuts Christmas") · 78929 "Peter Penguin's Christmas Surprise" 1965 E. S. London 1 issue 473950 (via CV candidate name "Peter Penguin's Christmas Surprise")   (rip lookup)
+   GCD dump:       156154 "Surprise surprise" [fr] 2014-2014 Dynamite [] 1 (via CV candidate name "Surprise, Surprise!") · 56602 "A Peanuts Christmas" 2002-2002 Random House [] 1 (via CV candidate name "Peanuts Christmas")   (dump lookup)
+
+== S13665 Peanuts - Snoopy's Snow Day!  [tier B]   keys: Peanuts - Snoopy's Snow Day!  years 2019-2019  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts
+   files:   [114728] Peanuts - Snoopy's Snow Day! (2019) (GreenGiant-DCP).cbr (14pp)
+   CV per-file (v1): vol 98936 "Snow Day" 2017 Humanoids 1 issue 581725 on 1/1 files
+   CV candidates:  (= per-file) · 130383 "Snow Day For Groot!" 2020 Marvel 1 issue 799924 s43 · 99045 "Pink Panther: Snow Day" 2017 American Mythology Productions 1 issue 582593 s43 · 138425 "Peanuts: Snoopy's Lief En Leed" ? Amsterdam Boek 1 issue 881374 s42 · 65747 "Snoopy's Philosophy" 1967 Hallmark Books 1 issue 419163 s35 · 77292 "Snoopy's Thanksgiving" 2014 Fantagraphics 1 issue 467139 s35 · 171215 "Game Day Peanuts" 2020 Fantagraphics 4 s32   (v1 search)
+   CV local rip:   (= per-file) · 130383 "Snow Day For Groot!" 2020 Marvel 1 issue 799924 (via CV candidate name "Snow Day For Groot!") · 99045 "Pink Panther: Snow Day" 2017 American Mythology Productions 1 issue 582593 (via CV candidate name "Pink Panther: Snow Day")   (rip lookup)
+   GCD dump:       143029 "Snow Day" 2019-2019 Humanoids [] 1 (via CV name "Snow Day") · 112346 "Pink Panther: Snow Day" 2017-2017 American Mythology Productions [] 1 (via CV candidate name "Pink Panther: Snow Day")   (dump lookup)
+
+== S13667 Woodstock's First Flight! (Peanuts)  [tier D]   keys: Peanuts - Woodstock's First Flight!  years 2020-2020  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts
+   files:   [114731] Peanuts - Woodstock's First Flight! (2020) (GreenGiant-DCP).cbr (20pp)
+   CV candidates:  25860 "Flight" 2004 Image 1 issue 152868 s55 · 85121 "Max Ride: First Flight" 2015 Marvel 1 issue 502126 s43 · 91758 "Legendary Star-Lord: First Flight" 2016 Marvel 1 issue 537235 s43 · 70829 "Flight" 2005 Random House 8 s40 · 61302 "The Legend of Isis: The First Flight of Horus" ? TidalWave Productions 1 issue 402260 s38 · 81231 "Max Ride: First Flight" 2015 Marvel 5 s28   (v1 search)
+   CV local rip:   25859 "Flight" 2005 Image 1 issue 152867 (via CV candidate name "Flight") · 70829 "Flight" 2005 Random House 8 (via CV candidate name "Flight") · 25860 "Flight" 2004 Image 1 issue 152868 (via CV candidate name "Flight") · 91758 "Legendary Star-Lord: First Flight" 2016 Marvel 1 issue 537235 (via CV candidate name "Legendary Star-Lord: First Flight") · 81231 "Max Ride: First Flight" 2015 Marvel 5 (via CV candidate name "Max Ride: First Flight") · 85121 "Max Ride: First Flight" 2015 Marvel 1 issue 502126 (via CV candidate name "Max Ride: First Flight")   (rip lookup)
+   GCD dump:       38796 "Flight" 2006-2011 Random House [] 8 (via CV candidate name "Flight") · 13105 "Flight" 2004-2005 Image [] 2 (via CV candidate name "Flight") · 106338 "Max Ride: First Flight" 2016-2016 Marvel [] 1 (via CV candidate name "Max Ride: First Flight") · 88186 "Max Ride: First Flight" 2015-2015 Marvel [] 5 (via CV candidate name "Max Ride: First Flight") · 92886 "Max Ride: First Flight" 2015-2015 Marvel [] 1 (via CV candidate name "Max Ride: First Flight")   (dump lookup)
+   MU / External:  ExternalWork 684 "Woodstock's First Flight! (Peanuts)" openlibrary /works/OL31369292W
+
+== S13668 Peanuts - Woodstock's Sunny Day  [tier D]   keys: Peanuts - Woodstock's Sunny Day  years 2019-2019  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts
+   files:   [114732] Peanuts - Woodstock's Sunny Day (2019) (GreenGiant-DCP).cbr (14pp)
+   CV candidates:  155912 "Sunny" 2023 Devir Portugal 1 issue 1039177 s55 · 167677 "Bergamot & Sunny Day" 2025 IDP 1 issue 1138203 s43 · 22249 "Sunny" 1947 Fox Comics (US) 4 s43 · 85591 "Sesame Street: Another Sunny Day" 2015 Ape Entertainment 1 issue 504405 s42 · 166859 "Sunny Sunny Ann!" 2023 JBC 1 issue 1131846 s41 · 61826 "Sunny" 2013 Viz 6 s40   (v1 search)
+   CV local rip:   140561 "Sunny" 2015 ECC Ediciones 6 (via CV candidate name "Sunny") · 155912 "Sunny" 2023 Devir Portugal 1 issue 1039177 (via CV candidate name "Sunny") · 134462 "Sunny" 2014 Dargaud 6 (via CV candidate name "Sunny") · 61826 "Sunny" 2013 Viz 6 (via CV candidate name "Sunny") · 3398 "Sunny" 2011 Shogakukan 6 (via CV candidate name "Sunny") · 22249 "Sunny" 1947 Fox Comics (US) 4 (via CV candidate name "Sunny")   (rip lookup)
+   GCD dump:       164266 "Sunny" [de] 2020-2022 Carlsen Comics [DE] [] 6 (via CV candidate name "Sunny") · 150791 "Sunny" 2015-? Scholastic [] 3 (via CV candidate name "Sunny") · 204897 "Sunny" [pt] 2023-? Devir Portugal [] 1 (via CV candidate name "Sunny") · 132699 "Sunny" [fr] 2014-2016 Dargaud [] 6 (via CV candidate name "Sunny") · 130996 "Sunny" 2013-2016 Viz [] 6 (via CV candidate name "Sunny") · 158162 "Sunny" [ja-jp] 2011-2015 小学館 [Shogakukan] [] 6 (via CV candidate name "Sunny")   (dump lookup)
+
+== S15817 Snoopy Soars to Space - Peanuts Graphic Novels  [tier D]   keys: Snoopy Soars to Space - Peanuts Graphic Novels  years 2023-2023  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts
+   files:   [114746] Snoopy Soars to Space - Peanuts Graphic Novels (2023) (GreenGiant-DCP).cbr (160pp)
+   ours:    ComicInfo Series: "Snoopy Soars to Space - Peanuts Graphic Novels"x1; ComicInfo Publisher: "Simon Spotlight"x1
+   CV candidates:  109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s58 · 99876 "Snoopy To the Rescue: A Peanuts Collection" 2017 Andrews McMeel Publishing 1 issue 587465 s36 · 86246 "Peanuts: The Snoopy Special" 2015 Boom! Studios 1 issue 506711 s35 · 106309 "Snoopy: A Peanuts Collection" 2017 Boom! Studios 1 issue 641458 s35 · 150714 "Peanuts Be More Snoopy" 2020 DK Publishing 1 issue 991898 s35 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s35   (v1 search)
+   CV local rip:   109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 (via CV candidate name "Graphic Novels") · 99876 "Snoopy To the Rescue: A Peanuts Collection" 2017 Andrews McMeel Publishing 1 issue 587465 (via CV candidate name "Snoopy To the Rescue: A Peanuts Collection") · 86246 "Peanuts: The Snoopy Special" 2015 Boom! Studios 1 issue 506711 (via CV candidate name "Peanuts: The Snoopy Special")   (rip lookup)
+   GCD dump:       65342 "Graphic Novels" [de] 2012-2012 Süddeutsche Zeitung [] 10 (via CV candidate name "Graphic Novels") · 60514 "Graphic Novels" [de] 2011-2011 Süddeutsche Zeitung [] 11 (via CV candidate name "Graphic Novels") · 94525 "Peanuts: The Snoopy Special" 2015-2015 Boom! Studios [] 1 (via CV candidate name "Peanuts: The Snoopy Special")   (dump lookup)
+
+== S15818 Snoopy for President!  [tier D]   keys: Snoopy for President!  years 2016-2016  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts
+   files:   [114745] Snoopy for President! (2016) (GreenGiant-DCP).cbr (25pp)
+   CV candidates:  66464 "Snoopy" 1958 Holt, Rinehart and Winston 1 issue 422043 s55 · 63204 "Snoopy" 1974 Holt, Rinehart and Winston 1 issue 409893 s55 · 140069 "Snoopy" 1987 Budget Books 4 s43 · 140157 "Snoopy" 1989 Carlsen Verlag 8 s40 · 140272 "Snoopy" 1990 Hjemmet 5 s40 · 140235 "Snoopy" 1989 Bavaria Comic Verlag 7 s40   (v1 search)
+   CV local rip:   140272 "Snoopy" 1990 Hjemmet 5 (via CV candidate name "Snoopy") · 140157 "Snoopy" 1989 Carlsen Verlag 8 (via CV candidate name "Snoopy") · 140235 "Snoopy" 1989 Bavaria Comic Verlag 7 (via CV candidate name "Snoopy") · 140069 "Snoopy" 1987 Budget Books 4 (via CV candidate name "Snoopy") · 63204 "Snoopy" 1974 Holt, Rinehart and Winston 1 issue 409893 (via CV candidate name "Snoopy") · 66464 "Snoopy" 1958 Holt, Rinehart and Winston 1 issue 422043 (via CV candidate name "Snoopy")   (rip lookup)
+   GCD dump:       179946 "Snoopy" [en-gb] 2015-2015 Titan [] 1 (via CV candidate name "Snoopy") · 124151 "Snoopy" [pt-br] 2014-2015 Autêntica Editora [] 4 (via CV candidate name "Snoopy") · 151338 "Snoopy!" [de] 2019-2019 Carlsen Comics [DE] [] 1 (via CV candidate name "Snoopy") · 43761 "Snoopy" [pt-br] 2006-? L&PM Editores [] 7 (via CV candidate name "Snoopy") · 225510 "Snoopy" [hu] 2001-2004 Semic [] 27 (via CV candidate name "Snoopy") · 108971 "Snoopy" [de] 1991-? Xenos Verlag [] 1 (via CV candidate name "Snoopy")   (dump lookup)
+   MU / External:  ExternalWork 685 "Snoopy for President!" openlibrary /works/OL25378236W
+
+== S19644 The Snoopy Show - Happiness Is a Dancing Dog  [tier D]   keys: The Snoopy Show - Happiness Is a Dancing Dog  years 2022-2022  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts
+   files:   [114752] The Snoopy Show - Happiness Is a Dancing Dog (2022) (GreenGiant-DCP).cbr (37pp)
+   CV candidates:  105635 "Dancing!!" 2014 Shueisha 1 issue 633222 s55 · 97249 "Happiness" 2015 Kodansha 10 s40 · 148152 "Happiness" 2021 Milky Way Ediciones 10 s40 · 67122 "Happiness Is... A Warm Puppy" 1979 Determined Productions, Inc. 1 issue 424810 s39 · 122923 "Happiness Is a Warm Puppy" 2019 Penguin Group 1 issue 728123 s39 · 129928 "Happiness Is A Warm Bun" 2020 Paxel Comics 1 issue 796690 s39   (v1 search)
+   CV local rip:   148152 "Happiness" 2021 Milky Way Ediciones 10 (via CV candidate name "Happiness") · 165715 "Happiness" 2023 Cross Cult 5 (via CV candidate name "Happiness") · 154170 "Happiness" 2017 Tong Li Publishing Co. 4 (via CV candidate name "Happiness") · 94399 "Happiness" 2016 Kodansha Comics USA 10 (via CV candidate name "Happiness") · 97249 "Happiness" 2015 Kodansha 10 (via CV candidate name "Happiness") · 147969 "Happiness" 2015 Milky Way Ediciones 1 issue 968134 (via CV candidate name "Happiness")   (rip lookup)
+   GCD dump:       204481 "Happiness" [de] 2023-2024 Cross Cult [] 5 (via CV candidate name "Happiness") · 201062 "Happiness" [fr] 2018-2020 Pika Édition [] 10 (via CV candidate name "Happiness") · 119685 "Happiness" 2016-2019 Kodansha USA [] 10 (via CV candidate name "Happiness") · 107092 "Dancing" [de] 1989-1990 Bastei Verlag [] 15 (via CV candidate name "Dancing!!")   (dump lookup)
+
+== S20274 To Mom and Dad with Love  [tier D]   keys: To Mom and Dad with Love  years 2023-2023  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts
+   files:   [114730] Peanuts - To Mom and Dad with Love (2023) (GreenGiant-DCP).cbr (37pp)
+   ours:    ComicInfo Series: "To Mom and Dad with Love"x1; ComicInfo Publisher: "Simon Spotlight"x1
+   CV candidates:  95987 "Dad" 2016 Europe Comics 3 s43 · 91648 "Dad" 2015 Dupuis 11 s40 · 116398 "Hobo Mom" 2019 Fantagraphics 1 issue 696793 s35 · 123341 "Slog's Dad" 2011 Candlewick Press 1 issue 730009 s35 · 65283 "Astronaut Dad" 2007 Silent Devil Productions 1 issue 417437 s35 · 59160 "In Love with Jesus" 1952 Catechetical Guild Educational Society 1 issue 394606 s35   (v1 search)
+   CV local rip:   95987 "Dad" 2016 Europe Comics 3 (via CV candidate name "Dad") · 91648 "Dad" 2015 Dupuis 11 (via CV candidate name "Dad") · 116398 "Hobo Mom" 2019 Fantagraphics 1 issue 696793 (via CV candidate name "Hobo Mom")   (rip lookup)
+   GCD dump:       222804 "Dad" [fr-be] 2023-2023 Dupuis [] 4 (via CV candidate name "Dad") · 120546 "Dad" [nl-be] 2016-? Dupuis [] 7 (via CV candidate name "Dad") · 131417 "Dad" [fr-be] 2015-? Dupuis [] 11 (via CV candidate name "Dad") · 137404 "Hobo Mom" 2019-2019 Fantagraphics [] 1 (via CV candidate name "Hobo Mom") · 186265 "Hobo Mom" [fr-be] 2015-2015 L'employé du Moi [] 1 (via CV candidate name "Hobo Mom")   (dump lookup)
+   MU / External:  ExternalWork 683 "To Mom and Dad with Love" openlibrary /works/OL28411335W
+
+== S21635 Who's Your Valentine, Charlie Brown?  [tier D]   keys: Who's Your Valentine, Charlie Brown  years 2017-2017  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts
+   files:   [114756] Who's Your Valentine, Charlie Brown (2017) (GreenGiant-DCP).cbr (12pp)
+   CV candidates:  79290 "A Valentine For Charlie Brown" 2015 Fantagraphics 1 issue 475544 s49 · 59317 "We're on Your Side, Charlie Brown" 1969 Coronet Books 1 issue 395089 s48 · 84076 "It's Your First Kiss, Charlie Brown" 1978 Scholastic Book Services 1 issue 498291 s48 · 84308 "You're Out of Your Mind, Charlie Brown" 1958 Holt, Rinehart and Winston 1 issue 498982 s47 · 115077 "Peanuts: Race For Your Life, Charlie Brown!" 2018 Boom! Studios 1 issue 691327 s47 · 59169 "Unsinkable Charlie Brown" 1994 Henry Holt and Co. 1 issue 394624 s41   (v1 search)
+   CV local rip:   79290 "A Valentine For Charlie Brown" 2015 Fantagraphics 1 issue 475544 (via CV candidate name "A Valentine For Charlie Brown") · 84076 "It's Your First Kiss, Charlie Brown" 1978 Scholastic Book Services 1 issue 498291 (via CV candidate name "It's Your First Kiss, Charlie Brown") · 59317 "We're on Your Side, Charlie Brown" 1969 Coronet Books 1 issue 395089 (via CV candidate name "We're on Your Side, Charlie Brown")   (rip lookup)
+   GCD dump:       85809 "A Valentine for Charlie Brown" 2014-2014 Fantagraphics [] 1 (via CV candidate name "A Valentine For Charlie Brown") · 75438 "It's Your First Kiss, Charlie Brown" 1978-1978 Scholastic Book Services [] 1 (via CV candidate name "It's Your First Kiss, Charlie Brown") · 33133 "We're on Your Side, Charlie Brown" [en-gb] 1969-1969 Coronet Books [] 1 (via CV candidate name "We're on Your Side, Charlie Brown") · 19161 "We're on Your Side, Charlie Brown" 1966-1984 Crest Books [] 5 (via CV candidate name "We're on Your Side, Charlie Brown")   (dump lookup)
+   MU / External:  ExternalWork 686 "Who's Your Valentine, Charlie Brown?" openlibrary /works/OL25411242W
+
+== S13676 Peanuts.1951  [tier D]   keys: Peanuts.1951  years 1951-1951  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114663] Peanuts.1951.cbr (292pp)
+   ours:    ladder 1951
+   CV candidates:  74830 "Casey Ruggles Daily Strips 5-14-1951 to 10-9-1951" 1979 Pacific Comics Club 1 issue 456336 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   57360 "Peanuts" 1952 Holt, Rinehart and Winston 1 issue 386734 (via CV candidate name "Peanuts") · 57453 "Peanuts" 1954 United Feature Syndicate 1 issue 387000 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts") · 57775 "Peanuts" 1952-1952 Holt, Rinehart and Winston [] 1 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13677 Peanuts.1952  [tier D]   keys: Peanuts.1952  years 1952-1952  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114664] Peanuts.1952.cbr (357pp)
+   ours:    ladder 1952
+   CV candidates:  171359 "Peanuts Every Sunday: 1952-1955" 2013 Fantagraphics 1 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   57360 "Peanuts" 1952 Holt, Rinehart and Winston 1 issue 386734 (via CV candidate name "Peanuts") · 57453 "Peanuts" 1954 United Feature Syndicate 1 issue 387000 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts") · 57775 "Peanuts" 1952-1952 Holt, Rinehart and Winston [] 1 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13678 Peanuts.1953  [tier D]   keys: Peanuts.1953  years 1953-1953  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114665] Peanuts.1953.cbr (353pp)
+   ours:    ladder 1953
+   CV candidates:  57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0 · 133549 "Peanuts" 1967 Coronet Books 89 s0   (v1 search)
+   CV local rip:   57360 "Peanuts" 1952 Holt, Rinehart and Winston 1 issue 386734 (via CV candidate name "Peanuts") · 57453 "Peanuts" 1954 United Feature Syndicate 1 issue 387000 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 57775 "Peanuts" 1952-1952 Holt, Rinehart and Winston [] 1 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13679 Peanuts.1954  [tier D]   keys: Peanuts.1954  years 1954-1954  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114666] Peanuts.1954.cbr (327pp)
+   ours:    ladder 1954
+   CV candidates:  138477 "Peanuts  De Jaren 1950-1954" ? Oog & Blik 1 issue 881533 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   57453 "Peanuts" 1954 United Feature Syndicate 1 issue 387000 (via CV candidate name "Peanuts") · 57360 "Peanuts" 1952 Holt, Rinehart and Winston 1 issue 386734 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts") · 57775 "Peanuts" 1952-1952 Holt, Rinehart and Winston [] 1 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13680 Peanuts.1955  [tier D]   keys: Peanuts.1955  years 1955-1955  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114667] Peanuts.1955.cbr (322pp)
+   ours:    ladder 1955
+   CV candidates:  138507 "Peanuts De Jaren 1955-1959" ? Oog & Blik 1 issue 881634 s15 · 171359 "Peanuts Every Sunday: 1952-1955" 2013 Fantagraphics 1 s15 · 78732 "Hit: 1955" 2014 Boom! Studios 1 issue 472977 s15 · 127981 "Archie! 1955" 2020 Archie Comics 1 issue 768554 s15 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 74052 "Strips" ? American Publishing 5 s0   (v1 search)
+   CV local rip:   78732 "Hit: 1955" 2014 Boom! Studios 1 issue 472977 (via CV candidate name "Hit: 1955") · 138507 "Peanuts De Jaren 1955-1959" ? Oog & Blik 1 issue 881634 (via CV candidate name "Peanuts De Jaren 1955-1959")   (rip lookup)
+   GCD dump:       215648 "Hit: 1955" 2014-2014 Boom! Studios [] 1 (via CV candidate name "Hit: 1955") · 215649 "Hit: 1955" 2014-2014 Boom! Studios [] 1 (via CV candidate name "Hit: 1955")   (dump lookup)
+
+== S13681 Peanuts.1956  [tier D]   keys: Peanuts.1956  years 1956-1956  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114668] Peanuts.1956.cbr (353pp)
+   ours:    ladder 1956
+   CV candidates:  171360 "Peanuts Every Sunday: 1956-1960" 2014 Fantagraphics 1 s15 · 136860 "1956" 2021 Birdcage Bottom Books 1 issue 859169 s15 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   136860 "1956" 2021 Birdcage Bottom Books 1 issue 859169 (via CV candidate name "1956") · 35571 "Strips" 1989 Rip Off Press 9 (via CV candidate name "Strips") · 35572 "Strips" 1997 White Buffaloe Press 3 (via CV candidate name "Strips") · 74052 "Strips" ? American Publishing 5 (via CV candidate name "Strips")   (rip lookup)
+   GCD dump:       94108 "Strips!!" [nl] 1980-1980 Oberon [] 1 (via CV candidate name "Strips") · 62903 "Strips" [fy-nl] 1982-1982 Harke Bremer; Jarich Hoekstra [] 1 (via CV candidate name "Strips") · 60383 "Strips" 1988-? American Publishing [] 101 (via CV candidate name "Strips") · 140973 "Strips" 1988-? National Forum [] 71 (via CV candidate name "Strips") · 17121 "Strips" 1989-1991 Rip Off Press [] 9 (via CV candidate name "Strips") · 180440 "Strips" [no] 1917-? Strips [] ? (via CV candidate name "Strips")   (dump lookup)
+
+== S13682 Peanuts.1957  [tier D]   keys: Peanuts.1957  years 1957-1957  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114669] Peanuts.1957.cbr (361pp)
+   ours:    ladder 1957
+   CV candidates:  88931 "Hit: 1957" 2016 Boom! Studios 1 issue 520251 s15 · 80912 "Hit: 1957" 2015 Boom! Studios 4 s3 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   35571 "Strips" 1989 Rip Off Press 9 (via CV candidate name "Strips") · 35572 "Strips" 1997 White Buffaloe Press 3 (via CV candidate name "Strips") · 80912 "Hit: 1957" 2015 Boom! Studios 4 (via CV candidate name "Hit: 1957") · 88931 "Hit: 1957" 2016 Boom! Studios 1 issue 520251 (via CV candidate name "Hit: 1957") · 74052 "Strips" ? American Publishing 5 (via CV candidate name "Strips")   (rip lookup)
+   GCD dump:       94108 "Strips!!" [nl] 1980-1980 Oberon [] 1 (via CV candidate name "Strips") · 62903 "Strips" [fy-nl] 1982-1982 Harke Bremer; Jarich Hoekstra [] 1 (via CV candidate name "Strips") · 60383 "Strips" 1988-? American Publishing [] 101 (via CV candidate name "Strips") · 140973 "Strips" 1988-? National Forum [] 71 (via CV candidate name "Strips") · 17121 "Strips" 1989-1991 Rip Off Press [] 9 (via CV candidate name "Strips") · 17107 "Strips" 1997-1997 White Buffaloe Press [] 3 (via CV candidate name "Strips")   (dump lookup)
+
+== S13683 Peanuts.1958  [tier D]   keys: Peanuts.1958  years 1958-1958  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114670] Peanuts.1958.cbr (361pp)
+   ours:    ladder 1958
+   CV candidates:  57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0 · 133549 "Peanuts" 1967 Coronet Books 89 s0   (v1 search)
+   CV local rip:   2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 57453 "Peanuts" 1954 United Feature Syndicate 1 issue 387000 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 57360 "Peanuts" 1952 Holt, Rinehart and Winston 1 issue 386734 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts") · 57775 "Peanuts" 1952-1952 Holt, Rinehart and Winston [] 1 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13684 Peanuts.1959  [tier D]   keys: Peanuts.1959  years 1959-1959  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114671] Peanuts.1959.cbr (351pp)
+   ours:    ladder 1959
+   CV candidates:  138507 "Peanuts De Jaren 1955-1959" ? Oog & Blik 1 issue 881634 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 57453 "Peanuts" 1954 United Feature Syndicate 1 issue 387000 (via CV candidate name "Peanuts") · 57360 "Peanuts" 1952 Holt, Rinehart and Winston 1 issue 386734 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts") · 57775 "Peanuts" 1952-1952 Holt, Rinehart and Winston [] 1 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13686 Peanuts.1961  [tier D]   keys: Peanuts.1961  years 1961-1961  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114673] Peanuts.1961.cbr (357pp)
+   ours:    ladder 1961
+   CV candidates:  171361 "Peanuts Every Sunday: 1961-1965" 2015 Fantagraphics 1 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 57453 "Peanuts" 1954 United Feature Syndicate 1 issue 387000 (via CV candidate name "Peanuts") · 57360 "Peanuts" 1952 Holt, Rinehart and Winston 1 issue 386734 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts") · 57775 "Peanuts" 1952-1952 Holt, Rinehart and Winston [] 1 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13687 Peanuts.1962  [tier D]   keys: Peanuts.1962  years 1962-1962  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114674] Peanuts.1962.cbr (339pp)
+   ours:    ladder 1962
+   CV candidates:  57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0 · 133549 "Peanuts" 1967 Coronet Books 89 s0   (v1 search)
+   CV local rip:   2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 57453 "Peanuts" 1954 United Feature Syndicate 1 issue 387000 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 57360 "Peanuts" 1952 Holt, Rinehart and Winston 1 issue 386734 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts") · 57775 "Peanuts" 1952-1952 Holt, Rinehart and Winston [] 1 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13688 Peanuts.1963  [tier D]   keys: Peanuts.1963  years 1963-1963  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114675] Peanuts.1963.cbr (358pp)
+   ours:    ladder 1963
+   CV candidates:  54294 "1963 Ashcan" 1992 Image 3 s3 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 5162 "1963" 1993 Image 6 s0 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 57453 "Peanuts" 1954 United Feature Syndicate 1 issue 387000 (via CV candidate name "Peanuts") · 57360 "Peanuts" 1952 Holt, Rinehart and Winston 1 issue 386734 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts") · 57775 "Peanuts" 1952-1952 Holt, Rinehart and Winston [] 1 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13689 Peanuts.1964  [tier D]   keys: Peanuts.1964  years 1964-1964  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114676] Peanuts.1964.cbr (365pp)
+   ours:    ladder 1964
+   CV candidates:  138520 "Peanuts De Jaren 1960-1964" ? Oog & Blik 1 issue 881711 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 57453 "Peanuts" 1954 United Feature Syndicate 1 issue 387000 (via CV candidate name "Peanuts") · 57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13690 Peanuts.1965  [tier D]   keys: Peanuts.1965  years 1965-1965  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114677] Peanuts.1965.cbr (322pp)
+   ours:    ladder 1965
+   CV candidates:  171361 "Peanuts Every Sunday: 1961-1965" 2015 Fantagraphics 1 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 57453 "Peanuts" 1954 United Feature Syndicate 1 issue 387000 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13691 Peanuts.1966  [tier D]   keys: Peanuts.1966  years 1966-1966  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114678] Peanuts.1966.cbr (364pp)
+   ours:    ladder 1966
+   CV candidates:  171362 "Peanuts Every Sunday: 1966-1970" 2016 Fantagraphics 1 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 57453 "Peanuts" 1954 United Feature Syndicate 1 issue 387000 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13692 Peanuts.1967  [tier D]   keys: Peanuts.1967  years 1967-1967  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114679] Peanuts.1967.cbr (362pp)
+   ours:    ladder 1967
+   CV candidates:  57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0 · 133549 "Peanuts" 1967 Coronet Books 89 s0   (v1 search)
+   CV local rip:   133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 57453 "Peanuts" 1954 United Feature Syndicate 1 issue 387000 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13693 Peanuts.1968  [tier D]   keys: Peanuts.1968  years 1968-1968  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114680] Peanuts.1968.cbr (363pp)
+   ours:    ladder 1968
+   CV candidates:  57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0 · 133549 "Peanuts" 1967 Coronet Books 89 s0   (v1 search)
+   CV local rip:   133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 57453 "Peanuts" 1954 United Feature Syndicate 1 issue 387000 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13694 Peanuts.1969  [tier D]   keys: Peanuts.1969  years 1969-1969  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114681] Peanuts.1969.cbr (364pp)
+   ours:    ladder 1969
+   CV candidates:  126708 "Eternauta 1969" 2017 Avant-Verlag 1 issue 759397 s15 · 132366 "The Eternaut 1969" 2020 Fantagraphics 1 issue 819983 s15 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 112216 "Dangerous 1969" 2018 Kodansha 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   35571 "Strips" 1989 Rip Off Press 9 (via CV candidate name "Strips") · 35572 "Strips" 1997 White Buffaloe Press 3 (via CV candidate name "Strips") · 126708 "Eternauta 1969" 2017 Avant-Verlag 1 issue 759397 (via CV candidate name "Eternauta 1969") · 132366 "The Eternaut 1969" 2020 Fantagraphics 1 issue 819983 (via CV candidate name "The Eternaut 1969") · 74052 "Strips" ? American Publishing 5 (via CV candidate name "Strips")   (rip lookup)
+   GCD dump:       94108 "Strips!!" [nl] 1980-1980 Oberon [] 1 (via CV candidate name "Strips") · 62903 "Strips" [fy-nl] 1982-1982 Harke Bremer; Jarich Hoekstra [] 1 (via CV candidate name "Strips") · 60383 "Strips" 1988-? American Publishing [] 101 (via CV candidate name "Strips") · 140973 "Strips" 1988-? National Forum [] 71 (via CV candidate name "Strips") · 17121 "Strips" 1989-1991 Rip Off Press [] 9 (via CV candidate name "Strips") · 17107 "Strips" 1997-1997 White Buffaloe Press [] 3 (via CV candidate name "Strips")   (dump lookup)
+
+== S13695 Peanuts.1970  [tier D]   keys: Peanuts.1970  years 1970-1970  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114682] Peanuts.1970.cbr (362pp)
+   ours:    ladder 1970
+   CV candidates:  171362 "Peanuts Every Sunday: 1966-1970" 2016 Fantagraphics 1 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 57453 "Peanuts" 1954 United Feature Syndicate 1 issue 387000 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13696 Peanuts.1971  [tier D]   keys: Peanuts.1971  years 1971-1971  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114683] Peanuts.1971.cbr (362pp)
+   ours:    ladder 1971
+   CV candidates:  171363 "Peanuts Every Sunday: 1971-1975" 2017 Fantagraphics 1 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 57453 "Peanuts" 1954 United Feature Syndicate 1 issue 387000 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13697 Peanuts.1972  [tier D]   keys: Peanuts.1972  years 1972-1972  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114684] Peanuts.1972.cbr (365pp)
+   ours:    ladder 1972
+   CV candidates:  159855 "Bobigny 1972" 2024 Éditions Glénat 1 issue 1070373 s15 · 127935 "Torpedo 1972" 2017 Cross Cult 1 issue 768367 s15 · 142661 "Torpedo 1972" 2017 Panini España 1 issue 920165 s15 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 157172 "Torpedo 1972" 2024 Ablaze 6 s0   (v1 search)
+   CV local rip:   127935 "Torpedo 1972" 2017 Cross Cult 1 issue 768367 (via CV candidate name "Torpedo 1972") · 142661 "Torpedo 1972" 2017 Panini España 1 issue 920165 (via CV candidate name "Torpedo 1972") · 157172 "Torpedo 1972" 2024 Ablaze 6 (via CV candidate name "Torpedo 1972") · 159855 "Bobigny 1972" 2024 Éditions Glénat 1 issue 1070373 (via CV candidate name "Bobigny 1972")   (rip lookup)
+   GCD dump:       117996 "Torpedo 1972" [de] 2017-2017 Cross Cult [] 1 (via CV candidate name "Torpedo 1972") · 125827 "Torpedo 1972" [nl] 2018-? HUM! [] 3 (via CV candidate name "Torpedo 1972") · 147039 "Torpedo 1972" [hr] 2018-2018 Fibra [] 1 (via CV candidate name "Torpedo 1972") · 144692 "Torpedo 1972" [fr] 2019-2019 Vents d'Ouest [] 1 (via CV candidate name "Torpedo 1972") · 209922 "Torpedo 1972" 2024-? Ablaze Publishing [] 6 (via CV candidate name "Torpedo 1972")   (dump lookup)
+
+== S13698 Peanuts.1973  [tier D]   keys: Peanuts.1973  years 1973-1973  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114685] Peanuts.1973.cbr (365pp)
+   ours:    ladder 1973
+   CV candidates:  139456 "Abbott 1973" 2021 Boom! Studios 1 issue 888777 s15 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 133334 "Abbott: 1973" 2021 Boom! Studios 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13699 Peanuts.1974  [tier D]   keys: Peanuts.1974  years 1974-1974  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114686] Peanuts.1974.cbr (365pp)
+   ours:    ladder 1974
+   CV candidates:  147292 "1974" ? Jaja Verlag 1 issue 963384 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts") · 30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts") · 11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13700 Peanuts.1975  [tier D]   keys: Peanuts.1975  years 1975-1975  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114687] Peanuts.1975.cbr (365pp)
+   ours:    ladder 1975
+   CV candidates:  171363 "Peanuts Every Sunday: 1971-1975" 2017 Fantagraphics 1 s15 · 142662 "Tórax 1975" 2020 Panini España 1 issue 920166 s15 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   35571 "Strips" 1989 Rip Off Press 9 (via CV candidate name "Strips") · 35572 "Strips" 1997 White Buffaloe Press 3 (via CV candidate name "Strips") · 142662 "Tórax 1975" 2020 Panini España 1 issue 920166 (via CV candidate name "Tórax 1975") · 74052 "Strips" ? American Publishing 5 (via CV candidate name "Strips")   (rip lookup)
+   GCD dump:       94108 "Strips!!" [nl] 1980-1980 Oberon [] 1 (via CV candidate name "Strips") · 62903 "Strips" [fy-nl] 1982-1982 Harke Bremer; Jarich Hoekstra [] 1 (via CV candidate name "Strips") · 60383 "Strips" 1988-? American Publishing [] 101 (via CV candidate name "Strips") · 140973 "Strips" 1988-? National Forum [] 71 (via CV candidate name "Strips") · 17121 "Strips" 1989-1991 Rip Off Press [] 9 (via CV candidate name "Strips") · 17107 "Strips" 1997-1997 White Buffaloe Press [] 3 (via CV candidate name "Strips")   (dump lookup)
+
+== S13701 Peanuts.1976  [tier D]   keys: Peanuts.1976  years 1976-1976  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114688] Peanuts.1976.cbr (366pp)
+   ours:    ladder 1976
+   CV candidates:  171364 "Peanuts Every Sunday: 1976-1980" 2018 Fantagraphics 1 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13702 Peanuts.1977  [tier D]   keys: Peanuts.1977  years 1977-1977  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114689] Peanuts.1977.cbr (359pp)
+   ours:    ladder 1977
+   CV candidates:  57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0 · 133549 "Peanuts" 1967 Coronet Books 89 s0   (v1 search)
+   CV local rip:   57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13703 Peanuts.1978  [tier D]   keys: Peanuts.1978  years 1978-1978  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114690] Peanuts.1978.cbr (362pp)
+   ours:    ladder 1978
+   CV candidates:  149894 "Superman 1978" 2022 ECC Ediciones 1 issue 986091 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts") · 187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 103636 "Peanuts" [de] 2000-2000 Baumhaus Verlag [] 3 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13704 Peanuts.1979  [tier D]   keys: Peanuts.1979  years 1979-1979  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114691] Peanuts.1979.cbr (365pp)
+   ours:    ladder 1979
+   CV candidates:  92138 "Love 1979" 1979 Murray Comics 1 issue 539068 s15 · 160042 "Abbott: 1979" 2024 Boom! Studios 1 issue 1071618 s15 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0 · 154113 "Abbott: 1979" 2023 Boom! Studios 5 s0   (v1 search)
+   CV local rip:   92138 "Love 1979" 1979 Murray Comics 1 issue 539068 (via CV candidate name "Love 1979") · 35571 "Strips" 1989 Rip Off Press 9 (via CV candidate name "Strips") · 35572 "Strips" 1997 White Buffaloe Press 3 (via CV candidate name "Strips") · 154113 "Abbott: 1979" 2023 Boom! Studios 5 (via CV candidate name "Abbott: 1979") · 160042 "Abbott: 1979" 2024 Boom! Studios 1 issue 1071618 (via CV candidate name "Abbott: 1979") · 74052 "Strips" ? American Publishing 5 (via CV candidate name "Strips")   (rip lookup)
+   GCD dump:       94108 "Strips!!" [nl] 1980-1980 Oberon [] 1 (via CV candidate name "Strips") · 62903 "Strips" [fy-nl] 1982-1982 Harke Bremer; Jarich Hoekstra [] 1 (via CV candidate name "Strips") · 60383 "Strips" 1988-? American Publishing [] 101 (via CV candidate name "Strips") · 140973 "Strips" 1988-? National Forum [] 71 (via CV candidate name "Strips") · 17121 "Strips" 1989-1991 Rip Off Press [] 9 (via CV candidate name "Strips") · 17107 "Strips" 1997-1997 White Buffaloe Press [] 3 (via CV candidate name "Strips")   (dump lookup)
+
+== S13705 Peanuts.1980  [tier D]   keys: Peanuts.1980  years 1980-1980  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114692] Peanuts.1980.cbr (365pp)
+   ours:    ladder 1980
+   CV candidates:  171364 "Peanuts Every Sunday: 1976-1980" 2018 Fantagraphics 1 s15 · 47308 "Little Man: Short Strips 1980 - 1995" 2006 Drawn & Quarterly 1 issue 324641 s15 · 47214 "Little Man: Short Strips 1980 - 1995" 1998 Drawn & Quarterly 1 issue 324020 s15 · 65779 "Hembeck 1980" 1980 FantaCo Enterprises 1 issue 419263 s15 · 28111 "Galactica 1980" 2009 Dynamite Entertainment 4 s3 · 35572 "Strips" 1997 White Buffaloe Press 3 s3   (v1 search)
+   CV local rip:   47214 "Little Man: Short Strips 1980 - 1995" 1998 Drawn & Quarterly 1 issue 324020 (via CV candidate name "Little Man: Short Strips 1980 - 1995") · 47308 "Little Man: Short Strips 1980 - 1995" 2006 Drawn & Quarterly 1 issue 324641 (via CV candidate name "Little Man: Short Strips 1980 - 1995")   (rip lookup)
+   GCD dump:       26963 "The Little Man: Short Strips 1980 - 1995" [en-ca] 1998-1998 Drawn & Quarterly [] 1 (via CV candidate name "Little Man: Short Strips 1980 - 1995") · 87298 "The Little Man: Short Strips 1980 - 1995" [en-ca] 1998-1998 Drawn & Quarterly [] 1 (via CV candidate name "Little Man: Short Strips 1980 - 1995") · 26964 "The Little Man: Short Strips 1980 - 1995" [en-ca] 2006-2006 Drawn & Quarterly [] 1 (via CV candidate name "Little Man: Short Strips 1980 - 1995")   (dump lookup)
+
+== S13706 Peanuts.1981  [tier D]   keys: Peanuts.1981  years 1981-1981  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114693] Peanuts.1981.cbr (365pp)
+   ours:    ladder 1981
+   CV candidates:  171365 "Peanuts Every Sunday: 1981-1985" 2019 Fantagraphics 1 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts") · 140448 "Peanuts" 2000 Baumhaus Verlag 3 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 103636 "Peanuts" [de] 2000-2000 Baumhaus Verlag [] 3 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13707 Peanuts.1982  [tier D]   keys: Peanuts.1982  years 1982-1982  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114694] Peanuts.1982.cbr (365pp)
+   ours:    ladder 1982
+   CV candidates:  57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0 · 133549 "Peanuts" 1967 Coronet Books 89 s0   (v1 search)
+   CV local rip:   57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 140448 "Peanuts" 2000 Baumhaus Verlag 3 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 103636 "Peanuts" [de] 2000-2000 Baumhaus Verlag [] 3 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13708 Peanuts.1983  [tier D]   keys: Peanuts.1983  years 1983-1983  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114695] Peanuts.1983.cbr (360pp)
+   ours:    ladder 1983
+   CV candidates:  57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0 · 133549 "Peanuts" 1967 Coronet Books 89 s0   (v1 search)
+   CV local rip:   30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 140448 "Peanuts" 2000 Baumhaus Verlag 3 (via CV candidate name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 103636 "Peanuts" [de] 2000-2000 Baumhaus Verlag [] 3 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13709 Peanuts.1984  [tier D]   keys: Peanuts.1984  years 1984-1984  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114696] Peanuts.1984.cbr (363pp)
+   ours:    ladder 1984
+   CV candidates:  137814 "1984" 2021 Splitter 1 issue 873798 s15 · 133160 "1984" 2021 Soleil 1 issue 824293 s15 · 164061 "1984" 2022 Norma Editorial 1 issue 1107519 s15 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 40660 "1984" 1978 Toutain Editor 64 s0 · 136486 "1984" 1980 Edizioni il Momento 40 s0   (v1 search)
+   CV local rip:   136486 "1984" 1980 Edizioni il Momento 40 (via CV candidate name "1984") · 46077 "1984" 1979 Semic Press AB 13 (via CV candidate name "1984") · 12086 "1984" 1978 Warren 10 (via CV candidate name "1984") · 40660 "1984" 1978 Toutain Editor 64 (via CV candidate name "1984") · 133160 "1984" 2021 Soleil 1 issue 824293 (via CV candidate name "1984") · 137814 "1984" 2021 Splitter 1 issue 873798 (via CV candidate name "1984")   (rip lookup)
+   GCD dump:       91832 "1984" [nl] 1984-1984 Espee [] 1 (via CV candidate name "1984") · 86561 "1984" [de] 1983-1983 März Verlag [] 1 (via CV candidate name "1984") · 164170 "1984" [it] 1980-1984 Edizioni Puleio [] 48 (via CV candidate name "1984") · 18114 "1984" [nl] 1979-1982 Semic Press [] 13 (via CV candidate name "1984") · 13121 "1984" 1978-1979 Warren [] 10 (via CV candidate name "1984") · 35190 "1984" [es] 1978-1984 Toutain Editor [] 64 (via CV candidate name "1984")   (dump lookup)
+
+== S13710 Peanuts.1985  [tier D]   keys: Peanuts.1985  years 1985-1985  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114697] Peanuts.1985.cbr (363pp)
+   ours:    ladder 1985
+   CV candidates:  171365 "Peanuts Every Sunday: 1981-1985" 2019 Fantagraphics 1 s15 · 155692 "1985" 2009 Marvel UK/Panini UK 1 issue 1038310 s15 · 34348 "1985" 2009 Marvel 1 issue 224211 s15 · 105883 "1985" 2017 Heavy Metal 1 issue 635479 s15 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 21711 "1985" 2008 Marvel 6 s0   (v1 search)
+   CV local rip:   21711 "1985" 2008 Marvel 6 (via CV candidate name "1985") · 34348 "1985" 2009 Marvel 1 issue 224211 (via CV candidate name "1985") · 155692 "1985" 2009 Marvel UK/Panini UK 1 issue 1038310 (via CV candidate name "1985") · 105883 "1985" 2017 Heavy Metal 1 issue 635479 (via CV candidate name "1985")   (rip lookup)
+
+== S13711 Peanuts.1986  [tier D]   keys: Peanuts.1986  years 1986-1986  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114698] Peanuts.1986.cbr (365pp)
+   ours:    ladder 1986
+   CV candidates:  171366 "Peanuts Every Sunday: 1986-1990" 2020 Fantagraphics 1 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 140448 "Peanuts" 2000 Baumhaus Verlag 3 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts") · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 103636 "Peanuts" [de] 2000-2000 Baumhaus Verlag [] 3 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 38578 "Peanuts" [nl] 2006-? Atlas; Oog & Blik [] 4 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13712 Peanuts.1987  [tier D]   keys: Peanuts.1987  years 1987-1987  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114699] Peanuts.1987.cbr (364pp)
+   ours:    ladder 1987
+   CV candidates:  57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0 · 133549 "Peanuts" 1967 Coronet Books 89 s0   (v1 search)
+   CV local rip:   30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 140448 "Peanuts" 2000 Baumhaus Verlag 3 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 103636 "Peanuts" [de] 2000-2000 Baumhaus Verlag [] 3 (via CV candidate name "Peanuts") · 38578 "Peanuts" [nl] 2006-? Atlas; Oog & Blik [] 4 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13713 Peanuts.1988  [tier D]   keys: Peanuts.1988  years 1988-1988  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114700] Peanuts.1988.cbr (362pp)
+   ours:    ladder 1988
+   CV candidates:  116888 "Fear Itself: Collected Strips from 1988-2008" 2019 Éditions Trip Comix 1 issue 699474 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 140448 "Peanuts" 2000 Baumhaus Verlag 3 (via CV candidate name "Peanuts") · 57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 133549 "Peanuts" 1967 Coronet Books 89 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 103636 "Peanuts" [de] 2000-2000 Baumhaus Verlag [] 3 (via CV candidate name "Peanuts") · 63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 38578 "Peanuts" [nl] 2006-? Atlas; Oog & Blik [] 4 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts") · 61884 "Peanuts" 2011-2012 Boom! Studios [] 5 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13714 Peanuts.1989  [tier D]   keys: Peanuts.1989  years 1989-1989  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114701] Peanuts.1989.cbr (365pp)
+   ours:    ladder 1989
+   CV candidates:  35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0 · 165877 "Zetsuai 1989" 2000 Carlsen Verlag 5 s0 · 103718 "Zetsuai 1989" 1990 Shueisha 5 s0   (v1 search)
+   CV local rip:   30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 140448 "Peanuts" 2000 Baumhaus Verlag 3 (via CV candidate name "Peanuts") · 57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 44056 "Peanuts" 2011 Boom! Studios 5 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 103636 "Peanuts" [de] 2000-2000 Baumhaus Verlag [] 3 (via CV candidate name "Peanuts") · 63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 38578 "Peanuts" [nl] 2006-? Atlas; Oog & Blik [] 4 (via CV candidate name "Peanuts") · 61884 "Peanuts" 2011-2012 Boom! Studios [] 5 (via CV candidate name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13715 Peanuts.1990  [tier D]   keys: Peanuts.1990  years 1990-1990  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114702] Peanuts.1990.cbr (363pp)
+   ours:    ladder 1990
+   CV candidates:  171366 "Peanuts Every Sunday: 1986-1990" 2020 Fantagraphics 1 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 140448 "Peanuts" 2000 Baumhaus Verlag 3 (via CV candidate name "Peanuts") · 57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 (via CV candidate name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV candidate name "Peanuts") · 44056 "Peanuts" 2011 Boom! Studios 5 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 103636 "Peanuts" [de] 2000-2000 Baumhaus Verlag [] 3 (via CV candidate name "Peanuts") · 38578 "Peanuts" [nl] 2006-? Atlas; Oog & Blik [] 4 (via CV candidate name "Peanuts") · 63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 61884 "Peanuts" 2011-2012 Boom! Studios [] 5 (via CV candidate name "Peanuts") · 67354 "Peanuts" 2012-2018 Boom! Studios [] 10 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13716 Peanuts.1991  [tier D]   keys: Peanuts.1991  years 1991-1991  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114703] Peanuts.1991.cbr (364pp)
+   ours:    ladder 1991
+   CV candidates:  171367 "Peanuts Every Sunday: 1991-1995" 2021 Fantagraphics 1 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 140448 "Peanuts" 2000 Baumhaus Verlag 3 (via CV candidate name "Peanuts") · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 (via CV candidate name "Peanuts") · 57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 44056 "Peanuts" 2011 Boom! Studios 5 (via CV candidate name "Peanuts") · 50186 "Peanuts" 2012 Boom! Studios 10 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 103636 "Peanuts" [de] 2000-2000 Baumhaus Verlag [] 3 (via CV candidate name "Peanuts") · 38578 "Peanuts" [nl] 2006-? Atlas; Oog & Blik [] 4 (via CV candidate name "Peanuts") · 63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 61884 "Peanuts" 2011-2012 Boom! Studios [] 5 (via CV candidate name "Peanuts") · 67354 "Peanuts" 2012-2018 Boom! Studios [] 10 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13717 Peanuts.1992  [tier D]   keys: Peanuts.1992  years 1992-1992  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114704] Peanuts.1992.cbr (366pp)
+   ours:    ladder 1992
+   CV candidates:  136614 "Vampirella 1992" 2021 Dynamite Entertainment 1 issue 857580 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 140448 "Peanuts" 2000 Baumhaus Verlag 3 (via CV candidate name "Peanuts") · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 (via CV candidate name "Peanuts") · 57521 "Peanuts" 1974 GVM 13 (via CV candidate name "Peanuts") · 44056 "Peanuts" 2011 Boom! Studios 5 (via CV candidate name "Peanuts") · 50186 "Peanuts" 2012 Boom! Studios 10 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 103636 "Peanuts" [de] 2000-2000 Baumhaus Verlag [] 3 (via CV candidate name "Peanuts") · 38578 "Peanuts" [nl] 2006-? Atlas; Oog & Blik [] 4 (via CV candidate name "Peanuts") · 63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 61884 "Peanuts" 2011-2012 Boom! Studios [] 5 (via CV candidate name "Peanuts") · 67354 "Peanuts" 2012-2018 Boom! Studios [] 10 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13718 Peanuts.1993  [tier D]   keys: Peanuts.1993  years 1993-1993  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114705] Peanuts.1993.cbr (355pp)
+   ours:    ladder 1993
+   CV candidates:  57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0 · 133549 "Peanuts" 1967 Coronet Books 89 s0   (v1 search)
+   CV local rip:   30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 140448 "Peanuts" 2000 Baumhaus Verlag 3 (via CV candidate name "Peanuts") · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 (via CV candidate name "Peanuts") · 44056 "Peanuts" 2011 Boom! Studios 5 (via CV candidate name "Peanuts") · 50186 "Peanuts" 2012 Boom! Studios 10 (via CV candidate name "Peanuts") · 51282 "Peanuts" 2012 Boom! Studios 32 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 103636 "Peanuts" [de] 2000-2000 Baumhaus Verlag [] 3 (via CV candidate name "Peanuts") · 38578 "Peanuts" [nl] 2006-? Atlas; Oog & Blik [] 4 (via CV candidate name "Peanuts") · 61884 "Peanuts" 2011-2012 Boom! Studios [] 5 (via CV candidate name "Peanuts") · 63944 "Peanuts" [de] 1974-1975 GVM [] 13 (via CV candidate name "Peanuts") · 67354 "Peanuts" 2012-2018 Boom! Studios [] 10 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13719 Peanuts.1994  [tier D]   keys: Peanuts.1994  years 1994-1994  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114706] Peanuts.1994.cbr (365pp)
+   ours:    ladder 1994
+   CV candidates:  57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 12087 "1994" 1980 Warren 19 s0 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 140448 "Peanuts" 2000 Baumhaus Verlag 3 (via CV candidate name "Peanuts") · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 (via CV candidate name "Peanuts") · 44056 "Peanuts" 2011 Boom! Studios 5 (via CV candidate name "Peanuts") · 50186 "Peanuts" 2012 Boom! Studios 10 (via CV candidate name "Peanuts") · 51282 "Peanuts" 2012 Boom! Studios 32 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 103636 "Peanuts" [de] 2000-2000 Baumhaus Verlag [] 3 (via CV candidate name "Peanuts") · 38578 "Peanuts" [nl] 2006-? Atlas; Oog & Blik [] 4 (via CV candidate name "Peanuts") · 61884 "Peanuts" 2011-2012 Boom! Studios [] 5 (via CV candidate name "Peanuts") · 67354 "Peanuts" 2012-2018 Boom! Studios [] 10 (via CV candidate name "Peanuts") · 68079 "Peanuts" 2012-2016 Boom! Studios [] 32 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13720 Peanuts.1995  [tier D]   keys: Peanuts.1995  years 1995-1995  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114707] Peanuts.1995.cbr (360pp)
+   ours:    ladder 1995
+   CV candidates:  171367 "Peanuts Every Sunday: 1991-1995" 2021 Fantagraphics 1 s15 · 47214 "Little Man: Short Strips 1980 - 1995" 1998 Drawn & Quarterly 1 issue 324020 s15 · 47308 "Little Man: Short Strips 1980 - 1995" 2006 Drawn & Quarterly 1 issue 324641 s15 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   47214 "Little Man: Short Strips 1980 - 1995" 1998 Drawn & Quarterly 1 issue 324020 (via CV candidate name "Little Man: Short Strips 1980 - 1995") · 47308 "Little Man: Short Strips 1980 - 1995" 2006 Drawn & Quarterly 1 issue 324641 (via CV candidate name "Little Man: Short Strips 1980 - 1995")   (rip lookup)
+   GCD dump:       26963 "The Little Man: Short Strips 1980 - 1995" [en-ca] 1998-1998 Drawn & Quarterly [] 1 (via CV candidate name "Little Man: Short Strips 1980 - 1995") · 87298 "The Little Man: Short Strips 1980 - 1995" [en-ca] 1998-1998 Drawn & Quarterly [] 1 (via CV candidate name "Little Man: Short Strips 1980 - 1995") · 26964 "The Little Man: Short Strips 1980 - 1995" [en-ca] 2006-2006 Drawn & Quarterly [] 1 (via CV candidate name "Little Man: Short Strips 1980 - 1995")   (dump lookup)
+
+== S13721 Peanuts.1996  [tier D]   keys: Peanuts.1996  years 1996-1996  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114708] Peanuts.1996.cbr (365pp)
+   ours:    ladder 1996
+   CV candidates:  171368 "Peanuts Every Sunday: 1996-2000" 2022 Fantagraphics 1 s15 · 170534 "Atlanta 1996" 2026 Akita Shoten 1 s15 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   35572 "Strips" 1997 White Buffaloe Press 3 (via CV candidate name "Strips") · 35571 "Strips" 1989 Rip Off Press 9 (via CV candidate name "Strips") · 74052 "Strips" ? American Publishing 5 (via CV candidate name "Strips")   (rip lookup)
+   GCD dump:       17107 "Strips" 1997-1997 White Buffaloe Press [] 3 (via CV candidate name "Strips") · 17121 "Strips" 1989-1991 Rip Off Press [] 9 (via CV candidate name "Strips") · 60383 "Strips" 1988-? American Publishing [] 101 (via CV candidate name "Strips") · 140973 "Strips" 1988-? National Forum [] 71 (via CV candidate name "Strips") · 62903 "Strips" [fy-nl] 1982-1982 Harke Bremer; Jarich Hoekstra [] 1 (via CV candidate name "Strips") · 94108 "Strips!!" [nl] 1980-1980 Oberon [] 1 (via CV candidate name "Strips")   (dump lookup)
+
+== S13722 Peanuts.1997  [tier D]   keys: Peanuts.1997  years 1997-1997  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114709] Peanuts.1997.cbr (364pp)
+   ours:    ladder 1997
+   CV candidates:  146194 "Samurai (1997)" 1997 Warp Graphics 1 issue 955510 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   140448 "Peanuts" 2000 Baumhaus Verlag 3 (via CV candidate name "Peanuts") · 30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 (via CV candidate name "Peanuts") · 44056 "Peanuts" 2011 Boom! Studios 5 (via CV candidate name "Peanuts") · 50186 "Peanuts" 2012 Boom! Studios 10 (via CV candidate name "Peanuts") · 51282 "Peanuts" 2012 Boom! Studios 32 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 103636 "Peanuts" [de] 2000-2000 Baumhaus Verlag [] 3 (via CV candidate name "Peanuts") · 38578 "Peanuts" [nl] 2006-? Atlas; Oog & Blik [] 4 (via CV candidate name "Peanuts") · 61884 "Peanuts" 2011-2012 Boom! Studios [] 5 (via CV candidate name "Peanuts") · 67354 "Peanuts" 2012-2018 Boom! Studios [] 10 (via CV candidate name "Peanuts") · 68079 "Peanuts" 2012-2016 Boom! Studios [] 32 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13723 Peanuts.1998  [tier D]   keys: Peanuts.1998  years 1998-1998  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114710] Peanuts.1998.cbr (342pp)
+   ours:    ladder 1998
+   CV candidates:  57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0 · 133549 "Peanuts" 1967 Coronet Books 89 s0   (v1 search)
+   CV local rip:   140448 "Peanuts" 2000 Baumhaus Verlag 3 (via CV candidate name "Peanuts") · 30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 (via CV candidate name "Peanuts") · 44056 "Peanuts" 2011 Boom! Studios 5 (via CV candidate name "Peanuts") · 50186 "Peanuts" 2012 Boom! Studios 10 (via CV candidate name "Peanuts") · 51282 "Peanuts" 2012 Boom! Studios 32 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 103636 "Peanuts" [de] 2000-2000 Baumhaus Verlag [] 3 (via CV candidate name "Peanuts") · 38578 "Peanuts" [nl] 2006-? Atlas; Oog & Blik [] 4 (via CV candidate name "Peanuts") · 61884 "Peanuts" 2011-2012 Boom! Studios [] 5 (via CV candidate name "Peanuts") · 67354 "Peanuts" 2012-2018 Boom! Studios [] 10 (via CV candidate name "Peanuts") · 68079 "Peanuts" 2012-2016 Boom! Studios [] 32 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S13724 Peanuts.1999  [tier D]   keys: Peanuts.1999  years 1999-1999  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114711] Peanuts.1999.cbr (358pp)
+   ours:    ladder 1999
+   CV candidates:  76579 "1999" 2014 Retrofit Comics 1 issue 463081 s15 · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 s8 · 35572 "Strips" 1997 White Buffaloe Press 3 s3 · 140448 "Peanuts" 2000 Baumhaus Verlag 3 s3 · 74052 "Strips" ? American Publishing 5 s0 · 35571 "Strips" 1989 Rip Off Press 9 s0   (v1 search)
+   CV local rip:   140448 "Peanuts" 2000 Baumhaus Verlag 3 (via CV candidate name "Peanuts") · 57700 "Peanuts" 2006 Atlas / Oog & Blik 2 (via CV candidate name "Peanuts") · 30651 "Peanuts" 1991 Arnoldo Mondadori Editore 6 (via CV candidate name "Peanuts") · 44056 "Peanuts" 2011 Boom! Studios 5 (via CV candidate name "Peanuts") · 50186 "Peanuts" 2012 Boom! Studios 10 (via CV candidate name "Peanuts") · 51282 "Peanuts" 2012 Boom! Studios 32 (via CV candidate name "Peanuts")   (rip lookup)
+   GCD dump:       103636 "Peanuts" [de] 2000-2000 Baumhaus Verlag [] 3 (via CV candidate name "Peanuts") · 187762 "Peanuts" [fr] 1997-2000 Editions Hors Collection [] 6 (via CV candidate name "Peanuts") · 38578 "Peanuts" [nl] 2006-? Atlas; Oog & Blik [] 4 (via CV candidate name "Peanuts") · 61884 "Peanuts" 2011-2012 Boom! Studios [] 5 (via CV candidate name "Peanuts") · 67354 "Peanuts" 2012-2018 Boom! Studios [] 10 (via CV candidate name "Peanuts") · 68079 "Peanuts" 2012-2016 Boom! Studios [] 32 (via CV candidate name "Peanuts")   (dump lookup)
+
+== S103717 Peanuts.1950  [tier B]   keys: Peanuts.1950  years 1950-1950  1 files / 0 collections
+   folders: [1] Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year)
+   files:   [114662] Peanuts 1950.cbz (26pp)
+   ours:    ladder 1950
+   CV per-file (v1): vol 133549 "Peanuts" 1967 Coronet Books 89 on 1/1 files
+   CV local rip:   (= per-file) · 57360 "Peanuts" 1952 Holt, Rinehart and Winston 1 issue 386734 (via CV name "Peanuts") · 57453 "Peanuts" 1954 United Feature Syndicate 1 issue 387000 (via CV name "Peanuts") · 2020 "Peanuts" 1960 Dell 10 (via CV name "Peanuts") · 2159 "Peanuts" 1963 Western Publishing 4 (via CV name "Peanuts") · 138188 "Peanuts" 1970 A.W. Bruna & Zoon 12 (via CV name "Peanuts")   (rip lookup)
+   GCD dump:       11426 "Peanuts" [en-ca] 1952-1952 Holt, Rinehart and Winston of Canada, Limited [] 1 (via CV name "Peanuts") · 57775 "Peanuts" 1952-1952 Holt, Rinehart and Winston [] 1 (via CV name "Peanuts") · 19424 "Peanuts" 1954-? United Feature Syndicate [] 1 (via CV name "Peanuts") · 1455 "Peanuts" 1960-1962 Dell [] 10 (via CV name "Peanuts") · 1602 "Peanuts" 1963-1964 Western [] 4 (via CV name "Peanuts") · 96572 "Peanuts" [en-gb] 1967-1994 Coronet Books [] 89 (via CV name "Peanuts")   (dump lookup)
+
+== S7305 Gen13  [tier C] · gap 4  keys: Gen13  years 1994-2001  12 files / 0 collections
+   folders: [12] Wildstorm\Gen13 (1994)\Gen13 Assorted
+   files:   [114917] Gen13 - A Christmas Caper.cbr (50pp) | [114918] Gen13 - Bikini Pin-up Special.cbr (20pp) | [114919] Gen13 - Carny Folk (2000) (DigitalPajamas-DCP).cbr (37pp)
+            [114920] Gen13 - European Vacation Collection.cbr (48pp) | [114921] Gen13 - Going West (1999) (DigitalPajamas-DCP).cbr (23pp)
+            [114922] Gen13 - Grunge Saves the World 01 (1999) (DigitalPajamas-DCP).cbr (52pp) | [114929] Gen13 - Medicine Song 2001.cbr (51pp) | [114932] Gen13 - Rave.cbr (35pp)
+            [114933] Gen13 - Science Friction.cbr (50pp) | [114937] Gen13 - The Unreal World.cbr (34pp) | [114938] Gen13 - Wired - 01.cbz (23pp) | [114939] Gen13 - Yearbook 97.cbr (31pp)
+   ours:    ladder 1, 97, 2001; 1 number(s) name more than one file: 1
+   GCD per-file:   series 51668 "Gen13" [it] 1998-? Edizioni Star Comics [] 24 on 1/12 files; methods numx1
+   GCD dump:       (= per-file) · 150321 "Gen13" [en-ph] 1997-1998 Universal Records Publishing [] ? · 25414 "Gen13" 2007-2009 DC [] 4   (dump lookup)
+   bridges:        gcd 51668 -> LOCG 148925 "Gen13" support 31
+   MU / External:  ExternalWork 16 "Gen13" openlibrary /works/OL19151997W
+
+== S97119 Gen13 v2 (1995)  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Gen13 v2 (1995)  years 1994-2002  75 files / 0 collections
+   folders: [72] Wildstorm\Gen13 (1994)\Gen13 v2 (1995) · [3] Wildstorm\Gen13 (1994)\Gen13 v2 (1995)\Annuals and Specials
+   files:   [114961] Gen13 v1 Annual 01.cbr (33pp) | [114962] Gen13 v1 Annual 02 - 1999.cbr (38pp) | [114963] Gen13 v1 Annual 03 - 2000.cbr (35pp)
+            Gen13 006 (1995) (digital) (Son of Ultron-Empire).cbr … Gen13 012 (1996) (digital) (Son of Ultron-Empire).cbr  (7 files, pp 21-28)
+            [114971] Gen13 013 (1996) (A, B and C Collected Editon) (Bchry-DCP).cbr (50pp)
+            Gen13 014 (1996) (digital) (Son of Ultron-Empire).cbr … Gen13 034 (1998) (digital) (Son of Ultron-Empire).cbr  (21 files, pp 20-35) | [114993] Gen13 035 (1998) (g-seti).cbr (25pp)
+            [114994] Gen13 036 (1998) (shaw001).cbr (26pp) | [114995] Gen13 037 (1999) (g-seti).cbr (26pp) | [114996] Gen13 038 (1999) (Nintenden).cbr (24pp)
+            Gen13 039 (1999) (g-seti).cbr … Gen13 061 (2001) (g-seti).cbr  (23 files, pp 21-41) | [115020] Gen13 062 (2001) (halfasandwich).cbr (23pp) | [115021] Gen13 063 (2001) (g-seti).cbr (24pp)
+            [115022] Gen13 064 (2001) (halfasandwich).cbr (24pp) | [115023] Gen13 065 (2001) (g-seti).cbr (23pp) | [115024] Gen13 066 (2001) (g-seti).cbr (23pp) | [115025] Gen13 067 (2001).cbr (23pp)
+            [115026] Gen13 068 (2001).cbr (23pp) | [115027] Gen13 069 (2001).cbr (24pp) | [115028] Gen13 070 (2001).cbr (23pp) | [115029] Gen13 071 (2002).cbr (23pp)
+            [115030] Gen13 072 (2002) (Beast-OCD).cbr (24pp) | [115031] Gen13 073 (2002).cbz (23pp) | [115032] Gen13 074 (2002) (c2c).cbr (36pp) | [115033] Gen13 075 (2002).cbr (23pp)
+            [115034] Gen13 076 (2002).cbr (23pp) | [115035] Gen13 077 (2002).cbr (32pp)
+   ours:    ladder 1-3, 6-77
+   GCD per-file:   series 51668 "Gen13" [it] 1998-? Edizioni Star Comics [] 24 on 9/75 files · series 14809 "Gen 13" 1999-2002 [] 41 (dump only) on 6/75 files; methods numx9 · fulldump-rematchx6
+   GCD dump:       (= per-file) · 150321 "Gen13" [en-ph] 1997-1998 Universal Records Publishing [] ? (via our own name without the filing suffix "Gen13") · 25414 "Gen13" 2007-2009 DC [] 4 (via our own name without the filing suffix "Gen13")   (dump lookup)
+   bridges:        gcd 51668 -> LOCG 148925 "Gen13" support 31
+
+== S21262 Warcraft Comic  [tier C] · ratio 0.04  keys: Warcraft Comic  years ?-?  1 files / 0 collections
+   folders: [1] Wildstorm\Warcraft
+   files:   [115542] Warcraft Comic 16.cbr (23pp)
+   ours:    ladder 16
+   CV candidates:  131017 "World of Warcraft: Comic Collection" 2020 Blizzard Entertainment 1 issue 807995 s72 · 27631 "Wildstorm Sampler" 1996 WildStorm Productions 1 issue 168896 s30 · 38717 "Warcraft: Legends" 2008 Tokyopop 5 s29 · 30796 "Wildstorm Rising" 1996 Image 1 issue 190179 s15 · 36662 "Wildstorm Presents" 2011 DC Comics 1 issue 243893 s15 · 18001 "Wildstorm Spotlight" 1997 Image 4 s3   (v1 search)
+   CV local rip:   131017 "World of Warcraft: Comic Collection" 2020 Blizzard Entertainment 1 issue 807995 (via CV candidate name "World of Warcraft: Comic Collection") · 19669 "World of Warcraft" 2007 DC Comics 26 (via GCD name "World of Warcraft") · 27631 "Wildstorm Sampler" 1996 WildStorm Productions 1 issue 168896 (via CV candidate name "Wildstorm Sampler") · 38717 "Warcraft: Legends" 2008 Tokyopop 5 (via CV candidate name "Warcraft: Legends") · 61410 "World of Warcraft" 2011 Comix-Art 2 (via GCD name "World of Warcraft") · 62211 "World of Warcraft" 2008 Panini Verlag 10 (via GCD name "World of Warcraft")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 27430 "World of Warcraft" 2008-2010 DC [was ongoing series] 25 on 1/1 files
+   GCD dump:       49078 "Warcraft Legends" [no] 2008-2009 Hjemmet / Egmont [] 5 (via CV candidate name "Warcraft: Legends") · 55122 "WarCraft: Legends" [de] 2008-2009 Tokyopop (de) [] 5 (via CV candidate name "Warcraft: Legends") · 117444 "Warcraft - Legends" [de] 2017-? Cross Cult [] 5 (via CV candidate name "Warcraft: Legends") · 158227 "Wildstorm Sampler" 1996-1996 Image [] 1 (via CV candidate name "Wildstorm Sampler") · 203760 "Warcraft - Legends" [fr] 2008-2010 Soleil [] 5 (via CV candidate name "Warcraft: Legends") · 230457 "Warcraft: Legends" 2008-2009 Tokyopop [] 5 (via CV candidate name "Warcraft: Legends")   (dump lookup)
+   bridges:        gcd 27430 -> LOCG 109322 "World of Warcraft Vol. 1 HC" support 23
+
+== S22064 World of Warcraft #010 - Last of the Line  [tier C] · ratio 0.04  keys: World of Warcraft #010 - Last of the Line  years ?-?  1 files / 0 collections
+   folders: [1] Wildstorm\Warcraft
+   files:   [115563] World of Warcraft v2 #010 - Last of the Line (08-20-2008) (RacerX-DCP).cbr (26pp)
+   ours:    ladder 10
+   CV candidates:  144970 "Last Line" 2022 Aftershock Comics 2 s63 · 61410 "World of Warcraft" 2011 Comix-Art 2 s63 · 70150 "World of Warcraft" 2008 DC Comics 4 s58 · 111270 "World of Warcraft" 2018 Blizzard Entertainment 3 s58 · 19669 "World of Warcraft" 2007 DC Comics 26 s55 · 62211 "World of Warcraft" 2008 Panini Verlag 10 s55   (v1 search)
+   CV local rip:   19669 "World of Warcraft" 2007 DC Comics 26 (via CV candidate name "World of Warcraft") · 61410 "World of Warcraft" 2011 Comix-Art 2 (via CV candidate name "World of Warcraft") · 62211 "World of Warcraft" 2008 Panini Verlag 10 (via CV candidate name "World of Warcraft") · 70150 "World of Warcraft" 2008 DC Comics 4 (via CV candidate name "World of Warcraft") · 111270 "World of Warcraft" 2018 Blizzard Entertainment 3 (via CV candidate name "World of Warcraft") · 144970 "Last Line" 2022 Aftershock Comics 2 (via CV candidate name "Last Line")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 27430 "World of Warcraft" 2008-2010 DC [was ongoing series] 25 on 1/1 files
+   GCD dump:       (= per-file) · 31525 "World of Warcraft" 2008-2010 DC [] 4 (via CV candidate name "World of Warcraft") · 32073 "World of Warcraft" [sv-se] 2008-2009 Egmont [] 9 (via CV candidate name "World of Warcraft") · 39013 "World of Warcraft" 2009-2011 DC [] 4 (via CV candidate name "World of Warcraft") · 49079 "World of Warcraft" [no] 2008-2009 Hjemmet / Egmont [] 7 (via CV candidate name "World of Warcraft") · 59980 "World of Warcraft" [nl] 2011-? Dark Dragon Books [] 3 (via CV candidate name "World of Warcraft")   (dump lookup)
+   bridges:        gcd 27430 -> LOCG 109322 "World of Warcraft Vol. 1 HC" support 23
+
+== S22065 World of Warcraft #011 - Descent  [tier C] · ratio 0.04  keys: World of Warcraft #011 - Descent  years ?-?  1 files / 0 collections
+   folders: [1] Wildstorm\Warcraft
+   files:   [115564] World of Warcraft v2 #011 - Descent (09-17-2008) (RacerX-DCP).cbr (25pp)
+   ours:    ladder 11
+   CV candidates:  61410 "World of Warcraft" 2011 Comix-Art 2 s63 · 70150 "World of Warcraft" 2008 DC Comics 4 s58 · 111270 "World of Warcraft" 2018 Blizzard Entertainment 3 s58 · 19669 "World of Warcraft" 2007 DC Comics 26 s55 · 62211 "World of Warcraft" 2008 Panini Verlag 10 s55 · 34918 "World of Warcraft: Mage" 2010 Tokyopop 1 issue 229460 s50   (v1 search)
+   CV local rip:   19669 "World of Warcraft" 2007 DC Comics 26 (via CV candidate name "World of Warcraft") · 61410 "World of Warcraft" 2011 Comix-Art 2 (via CV candidate name "World of Warcraft") · 62211 "World of Warcraft" 2008 Panini Verlag 10 (via CV candidate name "World of Warcraft") · 70150 "World of Warcraft" 2008 DC Comics 4 (via CV candidate name "World of Warcraft") · 111270 "World of Warcraft" 2018 Blizzard Entertainment 3 (via CV candidate name "World of Warcraft")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 27430 "World of Warcraft" 2008-2010 DC [was ongoing series] 25 on 1/1 files
+   GCD dump:       (= per-file) · 31525 "World of Warcraft" 2008-2010 DC [] 4 (via CV candidate name "World of Warcraft") · 32073 "World of Warcraft" [sv-se] 2008-2009 Egmont [] 9 (via CV candidate name "World of Warcraft") · 39013 "World of Warcraft" 2009-2011 DC [] 4 (via CV candidate name "World of Warcraft") · 49079 "World of Warcraft" [no] 2008-2009 Hjemmet / Egmont [] 7 (via CV candidate name "World of Warcraft") · 59980 "World of Warcraft" [nl] 2011-? Dark Dragon Books [] 3 (via CV candidate name "World of Warcraft")   (dump lookup)
+   bridges:        gcd 27430 -> LOCG 109322 "World of Warcraft Vol. 1 HC" support 23
+
+== S22066 World of Warcraft #012 - The Enemy Revealed  [tier C] · ratio 0.04  keys: World of Warcraft #012 - The Enemy Revealed  years ?-?  1 files / 0 collections
+   folders: [1] Wildstorm\Warcraft
+   files:   [115565] World of Warcraft v2 #012 - The Enemy Revealed [Samwise Didier Cover] (10-29-2008) (RacerX-DCP).cbr (24pp)
+   ours:    ladder 12
+   CV candidates:  61410 "World of Warcraft" 2011 Comix-Art 2 s63 · 70150 "World of Warcraft" 2008 DC Comics 4 s58 · 111270 "World of Warcraft" 2018 Blizzard Entertainment 3 s58 · 19669 "World of Warcraft" 2007 DC Comics 26 s55 · 62211 "World of Warcraft" 2008 Panini Verlag 10 s55 · 111105 "World of Warcraft: Gul'dan and the Stranger" 2014 Blizzard Entertainment 1 issue 671056 s46   (v1 search)
+   CV local rip:   19669 "World of Warcraft" 2007 DC Comics 26 (via CV candidate name "World of Warcraft") · 61410 "World of Warcraft" 2011 Comix-Art 2 (via CV candidate name "World of Warcraft") · 62211 "World of Warcraft" 2008 Panini Verlag 10 (via CV candidate name "World of Warcraft") · 70150 "World of Warcraft" 2008 DC Comics 4 (via CV candidate name "World of Warcraft") · 111270 "World of Warcraft" 2018 Blizzard Entertainment 3 (via CV candidate name "World of Warcraft")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 27430 "World of Warcraft" 2008-2010 DC [was ongoing series] 25 on 1/1 files
+   GCD dump:       (= per-file) · 31525 "World of Warcraft" 2008-2010 DC [] 4 (via CV candidate name "World of Warcraft") · 32073 "World of Warcraft" [sv-se] 2008-2009 Egmont [] 9 (via CV candidate name "World of Warcraft") · 39013 "World of Warcraft" 2009-2011 DC [] 4 (via CV candidate name "World of Warcraft") · 49079 "World of Warcraft" [no] 2008-2009 Hjemmet / Egmont [] 7 (via CV candidate name "World of Warcraft") · 59980 "World of Warcraft" [nl] 2011-? Dark Dragon Books [] 3 (via CV candidate name "World of Warcraft")   (dump lookup)
+   bridges:        gcd 27430 -> LOCG 109322 "World of Warcraft Vol. 1 HC" support 23
+
+== S22067 World of Warcraft #013 - Flashback  [tier C] · ratio 0.04  keys: World of Warcraft #013 - Flashback  years ?-?  1 files / 0 collections
+   folders: [1] Wildstorm\Warcraft
+   files:   [115566] World of Warcraft v2 #013 - Flashback [Both Covers] (11-19-2008) (Voodoo Gurus-DCP).cbr (25pp)
+   ours:    ladder 13
+   CV candidates:  61410 "World of Warcraft" 2011 Comix-Art 2 s63 · 70150 "World of Warcraft" 2008 DC Comics 4 s58 · 111270 "World of Warcraft" 2018 Blizzard Entertainment 3 s58 · 19669 "World of Warcraft" 2007 DC Comics 26 s55 · 62211 "World of Warcraft" 2008 Panini Verlag 10 s55 · 34918 "World of Warcraft: Mage" 2010 Tokyopop 1 issue 229460 s50   (v1 search)
+   CV local rip:   19669 "World of Warcraft" 2007 DC Comics 26 (via CV candidate name "World of Warcraft") · 61410 "World of Warcraft" 2011 Comix-Art 2 (via CV candidate name "World of Warcraft") · 62211 "World of Warcraft" 2008 Panini Verlag 10 (via CV candidate name "World of Warcraft") · 70150 "World of Warcraft" 2008 DC Comics 4 (via CV candidate name "World of Warcraft") · 111270 "World of Warcraft" 2018 Blizzard Entertainment 3 (via CV candidate name "World of Warcraft")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 27430 "World of Warcraft" 2008-2010 DC [was ongoing series] 25 on 1/1 files
+   GCD dump:       (= per-file) · 31525 "World of Warcraft" 2008-2010 DC [] 4 (via CV candidate name "World of Warcraft") · 32073 "World of Warcraft" [sv-se] 2008-2009 Egmont [] 9 (via CV candidate name "World of Warcraft") · 39013 "World of Warcraft" 2009-2011 DC [] 4 (via CV candidate name "World of Warcraft") · 49079 "World of Warcraft" [no] 2008-2009 Hjemmet / Egmont [] 7 (via CV candidate name "World of Warcraft") · 59980 "World of Warcraft" [nl] 2011-? Dark Dragon Books [] 3 (via CV candidate name "World of Warcraft")   (dump lookup)
+   bridges:        gcd 27430 -> LOCG 109322 "World of Warcraft Vol. 1 HC" support 23
+
+== S8041 Grimm Fairy Tales Presents 10th Anniversary Special  [tier D]   keys: Grimm Fairy Tales Presents 10th Anniversary Special  years 2015-2015  6 files / 0 collections
+   folders: [6] Zenescope\Grimm Fairy Tales Presents\Grimm Fairy Tales Presents - 10th Anniversary Special (2015)
+   files:   Grimm Fairy Tales Presents 10th Anniversary Special 001(2015)(Digital)(TLK-EMPIRE-HD).cbr … Grimm Fairy Tales Presents 10th Anniversary Special 006(2015)(Digital)(TLK-EMPIRE-HD).cbr  (6 files, pp 37-42)
+   ours:    ladder 1-6
+   CV candidates:  86101 "Grimm Fairy Tales presents Robyn Hood 2015 Holiday Special" 2015 Zenescope Entertainment ? s68 · 65435 "Grimm Fairy Tales presents Wounded Warriors Special" 2013 Zenescope Entertainment ? s63 · 85011 "Grimm Fairy Tales 2015 Halloween Special" 2015 Zenescope Entertainment ? s62 · 69592 "Grimm Fairy Tales presents Quest" 2013 Zenescope Entertainment ? s56 · 73439 "Grimm Fairy Tales presents Quest" 2014 Zenescope Entertainment ? s56 · 76552 "Grimm Fairy Tales presents Ascension" 2014 Zenescope Entertainment ? s56   (v1 search)
+   CV local rip:   85011 "Grimm Fairy Tales 2015 Halloween Special" 2015 Zenescope Entertainment 1 issue 501749 (via CV candidate name "Grimm Fairy Tales 2015 Halloween Special") · 86101 "Grimm Fairy Tales presents Robyn Hood 2015 Holiday Special" 2015 Zenescope Entertainment 1 issue 506257 (via CV candidate name "Grimm Fairy Tales presents Robyn Hood 2015 Holiday Special") · 65435 "Grimm Fairy Tales presents Wounded Warriors Special" 2013 Zenescope Entertainment 1 issue 418024 (via CV candidate name "Grimm Fairy Tales presents Wounded Warriors Special")   (rip lookup)
+   GCD dump:       93265 "Grimm Fairy Tales 2015 Halloween Special" 2015-2015 Zenescope Entertainment [] 1 (via CV candidate name "Grimm Fairy Tales 2015 Halloween Special") · 94759 "Grimm Fairy Tales Presents Robyn Hood: 2015 Holiday Special" 2015-2015 Zenescope Entertainment [] 1 (via CV candidate name "Grimm Fairy Tales presents Robyn Hood 2015 Holiday Special") · 80476 "Grimm Fairy Tales Presents Wounded Warriors Special" 2013-2013 Zenescope Entertainment [] 1 (via CV candidate name "Grimm Fairy Tales presents Wounded Warriors Special")   (dump lookup)
+
+== S97367 Grimm Tales Of Terror v4 (2018)  [tier C] · 2 volumes  keys: Grimm Tales Of Terror v4 (2018)  years 2014-2017  7 files / 0 collections
+   flags: #268 label-ambiguous [Pending] item 116115 — the seven Grimm Tales Of Terror v4 items (24-27 pp) are single issues
+   folders: [7] Zenescope\Grimm Tales of Terror\Grimm Tales Of Terror v4 (2018)
+   files:   [116115] Grimm Tales Of Terror v4 001 (2018)(Digital)(TLK-EMPIRE-HD).cbr (27pp) | [116116] Grimm Tales Of Terror v4 002 (2018) (Digital) (TLK-EMPIRE-HD).cbr (27pp)
+            [116117] Grimm Tales Of Terror v4 003(2018)(Digital)(TLK-EMPIRE-HD).cbr (24pp) | [116119] Grimm Tales Of Terror v4 005(2018)(Digital)(TLK-EMPIRE-HD).cbr (26pp)
+            [116120] Grimm Tales Of Terror v4 006(2018)(Digital)(TLK-EMPIRE-HD).cbr (26pp) | [116118] Grimm Tales of Terror v4 004 (2018) (Digital) (TLK-EMPIRE-HD).cbr (25pp)
+            [116121] Grimm Tales of Terror v4 007 (2018) (digital) (The Seeker-Empire).cbr (25pp)
+   ours:    ladder 1-7
+   CV per-file (v1): vol 98336 "Grimm Tales of Terror" 2017 Zenescope Entertainment 13 on 5/7 files · vol 76097 "Grimm Tales of Terror" 2014 Zenescope Entertainment 13 on 2/7 files
+   CV local rip:   (= per-file) · 84313 "Grimm Tales of Terror" 2015 Zenescope Entertainment 4 (via our own name without the filing suffix "Grimm Tales Of Terror") · 85478 "Grimm Tales of Terror" 2015 Zenescope Entertainment 13 (via our own name without the filing suffix "Grimm Tales Of Terror") · 109766 "Grimm Tales of Terror" 2018 Zenescope Entertainment 13 (via our own name without the filing suffix "Grimm Tales Of Terror") · 162017 "Grimm Tales of Terror" 2025 Zenescope Entertainment 12 (via our own name without the filing suffix "Grimm Tales Of Terror")   (rip lookup)
+   GCD dump:       82049 "Grimm Tales of Terror" 2014-2015 Zenescope Entertainment [] 13 (via our own name without the filing suffix "Grimm Tales Of Terror")   (dump lookup)
+
+== S3566 Marvel: The End  [tier C] · by 7  keys: Captain Marvel: The End | End  years 2013-2016  2 files / 0 collections
+   folders: [1] Marvel\_Captain Marvel\13 Captain Marvel v10 (2019)\Annuals and Specials · [1] _Marvel Major Event Chronology (digital)\2015.05 - Secret Wars\03 Battleworld
+   files:   [77647] Captain Marvel - The End 001 (2020) (Digital) (Zone-Empire).cbr (30pp) | [118107] Ultimate End (2016) (Digital) (Kileko-Empire).cbr (115pp)
+   ours:    ladder 1; ComicInfo Series: "Captain Marvel: The End"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 56017 "Marvel: The End" 2013 Marvel 1 issues issue 381075; cached #1-1 (1); yearΔ 0; ratio 1/1 = 1.00; no judged range; v1 per-file: same volume on 2/2 files
+   CV candidates:  (= linked) · 34102 "Captain Marvel: The Death of Captain Marvel" 2010 Marvel 1 issue 222331 s80 · 18296 "Captain Marvel" 2002 Marvel 25 s77 · 6458 "Captain Marvel" 1999 Marvel 36 s76 · 2401 "Captain Marvel" 1968 Marvel 62 s72 · 124678 "Captain Marvel: The End" 2020 Marvel 1 issue 735517 s65 · 120751 "Marvel Action: Captain Marvel" 2019 Marvel 6 s60   (v1 search)
+   CV local rip:   (= linked) · 63308 "The End" 2013 Fantagraphics 1 issue 410387 · 92835 "End" 2013 Splitter 1 issue 542873 · 74172 "The End" 2014 Padraic Productions 1 issue 453609 · 81568 "End" 2012 Bao Publishing 1 issue 487036 · 52979 "The End" 2007 Fantagraphics 1 issue 361386   (rip lookup)
+   GCD per-file:   series 155398 "Captain Marvel: The End" 2020-2020 Marvel [one-shot] 1 on 1/2 files; methods numx1
+   GCD dump:       75012 "The End" 2013-2013 Fantagraphics [] 1 · 88653 "End" [de] 2013-2013 Splitter Verlag [] 1 · 79406 "End" [nl] 2014-? Silvester [] 1 · 124832 "END" [fr] 2012-2012 Soleil [] 1 · 206220 "END" [fr] 2017-2017 Pascal Cataye [] 1 · 142719 "The End" [fr] 2018-2018 Rue de Sèvres [] 1   (dump lookup)
+
+== S6356 FCBD 2022 - Judgment Day (2022) (Digital) (Zone-Empire)  [tier C] · ratio 0.08  keys: FCBD 2022 - Judgment Day (2022) (Digital) (Zone-Empire)  years 2022-2022  1 files / 0 collections
+   folders: [1] _Marvel Major Event Chronology (digital)\2022.07 - A.X.E. - Judgement Day\00 Judgement Day Is Coming
+   files:   [118562] 04 FCBD 2022 - Judgment Day (2022) (Digital) (Zone-Empire).cbr (24pp)
+   ours:    ladder 4
+   CV candidates:  145387 "Bloodborne FCBD 2022" 2022 Titan Comics 1 issue 949724 s41 · 142205 "Brazil 2022" 1990 Loempia 1 issue 915272 s35 · 142203 "Brazil 2022" 1990 Himalaya 1 issue 915269 s35 · 143050 "TMNT FCBD 2022: The Armaggedon Game" 2022 IDW Publishing 1 issue 927316 s28 · 155617 "The Three Stooges 2022 FCBD Special" 2022 American Mythology Productions 1 issue 1037809 s28 · 144821 "Marvel 2022 Calendar" ? ? 1 issue 944876 s28   (v1 search)
+   CV local rip:   145387 "Bloodborne FCBD 2022" 2022 Titan Comics 1 issue 949724 (via CV candidate name "Bloodborne FCBD 2022") · 133080 "Eternals" 2021 Marvel 12 (via GCD name "Eternals") · 21937 "Eternals" 2008 Marvel 9 (via GCD name "Eternals") · 40496 "Eternals" 2007 Marvel 1 issue 272887 (via GCD name "Eternals") · 18203 "Eternals" 2006 Marvel 7 (via GCD name "Eternals") · 101859 "Brazil 2022" 1990 Edition Kunst der Comics 1 issue 599246 (via CV candidate name "Brazil 2022")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 168396 "Eternals" 2021-2022 Marvel [ongoing series] 12 on 1/1 files
+   GCD dump:       70135 "Brazil 2022" [de] 1990-1990 Kunst der Comics / Alpha [] 1 (via CV candidate name "Brazil 2022") · 94338 "Brazil 2022" [fr-be] 1990-1990 Himalaya [] 1 (via CV candidate name "Brazil 2022")   (dump lookup)
+   bridges:        gcd 168396 -> LOCG 117114 "The Eternals" support 4
