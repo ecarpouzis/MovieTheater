@@ -126,7 +126,8 @@ F 16797 misfiled | items 82880-82882 ("11 Starlord 1.cbr" … 36-37pp) sit under
   and its own title, **and the run's OWN trade sitting beside its issues** (one comic, two editions) — costs
   NOTHING: 0.95 stands when two legs agree; the trade still gets its `I` line. Residue that is a different comic — a special,
   an annual, a sequel's issues, a one-shot — caps the line at 0.9 and is named.
-- **Trades vs run — the RUN wins whenever a numbered run exists.** A shelf is a publishing run, and a trade on it is
+- **Trades vs run — the RUN wins whenever a numbered run exists** (lead, R-042: a line that reprints ONE run → the
+  run; a line spanning SEVERAL runs — omnibus, complete edition — is its own identity, L-109/L-186). A shelf is a publishing run, and a trade on it is
   an edition of that run. If our trades collect a numbered run (judged ranges like `#1-3 + #4-7`, a `(of 5)` in a
   name, a 124pp trade of a 5-issue mini, the per-file link naming the run) → the `S` line carries the RUN's CV
   volume and GCD series, even when a collected-edition record also exists and its count equals our volumes
