@@ -42,6 +42,10 @@ if ($Resolve) {
 }
 # pass2 ALWAYS runs (2026-09-11): wave 3's resume skipped it, imported the previous wave's stale pass2_spans.jsonl,
 # and the refusals merge_refusals had just written never reached the DB — 16 CV-derived spans nested files unjudged.
+# A rebuild moves items; the ORIGIN containment file keeps its old line and pass2 fails on "decision(s) for items
+# not in this series" (waves 18 and 20 halted here). retire_moved_lines comments a line out ONLY when the item's
+# new shelf has a file that decides it, so nothing is ever left undecided — safe to run on every wave.
+Step "retire_moved_lines --apply (origin lines for items a rebuild moved; destination file must decide them)" { python "$ctools/retire_moved_lines.py" --apply }
 Step "pass2 (re-expand the decision files, including the refusals just written)" { python "$ctools/pass2.py" }
 Step "check_decisions (every containment decision file must pass)" { python "$ctools/check_decisions.py" }
 Step "books-curated-spans-import --apply (refusals retract the pass's own rows; gold is never touched)" {

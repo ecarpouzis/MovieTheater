@@ -176,3 +176,4 @@
 34. **lookup.py --shelf <sid>** (keys, files, stored cv/gcd, S line in force) and **--who-stores cv=<id>|gcd=<id>**
     (every live shelf storing it, incl. alias SeriesKeyLinks). R-032's reader spent ~12 calls building these by hand.
 35. Rule 31 must also cover EMPTY shelves: wave 19's S96256 (R-032 cv=144027) merged undeclared into the empty S64503, which stored 144027 with no files (the reader had flagged it on an N line). Treat a stored CvVolumeId on ANY live Series row, file-holding or not, as a merge partner that needs a declared merge-with or a pre-landing clear.
+36. (with 34) split packets' `nearby:` / `named:` lines print each shelf's ParsedKey(s) verbatim — a `join` key must match exactly, and P-003 and P-004 readers each wrote a scratch sqlite helper for it; `lookup.py --id cv=<vol>|cvi=<issue>|gcd=<series>|gcdi=<issue>` prints the name, publisher, year and count.
