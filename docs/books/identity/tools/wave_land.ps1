@@ -47,7 +47,9 @@ function Step([string]$label, [scriptblock]$body) {
     }
 }
 
-$files = $Batches | ForEach-Object { "$repo/docs/books/identity/decisions/$_.txt" }
+# @( ) keeps it an array: one batch would otherwise be a bare string, and `@files` below splats a string
+# character by character (wave 15, R-030 alone, reached apply_identity as the batch "F").
+$files = @($Batches | ForEach-Object { "$repo/docs/books/identity/decisions/$_.txt" })
 $missing = $files | Where-Object { -not (Test-Path $_) }
 if ($missing) {
     Write-Host "STOP: no decision file for: $($missing -join ', ')" -ForegroundColor Red

@@ -388,9 +388,20 @@ def parse(path, ck, errors):
         nxt = {ck.merged[s] for s in frontier if s in ck.merged} - allowed
         allowed |= nxt
         frontier = nxt
+    # ... and a book a landed SPLIT moved (wave 14: R-025's C on item 36404, Dead Body Road: Bad Blood, now on
+    # S102475) was read on the shelf it sat on then. The walk-back CSVs record the shelf each moved item left;
+    # the new shelf's own revisit (R-030) restates the book, so the older line is history, not a defect.
+    import csv as _csv, glob as _glob
+    split_from = {}
+    for _f in _glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "undo", "split-*.csv")):
+        with open(_f, encoding="utf-8", newline="") as _h:
+            for _r in _csv.DictReader(_h):
+                split_from[int(_r["ItemId"])] = int(_r["SeriesIdAtSplit"])
     for loc, iid, shelf in c_shelves:
         if shelf is None:
             errors.append(f"{loc}: item {iid} sits on no shelf — a C line's range is judged on its shelf")
+        elif allowed and shelf not in allowed and split_from.get(iid) in allowed:
+            continue
         elif allowed and shelf not in allowed:
             errors.append(f"{loc}: item {iid} belongs to shelf S{shelf}, which this file neither decides nor "
                           f"holds in its .ids — say what a book collects only on a shelf you have read")

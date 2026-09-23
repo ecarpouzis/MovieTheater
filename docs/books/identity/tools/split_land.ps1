@@ -58,7 +58,7 @@ function Step([string]$label, [scriptblock]$body) {
 
 $bad = $Batches | Where-Object { $_ -notmatch '^P-\d{3,}$' }
 if ($bad) { Write-Host "STOP: not a split batch name: $($bad -join ', ') (expected P-NNN)" -ForegroundColor Red; exit 2 }
-$files = $Batches | ForEach-Object { "$repo/docs/books/identity/decisions/$_.jsonl" }
+$files = @($Batches | ForEach-Object { "$repo/docs/books/identity/decisions/$_.jsonl" })
 $missing = $files | Where-Object { -not (Test-Path $_) }
 if ($missing) { Write-Host "STOP: no split file for: $($missing -join ', ')" -ForegroundColor Red; exit 2 }
 if (-not (Test-Path $exe)) { Write-Host "STOP: BooksHost exe not built at $exe" -ForegroundColor Red; exit 2 }
