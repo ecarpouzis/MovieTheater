@@ -1,0 +1,1417 @@
+## Conventions for this batch (35 shown of 212 matched; 328 in LEDGER.md; 60 shelf/shelves: folder:vn-year ×30 · folder:sequel-subfolder ×19 · pub:marvel ×16 · folder:events ×14 · folder:bucket ×12 · pub:dc ×12 · kind:collected-line ×11 · kind:trade-only ×10)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-281] (42 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-191] (39 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-124] (37 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-272] (30 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-175] (23 shelf/shelves) folder:bucket folder:events pass:item
+- In the chronology folders the RUN rule stands over the bucket rule: `S` = the numbered run, the tie-in's collected
+  record goes on the `I` line (B-072/073, ~90 shelves); the book's own record is the S only where no numbered run exists.
+[L-060] (14 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-193] (41 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-113] (39 shelf/shelves) sig:comicinfo sig:stamp
+- ComicInfo `Volume` holding a 4-digit ComicVine volume id (not a year) is a 1.0 assertion like the 6-digit
+  case (Ka-Zar v2 1974: `Volume 2692` + `Count 20` = CV 2692) and disproves the per-file matcher's pick.
+[L-290] (19 shelf/shelves) folder:sequel-subfolder pass:item sig:stamp
+- A spin-off filed in its own subfolder on the parent's shelf gets the PARENT's v01 ids stamped by the per-file
+  matcher (Rent-a-(Really Shy!)-Girlfriend on Rent-A-Girlfriend) — `N no-record` (or the shelf note), never the
+  parent's record; it is a misfiling for the lead.
+[L-085] (36 shelf/shelves) sig:barcode sig:trade-link sig:twin
+- `gcd_issue` carries the trade's page count AND ISBN: it matched our rips within ±10pp on 100+ books and told
+  two same-title count-1 rows apart (an 8pp ashcan is not a twin of the trade).
+[L-064] (35 shelf/shelves) pass:item sig:twin
+- GCD indexes PRINTINGS: the S line takes the first edition both legs agree on; the `I` line takes the printing
+  we hold (page counts match the edition's row). GCD issue ids for books come from `gcd_issue` — prefer the
+  issue id to the `s<series>` form; use `s<series>` only for twin/variant rows.
+[L-101] (35 shelf/shelves) sig:twin
+- Page count tells GCD twins apart (a 32pp sampler vs the 256pp anthology); a count-0 GCD row (236534 "Cells at
+  Work! Lady") is an empty stub, not a leg.
+[L-310] (35 shelf/shelves) pass:revisit sig:gcd-notes sig:stale-flag
+- R-025 (Opus): the GCD dump's `gcd_reprint` + `gcd_story` tables answer "what does this trade collect" outright —
+  join story → reprint → origin issue → series and the `C` range falls out (Elektra #7-22, Casanova Luxuria #1-7,
+  all six Criminal ranges); `gcd_series.notes` states ranges in prose. A GCD line row with `year_ended` NULL and a
+  count BELOW our holdings is NOT coextensive when the provider files the missing books under their own row
+  (Casanova 148774 = 3 vols + Acedia 236165) — two lines, not staleness. Before `F wrong-cv-link` on a revisit read
+  Series.CvVolumeId: the shelf may already carry the right id and re-flagging would clear it. A stored id can belong
+  to a series holding NO comic files (outside the checker's population) — note it, never merge.
+[L-016] (34 shelf/shelves) sig:comicinfo
+- Glorith rips' ComicInfo `Web` ids are NOT GCD issue ids in our dump (29 checked: missing or unrelated). Never
+  claim 1.0 from one. A ComicInfo `Volume` holding a 6-digit number IS a ComicVine volume id (Lex and the City =
+  162184) — a genuine 1.0 assertion.
+[L-032] (34 shelf/shelves) sig:comicinfo
+- A Marika-Empire rip's ComicInfo `Web` id IS a ComicVine ISSUE id (21/21 resolve to the stored volume) — the
+  1.0 shape. The ripper decides: Glorith's Web ids are not GCD issue ids. Check one against the rip before
+  claiming 1.0 on a new ripper.
+[L-114] (34 shelf/shelves) sig:comicinfo
+- Marika-Empire and Glorith-HD `Web` ids are ComicVine ISSUE ids of the stored volume (7 of 7 here).
+[L-291] (17 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-116] (11 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-136] (11 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-319] (11 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-014] (32 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-128] (31 shelf/shelves) sig:split sig:stale-flag
+- The checker refuses an S line on a shelf with an OPEN conflated-series flag: write `R` + `F split-needed`
+  with the run's own ids in the R clause AND an `N` (`cv=… gcd=…`), so clearing the flag makes it one edit.
+[L-181] (31 shelf/shelves) sig:split
+- A ripper's CONTINUOUS numbering can hide several published comics: Gung-Ho 001-014 = Gung-Ho (7) + Sexy Beast (4) +
+  Anger (4); the trailing number after each filename subtitle is the real run's number, and a ladder running PAST the
+  linked count is the tell → `R` + split-needed, never `S` the first run.
+[L-040] (10 shelf/shelves) folder:bucket folder:events pub:dc pub:papercutz-nbm pub:scout pub:titan pub:valiant sig:twin
+- NBM / Papercutz album lines and Scout one-shots carry TWIN adjacent GCD rows for one book (120209/120210) —
+  cap at 0.9 and name both. Titan's Doctor Who "Year N" volumes number continuously across a Doctor (a ladder
+  starting at #6 is complete). A publisher's read-order crossover folder (Titan `Lost Dimension`, Valiant
+  `_Chronological Valiant`) = DC's `#DC Events` shape.
+[L-046] (9 shelf/shelves) pub:action-lab pub:aftershock pub:small-press sig:probe
+- Small-press American floppies (Action Lab, Aftershock minis, Behemoth) are thin in GCD → `provider-missing` on
+  the GCD side is common and honest.
+[L-082] (9 shelf/shelves) pub:dc sig:comicinfo
+- A Glorith-HD rip's ComicInfo `Web` id CAN be a ComicVine ISSUE id of the stored volume (599834, DC 100-Page
+  Spectacular) — Glorith's Web ids are never GCD ids, but check them against the CV rip.
+[L-093] (9 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
+[L-127] (9 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-237] (9 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+[L-013] (26 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-043] (26 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (26 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (26 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (26 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (26 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+
++177 more matched entries not shown: L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-164, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-007, L-051, L-055, L-139, L-199, L-217, L-228, L-289, L-298, L-123, L-135, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-309, L-314, L-033, L-130, L-195, L-274, L-288, L-293, L-194, L-011, L-015, L-031, L-034, L-065, L-097, L-099, L-133, L-140, L-142, L-148, L-158, L-169, L-174, L-211, L-242, L-245, L-252, L-262, L-271, L-313, L-052, L-152, L-168, L-265, L-200, L-023, L-027, L-059, L-121, L-129, L-197, L-206, L-227, L-243, L-255, L-029, L-076, L-109, L-115, L-117, L-132, L-182, L-196, L-203, L-205, L-210, L-212, L-214, L-215, L-234, L-254, L-260, L-295, L-296, L-302, L-306, L-307, L-308, L-324, L-327, L-328, L-150, L-003, L-018, L-020, L-022, L-137, L-153, L-156, L-162, L-166, L-183, L-198, L-220, L-222, L-223, L-231, L-257, L-263, L-312, L-318, L-054, L-028, L-036, L-057, L-063, L-068, L-069, L-070, L-077, L-084, L-087, L-106, L-111, L-112, L-119, L-138, L-143, L-147, L-149, L-167, L-173, L-187, L-188, L-219, L-229, L-233, L-238, L-240, L-261, L-297, L-311, L-315, L-323, L-326, L-098, L-100, L-276, L-277, L-278, L-280, L-283, L-284, L-304, L-041, L-192 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S16856 Stillwater  [split]  7 files / 3 collections  decided in C-003 (R)
+   decided: R 16856 | Two entirely different comics share the title on this shelf and neither record covers the other: "Stillwater 01-04 (of 04) (2016)" is Action Lab's four-issue mini, CV 89290 "Stillwater" 2016 Action Lab count 4 with cached #1-4 and our ladder 1-4 filling it exactly; "COL Stillwater Vol. 01-03 (2021-2023)" are trades of Zdarsky and Perez's Image/Skybound ongoing, CV 130377 "Stillwater" 2020 Image count 18 and GCD 164193 "Stillwater" 2020-2023 Image count 18, with GCD 181205 (2021-?, collected edition, 3) as the three-volume trade line. ComicInfo splits them the same way — Publisher "Action Lab"x1 against "Image - Skybound"x2, and Series "Stillwater by Zdarsky & Perez" on one — and the folders are "Action Lab\Stillwater (2016)" and "Image\Stillwater (2020)".
+   F 16856 split-needed | proposed runs: Action Lab's 2016 mini -> cv=89290 gcd=- (items 5546-5549; GCD has no 2016 Action Lab Stillwater row); the Image ongoing -> cv=130377 gcd=164193 (items 37240-37242, whose own collected record is GCD 181205).
+   N 16856 cv=89290 gcd=- (Stillwater, Action Lab 2016, 4 issues) and cv=130377 gcd=164193 (Stillwater, Image/Skybound 2020-2023, 18 issues) — same title, eleven years and two publishers apart; the French Delcourt row 200299 that the per-file matcher reached belongs to the Image series.
+   keys now: "Stillwater" x7
+   groups (title x folder): 2
+   G1 "Stillwater" in Action Lab\Stillwater (2016) — 4 file(s), numbers 1-4, pp 25-27; cv per-file 89290x4; key 'Stillwater'
+      e.g. Stillwater 01 (of 04) (2016) (digital) (Minutemen-Slayer).cbr
+        5546 #1 2016 25pp · 5547 #2 2016 27pp · 5548 #3 2016 27pp · 5549 #4 2016 27pp
+   G2 "Stillwater" in Image\Stillwater (2020) — 3 file(s), 3 COL, pp 131-172; cv per-file 89290x2, 130377x1; gcd per-file 200299x2, 181205x1; key 'Stillwater'
+      [37240] COL Stillwater Vol. 01 - Rage, Rage (2021) (Digital) (XRA-Empire).cbz (139pp)
+      [37241] COL Stillwater Vol. 02 - Always Loyal (2022) (Digital) (XRA-Empire).cbz (131pp)
+      [37242] COL Stillwater Vol. 03 - Border Crossing (2023) (digital) (DrVink-HD-DCP).cbz (172pp)
+
+== S16888 Strange Academy  [split]  7 files / 4 collections  decided in C-043 (R)
+   decided: R 16888 | mostly clean: our Vol.01-03 trades (judged #1-12) collect part of the 2020-2022 main ongoing (CV125477/GCD156773, 18 issues); the flag names a real conflation — "Strange Academy: Finals" is a SEPARATE 6-issue mini (CV145695) sharing the Series with the main run, filed as this shelf's Vol.04, plus two more one-off items ("Year One"/"Year Two" recap OGNs and "The Deadly Field Trip" one-shot, each with their own record) — the true identity splits main-run trades from the Finals mini as co-equal, not mere residue
+   F 16888 split-needed | main ongoing = CV125477/GCD156773 (Vol.01-03); "Strange Academy: Finals" = CV145695, a separate 6-issue mini (item 79978)
+   nearby: S101238 "Uncle Sam and the Freedom Fighters" 8f [shares cv=19194 — S cv=19194 gcd=26539 (B-014 0.95)] keys: "Uncle Sam and the Freedom Fighters v2 (2007)"
+   keys now: "Strange Academy" x4 · "Strange Academy: Year One" x1 · "Strange Academy: Year Two" x1 · "Strange Academy - The Deadly Field Trip" x1
+   groups (title x folder): 5
+   G1 "Strange Academy" in Marvel\_Doctor Strange\10 Strange Academy v1 (2020) — 3 file(s), 3 COL, pp 141-152; cv per-file 133905x1, 139780x1, 145422x1; gcd per-file 191043x1, 172414x1, 174588x1; key 'Strange Academy'
+      [79003] COL Strange Academy Vol. 01 - First Class (2021) (Digital) (Kileko-Empire).cbz (152pp)
+         own record cv 133905 / gcd s191043 "Strange Academy: First Class" (issue 2442924) COLLECTS: gcd=156773 Strange Academy (2020) #1-6
+      [79004] COL Strange Academy Vol. 02 - Bright Side (2021) (Digital) (Kileko-Empire).cbz (141pp)
+         own record cv 139780 / gcd s172414 "Strange Academy" (issue 2277409) COLLECTS: gcd=156773 Strange Academy (2020) #1, #7-12  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [79005] COL Strange Academy Vol. 03 - Wish-Craft (2022) (Digital) (Kileko-Empire).cbz (141pp)
+   G2 "Strange Academy - Year One (2023) (Digital) (Kileko-Empire)" in Marvel\_Doctor Strange\10 Strange Academy v1 (2020)\Deluxe Editions — 1 file(s), pp 298-298; cv per-file 25347x1; key 'Strange Academy: Year One'
+      [79001] Strange Academy - Year One (2023) (Digital) (Kileko-Empire).cbz (298pp)
+   G3 "Strange Academy - Year Two (2024) (Digital) (Kileko-Empire)" in Marvel\_Doctor Strange\10 Strange Academy v1 (2020)\Deluxe Editions — 1 file(s), pp 280-280; cv per-file 19194x1; key 'Strange Academy: Year Two'
+      [79002] Strange Academy - Year Two (2024) (Digital) (Kileko-Empire).cbz (280pp)
+   G4 "Strange Academy" in Marvel\_Doctor Strange\12 Strange Academy - Finals v1 (2022) — 1 file(s), 1 COL, pp 141-141; cv per-file 24656x1; gcd per-file 174401x1; key 'Strange Academy'
+      [79978] COL Strange Academy Vol. 04 - Finals (2023) (Digital-Empire).cbr (141pp)
+         own record cv 24656 / gcd s174401 "Strange Academy" (issue 2557632) COLLECTS: gcd=191962 Strange Academy: Finals (2022) #1
+   G5 "Strange Academy - The Deadly Field Trip (2024) (Digital) (Shan-Empire)" in Marvel\_Doctor Strange\_Trades, Minis and One-shots\Strange Academy - Solve for X (2023) — 1 file(s), pp 119-119; cv per-file 26382x1; key 'Strange Academy - The Deadly Field Trip'
+      [79982] Strange Academy - The Deadly Field Trip (2024) (Digital) (Shan-Empire).cbz (119pp)
+
+== S17094 Super Sons  [split]  7 files / 7 collections  decided in C-016 (R)
+   decided: R 17094 | this shelf conflates two different published works under one Series (flag item 19642): the 2017-2018 "Super Sons" monthly (CV 98910 / GCD dump 112144, count 16) — trades 70095-70098 (judged #1-16, incl the 02.5 "Super Sons of Tomorrow" crossover) plus the classic-era reprint "Superman/Batman: Saga of the Super Sons" (70101) — versus the 2019 YA graphic-novel trilogy "Super Sons" (GCD 142948, "Graphic Novel" format, count 3) — items 19642-19643
+   F 17094 split-needed | run A = CV 98910 / GCD 112144 "Super Sons" 2017-2018 DC monthly, 16 issues (items 70095-70098, 70101); run B = GCD 142948 "Super Sons" 2019-2020 DC Graphic Novel trilogy, 3 books (items 19642, 19643)
+   N 17094 cv=98910 gcd=112144 | run A: 2017-2018 monthly
+   N 17094 cv=- gcd=142948 | run B: 2019 YA graphic-novel trilogy
+   nearby: S17096 "Super Sons: Escape to Landis" 1f [shares gcd=142948 — S cv=130863 gcd=142948 (B-007 0.9)] keys: "Super Sons: Escape to Landis"
+   keys now: "Super Sons" x5 · "Super Sons.5 - Super Sons of Tomorrow" x1 · "Superman/Batman: Saga of the Super Sons (New Edition)" x1
+   groups (title x folder): 3
+   G1 "Super Sons" in DC Zoom (Kids)\Super Sons (2019) — 2 file(s), 2 COL, pp 159-173; cv per-file 98910x2; gcd per-file 142948x2; key 'Super Sons'
+      [19642] COL Super Sons Vol. 01 - The Polarshield Project (2019) (digital) (Son of Ultron-Empire).cbr (173pp)
+      [19643] COL Super Sons Vol. 02 - The Foxglove Mission (2019) (digital) (Son of Ultron-Empire).cbr (159pp)
+   G2 "Superman - Batman - Saga of the Super Sons (2017) (digital) (Son of Ultron-Empire)" in DC\_Super Sons — 1 file(s), 1 COL, pp 255-255; cv per-file 39857x1; key 'Superman/Batman: Saga of the Super Sons (New Edition)'
+      [70101] COL Superman - Batman - Saga of the Super Sons (2017) (digital) (Son of Ultron-Empire).cbr (255pp)
+   G3 "Super Sons" in DC\_Super Sons\01 Super Sons v1 (2017) — 4 file(s), 4 COL, pp 122-136; cv per-file 98910x4; gcd per-file 120672x2, 117393x1, 142948x1; key 'Super Sons' | 'Super Sons.5 - Super Sons of Tomorrow'
+      [70095] COL Super Sons Vol. 01 - When I Grow Up (2017) (digital) (Son of Ultron-Empire).cbr (129pp)
+         own record cv 98910 / gcd s117393 "Super Sons" (issue 1742426) COLLECTS: gcd=112144 Super Sons (2017) #1-5
+      [70096] COL Super Sons Vol. 02 - Planet of the Capes (2018) (digital) (Son of Ultron-Empire).cbr (122pp)
+      [70097] COL Super Sons Vol. 02.5 - Super Sons of Tomorrow (2018) (digital) (Son of Ultron-Empire).cbr (125pp)  key="Super Sons.5 - Super Sons of Tomorrow"
+      [70098] COL Super Sons Vol. 03 - Parent Trap (2018) (digital) (Son of Ultron-Empire).cbr (136pp)
+
+== S17377 Swamp Thing  [split]  7 files / 2 collections  decided in C-063 (R)
+   decided: R 17377 | the overlap flag is true across several Swamp Thing eras filed together: New 52 trades (Vol.01-02, items 73141-73142), the 1994 Grant Morrison "Bad Gumbo" era (items 113501-504), and a legacy Annual (113042) — no single CV/GCD id spans them
+   F 17377 split-needed | New 52 trades = GCD 68208 (2012-2016, collected, count 7); 1994 era = GCD 2999 (1985-1996, was ongoing, count 133); Annual = its own record, not found
+   nearby: S100163 "Swamp Thing" 111f [shares cv=3465, shares gcd=2999 — S cv=3465 gcd=2999 (C-019 0.95)] keys: "Saga of the Swamp Thing" | "Swamp Thing v2 (1982)"
+   nearby: S100166 "Swamp Thing" 5f [shares gcd=68208 — S cv=42599 gcd=68208 (C-019 0.9)] keys: "Swamp Thing v5 (2011)"
+   nearby: S100165 "Swamp Thing" 29f [title — S cv=11315 gcd=12262 (B-014 0.95)] keys: "Swamp Thing v4 (2004)" · S19715 "The Swamp Thing" 8f [title — S cv=134142 gcd=170016 (C-019 0.95)] keys: "The Swamp Thing"
+   nearby: S36014 "Swamp Thing" 6f [title — S cv=2556 gcd=2034 (C-019 0.9)] keys: "Swamp Thing - Jack in the Green" | "Swamp Thing - The Bronze Age" | "Swamp Thing - The Root of All Evil" | "Swamp Thing - Trial"
+   nearby: S4214 "Convergence Swamp Thing" 2f [title+1 — S cv=81469 gcd=88473 (A-008 0.95)] keys: "Convergence - Swamp Thing"
+   keys now: "Swamp Thing" x7
+   groups (title x folder): 3
+   G1 "Swamp Thing" in DC\_Swamp Thing\03 Swamp Thing v3 (Vertigo) (2000) — 2 file(s), 2 COL, pp 241-262; cv per-file 3465x2; gcd per-file 68208x2; key 'Swamp Thing'
+      [73141] COL Swamp Thing Vol. 01 (2014) (digital-Empire).cbz (241pp)
+      [73142] COL Swamp Thing Vol. 02 (2014) (digital-Empire).cbz (262pp)
+   G2 "Swamp Thing Annual" in Vertigo\Sandman and Death (1989)\The Children's Crusade — 1 file(s), numbers 7, pp 59-59; cv per-file 3465x1; gcd per-file 53463x1; key 'Swamp Thing'
+      [113042] 04. Swamp Thing Annual 07.cbr (59pp)
+   G3 "Swamp Thing" in Vertigo\_Grant Morrison\Swamp Thing v2 - Bad Gumbo (1994) — 4 file(s), numbers 140-143, pp 24-27; cv per-file 3465x4; gcd per-file 2999x4; key 'Swamp Thing'
+      e.g. Swamp Thing 140 (1994) (Digital) (AnHeroGold-Empire).cbz
+        113501 #140 1994 27pp · 113502 #141 1994 25pp · 113503 #142 1994 24pp · 113504 #143 1994 25pp
+
+== S17591 Tank girl  [split]  7 files / 0 collections  decided in B-064 (R)
+   decided: R 17591 | this shelf is a bucket of at least five separate Tank Girl publications swept out of four different subfolders: items 107676-107678 ("Dark Nuggets" 2009, "Dirty Helmets" 2010, "Hairy Heroes" 2010, 30-34pp) come from "09 We Hate Tank Girl (2009)"; item 107982 is the 114pp "21st Century Tank Girl (2015)"; item 107986 the 244pp "Dirty Old Tank Girl (2019)"; item 107989 the 132pp "King Tank Girl (2022)"; and item 107675 "Tank Girl - Coletanea Animal" 63pp is a Brazilian collection — no single record covers them, and the per-file pick CV 37019 "Tank Girl" 1991 Dark Horse count 4 is a 1991 mini none of them belongs to
+   F 17591 split-needed | proposed runs: the three 2009-2010 shorts belong with CV 53391 "Tank Girl: We Hate Tank Girl" 2011 Image count 1 (issue 363229); "21st Century Tank Girl" is CV 82473 2015 Titan count 3; "Dirty Old Tank Girl" and "King Tank Girl" are separate Titan collections; "Coletanea Animal" is a Brazilian edition with no record in either provider
+   N 17591 cv=82473 gcd=- for the 21st Century Tank Girl file and cv=53391 gcd=- for the We Hate Tank Girl shorts; the remaining three files need their own records before any of them can be linked
+   nearby: S17613 "Tank Girl Classic" 14f [title+1 — S cv=56274 (B-064 0.9)] keys: "Tank Girl Classic" · S17595 "Tank Girl: Carioca" 6f [title+1 — S cv=56273 gcd=71033 (B-064 0.95)] keys: "Tank Girl - Carioca"
+   nearby: S17593 "Tank Girl: Apocalypse" 4f [title+1 — S cv=20007 gcd=14893 (B-064 0.95)] keys: "Tank Girl - Apocalypse"
+   nearby: S17603 "Tank Girl: Tank Girl Gold" 4f [title+1 — S cv=94454 gcd=107808 (B-064 0.95)] keys: "Tank Girl - Gold"
+   nearby: S17605 "Tank Girl: Skidmarks" 4f [title+1 — S cv=29673 gcd=41616 (B-064 0.95)] keys: "Tank Girl - Skidmarks"
+   nearby: S17601 "Tank Girl - Forever" 1f [title+1 — S gcd=149040 (B-064 0.9)] keys: "Tank Girl - Forever" · S17614 "Tank Girl GN" 1f [title+1 — S cv=56274 (D-016 0.7)] keys: "Tank Girl GN"
+   keys now: "Tank Girl" x7
+   groups (title x folder): 7
+   G1 "Tank Girl - Coletanea Animal" in Misc\Tank Girl (1988)\09 We Hate Tank Girl (2009) — 1 file(s), pp 63-63; cv per-file 37019x1; key 'Tank Girl'
+      [107675] Tank Girl - Coletanea Animal.cbr (63pp)
+   G2 "Tank Girl - Dark Nuggets" in Misc\Tank Girl (1988)\09 We Hate Tank Girl (2009) — 1 file(s), pp 34-34; cv per-file 37019x1; key 'Tank Girl'
+      [107676] Tank Girl - Dark Nuggets (2009).cbr (34pp)
+   G3 "Tank Girl - Dirty Helmets (2010) (c2c) (Minutemen-DTs)" in Misc\Tank Girl (1988)\09 We Hate Tank Girl (2009) — 1 file(s), pp 34-34; cv per-file 37019x1; key 'Tank Girl'
+      [107677] Tank Girl - Dirty Helmets (2010) (c2c) (Minutemen-DTs).cbz (34pp)
+   G4 "Tank Girl - Hairy Heroes (2010) (c2c) (Minutemen-DTs)" in Misc\Tank Girl (1988)\09 We Hate Tank Girl (2009) — 1 file(s), pp 30-30; cv per-file 37019x1; key 'Tank Girl'
+      [107678] Tank Girl - Hairy Heroes (2010) (c2c) (Minutemen-DTs).cbz (30pp)
+   G5 "21st Century Tank Girl (2015) (Digital) (XRA-Empire)" in Misc\Tank Girl (1988)\14 21st Century Tank Girl (2015) — 1 file(s), pp 114-114; cv per-file 37019x1; key 'Tank Girl'
+      [107982] 21st Century Tank Girl (2015) (Digital) (XRA-Empire).cbz (114pp)
+   G6 "Dirty Old Tank Girl (2019) (Digital) (XRA-Empire)" in Misc\Tank Girl (1988)\20 Dirty Old Tank Girl (2019) — 1 file(s), pp 244-244; cv per-file 37019x1; key 'Tank Girl'
+      [107986] Dirty Old Tank Girl (2019) (Digital) (XRA-Empire).cbz (244pp)
+   G7 "King Tank Girl (2022) (Digital) (XRA-Empire)" in Misc\Tank Girl (1988)\23 King Tank Girl (2020) — 1 file(s), pp 132-132; cv per-file 37019x1; key 'Tank Girl'
+      [107989] King Tank Girl (2022) (Digital) (XRA-Empire).cbz (132pp)
+
+== S17665 Teen Titans  [split]  7 files / 2 collections  decided in B-014 (R)
+   decided: R 17665 | this shelf is four different comics under the bare key "Teen Titans": items 18399, 18401 and 18425 are Teen Titans (2011) #15, #16 and #18 filed under two #DC Events read-order folders; item 73991 is the 2024 trade of "Teen Titans - Year One", judged #1-6; and items 73426, 73427 and 73428 are three Teen Titans Go! graphic novels (Exchange Students!, Undead?!, To the Library!) whose ComicInfo Series names say so — the per-file stamp CV 10414 is the 2003 hundred-issue ongoing and describes none of them
+   F 17665 split-needed | proposed: 18399/18401/18425 -> Teen Titans (2011), CV 43004 / GCD 61186; 73991 -> Teen Titans: Year One, CV 20247 (DC 2008, 6); 73426/73427/73428 -> three separate Teen Titans Go! books, each with its own record
+   nearby: S65856 "Teen Titans" 112f [shares cv=10414 — S cv=10414 gcd=11297 (C-008 0.9)] keys: "Teen Titans (2003)" | "Teen Titans v3 (2003)"
+   nearby: S100220 "Teen Titans" 8f [shares cv=43004, shares gcd=61186 — S cv=43004 gcd=61186 (C-019 0.9)] keys: "Teen Titans v4 (2011)"
+   nearby: S100217 "Teen Titans" 30f [title — S cv=2279 gcd=1733 (C-019 0.95)] keys: "Teen Titans v1 (1966)" · S65855 "Teen Titans" 25f [title] keys: "Teen Titans (1996)" | "Teen Titans v2 (1996)"
+   nearby: S65858 "Teen Titans" 13f [title — S cv=95242 gcd=108551 (C-009 0.95)] keys: "Teen Titans (2016)" | "Teen Titans v6 (2016)"
+   nearby: S100221 "Teen Titans v5 (2014)" 4f [title — S gcd=91277 (C-019 0.7)] keys: "Teen Titans v5 (2014)"
+   nearby: S94714 "Teen Titans Go!" 79f [title+1 — S cv=69512 gcd=78078 (C-020 0.9)] keys: "Teen Titans Go! v2 (2013)"
+   nearby: S17677 "Teen Titans Go!" 28f [title+1 — S cv=11258 gcd=12199 (C-028 0.9)] keys: "Teen Titans Go!" | "Teen Titans Go! v1 (2004)"
+   nearby: S17689 "Teen Titans Spotlight" 21f [title+1 — S cv=3621 gcd=3171 (A-012 0.95)] keys: "Teen Titans Spotlight"
+   nearby: S19212 "The New Teen Titans" 15f [title+1 — S cv=3316 gcd=2842 (C-019 0.9)] keys: "New Teen Titans" | "The New Teen Titans"
+   nearby: S17674 "Teen Titans Academy" 2f [title+1 — S cv=134719 gcd=171160 (C-019 0.9)] keys: "Teen Titans Academy"
+   nearby: S17676 "Teen Titans Giant" 2f [title+1 — S cv=111996 gcd=126442 (A-012 0.9)] keys: "Teen Titans Giant"
+   nearby: S34308 "Teen Titans Annual" 1f [title+1 — S cv=18404 gcd=17005 (B-008 0.95)] keys: "Teen Titans - #Annual"
+   keys now: "Teen Titans" x7
+   groups (title x folder): 6
+   G1 "Teen Titans" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\064 Red Hood and the Outlaws Vol. 3 Death of the Family 1 — 2 file(s), numbers 15-16, pp 20-20; cv per-file 10414x2; key 'Teen Titans'
+      [18399] 002 Teen Titans 015 - February 2013.cbr (20pp)
+      [18401] 004 Teen Titans 016 - March 2013.cbr (20pp)
+   G2 "Teen Titans" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\079 Nightwing Vol. 3 Death of the Family 4 — 1 file(s), numbers 18, pp 22-22; cv per-file 10414x1; key 'Teen Titans'
+      [18425] 003 Teen Titans 018 - May 2013.cbr (22pp)
+   G3 "Teen Titans - Year One (2024) (digital) (Son of Ultron-Empire)" in DC\_Teen Titans\_Completed Series\Teen Titans - Year One (2008) — 1 file(s), 1 COL, pp 143-143; cv per-file 10414x1; key 'Teen Titans'
+      [73991] COL Teen Titans - Year One (2024) (digital) (Son of Ultron-Empire).cbr (143pp)
+   G4 "Teen Titans Go! - DC Super Hero Girls - Exchange Students! (2022) (digital) (Son of Ultron-Empire)" in DC\_Teen Titans\_Teen Titans Go! — 1 file(s), pp 164-164; cv per-file 10414x1; key 'Teen Titans'
+      [73426] Teen Titans Go! - DC Super Hero Girls - Exchange Students! (2022) (digital) (Son of Ultron-Empire).cbr (164pp)
+   G5 "Teen Titans Go! - Undead (2022) (digital) (Son of Ultron-Empire)" in DC\_Teen Titans\_Teen Titans Go! — 1 file(s), pp 155-155; cv per-file 10414x1; key 'Teen Titans'
+      [73427] Teen Titans Go! - Undead (2022) (digital) (Son of Ultron-Empire).cbr (155pp)
+   G6 "Teen Titans Go! To the Library! (2023) (digital) (Son of Ultron-Empire)" in DC\_Teen Titans\_Teen Titans Go! — 1 file(s), 1 COL, pp 153-153; cv per-file 10414x1; key 'Teen Titans'
+      [73428] COL Teen Titans Go! To the Library! (2023) (digital) (Son of Ultron-Empire).cbr (153pp)
+
+== S18341 Dark Tower: The Gunslinger Born  [split]  7 files / 4 collections  decided in C-040 (R)
+   decided: R 18341 | Marvel's Dark Tower line is several separate minis on one shelf: Gunslinger Born (CV 18161, 7 issues), Long Road Home (GCD 29890, 5 issues), Treachery (CV 22982/GCD 31883, 6 issues), Fall of Gilead (GCD 37665, 6 issues) — no line record spans them
+   F 18341 split-needed | four trades, four different minis: Gunslinger Born/Long Road Home/Treachery/Fall of Gilead, no coextensive line
+   N 103237 no-record | "The Dark Tower - End-World Almanac" not found on either leg
+   N 103238 no-record | "The Dark Tower - Guide to Gilead" (2009) not found on either leg (packet's dump doesn't show it separately)
+   nearby: S58610 "Weird War Tales" 135f [shares gcd=1983 — S cv=2507 gcd=1983 (C-010 0.9)] keys: "Weird War Tales" | "Weird war tales"
+   nearby: S11819 "Master of Kung Fu" 76f [shares gcd=2183 — S cv=2697 gcd=2183 (C-049 0.9)] keys: "Master of Kung Fu" | "Master of Kung Fu Epic Collection" | "Master of Kung fu"
+   nearby: S10922 "Longshot" 7f [shares gcd=3028 — S cv=3489 gcd=3028 (C-055 0.9)] keys: "Longshot"
+   keys now: "The Dark Tower" x7
+   groups (title x folder): 7
+   G1 "The Dark Tower - End-World Almanac" in Marvel\The Dark Tower — 1 file(s), numbers 1, pp 36-36; cv per-file 18161x1; gcd per-file 21863x1; key 'The Dark Tower'
+      [103237] The Dark Tower - End-World Almanac 01.cbz (36pp)
+   G2 "The Dark Tower - Guide to Gilead (2009) (Digital) (DR & Quinch-Empire)" in Marvel\The Dark Tower — 1 file(s), pp 35-35; cv per-file 18161x1; key 'The Dark Tower'
+      [103238] The Dark Tower - Guide to Gilead (2009) (Digital) (DR & Quinch-Empire).cbr (35pp)
+   G3 "The Dark Tower - Gunslinger's Guidebook (2007) (digital) (Son of Ultron II-Empire)" in Marvel\The Dark Tower — 1 file(s), pp 50-50; cv per-file 20562x1; gcd per-file 1983x1; key 'The Dark Tower'
+      [103239] The Dark Tower - Gunslinger's Guidebook (2007) (digital) (Son of Ultron II-Empire).cbr (50pp)
+   G4 "The Dark Tower" in Marvel\The Dark Tower\01 Gunslinger Born (2007) — 1 file(s), 1 COL, pp 219-219; cv per-file 18161x1; gcd per-file 2183x1; key 'The Dark Tower'
+      [103965] COL The Dark Tower Vol. 01 - The Gunslinger Born (2007) (Digital) (Zone-Empire).cbr (219pp)
+   G5 "The Dark Tower" in Marvel\The Dark Tower\02 The Long Road Home (2008) — 1 file(s), 1 COL, pp 140-140; cv per-file 18161x1; gcd per-file 3028x1; key 'The Dark Tower'
+      [103966] COL The Dark Tower Vol. 02 - The Long Road Home (2008) (Digital) (Zone-Empire).cbr (140pp)
+   G6 "The Dark Tower" in Marvel\The Dark Tower\03 Treachery (2008) — 1 file(s), 1 COL, pp 159-159; cv per-file 18161x1; gcd per-file 54031x1; key 'The Dark Tower'
+      [103967] COL The Dark Tower Vol. 03 - Treachery (2009) (Digital) (Zone-Empire).cbr (159pp)
+   G7 "The Dark Tower" in Marvel\The Dark Tower\05 Fall of Gilead (2009) — 1 file(s), 1 COL, pp 197-197; cv per-file 18161x1; gcd per-file 10416x1; key 'The Dark Tower'
+      [103969] COL The Dark Tower Vol. 05 - The Fall of Gilead (2010) (Digital) (Zone-Empire).cbr (197pp)
+
+== S20313 Tomb Raider  [split]  7 files / 7 collections  decided in C-023 (R)
+   decided: R 20313 | the overlap-in-series flag is TRUE: two distinct "Tomb Raider" Dark Horse runs each minted their own Vol.01/Vol.02 — the 2014 18-issue ongoing (CV 71943/GCD dump 79251, collected as v01-03 "Season of the Witch"/"Secrets and Lies"/"Queen of Serpents") and the 2016 12-issue relaunch (CV 88221/GCD 97501, collected as Vol.01-02 "Spore"/"Choice and Sacrifice"); the two Omnibus books likely span both eras but no single coextensive record for them was found in the packet
+   F 20313 split-needed | run A = 2014 ongoing (CV 71943/GCD 79251); run B = 2016 relaunch (CV 88221/GCD 97501)
+   N 20313 cv=71943 gcd=79251 | 2014 18-issue "Tomb Raider" ongoing, this shelf's v01-03 trades (items 13418-13420)
+   N 20313 cv=88221 gcd=97501 | 2016 12-issue "Tomb Raider" relaunch, this shelf's Vol.01-02 trades (items 13421-13422)
+   N 20313 cv=- gcd=108590 | GCD's "collected edition" row (2016-2019, count 4) likely covering the two Omnibus books (items 13416-13417); no confirmed per-book id
+   keys now: "Tomb Raider" x4 · "Tomb Raider v2 (2014)" x3
+   groups (title x folder): 3
+   G1 "Tomb Raider Omnibus" in Dark Horse\Tomb Raider — 2 file(s), 2 COL, pp 441-471; cv per-file 71943x2; key 'Tomb Raider'
+      [13416] COL Tomb Raider Omnibus Book 01 (2019) (digital) (The Magicians-Empire).cbr (471pp)
+      [13417] COL Tomb Raider Omnibus Book 02 (2020) (digital) (The Magicians-Empire).cbr (441pp)
+   G2 "Tomb Raider" in Dark Horse\Tomb Raider\Tomb Raider v2 (2014) — 3 file(s), 3 COL, pp 144-146; cv per-file 71943x3; gcd per-file 89355x3; key 'Tomb Raider v2 (2014)'
+      [13418] COL Tomb Raider v01 - Season of the Witch (2014) (digital) (The Magicians-Empire).cbr (144pp)
+      [13419] COL Tomb Raider v02 - Secrets and Lies (2015) (digital) (The Magicians-Empire).cbr (146pp)
+         own record cv 71943 / gcd s89355 "Tomb Raider" (issue 1355374) COLLECTS: gcd=79251 Tomb Raider (2014) #7-12
+      [13420] COL Tomb Raider v03 - Queen of Serpents (2015) (digital) (The Magicians-Empire).cbr (146pp)
+         own record cv 71943 / gcd s89355 "Tomb Raider" (issue 1498211) COLLECTS: gcd=79251 Tomb Raider (2014) #13-18
+   G3 "Tomb Raider" in Dark Horse\Tomb Raider\Tomb Raider v3 (2016) — 2 file(s), 2 COL, pp 137-142; cv per-file 71943x1, 88221x1; gcd per-file 97501x1, 108590x1; key 'Tomb Raider'
+      [13421] COL Tomb Raider Vol. 01 - Spore (2016) (digital) (The Magicians-Empire).cbr (137pp)
+      [13422] COL Tomb Raider Vol. 02 - Choice and Sacrifice (2017) (digital) (The Magicians-Empire).cbr (142pp)
+         own record cv 88221 / gcd s108590 "Tomb Raider" (issue 1698350) COLLECTS: gcd=97501 Tomb Raider (2016) #7-12
+
+== S23136 Captain America - Theater of War  [split]  7 files / 0 collections  decided in B-054 (R)
+   decided: R 23136 | this shelf is seven separately published one-shots of the Theater of War line, not a run: Operation Zero-Point (2008), America First! (2009), America the Beautiful (2009), Ghosts of My Country (2009), To Soldier On (2009), A Brother in Arms (2009) and Prisoners of Duty (2010), each with its own record in BOTH providers; the stamped 31612 "Captain America: Theater Of War" 2010 count 1 is the collected edition, and applying it would hand seven comics one identity
+   F 23136 split-needed | proposed records: 77404 -> CV 23548 / GCD 32370 (Operation Zero-Point); 77401 -> CV 25178 / GCD 33342 (America First!); 77402 -> CV 25516 (America the Beautiful); 77403 -> CV 28503 / GCD 40657 (Ghosts of My Country); 77406 -> CV 27396 (To Soldier On); 77400 -> CV 26304 / GCD 36139 (A Brother in Arms); 77405 -> CV 30232 (Prisoners of Duty)
+   keys now: "Captain America - Theater of War" x7
+   groups (title x folder): 7
+   G1 "Captain America - Theater of War - A Brother in Arms (2009) (digital) (Minutemen-PhD)" in Marvel\_Captain America\_Trades, Minis and One-shots\Captain America - Theater of War (2008) — 1 file(s), pp 37-37; cv per-file 26304x1; gcd per-file 36139x1; key 'Captain America - Theater of War'
+      [77400] Captain America - Theater of War - A Brother in Arms (2009) (digital) (Minutemen-PhD).cbr (37pp)
+   G2 "Captain America - Theater of War - America First! (2009) (Digital) (Shadowcat-Empire)" in Marvel\_Captain America\_Trades, Minis and One-shots\Captain America - Theater of War (2008) — 1 file(s), pp 55-55; cv per-file 25178x1; gcd per-file 33342x1; key 'Captain America - Theater of War'
+      [77401] Captain America - Theater of War - America First! (2009) (Digital) (Shadowcat-Empire).cbz (55pp)
+   G3 "Captain America - Theater of War - America the Beautiful (2009) (digital) (Minutemen-PhD)" in Marvel\_Captain America\_Trades, Minis and One-shots\Captain America - Theater of War (2008) — 1 file(s), pp 37-37; cv per-file 25516x1; key 'Captain America - Theater of War'
+      [77402] Captain America - Theater of War - America the Beautiful (2009) (digital) (Minutemen-PhD).cbr (37pp)
+   G4 "Captain America - Theater of War - Ghosts of My Country (2009) (digital) (Minutemen-PhD)" in Marvel\_Captain America\_Trades, Minis and One-shots\Captain America - Theater of War (2008) — 1 file(s), pp 37-37; cv per-file 28503x1; gcd per-file 40657x1; key 'Captain America - Theater of War'
+      [77403] Captain America - Theater of War - Ghosts of My Country (2009) (digital) (Minutemen-PhD).cbr (37pp)
+   G5 "Captain America - Theater of War - Operation Zero-Point (2008) (Digital) (Shadowcat-Empire)" in Marvel\_Captain America\_Trades, Minis and One-shots\Captain America - Theater of War (2008) — 1 file(s), pp 39-39; cv per-file 23548x1; gcd per-file 32370x1; key 'Captain America - Theater of War'
+      [77404] Captain America - Theater of War - Operation Zero-Point (2008) (Digital) (Shadowcat-Empire).cbz (39pp)
+   G6 "Captain America - Theater of War - Prisoners of Duty (2010) (Digital) (Shadowcat-Empire)" in Marvel\_Captain America\_Trades, Minis and One-shots\Captain America - Theater of War (2008) — 1 file(s), pp 33-33; cv per-file 30232x1; key 'Captain America - Theater of War'
+      [77405] Captain America - Theater of War - Prisoners of Duty (2010) (Digital) (Shadowcat-Empire).cbz (33pp)
+   G7 "Captain America - Theater of War - To Soldier On (2009) (digital) (Minutemen-PhD)" in Marvel\_Captain America\_Trades, Minis and One-shots\Captain America - Theater of War (2008) — 1 file(s), pp 37-37; cv per-file 27396x1; key 'Captain America - Theater of War'
+      [77406] Captain America - Theater of War - To Soldier On (2009) (digital) (Minutemen-PhD).cbr (37pp)
+
+== S24285 Batman Noir  [split]  7 files / 6 collections  decided in B-011 (R)
+   decided: R 24285 | seven different books on one shelf and no record spans them: DC's Batman Noir line mints a volume per title in BOTH providers — Eduardo Risso (CV 62380 / GCD 110362), Hush (84571 / 92481), The Black Mirror (88191 / 97427), The Dark Knight Returns (82397 / 89757), The Dark Knight Strikes Again (109437 / 123196), The Killing Joke (92730 / 104708) and The Long Halloween (77418 / 110635); the stored CV 133691 is Urban Comics' FRENCH "Batman: Le Chevalier Noir", rejected on the publisher column, and it has no CvVolume row
+   F 24285 split-needed | proposed: 62872 to CV 62380 / GCD 110362; 62873 to 84571 / 92481; 62874 to 88191 / 97427; 62875 to 82397 / 89757; 62876 to 109437 / 123196; 62877 to 92730 / 104708; 62878 to 77418 / 110635
+   F 24285 wrong-cv-link | stored CV 133691 "Batman: Le Chevalier Noir" (2013, Urban Comics, 4) is the French collected line, not DC's Batman Noir
+   nearby: S5409 "Detective Comics" 966f [shares gcd=87 (collected by item 62874) — S cv=18058 gcd=87 (C-008 0.9)] keys: "Detective Comics" | "Detective Comics (1937)" | "Detective Comics v1 (1937)"
+   nearby: S64223 "Batman" 829f [shares gcd=141 (collected by item 62872) — S cv=796 gcd=141 (C-011 0.9)] keys: "A Robins Tale" | "All they do is watch us kill part" | "As the Crow Flies part" | "Batman (1940)" (+5 more: lookup.py --shelf 64223)
+   nearby: S21390 "Wednesday Comics" 13f [shares gcd=38095 (collected by item 62872) — S cv=27010 gcd=38095 (A-009 0.9)] keys: "Wednesday Comics"
+   nearby: S6796 "Flashpoint: Batman Knight of Vengeance" 4f [shares gcd=59040 (collected by item 62872) — S cv=40364 gcd=59040 (C-008 0.95)] keys: "Flashpoint - Batman - Knight of Vengeance"
+   nearby: S2025 "The Dark Knight Strikes Again" 1f [shares gcd=9985 (collected by item 62876) — S cv=9221 gcd=9985 (B-010 0.95)] keys: "Batman - The Dark Knight Strikes Again"
+   nearby: S2032 "Batman: The Long Halloween" 1f [shares gcd=7339 (collected by item 62878) — S cv=6822 gcd=7339 (B-011 0.95)] keys: "Batman - The Long Halloween"
+   nearby: S1947 "Batman: Gargoyle of Gotham Noir Edition" 5f [title+1 — S cv=155368 gcd=203901 (A-009 0.9)] keys: "Batman - Gargoyle of Gotham Noir Edition" | "Batman Noir Edition"
+   keys now: "Batman Noir" x7
+   groups (title x folder): 7
+   G1 "Batman Noir - Eduardo Risso - The Deluxe Edition (2013) (digital) (Son of Ultron-Empire)" in DC\_Batman\_Trades, and Graphic Novels\Batman Noir (2014) — 1 file(s), 1 COL, pp 225-225; cv per-file 133691x1; gcd per-file 110362x1; key 'Batman Noir'
+      [62872] COL Batman Noir - Eduardo Risso - The Deluxe Edition (2013) (digital) (Son of Ultron-Empire).cbr (225pp)
+         own record cv 133691 / gcd s110362 "Batman Noir: Eduardo Risso: The Deluxe Edition" (issue 1658407) COLLECTS: gcd=38095 Wednesday Comics (2009) #1-12 · gcd=141 Batman (1940) #620-625 · gcd=59040 Flashpoint: Batman Knight of Vengeance (2011) #1-3 · gcd=7770 Batman: Gotham Knights (2000) #8
+   G2 "Batman Noir - Hush (2015) (Digital) (Zone-Empire)" in DC\_Batman\_Trades, and Graphic Novels\Batman Noir (2014) — 1 file(s), 1 COL, pp 291-291; cv per-file 133691x1; gcd per-file 92481x1; key 'Batman Noir'
+      [62873] COL Batman Noir - Hush (2015) (Digital) (Zone-Empire).cbr (291pp)
+         own record cv 133691 / gcd s92481 "Batman Noir: Hush" (issue 1458096) COLLECTS: gcd=141 Batman (1940) #608-619 · gcd=25724 Batman: Hush (2003) #1 · gcd=86771 Wizard: The Comics Magazine (1991) #0
+   G3 "Batman Noir - The Black Mirror (2016) (digital) (Son of Ultron-Empire)" in DC\_Batman\_Trades, and Graphic Novels\Batman Noir (2014) — 1 file(s), 1 COL, pp 275-275; cv per-file 133691x1; gcd per-file 97427x1; key 'Batman Noir'
+      [62874] COL Batman Noir - The Black Mirror (2016) (digital) (Son of Ultron-Empire).cbr (275pp)
+         own record cv 133691 / gcd s97427 "Batman Noir: The Black Mirror" (issue 1537780) COLLECTS: gcd=87 Detective Comics (1937) #871-881
+   G4 "Batman Noir - The Dark Knight Returns (2015) (digital) (Son of Ultron-Empire)" in DC\_Batman\_Trades, and Graphic Novels\Batman Noir (2014) — 1 file(s), 1 COL, pp 206-206; cv per-file 133691x1; gcd per-file 89757x1; key 'Batman Noir'
+      [62875] COL Batman Noir - The Dark Knight Returns (2015) (digital) (Son of Ultron-Empire).cbr (206pp)
+         own record cv 133691 / gcd s89757 "Batman Noir: The Dark Knight Returns" (issue 1379269) COLLECTS: gcd=3140 Batman: The Dark Knight (1986) #1-4 · gcd=23668 Absolute Dark Knight (2006) (unnumbered) · gcd=25728 Batman: The Dark Knight Returns -- Tenth Anniversary Edition (1997) (unnumbered) · gcd=155779 Batman: The Dark Knight Returns (2002) (unnumbered)
+   G5 "Batman Noir - The Dark Knight Strikes Again (2018) (digital) (Son of Ultron-Empire)" in DC\_Batman\_Trades, and Graphic Novels\Batman Noir (2014) — 1 file(s), 1 COL, pp 238-238; cv per-file 133691x1; gcd per-file 123196x1; key 'Batman Noir'
+      [62876] COL Batman Noir - The Dark Knight Strikes Again (2018) (digital) (Son of Ultron-Empire).cbr (238pp)
+         own record cv 133691 / gcd s123196 "Batman Noir: The Dark Knight Strikes Again" (issue 1796343) COLLECTS: gcd=9985 The Dark Knight Strikes Again (2001) #1-3 · gcd=23668 Absolute Dark Knight (2006) (unnumbered)
+   G6 "Batman Noir - The Killing Joke (2016) (Digital) (Zone-Empire)" in DC\_Batman\_Trades, and Graphic Novels\Batman Noir (2014) — 1 file(s), pp 113-113; cv per-file 133691x1; gcd per-file 104708x1; key 'Batman Noir'
+      [62877] Batman Noir - The Killing Joke (2016) (Digital) (Zone-Empire).cbr (113pp)
+   G7 "Batman Noir - The Long Halloween (2014) (Digital) (Zone-Empire)" in DC\_Batman\_Trades, and Graphic Novels\Batman Noir (2014) — 1 file(s), 1 COL, pp 359-359; cv per-file 133691x1; gcd per-file 110635x1; key 'Batman Noir'
+      [62878] COL Batman Noir - The Long Halloween (2014) (Digital) (Zone-Empire).cbr (359pp)
+         own record cv 133691 / gcd s110635 "Batman Noir: The Long Halloween" (issue 1660165) COLLECTS: gcd=7339 Batman: The Long Halloween (1996) #1-13 · gcd=24807 Absolute Batman: The Long Halloween (2007) (unnumbered) · gcd=22927 Batman: The Long Halloween (1999) (unnumbered) · gcd=23300 Batman: The Long Halloween (1998) (unnumbered)
+
+== S35140 Cyber Force  [split]  7 files / 4 collections  decided in C-030 (R)
+   decided: R 35140 | this shelf mixes the original 1992 5-issue mini (CV 18360/GCD via dump, 2 Annuals of the v2 ongoing) with the SEPARATE later "Cyber Force: Rebirth" 2013 relaunch (4 COL trades, own CV 67751/GCD 123035) and the standalone 2024 "Shootout" one-shot (own CV 159196/GCD 214263) — three co-equal, separately-published pieces
+   F 35140 split-needed | original 1992 mini + v2 Annuals cv=18360 gcd=-; Cyber Force: Rebirth (2013-2018, 4 trades) cv=67751 gcd=123035; Shootout (2024 one-shot) cv=159196 gcd=214263
+   nearby: S96216 "Cyberforce" 35f [title — S cv=18361 gcd=14377 (C-030 0.9)] keys: "Cyber Force v2 (1993)" · S96215 "Cyber Force v1 (1992)" 3f [title] keys: "Cyber Force v1 (1992)"
+   nearby: S96217 "Cyber Force" 3f [title — S cv=109443 gcd=123257 (B-039 0.95)] keys: "Cyber Force v6 (2018)"
+   nearby: S4483 "Cyber Force" 1f [title — S cv=20255 gcd=36784 (D-011 0.95)] keys: "Cyberforce - Rising From the Ashes"
+   keys now: "Cyber Force - Rebirth" x4 · "Cyber Force Annual" x2 · "Cyber Force - Shootout" x1
+   groups (title x folder): 3
+   G1 "Cyber Force - Shootout (2024) (digital) (Son of Ultron-Empire)" in Image\Cyber Force (1992) — 1 file(s), pp 32-32; cv per-file 18360x1; key 'Cyber Force - Shootout'
+      [36348] Cyber Force - Shootout (2024) (digital) (Son of Ultron-Empire).cbr (32pp)
+   G2 "Cyber Force" in Image\Cyber Force (1992)\Cyber Force v2 (1993)\Annuals and Specials — 2 file(s), numbers 1-2, pp 31-32; cv per-file 20268x2; gcd per-file 123035x2; key 'Cyber Force Annual'
+      [36352] Cyber Force v2 Annual 01 (1995).cbr (31pp)
+      [36353] Cyber Force v2 Annual 02 (1996).cbr (32pp)
+   G3 "Cyber Force - Rebirth" in Image\Cyber Force (1992)\Cyber Force v4+v5 (2012) — 4 file(s), 4 COL, pp 148-162; cv per-file 18360x3, 67751x1; gcd per-file 123035x4; key 'Cyber Force - Rebirth'
+      [36389] COL Cyber Force - Rebirth Vol. 01 (2013) (digital-Empire).cbr (162pp)
+         own record cv 67751 / gcd s123035 "Cyber Force Rebirth" (issue 1793852) COLLECTS: gcd=69632 Cyber Force (2012) #1-5
+      [36390] COL Cyber Force - Rebirth Vol. 02 (2015) (digital) (The Magicians-Empire).cbr (153pp)
+         own record cv 18360 / gcd s123035 "Cyber Force Rebirth" (issue 1793853) COLLECTS: gcd=69632 Cyber Force (2012) #6-11
+      [36391] COL Cyber Force - Rebirth Vol. 03 (2018) (Digital) (DrDoom-Empire).cbz (148pp)
+      [36392] COL Cyber Force - Rebirth Vol. 04 (2018) (Digital) (DrDoom-Empire).cbz (149pp)
+
+== S65814 Superman Year One  [split]  7 files / 0 collections  decided in C-007 (R)
+   decided: R 65814 | this shelf folds together three unrelated comics: DC Black Label's "Superman: Year One" #1-3 of 3 (2019, CV 119775, GCD dump 147743/151958), the 2016 "Superman" Annual #3 tie-in to the Savage Dawn reading order (GCD collected-edition row 104291, item 18999, filed from a different event folder), and "Absolute Superman" #1-3 (2025, a new ongoing with no matching stored volume in this packet)
+   F 65814 split-needed | Superman Year One (items 19522-19524) cv=119775 gcd=147743; Superman Annual 2016 (item 18999) is a different comic and misfiled here; Absolute Superman 2025 (items 70685-70687) is a separate ongoing, id not surfaced
+   F 65814 misfiled | item 18999 "01 Superman Annual 003 (2016)" belongs to the Savage Dawn tie-in reading order, not this Superman: Year One / Absolute Superman shelf
+   N 65814 cv=119775 gcd=147743 (Superman: Year One 2019, 3-issue DC Black Label mini)
+   N 65814 cv=- gcd=- (Absolute Superman 2025 — no candidate surfaced in this packet, needs-fetch)
+   nearby: S100138 "Superman" 5f [shares gcd=126785 — S cv=112206 gcd=126785 (B-013 0.95)] keys: "Superman v5 (2018)"
+   nearby: S2197 "Batman/Superman 2021 Annual" 1f [title+1 — S cv=138647 gcd=175620 (C-020 0.9)] keys: "Batman/Superman 2021 Annual (2021)"
+   nearby: S28403 "Batman/Superman Annual" 1f [title+1 — S cv=72110 gcd=79384 (C-020 0.95)] keys: "Batman/Superman Annual"
+   keys now: "Superman (2019)" x7
+   groups (title x folder): 3
+   G1 "Superman - Year One" in DC Black Label\Superman - Year One v1 (2019) — 3 file(s), numbers 1-3, pp 65-67; cv per-file 119775x3; gcd per-file 121442x2, 126785x1; key 'Superman (2019)'
+      [19522] Superman - Year One 01 (of 03) (2019) (Digital) (Thornn-Empire).cbr (67pp)
+      [19523] Superman - Year One 02 (of 03) (2019) (Digital-Empire).cbr (65pp)
+      [19524] Superman - Year One 03 (of 03) (2019) (Digital-Empire).cbr (66pp)
+   G2 "Superman Annual" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\125 Superman - Savage Dawn — 1 file(s), numbers 3, pp 42-42; cv per-file 119775x1; gcd per-file 104291x1; key 'Superman (2019)'
+      [18999] 01 Superman Annual 003 (2016) (Webrip) (The Last Kryptonian-DCP).cbr (42pp)
+   G3 "Absolute Superman" in DC\_Superman\Absolute Superman v1  (2024) — 3 file(s), numbers 1-3, pp 29-42; cv per-file 119775x3; key 'Superman (2019)'
+      [70685] Absolute Superman 001 (2025) (digital) (Son of Ultron-Empire).cbr (42pp)
+      [70686] Absolute Superman 002 (2025) (digital) (Son of Ultron-Empire).cbr (31pp)
+      [70687] Absolute Superman 003 (2025) (digital) (Son of Ultron-Empire).cbr (29pp)
+
+== S1331 Arsenal  [split]  8 files / 2 collections  decided in C-014 (R)
+   decided: R 1331 | two distinct comics share this shelf, both cleanly matched: the 1998 "Arsenal" 4-issue limited series + its "Arsenal Special" one-shot (CV 6144/GCD 5952, floppies #1-4 + the 1996 special) and the 2015-2016 "Red Hood/Arsenal" ongoing (CV 82470/GCD 89988, floppy #7) collected in the 2016 "Red Hood - Arsenal" trades (GCD 98740, count 2, matches our 2 trades exactly)
+   F 1331 split-needed | see R clause
+   N 1331 cv=6144 gcd=5952 | "Arsenal" 1998 4-issue limited series (floppies #1-4)
+   N 1331 cv=82470 gcd=89988 | "Red Hood/Arsenal" 2015-2016 ongoing (floppy #7; the 2 trades collect it, GCD 98740 count 2)
+   nearby: S4219 "Convergence Titans" 2f [shares gcd=88149 (collected by item 69308) — S cv=81223 gcd=88149 (A-008 0.95)] keys: "Convergence - The Titans"
+   nearby: S14462 "Red Hood & the Outlaws: Rebirth" 1f [shares gcd=104516 (collected by item 69309) — S cv=92572 gcd=104516 (A-008 0.95)] keys: "Red Hood and the Outlaws - Rebirth"
+   keys now: "Arsenal" x5 · "Red Hood - Arsenal" x3
+   groups (title x folder): 4
+   G1 "Red Hood-Arsenal" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\123 Robin War (2016) — 1 file(s), numbers 7, pp 20-20; cv per-file 6144x1; gcd per-file 89988x1; key 'Red Hood - Arsenal'
+      [18991] Red Hood-Arsenal 007 (2016) (Digital-Empire).cbr (20pp)
+   G2 "Arsenal" in DC\_Green Arrow\_Trades, Minis and one-shots\Arsenal v1 (1998) — 4 file(s), numbers 1-4, pp 23-23; cv per-file 6144x4; gcd per-file 5952x4; key 'Arsenal'
+      e.g. Arsenal 01 (of 04) (1998) (digital-Empire).cbr
+        64870 #1 1998 23pp · 64871 #2 1998 23pp · 64872 #3 1998 23pp · 64873 #4 1999 23pp
+   G3 "Arsenal Special" in DC\_Green Arrow\_Trades, Minis and one-shots\Arsenal v1 (1998) — 1 file(s), numbers 1, pp 37-37; cv per-file 35272x1; gcd per-file 123028x1; key 'Arsenal'
+      [64874] Arsenal Special 001 (1996) (digital-Empire).cbr (37pp)
+   G4 "Red Hood - Arsenal" in DC\_Red Hood\02 Red Hood-Arsenal v1 (2015) — 2 file(s), 2 COL, pp 142-171; cv per-file 82470x2; gcd per-file 98740x2; key 'Red Hood - Arsenal'
+      [69308] COL Red Hood - Arsenal Vol. 01 - Open for Business (2016) (digital) (Son of Ultron-Empire).cbr (142pp)
+         own record cv 82470 / gcd s98740 "Red Hood / Arsenal" (issue 1549579) COLLECTS: gcd=89988 Red Hood / Arsenal (2015) #1-6 · gcd=88149 Convergence Titans (2015) #2
+      [69309] COL Red Hood - Arsenal Vol. 02 - Dancing with the Devil's Daughter (2016) (digital) (Son of Ultron-Empire).cbr (171pp)
+         own record cv 82470 / gcd s98740 "Red Hood / Arsenal" (issue 1637902) COLLECTS: gcd=89988 Red Hood / Arsenal (2015) #7-13 · gcd=104516 Red Hood and the Outlaws: Rebirth (2016) #1
+
+== S2334 Battlestar Galactica  [split]  8 files / 4 collections  decided in R-005 (R)
+   decided: R 2334 | the shelf carries an OPEN conflated-series flag (item 20904) and is a bucket of eight different comics with no run between them: a 2016 Starbuck trade, a 2015 Death of Apollo trade, a 2017 Omnibus, the 2014 Adama Gambit, a 2009 Ghosts trade, a 2007 Pegasus one-shot, a 2009 Final Five trade and a 2016 one-shot; its stored CV 18480 (the 2006 thirteen-issue reboot, which is S94560) is a title-wide stamp and no record here spans the shelf
+   F 2334 split-needed | proposed: Starbuck 2016 trade (CV 89354 / GCD 99346) · The Death of Apollo 2015 trade (GCD 92506; ComicVine has no volume) · Ghosts 2009 trade (CV 82010 / GCD 90593) · The Final Five 2009 trade (CV 82011 / GCD 90592) · Pegasus 2007 one-shot (CV 20836 / GCD 34089) · The Adama Gambit 2015 trade (CV 79408; GCD has no row) · the 2016 one-shot (GCD 221224) · the 2017 Omnibus Book 01 (in neither provider)
+   F 2334 wrong-cv-link | stored CV 18480 "Battlestar Galactica" (Dynamite 2006, 13) is the reboot run whose three collected volumes are S94560; not one file here is an issue or a collection of it
+   N 2334 item 20895, "COL Battlestar Galactica Omnibus Book 01 (2017)" at 327 pages, is in NEITHER provider — a "Battlestar Galactica Omnibus" probe returns nothing in the ComicVine rip or the GCD dump — so that book has no record to give it
+   nearby: S102448 "Battlestar Galactica" 3f [shares cv=18480 — S cv=18480 gcd=18071 (B-031 0.95)] keys: "Battlestar Galactica v1 (2007)"
+   nearby: S2336 "Battlestar Galactica (Classic)" 7f [title — S cv=114047 gcd=130860 (B-022 0.95)] keys: "Battlestar Galactica (Classic) v2 (2018)" | "Battlestar Galactica (Classic): Counterstrike"
+   nearby: S2339 "Battlestar Galactica (Classic)" 2f [title — S cv=92734 gcd=104742 (B-022 0.95)] keys: "Battlestar Galactica (Classic) v1 (2016)" | "Battlestar Galactica - Folly of the Gods"
+   nearby: S2342 "(Classic) Battlestar Galactica" 1f [title — S cv=61319 gcd=74421 (B-022 0.95)] keys: "Battlestar Galactica - Memorial"
+   nearby: S2343 "Battlestar Galactica: Origins" 1f [title+1 — S cv=20145 gcd=28101 (B-022 0.95)] keys: "Battlestar Galactica - Origins"
+   nearby: S2345 "(New) Battlestar Galactica: Six" 1f [title+1 — S cv=73422 gcd=80399 (B-022 0.95)] keys: "Battlestar Galactica - Six"
+   nearby: S16828 "Steampunk Battlestar Galactica 1880" 1f [title+1 — S cv=76543 gcd=82993 (B-022 0.95)] keys: "Steampunk Battlestar Galactica"
+   keys now: "Battlestar Galactica" x6 · "Battlestar Galactica - Starbuck" x1 · "Battlestar Galactica - The Adama Gambit" x1
+   groups (title x folder): 8
+   G1 "Battlestar Galactica Omnibus" in Dynamite\Battlestar Galactica\Battlestar Galactica (Classic) — 1 file(s), 1 COL, pp 327-327; key 'Battlestar Galactica'
+      [20895] COL Battlestar Galactica Omnibus Book 01 (2017) (Digital) (DR & Quinch-Empire).cbr (327pp)
+   G2 "Battlestar Galactica - Starbuck (2016) (Digital) (DR & Quinch-Empire)" in Dynamite\Battlestar Galactica\Battlestar Galactica (Classic)\Battlestar Galactica - Starbuck (2015) — 1 file(s), pp 97-97; cv per-file 89354x1; gcd per-file 99346x1; key 'Battlestar Galactica - Starbuck'
+      [21838] Battlestar Galactica - Starbuck (2016) (Digital) (DR & Quinch-Empire).cbr (97pp)
+   G3 "(Classic) Battlestar Galactica - The Death of Apollo (2015) (Digital) (F) (DR & Quinch-Empire)" in Dynamite\Battlestar Galactica\Battlestar Galactica (Classic)\Battlestar Galactica - The Death of Apollo (2014) — 1 file(s), pp 193-193; cv per-file 18480x1; gcd per-file 92506x1; key 'Battlestar Galactica'
+      [21839] (Classic) Battlestar Galactica - The Death of Apollo (2015) (Digital) (F) (DR & Quinch-Empire).cbr (193pp)
+   G4 "(Classic) Battlestar Galactica" in Dynamite\Battlestar Galactica\Battlestar Galactica (Classic)\Classic Battlestar Galactica v2 (2013) — 1 file(s), 1 COL, pp 220-220; cv per-file 79408x1; key 'Battlestar Galactica - The Adama Gambit'
+      [20897] COL (Classic) Battlestar Galactica v02 - The Adama Gambit (2014) (Digital) (F) (DR & Quinch-Empire).cbr (220pp)
+   G5 "Battlestar Galactica - Ghosts" in Dynamite\Battlestar Galactica\Battlestar Galactica (Reboot) — 1 file(s), 1 COL, pp 135-135; cv per-file 82010x1; gcd per-file 90593x1; key 'Battlestar Galactica'
+      [20898] COL Battlestar Galactica - Ghosts Vol. 01 (2009) (Digital TPB) (DR & Quinch-Empire).cbr (135pp)
+         own record cv 82010 / gcd s90593 "Battlestar Galactica: Ghosts" (issue 1431998) COLLECTS: gcd=34088 Battlestar Galactica: Ghosts (2008) #1-4
+   G6 "Battlestar Galactica - Pegasus (2007) (2 Covers) (fixed) (Digital) (V-Empire)" in Dynamite\Battlestar Galactica\Battlestar Galactica (Reboot) — 1 file(s), pp 36-36; cv per-file 20836x1; gcd per-file 34089x1; key 'Battlestar Galactica'
+      [20899] Battlestar Galactica - Pegasus (2007) (2 Covers) (fixed) (Digital) (V-Empire).cbr (36pp)
+   G7 "Battlestar Galactica - The Final Five" in Dynamite\Battlestar Galactica\Battlestar Galactica (Reboot) — 1 file(s), 1 COL, pp 101-101; cv per-file 82011x1; gcd per-file 90592x1; key 'Battlestar Galactica'
+      [20900] COL Battlestar Galactica - The Final Five Vol 1 TPB (2009) (Digital) (DR & Quinch-Empire).cbr (101pp)
+         own record cv 82011 / gcd s90592 "Battlestar Galactica: The Final Five" (issue 1431997) COLLECTS: gcd=37937 Battlestar Galactica: The Final Five (2009) #1-4
+   G8 "Battlestar Galactica One-Shot (2016) (Digital) (DR & Quinch-Empire)" in Dynamite\Battlestar Galactica\Battlestar Galactica (Reboot) — 1 file(s), pp 19-19; cv per-file 18480x1; gcd per-file 221224x1; key 'Battlestar Galactica'
+      [20901] Battlestar Galactica One-Shot (2016) (Digital) (DR & Quinch-Empire).cbr (19pp)
+
+== S3808 Chicken Devil  [split]  8 files / 0 collections  decided in A-002 (R)
+   decided: R 3808 | this shelf is two runs that both number #1-4: "Chicken Devil 001-004 (2021-2022)" in subfolder "Chicken Devil v1 (2021)" and "Chicken Devil - Chicken Devils 001-004 (2022-2023)" in subfolder "Chicken Devil v2 - Chicken Devils (2022)", which is why all four numbers name more than one file and the ratio is 8/4 = 2.00; the stored CV 139451 (Aftershock 2021, 4) and GCD 177091 (AfterShock 2021-2022, limited series, 4) both describe only the first run, and the shelf carries a separate parsed key "Chicken Devil - Chicken Devils" that an S line would link to that same volume
+   F 3808 split-needed | proposed runs: Chicken Devil (2021, 4 issues, CV 139451 / GCD 177091) and Chicken Devils (2022-2023, 4 issues) — no provider record for the sequel appears anywhere in this packet, so the split needs a lookup of its own
+   keys now: "Chicken Devil" x4 · "Chicken Devil - Chicken Devils" x4
+   groups (title x folder): 2
+   G1 "Chicken Devil" in Aftershock\Chicken Devil (2021)\Chicken Devil v1 (2021) — 4 file(s), numbers 1-4, pp 32-36; cv per-file 139451x4; gcd per-file 177091x4; key 'Chicken Devil'
+      e.g. Chicken Devil 001 (2021) (Digital) (Mephisto-Empire).cbr
+        5824 #1 2021 32pp · 5825 #2 2021 36pp · 5826 #3 2021 36pp · 5827 #4 2022 35pp
+   G2 "Chicken Devil - Chicken Devils" in Aftershock\Chicken Devil (2021)\Chicken Devil v2 - Chicken Devils (2022) — 4 file(s), numbers 1-4, pp 33-36; cv per-file 139451x4; gcd per-file 177091x4; key 'Chicken Devil - Chicken Devils'
+      e.g. Chicken Devil - Chicken Devils 001 (2022) (Digital) (Mephisto-Empire).cbr
+        5828 #1 2022 33pp · 5829 #2 2022 36pp · 5830 #3 2023 34pp · 5831 #4 2023 34pp
+
+== S5654 Doctor Who  [split]  8 files / 0 collections  decided in B-067 (R)
+   decided: R 5654 | this shelf is three different comics under one parsed key: five files are "Doctor Who 2015 Event The Four Doctors" #1-5, which is CV 83813 "Doctor Who Event 2015: Four Doctors" 2015 Titan count 5; two are "05/07 Doctor Who Special 001-002 (2017)", the Lost Dimension crossover specials filed in a reading-order folder; and one is "Doctor Who FCBD (2015)", CV 81694 "Doctor Who: Free Comic Book Day" 2015 Titan count 1 (issue 487479) / GCD 89007; the per-file pick CV 25119 "Doctor Who" 2012 IDW 16 is a different publisher's ongoing and matches none of them, which is why two numbers name more than one file
+   F 5654 split-needed | proposed runs: the Four Doctors event cv=83813 (five files), the 2017 Lost Dimension specials (a publisher read-order crossover like Titan's other Lost Dimension folder, no spanning record), and the 2015 FCBD issue cv=81694 gcd=89007
+   nearby: S5659 "Doctor Who Magazine" 1f [title+1 — S cv=26877 gcd=73860 (C-038 0.9)] keys: "Doctor Who Magazine"
+   nearby: S6361 "Doctor Who: Free Comic Book Day 2018" 1f [title+1 — S cv=110613 gcd=124137 (D-017 0.95)] keys: "FCBD2018 - Doctor Who"
+   keys now: "Doctor Who" x8
+   groups (title x folder): 3
+   G1 "Doctor Who 2015 Event The Four Doctors" in Titan Comics\Doctor Who\Doctor Who -  The Four Doctors (2015) — 5 file(s), numbers 1-5, pp 31-31; cv per-file 25119x5; key 'Doctor Who'
+      e.g. Doctor Who 2015 Event The Four Doctors 001(2015)(3 covers)(Digital)(TLK-EMPIRE-HD).cbr
+        110151 #1 2015 31pp · 110152 #2 2015 31pp · 110153 #3 2015 31pp · 110154 #4 2015 31pp · 110155 #5 2015 31pp
+   G2 "Doctor Who Special" in Titan Comics\Doctor Who\Doctor Who - The Lost Dimension (2017) — 2 file(s), numbers 1-2, pp 30-37; cv per-file 25119x2; key 'Doctor Who'
+      [110177] 05 Doctor Who Special 001(2017)(2 covers)(Digital)(TLK-EMPIRE-HD).cbr (37pp)
+      [110179] 07 Doctor Who Special 002(2017)(2 covers)(Digital)(TLK-EMPIRE-HD).cbr (30pp)
+   G3 "Doctor Who FCBD(2015)(Digital)(TLK-EMPIRE-HD)" in Titan Comics\Doctor Who\Specials and One Shots — 1 file(s), pp 27-27; cv per-file 25119x1; key 'Doctor Who'
+      [110346] Doctor Who FCBD(2015)(Digital)(TLK-EMPIRE-HD).cbr (27pp)
+
+== S6232 The Eternals  [split]  8 files / 1 collections  decided in C-056 (R)
+   decided: R 6232 | this shelf mixes THREE unrelated Eternals: a facsimile of the 1976 original #1 (CV 2858/GCD 2346, item 83044), the 2008 9-issue miniseries (CV 21937/GCD 31809, items 90969-90974, 3 files), and the 2021-2022 12-issue ongoing (CV 133080/GCD 168396, items 118559-118561, 3 files, collected in trade item 79993); no majority
+   F 6232 split-needed | three distinct Eternals eras, roughly equal file counts, no dominant
+   nearby: S96743 "Eternals" 3f [shares cv=133080 (R clause), shares gcd=168396 — S cv=133080 gcd=168396 (C-044 0.9)] keys: "Eternals v5 (2021)"
+   nearby: S96742 "Eternals: The Herod Factor" 1f [title — S cv=33330 gcd=4242 (B-055 0.95)] keys: "Eternals v2 (1985)"
+   nearby: S6233 "Eternals: The 500 Year War: Infinity Comic" 7f [title+1 — S cv=141397 (B-050 0.9)] keys: "Eternals - The"
+   keys now: "Eternals" x7 · "Eternals: To Defy the Apocalypse" x1
+   groups (title x folder): 4
+   G1 "Eternals - To Defy the Apocalypse (2021) (Digital-Empire)" in Marvel\_Eternals\Eternals v4 (2008) — 1 file(s), 1 COL, pp 248-248; cv per-file 2858x1; gcd per-file 174712x1; key 'Eternals: To Defy the Apocalypse'
+      [79993] COL Eternals - To Defy the Apocalypse (2021) (Digital-Empire).cbr (248pp)
+         own record cv 2858 / gcd s174712 "Eternals: To Defy the Apocalypse" (issue 2251257) COLLECTS: gcd=31809 Eternals (2008) #1-9 · gcd=69032 Eternals Annual (2009) #1
+   G2 "Eternals" in Marvel\_Marvel Facsimile Editions — 1 file(s), numbers 1, pp 35-35; cv per-file 2858x1; key 'Eternals'
+      [83044] Eternals 001 - Facsimile Edition (1976) (Digital) (Shadowcat-Empire).cbz (35pp)
+   G3 "Eternals" in Marvel\_X-Men\_X-Men Complete Chronology V2\0783 Manifest Destiny — 3 file(s), numbers 7-9, pp 22-25; cv per-file 2858x3; gcd per-file 31809x3; key 'Eternals'
+      [90969] 029 Eternals 007 (2009) (Minutemen-!Shazam&Rocafella).cbr (25pp)
+      [90972] 032 Eternals 008 (2009) (Minutemen-Shazam!&Rocafella).cbr (22pp)
+      [90974] 034 Eternals 009 (2009) (Minutemen-Delirium-Powers).cbr (25pp)
+   G4 "Eternals" in _Marvel Major Event Chronology (digital)\2022.07 - A.X.E. - Judgement Day\00 Judgement Day Is Coming — 3 file(s), numbers 10-12, pp 26-26; cv per-file 2858x3; gcd per-file 168396x3; key 'Eternals'
+      [118559] 01 Eternals 010 (2022) (Digital) (Zone-Empire).cbr (26pp)
+      [118560] 02 Eternals 011 (2022) (Digital) (Zone-Empire).cbr (26pp)
+      [118561] 03 Eternals 012 (2022) (Digital) (Zone-Empire).cbr (26pp)
+
+== S6813 Flashpoint: The World of Flashpoint  [split]  8 files / 0 collections  decided in A-008 (S)
+   decided: S 6813 cv=40366 gcd=59042 0.9 | CV 40366 "Flashpoint: The World of Flashpoint" 2011 DC 3 and GCD 59042 2011-2011 DC [Miniseries] 3 agree on publisher, year and count, and the three Minutemen files say "(of 3)" with ladder 1-3. The five 2012 "Featuring ..." files are not editions of this mini — each is its own collection of a different Flashpoint tie-in, named separately
+   F 6813 split-needed | the five collections folded onto this shelf, with their own records: 19308 -> cv=46596 / gcd=69850 (Featuring Batman); 19309 -> gcd=69852 (Featuring Green Lantern, no CV id in the search); 19310 -> cv=46597 / gcd=69849 (Featuring Superman); 19311 -> cv=46931 / gcd=69851 (Featuring The Flash); 19312 -> gcd=64868 (Featuring Wonder Woman, no CV id)
+   keys now: "Flashpoint - The World of Flashpoint" x3 · "Flashpoint - The World of Flashpoint Featuring Batman" x1 · "Flashpoint - The World of Flashpoint Featuring Green Lantern" x1 · "Flashpoint - The World of Flashpoint Featuring Superman" x1 · "Flashpoint - The World of Flashpoint Featuring The Flash" x1 · "Flashpoint - The World of Flashpoint Featuring Wonder Woman" x1
+   groups (title x folder): 6
+   G1 "Flashpoint - The World of Flashpoint" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\97 2011 - Flashpoint — 3 file(s), numbers 1-3, pp 20-22; cv per-file 40366x3; gcd per-file 59042x3; key 'Flashpoint - The World of Flashpoint'
+      [17975] 038 Flashpoint - The World of Flashpoint 01 (of 3) (2011) (Minutemen-TwiztidTew).cbz (20pp)
+      [17976] 039 Flashpoint - The World of Flashpoint 02 (of 3) (2011) (Minutemen-TwiztidTew).cbz (22pp)
+      [17977] 040 Flashpoint - The World of Flashpoint 03 (of 3) (2011) (Minutemen-DTew).cbz (20pp)
+   G2 "Flashpoint - The World of Flashpoint Featuring Batman (2012) (Digital) (Zone-Empire)" in DC\#DC Events\Flashpoint (2011)\03 Tie-ins — 1 file(s), pp 258-258; cv per-file 40366x1; key 'Flashpoint - The World of Flashpoint Featuring Batman'
+      [19308] Flashpoint - The World of Flashpoint Featuring Batman (2012) (Digital) (Zone-Empire).cbr (258pp)
+   G3 "Flashpoint - The World of Flashpoint Featuring Green Lantern (2012) (Digital) (Zone-Empire)" in DC\#DC Events\Flashpoint (2011)\03 Tie-ins — 1 file(s), pp 201-201; cv per-file 40366x1; key 'Flashpoint - The World of Flashpoint Featuring Green Lantern'
+      [19309] Flashpoint - The World of Flashpoint Featuring Green Lantern (2012) (Digital) (Zone-Empire).cbr (201pp)
+   G4 "Flashpoint - The World of Flashpoint Featuring Superman (2012) (Digital) (Zone-Empire)" in DC\#DC Events\Flashpoint (2011)\03 Tie-ins — 1 file(s), pp 238-238; cv per-file 40366x1; key 'Flashpoint - The World of Flashpoint Featuring Superman'
+      [19310] Flashpoint - The World of Flashpoint Featuring Superman (2012) (Digital) (Zone-Empire).cbr (238pp)
+   G5 "Flashpoint - The World of Flashpoint Featuring The Flash (2012) (Digital) (Zone-Empire)" in DC\#DC Events\Flashpoint (2011)\03 Tie-ins — 1 file(s), pp 237-237; cv per-file 40366x1; key 'Flashpoint - The World of Flashpoint Featuring The Flash'
+      [19311] Flashpoint - The World of Flashpoint Featuring The Flash (2012) (Digital) (Zone-Empire).cbr (237pp)
+   G6 "Flashpoint - The World of Flashpoint Featuring Wonder Woman (2012) (Digital) (Zone-Empire)" in DC\#DC Events\Flashpoint (2011)\03 Tie-ins — 1 file(s), pp 247-247; cv per-file 40366x1; key 'Flashpoint - The World of Flashpoint Featuring Wonder Woman'
+      [19312] Flashpoint - The World of Flashpoint Featuring Wonder Woman (2012) (Digital) (Zone-Empire).cbr (247pp)
+
+== S7131 G.I.Joe - Master and Apprentice  [split]  8 files / 0 collections  decided in B-039 (R)
+   decided: R 7131 | two minis on one shelf, both numbered 1-4: four files are "G.I.Joe - Master & Apprentice v1 01-04 (2004)" and four are "v2 01-04 (2005)", which is why all four numbers name more than one file; ComicVine and GCD both hold them as separate records — CV 32920 / GCD 34621 for the 2004 mini and CV 32922 / GCD 27570 for the 2005 sequel — and the open label-ambiguous flag is right that all eight are 32-37pp single issues, not collections
+   F 7131 split-needed | proposed runs: G.I. Joe: Master and Apprentice on CV 32920 / GCD 34621 (the 2004 v1 files) and G.I. Joe: Master & Apprentice 2 on CV 32922 / GCD 27570 (the 2005 v2 files); linking either alone would hand the other mini its identity
+   keys now: "G.I.Joe - Master and Apprentice" x8
+   groups (title x folder): 2
+   G1 "G.I.Joe - Master & Apprentice" in Image\G.I. Joe (2001) (Devil's Due)\G.I. Joe - Master & Apprentice 2 (2005 Series) — 4 file(s), numbers 1-4, pp 35-37; cv per-file 32920x4; key 'G.I.Joe - Master and Apprentice'
+      e.g. G.I.Joe - Master & Apprentice v2 01 (of 04) (2005) (Minutemen-DarthScanner).cbr
+        36575 #1 2005 36pp · 36576 #2 2005 37pp · 36577 #3 2005 35pp · 36578 #4 2005 37pp
+   G2 "G.I.Joe - Master & Apprentice" in Image\G.I. Joe (2001) (Devil's Due)\G.I. Joe - Master and Apprentice (2004 Series) — 4 file(s), numbers 1-4, pp 32-37; cv per-file 32920x4; key 'G.I.Joe - Master and Apprentice'
+      e.g. G.I.Joe - Master & Apprentice v1 01 (of 04) (2004) (Minutemen-DarthScanner).cbr
+        36579 #1 2004 37pp · 36580 #2 2004 32pp · 36581 #3 2004 35pp · 36582 #4 2004 35pp
+
+== S8040 Grimm Fairy Tales presents Robyn Hood  [split]  8 files / 7 collections  decided in C-063 (R)
+   decided: R 8040 | the conflated flag is true: this franchise has several co-equal Robyn Hood minis/ongoings filed together — the 2012-2014 minis (K6 Vol.1-2 TPB collecting "Wanted" + the 2012 launch, item 115993 "Legend") and the 2015-2016 "Riot Girls"/"Monsters in the Dark" ongoing (Vol.01-04, GCD 126425) — no single record spans them
+   F 8040 split-needed | 2012-2014 minis' own ids per the CV candidates (57969 launch, 68938 Wanted, 76995 Legend); 2015+ ongoing = GCD 126425 (collected edition, count 4); "vs. Red Riding Hood" one-shot = CV local rip 59400
+   N 8040 early-minis | items 115991 "Vol 1 TPB" and 115992 "Vol 2 TPB" (K6, 2013) collect the early minis; no id confidently isolated beyond what the F line already names
+   keys now: "Grimm Fairy Tales Presents - Robyn Hood" x4 · "Grimm Fairy Tales - Robyn Hood" x2 · "Grimm Fairy Tales presents Robyn Hood - Legend" x1 · "Grimm Fairy Tales presents Robyn Hood vs. Red Riding Hood" x1
+   groups (title x folder): 5
+   G1 "Grimm Fairy Tales - Robyn Hood" in Zenescope\Grimm Fairy Tales - Robyn Hood (2012)\01 Grimm Fairy Tales Presents Robyn Hood (2012) — 1 file(s), 1 COL, pp 172-172; cv per-file 52691x1; gcd per-file 126425x1; key 'Grimm Fairy Tales - Robyn Hood'
+      [115991] COL Grimm Fairy Tales - Robyn Hood Vol 1 TPB (2013) (Digital) (K6-Empire).cbr (172pp)
+   G2 "Grimm Fairy Tales - Robyn Hood" in Zenescope\Grimm Fairy Tales - Robyn Hood (2012)\02 Robyn Hood - Wanted (2013) — 1 file(s), 1 COL, pp 158-158; cv per-file 52691x1; gcd per-file 126425x1; key 'Grimm Fairy Tales - Robyn Hood'
+      [115992] COL Grimm Fairy Tales - Robyn Hood Vol 2 TPB (2013) (Digital) (K6-Empire).cbr (158pp)
+   G3 "Grimm Fairy Tales presents Robyn Hood - Legend (2014) (digital) (TLK-EMPIRE)" in Zenescope\Grimm Fairy Tales - Robyn Hood (2012)\03 Robyn Hood - Legend (2014) — 1 file(s), 1 COL, pp 150-150; cv per-file 76995x1; key 'Grimm Fairy Tales presents Robyn Hood - Legend'
+      [115993] COL Grimm Fairy Tales presents Robyn Hood - Legend (2014) (digital) (TLK-EMPIRE).cbr (150pp)
+   G4 "Grimm Fairy Tales Presents - Robyn Hood" in Zenescope\Grimm Fairy Tales - Robyn Hood (2012)\04 Robyn Hood (2015) — 4 file(s), 4 COL, pp 162-183; cv per-file 52691x4; gcd per-file 126425x4; key 'Grimm Fairy Tales Presents - Robyn Hood'
+      [115929] COL Grimm Fairy Tales Presents - Robyn Hood Vol. 01 - Riot Girls (2015) (digital) (Minutemen-Slayer).cbr (179pp)
+      [115930] COL Grimm Fairy Tales Presents - Robyn Hood Vol. 02 - Monsters in the Dark(2015) (Digital) (DR & Quinch-Empire).cbr (176pp)
+      [115931] COL Grimm Fairy Tales Presents - Robyn Hood Vol. 03 - Attitude Adjustment (2015) (Digital) (DR & Quinch-Empire).cbr (162pp)
+      [115932] COL Grimm Fairy Tales Presents - Robyn Hood Vol. 04 - Uprising (2016) (Digital) (DR Quinch-Empire).cbr (183pp)
+   G5 "Grimm Fairy Tales presents Robyn Hood vs. Red Riding Hood" in Zenescope\Grimm Fairy Tales - Robyn Hood (2012)\Robyn Hood One Shots and Specials — 1 file(s), numbers 1, pp 42-42; cv per-file 52691x1; gcd per-file 126425x1; key 'Grimm Fairy Tales presents Robyn Hood vs. Red Riding Hood'
+      [115933] Grimm Fairy Tales presents Robyn Hood vs. Red Riding Hood 01 (2013) (digital) (Minutemen-Slayer).cbr (42pp)
+
+== S8342 Harlan Ellison's Dream Corridor  [split]  8 files / 0 collections  decided in C-022 (R)
+   decided: R 8342 | this shelf mixes the "Harlan Ellison's Dream Corridor" 5-issue mini (CV 37552 / GCD 5359, matched 5/8 files) with its separately-published "Dream Corridor Quarterly" #1 (GCD 5608, matched 1/8) and two "Special" one-shot printings (CV 40205, 1st/2nd editions) — several distinct comics sharing one folder, not one identity
+   F 8342 split-needed | the 5-issue Dream Corridor mini (CV 37552/GCD 5359), the Dream Corridor Quarterly one-shot (GCD 5608), and the Dream Corridor Special one-shot (CV 40205/GCD 5360) are three separate publications
+   N 8342 cv=37552 gcd=5359 | the 5-issue "Harlan Ellison's Dream Corridor" mini
+   N 8342 cv=- gcd=5608 | "Harlan Ellison's Dream Corridor Quarterly" #1, a separate one-shot
+   N 8342 cv=40205 gcd=5360 | "Harlan Ellison's Dream Corridor Special" one-shot (two printings on this shelf)
+   keys now: "Harlan Ellison's Dream Corridor" x7 · "Harlan Ellison's Dream Corridor Quarterly" x1
+   groups (title x folder): 4
+   G1 "Harlan Ellison's Dream Corridor" in Dark Horse\Harlan Ellison's Dream Corridor (1995) — 5 file(s), numbers 1-5, pp 35-39; cv per-file 37552x5; gcd per-file 5359x5; key "Harlan Ellison's Dream Corridor"
+      e.g. Harlan Ellison's Dream Corridor 01 (of 05) (1995).cbr
+        14419 #1 1995 35pp · 14420 #2 1995 37pp · 14421 #3 1995 37pp · 14422 #4 1995 37pp · 14423 #5 1995 39pp
+   G2 "Harlan Ellison's Dream Corridor - Special (1st Edition)" in Dark Horse\Harlan Ellison's Dream Corridor (1995)\Annuals and Specials — 1 file(s), pp 64-64; cv per-file 37552x1; key "Harlan Ellison's Dream Corridor"
+      [14416] Harlan Ellison's Dream Corridor - Special (1st Edition).cbr (64pp)
+   G3 "Harlan Ellison's Dream Corridor - Special (2nd Edition)" in Dark Horse\Harlan Ellison's Dream Corridor (1995)\Annuals and Specials — 1 file(s), pp 69-69; cv per-file 37552x1; key "Harlan Ellison's Dream Corridor"
+      [14417] Harlan Ellison's Dream Corridor - Special (2nd Edition).cbr (69pp)
+   G4 "Harlan Ellison's Dream Corridor Quarterly" in Dark Horse\Harlan Ellison's Dream Corridor (1995)\Annuals and Specials — 1 file(s), numbers 1, pp 69-69; cv per-file 37552x1; gcd per-file 5608x1; key "Harlan Ellison's Dream Corridor Quarterly"
+      [14418] Harlan Ellison's Dream Corridor Quarterly 01.cbr (69pp)
+
+== S8821 Hercules, prince of power  [split]  8 files / 0 collections  decided in C-038 (R)
+   decided: R 8821 | this shelf holds TWO separate 4-issue "Hercules" minis in sibling folders: 1982 (CV3139/GCD2653) and 1984 (CV3344/GCD2872) — co-equal, sharing only the character name and the parsed key's "Prince of Power" tag
+   F 8821 split-needed | 1982 = CV3139/GCD2653; 1984 = CV3344/GCD2872
+   N 8821 no-collections | 0 collected editions on this shelf
+   nearby: S97542 "Hercules" 7f [title — S cv=85761 gcd=93589 (B-051 0.95)] keys: "Hercules (2015)" | "Hercules v4 (2016)"
+   nearby: S8816 "Hercules" 5f [title — S cv=19104 gcd=29779 (A-035 0.95)] keys: "Hercules" | "Hercules v3 (2005)"
+   nearby: S9370 "Incredible Hercules" 18f [title+1 — S cv=20588 gcd=28772 (A-021 0.9)] keys: "Incredible Hercules" | "Incredible Hercules: The Complete Collection"
+   nearby: S5510 "Disney Hercules" 6f [title+1 — S cv=157639 gcd=210962 (A-013 0.95)] keys: "Disney Hercules"
+   keys now: "Hercules: Prince Of Power" x4 · "Hercules: Prince of Power" x4
+   groups (title x folder): 2
+   G1 "Hercules" in Marvel\Hercules\01 Hercules v1 (1982) — 4 file(s), numbers 1-4, pp 23-24; key 'Hercules: Prince Of Power'
+      e.g. Hercules 01 (of 04) (1982) (Digital) (Shadowcat-Empire).cbz
+        99325 #1 1982 24pp · 99326 #2 1982 23pp · 99327 #3 1982 23pp · 99328 #4 1982 24pp
+   G2 "Hercules" in Marvel\Hercules\02 Hercules v2 (1984) — 4 file(s), numbers 1-4, pp 24-24; key 'Hercules: Prince of Power'
+      e.g. Hercules 01 (of 04) (1984) (Digital) (Shadowcat-Empire).cbz
+        99329 #1 1984 24pp · 99330 #2 1984 24pp · 99331 #3 1984 24pp · 99332 #4 1984 24pp
+
+== S9560 Iron Fist  [split]  8 files / 3 collections  decided in C-045 (R)
+   decided: R 9560 | shelf conflates two eras: the 1975-1977 original "Iron Fist" run (CV2766/GCD2252, 15 issues, our #14-15 floppies + Epic Collection Vol.01) and the 2017-2018 relaunch (CV100082/GCD112909, 15 issues, our #78-80 floppies + Vol.01/02 trades) — the overlap-in-series flag is TRUE, not stale
+   F 9560 split-needed | 1975 run = CV2766/GCD2252 (our #14-15, Epic Collection item 81993); 2017-2018 run = CV100082/GCD112909 (our #78-80, Vol.01/02 trades)
+   N 81462 no-record | Vol.01 "The Trial of the Seven Masters" (2017, 114pp) — probed "Iron Fist Trial of the Seven Masters" on both legs, 0 hits; genuine gap
+   nearby: S97886 "Iron Fist" 3f [shares cv=100082, shares gcd=112909 (collected by item 81462) — S cv=100082 gcd=112909 (C-045 0.9)] keys: "Iron Fist v6 (2018)"
+   nearby: S9572 "Iron Fist" 1f [title — S cv=141631 gcd=182399 (B-057 0.95)] keys: "Iron Fist: The Shattered Sword"
+   nearby: S9566 "Iron Fist: Wolverine" 8f [title+1 — S cv=9115 gcd=9848 (B-062 0.95)] keys: "Iron Fist and Wolverine" | "Iron Fist-Wolverine"
+   keys now: "Iron Fist" x8
+   groups (title x folder): 4
+   G1 "Iron Fist Epic Collection" in Marvel\_Iron Fist\01 Iron Fist v1 (1975) — 1 file(s), 1 COL, pp 527-527; cv per-file 5516x1; gcd per-file 203373x1; key 'Iron Fist'
+      [81993] COL Iron Fist Epic Collection Vol. 01 - The Fury of Iron Fist (2015) (digital) (Minutemen-Slayer).cbr (527pp)
+   G2 "Iron Fist" in Marvel\_Iron Fist\06 Iron Fist v5-v1 (2017) — 5 file(s), 2 COL, numbers 78-80, pp 24-154; cv per-file 2766x4, 109322x1; gcd per-file 112909x3, 116562x1, 186728x1; key 'Iron Fist'
+      [81459] Iron Fist 078 (2018) (Digital) (Zone-Empire).cbr (24pp)
+      [81460] Iron Fist 079 (2018) (Digital) (Zone-Empire).cbr (24pp)
+      [81461] Iron Fist 080 (2018) (Digital) (Zone-Empire).cbr (25pp)
+      [81462] COL Iron Fist Vol. 01 - The Trial of the Seven Masters (2017) (Digital) (Zone-Empire).cbr (114pp)
+         own record cv 2766 / gcd s116562 "Iron Fist" (issue 1732377) COLLECTS: gcd=112909 Iron Fist (2017) #1-5
+      [81463] COL Iron Fist Vol. 02 - Sabretooth - Round Two (2018) (Digital) (Kileko-Empire).cbr (154pp)
+   G3 "Iron Fist" in Marvel\_X-Men\_X-Men Complete Chronology V2\0009 Phoenix Rising — 1 file(s), numbers 14, pp 19-19; cv per-file 2766x1; gcd per-file 2252x1; key 'Iron Fist'
+      [86677] 015 Iron Fist 014 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+   G4 "Iron Fist" in Marvel\_X-Men\_X-Men Complete Chronology V2\0010 The Phoenix Saga — 1 file(s), numbers 15, pp 19-19; cv per-file 2766x1; gcd per-file 2252x1; key 'Iron Fist'
+      [86688] 011 Iron Fist 015 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+
+== S11193 Magic - The Gathering  [split]  8 files / 4 collections  decided in C-029 (R)
+   decided: R 11193 | conflated-series flag TRUE: this shelf holds the original 4-issue "Magic: The Gathering" 2012 mini (CV 45576, no CvVolume row, GCD 74141 collected edition) AND the separate later "Chandra" 2018-2019 mini (GCD 135767, 4 issues) — two different Magic the Gathering comics sharing one Series bucket, each with its own record
+   F 11193 split-needed | Magic the Gathering (2012, the original mini + its 4 collected trades) cv=45576 gcd=74141; Chandra (2018-2019 mini) cv=- gcd=135767
+   keys now: "Magic - The Gathering" x4 · "Magic: The Gathering - Chandra" x2 · "Magic: The Gathering — Chandra" x2
+   groups (title x folder): 2
+   G1 "Magic - The Gathering" in IDW\Magic the Gathering (2012) — 4 file(s), 4 COL, pp 104-121; cv per-file 45576x4; gcd per-file 63117x1, 66494x1, 70260x1; key 'Magic - The Gathering'
+      [30978] COL Magic - The Gathering Vol. 01 (2012) (digital) (Minutemen-Slayer).cbr (121pp)
+      [30979] COL Magic - The Gathering Vol. 02 - The Spell Thief (2012) (digital) (Minutemern-Slayer).cbr (113pp)
+      [30980] COL Magic - The Gathering Vol. 03 - Path of Vengeance (2013) (digital) (Minutemen-Slayer).cbr (104pp)
+      [30981] COL Magic - The Gathering Vol. 04 - Theros (2014) (digital) (Minutemen-Slayer).cbr (116pp)
+   G2 "Magic - The Gathering - Chandra" in IDW\Magic the Gathering (2012)\Magic - The Gathering - Chandra (2018) — 4 file(s), numbers 1-4, pp 22-22; cv per-file 45576x4; gcd per-file 135767x4; key 'Magic: The Gathering - Chandra' | 'Magic: The Gathering — Chandra'
+      e.g. Magic - The Gathering - Chandra 001 (2018) (Digital) (DR & Quinch-Empire).cbr
+        30974 #001 2018 22pp key="Magic: The Gathering - Chandra" · 30975 #002 2019 22pp key="Magic: The Gathering - Chandra" · 30976 #003 2019 22pp key="Magic: The Gathering — Chandra"
+        30977 #004 2019 22pp key="Magic: The Gathering — Chandra"
+
+== S11357 Marvel Action Origins (2021-)  [split]  8 files / 0 collections  decided in C-039 (R)
+   decided: R 11357 | this shelf buckets TWO separate 2020-2021 IDW minis: "Marvel Action: Chillers" (4 files, ids not confirmed this pass) and "Marvel Action: Origins" (4 files, CV133616/GCD169173) — the stored CV link (47375, a 1981 Marvel UK anthology) is an unrelated bare-title stamp on all 8 files
+   F 11357 split-needed | Chillers = id not confirmed this pass; Origins = CV133616/GCD169173
+   F 11357 wrong-cv-link | the stored CV link (47375, "Marvel Action" 1981 Marvel UK) is unrelated, a bare-title stamp
+   N 11357 no-collections | 0 collected editions on this shelf
+   keys now: "Marvel Action: Chillers (2020-)" x4 · "Marvel Action Origins (2021-)" x3 · "Marvel Action Origins" x1
+   groups (title x folder): 2
+   G1 "Marvel Action - Chillers" in Marvel\Marvel Action (2018)\Marvel Action - Chillers v1 (2020) — 4 file(s), numbers 1-4, pp 22-23; cv per-file 47375x4; gcd per-file 169173x4; key 'Marvel Action: Chillers (2020-)'
+      e.g. Marvel Action - Chillers 001 (2020) (Digital) (Zone-Empire).cbr
+        99689 #1 2020 23pp · 99690 #2 2020 23pp · 99691 #3 2020 23pp · 99692 #4 2021 22pp
+   G2 "Marvel Action Origins" in Marvel\Marvel Action (2018)\Marvel Action Origins (2020) — 4 file(s), numbers 1-4, pp 26-27; cv per-file 47375x4; gcd per-file 169173x4; key 'Marvel Action Origins (2021-)' | 'Marvel Action Origins'
+      e.g. Marvel Action Origins 001 (2020) (Digital) (Zone-Empire).cbr
+        99731 #1 2020 27pp key="Marvel Action Origins (2021-)" · 99732 #2 2021 27pp key="Marvel Action Origins" · 99733 #3 2021 27pp key="Marvel Action Origins (2021-)"
+        99734 #4 2021 26pp key="Marvel Action Origins (2021-)"
+
+== S14264 Quantum & Woody  [split]  8 files / 7 collections  decided in C-062 (R)
+   decided: R 14264 | the overlap-in-series flag is true: the 1997 Acclaim run (CV 6031/GCD 5826, matched majority) and the "by Priest & Bright" trade line (4 Vol. 01-04 trades reissuing that same 1997 run under a creator credit) both mint a "Vol. 01"
+   F 14264 split-needed | the 1997 run = CV 6031/GCD 5826; the Deluxe Editions and "by Priest & Bright" trades collect that SAME run; items 110899 and 111067 are the 2013+ ongoing continuation (CV 105656)
+   N 14264 | per Eric's coextensive-line reasoning the "by Priest & Bright" and Deluxe Edition trades are not a second run — they reissue the 1997 content
+   nearby: S35823 "Quantum and Woody!" 3f [shares cv=105656, shares gcd=119452 — S cv=105656 gcd=119452 (C-062 0.9)] keys: "Quantum and Woody!"
+   keys now: "Quantum and Woody" x8
+   groups (title x folder): 4
+   G1 "Quantum and Woody" in Valiant\Quantum and Woody\Quantum and Woody v2 (2014) — 1 file(s), 1 COL, pp 159-159; cv per-file 6031x1; gcd per-file 119452x1; key 'Quantum and Woody'
+      [110899] COL 05 Quantum and Woody v04 - Quantum and Woody Must Die! (2015) (digital) (F) (Son of Ultron-Empire).cbr (159pp)
+   G2 "Quantum and Woody - Deluxe Edition" in Valiant\Quantum and Woody\Quantum and Woody v2 (2014)\Deluxe Editions — 2 file(s), 2 COL, pp 318-371; cv per-file 6031x1, 105656x1; gcd per-file 5826x2; key 'Quantum and Woody'
+      [110900] COL Quantum and Woody - Deluxe Edition - Book 01 (2015) (Digital) (Zone-Empire).cbr (371pp)
+      [110901] COL Quantum and Woody - Deluxe Edition - Book 02 (2018) (digital) (Son of Ultron-Empire).cbr (318pp)
+   G3 "Quantum & Woody Special - GOAT - H.A.E.D.U.S (1998) (Digital) (BlurPixel-Empire)" in Valiant\_Acclaim — 1 file(s), pp 45-45; cv per-file 6031x1; key 'Quantum and Woody'
+      [111063] Quantum & Woody Special - GOAT - H.A.E.D.U.S (1998) (Digital) (BlurPixel-Empire).cbr (45pp)
+   G4 "Quantum and Woody by Priest & Bright" in Valiant\_Acclaim\Quantum and Woody — 4 file(s), 4 COL, pp 146-218; cv per-file 6031x4; gcd per-file 5826x3, 119452x1; key 'Quantum and Woody'
+      [111064] COL Quantum and Woody by Priest & Bright Vol. 01 - Klang (2015) (Digital) (Zone-Empire).cbr (202pp)
+      [111065] COL Quantum and Woody by Priest & Bright Vol. 02 - Switch (2015) (Digital) (Zone-Empire).cbr (206pp)
+      [111066] COL Quantum and Woody by Priest & Bright Vol. 03 - And So... (2015) (Digital) (Zone-Empire).cbr (218pp)
+      [111067] COL Quantum and Woody by Priest & Bright Vol. 04 - Q2 - The Return (2016) (digital) (F) (Son of Ultron-Empire).cbr (146pp)
+
+== S14643 Revolutionary War  [split]  8 files / 0 collections  decided in B-052 (R)
+   decided: R 14643 | this is eight separately published 2014 one-shots that a ripper numbered 01-08 in reading order, and the per-file matcher stamped all eight with CV 156579 "Revolutionary War" 2014 Marvel UK/Panini UK count 1, a UK collection; each book has its own record in both providers — Alpha CV 70706 / GCD 78393, Dark Angel CV 70899 / GCD 78614, Knights of Pendragon CV 71322 / GCD 78804, Death's Head II CV 71611 / GCD 78999, SuperSoldiers CV 71950 / GCD 79255, Motormouth CV 72273 / GCD 79504, Warheads CV 72419 / GCD 79665, Omega CV 72581 / GCD 79795 — and no series record spans them
+   F 14643 split-needed | proposed runs, one book each, in the ripper's reading order: 102421 Alpha, 102422 Dark Angel, 102423 Knights of Pendragon, 102424 Death's Head II, 102425 SuperSoldiers, 102426 Motormouth, 102427 Warheads, 102428 Omega — the eight GCD series share one barcode block, 759606079933003NN, which is what proves they are one event and eight comics
+   keys now: "Revolutionary War" x8
+   groups (title x folder): 1
+   G1 "Revolutionary War" in Marvel\Revolutionary War (2014) — 8 file(s), numbers 1-8, pp 24-24; cv per-file 156579x3, 70706x1, 71950x1; gcd per-file 78393x1, 78614x1, 78804x1; key 'Revolutionary War'
+      [102421] Revolutionary War 01 (of 8) - Alpha (2014) (Digital) (Cypher-Empire).cbr (24pp)
+      [102422] Revolutionary War 02 (of 8) - Dark Angel (2014) (Digital) (Cypher-Empire).cbr (24pp)
+      [102423] Revolutionary War 03 (of 8) - Knights of Pendragon (2014) (Digital) (Cypher-Empire).cbr (24pp)
+      [102424] Revolutionary War 04 (of 8) - Death's Head II (2014) (Digital) (Cypher-Empire).cbr (24pp)
+      [102425] Revolutionary War 05 (of 8) - SuperSoldiers (2014) (Digital) (Cypher-Empire).cbr (24pp)
+      [102426] Revolutionary War 06 (of 8) - Motormouth (2014) (Digital) (Cypher-Empire).cbr (24pp)
+      [102427] Revolutionary War 07 (of 8) - Warheads  (2014) (Digital) (Cypher-Empire).cbr (24pp)
+      [102428] Revolutionary War 08 (of 8) - Omega (2014) (Digital) (Cypher-Empire).cbr (24pp)
+
+== S15231 Secret  [split]  8 files / 4 collections  decided in C-064 (R)
+   decided: R 15231 | this shelf conflates three unrelated "Secret" works, and item 33945 carries a TRUE conflated-series flag: Marvel's 2005 "Ultimate Secret" 4-issue mini (4 files), Dark Horse/Image's 2012 "Secret" (GCD 63053, item 33945's trade), and Yen Press's "Secret" manga trilogy (CV79543/GCD94985, items 43841-43843)
+   F 15231 split-needed | Ultimate Secret (2005 Marvel mini), Secret (2012 Image, GCD63053), and the Yen Press Secret manga (CV79543/GCD94985) are three separate works
+   nearby: S32728 "The Secret" 1f [shares cv=38697 — S cv=38697 gcd=42518 (B-019 0.95)] keys: "The Secret"
+   nearby: S15270 "Secret Origins" 56f [title+1 — S cv=3616 gcd=3166 (C-010 0.95)] keys: "Secret Origins" | "Secret Origins v2 (1986)" | "SecretOrigins2-035"
+   nearby: S15304 "Secret Weapons" 25f [title+1] keys: "Secret Weapons"
+   nearby: S15232 "Secret Avengers" 21f [title+1 — S cv=33350 gcd=49024 (C-046 0.9)] keys: "Fear Itself: Secret Avengers" | "Secret Avengers" | "Secret Avengers v1 (2010)"
+   nearby: S65609 "Secret Warriors" 20f [title+1 — S cv=25640 gcd=33729 (C-061 0.95)] keys: "Secret Warriors (2009)" | "Secret Warriors v1 (2009)" | "Secret Warriors: The Complete Collection"
+   nearby: S15234 "Secret Defenders" 16f [title+1 — S cv=5044 gcd=4730 (B-055 0.95)] keys: "Doctor Strange and the Secret Defenders" | "Secret Defenders"
+   nearby: S94692 "Secret Avengers" 15f [title+1 — S cv=72274 gcd=79505 (C-041 0.95)] keys: "Secret Avengers v3 (2014)" · S15235 "Secret Empire" 13f [title+1 — S cv=100840 gcd=113549 (A-033 0.9)] keys: "Secret Empire"
+   nearby: S15245 "Secret Invasion" 12f [title+1 — S cv=21076 gcd=30268 (A-032 0.95)] keys: "Secret Invasion" · S15276 "Secret Six" 8f [title+1] keys: "Secret Six"
+   nearby: S15280 "Secret War" 7f [title+1 — S cv=18234 gcd=19273 (C-056 0.95)] keys: "Secret War" · S15277 "Secret Skull" 4f [title+1 — S cv=23653 gcd=46709 (A-016 0.95)] keys: "Secret Skull"
+   nearby: S5161 "Deadpool's Secret Secret Wars" 3f [title+1 — S cv=82102 gcd=89419 (C-064 0.9)] keys: "Deadpool's Secret Secret Wars" | "Secret Wars" · (+14 more by title)
+   keys now: "Secret" x8
+   groups (title x folder): 3
+   G1 "Secret" in Image\Secret (2012) — 1 file(s), 1 COL, pp 186-186; cv per-file 79543x1; gcd per-file 63053x1; key 'Secret'
+      [33945] COL Secret Vol. 01 - Never Get Caught (2014) (DR & Quinch-Empire).cbr (186pp)
+   G2 "Secret" in Manga\Secret (2004) — 3 file(s), 3 COL, pp 212-229; cv per-file 38697x3; gcd per-file 94985x3; key 'Secret'
+      [43841] COL Secret v01 [Uasaha] (Yen Press) (digital).cbz (224pp)
+      [43842] COL Secret v02 [Uasaha] (Yen Press) (digital).cbz (212pp)
+      [43843] COL Secret v03 [Uasaha] (Yen Press) (digital).cbz (229pp)
+   G3 "Ultimate Secret" in _Marvel Major Event Chronology (digital)\2004.10 - Ultimate Galactus Trilogy\02 Ultimate Secret — 4 file(s), numbers 1-4, pp 23-24; cv per-file 38697x4; key 'Secret'
+      e.g. Ultimate Secret 01 (of 04) (2005) (Digital) (Fawkes-Empire).cbr
+        116624 #1 2005 24pp · 116625 #2 2005 23pp · 116626 #3 2005 23pp · 116627 #4 2005 23pp
+
+== S15276 Secret Six  [split]  8 files / 6 collections  decided in C-016 (R)
+   decided: R 15276 | two Secret Six runs numbering from #1 share this shelf, each with a record in both legs and no spanning record: the 2008-2011 ongoing (CV 22841 / GCD 31829, count 36) holds issues #17-18 (items 16346, 16357) and four trades Vol. 01-04 (69584-69587), and the 2014-2015 run (CV 78534 / GCD 85018, count 14) holds two trades Vol. 01-02 (69588-69589); the 2008 run dominates 6:2 but two whole trades of a 14-issue run are a co-equal run, not residue (lead, 2026-09-16, superseding the reader's S)
+   F 15276 split-needed | run A (dominant, keep the shelf): 2008 ongoing cv=22841 gcd=31829 — items 16346, 16357, 69584-69587; run B: 2014 run cv=78534 gcd=85018 — items 69588-69589 ("Friends in Low Places", "The Gauntlet")
+   N 15276 cv=22841 gcd=31829 | the 2008-2011 ongoing, 36 issues — six of the eight files; the S after the split
+   N 15276 cv=78534 gcd=85018 | the 2014-2015 run, 14 issues — the two Vol. 01-02 trades filed here by title
+   nearby: S381 "Action Comics" 1068f [shares gcd=97 (collected by item 69587) — S cv=18005 gcd=97 (R-026 0.9)] keys: "Action Comics" | "Action Comics (1938)" | "Action Comics Weekly" | "Action Comics v1 (1938)"
+   nearby: S64605 "Doom Patrol" 22f [shares gcd=38783 (collected by item 69587) — S cv=27258 gcd=38783 (C-028 0.9)] keys: "Doom Patrol (2009)" | "Doom Patrol v5 (2009)"
+   nearby: S21084 "Villains United" 12f [shares gcd=13998 (collected by item 69584) — S cv=18403 gcd=13998 (A-007 0.9)] keys: "Villains United"
+   nearby: S94542 "Suicide Squad" 10f [shares gcd=3385 (collected by item 69586) — S cv=3815 gcd=3385 (C-016 0.9)] keys: "Suicide Squad v1 (1987)"
+   nearby: S21085 "Villains United: Infinite Crisis Special" 3f [shares gcd=16118 (collected by item 69584) — S cv=20668 gcd=16118 (C-008 0.95)] keys: "Villains United - Infinite Crisis Special"
+   nearby: S4220 "Convergence Wonder Woman" 2f [shares gcd=88481 (collected by item 69588) — S cv=81462 gcd=88481 (A-008 0.95)] keys: "Convergence - Wonder Woman"
+   keys now: "Secret Six" x8
+   groups (title x folder): 3
+   G1 "Secret Six" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\144 Blackest Night — 2 file(s), numbers 17-18, pp 24-29; cv per-file 22437x2; key 'Secret Six'
+      [16346] 55 Secret Six 17.cbr (24pp)
+      [16357] 66 Secret Six 18.cbr (29pp)
+   G2 "Secret Six" in DC\_Secret Six\Secret Six v2 & v3 (2006) — 4 file(s), 4 COL, pp 258-336; cv per-file 22437x4; gcd per-file 90340x4; key 'Secret Six'
+      [69584] COL Secret Six Vol. 01 - Villains United (2015) (digital) (Son of Ultron-Empire).cbr (326pp)
+         own record cv 22437 / gcd s90340 "Secret Six" (issue 1430065) COLLECTS: gcd=13998 Villains United (2005) #1-6 · gcd=17961 Secret Six (2006) #1-6 · gcd=16118 Villains United: Infinite Crisis Special (2006) #1
+      [69585] COL Secret Six Vol. 02 - Money for Murder (2015) (digital) (Son of Ultron-Empire).cbr (336pp)
+         own record cv 22437 / gcd s90340 "Secret Six" (issue 1430065) COLLECTS: gcd=13998 Villains United (2005) #1-6 · gcd=17961 Secret Six (2006) #1-6 · gcd=16118 Villains United: Infinite Crisis Special (2006) #1  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [69586] COL Secret Six Vol. 03 - Cat's Cradle (2015) (digital) (Son of Ultron-Empire).cbr (258pp)
+         own record cv 22437 / gcd s90340 "Secret Six" (issue 1466232) COLLECTS: gcd=31829 Secret Six (2008) #15-24 · gcd=3385 Suicide Squad (1987) #67
+      [69587] COL Secret Six Vol. 04 - Caution to the Wind (2016) (digital) (Son of Ultron-Empire).cbr (310pp)
+         own record cv 22437 / gcd s90340 "Secret Six" (issue 1559115) COLLECTS: gcd=31829 Secret Six (2008) #25-36 · gcd=38783 Doom Patrol (2009) #19 · gcd=97 Action Comics (1938) #896
+   G3 "Secret Six" in DC\_Secret Six\Secret Six v4 (2015) — 2 file(s), 2 COL, pp 159-179; cv per-file 22437x2; gcd per-file 97158x2; key 'Secret Six'
+      [69588] COL Secret Six Vol. 01 - Friends in Low Places (2016) (digital) (Son of Ultron-Empire).cbr (159pp)
+         own record cv 22437 / gcd s97158 "Secret Six" (issue 1533295) COLLECTS: gcd=85018 Secret Six (2015) #1-6 · gcd=88481 Convergence Wonder Woman (2015) #2
+      [69589] COL Secret Six Vol. 02 - The Gauntlet (2016) (digital) (Son of Ultron-Empire).cbr (179pp)
+         own record cv 22437 / gcd s97158 "Secret Six" (issue 1661612) COLLECTS: gcd=85018 Secret Six (2015) #7-14
+
+== S15861 Solo  [split]  8 files / 2 collections  decided in C-040 (R)
+   decided: R 15861 | three unrelated "Solo" comics share this shelf: DC's 2004-2006 12-issue anthology (CV 11239/GCD 12180, collected as "Solo: The Deluxe Edition" GCD 73920), Marvel's 2016-2017 5-issue mini (CV 94818/GCD 104763), and Titan's 2020-2021 "Solo: The Survivors of Chaos" 2-volume OGN (CV 124268/GCD 154707) — three publishers, no shared identity
+   F 15861 split-needed | DC Solo = CV 11239/GCD 12180; Marvel Solo (2016) = CV 94818/GCD 104763; Titan Solo: Survivors of Chaos = CV 124268/GCD 154707 (2 volumes)
+   nearby: S15862 "Solo Avengers" 20f [title+1 — S cv=3859 gcd=3435 (A-022 0.95)] keys: "Solo Avengers" · S1543 "Avengers: Solo" 2f [title+1 — S cv=43648 gcd=61767 (B-053 0.95)] keys: "Avengers - Solo"
+   nearby: S16541 "Han Solo" 1f [title+1 — S cv=91286 gcd=103030 (B-048 0.95)] keys: "Star Wars - Han Solo"
+   keys now: "Solo" x8
+   groups (title x folder): 3
+   G1 "Solo - The Deluxe Edition (2013) (digital) (F) (Son of Ultron-Empire)" in DC\Solo (2005) — 1 file(s), 1 COL, pp 605-605; cv per-file 11239x1; gcd per-file 73920x1; key 'Solo'
+      [57125] COL Solo - The Deluxe Edition (2013) (digital) (F) (Son of Ultron-Empire).cbr (605pp)
+         own record cv 11239 / gcd s73920 "Solo: The Deluxe Edition" (issue 1106916) COLLECTS: gcd=12180 Solo (2004) #1-12
+   G2 "Solo" in Marvel\Solo v1 (2016) — 5 file(s), numbers 1-5, pp 23-24; cv per-file 11239x3, 94818x2; gcd per-file 104763x5; key 'Solo'
+      e.g. Solo 001 (2016) (Digital) (Zone-Empire).cbr
+        102673 #1 2016 24pp · 102674 #2 2017 23pp · 102675 #3 2017 24pp · 102676 #4 2017 24pp · 102677 #5 2017 23pp
+   G3 "Solo" in Titan Comics\Solo - The Survivors of Chaos (2021) — 2 file(s), 1 COL, numbers 2, pp 87-110; cv per-file 124268x2; gcd per-file 154707x2; key 'Solo'
+      [110554] COL Solo 01 - The Survivors of Chaos (2020) (Titan Comics) (Digital-Empire).cbr (110pp)
+      [110555] Solo 02 - The Survivors of Chaos (2021) (Titan Comics) (Digital-Empire).cbr (87pp)
+
+== S15906 Sonic the Hedgehog: Fang the Hunter  [split]  8 files / 0 collections  decided in C-029 (S)
+   decided: S 15906 cv=156202 gcd=207669 0.9 | CV 156202 and GCD 207669 both name "Sonic the Hedgehog: Fang the Hunter" 2024, 4 issues, the dominant piece on this shelf (4/8 files, matching ladder 1-4); the "Spring Broken!" and "Winter Jam" one-shots are each their own singleton record within the same 2024 Sonic continuity, residue
+   F 15906 split-needed | Fang the Hunter cv=156202 gcd=207669; Spring Broken! gcd=213214 (own one-shot); Winter Jam cv=155400 (own one-shot)
+   nearby: S94699 "Sonic the Hedgehog" 32f [shares cv=109575 — S cv=109575 gcd=123483 (C-029 0.9)] keys: "Sonic The Hedgehog v1 (2018)"
+   keys now: "Sonic the Hedgehog: Fang the Hunter" x5 · "Sonic the Hedgehog - Spring Broken!" x2 · "Sonic the Hedgehog: Winter Jam" x1
+   groups (title x folder): 5
+   G1 "Sonic the Hedgehog - Fang the Hunter" in IDW\Sonic The Hedgehog (2018)\Sonic The Hedgehog v1 (2018)\Annuals and Specials — 1 file(s), numbers 1, pp 30-30; cv per-file 109575x1; gcd per-file 207669x1; key 'Sonic the Hedgehog: Fang the Hunter'
+      [31288] Sonic the Hedgehog - Fang the Hunter 001 (2024) (Digital) (Walkabout-Empire).cbz (30pp)
+   G2 "Sonic the Hedgehog - Spring Broken! (2024) (SD) (Solar Hippo-QuantumDeep)" in IDW\Sonic The Hedgehog (2018)\Sonic The Hedgehog v1 (2018)\Annuals and Specials — 1 file(s), pp 31-31; cv per-file 109575x1; key 'Sonic the Hedgehog - Spring Broken!'
+      [31289] Sonic the Hedgehog - Spring Broken! (2024) (SD) (Solar Hippo-QuantumDeep).cbz (31pp)
+   G3 "Sonic the Hedgehog - Winter Jam (2024) (Digital) (Walkabout-Empire)" in IDW\Sonic The Hedgehog (2018)\Sonic The Hedgehog v1 (2018)\Annuals and Specials — 1 file(s), pp 30-30; cv per-file 109575x1; key 'Sonic the Hedgehog: Winter Jam'
+      [31290] Sonic the Hedgehog - Winter Jam (2024) (Digital) (Walkabout-Empire).cbz (30pp)
+   G4 "Sonic the Hedgehog - Spring Broken!" in IDW\Sonic The Hedgehog (2018)\Sonic The Hedgehog v1 (2018)\Variant Covers — 1 file(s), numbers 1, pp 1-1; cv per-file 109575x1; gcd per-file 213214x1; key 'Sonic the Hedgehog - Spring Broken!'
+      [31323] Sonic the Hedgehog - Spring Broken! 001 (2024) (IDW Webstore Adam Bryce Thomas Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   G5 "Sonic the Hedgehog - Fang the Hunter" in IDW\Sonic The Hedgehog (2018)\Sonic the Hedgehog - Fang the Hunter (2024) — 4 file(s), numbers 1-4, pp 27-30; cv per-file 109575x4; gcd per-file 207669x3; key 'Sonic the Hedgehog: Fang the Hunter'
+      e.g. Sonic the Hedgehog - Fang the Hunter 001 (2024) (Digital) (Walkabout-Empire).cbz
+        31279 #1 2024 30pp · 31280 #2 2024 27pp · 31281 #3 2024 30pp · 31282 #4 30pp
+
+== S16028 Spencer and Locke  [split]  8 files / 0 collections  decided in A-002 (R)
+   decided: R 16028 | this shelf is two runs that both number #1-4: "Spencer & Locke 001-004 (2017)" in subfolder "01 Spencer & Locke (2017)" and "Spencer & Locke 2 001-004 (2019)" in subfolder "02 Spencer & Locke 2 (2019)", which is why all four numbers name more than one file and why the ratio is 8/4 = 2.00; the stored CV 100666 (Action Lab 2017, 4) and GCD 113435 (Action Lab Comics 2017, limited series, 4) both describe only the FIRST run and GCD matches only 4 of the 8 files, while the sequel is its own volume (CV 118614 "Spencer & Locke 2" 2019 Action Lab, 4) — applying either would give the sequel's key the first run's identity
+   F 16028 split-needed | proposed runs: Spencer & Locke (2017, 4 issues, CV 100666 / GCD 113435) and Spencer & Locke 2 (2019, 4 issues, CV 118614); CV 100666 additionally has no CvVolume row and would need fetching after the split
+   keys now: "Spencer and Locke" x8
+   groups (title x folder): 2
+   G1 "Spencer & Locke" in Action Lab\Spencer & Locke (2017)\01 Spencer & Locke (2017) — 4 file(s), numbers 1-4, pp 25-33; cv per-file 100666x4; gcd per-file 113435x4; key 'Spencer and Locke'
+      e.g. Spencer & Locke 001 (2017) (digital) (d'argh-Empire).cbr
+        5538 #1 2017 33pp · 5539 #2 2017 25pp · 5540 #3 2017 26pp · 5541 #4 2017 26pp
+   G2 "Spencer & Locke 2" in Action Lab\Spencer & Locke (2017)\02 Spencer & Locke 2 (2019) — 4 file(s), numbers 1-4, pp 26-34; cv per-file 100666x4; key 'Spencer and Locke'
+      e.g. Spencer & Locke 2 001 (2019) (digital) (d'argh-Empire).cbr
+        5542 #1 2019 26pp · 5543 #2 2019 26pp · 5544 #3 2019 26pp · 5545 #4 2019 34pp
+
+== S18897 The Land That Time Forgot  [split]  8 files / 0 collections  decided in C-004 (R)
+   decided: R 18897 | shelf holds three separate American Mythology "Land That Time Forgot" minis (2016 #1-3, "Fearless" 2020-21 #1-2 of 3 cv=131674 gcd=166316, "See-Ta the Savage" 2018 #1-2 cv=109314 gcd=123007) plus a misfiled Fear on Four Worlds Part 4 tie-in one-shot (item 6682, cv=115892); the per-file matcher's round2-series stamped Fearless's GCD id across 6/8 files including the 2016 run and the tie-in
+   F 18897 split-needed | three co-equal minis share the shelf under different years/numbering
+   F 18897 misfiled | item 6682 "Fear on Four Worlds Part 4" (cv=115892, a 2018 crossover tie-in one-shot) is not part of any of the three minis
+   N 18897 The Land That Time Forgot (2016) #1-3 cv=92375 gcd=-
+   N 18897 The Land That Time Forgot: Fearless (2020-2021) cv=131674 gcd=166316
+   N 18897 Edgar Rice Burroughs' The Land That Time Forgot: See-Ta the Savage (2018) cv=109314 gcd=123007
+   keys now: "The Land that Time Forgot" x4 · "The Land That Time Forgot: Fearless" x2 · "Edgar Rice Burroughs The Land that Time Forgot, See-Ta the Savage" x2
+   groups (title x folder): 4
+   G1 "The Land that Time Forgot 001 Fear on Four Worlds Part" in American Mythology\Fear on Four Worlds (2018) — 1 file(s), numbers 1, pp 36-36; cv per-file 115892x1; gcd per-file 166316x1; key 'The Land that Time Forgot'
+      [6682] 04 The Land that Time Forgot 001 Fear on Four Worlds Part 4 (2018) (American Mythology) (c2c) (ComicsCastle).cbr (36pp)
+   G2 "The Land that Time Forgot" in American Mythology\The Land that Time Forgot (2016)\The Land That Time Forgot (2016) — 3 file(s), numbers 1-3, pp 36-36; cv per-file 92375x3; gcd per-file 166316x3; key 'The Land that Time Forgot'
+      [6748] The Land that Time Forgot 001 (2016) (American Mythology) (c2c) (ComicsCastle).cbr (36pp)
+      [6749] The Land that Time Forgot 002 (2016) (American Mythology) (c2c) (ComicsCastle).cbr (36pp)
+      [6750] The Land that Time Forgot 003 (2016) (American Mythology) (c2c) (ComicsCastle).cbr (36pp)
+   G3 "The Land That Time Forgot - Fearless" in American Mythology\The Land that Time Forgot (2016)\The Land That Time Forgot - Fearless (2020) — 2 file(s), numbers 1-2, pp 22-22; cv per-file 131674x2; gcd per-file 166316x2; key 'The Land That Time Forgot: Fearless'
+      [6751] The Land That Time Forgot - Fearless 01 (of 03) (2020) (digital) (Son of Ultron-Empire).cbr (22pp)
+      [6752] The Land That Time Forgot - Fearless 02 (of 03) (2021) (digital) (Son of Ultron-Empire).cbr (22pp)
+   G4 "Edgar Rice Burroughs The Land that Time Forgot, See-Ta the Savage" in American Mythology\The Land that Time Forgot (2016)\The Land that Time Forgot - See-Ta the Savage (2018) — 2 file(s), numbers 1-2, pp 34-36; cv per-file 109314x2; gcd per-file 123007x2; key 'Edgar Rice Burroughs The Land that Time Forgot, See-Ta the Savage'
+      [6753] Edgar Rice Burroughs The Land that Time Forgot, See-Ta the Savage 01 (2018) (American Mythology).cbr (34pp)
+      [6754] Edgar Rice Burroughs The Land that Time Forgot, See-Ta the Savage 02 (2018) (American Mythology) (c2c) (ComicsCastle).cbr (36pp)
+
+== S19059 The Manhattan Projects  [split]  8 files / 4 collections  decided in C-033 (R)
+   decided: R 19059 | this shelf mixes the main "The Manhattan Projects" 2012 Image 25-issue run (four collected volumes: Book01/02 + Vol.05/06) with its separately-published sequel mini "The Sun Beyond the Stars" (4 issues, its own GCD record) — two co-equal, separately-numbered pieces
+   F 19059 split-needed | main run cv=46365 gcd=63054; "The Sun Beyond the Stars" gcd=87409
+   keys now: "The Manhattan Projects - The Sun Beyond the Stars" x4 · "The Manhattan Projects" x4
+   groups (title x folder): 2
+   G1 "The Manhattan Projects" in Image\The Manhattan Projects (2012) — 4 file(s), 4 COL, pp 137-310; cv per-file 46365x4; gcd per-file 68758x4; key 'The Manhattan Projects'
+      [34796] COL The Manhattan Projects Book 01 (2014) (Digital HC) (Zone-Empire).cbr (297pp)
+      [34797] COL The Manhattan Projects Book 02 - Science, Bad (2016) (Digital) (Zone-Empire).cbr (310pp)
+      [34798] COL The Manhattan Projects Vol. 05 (2014) (Digital TPB) (Zone-Empire).cbr (157pp)
+      [34799] COL The Manhattan Projects Vol. 06 (2016) (Digital) (Zone-Empire).cbr (137pp)
+   G2 "The Manhattan Projects - The Sun Beyond the Stars" in Image\The Manhattan Projects (2012)\Manhattan Projects - The Sun Beyond the Stars (2015) — 4 file(s), numbers 1-4, pp 31-40; cv per-file 46365x4; gcd per-file 87409x4; key 'The Manhattan Projects - The Sun Beyond the Stars'
+      e.g. The Manhattan Projects - The Sun Beyond the Stars 001 (2015) (Digital) (Zone-Empire).cbr
+        34792 #1 2015 32pp · 34793 #2 2015 33pp · 34794 #3 2015 31pp · 34795 #4 2016 40pp
+
+== S19305 The Orville  [split]  8 files / 1 collections  decided in C-023 (R)
+   decided: R 19305 | this shelf holds two distinct 2020-2021 Dark Horse "The Orville" minis close to co-equal: "Launch Day"/"Heroes" (CV 120224/GCD 163559, 4 issues, our 4 files) and "Artifacts"/"Digressions" (CV 135870/GCD 172267, 2 issues, our 3 files here plus "Digressions" Part 2 on sibling S19306) — not residue
+   F 19305 split-needed | run A = 2020 "Launch Day"/"Heroes" mini (CV 120224/GCD 163559); run B = 2021 "Artifacts"/"Digressions" mini (CV 135870/GCD 172267), continued on sibling shelf S19306
+   N 19305 cv=120224 gcd=163559 | "The Orville" 2020 mini ("Launch Day", "Heroes"), items 15176-15179
+   N 19305 cv=135870 gcd=172267 | "The Orville" 2021 mini ("Artifacts", "Digressions"), items 15172-15174
+   named: S19306 The Orville  1 files  keys: "The Orville #2: Digressions (Part 2 of 2)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S19308 "The Orville Season 2.5: Digressions" 1f [title+1 — S cv=142227 gcd=183333 (B-019 0.9)] keys: "The Orville Season"
+   keys now: "The Orville" x8
+   groups (title x folder): 5
+   G1 "The Orville - Artifacts Part" in Dark Horse\The Orville — 2 file(s), numbers 1-2, pp 22-23; cv per-file 130051x2; gcd per-file 172267x2; key 'The Orville'
+      [15172] The Orville - Artifacts Part 01 (of 02) (2021) (digital) (Son of Ultron-Empire).cbr (23pp)
+      [15173] The Orville - Artifacts Part 02 (of 02) (2021) (digital) (Son of Ultron-Empire).cbr (22pp)
+   G2 "The Orville - Digressions Part" in Dark Horse\The Orville — 1 file(s), numbers 1, pp 22-22; cv per-file 130051x1; gcd per-file 172267x1; key 'The Orville'
+      [15174] The Orville - Digressions Part 01 (of 02) (2021) (digital) (Son of Ultron-Empire).cbr (22pp)
+   G3 "The Orville - Heroes Part" in Dark Horse\The Orville — 2 file(s), numbers 2-3, pp 22-23; cv per-file 130051x2; gcd per-file 163559x2; key 'The Orville'
+      [15176] The Orville - Heroes Part 01 (of 02) (2020) (digital) (Son of Ultron-Empire).cbr (22pp)
+      [15177] The Orville - Heroes Part 02 (of 02) (2020) (digital) (Son of Ultron-Empire).cbr (23pp)
+   G4 "The Orville - Launch Day Part" in Dark Horse\The Orville — 2 file(s), numbers 1-2, pp 22-22; cv per-file 130051x2; gcd per-file 163559x2; key 'The Orville'
+      [15178] The Orville - Launch Day Part 01 (of 02) (2020) (digital) (Son of Ultron-Empire).cbr (22pp)
+      [15179] The Orville - Launch Day Part 02 (of 02) (2020) (digital) (Son of Ultron-Empire).cbr (22pp)
+   G5 "The Orville Library Edition" in Dark Horse\The Orville\Library Editions — 1 file(s), 1 COL, pp 286-286; cv per-file 130051x1; gcd per-file 163559x1; key 'The Orville'
+      [16000] COL The Orville Library Edition Book 01 (2022) (digital) (Son of Ultron-Empire).cbr (286pp)
+
+== S19878 The Valiants  [split]  8 files / 0 collections  decided in R-013 (R)
+   decided: R 19878 | this shelf is four different comics in four folders with no record spanning any two of them: "The Valiants 001-004 (2024)" (items 110940-110943, 33/24/27/26pp) are Alien Books' four-issue mini CV 158092 / GCD 213600, whose issues are dated May-September 2024; "Rai - The History of the Valiant Universe 001 (2017)" 35pp is the June 2017 one-shot CV 102130 / GCD 114945; "05 Resurgence of the Valiant Universe - Finale (2025)" 44pp is the January 2025 one-shot CV 162083 / GCD 221002 and its "05" is a reading-order position in the Resurgence folder; "Valiant 8-Bit Adventure - Unity! (2013)" 143pp plus its 13pp cover gallery are the 2013 digital special CV 69229 — the ladder "1-5, 8" is the 8 of "8-Bit" and the 05 of a read-order prefix read as issue numbers, and the two numbers naming two files each are those same artefacts
+   F 19878 split-needed | proposed runs, one per comic: The Valiants cv=158092 gcd=213600 (items 110940-110943, ladder 1-4 complete against both legs' count 4); Rai: The History of the Valiant Universe cv=102130 gcd=114945 (item 110908); Resurgence of the Valiant Universe: Finale cv=162083 gcd=221002 (item 110921); Valiant 8-Bit Adventure: Unity! cv=69229 gcd=- (items 112105 and the 112106 cover gallery) — the four Resurgence issues proper (CV 159846 / GCD 219829, 2024 Alien Books count 4) are on another shelf, not here
+   F 19878 wrong-cv-link | the stored CV 78714 "The Valiant" 2014 Valiant count 4 is the Lemire/Kindt mini whose deluxe collection is S19877's only file; it was stamped here by issue NUMBER on 6 of 8 files, and The Valiants #1-4 are a 2024 Alien Books comic a decade later by different hands — the packet's ratio 8/4 = 2.00 and yearΔ 1 are that coincidence, not a rip of this volume
+   N 19878 item 112106 "Valiant 8-Bit Cover Gallery (2013) (12 covers only)" 13pp is a twelve-cover pack of the same 2013 special, the Avatar \covers shape: it is the second file on the phantom number "8" and is a comic of its own in neither provider
+   nearby: S14600 "Resurgence of the Valiant Universe" 4f [shares cv=159846, shares gcd=219829 — S cv=159846 gcd=219829 (A-030 0.95)] keys: "Resurgence of the Valiant Universe"
+   nearby: S19877 "The Valiant" 1f [shares cv=78714 — S cv=78714 gcd=85121 (R-013 0.95)] keys: "The Valiant Deluxe Edition"
+   nearby: S14091 "Prince Valiant" 33f [title+1 — S cv=46212 gcd=2943 (C-063 0.7)] keys: "Prince Valiant" · S20890 "Valiant High" 1f [title+1 — S cv=99060 gcd=125576 (B-068 0.95)] keys: "Valiant High"
+   keys now: "The Valiants" x5 · "Valiant" x2 · "Rai - The History of the Valiant Universe" x1
+   groups (title x folder): 4
+   G1 "Rai - The History of the Valiant Universe" in Valiant\Rai\Rai v3 (2014) — 1 file(s), numbers 1, pp 35-35; cv per-file 102130x1; gcd per-file 114945x1; key 'Rai - The History of the Valiant Universe'
+      [110908] Rai - The History of the Valiant Universe 001 (2017) (digital) (Son of Ultron-Empire).cbr (35pp)
+   G2 "Resurgence of the Valiant Universe - Finale (2025) (digital) (Son of Ultron-Empire)" in Valiant\Resurgance (2024)\Resurgence of the Valiant Universe (2024) — 1 file(s), numbers 5, pp 44-44; cv per-file 162083x1; gcd per-file 221002x1; key 'The Valiants'
+      [110921] 05 Resurgence of the Valiant Universe - Finale (2025) (digital) (Son of Ultron-Empire).cbr (44pp)
+   G3 "The Valiants" in Valiant\The Valiant (2015)\The Valiants (2024) — 4 file(s), numbers 1-4, pp 24-33; cv per-file 78714x3, 158092x1; gcd per-file 213600x4; key 'The Valiants'
+      e.g. The Valiants 001 (2024) (digital) (Son of Ultron-Empire).cbr
+        110940 #1 2024 33pp · 110941 #2 2024 24pp · 110942 #3 2024 27pp · 110943 #4 2024 26pp
+   G4 "Valiant" in Valiant\_One-shots\2013 — 2 file(s), numbers 8, pp 13-143; cv per-file 69229x1, 78714x1; key 'Valiant'
+      [112105] Valiant 8-Bit Adventure - Unity! (2013) (digital) (Son of Ultron-Empire).cbr (143pp)
+      [112106] Valiant 8-Bit Cover Gallery (2013) (12 covers only) (digital) (digital-Empire).cbr (13pp)
+
+== S20905 Vampirella  [split]  8 files / 2 collections  decided in C-024 (R)
+   decided: R 20905 | this shelf mixes the 2017-2018 "Vampirella" 4th-volume ongoing's own trades (Vol.01-02, CV 98538/GCD 111868 and its collected-edition row 119631) with the separate "Vampirella: Year One" 6-issue mini's own floppies (2022-2023, GCD's collected-edition row 169778 the closest candidate, no distinct raw-mini id confirmed) — two different comics
+   F 20905 split-needed | run A = 2017-2018 "Vampirella" ongoing (CV 98538/GCD 111868), collected by Vol.01-02 (items 22188-22189); run B = "Vampirella: Year One" 2022-2023 mini, the six #001-006 floppies
+   N 20905 cv=98538 gcd=111868 | 2017-2018 "Vampirella" 4th-volume ongoing, this shelf's Vol.01-02 trades
+   N 20905 cv=- gcd=169778 | "Vampirella: Year One" 2022-2023 mini, this shelf's #001-006 floppies; no distinct raw-mini id confirmed beyond this collected-edition row
+   nearby: S101287 "Vampirella" 9f [shares cv=156869 — S cv=156869 gcd=209003 (B-023 0.95)] keys: "Vampirella v1 (2024)"
+   nearby: S101288 "Vampirella" 6f [title — S cv=88585 gcd=98026 (B-023 0.95)] keys: "Vampirella v3 (2016)" · S101289 "Vampirella v5 (2019)" 2f [title — S gcd=148813 (C-024 0.9)] keys: "Vampirella v5 (2019)"
+   nearby: S20939 "Vampirella 1992" 1f [title — S cv=136614 gcd=172876 (B-023 0.95)] keys: "Vampirella: 1992 One-Shot"
+   nearby: S20915 "Vampirella Archives" 15f [title+1 — S cv=34405 gcd=61400 (B-023 0.9)] keys: "Vampirella Archives"
+   nearby: S20926 "Vampirella Strikes" 9f [title+1 — S cv=142917 gcd=185023 (A-014 0.95)] keys: "Vampirella Strikes" · S4993 "Dawn/Vampirella" 1f [title+1 — S cv=76865 gcd=82724 (B-023 0.95)] keys: "Dawn - Vampirella"
+   nearby: S10428 "KISS/Vampirella" 1f [title+1 — S cv=101940 gcd=114721 (B-022 0.95)] keys: "Kiss - Vampirella"
+   nearby: S10653 "Legenderry: Vampirella" 1f [title+1 — S cv=79866 gcd=86343 (B-023 0.95)] keys: "Legenderry - Vampirella" · S20916 "Vampirella Bites" 1f [title+1 — S cv=76544 (B-023 0.9)] keys: "Vampirella Bites"
+   nearby: S20920 "Vampirella Helliday Special" 1f [title+1 — S cv=161788 (B-023 0.9)] keys: "Vampirella Helliday" · S20921 "Vampirella Kracalactaka" 1f [title+1] keys: "Vampirella Kracalactaka"
+   nearby: S20923 "Vampirella Mindwarp" 1f [title+1 — S cv=145276 (B-023 0.9)] keys: "Vampirella Mindwarp" · (+1 more by title)
+   keys now: "Vampirella" x8
+   groups (title x folder): 2
+   G1 "Vampirella" in Dynamite\Vampirella\_Completed Series\Vampirella v4 (2017) — 2 file(s), 2 COL, pp 158-169; cv per-file 156869x2; gcd per-file 111868x1, 119631x1; key 'Vampirella'
+      [22188] COL Vampirella Vol. 01 - Forbidden Fruit (2017) (Digital) (F) (DR & Quinch-Empire).cbr (158pp)
+      [22189] COL Vampirella Vol. 02 - The God You Know (2018) (Digital) (DR & Quinch-Empire).cbr (169pp)
+   G2 "Vampirella - Year One" in Dynamite\Vampirella\_Minis, Trades and One-shots\Vampirella - Year One (2022) — 6 file(s), numbers 1-6, pp 29-38; cv per-file 156869x6; gcd per-file 169778x4; key 'Vampirella'
+      e.g. Vampirella - Year One 001 (2022) (5 covers) (digital) (Son of Ultron-Empire).cbr
+        22227 #1 2022 32pp · 22228 #2 2022 30pp · 22229 #3 2022 38pp · 22230 #4 2022 29pp · 22231 #5 2023 29pp · 22232 #6 2023 29pp
+
+== S21279 Warlord of Mars: Dejah Thoris  [split]  8 files / 8 collections  decided in A-014 (S)
+   decided: S 21279 cv=38625 gcd=56695 0.9 | the RUN wins: CV 38625 "Warlord of Mars: Dejah Thoris" (2011 Dynamite, 37 per the candidate list) and GCD dump 56695 (2011-2014 Dynamite Entertainment, 37) agree on publisher, span and count, and our three numbered trades are judged #20-24, #25-30 and #31-37 — the tail of exactly that 37-issue run; residue that is a different comic is the three "Green Men of Mars" trades
+   F 21279 split-needed | items 21009, 21010 and 21011 (Green Men of Mars Vol. 01 Red Meat, Vol. 02 Red Flood, Vol. 03 Red Trigger, in their own 2013 subfolder) collect Dynamite's separate 12-issue "Dejah Thoris: And the Green Men of Mars" (CV 57553), not the 37-issue Warlord of Mars: Dejah Thoris; the open label-ambiguous flag on 21011 is a second symptom
+   N 21279 the two omnibus books (items 21004, 21005) belong to ComicVine volume 104090 "Warlord of Mars: Dejah Thoris Omnibus" 2017; there is no item-level id for it and GCD names no omnibus series
+   keys now: "Warlord of Mars - Dejah Thoris" x5 · "Warlord of Mars - Dejah Thoris and the Green Men of Mars" x3
+   groups (title x folder): 3
+   G1 "Warlord of Mars - Dejah Thoris" in Dynamite\Deja Thoris\Warlord of Mars - Dejah Thoris (2011) — 3 file(s), 3 COL, pp 129-194; cv per-file 38625x3; gcd per-file 71878x3; key 'Warlord of Mars - Dejah Thoris'
+      [21006] COL Warlord of Mars - Dejah Thoris Vol. 05 - Rise of the Machine Men (2014) (Digital) (DR & Quinch II-Empire).cbr (129pp)
+      [21007] COL Warlord of Mars - Dejah Thoris Vol. 06 - Phantoms of Time (2015) (Digital) (DR & Quinch II-Empire).cbr (152pp)
+      [21008] COL Warlord of Mars - Dejah Thoris Vol. 07 - Duel to the Death (2015) (Digital) (DR & Quinch II-Empire).cbr (194pp)
+   G2 "Warlord of Mars - Dejah Thoris Omnibus" in Dynamite\Deja Thoris\Warlord of Mars - Dejah Thoris (2011) — 2 file(s), 2 COL, pp 456-483; cv per-file 38625x2; key 'Warlord of Mars - Dejah Thoris'
+      [21005] COL Warlord of Mars - Dejah Thoris Omnibus Vol. 02 (2018) (Digital) (DR & Quinch-Empire).cbr (456pp)
+      [21004] COL Warlord of Mars - Dejah Thoris Omnibus v01 (2017) (Digital) (DR & Quinch-Empire).cbr (483pp)
+   G3 "Warlord of Mars - Dejah Thoris and the Green Men of Mars" in Dynamite\Deja Thoris\Warlord of Mars - Dejah Thoris and the Green Men of Mars (2013) — 3 file(s), 3 COL, pp 111-125; cv per-file 38625x3; gcd per-file 71878x3; key 'Warlord of Mars - Dejah Thoris and the Green Men of Mars'
+      [21009] COL Warlord of Mars - Dejah Thoris and the Green Men of Mars Vol. 01 - Red Meat (2013) (Digital TPB) (K6-Empire).cbr (111pp)
+         own record cv 38625 / gcd s71878 "Warlord of Mars: Dejah Thoris" (issue 1072202) COLLECTS: gcd=56695 Warlord of Mars: Dejah Thoris (2011) #1-5  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [21010] COL Warlord of Mars - Dejah Thoris and the Green Men of Mars Vol. 02 - Red Flood (2014) (Digital TPB) (K6-Empire).cbr (125pp)
+         own record cv 38625 / gcd s71878 "Warlord of Mars: Dejah Thoris" (issue 1072203) COLLECTS: gcd=56695 Warlord of Mars: Dejah Thoris (2011) #6-10  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [21011] COL Warlord of Mars - Dejah Thoris and the Green Men of Mars Vol. 03 - Red Trigger (2014) (Digital TPB) (DR & Quinch-Empire).cbr (115pp)
+         own record cv 38625 / gcd s71878 "Warlord of Mars: Dejah Thoris" (issue 1072204) COLLECTS: gcd=56695 Warlord of Mars: Dejah Thoris (2011) #11-15  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+
+== S22860 Zorro: Legendary Adventures  [split]  8 files / 0 collections  decided in R-032 (R)
+   decided: R 22860 | two co-equal runs that each number #1-4: "Zorro - Legendary Adventures 001-004" (2018-2019, Book 1 folder, items 6788-6791) = CV 116101 (American Mythology 2018, 4, 2018-12..2019-03) / GCD 141478 (2018-2019, 4), and "Zorro - Legendary Adventures Book 2 001-004" (2019, Book 2 folder, items 6792-6795; ComicInfo "…Book 2") = CV 118284 "Zorro: Legendary Adventures Book 2" (2019, 4, 2019-04..08) / GCD 144238 (2019-?, 2 rows) — which is why all four numbers name two files and the ratio is 8/4; the stored CV 116101 describes only Book 1
+   F 22860 split-needed | items 6792 6793 6794 6795 (Zorro: Legendary Adventures Book 2 #1-4, CV 118284 / GCD 144238) move to a key of their own "Zorro: Legendary Adventures Book 2 (2019)"; items 6788-6791 stay as Book 1, CV 116101 / GCD 141478
+   keys now: "Zorro: Legendary Adventures" x8
+   groups (title x folder): 2
+   G1 "Zorro - Legendary Adventures" in American Mythology\Zorro\Zorro - Legendary Adventures Book 1 (2018) — 4 file(s), numbers 1-4, pp 27-34; cv per-file 116101x3, 157314x1; gcd per-file 141478x3; key 'Zorro: Legendary Adventures'
+      e.g. Zorro - Legendary Adventures 001 (2018) (digital) (Son of Ultron-Empire).cbr
+        6788 #001 2018 34pp · 6789 #002 2019 34pp · 6790 #003 2019 28pp · 6791 #004 2019 27pp
+   G2 "Zorro - Legendary Adventures" in American Mythology\Zorro\Zorro - Legendary Adventures Book 2 (2019) — 4 file(s), numbers 1-4, pp 22-25; cv per-file 116101x4; gcd per-file 141478x4; key 'Zorro: Legendary Adventures'
+      e.g. Zorro - Legendary Adventures Book 2 001 (2019) (digital) (Son of Ultron-Empire).cbr
+        6792 #001 2019 22pp · 6793 #002 2019 22pp · 6794 #003 2019 22pp · 6795 #004 2019 25pp
+
+== S34698 Batman Arkham  [split]  8 files / 8 collections  decided in B-010 (R)
+   decided: R 34698 | eight different comics on one shelf and no record spans them: DC's "Batman Arkham" line mints a separate volume per character in BOTH providers — Clayface (CV 103376 / GCD 115807), Hugo Strange (109941 / 123742), Killer Croc (91741 / 103489), Man-Bat (98322 / 111671), Mister Freeze (101380 / 114005), Penguin (113056 / 128407), Scarecrow (87789 / 96681) and Two-Face (85815 / 93555); the per-file CV 76663 "Batman Arkham" is Titan Comics' UK magazine, a different publisher entirely
+   F 34698 split-needed | proposed: 62577 to CV 103376 / GCD 115807; 62578 to 109941 / 123742; 62579 to 91741 / 103489; 62580 to 98322 / 111671; 62581 to 101380 / 114005; 62582 to 113056 / 128407; 62583 to 87789 / 96681; 62584 to 85815 / 93555
+   N 34698 ComicVine spells the line "Batman Arkham: X" for most titles but "Batman: Arkham: X" for Killer Croc, Man-Bat and Scarecrow — one line under two spellings inside one provider, which is why the packet's candidate list found only some of them
+   nearby: S5409 "Detective Comics" 966f [shares gcd=87 (collected by item 62577) — S cv=18058 gcd=87 (C-008 0.9)] keys: "Detective Comics" | "Detective Comics (1937)" | "Detective Comics v1 (1937)"
+   nearby: S64223 "Batman" 829f [shares gcd=141 (collected by item 62579) — S cv=796 gcd=141 (C-011 0.9)] keys: "A Robins Tale" | "All they do is watch us kill part" | "As the Crow Flies part" | "Batman (1940)" (+5 more: lookup.py --shelf 64223)
+   nearby: S95385 "Batman: Legends of the Dark Knight" 215f [shares gcd=4378 (collected by item 62581) — S cv=4720 gcd=4378 (C-012 0.95)] keys: "Batman - Legends of the Dark Knight v1 (1989)"
+   nearby: S94865 "Detective Comics" 97f [shares gcd=60830 (collected by item 62578) — S cv=91098 gcd=60830 (R-018 0.9)] keys: "Detective Comics v1 (2016)"
+   nearby: S15270 "Secret Origins" 56f [shares gcd=3166 (collected by item 62577) — S cv=3616 gcd=3166 (C-010 0.95)] keys: "Secret Origins" | "Secret Origins v2 (1986)" | "SecretOrigins2-035"
+   nearby: S2139 "Batman and Robin" 42f [shares gcd=60920 (collected by item 62579) — S cv=42692 gcd=60920 (B-008 0.9)] keys: "Batman and Robin" | "Robin and Batman"
+   nearby: S2021 "Batman: The Dark Knight" 27f [shares gcd=61179 (collected by item 62577) — S cv=37880 gcd=61179 (C-008 0.9)] keys: "Batman - The Dark Knight" | "Batman - The Dark Knight - Golden Dawn"
+   nearby: S94554 "Batman and Robin" 11f [shares gcd=60920 (collected by item 62579) — S cv=50161 gcd=60920 (C-012 0.9)] keys: "Batman & Robin v2 (2011)"
+   nearby: S65109 "Man-Bat" 3f [shares gcd=7073 (collected by item 62580) — S cv=6577 gcd=7073 (A-011 0.95)] keys: "Man-Bat (1996)"
+   nearby: S2073 "Batman Arkham: Penguin" 2f [shares gcd=128407 — S cv=113056 gcd=128407 (B-010 0.95)] keys: "Batman Arkham: Penguin"
+   nearby: S96415 "Detective Comics" 2f [shares gcd=60830 (collected by item 62578) — S cv=42594 gcd=60830 (B-010 0.9)] keys: "Detective Comics (2011)" | "Detective Comics v2 (2011)"
+   nearby: S2068 "Batman Arkham: Clayface" 1f [shares cv=103376, shares gcd=115807 — S cv=103376 gcd=115807 (B-011 0.95)] keys: "Batman Arkham: Clayface"
+   nearby: S2069 "Batman Arkham: Hugo Strange" 1f [shares gcd=123742 — S cv=109941 gcd=123742 (B-011 0.95)] keys: "Batman Arkham: Hugo Strange"
+   nearby: S2070 "Batman: Arkham: Killer Croc" 1f [shares gcd=103489 — S cv=91741 gcd=103489 (B-011 0.95)] keys: "Batman Arkham: Killer Croc"
+   nearby: S2071 "Batman: Arkham: Man-Bat" 1f [shares gcd=111671 — S cv=98322 gcd=111671 (B-011 0.95)] keys: "Batman Arkham: Man-Bat"
+   nearby: S2072 "Batman Arkham: Mister Freeze" 1f [shares gcd=114005 — S cv=101380 gcd=114005 (B-011 0.95)] keys: "Batman Arkham: Mister Freeze"
+   nearby: S2075 "Batman: Arkham: Scarecrow" 1f [shares gcd=96681 — S cv=87789 gcd=96681 (B-011 0.95)] keys: "Batman Arkham: Scarecrow"
+   nearby: S2076 "Batman Arkham: Two-Face" 1f [shares gcd=93555 — S cv=85815 gcd=93555 (B-011 0.95)] keys: "Batman Arkham: Two-Face"
+   nearby: S9962 "Joker's Asylum II: Killer Croc" 1f [shares gcd=50144 (collected by item 62579) — S cv=33915 gcd=50144 (B-014 0.95)] keys: "Joker's Asylum II - Killer Croc"
+   nearby: S13743 "Batman: Penguin Triumphant" 1f [shares gcd=4379 (collected by item 62582) — S cv=34198 gcd=4379 (B-009 0.95)] keys: "Penguin Triumphant"
+   nearby: S102801 "Joker's Asylum: Penguin (2008)" 1f [shares gcd=31285 (collected by item 62582) — S cv=22285 gcd=31285 (R-034 0.95)] keys: "Joker's Asylum: Penguin (2008)"
+   nearby: S102803 "Joker's Asylum: Scarecrow (2008)" 1f [shares gcd=31373 (collected by item 62583) — S cv=33803 gcd=31373 (R-034 0.95)] keys: "Joker's Asylum: Scarecrow (2008)"
+   nearby: S1902 "Batman: Arkham Knight" 42f [title+1 — S cv=80292 gcd=87347 (C-012 0.9)] keys: "Batman - Arkham Knight"
+   nearby: S1909 "Batman: Arkham Unhinged" 4f [title+1 — S cv=43361 gcd=78300 (C-012 0.9)] keys: "Batman - Arkham Unhinged"
+   nearby: S1908 "Batman: Arkham Origins" 1f [title+1 — S cv=79015 gcd=90437 (B-010 0.9)] keys: "Batman - Arkham Origins"
+   nearby: S2062 "Batman Arkham: Catwoman" 1f [title+1 — S cv=156680 gcd=202239 (B-011 0.95)] keys: "Batman Arkham - Catwoman"
+   nearby: S2209 "Batman: Arkham Asylum" 1f [title+1 — S cv=128285 gcd=161521 (B-010 0.95)] keys: "Batman: Arkham Asylum New Edition"
+   keys now: "Batman Arkham" x8
+   groups (title x folder): 8
+   G1 "Batman Arkham - Clayface (2017) (digital) (Son of Ultron-Empire)" in DC\_Batman\_Miniseries and One-shots\Batman Arkham (2015) — 1 file(s), 1 COL, pp 318-318; cv per-file 76663x1; gcd per-file 115807x1; key 'Batman Arkham'
+      [62577] COL Batman Arkham - Clayface (2017) (digital) (Son of Ultron-Empire).cbr (318pp)
+         own record cv 76663 / gcd s115807 "Batman Arkham: Clayface" (issue 1726034) COLLECTS: gcd=7770 Batman: Gotham Knights (2000) #68-71 · gcd=87 Detective Comics (1937) #40, #298, #478-479 · gcd=3166 Secret Origins (1986) #44 · gcd=61179 Batman: The Dark Knight (2011) #23.3
+   G2 "Batman Arkham - Hugo Strange (2018) (digital) (Son of Ultron-Empire)" in DC\_Batman\_Miniseries and One-shots\Batman Arkham (2015) — 1 file(s), 1 COL, pp 235-235; cv per-file 76663x1; gcd per-file 123742x1; key 'Batman Arkham'
+      [62578] COL Batman Arkham - Hugo Strange (2018) (digital) (Son of Ultron-Empire).cbr (235pp)
+         own record cv 76663 / gcd s123742 "Batman Arkham: Hugo Strange" (issue 1800574) COLLECTS: gcd=7770 Batman: Gotham Knights (2000) #8-11 · gcd=87 Detective Comics (1937) #36, #471-472 · gcd=60830 Detective Comics (2011) #942 · gcd=1468 Batman Annual (1961) #10
+   G3 "Batman Arkham - Killer Croc (2016) (digital) (Son of Ultron-Empire)" in DC\_Batman\_Miniseries and One-shots\Batman Arkham (2015) — 1 file(s), 1 COL, pp 291-291; cv per-file 76663x1; gcd per-file 103489x1; key 'Batman Arkham'
+      [62579] COL Batman Arkham - Killer Croc (2016) (digital) (Son of Ultron-Empire).cbr (291pp)
+         own record cv 76663 / gcd s103489 "Batman Arkham: Killer Croc" (issue 1583916) COLLECTS: gcd=141 Batman (1940) #358-359, #471, #489, #512, #521-522 · gcd=87 Detective Comics (1937) #525, #660, #808-810 · gcd=60920 Batman and Robin (2011) #23.4 · gcd=50144 Joker's Asylum II: Killer Croc (2010) #1
+   G4 "Batman Arkham - Man-Bat (2017) (digital) (Son of Ultron-Empire)" in DC\_Batman\_Miniseries and One-shots\Batman Arkham (2015) — 1 file(s), 1 COL, pp 296-296; cv per-file 76663x1; gcd per-file 111671x1; key 'Batman Arkham'
+      [62580] COL Batman Arkham - Man-Bat (2017) (digital) (Son of Ultron-Empire).cbr (296pp)
+         own record cv 76663 / gcd s111671 "Batman Arkham: Man-Bat" (issue 1669282) COLLECTS: gcd=7073 Man-Bat (1996) #1-3 · gcd=87 Detective Comics (1937) #400, #402, #407 · gcd=2222 Man-Bat (1975) #1-2 · gcd=60830 Detective Comics (2011) #23.4
+   G5 "Batman Arkham - Mister Freeze (2017) (digital) (Son of Ultron-Empire)" in DC\_Batman\_Miniseries and One-shots\Batman Arkham (2015) — 1 file(s), 1 COL, pp 271-271; cv per-file 76663x1; gcd per-file 114005x1; key 'Batman Arkham'
+      [62581] COL Batman Arkham - Mister Freeze (2017) (digital) (Son of Ultron-Empire).cbr (271pp)
+         own record cv 76663 / gcd s114005 "Batman Arkham: Mister Freeze" (issue 1697922) COLLECTS: gcd=141 Batman (1940) #121, #308, #375, #525 · gcd=87 Detective Comics (1937) #373, #595 · gcd=4378 Batman: Legends of the Dark Knight (1992) #190-191 · gcd=14765 Batman: Mr. Freeze (1997) (unnumbered)
+   G6 "Batman Arkham - Penguin (2018) (digital) (Son of Ultron-Empire)" in DC\_Batman\_Miniseries and One-shots\Batman Arkham (2015) — 1 file(s), 1 COL, pp 241-241; cv per-file 76663x1; gcd per-file 128407x1; key 'Batman Arkham'
+      [62582] COL Batman Arkham - Penguin (2018) (digital) (Son of Ultron-Empire).cbr (241pp)
+         own record cv 76663 / gcd s128407 "Batman Arkham: Penguin" (issue 1841550) COLLECTS: gcd=141 Batman (1940) #155, #374, #548-549 · gcd=87 Detective Comics (1937) #58, #610-611, #824 · gcd=31285 Joker's Asylum: Penguin (2008) #1 · gcd=4379 Batman: Penguin Triumphant (1992) (unnumbered)
+   G7 "Batman Arkham - Scarecrow (2015) (digital) (Son of Ultron-Empire)" in DC\_Batman\_Miniseries and One-shots\Batman Arkham (2015) — 1 file(s), 1 COL, pp 280-280; cv per-file 76663x1; gcd per-file 96681x1; key 'Batman Arkham'
+      [62583] COL Batman Arkham - Scarecrow (2015) (digital) (Son of Ultron-Empire).cbr (280pp)
+         own record cv 76663 / gcd s96681 "Batman Arkham: Scarecrow" (issue 1530799) COLLECTS: gcd=141 Batman (1940) #189, #296, #523-524 · gcd=87 Detective Comics (1937) #73, #389, #503, #571 · gcd=60830 Detective Comics (2011) #23.3 · gcd=31373 Joker's Asylum: Scarecrow (2008) #1
+   G8 "Batman Arkham - Two-Face (2015) (digital) (Son of Ultron-Empire)" in DC\_Batman\_Miniseries and One-shots\Batman Arkham (2015) — 1 file(s), 1 COL, pp 304-304; cv per-file 76663x1; gcd per-file 93555x1; key 'Batman Arkham'
+      [62584] COL Batman Arkham - Two-Face (2015) (digital) (Son of Ultron-Empire).cbr (304pp)
+         own record cv 76663 / gcd s93555 "Batman Arkham: Two-Face" (issue 1491108) COLLECTS: gcd=87 Detective Comics (1937) #66, #68, #80, #513, #563-564 · gcd=141 Batman (1940) #234, #346, #397-398 · gcd=5228 Batman: Two-Face - Crime and Punishment (1995) (unnumbered) · gcd=60920 Batman and Robin (2011) #23.1
+
+== S35314 X-Men Giant-Size  [split]  8 files / 0 collections  decided in C-037 (R)
+   decided: R 35314 | this shelf buckets SEVEN separate "Giant-Size X-Men" one-shots (Jean Grey and Emma Frost CV125302/GCD156492, Nightcrawler CV126014/GCD158359, Magneto CV128617, Fantomex, Storm, Tribute to Wein & Cockrum — all 2020 — plus Hickman's 2021 one-shot CV132515/GCD175477 and the 2011 "X-Men Giant-Size" CV40207/GCD58656) — the round2-series ⚠ per-file picks stamp one of these one-shots' series across the others, which is why the packet shows only 3 distinct GCD picks for 8 files naming 7 different comics
+   F 35314 split-needed | see R clause for each one-shot's own ids where known
+   N 35314 no-collections | 0 collected editions on this shelf (each file is its own one-shot)
+   nearby: S7542 "Giant-Size X-Men" 16f [title — S cv=2763 gcd=211959 (C-036 0.9)] keys: "Giant Sized X-Men" | "Giant-Size X-Men"
+   nearby: S7545 "Giant-Size X-Men: Tribute To Wein & Cockrum" 2f [title — S cv=130761 (C-036 0.7)] keys: "Giant-Size X-Men - Tribute To Wein and Cockrum"
+   nearby: S7517 "Giant-Size Astonishing X-Men" 1f [title+1 — S cv=21710 gcd=30925 (A-027 0.95)] keys: "Giant-Size Astonishing X-Men"
+   nearby: S7544 "Giant-Size X-Men: Thunderbird" 1f [title+1 — S cv=142761 gcd=184875 (B-049 0.95)] keys: "Giant-Size X-Men - Thunderbird"
+   nearby: S22367 "X-Men Forever Giant Size" 1f [title+1 — S cv=33569 gcd=49509 (B-062 0.95)] keys: "X-Men Forever Giant-Size"
+   keys now: "Giant-Size X-Men: Jean Grey And Emma Frost" x1 · "Giant-Size X-Men: Nightcrawler" x1 · "Giant-Size X-Men: Magneto (2020)" x1 · "Giant-Size X-Men: Fantomex (2020)" x1 · "Giant-Size X-Men: Storm (2020)" x1 · "Giant-Size X-Men: Tribute To Wein & Cockrum (2020)" x1 · "Giant-Size X-Men by Jonathan Hickman" x1 · "X-Men Giant-Size" x1
+   groups (title x folder): 8
+   G1 "Giant-Size X-Men - Fantomex" in Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2020.02.26 - Giant Sized X-Men One-Shots — 1 file(s), numbers 1, pp 31-31; cv per-file 40207x1; gcd per-file 156492x1; key 'Giant-Size X-Men: Fantomex (2020)'
+      [49508] 04 Giant-Size X-Men - Fantomex 001 (2020) (Digital) (Zone-Empire).cbr (31pp)
+   G2 "Giant-Size X-Men - Jean Grey And Emma Frost" in Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2020.02.26 - Giant Sized X-Men One-Shots — 1 file(s), numbers 1, pp 35-35; cv per-file 125302x1; gcd per-file 156492x1; key 'Giant-Size X-Men: Jean Grey And Emma Frost'
+      [49505] 01 Giant-Size X-Men - Jean Grey And Emma Frost 001 (2020) (Digital) (Zone-Empire).cbr (35pp)
+   G3 "Giant-Size X-Men - Magneto" in Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2020.02.26 - Giant Sized X-Men One-Shots — 1 file(s), numbers 1, pp 31-31; cv per-file 40207x1; gcd per-file 156492x1; key 'Giant-Size X-Men: Magneto (2020)'
+      [49507] 03 Giant-Size X-Men - Magneto 001 (2020) (Digital) (Zone-Empire).cbr (31pp)
+   G4 "Giant-Size X-Men - Nightcrawler" in Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2020.02.26 - Giant Sized X-Men One-Shots — 1 file(s), numbers 1, pp 33-33; cv per-file 126014x1; gcd per-file 158359x1; key 'Giant-Size X-Men: Nightcrawler'
+      [49506] 02 Giant-Size X-Men - Nightcrawler 001 (2020) (Digital) (Zone-Empire).cbr (33pp)
+   G5 "Giant-Size X-Men - Storm" in Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2020.02.26 - Giant Sized X-Men One-Shots — 1 file(s), numbers 1, pp 35-35; cv per-file 40207x1; gcd per-file 156492x1; key 'Giant-Size X-Men: Storm (2020)'
+      [49509] 05 Giant-Size X-Men - Storm 001 (2020) (Digital) (Zone-Empire).cbr (35pp)
+   G6 "Giant-Size X-Men - Tribute to Wein & Cockrum" in Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2020.02.26 - Giant Sized X-Men One-Shots — 1 file(s), numbers 1, pp 43-43; cv per-file 40207x1; gcd per-file 156492x1; key 'Giant-Size X-Men: Tribute To Wein & Cockrum (2020)'
+      [49510] 06 Giant-Size X-Men - Tribute to Wein & Cockrum 001 (2020) (Digital) (Zone-Empire).cbr (43pp)
+   G7 "Giant-Size X-Men by Jonathan Hickman (2021) (Digital) (Kileko-Empire)" in Marvel\_X-Men\X-Men\07 X-Men v5 (2019) (Krakoa) — 1 file(s), pp 161-161; cv per-file 40207x1; key 'Giant-Size X-Men by Jonathan Hickman'
+      [86032] Giant-Size X-Men by Jonathan Hickman (2021) (Digital) (Kileko-Empire).cbz (161pp)
+   G8 "X-Men Giant-Size" in Marvel\_X-Men\_X-Men Complete Chronology V2\0927 First To Last — 1 file(s), numbers 1, pp 33-33; cv per-file 40207x1; gcd per-file 58656x1; key 'X-Men Giant-Size'
+      [91814] 002 X-Men Giant-Size 001 (2011) (Digital) (Cypher-Empire).cbr (33pp)
+
+== S66171 Unnatural  [split]  8 files / 3 collections  decided in C-033 (R)
+   decided: R 66171 | this shelf mixes the original "Unnatural" 2018 Image 12-issue run (three collected volumes) with its separately-published sequel "Unnatural: Blue Blood" 2022 (5 floppy issues) — two co-equal, separately-numbered runs
+   F 66171 split-needed | Unnatural (2018) cv=112060 gcd=126503; Unnatural: Blue Blood (2022) cv=143182 gcd=185517
+   nearby: S20808 "Unnatural Order" 1f [title+1 — S cv=156068 gcd=205470 (A-031 0.9)] keys: "Unnatural Order - The Prisoner"
+   keys now: "Unnatural (2018)" x3 · "Unnatural - Blue Blood (2022)" x3 · "Unnatural - Blue Blood (2018)" x2
+   groups (title x folder): 2
+   G1 "Unnatural" in Image\Unnatural (2018)\Unnatural v1 (2018) — 3 file(s), 3 COL, pp 105-112; cv per-file 112060x3; gcd per-file 133774x3; key 'Unnatural (2018)'
+      [33154] COL Unnatural Vol. 01 - Awakening (2018) (Digital) (DrDoom-Empire).cbz (112pp)
+      [33155] COL Unnatural Vol. 02 - The Hunt (2019) (Digital) (DrDoom-Empire).cbz (112pp)
+      [33156] COL Unnatural Vol. 03 - Rebirth (2019) (DrDoom-Empire).cbz (105pp)
+   G2 "Unnatural - Blue Blood" in Image\Unnatural (2018)\Unnatural v2 - Blue Blood (2022) — 5 file(s), numbers 1-5, pp 28-33; cv per-file 143182x3, 112060x2; gcd per-file 185517x5; key 'Unnatural - Blue Blood (2022)' | 'Unnatural - Blue Blood (2018)'
+      e.g. Unnatural - Blue Blood 001 (2022) (Digital) (Zone-Empire).cbr
+        33157 #1 2022 29pp key="Unnatural - Blue Blood (2022)" · 33158 #2 2022 32pp key="Unnatural - Blue Blood (2022)" · 33159 #3 2022 32pp key="Unnatural - Blue Blood (2022)"
+        33160 #4 2022 33pp key="Unnatural - Blue Blood (2018)" · 33161 #5 2023 28pp key="Unnatural - Blue Blood (2018)"
+
+== S102419 Wolverine Annual  [split]  8 files / 0 collections  decided in C-055 (R)
+   decided: R 102419 | this shelf bundles 8 separate year-specific "Wolverine Annual" one-shots (1995, 1996, 1997, 1999, 2001, 2002, 2012, 2014) with no spanning CV/GCD record — GCD/CV mint a fresh one-shot per annual year, the Archie-holiday shape; the stored CV link (69993, Panini's Italian ongoing) is wrong for all eight
+   F 102419 split-needed | eight distinct annual-year one-shots, none dominant; candidate search for each surfaced only unrelated later years (2007/2012/2014/2019/2024), never our own eight
+   nearby: S101459 "Wolverine" 38f [shares gcd=78901 — S cv=71431 gcd=78901 (C-052 0.95)] keys: "Wolverine v6 (2014)"
+   keys now: "Wolverine Annual" x8
+   groups (title x folder): 8
+   G1 "Wolverine Annual '95 (1995) (Digital) (AnHeroGold-Empire)" in Marvel\_X-Men\_X-Men Complete Chronology V2\0251 Unnamed — 1 file(s), numbers 2, pp 56-56; cv per-file 69993x1; gcd per-file 182538x1; key 'Wolverine Annual'
+      [88258] 002 Wolverine Annual '95 (1995) (Digital) (AnHeroGold-Empire).cbz (56pp)
+   G2 "Wolverine Annual '96 (1996) (noads) (DarthMedio-DCP)" in Marvel\_X-Men\_X-Men Complete Chronology V2\0287 Untitled — 1 file(s), numbers 5, pp 53-53; cv per-file 69993x1; gcd per-file 42101x1; key 'Wolverine Annual'
+      [88392] 005 Wolverine Annual '96 (1996) (noads) (DarthMedio-DCP).cbr (53pp)
+   G3 "Wolverine Annual '97 (1997) (noads) (DarthMedio-DCP)" in Marvel\_X-Men\_X-Men Complete Chronology V2\0334 Untitled — 1 file(s), numbers 2, pp 38-38; cv per-file 69993x1; gcd per-file 42101x1; key 'Wolverine Annual'
+      [88675] 002 Wolverine Annual '97 (1997) (noads) (DarthMedio-DCP).cbr (38pp)
+   G4 "Wolverine Annual '99 (1999) (Digital) (AnHeroGold-Empire)" in Marvel\_X-Men\_X-Men Complete Chronology V2\0390 Unnamed — 1 file(s), numbers 1, pp 36-36; cv per-file 69993x1; gcd per-file 173283x1; key 'Wolverine Annual'
+      [88929] 001 Wolverine Annual '99 (1999) (Digital) (AnHeroGold-Empire).cbz (36pp)
+   G5 "Wolverine Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0762 Untitled — 1 file(s), numbers 1, pp 37-37; cv per-file 69993x1; gcd per-file 183832x1; key 'Wolverine Annual'
+      [90778] 003 Wolverine Annual 01 (2007) (digital) (Minutemen-Slayer).cbr (37pp)
+   G6 "Wolverine Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0801 Family Business — 1 file(s), numbers 2, pp 35-35; cv per-file 69993x1; key 'Wolverine Annual'
+      [91094] 006 Wolverine Annual 002 .cbz (35pp)
+   G7 "Wolverine Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0991 Clandestine — 1 file(s), numbers 1, pp 40-40; cv per-file 69993x1; gcd per-file 67091x1; key 'Wolverine Annual'
+      [92158] 003 Wolverine Annual 001 (2012) (Digital) (Cypher-Empire).cbr (40pp)
+   G8 "Wolverine Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\1101 3 Months to Die — 1 file(s), numbers 1, pp 32-32; cv per-file 69993x1; gcd per-file 78901x1; key 'Wolverine Annual'
+      [92735] 006 Wolverine Annual 01 (2014) (digital) (Minutemen-PhD).cbr (32pp)
+
+== S3110 Borderlands  [split]  9 files / 0 collections  decided in C-028 (R)
+   decided: R 3110 | two co-equal 4-issue minis under one shelf key: "The Fall of Fyrestone" (4 files, CV 75738/GCD dump none directly, "(of 04)") and "Tannis & The Vault" (4 files + 1 variant, CV 78876/GCD 87532, "(of 04)") — both restart at #1, each has its own record, neither subsumes the other
+   F 3110 split-needed | Fall of Fyrestone cv=75738 gcd=-; Tannis & The Vault cv=78876 gcd=87532
+   keys now: "Borderlands" x9
+   groups (title x folder): 2
+   G1 "Borderlands" in IDW\Borderlands — 8 file(s), numbers 1-4, pp 24-26; gcd per-file 74565x4, 102257x2; key 'Borderlands'
+      e.g. Borderlands 001 - The Fall of Fyrestone 01 (of 04) (2014) (digital) (DR & Quinch-Empire).cbr
+        30387 #1 2014 26pp · 30388 #2 2014 25pp · 30389 #3 2014 25pp · 30390 #4 2014 24pp
+      [30391] Borderlands 005 - Tannis & The Vault 01 (2014) (Digital) (DR & Quinch-Empire).cbr (26pp)
+      [30392] Borderlands 006 - Tannis & The Vault 02 (2015) (Digital) (DR & Quinch-Empire).cbr (26pp)
+      [30393] Borderlands 007 - Tannis & The Vault 03 (2015) (Digital) (DR & Quinch-Empire).cbr (26pp)
+      [30394] Borderlands 008 - Tannis & The Vault 04 (2015) (Digital) (DR & Quinch-Empire).cbr (25pp)
+   G2 "Borderlands" in IDW\Borderlands\Variant Covers — 1 file(s), numbers 4, pp 1-1; key 'Borderlands'
+      [31756] Borderlands 008 - Tannis & The Vault 04 (2015) (digital) (Roberto Goiriz Subscription variant) (Minutemen-Mastodon).cbz (1pp)
+
+== S4772 Danger Girl  [split]  9 files / 1 collections  decided in C-028 (R)
+   decided: R 4772 | Danger Girl franchise folder holding several separately-published one-shots/minis under one DC-era CV 6841 stamp: Back in Black, Mayday, The Chase, Trinity, Revolver (each its own one-shot, CV candidates 78060/72420/68126/49536), the Renegade mini (3 files, CV 84266/GCD 92152, 4 issues), and a Deluxe Edition collecting the 1998 original — genuinely several runs/one-shots, not one comic
+   F 4772 split-needed | Renegade cv=84266 gcd=92152; each one-shot (Back in Black/Mayday/The Chase/Trinity/Revolver) its own singleton CV id; the Deluxe Edition collects the 1998 DC original cv=6841
+   keys now: "Danger Girl - Renegade" x3 · "Danger Girl - Back in Black" x1 · "Danger Girl - Mayday" x1 · "Danger Girl: Revolver" x1 · "Danger Girl - The Chase" x1 · "Danger Girl" x1 · "Danger Girl - Trinity" x1
+   groups (title x folder): 7
+   G1 "Danger Girl - Back in Black (2014) (Digital) (DR & Quinch-Empire)" in IDW\Danger Girl (1998) — 1 file(s), pp 99-99; cv per-file 6841x1; key 'Danger Girl - Back in Black'
+      [30432] Danger Girl - Back in Black (2014) (Digital) (DR & Quinch-Empire).cbr (99pp)
+   G2 "Danger Girl - Mayday (2014) (Digital) (DR & Quinch-Empire)" in IDW\Danger Girl (1998) — 1 file(s), pp 101-101; cv per-file 6841x1; key 'Danger Girl - Mayday'
+      [30434] Danger Girl - Mayday (2014) (Digital) (DR & Quinch-Empire).cbr (101pp)
+   G3 "Danger Girl - Revolver (2012) (digital) (The Magicians-Empire)" in IDW\Danger Girl (1998) — 1 file(s), pp 100-100; cv per-file 6841x1; key 'Danger Girl: Revolver'
+      [30438] Danger Girl - Revolver (2012) (digital) (The Magicians-Empire).cbr (100pp)
+   G4 "Danger Girl - The Chase (2014) (digital) (DR & Quinch-Empire)" in IDW\Danger Girl (1998) — 1 file(s), pp 103-103; cv per-file 6841x1; key 'Danger Girl - The Chase'
+      [30439] Danger Girl - The Chase (2014) (digital) (DR & Quinch-Empire).cbr (103pp)
+   G5 "Danger Girl - The Deluxe Edition (2010) (digital) (The Magicians-Empire)" in IDW\Danger Girl (1998) — 1 file(s), 1 COL, pp 256-256; cv per-file 6841x1; gcd per-file 220324x1; key 'Danger Girl'
+      [30440] COL Danger Girl - The Deluxe Edition (2010) (digital) (The Magicians-Empire).cbr (256pp)
+   G6 "Danger Girl - Trinity (2013) (digital) (DR & Quinch-Empire)" in IDW\Danger Girl (1998) — 1 file(s), pp 104-104; cv per-file 6841x1; key 'Danger Girl - Trinity'
+      [30441] Danger Girl - Trinity (2013) (digital) (DR & Quinch-Empire).cbr (104pp)
+   G7 "Danger Girl - Renegade" in IDW\Danger Girl (1998)\Danger Girl - Renegade — 3 file(s), numbers 1-3, pp 23-24; cv per-file 6841x3; gcd per-file 92152x3; key 'Danger Girl - Renegade'
+      [30435] Danger Girl - Renegade 01 (of 04) (2015) (2 covers) (digital) (Minutemen-Ogie).cbz (23pp)
+      [30436] Danger Girl - Renegade 02 (of 04) (2015) (3 covers) (digital) (Minutemen-Ogie).cbz (24pp)
+      [30437] Danger Girl - Renegade 03 (of 04) (2015) (2 covers) (digital) (Minutemen-Ogie).cbz (23pp)
+
+== S7537 Giant-Size Spider-Man  [split]  9 files / 0 collections  decided in C-050 (R)
+   decided: R 7537 | three different "Giant-Size Spider-Man" comics share this bare title across decades: the 1974 5-issue miniseries (CV 2686/GCD 2172, our #1-5 ladder), the 2024 one-shot (CV 155967/GCD 207767, 4 files incl. variants), and the 2014 one-shot (CV 74329/GCD 80987) — the same-bare-title-different-decade shape, years decide
+   F 7537 split-needed | proposed: 1974 mini (CV 2686/GCD 2172), 2024 one-shot (CV 155967/GCD 207767), 2014 one-shot (CV 74329/GCD 80987)
+   keys now: "Giant-Size Spider-Man (2024)" x4 · "Giant-Size Spider-Man (1974)" x4 · "Giant-Size Spider-Man" x1
+   groups (title x folder): 4
+   G1 "Giant-Size Spider-Man" in Marvel\#MARVEL CURRENT ONGOING TITLES\Giant-Sized 50th Anniversary (2024) — 1 file(s), numbers 1, pp 41-41; cv per-file 155967x1; gcd per-file 207767x1; key 'Giant-Size Spider-Man (2024)'
+      [47810] 01 Giant-Size Spider-Man 001 (2024) (Digital) (Shan-Empire).cbz (41pp)
+   G2 "Giant-Size Spider-Man" in Marvel\#MARVEL CURRENT ONGOING TITLES\Giant-Sized 50th Anniversary (2024)\Variant Covers — 2 file(s), numbers 1, pp 1-1; cv per-file 155967x2; gcd per-file 207767x2; key 'Giant-Size Spider-Man (2024)'
+      [47827] Giant-Size Spider-Man 001 (2024) (Alexander Lozano Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47828] Giant-Size Spider-Man 001 (2024) Jeehyung Lee Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+   G3 "Giant-Size Spider-Man" in Marvel\#MARVEL CURRENT ONGOING TITLES\Miles Morales - Spider-Man v2 (2022)\Annuals and Specials — 1 file(s), numbers 1, pp 41-41; cv per-file 155967x1; gcd per-file 207767x1; key 'Giant-Size Spider-Man (2024)'
+      [48129] Giant-Size Spider-Man 001 (2024) (Digital) (Shan-Empire).cbz (41pp)
+   G4 "Giant-Size Spider-Man" in Marvel\_Spider-Man\__Amazing Spider-Man\00 Annuals and Specials — 5 file(s), numbers 1-5, pp 28-62; cv per-file 2686x4, 74329x1; gcd per-file 2172x4, 80987x1; key 'Giant-Size Spider-Man' | 'Giant-Size Spider-Man (1974)'
+      e.g. Giant-Size Spider-Man 001 (2014) (Digital) (Shadowcat-Empire).cbz
+        93892 #1 2014 62pp key="Giant-Size Spider-Man" · 93893 #2 1974 32pp key="Giant-Size Spider-Man (1974)" · 93894 #3 1975 56pp key="Giant-Size Spider-Man (1974)"
+        93895 #4 1975 28pp key="Giant-Size Spider-Man (1974)" · 93896 #5 1975 31pp key="Giant-Size Spider-Man (1974)"
+
+== S9766 James Bond  [split]  9 files / 7 collections  decided in C-024 (R)
+   decided: R 9766 | the overlap-in-series flag is TRUE: at least three separate "James Bond" Dynamite ladders share this shelf — the original 2015-2017 ongoing collected as Vol.01-03 "Vargr"/"Eidolon"/"Black Box" (CV 85766/GCD 103503), the 2019-2020 "James Bond 007" sub-line (CV 123253/GCD 118633, items 21171, 21900-21901), and the 2024 mini (GCD 207986, floppies #005-006); "Big Things" (item 21172) is a separate one-off
+   F 9766 split-needed | run A = original 2015-2017 ongoing (CV 85766/GCD 103503); run B = "James Bond 007" 2019-2020 sub-line (CV 123253/GCD 118633); run C = 2024 mini (GCD 207986, cv=- not confirmed)
+   N 9766 cv=85766 gcd=103503 | original 2015-2017 "James Bond" ongoing, this shelf's Vol.01-03 trades (items 21182, 21183, 21908)
+   N 9766 cv=123253 gcd=118633 | "James Bond 007" 2019-2020 sub-line, items 21171, 21900, 21901
+   N 9766 cv=- gcd=207986 | 2024 "James Bond" mini, this shelf's #005-006 floppies (items 21168-21169)
+   N 9766 cv=- gcd=- | "James Bond - Big Things" (2021 trade, item 21172) — no confirmed record in the packet
+   nearby: S9770 "James Bond: 007" 5f [shares gcd=207986 — S cv=156204 gcd=207986 (R-024 0.95)] keys: "James Bond: 007"
+   nearby: S9777 "James Bond: Origin" 2f [title+1 — S cv=113242 gcd=128755 (B-022 0.95)] keys: "James Bond: Origin"
+   nearby: S9768 "James Bond: Himeros" 1f [title+1 — S cv=139610 gcd=176879 (B-022 0.95)] keys: "James Bond - Himeros" · S9769 "James Bond: M" 1f [title+1 — S cv=108819 gcd=122388 (B-022 0.95)] keys: "James Bond - M"
+   nearby: S9774 "James Bond: Hammerhead" 1f [title+1 — S cv=94804 gcd=108225 (B-022 0.95)] keys: "James Bond: Hammerhead"
+   keys now: "James Bond" x9
+   groups (title x folder): 7
+   G1 "James Bond" in Dynamite\James Bond (2016)\James Bond v3 (2024) — 2 file(s), numbers 5-6, pp 22-24; cv per-file 85766x2; gcd per-file 207986x2; key 'James Bond'
+      [21168] James Bond 005 (2024) (digital) (Son of Ultron-Empire).cbr (24pp)
+      [21169] James Bond 006 (2024) (digital) (Son of Ultron-Empire).cbr (22pp)
+   G2 "James Bond - Big Things (2021) (digital) (The Magicians-Empire)" in Dynamite\James Bond (2016)\_Completed series, minis and trades — 1 file(s), 1 COL, pp 154-154; cv per-file 85766x1; key 'James Bond'
+      [21172] COL James Bond - Big Things (2021) (digital) (The Magicians-Empire).cbr (154pp)
+   G3 "James Bond 007" in Dynamite\James Bond (2016)\_Completed series, minis and trades\James Bond - 007 v1 (2018) — 1 file(s), 1 COL, pp 169-169; cv per-file 123253x1; gcd per-file 118633x1; key 'James Bond'
+      [21171] COL James Bond 007 Vol. 02 (2020) (digital) (The Magicians II-Empire).cbr (169pp)
+         own record cv 123253 / gcd s118633 "James Bond" (issue 1966700) COLLECTS: gcd=112484 James Bond (2017) #1-6  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+   G4 "James Bond - 007" in Dynamite\James Bond (2016)\_Completed series, minis and trades\James Bond - 007 v2 (2022) — 1 file(s), 1 COL, pp 155-155; cv per-file 85766x1; gcd per-file 118633x1; key 'James Bond'
+      [21900] COL James Bond - 007, Book 01 - Myrmidon (2024) (digital) (The Magicians-Empire).cbr (155pp)
+         own record cv 85766 / gcd s118633 "James Bond" (issue 1822506) COLLECTS: gcd=93664 James Bond (2015) #7-12  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+   G5 "James Bond - 007" in Dynamite\James Bond (2016)\_Completed series, minis and trades\James Bond - 007, For King and Country (2023) — 1 file(s), 1 COL, pp 172-172; cv per-file 85766x1; gcd per-file 118633x1; key 'James Bond'
+      [21901] COL James Bond - 007, Book 02 - For King and Country (2024) (digital) (The Magicians-Empire).cbr (172pp)
+         own record cv 85766 / gcd s118633 "James Bond" (issue 1822506) COLLECTS: gcd=93664 James Bond (2015) #7-12  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+   G6 "James Bond" in Dynamite\James Bond (2016)\_Completed series, minis and trades\James Bond v1 (2016) — 2 file(s), 2 COL, pp 151-174; cv per-file 85766x2; gcd per-file 103503x1, 121303x1; key 'James Bond'
+      [21182] COL James Bond Vol. 01 - Vargr (2016) (digital) (F) (The Magicians-Empire).cbr (174pp)
+         own record cv 85766 / gcd s103503 "James Bond" (issue 1584312) COLLECTS: gcd=93664 James Bond (2015) #1-6
+      [21183] COL James Bond Vol. 02 - Eidolon (2017) (digital) (The Magicians II-Empire).cbr (151pp)
+   G7 "James Bond" in Dynamite\James Bond (2016)\_Completed series, minis and trades\James Bond v2 (2019) — 1 file(s), 1 COL, pp 179-179; cv per-file 85766x1; gcd per-file 118633x1; key 'James Bond'
+      [21908] COL James Bond Vol. 03 - Black Box (2017) (digital) (The Magicians II-Empire).cbr (179pp)
+         own record cv 85766 / gcd s118633 "James Bond" (issue 1966700) COLLECTS: gcd=112484 James Bond (2017) #1-6
+
+== S9810 Jennifer Blood  [split]  9 files / 6 collections  decided in B-022 (R)
+   decided: R 9810 | this is a bucket of four different comics, and the packet's own overlap-in-series flag says why: 21195 "First Blood (2013)" is the trade of Jennifer Blood: First Blood (CV 52061, 2012, 6 issues); 21194 "Born Again (2015)" is a trade of the 2011 ongoing (CV 39051 / GCD 55884, 36 issues); 21196 is a 33pp 2022 one-shot, "Jennifer Blood Presents Giulietta Romeo - Hitwoman", whose ComicInfo names it as a One Shot; and 21202 "COL Jennifer Blood v01 (2022)" belongs to the 2021 relaunch (CV 139493 / GCD 176644, 10 issues) that S9811 already carries — linking the stored CV 39051 would stamp the 2011 ongoing on all four
+   F 9810 split-needed | proposed: the 2011 ongoing cv 39051 / gcd 55884 (item 21194); First Blood cv 52061 (item 21195); the 2022 Giulietta Romeo one-shot (item 21196); and the 2021 relaunch cv 139493 / gcd 176644 (item 21202), which duplicates S9811's run
+   named: S9811 Jennifer Blood  1 files  keys: "Jennifer Blood - Blood Debt"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Jennifer Blood v1 (2011)" x5 · "Jennifer Blood" x4
+   groups (title x folder): 5
+   G1 "Jennifer Blood - Born Again (2015) (Digital) (DR & Quinch II-Empire)" in Dynamite\Jennifer Blood — 1 file(s), pp 137-137; cv per-file 39051x1; key 'Jennifer Blood'
+      [21194] Jennifer Blood - Born Again (2015) (Digital) (DR & Quinch II-Empire).cbr (137pp)
+   G2 "Jennifer Blood - First Blood (2013) (Digital) (DR & Quinch II-Empire)" in Dynamite\Jennifer Blood — 1 file(s), pp 154-154; cv per-file 39051x1; key 'Jennifer Blood'
+      [21195] Jennifer Blood - First Blood (2013) (Digital) (DR & Quinch II-Empire).cbr (154pp)
+   G3 "Jennifer Blood Presents Giulietta Romeo - Hitwoman (2022) (3 covers) (Digital) (DR & Quinch-Empire)" in Dynamite\Jennifer Blood — 1 file(s), pp 33-33; cv per-file 39051x1; key 'Jennifer Blood'
+      [21196] Jennifer Blood Presents Giulietta Romeo - Hitwoman (2022) (3 covers) (Digital) (DR & Quinch-Empire).cbr (33pp)
+   G4 "Jennifer Blood" in Dynamite\Jennifer Blood\Jennifer Blood v1 (2011) — 5 file(s), 5 COL, pp 136-298; cv per-file 39051x5; gcd per-file 65827x2, 81058x1, 161609x1; key 'Jennifer Blood v1 (2011)'
+      [21197] COL Jennifer Blood Vol. 01 - A Woman's Work is Never Done (2012) (digital) (DR & Quinch-Empire).cbr (169pp)
+      [21198] COL Jennifer Blood Vol. 02 - Beautiful People (2012) (Digital) (DR & Quinch-Empire).cbr (162pp)
+      [21199] COL Jennifer Blood Vol. 03 - Neither Tarnished Nor Afraid (2013) (Digital) (DR & Quinch-Empire).cbr (143pp)
+      [21200] COL Jennifer Blood Vol. 04 - The Trial of Jennifer Blood (2013) (Digital) (DR & Quinch-Empire).cbr (136pp)
+         own record cv 39051 / gcd s161609 "Jennifer Blood" (issue 2124783) COLLECTS: gcd=55884 Jennifer Blood (2011) #19-24
+      [21201] COL Jennifer Blood Vol. 05 - Blood Legacy (2014) (Digital) (DR & Quinch-Empire).cbr (298pp)
+   G5 "Jennifer Blood" in Dynamite\Jennifer Blood\Jennifer Blood v2 (2021) — 1 file(s), 1 COL, pp 149-149; cv per-file 39051x1; key 'Jennifer Blood'
+      [21202] COL Jennifer Blood v01 (2022) (Digital) (DR & Quinch-Empire).cbr (149pp)
+
+== S14031 Powerless  [split]  9 files / 0 collections  decided in C-040 (R)
+   decided: R 14031 | two unrelated same-title "Powerless" runs share this shelf: Marvel's 2004 6-issue limited series (CV 11364/GCD 12317, our ladder 1-6) and Vault Comics' 2017 4-issue series (CV 99499/GCD 112989, our #1-3); both whole-floppy runs, not residue (3 whole Vault issues)
+   F 14031 split-needed | Marvel Powerless (2004) = CV 11364/GCD 12317; Vault Powerless (2017) = CV 99499/GCD 112989; the per-file matcher stamped the Marvel volume across all 9 files including the Vault ones
+   keys now: "Powerless" x9
+   groups (title x folder): 2
+   G1 "Powerless" in Marvel\Powerless v1 (2004) — 6 file(s), numbers 1-6, pp 23-26; cv per-file 11364x6; gcd per-file 12317x6; key 'Powerless'
+      e.g. Powerless 001 (2004) (Digital) (Shadowcat-Empire).cbz
+        102339 #1 2004 23pp · 102340 #2 2004 24pp · 102341 #3 2004 24pp · 102342 #4 2004 24pp · 102343 #5 2004 24pp · 102344 #6 2004 26pp
+   G2 "Powerless" in Vault\Powerless (2017) — 3 file(s), numbers 1-3, pp 32-34; cv per-file 11364x3; gcd per-file 112989x3; key 'Powerless'
+      [112212] Powerless 001 (2017) (digital) (Son of Ultron-Empire).cbr (34pp)
+      [112213] Powerless 002 (2017) (digital) (Son of Ultron-Empire).cbr (34pp)
+      [112214] Powerless 003 (2017) (digital) (Son of Ultron-Empire).cbr (32pp)
+
+== S14285 Queen & Country: Declassified  [split]  9 files / 0 collections  decided in B-065 (R)
+   decided: R 14285 | this shelf is three separate three-issue Queen & Country: Declassified minis in three sibling folders, each numbered 01-03 — v1 (2002-2003), v2 (2005-2006) and v3 (2005) — which is why all three numbers name more than one file and the ratio is 9/3; ComicVine holds four records (19295 2002, 94244 2003, 19297 and 19298 both 2005) and GCD four (47080 2002-2003, 72798 2003-2006, 60966 2005-2006, 60967 2005), so applying any one of them would hand the other two minis its identity
+   F 14285 split-needed | proposed runs: v1 cv=19295 gcd=47080 (2002-2003), v2 cv=19298 gcd=60966 (2005-2006), v3 cv=19297 gcd=60967 (2005); the parent ongoing is CV 9333 / GCD 10112 "Queen & Country" 2001 Oni Press count 32
+   N 14285 cv=19295 gcd=47080 for the v1 files; the 2003 CV record 94244 and GCD 72798 are a further pair of the same shape and need the folder years to tell apart
+   nearby: S14284 "Queen & Country" 8f [shares cv=9333 — S cv=9333 gcd=32367 (C-060 0.9)] keys: "Queen and Country"
+   keys now: "Queen and Country - Declassified" x9
+   groups (title x folder): 3
+   G1 "Queen & Country - Declassified" in Oni Press\Queen & Country\Queen & Country - Declassified v1 (2002) — 3 file(s), numbers 1-3, pp 29-37; cv per-file 19295x3; key 'Queen and Country - Declassified'
+      [108860] Queen & Country - Declassified v1 01 (of 03) (2002) (Mr_Xcitement-OCD).cbr (29pp)
+      [108861] Queen & Country - Declassified v1 02 (of 03) (2002) (Mr_Xcitement-OCD).cbr (37pp)
+      [108862] Queen & Country - Declassified v1 03 (of 03) (2003) (Mr_Xcitement-OCD).cbr (32pp)
+   G2 "Queen & Country - Declassified" in Oni Press\Queen & Country\Queen & Country - Declassified v2 (2005) — 3 file(s), numbers 1-3, pp 26-34; cv per-file 19295x3; key 'Queen and Country - Declassified'
+      [108863] Queen & Country - Declassified v2 01 (of 03) (2005) (DCBabes-DCP).cbr (34pp)
+      [108864] Queen & Country - Declassified v2 02 (of 03) (2005) (DCBabes-DCP).cbr (28pp)
+      [108865] Queen & Country - Declassified v2 03 (of 03) (2006) (Team-DCP).cbr (26pp)
+   G3 "Queen & Country - Declassified" in Oni Press\Queen & Country\Queen & Country - Declassified v3 (2005) — 3 file(s), numbers 1-3, pp 26-30; cv per-file 19295x3; key 'Queen and Country - Declassified'
+      [108866] Queen & Country - Declassified v3 01 (of 03) (2005) (MrX-OCD).cbr (30pp)
+      [108867] Queen & Country - Declassified v3 02 (of 03) (2005) (TheCaptain-DCP).cbr (27pp)
+      [108868] Queen & Country - Declassified v3 03 (of 03) (2005) (DCBabes-DCP).cbr (26pp)
+
+== S15981 Spawn: Godslayer  [split]  9 files / 0 collections  decided in B-041 (S)
+   decided: S 15981 cv=19879 gcd=26454 0.9 | CV 19879 "Spawn: Godslayer" 2007 Image 8 and GCD 26454 "Spawn Godslayer" 2007-2008 Image [limited series] 8 agree on publisher, span and count, and our ladder 1-8 (2007-2008, 25-31pp) fills it exactly; the ninth file is a different comic, which caps this at 0.9
+   F 15981 split-needed | item 33816 "Spawn - Godslayer (2006)" 52pp is the 2006 prelude one-shot, its own comic in both providers (CV 19878 "Spawn Godslayer" 2006 Image count 1, issue 119067 / GCD 20683 2006-2006 Image count 1) and not part of the eight-issue 2007 mini
+   keys now: "Spawn - Godslayer" x9
+   groups (title x folder): 2
+   G1 "Spawn - Godslayer" in Image\Spawn (1992)\_Trades, Minis and One-shots\Spawn - Godslayer (2006) — 8 file(s), numbers 1-8, pp 25-31; cv per-file 19879x8; gcd per-file 26454x8; key 'Spawn - Godslayer'
+      e.g. Spawn - Godslayer 01 (2007) (Archangel-DCP).cbr
+        33817 #1 2007 25pp · 33818 #2 2007 27pp · 33819 #3 2007 27pp · 33820 #4 2007 27pp · 33821 #5 2007 31pp · 33822 #6 2008 28pp · 33823 #7 2008 26pp · 33824 #8 2008 27pp
+   G2 "Spawn - Godslayer (2006) (Digital) (Darkness-Empire)" in Image\Spawn (1992)\_Trades, Minis and One-shots\Spawn - Godslayer (2006) — 1 file(s), pp 52-52; cv per-file 19878x1; gcd per-file 20683x1; key 'Spawn - Godslayer'
+      [33816] Spawn - Godslayer (2006) (Digital) (Darkness-Empire).cbr (52pp)
+
+== S16260 Spider-Woman  [split]  8 files / 3 collections  decided in R-026 (R)
+   decided: R 16260 | a bucket of at least four different comics, none of which spans it: three Marvel Masterworks trades (items 83345, 83346, 95998), two duplicate rips of the 1978 run's #37-38 (items 86784-86785, whose own shelf is S94794), three issues of the 2015-2017 ongoing #9-11 (items 118220-118222, CV 86127 / GCD 94001, 17 issues) and the whole 2024 four-issue mini (items 118601-118624, CV 154933 / GCD 205753, 10 issues); the stored CV 2960 is the 1978-1983 run, of which this shelf holds two loose duplicate issues
+   F 16260 split-needed | proposed: the Masterworks line CV 86032 / GCD 93786 (4 volumes, our v1-v3); the 2016 ongoing CV 86127 / GCD 94001; the 2024 mini CV 154933 / GCD 205753; and the two 1978 issue files, which belong to S94794's run
+   F 16260 wrong-cv-link | stored CV 2960 "Spider-Woman" 1978 Marvel 50 is the 1978-1983 ongoing whose 42 issue files are S94794; on this mixed shelf it describes 2 of 12 files
+   N 16260 Masterworks Volume 1 also reprints Marvel Spotlight (1971) #32 and Marvel Two-in-One (1974) #29-33; those are single guest issues of other runs, named here rather than forced into a C range
+   named: S94794 Spider-Woman  42 files  keys: "Spider-Woman v1 (Jessica Drew) (1978)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65153 "Marvel Spotlight" 33f [shares gcd=1992 (collected by item 95998) — S cv=2516 gcd=1992 (C-039 0.95)] keys: "Marvel Spotlight (1971)" | "Marvel Spotlight v1 (1971)"
+   nearby: S99976 "Spider-Woman" 30f [shares cv=154933, shares gcd=205753 — S cv=154933 gcd=205753 (C-051 0.9)] keys: "Spider-Woman (2024)" | "Spider-Woman v8 (2024)"
+   nearby: S11496 "Marvel Masterworks: Spider-Woman" 2f [shares cv=86032, shares gcd=93786 — S cv=86032 gcd=93786 (B-057 0.95)] keys: "Marvel Masterworks - Spider-Woman"
+   nearby: S99975 "Spider-Woman" 18f [title — S cv=9573 gcd=10380 (B-059 0.95)] keys: "Spider-Woman v3 (1999)" · S99974 "Spider-Woman" 4f [title — S cv=5049 gcd=4735 (C-051 0.95)] keys: "Spider-Woman v2 (1993)"
+   nearby: S16262 "Spider-Woman" 3f [title — S cv=125812 gcd=157639 (C-065 0.9)] keys: "Spider-Woman (2020-)" · S94796 "Spider-Woman v7 (2020)" 3f [title — S gcd=173413 (C-051 0.9)] keys: "Spider-Woman v7 (2020)"
+   nearby: S16263 "Spider-Woman" 1f [title — S cv=28083 gcd=39711 (B-059 0.95)] keys: "Spider-Woman - Agent of S.W.O.R.D."
+   nearby: S16067 "Spider-Island: Spider-Woman" 1f [title+1 — S cv=42978 gcd=61080 (A-032 0.95)] keys: "Spider-Island - Spider-Woman"
+   nearby: S16266 "Spider-Woman: Origin" 1f [title+1 — S cv=18292 gcd=16464 (B-059 0.95)] keys: "Spider-Woman: Origin"
+   keys now: "Spider-Woman (1978)" x5 · "Spider-Woman Masterworks (1978)" x3
+   groups (title x folder): 4
+   G1 "Marvel Masterworks - Spider-Woman" in Marvel\_Marvel Masterworks\Spider-Woman v1 (1978) — 2 file(s), 2 COL, pp 288-321; cv per-file 86032x2; gcd per-file 93786x2; key 'Spider-Woman Masterworks (1978)'
+      [83345] COL Marvel Masterworks - Spider-Woman Vol. 02 (2021) (Digital) (Zone-Empire).cbr (321pp)
+         own record cv 86032 / gcd s93786 "Marvel Masterworks: Spider-Woman" (issue 2202254) COLLECTS: gcd=2461 Spider-Woman (1978) #9-25
+      [83346] COL Marvel Masterworks - Spider-Woman Vol. 03 (2022) (Digital-Empire).cbr (288pp)
+         own record cv 86032 / gcd s93786 "Marvel Masterworks: Spider-Woman" (issue 2473083) COLLECTS: gcd=2461 Spider-Woman (1978) #26-38
+   G2 "Spider-Woman Masterworks" in Marvel\_Spider-Woman\Spider-Woman v1 (Jessica Drew) (1978)\Trades — 1 file(s), 1 COL, pp 268-268; cv per-file 86032x1; gcd per-file 93786x1; key 'Spider-Woman Masterworks (1978)'
+      [95998] COL Spider-Woman Masterworks v1 (2015) (Digital) (TLK-EMPIRE-HD).cbr (268pp)
+         own record cv 86032 / gcd s93786 "Marvel Masterworks: Spider-Woman" (issue 1493150) COLLECTS: gcd=2461 Spider-Woman (1978) #1-8 · gcd=2182 Marvel Two-in-One (1974) #29-33 · gcd=1992 Marvel Spotlight (1971) #32
+   G3 "Spider-Woman" in Marvel\_X-Men\_X-Men Complete Chronology V2\0017 Untitled — 2 file(s), numbers 37-38, pp 23-23; cv per-file 2960x2; key 'Spider-Woman (1978)'
+      [86784] 008 Spider-Woman #037.cbz (23pp)
+      [86785] 009 Spider-Woman #038.cbz (23pp)
+   G4 "Spider-Woman" in _Marvel Major Event Chronology (digital)\2016.06 - Civil War II\02 Tie-Ins\Spider-Woman — 3 file(s), numbers 9-11, pp 23-24; cv per-file 2960x3; gcd per-file 94001x3; key 'Spider-Woman (1978)'
+      [118220] Spider-Woman 009 (2016) (Digital) (Zone-Empire).cbr (23pp)
+      [118221] Spider-Woman 010 (2016) (Digital) (Zone-Empire).cbr (23pp)
+      [118222] Spider-Woman 011 (2016) (Digital) (Zone-Empire).cbr (24pp)
+
+== S18229 The Cimmerian  [split]  9 files / 2 collections  decided in A-001 (R)
+   decided: R 18229 | this shelf is three separate Ablaze miniseries plus two trades, and no single volume identifies it: "The Cimmerian - Iron Shadows in the Moon" 001-003, "The Cimmerian - The Man-Eaters of Zamboula" 001-002 and "The Cimmerian - Beyond The Black River" 001-002 each number from #1 (which is why numbers 1 and 2 name more than one file), each sits in its own numbered subfolder (05, 06, 07), and Ablaze volumes them separately — CV 137572 is Man-Eaters, 132475 is The Frost-Giant's Daughter, 130028 is People of the Black Circle, and the sibling shelf S18230 holds Hour of the Dragon on CV 141892; the stored CV 132702 "The Cimmerian" (Ablaze 2020, 4 by the rip) and GCD 182686 (Ablaze 2021-, ongoing, 4) match none of those file groups by count, and applying either would hand one miniseries' identity to all three
+   F 18229 split-needed | proposed runs: Iron Shadows in the Moon (3 files), The Man-Eaters of Zamboula (2 files, CV 137572), Beyond the Black River (2 files), plus items 4706/4707 "COL The Cimmerian v01/v02" which are collected editions of the wider Cimmerian line
+   nearby: S18230 "The Cimmerian: Hour of the Dragon" 4f [shares cv=141892 (R clause), named S18230 in the decision's R/N lines — S cv=141892 gcd=182652 (A-001 0.95)] keys: "The Cimmerian - Hour of the Dragon"
+   keys now: "The Cimmerian" x9
+   groups (title x folder): 5
+   G1 "The Cimmerian" in Ablaze\The Cimmerian — 2 file(s), 2 COL, pp 144-168; cv per-file 132702x2; key 'The Cimmerian'
+      [4706] COL The Cimmerian v01 (2020) (Digital) (Bean-Empire).cbz (144pp)
+      [4707] COL The Cimmerian v02 (2021) (digital) (Son of Ultron-Empire).cbr (168pp)
+   G2 "The Cimmerian - Iron Shadows in the Moon" in Ablaze\The Cimmerian\05 The Cimmerian - Iron Shadows in the Moon (2021) — 3 file(s), numbers 1-3, pp 34-36; cv per-file 132702x3; gcd per-file 182686x3; key 'The Cimmerian'
+      [4695] The Cimmerian - Iron Shadows in the Moon 001 (2021) (digital) (NeverAngel-Empire).cbr (36pp)
+      [4696] The Cimmerian - Iron Shadows in the Moon 002 (2021) (digital) (NeverAngel-Empire).cbr (36pp)
+      [4697] The Cimmerian - Iron Shadows in the Moon 003 (2021) (digital) (NeverAngel-Empire).cbr (34pp)
+   G3 "The Cimmerian - The Man-Eaters of Zamboula" in Ablaze\The Cimmerian\06 The Cimmerian - The Man-Eaters of Zamboula (2021) — 2 file(s), numbers 1-2, pp 33-35; cv per-file 132702x2; gcd per-file 182686x2; key 'The Cimmerian'
+      [4698] The Cimmerian - The Man-Eaters of Zamboula 001 (2021) (digital) (NeverAngel-Empire).cbr (35pp)
+      [4699] The Cimmerian - The Man-Eaters of Zamboula 002 (2021) (digital) (NeverAngel-Empire).cbr (33pp)
+   G4 "The Cimmerian - Beyond The Black River" in Ablaze\The Cimmerian\07 The Cimmerian - Beyond The Black River (2021) — 1 file(s), numbers 1, pp 36-36; cv per-file 132702x1; gcd per-file 182686x1; key 'The Cimmerian'
+      [4700] The Cimmerian - Beyond The Black River 001 (2021) (digital) (NeverAngel-Empire).cbr (36pp)
+   G5 "The Cimmerian - Beyond the Black River" in Ablaze\The Cimmerian\07 The Cimmerian - Beyond The Black River (2021) — 1 file(s), numbers 2, pp 36-36; cv per-file 132702x1; gcd per-file 182686x1; key 'The Cimmerian'
+      [4701] The Cimmerian - Beyond the Black River 002 (2021) (digital) (NeverAngel-Empire).cbr (36pp)
+
+== S19741 Terminator: The Dark Years  [split]  9 files / 2 collections  decided in C-024 (R)
+   decided: R 19741 | this shelf mixes two distinct "Terminator" comics: the 1999 Dark Horse "Terminator: The Dark Years" 4-issue mini (CV 24191/GCD dump 42075, collected by the two Omnibus trades) and the 2024-2025 Dynamite "The Terminator" ongoing (CV 160331/GCD 216352, our #1-4 floppies plus three one-shots)
+   F 19741 split-needed | run A = 1999 Dark Horse "Terminator: The Dark Years" (CV 24191/GCD dump 42075), collected by items 13407-13408; run B = 2024-2025 Dynamite "The Terminator" ongoing (CV 160331/GCD 216352), items 22084-22090
+   N 19741 cv=24191 gcd=42075 | 1999 Dark Horse "Terminator: The Dark Years" 4-issue mini, Omnibus v01/v02 trades
+   N 19741 cv=160331 gcd=216352 | 2024-2025 Dynamite "The Terminator" ongoing, #1-4 floppies plus three one-shots (Death Valley, One Shot, Suicide Run)
+   keys now: "The Terminator" x9
+   groups (title x folder): 5
+   G1 "The Terminator Omnibus" in Dark Horse\Terminator — 2 file(s), 2 COL, pp 343-371; cv per-file 24191x2; key 'The Terminator'
+      [13407] COL The Terminator Omnibus v01 (2008) (digital) (F) (The Magicians-Empire).cbr (343pp)
+      [13408] COL The Terminator Omnibus v02 (2008) (digital) (The Magicians-Empire).cbr (371pp)
+   G2 "The Terminator - Death Valley (2024) (digital) (Son of Ultron-Empire)" in Dynamite\The Terminator — 1 file(s), pp 113-113; cv per-file 24191x1; key 'The Terminator'
+      [22088] The Terminator - Death Valley (2024) (digital) (Son of Ultron-Empire).cbr (113pp)
+   G3 "The Terminator - One Shot (2024) (digital) (Son of Ultron-Empire)" in Dynamite\The Terminator — 1 file(s), pp 52-52; cv per-file 24191x1; key 'The Terminator'
+      [22089] The Terminator - One Shot (2024) (digital) (Son of Ultron-Empire).cbr (52pp)
+   G4 "The Terminator - Suicide Run (2024) (digital) (Son of Ultron-Empire)" in Dynamite\The Terminator — 1 file(s), pp 13-13; cv per-file 24191x1; key 'The Terminator'
+      [22090] The Terminator - Suicide Run (2024) (digital) (Son of Ultron-Empire).cbr (13pp)
+   G5 "The Terminator" in Dynamite\The Terminator\The Terminator (2024) — 4 file(s), numbers 1-4, pp 33-35; cv per-file 160331x2, 24191x2; gcd per-file 216352x4; key 'The Terminator'
+      e.g. The Terminator 001 (2024) (4 covers) (digital) (Son of Ultron-Empire).cbr
+        22084 #1 2024 35pp · 22085 #2 2024 33pp · 22086 #3 2024 33pp · 22087 #4 2025 33pp
+
+== S64201 FF by Jonathan Hickman  [split]  9 files / 9 collections  decided in C-044 (R)
+   decided: R 64201 | shelf conflates three different Hickman lines: "FF by Jonathan Hickman" (our own name, 4 books, CV42957/GCD64712 or twin 218487), "Avengers by Jonathan Hickman: The Complete Collection" (3 books, CV129900/GCD164932), and "New Avengers by Jonathan Hickman" (2 books, own CV/GCD not probed) — genuinely different titles (Fantastic Four vs Avengers vs New Avengers), not one run
+   F 64201 split-needed | FF by Hickman = CV42957/GCD64712 (or twin 218487); Avengers Complete Collection = CV129900/GCD164932; New Avengers by Hickman = own record, not probed this pass
+   nearby:
+   nearby: S20672 "Uncanny Avengers" 55f [shares gcd=69005 (collected by item 52898) — S cv=52880 gcd=69005 (C-064 0.9)] keys: "Uncanny Avengers" | "Uncanny Avengers - Unity" | "Uncanny Avengers 008AU" | "Uncanny Avengers Annual" (+1 more: lookup.py --shelf 20672)
+   nearby: S9439 "Infinity" 10f [shares gcd=75977 (collected by item 52900) — S cv=66319 gcd=75977 (C-058 0.9)] keys: "Infinity" | "Infinity (2013)"
+   nearby: S64187 "Avengers" 9f [shares gcd=70263 (collected by item 52898) — S cv=54428 gcd=70263 (A-022 0.9)] keys: "Avengers (2020)" | "Avengers (2023)" | "Avengers v5 (2013)"
+   nearby: S94666 "New Avengers" 4f [shares gcd=70463 (collected by item 52898) — S cv=55330 gcd=70463 (C-041 0.9)] keys: "New Avengers v2 (2013)"
+   keys now: "Avengers by Jonathan Hickman: The Complete Collection (2011)" x4 · "Avengers by Jonathan Hickman: The Complete Collection (2020)" x3 · "New Avengers by Jonathan Hickman (2011)" x2
+   groups (title x folder): 3
+   G1 "Avengers by Jonathan Hickman - The Complete Collection" in Marvel\_Avengers\07 Hickman's Avengers (2013)\_Complete Collection — 3 file(s), 3 COL, pp 329-505; cv per-file 129900x3; gcd per-file 164932x3; key 'Avengers by Jonathan Hickman: The Complete Collection (2020)'
+      [52898] COL Avengers by Jonathan Hickman - The Complete Collection Book 01 (2020) (Digital) (EJGriffin-Empire).cbz (329pp)
+         own record cv 129900 / gcd s164932 "Avengers by Jonathan Hickman: The Complete Collection" (issue 2154691) COLLECTS: gcd=70263 Avengers (2013) #1-5 · gcd=70463 New Avengers (2013) #1-6 · gcd=34120 Astonishing Tales (2009) #1-6 · gcd=69005 Uncanny Avengers (2012) #1
+      [52899] COL Avengers by Jonathan Hickman - The Complete Collection Book 02 (2020) (Digital) (EJGriffin-Empire).cbz (337pp)
+         own record cv 129900 / gcd s164932 "Avengers by Jonathan Hickman: The Complete Collection" (issue 2182483) COLLECTS: gcd=70263 Avengers (2013) #3, #6-18, #20, #22-23 · gcd=70463 New Avengers (2013) #7 · gcd=40016 Shang-Chi: Master of Kung Fu One-Shot (2009) #1 · gcd=76468 Mighty Avengers (2013) #4
+      [52900] COL Avengers by Jonathan Hickman - The Complete Collection Book 03 (2021) (Digital) (EJGriffin-Empire).cbz (505pp)
+         own record cv 129900 / gcd s164932 "Avengers by Jonathan Hickman: The Complete Collection" (issue 2216005) COLLECTS: gcd=75977 Infinity (2013) #1-6 · gcd=70263 Avengers (2013) #18-23 · gcd=70463 New Avengers (2013) #8-12 · gcd=74277 Free Comic Book Day 2013 (Infinity) (2013) #1
+   G2 "New Avengers by Jonathan Hickman" in Marvel\_Avengers\07 Hickman's Avengers (2013)\_Deluxe Editions — 2 file(s), 2 COL, pp 271-303; cv per-file 81304x2; gcd per-file 93607x2; key 'New Avengers by Jonathan Hickman (2011)'
+      [52906] COL New Avengers by Jonathan Hickman Vol. 01 (2019) (Digital) (F) (Asgard-Empire).cbz (303pp)
+         own record cv 81304 / gcd s93607 "New Avengers by Jonathan Hickman" (issue 1491792) COLLECTS: gcd=70463 New Avengers (2013) #1-12
+      [52907] COL New Avengers by Jonathan Hickman Vol. 02 (2019) (Digital) (Asgard-Empire).cbz (271pp)
+         own record cv 81304 / gcd s93607 "New Avengers by Jonathan Hickman" (issue 1491789) COLLECTS: gcd=70463 New Avengers (2013) #13-23
+   G3 "FF by Jonathan Hickman" in Marvel\_Fantastic Four\06 Hickman's Fantastic Four (2009) — 4 file(s), 4 COL, pp 121-162; cv per-file 42957x4; gcd per-file 64712x4; key 'Avengers by Jonathan Hickman: The Complete Collection (2011)'
+      [79733] COL 06 FF by Jonathan Hickman Vol. 01 (2012) (Digital) (F) (Asgard-Empire).cbz (128pp)
+         own record cv 42957 / gcd s64712 "FF by Jonathan Hickman" (issue 933793) COLLECTS: gcd=56740 FF (2011) #1-5 · gcd=218487 FF by Jonathan Hickman (2011) #1
+      [79734] COL 07 FF by Jonathan Hickman Vol. 02 (2012) (Digital) (F) (Asgard-Empire).cbz (134pp)
+         own record cv 42957 / gcd s64712 "FF by Jonathan Hickman" (issue 933794) COLLECTS: gcd=56740 FF (2011) #6-11 · gcd=218487 FF by Jonathan Hickman (2011) #2
+      [79736] COL 09 FF by Jonathan Hickman Vol. 03 (2013) (Digital) (F) (Asgard-Empire).cbz (121pp)
+         own record cv 42957 / gcd s64712 "FF by Jonathan Hickman" (issue 933795) COLLECTS: gcd=56740 FF (2011) #12-16 · gcd=218487 FF by Jonathan Hickman (2011) #3
+      [79738] COL 11 FF by Jonathan Hickman Vol. 04 (2014) (Digital) (F) (Asgard-Empire).cbz (162pp)
+         own record cv 42957 / gcd s64712 "FF by Jonathan Hickman" (issue 1095151) COLLECTS: gcd=56740 FF (2011) #17-23 · gcd=218487 FF by Jonathan Hickman (2011) #4
+
+== S64595 Domino  [split]  9 files / 2 collections  decided in C-056 (R)
+   decided: R 64595 | three unrelated "Domino" comics share this shelf: the 1997 3-issue mini (CV 22683/GCD 11501, items 88531-88533), the 2003 4-issue mini (CV 10904/GCD 11824, items 89746-89749 — ComicInfo Web 94154-94157 = CV's own issue ids exactly, the clean 1.0 shape on a Glorith-HD rip), and the 2018-2019 10-issue series collected in 2 trades (CV 109761); none dominates
+   F 64595 split-needed | three co-equal comics (3/4/3-ish files each), no majority
+   F 64595 provider-missing | GCD holds no row for either 2018-2019 Domino trade
+   nearby: S5715 "Domino: Hotshots" 1f [title+1 — S cv=117444 gcd=141718 (B-061 0.95)] keys: "Domino: Hotshots"
+   keys now: "Domino (2018)" x3 · "Domino (1997)" x3 · "Domino (2003)" x3
+   groups (title x folder): 3
+   G1 "Domino" in Marvel\_X-Men\Domino\Domino v3 (2018) — 2 file(s), 2 COL, pp 129-136; cv per-file 115049x1, 117583x1; gcd per-file 142422x2; key 'Domino (2018)'
+      [84417] COL Domino Vol. 01 - Killer Instinct (2019) (Digital) (Kileko-Empire).cbz (136pp)
+         own record cv 115049 / gcd s142422 "Domino" (issue 1938924) COLLECTS: gcd=123549 Domino (2018) #1-6  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [84418] COL Domino Vol. 02 - Soldier of Fortune (2019) (Digital) (Kileko-Empire).cbz (129pp)
+   G2 "Domino" in Marvel\_X-Men\_X-Men Complete Chronology V2\0308 Domino — 3 file(s), numbers 1-3, pp 22-24; cv per-file 22683x3; gcd per-file 11501x3; key 'Domino (1997)'
+      [88531] Domino 001 (1997) (Digital) (Shadowcat-Empire).cbz (24pp)
+      [88532] Domino 002 (1997) (Digital) (Shadowcat-Empire).cbz (22pp)
+      [88533] Domino 003 (1997) (Digital) (Shadowcat-Empire).cbz (24pp)
+   G3 "Domino" in Marvel\_X-Men\_X-Men Complete Chronology V2\0568 Perfect Weapon — 4 file(s), numbers 1-4, pp 24-25; cv per-file 10904x3, 109761x1; gcd per-file 11824x4; key 'Domino (2003)' | 'Domino (2018)'
+      e.g. 001 Domino 01 (of 04) (2003) (digital) (Glorith-HD).cbz
+        89746 #1 2003 25pp key="Domino (2003)" · 89747 #2 2003 24pp key="Domino (2003)" · 89748 #3 2003 25pp key="Domino (2003)" · 89749 #4 2003 24pp
+
+== S65436 Power Girl (2009)  [split]  9 files / 0 collections  decided in R-005 (R)
+   decided: R 65436 | nine files, two runs and no dominant one: Power Girl #1-4 from a Post-Crisis read-order folder are the 2009 series (CV 26326 / GCD 34078, whose remaining #13-27 are S99356), while #8, #9 and #10 plus two 1pp variant covers of #10 are the 2023 series (CV 153721 / GCD 203975) pulled in as House of Brainiac tie-ins; the shelf carries an open label-ambiguous flag, both halves number from #1, and its stored CV 26326 is the volume S99356 needs
+   F 65436 wrong-cv-link | stored CV 26326 "Power Girl" (DC 2009, 27) is the 2009 run, whose fifteen remaining issues are S99356; five of the nine files here are 2024-dated issues of the 2023 series
+   F 65436 split-needed | proposed: Power Girl 2009 (CV 26326 / GCD 34078, 27) for items 17270-17273, and Power Girl 2023 (CV 153721 / GCD 203975, 20) for items 70589-70591 with the two 1pp variant covers 70608 and 70609
+   nearby: S99357 "Power Girl" 52f [shares cv=153721, shares gcd=203975 — S cv=153721 gcd=203975 (C-016 0.9)] keys: "Power Girl v3 (2023)"
+   nearby: S102453 "Power Girl" 16f [shares stored cv=26326] keys: "Power Girl v2 (2009)" · S65435 "Power Girl" 4f [title — S cv=4018 gcd=3610 (A-011 0.95)] keys: "Power Girl (1988)"
+   nearby: S13989 "Power Girl: Uncovered" 5f [title+1 — S cv=156492 gcd=208403 (C-016 0.95)] keys: "Power Girl - Uncovered"
+   nearby: S13990 "Power Girl Returns" 1f [title+1 — S cv=155408 gcd=204676 (B-013 0.95)] keys: "Power Girl Returns"
+   keys now: "Power Girl (2009)" x9
+   groups (title x folder): 3
+   G1 "Power Girl" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\63 Power Girl\05 Power Girl Volume 1 — 4 file(s), numbers 1-4, pp 23-25; cv per-file 26326x4; key 'Power Girl (2009)'
+      e.g. Power Girl 01.cbr
+        17270 #1 25pp · 17271 #2 24pp · 17272 #3 23pp · 17273 #4 23pp
+   G2 "Power Girl" in DC\_Superman\21 House of Brainiac (2024)\Tie-Ins — 3 file(s), numbers 8-10, pp 25-26; cv per-file 26326x3; gcd per-file 203975x3; key 'Power Girl (2009)'
+      [70589] Power Girl 008 (2024) (digital) (Goobadaddy-Empire).cbz (25pp)
+      [70590] Power Girl 009 (2024) (Digital-Empire).cbz (26pp)
+      [70591] Power Girl 010 (2024) (digital) (Son of Ultron-Empire).cbr (26pp)
+   G3 "Power Girl" in DC\_Superman\21 House of Brainiac (2024)\Variant Covers — 2 file(s), numbers 10, pp 1-1; cv per-file 26326x2; gcd per-file 203975x2; key 'Power Girl (2009)'
+      [70608] Power Girl 010 (2024) (Dave Johnson Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+      [70609] Power Girl 010 (2024) (Nicola Scott Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+
+== S102188 Sea of Thieves  [split]  9 files / 1 collections  decided in B-067 (R)
+   decided: R 102188 | this shelf is four different Sea of Thieves comics plus a trade: three 2019 one-shots (The Bonds of Union, The Price of Gold, The Vision of Order), three "Sea of Thieves Origins" issues (2021-2022), two issues of "Sea Dog's Search" (2023-2024, CV 155113) and the 2018 collected edition item 110532 (CV 113730 "Sea of Thieves" 2018 Titan count 1, issue 685726); the stored CV 109207 "Sea of Thieves" 2018 Titan count 4 covers only the first mini, which is why the per-file split is 7/9 against 2/9 and why one number names more than one file
+   F 102188 split-needed | proposed runs: the 2018 four-issue mini cv=109207 gcd=127358 (whose trade is item 110532, cv=113730 gcd=129887); Sea of Thieves Origins gcd=198319 (items 110528, 110530, 110531); and Sea Dog's Search cv=155113 (items 110535, 110536), which also has its own shelf S46611
+   named: S46611 Sea of Thieves: Sea Dog's Search  1 files  keys: "Sea of Thieves: The Sea Dog's Search"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65599 "Sea of Thieves" 3f [shares gcd=198319 — S cv=134597 gcd=198319 (R-013 0.9)] keys: "Sea of Thieves (2021)" | "Sea of Thieves v2 (2021)"
+   keys now: "Sea of Thieves (2018)" x2 · "Sea of Thieves: Sea Dog's Search" x2 · "Sea of Thieves - The Bonds of Union" x1 · "Sea of Thieves - The Price of Gold" x1 · "Sea of Thieves - The Vision of Order" x1 · "Sea of Thieves Origins - Champion of Souls (2018)" x1 · "Sea of Thieves Origins" x1
+   groups (title x folder): 7
+   G1 "Sea of Thieves" in Titan Comics\Sea of Thieves (2018) — 1 file(s), 1 COL, pp 108-108; cv per-file 113730x1; key 'Sea of Thieves (2018)'
+      [110532] COL Sea of Thieves v01 (2018) (digital) (The Magicians-Empire).cbr (108pp)
+   G2 "Sea of Thieves - The Bonds of Union (2019) (digital) (The Magicians-Empire)" in Titan Comics\Sea of Thieves (2018) — 1 file(s), pp 26-26; cv per-file 109207x1; key 'Sea of Thieves - The Bonds of Union'
+      [110525] Sea of Thieves - The Bonds of Union (2019) (digital) (The Magicians-Empire).cbr (26pp)
+   G3 "Sea of Thieves - The Price of Gold (2019) (digital) (The Magicians-Empire)" in Titan Comics\Sea of Thieves (2018) — 1 file(s), pp 25-25; cv per-file 109207x1; key 'Sea of Thieves - The Price of Gold'
+      [110526] Sea of Thieves - The Price of Gold (2019) (digital) (The Magicians-Empire).cbr (25pp)
+   G4 "Sea of Thieves - The Vision of Order (2019) (digital) (The Magicians-Empire)" in Titan Comics\Sea of Thieves (2018) — 1 file(s), pp 25-25; cv per-file 109207x1; key 'Sea of Thieves - The Vision of Order'
+      [110527] Sea of Thieves - The Vision of Order (2019) (digital) (The Magicians-Empire).cbr (25pp)
+   G5 "Sea of Thieves Origins - Champion of Souls" in Titan Comics\Sea of Thieves (2018)\Sea of Thieves Origins (2021) — 2 file(s), numbers 1, 3, pp 24-24; cv per-file 109207x2; key 'Sea of Thieves Origins - Champion of Souls (2018)' | 'Sea of Thieves (2018)'
+      [110528] Sea of Thieves Origins - Champion of Souls 001 (2021) (digital).cbz (24pp)  key="Sea of Thieves Origins - Champion of Souls (2018)"
+      [110530] Sea of Thieves Origins - Champion of Souls 003 (2021) (digital).cbr (24pp)
+   G6 "Sea of Thieves Origins - The Servant's Tale (2022) (digital-Empire)" in Titan Comics\Sea of Thieves (2018)\Sea of Thieves Origins (2021) — 1 file(s), pp 25-25; cv per-file 109207x1; key 'Sea of Thieves Origins'
+      [110531] Sea of Thieves Origins - The Servant's Tale (2022) (digital-Empire).cbr (25pp)
+   G7 "Sea of Thieves - Sea Dog's Search" in Titan Comics\Sea of Thieves (2018)\Sea of Thieves v3 - Sea Dog's Search (2023) — 2 file(s), numbers 1-2, pp 24-25; cv per-file 155113x2; key "Sea of Thieves: Sea Dog's Search"
+      [110535] Sea of Thieves - Sea Dog's Search 001 (2023) (digital-Empire).cbr (24pp)
+      [110536] Sea of Thieves - Sea Dog's Search 002 (2024) (digital-Empire).cbr (25pp)
+
+== S1065 Anna Mercury  [split]  10 files / 0 collections  decided in C-063 (R)
+   decided: R 1065 | shelf holds two co-equal Anna Mercury minis: "Anna Mercury" (2008, CV 21079, majority of files) and "Anna Mercury 2" (2009, CV 26664, several files), both restarting at #1 — the title-wide CV stamp (21079 on all 10 files) hides the split
+   F 1065 split-needed | Anna Mercury 1 files = CV 21079/GCD 30267; Anna Mercury 2 files = CV 26664/GCD dump 21109
+   keys now: "Anna Mercury" x10
+   groups (title x folder): 7
+   G1 "Anna Mercury" in Warren Ellis\Anna Mercury — 2 file(s), numbers 4-5, pp 25-29; cv per-file 21079x2; gcd per-file 30267x2; key 'Anna Mercury'
+      [113513] Anna Mercury 005 (All Four Covers) (2008) (The Ramones-DCP).cbr (29pp)
+      [113514] Anna Mercury 04 (2 covers) (2008) (Minutemen-LockeZone).cbr (25pp)
+   G2 "Anna Mercury 2" in Warren Ellis\Anna Mercury — 3 file(s), numbers 1-3, pp 24-26; cv per-file 21079x3; gcd per-file 30267x2, 47410x1; key 'Anna Mercury'
+      [113515] Anna Mercury 2 001 (2009) (Three Covers) (1920) (Minutemen-Shamil).cbr (26pp)
+      [113516] Anna Mercury 2 02 (2009) (four covers) (Minutemen-DTs).cbz (25pp)
+      [113517] Anna Mercury 2 03 (2009) (three covers) (fixed) (Minutemen-DTs).cbz (24pp)
+   G3 "Anna_Mercury_-_Prepare_For_Launch_001__All_3_Covers___2008___TheRamones-DCP" in Warren Ellis\Anna Mercury — 1 file(s), pp 22-22; cv per-file 21079x1; key 'Anna Mercury'
+      [113518] Anna_Mercury_-_Prepare_For_Launch_001__All_3_Covers___2008___TheRamones-DCP_.cbr (22pp)
+   G4 "Anna_Mercury_001__All_Four_Covers___2008___c2c___The_Ramones-DCP" in Warren Ellis\Anna Mercury — 1 file(s), numbers 1, pp 39-39; cv per-file 21079x1; key 'Anna Mercury'
+      [113519] Anna_Mercury_001__All_Four_Covers___2008___c2c___The_Ramones-DCP_.cbr (39pp)
+   G5 "Anna_Mercury_002_Auxiliary__Cover_Only___2008___The_Ramones-DCP" in Warren Ellis\Anna Mercury — 1 file(s), numbers 2, pp 3-3; cv per-file 21079x1; key 'Anna Mercury'
+      [113520] Anna_Mercury_002_Auxiliary__Cover_Only___2008___The_Ramones-DCP_.cbr (3pp)
+   G6 "Anna_Mercury_002__All_Five_Covers___2008___The_Ramones-DCP" in Warren Ellis\Anna Mercury — 1 file(s), numbers 2, pp 32-32; cv per-file 21079x1; key 'Anna Mercury'
+      [113521] Anna_Mercury_002__All_Five_Covers___2008___The_Ramones-DCP_.cbr (32pp)
+   G7 "Anna_Mercury_003__2008___Minutemen-Locke_Zone" in Warren Ellis\Anna Mercury — 1 file(s), numbers 3, pp 26-26; cv per-file 21079x1; key 'Anna Mercury'
+      [113522] Anna_Mercury_003__2008___Minutemen-Locke_Zone_.cbr (26pp)
+
+== S1767 Back to the Future  [split]  10 files / 4 collections  decided in C-028 (R)
+   decided: R 1767 | this shelf mixes the unrelated 1992 Harvey "Back to the Future" comic (2 files, GCD 15324, its own limited series) with the 2015 IDW ongoing (4 files, GCD 93202) and four collected trades (GCD 119186) whose judged ranges are inconsistent (0.7-0.85, one gap at #11) — two different comics under one folder key
+   F 1767 split-needed | Harvey 1992 mini: cv=- gcd=15324; IDW 2015 ongoing + its own trades: cv=- (candidate 85421 unconfirmed) gcd=93202/119186
+   nearby: S20410 "Transformers/Back to the Future" 4f [title+1 — S cv=130973 gcd=164706 (A-016 0.95)] keys: "Transformers/Back to the Future"
+   nearby: S1768 "Back to the Future: Forward to the Future" 3f [title+1 — S cv=4764 gcd=4426 (A-015 0.95)] keys: "Back to the Future - Forward to the Future"
+   nearby: S102495 "Back to the Future: Biff to the Future (2017)" 1f [title+1 — S cv=98303 gcd=111739 (R-031 0.95)] keys: "Back to the Future: Biff to the Future (2017)"
+   keys now: "Back to the Future" x10
+   groups (title x folder): 2
+   G1 "Back to the Future" in Harvey Comics\Back to the Future (1992) — 2 file(s), numbers 2, 4, pp 36-36; cv per-file 24596x2; gcd per-file 15324x2; key 'Back to the Future'
+      [29017] Back to the Future 02 (Harvey) (1992-01) (c2c) (titansfan).cbz (36pp)
+      [29018] Back to the Future 04 (Harvey) (1992-06) (c2c) (titansfan).cbz (36pp)
+   G2 "Back to the Future" in IDW\Back to the Future (2015)\Back to the Future v2 (2015) — 8 file(s), 4 COL, numbers 22-25, pp 28-152; cv per-file 24596x8; gcd per-file 93202x4, 119186x4; key 'Back to the Future'
+      e.g. Back to the Future 022 (2017) (Digital) (Kileko-Empire).cbr
+        30364 #22 2017 33pp · 30365 #23 2017 32pp · 30366 #24 2017 32pp · 30367 #25 2017 28pp
+      [30369] COL Back to the Future Vol. 01 - Untold Tales and Alternate Timelines (2016) (Digital) (Kileko-Empire).cbr (142pp)
+      [30370] COL Back to the Future Vol. 02 - Continuum Conundrum (2017) (Digital) (Kileko-Empire).cbr (152pp)
+      [30371] COL Back to the Future Vol. 03 - Who Is Marty McFly (2017) (Digital) (Kileko-Empire).cbr (138pp)
+      [30372] COL Back to the Future Vol. 04 - Hard Time (2018) (Digital) (Kileko-Empire).cbr (97pp)
