@@ -1,0 +1,1209 @@
+## Conventions for this batch (29 shown of 152 matched; 328 in LEDGER.md; 8 shelf/shelves: folder:sequel-subfolder ×8 · folder:vn-year ×7 · folder:events ×7 · pub:dc ×4 · folder:bucket ×3 · kind:foreign ×3 · kind:golden-age ×3 · pub:marvel ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-175] (8 shelf/shelves) folder:bucket folder:events pass:item
+- In the chronology folders the RUN rule stands over the bucket rule: `S` = the numbered run, the tie-in's collected
+  record goes on the `I` line (B-072/073, ~90 shelves); the book's own record is the S only where no numbered run exists.
+[L-191] (8 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-281] (8 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-290] (8 shelf/shelves) folder:sequel-subfolder pass:item sig:stamp
+- A spin-off filed in its own subfolder on the parent's shelf gets the PARENT's v01 ids stamped by the per-file
+  matcher (Rent-a-(Really Shy!)-Girlfriend on Rent-A-Girlfriend) — `N no-record` (or the shelf note), never the
+  parent's record; it is a misfiling for the lead.
+[L-124] (7 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-272] (7 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-011] (4 shelf/shelves) folder:events pub:dc
+- DC event folders: the leading number is a READING-ORDER position, and the same book is filed again under its own
+  title folder — n issues × 2 files is one run.
+[L-015] (4 shelf/shelves) folder:events pub:dc
+- DC `#DC Events` read-order folders hold a SECOND rip of issues that also live on the title's own shelf — the
+  source of nearly every DC ratio 2.00; residue, not a second run. Event umbrellas (GCD "Convergence", 9) get
+  handed to two-issue tie-in shelves — the hull shape.
+[L-040] (4 shelf/shelves) folder:bucket folder:events pub:dc pub:papercutz-nbm pub:scout pub:titan pub:valiant sig:twin
+- NBM / Papercutz album lines and Scout one-shots carry TWIN adjacent GCD rows for one book (120209/120210) —
+  cap at 0.9 and name both. Titan's Doctor Who "Year N" volumes number continuously across a Doctor (a ladder
+  starting at #6 is complete). A publisher's read-order crossover folder (Titan `Lost Dimension`, Valiant
+  `_Chronological Valiant`) = DC's `#DC Events` shape.
+[L-199] (4 shelf/shelves) folder:bucket folder:events pub:dc
+- DC's "#DC Events" chronology folders resolve once the cross-referenced-run pattern is seen: a crossover reprint
+  bucket or a tie-in folder filed adjacent to the main run takes the main run's identity with the tie-ins named.
+[L-222] (4 shelf/shelves) pub:dc sig:collision
+- Second-rip fragments of shelves already read in earlier batches (Flash Secret Files, Spectre 1992, Teen Titans
+  2003/2016, Wonder Woman 1942/2016, Zatanna 1993, Donna Troy) surface as `--all` collisions — `merge-with` after
+  grepping the partner's name and count.
+[L-242] (4 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-245] (4 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-291] (5 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-033] (3 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-034] (3 shelf/shelves) folder:events pub:marvel sig:round2
+- `_X-Men Complete Chronology` / `_Marvel Major Event Chronology` folders re-file the same books a second and
+  third time — every ratio 2.00 there, never a second run. Crossover blocks get handed one member's series by
+  `round2-folder` (four Age of Apocalypse shelves → "X-Man", a 76-issue hull).
+[L-060] (3 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (3 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-127] (3 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-130] (3 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-133] (3 shelf/shelves) pub:marvel sig:probe
+- GCD splits a compound word ComicVine joins: "X-Men: Clan Destine" (5570) is invisible to a "ClanDestine" probe,
+  and 32535 "ClanDestine vs. The X-Men" is the collected edition, not the mini.
+[L-136] (3 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-142] (3 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-169] (3 shelf/shelves) folder:events pub:marvel sig:trade-link
+- `_Marvel Major Event Chronology (digital)` is one folder per tie-in holding that tie-in's collected edition: the
+  count-1-trade-as-stored-link artefact runs at 86 of 202 shelves there, the highest rate in any single folder.
+[L-174] (3 shelf/shelves) pub:marvel sig:legacy-stamp sig:stamp
+- A legacy-renumbered run is its own volume in both legs (Captain Marvel #125-129 = CV 105506 / GCD 117972; GotG
+  #146-150 = GCD 118041); the per-file matcher reaches the 1960s/1990s namesake by issue number every time.
+[L-211] (3 shelf/shelves) folder:vn-year pub:dc sig:collision sig:stale-flag
+- An `overlap-in-series` flag on a franchise with many `vN` sibling shelves (Deathstroke, Harley Quinn, Green Lantern,
+  Justice League, JLD, Legion, Lobo) describes the CROSS-SHELF Vol. 01 collision, not conflation on the one shelf —
+  confirmed 14 of 14 in C-013..C-015; the stale-flag note must name the sibling shelf.
+[L-298] (3 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-299] (3 shelf/shelves) pass:revisit pub:dark-horse pub:dc sig:probe sig:twin
+- R-024 (the item readers' shelf findings): GCD hides long runs behind a dropped article or suffix — "Flash" 3358
+  (1987-2006, 232 issues) and "James Bond" 207986 (2024) are invisible to the shelves' own keys; two packets' "no
+  GCD row" verdicts were wrong — probe without the article / the "007". A per-file CV id reused across a shelf's
+  books can be a wholly different comic's issue list (Portman "Demon!" 1978 on Shiga's four Demon volumes) — a
+  revisit re-verifies item-pass ids, never merely adds them. ComicVine's issue NAMES are strong `C` evidence
+  (Flash 2010 "Case One, Part N"; POTA's four arcs). One ripper folder can be split across two shelves by filename
+  wording (ten Usagi Saga deluxe files, 5 + 5). GCD indexes a deluxe line's 2nd-edition printing in the twin row.
+[L-313] (3 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+
++123 more matched entries not shown: L-319, L-014, L-128, L-181, L-064, L-085, L-101, L-310, L-007, L-016, L-027, L-032, L-082, L-093, L-097, L-113, L-114, L-123, L-150, L-172, L-193, L-195, L-198, L-210, L-212, L-217, L-237, L-252, L-256, L-265, L-274, L-288, L-293, L-324, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-135, L-157, L-159, L-163, L-164, L-177, L-186, L-200, L-204, L-244, L-246, L-247, L-248, L-251, L-253, L-258, L-264, L-267, L-269, L-273, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-292, L-294, L-309, L-314, L-004, L-018, L-022, L-031, L-044, L-049, L-051, L-052, L-056, L-065, L-076, L-080, L-099, L-109, L-115, L-117, L-120, L-132, L-156, L-162, L-194, L-196, L-197, L-202, L-206, L-207, L-216, L-218, L-220, L-255, L-262, L-263, L-266, L-295, L-296, L-297, L-302, L-306, L-307, L-308, L-315, L-325, L-327, L-328, L-054, L-074, L-083, L-250 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S100573 The Flash  [split]  273 files / 0 collections  decided in R-023 (R)
+   decided: R 100573 | two runs share this shelf after the wave-5 merge: 239 files from "03 The Flash v1 (1963)" are The Flash 1959 (CV 1995 / GCD 1428, #123-350 ladder) and 17 files from "06 The Flash v2 (2007)" (#231-247, 2007-2009) are Flash vol. 2 continuing Wally West's 1987 numbering (CV 3790 / GCD 26125, the shelf's own GCD key link) — the same numbers 231-247 name two different comics here
+   F 100573 split-needed | proposed: (a) The Flash 1959 = CV 1995 / GCD 1428, the 239 "v1 (1963)" files + the 17 "#DC Events" files (1959 issues by number); (b) The Flash v2 (2007) #231-247 = CV 3790 / GCD 26125, 17 files, merge-with S94717 "The Flash v2 (1987)" (CV 3790) once split
+   N 100573 the C-008 merge-with was declared on a SHARED STORED id (CV 1995 on both shelves) without checking that the id fit this shelf's own key and GCD link; the stored id is kept because it is right for 239 of 273 files
+   N 100573 the two runs' ids: The Flash 1959 CV 1995 / GCD 1428 (246 issues, 1959-1985) · The Flash vol. 2 CV 3790 / GCD 26125 for the 2007-2009 resumption #231-247 (GCD splits the 1987-2006 and 2007-2009 stretches, CV keeps one volume 3790)
+   named: S94717 The Flash  293 files  keys: "The Flash" | "The Flash v2 (1987)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S100576 "The Flash" 43f [title — S cv=153720 gcd=201306 (C-020 0.9)] keys: "The Flash v6 (2023)"
+   nearby: S100575 "The Flash" 30f [title — S cv=91750 gcd=103458 (B-014 0.95)] keys: "The Flash v1 (2020)" | "The Flash v5 (2016)"
+   nearby: S100574 "The Flash" 12f [title — S cv=43018 gcd=61181 (C-020 0.9)] keys: "The Flash v4 (2011)" · S6769 "Flash Comics" 105f [title+1 — S cv=19438 gcd=142 (C-020 0.95)] keys: "Flash Comics"
+   nearby: S6772 "Flash Gordon" 22f [title+1] keys: "Flash Gordon" · S724 "All-Flash Quarterly" 14f [title+1 — S cv=23194 gcd=211 (C-020 0.95)] keys: "All-Flash" | "All-Flash  DC Jan- 68p c2c"
+   nearby: S18589 "The Flash: Rebirth" 8f [title+1 — S cv=26076 gcd=33627 (B-008 0.9)] keys: "The Flash - Rebirth"
+   nearby: S103459 "Flash Gordon (2024)" 5f [title+1 — S cv=158146 gcd=214095 (R-044 0.95)] keys: "Flash Gordon (2024)" · S6770 "Flash Facts" 2f [title+1 — S cv=133527 gcd=169074 (B-007 0.95)] keys: "Flash Facts"
+   nearby: S6771 "Flash Forward" 1f [title+1 — S cv=121380 gcd=150371 (B-014 0.95)] keys: "Flash Forward ( 2019 -2020)" · S6788 "Flash Plus" 1f [title+1 — S cv=28597 gcd=5738 (D-003 0.95)] keys: "Flash plus Nightwing"
+   nearby: S18614 "The Flash: Wonderland" 1f [title+1 — S cv=40929 gcd=27132 (B-014 0.9)] keys: "The Flash: Wonderland" · (+1 more by title)
+   keys now: "The Flash v1 (1963)" x238 · "Flash" x18 · "The Flash v2 (2007)" x17
+   groups (title x folder): 5
+   G1 "Flash" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\01 Crisis on Multiple Earths\00 The Team ups\Vol. 1 — 4 file(s), numbers 123, 129, 137, 151, pp 26-36; cv per-file 1995x4; key 'Flash'
+      e.g. Flash v1 #123.cbr
+        16703 #123 26pp · 16704 #129 36pp · 16705 #137 26pp · 16706 #151 36pp
+   G2 "Flash" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\01 Crisis on Multiple Earths\00 The Team ups\Vol. 2 — 2 file(s), numbers 170, 173, pp 32-36; cv per-file 1995x2; key 'Flash'
+      [16713] Flash v1 #170.cbr (32pp)
+      [16714] Flash v1 #173.cbr (36pp)
+   G3 "Flash" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\38 Flash - The secret of Barry Allen — 11 file(s), numbers 207-217, pp 21-25; cv per-file 1995x11; key 'Flash'
+      e.g. Flash v2 #207.cbr
+        17078 #207 22pp · 17079 #208 23pp · 17080 #209 22pp · 17081 #210 24pp · 17082 #211 21pp · 17083 #212 25pp · 17084 #213 25pp · 17085 #214 24pp · 17086 #215 25pp · 17087 #216 25pp
+        17088 #217 25pp
+   G4 "The Flash" in DC\_The Flash\_Completed Seres\03 The Flash v1 (1963) — 239 file(s), numbers 105-109, 111-122, 124-138, 140-154, 156-164, 166-192, 194-208, 210-350, pp 19-100; cv per-file 1995x1; gcd per-file 1428x236, 149742x3; key 'The Flash v1 (1963)' | 'Flash'
+      e.g. The Flash 105 (1959) (Digital) (Shadowcat-Empire).cbz
+        73777 #105 1959 26pp · 73778 #106 1959 26pp · 73779 #107 1959 26pp · 73780 #108 1959 25pp · 73781 #109 1959 26pp · 73782 #111 1960 26pp · 73783 #112 1960 26pp · 73784 #113 1959 26pp
+        73785 #114 1960 26pp · 73786 #115 1960 26pp · 73787 #116 1961 26pp · 73788 #117 1961 28pp · 73789 #118 1961 26pp · 73790 #119 1961 26pp · 73791 #120 1961 26pp · 73792 #121 1961 26pp
+        73793 #122 1961 26pp · 73794 #124 1961 26pp · 73795 #125 1962 26pp · 73796 #126 1962 26pp · 73797 #127 1962 26pp · 73798 #128 1962 26pp · 73799 #129 1962 26pp · 73800 #130 1962 26pp
+        73801 #131 1962 26pp · 73802 #132 1963 26pp · 73803 #133 1963 26pp · 73804 #134 1963 26pp · 73805 #135 1963 26pp · 73806 #136 1963 26pp · 73807 #137 1963 26pp · 73808 #138 1962 26pp
+        73809 #140 1963 27pp · 73810 #141 1964 26pp · 73811 #142 1964 26pp · 73812 #143 1964 26pp · 73813 #144 1964 26pp · 73814 #145 1964 26pp · 73815 #146 1964 26pp · 73816 #147 1964 25pp
+        73817 #148 1965 25pp · 73818 #149 1965 25pp · 73819 #150 1965 25pp · 73820 #151 1965 26pp · 73821 #152 1965 26pp · 73822 #153 1965 26pp · 73823 #154 1965 25pp · 73824 #156 1966 26pp
+        73825 #157 1966 25pp · 73826 #158 1966 27pp · 73827 #159 1966 26pp · 73828 #160 1966 75pp · 73829 #161 1966 25pp · 73830 #162 1966 25pp · 73831 #163 1966 25pp · 73832 #164 1966 25pp
+        73833 #166 1967 25pp · 73834 #167 1967 24pp · 73835 #168 1967 24pp · 73836 #169 1967 72pp · 73837 #170 1967 24pp · 73838 #171 1967 24pp · 73839 #172 1967 24pp · 73840 #173 1967 24pp
+        73841 #174 1967 24pp · 73842 #175 1968 24pp · 73843 #176 1968 28pp · 73844 #177 1968 24pp · 73845 #178 1968 74pp · 73846 #179 1968 24pp · 73847 #180 1968 25pp · 73848 #181 1968 24pp
+        73849 #182 1968 24pp · 73850 #183 1969 23pp · 73851 #184 1969 24pp · 73852 #185 1969 24pp · 73853 #186 1969 24pp · 73854 #187 1969 60pp · 73855 #188 1969 23pp · 73856 #189 1969 25pp
+        73857 #190 1969 25pp · 73858 #191 1969 24pp · 73859 #192 1970 24pp · 73860 #194 1970 28pp · 73861 #195 1970 24pp · 73862 #196 1970 59pp · 73863 #197 1970 26pp · 73864 #198 1970 25pp
+        73865 #199 1970 25pp · 73866 #200 1970 24pp · 73867 #201 1971 27pp · 73868 #202 1971 24pp · 73869 #203 1971 23pp · 73870 #204 1971 23pp · 73871 #205 1971 56pp · 73872 #206 1971 23pp
+        73873 #207 1971 23pp · 73874 #208 1971 38pp · 73875 #210 1972 38pp · 73876 #211 1971 39pp · 73877 #212 1972 40pp · 73878 #213 1972 38pp · 73879 #214 1972 100pp · 73880 #215 1972 37pp
+        73881 #216 1972 37pp · 73882 #217 1972 25pp · 73883 #218 1972 23pp · 73884 #219 1973 25pp · 73885 #220 1973 24pp · 73886 #221 1973 24pp · 73887 #222 1973 24pp · 73888 #223 1973 23pp
+        73889 #224 1973 21pp · 73890 #225 1974 36pp · 73891 #226 1974 37pp · 73892 #227 1974 35pp · 73893 #228 1974 35pp · 73894 #229 1974 100pp · 73895 #230 1974 34pp · 73896 #231 1975 36pp
+        73897 #232 1975 100pp · 73898 #233 1975 35pp · 73899 #234 1975 35pp · 73900 #235 1975 29pp · 73901 #236 1975 36pp · 73902 #237 1975 35pp · 73903 #238 1975 35pp · 73904 #239 1976 36pp
+        73905 #240 1976 36pp · 73906 #241 1976 36pp · 73907 #242 1976 36pp · 73908 #243 1976 36pp · 73909 #244 1976 40pp · 73910 #245 1976 36pp · 73911 #246 1977 36pp · 73912 #247 1977 36pp
+        73913 #248 1977 40pp key="Flash" · 73914 #249 1977 36pp · 73915 #250 1977 36pp · 73916 #251 1977 36pp · 73917 #252 1977 36pp · 73918 #253 1977 36pp · 73919 #254 1977 40pp
+        73920 #255 1977 35pp · 73921 #256 1977 36pp · 73922 #257 1978 36pp · 73923 #258 1978 36pp · 73924 #259 1978 40pp · 73925 #260 1978 36pp · 73926 #261 1978 36pp · 73927 #262 1978 36pp
+        73928 #263 1978 36pp · 73929 #264 1978 36pp · 73930 #265 1978 44pp · 73931 #266 1978 43pp · 73932 #267 1978 44pp · 73933 #268 1978 36pp · 73934 #269 1979 36pp · 73935 #270 1979 35pp
+        73936 #271 1979 35pp · 73937 #272 1979 35pp · 73938 #273 1979 36pp · 73939 #274 1979 36pp · 73940 #275 1979 19pp · 73941 #276 1979 36pp · 73942 #277 1979 19pp · 73943 #278 1979 19pp
+        73944 #279 1979 36pp · 73945 #280 1979 19pp · 73946 #281 1980 19pp · 73947 #282 1980 19pp · 73948 #283 1980 19pp · 73949 #284 1980 19pp · 73950 #285 1980 39pp · 73951 #286 1980 36pp
+        73952 #287 1980 36pp · 73953 #288 1980 35pp · 73954 #289 1980 36pp · 73955 #290 1980 36pp · 73956 #291 1980 35pp · 73957 #292 1980 36pp · 73958 #293 1981 36pp · 73959 #294 1981 35pp
+        73960 #295 1981 36pp · 73961 #296 1981 36pp · 73962 #297 1981 36pp · 73963 #298 1981 40pp · 73964 #299 1981 36pp · 73965 #300 1981 50pp · 73966 #301 1981 36pp · 73967 #302 1981 35pp
+        73968 #303 1981 36pp · 74001 #304 1981 39pp · 74002 #305 1982 39pp · 74003 #306 1982 36pp · 74004 #307 1982 36pp · 74005 #308 1982 36pp · 74006 #309 1982 39pp · 74007 #310 1982 36pp
+        74008 #311 1982 36pp · 74009 #312 1982 36pp · 74010 #313 1982 36pp · 74011 #314 1982 36pp · 74012 #315 1982 40pp · 74013 #316 1982 36pp · 74014 #317 1983 36pp · 74015 #318 1983 36pp
+        74016 #319 1983 36pp · 74017 #320 1983 36pp · 74018 #321 1983 36pp · 74019 #322 1983 36pp · 74020 #323 1983 36pp · 74021 #324 1983 35pp · 74022 #325 1983 36pp · 74023 #326 1983 36pp
+        74024 #327 1983 36pp · 74025 #328 1983 36pp · 74026 #329 1984 35pp · 74027 #330 1984 36pp · 74028 #331 1984 36pp · 74029 #332 1984 36pp · 74030 #333 1984 36pp · 74031 #334 1984 36pp
+        74032 #335 1984 36pp · 74033 #336 1984 35pp · 74034 #337 1984 36pp · 74035 #338 1984 36pp · 74036 #339 1984 35pp · 74037 #340 1984 25pp · 74038 #341 1985 25pp · 74039 #342 1985 26pp
+        74040 #343 1985 26pp · 74041 #344 1985 25pp · 74042 #345 1985 25pp · 74043 #346 1985 26pp · 74044 #347 1985 26pp · 74045 #348 1985 26pp · 74046 #349 1985 26pp · 74047 #350 1985 43pp
+   G5 "The Flash" in DC\_The Flash\_Completed Seres\06 The Flash v2 (2007) — 17 file(s), numbers 231-247, pp 19-24; gcd per-file 26125x17; key 'The Flash v2 (2007)'
+      e.g. The Flash 231 (2007) (Digital) (AnHeroGold-Empire).cbz
+        74317 #231 2007 24pp · 74318 #232 2007 22pp · 74319 #233 2007 23pp · 74320 #234 2008 23pp · 74321 #235 2008 22pp · 74322 #236 2008 22pp · 74323 #237 2008 23pp · 74324 #238 2008 23pp
+        74325 #239 2008 21pp · 74326 #240 2008 22pp · 74327 #241 2008 22pp · 74328 #242 2008 21pp · 74329 #243 2008 19pp · 74330 #244 2008 23pp · 74331 #245 2008 23pp · 74332 #246 2009 23pp
+        74333 #247 2009 23pp
+
+== S468 Adventures of Superman  [split]  230 files / 1 collections  decided in C-019 (R)
+   decided: R 468 | this shelf holds two runs: the 1987 legacy Adventures of Superman ongoing (#428-649 + Annuals 1-5 + #0, CV 3778 "Adventures of Superman" 1987 DC 228 issues / GCD 3345 1987-2006, ~180 files, v1 per-file stamped 3778 on all 230/230 by the legacy-volume trap) and the 2013-2014 digital-first weekly "Adventures of Superman" (#1-51, 46 files by Minutemen-PhD, GCD 74653 2013-2014 DC count 17 on 12/230 files); item 72989's "COL Adventures of Superman v01 (2014)" trade is flagged conflated-series because CV actually offers "Superman: The City of Tomorrow Volume 1" #573-576 for it, a genuinely different comic
+   F 468 split-needed | run A = legacy 1987 ongoing #428-649+Annuals+#0, CV 3778 / GCD 3345 (dominant, ~180 files); run B = 2013-2014 digital-first weekly #1-51, GCD 74653, CV volume not resolved in packet
+   F 468 needs-web | item 72989's actual comic ("Superman: The City of Tomorrow" per CV, vs the "COL Adventures of Superman v01" filename) needs confirmation — the conflated-series flag looks genuine, not stale
+   N 468 cv=3778 gcd=3345 | run A: legacy Adventures of Superman (1987-2006)
+   N 468 cv=- gcd=74653 | run B: 2013-2014 digital-first weekly Adventures of Superman #1-51
+   N 468 item 72989 no-record | item 72989 "COL Adventures of Superman v01 (2014)" carries an open conflated-series flag (CV offers "Superman: The City of Tomorrow Volume 1" #573-576 instead) and no confirmed record surfaced locally; matches F 468 needs-web
+   nearby: S17909 "Adventures of Superman" 23f [shares cv=3778, shares gcd=3345 — S cv=3778 gcd=3345 (C-019 0.9)] keys: "Aftermath Adventures of Superman" | "The Adventures of Superman"
+   nearby: S4176 "Convergence Adventures of Superman" 2f [title+1 — S cv=81463 gcd=88472 (A-007 0.95)] keys: "Convergence - Adventures Of Superman" | "Convergence - Adventures of Superman"
+   keys now: "Adventures of Superman" x230
+   groups (title x folder): 28
+   G1 "Adventures of Superman" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\21 Superman - Emperor Joker — 2 file(s), numbers 582-583, pp 24-24; cv per-file 3778x2; key 'Adventures of Superman'
+      [16938] 02 Adventures of Superman # 582.cbz (24pp)
+      [16943] 07 Adventures of Superman #583.cbz (24pp)
+   G2 "Adventures_of_Superman_625" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\40 Superman - Unconventional Warfare — 1 file(s), numbers 625, pp 8-8; cv per-file 3778x1; key 'Adventures of Superman'
+      [17094] Adventures_of_Superman_625.cbr (8pp)
+   G3 "Adventures_of_Superman_626" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\40 Superman - Unconventional Warfare — 1 file(s), numbers 626, pp 8-8; cv per-file 3778x1; key 'Adventures of Superman'
+      [17095] Adventures_of_Superman_626.cbr (8pp)
+   G4 "Adventures_of_Superman_627" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\40 Superman - Unconventional Warfare — 1 file(s), numbers 627, pp 25-25; cv per-file 3778x1; key 'Adventures of Superman'
+      [17096] Adventures_of_Superman_627.cbr (25pp)
+   G5 "Adventures_of_Superman_628" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\40 Superman - Unconventional Warfare — 1 file(s), numbers 628, pp 24-24; cv per-file 3778x1; key 'Adventures of Superman'
+      [17097] Adventures_of_Superman_628.cbr (24pp)
+   G6 "Adventures_of_Superman_629" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\40 Superman - Unconventional Warfare — 1 file(s), numbers 629, pp 25-25; cv per-file 3778x1; key 'Adventures of Superman'
+      [17098] Adventures_of_Superman_629.cbr (25pp)
+   G7 "Adventures_of_Superman_630" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\40 Superman - Unconventional Warfare — 1 file(s), numbers 630, pp 23-23; cv per-file 3778x1; key 'Adventures of Superman'
+      [17099] Adventures_of_Superman_630.cbr (23pp)
+   G8 "Adventures_of_Superman_631" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\40 Superman - Unconventional Warfare — 1 file(s), numbers 631, pp 24-24; cv per-file 3778x1; key 'Adventures of Superman'
+      [17100] Adventures_of_Superman_631.cbz (24pp)
+   G9 "Adventures_of_Superman_632" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\40 Superman - Unconventional Warfare — 1 file(s), numbers 632, pp 23-23; cv per-file 3778x1; key 'Adventures of Superman'
+      [17101] Adventures_of_Superman_632.cbr (23pp)
+   G10 "Adventures_of_Superman_633" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\41 Superman - That Healing Touch — 1 file(s), numbers 633, pp 24-24; cv per-file 3778x1; key 'Adventures of Superman'
+      [17103] Adventures_of_Superman_633.cbr (24pp)
+   G11 "Adventures_of_Superman_634" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\41 Superman - That Healing Touch — 1 file(s), numbers 634, pp 25-25; cv per-file 3778x1; key 'Adventures of Superman'
+      [17104] Adventures_of_Superman_634.cbr (25pp)
+   G12 "Adventures_of_Superman_635" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\41 Superman - That Healing Touch — 1 file(s), numbers 635, pp 23-23; cv per-file 3778x1; key 'Adventures of Superman'
+      [17105] Adventures_of_Superman_635.cbr (23pp)
+   G13 "Adventures_of_Superman_636" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\41 Superman - That Healing Touch — 1 file(s), numbers 636, pp 25-25; cv per-file 3778x1; key 'Adventures of Superman'
+      [17106] Adventures_of_Superman_636.cbr (25pp)
+   G14 "Adventures_of_Superman_637" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\41 Superman - That Healing Touch — 1 file(s), numbers 637, pp 24-24; cv per-file 3778x1; key 'Adventures of Superman'
+      [17107] Adventures_of_Superman_637.cbr (24pp)
+   G15 "Adventures_of_Superman_638" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\41 Superman - That Healing Touch — 1 file(s), numbers 638, pp 22-22; cv per-file 3778x1; key 'Adventures of Superman'
+      [17108] Adventures_of_Superman_638.cbr (22pp)
+   G16 "Adventures_of_Superman_642" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\47 Superman - Sacrifice (After OMAC project 3) — 1 file(s), numbers 642, pp 19-19; cv per-file 3778x1; key 'Adventures of Superman'
+      [17158] 03 Adventures_of_Superman_642.cbr (19pp)
+   G17 "Adventures_of_Superman_640" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\52 Superman - Ruin Revealed — 1 file(s), numbers 640, pp 19-19; cv per-file 3778x1; key 'Adventures of Superman'
+      [17196] Adventures_of_Superman_640.cbz (19pp)
+   G18 "Adventures_of_Superman_641" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\52 Superman - Ruin Revealed — 1 file(s), numbers 641, pp 25-25; cv per-file 3778x1; key 'Adventures of Superman'
+      [17197] Adventures_of_Superman_641.cbz (25pp)
+   G19 "Adventures_of_Superman_644" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\52 Superman - Ruin Revealed — 1 file(s), numbers 644, pp 23-23; cv per-file 3778x1; key 'Adventures of Superman'
+      [17198] Adventures_of_Superman_644.cbr (23pp)
+   G20 "Adventures_of_Superman_645" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\52 Superman - Ruin Revealed — 1 file(s), numbers 645, pp 23-23; cv per-file 3778x1; key 'Adventures of Superman'
+      [17199] Adventures_of_Superman_645.cbr (23pp)
+   G21 "Adventures_of_Superman_646" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\52 Superman - Ruin Revealed — 1 file(s), numbers 646, pp 24-24; cv per-file 3778x1; key 'Adventures of Superman'
+      [17200] Adventures_of_Superman_646.cbr (24pp)
+   G22 "Adventures_of_Superman_647" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\52 Superman - Ruin Revealed — 1 file(s), numbers 647, pp 23-23; cv per-file 3778x1; key 'Adventures of Superman'
+      [17201] Adventures_of_Superman_647.cbr (23pp)
+   G23 "Adventures_of_Superman_649__final" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\09 Superman - Infinite Crisis — 1 file(s), numbers 649, pp 22-22; cv per-file 3778x1; key 'Adventures of Superman'
+      [17418] 03 Adventures_of_Superman_649__final_.cbz (22pp)
+   G24 "Adventures of Superman" in DC\_Superman\_Completed Series\04 The Adventures of Superman (1987) — 152 file(s), numbers 428-440, 442-444, 451-462, 464-471, 473-495, 506-579, 584-598, 608-609, 639, 642, pp 13-39; cv per-file 3778x152; gcd per-file 3345x152; key 'Adventures of Superman'
+      e.g. Adventures of Superman 428 (1987) (Digital) (Shadowcat-Empire).cbz
+        71952 #428 1987 22pp · 71953 #429 1987 22pp · 71954 #430 1987 23pp · 71955 #431 1987 22pp · 71956 #432 1987 23pp · 71957 #433 1987 23pp · 71958 #434 1987 23pp · 71959 #435 1987 23pp
+        71960 #436 1988 23pp · 71961 #437 1988 22pp · 71962 #438 1988 23pp · 71963 #439 1988 24pp · 71964 #440 1988 22pp · 71966 #442 1988 23pp · 71967 #443 1988 30pp · 71968 #444 1988 13pp
+        71969 #451 1989 23pp · 71970 #452 1989 23pp · 71971 #453 1989 22pp · 71972 #454 1989 23pp · 71973 #455 1989 23pp · 71974 #456 1989 22pp · 71975 #457 1989 23pp · 71976 #458 1989 23pp
+        71977 #459 1989 23pp · 71978 #460 1989 23pp · 71979 #461 1989 21pp · 71980 #462 1990 23pp · 71982 #464 1990 23pp · 71983 #465 1990 23pp · 71984 #466 1990 23pp · 71985 #467 1990 23pp
+        71986 #468 1990 31pp · 72001 #469 1990 22pp · 72002 #470 1990 22pp · 72003 #471 1990 23pp · 72005 #473 1990 23pp · 72006 #474 1991 23pp · 72007 #475 1991 22pp · 72008 #476 1991 23pp
+        72009 #477 1991 23pp · 72010 #478 1991 23pp · 72011 #479 1991 22pp · 72012 #480 1991 38pp · 72013 #481 1991 23pp · 72014 #482 1991 23pp · 72015 #483 1991 23pp · 72016 #484 1991 23pp
+        72017 #485 1991 23pp · 72018 #486 1992 23pp · 72019 #487 1992 23pp · 72020 #488 1992 22pp · 72021 #489 1992 23pp · 72022 #490 1992 23pp · 72023 #491 1992 22pp · 72024 #492 1992 23pp
+        72025 #493 1992 22pp · 72026 #494 1992 23pp · 72027 #495 1992 22pp · 72038 #506 1993 23pp · 72039 #507 1993 23pp · 72040 #508 1994 22pp · 72041 #509 1994 22pp · 72042 #510 1994 23pp
+        72043 #511 1994 22pp · 72044 #512 1994 23pp · 72045 #513 1994 23pp · 72046 #514 1994 23pp · 72047 #515 1994 22pp · 72048 #516 1994 21pp · 72049 #517 1994 23pp · 72050 #518 1994 22pp
+        72051 #519 1995 23pp · 72052 #520 1995 23pp · 72053 #521 1995 23pp · 72054 #522 1995 21pp · 72055 #523 1995 23pp · 72056 #524 1995 23pp · 72057 #525 1995 23pp · 72058 #526 1995 23pp
+        72059 #527 1995 23pp · 72060 #528 1995 23pp · 72061 #529 1995 23pp · 72062 #530 1995 23pp · 72063 #531 1996 23pp · 72064 #532 1996 23pp · 72065 #533 1996 23pp · 72066 #534 1996 23pp
+        72067 #535 1996 23pp · 72068 #536 1996 23pp · 72069 #537 1996 22pp · 72070 #538 1996 23pp · 72071 #539 1996 23pp · 72072 #540 1996 23pp · 72073 #541 1996 22pp · 72074 #542 1997 23pp
+        72075 #543 1997 23pp · 72076 #544 1997 23pp · 72077 #545 1997 23pp · 72078 #546 1997 23pp · 72079 #547 1997 22pp · 72080 #548 1997 23pp · 72081 #549 1997 22pp · 72082 #550 1997 39pp
+        72083 #551 1997 22pp · 72084 #552 1997 23pp · 72085 #553 1997 23pp · 72086 #554 1998 23pp · 72087 #555 1998 23pp · 72088 #556 1998 23pp · 72089 #557 1998 22pp · 72090 #558 1998 23pp
+        72091 #559 1998 23pp · 72092 #560 1998 23pp · 72093 #561 1998 23pp · 72094 #562 1998 23pp · 72095 #563 1998 22pp · 72096 #564 1999 23pp · 72097 #565 1999 23pp · 72098 #566 1999 23pp
+        72099 #567 1999 22pp · 72100 #568 1999 22pp · 72101 #569 1999 23pp · 72102 #570 1999 22pp · 72103 #571 1999 22pp · 72104 #572 1999 23pp · 72105 #573 1999 23pp · 72106 #574 2000 23pp
+        72107 #575 2000 23pp · 72108 #576 2000 22pp · 72109 #577 2000 23pp · 72110 #578 2000 22pp · 72111 #579 2000 23pp · 72112 #584 2000 23pp · 72113 #585 2000 23pp · 72114 #586 2001 22pp
+        72115 #587 2001 22pp · 72116 #588 2001 23pp · 72117 #589 2001 23pp · 72118 #590 2001 23pp · 72119 #591 2001 23pp · 72120 #592 2001 23pp · 72121 #593 2001 24pp · 72122 #594 2001 22pp
+        72123 #595 2001 23pp · 72124 #596 2001 23pp · 72125 #597 2001 23pp · 72126 #598 2002 23pp · 72127 #608 2002 23pp · 72128 #609 2002 21pp · 72130 #639 2005 22pp · 72131 #642 2005 20pp
+   G25 "Adventures of Superman" in DC\_Superman\_Completed Series\04 The Adventures of Superman (1987)\Annuals and Specials — 1 file(s), numbers 0, pp 23-23; cv per-file 3778x1; gcd per-file 3345x1; key 'Adventures of Superman'
+      [72132] Adventures of Superman 000 (1994) (Digital) (Shadowcat-Empire).cbz (23pp)
+   G26 "Adventures of Superman Annual" in DC\_Superman\_Completed Series\04 The Adventures of Superman (1987)\Annuals and Specials — 5 file(s), numbers 1-5, pp 39-56; cv per-file 3778x5; key 'Adventures of Superman'
+      e.g. Adventures of Superman Annual 001 (1987) (Digital) (Shadowcat-Empire).cbz
+        72133 #1 1987 39pp · 72134 #2 1990 54pp · 72135 #3 1991 56pp · 72136 #4 1992 55pp · 72137 #5 1993 55pp
+   G27 "Adventures of Superman" in DC\_Superman\_Trades, Minis and One-shots\The Adventures of Superman v2 (2014) — 47 file(s), 1 COL, numbers 6-51, pp 22-167; cv per-file 3778x47; gcd per-file 74653x12; key 'Adventures of Superman'
+      e.g. Adventures of Superman 006 (2013) (digital) (Minutemen-PhD).cbr
+        72943 #6 2013 23pp · 72944 #7 2013 23pp · 72945 #8 2013 23pp · 72946 #9 2013 22pp · 72947 #10 2013 22pp · 72948 #11 2013 22pp · 72949 #12 2013 23pp · 72950 #13 2013 23pp
+        72951 #14 2013 23pp · 72952 #15 2013 23pp · 72953 #16 2013 23pp · 72954 #17 2013 23pp · 72955 #18 2013 23pp · 72956 #19 2013 23pp · 72957 #20 2013 23pp · 72958 #21 2013 23pp
+        72959 #22 2013 23pp · 72960 #23 2013 23pp · 72961 #24 2013 23pp · 72962 #25 2013 22pp · 72963 #26 2013 23pp · 72964 #27 2013 23pp · 72965 #28 2013 23pp · 72966 #29 2013 23pp
+        72967 #30 2013 23pp · 72968 #31 2013 23pp · 72969 #32 2013 23pp · 72970 #33 2013 23pp · 72971 #34 2013 23pp · 72972 #35 2013 23pp · 72973 #36 2013 23pp · 72974 #37 2014 23pp
+        72975 #38 2014 23pp · 72976 #39 2014 23pp · 72977 #40 2014 23pp · 72978 #41 2014 23pp · 72979 #42 2014 23pp · 72980 #43 2014 23pp · 72981 #44 2014 23pp · 72982 #45 2014 23pp
+        72983 #46 2014 23pp · 72984 #47 2014 23pp · 72985 #48 2014 23pp · 72986 #49 2014 23pp · 72987 #50 2014 23pp · 72988 #51 2014 23pp
+      [72989] COL Adventures of Superman v01 (2014) (Digital) (Zone-Empire).cbr (167pp)
+   G28 "Adventures of Superman" in DC\_The Flash\_Completed Seres\04 The Flash v2 (1987)\Flash v2 Specials\Crossovers — 1 file(s), numbers 463, pp 25-25; cv per-file 3778x1; gcd per-file 3345x1; key 'Adventures of Superman'
+      [74071] Adventures of Superman #463.cbr (25pp)
+
+== S94806 Thor v1 (1966)  [split]  471 files / 3 collections  decided in R-045 (R)
+   decided: R 94806 | the shelf is TWO co-equal runs after C-051's merge with S94808: Thor (1966) #126-502 + Annuals 001-019 under key "Thor v1 (1966)" (397 files) = CV 2294 (Marvel 1966, 293) = GCD 1749 (1966-1996, 378), and Thor (1998) #17-85 + the Jurgens & Romita Jr. trades Vol. 01-03 + Thor Annual 2000 under key "Thor v2 (1998)" (74 files) = CV 6226 (Marvel 1998, 85) = GCD 6045 (1998-2004, 85); C-051's merge-with rested on CV 2294 being "the one legacy volume", but ComicVine keeps 1998 as its own 85-issue volume 6226 — 74 files of a different run with its own records are not residue (lead ruling after S15276)
+   F 94806 split-needed | proposed runs: every file on key 'Thor v2 (1998)' (Thor 017-085 (1999-2004), items 89048 / 89257 joined by P-009, the Jurgens & Romita Jr. trades 96646-96648, Thor Annual 2000 item 97936) -> CV 6226 / GCD 6045, key 'Thor v2 (1998)'; Thor (1966) #126-502 and Annuals 001-019 stay on CV 2294 / GCD 1749
+   F 94806 needs-fetch cv=6226 | CV 6226 "Thor" (Marvel 1998, 85) is named from the rip only; no CvVolume row
+   N 97936 "Thor Annual 2000 (2000)" 40pp is the 1998 run's annual one-shot "Thor 2000" = CV 60449 issue 159025 / GCD 10162 row 95352 — it moves with the 1998 files
+   nearby: S97889 "Iron Man" 62f [shares gcd=6998 (collected by item 96648) — S cv=6504 gcd=6998 (R-048 0.9)] keys: "Iron Man v3 (1998)"
+   nearby: S13784 "Peter Parker: Spider-Man" 61f [shares gcd=9876 (collected by item 96646) — S cv=9142 gcd=9876 (C-050 0.95)] keys: "Peter Parker Spiderman" | "Peter Parker, Spider-Man" | "Peter Parker, Spider-Man - Back In Black" | "Peter Parker: Spider-Man" (+1 more: lookup.py --shelf 13784)
+   nearby: S20070 "Thor" 23f [shares cv=2294, shares gcd=1749 — S cv=2294 gcd=1749 (R-045 0.9)] keys: "Thor"
+   nearby: S15276 "Secret Six" 6f [named S15276 in the decision's R/N lines — S cv=22841 gcd=31829 (R-036 0.9)] keys: "Secret Six"
+   nearby: S103572 "Mighty Thor (2015)" 6f [shares cv=86113 — S cv=86113 gcd=94123 (R-045 0.95)] keys: "Mighty Thor (2015)"
+   nearby: S97992 "Juggernaut v2 (1999)" 1f [shares gcd=9850 (collected by item 96648) — S gcd=9850 (C-053 0.9)] keys: "Juggernaut v2 (1999)" · S94812 "Thor v6 (2021)" 23f [title] keys: "Thor v6 (2021)"
+   nearby: S94810 "Thor v4 (2014)" 16f [title — S gcd=89289 (C-051 0.9)] keys: "Thor v4 (2014)"
+   nearby: S94807 "Thor v1 (2009)" 11f [title — S cv=18831 gcd=33987 (R-045 0.95)] keys: "Thor by Straczynski & Gillen Omnibus (2024)" | "Thor v1 (2009)" | "Thor v3 (2007)"
+   nearby: S94811 "Thor" 6f [title — S cv=111590 gcd=125894 (R-045 0.95)] keys: "Thor v5 (2018)" · S9308 "The Immortal Thor" 68f [title+1 — S cv=153118 gcd=210015 (C-036 0.9)] keys: "Immortal Thor"
+   nearby: S19134 "The Mighty Thor" 18f [title+1 — S cv=39763 gcd=57806 (R-045 0.95)] keys: "The Mighty Thor" · S20128 "Thor: Godstorm" 4f [title+1 — S cv=9144 gcd=9878 (A-025 0.95)] keys: "Thor: Godstorm"
+   nearby: S1411 "Astonishing Thor" 1f [title+1 — S cv=36955 gcd=53447 (B-060 0.95)] keys: "Astonishing Thor" · S10396 "King Thor" 1f [title+1 — S cv=121238 gcd=150278 (B-060 0.95)] keys: "King Thor"
+   nearby: S19872 "The Unworthy Thor" 1f [title+1 — S cv=95444 gcd=108756 (B-060 0.95)] keys: "The Unworthy Thor" · S20089 "Thor: Vikings" 1f [title+1 — S cv=19646 gcd=19289 (B-060 0.95)] keys: "Thor - Vikings"
+   nearby: S20093 "Thor: Worldengine" 1f [title+1 — S cv=39091 gcd=74090 (B-060 0.9)] keys: "Thor - Worldengine" · (+5 more by title)
+   keys now: "Thor v1 (1966)" x397 · "Thor v2 (1998)" x74
+   groups (title x folder): 8
+   G1 "Thor" in Marvel\_Thor\02 Thor v1 (1966) — 377 file(s), numbers 126-502, pp 16-73; cv per-file 2294x371, 86113x6; gcd per-file 1749x371; key 'Thor v1 (1966)'
+      e.g. Thor 126 (1966) (Digital) (AnHeroGold-Empire).cbz
+        96169 #126 1966 22pp · 96170 #127 1966 22pp · 96171 #128 1966 22pp · 96172 #129 1966 22pp · 96173 #130 1966 22pp · 96174 #131 1966 22pp · 96175 #132 1966 22pp · 96176 #133 1966 21pp
+        96177 #134 1966 22pp · 96178 #135 1966 22pp · 96179 #136 1967 22pp · 96180 #137 1967 22pp · 96181 #138 1967 22pp · 96182 #139 1967 22pp · 96183 #140 1967 22pp · 96184 #141 1967 22pp
+        96185 #142 1967 22pp · 96186 #143 1967 22pp · 96187 #144 1967 22pp · 96188 #145 1967 22pp · 96189 #146 1967 17pp · 96190 #147 1967 17pp · 96191 #148 1968 17pp · 96192 #149 1968 17pp
+        96193 #150 1968 17pp · 96194 #151 1968 16pp · 96195 #152 1968 17pp · 96196 #153 1968 21pp · 96197 #154 1968 21pp · 96198 #155 1968 21pp · 96199 #156 1968 21pp · 96200 #157 1968 21pp
+        96201 #158 1968 21pp · 96202 #159 1968 21pp · 96203 #160 1969 21pp · 96204 #161 1969 20pp · 96205 #162 1969 20pp · 96206 #163 1969 21pp · 96207 #164 1969 21pp · 96208 #165 1969 21pp
+        96209 #166 1969 21pp · 96210 #167 1969 21pp · 96211 #168 1969 21pp · 96212 #169 1969 21pp · 96213 #170 1969 21pp · 96214 #171 1969 21pp · 96215 #172 1970 21pp · 96216 #173 1970 21pp
+        96217 #174 1970 21pp · 96218 #175 1970 21pp · 96219 #176 1970 20pp · 96220 #177 1970 20pp · 96221 #178 1970 20pp · 96222 #179 1970 20pp · 96223 #180 1970 20pp · 96224 #181 1970 20pp
+        96225 #182 1970 20pp · 96226 #183 1970 20pp · 96227 #184 1971 20pp · 96228 #185 1971 20pp · 96229 #186 1971 20pp · 96230 #187 1971 20pp · 96231 #188 1971 20pp · 96232 #189 1971 20pp
+        96233 #190 1971 20pp · 96234 #191 1971 20pp · 96235 #192 1971 20pp · 96236 #193 1971 35pp · 96237 #194 1971 16pp · 96238 #195 1972 23pp · 96239 #196 1972 22pp · 96240 #197 1972 22pp
+        96241 #198 1972 21pp · 96242 #199 1972 22pp · 96243 #200 1972 22pp · 96244 #201 1972 21pp · 96245 #202 1972 21pp · 96246 #203 1972 21pp · 96247 #204 1972 20pp · 96248 #205 1972 21pp
+        96249 #206 1972 21pp · 96250 #207 1973 22pp · 96251 #208 1973 21pp · 96252 #209 1973 21pp · 96253 #210 1973 21pp · 96254 #211 1973 21pp · 96255 #212 1973 21pp · 96256 #213 1973 20pp
+        96257 #214 1973 20pp · 96258 #215 1973 19pp · 96259 #216 1973 20pp · 96260 #217 1973 20pp · 96261 #218 1973 19pp · 96262 #219 1974 19pp · 96263 #220 1974 19pp · 96264 #221 1974 19pp
+        96265 #222 1974 19pp · 96266 #223 1974 18pp · 96267 #224 1974 18pp · 96268 #225 1974 18pp · 96269 #226 1974 18pp · 96270 #227 1974 18pp · 96271 #228 1974 18pp · 96272 #229 1975 18pp
+        96273 #230 1975 18pp · 96274 #231 1975 19pp · 96275 #232 1975 18pp · 96276 #233 1975 19pp · 96277 #234 1975 19pp · 96278 #235 1975 19pp · 96279 #236 1975 19pp · 96280 #237 1975 19pp
+        96281 #238 1975 19pp · 96282 #239 1975 19pp · 96283 #240 1975 19pp · 96284 #241 1975 19pp · 96285 #242 1975 19pp · 96286 #243 1976 19pp · 96287 #244 1976 19pp · 96288 #245 1976 19pp
+        96289 #246 1976 18pp · 96290 #247 1976 18pp · 96291 #248 1976 18pp · 96292 #249 1976 18pp · 96293 #250 1976 18pp · 96294 #251 1976 18pp · 96295 #252 1976 19pp · 96296 #253 1976 19pp
+        96297 #254 1976 21pp · 96298 #255 1977 18pp · 96299 #256 1977 18pp · 96300 #257 1977 18pp · 96301 #258 1977 19pp · 96302 #259 1977 18pp · 96303 #260 1977 17pp · 96304 #261 1977 17pp
+        96305 #262 1977 18pp · 96306 #263 1977 18pp · 96307 #264 1977 18pp · 96308 #265 1977 18pp · 96309 #266 1977 19pp · 96310 #267 1978 18pp · 96311 #268 1978 19pp · 96312 #269 1978 19pp
+        96313 #270 1978 19pp · 96314 #271 1978 19pp · 96315 #272 1978 19pp · 96316 #273 1978 18pp · 96317 #274 1978 19pp · 96318 #275 1978 18pp · 96319 #276 1978 18pp · 96320 #277 1978 19pp
+        96321 #278 1978 19pp · 96322 #279 1979 19pp · 96323 #280 1979 18pp · 96324 #281 1979 19pp · 96325 #282 1979 19pp · 96326 #283 1979 18pp · 96327 #284 1979 18pp · 96328 #285 1979 18pp
+        96329 #286 1979 18pp · 96330 #287 1979 18pp · 96331 #288 1979 19pp · 96332 #289 1979 18pp · 96333 #290 1979 18pp · 96334 #291 1980 19pp · 96335 #292 1980 17pp · 96336 #293 1980 19pp
+        96337 #294 1980 18pp · 96338 #295 1980 19pp · 96339 #296 1980 19pp · 96340 #297 1980 18pp · 96341 #298 1980 18pp · 96342 #299 1980 18pp · 96343 #300 1980 36pp · 96344 #301 1980 24pp
+        96345 #302 1980 22pp · 96346 #303 1981 24pp · 96347 #304 1981 24pp · 96348 #305 1981 24pp · 96349 #306 1981 24pp · 96350 #307 1981 24pp · 96351 #308 1981 23pp · 96352 #309 1981 23pp
+        96353 #310 1981 23pp · 96354 #311 1981 23pp · 96355 #312 1981 23pp · 96356 #313 1981 23pp · 96357 #314 1981 22pp · 96358 #315 1982 24pp · 96359 #316 1982 24pp · 96360 #317 1982 24pp
+        96361 #318 1982 24pp · 96362 #319 1982 23pp · 96363 #320 1982 24pp · 96364 #321 1982 23pp · 96365 #322 1982 24pp · 96366 #323 1982 24pp · 96367 #324 1982 24pp · 96368 #325 1982 24pp
+        96369 #326 1982 24pp · 96370 #327 1983 23pp · 96371 #328 1983 24pp · 96372 #329 1983 23pp · 96373 #330 1983 24pp · 96374 #331 1983 24pp · 96375 #332 1983 24pp · 96376 #333 1983 24pp
+        96377 #334 1983 23pp · 96378 #335 1983 24pp · 96379 #336 1983 24pp · 96380 #337 1983 25pp · 96381 #338 1983 23pp · 96382 #339 1984 23pp · 96383 #340 1984 23pp · 96384 #341 1984 23pp
+        96385 #342 1984 22pp · 96386 #343 1984 25pp · 96387 #344 1984 23pp · 96388 #345 1984 23pp · 96389 #346 1984 23pp · 96390 #347 1984 23pp · 96391 #348 1984 24pp · 96392 #349 1984 23pp
+        96393 #350 1984 23pp · 96394 #351 1985 23pp · 96395 #352 1985 23pp · 96396 #353 1985 25pp · 96397 #354 1985 23pp · 96398 #355 1985 23pp · 96399 #356 1985 23pp · 96400 #357 1985 23pp
+        96401 #358 1985 23pp · 96402 #359 1985 23pp · 96403 #360 1985 23pp · 96404 #361 1985 23pp · 96405 #362 1985 23pp · 96406 #363 1985 23pp · 96407 #364 1986 23pp · 96408 #365 1986 23pp
+        96409 #366 1986 23pp · 96410 #367 1986 24pp · 96411 #368 1986 23pp · 96412 #369 1986 23pp · 96413 #370 1986 24pp · 96414 #371 1986 23pp · 96415 #372 1986 24pp · 96416 #373 1986 24pp
+        96417 #374 1986 23pp · 96418 #375 1987 23pp · 96419 #376 1987 23pp · 96420 #377 1987 23pp · 96421 #378 1987 23pp · 96422 #379 1987 23pp · 96423 #380 1987 24pp · 96424 #381 1987 23pp
+        96425 #382 1987 41pp · 96426 #383 1987 23pp · 96427 #384 1987 23pp · 96428 #385 1987 23pp · 96429 #386 1987 23pp · 96430 #387 1988 22pp · 96431 #388 1988 22pp · 96432 #389 1988 23pp
+        96433 #390 1988 23pp · 96434 #391 1988 23pp · 96435 #392 1988 23pp · 96436 #393 1988 24pp · 96437 #394 1988 25pp · 96438 #395 1988 23pp · 96439 #396 1988 23pp · 96440 #397 1988 23pp
+        96441 #398 1988 22pp · 96442 #399 1989 22pp · 96443 #400 1989 64pp · 96444 #401 1989 23pp · 96445 #402 1989 23pp · 96446 #403 1989 22pp · 96447 #404 1989 23pp · 96448 #405 1989 23pp
+        96449 #406 1989 23pp · 96450 #407 1989 22pp · 96451 #408 1989 23pp · 96452 #409 1989 23pp · 96453 #410 1989 23pp · 96454 #411 1989 24pp · 96455 #412 1989 23pp · 96456 #413 1990 23pp
+        96457 #414 1990 23pp · 96458 #415 1990 23pp · 96459 #416 1990 23pp · 96460 #417 1990 23pp · 96461 #418 1990 23pp · 96462 #419 1990 23pp · 96463 #420 1990 23pp · 96464 #421 1990 23pp
+        96465 #422 1990 23pp · 96466 #423 1990 21pp · 96467 #424 1990 23pp · 96468 #425 1990 24pp · 96469 #426 1990 23pp · 96470 #427 1990 23pp · 96471 #428 1991 22pp · 96472 #429 1991 23pp
+        96473 #430 1991 23pp · 96474 #431 1991 23pp · 96475 #432 1991 40pp · 96476 #433 1991 23pp · 96477 #434 1991 23pp · 96478 #435 1991 22pp · 96479 #436 1991 23pp · 96480 #437 1991 23pp
+        96481 #438 1991 24pp · 96482 #439 1991 24pp · 96483 #440 1991 24pp · 96484 #441 1991 25pp · 96485 #442 1992 23pp · 96486 #443 1992 23pp · 96487 #444 1992 23pp · 96488 #445 1992 23pp
+        96489 #446 1992 22pp · 96490 #447 1992 23pp · 96491 #448 1992 23pp · 96492 #449 1992 23pp · 96493 #450 1992 42pp · 96494 #451 1992 23pp · 96495 #452 1992 23pp · 96496 #453 1992 23pp
+        96497 #454 1992 23pp · 96498 #455 1992 23pp · 96499 #456 1992 23pp · 96500 #457 1993 24pp · 96501 #458 1993 23pp · 96502 #459 1993 23pp · 96503 #460 1993 23pp · 96504 #461 1993 23pp
+        96505 #462 1993 20pp · 96506 #463 1993 22pp · 96507 #464 1993 20pp · 96508 #465 1993 20pp · 96509 #466 1993 22pp · 96510 #467 1993 21pp · 96511 #468 1993 21pp · 96512 #469 1993 22pp
+        96513 #470 1994 20pp · 96514 #471 1994 22pp · 96515 #472 1944 21pp · 96516 #473 1994 23pp · 96517 #474 1994 22pp · 96518 #475 1994 37pp · 96519 #476 1994 22pp · 96520 #477 1994 23pp
+        96521 #478 1994 22pp · 96522 #479 1994 24pp · 96523 #480 1994 22pp · 96524 #481 1994 23pp · 96525 #482 1995 73pp · 96526 #483 1995 22pp · 96527 #484 1995 23pp · 96528 #485 1995 22pp
+        96529 #486 1995 21pp · 96530 #487 1995 22pp · 96531 #488 1995 23pp · 96532 #489 1995 22pp · 96533 #490 1995 22pp · 96534 #491 1995 19pp · 96535 #492 1995 21pp · 96536 #493 1995 21pp
+        96537 #494 1996 19pp · 96538 #495 1996 23pp · 96539 #496 1996 19pp · 96540 #497 1996 23pp · 96541 #498 1996 23pp · 96542 #499 1996 23pp · 96543 #500 1996 29pp · 96544 #501 1996 21pp
+        96545 #502 1996 21pp
+   G2 "Thor" in Marvel\_Thor\02 Thor v1 (1966)\Annuals and Specials — 1 file(s), numbers 272, pp 19-19; cv per-file 2294x1; gcd per-file 1749x1; key 'Thor v1 (1966)'
+      [96546] Thor 272 (1978) b&w (Bchry-DCP).cbz (19pp)
+   G3 "Thor Annual" in Marvel\_Thor\02 Thor v1 (1966)\Annuals and Specials — 19 file(s), numbers 1-19, pp 31-75; cv per-file 2294x18, 86113x1; gcd per-file 51126x4, 141469x3, 31141x2; key 'Thor v1 (1966)'
+      e.g. Thor Annual 001 (Journey into Mystery) (1965) (c2c) (Blastaar DCP).cbr
+        96547 #1 1965 75pp · 96548 #2 1966 31pp · 96549 #3 1971 69pp · 96550 #4 1971 53pp · 96551 #5 1977 42pp · 96552 #6 1977 35pp · 96553 #7 1978 36pp · 96554 #8 1979 38pp · 96555 #9 1966 38pp
+        96556 #10 1966 39pp · 96557 #11 1983 41pp · 96558 #12 1984 44pp · 96559 #13 1985 40pp · 96560 #14 1989 56pp · 96561 #15 1990 57pp · 96562 #16 1991 35pp · 96563 #17 1992 56pp
+        96564 #18 1993 51pp · 96565 #19 1994 54pp
+   G4 "Thor" in Marvel\_Thor\04 Thor v2 (1998) — 68 file(s), numbers 18-85, pp 17-54; cv per-file 2294x68; gcd per-file 6045x36, 42086x5, 31140x2; key 'Thor v2 (1998)'
+      e.g. Thor 018 (1999) (Digital) (AnHeroGold-Empire).cbz
+        96578 #18 1999 19pp · 96579 #19 2000 22pp · 96580 #20 2000 23pp · 96581 #21 2000 21pp · 96582 #22 2000 21pp · 96583 #23 2000 21pp · 96584 #24 2000 21pp · 96585 #25 2000 38pp
+        96586 #26 2000 22pp · 96587 #27 2000 23pp · 96588 #28 2000 22pp · 96589 #29 2000 23pp · 96590 #30 2000 22pp · 96591 #31 2001 20pp · 96592 #32 2001 22pp · 96593 #33 2001 23pp
+        96594 #34 2001 23pp · 96595 #35 2001 38pp · 96596 #36 2001 23pp · 96597 #37 2001 23pp · 96598 #38 2001 22pp · 96599 #39 2001 23pp · 96600 #40 2001 23pp · 96601 #41 2002 23pp
+        96602 #42 2002 23pp · 96603 #43 2003 22pp · 96604 #44 2003 23pp · 96605 #45 2002 21pp · 96606 #46 2002 24pp · 96607 #47 2002 23pp · 96608 #48 2002 22pp · 96609 #49 2002 24pp
+        96610 #50 2002 54pp · 96611 #51 2002 24pp · 96612 #52 2002 24pp · 96613 #53 2002 23pp · 96614 #54 2002 22pp · 96615 #55 2002 24pp · 96616 #56 2003 21pp · 96617 #57 2003 17pp
+        96618 #58 2003 23pp · 96619 #59 2003 22pp · 96620 #60 2003 23pp · 96621 #61 2003 24pp · 96622 #62 2003 23pp · 96623 #63 2003 23pp · 96624 #64 2003 23pp · 96625 #65 2003 22pp
+        96626 #66 2003 23pp · 96627 #67 2003 22pp · 96628 #68 2003 23pp · 96629 #69 2003 23pp · 96630 #70 2003 23pp · 96631 #71 2004 22pp · 96632 #72 2004 23pp · 96633 #73 2004 23pp
+        96634 #74 2004 23pp · 96635 #75 2004 22pp · 96636 #76 2004 23pp · 96637 #77 2004 22pp · 96638 #78 2004 22pp · 96639 #79 2004 24pp · 96640 #80 2004 22pp · 96641 #81 2004 22pp
+        96642 #82 2004 22pp · 96643 #83 2004 22pp · 96644 #84 2004 23pp · 96645 #85 2004 21pp
+   G5 "Thor Annual" in Marvel\_Thor\04 Thor v2 (1998)\Annuals — 1 file(s), pp 40-40; cv per-file 2294x1; key 'Thor v2 (1998)'
+      [97936] Thor Annual 2000 (2000) (Digital) (AnHeroGold-Empire).cbz (40pp)
+   G6 "Thor by Jurgens & Romita Jr." in Marvel\_Thor\04 Thor v2 (1998)\Trades — 3 file(s), 3 COL, pp 130-199; cv per-file 32067x3; gcd per-file 53034x3; key 'Thor v2 (1998)'
+      [96646] COL Thor by Jurgens & Romita Jr. Vol. 01 (2009) (Digital) (Asgard-Empire).cbr (199pp)
+         own record cv 32067 / gcd s53034 "Thor by Dan Jurgens and John Romita Jr." (issue 785677) COLLECTS: gcd=6045 Thor (1998) #1-8 · gcd=9876 Peter Parker: Spider-Man (1999) #2
+      [96647] COL Thor by Jurgens & Romita Jr. Vol. 02 (2010) (Digital) (Asgard-Empire).cbr (130pp)
+         own record cv 32067 / gcd s53034 "Thor by Dan Jurgens and John Romita Jr." (issue 785678) COLLECTS: gcd=6045 Thor (1998) #9-13 · gcd=10267 Thor 1999 (1999) (unnumbered)
+      [96648] COL Thor by Jurgens & Romita Jr. Vol. 03 (2010) (Digital) (Asgard-Empire).cbr (197pp)
+         own record cv 32067 / gcd s53034 "Thor by Dan Jurgens and John Romita Jr." (issue 785679) COLLECTS: gcd=6045 Thor (1998) #14-17 · gcd=6998 Iron Man (1998) #21-22 · gcd=9850 Juggernaut (1999) #1 · gcd=9876 Peter Parker: Spider-Man (1999) #11
+   G7 "Thor" in Marvel\_X-Men\_X-Men Complete Chronology V2\0417 The Eighth Day — 1 file(s), numbers 17, pp 22-22; cv per-file 2294x1; gcd per-file 31140x1; key 'Thor v2 (1998)'
+      [89048] 002 Thor 017 (1999) (Digital) (AnHeroGold-Empire).cbz (22pp)
+   G8 "Thor" in Marvel\_X-Men\_X-Men Complete Chronology V2\0463 Maximum Security — 1 file(s), numbers 30, pp 22-22; cv per-file 2294x1; gcd per-file 6045x1; key 'Thor v2 (1998)'
+      [89257] 004 Thor 030 (2000) (Digital) (AnHeroGold-Empire).cbz (22pp)
+
+== S1212 Archie  [split]  541 files / 11 collections  decided in C-004 (R)
+   decided: R 1212 | dominant 1942-2015 Archie ongoing (CV 9628 count 553, GCD 10447 "was ongoing series" 1959-2015 count 565) covers 427/541 files, ladder 1-666ish, and would otherwise be the S line at 0.9; the shelf's own overlap-in-series flag records that the 2015 relaunch's #1-32 sits in the same DB Series as this 1942 run — split per the flag rather than folding it in as residue
+   F 1212 split-needed | the 2015 v2 relaunch ongoing + its trades collide with the 1942-2015 run in the same Series per the open overlap-in-series flag on item 7511
+   N 1212 the dominant 1942-2015 Archie ongoing (427/541 files) cv=9628 gcd=10447
+   N 1212 the 2015 v2 relaunch ongoing cv=83121 gcd=90653; its COL Vol.01-06 trades (items 7511-7516, judged #1-32 conf 0.97) cv=88725 gcd=98511
+   N 1212 further residue on the shelf, each its own line: Nick Spencer legacy-numbered trades #700-709, three 998-1000pp digest anthologies, the Archie Facsimile Edition reprints, and the Bob Montana newspaper-strip collection (see item 31744's I line)
+   nearby: S97994 "Jughead" 3f [shares gcd=92964 (collected by item 7511) — S cv=85112 gcd=92964 (R-018 0.95)] keys: "Jughead v3 (2015)"
+   nearby: S2491 "Betty & Veronica: Vixens" 2f [shares gcd=118834 (collected by item 7516) — S cv=106279 gcd=118834 (C-004 0.9)] keys: "Betty & Veronica Vixens" | "Betty and Veronica - Vixens"
+   nearby: S17963 "The Archies" 2f [shares gcd=117202 (collected by item 7515) — S cv=104771 gcd=117202 (A-004 0.95)] keys: "The Archies"
+   nearby: S102499 "Betty & Veronica" 1f [shares gcd=104422 (collected by item 7512) — S cv=92353 gcd=104422 (R-031 0.95)] keys: "Betty and Veronica (2016)"
+   nearby: S1227 "Archie 3000!" 1f [title — S cv=22890 gcd=15377 (B-003 0.95)] keys: "Archie 3000" · S1274 "Archie: 1941" 1f [title — S cv=113505 gcd=129340 (A-004 0.95)] keys: "Archie: 1941"
+   nearby: S1275 "Archie 1955" 1f [title — S cv=121428 gcd=150411 (B-003 0.95)] keys: "Archie: 1955" · S1276 "Archie: Varsity Edition" 1f [title — S cv=117195 gcd=140820 (B-003 0.95)] keys: "Archie: Varsity Edition"
+   nearby: S1216 "Archie and Me" 4f [title+1 — S cv=115034 gcd=133332 (C-004 0.9)] keys: "Archie & Me" | "Archie & Me Digest" | "Archie and Me" | "Archie and Me Digest"
+   nearby: S10778 "Little Archie, One-Shot" 1f [title+1 — S cv=100580 gcd=113295 (B-003 0.9)] keys: "Little Archie"
+   keys now: "Archie" x541
+   groups (title x folder): 13
+   G1 "Archie" in Archie\01 Archie v1 (1942) — 521 file(s), numbers 1-72, 74, 81-113, 119-121, 159-176, 191-195, 197-229, 231-243, 248, 256, 263, 267-289, 291-373, 376, 378-387, 389-402, 423-437, 439, 441-461, 463-472, 479, 481-489, 491, 493-573, 597-666, pp 20-66; cv per-file 9628x521; gcd per-file 10447x427; key 'Archie'
+      e.g. Archie 001 (1942) (Digital-SD) (Asgard-Empire).cbr
+        7046 #1 1942 60pp · 7275 #2 1943 66pp · 7040 #3 1943 58pp · 7293 #4 1943 58pp · 7346 #5 1943 58pp · 7163 #6 1944 58pp · 7207 #7 1944 57pp · 7345 #8 1944 57pp · 7013 #9 1944 47pp
+        7085 #10 1944 48pp · 6975 #11 1944 47pp · 7183 #12 1945 48pp · 7062 #13 1945 48pp · 7010 #14 1945 48pp · 7012 #15 1945 48pp · 7290 #16 1945 48pp · 7232 #17 1945 48pp · 7127 #18 1946 48pp
+        6959 #19 1946 48pp · 7235 #20 1946 48pp · 7255 #21 1946 48pp · 7065 #22 1946 47pp · 7233 #23 1946 48pp · 7351 #24 1947 48pp · 7231 #25 1947 48pp · 7044 #26 1947 48pp · 7081 #27 1947 48pp
+        6980 #28 1947 47pp · 7184 #29 1947 47pp · 7141 #30 1948 46pp · 7276 #31 1948 46pp · 7005 #32 1948 46pp · 7057 #33 1948 47pp · 7011 #34 1948 47pp · 7244 #35 1948 44pp · 7135 #36 1949 47pp
+        7303 #37 1949 48pp · 7361 #38 1949 46pp · 7226 #39 1949 46pp · 7000 #40 1949 48pp · 7091 #41 1949 48pp · 6993 #42 1950 45pp · 7273 #43 1950 47pp · 7006 #44 1950 47pp · 7188 #45 1950 44pp
+        7267 #46 1950 48pp · 7070 #47 1950 46pp · 7009 #48 1951 46pp · 7177 #49 1951 50pp · 7344 #50 1951 48pp · 7034 #51 1951 44pp · 7172 #52 1951 46pp · 7042 #53 1951 43pp · 7063 #54 1952 44pp
+        7208 #55 1952 47pp · 7239 #56 1952 48pp · 7286 #57 1952 45pp · 7035 #58 1952 46pp · 7130 #59 1952 48pp · 7029 #60 1953 47pp · 7113 #61 1953 50pp · 7343 #62 1953 46pp · 7342 #63 1953 46pp
+        7248 #64 1953 47pp · 7107 #65 1953 45pp · 7144 #66 1954 38pp · 7241 #67 1954 39pp · 7206 #68 1954 39pp · 7099 #69 1954 28pp · 7237 #70 1954 30pp · 7227 #71 1954 32pp · 7430 #72 1955 30pp
+        7431 #74 1955 30pp · 7432 #81 1956 28pp · 7433 #82 1956 31pp · 7434 #83 1956 31pp · 7435 #84 1957 29pp · 7436 #85 1957 29pp · 7437 #86 1957 28pp · 7439 #87 1957 29pp · 7438 #88 1957 28pp
+        7440 #89 1957 30pp · 7441 #90 1958 30pp · 7442 #91 1958 30pp · 7443 #92 1958 29pp · 7444 #93 1958 29pp · 7445 #94 1958 28pp · 7446 #95 1958 29pp · 7447 #96 1958 29pp · 7448 #97 1958 29pp
+        7449 #98 1959 29pp · 7450 #99 1959 29pp · 7451 #100 1959 30pp · 7452 #101 1959 29pp · 7453 #102 1959 29pp · 7454 #103 1959 29pp · 7455 #104 1959 29pp · 7456 #105 1959 29pp
+        7457 #106 1959 28pp · 7458 #107 1960 29pp · 7459 #108 1960 29pp · 7460 #109 1960 29pp · 7461 #110 1960 30pp · 7462 #111 1960 30pp · 7463 #112 1960 30pp · 7464 #113 1960 29pp
+        7465 #119 1961 29pp · 7466 #120 1961 29pp · 7467 #121 1961 28pp · 7041 #159 1965 29pp · 7193 #160 1965 29pp · 7265 #161 1966 27pp · 7001 #162 28pp · 7308 #163 29pp · 7189 #164 26pp
+        7027 #165 1966 29pp · 7246 #166 1966 29pp · 7263 #167 1966 29pp · 7111 #168 1966 29pp · 7156 #169 1966 28pp · 7075 #170 1967 28pp · 7213 #171 1967 28pp · 6967 #172 1967 29pp
+        6946 #173 1967 29pp · 7289 #174 1967 29pp · 7020 #175 1967 29pp · 7152 #176 1967 29pp · 7143 #191 1969 28pp · 7053 #192 1969 28pp · 7112 #193 1969 29pp · 7330 #194 1969 27pp
+        6961 #195 1969 27pp · 6990 #197 1970 27pp · 7311 #198 1970 27pp · 7101 #199 1970 27pp · 7072 #200 1970 27pp · 7028 #201 1970 26pp · 7056 #202 1970 27pp · 7134 #203 1970 25pp
+        7368 #204 1970 24pp · 7331 #205 1970 27pp · 7148 #206 1971 28pp · 7024 #207 1971 28pp · 7186 #208 1971 28pp · 7223 #209 1971 28pp · 7017 #210 1971 28pp · 6944 #211 1971 27pp
+        7159 #212 1971 27pp · 7197 #213 1971 26pp · 7039 #214 1971 26pp · 7376 #215 1972 26pp · 7108 #216 1972 26pp · 7133 #217 1972 28pp · 7228 #218 1972 28pp · 7210 #219 1972 28pp
+        7155 #220 1972 26pp · 6985 #221 1972 26pp · 7314 #222 1972 25pp · 7140 #223 1972 26pp · 7008 #224 1973 26pp · 7294 #225 1973 27pp · 6984 #226 1973 26pp · 7136 #227 1973 26pp
+        7212 #228 1973 28pp · 6992 #229 1973 27pp · 7083 #231 1973 27pp · 6940 #232 1974 25pp · 6964 #233 1974 25pp · 7249 #234 1974 26pp · 7321 #235 1974 26pp · 7268 #236 1974 24pp
+        7201 #237 1974 26pp · 7045 #238 1974 26pp · 7217 #239 1974 23pp · 7377 #240 1974 24pp · 6979 #241 1975 24pp · 7064 #242 1975 24pp · 7336 #243 1975 25pp · 7358 #248 1975 25pp
+        7157 #256 1976 24pp · 7178 #263 1977 25pp · 7090 #267 1977 27pp · 7150 #268 1978 27pp · 6948 #269 1978 25pp · 7129 #270 1978 27pp · 6971 #271 1978 27pp · 6970 #272 1978 26pp
+        7086 #273 1978 25pp · 7271 #274 1978 25pp · 7356 #275 1978 27pp · 7238 #276 1978 26pp · 7089 #277 1979 26pp · 7334 #278 1979 26pp · 7078 #279 1979 27pp · 7347 #280 1979 27pp
+        7307 #281 1979 27pp · 7037 #282 1979 27pp · 7224 #283 1979 25pp · 7284 #284 1979 25pp · 7203 #285 1979 27pp · 7337 #286 1979 27pp · 7362 #287 1979 26pp · 7125 #288 1980 26pp
+        7132 #289 1980 27pp · 7052 #291 1980 26pp · 6968 #292 1980 26pp · 7002 #293 1980 27pp · 6963 #294 1980 27pp · 7285 #295 1980 25pp · 6974 #296 1980 26pp · 7242 #297 1980 25pp
+        7047 #298 1980 24pp · 7219 #299 1980 26pp · 7333 #300 1981 26pp · 7161 #301 1981 26pp · 7297 #302 1981 27pp · 7375 #303 1981 27pp · 7270 #304 1981 26pp · 7104 #305 1981 26pp
+        7327 #306 1981 26pp · 7378 #307 1981 26pp · 7247 #308 1981 26pp · 7278 #309 1981 25pp · 7060 #310 1981 24pp · 7366 #311 1981 26pp · 7352 #312 1982 26pp · 7296 #313 1982 27pp
+        7182 #314 1982 26pp · 7468 #315 1982 26pp · 7469 #316 1982 25pp · 7470 #317 1982 26pp · 7471 #318 1982 26pp · 7472 #319 1982 24pp · 7473 #320 1982 25pp · 7474 #321 1983 24pp
+        7475 #322 1983 26pp · 7476 #323 1983 25pp · 7477 #324 1983 24pp · 7478 #325 1983 23pp · 7479 #326 1983 24pp · 7480 #327 1984 25pp · 7481 #328 1984 25pp · 7482 #329 1984 25pp
+        7483 #330 1984 26pp · 7484 #331 1984 24pp · 7485 #332 1984 24pp · 7486 #333 1985 24pp · 7487 #334 1985 25pp · 7488 #335 1985 24pp · 7489 #336 1985 24pp · 7490 #337 1985 26pp
+        7491 #338 1985 27pp · 7492 #339 1986 25pp · 7493 #340 1986 25pp · 7494 #341 1986 26pp · 7495 #342 1986 28pp · 7153 #343 1986 25pp · 7341 #344 1986 26pp · 7198 #345 1987 29pp
+        7274 #346 1987 28pp · 6960 #347 1987 26pp · 7305 #348 1987 26pp · 6991 #349 1987 27pp · 7310 #350 1987 25pp · 7174 #351 1987 26pp · 7121 #352 1987 27pp · 7061 #353 1987 23pp
+        7122 #354 1988 25pp · 7164 #355 1988 27pp · 7058 #356 1988 27pp · 6954 #357 1988 27pp · 7225 #358 1988 28pp · 7185 #359 1988 26pp · 7093 #360 1988 27pp · 7179 #361 1988 27pp
+        7230 #362 1988 28pp · 7317 #363 1989 28pp · 7280 #364 1989 29pp · 7304 #365 1989 28pp · 7038 #366 1989 26pp · 7154 #367 1989 25pp · 7240 #368 1989 26pp · 7221 #369 1989 26pp
+        7360 #370 1989 26pp · 7374 #371 1989 24pp · 7043 #372 1989 24pp · 7259 #373 1990 24pp · 7300 #376 1990 26pp · 7036 #378 1990 28pp · 7279 #379 1990 23pp · 7496 #380 1990 21pp
+        7497 #381 1990 21pp · 7498 #382 1990 22pp · 7117 #383 1990 22pp · 7059 #384 1992 24pp · 7499 #385 1991 22pp · 7500 #386 1991 24pp · 7291 #387 1992 25pp · 6950 #389 1992 23pp
+        7139 #390 1992 25pp · 7253 #391 1992 25pp · 7340 #392 1992 26pp · 7501 #393 1991 24pp · 7502 #394 1991 26pp · 7503 #395 1992 27pp · 7504 #396 1992 26pp · 7505 #397 1992 25pp
+        7506 #398 1992 27pp · 7507 #399 1992 25pp · 7508 #400 1992 24pp · 7509 #401 1992 25pp · 7510 #402 1992 23pp · 7151 #423 1994 23pp · 7329 #424 1994 25pp · 7004 #425 1994 24pp
+        7309 #426 1994 22pp · 7302 #427 1994 23pp · 7147 #428 1994 22pp · 7145 #429 1994 22pp · 7364 #430 1994 23pp · 7220 #431 1995 23pp · 7023 #432 1995 22pp · 7299 #433 1995 23pp
+        7332 #434 1995 24pp · 7169 #435 1995 25pp · 7106 #436 1995 25pp · 7301 #437 1995 26pp · 7102 #439 1995 24pp · 7137 #441 1995 25pp · 6943 #442 1995 26pp · 7018 #443 1996 25pp
+        7214 #444 1996 26pp · 7119 #445 1996 27pp · 7287 #446 1996 27pp · 7100 #447 1996 25pp · 7349 #448 1996 26pp · 7014 #449 1996 26pp · 7215 #450 1996 26pp · 7026 #451 1996 26pp
+        7068 #452 1996 26pp · 7175 #453 1996 26pp · 7025 #454 1996 25pp · 7365 #455 1997 25pp · 7218 #456 1997 25pp · 7318 #457 1997 25pp · 7191 #458 1997 26pp · 7251 #459 1997 25pp
+        7021 #460 1997 24pp · 7369 #461 1997 26pp · 7173 #463 1997 26pp · 7054 #464 1997 26pp · 6983 #465 1997 25pp · 7277 #466 1997 25pp · 7082 #467 1998 25pp · 6994 #468 1998 25pp
+        7055 #469 1998 25pp · 7363 #470 1998 26pp · 7348 #471 1998 24pp · 7250 #472 1998 25pp · 7180 #479 1999 24pp · 7146 #481 1999 25pp · 7258 #482 1999 25pp · 7306 #483 1999 25pp
+        7073 #484 1999 25pp · 7087 #485 1999 25pp · 6982 #486 1999 25pp · 7357 #487 1999 26pp · 7142 #488 1999 25pp · 7328 #489 1999 25pp · 7315 #491 2000 24pp · 7098 #493 2000 25pp
+        7324 #494 2000 25pp · 7084 #495 2000 25pp · 7211 #496 2000 25pp · 7262 #497 2000 26pp · 7313 #498 2000 26pp · 7128 #499 2000 25pp · 7272 #500 2000 25pp · 7196 #501 2000 25pp
+        7338 #502 2000 25pp · 6962 #503 2001 25pp · 7126 #504 2001 26pp · 7288 #505 2001 24pp · 7202 #506 2001 26pp · 7123 #507 2001 25pp · 6942 #508 2001 26pp · 7071 #509 2001 25pp
+        6987 #510 2001 26pp · 7031 #511 2001 24pp · 7335 #512 2001 26pp · 7367 #513 2001 26pp · 7354 #514 2001 25pp · 7118 #515 2001 25pp · 7092 #516 2002 25pp · 7030 #517 2002 26pp
+        7194 #518 2002 26pp · 6941 #519 2002 26pp · 7007 #520 2002 25pp · 7355 #521 2002 26pp · 6958 #522 2002 25pp · 7295 #523 2002 26pp · 7370 #524 2002 25pp · 6955 #525 2002 25pp
+        7359 #526 2002 26pp · 7069 #527 2002 24pp · 7245 #528 2002 26pp · 7158 #529 2003 26pp · 7176 #530 2003 25pp · 7254 #531 2003 25pp · 7094 #532 2003 25pp · 6998 #533 2003 25pp
+        7032 #534 2003 25pp · 7049 #535 2003 26pp · 7187 #536 2003 25pp · 7168 #537 2003 25pp · 7074 #538 2003 36pp · 7022 #539 2003 26pp · 7298 #540 2003 26pp · 7096 #541 2003 26pp
+        7205 #542 2004 25pp · 6999 #543 2004 26pp · 6997 #544 2004 26pp · 7124 #545 2004 26pp · 7149 #546 2004 25pp · 7110 #547 2004 28pp · 7067 #548 2004 28pp · 7261 #549 2004 27pp
+        7105 #550 2004 27pp · 6989 #551 2004 27pp · 7103 #552 2004 27pp · 7192 #553 2005 26pp · 7077 #554 2005 24pp · 7166 #555 2005 26pp · 7079 #556 2005 24pp · 7066 #557 2005 25pp
+        7373 #558 2005 24pp · 7190 #559 2005 23pp · 6957 #560 2005 24pp · 7281 #561 2005 23pp · 7326 #562 2006 21pp · 7162 #563 2006 23pp · 7138 #564 2006 24pp · 7319 #565 2006 25pp
+        7088 #566 2006 24pp · 7372 #567 2006 22pp · 7323 #568 2006 23pp · 7033 #569 2006 24pp · 6939 #570 2006 23pp · 7003 #571 2007 24pp · 7097 #572 2007 22pp · 6947 #573 2007 23pp
+        7264 #597 2009 24pp · 6977 #598 2009 27pp · 7216 #599 2009 25pp · 6988 #600 2009 26pp · 7209 #601 2009 25pp · 7165 #602 2009 28pp · 7266 #603 2010 26pp · 7080 #604 2010 26pp
+        7257 #605 2010 26pp · 7170 #606 2010 23pp · 7095 #607 2010 27pp · 7339 #608 2010 25pp · 7316 #609 2010 26pp · 7171 #610 2010 23pp · 7320 #611 2010 24pp · 6969 #612 2010 24pp
+        7167 #613 2010 23pp · 7350 #614 2010 25pp · 7371 #615 2011 26pp · 7353 #616 2011 24pp · 7292 #617 2011 25pp · 6996 #618 2011 23pp · 7048 #619 2011 23pp · 7236 #620 2011 26pp
+        6965 #621 2011 23pp · 7016 #622 2011 23pp · 7204 #623 2011 23pp · 6976 #624 2011 23pp · 7019 #625 2011 23pp · 6973 #626 2011 23pp · 7312 #627 2012 23pp · 7114 #628 2012 27pp
+        7131 #629 2012 21pp · 7116 #630 2012 20pp · 6952 #631 2012 23pp · 7229 #632 2012 21pp · 7200 #633 2012 21pp · 7050 #634 2012 22pp · 7160 #635 2012 21pp · 7115 #636 2012 27pp
+        7109 #637 2012 21pp · 6953 #638 2012 21pp · 6951 #639 2013 22pp · 6986 #640 2013 24pp · 7222 #641 2013 24pp · 7325 #642 2013 24pp · 7015 #643 2013 25pp · 6956 #644 2013 27pp
+        6972 #645 2013 36pp · 7234 #646 2013 22pp · 7181 #647 2013 23pp · 7120 #648 2013 23pp · 6978 #649 2013 24pp · 7282 #650 2014 48pp · 7051 #651 2014 21pp · 7283 #652 2014 25pp
+        7195 #653 2014 21pp · 7243 #654 2014 23pp · 7199 #655 2014 22pp · 7252 #656 2014 22pp · 6981 #657 2014 22pp · 7076 #658 2014 21pp · 7256 #659 2014 21pp · 7260 #660 2014 22pp
+        6945 #661 2014 24pp · 6966 #662 2015 21pp · 6995 #663 2015 21pp · 7269 #664 2015 22pp · 6949 #665 2015 22pp · 7322 #666 2015 22pp
+   G2 "Archie 1000 Page Celebration (2014) (digital) (Minutemen-Slayer)" in Archie\01 Archie v1 (1942)\Annuals and Specials — 1 file(s), pp 998-998; cv per-file 9628x1; key 'Archie'
+      [7417] Archie 1000 Page Celebration (2014) (digital) (Minutemen-Slayer).cbr (998pp)
+   G3 "Archie 1000 Page Comics Blowout! (2015) (digital) (Minutemen-Slayer)" in Archie\01 Archie v1 (1942)\Annuals and Specials — 1 file(s), pp 998-998; cv per-file 9628x1; key 'Archie'
+      [7418] Archie 1000 Page Comics Blowout! (2015) (digital) (Minutemen-Slayer).cbr (998pp)
+   G4 "Archie 1000 Page Mega Comics Digest (2014) (digital) (Minutemen-Slayer)" in Archie\01 Archie v1 (1942)\Annuals and Specials — 1 file(s), pp 1000-1000; cv per-file 9628x1; key 'Archie'
+      [7419] Archie 1000 Page Mega Comics Digest (2014) (digital) (Minutemen-Slayer).cbr (1000pp)
+   G5 "Archie" in Archie\02 Archie v2 (2015) — 6 file(s), 6 COL, pp 146-179; cv per-file 9628x6; gcd per-file 98511x6; key 'Archie'
+      [7511] COL Archie Vol. 01 - The New Riverdale (2016) (digital) (Son of Ultron-Empire).cbr (177pp)
+         own record cv 9628 / gcd s98511 "Archie" (issue 1547063) COLLECTS: gcd=90653 Archie (2015) #1-6 · gcd=92964 Jughead (2015) #1
+      [7512] COL Archie Vol. 02 (2016) (digital) (Son of Ultron-Empire).cbr (179pp)
+         own record cv 9628 / gcd s98511 "Archie" (issue 1657719) COLLECTS: gcd=90653 Archie (2015) #7-12 · gcd=104422 Betty and Veronica (2016) #1
+      [7513] COL Archie Vol. 03 (2017) (digital) (Son of Ultron-Empire).cbr (146pp)
+         own record cv 9628 / gcd s98511 "Archie" (issue 1695160) COLLECTS: gcd=90653 Archie (2015) #13-17 · gcd=110182 Reggie and Me (2017) #1
+      [7514] COL Archie Vol. 04 - Over the Edge (2017) (digital) (Son of Ultron-Empire).cbr (147pp)
+         own record cv 9628 / gcd s98511 "Archie" (issue 1731324) COLLECTS: gcd=90653 Archie (2015) #18-22 · gcd=114338 The Archies (2017) (unnumbered)
+      [7515] COL Archie Vol. 05 - The Heart of Riverdale (2018) (digital) (Son of Ultron-Empire).cbr (146pp)
+         own record cv 9628 / gcd s98511 "Archie" (issue 1805545) COLLECTS: gcd=90653 Archie (2015) #23-27 · gcd=117202 The Archies (2017) #1
+      [7516] COL Archie Vol. 06 (2018) (digital) (Son of Ultron-Empire).cbr (146pp)
+         own record cv 9628 / gcd s98511 "Archie" (issue 1857214) COLLECTS: gcd=90653 Archie (2015) #28-32 · gcd=118834 Betty & Veronica: Vixens (2017) #6
+   G6 "Archie - Varsity Edition" in Archie\02 Archie v2 (2015)\Deluxe Editions — 1 file(s), 1 COL, pp 349-349; cv per-file 9628x1; key 'Archie'
+      [7517] COL Archie - Varsity Edition Book 01 (2019) (Digital) (Shadowcat-Empire).cbz (349pp)
+   G7 "Archie Collector's Edition (2016) (digital) (Son of Ultron-Empire)" in Archie\02 Archie v2 (2015)\Specials — 1 file(s), 1 COL, pp 80-80; cv per-file 9628x1; key 'Archie'
+      [7519] COL Archie Collector's Edition (2016) (digital) (Son of Ultron-Empire).cbr (80pp)
+   G8 "Archie Halloween Special" in Archie\02 Archie v2 (2015)\Specials — 1 file(s), numbers 1, pp 22-22; cv per-file 9628x1; gcd per-file 98511x1; key 'Archie'
+      [7520] Archie Halloween Special 001 (2017) (Digital) (Shadowcat-Empire).cbz (22pp)
+   G9 "Archie" in Archie\03 Archie v1 (2018) — 2 file(s), numbers 699, 711, pp 25-29; cv per-file 9628x2; gcd per-file 90653x2; key 'Archie'
+      [7524] Archie 699 (2018) (digital) (Son of Ultron-Empire).cbr (29pp)
+      [7526] Archie 711 (2020) (digital) (Salem-Empire).cbr (25pp)
+   G10 "Archie by Nick Spencer" in Archie\03 Archie v1 (2018) — 2 file(s), 2 COL, pp 145-147; cv per-file 9628x2; key 'Archie'
+      [7529] COL Archie by Nick Spencer Vol. 01 (2020) (digital) (Salem-Empire).cbr (147pp)
+      [7530] COL Archie by Nick Spencer Vol. 02 - Archie & Sabrina (2020) (digital) (Salem-Empire).cbr (145pp)
+   G11 "Archie Facsimile Edition" in Archie\Archie Facsimile Edition (2024) — 2 file(s), numbers 2, 8, pp 36-37; cv per-file 9628x2; key 'Archie'
+      [7547] Archie Facsimile Edition 02 (Veronica 28) (2024) (Forsythe-DCP).cbr (36pp)
+      [7548] Archie Facsimile Edition 03 (Betty 08) (2025) (Forsythe-DCP).cbr (37pp)
+   G12 "Archie Halloween Special (2017) (digital)" in Archie\_Archie Holiday Books — 1 file(s), pp 22-22; cv per-file 9628x1; key 'Archie'
+      [7942] Archie Halloween Special (2017) (digital).cbz (22pp)
+   G13 "Archie by Bob Montana - The Complete Newspaper Comics" in IDW\Archie by Bob Montana - The Complete Newspaper Comics - 1946-1948 (2010) — 1 file(s), 1 COL, pp 312-312; cv per-file 9628x1; key 'Archie'
+      [31744] COL Archie by Bob Montana - The Complete Newspaper Comics - 1946-1948 (IDW, 2010) (c2c) (drake10).cbz (312pp)
+
+== S66314 Wonder Woman  [split]  341 files / 12 collections  decided in R-029 (R)
+   decided: R 66314 | the 1942 run is the majority (~290 files, "02 Wonder Woman v1 (1942)", ladder 1-329 = CV 18525 (1942, 329) / GCD 277 (1942-1986, 329)) but three more runs sit here with their own records on both legs, each with whole books: Wonder Woman (1987) — v2 #125, #172, #218-226 and seven trades (Perez 1-3, Byrne 1-2, Rucka 2, The Last True Hero) = CV 3824 (228) / GCD 3396 (1987-2006, 228); Wonder Woman (2011) #34-40, #46-52 = CV 42953 (55) / GCD 61069 (2011-2016, 55); Wonder Woman (2016) — Vol. 01/02/04/05 trades and #73-77 variant covers = CV 91774 (134) / GCD 103460 (2016-2023, 134). The old S's gcd=61069 is the New 52 run, a wrong era for a 1942 shelf. The revisit's "The Last True Hero #63-76" is a 1987-run trade (GCD 2132187: Wonder Woman (DC, 1987 series) #63-64, 66-76), not a 2016 one
+   F 66314 split-needed | proposed runs: [1942 — stays] the "02 Wonder Woman v1 (1942)" folder incl. 75522 (#199 c2c dupe) → CV 18525 / GCD 277; [1987] 15837, 16030, 17159, 17362-17370 + trades 76348, 76350, 76351, 76352, 76357, 76359, 76360 + 75523 (Wonder Woman Special 1992: CV 25656 / GCD 4425) → CV 3824 / GCD 3396; [2011] 18610, 18611, 18958-18962, 19038-19044 → CV 42953 / GCD 61069; [2016] trades 76135, 76137, 76139, 76140 + 76130-76134 (#73-77 variant covers) → CV 91774 / GCD 103460, with 19172 / 76129 (Annual #3, 2019) → CV 101798 / GCD 114405 and the 2017 FCBD / Wonder Woman Day specials 76127 / 76128; [Absolute] 75466-75468 → CV 160511 / GCD 216727; 76311 (80 Years deluxe anthology) is its own book
+   N 66314 | the "GCD says" block stamps the WRONG row on three Perez trades (L-258 shape): 76350 carries The Last True Hero's row 2132187, 76351 the 2016 Rucka "Year One" row 1696199, 76352 row 1774419 — the Perez books are GCD 105499 rows 1616025 / 1709874 / 1799096, whose notes give #1-14, #15-24, #25-35; the judged #1-14 on 76350 stands and the judged #15-20 on 76351 undercounts
+   N 66314 | the "⚠ RANGE CONTRADICTED (count)" on Byrne Vol. 01 is real: GCD row 1708146 says #101-114 and Vol. 02 (row 1822558) starts at #115, so the judged #101-115 overlaps its neighbour by one — the C below says #101-114
+   N 75599 | "Wonder Woman 075 (1988) (SpookyResin)" 32pp in the 1942 folder is not the 1955 #75 (item 75598); the year says the 1987 run, whose #75 is 1993 — unresolved, left for the split
+   N 76139 | The Four Horsewomen also collects Wonder Woman (2016) #82-83 (GCD row 2218065) — not stated as a C: one range per (leg, run), and the run's numbering jumps from #83 to #750
+   N 76311 | 80 Years of the Amazon Warrior is an anthology of stories from every era — no single run, no C (L-269)
+   nearby: S94717 "The Flash" 293f [shares gcd=3358 (collected by item 76357) — S cv=3790 gcd=3358 (R-024 0.9)] keys: "The Flash" | "The Flash v2 (1987)"
+   nearby: S101470 "Wonder Woman" 224f [shares cv=3824, shares gcd=3396 (collected by item 76311) — S cv=3824 gcd=3396 (C-020 0.9)] keys: "Aftermath Wonder Woman" | "Wonder Woman v2 (1986)"
+   nearby: S21955 "Wonder Woman" 40f [shares cv=42953, shares gcd=61069 — S cv=42953 gcd=61069 (B-008 0.9)] keys: "Wonder Woman"
+   nearby: S101473 "Wonder Woman" 15f [shares cv=91774, shares gcd=103460 (collected by item 76135) — S cv=91774 gcd=103460 (C-020 0.9)] keys: "Wonder Woman v5 (2016)"
+   nearby: S101472 "Wonder Woman v4 (2012)" 14f [shares gcd=61069 — S gcd=61069 (C-020 0.9)] keys: "Wonder Woman v4 (2012)"
+   nearby: S66317 "Wonder Woman (2016)" 6f [shares gcd=61069 — S gcd=61069 (C-009 0.9)] keys: "Wonder Woman (2016)"
+   nearby: S21634 "Who's Who: Update '87" 5f [shares gcd=3394 (collected by item 76350) — S cv=18595 gcd=3394 (A-009 0.95)] keys: "Who's Who: Update '87"
+   nearby: S21629 "Update '88" 4f [shares gcd=3631 (collected by item 76352) — S cv=18596 gcd=3631 (A-009 0.95)] keys: "Who's Who Update '88"
+   nearby: S21996 "Wonder Woman by George Perez Omnibus" 4f [shares cv=84053, shares gcd=105499 — S cv=84053 gcd=105499 (C-021 0.9)] keys: "Wonder Woman By George Perez" | "Wonder Woman by George Perez"
+   nearby: S16884 "JLA Secret Files" 3f [shares gcd=5976 (collected by item 76360) — S cv=6166 gcd=5976 (A-011 0.9)] keys: "JLA - Secret Files and Origins" | "Story from JLA Secret Files"
+   nearby: S21987 "Wonder Woman By Greg Rucka" 2f [shares cv=92217, shares gcd=104139 — S cv=92217 gcd=104139 (A-012 0.95)] keys: "Wonder Woman By Greg Rucka" | "Wonder Woman by Greg Rucka"
+   nearby: S366 "Absolute Wonder Woman" 1f [shares cv=160511, shares gcd=216727 — S cv=160511 gcd=216727 (C-020 0.95)] keys: "Absolute Wonder Woman"
+   nearby: S21998 "Wonder Woman by John Byrne" 1f [shares cv=101800, shares gcd=114406 — S cv=101800 gcd=114406 (A-012 0.95)] keys: "Wonder Woman by John Byrne"
+   nearby: S22009 "Wonder Woman: Loveless" 1f [shares gcd=160653 — S gcd=160653 (B-014 0.9)] keys: "Wonder Woman: Loveless"
+   nearby: S101474 "Wonder Woman v6 (2023)" 81f [title — S gcd=201551 (C-020 0.9)] keys: "Wonder Woman v6 (2023)"
+   nearby: S21958 "Wonder Woman '77" 30f [title — S cv=79310 gcd=88985 (C-021 0.9)] keys: "Wonder Woman '77" | "Wonder Woman '77 Meets the Bionic Woman"
+   nearby: S21970 "Wonder Woman" 25f [title — S cv=18208 gcd=17527 (C-008 0.9)] keys: "Wonder Woman (2006)" | "Wonder Woman - Odyssey" | "Wonder Woman v1 (2010)" | "Wonder Woman v3 (2006)"
+   nearby: S101469 "Wonder Woman v1 (2020)" 4f [title — S gcd=179194 (C-021 0.7)] keys: "Wonder Woman v1 (2020)" · S22004 "Wonder Woman 1984" 1f [title — S cv=130657 gcd=164328 (A-012 0.95)] keys: "Wonder Woman: 1984"
+   nearby: S17339 "Superman/Wonder Woman" 32f [title+1 — S cv=68150 gcd=76971 (C-008 0.95)] keys: "Superman - Wonder Woman" | "SupermanWonder Woman"
+   nearby: S21964 "Wonder Woman/Conan" 6f [title+1 — S cv=104505 gcd=116784 (B-015 0.95)] keys: "Wonder Woman - Conan"
+   nearby: S63986 "Wonder Woman: Rebirth" 4f [title+1 — S cv=91124 gcd=102825 (C-021 0.95)] keys: "Wonder Woman - Rebirth" | "Wonder Woman Rebirth" | "Wonder Woman: The Rebirth Deluxe Edition - Book 3"
+   nearby: S4220 "Convergence Wonder Woman" 2f [title+1 — S cv=81462 gcd=88481 (A-008 0.95)] keys: "Convergence - Wonder Woman"
+   nearby: S15337 "Sensational Wonder Woman" 2f [title+1 — S cv=134137 gcd=170020 (A-012 0.9)] keys: "Sensational Wonder Woman"
+   nearby: S21963 "Wonder Woman: Amazonia" 1f [title+1 — S cv=23938 gcd=5782 (B-015 0.95)] keys: "Wonder Woman - Amazonia"
+   nearby: S21966 "Wonder Woman: Evolution" 1f [title+1 — S cv=140152 gcd=177791 (B-015 0.95)] keys: "Wonder Woman - Evolution" · (+3 more by title)
+   keys now: "Wonder Woman v1 (1942)" x291 · "Wonder Woman (1942)" x50
+   groups (title x folder): 22
+   G1 "Wonder Woman" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\080 Faster Friends — 1 file(s), numbers 125, pp 25-25; cv per-file 18525x1; gcd per-file 3396x1; key 'Wonder Woman (1942)'
+      [15837] 09 Wonder Woman v2 125  Death Watch.cbz (25pp)
+   G2 "Wonder Woman" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\102 Our Worlds at War — 1 file(s), numbers 172, pp 23-23; cv per-file 18525x1; gcd per-file 3396x1; key 'Wonder Woman (1942)'
+      [16030] 04 Wonder Woman v2 172  Her Mothers Daughter.cbz (23pp)
+   G3 "Wonder_Woman_v2__219" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\47 Superman - Sacrifice (After OMAC project 3) — 1 file(s), numbers 219, pp 22-22; cv per-file 18525x1; key 'Wonder Woman (1942)'
+      [17159] 04 Wonder_Woman_v2__219.cbr (22pp)
+   G4 "Wonder Woman" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\01 Wonder Woman - Mission's End — 9 file(s), numbers 218-226, pp 23-25; cv per-file 18525x9; key 'Wonder Woman (1942)'
+      e.g. Wonder Woman v2 #218.cbz
+        17362 #218 25pp · 17363 #219 24pp · 17364 #220 25pp · 17365 #221 25pp · 17366 #222 25pp · 17367 #223 23pp · 17368 #224 23pp · 17369 #225 25pp · 17370 #226 25pp
+   G5 "Wonder Woman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\098 Wonder Woman (23.1-35) — 2 file(s), numbers 34-35, pp 23-24; cv per-file 18525x2; key 'Wonder Woman (1942)'
+      [18610] Wonder Woman 034.cbr (23pp)
+      [18611] Wonder Woman 035.cbr (24pp)
+   G6 "Wonder Woman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\121 Wonder Woman - War Torn — 5 file(s), numbers 36-40, pp 21-26; cv per-file 18525x5; key 'Wonder Woman (1942)'
+      e.g. Wonder Woman # 36.cbz
+        18958 #36 22pp · 18959 #37 21pp · 18960 #38 23pp · 18961 #39 22pp · 18962 #40 26pp
+   G7 "Wonder Woman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\130 Wonder Woman - War torn aftermath and Rebirth leadup — 7 file(s), numbers 46-52, pp 25-46; cv per-file 18525x7; gcd per-file 61069x7; key 'Wonder Woman (1942)'
+      e.g. Wonder Woman 046 (2016) (Digital-Empire).cbr
+        19038 #46 2016 26pp · 19039 #47 2016 28pp · 19040 #48 2016 27pp · 19041 #49 2016 27pp · 19042 #50 2016 46pp · 19043 #51 2016 25pp · 19044 #52 2016 31pp
+   G8 "Wonder Woman Annual" in DC\#DC Events\Event Leviathan (2019)\Tie-ins — 1 file(s), numbers 3, pp 39-39; cv per-file 18525x1; gcd per-file 113680x1; key 'Wonder Woman (1942)'
+      [19172] Wonder Woman Annual 003 (2019) (Digital-Empire).cbr (39pp)
+   G9 "Absolute Wonder Woman" in DC\_Wonder Woman\Absolute Wonder Woman v1 (2024) — 3 file(s), numbers 1-3, pp 28-32; cv per-file 18525x3; gcd per-file 224760x2, 213394x1; key 'Wonder Woman (1942)'
+      [75466] Absolute Wonder Woman 001 (2024) (digital) (Son of Ultron-Empire).cbr (32pp)
+      [75467] Absolute Wonder Woman 002 (2025) (digital) (Son of Ultron-Empire).cbr (28pp)
+      [75468] Absolute Wonder Woman 003 (2025) (digital) (Son of Ultron-Empire).cbr (30pp)
+   G10 "Wonder Woman" in DC\_Wonder Woman\_Completed Series\02 Wonder Woman v1 (1942) — 289 file(s), numbers 1-250, 285-293, 300-302, 306-329, pp 17-85; cv per-file 18525x289; gcd per-file 277x281, 14622x4, 32470x3; key 'Wonder Woman v1 (1942)'
+      e.g. Wonder Woman 001 (1942) (Digital) (Shadowcat-Empire).cbz
+        75524 #1 1942 58pp · 75525 #2 1942 58pp · 75526 #3 1943 56pp · 75527 #4 1943 56pp · 75528 #5 1943 48pp · 75529 #6 1943 48pp · 75530 #7 1943 60pp · 75531 #8 1944 46pp · 75532 #9 1944 46pp
+        75533 #10 1944 46pp · 75534 #11 1944 44pp · 75535 #12 1945 46pp · 75536 #13 1945 45pp · 75537 #14 1945 45pp · 75538 #15 1945 44pp · 75539 #16 1946 52pp · 75540 #17 1946 53pp
+        75541 #18 1946 52pp · 75542 #19 1946 52pp · 75543 #20 1946 52pp · 75544 #21 1947 52pp · 75545 #22 1947 52pp · 75546 #23 1947 52pp · 75547 #24 1947 54pp · 75548 #25 1947 52pp
+        75549 #26 1947 52pp · 75550 #27 1948 52pp · 75551 #28 1948 52pp · 75552 #29 1948 52pp · 75553 #30 1948 52pp · 75554 #31 1948 53pp · 75555 #32 1948 52pp · 75556 #33 1949 52pp
+        75557 #34 1949 52pp · 75558 #35 1949 52pp · 75559 #36 1949 52pp · 75560 #37 1949 53pp · 75561 #38 1949 52pp · 75562 #39 1950 52pp · 75563 #40 1950 49pp · 75564 #41 1950 43pp
+        75565 #42 1950 43pp · 75566 #43 1950 46pp · 75567 #44 1951 45pp · 75568 #45 1951 42pp · 75569 #46 1951 44pp · 75570 #47 1951 44pp · 75571 #48 1951 45pp · 75572 #49 1951 41pp
+        75573 #50 1952 37pp · 75574 #51 1952 44pp · 75575 #52 1952 44pp · 75576 #53 1952 44pp · 75577 #54 1952 44pp · 75578 #55 1952 44pp · 75579 #56 1952 45pp · 75580 #57 1953 44pp
+        75581 #58 1953 46pp · 75582 #59 1953 36pp · 75583 #60 1953 36pp · 75584 #61 1953 36pp · 75585 #62 1953 37pp · 75586 #63 1954 37pp · 75587 #64 1964 37pp · 75588 #65 1954 36pp
+        75589 #66 1954 37pp · 75590 #67 1954 36pp · 75591 #68 1954 36pp · 75592 #69 1954 36pp · 75593 #70 1954 36pp · 75594 #71 1955 36pp · 75595 #72 1955 37pp · 75596 #73 1955 36pp
+        75597 #74 1955 36pp · 75598 #75 1955 36pp · 75599 #75 1988 32pp · 75600 #76 1955 30pp · 75601 #77 1955 37pp · 75602 #78 1955 36pp · 75603 #79 1956 36pp · 75604 #80 1956 36pp
+        75605 #81 1956 36pp · 75606 #82 1956 36pp · 75607 #83 1956 36pp · 75608 #84 1956 37pp · 75609 #85 1956 36pp · 75610 #86 1956 36pp · 75611 #87 1957 37pp · 75612 #88 1957 36pp
+        75613 #89 1957 36pp · 75614 #89 1957 33pp · 75615 #90 1957 36pp · 75616 #91 1957 36pp · 75617 #92 1957 36pp · 75618 #93 1957 36pp · 75619 #94 1957 37pp · 75620 #95 1958 36pp
+        75621 #96 1958 37pp · 75622 #97 1958 36pp · 75623 #98 1958 27pp · 75624 #99 1958 28pp · 75625 #100 1958 27pp · 75626 #101 1958 27pp · 75627 #102 1958 27pp · 75628 #103 1958 27pp
+        75629 #104 1958 28pp · 75630 #105 1959 26pp · 75631 #106 1959 27pp · 75632 #107 1959 27pp · 75633 #108 1959 26pp · 75634 #109 1959 27pp · 75635 #110 1959 27pp · 75636 #111 1960 37pp
+        75637 #112 1959 28pp · 75638 #113 1960 27pp · 75639 #114 1960 30pp · 75640 #115 1960 29pp · 75641 #116 1960 29pp · 75642 #117 1960 29pp · 75643 #118 1960 36pp · 75644 #119 1960 29pp
+        75645 #120 1960 29pp · 75646 #121 1961 29pp · 75647 #122 1961 30pp · 75648 #123 1961 28pp · 75649 #124 1961 27pp · 75650 #125 1961 27pp · 75651 #126 1961 29pp · 75652 #127 1961 29pp
+        75653 #128 1961 28pp · 75654 #129 1962 29pp · 75655 #130 1962 30pp · 75656 #131 1962 28pp · 75657 #132 1962 28pp · 75658 #133 1962 28pp · 75659 #134 1962 29pp · 75660 #135 1962 29pp
+        75661 #136 1962 29pp · 75662 #137 1963 29pp · 75663 #138 1963 28pp · 75664 #139 1963 28pp · 75665 #140 1963 27pp · 75666 #141 1963 28pp · 75667 #142 1963 28pp · 75668 #143 1963 27pp
+        75669 #144 1964 17pp · 75670 #145 1964 36pp · 75671 #146 1964 36pp · 75672 #147 1964 36pp · 75673 #148 1964 36pp · 75674 #149 1964 26pp · 75675 #150 1964 26pp · 75676 #151 1964 27pp
+        75677 #152 1964 28pp · 75678 #153 1965 27pp · 75679 #154 1965 27pp · 75680 #155 1965 26pp · 75681 #156 1965 26pp · 75682 #157 1965 26pp · 75683 #158 1965 27pp · 75684 #159 1965 24pp
+        75685 #160 1965 29pp · 75686 #161 1965 27pp · 75687 #162 1966 28pp · 75688 #163 1966 26pp · 75689 #164 1966 26pp · 75690 #165 1966 26pp · 75691 #166 1966 26pp · 75692 #167 1966 27pp
+        75693 #168 1966 26pp · 75694 #169 1967 26pp · 75695 #170 1967 26pp · 75696 #171 1967 26pp · 75697 #172 1967 25pp · 75698 #173 1967 25pp · 75699 #174 1967 25pp · 75700 #175 1968 25pp
+        75701 #176 1968 24pp · 75702 #177 1968 22pp · 75703 #178 1968 24pp · 75704 #179 1968 24pp · 75705 #180 1969 24pp · 75706 #181 1969 24pp · 75707 #182 1969 24pp · 75708 #183 1969 26pp
+        75709 #184 1969 24pp · 75710 #185 1969 24pp · 75711 #186 1970 25pp · 75712 #187 1970 25pp · 75713 #188 1970 27pp · 75714 #189 1970 26pp · 75715 #190 1970 24pp · 75716 #191 1970 27pp
+        75717 #192 1971 23pp · 75718 #193 1971 23pp · 75719 #194 1971 23pp · 75720 #195 1971 23pp · 75721 #196 1971 23pp · 75722 #197 1971 40pp · 75723 #198 1972 37pp · 75724 #199 1972 52pp
+        75725 #199 1972 38pp · 75726 #200 1972 37pp · 75727 #201 1972 24pp · 75728 #202 1972 25pp · 75729 #203 1972 25pp · 75730 #204 1973 23pp · 75731 #205 1973 24pp · 75732 #206 1973 24pp
+        75733 #207 1973 23pp · 75734 #208 1973 21pp · 75735 #209 1974 21pp · 75736 #210 1974 21pp · 75737 #211 1974 85pp · 75738 #212 1974 22pp · 75739 #213 1974 21pp · 75740 #214 1974 83pp
+        75741 #215 1975 21pp · 75742 #216 1975 21pp · 75743 #217 1975 50pp · 75744 #218 1975 20pp · 75745 #219 1975 20pp · 75746 #220 1975 22pp · 75747 #221 1975 20pp · 75748 #222 1976 20pp
+        75749 #223 1976 20pp · 75750 #224 1976 18pp · 75751 #225 1976 18pp · 75752 #226 1976 18pp · 75753 #227 1977 17pp · 75754 #228 1977 18pp · 75755 #229 1977 18pp · 75756 #230 1977 18pp
+        75757 #231 1977 35pp · 75758 #232 1977 37pp · 75759 #233 1977 20pp · 75760 #234 1977 20pp · 75761 #235 1977 36pp · 75762 #236 1977 19pp · 75763 #237 1977 20pp · 75764 #238 1977 21pp
+        75765 #239 1978 21pp · 75766 #240 1978 20pp · 75767 #241 1978 20pp · 75768 #242 1978 36pp · 75769 #243 1978 20pp · 75770 #244 1978 21pp · 75771 #245 1978 20pp · 75772 #246 1978 20pp
+        75773 #247 1978 29pp · 75774 #248 1978 28pp · 75775 #249 1978 43pp · 75776 #250 1978 20pp · 75777 #285 1981 28pp · 75778 #286 1981 29pp · 75779 #287 1982 26pp · 75780 #288 1982 28pp
+        75781 #289 1982 27pp · 75782 #290 1982 26pp · 75783 #291 1982 26pp · 75784 #292 1982 26pp · 75785 #293 1982 25pp · 75786 #300 1983 74pp · 75787 #301 1983 24pp · 75788 #302 1983 24pp
+        75789 #306 1983 24pp · 75790 #307 1983 24pp · 75791 #308 1983 24pp · 75792 #309 1983 24pp · 75793 #310 1983 24pp
+      [75794] Wonder Woman, 1984-01-00 (#311) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75795] Wonder Woman, 1984-02-00 (#312) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75796] Wonder Woman, 1984-03-00 (#313) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75797] Wonder Woman, 1984-04-00 (#314) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75798] Wonder Woman, 1984-05-00 (#315) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75799] Wonder Woman, 1984-06-00 (#316) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75800] Wonder Woman, 1984-07-00 (#317) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75801] Wonder Woman, 1984-08-00 (#318) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75802] Wonder Woman, 1984-09-00 (#319) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75803] Wonder Woman, 1984-10-00 (#320) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75804] Wonder Woman, 1984-11-00 (#321) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75805] Wonder Woman, 1984-12-00 (#322) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75806] Wonder Woman, 1985-01-00 (#323) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75807] Wonder Woman, 1985-04-00 (#324) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75808] Wonder Woman, 1985-05-00 (#325) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75809] Wonder Woman, 1985-07-00 (#326) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75810] Wonder Woman, 1985-09-00 (#327) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75811] Wonder Woman, 1985-10-00 (#328) (Digital) (AnHeroGold-Empire).cbz (24pp)
+      [75812] Wonder Woman, 1986-02-00 (#329) (Digital) (AnHeroGold-Empire).cbz (37pp)
+   G11 "Wonder Woman" in DC\_Wonder Woman\_Completed Series\02 Wonder Woman v1 (1942)\Annuals and Specials — 1 file(s), numbers 199, pp 68-68; cv per-file 18525x1; gcd per-file 277x1; key 'Wonder Woman v1 (1942)'
+      [75522] Wonder Woman 199 (1972) (c2c) (w 14 pgs original art) (Kracalactaka-a nonny moose).cbz (68pp)
+   G12 "Wonder Woman Special" in DC\_Wonder Woman\_Completed Series\02 Wonder Woman v1 (1942)\Annuals and Specials — 1 file(s), numbers 1, pp 38-38; cv per-file 18525x1; key 'Wonder Woman v1 (1942)'
+      [75523] Wonder Woman Special 001 (1992) (Digital) (Shadowcat-Empire).cbz (38pp)
+   G13 "Wonder Woman" in DC\_Wonder Woman\_Completed Series\08 Wonder Woman v5.2-v1 (2018) — 4 file(s), 4 COL, pp 187-318; cv per-file 122181x3, 137670x1; gcd per-file 151240x2, 160653x2; key 'Wonder Woman (1942)'
+      [76135] COL Wonder Woman Vol. 01 - The Just War (2019) (digital) (Son of Ultron-Empire).cbr (189pp)
+         own record cv 122181 / gcd s151240 "Wonder Woman" (issue 2026898) COLLECTS: gcd=103460 Wonder Woman (2016) #58-65
+      [76137] COL Wonder Woman Vol. 02 - Love is a Battlefield (2020) (digital) (Son of Ultron-Empire).cbr (187pp)
+         own record cv 122181 / gcd s151240 "Wonder Woman" (issue 2100552) COLLECTS: gcd=103460 Wonder Woman (2016) #66-73
+      [76139] COL Wonder Woman Vol. 04 - The Four Horsewomen (2021) (digital) (Son of Ultron-Empire).cbr (318pp)
+         own record cv 122181 / gcd s160653 "Wonder Woman" (issue 2218065) COLLECTS: gcd=103460 Wonder Woman (2016) #82-83, #750-758 · gcd=114405 Wonder Woman Annual (2017) #3-4
+      [76140] COL Wonder Woman Vol. 05 - Lords & Liars (2021) (digital) (Son of Ultron-Empire).cbr (256pp)
+         own record cv 137670 / gcd s160653 "Wonder Woman" (issue 2246217) COLLECTS: gcd=103460 Wonder Woman (2016) #759-769
+   G14 "Wonder Woman" in DC\_Wonder Woman\_Completed Series\08 Wonder Woman v5.2-v1 (2018)\Annuals and Specials — 1 file(s), numbers 1, pp 23-23; cv per-file 18525x1; gcd per-file 112292x1; key 'Wonder Woman (1942)'
+      [76127] Wonder Woman 001 - Wonder Woman Day Special Edition (2017) (digital-Empire).cbr (23pp)
+   G15 "Wonder Woman 001 Free Comic Book Day 2017 Special Edition (2017) (digital-Empire)" in DC\_Wonder Woman\_Completed Series\08 Wonder Woman v5.2-v1 (2018)\Annuals and Specials — 1 file(s), numbers 1, pp 22-22; cv per-file 18525x1; gcd per-file 112292x1; key 'Wonder Woman (1942)'
+      [76128] Wonder Woman 001 Free Comic Book Day 2017 Special Edition (2017) (digital-Empire).cbr (22pp)
+   G16 "Wonder Woman Annual" in DC\_Wonder Woman\_Completed Series\08 Wonder Woman v5.2-v1 (2018)\Annuals and Specials — 1 file(s), numbers 3, pp 39-39; cv per-file 18525x1; gcd per-file 113680x1; key 'Wonder Woman (1942)'
+      [76129] Wonder Woman Annual 003 (2019) (Digital-Empire).cbr (39pp)
+   G17 "Wonder Woman" in DC\_Wonder Woman\_Completed Series\08 Wonder Woman v5.2-v1 (2018)\Variant Covers — 5 file(s), numbers 73-77, pp 1-1; cv per-file 18525x5; gcd per-file 103460x5; key 'Wonder Woman (1942)'
+      e.g. Wonder Woman 073 (2019) (Variant Cover - Jenny Frison) (digital-Empire).cbr
+        76130 #73 2019 1pp · 76131 #74 2019 1pp · 76132 #75 2019 1pp · 76133 #76 2019 1pp · 76134 #77 2019 1pp
+   G18 "Wonder Woman" in DC\_Wonder Woman\_Trades, Minis and One-shots — 1 file(s), 1 COL, pp 401-401; cv per-file 129216x1; gcd per-file 162593x1; key 'Wonder Woman (1942)'
+      [76348] COL Wonder Woman Book 1 - The Last True Hero (2020) (digital) (Son of Ultron-Empire).cbr (401pp)
+         own record cv 129216 / gcd s162593 "Wonder Woman" (issue 2132187) COLLECTS: gcd=3396 Wonder Woman (1987) #63-64, #66-76 · gcd=3827 Wonder Woman Annual (1988) #3 · gcd=4425 Wonder Woman Special (1992) #1
+   G19 "Wonder Woman - 80 Years of the Amazon Warrior the Deluxe Edition (2021) (digital) (Son of Ultron-Empire)" in DC\_Wonder Woman\_Trades, Minis and One-shots — 1 file(s), 1 COL, pp 415-415; cv per-file 138903x1; gcd per-file 176029x1; key 'Wonder Woman (1942)'
+      [76311] COL Wonder Woman - 80 Years of the Amazon Warrior the Deluxe Edition (2021) (digital) (Son of Ultron-Empire).cbr (415pp)
+         own record cv 138903 / gcd s176029 "Wonder Woman: 80 Years of the Amazon Warrior The Deluxe Edition" (issue 2262112) COLLECTS: gcd=277 Wonder Woman (1942) #5, #78, #98, #124, #162, #203, #206 · gcd=3396 Wonder Woman (1987) #6, #57, #73, #170 · gcd=168741 Future State: Immortal Wonder Woman (2021) #1-2 · gcd=103460 Wonder Woman (2016) #750
+   G20 "Wonder Woman by George Perez" in DC\_Wonder Woman\_Trades, Minis and One-shots\Wonder Woman By George Perez (2016) — 3 file(s), 3 COL, pp 263-347; cv per-file 84053x3; gcd per-file 105499x3; key 'Wonder Woman (1942)'
+      [76350] COL Wonder Woman by George Perez Vol. 01 (2016) (digital) (Son of Ultron-Empire).cbr (347pp)
+         own record cv 84053 / gcd s105499 "Wonder Woman by George Pérez" (issue 1616025) COLLECTS: gcd=3396 Wonder Woman (1987) #1-14, #120 · gcd=3394 Who's Who: Update '87 (1987) #1-3 · gcd=14805 Wonder Woman (2004) #1-2 · gcd=14740 Wonder Woman Gallery (1996) (unnumbered)
+      [76351] COL Wonder Woman by George Perez Vol. 02 (2017) (digital) (Son of Ultron-Empire).cbr (289pp)
+         own record cv 84053 / gcd s105499 "Wonder Woman by George Pérez" (issue 1709874) COLLECTS: gcd=3396 Wonder Woman (1987) #15-24 · gcd=3827 Wonder Woman Annual (1988) #1 · gcd=14805 Wonder Woman (2004) #3-4 · gcd=3394 Who's Who: Update '87 (1987) #2
+      [76352] COL Wonder Woman by George Perez Vol. 03 (2018) (digital) (Son of Ultron-Empire).cbr (263pp)
+         own record cv 84053 / gcd s105499 "Wonder Woman by George Pérez" (issue 1799096) COLLECTS: gcd=3396 Wonder Woman (1987) #25-35 · gcd=3631 Who's Who Update '88 (1988) #4 · gcd=3394 Who's Who: Update '87 (1987) #4 · gcd=3827 Wonder Woman Annual (1988) #2
+   G21 "Wonder Woman by Greg Rucka" in DC\_Wonder Woman\_Trades, Minis and One-shots\Wonder Woman By Greg Rucka (2016) — 1 file(s), 1 COL, pp 308-308; cv per-file 92217x1; gcd per-file 104139x1; key 'Wonder Woman (1942)'
+      [76357] COL Wonder Woman by Greg Rucka Vol. 02 (2017) (digital) (Son of Ultron-Empire).cbr (308pp)
+         own record cv 92217 / gcd s104139 "Wonder Woman by Greg Rucka" (issue 1720071) COLLECTS: gcd=3396 Wonder Woman (1987) #206-217 · gcd=3358 Flash (1987) #219
+   G22 "Wonder Woman by John Byrne" in DC\_Wonder Woman\_Trades, Minis and One-shots\Wonder Woman By John Byrne (2017) — 2 file(s), 2 COL, pp 323-324; cv per-file 101800x2; gcd per-file 114406x2; key 'Wonder Woman (1942)'
+      [76359] COL Wonder Woman by John Byrne Vol. 01 (2017) (digital) (Son of Ultron-Empire).cbr (324pp)
+         own record cv 101800 / gcd s114406 "Wonder Woman by John Byrne" (issue 1708146) COLLECTS: gcd=3396 Wonder Woman (1987) #101-114
+      [76360] COL Wonder Woman by John Byrne Vol. 02 (2018) (digital) (Son of Ultron-Empire).cbr (323pp)
+         own record cv 101800 / gcd s114406 "Wonder Woman by John Byrne" (issue 1822558) COLLECTS: gcd=3396 Wonder Woman (1987) #115-124 · gcd=3827 Wonder Woman Annual (1988) #5-6 · gcd=5976 JLA Secret Files (1997) #1 · gcd=14740 Wonder Woman Gallery (1996) (unnumbered)
+
+== S7938 Green Lantern Corps  [split]  135 files / 1 collections  decided in C-007 (R)
+   decided: R 7938 | this shelf holds two distinct Green Lantern Corps runs sharing overlapping numbering: the 1986-era "Green Lantern Corps" continuation of Green Lantern's own numbering (items labeled "v1 201-224") and the 2006 "Green Lantern Corps" ongoing (cv=18248 gcd=18427, our items numbered "v2 01-38" and "#1-54"); the open overlap-in-series flag on item 65464 (four GLC ladders each contribute a Vol. 01) confirms several runs numbered from #1 share this shelf
+   F 7938 split-needed | Green Lantern Corps 1986-era continuation of Green Lantern's own numbering (items #201-224, e.g. 15460-15503); Green Lantern Corps 2006 ongoing (cv=18248 gcd=18427, items numbered v2 01-38 and #1-54)
+   F 7938 wrong-cv-link | the per-file CV/GCD 18248/18427 match is stamped across all 135 files including the 1986-era "v1 201-224" issues, which are a different, earlier run
+   N 7938 cv=18248 gcd=18427 (Green Lantern Corps 2006 ongoing, 63 issues)
+   N 7938 cv=- gcd=- (Green Lantern Corps 1986-era "v1 201-224" continuation of Green Lantern's own numbering — needs-fetch)
+   nearby:
+   nearby: S102449 "Green Lantern Corps" 48f [shares cv=18248, shares gcd=18427 — S cv=18248 gcd=18427 (R-017 0.95)] keys: "Green Lantern Corps v2 (2006)" | "Green Lantern Corps v3 (2011)" | "Green Lantern Vol. 11 - War of the Green Lanterns Aftermath (2011)"
+   nearby: S6203 "Epilogue - Green Lantern Corps" 2f [shares gcd=18427 — S gcd=18427 (B-008 0.9)] keys: "Epilogue - Green Lantern Corps"
+   nearby: S22910 "comic green lantern corps" 1f [shares gcd=18427 — S gcd=18427 (B-008 0.9)] keys: "comic green lantern corps"
+   nearby: S64823 "Green Lantern" 461f [title — S cv=2839 gcd=1448 (C-008 0.9)] keys: "Green Lantern # (1960)" | "Green Lantern (1960)" | "Green Lantern Corps v1 (1986)" | "Green Lantern v2 (1960)"
+   nearby: S7944 "Green Lantern Corps: Recharge" 14f [title+1 — S cv=18901 gcd=15516 (C-007 0.95)] keys: "Green Lantern Corps - Recharge"
+   nearby: S7949 "Green Lantern Corps Quarterly" 8f [title+1 — S cv=4741 gcd=4400 (A-007 0.95)] keys: "Green Lantern Corps Quarterly"
+   nearby: S4191 "Convergence Green Lantern Corps" 2f [title+1 — S cv=81464 gcd=88474 (R-033 0.95)] keys: "Convergence - Green Lantern Corps"
+   keys now: "Green Lantern Corps" x133 · "Green Lantern corps" x2
+   groups (title x folder): 42
+   G1 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\028 Setting Up Shop — 6 file(s), numbers 201-206, pp 23-36; cv per-file 18248x6; key 'Green Lantern Corps'
+      [15460] 01 Green Lantern Corps v1 201  Setting Up Shop.cbz (23pp)
+      [15462] 03 Green Lantern Corps v1 202  Turf.cbz (36pp)
+      [15463] 04 Green Lantern Corps v1 203  The Diabolical Dr Ubx.cbz (36pp)
+      [15464] 05 Green Lantern Corps v1 204  Young And Innocent.cbz (36pp)
+      [15465] 06 Green Lantern Corps v1 205  Bad Reputation.cbz (36pp)
+      [15466] 07 Green Lantern Corps v1 206  In Deep.cbz (36pp)
+   G2 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\029 Legends — 1 file(s), numbers 207, pp 25-25; cv per-file 18248x1; key 'Green Lantern Corps'
+      [15468] 02 Green Lantern Corps v1 207  Simple Minds.cbz (25pp)
+   G3 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\030 Red Lantern — 3 file(s), numbers 208-210, pp 23-36; cv per-file 18248x3; key 'Green Lantern Corps'
+      [15474] 01 Green Lantern Corps v1 208  Red Lantern.cbz (36pp)
+      [15475] 02 Green Lantern Corps v1 209  Red Alert.cbz (24pp)
+      [15476] 03 Green Lantern Corps v1 210  See Red.cbz (23pp)
+   G4 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\031 I Think, Therefore I Am — 5 file(s), numbers 211-215, pp 24-31; cv per-file 18248x5; key 'Green Lantern Corps'
+      [15477] 01 Green Lantern Corps v1 211  Pink Elephants.cbz (30pp)
+      [15478] 02 Green Lantern Corps v1 212  Fun Couples.cbz (31pp)
+      [15479] 03 Green Lantern Corps v1 213  For Want Of A Male.cbz (25pp)
+      [15480] 04 Green Lantern Corps v1 214  I Think Therefore.cbz (25pp)
+      [15481] 05 Green Lantern Corps v1 215  I Am.cbz (24pp)
+   G5 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\032 Inside Summer Skies — 4 file(s), numbers 216-219, pp 23-25; cv per-file 18248x4; key 'Green Lantern Corps'
+      [15484] 01 Green Lantern Corps v1 216  Secret Identities.cbz (23pp)
+      [15485] 02 Green Lantern Corps v1 217  Inside Summer Skies.cbz (23pp)
+      [15486] 03 Green Lantern Corps v1 218  Inside Some Other Skies.cbz (24pp)
+      [15487] 04 Green Lantern Corps v1 219  Inside Somatic Psyches.cbz (25pp)
+   G6 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\033 Milennium — 2 file(s), numbers 220-221, pp 25-26; cv per-file 18248x2; key 'Green Lantern Corps'
+      [15492] 05 Green Lantern Corps v1 220  Sacred Identities.cbz (26pp)
+      [15499] 12 Green Lantern Corps v1 221  Diversions.cbz (25pp)
+   G7 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\034 The Ultimate Testament — 3 file(s), numbers 222-224, pp 24-40; cv per-file 18248x3; key 'Green Lantern Corps'
+      [15501] 01 Green Lantern Corps v1 222  The Last Testament Of Sinestro.cbz (24pp)
+      [15502] 02 Green Lantern Corps v1 223  The Last Testament Of The Green Lantern Corps.cbz (25pp)
+      [15503] 03 Green Lantern Corps v1 224  The Ultimate Testament.cbz (40pp)
+   G8 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\125 Collateral Damage — 3 file(s), numbers 1-3, pp 23-25; cv per-file 18248x3; gcd per-file 18427x3; key 'Green Lantern Corps'
+      [16165] 03 Green Lantern Corps v2 01  To Be A Lantern.cbz (23pp)
+      [16166] 04 Green Lantern Corps v2 02  Death Trail.cbz (25pp)
+      [16167] 05 Green Lantern Corps v2 03  Homecoming.cbz (24pp)
+   G9 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\128 The Hunt — 3 file(s), numbers 4-6, pp 24-25; cv per-file 18248x3; gcd per-file 18427x3; key 'Green Lantern Corps'
+      [16177] 01 Green Lantern Corps v2 04  Unrelenting.cbz (24pp)
+      [16178] 02 Green Lantern Corps v2 05  The Hunt.cbz (25pp)
+      [16179] 03 Green Lantern Corps v2 06  The Price of Duty.cbz (24pp)
+   G10 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\131 The Dark Side of Green — 7 file(s), numbers 7-13, pp 23-25; cv per-file 18248x7; gcd per-file 18427x7; key 'Green Lantern Corps'
+      [16189] 01 Green Lantern Corps v2 07  The Dark Side of Green Part One.cbz (24pp)
+      [16190] 02 Green Lantern Corps v2 08  The Dark Side of Green Part Two.cbz (24pp)
+      [16191] 03 Green Lantern Corps v2 09  The Dark Side of Green Conclusion.cbz (23pp)
+      [16192] 04 Green Lantern Corps v2 10  Friends in Need.cbz (24pp)
+      [16193] 05 Green Lantern Corps v2 11  The Prophecy.cbz (24pp)
+      [16194] 06 Green Lantern Corps v2 12  Fugitive.cbz (25pp)
+      [16195] 07 Green Lantern Corps v2 13  Old Ghosts.cbz (23pp)
+   G11 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\132 The War of Light, Part 1- The Sinestro Corps War — 5 file(s), numbers 11, 14-16, pp 21-26; cv per-file 18248x5; key 'Green Lantern Corps'
+      [16198] 03 Green Lantern Corps v2 14  Sinestro Corps Chapter Two The Gathering Storm.cbz (26pp)
+      [16200] 05 Green Lantern Corps v2 15  The Battle of Mogo.cbz (24pp)
+      [16203] 08 Green Lantern Corps v2 16  Battle of Ranx.cbz (23pp)
+      [16206] 11 Green Lantern Corps v2 17  Endgame.cbz (21pp)
+      [16209] 14 Green Lantern Corps v2 18  Hammer to Fall.cbz (25pp)
+   G12 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\133 The Alpha Lanterns — 1 file(s), numbers 19, pp 25-25; cv per-file 18248x1; key 'Green Lantern Corps'
+      [16213] 03 Green Lantern Corps v2 19  Libertys Light.cbz (25pp)
+   G13 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\134 Ring Quest — 5 file(s), numbers 20, 23-26, pp 23-25; cv per-file 18248x5; key 'Green Lantern Corps'
+      [16217] 01 Green Lantern Corps v2 20  Ring Quest Part One.cbz (24pp)
+      [16218] 02 Green Lantern Corps v2 23  Ring Quest Part Two.cbz (25pp)
+      [16219] 03 Green Lantern Corps v2 24  Ring Quest Part Three.cbz (23pp)
+      [16220] 04 Green Lantern Corps v2 25  Ring Quest Part Four.cbz (24pp)
+      [16221] 05 Green Lantern Corps v2 26  Ring Quest Conclusion.cbz (25pp)
+   G14 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\136 The Curse of the Alpha Lanterns — 2 file(s), numbers 21-22, pp 23-23; cv per-file 18248x2; key 'Green Lantern Corps'
+      [16242] 01 Green Lantern Corps v2 21  The Curse of the AlphaLantern Part One.cbz (23pp)
+      [16243] 02 Green Lantern Corps v2 22  The Curse of the AlphaLantern Part Two.cbz (23pp)
+   G15 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\138 Eye of the Beholder — 2 file(s), numbers 27-28, pp 25-25; cv per-file 18248x2; key 'Green Lantern Corps'
+      [16261] 01 Green Lantern Corps v2 27  Eye of the Beholder Part One.cbz (25pp)
+      [16262] 02 Green Lantern Corps v2 28  Eye of the Beholder Part Two.cbz (25pp)
+   G16 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\140 Sins of the Star Sapphire — 4 file(s), numbers 29-32, pp 23-25; cv per-file 18248x4; key 'Green Lantern Corps'
+      [16271] 01 Green Lantern Corps v2 29  Sins of the Star Sapphire Part One Love on the Air.cbz (25pp)
+      [16272] 02 Green Lantern Corps v2 30  Sins of the Star Sapphire Part Two Emptyhanded Heart.cbz (25pp)
+      [16273] 03 Green Lantern Corps v2 31  Sins of the Star Sapphire Part Three EmptyHanded Heart.cbz (25pp)
+      [16274] 04 Green Lantern Corps v2 32  Sins of the Star Sapphire Part Four Hearts and Minds.cbz (23pp)
+   G17 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\143 Prelude to Blackest Night — 6 file(s), numbers 33-38, pp 22-30; cv per-file 18248x6; key 'Green Lantern Corps'
+      [16281] 01 Green Lantern Corps v2 33  Emerald Eclipse Part One.cbz (26pp)
+      [16282] 02 Green Lantern Corps v2 34  Emerald Eclipse Part Two.cbz (24pp)
+      [16283] 03 Green Lantern Corps v2 35  Emerald Eclipse Part Three.cbz (30pp)
+      [16284] 04 Green Lantern Corps v2 36  Emerald Eclipse Part Four.cbz (22pp)
+      [16285] 05 Green Lantern Corps v2 37  Emerald Eclipse Part Five.cbz (22pp)
+      [16286] 06 Green Lantern Corps v2 38  Emerald Eclipse Conclusion.cbz (22pp)
+   G18 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\144 Blackest Night — 7 file(s), numbers 40-46, pp 23-32; cv per-file 18248x7; key 'Green Lantern Corps'
+      e.g. 14 Green Lantern Corps 40.cbr
+        16305 #40 32pp · 16310 #41 26pp · 16317 #42 25pp · 16333 #43 24pp · 16348 #44 23pp · 16360 #45 26pp · 16364 #46 30pp
+   G19 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\147 Brightest Day — 8 file(s), numbers 47-54, pp 22-44; cv per-file 18248x8; key 'Green Lantern Corps'
+      e.g. 13 Green Lantern Corps 48.cbz
+        16386 #48 22pp · 16395 #49 30pp · 16409 #50 24pp · 16420 #51 23pp · 16426 #47 44pp · 16433 #52 23pp · 16445 #53 35pp · 16455 #54 23pp
+   G20 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\151 Green Lantern Corps - Fearsome — 7 file(s), numbers 1-7, pp 22-36; cv per-file 18248x7; key 'Green Lantern Corps'
+      e.g. Green Lantern Corps # 1.cbr
+        16479 #1 33pp · 16480 #2 36pp · 16481 #3 33pp · 16482 #4 22pp · 16483 #5 35pp · 16484 #6 23pp · 16485 #7 26pp
+   G21 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\155 Green Lantern Corps - Alpha War — 5 file(s), numbers 8-12, pp 20-34; cv per-file 18248x5; key 'Green Lantern Corps'
+      e.g. Green Lantern Corps # 10.cbr
+        16504 #10 33pp · 16505 #11 34pp · 16506 #12 20pp · 16507 #8 31pp · 16508 #9 21pp
+   G22 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\157 Rise of the Third Army & Wraith of the first Lantern - The End — 8 file(s), numbers 13-20, pp 19-33; cv per-file 18248x8; key 'Green Lantern Corps'
+      e.g. 05 Green Lantern Corps # 13.cbr
+        16519 #13 33pp · 16520 #14 22pp · 16521 #15 23pp · 16522 #16 20pp · 16533 #17 24pp · 16537 #18 24pp · 16541 #19 19pp · 16545 #20 23pp
+   G23 "Green Lantern Corps Annual" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\157 Rise of the Third Army & Wraith of the first Lantern - The End — 1 file(s), numbers 1, pp 33-33; cv per-file 18248x1; key 'Green Lantern Corps'
+      [16531] 17 Green Lantern Corps Annual # 1.cbr (33pp)
+   G24 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\160 Lights Out — 1 file(s), numbers 24, pp 24-24; cv per-file 18248x1; key 'Green Lantern Corps'
+      [16562] 05 Green Lantern Corps # 24.cbr (24pp)
+   G25 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\161 Green Lantern Corps - Rebuild — 7 file(s), numbers 21-27, pp 22-31; cv per-file 18248x7; key 'Green Lantern Corps'
+      e.g. 01 Green Lantern Corps # 21.cbr
+        16568 #21 25pp · 16569 #22 24pp · 16570 #23 24pp · 16571 #24 24pp · 16572 #25 31pp · 16573 #26 23pp · 16574 #27 22pp
+   G26 "Green Lantern Corps Annual" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\161 Green Lantern Corps - Rebuild — 1 file(s), numbers 2, pp 40-40; cv per-file 18248x1; key 'Green Lantern Corps'
+      [16575] 08 Green Lantern Corps Annual # 2.cbr (40pp)
+   G27 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\163 Test of Wills — 3 file(s), numbers 31-33, pp 22-28; cv per-file 18248x3; key 'Green Lantern Corps'
+      [16584] 06 Green Lantern Corps # 31.cbr (28pp)
+      [16586] 08 Green Lantern Corps # 32.cbr (22pp)
+      [16588] 10 Green Lantern Corps # 33.cbr (24pp)
+   G28 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\168 Godhead (some dups) — 3 file(s), numbers 35-37, pp 22-29; cv per-file 18248x3; key 'Green Lantern Corps'
+      [16637] 003 Green Lantern Corps # 35.cbr (29pp)
+      [16643] 009 Green Lantern Corps # 36.cbr (23pp)
+      [16649] 015 Green Lantern Corps # 37.cbr (22pp)
+   G29 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\169 Green Lantern - Corps Uprising — 7 file(s), numbers 28-34, pp 22-32; cv per-file 18248x7; key 'Green Lantern Corps'
+      e.g. 01 Green Lantern Corps # 28.cbr
+        16655 #28 23pp · 16656 #29 23pp · 16657 #30 23pp · 16659 #31 28pp · 16661 #32 22pp · 16663 #33 24pp · 16664 #34 32pp
+   G30 "Green Lantern Corps Annual" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\169 Green Lantern - Corps Uprising — 1 file(s), numbers 2, pp 40-40; cv per-file 18248x1; key 'Green Lantern Corps'
+      [16665] 11 Green Lantern Corps Annual # 2.cbr (40pp)
+   G31 "Green Lantern Corps" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\174 Green Lantern Corps - The Dark — 3 file(s), numbers 38-40, pp 22-33; cv per-file 18248x3; key 'Green Lantern Corps'
+      [16689] Green Lantern Corps # 38.cbr (22pp)
+      [16690] Green Lantern Corps # 39.cbr (28pp)
+      [16691] Green Lantern Corps # 40.cbr (33pp)
+   G32 "Green_Lantern_Corps_014__2007___noads___Taft-DCP" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\80 Green Lantern - Sinestro Corps War — 1 file(s), numbers 14, pp 25-25; cv per-file 18248x1; key 'Green Lantern Corps'
+      [17647] 3.Green_Lantern_Corps_014__2007___noads___Taft-DCP_.cbr (25pp)
+   G33 "Green_Lantern_Corps_015__2007___greengiant-DCP" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\80 Green Lantern - Sinestro Corps War — 1 file(s), numbers 15, pp 24-24; cv per-file 18248x1; key 'Green Lantern Corps'
+      [17649] 5.Green_Lantern_Corps_015__2007___greengiant-DCP_.cbr (24pp)
+   G34 "Green_Lantern_Corps_017__2007___greengiant-DCP" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\80 Green Lantern - Sinestro Corps War — 1 file(s), numbers 17, pp 22-22; cv per-file 18248x1; key 'Green Lantern Corps'
+      [17656] 9.Green_Lantern_Corps_017__2007___greengiant-DCP_.cbr (22pp)
+   G35 "Green_Lantern_Corps_18__2008___greengiant-DCP" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\80 Green Lantern - Sinestro Corps War — 1 file(s), numbers 18, pp 25-25; cv per-file 18248x1; key 'Green Lantern Corps'
+      [17642] 10.Green_Lantern_Corps_18__2008___greengiant-DCP_.cbr (25pp)
+   G36 "Green Lantern Corps" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\81 Green Lantern Corps - Ring Quest — 1 file(s), numbers 26, pp 24-24; cv per-file 18248x1; gcd per-file 18427x1; key 'Green Lantern Corps'
+      [17665] 06 Green Lantern Corps 026(2008)(DC)(WildBlueZero).cbr (24pp)
+   G37 "Green_Lantern_Corps_023__2008___greengiant-DCP" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\81 Green Lantern Corps - Ring Quest — 1 file(s), numbers 23, pp 25-25; cv per-file 18248x1; key 'Green Lantern Corps'
+      [17662] 03 Green_Lantern_Corps_023__2008___greengiant-DCP_.cbr (25pp)
+   G38 "Green_Lantern_Corps_025__2008___Minutemen-Incrediblehunk" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\81 Green Lantern Corps - Ring Quest — 1 file(s), numbers 25, pp 24-24; cv per-file 18248x1; key 'Green Lantern Corps'
+      [17664] 05 Green_Lantern_Corps_025__2008___Minutemen-Incrediblehunk_.cbr (24pp)
+   G39 "Green_Lantern_corps_020" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\81 Green Lantern Corps - Ring Quest — 1 file(s), numbers 20, pp 22-22; cv per-file 18248x1; key 'Green Lantern corps'
+      [17661] 02 Green_Lantern_corps_020.cbr (22pp)
+   G40 "Green_Lantern_corps_024__2008___Minutemen-Theincrediblehunk" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\81 Green Lantern Corps - Ring Quest — 1 file(s), numbers 24, pp 23-23; cv per-file 18248x1; key 'Green Lantern corps'
+      [17663] 04 Green_Lantern_corps_024__2008___Minutemen-Theincrediblehunk_.cbr (23pp)
+   G41 "Green Lantern Corps" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\002 Zero Year Secret City — 1 file(s), numbers 25, pp 31-31; cv per-file 18248x1; key 'Green Lantern Corps'
+      [18069] 011 Green Lantern Corps 025 - January 2014.cbr (31pp)
+   G42 "Green Lantern Corps" in DC\_Green Lantern\_Green Lantern Corps & Misc — 1 file(s), 1 COL, pp 144-144; cv per-file 18248x1; key 'Green Lantern Corps'
+      [65464] COL Green Lantern Corps Vol. 01 - The Lost Army (2016) (digital) (Son of Ultron-Empire).cbr (144pp)
+
+== S6312 Exiles  [split]  222 files / 21 collections  decided in C-046 (R)
+   decided: R 6312 | this shelf mixes the dominant 2001 ongoing (CV 6983/GCD 7516, 100 issues, ~204/222 files + its own 16-volume trade line GCD 53302 "Down the Rabbit Hole"...) with the 2018 mini (CV 109764/GCD 130419, 12 issues), represented by two whole trades ("Test of Time"/"Trial of the Exiles") — the overlap-in-series flag's "three Vol.01s" names this genuine second identity; the third "Vol.01," on the Complete/Ultimate Collection omnibus (85967/84503), only repackages the 2001 run's own issues, not a separate work
+   F 6312 split-needed | proposed: 2001 run cv=6983 gcd=7516 (dominant, ~204/222 files + trades 84478-84494); 2018 mini cv=109764 gcd=130419 for trades 84501-84502; the Complete/Ultimate Collection omnibus (85967, 84503) repackages the 2001 run and is not a third identity
+   nearby: S6314 "Exiles: Days Of Then And Now" 2f [shares gcd=28995 (collected by item 84494) — S cv=20248 gcd=28995 (C-056 0.95)] keys: "Exiles Days of Then and Now"
+   nearby: S19256 "Official Handbook of the Marvel Universe A to Z" 1f [shares gcd=44873 (collected by item 84492) — S cv=22981 gcd=44873 (C-040 0.9)] keys: "The Official Handbook of the Marvel Universe A to Z"
+   nearby: S96763 "Exiles" 17f [title — S cv=26159 gcd=35700 (B-051 0.95)] keys: "Exiles (2009)" | "Exiles v2 (2009)" · S12808 "New Exiles" 42f [title+1 — S cv=20347 gcd=28827 (C-038 0.9)] keys: "New Exiles"
+   nearby: S6315 "Exiles Sketchbook" 2f [title+1 — S cv=38740 gcd=81719 (B-061 0.9)] keys: "Exiles Sketchbook" · S4133 "Conan: Exiles" 1f [title+1 — S cv=141912 gcd=180666 (B-055 0.9)] keys: "Conan: Exiles"
+   keys now: "Exiles v1 (2001)" x117 · "Exiles (2001)" x99 · "Exiles: The Complete Collection" x2 · "Exiles" x2 · "Exiles Annual" x1 · "Exiles Annual (2001)" x1
+   groups (title x folder): 41
+   G1 "Exiles" in Marvel\Exiles\01 Exiles v1 (2001) — 100 file(s), numbers 1-100, pp 20-39; cv per-file 6983x100; gcd per-file 7516x100; key 'Exiles v1 (2001)'
+      e.g. Exiles 001 (2001) (Digital) (AnPymGold - Empire).cbr
+        99041 #1 2001 39pp · 99042 #2 2001 25pp · 99043 #3 2001 20pp · 99044 #4 2001 25pp · 99045 #5 2001 22pp · 99046 #6 2002 23pp · 99047 #7 2002 23pp · 99048 #8 2002 22pp · 99049 #9 2002 22pp
+        99050 #10 2002 24pp · 99051 #11 2002 23pp · 99052 #12 2002 23pp · 99053 #13 2002 23pp · 99054 #14 2002 22pp · 99055 #15 2002 22pp · 99056 #16 2002 23pp · 99057 #17 2002 23pp
+        99058 #18 2002 24pp · 99059 #19 2003 23pp · 99060 #20 2003 22pp · 99061 #21 2003 22pp · 99062 #22 2003 24pp · 99063 #23 2003 24pp · 99064 #24 2003 24pp · 99065 #25 2003 24pp
+        99066 #26 2003 22pp · 99067 #27 2003 22pp · 99068 #28 2003 23pp · 99069 #29 2003 21pp · 99070 #30 2003 23pp · 99071 #31 2003 24pp · 99072 #32 2003 23pp · 99073 #33 2003 24pp
+        99074 #34 2003 24pp · 99075 #35 2003 22pp · 99076 #36 2003 23pp · 99077 #37 2004 25pp · 99078 #38 2004 24pp · 99079 #39 2004 24pp · 99080 #40 2004 24pp · 99081 #41 2004 22pp
+        99082 #42 2004 22pp · 99083 #43 2004 23pp · 99084 #44 2004 23pp · 99085 #45 2004 22pp · 99086 #46 2004 24pp · 99087 #47 2004 23pp · 99088 #48 2004 22pp · 99089 #49 2004 22pp
+        99090 #50 2004 23pp · 99091 #51 2004 22pp · 99092 #52 2004 23pp · 99093 #53 2004 21pp · 99094 #54 2005 24pp · 99095 #55 2005 22pp · 99096 #56 2005 22pp · 99097 #57 2005 22pp
+        99098 #58 2005 23pp · 99099 #59 2005 22pp · 99100 #60 2005 22pp · 99101 #61 2005 23pp · 99102 #62 2005 22pp · 99103 #63 2005 23pp · 99104 #64 2005 22pp · 99105 #65 2005 22pp
+        99106 #66 2005 22pp · 99107 #67 2005 22pp · 99108 #68 2005 22pp · 99109 #69 2005 22pp · 99110 #70 2005 22pp · 99111 #71 2005 23pp · 99112 #72 2006 25pp · 99113 #73 2006 22pp
+        99114 #74 2006 23pp · 99115 #75 2006 23pp · 99116 #76 2006 24pp · 99117 #77 2006 24pp · 99118 #78 2006 23pp · 99119 #79 2006 23pp · 99120 #80 2006 23pp · 99121 #81 2006 22pp
+        99122 #82 2006 24pp · 99123 #83 2006 24pp · 99124 #84 2006 23pp · 99125 #85 2006 23pp · 99126 #86 2006 24pp · 99127 #87 2006 23pp · 99128 #88 2007 21pp · 99129 #89 2007 23pp
+        99130 #90 2007 24pp · 99131 #91 2007 23pp · 99132 #92 2007 24pp · 99133 #93 2007 24pp · 99134 #94 2007 23pp · 99135 #95 2007 23pp · 99136 #96 2007 23pp · 99137 #97 2007 24pp
+        99138 #98 2007 25pp · 99139 #99 2007 24pp · 99140 #100 2008 25pp
+   G2 "Exiles Annual (2007) (Digital) (AnPymGold - Empire)" in Marvel\Exiles\01 Exiles v1 (2001)\Annuals — 1 file(s), pp 40-40; cv per-file 18008x1; key 'Exiles Annual'
+      [99985] Exiles Annual (2007) (Digital) (AnPymGold - Empire).cbr (40pp)
+   G3 "Exiles" in Marvel\_X-Men\Exiles\01 Exiles v1 (2001) — 17 file(s), 17 COL, pp 109-220; cv per-file 6983x4, 36303x3, 36116x1; gcd per-file 53302x17; key 'Exiles v1 (2001)'
+      [84478] COL Exiles Vol. 01 - Down the Rabbit Hole (2007) (Digital-HD-Empire).cbz (109pp)
+         own record cv 6983 / gcd s53302 "Exiles" (issue 787873) COLLECTS: gcd=7516 Exiles (2001) #1-4
+      [84479] COL Exiles Vol. 02 - A World Apart (2014) (digital-HD-Empire).cbz (159pp)
+      [84480] COL Exiles Vol. 03 - Out of Time (2014) (F) (Digital-Empire).cbz (188pp)
+         own record cv 6983 / gcd s53302 "Exiles" (issue 787875) COLLECTS: gcd=7516 Exiles (2001) #2, #12-19
+      [84481] COL Exiles Vol. 04 - Legacy (2014) (digital-Empire).cbr (149pp)
+         own record cv 36116 / gcd s53302 "Exiles" (issue 787876) COLLECTS: gcd=7516 Exiles (2001) #2, #20-25
+      [84482] COL Exiles Vol. 05 - Unnatural Instinct (2016) (F) (Digital-Empire).cbz (133pp)
+      [84483] COL Exiles Vol. 06 - Fantastic Voyage (2016) (digital-Empire).cbr (177pp)
+         own record cv 36136 / gcd s53302 "Exiles" (issue 787878) COLLECTS: gcd=7516 Exiles (2001) #31-37
+      [84484] COL Exiles Vol. 07 - A Blink In Time (2016) (digital-Empire).cbr (208pp)
+         own record cv 6983 / gcd s53302 "Exiles" (issue 787879) COLLECTS: gcd=7516 Exiles (2001) #43-45
+      [84485] COL Exiles Vol. 08 - Earn Your Wings (2016) (F) (digital-Empire).cbz (140pp)
+         own record cv 36176 / gcd s53302 "Exiles" (issue 787880) COLLECTS: gcd=7516 Exiles (2001) #46-51
+      [84486] COL Exiles Vol. 09 - Bump In The Night (2016) (F) (Digital-Empire).cbz (159pp)
+         own record cv 36177 / gcd s53302 "Exiles" (issue 787881) COLLECTS: gcd=7516 Exiles (2001) #52-53
+      [84487] COL Exiles Vol. 10 - Age of Apocalypse (2016) (digital-Empire).cbr (125pp)
+      [84488] COL Exiles Vol. 11 - Timebreakers (2016) (digital-Empire).cbr (170pp)
+         own record cv 36292 / gcd s53302 "Exiles" (issue 787883) COLLECTS: gcd=7516 Exiles (2001) #62-68
+      [84489] COL Exiles Vol. 12 - World Tour Book One (2016) (digital-sd-Empire).cbr (145pp)
+      [84490] COL Exiles Vol. 13 - World Tour Book Two (2016) (Digital-HD-Empire).cbz (207pp)
+      [84491] COL Exiles Vol. 13 - World Tour Book Two (2016) (digital-sd-Empire).cbr (220pp)
+      [84492] COL Exiles Vol. 14 - The New Exiles (2016) (F) (digital-Empire).cbz (176pp)
+         own record cv 36388 / gcd s53302 "Exiles" (issue 787886) COLLECTS: gcd=7516 Exiles (2001) #84-89 · gcd=30872 Exiles Annual (2007) #1 · gcd=44873 Official Handbook of the Marvel Universe A to Z (2008) #11
+      [84493] COL Exiles Vol. 15 - Enemy of the Stars (2016) (digital-Empire).cbr (123pp)
+      [84494] COL Exiles Vol. 16 - Starting Over (2016) (F) (Digital-Empire).cbz (182pp)
+         own record cv 36385 / gcd s53302 "Exiles" (issue 787888) COLLECTS: gcd=7516 Exiles (2001) #95-100 · gcd=28995 Exiles (2008) #1
+   G4 "Exiles - The Complete Collection" in Marvel\_X-Men\Exiles\01 Exiles v1 (2001)\Deluxe Editions — 1 file(s), 1 COL, pp 465-465; cv per-file 113867x1; gcd per-file 134833x1; key 'Exiles: The Complete Collection'
+      [85967] COL Exiles - The Complete Collection Book 01 (2019) (Digital) (Kileko-Empire).cbz (465pp)
+         own record cv 113867 / gcd s134833 "Exiles: The Complete Collection" (issue 1877379) COLLECTS: gcd=7516 Exiles (2001) #1-19 · gcd=141337 Exiles: Ultimate Collection (2009) #1
+   G5 "Exiles" in Marvel\_X-Men\Exiles\04 Exiles v3 (2018) — 2 file(s), 2 COL, pp 130-133; cv per-file 109764x2; gcd per-file 130419x2; key 'Exiles'
+      [84501] COL Exiles Vol. 01 - Test Of Time (2018) (Digital) (Kileko-Empire).cbz (130pp)
+         own record cv 109764 / gcd s130419 "Exiles" (issue 1851951) COLLECTS: gcd=123546 Exiles (2018) #1-6
+      [84502] COL Exiles Vol. 02 - The Trial Of The Exiles (2019) (Digital) (Kileko-Empire).cbz (133pp)
+         own record cv 109764 / gcd s130419 "Exiles" (issue 1932001) COLLECTS: gcd=123546 Exiles (2018) #7-12
+   G6 "Exiles - Ultimate Collection" in Marvel\_X-Men\Exiles\Exiles Ultimate Collection (2008) — 1 file(s), 1 COL, pp 465-465; cv per-file 113867x1; gcd per-file 134833x1; key 'Exiles: The Complete Collection'
+      [84503] COL Exiles - Ultimate Collection v01 (2019) (Digital) (Kileko-Empire).cbz (465pp)
+         own record cv 113867 / gcd s134833 "Exiles: The Complete Collection" (issue 1877379) COLLECTS: gcd=7516 Exiles (2001) #1-19 · gcd=141337 Exiles: Ultimate Collection (2009) #1
+   G7 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0487 Exiles — 5 file(s), numbers 1-4, 6, pp 20-39; cv per-file 6983x5; gcd per-file 7516x5; key 'Exiles (2001)'
+      e.g. 001 Exiles 001 (2001) (Digital) (AnPymGold - Empire).cbr
+        89384 #1 2001 39pp · 89385 #2 2001 25pp · 89386 #3 2001 20pp · 89387 #4 2001 25pp · 89389 #6 2002 23pp
+   G8 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0503 A World Apart — 5 file(s), numbers 7-11, pp 22-24; cv per-file 6983x5; gcd per-file 7516x5; key 'Exiles (2001)'
+      e.g. 001 Exiles 007 (2002) (Digital) (AnPymGold - Empire).cbr
+        89457 #7 2002 23pp · 89458 #8 2002 22pp · 89459 #9 2002 22pp · 89460 #10 2002 24pp · 89461 #11 2002 23pp
+   G9 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0516 Another Rooster In The Henhouse — 6 file(s), numbers 12-17, pp 22-23; cv per-file 6983x6; gcd per-file 7516x6; key 'Exiles (2001)'
+      e.g. 001 Exiles 012 (2002) (Digital) (AnPymGold - Empire).cbr
+        89527 #12 2002 23pp · 89528 #13 2002 23pp · 89529 #14 2002 22pp · 89530 #15 2002 22pp · 89531 #16 2002 23pp · 89532 #17 2002 23pp
+   G10 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0533 So Lame - The Exiles in Mojoverse — 2 file(s), numbers 18-19, pp 23-24; cv per-file 6983x2; gcd per-file 7516x2; key 'Exiles (2001)'
+      [89602] 001 Exiles 018 (2002) (Digital) (AnPymGold - Empire).cbr (24pp)
+      [89603] 002 Exiles 019 (2003) (Digital) (AnPymGold - Empire).cbr (23pp)
+   G11 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0538 Legacy — 3 file(s), numbers 20-22, pp 22-24; cv per-file 6983x3; gcd per-file 7516x3; key 'Exiles (2001)'
+      [89625] 001 Exiles 020 (2003) (Digital) (AnPymGold - Empire).cbr (22pp)
+      [89626] 002 Exiles 021 (2003) (Digital) (AnPymGold - Empire).cbr (22pp)
+      [89627] 003 Exiles 022 (2003) (Digital) (AnPymGold - Empire).cbr (24pp)
+   G12 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0555 Hard Choices — 2 file(s), numbers 26-27, pp 22-22; cv per-file 6983x2; gcd per-file 7516x2; key 'Exiles (2001)'
+      [89690] 001 Exiles 026 (2003) (Digital) (AnPymGold - Empire).cbr (22pp)
+      [89691] 002 Exiles 027 (2003) (Digital) (AnPymGold - Empire).cbr (22pp)
+   G13 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0560 Unnatural Instincts — 3 file(s), numbers 28-30, pp 21-23; cv per-file 6983x3; gcd per-file 7516x3; key 'Exiles (2001)'
+      [89711] 001 Exiles 028 (2003) (Digital) (AnPymGold - Empire).cbr (23pp)
+      [89712] 002 Exiles 029 (2003) (Digital) (AnPymGold - Empire).cbr (21pp)
+      [89713] 003 Exiles 030 (2003) (Digital) (AnPymGold - Empire).cbr (23pp)
+   G14 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0564 With an Iron Fist — 3 file(s), numbers 23-25, pp 24-24; cv per-file 6983x3; gcd per-file 7516x3; key 'Exiles (2001)'
+      [89728] 001 Exiles 023 (2003) (Digital) (F) (AnPymGold-Empire).cbz (24pp)
+      [89729] 002 Exiles 024 (2003) (Digital) (AnPymGold - Empire).cbr (24pp)
+      [89730] 003 Exiles 025 (2003) (Digital) (AnPymGold - Empire).cbr (24pp)
+   G15 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0572 Exiles - Avengers Forever — 2 file(s), numbers 31-32, pp 23-24; cv per-file 6983x2; gcd per-file 7516x2; key 'Exiles (2001)'
+      [89766] 001 Exiles 031 (2003) (Digital) (F) (AnPymGold-Empire).cbz (24pp)
+      [89767] 002 Exiles 032 (2003) (Digital) (AnPymGold - Empire).cbr (23pp)
+   G16 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0576 A Second Farwell — 2 file(s), numbers 33-34, pp 24-24; cv per-file 6983x2; gcd per-file 7516x2; key 'Exiles (2001)'
+      [89782] 001 Exiles 033 (2003) (Digital) (AnPymGold - Empire).cbr (24pp)
+      [89783] 002 Exiles 034 (2003) (Digital) (AnPymGold - Empire).cbr (24pp)
+   G17 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0583 Fantastic Voyage — 3 file(s), numbers 35-37, pp 22-25; cv per-file 6983x3; gcd per-file 7516x3; key 'Exiles (2001)'
+      [89816] 001 Exiles 035 (2003) (Digital) (AnPymGold - Empire).cbr (22pp)
+      [89817] 002 Exiles 036 (2003) (Digital) (AnPymGold - Empire).cbr (23pp)
+      [89818] 003 Exiles 037 (2004) (Digital) (AnPymGold - Empire).cbr (25pp)
+   G18 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0590 King Hyperion — 3 file(s), numbers 38-40, pp 24-24; cv per-file 6983x3; gcd per-file 7516x3; key 'Exiles (2001)'
+      [89848] 001 Exiles 038 (2004) (Digital) (AnPymGold - Empire).cbr (24pp)
+      [89849] 002 Exiles 039 (2004) (Digital) (AnPymGold - Empire).cbr (24pp)
+      [89850] 003 Exiles 040 (2004) (Digital) (AnPymGold - Empire).cbr (24pp)
+   G19 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0592 Nocturne's Tale — 2 file(s), numbers 41-42, pp 22-22; cv per-file 6983x2; gcd per-file 7516x2; key 'Exiles (2001)'
+      [89856] 001 Exiles 041 (2004) (Digital) (AnPymGold - Empire).cbr (22pp)
+      [89857] 002 Exiles 042 (2004) (Digital) (AnPymGold - Empire).cbr (22pp)
+   G20 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0597 A Blink In Time — 3 file(s), numbers 43-45, pp 22-23; cv per-file 6983x3; gcd per-file 7516x3; key 'Exiles (2001)'
+      [89877] 001 Exiles 043 (2004) (Digital) (AnPymGold - Empire).cbr (23pp)
+      [89878] 002 Exiles 044 (2004) (Digital) (AnPymGold - Empire).cbr (23pp)
+      [89879] 003 Exiles 045 (2004) (Digital) (AnPymGold - Empire).cbr (22pp)
+   G21 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0608 Earn Your Wings — 3 file(s), numbers 46-48, pp 22-24; cv per-file 6983x3; gcd per-file 7516x3; key 'Exiles (2001)'
+      [89921] 001 Exiles 046 (2004) (Digital) (AnPymGold - Empire).cbr (24pp)
+      [89922] 002 Exiles 047 (2004) (Digital) (AnPymGold - Empire).cbr (23pp)
+      [89923] 003 Exiles 048 (2004) (Digital) (AnPymGold - Empire).cbr (22pp)
+   G22 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0618 The Big M — 3 file(s), numbers 49-51, pp 22-23; cv per-file 6983x3; gcd per-file 7516x3; key 'Exiles (2001)'
+      [89971] 001 Exiles 049 (2004) (Digital) (AnPymGold - Empire).cbr (22pp)
+      [89972] 002 Exiles 050 (2004) (Digital) (AnPymGold - Empire).cbr (23pp)
+      [89973] 003 Exiles 051 (2004) (Digital) (AnPymGold - Empire).cbr (22pp)
+   G23 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0628 Living Planet — 2 file(s), numbers 52-53, pp 21-23; cv per-file 6983x2; gcd per-file 7516x2; key 'Exiles (2001)'
+      [90019] 001 Exiles 052 (2004) (Digital) (AnPymGold - Empire).cbr (23pp)
+      [90020] 002 Exiles 053 (2004) (Digital) (AnPymGold - Empire).cbr (21pp)
+   G24 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0641 Bump in the Night — 4 file(s), numbers 54-57, pp 22-24; cv per-file 6983x4; gcd per-file 7516x4; key 'Exiles (2001)'
+      e.g. 001 Exiles 054 (2005) (Digital) (AnPymGold - Empire).cbr
+        90079 #54 2005 24pp · 90080 #55 2005 22pp · 90081 #56 2005 22pp · 90082 #57 2005 22pp
+   G25 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0650 Taking on Tanaraq — 2 file(s), numbers 58-59, pp 22-23; cv per-file 6983x2; gcd per-file 7516x2; key 'Exiles (2001)'
+      [90118] 001 Exiles 058 (2005) (Digital) (AnPymGold - Empire).cbr (23pp)
+      [90119] 002 Exiles 059 (2005) (Digital) (AnPymGold - Empire).cbr (22pp)
+   G26 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0662 Son of Apocalypse — 2 file(s), numbers 60-61, pp 22-23; cv per-file 6983x2; gcd per-file 7516x2; key 'Exiles (2001)'
+      [90169] 001 Exiles 060 (2005) (Digital) (AnPymGold - Empire).cbr (22pp)
+      [90170] 002 Exiles 061 (2005) (Digital) (AnPymGold - Empire).cbr (23pp)
+   G27 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0668 Timebreakers — 4 file(s), numbers 62-65, pp 22-23; cv per-file 6983x4; gcd per-file 7516x4; key 'Exiles (2001)'
+      e.g. 001 Exiles 062 (2005) (Digital) (AnPymGold - Empire).cbr
+        90194 #62 2005 22pp · 90195 #63 2005 23pp · 90196 #64 2005 22pp · 90197 #65 2005 22pp
+   G28 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0679 House of M — 3 file(s), numbers 69-71, pp 22-23; cv per-file 6983x3; gcd per-file 7516x3; key 'Exiles (2001)'
+      [90263] 024 Exiles 069 (2005) (Digital) (AnPymGold - Empire).cbr (22pp)
+      [90264] 025 Exiles 070 (2005) (Digital) (AnPymGold - Empire).cbr (22pp)
+      [90265] 026 Exiles 071 (2005) (Digital) (AnPymGold - Empire).cbr (23pp)
+   G29 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0680 Destroy All Monsters — 3 file(s), numbers 66-68, pp 22-22; cv per-file 6983x3; gcd per-file 7516x3; key 'Exiles (2001)'
+      [90291] 001 Exiles 066 (2005) (Digital) (AnPymGold - Empire).cbr (22pp)
+      [90292] 002 Exiles 067 (2005) (Digital) (AnPymGold - Empire).cbr (22pp)
+      [90293] 003 Exiles 068 (2005) (Digital) (AnPymGold - Empire).cbr (22pp)
+   G30 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0690 World Tour New Universe — 2 file(s), numbers 72, 74, pp 23-25; cv per-file 6983x2; gcd per-file 7516x2; key 'Exiles (2001)'
+      [90333] 001 Exiles 072 (2006) (Digital) (AnPymGold - Empire).cbr (25pp)
+      [90335] 003 Exiles 074 (2006) (Digital) (AnPymGold - Empire).cbr (23pp)
+   G31 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0701 World Tour 2099 — 2 file(s), numbers 75-76, pp 23-24; cv per-file 6983x2; gcd per-file 7516x2; key 'Exiles (2001)'
+      [90387] 001 Exiles 075 (2006) (Digital) (AnPymGold - Empire).cbr (23pp)
+      [90388] 002 Exiles 076 (2006) (Digital) (AnPymGold - Empire).cbr (24pp)
+   G32 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0705 World Tour Squadron Supreme — 2 file(s), numbers 77-78, pp 23-24; cv per-file 6983x2; gcd per-file 7516x2; key 'Exiles (2001)'
+      [90404] 001 Exiles 077 (2006) (Digital) (AnPymGold - Empire).cbr (24pp)
+      [90405] 002 Exiles 078 (2006) (Digital) (AnPymGold - Empire).cbr (23pp)
+   G33 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0715 World Tour Future Imperfect — 2 file(s), numbers 79-80, pp 23-23; cv per-file 6983x2; gcd per-file 7516x2; key 'Exiles (2001)'
+      [90450] 001 Exiles 079 (2006) (Digital) (AnPymGold - Empire).cbr (23pp)
+      [90451] 002 Exiles 080 (2006) (Digital) (AnPymGold - Empire).cbr (23pp)
+   G34 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0717 World Tour Heroes Reborn — 2 file(s), numbers 81-82, pp 22-24; cv per-file 6983x2; gcd per-file 7516x2; key 'Exiles (2001)'
+      [90456] 001 Exiles 081 (2006) (Digital) (AnPymGold - Empire).cbr (22pp)
+      [90457] 002 Exiles 082 (2006) (Digital) (AnPymGold - Empire).cbr (24pp)
+   G35 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0721 The New Exiles — 3 file(s), numbers 83, 85-86, pp 23-24; cv per-file 6983x3; gcd per-file 7516x3; key 'Exiles (2001)'
+      [90489] 001 Exiles 083 (2006) (Digital) (AnPymGold - Empire).cbr (24pp)
+      [90491] 003 Exiles 085 (2006) (Digital) (AnPymGold - Empire).cbr (23pp)
+      [90492] 004 Exiles 086 (2006) (Digital) (AnPymGold - Empire).cbr (24pp)
+   G36 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0736 Superguardians — 1 file(s), numbers 88, pp 21-21; cv per-file 6983x1; gcd per-file 7516x1; key 'Exiles (2001)'
+      [90635] 002 Exiles 088 (2007) (Digital) (AnPymGold - Empire).cbr (21pp)
+   G37 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0739 Rules of The Game — 1 file(s), numbers 89, pp 23-23; cv per-file 6983x1; gcd per-file 7516x1; key 'Exiles (2001)'
+      [90645] 001 Exiles 089 (2007) (Digital) (AnPymGold - Empire).cbr (23pp)
+   G38 "Exiles Annual (2007) (Digital) (AnPymGold - Empire)" in Marvel\_X-Men\_X-Men Complete Chronology V2\0739 Rules of The Game — 1 file(s), numbers 2, pp 40-40; cv per-file 6983x1; gcd per-file 7516x1; key 'Exiles Annual (2001)'
+      [90646] 002 Exiles Annual (2007) (Digital) (AnPymGold - Empire).cbr (40pp)
+   G39 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0746 Enemy of the Stars — 5 file(s), numbers 90-94, pp 23-24; cv per-file 6983x5; gcd per-file 7516x5; key 'Exiles (2001)'
+      e.g. 001 Exiles 090 (2007) (Digital) (AnPymGold - Empire).cbr
+        90678 #90 2007 24pp · 90679 #91 2007 23pp · 90680 #92 2007 24pp · 90681 #93 2007 24pp · 90682 #94 2007 23pp
+   G40 "Exiles" in Marvel\_X-Men\_X-Men Complete Chronology V2\0758 Home Again — 6 file(s), numbers 95-100, pp 23-25; cv per-file 6983x6; gcd per-file 7516x6; key 'Exiles (2001)'
+      e.g. 001 Exiles 095 (2007) (Digital) (AnPymGold - Empire).cbr
+        90751 #95 2007 23pp · 90752 #96 2007 23pp · 90753 #97 2007 24pp · 90754 #98 2007 25pp · 90755 #99 2007 24pp · 90756 #100 2008 25pp
+   G41 "Exiles" in _Marvel Major Event Chronology (digital)\2005.08 - House of M\03 House of M Tie-ins\Exiles — 3 file(s), numbers 69-71, pp 22-23; cv per-file 6983x3; gcd per-file 7516x3; key 'Exiles (2001)'
+      [116646] Exiles 069 (2005) (Digital) (AnPymGold-Empire).cbr (22pp)
+      [116647] Exiles 070 (2005) (Digital) (AnPymGold-Empire).cbr (22pp)
+      [116648] Exiles 071 (2005) (Digital) (AnPymGold-Empire).cbr (23pp)
+
+== S6284 Excalibur  [split]  218 files / 5 collections  decided in C-037 (R)
+   decided: R 6284 | this shelf mixes THREE separate "Excalibur" runs sharing the bare title: the 1988 legacy ongoing (CV 4052/GCD 3648, 126 issues, majority of files + the "Excalibur Classic" trades), the 2004 mini (GCD 12238, 14 issues, ~18 files), and the 2019 Krakoa v4 (CV 122488/GCD 151427, 26 issues, ~30 files + Annual items) — each is co-equal, not residue
+   F 6284 split-needed | 1988 = CV 4052/GCD 3648 (126 issues); 2004 = GCD 12238 (14 issues, CV id not confirmed this pass); 2019 = CV 122488/GCD 151427 (26 issues)
+   N 6284 residue | items linked to CV 125178 (Panini España, 12 files) and CV 9101 "Excalibur Annual" (2 files) are foreign/annual co-editions of the above three runs, not further runs
+   nearby: S64363 "Cable" 222f [shares gcd=4675 — S cv=4993 gcd=4675 (C-056 0.9)] keys: "Cable (1993)" | "Cable v1 (1992)"
+   nearby: S6305 "Excalibur" 5f [shares cv=122488 — S cv=122488 (C-052 0.9)] keys: "Excalibur By Tini Howard" | "Excalibur by Tini Howard"
+   nearby: S94593 "Excalibur" 2f [shares gcd=12238 — S cv=11292 gcd=12238 (R-016 0.95)] keys: "Excalibur v3 (2004)"
+   nearby: S6287 "Excalibur Mojo Mayhem" 1f [shares gcd=3838 (collected by item 84455) — S cv=26109 gcd=3838 (A-026 0.95)] keys: "Excalibur - Mojo Mayhem"
+   nearby: S6290 "Excalibur" 8f [title — S cv=22316 gcd=20462 (C-056 0.9)] keys: "Excalibur - The Sword of Power" | "Excalibur v2 (2001)"
+   nearby: S12807 "New Excalibur" 24f [title+1 — S cv=18019 gcd=16508 (A-027 0.95)] keys: "New Excalibur"
+   keys now: "Excalibur (1988)" x164 · "Excalibur v1 (1988)" x33 · "Excalibur (2020)" x12 · "Excalibur Classic (1988)" x5 · "Excalibur Annual" x2 · "Excalibur Annual (1988)" x1 · "Excalibur - Flashback -1" x1
+   groups (title x folder): 60
+   G1 "Excalibur" in Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2019.10.30 - Excalibur v4 — 26 file(s), numbers 1-26, pp 25-38; cv per-file 4052x17, 125178x9; gcd per-file 151427x26; key 'Excalibur (1988)' | 'Excalibur (2020)'
+      e.g. Excalibur 001 (2019) (Digital) (Zone-Empire).cbr
+        49242 #001 2019 38pp · 49243 #002 2020 26pp · 49244 #003 2020 27pp · 49245 #004 2020 27pp · 49246 #005 2020 27pp · 49247 #006 2020 27pp · 49248 #007 2020 27pp · 49249 #008 2020 26pp
+        49250 #009 2020 27pp · 49251 #10 2020 27pp · 49252 #11 2020 28pp · 49253 #12 2020 27pp · 49254 #13 2020 27pp · 49255 #14 2021 27pp key="Excalibur (2020)"
+        49256 #15 2021 26pp key="Excalibur (2020)" · 49257 #16 2021 25pp key="Excalibur (2020)" · 49258 #17 2021 25pp key="Excalibur (2020)" · 49259 #18 2021 25pp key="Excalibur (2020)"
+        49260 #19 2021 25pp key="Excalibur (2020)" · 49261 #20 2021 25pp key="Excalibur (2020)" · 49262 #21 2021 25pp key="Excalibur (2020)" · 49263 #22 2021 25pp key="Excalibur (2020)"
+        49264 #23 2021 32pp · 49265 #24 2021 25pp · 49266 #25 2022 25pp · 49267 #26 2022 25pp
+   G2 "Excalibur" in Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2021.04.28 - Hellfire Gala — 1 file(s), numbers 21, pp 25-25; cv per-file 125178x1; gcd per-file 151427x1; key 'Excalibur (2020)'
+      [49596] 04 Excalibur 021 (2021) (Digital) (Zone-Empire).cbr (25pp)
+   G3 "Excalibur" in Marvel\Death's Head\3. Death's Head (3.0) — 2 file(s), numbers 66-67, pp 24-26; cv per-file 4052x2; key 'Excalibur (1988)'
+      [98946] 117 - Excalibur v1 066.cbz (24pp)
+      [98947] 118 - Excalibur v1 067.cbz (26pp)
+   G4 "Excalibur" in Marvel\_X-Men\Excalibur\01 Excalibur v1 (1988) — 32 file(s), numbers 68-76, 81, 104-125, pp 22-39; cv per-file 4052x32; gcd per-file 3648x29, 182016x3; key 'Excalibur v1 (1988)'
+      e.g. Excalibur 068 (1993) (digital) (Marika-Empire).cbz
+        84422 #68 1993 24pp · 84423 #69 1993 22pp · 84424 #70 1993 24pp · 84425 #71 1993 39pp · 84426 #72 1993 22pp · 84427 #73 1994 24pp · 84428 #74 1994 23pp · 84429 #75 1994 38pp
+        84430 #76 1994 22pp · 84431 #81 1994 24pp · 84432 #104 1996 23pp · 84433 #105 1997 23pp · 84434 #106 1997 24pp · 84435 #107 1997 23pp · 84436 #108 1997 22pp · 84437 #109 1997 22pp
+        84438 #110 1997 24pp · 84439 #111 1997 24pp · 84440 #112 1997 23pp · 84441 #113 1997 23pp · 84442 #114 1997 24pp · 84443 #115 1997 24pp · 84444 #116 1998 24pp · 84445 #117 1998 24pp
+        84446 #118 1998 24pp · 84447 #119 1998 22pp · 84448 #120 1998 23pp · 84449 #121 1998 23pp · 84450 #122 1998 23pp · 84451 #123 1998 23pp · 84452 #124 1998 24pp · 84453 #125 1998 39pp
+   G5 "Excalibur -1 (1997) (Digital) (Shadowcat-Empire)" in Marvel\_X-Men\Excalibur\01 Excalibur v1 (1988) — 1 file(s), pp 21-21; cv per-file 4052x1; key 'Excalibur v1 (1988)'
+      [84421] Excalibur -1 (1997) (Digital) (Shadowcat-Empire).cbz (21pp)
+   G6 "Excalibur Annual" in Marvel\_X-Men\Excalibur\01 Excalibur v1 (1988)\Annuals and Specials — 2 file(s), numbers 1-2, pp 53-54; cv per-file 9101x2; gcd per-file 9832x2; key 'Excalibur Annual'
+      [84419] Excalibur Annual 001 (1993) (digital) (Marika-Empire).cbz (53pp)
+      [84420] Excalibur Annual 002 (1994) (digital) (Marika-Empire).cbz (54pp)
+   G7 "Excalibur Classic" in Marvel\_X-Men\Excalibur\01 Excalibur v1 (1988)\Trades — 5 file(s), 5 COL, pp 174-215; cv per-file 26398x5; gcd per-file 55975x5; key 'Excalibur Classic (1988)'
+      [84454] COL 01 Excalibur Classic Vol. 01 - The Sword is Drawn (2006) (Digital) (Kileko-Empire).cbr (174pp)
+         own record cv 26398 / gcd s55975 "Excalibur Classic" (issue 807884) COLLECTS: gcd=3648 Excalibur (1988) #1
+      [84455] COL 02 Excalibur Classic Vol. 02 - Two-Edged Sword (2006) (Digital) (F) (Kileko-Empire).cbz (197pp)
+         own record cv 26398 / gcd s55975 "Excalibur Classic" (issue 807885) COLLECTS: gcd=3648 Excalibur (1988) #6-11 · gcd=3838 Excalibur: Mojo Mayhem (1989) (unnumbered)
+      [84456] COL 03 Excalibur Classic Vol. 03 - Cross Time Caper Book One (2016) (Digital) (F) (Kileko-Empire).cbz (215pp)
+         own record cv 26398 / gcd s55975 "Excalibur Classic" (issue 807886) COLLECTS: gcd=3648 Excalibur (1988) #14
+      [84457] COL 04 Excalibur Classic Vol. 04 - Cross Time Caper Book Two (2016) (Digital) (F) (Kileko-Empire).cbz (192pp)
+         own record cv 26398 / gcd s55975 "Excalibur Classic" (issue 807887) COLLECTS: gcd=3648 Excalibur (1988) #26
+      [84458] COL 05 Excalibur Classic Vol. 05 (2008) (Digital) (F) (Kileko-Empire).cbz (200pp)
+         own record cv 26398 / gcd s55975 "Excalibur Classic" (issue 807888) COLLECTS: gcd=3648 Excalibur (1988) #34
+   G8 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0083 Warwolves of London — 5 file(s), numbers 1-5, pp 23-24; cv per-file 4052x5; gcd per-file 3648x3, 47024x2; key 'Excalibur (1988)'
+      e.g. 001 Excalibur 001 (1988) (Digital) (AnHeroGold-Empire).cbz
+        87272 #1 1988 24pp · 87273 #2 1988 24pp · 87274 #3 1988 24pp · 87275 #4 1989 24pp · 87276 #5 1989 23pp
+   G9 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0086 Inferno — 2 file(s), numbers 6-7, pp 23-24; cv per-file 4052x2; gcd per-file 47024x2; key 'Excalibur (1988)'
+      [87300] 017 Excalibur 006 (1989) (Digital) (AnHeroGold-Empire).cbz (23pp)
+      [87301] 018 Excalibur 007 (1989) (Digital) (AnHeroGold-Empire).cbz (24pp)
+   G10 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0092 Untitled — 4 file(s), numbers 8-11, pp 23-25; cv per-file 4052x4; gcd per-file 47024x4; key 'Excalibur (1988)'
+      e.g. 002 Excalibur 008 (1989) (Digital) (AnHeroGold-Empire).cbz
+        87337 #8 1989 25pp · 87341 #9 1989 24pp · 87342 #10 1989 23pp · 87343 #11 1989 24pp
+   G11 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0105 The Cross-Time Caper — 13 file(s), numbers 12-24, pp 23-25; cv per-file 4052x13; gcd per-file 3648x7, 47024x6; key 'Excalibur (1988)'
+      e.g. 001 Excalibur 012 (1989) (Digital) (AnHeroGold-Empire).cbz
+        87420 #12 1989 23pp · 87421 #13 1989 24pp · 87422 #14 1989 25pp · 87423 #15 1989 23pp · 87424 #16 1989 23pp · 87425 #17 1989 23pp · 87426 #18 1990 23pp · 87427 #19 1990 23pp
+        87428 #20 1990 24pp · 87429 #21 1990 24pp · 87430 #22 1990 23pp · 87431 #23 1990 23pp · 87432 #24 1990 23pp
+   G12 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0123 Untitled — 7 file(s), numbers 25-31, pp 19-24; cv per-file 4052x7; gcd per-file 3648x7; key 'Excalibur (1988)'
+      e.g. 001 Excalibur 025 (1990) (Digital) (AnHeroGold-Empire).cbz
+        87596 #25 1990 24pp · 87597 #26 1990 23pp · 87598 #27 1990 24pp · 87599 #28 1990 24pp · 87600 #29 1990 19pp · 87601 #30 1990 24pp · 87602 #31 1990 22pp
+   G13 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0128 Girls' school from heck — 3 file(s), numbers 32-34, pp 23-23; cv per-file 4052x3; gcd per-file 3648x3; key 'Excalibur (1988)'
+      [87616] 001 Excalibur 032 (1990) (Digital) (AnPymGold-Empire).cbz (23pp)
+      [87617] 002 Excalibur 033 (1991) (Digital) (AnPymGold-Empire).cbz (23pp)
+      [87618] 003 Excalibur 034 (1991) (Digital) (AnPymGold-Empire).cbz (23pp)
+   G14 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0129 The X-Tinction Agenda — 1 file(s), numbers 35, pp 25-25; cv per-file 4052x1; gcd per-file 3648x1; key 'Excalibur (1988)'
+      [87630] 010 Excalibur 035 (1991) (beast's library).cbr (25pp)
+   G15 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0139 Promethium Exchange — 6 file(s), numbers 36-41, pp 24-26; cv per-file 4052x6; gcd per-file 3648x6; key 'Excalibur (1988)'
+      e.g. 001 Excalibur 036 (1991).cbr
+        87678 #36 1991 26pp · 87679 #37 1991 25pp · 87680 #38 1991 25pp · 87681 #39 1991 25pp · 87682 #40 1991 24pp · 87683 #41 1991 26pp
+   G16 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0145 Unnamed — 6 file(s), numbers 42-47, pp 22-23; cv per-file 4052x6; gcd per-file 3648x6; key 'Excalibur (1988)'
+      e.g. 001 Excalibur 042 (1991) (Digital) (AnPymGold-Empire).cbz
+        87716 #42 1991 23pp · 87717 #43 1991 23pp · 87718 #44 1991 23pp · 87719 #45 1991 22pp · 87720 #46 1992 23pp · 87721 #47 1992 22pp
+   G17 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0158 Unnamed — 7 file(s), numbers 48-54, pp 23-38; cv per-file 4052x7; gcd per-file 3648x7; key 'Excalibur (1988)'
+      e.g. 003 Excalibur 048 (1992) (digital) (Minutemen-FactorX).cbr
+        87778 #48 1992 23pp · 87779 #49 1992 23pp · 87780 #50 1992 38pp · 87782 #51 1992 23pp · 87783 #52 1992 23pp · 87784 #53 1992 23pp · 87785 #54 1992 23pp
+   G18 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0173 Madness — 6 file(s), numbers 55-60, pp 22-24; cv per-file 4052x6; gcd per-file 3648x6; key 'Excalibur (1988)'
+      e.g. 001 Excalibur 055 (1992) (digital) (Minutemen-FactorX).cbr
+        87852 #55 1992 23pp · 87853 #56 1992 23pp · 87854 #57 1992 23pp · 87855 #58 1992 23pp · 87856 #59 1992 24pp · 87857 #60 1992 22pp
+   G19 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0178 Untitled — 5 file(s), numbers 61-65, pp 23-24; cv per-file 4052x5; gcd per-file 3648x5; key 'Excalibur (1988)'
+      e.g. 001  Excalibur 061 (1992) (digital) (Glorith-HD).cbz
+        87886 #61 1992 24pp · 87887 #62 1992 23pp · 87888 #63 1993 24pp · 87889 #64 1993 24pp · 87890 #65 1993 24pp
+   G20 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0190 Days of Future Yet to Come — 2 file(s), numbers 66-67, pp 23-24; cv per-file 4052x2; gcd per-file 3648x2; key 'Excalibur (1988)'
+      [87943] 001 Excalibur 066 (1993) (digital) (Glorith-HD).cbz (24pp)
+      [87944] 002 Excalibur 067 (1993) (digital) (Glorith-HD).cbz (23pp)
+   G21 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0194 Exile — 3 file(s), numbers 68-70, pp 24-35; cv per-file 4052x3; gcd per-file 47024x1; key 'Excalibur (1988)'
+      [87960] 001 Excalibur v1 068 (1998) (c2c) (Heintje scan).cbr (35pp)
+      [87961] 002 Excalibur v1 069 (1988) [BeastCharming].cbr (24pp)
+      [87962] 003 Excalibur v1 070.cbr (33pp)
+   G22 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0202 Fatal Attractions — 1 file(s), numbers 71, pp 38-38; cv per-file 4052x1; gcd per-file 3648x1; key 'Excalibur (1988)'
+      [88007] 003 Excalibur 071 (1993) (digital) (Minutemen-Phantasm).cbr (38pp)
+   G23 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0213 The Killing Field — 1 file(s), numbers 74, pp 22-22; cv per-file 4052x1; key 'Excalibur (1988)'
+      [88057] 004 Excalibur v1 074.cbr (22pp)
+   G24 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0214 The Ties that Bind — 1 file(s), numbers 75, pp 46-46; cv per-file 4052x1; gcd per-file 182016x1; key 'Excalibur (1988)'
+      [88061] 004 Excalibur 075 (1994) (c2c) (Re-Edit) (original scanner-Montagnard93-DCP).cbr (46pp)
+   G25 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0222 Hope and D'Spayre — 2 file(s), numbers 76-77, pp 33-33; cv per-file 4052x2; key 'Excalibur (1988)'
+      [88090] 002 Excalibur v1 076.cbr (33pp)
+      [88091] 003 Excalibur v1 077.cbr (33pp)
+   G26 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0223 Shadow Games — 2 file(s), numbers 72-73, pp 32-33; cv per-file 4052x2; gcd per-file 3648x1; key 'Excalibur (1988)'
+      [88096] 004 Excalibur v1 072.cbr (32pp)
+      [88097] 005 Excalibur 073 (1994) (c2c) (Re-Edit) (original scanner-Montagnard93-DCP).cbr (33pp)
+   G27 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0227 The Douglock Chronicles — 3 file(s), numbers 78-80, pp 32-34; cv per-file 4052x3; gcd per-file 3648x1; key 'Excalibur (1988)'
+      [88107] 001 Excalibur 078 (1994) (c2c) (Re-Edit) (original scanner-Montagnard93-DCP).cbr (32pp)
+      [88108] 002 Excalibur v1 079.cbr (32pp)
+      [88109] 003 Excalibur v1 080.cbr (34pp)
+   G28 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0230 Hunters in Darkness — 1 file(s), numbers 81, pp 35-35; cv per-file 4052x1; gcd per-file 3648x1; key 'Excalibur (1988)'
+      [88121] 003 Excalibur v1 081 (1994) (c2c) (Re-Edit) (original scanner-Montagnard93-DCP).cbr (35pp)
+   G29 "Excalibur Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0232 Untitled — 1 file(s), numbers 2, pp 66-66; cv per-file 4052x1; key 'Excalibur Annual (1988)'
+      [88128] 003 Excalibur Annual v1 002.cbr (66pp)
+   G30 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0234 The Phalanx Covenant - Life Signs — 1 file(s), numbers 82, pp 38-38; cv per-file 4052x1; gcd per-file 3648x1; key 'Excalibur (1988)'
+      [88136] 003 Excalibur 082 (1994) (digital) (Glorith-Novus-HD).cbz (38pp)
+   G31 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0238 Soulsword — 3 file(s), numbers 83-85, pp 23-24; cv per-file 4052x3; gcd per-file 3648x3; key 'Excalibur (1988)'
+      [88148] 001 Excalibur 083 (1994) (Digital) (AnPymGold-Empire).cbz (24pp)
+      [88149] 002 Excalibur 084 (1994) (Digital) (AnPymGold-Empire).cbz (23pp)
+      [88150] 003 Excalibur 085 (1995) (Digital) (AnPymGold-Empire).cbz (23pp)
+   G32 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0246 Untitled — 1 file(s), numbers 86, pp 25-25; cv per-file 4052x1; gcd per-file 3648x1; key 'Excalibur (1988)'
+      [88194] 005 Excalibur 086 (1995) (Digital) (AnPymGold-Empire).cbz (25pp)
+   G33 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0247 After Xavier - The Age of Apocolypse — 1 file(s), numbers 87, pp 22-22; cv per-file 4052x1; gcd per-file 3648x1; key 'Excalibur (1988)'
+      [88245] 050 Excalibur 087 (1995) (Digital) (AnPymGold-Empire).cbz (22pp)
+   G34 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0253 Dream Nails — 3 file(s), numbers 88-90, pp 24-37; cv per-file 4052x3; gcd per-file 3648x3; key 'Excalibur (1988)'
+      [88263] 001 Excalibur 088 (1995) (Digital) (AnPymGold-Empire).cbz (25pp)
+      [88264] 002 Excalibur 089 (1995) (Digital) (AnPymGold-Empire).cbz (24pp)
+      [88265] 003 Excalibur 090 (1995) (Digital) (Shadowcat-Empire).cbz (37pp)
+   G35 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0257 Victims — 2 file(s), numbers 91-92, pp 23-24; cv per-file 4052x2; gcd per-file 3648x2; key 'Excalibur (1988)'
+      [88283] 005 Excalibur 091 (1995) (Digital) (AnPymGold-Empire).cbz (23pp)
+      [88284] 006 Excalibur 092 (1995) (Digital) (AnPymGold-Empire).cbz (24pp)
+   G36 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0262 Untitled — 1 file(s), numbers 93, pp 20-20; cv per-file 4052x1; gcd per-file 3648x1; key 'Excalibur (1988)'
+      [88300] 004 Excalibur 093 (1996) (Digital) (AnPymGold-Empire).cbz (20pp)
+   G37 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0267 Death Wail — 1 file(s), numbers 94, pp 20-20; cv per-file 4052x1; gcd per-file 3648x1; key 'Excalibur (1988)'
+      [88319] 005 Excalibur 094 (1996) (Digital) (AnPymGold-Empire).cbz (20pp)
+   G38 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0275 Untitled — 1 file(s), numbers 95, pp 20-20; cv per-file 4052x1; gcd per-file 3648x1; key 'Excalibur (1988)'
+      [88351] 003 Excalibur 095 (1996) (Digital) (AnPymGold-Empire).cbz (20pp)
+   G39 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0277 Untitled — 2 file(s), numbers 96-97, pp 19-20; cv per-file 4052x2; gcd per-file 3648x2; key 'Excalibur (1988)'
+      [88354] 001 Excalibur 096 (1996) (Digital) (Shadowcat-Empire).cbz (19pp)
+      [88355] 002 Excalibur 097 (1996) (Digital) (Shadowcat-Empire).cbz (20pp)
+   G40 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0287 Untitled — 2 file(s), numbers 98-99, pp 22-22; cv per-file 4052x2; gcd per-file 3648x2; key 'Excalibur (1988)'
+      [88388] 001 Excalibur 098 (1996) (Digital) (Shadowcat-Empire).cbz (22pp)
+      [88389] 002 Excalibur 099 (1996) (Digital) (Shadowcat-Empire).cbz (22pp)
+   G41 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught — 3 file(s), numbers 100-102, pp 21-43; cv per-file 4052x3; gcd per-file 3648x3; key 'Excalibur (1988)'
+      [88418] 008 Excalibur 100 (1996) (digital) (Minutemen-Bluntman).cbr (43pp)
+      [88443] 033 Excalibur 101 (1996) (Digital) (Shadowcat-Empire).cbz (21pp)
+      [88444] 034 Excalibur 102 (1996) (Digital) (Shadowcat-Empire).cbz (23pp)
+   G42 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0299 Unnamed — 1 file(s), numbers 103, pp 23-23; cv per-file 4052x1; gcd per-file 3648x1; key 'Excalibur (1988)'
+      [88481] 003 Excalibur 103 (1996) (Digital) (Shadowcat-Empire).cbz (23pp)
+   G43 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0300 True Lies — 1 file(s), numbers 106, pp 28-28; cv per-file 4052x1; key 'Excalibur (1988)'
+      [88488] 005 Excalibur v1 106.cbr (28pp)
+   G44 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0305 Untitled — 2 file(s), numbers 104-105, pp 28-32; cv per-file 4052x2; gcd per-file 3648x1; key 'Excalibur (1988)'
+      [88518] 012 Excalibur 104 (1996) (Beast's Library).cbr (32pp)
+      [88519] 013  Excalibur v1 105.cbr (28pp)
+   G45 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0313 Untitled — 1 file(s), numbers 107, pp 28-28; cv per-file 4052x1; gcd per-file 3648x1; key 'Excalibur (1988)'
+      [88563] 001 Excalibur 107 (1997) (Beast's Library).cbr (28pp)
+   G46 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0316 Battle for Britain — 3 file(s), numbers 108-110, pp 27-28; cv per-file 4052x3; gcd per-file 3648x3; key 'Excalibur (1988)'
+      [88573] 001 Excalibur 108 (1997) (Beast's Library).cbr (27pp)
+      [88574] 002 Excalibur 109 (1997) (Beast's Library).cbr (27pp)
+      [88575] 003 Excalibur 110 (1997) (Beast's Library).cbr (28pp)
+   G47 "Excalibur - Flashback -1" in Marvel\_X-Men\_X-Men Complete Chronology V2\0325 Flashback — 1 file(s), numbers 1, pp 22-22; gcd per-file 4675x1; key 'Excalibur - Flashback -1'
+      [88616] 007 Excalibur - Flashback -1.cbr (22pp)
+   G48 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0327 Untitled — 3 file(s), numbers 111-113, pp 24-26; cv per-file 4052x3; gcd per-file 3648x1; key 'Excalibur (1988)'
+      [88625] 002 Excalibur 111 (1997).cbr (26pp)
+      [88626] 003 Excalibur v1 #112.cbr (24pp)
+      [88627] 004 Excalibur v1 #113.cbr (26pp)
+   G49 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0334 Untitled — 1 file(s), numbers 114, pp 26-26; cv per-file 4052x1; key 'Excalibur (1988)'
+      [88678] 005 Excalibur v1 #114.cbr (26pp)
+   G50 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0347 Untitled — 2 file(s), numbers 116-117, pp 24-25; cv per-file 4052x2; key 'Excalibur (1988)'
+      [88743] 004 Excalibur v1 #116.cbr (25pp)
+      [88744] 005 Excalibur v1 #117.cbr (24pp)
+   G51 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0350 Unnamed — 1 file(s), numbers 115, pp 27-27; cv per-file 4052x1; key 'Excalibur (1988)'
+      [88761] 003 Excalibur v1 #115.cbr (27pp)
+   G52 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0354 Preludes and Nightmares — 6 file(s), numbers 118-123, pp 24-26; cv per-file 4052x6; gcd per-file 3648x2; key 'Excalibur (1988)'
+      e.g. 001 Excalibur 118 (1998) (Beast's Library).cbr
+        88777 #118 1998 26pp · 88778 #119 1998 25pp · 88779 #120 24pp · 88782 #123 24pp
+      [88780] 004 Excalibur v1 #121.cbr (24pp)
+      [88781] 005 Excalibur v1 122.cbr (24pp)
+   G53 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0365 PayBack — 2 file(s), numbers 124-125, pp 24-39; cv per-file 4052x2; key 'Excalibur (1988)'
+      [88830] 007 Excalibur v1 #124.cbr (24pp)
+      [88831] 008 Excalibur v1 #125.cbr (39pp)
+   G54 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0613 Forging The Sword — 4 file(s), numbers 1-4, pp 23-25; cv per-file 4052x4; gcd per-file 12238x4; key 'Excalibur (1988)'
+      e.g. 001 Excalibur 001 (2004) (Digital) (Shadowcat-Empire).cbz
+        89946 #1 2004 24pp · 89947 #2 2004 25pp · 89948 #3 2004 25pp · 89949 #4 2004 23pp
+   G55 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0635 Food Fight — 3 file(s), numbers 5-7, pp 22-25; cv per-file 4052x3; gcd per-file 12238x3; key 'Excalibur (1988)'
+      [90049] 001 Excalibur 005 (2004) (Digital) (AnPymGold-Empire).cbz (22pp)
+      [90050] 002 Excalibur 006 (2004) (Digital) (Shadowcat-Empire).cbz (23pp)
+      [90051] 003 Excalibur 007 (2005) (Digital) (Shadowcat-Empire).cbz (25pp)
+   G56 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0648 Saturday Night Fever — 3 file(s), numbers 8-10, pp 24-25; cv per-file 4052x3; gcd per-file 12238x3; key 'Excalibur (1988)'
+      [90110] 001 Excalibur 008 (2005) (Digital) (Shadowcat-Empire).cbz (24pp)
+      [90111] 002 Excalibur 009 (2005) (Digital) (Shadowcat-Empire).cbz (25pp)
+      [90112] 003 Excalibur 010 (2005) (Digital) (AnPymGold-Empire).cbz (24pp)
+   G57 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0667 The Devil's Own — 4 file(s), numbers 11-14, pp 24-24; cv per-file 4052x4; gcd per-file 12238x4; key 'Excalibur (1988)'
+      e.g. 001 Excalibur 011 (2005) (Digital) (Shadowcat-Empire).cbz
+        90190 #11 2005 24pp · 90191 #12 2005 24pp · 90192 #13 2005 24pp · 90193 #14 2005 24pp
+   G58 "Excalibur" in Marvel\_X-Men\_X-Men Complete Chronology V2\0729 The Last Days Of Camelot — 3 file(s), numbers 10-12, pp 23-25; cv per-file 4052x3; gcd per-file 12238x2; key 'Excalibur (1988)'
+      [90601] 001 Excalibur 010 (2006) (Digital) (AnPymGold-Empire).cbr (23pp)
+      [90602] 002 Excalibur 011 (2006) (Digital) (AnPymGold-Empire).cbr (24pp)
+      [90603] 003 Excalibur 012 (2007) (Digital) (AnPymGold-Empire).cbr (25pp)
+   G59 "Excalibur" in _Marvel Major Event Chronology (digital)\2005.08 - House of M\01 Prelude — 2 file(s), numbers 8-9, pp 24-25; cv per-file 4052x2; gcd per-file 12238x2; key 'Excalibur (1988)'
+      [116642] 01 Excalibur 008 (2005) (Digital) (Shadowcat-Empire).cbz (24pp)
+      [116643] 02 Excalibur 009 (2005) (Digital) (Shadowcat-Empire).cbz (25pp)
+   G60 "Excalibur" in _Marvel Major Event Chronology (digital)\2020.09 - X of Swords — 3 file(s), numbers 13-15, pp 26-27; cv per-file 125178x2, 4052x1; gcd per-file 151427x3; key 'Excalibur (1988)' | 'Excalibur (2020)'
+      [118462] 09 Excalibur 013 (2020) (Digital) (Zone-Empire).cbr (27pp)
+      [118468] 15 Excalibur 014 (2021) (Digital) (Zone-Empire).cbr (27pp)  key="Excalibur (2020)"
+      [118474] 21 Excalibur 015 (2021) (Digital) (Zone-Empire).cbr (26pp)  key="Excalibur (2020)"

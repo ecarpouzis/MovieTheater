@@ -1,0 +1,36 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S94717	The Flash v2 (1987)	run=-	P-012.jsonl	new	pair=100573
+S103782	Adventures of Superman v2 (2013)	run={"cv": 60518}	P-012.jsonl	new	pair=468
+S103795	Thor (1998)	run={"cv": 6226, "gcd": 6045}	P-012.jsonl	new	pair=94806
+S103786	Archie v2 (2015)	run={"cv": 83121, "gcd": 90653}	P-012.jsonl	new	pair=1212
+S1276	Archie: Varsity Edition	run=-	P-012.jsonl	new	pair=1212
+S103784	Archie Facsimile Edition (2024)	run={"gcd": 214284}	P-012.jsonl	new	pair=1212
+S103783	Archie Collector's Edition (2016)	run={"cv": 86677, "gcd": 94854}	P-012.jsonl	new	pair=1212
+S103785	Archie Halloween Special (2017)	run=-	P-012.jsonl	new	pair=1212
+S101470	Wonder Woman v2 (1986)	run=-	P-012.jsonl	new	pair=66314
+S21955	Wonder Woman	run=-	P-012.jsonl	new	pair=66314
+S101473	Wonder Woman v5 (2016)	run=-	P-012.jsonl	new	pair=66314
+S366	Absolute Wonder Woman	run=-	P-012.jsonl	new	pair=66314
+S103797	Wonder Woman Annual (2017)	run={"cv": 101798, "gcd": 114405}	P-012.jsonl	new	pair=66314
+S103798	Wonder Woman Day Special Edition (2017)	run={"cv": 101807, "gcd": 114682}	P-012.jsonl	new	pair=66314
+S103800	Wonder Woman Special Edition: Free Comic Book Day (2017)	run={"cv": 101293}	P-012.jsonl	new	pair=66314
+S103803	Wonder Woman: 80 Years of the Amazon Warrior - The Deluxe Edition (2021)	run={"cv": 138903, "gcd": 176029}	P-012.jsonl	new	pair=66314
+S103799	Wonder Woman Special (1992)	run={"cv": 25656, "gcd": 4425}	P-012.jsonl	new	pair=66314
+S64823	Green Lantern Corps v1 (1986)	run=-	P-012.jsonl	new	pair=7938
+S103791	Green Lantern Corps (2011)	run={"cv": 42916, "gcd": 61068}	P-012.jsonl	new	pair=7938
+S7917	Green Lantern - Lost Army	run=-	P-012.jsonl	new	pair=7938
+S96764	Exiles v3 (2018)	run={"cv": 109764, "gcd": 123546}	P-012.jsonl	new	pair=6312
+S94593	Excalibur v3 (2004)	run=-	P-012.jsonl	new	pair=6284
+S12807	New Excalibur	run=-	P-012.jsonl	new	pair=6284
+S6305	Excalibur by Tini Howard	run=-	P-012.jsonl	new	pair=6284
+S100573	moved out -> S94717 "The Flash v2 (1987)"	run=-	P-012.jsonl	kept	pair=100573
+S468	moved out -> S103782 "Adventures of Superman v2 (2013)"	run=-	P-012.jsonl	kept	pair=468	moved_cv=60518	pending_join=17909
+S94806	moved out -> S103795 "Thor (1998)"	run=-	P-012.jsonl	kept	pair=94806	moved_cv=6226	pending_join=20070
+S1212	moved out -> S103786 "Archie v2 (2015)"; S1276 "Archie: Varsity Edition"; S103784 "Archie Facsimile Edition (2024)"; S103783 "Archie Collector's Edition (2016)"; S103785 "Archie Halloween Special (2017)"	run=-	P-012.jsonl	kept	pair=1212	moved_cv=83121,86677
+S66314	moved out -> S101470 "Wonder Woman v2 (1986)"; S21955 "Wonder Woman"; S101473 "Wonder Woman v5 (2016)"; S366 "Absolute Wonder Woman"; S103797 "Wonder Woman Annual (2017)"; S103798 "Wonder Woman Day Special Edition (2017)"; S103800 "Wonder Woman Special Edition: Free Comic Book Day (2017)"; S103803 "Wonder Woman: 80 Years of the Amazon Warrior - The Deluxe Edition (2021)"; S103799 "Wonder Woman Special (1992)"	run=-	P-012.jsonl	kept	pair=66314	moved_cv=101798,101807,101293,138903,25656
+S7938	moved out -> S64823 "Green Lantern Corps v1 (1986)"; S103791 "Green Lantern Corps (2011)"; S7917 "Green Lantern - Lost Army"	run=-	P-012.jsonl	kept	pair=7938	moved_cv=42916	pending_join=102449
+S6312	moved out -> S96764 "Exiles v3 (2018)"	run=-	P-012.jsonl	kept	pair=6312	moved_cv=109764
+S6284	moved out -> S94593 "Excalibur v3 (2004)"; S12807 "New Excalibur"; S6305 "Excalibur by Tini Howard"	run=-	P-012.jsonl	kept	pair=6284
