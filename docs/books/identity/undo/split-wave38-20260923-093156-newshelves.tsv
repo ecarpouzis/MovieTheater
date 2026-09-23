@@ -1,0 +1,29 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S95051	Amazing Spider-Man v5 (2018)	run=-	P-013.jsonl	new	pair=64133
+S95053	Amazing Spider-man v6 (2022)	run=-	P-013.jsonl	new	pair=64133
+S103529	Amazing Spider-Man v4 (2015)	run=-	P-013.jsonl	new	pair=64133
+S95052	Amazing Spider-man v3 (2014)	run=-	P-013.jsonl	new	pair=64133
+S103813	Wolverine by Jason Aaron - The Complete Collection (2013)	run={"cv": 69789, "gcd": 77972}	P-013.jsonl	new	pair=66293
+S101456	Wolverine v3 (2003)	run=-	P-013.jsonl	new	pair=66293
+S21775	Wolverine #88: Facsimile Edition	run=-	P-013.jsonl	new	pair=66293
+S66295	Wolverine (2022)	run=-	P-013.jsonl	new	pair=66293
+S66292	Wolverine (1982)	run=-	P-013.jsonl	new	pair=66293
+S21844	Wolverine 2000	run=-	P-013.jsonl	new	pair=66293
+S21845	Wolverine 2001	run=-	P-013.jsonl	new	pair=66293
+S103744	X-Men by Lee & Kirby Omnibus (2009)	run=-	P-013.jsonl	new	pair=66349
+S103816	X-Men (2004)	run={"cv": 10731, "gcd": 11638}	P-013.jsonl	new	pair=66349
+S22374	X-Men Legacy	run=-	P-013.jsonl	new	pair=66349
+S22445	X-Men: Age of X	run=-	P-013.jsonl	new	pair=66349
+S66353	X-Men (2021)	run=-	P-013.jsonl	new	pair=66349
+S102430	X-Men v5 (2019)	run=-	P-013.jsonl	new	pair=66349
+S22220	X-Men #137: Facsimile Edition	run=-	P-013.jsonl	new	pair=66349
+S103819	X-Men No. 1 Facsimile Edition (2019)	run={"cv": 120145, "gcd": 148701}	P-013.jsonl	new	pair=66349
+S66149	Ultimate X-Men v1 (2001)	run=-	P-013.jsonl	new	pair=66349
+S103824	X-Necrosha (2010)	run={"cv": 34001, "gcd": 53690}	P-013.jsonl	new	pair=66349
+S103823	X-Men: Second Coming (2011)	run={"gcd": 159496}	P-013.jsonl	new	pair=66349
+S64133	moved out -> S95051 "Amazing Spider-Man v5 (2018)"; S95053 "Amazing Spider-man v6 (2022)"; S103529 "Amazing Spider-Man v4 (2015)"; S95052 "Amazing Spider-man v3 (2014)"	run=-	P-013.jsonl	kept	pair=64133	pending_join=4752
+S66293	moved out -> S103813 "Wolverine by Jason Aaron - The Complete Collection (2013)"; S101456 "Wolverine v3 (2003)"; S21775 "Wolverine #88: Facsimile Edition"; S66295 "Wolverine (2022)"; S66292 "Wolverine (1982)"; S21844 "Wolverine 2000"; S21845 "Wolverine 2001"	run=-	P-013.jsonl	kept	pair=66293	moved_cv=69789	pending_join=101454
+S66349	moved out -> S103744 "X-Men by Lee & Kirby Omnibus (2009)"; S103816 "X-Men (2004)"; S22374 "X-Men Legacy"; S22445 "X-Men: Age of X"; S66353 "X-Men (2021)"; S102430 "X-Men v5 (2019)"; S22220 "X-Men #137: Facsimile Edition"; S103819 "X-Men No. 1 Facsimile Edition (2019)"; S66149 "Ultimate X-Men v1 (2001)"; S103824 "X-Necrosha (2010)"; S103823 "X-Men: Second Coming (2011)"	run=-	P-013.jsonl	kept	pair=66349	moved_cv=10731,120145,34001
