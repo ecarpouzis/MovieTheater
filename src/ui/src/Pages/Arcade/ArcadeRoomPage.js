@@ -6,6 +6,7 @@ import { createCloudRetroSession, arcadeDeviceId, arcadeInputHint, rotatedVideoS
 import { DEFAULT_CHORDS, resolveChords } from "./controllerChords";
 import { SYSTEM_LABEL, systemLabel, NO_SAVE_STATE_SYSTEMS, HEAVY_LANE_SYSTEMS, QUICK_SLOT, hasSaveStates } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
+import { installRoomKeySwallow, installBackTrap } from "./roomInputGuard";
 import { useWakeLock } from "../../useWakeLock";
 import AchievementToaster from "./AchievementToast";
 import ArcadeHostBanner from "./ArcadeHostBanner";
@@ -1144,6 +1145,24 @@ export default function ArcadeRoomPage() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  // A Bluetooth pad must never drive the browser (Firefox/Edge on Android turn A/B/Start/d-pad into
+  // Enter/BACK/scroll — "pressing jump went to the prior page", 2026-09-22). Swallow pad-shaped key events
+  // and trap history's back for the life of the page; every exit below uses history.replace so the trap's
+  // sentinel entry is consumed rather than left behind. See roomInputGuard.js.
+  useEffect(() => {
+    const offKeys = installRoomKeySwallow();
+    let lastToast = 0;
+    const offTrap = installBackTrap({
+      onTrapped: () => {
+        const now = Date.now();
+        if (now - lastToast < 4000) return;
+        lastToast = now;
+        message.info("Back is off while you're in a room — use End (or Stop watching) to leave");
+      },
+    });
+    return () => { offKeys(); offTrap(); };
+  }, []);
+
   // A room that goes away with a tape still rolling must not leave the replay pump ticking.
   useEffect(() => () => { if (tapeReplayRef.current) clearInterval(tapeReplayRef.current.timer); }, []);
 
@@ -1226,7 +1245,7 @@ export default function ArcadeRoomPage() {
         <Title level={3}>Can't join this room</Title>
         <Text type="secondary">{fatal}</Text>
         <div style={{ marginTop: 24 }}>
-          <Button type="primary" onClick={() => history.push(lobbyPath())}>Back to arcade</Button>
+          <Button type="primary" onClick={() => history.replace(lobbyPath())}>Back to arcade</Button>
         </div>
       </div>
     );
@@ -1258,7 +1277,7 @@ export default function ArcadeRoomPage() {
       />
       <div className="arcade-room-page__topbar">
         <Space wrap>
-          <Button onClick={() => history.push(lobbyPath())}>← Arcade</Button>
+          <Button onClick={() => history.replace(lobbyPath())}>← Arcade</Button>
           {/* While the gateway inflates a compressed disc image, say THAT — not "Connecting…", which is
               a lie the player can only respond to by giving up (and giving up used to cancel the work). */}
           <Tag color={romPercent != null ? "orange" : LIVE_STATUS.includes(status) ? "green" : "blue"}>
@@ -1493,7 +1512,7 @@ export default function ArcadeRoomPage() {
           <Tooltip title="Fullscreen">
             <Button onClick={goFullscreen}>⛶ Fullscreen</Button>
           </Tooltip>
-          <Button danger onClick={() => history.push(lobbyPath())}>{spectator ? "Stop watching" : "End"}</Button>
+          <Button danger onClick={() => history.replace(lobbyPath())}>{spectator ? "Stop watching" : "End"}</Button>
         </Space>
       </div>
 
