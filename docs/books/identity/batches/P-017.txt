@@ -1,0 +1,169 @@
+## Conventions for this batch (25 shown of 73 matched; 328 in LEDGER.md; 1 shelf/shelves: kind:collected-line ×1 · kind:trade-only ×1 · pub:marvel ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-029] (1 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
+- On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
+  collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
+[L-031] (1 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (1 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (1 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (1 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (1 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-119] (1 shelf/shelves) pub:marvel
+- GCD filing quirks that recovered legs: drop "Comics" from a title, "and" for "&", "Digest" appended, reversed
+  or reordered name lists ("Deadpool / Amazing Spider-Man / Hulk: Identity Wars").
+[L-127] (1 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-130] (1 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-132] (1 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-136] (1 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-196] (1 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (1 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (1 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-297] (1 shelf/shelves) pass:item pub:marvel
+- ComicVine's issue-number field follows LEGACY print numbering (Amazing Spider-Man 2015 v4 #792-801 under CV
+  85076 / GCD 92892) — a `C` range in the 790s is still that volume.
+[L-298] (1 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-306] (1 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (1 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (1 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-313] (1 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-327] (1 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (1 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+[L-135] (1 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-164] (1 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (1 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+
++48 more matched entries not shown: L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-013, L-014, L-016, L-032, L-043, L-050, L-064, L-072, L-085, L-088, L-089, L-095, L-096, L-101, L-113, L-114, L-118, L-125, L-157, L-159, L-163, L-177, L-193, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-310 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S871 Amazing Spider-Man Epic Collection  [split]  11 files / 11 collections  decided in R-059 (R)
+   decided: R 871 | eleven different books under the bare line key "Amazing Spider-Man Epic Collection": Vol. 01 Great Power (CV 77149), 02 Great Responsibility (97134), 03 Spider-Man No More (110903), 04 The Goblin Lives (119744), 06 The Death of Captain Stacy (139777), 07 The Goblin's Last Stand (101161), 10 Big Apple Battleground (158331), 15 Ghosts of the Past (74202), 17 Kraven's Last Hunt (101919), 19 Assassin Nation (119132), 26 Lifetheft (142111) — every one a count-1 CV volume; B-059's S 871 cv=- gcd=74602 put the line GCD on the S line, which the wave-44 one-rule forbids, and no single CV names the shelf
+   F 871 split-needed | one shelf per book, keyed "<Amazing Spider-Man Epic Collection: Subtitle> (<year>)" like its sibling singletons S872-S882, each S = the book's own CV: 95797→77149, 95798→97134, 95799→110903, 95800→119744, 95802→139777, 95803→101161, 95806→158331, 95807→74202, 95808→101919, 95810→119132, 95817→142111
+   named: S872 Spider-Man Epic Collection: Cosmic Adventures  1 files  keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S882 Amazing Spider-Man Epic Collection: Venom  1 files  keys: "Amazing Spider-Man Epic Collection: Venom"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 814f [shares gcd=1570 (collected by item 95797) — S cv=2127 gcd=1570 (R-058 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+2 more: lookup.py --shelf 4752)
+   nearby: S66237 "Web of Spider-Man" 155f [shares gcd=3059 (collected by item 95807) — S cv=3519 gcd=3059 (R-028 0.9)] keys: "The Amazing Spider-Man Epic Collection 28: Web of Life, Web of Death (1985)" | "Web Of Spider-Man" | "Web of Spider-Man (1985)" | "Web of Spider-Man Super Special" (+2 more: lookup.py --shelf 66237)
+   nearby: S11410 "Marvel Fanfare" 63f [shares gcd=2657 (collected by item 95810) — S cv=3143 gcd=2657 (A-021 0.9)] keys: "Marvel Fanfare"
+   nearby: S11370 "Marvel Age" 39f [shares gcd=69795 (collected by item 95808) — S cv=19176 gcd=69795 (C-039 0.9)] keys: "Marvel Age" | "Marvel Age Annual"
+   nearby: S11602 "Marvel Tales Starring Spider-Man" 35f [shares gcd=1747 (collected by item 95807) — S cv=138122 gcd=1747 (C-039 0.9)] keys: "Marvel Tales Starring Spider-Man"
+   nearby: S98485 "Marvel Tales v2 (1964)" 23f [shares gcd=1747 (collected by item 95807) — S gcd=1747 (C-039 0.9)] keys: "Marvel Tales v2 (1964)"
+   nearby: S11601 "Marvel Tales Featuring Spider-Man" 15f [shares gcd=1747 (collected by item 95807) — S cv=137722 gcd=1747 (C-039 0.9)] keys: "Marvel Tales Featuring Spider-Man"
+   nearby: S13066 "Not Brand Echh" 14f [shares gcd=1811 (collected by item 95799) — S cv=2354 gcd=1811 (A-022 0.9)] keys: "Not Brand Echh"
+   nearby: S11597 "Marvel Super-Heroes" 9f [shares gcd=1810 (collected by item 95800) — S cv=2353 gcd=1810 (R-046 0.95)] keys: "Marvel Super-Heroes" | "Marvel Super-Heroes v1 (1967)"
+   nearby: S824 "Amazing Fantasy" 6f [shares gcd=1514 (collected by item 95797) — S cv=5533 gcd=1514 (C-035 0.9)] keys: "Amasing Fantasy" | "Amazing Fantasy"
+   nearby: S11628 "Marvel Treasury Edition" 3f [shares gcd=2180 (collected by item 95806) — S cv=2694 gcd=2180 (C-039 0.9)] keys: "Marvel Treasury Edition"
+   nearby: S64135 "Amazing Spider-Man" 3f [shares gcd=1635 (collected by item 95797) — S cv=2189 gcd=1635 (C-050 0.7)] keys: "Amazing Spider-Man (2021)"
+   nearby: S19656 "The Spectacular Spider-Man Magazine" 2f [shares gcd=1873 (collected by item 95800) — S cv=27251 gcd=1873 (B-059 0.95)] keys: "The Spectacular Spider-Man Magazine"
+   nearby: S42165 "The Amazing Spider-Man Annual" 2f [shares gcd=1635 (collected by item 95797) — S cv=2189 gcd=1635 (C-050 0.95)] keys: "The Amazing Spider-Man Annual"
+   keys now: "Amazing Spider-Man Epic Collection" x11
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 11 file(s), 11 COL, pp 397-519; cv per-file 77149x1, 97134x1, 110903x1; gcd per-file 74602x11; key 'Amazing Spider-Man Epic Collection'
+      [95797] COL Amazing Spider-Man Epic Collection Vol. 01 - Great Power (2014) (Digital) (Zone-Empire).cbr (505pp)
+         own record cv 77149 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1205404) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #1-17 · gcd=1635 The Amazing Spider-Man Annual (1964) #1 · gcd=1514 Amazing Fantasy (1962) #15 · gcd=1637 Marvel Tales Annual (1964) #1
+      [95798] COL Amazing Spider-Man Epic Collection Vol. 02 - Great Responsibility (2016) (Digital) (Shadowcat-Empire).cbz (494pp)
+         own record cv 97134 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1660431) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #18-38 · gcd=1635 The Amazing Spider-Man Annual (1964) #2 · gcd=52975 Marvel Masterworks: The Amazing Spider-Man (2009) #1-4
+      [95799] COL Amazing Spider-Man Epic Collection Vol. 03 - Spider-Man No More (2018) (Digital) (Zone-Empire).cbr (397pp)
+         own record cv 110903 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1808311) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #39-52 · gcd=1635 The Amazing Spider-Man Annual (1964) #3-4 · gcd=1811 Not Brand Echh (1967) #2 · gcd=52975 Marvel Masterworks: The Amazing Spider-Man (2009) #5
+      [95800] COL Amazing Spider-Man Epic Collection Vol. 04 - The Goblin Lives (2019) (Digital) (Zone-Empire).cbr (495pp)
+         own record cv 119744 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1978761) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #53-67 · gcd=1873 The Spectacular Spider-Man (1968) #1-2 · gcd=1811 Not Brand Echh (1967) #6, #11 · gcd=1810 Marvel Super-Heroes (1967) #14
+      [95802] COL Amazing Spider-Man Epic Collection Vol. 06 - The Death of Captain Stacy (2021) (Digital-Empire).cbr (438pp)
+         own record cv 139777 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 2268841) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #86-104
+      [95803] COL Amazing Spider-Man Epic Collection Vol. 07 - The Goblin's Last Stand (2017) (Digital) (Shadowcat-Empire).cbz (448pp)
+         own record cv 101161 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1696226) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #105-123 · gcd=66209 Spider-Man: The Death of Gwen Stacy (1999) (unnumbered) · gcd=1635 The Amazing Spider-Man Annual (1964) #9 · gcd=27784 Spider-Man: Death of the Stacys (2007) (unnumbered)
+      [95806] COL Amazing Spider-Man Epic Collection Vol. 10 - Big Apple Battleground (2024) (Digital) (Shan-Empire).cbz (519pp)
+         own record cv 158331 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 2633948) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #165-185 · gcd=158698 FOOM Magazine (1973) #17-18, #22 · gcd=1635 The Amazing Spider-Man Annual (1964) #11-12 · gcd=2180 Marvel Treasury Edition (1974) #14
+      [95807] COL Amazing Spider-Man Epic Collection Vol. 15 - Ghosts of the Past (2014) (Digital) (Zone-Empire).cbr (473pp)
+         own record cv 74202 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1181282) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #259-272 · gcd=1747 Marvel Tales (1966) #273-282 · gcd=3059 Web of Spider-Man (1985) #1, #6 · gcd=1635 The Amazing Spider-Man Annual (1964) #18-19
+      [95808] COL Amazing Spider-Man Epic Collection Vol. 17 - Kraven's Last Hunt (2017) (Digital) (Zone-Empire).cbr (497pp)
+         own record cv 101919 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1710057) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #289-294 · gcd=3059 Web of Spider-Man (1985) #29-32 · gcd=69795 Marvel Age (1983) #54 · gcd=46980 The Amazing Spider-Man: The Wedding (1991) (unnumbered)
+      [95810] COL Amazing Spider-Man Epic Collection Vol. 19 - Assassin Nation (2019) (Digital) (Zone-Empire).cbr (481pp)
+         own record cv 119132 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1964905) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #311-325 · gcd=1635 The Amazing Spider-Man Annual (1964) #23 · gcd=28497 Marvel Graphic Novel: The Amazing Spider-Man "Parallel Lives" (1989) (unnumbered) · gcd=2657 Marvel Fanfare (1982) #41, #45, #50
+      [95817] COL Amazing Spider-Man Epic Collection Vol. 26 - Lifetheft (2021) (Digital-Empire).cbr (482pp)
+         own record cv 142111 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 2273650) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #381-393 · gcd=175761 The Amazing Spider-Man 30th Anniversary Poster Magazine (1992) #1 · gcd=54499 The Amazing Spider-Man Ashcan Edition (1994) (unnumbered) · gcd=3059 Web of Spider-Man (1985) #112
