@@ -1816,3 +1816,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   volume ("Digital Collection One", "TPB") is the collection's OWN record (its I line); a link to the 5-8 issue serial
   means the run wins. DC's Green Lantern trades exist as HC (77116) and SC (77117) GCD series — pick ONE edition per
   shelf (R-096/R-097).
+
+[L-363] pub:dc
+- DC New 52 trade lines on GCD are HC/TPB TWIN series (BTDK 78638/78639, Batwoman 66358/71298); CV holds per-trade
+  count-1 volumes that subtitle probes often miss. The retitle cut shows on GCD only (Fury of Firestorm: The Nuclear
+  Men = 61180 #0-12 + 171997 #13-20 = CV 42987's 21); L.E.G.I.O.N. / R.E.B.E.L.S. are split into year series. A "#DC
+  Events" shelf holding #41-45 of a New 52 title is a FRAGMENT of the run shelf — merge it in. Deathstroke the
+  Terminator 1991 = CV 9645 (#0-60) while GCD splits it 10465 (#1-40) / 15127 The Hunted / 15128 (#48-60); the 1991
+  trades (GCD 88153) collect #1-34 (R-098/R-099).

@@ -1,0 +1,315 @@
+## Conventions for this batch (35 shown of 127 matched; 362 in LEDGER.md; 14 shelf/shelves: folder:vn-year ×12 · pub:dc ×6 · pub:archie ×4 · pub:small-press ×2 · pub:aftershock ×2 · folder:sequel-subfolder ×2 · folder:events ×2 · kind:collected-line ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-191] (13 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-281] (13 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-124] (12 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-272] (12 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-212] (6 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-222] (6 shelf/shelves) pub:dc sig:collision
+- Second-rip fragments of shelves already read in earlier batches (Flash Secret Files, Spectre 1992, Teen Titans
+  2003/2016, Wonder Woman 1942/2016, Zatanna 1993, Donna Troy) surface as `--all` collisions — `merge-with` after
+  grepping the partner's name and count.
+[L-237] (6 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+[L-245] (6 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-211] (5 shelf/shelves) folder:vn-year pub:dc sig:collision sig:stale-flag
+- An `overlap-in-series` flag on a franchise with many `vN` sibling shelves (Deathstroke, Harley Quinn, Green Lantern,
+  Justice League, JLD, Legion, Lobo) describes the CROSS-SHELF Vol. 01 collision, not conflation on the one shelf —
+  confirmed 14 of 14 in C-013..C-015; the stale-flag note must name the sibling shelf.
+[L-030] (14 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-151] (14 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (14 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-046] (4 shelf/shelves) pub:action-lab pub:aftershock pub:small-press sig:probe
+- Small-press American floppies (Action Lab, Aftershock minis, Behemoth) are thin in GCD → `provider-missing` on
+  the GCD side is common and honest.
+[L-049] (4 shelf/shelves) kind:kids kind:strip pub:archie pub:boom
+- BOOM's licensed-kids folders (Ben 10, Ice Age, Garfield, BOOM! Box Mix Tape) file a new record per book/year in
+  both providers — the Archie holiday-annual shape; the year in the filename selects.
+[L-056] (4 shelf/shelves) pub:archie pub:dc sig:probe
+- The Archie-holiday split runs BOTH ways: GCD mints six one-shot series for DC's Earth-Prime week while CV keeps
+  one 6-issue volume — whichever provider spans the shelf carries the S line; the other takes `provider-missing`.
+[L-120] (4 shelf/shelves) kind:weekly pub:archie pub:marvel
+- Marvel UK: GCD keeps ONE series across a weekly's title changes ("Super Spider-Man" 2407, 153 issues) while CV
+  mints a volume per title; the quarterly "ThunderCats Collected Comics" is ONE CV volume and FIVE GCD series
+  (one per season) — the Archie holiday split with ComicVine on the spanning side.
+[L-156] (4 shelf/shelves) pub:archie pub:valiant
+- Acclaim's Eternal Warriors is the Archie-holiday split with ComicVine on the spanning side: CV 26146 count 6 vs six
+  separate GCD one-shot series (15146, 21569-21572, 21589).
+[L-335] (4 shelf/shelves) pub:archie
+- Archie 2019+ "Archie & Friends" one-shots: GCD 188076 is ONE numbered series (Back to School = #3) while CV mints
+  a volume per one-shot — the holiday split (L-056): the GCD row goes on the I line.
+[L-348] (4 shelf/shelves) pub:dc sig:probe
+- DC (R-073): the rip holds count-1 CV trade records under "Title: Subtitle" (Justice League Vol. 1-8, Teen Titans 2014,
+  Young Justice 2019, Doom Rising, Oz Effect) — probe the SUBTITLE with --contains. One-shots filed by event name ("Flash
+  Special" = the 50th anniversary special, "Joker: Last Laugh Secret Files"). CV keeps Daring New Adventures of Supergirl
+  #1-13 + Supergirl #14-23 as ONE volume (3113); GCD splits 2626 / 2722 — a C line per leg.
+[L-361] (4 shelf/shelves) pub:archie pub:boom pub:dark-horse
+- Archie holiday specials: GCD names each series by COVER year (on sale Dec Y = series Y+1) while CV uses the on-sale
+  year; page count separates them (24pp up to Dec 2019, 36pp from Dec 2020). Sabrina (2000) #1-37 and Sabrina the
+  Teenage Witch (2003) #38-104 are one continuous numbering, but BOTH catalogues cut at #37/#38 — two runs. Dark Horse /
+  Berger's Everything Vol. 2 collects "what would have been #6-10" (trade-only issues). Boom's Fence and Adventure Time
+  OGN lines: some trade-line volumes are OGNs — no issue range applies. A 2000 AD strip-collection's prog ranges are N
+  lines, never C lines onto the weekly (L-333, reaffirmed R-094) (R-095).
+[L-362] (4 shelf/shelves) kind:digital pub:archie pub:boom pub:dc
+- Archie Forsythe-DCP Christmas Spectaculars: the filename year is the COVER year and ComicInfo Notes carry the UPC,
+  which equals GCD's row barcode — a 1.0 assertion. Boom: a trade line spanning several runs (Wynd Books, WWE Then. Now.
+  Forever., MM/PR Deluxe) is its own identity with C lines onto each run. ComiXology: a per-file CV link to a count-1
+  volume ("Digital Collection One", "TPB") is the collection's OWN record (its I line); a link to the 5-8 issue serial
+  means the run wins. DC's Green Lantern trades exist as HC (77116) and SC (77117) GCD series — pick ONE edition per
+  shelf (R-096/R-097).
+[L-193] (10 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-013] (9 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (9 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-043] (9 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (9 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (9 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (9 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (9 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (9 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (9 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (9 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (9 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (9 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (9 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+
++92 more matched entries not shown: L-163, L-177, L-198, L-204, L-210, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-016, L-032, L-113, L-114, L-003, L-011, L-015, L-040, L-051, L-055, L-139, L-140, L-148, L-183, L-199, L-255, L-271, L-334, L-064, L-085, L-101, L-175, L-290, L-291, L-310, L-018, L-031, L-082, L-093, L-162, L-197, L-203, L-205, L-207, L-215, L-220, L-242, L-254, L-260, L-263, L-299, L-329, L-097, L-123, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-252, L-258, L-269, L-274, L-275, L-279, L-282, L-285, L-286, L-287, L-288, L-289, L-293, L-309, L-314, L-352, L-354, L-065, L-099, L-128, L-150, L-181, L-194, L-262, L-330, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S103951 American Mythology Monsters Vol 2 (2021)  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: American Mythology Monsters Vol 2 (2021)  years 2021-2021  3 files / 0 collections
+   split run: "American Mythology Monsters Vol 2 (2021)" run={"cv": 137574, "gcd": 187848} (new shelf from P-032) — seed the S line from these ids, then verify them
+   flags: #154 label-ambiguous [Pending] item 6651 — six 29-32 pp single issues from two different runs carry a collection format
+   folders: [3] American Mythology\American Mythology Monsters (2020)\American Mythology Monsters v2 (2021)
+   files:   [6651] American Mythology Monsters v2 001 (2021) (digital) (Son of Ultron-Empire).cbr (31pp) | [6652] American Mythology Monsters v2 002 (2021) (digital) (Son of Ultron-Empire).cbr (29pp)
+            [6653] American Mythology Monsters v2 003 (2021) (digital) (Son of Ultron-Empire).cbr (30pp)
+   ours:    ladder 1-3; ComicInfo Series: "American Mythology Monsters"x2, "American Mythology Monsters Vol 2"x1; ComicInfo Publisher: "American Mythology Productions"x3
+   CV per-file (v1): vol 137574 "American Mythology Monsters" 2021 American Mythology Productions 3 on 3/3 files
+   CV local rip:   (= per-file) · 133182 "American Mythology Monsters" 2021 American Mythology Productions 3 (via CV name "American Mythology Monsters") · 144299 "American Mythology Monsters" 2022 American Mythology Productions 3 (via CV name "American Mythology Monsters")   (rip lookup)
+   GCD per-file:   series 168712 "American Mythology Monsters" 2021-? American Mythology Productions [limited series] 3 on 2/3 files · series 187848 "American Mythology Monsters" 2021-2021 American Mythology Productions [miniseries] 3 on 1/3 files; methods numx3
+   GCD dump:       (= per-file) · 187847 "American Mythology Monsters" 2022-? American Mythology Productions [] 3 (via CV name "American Mythology Monsters")   (dump lookup)
+   bridges:        gcd 168712 -> LOCG 146880 "American Mythology: Monsters" support 5 · gcd 187848 -> LOCG 146880 "American Mythology: Monsters" support 1
+
+== S95056 American Mythology Monsters  [tier A]   keys: American Mythology Monsters v1 (2020)  years 2021-2021  3 files / 0 collections
+   split: the KEPT half of the P-032 split — moved out -> S103951 "American Mythology Monsters Vol 2 (2021)"; re-identify what stayed
+   ⚠ stored cv 137574 = the moved run's — the run that left this shelf is CV 137574; unless this half IS that run, write `F 95056 wrong-cv-link` and give the S line this half's own id (or cv=-) so the new shelf can keep 137574
+   folders: [3] American Mythology\American Mythology Monsters (2020)\American Mythology Monsters v1 (2020)
+   files:   [6648] American Mythology Monsters 001 (2020) (digital) (Son of Ultron-Empire).cbr (26pp) | [6649] American Mythology Monsters 002 (2021) (digital) (Son of Ultron-Empire).cbr (26pp)
+            [6650] American Mythology Monsters 003 (2021) (digital) (Son of Ultron-Empire).cbr (26pp)
+   ours:    ladder 1-3; ComicInfo Series: "American Mythology Monsters"x3; ComicInfo Publisher: "American Mythology Productions"x3
+   CV linked:      vol 137574 "American Mythology Monsters" 2021 American Mythology Productions 3 issues; cached #1-3 (3); yearΔ 0; ratio 3/3 = 1.00; no judged range; v1 per-file: same volume on 3/3 files
+   CV local rip:   (= linked) · 133182 "American Mythology Monsters" 2021 American Mythology Productions 3 · 144299 "American Mythology Monsters" 2022 American Mythology Productions 3   (rip lookup)
+   GCD per-file:   series 168712 "American Mythology Monsters" 2021-? American Mythology Productions [limited series] 3 on 3/3 files; methods numx3
+   GCD dump:       (= per-file) · 187848 "American Mythology Monsters" 2021-2021 American Mythology Productions [] 3 · 187847 "American Mythology Monsters" 2022-? American Mythology Productions [] 3   (dump lookup)
+   bridges:        gcd 168712 -> LOCG 146880 "American Mythology: Monsters" support 5
+
+== S103953 Archie and Me Comics Digest (2017)  [tier D]   keys: Archie and Me Comics Digest (2017)  years 2018-2019  2 files / 0 collections
+   split run: "Archie and Me Comics Digest (2017)" run={"cv": 105297, "gcd": 117633} (new shelf from P-032) — seed the S line from these ids, then verify them
+   folders: [2] Archie\Archie & Me v1 (1964)
+   files:   [7538] Archie & Me Digest 015 (2019) (Digital) (Shadowcat-Empire).cbz (183pp) | [7539] Archie and Me Digest 012 (2018) (Digital) (Shadowcat-Empire).cbz (121pp)
+   ours:    ladder 12, 15; ComicInfo Series: "Archie & Me Digest"x1; ComicInfo Publisher: "Archie"x1
+   CV local rip:   105297 "Archie and Me Comics Digest" 2017 Archie Comics 23 (via our own name without the filing suffix "Archie and Me Comics Digest")   (rip lookup)
+   GCD dump:       117633 "Archie and Me Comics Digest" 2017-2020 Archie [] 23 (via our own name without the filing suffix "Archie and Me Comics Digest")   (dump lookup)
+
+== S1216 Archie and Me  [tier B]   keys: Archie & Me | Archie and Me  years 2018-2019  2 files / 1 collections
+   split: the KEPT half of the P-032 split — moved out -> S103953 "Archie and Me Comics Digest (2017)"; re-identify what stayed
+   folders: [2] Archie\Archie & Me v1 (1964)
+   files:   [7537] Archie & Me 002 (2019) (Digital) (Shadowcat-Empire).cbz (227pp) | [7540] COL Archie and Me v01 (2018) (Digital) (Shadowcat-Empire).cbz (227pp)
+   ours:    ladder 2; ComicInfo Series: "Archie & Me"x1; ComicInfo Publisher: "Archie"x1
+   GCD says: [7540] gcd_reprint 1871697: s11549 Archie and Me (1964) #3-4, #6-10, #14-18, #21-23 [19 stories] · s285 Archie Comics (1942) #95 [1 story] · s10447 Archie (1959) #106 [1 story]
+   CV linked:      vol 115034 "Archie and Me" 2018 Archie Comics 2 issues; cached #1-2 (2); yearΔ 0; ratio 1/2 = 0.50; no judged range
+   CV candidates:  (= linked) · 24359 "Archie and Me" 1964 Archie Comics 161 s105 · 9628 "Archie" 1960 Archie Comics 553 s66 · 105297 "Archie and Me Comics Digest" 2017 Archie Comics 23 s33 · 24362 "An Archie Special Edition, Christmas and Archie" 1975 Archie Comics 1 issue 144769 s25 · 128395 "The Archie Wedding: Archie Will You Marry Me" 2011 Archie Comics 1 issue 773525 s24 · 83121 "Archie" 2015 Archie Comics 47 s15   (v1 search)
+   CV local rip:   (= linked) · 24359 "Archie and Me" 1964 Archie Comics 161 · 88725 "Archie" 2016 Archie Comics 6 (via CV candidate name "Archie") · 83121 "Archie" 2015 Archie Comics 47 (via CV candidate name "Archie") · 55522 "Archie" 1968 Jeunesse et Vacances 54 (via CV candidate name "Archie") · 9628 "Archie" 1960 Archie Comics 553 (via CV candidate name "Archie")   (rip lookup)
+   GCD dump:       133332 "Archie and Me" 2018-2019 Archie [] 2 · 11549 "Archie and Me" 1964-1987 Archie [] 161 · 98511 "Archie" 2016-2018 Archie [] 6 (via CV candidate name "Archie") · 90653 "Archie" 2015-2020 Archie [] 47 (via CV candidate name "Archie") · 47842 "Archie" [es-mx] 2006-? EditoPoster / Vanguardia Editores [] 40 (via CV candidate name "Archie") · 21900 "Archie" [no] 1982-1995 Semic [] 153 (via CV candidate name "Archie")   (dump lookup)
+
+== S103952 Animosity: The Rise (2017)  [tier B]   keys: Animosity: The Rise (2017)  years 2016-2016  3 files / 0 collections
+   split run: "Animosity: The Rise (2017)" run={"cv": 98321, "gcd": 111710} (new shelf from P-032) — seed the S line from these ids, then verify them
+   folders: [3] Aftershock\Animosity (2016)\02 Animosity - The Rise (2017)
+   files:   [5727] Animosity - The Rise 001 (2017) (digital) (Son of Ultron-Empire).cbr (33pp) | [5728] Animosity - The Rise 002 (2017) (digital) (Son of Ultron-Empire).cbr (31pp)
+            [5729] Animosity - The Rise 003 (2017) (digital) (Son of Ultron-Empire).cbr (32pp)
+   ours:    ladder 1-3
+   CV per-file (v1): vol 92728 "Animosity" 2016 Aftershock Comics 28 on 3/3 files
+   CV local rip:   (= per-file) · 98321 "Animosity: The Rise" 2017 Aftershock Comics 3 (via our own name without the filing suffix "Animosity: The Rise") · 106623 "Animosity: The Rise" 2017 Aftershock Comics 1 issue 643930 (via our own name without the filing suffix "Animosity: The Rise")   (rip lookup)
+   GCD per-file:   series 111710 "Animosity: The Rise" 2017-2017 AfterShock [ongoing series] 3 on 3/3 files; methods numx3
+   GCD dump:       (= per-file) · 104784 "Animosity" 2016-2020 AfterShock [] 28 (via CV name "Animosity") · 112524 "Animosity" 2017-2020 AfterShock [] 6 (via CV name "Animosity") · 177235 "Animosity" [fr] 2017-? Snorgleux Editions [] 4 (via CV name "Animosity") · 119184 "Animosity: The Rise" 2018-2018 AfterShock [] 1 (via our own name without the filing suffix "Animosity: The Rise") · 123874 "Animosity" 2018-2020 AfterShock [] 2 (via CV name "Animosity")   (dump lookup)
+
+== S1061 Animosity  [tier A]   keys: Animosity  years 2016-2020  28 files / 0 collections
+   split: the KEPT half of the P-032 split — moved out -> S103952 "Animosity: The Rise (2017)"; re-identify what stayed
+   folders: [28] Aftershock\Animosity (2016)\01 Animosity v1 (2016)
+   files:   [5699] Animosity 001 (2016) (digital) (Son of Ultron-Empire).cbr (32pp) | [5700] Animosity 002 (2016) (digital) (Son of Ultron-Empire).cbr (34pp)
+            [5701] Animosity 003 (2016) (digital) (Son of Ultron-Empire).cbr (36pp) | [5702] Animosity 004 (2016) (digital) (Son of Ultron-Empire).cbr (35pp)
+            [5703] Animosity 005 (2017) (digital) (Son of Ultron-Empire).cbr (33pp) | [5704] Animosity 006 (2017) (2 covers) (digital) (Son of Ultron-Empire).cbr (33pp)
+            Animosity 007 (2017) (digital) (Son of Ultron-Empire).cbr … Animosity 028 (2020) (digital) (Son of Ultron-Empire).cbr  (22 files, pp 25-31)
+   ours:    ladder 1-28; ComicInfo Series: "Animosity"x28; ComicInfo Publisher: "Aftershock Comics"x17, "AfterShock Comics"x11
+   CV linked:      vol 92728 "Animosity" 2016 Aftershock Comics 28 issues; cached #1-28 (28); yearΔ 0; ratio 28/28 = 1.00; no judged range; v1 per-file: same volume on 28/28 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 104784 "Animosity" 2016-2020 AfterShock [was ongoing series] 28 on 28/28 files; methods numx28
+   GCD dump:       (= per-file) · 112524 "Animosity" 2017-2020 AfterShock [] 6 · 177235 "Animosity" [fr] 2017-? Snorgleux Editions [] 4 · 123874 "Animosity" 2018-2020 AfterShock [] 2   (dump lookup)
+   bridges:        gcd 104784 -> LOCG 125339 "Animosity" support 28
+
+== S103956 Tom Strong and the Robots of Doom Mini (2010)  [tier C] · 4 number(s) x2+, 1 parsed key(s), ratio 1.67  keys: Tom Strong and the Robots of Doom Mini (2010)  years 2010-2011  10 files / 0 collections
+   split run: "Tom Strong and the Robots of Doom Mini (2010)" run={"cv": 33669, "gcd": 49878} (new shelf from P-032) — seed the S line from these ids, then verify them
+   folders: [6] Americas Best Comics\Tom Strong\Tom Strong v1 (1999)\Tom Strong and the Robots of Doom (2010) · [4] Americas Best Comics\Tom Strong\Robots of Doom (2010)
+   files:   Tom Strong and the Robots of Doom 01 (of 6) (2010) (digital-Empire).cbz … Tom Strong and the Robots of Doom 06 (of 06) (2011) (digital-Empire).cbz  (10 files, pp 22-23)
+   ours:    ladder 1-6; 4 number(s) name more than one file: 1, 2, 3, 4
+   CV per-file (v1): vol 33669 "Tom Strong and the Robots of Doom" 2010 DC Comics 6 on 10/10 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 49878 "Tom Strong and the Robots of Doom" 2010-2011 DC [limited series] 6 on 10/10 files; methods numx10
+   GCD dump:       (= per-file) · 71254 "Tom Strong and the Robots of Doom" 2011-2011 DC [] 1 (via CV name "Tom Strong and the Robots of Doom")   (dump lookup)
+
+== S103955 Tom Strong and the Planet of Peril (2013)  [tier D]   keys: Tom Strong and the Planet of Peril (2013)  years 2014-2014  1 files / 1 collections
+   split run: "Tom Strong and the Planet of Peril (2013)" run={"cv": 65918, "gcd": 75728} (new shelf from P-032) — seed the S line from these ids, then verify them
+   folders: [1] Americas Best Comics\Tom Strong\Tom Strong v1 (1999)\Tom Strong and the Planet of Peril (2014)
+   files:   [7973] COL Tom Strong and the Planet of Peril (2014) (digital) (Son of Ultron-Empire).cbr (140pp)
+   GCD says: [7973] gcd_reprint 1217409: s75728 Tom Strong and the Planet of Peril (2013) #1-6 [13 stories]
+   CV local rip:   75138 "Tom Strong and the Planet of Peril" 2014 DC Comics 1 issue 457631 (via our own name without the filing suffix "Tom Strong and the Planet of Peril") · 65918 "Tom Strong and the Planet of Peril" 2013 DC Comics 6 (via our own name without the filing suffix "Tom Strong and the Planet of Peril")   (rip lookup)
+   GCD dump:       81425 "Tom Strong and the Planet of Peril" 2014-2014 DC [] 1 (via our own name without the filing suffix "Tom Strong and the Planet of Peril") · 75728 "Tom Strong and the Planet of Peril" 2013-2014 DC [] 6 (via our own name without the filing suffix "Tom Strong and the Planet of Peril")   (dump lookup)
+
+== S66125 Tom Strong  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Tom Strong (1999)  years 1999-2006  36 files / 0 collections
+   split: the KEPT half of the P-032 split — moved out -> S103956 "Tom Strong and the Robots of Doom Mini (2010)"; S103955 "Tom Strong and the Planet of Peril (2013)"; re-identify what stayed
+   folders: [36] Americas Best Comics\Tom Strong\Tom Strong v1 (1999)
+   files:   [6863] Tom Strong 001 (1999) (2 covers) (HD) (digital-Empire).cbr (36pp)
+            Tom Strong 002 (1999) (HD) (digital-Empire).cbr … Tom Strong 018 (2002) (HD) (digital-Empire).cbr  (17 files, pp 22-25)
+            Tom Strong 019 (2003) (HD) (digital-Empire).cbz … Tom Strong 036 (2006) (HD) (digital-Empire).cbz  (18 files, pp 23-25)
+   ours:    ladder 1-36
+   CV linked:      vol 6566 "Tom Strong" 1999 DC Comics 36 issues; cached #1-36 (36); yearΔ 0; ratio 36/36 = 1.00; no judged range; v1 per-file: same volume on 36/36 files
+   CV local rip:   (= linked) · 36473 "Tom Strong" 2001 DC Comics 6 · 162577 "Tom Strong" 2017 ECC Ediciones 3   (rip lookup)
+   GCD per-file:   series 7061 "Tom Strong" 1999-2006 DC [was ongoing series] 36 on 31/36 files · series 39228 "Tom Strong" [es] 2000-2002 Planeta DeAgostini [was ongoing series] 14 on 5/36 files; methods numx36
+   GCD dump:       (= per-file) · 25629 "Tom Strong" 2000-2006 DC [] 6 · 161121 "Tom Strong" [fr] 2000-2001 Semic S.A. [] 2 · 24684 "Tom Strong" 2001-2008 DC [] 6 · 160469 "Tom Strong" [pt-br] 2003-2003 Pandora Books [] 1   (dump lookup)
+   bridges:        gcd 7061 -> LOCG 108528 "Tom Strong" support 31 · gcd 39228 -> LOCG 108528 "Tom Strong" support 5
+
+== S103954 Sabrina (2000)  [tier C] · ratio 0.47  keys: Sabrina (2000)  years 1971-1977  36 files / 0 collections
+   split run: "Sabrina (2000)" run={"cv": 7298, "gcd": 7875} (new shelf from P-032) — seed the S line from these ids, then verify them
+   folders: [36] Archie\Sabrina the Teenage Witch\Sabrina the Teenage Witch v3 (2000)
+   files:   Sabrina the Teenage Witch 001 (2000) (digital) (ZERO-rips).cbr … Sabrina the Teenage Witch 010 (2000) (digital) (ZERO-rips).cbr  (9 files, pp 23-25)
+            Sabrina the Teenage Witch 011 - The Animated Series (2000) (digital-SD) (Minutemen-Mookie).cbr … Sabrina the Teenage Witch 035 - The Animated Series (2002) (digital-SD) (Minutemen-Mookie).cbr  (25 files, pp 23-25)
+            [7772] Sabrina the Teenage Witch 036 - The Animated Series (2002) (digital) (Minutemen-Mookie).cbr (24pp)
+            [7773] Sabrina the Teenage Witch 037 - The Animated Series (2002) (digital) (Minutemen-Mookie).cbr (24pp)
+   ours:    ladder 1-7, 9-37
+   CV per-file (v1): vol 22745 "Sabrina the Teenage Witch" 1971 Archie Comics 77 on 36/36 files
+   CV local rip:   (= per-file) · 7298 "Sabrina" 2000 Archie Comics 37 (via our own name without the filing suffix "Sabrina") · 111066 "Sabrina" 2018 Drawn & Quarterly 1 issue 670699 (via our own name without the filing suffix "Sabrina") · 46806 "Sabrina the Teenage Witch" 1996 Archie Comics 1 issue 322680 (via CV name "Sabrina the Teenage Witch") · 11042 "Sabrina the Teenage Witch" 1997 Archie Comics 32 (via CV name "Sabrina the Teenage Witch") · 22714 "Sabrina the Teenage Witch" 2003 Archie Comics 67 (via CV name "Sabrina the Teenage Witch")   (rip lookup)
+   GCD per-file:   methods round2-seriesx5 ⚠  (⚠ copies a folder neighbour's series — verify); series 17209 "Sabrina, the Teenage Witch" 1971-1983 Archie [was ongoing series] 77 on 5/36 files
+   GCD dump:       7875 "Sabrina" 2000-2002 Archie [] 37 (via our own name without the filing suffix "Sabrina") · 48487 "Sabrina" [sv-se] 2002-2004 Egmont [] 14 (via our own name without the filing suffix "Sabrina") · 124644 "Sabrina" [en-ca] 2018-2018 Drawn & Quarterly [] 1 (via our own name without the filing suffix "Sabrina") · 138426 "Sabrina" [it] 2018-2018 Coconino Press [] 1 (via our own name without the filing suffix "Sabrina") · 138427 "Sabrina" [fr] 2018-2018 Presque Lune [] 1 (via our own name without the filing suffix "Sabrina") · 138428 "Sabrina" [en-gb] 2018-2018 Granta Books [] 1 (via our own name without the filing suffix "Sabrina")   (dump lookup)
+   bridges:        gcd 17209 -> LOCG 135261 "Sabrina the Teenage Witch" support 66
+
+== S14949 Sabrina the Teenage Witch  [tier C] · ratio 0.37  keys: Sabrina the Teenage Witch | Sabrina the Teenage Witch (1971) | Sabrina the Teenage Witch v3 (2000)  years 2003-2022  31 files / 6 collections
+   split: the KEPT half of the P-032 split — moved out -> S103954 "Sabrina (2000)"; re-identify what stayed
+   folders: [25] Archie\Sabrina the Teenage Witch\Sabrina the Teenage Witch v3 (2000) · [4] Archie\Sabrina the Teenage Witch\Sabrina the Teenage Witch v3 (2000)\Trades · [2] Archie\Sabrina the Teenage Witch
+   files:   [7635] COL Sabrina the Teenage Witch - 60 Magical Stories (2022) (digital) (DrVink).cbz (512pp)
+            [7636] COL Sabrina the Teenage Witch - Something Wicked (2021) (digital) (Salem-Empire).cbr (147pp)
+            Sabrina the Teenage Witch 038 (2003) (digital) (Minutemen-Mookie).cbr … Sabrina the Teenage Witch 057 (2004) (digital) (Minutemen-Mookie).cbr  (20 files, pp 22-27)
+            [7794] Sabrina the Teenage Witch 101 (2009) (digital) (Salem-Empire).cbr (24pp) | [7795] Sabrina the Teenage Witch 101 - Young Salem (2009) (digital) (Minutemen-Mookie).cbr (24pp)
+            [7796] Sabrina the Teenage Witch 102 - Young Salem (2009) (digital) (Minutemen-Mookie).cbr (24pp)
+            [7797] Sabrina the Teenage Witch 103 - Young Salem (2009) (digital) (Minutemen-Mookie).cbr (24pp)
+            [7798] Sabrina the Teenage Witch 104 - Young Salem (2009) (digital) (Minutemen-Mookie).cbr (23pp)
+            [7799] COL Sabrina the Teenage Witch - The Magic Within Vol. 01 (2013) (digital) (Minutemen-Mookie).cbr (278pp)
+            [7800] COL Sabrina the Teenage Witch - The Magic Within Vol. 02 (2013) (digital) (Minutemen-Mookie).cbr (240pp)
+            [7801] COL Sabrina the Teenage Witch - The Magic Within Vol. 03 (2013) (digital) (Minutemen-Mookie).cbr (256pp)
+            [7802] COL Sabrina the Teenage Witch - The Magic Within Vol. 04 (2014) (digital) (Minutemen-Mookie).cbr (272pp)
+   ours:    ladder 38-57, 101-104; 1 number(s) name more than one file: 101; judged item 7636 #1-5 conf 0.75; judged item 7799 #58-68 conf 0.98; judged item 7800 #68-78 conf 0.98; judged item 7801 #79-90 conf 0.98; judged item 7802 #90-100 conf 0.98; ComicInfo Series: "Sabrina the Teenage Witch"x1; ComicInfo Publisher: "Archie Comics"x1, "Archie"x1
+   GCD says: [7635] gcd_reprint 2429795: s12505 Archie's Madhouse (1959) #22, #24, #37, #48, #53, #59 [6 stories]
+             [7799] gcd_reprint 1111855: s86275 Sabrina the Teenage Witch (2003) #58-68 [24 stories] · s74428 Sabrina the Teenage Witch: The Magic Within (2013) #2 [1 story]
+             [7800] gcd_reprint 1156454: s86275 Sabrina the Teenage Witch (2003) #68 [1 story]
+   CV linked:      vol 22714 "Sabrina the Teenage Witch" 2003 Archie Comics 67 issues; cached #38-104 (67); yearΔ 0; ratio 25/67 = 0.37; 4 of 5 judged fit
+   CV per-file (v1): vol 22714 "Sabrina the Teenage Witch" 2003 Archie Comics 67 on 20/31 files · vol 22745 "Sabrina the Teenage Witch" 1971 Archie Comics 77 on 5/31 files
+   CV local rip:   (= linked) · 11042 "Sabrina the Teenage Witch" 1997 Archie Comics 32 · 46806 "Sabrina the Teenage Witch" 1996 Archie Comics 1 issue 322680 · 117988 "Sabrina the Teenage Witch" 2019 Archie Comics 5 · 123014 "Sabrina the Teenage Witch" 2019 Archie Comics 1 issue 728535 · 126147 "Sabrina the Teenage Witch" 2020 Archie Comics 5   (rip lookup)
+   GCD per-file:   series 86275 "Sabrina the Teenage Witch" 2003-2009 Archie [was ongoing series] 67 on 25/31 files; methods numx25
+   GCD dump:       (= per-file) · 11973 "Sabrina the Teenage Witch" 1997-1999 Archie [] 32 · 19972 "Sabrina the Teenage Witch" 1996-1996 Archie [] 1 · 143162 "Sabrina the Teenage Witch" 2019-2019 Archie [] 5 · 152911 "Sabrina the Teenage Witch" 2019-2019 Archie [] 1 · 160328 "Sabrina the Teenage Witch" 2020-2021 Archie [] 5   (dump lookup)
+   bridges:        gcd 86275 -> LOCG 135261 "Sabrina the Teenage Witch" support 20
+
+== S5272 Deathstroke the Terminator  [tier C] · ratio 0.02  keys: Deathstroke the Terminator  years 1991-2018  6 files / 5 collections
+   folders: [5] DC\_Deathstroke\Deathstroke v1 (1991)\Trades · [1] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\045 Evil Star Rising
+   files:   [15603] 07 Deathstroke the Terminator 13  The Powers That Be.cbz (25pp) | [64306] COL Deathstroke the Terminator Vol. 01 - Assassins (2015) (digital) (Son of Ultron-Empire).cbr (265pp)
+            [64307] COL Deathstroke the Terminator Vol. 02 - Sympathy for the Devil (2015) (digital) (Son of Ultron-Empire).cbr (191pp)
+            [64308] COL Deathstroke the Terminator Vol. 03 - Nuclear Winter (2017) (digital) (Son of Ultron-Empire).cbr (258pp)
+            [64309] COL Deathstroke the Terminator Vol. 04 - Crash or Burn (2018) (digital) (Son of Ultron-Empire).cbr (197pp)
+            [64310] COL Deathstroke the Terminator Vol. 05 - World Tour (2018) (digital) (Son of Ultron-Empire).cbr (237pp)
+   ours:    ladder 13; judged item 64306 #1-9 conf 0.9; judged item 64307 #10-13 conf 0.9; judged item 64308 #14-20 conf 0.9; judged item 64309 #21-25 conf 0.9; judged item 64310 #26-34 conf 0.9; ComicInfo Series: "Deathstroke the Terminator"x2; ComicInfo Volume: "1991"x1; ComicInfo Publisher: "DC Comics"x1, "DC"x1
+   GCD says: [64306] gcd_reprint 1338945: s10465 Deathstroke, the Terminator (1991) #1-9 [19 stories] · s3606 The New Titans (1988) #70 [2 stories] · s22888 Deathstroke, the Terminator -- Full Cycle (1992) (unnumbered) [1 story]
+             [64307] gcd_reprint 1514274: s10465 Deathstroke, the Terminator (1991) #10-13 [8 stories] · s11010 Deathstroke, the Terminator Annual (1992) #1 [3 stories] · s3386 Superman (1987) #68 [2 stories]
+             [64308] gcd notes 1742281 (#3 of Deathstroke the Terminator): Deathstroke the Terminator (DC, 1991 Series) #14-20; Showcase '93 (DC, 1993 series) #6-11  |  gcd_reprint 1742281: s10465 Deathstroke, the Terminator (1991) #14-20 [15 stories] · s10379 Showcase '93 (1993) #6-11 [12 stories] · s4008 Who's Who in the DC Universe (1990) #9 [1 story]
+             [64309] gcd notes 1806559 (#4 of Deathstroke the Terminator): Deathstroke: The Terminator (DC, 1991 series) #21-25; Deathstroke: The Terminator Annual (DC, 1992 series) #2  |  gcd_reprint 1806559: s10465 Deathstroke, the Terminator (1991) #21-25 [11 stories] · s11010 Deathstroke, the Terminator Annual (1992) #2 [2 stories]
+             [64310] gcd notes 1905239 (#5 of Deathstroke the Terminator): Deathstroke: The Terminator (DC, 1991 series) #26-34  |  gcd_reprint 1905239: s10465 Deathstroke, the Terminator (1991) #26-34 [19 stories]
+   CV linked:      vol 9645 "Deathstroke the Terminator" 1991 DC Comics 61 issues; cached #1-13 (6); yearΔ 0; ratio 1/61 = 0.02; 2 of 5 judged fit; v1 per-file: same volume on 6/6 files
+   CV local rip:   (= linked) · 81226 "Deathstroke the Terminator" 2015 DC Comics 5   (rip lookup)
+   GCD per-file:   series 10465 "Deathstroke, the Terminator" 1991-1994 DC [was ongoing series] 40 on 1/6 files; methods numx1
+   GCD dump:       (= per-file) · 88153 "Deathstroke the Terminator" 2015-2019 DC [] 5 · 233427 "Deathstroke: The Terminator" 2026-? DC [] 3   (dump lookup)
+   bridges:        gcd 10465 -> LOCG 102335 "Deathstroke: The Terminator Annual" support 1
+
+== S94581 Deathstroke v1 (1991)  [tier C] · gap 3  keys: Deathstroke v1 (1991)  years 1992-1996  30 files / 0 collections
+   folders: [26] DC\_Deathstroke\Deathstroke v1 (1991) · [4] DC\_Deathstroke\Deathstroke v1 (1991)\Annuals
+   files:   [64276] Deathstroke Annual 001 (1992) (digital) (Minutemen-Midas).cbr (55pp) | [64277] Deathstroke Annual 002 (1993) (digital) (Minutemen-Midas).cbr (52pp)
+            [64278] Deathstroke Annual 003 (1994) (digital) (Minutemen-Midas).cbr (55pp) | [64279] Deathstroke Annual 004 (1995) (digital) (Minutemen-Midas).cbr (48pp)
+            Deathstroke 035 (1994) (digital) (Minutemen-Midas).cbr … Deathstroke 046 (1995) (digital) (Minutemen-Midas).cbr  (12 files, pp 23-26)
+            [64292] Deathstroke 047 (1995) (digital) (F) (Minutemen-Midas).cbr (24pp)
+            Deathstroke 048 (1995) (digital) (Minutemen-Midas).cbr … Deathstroke 060 (1996) (digital) (Minutemen-Midas).cbr  (13 files, pp 22-36)
+   ours:    ladder 1-4, 35-60
+   CV local rip:   42807 "Deathstroke" 2011 DC Comics 21 (via our own name without the filing suffix "Deathstroke") · 51174 "Deathstroke" 2012 DC Comics 2 (via our own name without the filing suffix "Deathstroke") · 77678 "Deathstroke" 2014 DC Comics 20 (via our own name without the filing suffix "Deathstroke") · 82676 "Deathstroke" 2015 DC Comics 4 (via our own name without the filing suffix "Deathstroke") · 109664 "Deathstroke" 2015 Panini Verlag 4 (via our own name without the filing suffix "Deathstroke") · 93375 "Deathstroke" 2016 DC Comics 50 (via our own name without the filing suffix "Deathstroke")   (rip lookup)
+   GCD per-file:   series 15128 "Deathstroke" 1995-1996 DC [was ongoing series] 13 on 13/30 files; methods numx13
+   GCD dump:       (= per-file) · 60921 "Deathstroke" 2011-2013 DC [] 21 (via our own name without the filing suffix "Deathstroke") · 110269 "Deathstroke" 2012-2014 DC [] 2 (via our own name without the filing suffix "Deathstroke") · 83897 "Deathstroke" 2014-2016 DC [] 20 (via our own name without the filing suffix "Deathstroke") · 90175 "Deathstroke" 2015-2017 DC [] 4 (via our own name without the filing suffix "Deathstroke") · 102146 "Deathstroke" [de] 2015-2017 Panini Deutschland [] 4 (via our own name without the filing suffix "Deathstroke")   (dump lookup)
+   bridges:        gcd 15128 -> LOCG 179385 "Deathstroke: The Hunted" support 16
+
+== S5267 Deathstroke volume 1  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Deathstroke  years 1995-2017  4 files / 0 collections
+   folders: [3] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\068 Grand Opening · [1] DC\#DC Events\004 Major DC Events - Rebirth\006 Teen Titans - The Lazarus Contract (2017)
+   files:   [15742] 06 Deathstroke 48  Third Strike.cbz (26pp) | [15745] 09 Deathstroke 49  All the Kings Men.cbz (24pp) | [15746] 10 Deathstroke 50  Revelations.cbz (38pp)
+            [19101] 03 Deathstroke 019 (2017) (2 covers) (Digital) (Zone-Empire).cbr (26pp)
+   ours:    ladder 19, 48-50; ComicInfo Series: "Deathstroke"x3; ComicInfo Publisher: "DC Comics"x3
+   CV candidates:  93375 "Deathstroke" 2016 DC Comics ? s45 · 42807 "Deathstroke" 2011 DC Comics ? s45 · 77678 "Deathstroke" 2014 DC Comics ? s45 · 99495 "Deathstroke" 2017 DC Comics ? s45 · 82676 "Deathstroke" 2015 DC Comics ? s45 · 81954 "DC Sneak Peek: Deathstroke" 2015 DC Comics ? s32   (v1 search)
+   CV local rip:   42807 "Deathstroke" 2011 DC Comics 21 · 51174 "Deathstroke" 2012 DC Comics 2 · 77678 "Deathstroke" 2014 DC Comics 20 · 82676 "Deathstroke" 2015 DC Comics 4 · 109664 "Deathstroke" 2015 Panini Verlag 4 · 93375 "Deathstroke" 2016 DC Comics 50   (rip lookup)
+   GCD per-file:   series 15128 "Deathstroke" 1995-1996 DC [was ongoing series] 13 on 3/4 files · series 105634 "Deathstroke" 2016-2020 DC [was ongoing series] 50 on 1/4 files; methods numx4
+   GCD dump:       (= per-file) · 60921 "Deathstroke" 2011-2013 DC [] 21 · 110269 "Deathstroke" 2012-2014 DC [] 2 · 83897 "Deathstroke" 2014-2016 DC [] 20 · 90175 "Deathstroke" 2015-2017 DC [] 4 · 102146 "Deathstroke" [de] 2015-2017 Panini Deutschland [] 4   (dump lookup)
+   bridges:        gcd 15128 -> LOCG 179385 "Deathstroke: The Hunted" support 16 · gcd 105634 -> LOCG 124080 "Deathstroke R.I.P. TP" support 17
+   MU / External:  ExternalWork 27 "Deathstroke volume 1" openlibrary /works/OL16600104W

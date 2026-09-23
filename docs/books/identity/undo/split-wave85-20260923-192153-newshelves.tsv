@@ -1,0 +1,15 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S103960	Ultimate End (2015)	run={"cv": 82109, "gcd": 89425}	P-033.jsonl	new	pair=18524
+S103959	Mighty Morphin / Power Rangers Deluxe Edition (2023)	run={"cv": 159923, "gcd": 205362}	P-033.jsonl	new	pair=98522
+S103496	Mighty Morphin Power Rangers: Recharged (2022)	run=-	P-033.jsonl	new	pair=98523
+S11054	Lucky Luke: The Complete Collection	run=-	P-033.jsonl	new	pair=11051
+S103957	CBLDF Defender v2 (2017)	run={"cv": 99852}	P-033.jsonl	new	pair=3297
+S103961	Wynd: The Power of the Blood (2024)	run={"cv": 161163, "gcd": 217569}	P-033.jsonl	new	pair=22115
+S18524	moved out -> S103960 "Ultimate End (2015)"	run=-	P-033.jsonl	kept	pair=18524	moved_cv=82109
+S98522	moved out -> S103959 "Mighty Morphin / Power Rangers Deluxe Edition (2023)"	run=-	P-033.jsonl	kept	pair=98522	moved_cv=159923
+S11051	moved out -> S11054 "Lucky Luke: The Complete Collection"	run=-	P-033.jsonl	kept	pair=11051
+S3297	moved out -> S103957 "CBLDF Defender v2 (2017)"	run=-	P-033.jsonl	kept	pair=3297	moved_cv=99852
+S22115	moved out -> S103961 "Wynd: The Power of the Blood (2024)"	run=-	P-033.jsonl	kept	pair=22115	moved_cv=161163
