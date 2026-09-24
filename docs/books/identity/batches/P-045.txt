@@ -1,0 +1,397 @@
+## Conventions for this batch (32 shown of 111 matched; 375 in LEDGER.md; 10 shelf/shelves: kind:golden-age ×4 · kind:archive ×3 · pub:ec-archives ×3 · pub:dark-horse ×3 · folder:vn-year ×3 · pub:gold-key-dell ×3 · pub:europe-comics ×2 · pub:dc ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-093] (4 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
+[L-242] (4 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-020] (3 shelf/shelves) kind:archive kind:collected-line pub:dark-horse
+- Reprint LIBRARY / omnibus lines over a run split across publishers (Fear Agent Final Edition, Kabuki Library,
+  Madman Library) have no single run record → the collected line at 0.9 with an `N` naming the underlying run.
+[L-069] (3 shelf/shelves) kind:archive pass:item pub:dark-horse pub:ec-archives
+- Archive / reprint lines (EC Archives, Dark Horse archives) — RULING: when both legs also hold the ORIGINAL
+  series, the S line is the original (the run wins) and the `I` line is the archive printing we hold; only
+  when the original is in neither leg does the archive line carry the S at 0.9 with an `N` naming what it
+  reprints. Do not let the stored link decide which shape you write.
+[L-075] (3 shelf/shelves) kind:archive kind:strip pub:gold-key-dell
+- An archive of a run that the run's own records do NOT cover (Peanuts Dell Archive collects Four Color issues
+  the Dell "Peanuts" run excludes) takes the archive line's records, with an `N` naming the run.
+[L-238] (3 shelf/shelves) kind:archive kind:golden-age pub:dark-horse pub:ec-archives
+- ARCHIVE shape, stated once (after C-025): a shelf that is PURELY the collected trades of a Golden-Age original
+  (Dark Horse "EC Comics & Others Archives", Crime Does Not Pay, Frontline Combat, Magnus, War Against Crime, Savage
+  Sword of Conan) takes the archive LINE's own CV/GCD record — the S16653 line-wins ruling; the older "S = the original
+  when both legs hold it" line applies only when NO line record exists. The later, dated ruling wins.
+[L-270] (3 shelf/shelves) kind:archive kind:golden-age pass:item pub:ec-archives sig:probe
+- ITEM PASS (X-016..X-018): an archive line's `C` run is the reprinted Golden-Age ORIGINAL, and it is usually in
+  the catalogs even when the shelf's `N` said "no record" (Creepy cv 2194 / gcd 1640, Crime Does Not Pay 943 / 296,
+  Eerie 2300 / 1755, Frontline Combat 1443 / 834, Magnus 2157 / 1600, War Against Crime 11807 / 12814) — probe.
+[L-350] (3 shelf/shelves) kind:archive kind:golden-age pub:dark-horse pub:ec-archives
+- L-238 is SUPERSEDED for single-run archives (lead, 2026-09-23): the brief's later R-042 ruling (a line that reprints
+  ONE numbered run gives way to the run) wins — Dark Horse SSoC -> Marvel SSoC (wave 52), Doctor Solar Archives -> the
+  1962 run (P-019). The archive LINE keeps its own identity only when it spans SEVERAL runs / titles (EC Archives, L-109).
+[L-064] (8 shelf/shelves) pass:item sig:twin
+- GCD indexes PRINTINGS: the S line takes the first edition both legs agree on; the `I` line takes the printing
+  we hold (page counts match the edition's row). GCD issue ids for books come from `gcd_issue` — prefer the
+  issue id to the `s<series>` form; use `s<series>` only for twin/variant rows.
+[L-085] (8 shelf/shelves) sig:barcode sig:trade-link sig:twin
+- `gcd_issue` carries the trade's page count AND ISBN: it matched our rips within ±10pp on 100+ books and told
+  two same-title count-1 rows apart (an 8pp ashcan is not a twin of the trade).
+[L-101] (8 shelf/shelves) sig:twin
+- Page count tells GCD twins apart (a 32pp sampler vs the 256pp anthology); a count-0 GCD row (236534 "Cells at
+  Work! Lady") is an empty stub, not a leg.
+[L-164] (4 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-310] (7 shelf/shelves) pass:revisit sig:gcd-notes sig:stale-flag
+- R-025 (Opus): the GCD dump's `gcd_reprint` + `gcd_story` tables answer "what does this trade collect" outright —
+  join story → reprint → origin issue → series and the `C` range falls out (Elektra #7-22, Casanova Luxuria #1-7,
+  all six Criminal ranges); `gcd_series.notes` states ranges in prose. A GCD line row with `year_ended` NULL and a
+  count BELOW our holdings is NOT coextensive when the provider files the missing books under their own row
+  (Casanova 148774 = 3 vols + Acedia 236165) — two lines, not staleness. Before `F wrong-cv-link` on a revisit read
+  Series.CvVolumeId: the shelf may already carry the right id and re-flagging would clear it. A stored id can belong
+  to a series holding NO comic files (outside the checker's population) — note it, never merge.
+[L-009] (2 shelf/shelves) kind:foreign pub:cinebook pub:europe-comics
+- Cinebook: one ~50pp album per file; both providers hold Dargaud / Splitter / Epsilon / Panini rows of the same
+  album — the PUBLISHER column is the only test. GCD's span = the file years.
+[L-021] (2 shelf/shelves) pub:dark-horse pub:disney pub:dstlry pub:dynamite pub:fantagraphics pub:idw
+- The Disney folder is publisher-agnostic (Joe Books, Dark Horse, IDW, Dynamite, Fantagraphics, Yen Press on one
+  shelf) — the provider's publisher column is the only test. DSTLRY filenames' "(N covers)" is a cover count.
+[L-024] (2 shelf/shelves) kind:foreign pub:europe-comics
+- Europe Comics (digital English imprint of Dargaud / Dupuis / Le Lombard): ComicVine has a volume per shelf; GCD has
+  NO Europe Comics rows. **Eric's ruling: the original-language GCD row is the right comic in the wrong language —
+  link it** (at 0.9, naming the language edition) rather than `gcd=-`; when the dump holds two language editions,
+  take the original publisher's.
+[L-046] (2 shelf/shelves) pub:action-lab pub:aftershock pub:small-press sig:probe
+- Small-press American floppies (Action Lab, Aftershock minis, Behemoth) are thin in GCD → `provider-missing` on
+  the GCD side is common and honest.
+[L-051] (2 shelf/shelves) pub:bongo pub:dc pub:small-press sig:probe
+- GCD spellings that hide a hit: Bongo's annual is plainly "Treehouse of Horror" (5435); Miller's 1983 series is
+  "Rōnin" (2721); Comico's Primer is "Primer" (14288). DC's Blackest Night revival issues sit in the ORIGINAL
+  series (Power of SHAZAM! 5246 runs 1995-2010).
+[L-052] (2 shelf/shelves) pub:dc sig:stamp sig:twin
+- The per-file CV matcher picks the LEGACY volume for every New 52 shelf (Batman 1940, Wonder Woman 1942, Nightwing
+  1996, Catwoman 1993) because it matched by issue number — the stored link on a 2011 shelf that names a 1940
+  volume is `wrong-cv-link`, the 2011 volume is in the rip.
+[L-054] (3 shelf/shelves) kind:archive kind:fan
+- Fan-made DCP "Archive Edition" compiles and story-only extracts → `R` (not a published edition), never linked.
+[L-055] (2 shelf/shelves) pub:dc pub:small-press sig:probe
+- ComicVine splits ONE line across two spellings of its own ("Batman Arkham: X" vs "Batman: Arkham: X"). GCD
+  prefixes titles the packet probes without ("Batman: Catwoman Defiant", "The Blue Beetle" for the 2006 series).
+[L-068] (2 shelf/shelves) kind:foreign pub:ablaze pub:cinebook pub:europe-comics pub:lion-forge-magnetic pub:papercutz-nbm
+- Europe Comics may have an ENGLISH PRINT sister edition in GCD (SelfMadeHero, Cinebook, NBM, Fanfare,
+  Magnetic Press, Ablaze) — the same text, not a translation — which is the better second leg than the
+  original-language row.
+[L-102] (2 shelf/shelves) kind:foreign kind:manga pub:europe-comics
+- Where GCD has no English row for a manga, readers have linked the same work's Japanese original (else the
+  European edition) at 0.9 with the language named — the Europe Comics ruling extended to manga, CONFIRMED by
+  Eric 2026-09-10: the right comic in another language beats no leg.
+[L-113] (6 shelf/shelves) sig:comicinfo sig:stamp
+- ComicInfo `Volume` holding a 4-digit ComicVine volume id (not a year) is a 1.0 assertion like the 6-digit
+  case (Ka-Zar v2 1974: `Volume 2692` + `Count 20` = CV 2692) and disproves the per-file matcher's pick.
+[L-124] (3 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-139] (2 shelf/shelves) pub:dark-horse pub:millarworld pub:small-press sig:round2 sig:stamp
+- A folder-wide CV stamp exists too: Space Goat's Evil Dead 2 programme (CV 20289 on 37 files) and Millarworld's Dark
+  Horse folder (CV 115757 on the sequel) stamp ONE wrong volume across a folder — the `round2-folder` shape on the CV side.
+[L-140] (2 shelf/shelves) kind:strip pub:lion-forge-magnetic pub:scout pub:small-press sig:probe
+- Bubble Comics (Exlibrium, Major Grom, Igor Grom, Meteora), Space Between, Scout/Roar, Strip For Me, Studio D., Imagine
+  Bin, SAF Comics, Magnetic Press and Lost His Keys Man are total GCD holes — ComicVine-only is the honest answer there.
+[L-148] (2 shelf/shelves) pub:small-press sig:probe
+- GCD files New England Comics' Tick specials under the POSSESSIVE ComicVine drops ("The Tick's Big Romantic Adventure"
+  15953, "The Tick's Big Back to School Special" 15958) — re-probe with `Tick's`.
+[L-191] (3 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-195] (2 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- Trade SUBTITLES tell two same-title relaunches apart when the per-file matcher cannot (Batman Beyond 2015 = Brave
+  New Worlds / City of Yesterday / Wired for Death; 2016 = Escaping the Grave / Rise of the Demon / The Long Payback).
+[L-197] (2 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- The per-file matcher's "wrong RELAUNCH" trap: it stamps the LATER same-title volume onto files dated to the earlier
+  era by issue-number coincidence (Wonder Woman 2016, Batman 2016, JLA v2/v3, Firestorm, Hawk and Dove v5, Atari Force
+  v2, Adventure Comics 2010) — the tell is files whose years or numbers predate or exceed the stamped volume's own.
+[L-210] (2 shelf/shelves) pub:dc sig:legacy-stamp sig:probe sig:stamp
+- The wrong-relaunch trap is near-universal on any DC title with 3+ relaunches (Green Arrow, Green Lantern, Harley
+  Quinn, Justice League, Legion, Lobo, Martian Manhunter, Doom Patrol): the matcher stamps the oldest legacy volume or
+  the largest/most-recent one across every sibling shelf; `lookup.py` by name + year recovers the true id.
+
++79 more matched entries not shown: L-211, L-212, L-214, L-220, L-228, L-245, L-265, L-271, L-272, L-281, L-321, L-339, L-342, L-375, L-193, L-016, L-032, L-065, L-099, L-114, L-123, L-194, L-262, L-330, L-018, L-060, L-082, L-116, L-162, L-216, L-218, L-234, L-237, L-255, L-263, L-343, L-364, L-369, L-013, L-014, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-097, L-118, L-125, L-157, L-159, L-163, L-165, L-177, L-204, L-252, L-253, L-264, L-267, L-273, L-274, L-288, L-290, L-291, L-292, L-293, L-294, L-341, L-346, L-347, L-352, L-354, L-074, L-083, L-128, L-181, L-250, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S64102 Adventures into the Unknown  [split]  110 files / 1 collections  decided in R-118 (S)
+   decided: S 64102 cv=25279 gcd=598 0.95 | CV 25279 "Adventures into the Unknown" (ACG 1948, 174) and GCD 598 (ACG 1948-1967, 174) agree on publisher, start year and count; our 109 floppies 001-112 (1948-1959, 36-54pp, gaps 73 and 89-90) sit inside the cached #1-174 with CV per-file 109/109; six files' per-file GCD 66638 is the UK Arnold Book Co. reprint, a stamp; the one Dark Horse Archives trade is misfiled (F below)
+   F 64102 split-needed | 22477 -> join S101675
+   N 64102 item 22477 "COL Adventures into the Unknown Archives v04 (2015)" 224pp is Volume 4 of the Dark Horse Archives line CV 49231 / GCD 68255 (4 on both legs); S101675 stores exactly cv=49231 gcd=68255 and holds Archives v01 (twice), v02 and v03 of the same Magicians-Empire rips, so v04 is its missing fourth book; its parsed key "Adventures into the Unknown Archives (1948)" carries the ACG run's links, which is why it landed here
+   N 64102 six files carry per-file GCD 66638 (Arnold Book Co. UK reprint 1950, 20) instead of 598 — a per-file stamp; the stored GCD is right
+   named: S101675 Adventures Into the Unknown: Archives  4 files  keys: "Adventures into the Unknown Archives (2012)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Adventures Into the Unknown (1948)" x109 · "Adventures into the Unknown Archives (1948)" x1
+   groups (title x folder): 2
+   G1 "Adventures Into the Unknown" in EC Comics & Others Archives (Dark Horse)\Adventures Into The Unknown — 109 file(s), numbers 1-72, 74-88, 91-112, pp 36-54; cv per-file 25279x109; gcd per-file 598x103, 66638x6; key 'Adventures Into the Unknown (1948)'
+      e.g. Adventures Into the Unknown 001 (1948).cbr
+        22365 #1 1948 52pp · 22366 #2 1948 53pp · 22367 #3 1949 52pp · 22368 #4 1949 52pp · 22369 #5 1949 52pp · 22370 #6 1949 52pp · 22371 #7 1949 52pp · 22372 #8 1949 52pp · 22373 #9 1950 52pp
+        22374 #10 1950 52pp · 22375 #11 1950 52pp · 22376 #12 1950 52pp · 22377 #13 1950 52pp · 22378 #14 1950 52pp · 22379 #15 1951 52pp · 22380 #16 1951 52pp · 22381 #17 1951 52pp
+        22382 #18 1951 54pp · 22383 #19 1951 52pp · 22384 #20 1951 52pp · 22385 #21 1951 52pp · 22386 #22 1951 52pp · 22387 #23 1951 53pp · 22388 #24 1951 54pp · 22389 #25 1951 52pp
+        22390 #26 1951 52pp · 22391 #27 1952 52pp · 22392 #28 1952 52pp · 22393 #29 1952 53pp · 22394 #30 1952 52pp · 22395 #31 1952 52pp · 22396 #32 1952 52pp · 22397 #33 1952 52pp
+        22398 #34 1952 36pp · 22399 #35 1952 36pp · 22400 #36 1952 36pp · 22401 #37 1952 36pp · 22402 #38 1952 36pp · 22403 #39 1953 36pp · 22404 #40 1953 36pp · 22405 #41 1953 36pp
+        22406 #42 1953 36pp · 22407 #43 1953 36pp · 22408 #44 1953 36pp · 22409 #45 1953 36pp · 22410 #46 1953 37pp · 22411 #47 1953 36pp · 22412 #48 1953 36pp · 22413 #49 1953 36pp
+        22414 #50 1953 37pp · 22415 #51 1954 36pp · 22416 #52 1954 36pp · 22417 #53 1954 36pp · 22418 #54 1954 36pp · 22419 #55 1954 36pp · 22420 #56 1954 36pp · 22421 #57 1954 36pp
+        22422 #58 1954 36pp · 22423 #59 1954 37pp · 22424 #60 1954 36pp · 22425 #61 1955 36pp · 22426 #62 1955 36pp · 22427 #63 1955 36pp · 22428 #64 1955 36pp · 22429 #65 1955 36pp
+        22430 #66 1955 37pp · 22431 #67 1955 36pp · 22432 #68 1955 36pp · 22433 #69 1955 36pp · 22434 #70 1956 36pp · 22435 #71 1956 36pp · 22436 #72 1956 36pp · 22437 #74 1956 36pp
+        22438 #75 1956 36pp · 22439 #76 1956 36pp · 22440 #77 1956 38pp · 22441 #78 1956 36pp · 22442 #79 1956 36pp · 22443 #80 1957 36pp · 22444 #81 1957 36pp · 22445 #82 1957 36pp
+        22446 #83 1957 36pp · 22447 #84 1957 36pp · 22448 #85 1957 36pp · 22449 #86 1957 36pp · 22450 #87 1957 36pp · 22451 #88 1957 36pp · 22452 #91 1957 37pp · 22453 #92 1958 36pp
+        22454 #93 1958 36pp · 22455 #94 1958 36pp · 22456 #95 1958 36pp · 22457 #96 1958 36pp · 22458 #97 1958 36pp · 22459 #98 1958 36pp · 22460 #99 1958 36pp · 22461 #100 1958 36pp
+        22462 #101 1958 36pp · 22463 #102 1958 36pp · 22464 #103 1958 36pp · 22465 #104 1959 36pp · 22466 #105 1959 36pp · 22467 #106 1959 36pp · 22468 #107 1959 36pp · 22469 #108 1959 36pp
+        22470 #109 1959 36pp · 22471 #110 1959 36pp · 22472 #111 1959 36pp · 22473 #112 1959 36pp
+   G2 "Adventures into the Unknown Archives" in EC Comics & Others Archives (Dark Horse)\Adventures into the Unknown (1948) — 1 file(s), 1 COL, pp 224-224; cv per-file 49231x1; gcd per-file 68255x1; key 'Adventures into the Unknown Archives (1948)'
+      [22477] COL Adventures into the Unknown Archives v04 (2015) (digital) (The Magicians-Empire).cbr (224pp)
+         own record cv 49231 / gcd s68255 "Adventures into the Unknown Archives" (issue 1334608) COLLECTS: gcd=598 Adventures into the Unknown (1948) #13-16
+
+== S17514 Tales from the Crypt  [split]  4 files / 1 collections  decided in R-119 (S)
+   decided: S 17514 cv=18612 gcd=761 0.9 | CV 18612 "Tales from the Crypt" (EC 1950, cached #20-46) and GCD 761 (EC 1950-1955, 27) are one run — EC's numbering continuing from Crypt of Terror at #20 — and our three c2c floppies #29, #32 (Oct-Nov 1952) and #36 sit inside both; 0.9 for the one misfiled 2017 trade named below
+   F 17514 split-needed | 22694 -> new key "Tales from the Crypt (2016)"
+   N 17514 item 22694 "COL Tales From The Crypt v01 - The Stalking Dead (2017)" 74pp is NBM/Super Genius's modern Tales from the Crypt Vol. 1 (GCD 125796 row 1815087, 76pp, 2017-12, ISBN 978-1-62991-460-2 = CV 109481 issue 664393 "Volume 1"), collecting the 2016 two-issue run CV 96166 / GCD 109885; no shelf stores either id (--who-stores), so it takes a key of its own (L-368)
+   N 17514 flag #451 label-ambiguous (item 22694's cv row) is a label flag, not a conflation (L-367); the I line below corrects the book's record
+   keys now: "Tales from the Crypt" x2 · "Tales From The Crypt - The Stalking Dead" x1 · "Tales From the Crypt" x1
+   groups (title x folder): 3
+   G1 "Tales From The Crypt" in EC Comics & Others Archives (Dark Horse)\Tales From the Crypt (1950) — 1 file(s), 1 COL, pp 74-74; cv per-file 109481x1; gcd per-file 125796x1; key 'Tales From The Crypt - The Stalking Dead'
+      [22694] COL Tales From The Crypt v01 - The Stalking Dead (2017) (Digital) (Bean-Empire).cbz (74pp)
+         own record cv 109481 / gcd s125796 "Tales from the Crypt" (issue 1815087) COLLECTS: gcd=109885 Tales from the Crypt (2016) #1-2
+   G2 "Tales From the Crypt" in EC Comics & Others Archives (Dark Horse)\Tales From the Crypt (1950) — 1 file(s), numbers 36, pp 36-36; cv per-file 18612x1; gcd per-file 761x1; key 'Tales From the Crypt'
+      [22693] Tales From the Crypt 036 (c2c).cbr (36pp)
+   G3 "Tales from the Crypt" in EC Comics & Others Archives (Dark Horse)\Tales From the Crypt (1950) — 2 file(s), numbers 29, 32, pp 36-37; cv per-file 18612x2; gcd per-file 761x2; key 'Tales from the Crypt'
+      [22691] Tales from the Crypt 029 (EC) (1950) (c2c) (Mark Bowen + Cclay).cbz (36pp)
+      [22692] Tales from the Crypt 032 (EC) (Oct-Nov 1952) (c2c) (SuperMack).cbz (37pp)
+
+== S21399 Weird Science  [split]  4 files / 1 collections  decided in R-119 (S)
+   decided: S 21399 cv=18944 gcd=764 0.9 | CV 18944 "Weird Science" (EC 1950) and GCD 764 (EC 1950, 4 issues #12-15) are the run our three c2c floppies belong to — #12 (1952 per the rip, #14 Sep-Oct 1950, #15 Nov-Dec 1950); 0.9 for the one Dark Horse archive volume misfiled here, split below
+   F 21399 split-needed | 22796 -> join S18471
+   N 21399 item 22796 "COL The EC Archives - Weird Science v03 (2024)" 216pp is the third book of the Dark Horse archive line: GCD 180137 #3 row 2607439 (2024-01-31, 220pp) = CV 52402 #3 issue 359132 ("Six Complete Issues, 13-18"); S18471 stores CV 52402 / GCD 180137 and holds v01, v02 and v04 of the same line, so v03 joins it (L-368)
+   N 21399 flag #529 label-ambiguous (item 22796's cv row) is a label flag (L-367): C-025's `I 22796 cv=496359` named Volume 4 and is corrected below
+   named: S18471 The EC Archives: Weird Science  3 files  keys: "The EC Archives - Weird Science"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Weird Science" x3 · "EC Archives: Weird Science" x1
+   groups (title x folder): 2
+   G1 "The EC Archives - Weird Science" in EC Comics & Others Archives (Dark Horse)\Weird Science (1950) — 1 file(s), 1 COL, pp 216-216; cv per-file 52402x1; gcd per-file 180137x1; key 'EC Archives: Weird Science'
+      [22796] COL The EC Archives - Weird Science v03 (2024) (Digital-Empire).cbr (216pp)
+         own record cv 52402 / gcd s180137 "EC Archives: Weird Science" (issue 2607439) COLLECTS: gcd=836 Weird Science (1951) #13-18
+   G2 "Weird Science" in EC Comics & Others Archives (Dark Horse)\Weird Science (1950) — 3 file(s), numbers 12, 14-15, pp 37-37; cv per-file 18944x3; gcd per-file 764x3; key 'Weird Science'
+      [22798] Weird Science 012 (EC.1952) (Pmack).cbz (37pp)
+      [22799] Weird Science 014 (EC) (Sep-Oct 1950) (c2c) (Moose+Squirrel).cbz (37pp)
+      [22800] Weird Science 015 (EC) (Nov-Dec 1950) (c2c) (SuperMack).cbz (37pp)
+
+== S11793 Masks  [split]  3 files / 1 collections  decided in R-119 (S)
+   decided: S 11793 cv=144903 gcd=- 0.9 | two of three files are Europe Comics' Masks: CV 144903 "Masks" (Europe Comics 2022, 2) names #1 "The Mask Without A Face" (2022) and #2 (2023), our "001 - The Mask Without a Face" 88pp and "002 - The Eclipse Mask" 89pp; the third file is Dynamite's 2013 trade of a different comic, split below
+   F 11793 split-needed | 21937 -> new key "Masks (2012)"
+   N 11793 item 21937 "COL Masks (2013)" 255pp (Dynamite\Masks (2013), ComicInfo Dynamite) is the trade of Dynamite's eight-issue 2012 crossover CV 54311 / GCD 70166; no shelf stores either id (--who-stores), so it takes its own key (L-368)
+   N 11793 the stored CV is already 144903, so B-025's F wrong-cv-link on 54311 is spent; signal b is 54311 stamped per-file on the two Europe albums
+   nearby: S1029 "Angel: Masks" 1f [title+1 — S cv=23589 gcd=20706 (B-036 0.95)] keys: "Angel: Masks"
+   keys now: "Masks" x3
+   groups (title x folder): 2
+   G1 "Masks (2013) (Digital) (F) (DR & Quinch-Empire)" in Dynamite\Masks (2013) — 1 file(s), 1 COL, pp 255-255; cv per-file 66794x1; gcd per-file 102528x1; key 'Masks'
+      [21937] COL Masks (2013) (Digital) (F) (DR & Quinch-Empire).cbr (255pp)
+         own record cv 66794 / gcd s102528 "Masks" (issue 1575334) COLLECTS: gcd=70166 Masks (2012) #1-8
+   G2 "Masks" in Europe Comics\Masks (2022) — 2 file(s), numbers 1-2, pp 88-89; cv per-file 54311x2; key 'Masks'
+      [23227] Masks 001 - The Mask Without a Face (2022) (digital) (Mr Norrell-Empire).cbr (88pp)
+      [23228] Masks 002 - The Eclipse Mask (2023) (digital) (Mr Norrell-Empire).cbr (89pp)
+
+== S14408 Raven  [split]  3 files / 1 collections  decided in R-119 (S)
+   decided: S 14408 cv=132597 gcd=162119 0.9 | Europe Comics CV 132597 "Raven" (2020, 2: #1 "Nemesis", #2 "The Hellish Lands") names our two albums exactly, paired with Dargaud's French original GCD 162119 (2020-2024, 3) per the Europe Comics ruling; the third file is DC's unrelated Raven trade, split below
+   F 14408 split-needed | 69976 -> new key "Raven (2016)"
+   N 14408 item 69976 "COL Raven (2017)" 136pp (DC\_Raven\01 Raven v1 (2016), ComicInfo DC / Volume 2016) is the trade of DC's six-issue 2016 Raven mini CV 94288 / GCD 106567; no shelf stores either id, so it takes its own key (L-368); signal b is 94288 stamped per-file on all three files
+   keys now: "Raven" x3
+   groups (title x folder): 2
+   G1 "Raven (2017) (digital) (Son of Ultron-Empire)" in DC\_Raven\01 Raven v1 (2016) — 1 file(s), 1 COL, pp 136-136; cv per-file 101406x1; gcd per-file 114008x1; key 'Raven'
+      [69976] COL Raven (2017) (digital) (Son of Ultron-Empire).cbr (136pp)
+         own record cv 101406 / gcd s114008 "Raven" (issue 1697924) COLLECTS: gcd=106567 Raven (2016) #1-6
+   G2 "Raven" in Europe Comics\Raven (2020) — 2 file(s), numbers 1-2, pp 53-59; cv per-file 94288x2; gcd per-file 162092x2; key 'Raven'
+      [23296] Raven 001 - Nemesis (2020) (digital) (Mr Norrell-Empire).cbr (53pp)
+      [23297] Raven 002 - The Hellish Lands (2021) (digital) (Mr Norrell-Empire).cbr (59pp)
+
+== S35501 Hip Hop Family Tree Three-in-One - Featuring Cosplayers  [split]  2 files / 0 collections  decided in R-119 (S)
+   decided: S 35501 cv=81701 gcd=89025 0.9 | the shelf's key book is the FCBD 2015 giveaway "Hip Hop Family Tree Three-in-One - Featuring Cosplayers" 59pp = CV 81701 (Fantagraphics 2015, 1, issue 487486) = GCD 89025 "… Three-in-One: Featuring Cosplayers [Free Comic Book Day 2015]" (60pp, 2015-05-02); our barcode 0609224368721 is the stem of GCD row 1352303's UPC 60922436872100111; 0.9 for the second FCBD book, split below
+   F 35501 wrong-cv-link | the stored CV 68786 / GCD 78273 is Fantagraphics' four-volume hardcover line, whose books sit on S97608 (its trades' I lines carry 78273) — neither of our two FCBD giveaways
+   F 35501 split-needed | 24504 -> new key "Hip Hop Family Tree Two-in-One (2014)"
+   F 35501 needs-fetch cv=81701 | named from the rip only, no CvVolume row
+   N 35501 item 24504 "Hip Hop Family Tree Two-in-One (FCBD 2014)" 36pp is the separate FCBD 2014 giveaway CV 73579 (issue 452064) / GCD 80514 (row 1204025, 36pp); no shelf stores either id; its current key "Hip Hop Family Tree Two-in-One" lands on this shelf, so the new key carries the year
+   keys now: "Hip Hop Family Tree Three-in-One - Featuring Cosplayers" x1 · "Hip Hop Family Tree Two-in-One" x1
+   groups (title x folder): 2
+   G1 "Hip Hop Family Tree Three-in-One - Featuring Cosplayers (FCBD 2015) (digital) (Minutemen-Faessla)" in Fantagraphics\Hip Hop Family Tree (2013) — 1 file(s), pp 59-59; cv per-file 81701x1; gcd per-file 89025x1; key 'Hip Hop Family Tree Three-in-One - Featuring Cosplayers'
+      [24503] Hip Hop Family Tree Three-in-One - Featuring Cosplayers (FCBD 2015) (digital) (Minutemen-Faessla).cbz (59pp)
+   G2 "Hip Hop Family Tree Two-in-One (FCBD 2014)" in Fantagraphics\Hip Hop Family Tree (2013) — 1 file(s), pp 36-36; cv per-file 73579x1; gcd per-file 80514x1; key 'Hip Hop Family Tree Two-in-One'
+      [24504] Hip Hop Family Tree Two-in-One (FCBD 2014).cbr (36pp)
+
+== S18258 The Comics Journal  [split]  49 files / 3 collections  decided in R-119 (S)
+   decided: S 18258 cv=35609 gcd=65424 0.9 | the shelf is the MAGAZINE: CV 35609 "The Comics Journal" (Fantagraphics 1976, cached #27-311) and GCD 65424 (Fantagraphics 1977-?, 280) are the same run, our ladder 27-309 sits wholly inside it with ComicInfo Series "The Comics Journal" / Fantagraphics on ten files; eleven numbers naming two files are duplicate rips; 0.9 for the three Library trades split below
+   F 18258 split-needed | 24967, 24968, 24969 -> join S68127
+   N 18258 items 24967-24969 (COL The Comics Journal Library Vol. 08 / 09 / 10) are books of the Library line CV 56281 / GCD 139416, whose own shelf S68127 stores exactly those ids and holds second rips of the same three books (items 110016-110018); their R-027 I lines stand (L-368)
+   named: S68127 The Comics Journal Library  3 files  keys: "The Comics Journal Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "The Comics Journal" x49
+   groups (title x folder): 16
+   G1 "The Comics Journal" in Fantagraphics\The Comics Journal — 28 file(s), numbers 32-36, 53, 59, 63, 67, 105, 116, 119, 161, 179, 208, 213, 250, 269, 303-309, pp 6-340; cv per-file 35609x28; gcd per-file 65424x16; key 'The Comics Journal'
+      e.g. The Comics Journal 032 (1977) (tcj.com).cbr
+        24929 #32 1977 32pp · 24930 #32 32pp · 24931 #33 1977 37pp · 24932 #33 37pp · 24933 #34 1977 36pp · 24934 #34 36pp · 24935 #35 1977 41pp · 24936 #36 32pp · 24937 #53 1980 148pp
+        24938 #59 1980 140pp · 24939 #63 1981 340pp · 24940 #67 1981 132pp · 24948 #105 1986 100pp · 24949 #116 1987 147pp · 24950 #119 1988 124pp · 24953 #161 1993 112pp · 24954 #179 1995 121pp
+        24956 #208 1998 133pp · 24957 #213 1999 117pp · 24958 #250 2003 21pp · 24959 #269 2005 6pp · 24960 #303 2019 179pp · 24961 #304 2019 198pp · 24962 #305 2020 157pp · 24963 #306 2020 172pp
+        24964 #307 2021 219pp · 24965 #308 2022 145pp · 24966 #309 2023 195pp
+   G2 "The Comics Journal 027 [Fantagraphics] (Jul 1976)" in Fantagraphics\The Comics Journal — 1 file(s), numbers 27, pp 36-36; cv per-file 35609x1; key 'The Comics Journal'
+      [24927] The Comics Journal 027 [Fantagraphics] (Jul 1976).cbz (36pp)
+   G3 "The Comics Journal 028 [Fantagraphics] (1976-09)" in Fantagraphics\The Comics Journal — 1 file(s), numbers 28, pp 40-40; cv per-file 35609x1; key 'The Comics Journal'
+      [24928] The Comics Journal 028 [Fantagraphics] (1976-09).cbz (40pp)
+   G4 "The Comics Journal 069 [Fantagraphics] (1981) (digital)" in Fantagraphics\The Comics Journal — 1 file(s), numbers 69, pp 116-116; cv per-file 35609x1; gcd per-file 65424x1; key 'The Comics Journal'
+      [24941] The Comics Journal 069 [Fantagraphics] (1981) (digital).cbz (116pp)
+   G5 "The Comics Journal 072 [Fantagraphics] (1982) (digital)" in Fantagraphics\The Comics Journal — 1 file(s), numbers 72, pp 132-132; cv per-file 35609x1; key 'The Comics Journal'
+      [24942] The Comics Journal 072 [Fantagraphics] (1982) (digital).cbz (132pp)
+   G6 "The Comics Journal 076 [Fantagraphics] (1982) (digital)" in Fantagraphics\The Comics Journal — 1 file(s), numbers 76, pp 180-180; cv per-file 35609x1; key 'The Comics Journal'
+      [24943] The Comics Journal 076 [Fantagraphics] (1982) (digital).cbz (180pp)
+   G7 "The Comics Journal 077 [Fantagraphics] (1982) (digital)" in Fantagraphics\The Comics Journal — 1 file(s), numbers 77, pp 116-116; cv per-file 35609x1; key 'The Comics Journal'
+      [24944] The Comics Journal 077 [Fantagraphics] (1982) (digital).cbz (116pp)
+   G8 "The Comics Journal 079 [Fantagraphics] (1983) (digital)" in Fantagraphics\The Comics Journal — 1 file(s), numbers 79, pp 116-116; cv per-file 35609x1; key 'The Comics Journal'
+      [24945] The Comics Journal 079 [Fantagraphics] (1983) (digital).cbz (116pp)
+   G9 "The Comics Journal 081 [Fantagraphics] (1983) (digital)" in Fantagraphics\The Comics Journal — 1 file(s), numbers 81, pp 108-108; cv per-file 35609x1; key 'The Comics Journal'
+      [24946] The Comics Journal 081 [Fantagraphics] (1983) (digital).cbz (108pp)
+   G10 "The Comics Journal 084 [Fantagraphics] (1983) (digital)" in Fantagraphics\The Comics Journal — 1 file(s), numbers 84, pp 116-116; cv per-file 35609x1; key 'The Comics Journal'
+      [24947] The Comics Journal 084 [Fantagraphics] (1983) (digital).cbz (116pp)
+   G11 "The Comics Journal 121 [1988-04][c2c][Neon Vincent]" in Fantagraphics\The Comics Journal — 1 file(s), numbers 121, pp 149-149; cv per-file 35609x1; key 'The Comics Journal'
+      [24951] The Comics Journal 121 [1988-04][c2c][Neon Vincent].cbr (149pp)
+   G12 "The Comics Journal 179 [1995-08][c2c][Neon Vincent]" in Fantagraphics\The Comics Journal — 1 file(s), numbers 179, pp 121-121; cv per-file 35609x1; key 'The Comics Journal'
+      [24955] The Comics Journal 179 [1995-08][c2c][Neon Vincent].cbr (121pp)
+   G13 "The Comics Journal Library" in Fantagraphics\The Comics Journal\Trades — 3 file(s), 3 COL, pp 240-282; cv per-file 56281x3; gcd per-file 139416x3; key 'The Comics Journal'
+      [24967] COL The Comics Journal Library Vol. 08 - The EC Artists 01 (2013) (digital-Empire).cbr (240pp)
+      [24968] COL The Comics Journal Library Vol. 09 - Zap - The Interviews (2015) (digital-Empire).cbz (261pp)
+      [24969] COL The Comics Journal Library Vol. 10 - The EC Artists 02 (2016) (digital-Empire).cbr (282pp)
+   G14 "The Comics Journal" in The Comics Journal — 5 file(s), numbers 303-306, 308, pp 145-198; cv per-file 35609x5; gcd per-file 65424x5; key 'The Comics Journal'
+      e.g. The Comics Journal 303 (2019) (digital) (Mr Norrell-Empire).cbr
+        110010 #303 2019 179pp · 110011 #304 2019 198pp · 110012 #305 2020 157pp · 110013 #306 2020 172pp · 110015 #308 2022 145pp
+   G15 "The Comics Journal 053 [Fantagraphics] (1980) (digital)" in The Comics Journal — 1 file(s), numbers 53, pp 148-148; cv per-file 35609x1; gcd per-file 65424x1; key 'The Comics Journal'
+      [110007] The Comics Journal 053 [Fantagraphics] (1980) (digital).cbz (148pp)
+   G16 "The Comics Journal 067 [Fantagraphics] (1981) (digital)" in The Comics Journal — 1 file(s), numbers 67, pp 132-132; cv per-file 35609x1; gcd per-file 65424x1; key 'The Comics Journal'
+      [110009] The Comics Journal 067 [Fantagraphics] (1981) (digital).cbz (132pp)
+
+== S3246 Bugs Bunny  [split]  77 files / 0 collections  decided in R-119 (S)
+   decided: S 3246 cv=11508 gcd=12477 0.9 | the Gold Key/Whitman majority: 65 of 77 files are #86-245 (1962-1984), GCD 12477 "Bugs Bunny" (Western 1962-1984, 160, rows #86-245) holds them all and CV 11508 "Bugs Bunny" (Western 1962, 135, cached #86-220 with our #89 "The Magic Door" etc.) is the same run to #220; 0.9 for the Dell issues and the DC mini named below
+   F 3246 needs-fetch cv=11508 | named from the local rip only, no CvVolume row
+   F 3246 split-needed | 27707, 27708, 27709 -> new key "Bugs Bunny (1990)"
+   N 3246 items 27707-27709 "Bugs Bunny 01-03 (of 03) (1990)" are DC's three-issue 1990 mini CV 4356 / GCD 3979 (3 on both legs, per-file GCD 3979 x3); no shelf stores either id — a different comic (L-368)
+   N 3246 CV splits the Western run at 1980: #221-245 (our 19 Whitman-era files) are CV 31736 "Bugs Bunny" (Western 1980, 25); GCD 12477 spans both. The stored CV 6500 (Dell 1952, 58, #28-85) was C-026's wrong-cv-link and is now replaced by 11508
+   N 3246 for the lead: Dell #28-85 (our #28-35, 1953-54, CV 6500 / GCD 6993) and Gold Key #86-245 are ONE continuous numbering across a publisher change; if L-212/L-369 applies to a publisher change as to a retitle, the chain's first record is Dell's CV 6500 / GCD 6993 — but CV 6500's count 58 fails the ladder test for #86-245. Item 25582 "Bugs Bunny 008 (fiche(1942)" 51pp is a Dell-era Four Color-period file neither record numbers
+   keys now: "Bugs Bunny" x77
+   groups (title x folder): 20
+   G1 "Bugs Bunny" in Gold Key-Dell-Whitman\Bugs Bunny — 56 file(s), numbers 8, 28-29, 86, 88, 90, 92-93, 102, 106, 109, 118, 126-127, 146, 149, 161, 168, 171, 189, 196-197, 199-200, 202-203, 205, 208-209, 211-218, 220-222, 225-226, 228-229, 233, 235-245, pp 35-84; cv per-file 6500x56; gcd per-file 12477x10, 6993x2; key 'Bugs Bunny'
+      e.g. Bugs Bunny 008 (fiche(1942).cbr
+        25582 #8 1942 51pp · 25583 #28 1953 36pp · 25584 #29 1953 36pp · 25591 #86 1962 84pp · 25592 #88 1963 84pp · 25594 #90 1963 36pp · 25595 #92 1964 36pp · 25596 #93 1964 36pp
+        25602 #102 1965 35pp · 25604 #106 1966 37pp · 25607 #109 1967 36pp · 25608 #118 1968 37pp · 25610 #126 1969 36pp · 25611 #127 1970 37pp · 25613 #146 1972 53pp · 25616 #161 1975 37pp
+        25617 #168 1975 37pp · 25618 #171 1976 36pp · 25619 #189 1977 37pp · 25620 #196 1978 37pp · 25621 #197 1978 37pp · 25622 #199 1978 36pp · 25623 #200 1978 36pp · 25624 #202 1978 36pp
+        25625 #203 1978 36pp · 25626 #205 1979 36pp · 25627 #208 1979 37pp · 25628 #209 1979 37pp · 25630 #212 1979 37pp · 25631 #213 1979 37pp · 25632 #214 1979 37pp · 25633 #215 1979 37pp
+        25634 #216 1980 37pp · 25635 #217 1980 37pp · 25636 #218 1980 37pp · 25637 #220 1980 37pp · 25638 #221 1980 37pp · 25639 #222 1980 37pp · 25640 #225 1981 37pp · 25641 #226 1981 37pp
+        25642 #228 1981 37pp · 25643 #229 1981 37pp · 25644 #233 1981 37pp · 25645 #235 1982 37pp · 25646 #236 1982 37pp · 25647 #237 1982 37pp · 25648 #238 1982 37pp · 25649 #239 1982 37pp
+        25650 #240 1982 37pp · 25651 #241 1983 37pp · 25652 #242 1983 37pp · 25654 #244 1984 37pp · 25655 #245 1984 37pp
+      [25615] Bugs Bunny 149 (c2c) (Gold Key) (1973-05) Comicwanderer.cbz (37pp)
+      [25629] Bugs Bunny 211 (Gold Key) (Aug 1979) (c2c) (Titansfan Scans - DMiles Edits)..cbz (37pp)
+      [25653] Bugs Bunny 243 (Gold Key) (1982) (Jojo) c2c.cbr (37pp)
+   G2 "Bugs Bunny 030 ctc" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), numbers 30, pp 36-36; cv per-file 6500x1; gcd per-file 6993x1; key 'Bugs Bunny'
+      [25585] Bugs Bunny 030 ctc (1953).cbr (36pp)
+   G3 "Bugs Bunny 031 ctc" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), numbers 31, pp 36-36; cv per-file 6500x1; gcd per-file 6993x1; key 'Bugs Bunny'
+      [25586] Bugs Bunny 031 ctc (1953).cbr (36pp)
+   G4 "Bugs Bunny 032 ctc" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), numbers 32, pp 36-36; cv per-file 6500x1; gcd per-file 6993x1; key 'Bugs Bunny'
+      [25587] Bugs Bunny 032 ctc (1953).cbz (36pp)
+   G5 "Bugs Bunny 033 ctc" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), numbers 33, pp 36-36; cv per-file 6500x1; gcd per-file 6993x1; key 'Bugs Bunny'
+      [25588] Bugs Bunny 033 ctc (1953).cbr (36pp)
+   G6 "Bugs Bunny 034 ctc" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), numbers 34, pp 36-36; cv per-file 6500x1; gcd per-file 6993x1; key 'Bugs Bunny'
+      [25589] Bugs Bunny 034 ctc (1954).cbr (36pp)
+   G7 "Bugs Bunny 035 ctc" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), numbers 35, pp 36-36; cv per-file 6500x1; gcd per-file 6993x1; key 'Bugs Bunny'
+      [25590] Bugs Bunny 035 ctc (1954).cbr (36pp)
+   G8 "Bugs Bunny 089 Gold Key Jun 1963 C2C (js DCP)" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), pp 36-36; cv per-file 6500x1; key 'Bugs Bunny'
+      [25593] Bugs Bunny 089 Gold Key Jun 1963 C2C (js DCP).cbz (36pp)
+   G9 "Bugs Bunny 094 [Gold Key] (1964) c2c" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), numbers 94, pp 36-36; cv per-file 6500x1; gcd per-file 12477x1; key 'Bugs Bunny'
+      [25597] Bugs Bunny 094 [Gold Key] (1964) c2c.cbr (36pp)
+   G10 "Bugs Bunny 095 Gold Key Sep 1964 C2C (js-DCP)" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), pp 36-36; cv per-file 6500x1; key 'Bugs Bunny'
+      [25598] Bugs Bunny 095 Gold Key Sep 1964 C2C (js-DCP).cbz (36pp)
+   G11 "Bugs Bunny 097 Gold Key Jan 1965 C2C (js-DCP)" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), pp 36-36; cv per-file 6500x1; key 'Bugs Bunny'
+      [25599] Bugs Bunny 097 Gold Key Jan 1965 C2C (js-DCP).cbz (36pp)
+   G12 "Bugs Bunny 099 Gold Key May 1965 C2C (js-DCP)" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), pp 36-36; cv per-file 6500x1; key 'Bugs Bunny'
+      [25600] Bugs Bunny 099 Gold Key May 1965 C2C (js-DCP).cbz (36pp)
+   G13 "Bugs Bunny 100 [Gold Key] (1965) (FIXED)" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), numbers 100, pp 35-35; cv per-file 6500x1; gcd per-file 12477x1; key 'Bugs Bunny'
+      [25601] Bugs Bunny 100 [Gold Key] (1965) (FIXED).cbz (35pp)
+   G14 "Bugs Bunny 103 [Gold Key] (1966) c2c" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), numbers 103, pp 36-36; cv per-file 6500x1; gcd per-file 12477x1; key 'Bugs Bunny'
+      [25603] Bugs Bunny 103 [Gold Key] (1966) c2c.cbz (36pp)
+   G15 "Bugs Bunny 107 [Gold Key]" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), numbers 107, pp 33-33; cv per-file 6500x1; gcd per-file 12477x1; key 'Bugs Bunny'
+      [25605] Bugs Bunny 107 [Gold Key] (1966).cbz (33pp)
+   G16 "Bugs Bunny 108 [Gold Key]" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), numbers 108, pp 34-34; cv per-file 6500x1; gcd per-file 12477x1; key 'Bugs Bunny'
+      [25606] Bugs Bunny 108 [Gold Key] (1966).cbz (34pp)
+   G17 "Bugs Bunny 123 Gold Key May 1969 C2C (js DCP)" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), pp 36-36; cv per-file 6500x1; key 'Bugs Bunny'
+      [25609] Bugs Bunny 123 Gold Key May 1969 C2C (js DCP) .cbz (36pp)
+   G18 "Bugs Bunny 140 [Gold Key 1972] 26p" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), numbers 140, pp 26-26; cv per-file 6500x1; gcd per-file 12477x1; key 'Bugs Bunny'
+      [25612] Bugs Bunny 140 [Gold Key 1972] 26p.cbz (26pp)
+   G19 "Bugs Bunny 147 Gold Key Dec 1972 C2C (ABPC)" in Gold Key-Dell-Whitman\Bugs Bunny — 1 file(s), pp 37-37; cv per-file 6500x1; key 'Bugs Bunny'
+      [25614] Bugs Bunny 147 Gold Key Dec 1972 C2C (ABPC).cbz (37pp)
+   G20 "Bugs Bunny" in Hanna-Barbera & Licenses\Looney Tunes v1 (1994)\Bugs Bunny (1990) — 3 file(s), numbers 1-3, pp 23-37; cv per-file 6500x3; gcd per-file 3979x3; key 'Bugs Bunny'
+      [27707] Bugs Bunny 01 (of 03) (1990) (c2c) (JeffAlbertson-DCP).cbz (37pp)
+      [27708] Bugs Bunny 02 (of 03) (1990) (noads).cbr.cbr (23pp)
+      [27709] Bugs Bunny 03 (of 03) (1990) (noads).cbr (23pp)
+
+== S13685 Peanuts  [split]  11 files / 0 collections  decided in R-119 (S)
+   decided: S 13685 cv=2020 gcd=1455 0.9 | Dell's Peanuts #4-13 (1960-1962, 36-37pp) = CV 2020 (Dell 1960, 10, cached #4-13) = GCD 1455 (Dell 1960-1962, 10): our ten issue files fill it exactly; 0.9 for the strip-year file split below
+   F 13685 split-needed | 114672 -> new key "Peanuts (1960 strip year)"
+   N 13685 item 114672 "Peanuts.1960.cbr" (336pp, Webcomics and Strips\...\Peanuts (By Year)) is a calendar year of the daily strip, the shape of S13676 "Peanuts.1951" and its siblings (R + provider-missing, L-164); its current key "Peanuts.1960" is carried by this shelf, so the new key is respelled (L-336); no strip-year shelf for 1960 exists to join
+   N 13685 signal b: per-file CV 133549 (Coronet Books 1967, the UK paperbacks) on 7 of 11 files is a same-title stamp; signal f (S103714 merged in) is the P-010 joins
+   nearby: S13676 "Peanuts.1951" 1f [named S13676 in the decision's R/N lines] keys: "Peanuts.1951" · S13639 "Peanuts" 26f [title — S cv=20938 gcd=15711 (R-047 0.95)] keys: "Peanuts" | "Peanuts (1967)"
+   nearby: S103715 "Peanuts (2012)" 12f [title — S cv=50186 gcd=67354 (R-047 0.95)] keys: "Peanuts (2012)" · S103716 "Peanuts" 3f [title — S cv=2159 gcd=1602 (R-047 0.95)] keys: "Peanuts v2 (1963)"
+   nearby: S13656 "Peanuts" 1f [title — S cv=57360 gcd=57775 (B-070 0.9)] keys: "Peanuts - Peanuts" · S13677 "Peanuts.1952" 1f [title] keys: "Peanuts.1952" · S13678 "Peanuts.1953" 1f [title] keys: "Peanuts.1953"
+   nearby: S13679 "Peanuts.1954" 1f [title] keys: "Peanuts.1954" · S13680 "Peanuts.1955" 1f [title] keys: "Peanuts.1955" · S13681 "Peanuts.1956" 1f [title] keys: "Peanuts.1956"
+   nearby: S13682 "Peanuts.1957" 1f [title] keys: "Peanuts.1957" · S13683 "Peanuts.1958" 1f [title] keys: "Peanuts.1958" · S13684 "Peanuts.1959" 1f [title] keys: "Peanuts.1959" · (+47 more by title)
+   keys now: "Peanuts (1960)" x10 · "Peanuts.1960" x1
+   groups (title x folder): 11
+   G1 "Peanuts 004 [Dell] (Feb-Apr 1960) (js-Upgrade, Variant bc Added)" in Gold Key-Dell-Whitman\Peanuts — 1 file(s), numbers 4, pp 37-37; cv per-file 133549x1; key 'Peanuts (1960)'
+      [25783] Peanuts 004 [Dell] (Feb-Apr 1960) (js-Upgrade, Variant bc Added).cbz (37pp)
+   G2 "Peanuts 005 [Dell] (May-Jul 1960) (c2c +Variant bc) ( js Upgrade)" in Gold Key-Dell-Whitman\Peanuts — 1 file(s), numbers 5, pp 37-37; cv per-file 133549x1; key 'Peanuts (1960)'
+      [25784] Peanuts 005 [Dell] (May-Jul 1960) (c2c +Variant bc) ( js Upgrade).cbz (37pp)
+   G3 "Peanuts 006 [Dell]" in Gold Key-Dell-Whitman\Peanuts — 1 file(s), numbers 6, pp 36-36; cv per-file 133549x1; key 'Peanuts (1960)'
+      [25785] Peanuts 006 [Dell].cbr (36pp)
+   G4 "Peanuts 008 [Dell] (1961) C2C [js-upgrade, variant bc added, page order fixed] (KF)" in Gold Key-Dell-Whitman\Peanuts — 1 file(s), numbers 8, pp 37-37; cv per-file 2020x1; gcd per-file 1455x1; key 'Peanuts (1960)'
+      [25787] Peanuts 008 [Dell] (1961) C2C [js-upgrade, variant bc added, page order fixed] (KF).cbz (37pp)
+   G5 "Peanuts 009 [Dell]" in Gold Key-Dell-Whitman\Peanuts — 1 file(s), numbers 9, pp 36-36; cv per-file 133549x1; key 'Peanuts (1960)'
+      [25788] Peanuts 009 [Dell].cbr (36pp)
+   G6 "Peanuts 010 [Dell] (1961) (c2c)" in Gold Key-Dell-Whitman\Peanuts — 1 file(s), numbers 10; cv per-file 2020x1; gcd per-file 1455x1; key 'Peanuts (1960)'
+      [25789] Peanuts 010 [Dell] (1961) (c2c).cbr (?pp)
+   G7 "Peanuts 011 [Dell]" in Gold Key-Dell-Whitman\Peanuts — 1 file(s), numbers 11, pp 36-36; cv per-file 133549x1; gcd per-file 1455x1; key 'Peanuts (1960)'
+      [25790] Peanuts 011 [Dell] (1962).cbr (36pp)
+   G8 "Peanuts 012 [Dell] (1962-02) Kracalactaka+CW c2c" in Gold Key-Dell-Whitman\Peanuts — 1 file(s), numbers 12, pp 36-36; cv per-file 133549x1; key 'Peanuts (1960)'
+      [25791] Peanuts 012 [Dell] (1962-02) Kracalactaka+CW c2c.cbz (36pp)
+   G9 "Peanuts 013 [Dell] (1962) c2c" in Gold Key-Dell-Whitman\Peanuts — 1 file(s), numbers 13, pp 36-36; cv per-file 133549x1; gcd per-file 1455x1; key 'Peanuts (1960)'
+      [25792] Peanuts 013 [Dell] (1962) c2c.cbr (36pp)
+   G10 "peanuts 007 [Dell] (1961) c2c" in Gold Key-Dell-Whitman\Peanuts — 1 file(s), numbers 7, pp 36-36; cv per-file 2020x1; gcd per-file 1455x1; key 'Peanuts (1960)'
+      [25786] peanuts 007 [Dell] (1961) c2c.cbr (36pp)
+   G11 "Peanuts.1960" in Webcomics and Strips\_Charles Schulz-Peanuts\Peanuts (By Year) — 1 file(s), numbers 1960, pp 336-336; key 'Peanuts.1960'
+      [114672] Peanuts.1960.cbr (336pp)
+
+== S18616 The Flintstones  [split]  61 files / 1 collections  decided in R-119 (S)
+   decided: S 18616 cv=11612 gcd=12603 0.9 | CV 11612 "The Flintstones" (Western 1962, 59, cached #2-60) spans Dell 1961-62 and Gold Key 1962-70 as one volume, paired with the majority-era GCD 12603 (Western 1962-1970, 54, per-file 29/61; Dell #2-6 are sibling row 12602); our ladder 1-60 is the whole run; 0.9 for the two books of other runs split below
+   F 18616 split-needed | 29918 -> new key "The Flintstones (1992)"
+   F 18616 split-needed | 28988 -> new key "The Flintstones (2016)"
+   N 18616 item 29918 "The Flintstones v2 001 (Harvey 1992-09)" 36pp is Harvey's 1992 series CV 35576 / GCD 15440 (13; #1 row 262313, 1992-09-10, 36pp); item 28988 "COL The Flintstones - The Deluxe Edition (2022)" 358pp (Hanna-Barbera & Licenses\The Flintstones (2016)) is DC's deluxe of the 2016 run CV 92026 / GCD 103891 (12); no shelf stores any of those ids (L-368)
+   N 18616 flag #469 label-ambiguous (item 29918 is a single issue, not a collection) is a label flag (L-367)
+   keys now: "The Flintstones" x61
+   groups (title x folder): 4
+   G1 "The Flintstones" in Gold Key-Dell-Whitman\The Flintstones (1961) — 58 file(s), numbers 2-20, 22-60, pp 30-37; cv per-file 11612x58; gcd per-file 12603x29, 12602x5; key 'The Flintstones'
+      e.g. The Flintstones 002 (1961) (Dell) (c2c).cbr
+        25855 #2 1961 36pp · 25856 #3 1962 36pp · 25857 #4 1962 36pp · 25858 #5 1962 36pp · 25859 #6 1962 36pp · 25860 #7 1962 36pp · 25861 #8 1962 36pp · 25862 #9 1963 36pp · 25863 #10 1963 37pp
+        25864 #11 1963 36pp · 25865 #12 1963 36pp · 25866 #13 1963 36pp · 25867 #14 1963 36pp · 25868 #15 1963 36pp · 25869 #16 1964 36pp · 25870 #17 1964 36pp · 25871 #18 1964 36pp
+        25872 #19 1964 36pp · 25873 #20 1964 36pp · 25875 #22 1964 32pp · 25876 #23 1964 36pp · 25877 #24 1965 35pp · 25878 #25 1965 36pp · 25879 #26 1965 36pp · 25880 #27 1965 36pp
+        25881 #28 1965 36pp · 25882 #29 1965 36pp · 25883 #30 1965 36pp · 25884 #31 1965 36pp · 25885 #32 1966 37pp · 25886 #33 1966 37pp · 25887 #34 1966 37pp · 25888 #35 1966 37pp
+        25889 #36 1966 37pp · 25890 #37 1966 36pp · 25891 #38 1967 36pp · 25892 #39 1967 37pp · 25893 #40 1967 37pp · 25894 #41 1967 37pp · 25895 #42 1967 36pp · 25896 #43 1967 37pp
+        25897 #44 1968 37pp · 25898 #45 1968 36pp · 25899 #46 1968 37pp · 25900 #47 1968 37pp · 25901 #48 1968 37pp · 25902 #49 1968 37pp · 25903 #50 1969 37pp · 25904 #51 1969 37pp
+        25905 #52 1969 37pp · 25906 #53 1969 37pp · 25907 #54 1969 37pp · 25908 #55 1969 36pp · 25909 #56 1970 37pp · 25911 #58 1970 30pp · 25912 #59 1970 36pp · 25913 #60 1960 37pp
+      [25910] The Flintstones 057 (1970) (Gold Key) c2c.cbr (36pp)
+   G2 "The Flintstones 021 [Gold Key 1964] (c2c)" in Gold Key-Dell-Whitman\The Flintstones (1961) — 1 file(s), numbers 21, pp 36-36; cv per-file 11612x1; key 'The Flintstones'
+      [25874] The Flintstones 021 [Gold Key 1964] (c2c).cbr (36pp)
+   G3 "The Flintstones - The Deluxe Edition (2022) (Digital) (mag-Empire)" in Hanna-Barbera & Licenses\The Flintstones (2016) — 1 file(s), 1 COL, pp 358-358; cv per-file 141599x1; gcd per-file 180856x1; key 'The Flintstones'
+      [28988] COL The Flintstones - The Deluxe Edition (2022) (Digital) (mag-Empire).cbz (358pp)
+         own record cv 141599 / gcd s180856 "The Flintstones: The Deluxe Edition" (issue 2305782) COLLECTS: gcd=103891 The Flintstones (2016) #1-12 · gcd=113111 Booster Gold / The Flintstones Special (2017) #1
+   G4 "The Flintstones" in Harvey Comics\The Flintstones  v2 (1992) — 1 file(s), numbers 1, pp 36-36; cv per-file 11612x1; gcd per-file 15440x1; key 'The Flintstones'
+      [29918] The Flintstones v2 001 (Harvey 1992-09) (c2c) (titansfan).cbz (36pp)

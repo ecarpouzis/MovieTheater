@@ -1,0 +1,25 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S101675	Adventures into the Unknown Archives (2012)	run={"cv": 49231, "gcd": 68255}	P-045.jsonl	new	pair=64102
+S104066	Tales from the Crypt (2016)	run={"cv": 96166, "gcd": 109885}	P-045.jsonl	new	pair=17514
+S18471	The EC Archives - Weird Science	run={"cv": 52402, "gcd": 180137}	P-045.jsonl	new	pair=21399
+S104063	Masks (2012)	run={"cv": 54311, "gcd": 70166}	P-045.jsonl	new	pair=11793
+S104065	Raven (2016)	run={"cv": 94288, "gcd": 106567}	P-045.jsonl	new	pair=14408
+S104062	Hip Hop Family Tree Two-in-One (2014)	run={"cv": 73579, "gcd": 80514}	P-045.jsonl	new	pair=35501
+S68127	The Comics Journal Library	run={"cv": 56281, "gcd": 139416}	P-045.jsonl	new	pair=18258
+S104061	Bugs Bunny (1990)	run={"cv": 4356, "gcd": 3979}	P-045.jsonl	new	pair=3246
+S104064	Peanuts Strips 1960 (1960)	run=-	P-045.jsonl	new	pair=13685
+S104069	The Flintstones (1992)	run={"cv": 35576, "gcd": 15440}	P-045.jsonl	new	pair=18616
+S104070	The Flintstones (2016)	run={"cv": 92026, "gcd": 103891}	P-045.jsonl	new	pair=18616
+S64102	moved out -> S101675 "Adventures into the Unknown Archives (2012)"	run=-	P-045.jsonl	kept	pair=64102	moved_cv=49231
+S17514	moved out -> S104066 "Tales from the Crypt (2016)"	run=-	P-045.jsonl	kept	pair=17514	moved_cv=96166
+S21399	moved out -> S18471 "The EC Archives - Weird Science"	run=-	P-045.jsonl	kept	pair=21399	moved_cv=52402
+S11793	moved out -> S104063 "Masks (2012)"	run=-	P-045.jsonl	kept	pair=11793	moved_cv=54311
+S14408	moved out -> S104065 "Raven (2016)"	run=-	P-045.jsonl	kept	pair=14408	moved_cv=94288
+S35501	moved out -> S104062 "Hip Hop Family Tree Two-in-One (2014)"	run=-	P-045.jsonl	kept	pair=35501	moved_cv=73579
+S18258	moved out -> S68127 "The Comics Journal Library"	run=-	P-045.jsonl	kept	pair=18258	moved_cv=56281
+S3246	moved out -> S104061 "Bugs Bunny (1990)"	run=-	P-045.jsonl	kept	pair=3246	moved_cv=4356
+S13685	moved out -> S104064 "Peanuts Strips 1960 (1960)"	run=-	P-045.jsonl	kept	pair=13685
+S18616	moved out -> S104069 "The Flintstones (1992)"; S104070 "The Flintstones (2016)"	run=-	P-045.jsonl	kept	pair=18616	moved_cv=35576,92026

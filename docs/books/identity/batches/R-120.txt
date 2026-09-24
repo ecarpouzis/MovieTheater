@@ -1,0 +1,388 @@
+## Conventions for this batch (35 shown of 103 matched; 375 in LEDGER.md; 17 shelf/shelves: pub:dark-horse ×8 · pub:dynamite ×6 · kind:trade-only ×5 · kind:collected-line ×5 · folder:vn-year ×5 · pub:disney ×5 · kind:new ×3 · pub:idw ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-229] (11 shelf/shelves) pub:disney pub:dynamite sig:collision
+- Same-run continuations split by a folder or a parsed-key token surface as cross-batch collisions → `merge-with`
+  after reading the partner (Disney Masters S21200→S5517, Red Sonja v5 S99463→S14482, Sheena S15521→S15518,
+  BSG Classic trade S2336 ↔ run S94559, Elvira #1 S6117 ↔ #2-5 S6116).
+[L-228] (6 shelf/shelves) pub:dark-horse pub:dynamite pub:zenescope sig:legacy-stamp sig:split
+- Franchise folders that are genuinely several runs → `R` + split-needed, not residue: James Bond (three ladders),
+  Charmed (reboot + two Zenescope seasons), Green Hornet (three eras), Savage Tales (three publishers on a bare
+  title), Terminator (1999 Dark Horse mini + 2024 Dynamite), Vampirella (ongoing + "Year One"), Kirby: Genesis
+  (main + Dragonsbane), Tomb Raider (two same-numbered relaunches).
+[L-030] (17 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-151] (17 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (17 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-021] (5 shelf/shelves) pub:dark-horse pub:disney pub:dstlry pub:dynamite pub:fantagraphics pub:idw
+- The Disney folder is publisher-agnostic (Joe Books, Dark Horse, IDW, Dynamite, Fantagraphics, Yen Press on one
+  shelf) — the provider's publisher column is the only test. DSTLRY filenames' "(N covers)" is a cover count.
+[L-023] (5 shelf/shelves) kind:trade-only pub:dark-horse pub:dynamite sig:trade-link
+- 23 stored CV links in three batches pointed at the TPB record (count = the books we hold) instead of the run
+  — heavy on trade-only Dark Horse / Dynamite shelves. Expect it; `F wrong-cv-link`, `S` = the run.
+[L-243] (5 shelf/shelves) kind:collected-line pass:item pass:revisit pub:dark-horse pub:dynamite sig:trade-link
+- Under the one-leg ruling every Dark Horse / Dynamite chain-of-minis shelf in R-020..R-022 became `S cv=- gcd=<line>
+  0.9` + `F wrong-cv-link` (the stored id was the FIRST mini's run in every case) + minis on N + a `C` per trade —
+  except the issue-file chains (Baltimore, Lobster Johnson), the several-publisher shelf (Angel), a shelf mixing one
+  season's issues with another's books (Angel & Faith), and Ash (three count-1 records, no line on either leg).
+[L-374] (5 shelf/shelves) kind:trade-only pub:dark-horse pub:dynamite pub:idw sig:stamp
+- One-book Dark Horse / Dynamite shelves: a per-file count-1 volume dated a year after the run is the trade's OWN record
+  (I line); the run is the S. IDW Disney trades (Uncle Scrooge, Timeless Tales) and Dark Horse Disney Princess GNs carry a
+  count-1 record per book on BOTH CV and GCD — probe by subtitle. GCD counts VARIANT rows in a series' issue count (Shock
+  Shop 189080): read the rows before calling a count mismatch. Soleil English digital: CV can hold a French-titled AND an
+  English-titled volume of one album series — match issue titles to filenames (Olympus Mons, R-117). Dark Horse "Title
+  0NN - Mini 0N (of 05)" ripper ladders: the (of 05) position is the issue number, 0NN is the ripper's running count.
+  Split-out shelves with NO stored cv keep the parent's per-file stamp on an N line, not F wrong-cv-link (refines L-366,
+  R-116). Grandville / Don Rosa Library: one GCD line, no shared cv — a merge-with there is inert; lead-lane (L-373).
+[L-193] (14 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-113] (12 shelf/shelves) sig:comicinfo sig:stamp
+- ComicInfo `Volume` holding a 4-digit ComicVine volume id (not a year) is a 1.0 assertion like the 6-digit
+  case (Ka-Zar v2 1974: `Volume 2692` + `Count 20` = CV 2692) and disproves the per-file matcher's pick.
+[L-234] (4 shelf/shelves) pub:dark-horse pub:dynamite sig:stamp sig:trade-link
+- The count-1-trade / first-mini stored-link artefact runs at full strength on Dark Horse and Dynamite chains
+  (Ether 95727, Briggs Land 93181, Brain Boy 67220, Itty Bitty Hellboy 66787, Pathfinder 51262, Ash 68723): the FIRST
+  mini's volume stamped across the whole chain.
+[L-014] (11 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-016] (11 shelf/shelves) sig:comicinfo
+- Glorith rips' ComicInfo `Web` ids are NOT GCD issue ids in our dump (29 checked: missing or unrelated). Never
+  claim 1.0 from one. A ComicInfo `Volume` holding a 6-digit number IS a ComicVine volume id (Lex and the City =
+  162184) — a genuine 1.0 assertion.
+[L-032] (11 shelf/shelves) sig:comicinfo
+- A Marika-Empire rip's ComicInfo `Web` id IS a ComicVine ISSUE id (21/21 resolve to the stored volume) — the
+  1.0 shape. The ripper decides: Glorith's Web ids are not GCD issue ids. Check one against the rip before
+  claiming 1.0 on a new ripper.
+[L-114] (11 shelf/shelves) sig:comicinfo
+- Marika-Empire and Glorith-HD `Web` ids are ComicVine ISSUE ids of the stored volume (7 of 7 here).
+[L-013] (10 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-043] (10 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (10 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (10 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (10 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (10 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (10 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (10 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (10 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-124] (5 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-125] (10 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-135] (5 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-157] (10 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (10 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (10 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-164] (5 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-177] (10 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-186] (5 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-191] (5 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+
++68 more matched entries not shown: L-204, L-244, L-246, L-247, L-248, L-251, L-253, L-258, L-264, L-267, L-269, L-272, L-273, L-275, L-279, L-281, L-282, L-285, L-286, L-287, L-289, L-291, L-292, L-294, L-309, L-314, L-341, L-346, L-347, L-020, L-029, L-188, L-219, L-227, L-233, L-299, L-321, L-343, L-353, L-373, L-064, L-085, L-101, L-310, L-060, L-361, L-194, L-330, L-065, L-099, L-123, L-262, L-033, L-087, L-116, L-127, L-136, L-139, L-142, L-302, L-351, L-007, L-175, L-217, L-074, L-083, L-150, L-250 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S20852 The Usagi Yojimbo Saga  [tier C] · gap 27  keys: The Usagi Yojimbo Saga | Usagi Yojimbo Saga  years 1987-2021  10 files / 10 collections
+   split run: "Usagi Yojimbo Saga" run={"cv": 77562} (new shelf from P-044) — seed the S line from these ids, then verify them
+   folders: [10] Dark Horse\Usagi Yojimbo (1987)\_Usagi Yojimbo Saga Deluxe Editions
+   files:   [13715] COL Usagi Yojimbo Vol. 08-10 - Saga Book One (2021, 2nd edition) (digital) (Son of Ultron-Empire).cbr (613pp)
+            [13716] COL Usagi Yojimbo Vol. 11-13 - Saga Book Two (2021, 2nd edition) (digital) (Son of Ultron-Empire).cbr (663pp)
+            [13717] COL Usagi Yojimbo Vol. 14-16 - Saga Book Three (2021, 2nd edition) (digital) (Son of Ultron-Empire).cbr (607pp)
+            [13718] COL Usagi Yojimbo Vol. 17-19 - Saga Book Four (2022, 2nd edition) (digital) (Son of Ultron-Empire).cbr (609pp)
+            [13719] COL Usagi Yojimbo Vol. 20-24 - Saga Book Five (2022, 2nd edition) (digital) (Son of Ultron-Empire).cbr (585pp)
+            [13720] COL Usagi Yojimbo Vol. 23-25 - Saga Book Six (2022, 2nd edition) (digital) (Son of Ultron-Empire).cbr (599pp)
+            [13721] COL Usagi Yojimbo Vol. 26-28 - Saga Book Seven (2023, 2nd edition) (digital) (Son of Ultron-Empire).cbr (587pp)
+            [13722] COL Usagi Yojimbo Vol. 29-31 - Saga Book Eight (2019) (digital) (Son of Ultron-Empire).cbr (572pp)
+            [13723] COL Usagi Yojimbo Vol. 29-31 - Saga Book Eight (2023, 2nd edition) (digital) (Son of Ultron-Empire).cbr (573pp)
+            [13724] COL Usagi Yojimbo Vol. 32-33 - Saga Book Nine (2021) (digital) (Son of Ultron-Empire).cbr (587pp)
+   ours:    ComicInfo Series: "Usagi Yojimbo Saga"x3, "The Usagi Yojimbo Saga"x2, "Usagi Yojimbo Saga (Second Edition)"x1; ComicInfo Publisher: "Dark Horse"x6
+   GCD says: [13717] gcd_reprint 1385011: s10606 Dark Horse Extra (1998) #20-23 [4 stories]
+             [13718] gcd_reprint 1450879: s5623 Usagi Yojimbo (1996) #53-75 [46 stories] · s10934 Usagi Yojimbo (1997) #17-19 [6 stories] · s10606 Dark Horse Extra (1998) #45-48 [4 stories]
+             [13719] gcd_reprint 1504162: s5623 Usagi Yojimbo (1996) #76-94 [19 stories] · s3886 Usagi Yojimbo Color Special (1989) #1-3 [3 stories] · s36600 Drawing the Line (2004) #1 [1 story]
+             [13720] gcd notes 1562776 (#6 of The Usagi Yojimbo Saga): Usagi Yojimbo #95-116  |  gcd_reprint 1562776: s5623 Usagi Yojimbo (1996) #95-116 [57 stories] · s10934 Usagi Yojimbo (1997) #23-25 [6 stories] · s5869 Usagi Yojimbo Color Special (1997) #5 [1 story] · s32436 More Fund Comics (2003) (unnumbered) [1 story]
+   CV linked:      vol 77562 "The Usagi Yojimbo Saga" 2014 Dark Horse Comics 9 issues; cached #1-9 (9); yearΔ 27; ratio 0/9; no judged range; v1 per-file: same volume on 5/10 files
+   CV candidates:  (= linked) · 43045 "Usagi Yojimbo" 1987 Fantagraphics 7 s73 · 3897 "Usagi Yojimbo" 1987 Fantagraphics 38 s70 · 103123 "The Usagi Yojimbo Saga: Legends" 2017 Dark Horse Comics 1 issue 610451 s42 · 5845 "Usagi Yojimbo" 1996 Dark Horse Comics 165 s30 · 124115 "Usagi Yojimbo Saga" 2017 Planeta DeAgostini 3 s23 · 119731 "Usagi Yojimbo" 2019 IDW Publishing 31 s15   (v1 search)
+   CV local rip:   (= linked) · 124115 "Usagi Yojimbo Saga" 2017 Planeta DeAgostini 3 · 3897 "Usagi Yojimbo" 1987 Fantagraphics 38 (via CV candidate name "Usagi Yojimbo") · 43045 "Usagi Yojimbo" 1987 Fantagraphics 7 (via CV candidate name "Usagi Yojimbo") · 5183 "Usagi Yojimbo" 1993 Mirage 16 (via CV candidate name "Usagi Yojimbo") · 5845 "Usagi Yojimbo" 1996 Dark Horse Comics 165 (via CV candidate name "Usagi Yojimbo")   (rip lookup)
+   GCD dump:       87487 "Usagi Yojimbo Saga" 2014-2021 Dark Horse [] 10 · 92028 "The Usagi Yojimbo Saga" 2014-2021 Dark Horse [] 10 · 162742 "Usagi Yojimbo Saga" [es] 2017-? Planeta DeAgostini [] 5 · 187743 "Usagi Yojimbo Saga" [pl] 2019-2021 Egmont Polska [] ? · 3475 "Usagi Yojimbo" 1987-1993 Fantagraphics [] 38 (via CV candidate name "Usagi Yojimbo") · 3476 "Usagi Yojimbo" 1987-1996 Fantagraphics [] 7 (via CV candidate name "Usagi Yojimbo")   (dump lookup)
+
+== S104057 Usagi Yojimbo: The Crow v1 (2024)  [tier B]   keys: Usagi Yojimbo: The Crow v1 (2024)  years 2024-2024  5 files / 0 collections
+   split run: "Usagi Yojimbo: The Crow v1 (2024)" run={"cv": 157529, "gcd": 210694} (new shelf from P-044) — seed the S line from these ids, then verify them
+   folders: [5] Dark Horse\Usagi Yojimbo (1987)\Usagi Yojimbo Vol. 40 - The Crow (2024)
+   files:   [13664] Usagi Yojimbo (275) - The Crow 01 (of 05) (2024) (digital) (Son of Ultron-Empire).cbr (29pp)
+            [13665] Usagi Yojimbo (276) - The Crow 02 (of 05) (2024) (digital) (Son of Ultron-Empire).cbr (27pp)
+            [13666] Usagi Yojimbo (277) - The Crow 03 (of 05) (2024) (digital) (Son of Ultron-Empire).cbr (28pp)
+            [13667] Usagi Yojimbo (278) - The Crow 04 (of 05) (2024) (digital) (Son of Ultron-Empire).cbr (29pp)
+            [13668] Usagi Yojimbo (279) - The Crow 05 (of 05) (2024) (digital) (Son of Ultron-Empire).cbr (29pp)
+   ours:    ladder 1-5
+   CV per-file (v1): vol 157529 "Usagi Yojimbo: The Crow" 2024 Dark Horse Comics 5 on 5/5 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 210694 "Usagi Yojimbo: The Crow" 2024-2024 Dark Horse [limited series] 5 on 5/5 files; methods numx5
+   GCD dump:       (= per-file) · 220330 "Usagi Yojimbo: The Crow" 2025-2025 Dark Horse [] 1 (via our own name without the filing suffix "Usagi Yojimbo: The Crow")   (dump lookup)
+
+== S20847 Usagi Yojimbo  [tier B]   keys: Usagi Yojimbo  years 1987-2024  37 files / 37 collections
+   split: the KEPT half of the P-044 split — moved out -> S20852 "Usagi Yojimbo Saga"; S104057 "Usagi Yojimbo: The Crow v1 (2024)"; re-identify what stayed
+   folders: [37] Dark Horse\Usagi Yojimbo (1987)\_Trade Paper Back Editions
+   files:   [13676] COL Usagi Yojimbo Vol. 01 - The Ronin (2015, 13th print) (digital) (Son of Ultron-Empire).cbr (153pp)
+            [13677] COL Usagi Yojimbo Vol. 02 - Samurai (2015, 9th print) (digital) (Son of Ultron-Empire).cbr (146pp)
+            [13678] COL Usagi Yojimbo Vol. 03 - The Wanderer's Road (2014, 7th print) (digital) (Son of Ultron-Empire).cbr (150pp)
+            [13679] COL Usagi Yojimbo Vol. 04 - The Dragon Bellow Conspiracy (2005, 4th print) (digital) (Son of Ultron-Empire).cbr (183pp)
+            [13680] COL Usagi Yojimbo Vol. 05 - Lone Goat and Kid (2008, 4th print) (digital) (Son of Ultron-Empire).cbr (142pp)
+            [13681] COL Usagi Yojimbo Vol. 06 - Circles (2014, 6th print) (digital) (Son of Ultron-Empire).cbr (165pp)
+            [13682] COL Usagi Yojimbo Vol. 07 - Gen's Story (2014, 6th print) (digital) (Son of Ultron-Empire).cbr (185pp)
+            [13683] COL Usagi Yojimbo Vol. 08 - Shades of Death (2010, 2nd edition) (digital) (Son of Ultron-Empire).cbr (199pp)
+            [13684] COL Usagi Yojimbo Vol. 09 - Daisho (2010, 2nd edition) (digital) (Son of Ultron II-Empire).cbr (213pp)
+            [13685] COL Usagi Yojimbo Vol. 10 - The Brink of Life and Death (2010, 2nd edition) (digital) (Son of Ultron II-Empire).cbr (214pp)
+            [13686] COL Usagi Yojimbo Vol. 11 - Seasons (1999) (digital, SC) (Son of Ultron II-Empire).cbr (199pp)
+            [13687] COL Usagi Yojimbo Vol. 12 - Grasscutter (1999) (digital) (Son of Ultron-Empire).cbr (251pp)
+            [13688] COL Usagi Yojimbo Vol. 13 - Grey Shadows (2000) (digital) (Son of Ultron II-Empire).cbr (199pp)
+            [13689] COL Usagi Yojimbo Vol. 14 - Demon Mask (2001) (digital) (Son of Ultron II-Empire).cbr (224pp)
+            [13690] COL Usagi Yojimbo Vol. 15 - Grasscutter II - Journey to Atsuta Shrine (2002) (digital) (Son of Ultron II-Empire).cbr (186pp)
+            [13691] COL Usagi Yojimbo Vol. 16 - The Shrouded Moon (2003) (digital) (Son of Ultron II-Empire).cbr (183pp)
+            [13692] COL Usagi Yojimbo Vol. 17 - Duel at Kitanoji (2003) (digital) (Son of Ultron-Empire).cbr (223pp)
+            [13693] COL Usagi Yojimbo Vol. 18 - Travels with Jotaro (2004) (digital, SC) (Son of Ultron II-Empire).cbr (218pp)
+            [13694] COL Usagi Yojimbo Vol. 19 - Fathers and Sons (2005) (digital) (Son of Ultron II-Empire).cbr (185pp)
+            [13695] COL Usagi Yojimbo Vol. 20 - Glimpses of Death (2006) (digital) (Son of Ultron II-Empire).cbr (194pp)
+            [13696] COL Usagi Yojimbo Vol. 21 - The Mother of Mountains (2007) (digital) (Son of Ultron II-Empire).cbr (184pp)
+            [13697] COL Usagi Yojimbo Vol. 22 - Tomoe's Story (2008) (digital) (Son of Ultron II-Empire).cbr (183pp)
+            [13698] COL Usagi Yojimbo Vol. 23 - Bridge of Tears (2009) (digital) (Son of Ultron-Empire).cbr (246pp)
+            [13699] COL Usagi Yojimbo Vol. 24 - Return of the Black Soul (2010) (digital) (Son of Ultron-Empire).cbr (193pp)
+            [13700] COL Usagi Yojimbo Vol. 25 - Fox Hunt (2011) (digital) (Son of Ultron-Empire).cbr (193pp)
+            [13701] COL Usagi Yojimbo Vol. 26 - Traitors of the Earth (2012) (digital) (Son of Ultron-Empire).cbr (195pp)
+            [13702] COL Usagi Yojimbo Vol. 27 - A Town Called Hell (2013) (digital) (Son of Ultron-Empire).cbr (213pp)
+            [13703] COL Usagi Yojimbo Vol. 28 - Red Scorpion (2014) (digital) (Son of Ultron-Empire).cbr (191pp)
+            [13704] COL Usagi Yojimbo Vol. 29 - Two Hundred Jizo (2015) (digital) (Son of Ultron II-Empire).cbr (210pp)
+            [13705] COL Usagi Yojimbo Vol. 30 - Thieves and Spies (2016) (digital) (Son of Ultron-Empire).cbr (183pp)
+            [13706] COL Usagi Yojimbo Vol. 31 - The Hell Screen (2017) (digital) (Son of Ultron-Empire).cbr (194pp)
+            [13707] COL Usagi Yojimbo Vol. 32 - Mysteries (2018) (digital) (Son of Ultron-Empire).cbr (198pp)
+            [13708] COL Usagi Yojimbo Vol. 33 - The Hidden (2019) (digital) (Son of Ultron-Empire).cbr (195pp)
+            [13709] COL Usagi Yojimbo Vol. 34 - Bunraku and Other Stories (2020) (digital) (Son of Ultron-Empire).cbr (186pp)
+            [13710] COL Usagi Yojimbo Vol. 35 - Homecoming (2021) (digital) (Son of Ultron-Empire).cbr (195pp)
+            [13711] COL Usagi Yojimbo Vol. 36 - Tengu War! (2022) (digital) (Son of Ultron-Empire).cbr (194pp)
+            [13714] COL Usagi Yojimbo Vol. 39 - Ice and Snow (2024) (digital) (Son of Ultron-Empire).cbr (162pp)
+   ours:    judged item 13677 #1-6 conf 0.97; judged item 13683 #1-8 conf 0.97; judged item 13685 #1-6 conf 0.97; judged item 13709 #1-7 conf 0.97; judged item 13714 #1-5 conf 0.97; judged item 13678 #7-12 conf 0.97; judged item 13686 #7-12 conf 0.97; judged item 13710 #8-14 conf 0.97; judged item 13684 #9-14 conf 0.97; judged item 13679 #13-18 conf 0.97; judged item 13687 #13-22 conf 0.97; judged item 13711 #15-21 conf 0.97; judged item 13680 #19-24 conf 0.97; judged item 13688 #23-30 conf 0.97; judged item 13681 #25-31 conf 0.97; judged item 13689 #31-38 conf 0.97; judged item 13682 #32-38 conf 0.97; judged item 13690 #39-45 conf 0.97; judged item 13691 #46-52 conf 0.97; judged item 13692 #53-60 conf 0.97; judged item 13693 #61-68 conf 0.97; judged item 13694 #69-75 conf 0.97; judged item 13695 #76-82 conf 0.97; judged item 13696 #83-89 conf 0.97; judged item 13697 #90-93 conf 0.95; judged item 13698 #94-102 conf 0.97; judged item 13699 #103-109 conf 0.97; judged item 13700 #110-116 conf 0.97; judged item 13701 #117-123 conf 0.97; judged item 13702 #124-131 conf 0.97; judged item 13703 #132-138 conf 0.97; judged item 13704 #139-144 conf 0.97; judged item 13705 #145-151 conf 0.97; judged item 13706 #152-158 conf 0.97; judged item 13707 #159-165 conf 0.97; judged item 13708 #166-172 conf 0.97; ComicInfo Series: "Usagi Yojimbo"x16; ComicInfo Publisher: "Dark Horse"x14, "IDW"x2
+   GCD says: [13683] gcd_reprint 129736: s4888 Usagi Yojimbo (1993) #1-8 [18 stories]
+             [13684] gcd_reprint 667687: s4888 Usagi Yojimbo (1993) #7-14 [10 stories]
+             [13685] gcd_reprint 370508: s5623 Usagi Yojimbo (1996) #1-6 [8 stories] · s4888 Usagi Yojimbo (1993) #13, #15-16 [3 stories]
+             [13686] gcd_reprint 713073: s5623 Usagi Yojimbo (1996) #7-12 [15 stories] · s5869 Usagi Yojimbo Color Special (1997) #4 [2 stories] · s71368 The Art of Usagi Yojimbo (1997) #1 [1 story] · s85868 Usagi Yojimbo (1987) #7 [1 story]
+             [13687] gcd_reprint 713071: s5623 Usagi Yojimbo (1996) #13-22 [12 stories]
+             [13688] gcd_reprint 713072: s5623 Usagi Yojimbo (1996) #23-30 [8 stories]
+             [13689] gcd_reprint 715415: s5623 Usagi Yojimbo (1996) #31-38 [10 stories] · s10606 Dark Horse Extra (1998) #20-23 [4 stories] · s19038 Dark Horse Presents Annual (1998) #1999 [1 story] · s3301 Dark Horse Presents (1986) #140 [1 story]
+             [13690] gcd_reprint 715418: s5623 Usagi Yojimbo (1996) #39-45 [14 stories]
+             [13691] gcd_reprint 715419: s5623 Usagi Yojimbo (1996) #46-52 [14 stories]
+             [13692] gcd_reprint 715426: s5623 Usagi Yojimbo (1996) #53-60 [16 stories] · s10606 Dark Horse Extra (1998) #45 [1 story]
+             [13693] gcd_reprint 715427: s5623 Usagi Yojimbo (1996) #61-68 [16 stories]
+             [13694] gcd_reprint 715428: s5623 Usagi Yojimbo (1996) #69-75 [14 stories]
+             [13695] gcd_reprint 715429: s5623 Usagi Yojimbo (1996) #76-82 [17 stories] · s36600 Drawing the Line (2004) #1 [1 story]
+             [13696] gcd_reprint 715430: s5623 Usagi Yojimbo (1996) #83-89 [14 stories]
+             [13697] gcd_reprint 715431: s5623 Usagi Yojimbo (1996) #90-93 [8 stories] · s3886 Usagi Yojimbo Color Special (1989) #1-3 [6 stories]
+             [13698] gcd_reprint 715432: s5623 Usagi Yojimbo (1996) #94-102 [9 stories]
+             [13699] gcd_reprint 946585: s5623 Usagi Yojimbo (1996) #103-109 [7 stories] · s36493 Free Comic Book Day and Star Wars: The Clone Wars - Gauntlet of Death / Free Comic Book Day (2009) (unnumbered) [1 story]
+             [13700] gcd_reprint 946586: s5623 Usagi Yojimbo (1996) #110-116 [7 stories] · s38394 MySpace Dark Horse Presents (2008) #3 [1 story]
+             [13701] gcd_reprint 946587: s5623 Usagi Yojimbo (1996) #107, #117-123 [16 stories] · s14823 Dark Horse Maverick 2001 (2001) (unnumbered) [1 story] · s38394 MySpace Dark Horse Presents (2008) #6 [1 story]
+             [13702] gcd_reprint 1052283: s5623 Usagi Yojimbo (1996) #124-131 [16 stories]
+             … 6 more book(s) with GCD notes (`python gcdnotes.py --issue <id>`)
+   CV per-file (v1): vol 3897 "Usagi Yojimbo" 1987 Fantagraphics 38 on 37/37 files
+   CV candidates:  (= per-file) · 43045 "Usagi Yojimbo" 1987 Fantagraphics 7 s90 · 119731 "Usagi Yojimbo" 2019 IDW Publishing 31 s50 · 5845 "Usagi Yojimbo" 1996 Dark Horse Comics 165 s50 · 124091 "Usagi Yojimbo" 1998 Planeta DeAgostini 31 s50 · 170197 "Usagi Yojimbo" 2017 Dantes Verlag 27 s43 · 5183 "Usagi Yojimbo" 1993 Mirage 16 s38   (v1 search)
+   CV local rip:   (= per-file) · 43045 "Usagi Yojimbo" 1987 Fantagraphics 7 · 5183 "Usagi Yojimbo" 1993 Mirage 16 · 5845 "Usagi Yojimbo" 1996 Dark Horse Comics 165 · 124091 "Usagi Yojimbo" 1998 Planeta DeAgostini 31 · 170197 "Usagi Yojimbo" 2017 Dantes Verlag 27   (rip lookup)
+   GCD dump:       3475 "Usagi Yojimbo" 1987-1993 Fantagraphics [] 38 · 3476 "Usagi Yojimbo" 1987-1996 Fantagraphics [] 7 · 85868 "Usagi Yojimbo" 1987-1996 Fantagraphics [] 7 · 8798 "Usagi Yojimbo" [sv-se] 1991-1992 Epix [] 11 · 4888 "Usagi Yojimbo" 1993-1995 Mirage [] 16 · 5623 "Usagi Yojimbo" 1996-2017 Dark Horse [] 165   (dump lookup)
+
+== S104059 Where Monsters Lie (2023)  [tier B]   keys: Where Monsters Lie (2023)  years 2023-2023  1 files / 1 collections
+   split run: "Where Monsters Lie (2023)" run={"cv": 147995, "gcd": 195915} (new shelf from P-044) — seed the S line from these ids, then verify them
+   folders: [1] Dark Horse\Where Monsters Lie (2023)
+   files:   [14745] COL Where Monsters Lie (2023) (digital) (Son of Ultron-Empire).cbr (104pp)
+   ours:    ComicInfo Series: "Where Monsters Lie"x1; ComicInfo Publisher: "Dark Horse"x1
+   CV per-file (v1): vol 147995 "Where Monsters Lie" 2023 Dark Horse Comics 4 on 1/1 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       195915 "Where Monsters Lie" 2023-2023 Dark Horse [] 4 (via our own name without the filing suffix "Where Monsters Lie") · 204685 "Where Monsters Lie" 2023-2023 Dark Horse [] 1 (via our own name without the filing suffix "Where Monsters Lie")   (dump lookup)
+
+== S21573 Where Monsters Lie: Cull-De-Sac  [tier A]   keys: Where Monsters Lie - Cull-De-Sac  years 2023-2023  3 files / 0 collections
+   split: the KEPT half of the P-044 split — moved out -> S104059 "Where Monsters Lie (2023)"; re-identify what stayed
+   folders: [3] Dark Horse\Where Monsters Lie (2023)\Where Monsters Lie v2 - Cull-De-Sac (2024)
+   files:   [14746] Where Monsters Lie - Cull-De-Sac 001 (2024) (digital) (Son of Ultron-Empire).cbr (25pp)
+            [14747] Where Monsters Lie - Cull-De-Sac 002 (2024) (digital) (Son of Ultron-Empire).cbr (25pp)
+            [14748] Where Monsters Lie - Cull-De-Sac 003 (2025) (digital) (Son of Ultron-Empire).cbr (25pp)
+   ours:    ladder 1-3
+   CV linked:      vol 160430 "Where Monsters Lie: Cull-De-Sac" 2024 Dark Horse Comics 4 issues; cached #1-4 (4); yearΔ 1; ratio 3/4 = 0.75; no judged range
+   CV per-file (v1): vol 147995 "Where Monsters Lie" 2023 Dark Horse Comics 4 on 3/3 files
+   CV candidates:  (= linked) · 26827 "Dark Horse Book of Monsters" 2006 Dark Horse Comics 1 issue 161022 s36 · 41240 "Marvel Monsters: Where Monsters Dwell" 2005 Marvel 1 issue 278465 s36 · 21656 "Dark Horse Monsters" 1997 Dark Horse Comics 1 issue 130712 s35 · 22518 "Dark Horse Classics: Godzilla - King of the Monsters" 1998 Dark Horse Comics 6 s35 · 70622 "Where Monsters Dwell" ? Yaffa / Page 1 issue 440921 s27 · 153101 "The Cull" 2023 Image 5 s23   (v1 search)
+   CV local rip:   (= linked) · 26827 "Dark Horse Book of Monsters" 2006 Dark Horse Comics 1 issue 161022 (via CV candidate name "Dark Horse Book of Monsters")   (rip lookup)
+   GCD per-file:   series 216657 "Where Monsters Lie: Cull-de-Sac" 2024-2025 Dark Horse [limited series] 4 on 3/3 files; methods numx3
+   GCD dump:       (= per-file) · 225009 "Where Monsters Lie: Cull-de-Sac" 2025-2025 Dark Horse [] 1 · 195915 "Where Monsters Lie" 2023-2023 Dark Horse [] 4 (via CV name "Where Monsters Lie") · 204685 "Where Monsters Lie" 2023-2023 Dark Horse [] 1 (via CV name "Where Monsters Lie") · 35712 "The Dark Horse Book of Monsters" 2006-2006 Dark Horse [] 1 (via CV candidate name "Dark Horse Book of Monsters")   (dump lookup)
+
+== S104052 Disney Princess: Jasmine's New Pet (2018)  [tier D]   keys: Disney Princess: Jasmine's New Pet (2018)  years 2018-2018  1 files / 0 collections
+   split run: "Disney Princess: Jasmine's New Pet (2018)" run={"cv": 113863, "gcd": 130343} (new shelf from P-044) — seed the S line from these ids, then verify them
+   folders: [1] Disney\_Movies+Shows\Disney Princess (2016)\Annuals and Specials
+   files:   [20305] Disney Princess - Jasmine's New Pet (2018) (digital) (Salem-Empire).cbr (47pp)
+   CV local rip:   113863 "Disney Princess: Jasmine's New Pet" 2018 Dark Horse Comics 1 issue 686209 (via our own name without the filing suffix "Disney Princess: Jasmine's New Pet")   (rip lookup)
+   GCD dump:       130343 "Disney Princess: Jasmine's New Pet" 2018-2018 Dark Horse [] 1 (via our own name without the filing suffix "Disney Princess: Jasmine's New Pet")   (dump lookup)
+
+== S104050 Disney Princess: Ariel and the Sea Wolf (2019)  [tier D]   keys: Disney Princess: Ariel and the Sea Wolf (2019)  years 2019-2019  1 files / 0 collections
+   split run: "Disney Princess: Ariel and the Sea Wolf (2019)" run={"cv": 118243, "gcd": 143832} (new shelf from P-044) — seed the S line from these ids, then verify them
+   folders: [1] Disney\_Movies+Shows\Disney Princess (2016)\Annuals and Specials
+   files:   [20303] Disney Princess - Ariel and the Sea Wolf (2019) (digital) (Salem-Empire).cbr (45pp)
+   ours:    ComicInfo Series: "Disney Princess: Ariel and the Sea Wolf"x1; ComicInfo Publisher: "Dark Horse"x1
+   CV local rip:   118243 "Disney Princess: Ariel and the Sea Wolf" 2019 Dark Horse Comics 1 issue 705827 (via our own name without the filing suffix "Disney Princess: Ariel and the Sea Wolf")   (rip lookup)
+   GCD dump:       143832 "Disney Princess: Ariel and the Sea Wolf" 2019-2019 Dark Horse [] 1 (via our own name without the filing suffix "Disney Princess: Ariel and the Sea Wolf")   (dump lookup)
+
+== S104051 Disney Princess: Friends, Family, Fantastic (2020)  [tier D]   keys: Disney Princess: Friends, Family, Fantastic (2020)  years 2020-2020  1 files / 0 collections
+   split run: "Disney Princess: Friends, Family, Fantastic (2020)" run={"cv": 125651, "gcd": 157363} (new shelf from P-044) — seed the S line from these ids, then verify them
+   folders: [1] Disney\_Movies+Shows\Disney Princess (2016)\Annuals and Specials
+   files:   [20304] Disney Princess - Friends, Family, Fantastic (2020) (digital) (Salem-Empire).cbr (106pp)
+   ours:    ComicInfo Series: "Disney Princess: Friends, Family, Fantastic"x1; ComicInfo Publisher: "Dark Horse"x1
+   CV local rip:   125651 "Disney Princess: Friends, Family, Fantastic" 2020 Dark Horse Comics 1 issue 740672 (via our own name without the filing suffix "Disney Princess: Friends, Family, Fantastic")   (rip lookup)
+   GCD dump:       157363 "Disney Princess: Friends, Family, Fantastic" 2020-2020 Dark Horse [] 1 (via our own name without the filing suffix "Disney Princess: Friends, Family, Fantastic")   (dump lookup)
+
+== S104053 Disney Princess: Make Way for Fun (2021)  [tier D]   keys: Disney Princess: Make Way for Fun (2021)  years 2021-2021  1 files / 0 collections
+   split run: "Disney Princess: Make Way for Fun (2021)" run={"cv": 133340, "gcd": 168775} (new shelf from P-044) — seed the S line from these ids, then verify them
+   folders: [1] Disney\_Movies+Shows\Disney Princess (2016)\Annuals and Specials
+   files:   [20306] Disney Princess - Make Way for Fun (2021) (digital) (F) (Salem-Empire).cbr (80pp)
+   ours:    ComicInfo Series: "Disney Princess: Make Way for Fun"x1; ComicInfo Publisher: "Dark Horse"x1
+   CV local rip:   133340 "Disney Princess: Make Way For Fun" 2021 Dark Horse Comics 1 issue 825432 (via our own name without the filing suffix "Disney Princess: Make Way for Fun")   (rip lookup)
+   GCD dump:       168775 "Disney Princess: Make Way for Fun" 2021-2021 Dark Horse [] 1 (via our own name without the filing suffix "Disney Princess: Make Way for Fun")   (dump lookup)
+
+== S5525 Disney Princess  [tier A]   keys: Disney Princess  years 2016-2018  17 files / 0 collections
+   split: the KEPT half of the P-044 split — moved out -> S104052 "Disney Princess: Jasmine's New Pet (2018)"; S104050 "Disney Princess: Ariel and the Sea Wolf (2019)"; S104051 "Disney Princess: Friends, Family, Fantastic (2020)"; S104053 "Disney Princess: Make Way for Fun (2021)"; re-identify what stayed
+   folders: [17] Disney\_Movies+Shows\Disney Princess (2016)
+   files:   [20310] Disney Princess 001 (2016) (digital) (Salem-Empire).cbr (26pp) | [20311] Disney Princess 002 (2016) (digital) (Salem-Empire).cbr (26pp)
+            [20312] Disney Princess 003 (2016) (digital) (Salem-Empire).cbr (26pp) | [20313] Disney Princess 004 (2016) (digital) (Salem-Empire).cbr (26pp)
+            [20314] Disney Princess 005 (2016) (digital) (F) (Salem-Empire).cbr (25pp)
+            Disney Princess 006 (2016) (digital) (Salem-Empire).cbr … Disney Princess 017 (2018) (digital) (Salem-Empire).cbr  (12 files, pp 24-32)
+   ours:    ladder 1-17
+   CV linked:      vol 88751 "Disney Princess" 2016 Joe Books ? issues; cached #1-17 (17); yearΔ 0; ratio 17/? = 1.00; no judged range; v1 per-file: same volume on 17/17 files
+   CV candidates:  (= linked) · 162956 "Disney Princess" 2016 Panini Comics 1 issue 1099972 s90 · 158525 "Disney Princess" 2019 Peachtree Publishers, LTD 6 s38 · 90868 "Dark Horse Day 2016 Sampler" 2016 Dark Horse Comics 1 issue 532996 s30 · 91633 "Dark Horse Insider" 1996 Dark Horse Comics 12 s29 · 56627 "Dark Horse Insider" 1992 Dark Horse Comics 48 s22 · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 s22   (v1 search)
+   CV local rip:   (= linked) · 162956 "Disney Princess" 2016 Panini Comics 1 issue 1099972 · 158525 "Disney Princess" 2019 Peachtree Publishers, LTD 6   (rip lookup)
+   GCD per-file:   series 98404 "Disney Princess" [en-ca] 2016-2018 Joe Books [was ongoing series] 17 on 17/17 files; methods numx17
+   GCD dump:       (= per-file) · 153941 "Disney Princess" 2019-? Peachtree Playthings [] 6 · 53920 "Disney Princess" 2010-2010 Creative Edge [] 1   (dump lookup)
+   bridges:        gcd 98404 -> LOCG 123681 "Disney Princess" support 17
+
+== S102967 James Bond 007 (2018)  [tier B]   keys: James Bond 007 (2018)  years 2019-2020  2 files / 2 collections
+   split run: "James Bond 007 (2018)" run={"cv": 115056, "gcd": 133145} (new shelf from P-044) — seed the S line from these ids, then verify them
+   folders: [2] Dynamite\James Bond (2016)\_Completed series, minis and trades\James Bond - 007 v1 (2018)
+   files:   [21170] COL James Bond 007 Vol. 01 (2019) (digital) (The Magicians II-Empire).cbr (177pp) | [21171] COL James Bond 007 Vol. 02 (2020) (digital) (The Magicians II-Empire).cbr (169pp)
+   ours:    ComicInfo Series: "James Bond 007"x1; ComicInfo Publisher: "Dynamite Entertainment"x1
+   GCD says: [21170] gcd_reprint 2044923: s133145 James Bond 007 (2018) #1-6 [31 stories]
+             [21171] gcd_reprint 2159647: s133145 James Bond 007 (2018) #6-12 [31 stories]
+   CV linked:      vol 115056 "James Bond 007" 2018 Dynamite Entertainment 12 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV local rip:   (= linked) · 123254 "James Bond: 007" 2019 Dynamite Entertainment 2 (via our own name without the filing suffix "James Bond 007") · 91536 "James Bond 007" 2016 Splitter 10 (via our own name without the filing suffix "James Bond 007") · 144331 "James Bond: 007" 2022 Dynamite Entertainment 6 (via our own name without the filing suffix "James Bond 007") · 156204 "James Bond: 007" 2024 Dynamite Entertainment 6 (via our own name without the filing suffix "James Bond 007") · 159866 "James Bond: 007" 2024 Dynamite Entertainment 2 (via our own name without the filing suffix "James Bond 007")   (rip lookup)
+   GCD dump:       153288 "James Bond 007" 2019-2020 Dynamite Entertainment [] 2 (via our own name without the filing suffix "James Bond 007") · 133145 "James Bond 007" 2018-2019 Dynamite Entertainment [] 12 (via our own name without the filing suffix "James Bond 007") · 156987 "James Bond 007" [pt-br] 2017-2017 Mythos Editora [] 1 (via our own name without the filing suffix "James Bond 007") · 102857 "James Bond 007" [de] 2016-2019 Splitter Verlag [] 8 (via our own name without the filing suffix "James Bond 007") · 187992 "James Bond: 007" 2022-2023 Dynamite Entertainment [] 6 (via our own name without the filing suffix "James Bond 007") · 219783 "James Bond 007" [hu] 2022-2022 Vad Virágok [] 2 (via our own name without the filing suffix "James Bond 007")   (dump lookup)
+
+== S9770 James Bond: 007  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: James Bond: 007  years 2016-2017  6 files / 0 collections
+   split: the KEPT half of the P-044 split — moved out -> S102967 "James Bond 007 (2018)"; re-identify what stayed
+   folders: [6] Dynamite\James Bond (2016)\James Bond v3 (2024)
+   files:   James Bond 001 (2024) (digital) (Son of Ultron-Empire).cbr … James Bond 006 (2024) (digital) (Son of Ultron-Empire).cbr  (6 files, pp 22-25)
+   ours:    ladder 1-6; ComicInfo Series: "James Bond: 007"x4; ComicInfo Publisher: "Dynamite Entertainment"x4
+   CV linked:      vol 156204 "James Bond: 007" 2024 Dynamite Entertainment 6 issues; cached #1-6 (6); yearΔ 8; ratio 6/6 = 1.00; no judged range
+   CV per-file (v1): vol 91536 "James Bond 007" 2016 Splitter 10 on 4/6 files · vol 85766 "James Bond" 2015 Dynamite Entertainment ? on 2/6 files
+   CV candidates:  (= linked) · 39145 "James Bond 007" 2004 Titan Comics 17 s86 · 44837 "007 James Bond" 1968 Editora Zig Zag 49 s77 · 19600 "James Bond 007 Goldeneye" 1995 Topps Comics 2 s67 · 144331 "James Bond: 007" 2022 Dynamite Entertainment 6 s65 · 33938 "James Bond Agent 007" 1965 Semic Press AB 185 s61 · 115056 "James Bond 007" 2018 Dynamite Entertainment 12 s53   (v1 search)
+   CV local rip:   (= linked) · 115056 "James Bond 007" 2018 Dynamite Entertainment 12 · 123254 "James Bond: 007" 2019 Dynamite Entertainment 2 · 144331 "James Bond: 007" 2022 Dynamite Entertainment 6 · 159866 "James Bond: 007" 2024 Dynamite Entertainment 2   (rip lookup)
+   GCD per-file:   series 212779 "James Bond: 007" 2024-2024 Dynamite Entertainment [collected edition] 2 on 2/6 files · series 207986 "James Bond" 2024-2024 Dynamite Entertainment [limited series] 6 on 2/6 files; methods numx4
+   GCD dump:       102857 "James Bond 007" [de] 2016-2019 Splitter Verlag [] 8 · 156987 "James Bond 007" [pt-br] 2017-2017 Mythos Editora [] 1 · 133145 "James Bond 007" 2018-2019 Dynamite Entertainment [] 12 · 153288 "James Bond 007" 2019-2020 Dynamite Entertainment [] 2 · 187992 "James Bond: 007" 2022-2023 Dynamite Entertainment [] 6 · 219783 "James Bond 007" [hu] 2022-2022 Vad Virágok [] 2   (dump lookup)
+   bridges:        gcd 212779 -> LOCG 164003 "007: For King and Country HC" support 1 · gcd 207986 -> LOCG 120057 "James Bond" support 4
+
+== S104055 The Ninjettes (2012)  [tier D]   keys: The Ninjettes (2012)  years 2012-2012  1 files / 1 collections
+   split run: "The Ninjettes (2012)" run={"cv": 45785, "gcd": 63251} (new shelf from P-044) — seed the S line from these ids, then verify them
+   folders: [1] Dynamite\The Ninjettes (2012)
+   files:   [22032] COL The Ninjettes v01 (2012) (Digital) (DR & Quinch-Empire).cbr (154pp)
+   CV local rip:   45785 "The Ninjettes" 2012 Dynamite Entertainment 6 (via our own name without the filing suffix "The Ninjettes") · 55908 "The Ninjettes" 2013 Dynamite Entertainment 1 issue 380712 (via our own name without the filing suffix "The Ninjettes") · 144995 "The Ninjettes" 2022 Dynamite Entertainment 5 (via our own name without the filing suffix "The Ninjettes")   (rip lookup)
+   GCD dump:       63251 "The Ninjettes" 2012-2012 Dynamite Entertainment [] 6 (via our own name without the filing suffix "The Ninjettes") · 74541 "Ninjettes" [fr] 2013-2013 Panini France [] 1 (via our own name without the filing suffix "The Ninjettes") · 189086 "The Ninjettes" 2022-2023 Dynamite Entertainment [] 5 (via our own name without the filing suffix "The Ninjettes")   (dump lookup)
+
+== S19235 The Ninjettes  [tier C] · gap 10  keys: Ninjettes | The Ninjettes  years 2012-2022  6 files / 0 collections
+   split: the KEPT half of the P-044 split — moved out -> S104055 "The Ninjettes (2012)"; re-identify what stayed
+   folders: [5] Dynamite\The Ninjettes (2012) · [1] Dynamite\The Ninjettes (2022)
+   files:   The Ninjettes 001 (2022) (4 covers) (Digital) (DR & Quinch-Empire).cbr … The Ninjettes 001 (2022) (4 covers) (Digital) (DR & Quinch-Empire).cbr  (6 files, pp 28-30)
+   ours:    ladder 1-5; 1 number(s) name more than one file: 1; ComicInfo Series: "Ninjettes"x1, "The Ninjettes"x1; ComicInfo Publisher: "Dynamite Entertainment"x2
+   CV linked:      vol 144995 "The Ninjettes" 2022 Dynamite Entertainment 5 issues; cached #1-5 (5); yearΔ 10; ratio 6/5 = 1.20; no judged range
+   CV per-file (v1): vol 45785 "The Ninjettes" 2012 Dynamite Entertainment 6 on 4/6 files · vol 144995 "The Ninjettes" 2022 Dynamite Entertainment 5 on 2/6 files
+   CV candidates:  (= linked) · 55908 "The Ninjettes" 2013 Dynamite Entertainment 1 issue 380712 s49 · 48666 "Johnny Dynamite" 2003 AiT/Planet Lar 1 issue 334678 s24 · 45524 "Highbrow Entertainment" 1994 Image 2 s14 · 5389 "Johnny Dynamite" 1994 Dark Horse Comics 4 s9 · 10813 "Dynamite" 1953 Comic Media 9 s2 · 78482 "That's Entertainment" 2013 T3 Terminal Entertainment 1 issue 471630 s0   (v1 search)
+   CV local rip:   (= linked) · 55908 "The Ninjettes" 2013 Dynamite Entertainment 1 issue 380712   (rip lookup)
+   GCD per-file:   methods numx5 · round2-seriesx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 189086 "The Ninjettes" 2022-2023 Dynamite Entertainment [limited series] 5 on 6/6 files
+   GCD dump:       (= per-file) · 63251 "The Ninjettes" 2012-2012 Dynamite Entertainment [] 6 · 74541 "Ninjettes" [fr] 2013-2013 Panini France [] 1   (dump lookup)
+   bridges:        gcd 189086 -> LOCG 108069 "The Ninjettes" support 6
+
+== S20921 Vampirella Kracalactaka  [tier C] · gap 3  keys: Vampirella Kracalactaka | Vampirella v5 (2019)  years 2016-2024  7 files / 5 collections
+   split run: "Vampirella v5 (2019)" run={"cv": 120227, "gcd": 148813} (new shelf from P-044) — seed the S line from these ids, then verify them
+   flags: #404 label-ambiguous [Pending] item 22223 — items 22195 and 22223 are duplicate copies of v01
+   folders: [4] Dynamite\Vampirella\_Completed Series\Vampirella v5 (2019) · [2] Dynamite\Vampirella\_Minis, Trades and One-shots · [1] Dynamite\Vampirella\_Completed Series\Vampirella v5 (2019)\Annuals and Specials
+   files:   [22192] Vampirella 000 (2019) (digital) (Son of Ultron-Empire).cbr (25pp) | [22195] COL Vampirella - Seduction of the Innocent v01 (2020) (Digital) (DR & Quinch-Empire).cbr (179pp)
+            [22196] COL Vampirella - Seduction of the Innocent v02 (2020) (Digital) (DR & Quinch-Empire).cbr (159pp)
+            [22197] COL Vampirella - Seduction of the Innocent v03 - Interstellar (2022) (Digital) (DR & Quinch-Empire).cbr (156pp)
+            [22198] COL Vampirella - Seduction of the Innocent v04 - Red Mass (2023) (Digital) (DR & Quinch-Empire).cbr (192pp)
+            [22223] COL Vampirella - Seduction of the Innocent v01 (2020) (Digital) (DR & Quinch II-Empire).cbr (179pp) | [22237] Vampirella FCBD (Dynamite) (2019) c2c Kracalactaka.cbz (35pp)
+   ours:    ladder 0; ComicInfo Series: "Vampirella: Seduction of the Innocent Vol 1"x2, "Vampirella: Seduction of the Innocent"x2, "Vampirella"x1; ComicInfo Volume: "2019"x1; ComicInfo Publisher: "Dynamite Entertainment"x5; barcode item 22237 [{"type": "EAN13", "data": "0725130278708", "page": "Vampire
+   CV linked:      vol 120227 "Vampirella" 2019 Dynamite Entertainment 26 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ 3; ratio 1/? = 0.04; none cached
+   CV per-file (v1): vol 156869 "Vampirella" 2024 Dynamite Entertainment 10 on 1/7 files · vol 86392 "Seduction of the Innocent" 2015 Dynamite Entertainment ? on 1/7 files
+   CV candidates:  77249 "The Art of Vampirella: The Dynamite Years" 2014 Dynamite Entertainment 1 issue 467045 s54 · 105778 "Vampirella: The Dynamite Years Omnibus" 2017 Dynamite Entertainment 4 s44 · 48666 "Johnny Dynamite" 2003 AiT/Planet Lar 1 issue 334678 s15 · 79556 "Black Dynamite" 2015 IDW Publishing 1 issue 476805 s15 · 5389 "Johnny Dynamite" 1994 Dark Horse Comics 4 s3 · 70902 "Black Dynamite" 2014 IDW Publishing 4 s3   (v1 search)
+   CV local rip:   (= linked) · 88585 "Vampirella" 2016 Dynamite Entertainment 6 (via the parsed key without the filing suffix "Vampirella") · 98538 "Vampirella" 2017 Dynamite Entertainment 12 (via the parsed key without the filing suffix "Vampirella") · 74523 "Vampirella" 2014 Dynamite Entertainment 15 (via the parsed key without the filing suffix "Vampirella") · 62101 "Vampirella" 2012 Panini Verlag 2 (via the parsed key without the filing suffix "Vampirella") · 66031 "Vampirella" 2012 Panini France 2 (via the parsed key without the filing suffix "Vampirella")   (rip lookup)
+   GCD per-file:   series 148813 "Vampirella" 2019-2021 Dynamite Entertainment [was ongoing series] 26 on 1/7 files; methods numx1
+   GCD dump:       98026 "Vampirella" 2016-2016 Dynamite Entertainment [] 6 (via the parsed key without the filing suffix "Vampirella") · 94229 "Vampirella" 2015-2015 Dynamite Entertainment [] 1 (via the parsed key without the filing suffix "Vampirella") · 111868 "Vampirella" 2017-2018 Dynamite Entertainment [] 12 (via the parsed key without the filing suffix "Vampirella") · 119631 "Vampirella" 2017-2018 Dynamite Entertainment [] 2 (via the parsed key without the filing suffix "Vampirella") · 167392 "Vampirella" [es-mx] 2015-2015 Editorial Panini México [] 4 (via the parsed key without the filing suffix "Vampirella") · 81113 "Vampirella" 2014-2015 Dynamite Entertainment [] 14 (via the parsed key without the filing suffix "Vampirella")   (dump lookup)
+
+== S65613 Seduction of the Innocent  [tier A]   keys: Seduction of the Innocent (2015)  years 2015-2016  4 files / 0 collections
+   split: the KEPT half of the P-044 split — moved out -> S20921 "Vampirella v5 (2019)"; re-identify what stayed
+   folders: [4] Dynamite\Seduction of the Innocent (2015)
+   files:   [21640] Seduction of the Innocent 001 (2015) (digital) (Salem-Empire).cbr (25pp) | [21641] Seduction of the Innocent 002 (2016) (digital) (Salem-Empire).cbr (29pp)
+            [21642] Seduction of the Innocent 003 (2016) (digital) (Salem-Empire).cbr (29pp) | [21643] Seduction of the Innocent 004 (2016) (digital) (Salem-Empire).cbr (29pp)
+   ours:    ladder 1-4
+   CV linked:      vol 86392 "Seduction of the Innocent" 2015 Dynamite Entertainment ? issues; cached #1-4 (4); yearΔ 0; ratio 4/? = 1.00; no judged range; v1 per-file: same volume on 4/4 files
+   CV local rip:   (= linked) · 94226 "Seduction of the Innocent" 2016 Dynamite Entertainment 1 issue 549888 · 3542 "Seduction of the Innocent" 1985 Eclipse 6   (rip lookup)
+   GCD per-file:   series 94665 "Seduction of the Innocent" 2015-2016 Dynamite Entertainment [Limited Series] 4 on 4/4 files; methods numx4
+   GCD dump:       (= per-file) · 105521 "Seduction of the Innocent" 2016-2016 Dynamite Entertainment [] 1 · 3086 "Seduction of the Innocent!" 1985-1986 Eclipse [] 6 · 152694 "Seduction of the Innocent" 1972-1972 Kennikat Press [] 1 · 152690 "Seduction of the Innocent" [en-gb] 1955-1955 Museum Press Limited [] 1 · 152713 "Seduction of the Innocent" 1954-1954 Rinehart & Company [] 1   (dump lookup)
+   bridges:        gcd 94665 -> LOCG 120945 "Seduction of the Innocent" support 4
+
+== S6861 Force Works  [tier C] · ratio 0.36  keys: Avengers / Iron Man: Force Works | Force Works  years 1994-2016  9 files / 1 collections
+   folders: [8] Marvel\Force Works\Force Works v1 (1994) · [1] Marvel\Force Works\Force Works v1 (1994)\Annuals and Specials
+   files:   [99236] Force Works 001 (with pop-up cover) (1994) (c2c) (Lusiphur-DCP).cbr (55pp) | [99238] COL Avengers - Iron Man - Force Works Vol. 01 (2016) (Digital-Empire).cbr (450pp)
+            Force Works 016 (1995) (Digital) (Shadowcat-Empire).cbz … Force Works 022 (1996) (Digital) (Shadowcat-Empire).cbz  (7 files, pp 21-24)
+   ours:    ladder 1, 16-22; ComicInfo Series: "Avengers / Iron Man: Force Works"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [99238] gcd_reprint 100914: s10364 Daffy Duck (1962) #33, #35 [6 stories]  |  ⚠ stored GCD row is another book: our title 'Avengers - Iron Man - Force Works' has avengers/force/iron/man/works, GCD's series 'Daffy Duck' does not; our vol 1 vs GCD #96; 450pp vs GCD 36pp — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+   CV linked:      vol 5297 "Force Works" 1994 Marvel 22 issues; cached #1-22 (22); yearΔ 0; ratio 8/22 = 0.36; no judged range; v1 per-file: same volume on 8/9 files
+   CV candidates:  (= linked) · 63086 "Iron Man & Force Works Collectors' Preview" 1994 Marvel 1 issue 409559 s90 · 38742 "Force Works Ashcan Edition" 1994 Marvel 1 issue 259758 s88 · 125299 "2020 Force Works" 2020 Marvel 3 s37 · 131538 "Iron Man 2020: Robot Revolution - Force Works" 2020 Marvel 1 issue 814969 s35 · 56671 "1994 Marvel Comics Publishing Plan" 1993 Marvel 2 s30 · 90095 "Avengers/Iron Man: Force Works" 2016 Marvel 1 issue 528501 s25   (v1 search)
+   CV local rip:   (= linked) · 90095 "Avengers/Iron Man: Force Works" 2016 Marvel 1 issue 528501 · 38742 "Force Works Ashcan Edition" 1994 Marvel 1 issue 259758 (via CV candidate name "Force Works Ashcan Edition") · 63086 "Iron Man & Force Works Collectors' Preview" 1994 Marvel 1 issue 409559 (via CV candidate name "Iron Man & Force Works Collectors' Preview")   (rip lookup)
+   GCD per-file:   series 5009 "Force Works" 1994-1996 Marvel [was ongoing series] 22 on 8/9 files; methods numx8
+   GCD dump:       (= per-file) · 100914 "Avengers / Iron Man: Force Works" 2016-2016 Marvel [] 1 · 66287 "Force Works Ashcan Edition" 1993-1993 Marvel [] 1 (via CV candidate name "Force Works Ashcan Edition")   (dump lookup)
+   bridges:        gcd 5009 -> LOCG 112490 "Force Works" support 10

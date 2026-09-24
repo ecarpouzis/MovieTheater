@@ -1926,3 +1926,13 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Fantasy 1-22 in publication order (files 001-005 = EC's 1950 #13-17). Oni Courtney Crumrin: CV 44811 is the 2012
   monthly, not the 7-volume trade line. A one-book title CV holds twice (Gabrielle Bell 49698 / 64883) merges by
   restating one side onto the other's cv (R-119).
+[L-376] pub:idw pub:image pub:dark-horse sig:split kind:trade-only
+- Refines L-375: books-series-split compares keys EXACTLY and always writes the re-key; the item lands wherever the
+  resolver maps the new key. A join onto a live shelf's EXACT key moves even when it normalizes like the old key; the vN
+  respell is needed only when NO exact target exists and the normalized form is aliased to the parent (P-045). IDW / Image
+  trade-only shelves often paired the run's CV with the collected line's GCD row — check that both legs name the same thing.
+  GCD keeps a limited-HC and a softcover row for deluxe Dark Horse lines (Usagi Saga 87487 HC / 92028 SC) — page counts and
+  edition rows decide. GCD hands the Usagi trade numbering to IDW's own row (160732) from Vol. 34. IDW Library of American
+  Comics / Winterworld reprints: GCD's roll-up names the ORIGINAL Eclipse / Warp run. CV counts an IDW FCBD issue as #0 of
+  the run (Unicron) while GCD files it as its own series — a merge that brings #0 under an unjudged trade halts
+  audit_containment: write a `u` line (containment/decisions/S20426.txt) and wave_fix (R-121, wave 112).
