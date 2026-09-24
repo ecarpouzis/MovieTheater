@@ -1,0 +1,516 @@
+## Conventions for this batch (31 shown of 77 matched; 369 in LEDGER.md; 1 shelf/shelves: pub:dc ×1 · folder:events ×1 · folder:vn-year ×1 · folder:variant-covers ×1 · folder:sequel-subfolder ×1 · kind:golden-age ×1 · kind:foreign ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-011] (1 shelf/shelves) folder:events pub:dc
+- DC event folders: the leading number is a READING-ORDER position, and the same book is filed again under its own
+  title folder — n issues × 2 files is one run.
+[L-015] (1 shelf/shelves) folder:events pub:dc
+- DC `#DC Events` read-order folders hold a SECOND rip of issues that also live on the title's own shelf — the
+  source of nearly every DC ratio 2.00; residue, not a second run. Event umbrellas (GCD "Convergence", 9) get
+  handed to two-issue tie-in shelves — the hull shape.
+[L-018] (1 shelf/shelves) kind:foreign pub:dc
+- Stored links that are the PARENT ongoing (Harley Quinn Road Trip → the ongoing), a different publisher
+  (Justice → Panini; Inferno → Games Workshop), or an empty stub (Arkham Horror) → `F wrong-cv-link`.
+[L-040] (1 shelf/shelves) folder:bucket folder:events pub:dc pub:papercutz-nbm pub:scout pub:titan pub:valiant sig:twin
+- NBM / Papercutz album lines and Scout one-shots carry TWIN adjacent GCD rows for one book (120209/120210) —
+  cap at 0.9 and name both. Titan's Doctor Who "Year N" volumes number continuously across a Doctor (a ladder
+  starting at #6 is complete). A publisher's read-order crossover folder (Titan `Lost Dimension`, Valiant
+  `_Chronological Valiant`) = DC's `#DC Events` shape.
+[L-051] (1 shelf/shelves) pub:bongo pub:dc pub:small-press sig:probe
+- GCD spellings that hide a hit: Bongo's annual is plainly "Treehouse of Horror" (5435); Miller's 1983 series is
+  "Rōnin" (2721); Comico's Primer is "Primer" (14288). DC's Blackest Night revival issues sit in the ORIGINAL
+  series (Power of SHAZAM! 5246 runs 1995-2010).
+[L-052] (1 shelf/shelves) pub:dc sig:stamp sig:twin
+- The per-file CV matcher picks the LEGACY volume for every New 52 shelf (Batman 1940, Wonder Woman 1942, Nightwing
+  1996, Catwoman 1993) because it matched by issue number — the stored link on a 2011 shelf that names a 1940
+  volume is `wrong-cv-link`, the 2011 volume is in the rip.
+[L-082] (1 shelf/shelves) pub:dc sig:comicinfo
+- A Glorith-HD rip's ComicInfo `Web` id CAN be a ComicVine ISSUE id of the stored volume (599834, DC 100-Page
+  Spectacular) — Glorith's Web ids are never GCD ids, but check them against the CV rip.
+[L-093] (1 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
+[L-162] (1 shelf/shelves) kind:foreign pub:dc sig:probe
+- A SPACE inside a title hides the English record in BOTH providers: "Gen 13: Armageddon" (CV 19859/GCD 27648) and
+  "Superman/Gen 13" (CV 26595/GCD 16731) are invisible to a "Gen13" probe — that is why such packets offer only foreign editions.
+[L-195] (1 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- Trade SUBTITLES tell two same-title relaunches apart when the per-file matcher cannot (Batman Beyond 2015 = Brave
+  New Worlds / City of Yesterday / Wired for Death; 2016 = Escaping the Grave / Rise of the Demon / The Long Payback).
+[L-197] (1 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- The per-file matcher's "wrong RELAUNCH" trap: it stamps the LATER same-title volume onto files dated to the earlier
+  era by issue-number coincidence (Wonder Woman 2016, Batman 2016, JLA v2/v3, Firestorm, Hawk and Dove v5, Atari Force
+  v2, Adventure Comics 2010) — the tell is files whose years or numbers predate or exceed the stamped volume's own.
+[L-198] (1 shelf/shelves) pub:dc
+- ComicVine keeps ONE spanning volume across era-retitled arcs (L.E.G.I.O.N. / R.E.B.E.L.S., Deathstroke "The Hunted",
+  Green Lantern 1960, Detective, Action, All-Star) while GCD names each era its own row — majority GCD era + `N` the
+  rest; no split for that alone.
+[L-199] (1 shelf/shelves) folder:bucket folder:events pub:dc
+- DC's "#DC Events" chronology folders resolve once the cross-referenced-run pattern is seen: a crossover reprint
+  bucket or a tie-in folder filed adjacent to the main run takes the main run's identity with the tie-ins named.
+[L-207] (1 shelf/shelves) pub:dc
+- GCD 60830 "Detective Comics" spans the New 52 AND Rebirth; CV splits them (42594 New 52, 91098 Rebirth) — a New 52
+  sibling shelf must take CV 42594 and be declared before landing, or the shared GCD row misleads.
+[L-210] (1 shelf/shelves) pub:dc sig:legacy-stamp sig:probe sig:stamp
+- The wrong-relaunch trap is near-universal on any DC title with 3+ relaunches (Green Arrow, Green Lantern, Harley
+  Quinn, Justice League, Legion, Lobo, Martian Manhunter, Doom Patrol): the matcher stamps the oldest legacy volume or
+  the largest/most-recent one across every sibling shelf; `lookup.py` by name + year recovers the true id.
+[L-211] (1 shelf/shelves) folder:vn-year pub:dc sig:collision sig:stale-flag
+- An `overlap-in-series` flag on a franchise with many `vN` sibling shelves (Deathstroke, Harley Quinn, Green Lantern,
+  Justice League, JLD, Legion, Lobo) describes the CROSS-SHELF Vol. 01 collision, not conflation on the one shelf —
+  confirmed 14 of 14 in C-013..C-015; the stale-flag note must name the sibling shelf.
+[L-212] (1 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-214] (1 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp sig:twin
+- The wrong-relaunch / legacy-volume stamp ran at 70-95% of files on Midnighter, Mister Miracle, Robin, Nightwing,
+  Supergirl, Plastic Man and Suicide Squad shelves in C-016 — assume it on any DC relaunch shelf and verify by year.
+[L-216] (1 shelf/shelves) kind:golden-age pub:dc
+- Regional reprint editions (Canadian, Philippine, Australian) recur as small harmless residue on Golden Age DC shelves.
+[L-218] (1 shelf/shelves) kind:golden-age pass:revisit pub:dc sig:legacy-stamp
+- ComicVine keeps Action Comics as ONE volume (18005) across the 1938 run and the 2018 legacy-numbered continuation
+  while GCD splits the eras (97 / 59922) — whether the two era shelves merge is a revisit question (R-019).
+[L-220] (1 shelf/shelves) kind:foreign kind:golden-age pub:dc sig:legacy-stamp sig:stamp
+- The wrong-relaunch / legacy-volume stamp runs in BOTH directions on DC legacy titles: the 1938/1959/1942 volume on
+  modern relaunch files AND a modern or FOREIGN volume on legacy files (a 1976 French Éditions Lug "Titans" reprint,
+  CV 44350, is the per-file majority on every US Titans shelf) — reject on publisher and language.
+[L-222] (1 shelf/shelves) pub:dc sig:collision
+- Second-rip fragments of shelves already read in earlier batches (Flash Secret Files, Spectre 1992, Teen Titans
+  2003/2016, Wonder Woman 1942/2016, Zatanna 1993, Donna Troy) surface as `--all` collisions — `merge-with` after
+  grepping the partner's name and count.
+[L-237] (1 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+[L-242] (1 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-245] (1 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-255] (1 shelf/shelves) kind:foreign kind:trade-only pass:item pub:dc sig:barcode sig:twin
+- ITEM PASS (X-007..X-009): foreign-language GCD twins are the commonest per-book trap on DC trade shelves —
+  Spanish (84-…), German (3-86201 / 3-95798), French (2-365-77… / 979-10-268…), Dutch rows beside the English one;
+  the ISBN prefix is the fast tell (Aquaman, Green Arrow, Catwoman, Checkmate, Deathstroke Inc. 185111 vs 187856).
+[L-256] (1 shelf/shelves) pub:dc sig:barcode
+- The packet's shelf-level `identity:` list of the shelf's own per-book GCD rows (pages + ISBN) outranks a book's
+  own mismatched `linked` pick — read the shelf list first (Detective Comics 2012, Curse of Brimstone, Wonder Twins).
+[L-261] (1 shelf/shelves) pass:item pub:dc sig:twin
+- Sibling-era shelves of one franchise cross-contaminate each other's per-file GCD picks by "Vol N" ordinal
+  (Harley Quinn S94832↔S94833, Nightwing S65356↔S94872, Legion S98212↔S65063; Supergirl's five shelves so badly
+  that S94709's thirteen books are all no-record) — read the shelf's own list, not the neighbour's.
+[L-263] (1 shelf/shelves) kind:foreign pass:item pub:dc sig:legacy-stamp sig:stamp
+- ITEM PASS (X-013..X-015): the per-file CV matcher stamps a SPANNING legacy volume on every modern Wonder Woman
+  trade and the French Éditions Lug 1976 reprint (CV 44350) on every US Titans trade — reject on era / language.
+[L-299] (1 shelf/shelves) pass:revisit pub:dark-horse pub:dc sig:probe sig:twin
+- R-024 (the item readers' shelf findings): GCD hides long runs behind a dropped article or suffix — "Flash" 3358
+  (1987-2006, 232 issues) and "James Bond" 207986 (2024) are invisible to the shelves' own keys; two packets' "no
+  GCD row" verdicts were wrong — probe without the article / the "007". A per-file CV id reused across a shelf's
+  books can be a wholly different comic's issue list (Portman "Demon!" 1978 on Shiga's four Demon volumes) — a
+  revisit re-verifies item-pass ids, never merely adds them. ComicVine's issue NAMES are strong `C` evidence
+  (Flash 2010 "Case One, Part N"; POTA's four arcs). One ripper folder can be split across two shelves by filename
+  wording (ten Usagi Saga deluxe files, 5 + 5). GCD indexes a deluxe line's 2nd-edition printing in the twin row.
+[L-348] (1 shelf/shelves) pub:dc sig:probe
+- DC (R-073): the rip holds count-1 CV trade records under "Title: Subtitle" (Justice League Vol. 1-8, Teen Titans 2014,
+  Young Justice 2019, Doom Rising, Oz Effect) — probe the SUBTITLE with --contains. One-shots filed by event name ("Flash
+  Special" = the 50th anniversary special, "Joker: Last Laugh Secret Files"). CV keeps Daring New Adventures of Supergirl
+  #1-13 + Supergirl #14-23 as ONE volume (3113); GCD splits 2626 / 2722 — a C line per leg.
+
++46 more matched entries not shown: L-363, L-364, L-365, L-366, L-367, L-368, L-369, L-097, L-124, L-175, L-191, L-252, L-272, L-274, L-281, L-288, L-290, L-291, L-293, L-352, L-354, L-014, L-016, L-030, L-032, L-064, L-065, L-074, L-083, L-085, L-099, L-101, L-113, L-114, L-123, L-128, L-150, L-151, L-160, L-181, L-193, L-194, L-250, L-262, L-330, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S381 Action Comics  [tier C] · 1068 files  keys: Action Comics | Action Comics (1938) | Action Comics Weekly | Action Comics v1 (1938)  years 1938-2024  1068 files / 0 collections
+   folders: [901] DC\_Superman\_Completed Series\01 Action Comics v1 (1938) · [36] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly · [19] DC\_Superman\_Completed Series\01 Action Comics v1 (1938)\Annuals and Specials · [16] DC\_Superman\21 House of Brainiac (2024)\Variant Covers · [8] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\65 Superman - Strange Attractors · [8] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\008 Action Comics v2 - (1-8 w Annual 1) · [6] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\92 Superman - The legion of Super heroes · [6] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\012 Action Comics v2 - (13-18) · [5] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\097 Doomed · [5] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\100 Action Comics - Horrorville · [4] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Superman - Up, Up and Away · [4] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\010 Action Comics v2 - (9-12) · [4] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\095 Superman · [4] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\120 Truth · [4] DC\#DC Events\004 Major DC Events - Rebirth\004 Superman Reborn (2017) · [3] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\071 Action Comics (19-21) · [3] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\087 Superman - Supergirl · [3] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\125 Superman - Savage Dawn · [3] DC\_Superman\_Completed Series\09 Superman - New Krypton (2009)\06 Superman - Last Stand of New Krypton (2010) · [2] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\102 Our Worlds at War · [2] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\106 Guy Gardner, Warrior of Hell · [2] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\21 Superman - Emperor Joker · [2] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\001 Forever Evil 1 · [2] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\127 The Final Days of Superman (2016) · [1] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\031 I Think, Therefore I Am · [1] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\054 The Medusa Plague · [1] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\068 Grand Opening · [1] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\12 Final Night\The Final Night Reading Order · [1] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\47 Superman - Sacrifice (After OMAC project 3) · [1] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\64 Superman - The Journey · [1] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\09 Superman - Infinite Crisis · [1] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\002 Zero Year Secret City · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\074 Forever Evil 3 · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\088 Psi War · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\089 Forever Evil 3 · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\090 Krypton Returns · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\096 Doomed Prelude · [1] DC\#DC Events\004 Major DC Events - Rebirth\001 DC Rebirth (2016) · [1] DC\_Superman\_Completed Series\09 Superman - New Krypton (2009)\04 Superman - Codename Patriot (2009)
+   files:   [15482] 06 Action Comics 589  Green on Green.cbz (23pp) | [15504] 01 Action Comics Weekly 601 GL only.cbz (9pp) | [15505] 02 Action Comics Weekly 602 GL only.cbz (9pp)
+            [15506] 03 Action Comics Weekly 603 GL only.cbz (9pp) | [15507] 04 Action Comics Weekly 604 GL only.cbz (9pp) | [15508] 05 Action Comics Weekly 605 GL only.cbz (9pp)
+            [15509] 06 Action Comics Weekly 606 GL only.cbz (9pp) | [15510] 07 Action Comics Weekly 607 GL only.cbz (9pp) | [15511] 08 Action Comics Weekly 608 GL only.cbz (9pp)
+            [15512] 09 Action Comics Weekly 609 GL only.cbz (9pp) | [15513] 10 Action Comics Weekly 610 GL only.cbz (9pp) | [15514] 11 Action Comics Weekly 611 GL only.cbz (9pp)
+            [15515] 12 Action Comics Weekly 612 GL only.cbz (9pp) | [15516] 13 Action Comics Weekly 613 GL only.cbz (9pp) | [15517] 14 Action Comics Weekly 614 GL only.cbz (9pp)
+            [15518] 15 Action Comics Weekly 615 GL only.cbz (9pp) | [15519] 16 Action Comics Weekly 616 GL only.cbz (9pp) | [15520] 17 Action Comics Weekly 617 GL only.cbz (9pp)
+            [15521] 18 Action Comics Weekly 618 GL only.cbz (9pp) | [15522] 19 Action Comics Weekly 619 GL only.cbz (9pp) | [15523] 20 Action Comics Weekly 620 GL only.cbz (9pp)
+            [15524] 21 Action Comics Weekly 621 GL only.cbz (9pp) | [15525] 22 Action Comics Weekly 622 GL only.cbz (9pp) | [15526] 23 Action Comics Weekly 623 GL only.cbz (9pp)
+            [15527] 24 Action Comics Weekly 624 GL only.cbz (9pp) | [15528] 25 Action Comics Weekly 625 GL only.cbz (9pp) | [15529] 26 Action Comics Weekly 626 GL only.cbz (9pp)
+            [15530] 27 Action Comics Weekly 627 GL only.cbz (9pp) | [15531] 28 Action Comics Weekly 628 GL only.cbz (9pp) | [15532] 29 Action Comics Weekly 629 GL only.cbz (9pp)
+            [15533] 30 Action Comics Weekly 630 GL only.cbz (9pp) | [15534] 31 Action Comics Weekly 631 GL only.cbz (9pp) | [15535] 32 Action Comics Weekly 632 GL only.cbz (9pp)
+            [15536] 33 Action Comics Weekly 633 GL only.cbz (9pp) | [15537] 34 Action Comics Weekly 634 GL only.cbz (8pp) | [15538] 35 Action Comics Weekly 635 GL only.cbz (9pp)
+            [15539] 36 Action Comics Weekly 642 GL only.cbz (39pp) | [15655] 03 Action Comics 688  An Eye for an Eye.cbz (26pp) | [15738] 02 Action Comics 709  Crime Tunnel.cbz (24pp)
+            [16028] 02 Action Comics 780  The End of the Beginning.cbz (23pp) | [16032] 06 Action Comics 782  Trial By Fire.cbz (24pp) | [16055] 01 Action Comics 789  Man  Beast.cbz (23pp)
+            [16056] 02 Action Comics 790  Man  Beast Pt 2.cbz (23pp) | [16851] 012 Action Comics, 1996-09-00 (_727) (digital) (Glorith-Novus-HD).cbz (23pp) | [16940] 04 Action Comics 769.cbr (23pp)
+            [16945] 09 Action Comics 770.cbr (38pp) | [17157] 02 Action_Comics_829.cbr (25pp) | Action_Comics_831.cbr … Action_Comics_835.cbr  (9 files, pp 22-35)
+            [17417] 02 Action_Comics_836.cbr (24pp) | [17515] 02 Action Comics 837.cbr (24pp) | [17517] 04 Action Comics 838.cbr (24pp) | [17519] 06 Action Comics 839.cbr (25pp)
+            [17521] 08 Action Comics 840.cbr (25pp) | [17822] Action Comics 858__2007___CamelotScans-DCP_.cbr (32pp) | [17823] Action Comics 859.cbr (23pp) | [17824] Action Comics 860.cbr (25pp)
+            [17825] Action Comics 861.cbr (25pp) | [17826] Action Comics 862.cbr (25pp) | [17827] Action Comics 863.cbr (27pp)
+            [18017] 02 Action Comics (1998-11) 1000000 (hybrid) (DreamGirl-Novus-HD).cbz (26pp) | [18054] 000 Action Comics 023-2 - November 2013.cbr (24pp)
+            [18055] 001 Action Comics 000 - November 2012.cbz (?pp) | [18065] 007 Action Comics 025 - January 2014.cbr (31pp) | [18111] Action Comics 001 - November 2011.cbz (?pp)
+            [18112] Action Comics 002 - December 2011.cbz (30pp) | [18113] Action Comics 003 - January 2012.cbz (30pp) | [18114] Action Comics 004 - February 2012.cbz (30pp)
+            [18115] Action Comics 005 - March 2012.cbz (31pp) | [18116] Action Comics 006 - April 2012.cbz (29pp) | [18117] Action Comics 007 - May 2012.cbz (29pp)
+            [18118] Action Comics 008 - June 2012.cbz (31pp) | [18126] Action Comics 009 - July 2012.cbr (35pp) | [18127] Action Comics 010 - August 2012.cbz (31pp)
+            [18128] Action Comics 011 - September 2012.cbz (31pp) | [18129] Action Comics 012 - October 2012.cbz (32pp) | [18130] Action Comics 013 - December 2012.cbz (?pp)
+            [18131] Action Comics 014 - January 2013.cbz (?pp) | [18132] Action Comics 015 - February 2013.cbz (?pp) | [18133] Action Comics 016 - March 2013.cbz (?pp)
+            [18134] Action Comics 017 - April 2013.cbz (?pp) | [18135] Action Comics 018 - May 2013.cbz (?pp) | [18407] Action Comics 019 - June 2013.cbz (?pp)
+            [18408] Action Comics 020 - July 2013.cbr (30pp) | [18409] Action Comics 021 - August 2013.cbr (40pp) | [19918] Action Comics 023.4 - November 2013.cbr (24pp)
+            [18445] 007 Action Comics 023.1 - November 2013.cbr (21pp) | [18452] 014 Action Comics 022 - September 2013.cbr (28pp) | [18453] 015 Action Comics 023 - October 2013.cbr (28pp)
+            [18464] 002 Action Comics 024 - December 2013.cbr (26pp) | [18466] 001 Action Comics 023.3 - November 2013.cbr (23pp) | [18468] 001 Action Comics Annual 002 - December 2013.cbr (22pp)
+            [18566] 001 Action Comics 026 - February 2014.cbr (25pp) | [18567] 002 Action Comics 027 - March 2014.cbr (24pp) | [18568] 003 Action Comics 028 - April 2014.cbr (26pp)
+            [18569] 004 Action Comics 029 - May 2014.cbr (25pp) | [18578] 007 Action Comics 030 - June 2014.cbr (24pp) | [18584] 002 Action Comics 031 - July 2014.cbr (28pp)
+            [18588] 006 Action Comics 032 - August 2014.cbr (27pp) | [18590] 008 Action Comics 033 - September 2014.cbr (26pp) | [18592] 010 Action Comics Annual # 3.cbr (42pp)
+            [18594] 012 Action Comics 034 - October 2014.cbr (27pp) | [18615] Action Comics # 35.cbr (24pp) | [18616] Action Comics # 36.cbr (26pp) | [18617] Action Comics # 37.cbr (24pp)
+            [18618] Action Comics # 38.cbr (25pp) | [18619] Action Comics # 39.cbr (30pp) | [18942] 01 Action Comics # 41 (2015) (Digital-Empire).cbr (27pp)
+            [18946] 05 Action Comics # 42 (2015) (Digital-Empire).cbr (28pp) | [18950] 09 Action Comics # 43 (2015) (Digital-Empire).cbr (27pp)
+            [18954] 13 Action Comics # 44 (2015) (Digital-Empire).cbr (27pp) | [19000] 02 Action Comics 048 (2016) (Digital-Empire).cbr (27pp)
+            [19003] 05 Action Comics 049 (2016) (2 covers) (Digital) (Zone-Empire).cbr (26pp) | [19006] 08 Action Comics 050 (2016) (4 covers) (Digital) (Zone-Empire).cbr (42pp)
+            [19023] 03 Action Comics 051 (2016) (2 covers) (Digital) (Zone-Empire).cbr (24pp) | [19026] 06 Action Comics 052 (2016) (2 covers) (Digital) (Zone-Empire).cbr (25pp)
+            [19055] Action Comics 957 (2016) (2 covers) (Digital) (Zone-Empire).cbr (30pp) | [19088] Action Comics 973 (2017) (2 covers) (Digital) (Zone-Empire).cbr (32pp)
+            [19089] Action Comics 974 (2017) (2 covers) (Digital) (Zone-Empire).cbr (25pp) | [19090] Action Comics 975 (2017) (2 covers) (Digital) (Zone-Empire).cbr (42pp)
+            [19091] Action Comics 976 (2017) (2 covers) (Digital) (Zone-Empire).cbr (24pp) | [70592] Action Comics 1064 (2024) (1-in-25 Ariel Colón Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [70593] Action Comics 1064 (2024) (Jorge Jiménez Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [70594] Action Comics 1064 (2024) (Maria Wolf Ape-ril Fools' Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [70595] Action Comics 1064 (2024) (Michael Walsh Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [70596] Action Comics 1064 (2024) (Paolo Rivera Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [70597] Action Comics 1064 (2024) (Rafa Sandoval Connecting Foil Card Stock Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [70598] Action Comics 1065 (2024) (1-in-25 Mark Spears Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [70599] Action Comics 1065 (2024) (Ethan Young AAPI Heritage Month Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [70600] Action Comics 1065 (2024) (Ivan Talavera Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [70601] Action Comics 1065 (2024) (Jorge Jiménez Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [70602] Action Comics 1065 (2024) (Paolo Rivera Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [70603] Action Comics 1066 (2024) (1-in-25 Mark Spears Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [70604] Action Comics 1066 (2024) (Betsy Cola DC Pride 2024 Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [70605] Action Comics 1066 (2024) (Jorge Jimenez Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [70606] Action Comics 1066 (2024) (Jorge Jiménez Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [70607] Action Comics 1066 (2024) (Paolo Rivera Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [70765] Action Comics 001 (1938) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70766] Action Comics 002 (1938) (Digital) (Shadowcat-Empire).cbz (14pp) | [70767] Action Comics 003 (1938) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70768] Action Comics 004 (1938) (Digital) (Shadowcat-Empire).cbz (14pp) | [70769] Action Comics 005 (1938) (Digital) (Shadowcat-Empire).cbz (10pp)
+            [70770] Action Comics 006 (1938) (Digital) (Shadowcat-Empire).cbz (14pp) | [70771] Action Comics 007 (1938) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70772] Action Comics 008 (1939) (Digital) (Shadowcat-Empire).cbz (14pp) | [70773] Action Comics 009 (1939) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70774] Action Comics 010 (1939) (Digital) (Shadowcat-Empire).cbz (14pp) | [70775] Action Comics 011 (1939) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70776] Action Comics 012 (1939) (Digital) (Shadowcat-Empire).cbz (14pp) | [70777] Action Comics 013 (1939) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70778] Action Comics 014 (1939) (Digital) (Shadowcat-Empire).cbz (14pp) | [70779] Action Comics 015 (1939) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70780] Action Comics 016 (1939) (Digital) (Shadowcat-Empire).cbz (14pp) | [70781] Action Comics 017 (1939) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70782] Action Comics 018 (1939) (Digital) (Shadowcat-Empire).cbz (14pp) | [70783] Action Comics 019 (1939) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70784] Action Comics 020 (1940) (Digital) (Shadowcat-Empire).cbz (14pp) | [70785] Action Comics 021 (1940) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70786] Action Comics 022 (1940) (Digital) (Shadowcat-Empire).cbz (14pp) | [70787] Action Comics 023 (1940) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70788] Action Comics 024 (1940) (Digital) (Shadowcat-Empire).cbz (14pp) | [70789] Action Comics 025 (1940) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70790] Action Comics 026 (1940) (Digital) (Shadowcat-Empire).cbz (14pp) | [70791] Action Comics 027 (1940) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70792] Action Comics 028 (1940) (Digital) (Shadowcat-Empire).cbz (14pp) | [70793] Action Comics 029 (1940) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70794] Action Comics 030 (1940) (Digital) (Shadowcat-Empire).cbz (14pp) | [70795] Action Comics 031 (1940) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [70796] Action Comics 032 (1940) (Digital) (Shadowcat-Empire).cbz (14pp) | [70797] Action Comics 033 (1940) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70798] Action Comics 034 (1940) (Digital) (Shadowcat-Empire).cbz (14pp) | [70799] Action Comics 035 (1940) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70800] Action Comics 036 (1940) (Digital) (Shadowcat-Empire).cbz (14pp) | [70801] Action Comics 037 (1940) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70802] Action Comics 038 (1940) (Digital) (Shadowcat-Empire).cbz (13pp) | [70803] Action Comics 039 (1940) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [70804] Action Comics 040 (1940) (Digital) (Shadowcat-Empire).cbz (14pp) | [70805] Action Comics 041 (1941) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70806] Action Comics 042 (1941) (Digital) (Shadowcat-Empire).cbz (15pp) | [70807] Action Comics 043 (1941) (Digital) (Shadowcat-Empire).cbz (15pp)
+            [70808] Action Comics 044 (1942) (Digital) (Shadowcat-Empire).cbz (15pp) | [70809] Action Comics 045 (1942) (Digital) (Shadowcat-Empire).cbz (15pp)
+            [70810] Action Comics 046 (1942) (Digital) (Shadowcat-Empire).cbz (15pp) | [70811] Action Comics 047 (1942) (Digital) (Shadowcat-Empire).cbz (15pp)
+            [70812] Action Comics 048 (1942) (Digital) (Shadowcat-Empire).cbz (15pp) | [70813] Action Comics 049 (1942) (Digital) (Shadowcat-Empire).cbz (15pp)
+            [70814] Action Comics 050 (1942) (Digital) (Shadowcat-Empire).cbz (15pp) | [70815] Action Comics 051 (1942) (Digital) (Shadowcat-Empire).cbz (15pp)
+            [70816] Action Comics 052 (1942) (Digital) (Shadowcat-Empire).cbz (15pp) | [70817] Action Comics 053 (1942) (Digital) (Shadowcat-Empire).cbz (15pp)
+            [70818] Action Comics 054 (1942) (Digital) (Shadowcat-Empire).cbz (15pp) | [70819] Action Comics 055 (1942) (Digital) (Shadowcat-Empire).cbz (15pp)
+            [70820] Action Comics 056 (1943) (Digital) (Shadowcat-Empire).cbz (15pp) | [70821] Action Comics 057 (1943) (Digital) (Shadowcat-Empire).cbz (15pp)
+            [70822] Action Comics 058 (1943) (Digital) (Shadowcat-Empire).cbz (15pp) | [70823] Action Comics 059 (1943) (Digital) (Shadowcat-Empire).cbz (15pp)
+            [70824] Action Comics 060 (1943) (Digital) (Shadowcat-Empire).cbz (14pp) | [70825] Action Comics 061 (1943) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70826] Action Comics 062 (1943) (Digital) (Shadowcat-Empire).cbz (14pp) | [70827] Action Comics 063 (1943) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70828] Action Comics 064 (1943) (Digital) (Shadowcat-Empire).cbz (14pp) | [70829] Action Comics 065 (1943) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70830] Action Comics 066 (1943) (Digital) (Shadowcat-Empire).cbz (14pp) | [70831] Action Comics 067 (1943) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70832] Action Comics 068 (1944) (Digital) (Shadowcat-Empire).cbz (14pp) | [70833] Action Comics 069 (1944) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [70834] Action Comics 070 (1944) (Digital) (Shadowcat-Empire).cbz (14pp) | [70835] Action Comics 071 (1944) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70836] Action Comics 072 (1944) (Digital) (Shadowcat-Empire).cbz (14pp) | [70837] Action Comics 073 (1944) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70838] Action Comics 074 (1944) (Digital) (Shadowcat-Empire).cbz (14pp) | [70839] Action Comics 075 (1944) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70840] Action Comics 076 (1944) (Digital) (Shadowcat-Empire).cbz (14pp) | [70841] Action Comics 077 (1944) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70842] Action Comics 078 (1944) (Digital) (Shadowcat-Empire).cbz (13pp) | [70843] Action Comics 079 (1944) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [70844] Action Comics 080 (1945) (Digital) (Shadowcat-Empire).cbz (12pp) | [70845] Action Comics 081 (1945) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [70846] Action Comics 082 (1945) (Digital) (Shadowcat-Empire).cbz (13pp) | [70847] Action Comics 083 (1945) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70848] Action Comics 084 (1945) (Digital) (Shadowcat-Empire).cbz (14pp) | [70849] Action Comics 085 (1945) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [70850] Action Comics 086 (1945) (Digital) (Shadowcat-Empire).cbz (12pp) | [70851] Action Comics 087 (1945) (Digital) (Shadowcat-Empire).cbz (14pp)
+            [70852] Action Comics 088 (1945) (Digital) (Shadowcat-Empire).cbz (13pp) | [70853] Action Comics 089 (1945) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [70854] Action Comics 090 (1945) (Digital) (Shadowcat-Empire).cbz (13pp) | [70855] Action Comics 091 (1945) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [70856] Action Comics 092 (1946) (Digital) (Shadowcat-Empire).cbz (12pp) | [70857] Action Comics 093 (1946) (Digital) (Shadowcat-Empire).cbz (17pp)
+            [70858] Action Comics 094 (1946) (Digital) (Shadowcat-Empire).cbz (13pp) | [70859] Action Comics 095 (1946) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [70860] Action Comics 096 (1946) (Digital) (Shadowcat-Empire).cbz (13pp) | [70861] Action Comics 097 (1946) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [70862] Action Comics 098 (1946) (Digital) (Shadowcat-Empire).cbz (13pp) | [70863] Action Comics 099 (1946) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [70864] Action Comics 100 (1946) (Digital) (Shadowcat-Empire).cbz (13pp) | [70865] Action Comics 101 (1946) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [70866] Action Comics 102 (1946) (Digital) (Shadowcat-Empire).cbz (13pp) | [70867] Action Comics 103 (1946) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [70868] Action Comics 104 (1947) (Digital) (Shadowcat-Empire).cbz (13pp) | [70869] Action Comics 105 (1947) (Digital) (Shadowcat-Empire).cbz (15pp)
+            Action Comics 106 (1947) (c2c) (Superscan).cbz … Action Comics 120 (1948) (c2c) (Superscan).cbz  (15 files, pp 53-53) | [70885] Action Comics 121 (1948).cbr (50pp)
+            [70886] Action Comics 122 (1948).cbr (52pp) | [70887] Action Comics 123 (1948).cbr (52pp) | [70888] Action Comics 124 ( 1948) (c2c) (Superscan).cbz (53pp)
+            [70889] Action Comics 125 ( 1948) (c2c) (Superscan).cbz (53pp) | [70890] Action Comics 126 ( 1948) (c2c) (Superscan).cbz (53pp)
+            [70891] Action Comics 127 (1948) (c2c) (Superscan).cbz (53pp) | [70892] Action Comics 128 (1949).cbr (41pp)
+            Action Comics 129 (1949) (c2c) (Superscan).cbz … Action Comics 137 (1949) (c2c) (Superscan).cbz  (9 files, pp 53-53) | [70902] Action Comics 138 (1949).cbr (49pp)
+            [70903] Action Comics 139 (1949).cbr (52pp) | [70904] Action Comics 140 (1950).cbr (52pp) | [70905] Action Comics 141 (1950).cbz (49pp)
+            Action Comics 142 (1950).cbr … Action Comics 158 (1951).cbr  (17 files, pp 37-52) | [70923] Action Comics 159 (1951) (c2c) (Superscan).cbz (53pp)
+            [70924] Action Comics 160 (1951).cbr (52pp) | [70925] Action Comics 161 (1951).cbr (52pp) | [70926] Action Comics 162 (1951).cbr (34pp)
+            [70927] Action Comics 163 (1951) (c2c) (Superscan).cbz (45pp) | [70928] Action Comics 164 (1952).cbr (44pp) | [70929] Action Comics 165 (1952).cbr (42pp)
+            [70930] Action Comics 166 (1952).cbr (42pp) | [70931] Action Comics 167 (1952).cbr (44pp) | [70932] Action Comics 168 (1952).cbr (34pp)
+            [70933] Action Comics 169 (1952) (c2c) (Superscan).cbz (45pp) | [70934] Action Comics 170 (1952) (c2c) (Superscan).cbz (45pp)
+            [70935] Action Comics 171 (1952) (c2c) (Superscan).cbz (45pp) | [70936] Action Comics 172 (1952) (c2c) (Superscan).cbz (45pp)
+            [70937] Action Comics 173 (1952) (c2c) (Superscan).cbz (45pp) | [70938] Action Comics 174 (1952).cbr (44pp) | [70939] Action Comics 175 (1952).cbr (44pp)
+            [70940] Action Comics 176 (DC) (Jan 1953) (c2c) (Superscan).cbz (45pp) | Action Comics 177 (1953).cbr … Action Comics 183 (1953).cbr  (7 files, pp 42-44)
+            [70948] Action Comics 184 (1953) (c2c) (Superscan).cbz (45pp) | [70949] Action Comics 185 (1953) (c2c) (Superscan).cbz (45pp)
+            Action Comics 186 (1953).cbr … Action Comics 198 (1954).cbr  (13 files, pp 33-44) | [70963] Action Comics 199 (1954) (c2c) (Superscan).cbz (37pp)
+            [70964] Action Comics 200 (1955) (c2c) (Superscan).cbz (37pp) | [70965] Action Comics 201 (1955) (c2c) (Superscan).cbz (?pp) | [70966] Action Comics 202 (1955) (c2c) (Superscan).cbz (37pp)
+            [70967] Action Comics 203 (1955).cbr (36pp) | [70968] Action Comics 204 (1955) (c2c) (Superscan).cbz (37pp) | [70969] Action Comics 205 (1955) (c2c) (Superscan).cbz (37pp)
+            [70970] Action Comics 206 (1955) (c2c) (Superscan).cbz (37pp) | [70971] Action Comics 207 (1955) (c2c) (Superscan).cbz (37pp) | [70972] Action Comics 208 (1955).cbr (33pp)
+            [70973] Action Comics 209 (1955).cbr (36pp) | [70974] Action Comics 210 (DC) (Nov 1955) (c2c) (Superscan).cbz (37pp)
+            Action Comics 211 (1955).cbr … Action Comics 222 (1956).cbr  (12 files, pp 25-38) | [70987] Action Comics 223 (DC) (Dec 1956) (c2c) (Superscan).cbz (37pp)
+            [70988] Action Comics 224 (1957).cbr (36pp) | [70989] Action Comics 225 (1957).cbr (36pp) | [70990] Action Comics 226 (1957).cbr (36pp) | [70991] Action Comics 227 (1957).cbr (36pp)
+            [70992] Action Comics 228 (1957).cbr (36pp) | [70993] Action Comics 229 (1957) (c2c) (Superscan).cbz (37pp) | [70994] Action Comics 230 (1957) (c2c) (Superscan).cbz (37pp)
+            [70995] Action Comics 231 (1957).cbr (36pp) | [70996] Action Comics 232 (1957).cbr (36pp) | [70997] Action Comics 233 (1957).cbr (36pp) | [70998] Action Comics 234 (1957).cbr (36pp)
+            [70999] Action Comics 235 (1957).cbr (26pp) | [71000] Action Comics 236 (1958).cbr (36pp) | [71001] Action Comics 237 (1958).cbr (37pp) | [71002] Action Comics 238 (1958).cbr (36pp)
+            [71003] Action Comics 239 (1958).cbr (36pp) | [71004] Action Comics 240 (1958).cbr (36pp) | [71005] Action Comics 241 (1958).cbr (36pp) | [71006] Action Comics 242 (1958).cbr (37pp)
+            [71007] Action Comics 243 (1958).cbr (36pp) | [71008] Action Comics 244 (1958).cbr (72pp) | [71009] Action Comics 245 (1958).cbr (36pp) | [71010] Action Comics 246 (1958).cbr (37pp)
+            [71011] Action Comics 247 (1958) (c2c) (Superscan).cbz (37pp) | [71012] Action Comics 248 (1959).cbr (36pp) | [71013] Action Comics 249 (1959).cbr (36pp)
+            [71014] Action Comics 250 (1959).cbr (36pp) | [71015] Action Comics 251 (1959).cbr (36pp) | [71016] Action Comics 252 (1959) (Digital) (AnHeroGold-Empire).cbz (28pp)
+            Action Comics 253 (1959).cbr … Action Comics 259 (1959).cbr  (7 files, pp 36-45) | [71024] Action Comics 260 (1960).cbz (36pp)
+            Action Comics 261 (1960).cbr … Action Comics 266 (1960).cbr  (6 files, pp 36-36) | [71031] Action Comics 267 (1960) (Digital) (Shadowcat-Empire).cbz (27pp)
+            Action Comics 268 (1960).cbr … Action Comics 273 (1961).cbr  (6 files, pp 29-36) | [71038] Action Comics 274 (1961) (c2c) flattermann.cbr (37pp)
+            [71039] Action Comics 275 (1961).cbr (31pp) | [71040] Action Comics 276 (1961) (c2c) flattermann.cbr (37pp)
+            Action Comics 277 (1961).cbr … Action Comics 282 (1961).cbr  (6 files, pp 36-36) | [71047] Action Comics 283 (1961).cbz (36pp)
+            [71048] Action Comics 284 (1962) (Digital) (Shadowcat-Empire).cbz (29pp) | [71049] Action Comics 285 (1962) (c2c) (Superscan).cbz (37pp) | [71050] Action Comics 286 (1962).cbr (36pp)
+            [71051] Action Comics 287 (1962) (c2c) flattermann.cbr (37pp) | [71052] Action Comics 288 (1962) (c2c) (Superscan).cbz (37pp)
+            [71053] Action Comics 289 (1962) (c2c) flattermann.cbr (37pp) | Action Comics 290 (1962).cbr … Action Comics 307 (1963).cbr  (18 files, pp 28-42)
+            [71072] Action Comics 308 (1964) (Digital) (Shadowcat-Empire).cbz (27pp) | [71073] Action Comics 309 (1964) (Digital) (Shadowcat-Empire).cbz (27pp)
+            [71074] Action Comics 310 (1964) (Digital) (Shadowcat-Empire).cbz (27pp) | [71075] Action Comics 311 (1964) (Digital) (Shadowcat-Empire).cbz (27pp)
+            [71076] Action Comics 312 (1964) (Digital) (Shadowcat-Empire).cbz (27pp) | [71077] Action Comics 313 (1964) (Digital) (Shadowcat-Empire).cbz (28pp)
+            [71078] Action Comics 314 (1964) (Digital) (Shadowcat-Empire).cbz (27pp) | [71079] Action Comics 315 (1964) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [71080] Action Comics 316 (1964) (Digital) (Shadowcat-Empire).cbz (25pp) | [71081] Action Comics 317 (1964) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [71082] Action Comics 318 (1964) (Digital) (Shadowcat-Empire).cbz (26pp) | [71083] Action Comics 319 (1964) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [71084] Action Comics 320 (1965) (Digital) (Shadowcat-Empire).cbz (26pp) | [71085] Action Comics 321 (1965) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [71086] Action Comics 322 (1965) (Digital) (Shadowcat-Empire).cbz (27pp) | [71087] Action Comics 323 (1965) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [71088] Action Comics 324 (1965) (Digital) (Shadowcat-Empire).cbz (26pp) | [71089] Action Comics 325 (1965) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [71090] Action Comics 326 (1965) (Digital) (Shadowcat-Empire).cbz (25pp) | [71091] Action Comics 327 (1965) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [71092] Action Comics 328 (1965) (Digital) (Shadowcat-Empire).cbz (25pp) | [71093] Action Comics 329 (1965) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [71094] Action Comics 330 (1965) (Digital) (Shadowcat-Empire).cbz (25pp) | [71095] Action Comics 331 (1965) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [71096] Action Comics 332 (1966) (Digital) (Shadowcat-Empire).cbz (26pp) | [71097] Action Comics 333 (1966) (Digital) (Shadowcat-Empire).cbz (28pp)
+            [71098] Action Comics 334 (1966) (Digital) (Shadowcat-Empire).cbz (77pp) | [71099] Action Comics 335 (1966) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [71100] Action Comics 336 (1966) (Digital) (Shadowcat-Empire).cbz (25pp) | [71101] Action Comics 337 (1966) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [71102] Action Comics 338 (1966) (Digital) (Shadowcat-Empire).cbz (26pp) | [71103] Action Comics 339 (1966) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [71104] Action Comics 340 (1966) (Digital) (Shadowcat-Empire).cbz (26pp) | [71105] Action Comics 341 (1966).cbr (36pp)
+            [71106] Action Comics 342 (1966) (Digital) (Shadowcat-Empire).cbz (25pp) | [71107] Action Comics 343 (1967) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [71108] Action Comics 344 (1966) (Digital) (Shadowcat-Empire).cbz (25pp) | [71109] Action Comics 345 (1967) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [71110] Action Comics 346 (1967) (Digital) (Shadowcat-Empire).cbz (25pp) | [71111] Action Comics 347 (1967) (Digital) (Shadowcat-Empire).cbz (75pp)
+            [71112] Action Comics 348 (1967) (Digital) (Shadowcat-Empire).cbz (25pp) | [71113] Action Comics 349 (1967) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [71114] Action Comics 350 (1967) (Digital) (Shadowcat-Empire).cbz (25pp) | [71115] Action Comics 351 (1967) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [71116] Action Comics 352 (1967) (Digital) (Shadowcat-Empire).cbz (24pp) | [71117] Action Comics 353 (1967) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [71118] Action Comics 354 (1967) (Digital) (Shadowcat-Empire).cbz (25pp) | [71119] Action Comics 355 (1967) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [71120] Action Comics 356 (1967) (Digital) (Shadowcat-Empire).cbz (26pp) | [71121] Action Comics 357 (1967) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [71122] Action Comics 358 (1968) (Digital) (Shadowcat-Empire).cbz (25pp) | [71123] Action Comics 359 (1968) (Digital) (Shadowcat-Empire).cbz (27pp)
+            [71124] Action Comics 360 (1968).cbr (78pp) | [71125] Action Comics 361 (1968).cbr (36pp) | [71126] Action Comics 362 (1968).cbr (36pp) | [71127] Action Comics 363 (1968) (c2c).cbz (36pp)
+            [71128] Action Comics 364 (1968) (digital) (Shadowcat-Empire).cbz (26pp) | [71129] Action Comics 365 (1968) (digital) (Shadowcat-Empire).cbz (25pp)
+            [71130] Action Comics 366 (1968) (digital) (Shadowcat-Empire).cbz (24pp) | [71131] Action Comics 367 (1968) (digital) (Shadowcat-Empire).cbz (24pp)
+            [71132] Action Comics 368 (1968) (Digital) (Shadowcat-Empire).cbz (24pp) | [71133] Action Comics 369 (1968) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [71134] Action Comics 370 (1968) (Digital) (Shadowcat-Empire).cbz (25pp) | [71135] Action Comics 371 (1969) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [71136] Action Comics 372 (1969) (Digital) (Shadowcat-Empire).cbz (27pp) | [71137] Action Comics 373 (1969) (Digital) (Shadowcat-Empire).cbz (60pp)
+            [71138] Action Comics 374 (1969) (Digital) (Shadowcat-Empire).cbz (26pp) | [71139] Action Comics 375 (1969) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [71140] Action Comics 376 (1969) (Digital) (Shadowcat-Empire).cbz (25pp) | [71141] Action Comics 377 (1969).cbr (36pp) | [71142] Action Comics 378 (1969) (c2c).cbz (36pp)
+            [71143] Action Comics 379 (1969).cbr (36pp) | [71144] Action Comics 380 (1969) (c2c).cbz (36pp) | [71145] Action Comics 381 (1969) (c2c).cbz (36pp)
+            [71146] Action Comics 382 (1969) (c2c).cbz (36pp) | [71147] Action Comics 383 (1969) (c2c).cbr (36pp) | [71148] Action Comics 384 (1970) (c2c).cbr (36pp)
+            [71149] Action Comics 385 (1970) (c2c) (lindalee & cimmerian32).cbr (36pp) | [71150] Action Comics 386 (1970) (c2c) (lindalee).cbr (36pp)
+            [71151] Action Comics 387 (1970) (c2c).cbr (36pp) | [71152] Action Comics 388 (1970) (c2c).cbz (36pp) | [71153] Action Comics 389 (1970) (c2c).cbr (36pp)
+            [71154] Action Comics 390 (1970) (c2c).cbr (36pp) | [71155] Action Comics 391 (1970) (c2c).cbr (36pp) | [71156] Action Comics 392 (1970) (c2c).cbr (36pp)
+            [71157] Action Comics 393 (1970) (c2c).cbr (37pp) | [71158] Action Comics 394 (1970) (c2c).cbz (37pp) | [71159] Action Comics 395 (1970) (c2c).cbr (37pp)
+            [71160] Action Comics 396 (1971) (c2c) (FBScan) (small cover).cbr (35pp) | [71161] Action Comics 397 (1971) (c2c).cbz (36pp) | [71162] Action Comics 398 (1971) (c2c).cbr (36pp)
+            [71163] Action Comics 399 (1971) (c2c).cbz (37pp) | [71164] Action Comics 400 (1971) (c2c) (FBScan).cbr (35pp) | [71165] Action Comics 401 (1971) (c2c).cbr (37pp)
+            [71166] Action Comics 402 (1971) (c2c).cbr (36pp) | [71167] Action Comics 403 (1971) (c2c).cbr (53pp) | [71168] Action Comics 404 (1971) (c2c).cbz (53pp)
+            [71169] Action Comics 405 (1971) (c2c).cbr (54pp) | [71170] Action Comics 406 (1971) (c2c).cbr (52pp) | [71171] Action Comics 407 (1971) (c2c).cbr (53pp)
+            [71172] Action Comics 408 (1972) (c2c).cbz (51pp) | [71173] Action Comics 409 (1972) (c2c).cbr (52pp) | [71174] Action Comics 410 (1972) (c2c).cbr (52pp)
+            [71175] Action Comics 411 (1972) (c2c).cbr (53pp) | [71176] Action Comics 412 (1972) (c2c).cbz (53pp) | [71177] Action Comics 413 (1972) (c2c).cbr (53pp)
+            [71178] Action Comics 414 (1972) (c2c).cbr (37pp) | [71179] Action Comics 415 (1972) (c2c).cbz (35pp) | [71180] Action Comics 416 (1972) (c2c).cbz (35pp)
+            [71181] Action Comics 417 (1972) (c2c).cbz (35pp) | [71182] Action Comics 418 (1972) (c2c).cbr (36pp) | [71183] Action Comics 419 (1973) (c2c).cbr (36pp)
+            [71184] Action Comics 420 (1973) (c2c).cbz (36pp) | [71185] Action Comics 421 (1973) (noads).cbz (26pp) | [71186] Action Comics 422 (1973) (c2c).cbr (36pp)
+            [71187] Action Comics 423 (1973) (c2c).cbr (33pp) | [71188] Action Comics 424 (1973) (c2c).cbr (35pp) | [71189] Action Comics 425 (1973) (c2c).cbr (35pp)
+            [71190] Action Comics 426 (1973) (c2c).cbz (36pp) | [71191] Action Comics 427 (1973) (c2c) (Rescan) (lindalee).cbr (36pp) | [71192] Action Comics 428 (1973) (FB-DCP).cbr (36pp)
+            [71193] Action Comics 429 (1973).cbr (21pp) | [71194] Action Comics 430 (1973) (c2c).cbr (35pp) | [71195] Action Comics 431 (1974).cbr (21pp)
+            [71196] Action Comics 432 (1974) (c2c) (Rescan) (lindalee).cbr (35pp) | [71197] Action Comics 433 (1974) (c2c) (Rescan) (lindalee).cbr (36pp)
+            [71198] Action Comics 434 (1974) (c2c).cbr (26pp) | [71199] Action Comics 435 (1974) (c2c) (Mr. Woodman).cbr (35pp) | [71200] Action Comics 436 (1974).cbr (21pp)
+            [71201] Action Comics 437 (1974).cbr (82pp) | [71202] Action Comics 438 (1974).cbr (21pp) | [71203] Action Comics 439 (1974).cbr (21pp)
+            [71204] Action Comics 440 (1974) (c2c) (Rescan) (lindalee).cbr (35pp) | [71205] Action Comics 441 (1974).cbr (22pp) | [71206] Action Comics 442 (1974) (c2c).cbr (35pp)
+            [71207] Action Comics 443 (1975) (c2c).cbz (100pp) | [71208] Action Comics 444 (1975) (c2c) (Rescan) (bluejeff1954-lindalee).cbr (35pp)
+            [71209] Action Comics 445 (1975) (c2c) (rescan) (bluejeff1954).cbr (36pp) | [71210] Action Comics 446 (1975) (c2c) (rescan) (bluejeff1954).cbr (36pp)
+            [71211] Action Comics 447 (1975) (c2c) (rescan) (bluejeff1954).cbr (35pp) | [71212] Action Comics 448 (1975) (c2c) (Rescan) (bluejeff1954-lindalee).cbr (35pp)
+            [71213] Action Comics 449 (1975) (c2c) (rescan) (bluejeff1954).cbr (68pp) | [71214] Action Comics 450 (1975) (c2c) (rescan) (bluejeff1954-lindalee).cbr (36pp)
+            [71215] Action Comics 451 (1975) (c2c) (Rescan) (bluejeff1954-lindalee).cbr (36pp) | [71216] Action Comics 452 (1975) (c2c) (rescan) (bluejeff1954).cbr (36pp)
+            [71217] Action Comics 453 (1975) (c2c) (rescan) (bluejeff1954).cbr (35pp) | [71218] Action Comics 454 (1975) (c2c).cbr (35pp)
+            [71219] Action Comics 455 (1976) (c2c) (rescan) (bluejeff1954).cbr (36pp) | [71220] Action Comics 456 (1976) (c2c) (rescan) (bluejeff1954-lindalee).cbr (36pp)
+            [71221] Action Comics 457 (1976) (Digital) (Shadowcat-Empire).cbz (19pp) | [71222] Action Comics 458 (1976).cbr (21pp) | [71223] Action Comics 459 (1976).cbr (20pp)
+            [71224] Action Comics 460 (1976).cbr (21pp) | [71225] Action Comics 461 (1976).cbr (19pp) | [71226] Action Comics 462 (1976) (c2c).cbr (36pp)
+            [71227] Action Comics 463 (1976) (c2c).cbz (36pp) | [71228] Action Comics 464 (1976) (c2c).cbr (36pp) | [71229] Action Comics 465 (1976) (c2c) (lindalee).cbr (36pp)
+            [71230] Action Comics 466 (1976) (c2c).cbz (36pp) | [71231] Action Comics 467 (1977) (c2c).cbr (36pp) | [71232] Action Comics 468 (1977) (c2c).cbr (36pp)
+            [71233] Action Comics 469 (1977) (c2c).cbz (36pp) | [71234] Action Comics 470 (1977) (c2c).cbz (36pp) | [71235] Action Comics 471 (1977) (c2c).cbr (36pp)
+            [71236] Action Comics 472 (1977) (c2c) (lindalee).cbr (36pp) | [71237] Action Comics 473 (1977) (c2c).cbr (36pp) | [71238] Action Comics 474 (1977) (c2c).cbz (36pp)
+            [71239] Action Comics 475 (1977) (c2c) (lindalee).cbr (36pp) | [71240] Action Comics 476 (1977) (c2c) (lindalee).cbr (36pp) | [71241] Action Comics 477 (1977) (c2c).cbz (35pp)
+            [71242] Action Comics 478 (1977) (c2c) (lindalee).cbr (36pp) | [71243] Action Comics 479 (1978).cbr (21pp) | [71244] Action Comics 480 (1978).cbr (20pp)
+            [71245] Action Comics 481 (1978).cbr (20pp) | [71246] Action Comics 482 (1978).cbr (20pp) | [71247] Action Comics 483 (1978).cbz (20pp)
+            [71248] Action Comics 484 (1978-04) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (24pp) | [71249] Action Comics 485 (1978) (c2c).cbr (36pp) | [71250] Action Comics 486 (1978) (c2c).cbr (34pp)
+            [71251] Action Comics 487 (1978).cbz (28pp) | [71252] Action Comics 488 (1978) (JaneJetson-DCP).cbz (43pp) | [71253] Action Comics 489 (1978) (JaneJetson-DCP).cbz (43pp)
+            [71254] Action Comics 490 (1978).cbr (20pp) | [71255] Action Comics 491 (1979).cbz (22pp) | [71256] Action Comics 492 (1979) (c2c).cbz (35pp)
+            [71257] Action Comics 493 (1979) (c2c) (Tnek Kralc).cbz (35pp) | [71258] Action Comics 494 (1979) (c2c) (lindalee).cbr (35pp)
+            [71259] Action Comics 495 (1979) (c2c) (Tnek Kralc).cbz (36pp) | [71260] Action Comics 496 (1979) (c2c) (Tnek Kralc).cbz (36pp) | [71261] Action Comics 497 (1979) (c2c).cbr (35pp)
+            [71262] Action Comics 498 (1979) (c2c) (lindalee).cbr (36pp) | [71263] Action Comics 499 (1979) (c2c) (rescan) (lindalee).cbr (36pp) | [71264] Action Comics 500 (1979).cbr (68pp)
+            [71265] Action Comics 501 (1979) (c2c).cbr (36pp) | [71266] Action Comics 502 (1979) (c2c) (ActionComics-DCP).cbz (35pp) | [71267] Action Comics 503 (1980) (c2c).cbr (36pp)
+            [71268] Action Comics 504 (1980) (Parallax-DCP).cbr (21pp) | [71269] Action Comics 505 (1980) (c2c).cbz (35pp) | [71270] Action Comics 506 (1980) (c2c).cbr (36pp)
+            [71271] Action Comics 507 (1980) (c2c) (Comixbear-DCP).cbr (38pp) | [71272] Action Comics 508 (1980) (c2c).cbz (36pp) | [71273] Action Comics 509 (1980) (c2c).cbz (68pp)
+            [71274] Action Comics 510 (1980) (Parallax-DCP).cbr (21pp) | [71275] Action Comics 511 (1980) (c2c).cbr (36pp) | [71276] Action Comics 512 (1980) (c2c).cbr (36pp)
+            [71277] Action Comics 513 (1980) (Parallax-DCP).cbr (29pp) | [71278] Action Comics 514 (1980) (KingDaubach-DCP).cbr (28pp) | [71279] Action Comics 515 (1981) (c2c).cbr (40pp)
+            [71280] Action Comics 516 (1981).cbr (28pp) | [71281] Action Comics 517 (1981) (c2c).cbr (36pp) | [71282] Action Comics 518 (1981).cbz (36pp)
+            [71283] Action Comics 519 (1981) (Parallax-DCP).cbr (29pp) | [71284] Action Comics 520 (1981) (Parallax-DCP).cbr (29pp)
+            [71285] Action Comics 521 (1981-07) (Digital) (Shadowcat-Empire).cbz (26pp) | [71286] Action Comics 522 (1981).cbr (29pp) | [71287] Action Comics 523 (1981).cbr (29pp)
+            [71288] Action Comics 524 (1981) (KingDaubach-DCP).cbr (31pp) | [71289] Action Comics 525 (1981).cbr (36pp) | [71290] Action Comics 526 (1981).cbz (41pp)
+            [71291] Action Comics 527 (1982).cbz (29pp) | [71292] Action Comics 528 (1982).cbz (36pp) | [71293] Action Comics 529 (1982).cbr (28pp) | [71294] Action Comics 530 (1982).cbz (36pp)
+            [71295] Action Comics 531 (1982).cbr (1pp) | [71296] Action Comics 532 (1982).cbr (16pp) | [71297] Action Comics 533 (1982).cbr (27pp) | [71298] Action Comics 534 (1982).cbr (27pp)
+            [71299] Action Comics 535 (1982).cbr (22pp) | [71300] Action Comics 536 (1982).cbr (26pp) | [71301] Action Comics 537 (1982).cbr (36pp) | [71302] Action Comics 538 (1982).cbr (25pp)
+            [71303] Action Comics 539 (1983).cbr (26pp) | [71304] Action Comics 540 (1983).cbr (27pp) | [71305] Action Comics 541 (1983).cbr (27pp) | [71306] Action Comics 542 (1983).cbr (27pp)
+            [71307] Action Comics 543 (1983).cbr (27pp) | [71308] Action Comics 544 (1983).cbr (58pp) | [71309] Action Comics 545 (1983).cbr (27pp) | [71310] Action Comics 546 (1983).cbr (27pp)
+            [71311] Action Comics 547 (1986).cbr (37pp) | [71312] Action Comics 548 (1983).cbr (37pp) | [71313] Action Comics 549 (1983) (Parallax-DCP).cbr (28pp)
+            [71314] Action Comics 550 (1983).cbr (27pp) | [71315] Action Comics 551 (1984) (KingDaubach-DCP).cbr (26pp) | [71316] Action Comics 552 (1984) (digital) (Son of Ultron-Empire).cbr (25pp)
+            [71317] Action Comics 553 (1984) (digital) (Son of Ultron-Empire).cbr (26pp) | [71318] Action Comics 554 (1984-02) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (26pp)
+            [71319] Action Comics 555 (1984-05) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (26pp) | [71320] Action Comics 556 (1984-04) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (26pp)
+            [71321] Action Comics 557 (1984-05) (Digital) (Shadowcat-Empire).cbz (26pp) | [71322] Action Comics 558 (1984-06) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [71323] Action Comics 559 (1984-07) (Digital) (Shadowcat-Empire).cbz (26pp) | Action Comics 560 (1984).cbr … Action Comics 565 (1985).cbr  (6 files, pp 25-28)
+            [71330] Action Comics 566 (1985) (KingDaubach-DCP).cbr (28pp) | [71331] Action Comics 567 (1985) (blonde_goddess-DCP).cbr (32pp)
+            [71332] Action Comics 568 (1985) (blonde_goddess-DCP).cbr (33pp) | [71333] Action Comics 569 (1985).cbr (29pp) | [71334] Action Comics 570 (1985).cbr (28pp)
+            [71335] Action Comics 571 (1985).cbr (27pp) | [71336] Action Comics 572 (1985) (KingDaubach-DCP).cbr (27pp)
+            [71337] Action Comics 573 (1985) (with MASK insert) (KingDaubach-DCP).cbr (45pp) | [71338] Action Comics 574 (1985) (JaneJetson-DCP).cbr (35pp)
+            [71339] Action Comics 575 (1986) (ActionComics-DCP).cbr (37pp) | [71340] Action Comics 576 (1986).cbr (37pp) | [71341] Action Comics 577 (1986).cbr (37pp)
+            [71342] Action Comics 578 (1986) (c2c) (Comixbear-DCP).cbr (39pp) | [71343] Action Comics 579 (1985) (ActionComics-DCP).cbz (36pp)
+            [71344] Action Comics 580 (1986) (c2c-no color edit) (DCP).cbz (36pp) | [71345] Action Comics 581 (1986) (c2c-no color edit) (DCP).cbz (36pp)
+            [71346] Action Comics 582 (1986) (c2c) (Comixbear-SCC-DCP).cbz (40pp) | [71347] Action Comics 583 (1986) (digital) (AnHeroGold-Empire).cbz (25pp)
+            [71348] Action Comics 584 (1987) (Digital) (Shadowcat-Empire).cbz (23pp) | [71349] Action Comics 585 (1987) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [71350] Action Comics 586 (1987-01) (digital) (Glorith-Novus-HD).cbz (24pp) | [71351] Action Comics 587 (1987) (Digital) (Shadowcat-Empire).cbz (23pp)
+            Action Comics 588 (1987-03) (digital) (Glorith-Novus-HD).cbz … Action Comics 599 (1988-02) (digital) (Glorith-Novus-HD).cbz  (12 files, pp 23-38)
+            [71364] Action Comics 600 (1988) (2 covers) (Digital) (Shadowcat-Empire).cbz (72pp) | [71365] Action Comics 601 (1988) (Digital) (Shadowcat-Empire).cbz (42pp)
+            [71366] Action Comics 602 (1988) (Digital) (Shadowcat-Empire).cbz (43pp) | [71367] Action Comics 603 (1988) (c2c-no color edit) (DCP) (weekly).cbz (51pp)
+            [71368] Action Comics 604 (1988) (weekly).cbz (44pp) | [71369] Action Comics 605 (1988) (weekly).cbz (47pp) | [71370] Action Comics 606 (1988) (weekly).cbz (47pp)
+            [71371] Action Comics 607 (1988) (c2c-no color edit) (DCP) (weekly).cbz (51pp) | [71372] Action Comics 608 (1988) (weekly).cbz (47pp) | [71373] Action Comics 609 (1988) (weekly).cbz (47pp)
+            [71374] Action Comics 610 (1988) (c2c-no color edit) (DCP) (weekly).cbz (51pp) | [71375] Action Comics 611 (1988) (weekly).cbr (46pp)
+            [71376] Action Comics 612 ctc (Weekly(1988).cbr (51pp) | [71377] Action Comics 613 (1988).cbr (46pp) | [71378] Action Comics 614 (1988).cbr (46pp)
+            [71379] Action Comics 615 (1988).cbr (42pp) | [71380] Action Comics 616 (1988).cbr (42pp) | [71381] Action Comics 617 (1988).cbr (45pp)
+            Action Comics 618 (1989) (Digital) (Shadowcat-Empire).cbz … Action Comics 626 (1990) (Digital) (Shadowcat-Empire).cbz  (9 files, pp 39-41) | [71391] Action Comics 627 (1988).cbr (43pp)
+            [71392] Action Comics 628 (1988) (c2c-no color edit) (DCP).cbz (51pp) | Action Comics 629 (1988) (weekly).cbr … Action Comics 641 (1989) (weekly).cbr  (13 files, pp 38-51)
+            [71406] Action Comics 642 (1989) (MaidOfMight-Novus-HD).cbz (42pp)
+            Action Comics 643 (1989) (Digital) (Shadowcat-Empire).cbz … Action Comics 649 (1990) (Digital) (Shadowcat-Empire).cbz  (7 files, pp 20-23)
+            [71414] Action Comics 650 (1990) (digital) (Glorith-HD).cbz (42pp) | [71415] Action Comics 651 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [71416] Action Comics 652 (1990) (Digital) (Shadowcat-Empire).cbz (23pp) | [71417] Action Comics 653 (1990) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [71418] Action Comics 654 (1990) (digital) (Glorith-Novus-HD).cbz (25pp) | [71419] Action Comics 655 (1990) (DobisP.R.-Novus-HD).cbz (34pp)
+            [71420] Action Comics 656 (1990) (ActionComics-DCP).cbr (38pp) | [71421] Action Comics 657 (1990) (ActionComics-DCP).cbr (36pp)
+            [71422] Action Comics 658 (1990) (2 covers) (digital) (Glorith-Novus-HD).cbz (25pp) | [71423] Action Comics 659 (1990) (digital) (AnHeroGold-Empire).cbz (25pp)
+            [71424] Action Comics 660 (1990) (DobisP.R.-Novus-HD).cbz (26pp) | [71425] Action Comics 661 (1990) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [71426] Action Comics 662 (1990) (digital) (Glorith-Novus-HD).cbz (23pp) | [71427] Action Comics 663 (1991) (DobisP.R.-Novus-HD).cbz (26pp)
+            [71428] Action Comics 664 (1991) (DobisP.R.-Novus-HD).cbz (26pp) | [71429] Action Comics 665 (1991) (DobisP.R.-Novus-HD).cbz (25pp)
+            [71430] Action Comics 666 (1991) (c2c) (ActionComics-DCP).cbz (35pp) | [71431] Action Comics 667 (1991) (RoyalTalon-Novus-HD).cbr (41pp)
+            [71432] Action Comics 668 (1991) (DobisP.R.-Novus-HD).cbz (25pp) | [71433] Action Comics 669 (1991) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [71434] Action Comics 670 (1991) (Digital) (Shadowcat-Empire).cbz (23pp) | [71435] Action Comics 671 (1991) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71436] Action Comics 672 (1991) (Digital) (Shadowcat-Empire).cbz (22pp) | [71437] Action Comics 673 (1992) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (23pp)
+            [71438] Action Comics 674 (1992) (Digital) (Shadowcat-Empire).cbz (23pp) | [71439] Action Comics 675 (1992) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71440] Action Comics 676 (1992) (Digital) (Shadowcat-Empire).cbz (23pp) | [71441] Action Comics 677 (1992) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [71442] Action Comics 678 (1992) (digital) (Shadowcat-Empire).cbz (22pp) | [71443] Action Comics 679 (1992) (digital) (Shadowcat-Empire).cbz (23pp)
+            [71444] Action Comics 680 (1992) (digital) (Glorith-Novus-HD).cbz (23pp) | [71445] Action Comics 681 (1992) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [71446] Action Comics 682 (1992) (Digital) (Shadowcat-Empire).cbz (23pp) | [71447] Action Comics 683 (1992-09) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [71448] Action Comics 684 (1992) (digital) (AnHeroGold-Empire).cbz (23pp)
+            Action Comics 685 (1992-11) (digital) (Glorith-Novus-HD).cbz … Action Comics 691 (1993-07) (digital) (Glorith-Novus-HD).cbz  (7 files, pp 22-25)
+            [71456] Action Comics 692 (1993) (Digital) (Shadowcat-Empire).cbz (23pp) | [71457] Action Comics 693 (1993-11) (RoyalTalon-Novus-HD).cbr (28pp)
+            [71458] Action Comics 694 (1993) (Digital) (Shadowcat-Empire).cbz (22pp) | [71459] Action Comics 695 (1994) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [71460] Action Comics 696 (1994) (digital) (Shadowcat-Empire).cbz (22pp) | [71461] Action Comics 697 (1994) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71462] Action Comics 698 (1994) (digital) (Shadowcat-Empire).cbz (21pp) | [71463] Action Comics 699 (1994) (digital) (Shadowcat-Empire).cbz (21pp)
+            [71464] Action Comics 700 (1994-04) (digital) (Glorith-Novus-HD).cbz (54pp) | [71465] Action Comics 701 (1994) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [71466] Action Comics 702 (1994) (Digital) (Shadowcat-Empire).cbz (22pp) | [71467] Action Comics 703 (1994-07) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [71468] Action Comics 704 (1994-11) (digital) (DreamGirl-Novus-HD).cbz (23pp) | [71469] Action Comics 705 (1994) (digital) (Shadowcat-Empire).cbz (22pp)
+            [71470] Action Comics 706 (1995) (Digital) (Shadowcat-Empire).cbz (22pp) | [71471] Action Comics 709 (1995) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71472] Action Comics 709 (1995-02) (digital) (Glorith-Novus-HD).cbz (23pp) | [71473] Action Comics 710 (1995-06) (digital) (DreamGirl-Novus-HD).cbz (23pp)
+            [71474] Action Comics 711 (1995-07) (digital) (DreamGirl-Novus-HD).cbz (23pp) | [71475] Action Comics 712 (1995) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71476] Action Comics 713 (1995) (Digital) (Shadowcat-Empire).cbz (22pp) | [71477] Action Comics 714 (1995) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71478] Action Comics 715 (1995-09) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (24pp) | [71479] Action Comics 716 (1995) (digital) (Shadowcat-Empire).cbz (22pp)
+            [71480] Action Comics 717 (1996) (digital) (Shadowcat-Empire).cbz (22pp) | [71481] Action Comics 718 (1996) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71482] Action Comics 719 (1996) (Digital) (Shadowcat-Empire).cbz (22pp) | [71483] Action Comics 720 (1996) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71484] Action Comics 721 (1996) (Digital) (Shadowcat-Empire).cbz (22pp) | [71485] Action Comics 722 (1996) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71486] Action Comics 723 (1996) (digital) (Shadowcat-Empire).cbz (23pp) | [71487] Action Comics 724 (1996) (digital) (Shadowcat-Empire).cbz (22pp)
+            [71488] Action Comics 725 (1996) (Digital) (Shadowcat-Empire).cbz (22pp) | [71489] Action Comics 726 (1996) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71490] Action Comics 727 (1996) (Digital) (Shadowcat-Empire).cbz (22pp) | [71491] Action Comics 728 (1996) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71492] Action Comics 729 (1996-11) (scan) (MaidOfMight-HD).cbz (24pp) | [71493] Action Comics 730 (1997) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71494] Action Comics 731 (1997) (Digital) (Shadowcat-Empire).cbz (22pp) | [71495] Action Comics 732 (1997) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71496] Action Comics 733 (1997) (Digital) (Shadowcat-Empire).cbz (22pp) | [71497] Action Comics 734 (1997) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71498] Action Comics 735 (1997-05) (digital) (Glorith-HD).cbz (24pp) | [71499] Action Comics 736 (1997) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [71500] Action Comics 737 (1997-07) (digital) (Glorith-HD).cbz (24pp) | [71501] Action Comics 738 (1997-08) (digital) (Glorith-HD).cbz (24pp)
+            Action Comics 739 (1997) (Digital) (Shadowcat-Empire).cbz … Action Comics 745 (1998) (Digital) (Shadowcat-Empire).cbz  (7 files, pp 22-23)
+            [71509] Action Comics 746 (1998-05) (digital) (Glorith).cbz (23pp) | [71510] Action Comics 747 (1998) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [71511] Action Comics 748 (1998-07) (digital) (Glorith-HD).cbz (24pp) | [71512] Action Comics 749 (1998-10) (digital) (Glorith-HD).cbz (24pp)
+            [71513] Action Comics 750 (1999) (Digital) (Shadowcat-Empire).cbz (39pp) | [71514] Action Comics 751 (1999) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [71515] Action Comics 752 (1999) (Digital) (Shadowcat-Empire).cbz (23pp) | [71516] Action Comics 753 (1999-02) (digital) (Glorith-HD).cbz (23pp)
+            [71517] Action Comics 754 (1999-03) (digital) (Glorith-HD).cbz (24pp)
+            Action Comics 755 (1999) (Digital) (Shadowcat-Empire).cbz … Action Comics 770 (2000) (Digital) (Shadowcat-Empire).cbz  (16 files, pp 19-37)
+            [71534] Action Comics 771 (2000) (digital) (DreamGirl-Novus-HD).cbz (23pp)
+            Action Comics 772 (2000) (Digital) (Shadowcat-Empire).cbz … Action Comics 780 (2001) (Digital) (Shadowcat-Empire).cbz  (9 files, pp 20-39)
+            [71544] Action Comics 781 (2001-09) (digital) (DreamGirl-Novus-HD).cbz (22pp) | [71545] Action Comics 782 (2001) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71546] Action Comics 783 (2001) (digital) (Shadowcat-Empire).cbz (22pp) | [71547] Action Comics 784 (2001) (digital) (Shadowcat-Empire).cbz (22pp)
+            [71548] Action Comics 785 (2002) (Digital) (Shadowcat-Empire).cbz (22pp) | [71549] Action Comics 786 (2002) (digital) (Shadowcat-Empire).cbz (22pp)
+            [71550] Action Comics 787 (2002) (Digital) (Shadowcat-Empire).cbz (23pp) | [71551] Action Comics 788 (2002) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [71552] Action Comics 789 (2002-03) (digital) (Glorith-Novus-HD).cbz (23pp) | [71553] Action Comics 790 (2002) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71554] Action Comics 791 (2002) (Digital) (Shadowcat-Empire).cbz (23pp) | [71555] Action Comics 792 (2002) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71556] Action Comics 793 (2002) (Digital) (Shadowcat-Empire).cbz (23pp) | [71557] Action Comics 794 (2002) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [71558] Action Comics 795 (2002) (Digital) (Shadowcat-Empire).cbz (23pp) | [71559] Action Comics 796 (2002) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [71560] Action Comics 797 (2003) (Digital) (Shadowcat-Empire).cbz (22pp) | [71561] Action Comics 798 (2003) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [71562] Action Comics 799 (2003) (Digital) (Shadowcat-Empire).cbz (23pp) | [71563] Action Comics 800 (2003) (Digital) (Shadowcat-Empire).cbz (53pp)
+            [71564] Action Comics 801 (2003) (Digital) (Shadowcat-Empire).cbz (23pp) | [71565] Action Comics 802 (2003) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [71566] Action Comics 803 (2003) (Digital) (Shadowcat-Empire).cbz (22pp) | [71567] Action Comics 804 (2003) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [71568] Action Comics 805 (2003) (Digital) (Shadowcat-Empire).cbz (22pp) | [71569] Action Comics 806 (2003) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [71570] Action Comics 807 (2003) (Digital) (Shadowcat-Empire).cbz (21pp) | [71571] Action Comics 808 (2003) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71572] Action Comics 809 (2004) (Digital) (Shadowcat-Empire).cbz (23pp) | [71573] Action Comics 810 (2004) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [71574] Action Comics 811 (2004) (Digital) (Shadowcat-Empire).cbz (22pp) | [71575] Action Comics 812 (2004) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71576] Action Comics 813 (2004) (Digital) (Shadowcat-Empire).cbz (23pp) | [71577] Action Comics 814 (2004) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71578] Action Comics 815 (2004) (Digital) (Shadowcat-Empire).cbz (21pp) | [71579] Action Comics 816 (2004) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [71580] Action Comics 817 (2004) (Digital) (Shadowcat-Empire).cbz (21pp) | [71581] Action Comics 818 (2004) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71582] Action Comics 819 (2004) (digital) (Shadowcat-Empire).cbz (23pp)
+            Action Comics 820 (2004) (Digital) (Shadowcat-Empire).cbz … Action Comics 826 (2005) (Digital) (Shadowcat-Empire).cbz  (7 files, pp 21-27)
+            [71590] Action Comics 827 (2005) (digital) (TLK-EMPIRE-HD).cbr (24pp) | [71591] Action Comics 828 (2005) (digital) (TLK-EMPIRE-HD).cbr (23pp)
+            [71592] Action Comics 829 (2005) (digital-Empire).cbr (23pp)
+            Action Comics 830 (2005) (digital) (TLK-EMPIRE-HD).cbr … Action Comics 835 (2006) (digital) (TLK-EMPIRE-HD).cbr  (6 files, pp 24-25)
+            [71599] Action Comics 836 (2006) (Digital) (Shadowcat-Empire).cbz (24pp) | [71600] Action Comics 837 (2006) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [71601] Action Comics 838 (2006) (Digital) (AnHeroGold-Empire).cbz (23pp) | [71602] Action Comics 839 (2006) (Digital) (AnHeroGold-Empire).cbz (24pp)
+            [71603] Action Comics 840 (2006) (digital) (AnHeroGold-Empire).cbz (24pp) | [71604] Action Comics 841 (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (24pp)
+            [71605] Action Comics 842 (2006) (Digital) (Shadowcat-Empire).cbz (23pp) | [71606] Action Comics 843 (2006) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71607] Action Comics 844 (2006) (3 covers) (digital) (Minutemen-InnerDemons).cbr (20pp) | [71608] Action Comics 845 (2006) (2 Covers) (Digital) (Zone-Empire).cbr (21pp)
+            [71609] Action Comics 846 (2006) (Digital) (Zone-Empire).cbr (19pp) | [71610] Action Comics 847 (2007) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [71611] Action Comics 848 (2007) (Digital) (Shadowcat-Empire).cbz (22pp) | [71612] Action Comics 849 (2007) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [71613] Action Comics 850 (2007) (Digital) (Shadowcat-Empire).cbz (39pp) | [71614] Action Comics 851 (2007) (Digital) (Zone-Empire).cbr (17pp)
+            [71615] Action Comics 852 (2007) (Digital) (Shadowcat-Empire).cbz (25pp) | [71616] Action Comics 853 (2007) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [71617] Action Comics 854 (2007) (Digital) (Shadowcat-Empire).cbz (24pp) | [71618] Action Comics 855 (2007) (Digital) (Zone-Empire).cbr (20pp)
+            [71619] Action Comics 856 (2007) (Digital) (Zone-Empire).cbr (24pp) | [71620] Action Comics 857 (2007) (Digital) (Zone-Empire).cbr (24pp)
+            Action Comics 858 (2007) (2 Covers) (Digital) (Zone-Empire).cbr … Action Comics 863 (2008) (2 Covers) (Digital) (Zone-Empire).cbr  (6 files, pp 24-33)
+            [71627] Action Comics 864 (2008) (Digital) (Zone-Empire).cbr (24pp) | [71628] Action Comics 865 (2008) (Digital) (Zone-Empire).cbr (24pp)
+            [71629] Action Comics 866 (2008) (Digital) (Zone-Empire).cbr (24pp) | [71630] Action Comics 867 (2008) (Digital) (Zone-Empire).cbr (25pp)
+            [71631] Action Comics 868 (2008) (Digital) (Zone-Empire).cbr (25pp) | [71632] Action Comics 869 (2008) (digital) (Minutemen-PhD).cbr (24pp)
+            [71633] Action Comics 870 (2008) (2 covers) (digital) (Minutemen-PhD).cbr (25pp) | [71634] Action Comics 871 (2009) (Digital) (Zone-Empire).cbr (24pp)
+            [71635] Action Comics 872 (2009) (Digital) (Zone-Empire).cbr (22pp) | [71636] Action Comics 873 (2009) (Digital) (Zone-Empire).cbr (22pp)
+            [71637] Action Comics 874 (2009) (digital) (Zone-Empire).cbr (25pp) | [71638] Action Comics 875 (2009) (digital) (Zone-Empire).cbr (22pp)
+            [71639] Action Comics 876 (2009) (digital) (Zone-Empire).cbr (20pp) | [71640] Action Comics 877 (2009) (digital) (Zone-Empire).cbr (23pp)
+            [71641] Action Comics 878 (2009) (digital) (Zone-Empire).cbr (23pp)
+            Action Comics 879 (2009) (Digital) (Shadowcat-Empire).cbz … Action Comics 887 (2010) (Digital) (Shadowcat-Empire).cbz  (8 files, pp 23-29)
+            [71652] Action Comics 889 (2010) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (27pp) | [71653] Action Comics 890 (2010) (Two Covers) (digital) (TheHand-Empire).cbr (32pp)
+            [71654] Action Comics 891 (2010) (digital) (TheHand-Empire).cbr (32pp) | [71655] Action Comics 892 (2 Covers) (2010) (Digital) (Zone-Empire).cbr (33pp)
+            [71656] Action Comics 893 (2010) (Digital) (Zone-Empire).cbr (33pp) | [71657] Action Comics 894 (2 Covers) (2010) (Digital) (Zone-Empire).cbr (33pp)
+            [71658] Action Comics 895 (2011) (Digital) (Zone-Empire).cbr (32pp) | [71659] Action Comics 896 (2011) (Digital) (Zone-Empire).cbr (32pp)
+            [71660] Action Comics 897 (2011) (digital) (Zone-Empire).cbr (22pp) | [71661] Action Comics 898 (2011) (digital) (Zone-Empire).cbr (22pp)
+            [71662] Action Comics 899 (2011) (digital) (Zone-Empire).cbr (25pp) | [71663] Action Comics 900 (3 Covers) (2011) (Digital) (Zone-Empire).cbr (94pp)
+            [71664] Action Comics 901 (2011) (2 Covers) (Digital) (AnHeroGold-Empire).cbr (23pp) | [71665] Action Comics 902 (2011) (2 Covers) (Digital) (AnHeroGold-Empire).cbr (23pp)
+            [71666] Action Comics 903 (2011) (Digital) (AnHeroGold-Empire).cbz (23pp) | [71667] Action Comics 904 (2011) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [71668] Action Comics 000 (1994-08) (digital) (Glorith-Novus-HD).cbz (23pp) | [71669] Action Comics Annual 002 (1989) (Digital) (Shadowcat-Empire).cbz (51pp)
+            [71670] Action Comics Annual 005 (1993) (Digital) (Shadowcat-Empire).cbz (53pp) | [71671] Action Comics Annual 010 (2007) (Digital) (Shadowcat-Empire).cbz (40pp)
+            [71672] Action Comics Annual 011 (2008) (Digital) (Shadowcat-Empire).cbz (40pp) | [71673] Action Comics Annual 012 (2009) (Digital) (Shadowcat-Empire).cbz (36pp)
+            [71674] Action Comics Annual 03 (1991) (Novus Year Three) (RoyalTalon-Novus-HD).cbr (58pp) | [71675] Action Comics Annual 04 (1992) (RoyalTalon-Novus-HD).cbr (57pp)
+            [71676] Action Comics Annual 06 (1994) (ActionComics-DCP).cbr (68pp) | [71677] Action Comics Annual 07 (1995) (DobisP.R.-Novus-HD).cbz (48pp)
+            [71678] Action Comics Annual 08 - Legends of the Dead Earth (1996).cbr (37pp) | [71679] Action Comics Annual 09 (1997) (dc-dcp).cbz (67pp)
+            [71680] Action Comics Annual 10 (2007) (digital) (Minutemen-InnerDemons).cbr (40pp) | [71681] Action Comics Annual 11 (2008) (digital) (Minutemen-InnerDemons).cbr (40pp)
+            [71682] Action Comics Annual 12 (2009) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (37pp) | [71683] Action Comics Annual 13 (2011) (Avalon-SCC-DCP).cbr (54pp)
+            [71684] Action Comics Annual, 1987-11-00 (#01) (DobisP.R.-Novus-HD).cbz (40pp) | [71685] Action Comics Annual, 1989-12-00 (#02) (digital) (Glorith-HD).cbz (50pp)
+            [71686] Action Comics Annual, 1993-01-00 (#05) (digital) (Glorith-Novus-HD).cbz (54pp) | [72541] Action Comics 880 (2009) (Digital) (Shadowcat-Empire).cbz (29pp)
+            [72550] 03 Action Comics 887 (2010) (Digital) (Shadowcat-Empire).cbz (23pp) | [72555] 08 Action Comics 888 (2010) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [72561] Action Comics 889 (2010) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (27pp)
+   ours:    ladder 0-23, 23.1, 23.2, 23.3, 23.4, 24-657, 659-706, 709-891, 893, 895-899, 901-904, 957-958, 973-976, 1064-1066; 120 number(s) name more than one file: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11; ComicInfo Series: "Action Comics"x79, "Action Comics Weekly"x37, "Action Comics Annual"x5; ComicInfo Volume: "1938"x40, "1989"x29, "1987"x5, "1988"x1; ComicInfo Count: "904"x30, "885"x22, "871"x7, "600"x4; ComicInfo Publisher: "DC Comics"x106, "DC"x15; ComicInfo Web: "115463"x1, "111066"x1, "118442"x1, "118404"x1; barcode item 18112 [{"type": "EAN13", "data": "0761941306377", "page": " (three; barcode item 18113 [{"type": "EAN13", "data": "0761941306377", "page": ") (two ; barcode item 18114 [{"type": "EAN13", "data": "0761941306377", "page": "2) (two; barcode item 18115 [{"type": "EAN13", "data": "0761941306377", "page": " (three
+   CV linked:      vol 18005 "Action Comics" 1938 DC Comics 864 issues; cached #0-904 (864); yearΔ 0; ratio 1067/864 = 1.23; no judged range
+   CV per-file (v1): vol 18005 "Action Comics" 1938 DC Comics 864 on 1064/1068 files · vol 42563 "Action Comics" 2011 DC Comics 57 on 4/1068 files
+   CV local rip:   (= linked) · 77491 "Action Comics" 1947 N.S.W. Bookstall Co. 6 · 41730 "Action Comics" 2001 Panini Verlag 6 · 91078 "Action Comics" 2016 DC Comics 136 · 40958 "Action Comics" ? L. Miller & Son, Ltd 1 issue 276268   (rip lookup)
+   GCD per-file:   methods numx884 · round2-seriesx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 97 "Action Comics" 1938-2011 DC [was ongoing series] 866 on 836/1068 files · series 59922 "Action Comics" 2011-? DC [ongoing series] 199 on 35/1068 files · series 16410 "Action Comics" [en-ca] 1948-1948 National Comics Publications of Canada Ltd [Was Ongoing Series] 10 on 6/1068 files · series 13586 "Action Comics" [en-ca] 1948-1950 Simcoe Publishing & Distribution [was ongoing series] 7 on 5/1068 files
+   GCD dump:       (= per-file) · 72786 "Action Comics" [en-au] 1951-1955 H. John Edwards [] 43 · 185623 "Action Comics" [en-za] 1954-1954 Zebra Publications [] 7 · 112432 "Action Comics" [en-au] 1955-1957 Action Comics [] 20   (dump lookup)
+   bridges:        gcd 97 -> LOCG 100180 "Action Comics" support 884 · gcd 59922 -> LOCG 124401 "Action Comics" support 104 · gcd 16410 -> LOCG 100180 "Action Comics" support 6

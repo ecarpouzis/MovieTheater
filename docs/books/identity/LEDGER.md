@@ -1875,3 +1875,12 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   "#DC Events" Post-Crisis read-order folders hold UNDATED "Title 001.cbr" rips of the 1987 series inside a New 52
   ladder — grep for undated names (extends L-365). X-batch I lines on "<Title> by <Creator> Book NN" lines were often
   attached to same-name rows (Spanish ECC, a 2025 relaunch) — check `--gcd-series "<Title> by <Creator>"` (R-108).
+
+[L-370] pub:dc sig:split
+- GCD 59922 "Action Comics" spans New 52 #0-52 AND Rebirth #957+ (the inverse of L-198); a shared gcd between S94962
+  (New 52) and S94961 (#957+) is benign — they stay apart on CV. A return to LEGACY numbering after a relaunch (Action
+  #957) is NOT an L-212 retitle: it stays its own run unless a catalogue joins it to the old series (lead, wave 99).
+  DC Ostrander Suicide Squad trades = GCD 94748 #1-8 (twin #1 rows). The volume-id-as-issue-id mistake happens on the
+  CV side too (cv=33054 on an I line) — the a-I signal catches it. A split's warrant is the shelf's WINNING F
+  split-needed: an unlanded R- file that restates the shelf must carry the F line too, or check_splits --all refuses
+  the P- line (P-039 / R-109, S16896).
