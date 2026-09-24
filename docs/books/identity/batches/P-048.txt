@@ -1,0 +1,290 @@
+## Conventions for this batch (28 shown of 75 matched; 382 in LEDGER.md; 11 shelf/shelves: pub:fantagraphics ×9 · kind:trade-only ×7 · kind:collected-line ×7 · pub:image ×2 · kind:new ×1 · folder:graphic-novels ×1 · folder:variant-covers ×1 · folder:vn-year ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-021] (9 shelf/shelves) pub:dark-horse pub:disney pub:dstlry pub:dynamite pub:fantagraphics pub:idw
+- The Disney folder is publisher-agnostic (Joe Books, Dark Horse, IDW, Dynamite, Fantagraphics, Yen Press on one
+  shelf) — the provider's publisher column is the only test. DSTLRY filenames' "(N covers)" is a cover count.
+[L-321] (9 shelf/shelves) kind:foreign kind:new pub:dark-horse pub:drawn-quarterly pub:fantagraphics pub:first-second sig:probe sig:split tier:D
+- TIER D (D-004..D-006): one CV volume per LINE vs one GCD row per BOOK is what cuts a tier-D folder into shelves
+  (Maakies, Black Moon Chronicles, Wunderwaffen, Ekho, Moebius Library) — `--issues <line volume>` resolves the whole
+  folder by subtitle; the reverse (GCD keeps the line, CV per book: Don Rosa Library, Complete Crepax, History
+  Comics) → cv=- on the S, per-book CV issues on the I. 2022-25 Fantagraphics / D&Q / First Second / Dark Horse
+  singletons are past the rip's horizon → GCD-only cv=- + provider-missing (~150 of 360). A GCD row with count 0 and a
+  "do not add issues" note naming its constituents IS the finding (R + split with those ids); a GCD row with zero
+  indexed issues but the right title still carries the S, the I takes `gcd=s<series>`. GCD splits a run at a mid-run
+  trademark retitle (Tommy Gun: Wizards 149904 / Machine Gun: Wizards 153050 vs CV's one 120928). LEAD RULING: when
+  the ONLY catalog record of a comic is a third-territory licence (a German Splitter edition of a French album whose
+  original is in neither catalog) link it at 0.7 + provider-missing — the review queue, not an applied identity —
+  so the web lane gets a concrete question instead of a refusal.
+[L-342] (9 shelf/shelves) pub:fantagraphics
+- Fantagraphics singletons are often ONE numbered row of a GCD line (EC Artists' Library, Freak Brothers Follies) while
+  CV mints a volume per book — probe the LINE name before provider-missing. A line spanning several works keeps its
+  own identity; a one-volume edition / omnibus of ONE run on its own shelf is a merge into the live run shelf (Bone,
+  Mask of Fudo, Tenement — R-065).
+[L-375] (9 shelf/shelves) pub:fantagraphics pub:oni sig:split
+- A split key that NORMALIZES to the items' CURRENT key moves nothing (checker and replay both pass it): respell with
+  vN (Usagi Yojimbo: The Crow v1 (2024), P-044) — extends L-336. GCD files Fantagraphics' Segar Popeye Sundays under bare
+  "Popeye" (179342) and the French magazine as "Métal Hurlant" with the accent (41897; its "bis" rows = CV "NNbis").
+  CV's Western Bugs Bunny splits at #220/221 (11508 / 31736) while GCD 12477 spans both. Rippers number EC's Weird
+  Fantasy 1-22 in publication order (files 001-005 = EC's 1950 #13-17). Oni Courtney Crumrin: CV 44811 is the 2012
+  monthly, not the 7-volume trade line. A one-book title CV holds twice (Gabrielle Bell 49698 / 64883) merges by
+  restating one side onto the other's cv (R-119).
+[L-135] (7 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-164] (7 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (7 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-244] (7 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (7 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (7 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+[L-248] (7 shelf/shelves) kind:collected-line
+- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
+  the sibling's landed S is evidence for the weak per-file matches on the others.
+[L-251] (7 shelf/shelves) kind:collected-line
+- Deluxe / Yearbook / Omnibus editions of the shelf's own ongoing with NO judged range get an `N` naming the
+  relationship, never an invented `C` range (the range is containment's to read).
+[L-258] (7 shelf/shelves) kind:collected-line sig:stamp
+- A degenerate packet block can stamp ONE GCD issue id onto every book of a shelf (Green Arrow S97350, six eras of
+  collected lines) — resolve only by each series' full issue list matched by title, never by the stamp.
+[L-269] (7 shelf/shelves) kind:collected-line kind:trade-only
+- An omnibus bundling several minis gets one `C` per mini at that mini's full range; an anthology TPB ("… and
+  Others") is not a numbered run and gets an `N`, not a forced `C`.
+[L-275] (7 shelf/shelves) kind:collected-line pass:item sig:probe sig:trade-link
+- A count-1/2/3 trade record the shelf's `N` called absent is often in the catalogs under a spelling the packet
+  never probed ("The Adventures of …", "Complete Collection", "Deluxe") — probe before writing no-record.
+[L-279] (7 shelf/shelves) kind:collected-line
+- Blade of the Immortal (S23118) is the canonical "line + run" shape: GCD's 31 collected-edition rows are the `I`
+  identities (cv=- — ComicVine mints only the floppy volume), and the floppy run CV 9069 is what every `C` names,
+  ranges #0-206 ascending across the 31 books. A single-leg shelf's books inherit the shelf's 0.9, never more.
+[L-282] (7 shelf/shelves) kind:collected-line
+- A `gcd=-` / dump-only shelf's books inherit the shelf's 0.9 (Cells at Work! Lady, Dragon Head); an exact edition
+  can exist on GCD alone and be absent from ComicVine entirely (Cat Shit One Omnibus GCD 186621 → 0.9, cv=-).
+[L-285] (7 shelf/shelves) kind:collected-line pass:item sig:stamp
+- ITEM PASS (X-031..X-033): JoJo's Bizarre Adventure part-shelves are double-stamped — per-file CV is the whole-saga
+  hardcover omnibus volume (165667, one issue per PART) and per-file GCD the umbrella whole-saga series (27115) by
+  raw issue number; both wrong for all 37 books. Parts 1-3 have no CV softcover record (cv=-); Parts 4-5 do.
+[L-286] (7 shelf/shelves) kind:collected-line sig:probe
+- A shelf-level "no record" `N` can be wrong for an English product too (Innocent Omnibus: CV 157999 / GCD 206125
+  under "Innocent Omnibus") — probe the edition's own name before inheriting the shelf's gap.
+[L-287] (7 shelf/shelves) kind:collected-line pass:item
+- A series can be wrong on BOTH legs at once (Hunter x Hunter, Inuyashiki, Kakegurui Twin): the header pool by
+  ordinal is the only source; an omnibus with no dedicated record on either leg is `N no-record`, never a mapping.
+[L-289] (7 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-291] (7 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-309] (7 shelf/shelves) kind:collected-line pass:item sig:probe
+- A collected line's own issue rows carry the trade's SUBTITLE as the issue title, so once one book of a line is
+  identified, `--issues <volume>` or `gcd_issue WHERE series_id=?` resolves the whole Vol. 01-N run in one query —
+  "own container id not probed" is never a valid no-record.
+[L-314] (7 shelf/shelves) kind:collected-line pass:item
+- `cvref.normName` drops "the / a / an / of / and" everywhere, not just leading articles — a word-preserving
+  normalizer misses ~90% of exact matches; replicate cvref's tokenizer when matching titles by script. A bare
+  trailing-number fallback (trade "01" → run issue #1) is safe only for mislabeled single-issue files, never for
+  "Vol." / "Book" / dash-subtitled titles (it matched an 824pp omnibus to issue #1). One CV issue id reused across
+  two differently titled books on a shelf is a sign of two eras, not one book. A digital "Collection Book NN"
+  bundle is a different catalog shape from a "Vol. NN" trade and is often uncatalogued — honest no-record.
+[L-014] (11 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-193] (11 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-013] (10 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-043] (10 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+
++47 more matched entries not shown: L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-064, L-085, L-101, L-310, L-016, L-032, L-113, L-114, L-041, L-192, L-060, L-182, L-357, L-124, L-175, L-191, L-272, L-281, L-065, L-099, L-123, L-150, L-194, L-262, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S10258 Kamen's Kalamity and Other Stories  [split]  1 files / 0 collections  decided in R-123 (S)
+   decided: S 10258 cv=161538 gcd=- 0.9 | CV 161538 "Kamen's Kalamity and Other Stories" (Fantagraphics 2024, 1, issue 1080662) plus our own naming and year against a 259pp 2024 rip; GCD holds the book only as #36 of the EC Artists' Library line 69863 (row 2625378, 254pp, ISBN 9781683969181); 0.9 because the line's shelf is S68158, joined below
+   F 10258 split-needed | item 25118 -> join S68158 — v36 of the EC Artists' Library (GCD 69863 row 2625378, 254pp vs our 259pp), the line S68158 stores (cv=- gcd=69863); the split-lane join (L-377) empties this one-file shelf
+   named: S68158 The EC Artists' Library  34 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Kamen's Kalamity and Other Stories" x1
+   groups (title x folder): 1
+   G1 "Kamen's Kalamity and Other Stories (2024) (digital) (DrVink-DCP)" in Fantagraphics — 1 file(s), pp 259-259; cv per-file 161538x1; gcd per-file 69863x1; key "Kamen's Kalamity and Other Stories"
+      [25118] Kamen's Kalamity and Other Stories (2024) (digital) (DrVink-DCP).cbz (259pp)
+
+== S11252 Man and Superman and Other Stories  [split]  2 files / 1 collections  decided in R-123 (S)
+   decided: S 11252 cv=124661 gcd=- 0.9 | CV 124661 "Man and Superman and Other Stories" (Fantagraphics 2020, 1, issue 735457) plus ComicInfo Series / Publisher on both files (the same 188pp rip, one named "The EC Artists' Library v27 … (Harvey Kurtzman)"); GCD holds it only as #27 of line 69863 (row 2063711, 172pp, ISBN 978-1-68396-275-5); 0.9 because the line's shelf is S68158, joined below
+   F 11252 split-needed | items 25002, 25126 -> join S68158 — both are v27 of the EC Artists' Library (GCD 69863 row 2063711, 188pp both), which S68158 stores (cv=- gcd=69863); the split-lane join (L-377) empties this shelf
+   named: S68158 The EC Artists' Library  34 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S21399 "Weird Science" 3f [shares gcd=764 (collected by item 25002) — S cv=18944 gcd=764 (R-122 0.9)] keys: "Weird Science"
+   nearby: S4338 "Crime SuspenStories" 2f [shares gcd=759 (collected by item 25002) — S cv=1373 gcd=759 (C-025 0.95)] keys: "Crime SuspenStories" | "EC Archives: Crime Suspenstories"
+   keys now: "Man and Superman and Other Stories" x2
+   groups (title x folder): 2
+   G1 "Man and Superman and Other Stories (2020) (Digital) (Bean-Empire)" in Fantagraphics — 1 file(s), pp 188-188; cv per-file 124661x1; gcd per-file 69863x1; key 'Man and Superman and Other Stories'
+      [25126] Man and Superman and Other Stories (2020) (Digital) (Bean-Empire).cbz (188pp)
+   G2 "The EC Artists' Library" in Fantagraphics\The EC Artists' Library (2012) — 1 file(s), 1 COL, pp 188-188; cv per-file 124661x1; gcd per-file 69863x1; key 'Man and Superman and Other Stories'
+      [25002] COL The EC Artists' Library v27 - Man and Superman and Other Stories (Harvey Kurtzman) (2020) (Digital) (Bean-Empire).cbz (188pp)
+         own record cv 124661 / gcd s69863 "The Fantagraphics EC Artists' Library" (issue 2063711) COLLECTS: gcd=763 Weird Fantasy (1950) #13-17 · gcd=764 Weird Science (1950) #12-15 · gcd=836 Weird Science (1951) #5-7 · gcd=759 Crime SuspenStories (1950) #1, #3
+
+== S1461 Atom Bomb and Other Stories  [split]  2 files / 1 collections  decided in R-123 (S)
+   decided: S 1461 cv=122566 gcd=- 0.9 | CV 122566 "Atom Bomb and Other Stories" (Fantagraphics 2019, 1, issue 725815) plus ComicInfo Series / Publisher on both files (the same 289pp rip, one named "The EC Artists' Library v26 … (Wallace Wood)"); GCD holds it as #26 of line 69863 (row 2035751, 268pp, ISBN 978-1-68396-245-8); 0.9 because the line's shelf is S68158, joined below
+   F 1461 split-needed | items 24545, 25001 -> join S68158 — both are v26 of the EC Artists' Library (GCD 69863 row 2035751, 289pp both), which S68158 stores (cv=- gcd=69863); the split-lane join (L-377) empties this shelf
+   named: S68158 The EC Artists' Library  34 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Atom Bomb and Other Stories" x2
+   groups (title x folder): 2
+   G1 "The EC Artists' Library" in Fantagraphics\The EC Artists' Library (2012) — 1 file(s), 1 COL, pp 289-289; cv per-file 122566x1; gcd per-file 69863x1; key 'Atom Bomb and Other Stories'
+      [25001] COL The EC Artists' Library v26 - Atom Bomb and Other Stories (Wallace Wood) (2019) (Digital) (Bean-Empire).cbz (289pp)
+         own record cv 122566 / gcd s69863 "The Fantagraphics EC Artists' Library" (issue 2035751) COLLECTS: gcd=762 Two-Fisted Tales (1950) #18-28, #30-35, #41 · gcd=834 Frontline Combat (1951) #1-4, #6-10, #12-15 · gcd=1149 Aces High (1955) #1-5 · gcd=1692 Blazing Combat (1965) #3-4
+   G2 "Atom Bomb and Other Stories (2019) (Digital) (Bean-Empire)" in Fantagraphics\_Wallace Wood — 1 file(s), pp 289-289; cv per-file 122566x1; gcd per-file 69863x1; key 'Atom Bomb and Other Stories'
+      [24545] Atom Bomb and Other Stories (2019) (Digital) (Bean-Empire).cbz (289pp)
+
+== S19071 The Martian Monster and Other Stories  [split]  1 files / 1 collections  decided in R-123 (S)
+   decided: S 19071 cv=116718 gcd=- 0.9 | CV 116718 "The Martian Monster and Other Stories" (Fantagraphics 2019, 1, issue 698643) plus ComicInfo Series / Publisher on our 178pp rip named "The EC Artists' Library v24 … (Jack Kamen)"; GCD holds it as #24 of line 69863 (row 1912061, 180pp, ISBN 978-1-68396-168-0); 0.9 because the line's shelf is S68158, joined below
+   F 19071 split-needed | item 24999 -> join S68158 — v24 of the EC Artists' Library (GCD 69863 row 1912061, 180pp vs our 178pp), the line S68158 stores (cv=- gcd=69863); the split-lane join (L-377) empties this one-file shelf
+   named: S68158 The EC Artists' Library  34 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S21397 "Weird Fantasy" 22f [shares gcd=835 (collected by item 24999) — S cv=1444 gcd=835 (R-119 0.9)] keys: "Weird Fantasy"
+   nearby: S21399 "Weird Science" 3f [shares gcd=764 (collected by item 24999) — S cv=18944 gcd=764 (R-122 0.9)] keys: "Weird Science"
+   keys now: "The Martian Monster and Other Stories" x1
+   groups (title x folder): 1
+   G1 "The EC Artists' Library" in Fantagraphics\The EC Artists' Library (2012) — 1 file(s), 1 COL, pp 178-178; cv per-file 116718x1; gcd per-file 69863x1; key 'The Martian Monster and Other Stories'
+      [24999] COL The EC Artists' Library v24 - The Martian Monster and Other Stories (Jack Kamen) (2019) (Digital) (Bean-Empire).cbz (178pp)
+         own record cv 116718 / gcd s69863 "The Fantagraphics EC Artists' Library" (issue 1912061) COLLECTS: gcd=836 Weird Science (1951) #5-10 · gcd=835 Weird Fantasy (1951) #6-10 · gcd=763 Weird Fantasy (1950) #13-17 · gcd=764 Weird Science (1950) #12-15
+
+== S19963 The Woman Who Loved Life and Other Stories  [split]  2 files / 1 collections  decided in R-123 (S)
+   decided: S 19963 cv=121296 gcd=- 0.9 | CV 121296 "The Woman Who Loved Life and Other Stories" (Fantagraphics 2019, 1, issue 718799) plus ComicInfo Series / Publisher on both files (the same 233pp rip, one named "The EC Artists' Library v25 … (Johnny Craig)"); GCD holds it as #25 of line 69863 (row 2016534, 240pp, ISBN 978-1-68396-201-4); 0.9 because the line's shelf is S68158, joined below
+   F 19963 split-needed | items 25000, 25221 -> join S68158 — both are v25 of the EC Artists' Library (GCD 69863 row 2016534, 233pp both), which S68158 stores (cv=- gcd=69863); the split-lane join (L-377) empties this shelf
+   named: S68158 The EC Artists' Library  34 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S4438 "Crypt of Terror" 3f [shares gcd=760 (collected by item 25000) — S cv=18611 gcd=760 (B-024 0.95)] keys: "Crypt of Terror"
+   nearby: S18473 "Crime Patrol" 1f [shares gcd=594 (collected by item 25000) — S cv=18613 gcd=594 (B-023 0.95)] keys: "The EC Archives: Crime Patrol"
+   keys now: "The Woman Who Loved Life and Other Stories" x2
+   groups (title x folder): 2
+   G1 "The Woman Who Loved Life and Other Stories (2019) (Digital) (Bean-Empire)" in Fantagraphics — 1 file(s), pp 233-233; cv per-file 121296x1; gcd per-file 69863x1; key 'The Woman Who Loved Life and Other Stories'
+      [25221] The Woman Who Loved Life and Other Stories (2019) (Digital) (Bean-Empire).cbz (233pp)
+   G2 "The EC Artists' Library" in Fantagraphics\The EC Artists' Library (2012) — 1 file(s), 1 COL, pp 233-233; cv per-file 121296x1; gcd per-file 69863x1; key 'The Woman Who Loved Life and Other Stories'
+      [25000] COL The EC Artists' Library v25 - Woman Who Loved Life and Other Stories (Johnny Craig) (2019) (Digital) (Bean-Empire).cbr (233pp)
+         own record cv 121296 / gcd s69863 "The Fantagraphics EC Artists' Library" (issue 2016534) COLLECTS: gcd=594 Crime Patrol (1948) #7, #9, #13-16 · gcd=12814 War Against Crime (1948) #1, #5-7, #9-11 · gcd=760 The Crypt of Terror (1950) #17-19 · gcd=682 Modern Love (1949) #2-3
+
+== S241 A Slight Case of Murder and Other Stories  [split]  2 files / 1 collections  decided in R-123 (S)
+   decided: S 241 cv=133141 gcd=- 0.9 | CV 133141 "A Slight Case of Murder and Other Stories" (Fantagraphics 2021, 1, issue 824233) plus ComicInfo Series / Publisher "Fantagraphics" on both files (the same 232pp rip, one named "The EC Artists' Library v30"); GCD holds the book only as #30 of the EC Artists' Library line 69863 (row 2186961, 224pp, ISBN 9781683963981); 0.9 because the line's shelf is S68158, joined below
+   F 241 split-needed | items 25005, 25975 -> join S68158 — both are v30 of the Fantagraphics EC Artists' Library (GCD 69863 row 2186961, 232pp both), which S68158 stores (cv=- gcd=69863) and holds v01-v23 / v31-v34 of; cv=- on the survivor, so the split-lane join (L-377) empties this shelf
+   named: S68158 The EC Artists' Library  34 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S19881 "Vault of Horror" 29f [shares gcd=12404 (collected by item 25005) — S cv=11447 gcd=12404 (A-014 0.95)] keys: "The EC Archives - The Vault of Horror" | "The Vault of Horror" | "The Vault of Horror 012R" | "The Vault of Horror 014r" (+5 more: lookup.py --shelf 19881)
+   nearby: S18758 "Haunt of Fear" 28f [shares gcd=784 (collected by item 25005) — S cv=1398 gcd=784 (C-025 0.95)] keys: "Haunt of Fear" | "The Haunt of Fear" | "The Haunt of Fear 008r" | "The Haunt of Fear 010r" (+1 more: lookup.py --shelf 18758)
+   nearby: S17514 "Tales from the Crypt" 3f [shares gcd=761 (collected by item 25005) — S cv=18612 gcd=761 (R-122 0.95)] keys: "Tales From the Crypt" | "Tales from the Crypt"
+   keys now: "A Slight Case of Murder and Other Stories" x2
+   groups (title x folder): 2
+   G1 "The EC Artists' Library" in Fantagraphics\The EC Artists' Library (2012) — 1 file(s), 1 COL, pp 232-232; cv per-file 133141x1; gcd per-file 69863x1; key 'A Slight Case of Murder and Other Stories'
+      [25005] COL The EC Artists' Library v30 - A Slight Case of Murder and Other Stories (2021) (Digital) (Bean-Empire).cbz (232pp)
+         own record cv 133141 / gcd s69863 "The Fantagraphics EC Artists' Library" (issue 2186961) COLLECTS: gcd=784 Haunt of Fear (1950) #15-19, #22-25, #27 · gcd=761 Tales from the Crypt (1950) #32-34, #36, #40-41, #43, #46 · gcd=12404 Vault of Horror (1950) #27-28, #30, #32-33 · gcd=1152 Impact (1955) #1, #4-5
+   G2 "A Slight Case of Murder and Other Stories (2021) (Digital) (Bean-Empire)" in Fantagraphics\_EC Comics — 1 file(s), pp 232-232; cv per-file 133141x1; gcd per-file 69863x1; key 'A Slight Case of Murder and Other Stories'
+      [25975] A Slight Case of Murder and Other Stories (2021) (Digital) (Bean-Empire).cbz (232pp)
+
+== S36038 Terror Train And Other Stories  [split]  2 files / 1 collections  decided in R-123 (S)
+   decided: S 36038 cv=128132 gcd=- 0.9 | CV 128132 "Terror Train And Other Stories" (Fantagraphics 2020, 1, issue 769904) plus ComicInfo Series / Publisher on both files (the same 329pp rip, one named "The EC Artists' Library v28 … (Al Feldstein)"); GCD holds it as #28 of line 69863 (row 2133397, 302pp, ISBN 9781683963295); 0.9 because the line's shelf is S68158, joined below
+   F 36038 split-needed | items 25003, 25184 -> join S68158 — both are v28 of the EC Artists' Library (GCD 69863 row 2133397, 329pp both), which S68158 stores (cv=- gcd=69863); the split-lane join (L-377) empties this shelf
+   named: S68158 The EC Artists' Library  34 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S19881 "Vault of Horror" 29f [shares gcd=12404 (collected by item 25003) — S cv=11447 gcd=12404 (A-014 0.95)] keys: "The EC Archives - The Vault of Horror" | "The Vault of Horror" | "The Vault of Horror 012R" | "The Vault of Horror 014r" (+5 more: lookup.py --shelf 19881)
+   nearby: S17514 "Tales from the Crypt" 3f [shares gcd=761 (collected by item 25003) — S cv=18612 gcd=761 (R-122 0.95)] keys: "Tales From the Crypt" | "Tales from the Crypt"
+   nearby: S18473 "Crime Patrol" 1f [shares gcd=594 (collected by item 25003) — S cv=18613 gcd=594 (B-023 0.95)] keys: "The EC Archives: Crime Patrol"
+   keys now: "Terror Train and Other Stories" x2
+   groups (title x folder): 2
+   G1 "Terror Train and Other Stories (2020) (Digital) (Bean-Empire)" in Fantagraphics — 1 file(s), pp 329-329; cv per-file 128132x1; gcd per-file 69863x1; key 'Terror Train and Other Stories'
+      [25184] Terror Train and Other Stories (2020) (Digital) (Bean-Empire).cbz (329pp)
+   G2 "The EC Artists' Library" in Fantagraphics\The EC Artists' Library (2012) — 1 file(s), 1 COL, pp 329-329; cv per-file 128132x1; gcd per-file 69863x1; key 'Terror Train and Other Stories'
+      [25003] COL The EC Artists' Library v28 - Terror Train and Other Stories (Al Feldstein) (2020) (Digital) (Bean-Empire).cbz (329pp)
+         own record cv 128132 / gcd s69863 "The Fantagraphics EC Artists' Library" (issue 2133397) COLLECTS: gcd=12814 War Against Crime (1948) #3-11 · gcd=594 Crime Patrol (1948) #9-12, #14-16 · gcd=761 Tales from the Crypt (1950) #20-23 · gcd=12404 Vault of Horror (1950) #12-14, #16
+
+== S3612 Carmen Sandiego: The Chasing Paper Caper  [split]  1 files / 0 collections  decided in R-123 (S)
+   decided: S 3612 cv=130792 gcd=145017 0.9 | "Carmen Sandiego - The Chasing Paper Caper (2019)" 136pp = CV 130792 (Houghton Mifflin Harcourt 2020, 1, issue 805325 "Volume 3") = GCD 145017 "Carmen Sandiego" #[3] row 2152824 "The Chasing Paper Caper" (ISBN 9780358380191); 0.9 because the book belongs to the line whose shelf is S3613, joined below
+   F 3612 split-needed | item 26604 -> join S3613 — book #[3] of the Houghton Mifflin line GCD 145017 that S3613 stores (restated cv=- gcd=145017, R-122); ComicVine mints a per-book volume (130792 here, 121679 there), so no shared cv and the split-lane join (L-377) replaces B-033's forced merge-with=3613, emptying this one-file shelf
+   named: S3613 Carmen Sandiego: The Fishy Treasure Caper  2 files  keys: "Carmen Sandiego - The Fishy Treasure Caper"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Carmen Sandiego - The Chasing Paper Caper" x1
+   groups (title x folder): 1
+   G1 "Carmen Sandiego - The Chasing Paper Caper (2019) (Digital) (Walkabout-Empire)" in Graphic Novels\_Houghton Mifflin Harcourt\Carmen San Diego — 1 file(s), pp 136-136; cv per-file 130792x1; gcd per-file 145017x1; key 'Carmen Sandiego - The Chasing Paper Caper'
+      [26604] Carmen Sandiego - The Chasing Paper Caper (2019) (Digital) (Walkabout-Empire).cbz (136pp)
+
+== S371 Accidents and Old Lace and Other Stories  [split]  2 files / 1 collections  decided in R-123 (S)
+   decided: S 371 cv=132197 gcd=- 0.9 | CV 132197 "Accidents and Old Lace and Other Stories" (Fantagraphics 2020, 1, issue 819387) plus ComicInfo Series / Publisher on both files (the same 237pp rip, one named "The EC Artists' Library v29"); GCD holds it only as #29 of line 69863 (row 2169479, 216pp, ISBN 9781683963806); 0.9 because the line's shelf is S68158, joined below
+   F 371 split-needed | items 24820, 25004 -> join S68158 — both are v29 of the EC Artists' Library (GCD 69863 row 2169479, 237pp both), which S68158 stores (cv=- gcd=69863); the split-lane join (L-377) empties this shelf
+   named: S68158 The EC Artists' Library  34 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S19881 "Vault of Horror" 29f [shares gcd=12404 (collected by item 25004) — S cv=11447 gcd=12404 (A-014 0.95)] keys: "The EC Archives - The Vault of Horror" | "The Vault of Horror" | "The Vault of Horror 012R" | "The Vault of Horror 014r" (+5 more: lookup.py --shelf 19881)
+   nearby: S18758 "Haunt of Fear" 28f [shares gcd=784 (collected by item 25004) — S cv=1398 gcd=784 (C-025 0.95)] keys: "Haunt of Fear" | "The Haunt of Fear" | "The Haunt of Fear 008r" | "The Haunt of Fear 010r" (+1 more: lookup.py --shelf 18758)
+   nearby: S17514 "Tales from the Crypt" 3f [shares gcd=761 (collected by item 25004) — S cv=18612 gcd=761 (R-122 0.95)] keys: "Tales From the Crypt" | "Tales from the Crypt"
+   keys now: "Accidents and Old Lace and Other Stories" x2
+   groups (title x folder): 2
+   G1 "Accidents and Old Lace and Other Stories (2020) (Digital) (Bean-Empire)" in Fantagraphics — 1 file(s), pp 237-237; cv per-file 132197x1; gcd per-file 69863x1; key 'Accidents and Old Lace and Other Stories'
+      [24820] Accidents and Old Lace and Other Stories (2020) (Digital) (Bean-Empire).cbz (237pp)
+   G2 "The EC Artists' Library" in Fantagraphics\The EC Artists' Library (2012) — 1 file(s), 1 COL, pp 237-237; cv per-file 132197x1; gcd per-file 69863x1; key 'Accidents and Old Lace and Other Stories'
+      [25004] COL The EC Artists' Library v29 - Accidents and Old Lace and Other Stories (2020) (Digital) (Bean-Empire).cbz (237pp)
+         own record cv 132197 / gcd s69863 "The Fantagraphics EC Artists' Library" (issue 2169479) COLLECTS: gcd=761 Tales from the Crypt (1950) #39-46 · gcd=784 Haunt of Fear (1950) #22-28 · gcd=12404 Vault of Horror (1950) #34-40 · gcd=1152 Impact (1955) #1-5
+
+== S7138 G.I. Joe: A Real American Hero  [split]  28 files / 2 collections  decided in R-124 (S)
+   decided: S 7138 cv=154808 gcd=205826 0.9 | CV 154808 "G.I. Joe: A Real American Hero" (Image 2023, legacy-numbered #301-, cached #301-324) and GCD 205826 (Image 2023-?, ongoing) agree on the Skybound continuation; our floppies #311-313, 21 one-page variant covers of #303-312 and the trade line's Vol. 01-02 sit inside; 0.9 for the 1982 Marvel Treasury Edition and the 50pp "001 Larry Hama Cut (2023)" special
+   F 7138 split-needed | item 32138 -> new key "G.I. Joe Special Treasury Edition (1982)" (CV 49625 / GCD 21586, Marvel 1982, one book, 52pp): a Marvel one-shot filed from the Larry Hama Chronology folder; --who-stores cv=49625 finds no shelf, so its own key (restates C-031's F misfiled as L-368)
+   N 7138 C-031's F merge-with=94769 is spent: S94769 has been merged into this shelf by a landed wave
+   N 37923 "G.I. Joe - A Real American Hero 001 Larry Hama Cut (2023)" 50pp: no record on either leg ("Larry Hama Cut" probes return nothing); read as a special edition of the 2023 series' opening issue, residue
+   N 7138 per-file CV 3138 (the 1982 Marvel run) on 22 files is the legacy-numbering stamp C-031/S94769 already rejected; GCD per-file 2870 (G.I. Joe Yearbook) on the Treasury Edition is a stamp
+   nearby: S7094 "G.I. Joe - A Real American Hero" 79f [title — S cv=32910 gcd=51579 (R-122 0.9)] keys: "Classic G.I. Joe" | "G.I. Joe - A Real American Hero"
+   nearby: S94770 "G.I. Joe - A Real American Hero v2 (2001)" 43f [title — S cv=9112 gcd=9845 (R-083 0.9)] keys: "G.I. Joe - A Real American Hero v2 (2001)"
+   nearby: S7123 "G.I. Joe: A Real American Hero: Yearbook" 4f [title+1 — S cv=133726 gcd=169341 (R-065 0.9)] keys: "G.I. Joe: A Real American Hero: Yearbook"
+   keys now: "G.I. Joe - A Real American Hero v1 (2023)" x23 · "GI Joe A Real American Hero" x5
+   groups (title x folder): 5
+   G1 "GI Joe A Real American Hero Special Treasury Edtion" in IDW Hasbro\G.I. Joe - A Real American Hero (Larry Hama Chronology)\G.I. Joe - A Real American Hero (1982) (Marvel)\Annuals and Specials — 1 file(s), numbers 1, pp 51-51; cv per-file 49625x1; gcd per-file 21586x1; key 'GI Joe A Real American Hero'
+      [32138] GI Joe A Real American Hero Special Treasury Edtion 001 (1982) (c2c) (Gambit).cbz (51pp)
+   G2 "G.I. Joe - A Real American Hero" in Image\G.I. Joe - A Real American Hero v1 (2023) — 5 file(s), 2 COL, numbers 311-313, pp 31-115; cv per-file 3138x3, 159935x2; gcd per-file 205826x3, 216049x2; key 'G.I. Joe - A Real American Hero v1 (2023)'
+      [36672] G.I. Joe - A Real American Hero 311 (2024) (Digital) (Shan-Empire).cbz (31pp)
+      [36673] G.I. Joe - A Real American Hero 312 (2025) (Digital) (Shan-Empire).cbz (31pp)
+      [36674] G.I. Joe - A Real American Hero 313 (2025) (Digital) (Shan-Empire).cbz (31pp)
+      [36675] COL G.I. Joe - A Real American Hero Vol. 01 (2024) (digital) (Knight Ripper-Empire).cbr (114pp)
+      [36676] COL G.I. Joe - A Real American Hero Vol. 02 (2025) (digital) (Knight Ripper-Empire).cbr (115pp)
+   G3 "G.I. Joe - A Real American Hero 001 Larry Hama Cut (2023) (digital) (Knight Ripper-Empire)" in Image\G.I. Joe - A Real American Hero v1 (2023)\Annuals and Specials — 1 file(s), numbers 1, pp 50-50; cv per-file 3138x1; gcd per-file 216049x1; key 'G.I. Joe - A Real American Hero v1 (2023)'
+      [37923] G.I. Joe - A Real American Hero 001 Larry Hama Cut (2023) (digital) (Knight Ripper-Empire).cbr (50pp)
+   G4 "G.I. Joe - A Real American Hero" in Image\G.I. Joe - A Real American Hero v1 (2023)\Variant Covers — 17 file(s), numbers 303-309, pp 1-1; cv per-file 3138x17; gcd per-file 205826x17; key 'G.I. Joe - A Real American Hero v1 (2023)'
+      e.g. G.I. Joe - A Real American Hero 303 (2024) (1-in-10 Brad Walker Variant) (Digital) (MikeNY76-Empire).cbz
+        36677 #303 2024 1pp · 36678 #303 2024 1pp · 36679 #303 2024 1pp · 36680 #304 2024 1pp · 36681 #304 2024 1pp · 36682 #305 2024 1pp · 36683 #305 2024 1pp · 36684 #306 2024 1pp
+        36685 #306 2024 1pp · 36686 #307 2024 1pp · 36687 #307 2024 1pp · 36688 #307 2024 1pp · 36689 #307 2024 1pp · 36690 #308 2024 1pp · 36691 #308 2024 1pp · 36692 #309 2024 1pp
+        36693 #309 2024 1pp
+   G5 "GI Joe A Real American Hero" in Image\G.I. Joe - A Real American Hero v1 (2023)\Variant Covers — 4 file(s), numbers 311-312, pp 1-1; cv per-file 154808x4; gcd per-file 205826x4; key 'GI Joe A Real American Hero'
+      e.g. GI Joe A Real American Hero 311 (2024) (1-in-10 Francis Portela Camouflage Variant) (Digital) (MikeNY76-Empire).cbz
+        36694 #311 2024 1pp · 36695 #311 2024 1pp · 36696 #312 2024 1pp · 36697 #312 2024 1pp
+
+== S7590 Girls  [split]  2 files / 1 collections  decided in R-123 (S)
+   decided: S 7590 cv=18163 gcd=18558 0.9 | run wins (R-042): the shelf's own book "COL Girls - The Complete Collection (2011)" 654pp collects the Luna Brothers' Image run CV 18163 "Girls" (Image 2005, 24, cached #1-24) = GCD 18558 (Image 2005-2007, 24); 0.9 for the misfiled EC book split below
+   F 7590 split-needed | item 24774 -> join S68158 — "50 Girls 50 And Other Stories (2014)" 266pp (filed under Fantagraphics\_Jim Woodring, folded here by the bare word "Girls") is v03 of the EC Artists' Library, GCD 69863 #3 row 1100560 (272pp, ISBN 978-1-60699-577-8) and CV 59568 issue 395909 "The EC Artists' Library Vol. 3", a second rip of S68158's item 24978 (266pp); S68158 stores gcd=69863 with cv=-, so a split-lane join (L-377)
+   N 7590 B-028's F needs-fetch cv=18163 is spent (CV 18163 is now cached #1-24) and its F misfiled is restated as the split-needed join above
+   named: S68158 The EC Artists' Library  34 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S139 "50 Girls 50" 4f [title — S cv=40438 gcd=59092 (A-017 0.95)] keys: "50 Girls 50" · S14032 "The Powerpuff Girls" 72f [title+1 — S cv=34986 gcd=15109 (R-119 0.9)] keys: "Powerpuff Girls"
+   nearby: S10074 "Jungle Girls" 17f [title+1 — S cv=4271 gcd=3887 (A-001 0.95)] keys: "Jungle Girls" · S22661 "Yokai Girls" 11f [title+1 — S cv=107350 gcd=120271 (B-047 0.95)] keys: "Yokai Girls"
+   nearby: S13584 "Parker Girls" 10f [title+1 — S cv=144441 gcd=187999 (A-002 0.95)] keys: "Parker Girls" · S3344 "California Girls" 8f [title+1 — S cv=24115 gcd=21862 (A-014 0.95)] keys: "California Girls"
+   nearby: S13552 "Paper Girls" 8f [title+1 — S cv=85128 gcd=92897 (C-032 0.9)] keys: "Paper Girls" | "Paper Girls: The Complete Story"
+   nearby: S19374 "The Powerpuff Girls" 7f [title+1 — S cv=158897 gcd=213781 (C-024 0.9)] keys: "The Powerpuff Girls" · S2530 "Big Girls" 6f [title+1 — S cv=129454 gcd=164194 (A-017 0.95)] keys: "Big Girls"
+   nearby: S7817 "Gotham Girls" 5f [title+1 — S cv=12022 gcd=13050 (A-009 0.95)] keys: "Gotham Girls"
+   nearby: S6826 "Flavor Girls" 3f [title+1 — S cv=144031 gcd=187039 (C-005 0.9)] keys: "Flavor Girls" | "Flavor Girls - Return to the Mothership"
+   nearby: S17362 "Surfside Girls: The Secret of Danger Point" 3f [title+1 — S gcd=149891 (A-030 0.9)] keys: "Surfside Girls" · (+11 more by title)
+   keys now: "Girls" x2
+   groups (title x folder): 2
+   G1 "Girls 50 And Other Stories (2014) (Digital) (TLK-EMPIRE-HD)" in Fantagraphics\_Jim Woodring — 1 file(s), numbers 50, pp 266-266; cv per-file 59568x1; gcd per-file 69863x1; key 'Girls'
+      [24774] 50 Girls 50 And Other Stories (2014) (Digital) (TLK-EMPIRE-HD).cbr (266pp)
+   G2 "Girls - The Complete Collection (2011) (Digital-TPB) (JK-Empire)" in Image\Girls (2011) — 1 file(s), 1 COL, pp 654-654; cv per-file 62778x1; key 'Girls'
+      [34243] COL Girls - The Complete Collection (2011) (Digital-TPB) (JK-Empire).cbz (654pp)

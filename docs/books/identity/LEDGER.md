@@ -1982,3 +1982,10 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Rat Queens trade line GCD 111005: roll-ups on rows #1-3 only. Spawn Origins Collection reprints only Spawn 1992 —
   run-wins merge onto S15978 (reverses C-032); Prophet's run is GCD 63020, not the trade line 68348. The P-047 joins
   emptied 15 one-file shelves onto their survivors (L-377 in practice).
+[L-383] pub:fantagraphics pub:image pub:dc pub:dark-horse kind:manga kind:collected-line
+- R-125/R-126 (waves 117-118): CV's own labels SWAP EC Artists' Library #7 and #8 (Sucker Bait "Vol. 8", Zero Hour
+  "Vol. 7") — match I lines by subtitle, not ordinal. Kodansha USA / Viz manga shelves stored on the JAPANESE CV line
+  (Blue Period 113349, Beast Children 121130): a same-title English-publisher CV volume dated with our files is the
+  edition — probe with `--contains` before accepting a stored link. DC 2018 "Powers" (CV 116809 / GCD 134252) and Dark
+  Horse 2022 "Powers" (146264 / 189386) are library lines spanning several runs (own identity); a single-run trade filed
+  there joins the run. Image Witchblade TPB sub-lines have CV per-line volumes but no GCD rows except Redemption (63620).

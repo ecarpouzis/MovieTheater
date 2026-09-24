@@ -5,7 +5,7 @@ Work alone; do not spawn subagents. You never write to the database, never run a
 exe, never open a book archive, and never touch another batch's files.
 
 Read `F:\Work\MovieTheater\docs\books\identity\READER_BRIEF.md` in full first — it is the whole contract. The
-section you live in is **"Split batches"**; the rulings on several runs on one shelf and on RESIDUE decide what
+rulings on several runs on one shelf and on RESIDUE decide what
 counts as a run. Then read the `## Conventions for this batch` block at the top of each batch file. **Do not open
 `LEDGER.md` whole**; `grep` it for a publisher or folder word if a shelf needs a convention the block lacks.
 

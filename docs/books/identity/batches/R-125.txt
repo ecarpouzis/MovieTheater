@@ -1,0 +1,288 @@
+## Conventions for this batch (35 shown of 91 matched; 382 in LEDGER.md; 8 shelf/shelves: pub:dark-horse ×4 · folder:graphic-novels ×4 · kind:trade-only ×3 · kind:collected-line ×3 · pub:fantagraphics ×2 · pub:disney ×1 · pub:ec-archives ×1 · kind:archive ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-013] (8 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (8 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-030] (8 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-043] (8 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (8 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (8 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-085] (8 shelf/shelves) sig:barcode sig:trade-link sig:twin
+- `gcd_issue` carries the trade's page count AND ISBN: it matched our rips within ±10pp on 100+ books and told
+  two same-title count-1 rows apart (an 8pp ashcan is not a twin of the trade).
+[L-088] (8 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (8 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (8 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (8 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (8 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (8 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-151] (8 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-157] (8 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (8 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-160] (8 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-163] (8 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (8 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (8 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (8 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (8 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (8 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (8 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (8 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (8 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (8 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (8 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (8 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (8 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
+[L-020] (2 shelf/shelves) kind:archive kind:collected-line pub:dark-horse
+- Reprint LIBRARY / omnibus lines over a run split across publishers (Fear Agent Final Edition, Kabuki Library,
+  Madman Library) have no single run record → the collected line at 0.9 with an `N` naming the underlying run.
+[L-021] (2 shelf/shelves) pub:dark-horse pub:disney pub:dstlry pub:dynamite pub:fantagraphics pub:idw
+- The Disney folder is publisher-agnostic (Joe Books, Dark Horse, IDW, Dynamite, Fantagraphics, Yen Press on one
+  shelf) — the provider's publisher column is the only test. DSTLRY filenames' "(N covers)" is a cover count.
+[L-023] (2 shelf/shelves) kind:trade-only pub:dark-horse pub:dynamite sig:trade-link
+- 23 stored CV links in three batches pointed at the TPB record (count = the books we hold) instead of the run
+  — heavy on trade-only Dark Horse / Dynamite shelves. Expect it; `F wrong-cv-link`, `S` = the run.
+[L-029] (2 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
+- On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
+  collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
+[L-064] (6 shelf/shelves) pass:item sig:twin
+- GCD indexes PRINTINGS: the S line takes the first edition both legs agree on; the `I` line takes the printing
+  we hold (page counts match the edition's row). GCD issue ids for books come from `gcd_issue` — prefer the
+  issue id to the `s<series>` form; use `s<series>` only for twin/variant rows.
+
++56 more matched entries not shown: L-101, L-112, L-135, L-164, L-186, L-188, L-219, L-233, L-234, L-243, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-321, L-342, L-373, L-374, L-375, L-376, L-377, L-380, L-310, L-074, L-083, L-250, L-016, L-032, L-041, L-069, L-087, L-093, L-113, L-114, L-192, L-229, L-238, L-270, L-299, L-350, L-378, L-381, L-054 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S7832 Grandville  [tier B]   keys: Grandville | Grandville Bete Noire | Grandville Noel  years 2009-2017  5 files / 5 collections
+   split run: "Grandville" run={"gcd": 42860} (new shelf from P-047) — seed the S line from these ids, then verify them
+   folders: [5] Dark Horse\Grandville
+   files:   [14135] COL Grandville v1 (2009).cbr (107pp) | [14136] COL Grandville v2 Mon Amour (2010).cbr (107pp) | [14137] COL Grandville v3 Bete Noire (2012).cbr (107pp)
+            [14138] COL Grandville v4 Noel (2014).cbr (107pp) | [14139] COL Grandville v5 Force Majeure (2017) (digital) (Mr Norrell-Empire).cbr (178pp)
+   ours:    ComicInfo Series: "Grandville Force Majeur"x1; ComicInfo Publisher: "Dark Horse"x1
+   GCD says: [14136] gcd_reprint 796672: s54897 Sidekick (2010) #1 [1 story]
+   CV linked:      vol 45516 "Grandville" 2009 Dark Horse Comics 1 issues issue 313493; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 54655 "Grandville Bête Noire" 2012 Dark Horse Comics 1 issue 372395 s69 · 77958 "Grandville Noël" 2014 Dark Horse Comics 1 issue 469555 s59 · 54591 "Grandville Bête Noire" 2012 Jonathan Cape 1 issue 372041 s54 · 140996 "Grandville: Bête Noire" 2015 Astiberri Ediciones 1 issue 901939 s54 · 140997 "Grandville: Noël" 2015 Astiberri Ediciones 1 issue 901941 s44 · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 s30   (v1 search)
+   CV local rip:   (= linked) · 54591 "Grandville Bête Noire" 2012 Jonathan Cape 1 issue 372041 (via CV candidate name "Grandville Bête Noire") · 54655 "Grandville Bête Noire" 2012 Dark Horse Comics 1 issue 372395 (via CV candidate name "Grandville Bête Noire") · 77958 "Grandville Noël" 2014 Dark Horse Comics 1 issue 469555 (via CV candidate name "Grandville Noël") · 140996 "Grandville: Bête Noire" 2015 Astiberri Ediciones 1 issue 901939 (via CV candidate name "Grandville Bête Noire") · 140997 "Grandville: Noël" 2015 Astiberri Ediciones 1 issue 901941 (via CV candidate name "Grandville Noël")   (rip lookup)
+   GCD dump:       42860 "Grandville" 2009-2017 Dark Horse [] 5 · 73009 "Grandville" [en-gb] 2009-2017 Jonathan Cape [] 5 · 60332 "Grandville" [fr] 2010-? Bragelonne [] 2 · 92325 "Grandville" [de] 2012-2018 Schreiber & Leser [] 5 · 105427 "Grandville" [fi] 2013-2013 Like [] 1 · 175973 "Grandville" [es] 2013-2018 Astiberri Ediciones [] 5   (dump lookup)
+
+== S15358 Serenity - Firefly Class  [tier D]   keys: Serenity - Firefly Class  years 2010-2010  5 files / 3 collections
+   split run: "Serenity - Firefly Class" run={"gcd": 84943} (new shelf from P-047) — seed the S line from these ids, then verify them
+   folders: [4] Dark Horse\Firefly\Serenity - Firefly Class 03-K64 (2010) · [1] Dark Horse\Serenity\The Shepherds Tale (2010)
+   files:   [13344] COL Serenity - Firefly Class 03-K64 Vol. 01 - Those Left Behind (2012, 2nd edition) (Digital) (Zone-Empire).cbr (95pp)
+            [13345] COL Serenity - Firefly Class 03-K64 Vol. 02 - Better Days and Other Stories (2011, 2nd edition) (digital) (Son of Ultron-Empire).cbr (127pp)
+            [13346] Serenity - Firefly Class 03-K64 Vol. 03 - The Shepherd's Tale (2010) (digital) (Son of Ultron-Empire).cbr (58pp)
+            [13347] COL Serenity - Firefly Class 03-K64 Vol. 04 - Leaves on the Wind (2014) (Digital) (Zone-Empire).cbr (178pp)
+            [13945] Serenity - The Shepherds Tale (2010) (Minutemen-DTs).cbz (56pp)
+   ours:    ladder 3; judged item 13344 #1-3 conf 0.9; judged item 13345 #1-3 conf 0.95; judged item 13347 #1-6 conf 0.95; barcode item 13945 [{"type": "EAN13", "data": "9781595825612", "page": "ale (20
+   GCD says: [13345] gcd_reprint 1287525: s29946 Serenity Better Days (2008) #1-3 [6 stories] · s49434 Serenity: Float Out (2010) (unnumbered) [3 stories] · s16516 Serenity (2006) #2 [1 story] · s38394 MySpace Dark Horse Presents (2008) #3 [1 story]
+             [13347] gcd_reprint 1285652: s78795 Serenity: Firefly Class 03-K64 - Leaves on the Wind (2014) #1-6 [21 stories] · s65360 Free Comic Book Day: Star Wars / and Serenity: Firefly Class 03-K64 (2012) (unnumbered) [2 stories]
+   CV candidates:  18135 "Serenity" 2005 Dark Horse Comics ? s55 · 63647 "Serenity" 2005 Barbour Christian Comics ? s40 · 39571 "Serenity" 1995 Carnal Comics ? s40 · 95235 "Serenity: Firefly Class 03-K64⏤No Power In The 'Verse" 2016 Dark Horse Comics ? s30 · 103111 "Serenity: Firefly Class 03-K64⏤No Power In The 'Verse" 2017 Dark Horse Comics ? s30 · 104971 "Serenity: Firefly Class 03-K64-Everything's Shiny Adult Coloring Book" 2017 Dark Horse Comics ? s30   (v1 search)
+   CV local rip:   18135 "Serenity" 2005 Dark Horse Comics 3 (via CV candidate name "Serenity") · 63647 "Serenity" 2005 Barbour Christian Comics 6 (via CV candidate name "Serenity") · 39571 "Serenity" 1995 Carnal Comics 1 issue 267416 (via CV candidate name "Serenity")   (rip lookup)
+   GCD dump:       101450 "Serenity" [de] 2010-? Panini Deutschland [] 4 (via CV candidate name "Serenity") · 57314 "Serenity" 2008-2008 Thomas Nelson [] 4 (via CV candidate name "Serenity") · 16516 "Serenity" 2006-2008 Dark Horse [] 3 (via CV candidate name "Serenity") · 16487 "Serenity" 2005-2005 Dark Horse [] 3 (via CV candidate name "Serenity") · 25170 "Serenity" 2005-2006 Barbour Publishing, Inc [] 6 (via CV candidate name "Serenity")   (dump lookup)
+
+== S68154 The Don Rosa Library - Uncle Scrooge and Donald Duck  [tier D]   keys: The Don Rosa Library - Uncle Scrooge and Donald Duck  years 2014-2018  10 files / 10 collections
+   split run: "The Don Rosa Library - Uncle Scrooge and Donald Duck" run={"gcd": 82739} (new shelf from P-047) — seed the S line from these ids, then verify them
+   folders: [10] Disney\_Donald Duck Family\The Don Rosa Library - Uncle Scrooge and Donald Duck (2014) (Fantagraphics)
+   files:   [20158] COL The Don Rosa Library - Uncle Scrooge and Donald Duck Vol. 01 - The Son of the Sun (2014) (digital) (Salem-Empire).cbr (210pp)
+            [20159] COL The Don Rosa Library - Uncle Scrooge and Donald Duck Vol. 02 - Return to Plain Awful (2014) (digital) (Salem-Empire).cbr (218pp)
+            [20160] COL The Don Rosa Library - Uncle Scrooge and Donald Duck Vol. 03 - Treasure Under Glass (2015) (digital) (Salem-Empire).cbr (194pp)
+            [20161] COL The Don Rosa Library - Uncle Scrooge and Donald Duck Vol. 04 - The Last of the Clan McDuck (2015) (digital) (Salem-Empire).cbr (193pp)
+            [20162] COL The Don Rosa Library - Uncle Scrooge and Donald Duck Vol. 05 - The Richest Duck in the World (2016) (digital) (Salem-Empire).cbr (193pp)
+            [20163] COL The Don Rosa Library - Uncle Scrooge and Donald Duck Vol. 06 - The Universal Solvent (2016) (digital) (Salem-Empire).cbr (210pp)
+            [20164] COL The Don Rosa Library - Uncle Scrooge and Donald Duck Vol. 07 - The Treasure of the Ten Avatars (2017) (digital) (Salem-Empire).cbr (225pp)
+            [20165] COL The Don Rosa Library - Uncle Scrooge and Donald Duck Vol. 08 - Escape from Forbidden Valley (2017) (digital) (F) (Salem-Empire).cbr (227pp)
+            [20166] COL The Don Rosa Library - Uncle Scrooge and Donald Duck Vol. 09 - The Three Caballeros Ride Again! (2018) (digital) (Salem-Empire).cbr (223pp)
+            [20167] COL The Don Rosa Library - Uncle Scrooge and Donald Duck Vol. 10 - The Old Castle's Other Secret (2018) (digital) (Salem-Empire).cbr (234pp)
+   ours:    ComicInfo Series: "Walt Disney Uncle Scrooge and Donald Duck"x2; ComicInfo Publisher: "Fantagraphics"x2
+   GCD says: [20158] gcd_reprint 1252424: s3286 Walt Disney's Uncle Scrooge (1986) #219-220, #224, #226-227, #231 [6 stories] · s3284 Walt Disney's Comics and Stories (1986) #523-524, #526, #528, #531 [5 stories] · s3496 Walt Disney's Donald Duck Adventures (1987) #5, #13, #16, #18 [4 stories] · s3497 Walt Disney's Uncle Scrooge Adventures (1987) #5, #13, #17-18 [4 stories]
+             [20159] gcd_reprint 1267969: s3497 Walt Disney's Uncle Scrooge Adventures (1987) #9, #14, #19-21 [7 stories] · s50922 Walt Disney's Comics in Color (1988) #1-6 [6 stories] · s3279 Donald Duck (1986) #278-279 [3 stories] · s3496 Walt Disney's Donald Duck Adventures (1987) #8, #12 [3 stories]
+             [20160] gcd_reprint 1449829: s28513 Micky Maus (1951) (unnumbered) [7 stories] · s4158 Walt Disney's Donald Duck Adventures (1990) #22, #34, #37 [3 stories] · s4159 Walt Disney's Uncle Scrooge (1990) #262-263 [2 stories] · s10923 Kalle Anka & C:o (1957) (unnumbered) [2 stories]
+             [20161] gcd_reprint 1498885: s4796 Walt Disney's Uncle Scrooge (1993) #281, #285-291 [8 stories] · s58267 Anders And & Co. (1949) (unnumbered) [7 stories] · s4159 Walt Disney's Uncle Scrooge (1990) #275, #278-280 [4 stories] · s4797 Walt Disney's Uncle Scrooge Adventures (1993) #22, #24-25 [3 stories]
+             [20162] gcd_reprint 1619405: s4796 Walt Disney's Uncle Scrooge (1993) #292-296 [9 stories] · s4797 Walt Disney's Uncle Scrooge Adventures (1993) #27, #29 [3 stories] · s63268 Onkel Dagobert (1994) #5, #32 [2 stories] · s4795 Walt Disney's Donald Duck Adventures (1993) #29 [1 story]
+             [20163] gcd_reprint 1653980: s58267 Anders And & Co. (1949) (unnumbered) [6 stories] · s5348 Walt Disney Giant (1995) #1, #3 [3 stories] · s4797 Walt Disney's Uncle Scrooge Adventures (1993) #30-32 [3 stories] · s4793 Walt Disney's Comics and Stories (1993) #613 [2 stories]
+             [20164] gcd_reprint 1724331: s58267 Anders And & Co. (1949) (unnumbered) [9 stories] · s4797 Walt Disney's Uncle Scrooge Adventures (1993) #39, #44, #51 [3 stories] · s4796 Walt Disney's Uncle Scrooge (1993) #300, #306 [3 stories] · s63268 Onkel Dagobert (1994) #14, #22 [2 stories]
+             [20165] gcd_reprint 1771856: s64714 Picsou Magazine (1972) #310-311, #313-319, #321-330, #332-337, #339, #344 [29 stories] · s58267 Anders And & Co. (1949) (unnumbered) [12 stories] · s56399 Aku Ankka (1951) (unnumbered) [2 stories] · s11204 Walt Disney's Uncle Scrooge (2003) #347 [2 stories]
+             [20166] gcd_reprint 1825391: s64714 Picsou Magazine (1972) #333, #338, #340, #342-343, #345-347, #349, #384-391 [18 stories] · s58267 Anders And & Co. (1949) (unnumbered) [12 stories] · s56399 Aku Ankka (1951) (unnumbered) [4 stories] · s11204 Walt Disney's Uncle Scrooge (2003) #321, #328, #332 [3 stories]
+             [20167] gcd_reprint 1873500: s58267 Anders And & Co. (1949) (unnumbered) [16 stories] · s10562 Donald Duck & Co (1948) (unnumbered) [12 stories] · s39153 Hall of Fame (2004) (unnumbered) [10 stories] · s56399 Aku Ankka (1951) (unnumbered) [9 stories]
+
+== S68158 The EC Artists' Library  [tier D]   keys: The EC Artists' Library  years 2012-2024  34 files / 26 collections
+   split run: "The EC Artists' Library" run={"gcd": 69863} (new shelf from P-047) — seed the S line from these ids, then verify them
+   folders: [26] Fantagraphics\The EC Artists' Library (2012) · [5] Fantagraphics · [1] EC Comics & Others Archives (Dark Horse)\Will Edler · [1] Fantagraphics\Death Stand and Other Stories (2018) · [1] Graphic Novels
+   files:   [23810] The Million Year Picnic and Other Stories (2017) (Digital) (Bean-Empire).cbz (220pp) | [25978] Death Stand and Other Stories (2018) (Digital) (Bean-Empire).cbz (277pp)
+            [25128] Master Race and Other Stories (2018) (Digital) (Bean-Empire).cbz (240pp) | [25187] The Bitter End and Other Stories (2024) (digital) (DrVink-DCP).cbz (238pp)
+            [24976] COL The EC Artists' Library v01 - Corpse on the Imjin! and Other Stories (2012) (Digital) (TLK-EMPIRE-HD).cbr (241pp)
+            [24977] COL The EC Artists' Library v02 - Came the Dawn and Other Stories (2012) (Digital) (TLK-EMPIRE-HD).cbr (209pp)
+            [24978] COL The EC Artists' Library v03 - 50 Girls 50 and Other Stories (2013) (Digital) (TLK-EMPIRE-HD).cbr (266pp)
+            [24979] COL The EC Artists' Library v04 - 'Taint the Meat...It's the Humanity! (2013) (Digital) (TLK-EMPIRE-HD).cbr (225pp)
+            [24980] COL The EC Artists' Library v05 - Fall Guy For Murder and Other Stories (2013) (Digital) (TLK-EMPIRE-HD).cbr (210pp)
+            [24981] COL The EC Artists' Library v06 - Child of Tomorrow and Other Stories (2013) (Digital) (TLK-EMPIRE-HD).cbr (218pp)
+            [24982] COL The EC Artists' Library v07 - Sucker Bait and Other Stories (2014) (Digital) (Bean-Empire).cbz (217pp)
+            [24984] COL The EC Artists' Library v09 - Judgment Day and Other Stories (2014) (Digital) (Bean-Empire).cbz (191pp)
+            [24985] COL The EC Artists' Library v10 - Bomb Run and Other Stories (2014) (Digital) (TLK-EMPIRE-HD).cbr (265pp)
+            [24986] COL The EC Artists' Library v11 - Aces High (2014) (Digital) (TLK-EMPIRE-HD).cbr (211pp)
+            [24987] COL The EC Artists' Library v12 - Spawn of Mars and Other Stories (2015) (Digital) (TLK-EMPIRE-HD).cbr (241pp)
+            [24988] COL The EC Artists' Library v13 - Grave Business and Other Stories (2015) (Digital) (TLK-EMPIRE-HD).cbr (225pp)
+            [24989] COL The EC Artists' Library v14 - Forty Whacks and Other Stories (2015) (Digital) (TLK-EMPIRE-HD).cbr (203pp)
+            [24990] COL The EC Artists' Library v15 - The High Cost of Dying and Other Stories (2016) (Digital) (TLK-EMPIRE-HD).cbr (177pp)
+            [24991] COL The EC Artists' Library v16 - The Living Mummy and Other Stories (Jack Davis) (2016) (Digital) (Bean-Empire) (Fantagraphics).cbz (225pp)
+            [24992] COL The EC Artists' Library v17 - Voodoo Vengeance and Other Stories (Johnny Craig) (2016) (Digital) (Bean-Empire).cbz (217pp)
+            [24993] COL The EC Artists' Library v18 - The Million Year Picnic and Other Stories (Will Elder) (2017) (Digital) (Bean-Empire).cbz (220pp)
+            [24994] COL The EC Artists' Library v19 - The Thing from the Grave and Other Stories (Joe Orlando) (2017) (Digital) (Bean-Empire).cbz (240pp)
+            [24995] COL The EC Artists' Library v20 - Daddy Lost His Head and Other Stories (Jack Kamen) (2017) (Digital) (Bean-Empire).cbz (185pp)
+            [24996] COL The EC Artists' Library v21 - Master Race and Other Stories (Bernie Krigstein) (2018) (Digital) (Bean-Empire).cbz (240pp)
+            [24997] COL The EC Artists' Library v22 - Death Stand and Other Stories (Jack Davis) (2018) (Digital) (Bean-Empire).cbz (277pp)
+            [24998] COL The EC Artists' Library v23 - Doctor of Horror and Other Stories (2018) (Digital) (Bean-Empire).cbz (226pp)
+            [25006] COL The EC Artists' Library v31 - Three for the Money and Other Stories (2021) (Digital) (Bean-Empire).cbz (240pp)
+            [25007] COL The EC Artists' Library v32 - Code Of Honor and Other Stories (2022) (Digital) (Lo Pan).cbr (261pp)
+            [25008] COL The EC Artists' Library v33 - Deadly Beloved and Other Stories (2023) (Digital) (Lo Pan).cbr (273pp)
+            [25009] COL The EC Artists' Library v34 - The Planetoid and Other Stories (2023) (Digital) (danke-Empire).cbz (231pp)
+            [24162] The High Cost of Dying and Other Stories (2016) (Digital) (TLK-EMPIRE-HD).cbr (177pp)
+            [25218] The Thing from the Grave and Other Stories (2017) (Digital) (Bean-Empire).cbz (240pp) | [25223] Three for the Money and Other Stories (2021) (Digital) (Bean-Empire).cbz (240pp)
+            [26113] Zero Hour and Other Stories (2014) (Digital) (Bean-Empire).cbz (169pp)
+   ours:    ComicInfo Series: "The EC Comics Library"x1; ComicInfo Publisher: "Fantagraphics"x1; barcode item 24984 [{"type": "EAN13", "data": "9781606997277", "page": "s (2014; barcode item 26113 [{"type": "EAN13", "data": "9781606997048", "page": "s (2014
+   GCD says: [24976] gcd_reprint 1033241: s762 Two-Fisted Tales (1950) #18-32, #35 [28 stories] · s834 Frontline Combat (1951) #1-9, #11-12, #14 [19 stories] · s14397 Two-Fisted Tales Annual (1952) #1 [1 story]
+             [24977] gcd_reprint 1034721: s913 Shock SuspenStories (1952) #3-15 [13 stories] · s784 Haunt of Fear (1950) #4-6 [5 stories] · s761 Tales from the Crypt (1950) #21, #24-25 [3 stories] · s759 Crime SuspenStories (1950) #1, #3 [2 stories]
+             [24978] gcd_reprint 1100560: s835 Weird Fantasy (1951) #14-21 [10 stories] · s836 Weird Science (1951) #15-22 [8 stories] · s1065 Weird Science-Fantasy (1954) #23-25, #28-29 [5 stories] · s759 Crime SuspenStories (1950) #13, #16-17 [3 stories]
+             [24979] gcd_reprint 1102480: s761 Tales from the Crypt (1950) #23-46 [24 stories] · s12149 Three Dimensional Tales from the Crypt of Terror (1954) #2 [1 story] · s69863 The Fantagraphics EC Artists' Library (2012) #1 [1 story]
+             [24980] gcd_reprint 1149220: s12404 Vault of Horror (1950) #21-31 [11 stories] · s759 Crime SuspenStories (1950) #8-12, #14-18 [10 stories] · s784 Haunt of Fear (1950) #12-13 [2 stories] · s69863 The Fantagraphics EC Artists' Library (2012) #1 [1 story]
+             [24981] gcd_reprint 1149238: s836 Weird Science (1951) #5-9, #14 [7 stories] · s835 Weird Fantasy (1951) #6-9 [6 stories] · s764 Weird Science (1950) #12-15 [5 stories] · s763 Weird Fantasy (1950) #13-17 [5 stories]
+             [24982] gcd_reprint 1179163: s12404 Vault of Horror (1950) #26-33 [8 stories] · s784 Haunt of Fear (1950) #14-21 [8 stories] · s761 Tales from the Crypt (1950) #32-38 [7 stories] · s759 Crime SuspenStories (1950) #14-15 [2 stories]
+             [24984] gcd_reprint 1218639: s1065 Weird Science-Fantasy (1954) #23-25, #27-29 [6 stories] · s835 Weird Fantasy (1951) #17-22 [6 stories] · s836 Weird Science (1951) #17-22 [6 stories] · s913 Shock SuspenStories (1952) #7, #9-10 [3 stories]
+             [24985] gcd_reprint 1218663: s762 Two-Fisted Tales (1950) #19-29, #31, #35 [25 stories] · s834 Frontline Combat (1951) #2-11 [17 stories] · s69863 The Fantagraphics EC Artists' Library (2012) #1 [1 story]
+             [24986] gcd_reprint 1283984: s759 Crime SuspenStories (1950) #15, #19, #21, #23, #25, #27 [7 stories] · s913 Shock SuspenStories (1952) #8, #14-18 [6 stories] · s834 Frontline Combat (1951) #10-15 [6 stories] · s1149 Aces High (1955) #1-5 [5 stories]
+             [24987] gcd_reprint 1300587: s836 Weird Science (1951) #5-12 [11 stories] · s835 Weird Fantasy (1951) #6-12 [10 stories] · s763 Weird Fantasy (1950) #13-17 [5 stories] · s764 Weird Science (1950) #12-14 [3 stories]
+             [24988] gcd_reprint 1426443: s761 Tales from the Crypt (1950) #25-31 [7 stories] · s759 Crime SuspenStories (1950) #6-12 [7 stories] · s784 Haunt of Fear (1950) #8-13 [6 stories] · s12404 Vault of Horror (1950) #20, #22-25 [5 stories]
+             [24989] gcd_reprint 1463824: s759 Crime SuspenStories (1950) #2, #4-17 [16 stories] · s913 Shock SuspenStories (1952) #1-8 [8 stories] · s69863 The Fantagraphics EC Artists' Library (2012) #1 [1 story]
+             [24990] gcd_reprint 1536899: s759 Crime SuspenStories (1950) #18-23 [7 stories] · s913 Shock SuspenStories (1952) #9-13, #15 [6 stories] · s762 Two-Fisted Tales (1950) #35-36 [2 stories] · s12404 Vault of Horror (1950) #33-34 [2 stories]
+             [24991] gcd_reprint 1609430: s12404 Vault of Horror (1950) #17-26 [11 stories] · s784 Haunt of Fear (1950) #4-13 [10 stories] · s759 Crime SuspenStories (1950) #4-5, #7, #9-12 [9 stories] · s913 Shock SuspenStories (1952) #2-3 [2 stories]
+             [24992] gcd_reprint 1648489: s759 Crime SuspenStories (1950) #1-7 [7 stories] · s12404 Vault of Horror (1950) #14-20 [7 stories] · s784 Haunt of Fear (1950) #5, #7, #10 [5 stories] · s761 Tales from the Crypt (1950) #20, #22-24 [4 stories]
+             [24993] gcd_reprint 1666527: s1063 Panic (1954) #1-12 [15 stories] · s835 Weird Fantasy (1951) #17-21 [5 stories] · s761 Tales from the Crypt (1950) #37-38 [2 stories] · s759 Crime SuspenStories (1950) #17-18 [2 stories]
+             [24994] gcd_reprint 1724162: s1063 Panic (1954) #1-9 [9 stories] · s761 Tales from the Crypt (1950) #27-30, #35, #37, #39, #46 [8 stories] · s759 Crime SuspenStories (1950) #16, #22, #24, #26 [4 stories] · s784 Haunt of Fear (1950) #9, #12 [3 stories]
+             [24995] gcd_reprint 1745809: s784 Haunt of Fear (1950) #4, #6-7, #9-11, #13-14 [9 stories] · s12404 Vault of Horror (1950) #15-22, #25 [9 stories] · s761 Tales from the Crypt (1950) #20, #22, #25, #27-30 [7 stories] · s69863 The Fantagraphics EC Artists' Library (2012) #1 [1 story]
+             [24996] gcd_reprint 1776839: s1149 Aces High (1955) #1-5 [5 stories] · s1153 Incredible Science Fiction (1955) #30-33 [4 stories] · s759 Crime SuspenStories (1950) #22, #24-25, #27 [4 stories] · s12404 Vault of Horror (1950) #36, #38-40 [4 stories]
+             … 6 more book(s) with GCD notes (`python gcdnotes.py --issue <id>`)
+
+== S12315 Monsters of Metal  [tier D]   keys: Monsters of Metal  years 2022-2023  4 files / 0 collections
+   split run: "Monsters of Metal" run={"gcd": 203061} (new shelf from P-047) — seed the S line from these ids, then verify them
+   folders: [3] Misc\Monsters of Metal (2022) (Opus) · [1] Graphic Novels
+   files:   [27410] Monsters of Metal (2022) (digital) (DrVink).cbz (47pp) | [106884] Monsters of Metal (2022) (3 covers) (digital) (DrVink-HD-DCP).cbz (32pp)
+            [106885] Monsters of Metal - Krampus in Concert (2022) (digital) (DrVink-HD-DCP).cbz (30pp)
+            [106886] Monsters of Metal - My Bloody Valentine (2023) (2 covers) (digital) (DrVink-HD-DCP).cbz (31pp)
+   ours:    ComicInfo Publisher: "Opus Comics"x3; barcode item 106885 [{"type": "EAN13", "data": "0085930100723", "page": "of Meta; barcode item 106886 [{"type": "EAN13", "data": "0085930100723", "page": "f Metal
+   CV candidates:  103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s19 · 86527 "Disney Graphic Novels" 2015 NBM 4 s18 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s17 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s17 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s16 · 39361 "Disney Libri Graphic Novels" 2010 Walt Disney Company Italia 3 s16   (v1 search)
+   CV local rip:   103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 86527 "Disney Graphic Novels" 2015 NBM 4 (via CV candidate name "Disney Graphic Novels") · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 (via CV candidate name "Graphic Novels")   (rip lookup)
+   GCD dump:       203061 "Monsters of Metal" 2022-2022 Opus Comics [] 1 · 92652 "Disney Graphic Novels" 2015-2017 NBM [] 6 (via CV candidate name "Disney Graphic Novels") · 94951 "Disney Graphic Novels" 2015-2017 NBM [] 5 (via CV candidate name "Disney Graphic Novels") · 65342 "Graphic Novels" [de] 2012-2012 Süddeutsche Zeitung [] 10 (via CV candidate name "Graphic Novels") · 60514 "Graphic Novels" [de] 2011-2011 Süddeutsche Zeitung [] 11 (via CV candidate name "Graphic Novels")   (dump lookup)
+   MU / External:  ExternalWork 237 "Monsters of Metal" openlibrary /works/OL36718338W
+
+== S3613 Carmen Sandiego: The Fishy Treasure Caper  [tier B]   keys: Carmen Sandiego - The Fishy Treasure Caper  years 2019-2019  2 files / 0 collections
+   split run: "Carmen Sandiego - The Fishy Treasure Caper" run={"gcd": 145017} (new shelf from P-047) — seed the S line from these ids, then verify them
+   folders: [2] Graphic Novels\_Houghton Mifflin Harcourt\Carmen San Diego
+   files:   [26605] Carmen Sandiego - The Fishy Treasure Caper (2019) (Digital) (Walkabout-Empire).cbz (130pp)
+            [26607] Carmen Sandiego - The Sticky Rice Caper (2019) (Digital) (Walkabout-Empire).cbz (129pp)
+   CV linked:      vol 121679 "Carmen Sandiego: The Fishy Treasure Caper" 2019 Houghton Mifflin Harcourt 1 issues issue 720893; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 106742 "Carmen" 2017 Soleil 1 issue 644826 s55 · 157802 "Carmen" 2023 Éditions Glénat 1 issue 1052698 s55 · 130792 "Carmen Sandiego: The Chasing Paper Caper" 2020 Houghton Mifflin Harcourt 1 issue 805325 s53 · 118810 "Carmen Sandiego: The Sticky Rice Caper" 2019 Houghton Mifflin Harcourt 1 issue 707945 s53 · 136962 "Carmen Sandiego: The Need For Speed Caper" 2021 Houghton Mifflin Harcourt 1 issue 862005 s52 · 11146 "Caper" 2003 DC Comics 12 s40   (v1 search)
+   CV local rip:   (= linked) · 106742 "Carmen" 2017 Soleil 1 issue 644826 (via CV candidate name "Carmen") · 87501 "Carmen" 2015 Source Point Press 2 (via CV candidate name "Carmen") · 157802 "Carmen" 2023 Éditions Glénat 1 issue 1052698 (via CV candidate name "Carmen")   (rip lookup)
+   GCD dump:       131127 "Carmen" [de] 2018-2018 Verlagshaus Jacoby & Stuart [] 1 (via CV candidate name "Carmen") · 194406 "Carmen" 2022-2022 Clover Press [] 1 (via CV candidate name "Carmen") · 219956 "Carmen" [fr] 2023-2023 Glénat [] 1 (via CV candidate name "Carmen") · 120886 "Carmen" [fr] 2012-2012 Delcourt [] 1 (via CV candidate name "Carmen") · 93044 "Carmen" 1995-1995 NBM [] 1 (via CV candidate name "Carmen") · 72222 "Carmen" [da-dk] 1985-1985 Interpresse [] 1 (via CV candidate name "Carmen")   (dump lookup)
+
+== S19246 Obscure Cities - the Return of Captain Nemo  [tier D]   keys: The Obscure Cities  years 1988-2022  10 files / 9 collections
+   split run: "The Obscure Cities" run={"gcd": 117236} (new shelf from P-047) — seed the S line from these ids, then verify them
+   folders: [9] IDW\The Obscure Cities (1982) · [1] IDW\The Theory of the Grain of Sand (2016)
+   files:   [31616] COL The Obscure Cities Vol. 01 - Samaris and the Mysteries of Pahry (2017) (c2c) (fylgja).cbz (96pp)
+            [31617] COL The Obscure Cities Vol. 02 - The Fever in Urbicande (2022) (digi-Hybrid) (fylgja).cbz (108pp)
+            [31618] COL The Obscure Cities Vol. 03 - The Tower (2022) (c2c) (fylgja).cbz (116pp) | [31619] COL The Obscure Cities Vol. 04 - The Road to Armilia (1988).cbr (61pp)
+            [31620] COL The Obscure Cities Vol. 05 - Brusel (1992).cbr (101pp) | [31621] COL The Obscure Cities Vol. 06 - The Leaning Girl (2014) (c2c) (fylgja).cbz (179pp)
+            [31622] COL The Obscure Cities Vol. 07 - The Shadow of a Man (2021) (c2c) (fylgja).cbz (109pp)
+            [31623] COL The Obscure Cities Vol. 08-09 - The Invisible Frontier (2022) (digi-Hybrid) (fylgja).cbz (139pp)
+            [31624] COL The Obscure Cities Vol. 10-11 - The Theory of the Grain of Sand (2016) (c2c) (fylgja).cbz (134pp)
+            [31981] The Theory of the Grain of Sand - The Obscure Cities Vols. 10 & 11 (2016) (c2c) (fylgja).cbz (134pp)
+   ours:    ladder 11; barcode item 31616 [{"type": "EAN13", "data": "9781631409424", "page": "Samaris; barcode item 31617 [{"type": "EAN13", "data": "9781684058037", "page": "The Fev; barcode item 31618 [{"type": "EAN13", "data": "9781684057313", "page": "The Tow; barcode item 31621 [{"type": "EAN13", "data": "9781628472271", "page": "The Lea
+   GCD says: [31616] gcd_reprint 1741408: s51358 Stories of the Fantastic (1987) #2 [1 story]
+             [31621] gcd_reprint 2364078: s82700 Les Cités obscures (1983) #6 [2 stories]
+   CV candidates:  83350 "Obscure" 1985 Unknown Publisher ? s0 · 55434 "Chambre Obscure" 2010 Dargaud ? s0 · 125230 "Cities of Magick" 2020 Scout Comics ? s0 · 125724 "The Cities Beneath" 2020 Syenagiri ? s0 · 126267 "Arsenic Lullaby: Obscure and Oddities" 2020 Arsenic Lullaby Publishing ? s0 · 136833 "Red Sonja 1982" 2021 Dynamite Entertainment ? s0   (v1 search)
+   CV local rip:   83350 "Obscure" 1985 Unknown Publisher 1 issue 495394 (via CV candidate name "Obscure") · 55434 "Chambre Obscure" 2010 Dargaud 2 (via CV candidate name "Chambre Obscure") · 125230 "Cities of Magick" 2020 Scout Comics 5 (via CV candidate name "Cities of Magick")   (rip lookup)
+   GCD dump:       217385 "Obscure Cities: The Return of Captain Nemo" 2024-2024 Alaxis Press [] 1 · 117236 "The Obscure Cities" 2016-? IDW [] 7 · 131770 "Chambre Obscure" [fr] 2010-2011 Dargaud [] 2 (via CV candidate name "Chambre Obscure") · 183259 "Cities of Magick" 2022-? Scout Comics [] 5 (via CV candidate name "Cities of Magick")   (dump lookup)
+   MU / External:  ExternalWork 87 "Obscure Cities - the Return of Captain Nemo" openlibrary /works/OL36723727W
+
+== S21684 Fagin the Jew  [tier B]   keys: Will Eisner - Fagin The Jew  years 2003-2013  2 files / 0 collections
+   split run: "Will Eisner - Fagin The Jew" run={"cv": 34805, "gcd": 40684} (new shelf from P-047) — seed the S line from these ids, then verify them
+   folders: [1] Dark Horse\_Will Eisner · [1] Graphic Novels\Will Eisner
+   files:   [12957] Fagin the Jew (tenth-anniversary edition) (2013, 2nd print) (digital) (Son of Ultron II-Empire).cbr (140pp) | [26222] Will Eisner - Fagin The Jew.cbr (130pp)
+   CV linked:      vol 34805 "Fagin the Jew" 2003 Random House 1 issues issue 228609; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 71301 "Fagin the Jew" 2013 Dark Horse Comics 1 issue 443884 s70 · 93927 "The Lost Work of Will Eisner" 2016 Locust Moon Press 1 issue 548690 s48 · 85924 "Will Eisner: Champion of the Graphic Novel" 2015 Harry N. Abrams 1 issue 505444 s47 · 43959 "Will Eisner Companion" 2004 DC Comics 1 issue 302155 s41 · 46909 "Will Eisner Presents" 1990 Eclipse 1 issue 323061 s41 · 45847 "Art of Will Eisner" 1982 Kitchen Sink 1 issue 315634 s37   (v1 search)
+   CV local rip:   (= linked) · 71301 "Fagin the Jew" 2013 Dark Horse Comics 1 issue 443884 · 93927 "The Lost Work of Will Eisner" 2016 Locust Moon Press 1 issue 548690 (via CV candidate name "The Lost Work of Will Eisner")   (rip lookup)
+   GCD dump:       40684 "Fagin the Jew" 2003-2003 Random House [] 1 · 169562 "The Lost Work of Will Eisner" 2016-2016 Locust Moon Press [] 1 (via CV candidate name "The Lost Work of Will Eisner")   (dump lookup)

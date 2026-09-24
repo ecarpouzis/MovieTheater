@@ -1,0 +1,878 @@
+## Conventions for this batch (31 shown of 166 matched; 382 in LEDGER.md; 45 shelf/shelves: kind:trade-only ×31 · kind:collected-line ×31 · kind:manga ×31 · pub:image ×6 · folder:sequel-subfolder ×6 · folder:vn-year ×5 · pub:dark-horse ×4 · kind:new ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-289] (39 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-274] (32 shelf/shelves) kind:foreign kind:manga pass:item sig:twin
+- ITEM PASS (X-019..X-021, manga): the per-file GCD pick reuses volume 1's title-only id across EVERY book of a
+  manga shelf whose header already lists N numbered rows (A Bride's Story 12/12, Ajin 17/17, Assassination Classroom
+  21/21) — match the header pool by ordinal, ignore the pick. Per-file CV lands on a foreign twin of the same
+  title even more often (Milky Way, Egmont Ehapa, Glénat, Panini España, Carlsen, Altraverse, the Shogakukan
+  original) — the shelf's identity is the ENGLISH edition; use the header's cv-issues pool.
+[L-288] (32 shelf/shelves) kind:foreign kind:manga pass:item sig:stamp
+- ITEM PASS (X-034..X-036): the reused stamp can jump FOUR times over one shelf (My Hero Academia: 105138 → 204933
+  → 236032 → 228276 over 38 books, CV pinned on foreign 166768 throughout); a shelf can carry NO gcd pick at all
+  (Muhyo & Roji's ×18). The header ladder by ordinal is the only source on manga — no exceptions found in 400 books.
+[L-293] (32 shelf/shelves) kind:foreign kind:manga pass:item sig:stamp
+- ITEM PASS (X-043..X-045, ~30 manga shelves): not one case where the per-file pick was right and the header pool
+  wrong. A foreign GCD leg that undershoots by one (Twin Star Exorcists, 26 vs 27) → the last book takes gcd=-;
+  a Vertical → Kodansha USA imprint split duplicate-stamps the later imprint's id onto the earlier book
+  (Weathering with You) — reject the duplicate, keep it on its own volume.
+[L-098] (31 shelf/shelves) kind:manga sig:probe
+- GCD hides English manga behind a LONGER title far more than a shorter one ("Oishinbo a la Carte", "Neon
+  Genesis Evangelion 3-in-1 Edition", "Fairy Tail S: Tales from Fairy Tail") and occasionally a typo ("Fairy Tale:
+  Fairy Girls"); the mirror exists too (no ComicVine Viz volume for JoJo Parts 1-3 while GCD has all six → `cv=-`).
+[L-100] (31 shelf/shelves) kind:manga
+- A publisher change mid-line (Vertical → Kodansha USA) splits the GCD leg while CV keeps one volume (Ajin, CITY,
+  Miss Nagatoro): one S line, the GCD row that holds the wider span, `N` naming the other.
+[L-135] (31 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-164] (31 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (31 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-244] (31 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (31 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (31 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+[L-248] (31 shelf/shelves) kind:collected-line
+- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
+  the sibling's landed S is evidence for the weak per-file matches on the others.
+[L-251] (31 shelf/shelves) kind:collected-line
+- Deluxe / Yearbook / Omnibus editions of the shelf's own ongoing with NO judged range get an `N` naming the
+  relationship, never an invented `C` range (the range is containment's to read).
+[L-258] (31 shelf/shelves) kind:collected-line sig:stamp
+- A degenerate packet block can stamp ONE GCD issue id onto every book of a shelf (Green Arrow S97350, six eras of
+  collected lines) — resolve only by each series' full issue list matched by title, never by the stamp.
+[L-269] (31 shelf/shelves) kind:collected-line kind:trade-only
+- An omnibus bundling several minis gets one `C` per mini at that mini's full range; an anthology TPB ("… and
+  Others") is not a numbered run and gets an `N`, not a forced `C`.
+[L-275] (31 shelf/shelves) kind:collected-line pass:item sig:probe sig:trade-link
+- A count-1/2/3 trade record the shelf's `N` called absent is often in the catalogs under a spelling the packet
+  never probed ("The Adventures of …", "Complete Collection", "Deluxe") — probe before writing no-record.
+[L-276] (31 shelf/shelves) kind:manga
+- GCD splits one manga line into a second publisher-branded series for its LAST volumes (Ajin v17, APOSIMZ v07-09:
+  Vertical → Kodansha USA); `SELECT id, number, page_count, isbn, title FROM gcd_issue WHERE series_id=?` on the
+  dump recovers the rows the header pool lacks.
+[L-277] (31 shelf/shelves) kind:manga pass:item sig:stamp
+- ITEM PASS (X-022..X-024, manga): the reused per-file stamp is not always volume 1's id — it can jump to a new
+  wrong series partway through a shelf (Berserk: three wrong series across v02-v41; Bleach cycles four before
+  settling) — always re-derive from the header pool by `#N`, never from a plausible-looking pick.
+[L-278] (31 shelf/shelves) kind:manga
+- Two parallel rip sets of one manga (Berserk .cbz + .cbr) take IDENTICAL per-volume ids from the same ordinal pool.
+[L-279] (31 shelf/shelves) kind:collected-line
+- Blade of the Immortal (S23118) is the canonical "line + run" shape: GCD's 31 collected-edition rows are the `I`
+  identities (cv=- — ComicVine mints only the floppy volume), and the floppy run CV 9069 is what every `C` names,
+  ranges #0-206 ascending across the 31 books. A single-leg shelf's books inherit the shelf's 0.9, never more.
+[L-280] (31 shelf/shelves) kind:manga pass:item sig:probe
+- ITEM PASS (X-025..X-027, manga): when GCD splits a line in two (an earlier series for v1-N, a later one
+  continuing: Blood on the Tracks 156521 / 171046, CITY 123267 / 172756, Nagatoro 152847 / 171408) the packet's
+  header pool shows only the shelf's STORED series — find the other with `lookup.py --contains` and pull its issues
+  with `gcd_issue WHERE series_id=?`.
+[L-282] (31 shelf/shelves) kind:collected-line
+- A `gcd=-` / dump-only shelf's books inherit the shelf's 0.9 (Cells at Work! Lady, Dragon Head); an exact edition
+  can exist on GCD alone and be absent from ComicVine entirely (Cat Shit One Omnibus GCD 186621 → 0.9, cv=-).
+[L-283] (31 shelf/shelves) kind:digital kind:manga pass:item
+- A manga whose only catalog runs are indexed by tankōbon VOLUME cannot take a chapter-count `C` range (Dragon Ball
+  Full Color: judged #1-17 are chapters) — `N no-record`, never an invented mapping.
+[L-284] (31 shelf/shelves) kind:manga pass:item
+- ITEM PASS (X-028..X-030): a manga tankōbon line that GCD tags [Collected Editions] (Food Wars! GCD 95211) has no
+  chapter-indexed run in either catalog — the `C OWED` marker is satisfied by `N no chapter-run`, the Dragon Ball
+  Full Color ruling; the books ARE the run. Our single volumes against GCD's "two-in-one" record have no safe 1:1
+  mapping → `gcd=s<series>` (Erased 118174), never an invented pairing.
+[L-285] (31 shelf/shelves) kind:collected-line pass:item sig:stamp
+- ITEM PASS (X-031..X-033): JoJo's Bizarre Adventure part-shelves are double-stamped — per-file CV is the whole-saga
+  hardcover omnibus volume (165667, one issue per PART) and per-file GCD the umbrella whole-saga series (27115) by
+  raw issue number; both wrong for all 37 books. Parts 1-3 have no CV softcover record (cv=-); Parts 4-5 do.
+[L-286] (31 shelf/shelves) kind:collected-line sig:probe
+- A shelf-level "no record" `N` can be wrong for an English product too (Innocent Omnibus: CV 157999 / GCD 206125
+  under "Innocent Omnibus") — probe the edition's own name before inheriting the shelf's gap.
+[L-287] (31 shelf/shelves) kind:collected-line pass:item
+- A series can be wrong on BOTH legs at once (Hunter x Hunter, Inuyashiki, Kakegurui Twin): the header pool by
+  ordinal is the only source; an omnibus with no dedicated record on either leg is `N no-record`, never a mapping.
+[L-291] (31 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-304] (31 shelf/shelves) kind:manga pass:item
+- On a 60-volume manga run the `I` lines map the shelf's own file order onto the CV/GCD issue-list order (ordinal);
+  that is the accepted precision at this scale — the item pass verified it held on 400+ books.
+[L-309] (31 shelf/shelves) kind:collected-line pass:item sig:probe
+- A collected line's own issue rows carry the trade's SUBTITLE as the issue title, so once one book of a line is
+  identified, `--issues <volume>` or `gcd_issue WHERE series_id=?` resolves the whole Vol. 01-N run in one query —
+  "own container id not probed" is never a valid no-record.
+
++135 more matched entries not shown: L-314, L-344, L-030, L-151, L-160, L-014, L-193, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-064, L-085, L-101, L-310, L-029, L-376, L-087, L-113, L-191, L-194, L-330, L-060, L-016, L-026, L-032, L-047, L-114, L-123, L-182, L-281, L-290, L-302, L-382, L-065, L-099, L-262, L-124, L-272, L-020, L-023, L-068, L-073, L-090, L-091, L-140, L-188, L-219, L-233, L-243, L-373, L-374, L-377, L-380, L-092, L-104, L-105, L-357, L-361, L-028, L-031, L-033, L-034, L-036, L-063, L-070, L-082, L-093, L-094, L-126, L-127, L-130, L-136, L-142, L-158, L-169, L-173, L-174, L-195, L-203, L-205, L-211, L-212, L-215, L-222, L-228, L-237, L-241, L-242, L-245, L-254, L-255, L-260, L-265, L-319, L-321, L-322, L-325, L-329, L-343, L-364, L-378, L-379, L-097, L-175, L-252, L-352, L-354, L-074, L-083, L-128, L-150, L-181, L-250, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S19614 The Silver Coin  [tier B]   keys: The Silver Coin  years 2021-2022  3 files / 3 collections
+   folders: [3] Image\The Silver Coin (2021)
+   files:   [37452] COL The Silver Coin Vol. 01 (2021) (Digital) (DR & Quinch-Empire).cbr (132pp) | [37453] COL The Silver Coin Vol. 02 (2022) (digital) (DrVink-HD).cbz (128pp)
+            [37454] COL The Silver Coin Vol. 03 (2022) (digital) (DrVink-HD).cbz (138pp)
+   ours:    ComicInfo Series: "The Silver Coin"x3; ComicInfo Publisher: "Image"x3
+   CV linked:      vol 135293 "The Silver Coin" 2021 Image 15 issues; cached #1-15 (15); yearΔ 0; ratio 0/15; no judged range
+   CV per-file (v1): vol 139445 "The Silver Coin" 2021 Image 3 on 3/3 files
+   CV candidates:  (= linked) · 75627 "Silver" 2014 Dark Planet Comics 4 s65 · 60345 "Silver" 2013 Dark Planet Comics 12 s53 · 52149 "The Judas Coin" 2012 DC Comics 1 issue 357256 s51 · 96882 "Coin Laundry no Onna" 2010 Kadokawa Shoten 1 issue 568206 s29 · 103821 "Image+" 2017 Image 12 s29 · 89936 "Image+" 2016 Image 16 s26   (v1 search)
+   CV local rip:   (= linked) · 75627 "Silver" 2014 Dark Planet Comics 4 (via CV candidate name "Silver") · 60345 "Silver" 2013 Dark Planet Comics 12 (via CV candidate name "Silver")   (rip lookup)
+   GCD dump:       171653 "The Silver Coin" 2021-2022 Image [] 15 · 185518 "The Silver Coin" 2021-? Image [] 3 · 203957 "Silver Coin" [fr] 2023-? Huginn & Muninn [] 1 · 124215 "Silver" 2018-2018 Dark Planet Productions Inc. [] 1 (via CV candidate name "Silver") · 198114 "Silver" [fr] 2017-2017 Glénat [] 1 (via CV candidate name "Silver") · 108159 "Silver" [de] 2016-? Schreiber & Leser [] 4 (via CV candidate name "Silver")   (dump lookup)
+
+== S20373 Transformers  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: Transformers  years 1984-2023  84 files / 3 collections
+   flags: #502 label-ambiguous [Pending] item 32594 — the cv row on Vol. 02 is a Transformers Classics book
+   folders: [44] Image\Transformers (2023)\Variant Covers · [15] IDW Hasbro\Transformers (IDW Chronology) (2005)\2016 - Phase Three\2019.03 - Transformers · [13] Marvel\Death's Head\1. Death's Head (FPA) · [11] Image\Transformers (2023) · [1] Image\Transformers (2023)\Annuals and Specials
+   files:   Transformers 019 (2020) (digital) (Knight Ripper-Empire).cbr … Transformers 043 (2022) (digital) (Knight Ripper-Empire).cbr  (13 files, pp 27-44)
+            [32593] COL Transformers Vol. 01 - The World in Your Eyes (2019) (digital) (Knight Ripper-Empire).cbr (290pp)
+            [32594] COL Transformers Vol. 02 - The Change in Their Nature (2020) (digital) (Knight Ripper-Empire).cbr (277pp)
+            [37944] Transformers 01 Fifth Printing (Filya Bratukhin cover b~n~w variant) (1349).cbz (1pp) | [37471] Transformers 007 (2024) (Digital) (Shan-Empire).cbz (31pp)
+            [37472] Transformers 008 (2024) (Digital) (Shan-Empire).cbz (31pp) | [37473] Transformers 009 (2024) (Digital) (Shan-Empire).cbz (31pp)
+            [37474] Transformers 010 (2024) (Digital) (Shan-Empire).cbz (30pp) | [37475] Transformers 011 (2024) (Digital) (Shan-Empire).cbz (29pp)
+            [37476] Transformers 012 (2024) (Digital-Empire).cbz (30pp) | [37477] Transformers 013 (2024) (Digital) (Shan-Empire).cbz (29pp)
+            [37478] Transformers 014 (2024) (Digital) (Shan-Empire).cbz (29pp) | [37479] Transformers 015 (2025) (Digital) (Shan-Empire).cbz (31pp)
+            [37480] Transformers 016 (2025) (Digital) (Shan-Empire).cbz (29pp) | [37481] COL Transformers Vol. 01 - Robots in Disguise (2024) (digital) (Knight Ripper-Empire).cbr (143pp)
+            [37482] Transformers 001 (2023) (1-in-10 Orlando Arocena Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37483] Transformers 001 (2023) (1-in-25 Cliff Chiang Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37484] Transformers 001 (2023) (1-in-50 Francis Manapul Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37485] Transformers 001 (2023) (Daniel Warren Johnson Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37486] Transformers 001 (2023) (Ryan Ottley Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [37487] Transformers 001 (2024) (GameStop Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37488] Transformers 001 Fifth Printing (Filya Bratukhin cover b~n~w variant) (1349).cbz (1pp)
+            [37489] Transformers 002 (2023) (1-in-10 Orlando Arocena Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37490] Transformers 002 (2023) (1-in-25 Bryan Hitch Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37491] Transformers 002 (2023) (1-in-50 Tom Reilly Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37492] Transformers 005 (2024) (1-in-50 Karl Kerschl Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37493] Transformers 005 (2024) (James Stokoe Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37494] Transformers 006 (2024) (1-in-25 Eric Canete Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37495] Transformers 006 (2024) (André Lima Araújo Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37496] Transformers 007 (2024) (Jorge Corona Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37497] Transformers 008 (2024) (1-in-25 Ethan Young Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37498] Transformers 008 (2024) (Second Printing Jason Howard Autobot Var) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37499] Transformers 009 (2024) (Jorge Corona Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37500] Transformers 011 (2024) (1-in-10 Karen S Darboe Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37501] Transformers 011 (2024) (1-in-25 Ludo Lullabi Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37502] Transformers 011 (2024) (1-in-50 Wes Craig Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37503] Transformers 011 (2024) (Jorge Corona & Mike Spicer Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37504] Transformers 012 (2024) (1-in-25 Chris Stevens Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37505] Transformers 012 (2024) (1-in-50 Cory Walker Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37506] Transformers 013 (2024) (1-in-10 Viktor Bogdanovic Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37507] Transformers 013 (2024) (1-in-100 Homare Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37508] Transformers 013 (2024) (1-in-25 Jorge Fornes Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37509] Transformers 013 (2024) (1-in-50 Francesco Mattina Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37510] Transformers 013 (2024) (Blank Sketch Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37511] Transformers 013 (2024) (Jorge Corona & Mike Spicer Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37512] Transformers 014 (2024) (1-in-10 Viktor Bogdanovic Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37513] Transformers 014 (2024) (1-in-25 Jorge Fornes Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37514] Transformers 014 (2024) (1-in-50 Derrick Chew Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37515] Transformers 014 (2024) (Jorge Corona & Mike Spicer Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37516] Transformers 015 (2024) (1-in-10 Karl Kerschl Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37517] Transformers 015 (2024) (1-in-100 Dustin Nguyen Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37518] Transformers 015 (2024) (1-in-25 Ej Su Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37519] Transformers 015 (2024) (1-in-50 Oliver Ono Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37520] Transformers 015 (2024) (Blank Sketch Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37521] Transformers 015 (2024) (Jorge Corona & Mike Spicer Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37522] Transformers 016 (2025) (1-in-10 Karl Kerschl Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37523] Transformers 016 (2025) (1-in-25 Manabu Yashiro Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37524] Transformers 016 (2025) (1-in-50 Homare Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37525] Transformers 016 (2025) (Jorge Corona & Mike Spicer Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | 002 - Transformers (UK) 113.cbz … 014 - Transformers (UK) 151.cbz  (13 files)
+   ours:    ladder 1-2, 5-16, 19-24, 37-43, 113-114, 117-119, 133-134, 146-151; 13 number(s) name more than one file: 1, 2, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15; ComicInfo Series: "Transformers"x12, "Transformers "x1; ComicInfo Volume: "2019"x10; ComicInfo Publisher: "IDW"x12
+   CV linked:      vol 153968 "Transformers" 2023 Image 26 issues; cached #1-28 (28); yearΔ 39; ratio 81/26 = 3.12; no judged range
+   CV per-file (v1): vol 3370 "The Transformers" 1984 Marvel 80 on 82/84 files
+   CV candidates:  (= linked) · 130616 "Transformers" 1987 Atlantic Förlags AB 31 s84 · 163604 "Transformers" 1990 Meribérica-Líber 17 s82 · 29903 "The Transformers" 2009 IDW Publishing 31 s37 · 171174 "Transformers" 2024 Moztros Producciones 3 s35 · 53103 "Transformers: The IDW Collection" 2010 IDW Publishing 8 s32 · 145602 "Transformers: IDW Collection Phase Three" 2021 IDW Publishing 3 s31   (v1 search)
+   CV local rip:   (= linked) · 20559 "The Transformers" 1984 Marvel UK/Panini UK 333 · 130616 "Transformers" 1987 Atlantic Förlags AB 31 · 163604 "Transformers" 1990 Meribérica-Líber 17 · 166262 "Transformers" 1991 TM-Semic 24 · 27885 "The Transformers" 2007 IDW Publishing 1 issue 170947   (rip lookup)
+   GCD per-file:   series 204233 "Transformers" 2023-? Image [ongoing series] 32 on 52/84 files · series 142349 "Transformers" 2019-2022 IDW [Ongoing  Series] 43 on 13/84 files · series 211992 "Transformers" 2024-? Image [collected edition] 5 on 1/84 files; methods numx66
+   GCD dump:       2898 "The Transformers" 1984-1991 Marvel [] 80 · 32544 "The Transformers" [en-gb] 1984-1992 Marvel UK [] 332 · 141869 "The Transformers" [en-au] 1984-1984 Federal [] 1 · 62124 "Transformers" [pt-br] 1985-1986 RGE [] 12 · 79736 "Transformers" [es] 1985-1992 Planeta DeAgostini [] 69 · 20487 "Transformers" [nl] 1986-1991 Juniorpress [] 32   (dump lookup)
+   bridges:        gcd 204233 -> LOCG 168170 "Transformers" support 52 · gcd 142349 -> LOCG 114951 "The Transformers" support 15 · gcd 211992 -> LOCG 168170 "Transformers" support 4 · gcd 211992 -> OL /works/OL37566139W "None" isbnSupport 4
+
+== S18272 The Complete Witchblade  [tier B]   keys: The Complete Witchblade  years 2020-2023  3 files / 3 collections
+   folders: [3] Image\Witchblade\The Complete Witchblade (2020)
+   files:   [36046] COL The Complete Witchblade Book 01 (2020) (Digital) (DR & Quinch-Empire).cbr (552pp)
+            [36047] COL The Complete Witchblade Book 02 (2021) (Digital) (DR & Quinch-Empire).cbr (645pp) | [36048] COL The Complete Witchblade Book 03 (2023) (Digital) (dekabro-Empire).cbz (601pp)
+   ours:    ComicInfo Series: "The Complete Witchblade"x2, "Witchblade Collected Edition"x1; ComicInfo Publisher: "Image"x2, "Image - Top Cow"x1
+   GCD says: [36046] gcd_reprint 2095219: s7880 Witchblade (1995) #1-19 [40 stories] · s13394 Tales of the Witchblade (1996) #1-3 [7 stories] · s5648 The Darkness (1996) #9-10 [4 stories] · s100553 Witchblade: Origins (2001) (unnumbered) [1 story]
+   CV linked:      vol 125989 "The Complete Witchblade" 2020 Image 3 issues; cached #1-3 (3); yearΔ 0; ratio 0/3; no judged range
+   CV candidates:  (= linked) · 45637 "Witchblade" 2008 Image 8 s66 · 7300 "Witchblade" 1995 Image 187 s59 · 32649 "Image Firsts: Witchblade" 2010 Image 1 issue 208520 s50 · 130589 "Witchblade" 2000 Infinity Verlag 19 s46 · 113386 "Witchblade" 1996 Splitter 25 s44 · 162081 "Witchblade" 2025 Image 3 s23   (v1 search)
+   CV local rip:   (= linked) · 112061 "Witchblade" 2018 Image 3 (via CV candidate name "Witchblade") · 106705 "Witchblade" 2017 Image 18 (via CV candidate name "Witchblade") · 158904 "Witchblade" 2024 Image 17 (via CV candidate name "Witchblade") · 162081 "Witchblade" 2025 Image 2 (via CV candidate name "Witchblade") · 62097 "Witchblade" 2009 Panini Verlag 7 (via CV candidate name "Witchblade")   (rip lookup)
+   GCD dump:       158184 "The Complete Witchblade" 2020-? Image [] 4 · 163782 "The Complete Witchblade" 2020-? Image [] 4 · 126504 "Witchblade" 2018-2020 Image [] 3 (via CV candidate name "Witchblade") · 119104 "Witchblade" 2017-2020 Image [] 18 (via CV candidate name "Witchblade") · 213774 "Witchblade" 2024-? Image [] 21 (via CV candidate name "Witchblade") · 220100 "Witchblade" 2025-? Image [] 3 (via CV candidate name "Witchblade")   (dump lookup)
+
+== S94736 Witchblade  [tier C] · by 13  keys: Witchblade v1 (1995)  years 1995-2014  20 files / 20 collections
+   flags: #674 overlap-in-series [Dismissed] item 36050 — several Witchblade ladders each contribute a Vol. 01 numbered from #1
+   folders: [8] Image\Witchblade\Witchblade v1 (1995)\Witchblade (TPBs) (2008-2010) (Digital) · [4] Image\Witchblade\Witchblade v1 (1995)\Witchblade - Rebirth (TPBs) (2012-2013) (Digital) · [4] Image\Witchblade\Witchblade v1 (1995)\Witchblade - Redemption (TPBs) (2010-2012) (Digital) · [3] Image\Witchblade\Witchblade v1 (1995)\Witchblade - Origins (TPBs) (2008-2009) (Digital) · [1] Image\Witchblade\Witchblade v1 (1995)
+   files:   [36050] COL Witchblade Vol. 01 (2008) (Digital) (K6-Empire).cbr (158pp) | [36051] COL Witchblade Vol. 02 (2008) (Digital) (K6-Empire).cbr (202pp)
+            [36052] COL Witchblade Vol. 03 (2008) (Digital) (K6-Empire).cbr (257pp) | [36053] COL Witchblade Vol. 04 (2008) (Digital) (K6-Empire).cbr (237pp)
+            [36054] COL Witchblade Vol. 05 (2008) (Digital) (K6-Empire).cbr (262pp) | [36055] COL Witchblade Vol. 06 (2009) (Digital) (K6-Empire).cbr (159pp)
+            [36056] COL Witchblade Vol. 07 (2009) (Digital) (K6-Empire).cbr (175pp) | [36057] COL Witchblade Vol. 08 (2010) (Digital) (K6-Empire).cbr (176pp)
+            [36058] COL Witchblade - Borne Again Vol. 01 (2014) (Digital) (K7-Empire).cbr (126pp) | [36063] COL Witchblade - Origins Vol. 01 (2008) (Digital) (K6-Empire).cbr (199pp)
+            [36064] COL Witchblade - Origins Vol. 02 (2008) (Digital) (K6-Empire).cbr (222pp) | [36065] COL Witchblade - Origins Vol. 03 (2009) (Digital) (K6-Empire).cbr (260pp)
+            [36066] COL Witchblade - Rebirth Vol. 01 (2012) (Digital) (K6-Empire).cbr (136pp) | [36067] COL Witchblade - Rebirth Vol. 02 (2013) (Digital) (K7-Empire).cbr (154pp)
+            [36068] COL Witchblade - Rebirth Vol. 03 (2013) (Digital) (K7-Empire).cbr (164pp) | [36069] COL Witchblade - Rebirth Vol. 04 (2013) (Digital) (K7-Empire).cbr (158pp)
+            [36070] COL Witchblade - Redemption Vol. 01 (2010) (Digital) (K6-Empire).cbr (181pp) | [36071] COL Witchblade - Redemption Vol. 02 (2011) (Digital) (K6-Empire).cbr (143pp)
+            [36072] COL Witchblade - Redemption Vol. 03 (2011) (Digital) (K6-Empire).cbr (161pp) | [36073] COL Witchblade - Redemption Vol. 04 (2012) (Digital) (K6-Empire).cbr (153pp)
+   GCD says: [36058] gcd_reprint 1037697: s7880 Witchblade (1995) #70-75 [14 stories]
+             [36063] gcd_reprint 1037697: s7880 Witchblade (1995) #70-75 [14 stories]
+   CV linked:      vol 7300 "Witchblade" 1995 Image 187 issues; cached #1-500 (187); yearΔ 0; ratio 0/187; no judged range; v1 per-file: same volume on 8/20 files
+   CV local rip:   (= linked) · 113386 "Witchblade" 1996 Splitter 25 · 127234 "Witchblade" 1996 JuniorPress BV 30 · 130589 "Witchblade" 2000 Infinity Verlag 19 · 62183 "Witchblade" 2007 Panini Verlag 2 · 45637 "Witchblade" 2008 Image 8   (rip lookup)
+   GCD per-file:   methods round2-seriesx4 ⚠  (⚠ copies a folder neighbour's series — verify); series 70310 "Witchblade" [fr] 2008-2012 Delcourt [série continue terminée [was ongoing series]] 6 on 4/20 files
+   GCD dump:       7880 "Witchblade" 1995-2015 Image [] 185 · 20482 "Witchblade" [nl] 1996-2002 Juniorpress [] 30 · 42100 "Witchblade" [de] 1996-1999 Splitter [] 29 · 46773 "Witchblade" 1996-1996 Image [] 1 · 97999 "Witchblade" [fr] 1996-2002 Semic S.A. [] 27 · 55598 "Witchblade" [pt-br] 1997-1998 Editora Globo [] 8   (dump lookup)
+   bridges:        gcd 70310 -> LOCG 109155 "Witchblade" support 5 · gcd 70310 -> OL /works/OL37505567W "None" isbnSupport 3
+
+== S94737 Witchblade  [tier C] · gap 23  keys: Witchblade (2017-) | Witchblade v2 (2017)  years 1995-2020  3 files / 3 collections
+   folders: [3] Image\Witchblade\Witchblade v2 (2017)
+   files:   [36075] COL Witchblade Vol. 01 (2018) (Digital) (DR & Quinch-Empire).cbr (164pp) | [36076] COL Witchblade Vol. 02 (2019) (Digital) (DR & Quinch-Empire).cbr (162pp)
+            [36077] COL Witchblade Vol. 03 (2020) (Digital) (DrDoom-Empire).cbz (150pp)
+   ours:    ComicInfo Series: "Witchblade"x2, "Witchblade (2017-)"x1; ComicInfo Publisher: "Image - Top Cow"x3
+   GCD says: [36077] gcd notes 2119801 (#3 of Witchblade): Witchblade (Image, 2017 series) #13-18
+   CV linked:      vol 112061 "Witchblade" 2018 Image 3 issues; cached #1-3 (3); yearΔ 23; ratio 0/3; no judged range
+   CV per-file (v1): vol 7300 "Witchblade" 1995 Image 187 on 1/3 files
+   CV candidates:  61761 "Top Cow Classics in Black and White: Witchblade" 2000 Image 1 issue 404509 s60 · 98029 "Ghostbusters Annual 2017" 2017 IDW Publishing 1 issue 576551 s58 · 99420 "Transformers Annual 2017" 2017 IDW Publishing 1 issue 584905 s58 · 102576 "Belladonna Annual 2017" 2017 Avatar Press 1 issue 606683 s58 · 105428 "Something Wicked 2017" 2017 FutureQuake Press 1 issue 631215 s58 · 98340 "Hellboy Winter Special 2017" 2017 Dark Horse Comics 1 issue 578407 s57   (v1 search)
+   CV local rip:   (= linked) · 113386 "Witchblade" 1996 Splitter 25 · 127234 "Witchblade" 1996 JuniorPress BV 30 · 130589 "Witchblade" 2000 Infinity Verlag 19 · 62183 "Witchblade" 2007 Panini Verlag 2 · 45637 "Witchblade" 2008 Image 8   (rip lookup)
+   GCD dump:       7880 "Witchblade" 1995-2015 Image [] 185 · 20482 "Witchblade" [nl] 1996-2002 Juniorpress [] 30 · 42100 "Witchblade" [de] 1996-1999 Splitter [] 29 · 46773 "Witchblade" 1996-1996 Image [] 1 · 97999 "Witchblade" [fr] 1996-2002 Semic S.A. [] 27 · 55598 "Witchblade" [pt-br] 1997-1998 Editora Globo [] 8   (dump lookup)
+
+== S101568 Youngblood v4 (2008)  [tier C] · gap 16  keys: Youngblood v4 (2008)  years 1992-1993  5 files / 0 collections
+   flags: #558 label-ambiguous [Pending] item 34442 — Youngblood v4 001-005 are single issues, not collections
+   folders: [5] Image\Youngblood\Youngblood v4 (2008)
+   files:   [34442] Youngblood v4 001 (2008) (Minutemen-Zone).cbr (25pp) | [34443] Youngblood v4 002 (2008) (Minuemen-Zone).cbr (26pp) | [34444] Youngblood v4 003 (2008) (Minutemen-ReZone).cbr (26pp)
+            [34445] Youngblood v4 004 (2008) (both covers) (Minutemen-Zone).cbr (28pp) | [34446] Youngblood v4 005 (2008) (2 covers) (Minutemen-ReZone).cbr (27pp)
+   ours:    ladder 1-5
+   CV per-file (v1): vol 11281 "Youngblood" 1992 Image 11 on 5/5 files
+   CV local rip:   (= per-file) · 134476 "Youngblood" 1994 Planeta DeAgostini 7 (via our own name without the filing suffix "Youngblood") · 21764 "Youngblood" 1995 Image 11 (via our own name without the filing suffix "Youngblood") · 134477 "Youngblood" 1995 Semic S.A. 6 (via our own name without the filing suffix "Youngblood") · 19846 "Youngblood" 1998 Awesome Comics 2 (via our own name without the filing suffix "Youngblood") · 20293 "Youngblood" 2008 Image 9 (via our own name without the filing suffix "Youngblood")   (rip lookup)
+   GCD per-file:   series 31435 "Youngblood" 2008-2008 Image [] 9 on 5/5 files; methods numx5
+   GCD dump:       12225 "Youngblood" 1992-1994 Image [] 11 (via our own name without the filing suffix "Youngblood") · 50794 "Youngblood" 1995-1996 Image [] 10 (via our own name without the filing suffix "Youngblood") · 51143 "Youngblood" [fr] 1995-1996 Semic S.A. [] 6 (via our own name without the filing suffix "Youngblood") · 50362 "Youngblood" [pt-br] 1996-1997 Editora Abril [] 9 (via our own name without the filing suffix "Youngblood") · 51158 "Youngblood" 1996-1996 Image [] 1 (via our own name without the filing suffix "Youngblood") · 158630 "Youngblood" 1996-1996 Maximum Press [] 1 (via our own name without the filing suffix "Youngblood")   (dump lookup)
+   bridges:        gcd 31435 -> LOCG 113308 "Youngblood" support 5
+
+== S102127 Powers  [tier B]   keys: Powers (2022)  years 2022-2023  6 files / 6 collections
+   folders: [5] Jinxworld (Dark Horse)\Powers (2000)\00 Dark Horse Reprints · [1] Jinxworld (Dark Horse)\Powers (2000)\05 Powers v4 (Icon) (2015)
+   files:   [37624] COL Powers v01 (2022) (digital) (Son of Ultron-Empire).cbr (416pp) | [37625] COL Powers v02 (2022) (digital) (Son of Ultron-Empire).cbr (410pp)
+            [37626] COL Powers v03 (2023) (digital) (Son of Ultron-Empire).cbr (417pp) | [37627] COL Powers v04 (2023) (digital) (Son of Ultron-Empire).cbr (494pp)
+            [37628] COL Powers v05 (2023) (digital) (Son of Ultron-Empire).cbr (403pp) | [37636] COL Powers Vol. 02 - The Best Ever (2022) (digital) (Son of Ultron-Empire).cbr (238pp)
+   ours:    ComicInfo Series: "Powers"x3; ComicInfo Publisher: "Dark Horse"x3
+   GCD says: [37636] gcd_reprint 2142090: s85993 Powers (2015) #1-4, #7-8 [8 stories] · s207021 Powers (2011) #7 [1 story] · s71998 Powers: Bureau (2013) #1 [1 story] · s12071 Powers (2004) #13 [1 story]
+   CV linked:      vol 146264 "Powers" 2022 Dark Horse Comics 7 issues; cached #1-7 (7); yearΔ 0; ratio 0/7; no judged range
+   CV local rip:   (= linked) · 116809 "Powers" 2018 DC Comics 7 · 79571 "Powers" 2015 Marvel 8 · 61656 "Powers" 2012 Panini Verlag 2 · 30045 "Powers" 2009 Marvel 11 · 18034 "Powers" 2004 Marvel 30   (rip lookup)
+   GCD dump:       189386 "Powers" 2022-? Dark Horse [] 7 · 134252 "Powers" 2018-2019 DC [] 7 · 103613 "Powers" 2016-2016 Marvel [] 1 · 85993 "Powers" 2015-2017 Marvel [] 8 · 101523 "Powers" [de] 2012-2012 Panini Deutschland [] 2 · 170516 "Powers" [pt-br] 2011-2011 Panini Brasil [] 1   (dump lookup)
+
+== S102126 Powers  [tier B]   keys: Powers (2018)  years 2018-2019  4 files / 4 collections
+   folders: [2] Jinxworld (Dark Horse)\Powers (2000)\02 Powers v2 (Icon) (2004) · [1] Jinxworld (Dark Horse)\Powers (2000)\03 Powers v3 (Icon) (2009) · [1] Jinxworld (Dark Horse)\Powers (2000)\05 Powers v4 (Icon) (2015)
+   files:   [37633] COL Powers Book 04 (2019) (digital) (Son of Ultron-Empire).cbr (468pp) | [37634] COL Powers Book 05 (2019) (digital) (Son of Ultron-Empire).cbr (402pp)
+            [37957] COL Powers Book 06 (2019) (digital) (Son of Ultron-Empire).cbr (352pp) | [37635] COL Powers Vol. 01 - All the New Powers (2018) (Digital) (EJGriffin).cbz (154pp)
+   ours:    ComicInfo Series: "Powers Book Four"x1, "Powers Book Five"x1, "Powers"x1, "Powers Book Six"x1; ComicInfo Volume: "2015"x1; ComicInfo Publisher: "DC"x4
+   CV linked:      vol 116809 "Powers" 2018 DC Comics 7 issues; cached #1-7 (7); yearΔ 0; ratio 0/7; no judged range; v1 per-file: same volume on 4/4 files
+   CV local rip:   (= linked) · 79571 "Powers" 2015 Marvel 8 · 146264 "Powers" 2022 Dark Horse Comics 7 · 61656 "Powers" 2012 Panini Verlag 2 · 30045 "Powers" 2009 Marvel 11 · 18034 "Powers" 2004 Marvel 30   (rip lookup)
+   GCD dump:       134252 "Powers" 2018-2019 DC [] 7 · 103613 "Powers" 2016-2016 Marvel [] 1 · 85993 "Powers" 2015-2017 Marvel [] 8 · 189386 "Powers" 2022-? Dark Horse [] 7 · 101523 "Powers" [de] 2012-2012 Panini Deutschland [] 2 · 170516 "Powers" [pt-br] 2011-2011 Panini Brasil [] 1   (dump lookup)
+
+== S18834 The Infinite Adventures of Jonas Quantum  [tier B]   keys: The Infinite Adventures of Jonas Quantum  years 2015-2016  1 files / 1 collections
+   folders: [1] Legendary Comics
+   files:   [37661] COL The Infinite Adventures of Jonas Quantum Vol. 01 (2016) (digital) (Son of Ultron-Empire).cbr (162pp)
+   ours:    ComicInfo Series: "The Infinite Adventures of Jonas Quantum"x1; ComicInfo Publisher: "Legendary"x1
+   CV linked:      vol 84629 "The Infinite Adventures of Jonas Quantum" 2015 Legendary Comics 6 issues; cached #1-6 (6); yearΔ 0; ratio 0/6; no judged range
+   CV per-file (v1): vol 90411 "The Infinite Adventures of Jonas Quantum" 2016 Legendary Comics 1 issue 529733 on 1/1 files
+   CV candidates:  (= linked) · 45761 "Jonas" 1996 Caliber Comics 1 issue 315205 s55 · 6038 "Jonas Fink" 1997 Carlsen Verlag 3 s23 · 116101 "Zorro: Legendary Adventures" 2018 American Mythology Productions 4 s16 · 38243 "Legendary" 2011 Gamecock Media Group 1 issue 255971 s15 · 59898 "Legendary Talespinners" 2010 Dynamite Entertainment 1 issue 397184 s15 · 118284 "Zorro: Legendary Adventures Book 2" 2019 American Mythology Productions 4 s11   (v1 search)
+   CV local rip:   (= linked) · 45761 "Jonas" 1996 Caliber Comics 1 issue 315205 (via CV candidate name "Jonas")   (rip lookup)
+   GCD dump:       92574 "The Infinite Adventures of Jonas Quantum" 2015-2016 Legendary [] 6 · 196348 "The Infinite Adventures of Jonas Quantum" 2016-2016 Legendary [] 1 · 109916 "Jonas" [de] 1991-? Gleis Verlag [] 6 (via CV candidate name "Jonas") · 129494 "Jonas" [fr] 1989-1989 Futuropolis [] 1 (via CV candidate name "Jonas")   (dump lookup)
+
+== S21308 Water Memory  [tier B]   keys: Water Memory  years 2017-2017  1 files / 0 collections
+   folders: [1] Lion Forge-Magnetic-Non-Catalyst Prime
+   files:   [37816] Water Memory (2017) (Lion Forge Comics) (Digital-Empire).cbr (113pp)
+   CV linked:      vol 103629 "Water Memory" 2017 Lion Forge Comics 1 issues issue 616252; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV per-file (v1): vol 96054 "Water Memory" 2016 Europe Comics 2 on 1/1 files
+   CV candidates:  (= linked) · 38185 "Memory" 2001 Paquet 1 issue 255457 s55 · 92112 "Memory" 1986 Éditions Glénat 1 issue 538957 s55 · 132025 "Catalyst Prime: Seven Days" 2020 Lion Forge Comics 1 issue 818739 s15 · 101258 "Catalyst Prime: The Event" 2017 Lion Forge Comics 1 issue 594532 s15 · 115661 "ElectroMagnetic" 2018 Maximized Comics 1 issue 693741 s15 · 68008 "Catalyst Prime" 2013 Lion Forge Comics 3 s3   (v1 search)
+   CV local rip:   (= linked) · 38185 "Memory" 2001 Paquet 1 issue 255457 (via CV candidate name "Memory") · 92112 "Memory" 1986 Éditions Glénat 1 issue 538957 (via CV candidate name "Memory")   (rip lookup)
+   GCD dump:       76042 "Memory" [fr] 1986-1987 Glénat [] 3 (via CV candidate name "Memory")   (dump lookup)
+
+== S8946 Hollywood Trash  [tier B]   keys: Hollywood Trash TPB  years 2020-2021  1 files / 1 collections
+   folders: [1] MadCave (and Maverick)
+   files:   [37874] COL Hollywood Trash v01 (2021) (Digital) (DR & Quinch-Empire).cbr (120pp)
+   ours:    ComicInfo Series: "Hollywood Trash TPB"x1; ComicInfo Publisher: "Mad Cave Studios"x1
+   CV linked:      vol 131001 "Hollywood Trash" 2020 Mad Cave Studios 5 issues; cached #1-5 (5); yearΔ 0; ratio 0/5; no judged range
+   CV per-file (v1): vol 135875 "Hollywood Trash" 2021 Mad Cave Studios 1 issue 847356 on 1/1 files
+   CV candidates:  (= linked) · 38608 "Trash" 2006 Tokyopop 1 issue 259091 s55 · 137651 "Hollywood" 2021 Inverse Press 1 issue 872141 s55 · 79973 "Hollywood" 2010 Éditions Glénat 3 s43 · 53315 "Trash." 2010 Akita Shoten 11 s40 · 121554 "Tomb Raider: Journeys TPB" 2003 mg/publishing 1 issue 1040498 s32 · 144127 "Batman: Secret Files  TPB" 2022 DC Comics 1 issue 937991 s32   (v1 search)
+   CV local rip:   (= linked) · 53315 "Trash." 2010 Akita Shoten 11 (via CV candidate name "Trash") · 38608 "Trash" 2006 Tokyopop 1 issue 259091 (via CV candidate name "Trash")   (rip lookup)
+   GCD dump:       178844 "Hollywood Trash" 2020-2021 Mad Cave Studios [] 5 · 178845 "Hollywood Trash" 2021-2021 Mad Cave Studios [] 1 · 43834 "Trash" 1993-1993 Fleetway/Quality [] 2 (via CV candidate name "Trash")   (dump lookup)
+
+== S208 A Legacy of Violence  [tier C] · ratio 0.33  keys: A Legacy of Violence  years 2022-2024  6 files / 2 collections
+   flags: #681 provider-disagrees [Pending] item 37824 — identical locg 9-12 on both volumes of A Legacy of Violence
+   folders: [6] MadCave (and Maverick)\A Legacy of Violence (2022)
+   files:   [37820] A Legacy of Violence 09 (of 12) (2023) (digital-Empire).cbr (24pp) | [37821] A Legacy of Violence 10 (of 12) (2024) (digital-Empire).cbr (24pp)
+            [37822] A Legacy of Violence 11 (of 12) (2024) (digital-Empire).cbr (24pp) | [37823] A Legacy of Violence 12 (of 12) (2024) (digital-Empire).cbr (24pp)
+            [37824] COL A Legacy of Violence v01 (2023) (Digital) (DR & Quinch-Empire).cbr (105pp) | [37825] COL A Legacy of Violence v02 (2023) (Digital) (DR & Quinch-Empire).cbr (95pp)
+   ours:    ladder 9-12
+   CV linked:      vol 148184 "A Legacy of Violence" 2022 Mad Cave Studios 12 issues; cached #1-12 (12); yearΔ 0; ratio 4/12 = 0.33; no judged range; v1 per-file: same volume on 5/6 files
+   CV local rip:   (= linked) · 148265 "A Legacy of Violence" 2023 Mad Cave Studios 2   (rip lookup)
+   GCD per-file:   series 192489 "A Legacy of Violence" 2022-2024 Mad Cave Studios [limited series] 12 on 4/6 files; methods numx4
+   GCD dump:       (= per-file) · 232693 "A Legacy of Violence" 2023-2023 Mad Cave Studios [] 1   (dump lookup)
+   bridges:        gcd 192489 -> LOCG 160065 "A Legacy of Violence" support 4
+
+== S21115 Viz  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: VIZ | Viz | Viz  Aug | Viz  Jun | Viz  May | Viz  Sep | Viz 231 & Dec-Jan  years 1979-2024  81 files / 0 collections
+   folders: [81] Magazines\Viz (1979)
+   files:   [39119] VIZ 212 (2012-02) c2c.cbr (51pp) | [39113] Viz 201 (2010) (Random Stranger-DCP).cbr (49pp) | [39114] Viz 203 (2011) (Random Stranger-DCP).cbr (49pp)
+            [39115] Viz 204 (2011-04) (PDFrip).cbr (52pp) | [39116] Viz 206 (2011-06) (PDFrip).cbr (52pp) | [39117] Viz 207 (2011-08) (PDFrip).cbr (52pp)
+            [39118] Viz 208 (2011-09) (PDFrip).cbr (52pp) | [39120] Viz 214 [2012-04].cbr (52pp) | [39121] Viz 215 [2012-05].cbz (52pp) | [39122] Viz 216 [2012-06].cbz (52pp)
+            [39123] Viz 217 [2012-08].cbz (52pp) | [39124] Viz 218 [2012-09].cbz (52pp) | [39125] Viz 219 (2012) (c2c) (PDF Rip) (Plonker-AFO).cbz (52pp) | [39126] Viz 219 [2012-10].cbz (52pp)
+            [39127] Viz 223 (2013) (c2c) (PDF Rip) (Plonker-AFO).cbz (52pp) | [39128] Viz 226 (2013-06) c2c.cbr (52pp) | [39129] Viz 229 (2013) (c2c) (PDF Rip) (Plonker-AFO).cbz (51pp)
+            [39130] Viz 231 [2013-12].cbz (52pp) | [39131] Viz 232 (2014) (PDF Rip) (Plonker-AFO) c2c.cbz (52pp)
+            Viz 233 (2014) (Random Stranger-DCP).cbr … Viz 280 (2018) (Random Stranger-DCP).cbr  (16 files, pp 43-48) | [39148] Viz 292 [2020-02].cbr (52pp) | [39149] Viz 293 [2020-03].cbr (52pp)
+            [39150] Viz 294 [2020-04].cbr (53pp) | [39151] Viz 295 [2020-05].cbr (53pp) | [39152] Viz 296 [2020-06].cbr (53pp) | [39153] Viz 297 (2020-07) (PDF-rip) (Random Stranger-DCP).cbr (45pp)
+            [39154] Viz 298 (2020-09) (PDF-Rip) (Random Stranger-DCP).cbr (46pp) | Viz 301 (2021) (Random Stranger-DCP).cbr … Viz 340 (2024) (Random Stranger-DCP).cbr  (39 files, pp 43-50)
+   ours:    ladder 1, 201, 203-204, 206-208, 212, 214-219, 223, 226, 229, 232-233, 236, 247-250, 260, 272-280, 292-298, 301-303, 305-340; 1 number(s) name more than one file: 219; ComicInfo Series: "Viz  May"x1, "Viz  Jun"x1, "Viz  Aug"x1, "Viz  Sep"x1; barcode item 39122 [{"type": "EAN13", "data": "9770952796153", "page": "P00001.
+   CV linked:      vol 32718 "Viz" 1979 Dennis Förlag 355 issues; cached #1-352 (352); yearΔ 0; ratio 81/355 = 0.23; no judged range; v1 per-file: same volume on 76/81 files
+   CV candidates:  (= linked) · 80339 "Karl May" 1976 Condor Verlag 5 s40 · 95634 "Viz Media Manga Sampler" 2015 Viz 1 issue 557578 s32 · 92138 "Love 1979" 1979 Murray Comics 1 issue 539068 s30 · 74774 "Tender Loving Care of Magazines" 1973 Council for Periodical Distributing Association 1 issue 456185 s25 · 151675 "Viz Manga" 2023 Viz 146 s19 · 93526 "Jun" 1983 Shueisha 1 issue 546712 s15   (v1 search)
+   CV local rip:   (= linked) · 95634 "Viz Media Manga Sampler" 2015 Viz 1 issue 557578 (via CV candidate name "Viz Media Manga Sampler") · 80339 "Karl May" 1976 Condor Verlag 5 (via CV candidate name "Karl May") · 80260 "Karl May" 1975 Unipart 4 (via CV candidate name "Karl May") · 75341 "Karl May" 1963 Lehning Verlag 53 (via CV candidate name "Karl May") · 83717 "Karl May" 1962 Standaard Uitgeverij 20 (via CV candidate name "Karl May")   (rip lookup)
+   GCD per-file:   series 204807 "Viz" [en-gb] 2022-? Metropolis Publishing [ongoing series] 44 on 28/81 files · series 44235 "Viz" [en-gb] 1979-2021 Dennis Publishing [was ongoing series] 309 on 16/81 files · series 204806 "Viz" [en-gb] 2021-2022 Viz Holdings Ltd. [was ongoing series] 3 on 3/81 files; methods numx47
+   GCD dump:       (= per-file) · 69954 "Karl May" [de] 1976-1977 Condor [] 12 (via CV candidate name "Karl May") · 86419 "Karl May" [de] 1975-1976 Unipart [] 7 (via CV candidate name "Karl May") · 111717 "Karl May" [nl] 1964-1964 Metropolis [] 20 (via CV candidate name "Karl May")   (dump lookup)
+   bridges:        gcd 204807 -> LOCG 160970 "Viz" support 28 · gcd 44235 -> LOCG 160970 "Viz" support 45 · gcd 204806 -> LOCG 160970 "Viz" support 3
+
+== S8331 Hard Melody  [tier B]   keys: Hard Melody  years 2021-2021  1 files / 0 collections
+   flags: #273 label-ambiguous [Pending] item 39989 — Hard Melody v1 001 is a 42 pp single issue
+   folders: [1] Magnetic Press\Hard Melody (2021)
+   files:   [39989] Hard Melody v1 001 (2021) (digital) (Mr Norrell-Empire).cbr (42pp)
+   ours:    ladder 1; ComicInfo Series: "Hard Melody"x1; ComicInfo Publisher: "Magnetic Press"x1
+   CV linked:      vol 134106 "Hard Melody" 2021 Magnetic Press 2 issues; cached #1-2 (2); yearΔ 0; ratio 1/2 = 0.50; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 135918 "Hard Melody" 2021 Magnetic Press 1 issue 847621 s120 · 98156 "Melody" 2013 Coremagazine 1 issue 577147 s65 · 54411 "Melody" 1991 Kitchen Sink 1 issue 371060 s57 · 97762 "A Mysterious Melody" 2017 IDW Publishing 1 issue 574893 s54 · 92702 "Melody" 1997 Hakusensha 191 s44 · 4087 "Melody" 1988 Kitchen Sink 10 s42   (v1 search)
+   CV local rip:   (= linked) · 135918 "Hard Melody" 2021 Magnetic Press 1 issue 847621 · 155085 "Melody" 2023 Europe Comics 1 issue 1033003 (via CV candidate name "Melody") · 98156 "Melody" 2013 Coremagazine 1 issue 577147 (via CV candidate name "Melody") · 92702 "Melody" 1997 Hakusensha 188 (via CV candidate name "Melody") · 54411 "Melody" 1991 Kitchen Sink 1 issue 371060 (via CV candidate name "Melody")   (rip lookup)
+   GCD dump:       156020 "Hard Melody" [fr] 2014-2014 Mosquito [] 1 · 89648 "メロディ [Melody]" [ja-jp] 2006-? 白泉社 [Hakusensha] [] 117 (via CV candidate name "Melody") · 231104 "メロディ [Melody]" [ja-jp] 1994-1994 白泉社 [Hakusensha] [] 1 (via CV candidate name "Melody") · 3683 "Melody" 1988-1990 Kitchen Sink Press [] 10 (via CV candidate name "Melody")   (dump lookup)
+
+== S21165 Wahcommo  [tier B]   keys: Wahcommo  years 2021-2021  4 files / 1 collections
+   flags: #520 label-ambiguous [Pending] item 39286 — Wahcommo v1 001-004 are single issues, not collections
+   folders: [4] Magnetic Press\Wahcommo (2021)
+   files:   [39286] Wahcommo v1 001 (2021) (digital) (Mr Norrell-Empire).cbr (53pp) | [39287] Wahcommo v1 002 (2021) (digital) (Mr Norrell-Empire).cbr (51pp)
+            [39288] Wahcommo v1 003 (2021) (digital) (Mr Norrell-Empire).cbr (53pp) | [39289] COL Wahcommo v1 004 (2021) (digital) (Mr Norrell-Empire).cbr (61pp)
+   ours:    ladder 1-3; ComicInfo Series: "Wahcommo"x4; ComicInfo Publisher: "Magnetic Press"x4
+   CV linked:      vol 133937 "Wahcommo" 2021 Magnetic Press 4 issues; cached #1-4 (4); yearΔ 0; ratio 3/4 = 0.75; no judged range; v1 per-file: same volume on 3/4 files
+   CV candidates:  (= linked) · 135114 "Wahcommo" 2021 Magnetic Press 1 issue 841282 s108 · 141103 "Wahcommo" 2018 Astiberri Ediciones 1 issue 902222 s89 · 107553 "2021" 2012 Soleil 2 s17 · 126729 "Wrong Magnetic Poles" 2020 Imaginator Studios 1 issue 759438 s15 · 115661 "ElectroMagnetic" 2018 Maximized Comics 1 issue 693741 s14 · 35628 "Ultimate X-Men: Magnetic North" 2006 Marvel 1 issue 235543 s10   (v1 search)
+   CV local rip:   (= linked) · 135114 "Wahcommo" 2021 Magnetic Press 1 issue 841282 · 141103 "Wahcommo" 2018 Astiberri Ediciones 1 issue 902222   (rip lookup)
+   GCD dump:       173059 "Wahcommo" 2021-2021 Magnetic Press Inc. [] 1 · 179350 "Wahcommo" [fr] 2019-2019 Editions du Long Bec [] 1 · 173060 "Wahcommo" [es] 2018-2018 Astiberri Ediciones [] ?   (dump lookup)
+
+== S4781 Dante Shinkyoku  [tier B]   keys: Dante's Divine Comedy  years 1998-?  1 files / 0 collections
+   folders: [1] Manga
+   files:   [42022] Dante's Divine Comedy (1994-1995) [xPearse & NSN] (Waifu2x Upscale).cbz (765pp)
+   CV linked:      vol 50653 "Dante Shinkyoku" 1998 Kodansha 2 issues; cached #1-2 (2); yearΔ 0; ratio 0/2; no judged range
+   CV per-file (v1): vol 79254 "Dante's Divine Comedy" 2014 Bloomsbury Publishing 1 issue 475386 on 1/1 files
+   CV candidates:  (= linked) · 91521 "Divine Comedy" 2016 Caliber Comics 1 issue 536033 s70 · 91417 "Divine Comedy" 2016 Caliber Comics 2 s63 · 27648 "Lucifer: The Divine Comedy" 2003 DC Comics 1 issue 169092 s53 · 135387 "Bomb Queen: The Divine Comedy: Bombastic" 2009 Image 1 issue 842898 s51 · 102229 "Dantes" 2017 Europe Comics 10 s40 · 136447 "Comedy" 1942 Marvel 6 s40   (v1 search)
+   CV local rip:   (= linked) · 91417 "Divine Comedy" 2016 Caliber Comics 2 (via CV candidate name "Divine Comedy") · 91521 "Divine Comedy" 2016 Caliber Comics 1 issue 536033 (via CV candidate name "Divine Comedy")   (rip lookup)
+   GCD dump:       59507 "Dante's Divine Comedy" 2010-2010 Bloomsbury [] 1   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.4153846153846154
+
+== S15554 Shigurui  [tier B]   keys: Shigurui  years 2003-2003  1 files / 0 collections
+   folders: [1] Manga
+   files:   [42023] Shigurui (2003-2010) (Waifu2x Upscale).cbz (2870pp)
+   CV linked:      vol 76964 "Shigurui" 2004 Akita Shoten 15 issues; cached #1-15 (15); yearΔ 1; ratio 0/15; no judged range
+   CV per-file (v1): vol 161564 "Shigurui" 2008 Panini Comics 2 on 1/1 files
+   CV candidates:  (= linked) · 80113 "Shigurui" 2015 Editorial Ivrea 1 issue 1047703 s90 · 83946 "Shigurui" 2021 Meian 10 s75 · 130416 "the manga" ? ? 1 issue 804012 s15 · 120993 "Manga" 2019 Unknown Publisher 1 issue 717709 s15 · 127976 "Manga! Manga! The World of Japanese Comics" 1983 Kodansha International 1 issue 768546 s15 · 99094 "Manga Times" 1956 Houbunsha 614 s0   (v1 search)
+   CV local rip:   (= linked) · 80113 "Shigurui" 2015 Editorial Ivrea 1 issue 1047703 · 83946 "Shigurui" 2021 Meian 10   (rip lookup)
+   GCD dump:       190214 "Shigurui" [fr] 2021-? Meian [] 8   (dump lookup)
+   MU / External:  MU 52395961806 "Shigurui" 2003 Manga · MuSeriesLink 52395961806 status 1 conf 1.0
+
+== S128 3x3 Eyes  [tier C] · gap 8  keys: 3x3 Eyes  years 1987-1987  40 files / 0 collections
+   folders: [40] Manga\3x3 Eyes (1987)
+   files:   3x3_Eyes_v01.cbz … 3x3_Eyes_v08.cbz  (8 files, pp 199-315) | 3x3_Eyes_v09_[SazanQuest].cbz … 3x3_Eyes_v39_[SazanQuest].cbz  (31 files, pp 211-261)
+            [45788] 3x3_Eyes_v40_[END]_[SazanQuest].cbz (190pp)
+   CV linked:      vol 22641 "3x3 Eyes" 1995 Dark Horse Comics 8 issues; cached #1-8 (8); yearΔ 8; ratio 0/8; no judged range
+   CV candidates:  (= linked) · 48172 "3x3 Eyes: Big Ghost Picture Reference Book" ? Kodansha ? s50 · 56958 "3x3 Eyes" 1991 Innovation ? s30 · 170947 "3x3 Eyes" 1997 Pika Édition ? s30 · 48173 "3x3 Eyes: Perfect Encyclopedia" 2001 Kodansha ? s18 · 22643 "3x3 Eyes: Curse of the Gesu" 1995 Dark Horse Comics ? s16 · 126827 "3x3 Ojos" 1998 Planeta DeAgostini ? s0   (v1 search)
+   CV local rip:   (= linked) · 56958 "3x3 Eyes" 1991 Innovation 5 · 48172 "3x3 Eyes: Big Ghost Picture Reference Book" ? Kodansha 1 issue 332666 (via CV candidate name "3x3 Eyes: Big Ghost Picture Reference Book")   (rip lookup)
+   GCD dump:       24985 "3x3 Eyes" 1991-1992 Innovation [] 5 · 42131 "3x3 Eyes" 1995-2004 Dark Horse [] 10   (dump lookup)
+   MU / External:  MU 27629113441 "3x3 Eyes" 1987 Manga · MuSeriesLink 27629113441 status 1 conf 1.0
+
+== S327 APOSIMZ  [tier B]   keys: APOSIMZ  years 2018-2022  9 files / 9 collections
+   folders: [9] Manga\APOSIMZ (2017)
+   files:   [41225] COL APOSIMZ v01 (2018) (Digital) (danke-Empire).cbz (181pp) | [41226] COL APOSIMZ v02 (2019) (Digital) (danke-Empire).cbz (174pp)
+            [41227] COL APOSIMZ v03 (2020) (Digital) (danke-Empire).cbz (182pp) | [41228] COL APOSIMZ v04 (2020) (Digital) (danke-Empire).cbz (181pp)
+            [41229] COL APOSIMZ v05 (2020) (Digital) (danke-Empire).cbz (165pp) | [41230] COL APOSIMZ v06 (2021) (Digital) (danke-Empire).cbz (165pp)
+            [41231] COL APOSIMZ v07 (2021) (Digital) (danke-Empire).cbz (165pp) | [41232] COL APOSIMZ v08 (2022) (Digital) (danke-Empire).cbz (165pp)
+            [41233] COL APOSIMZ v09 (2022) (Digital) (danke-Empire).cbz (165pp)
+   ours:    judged item 41225 #1-3 conf 0.97; judged item 41226 #4-9 conf 0.97; judged item 41227 #10-17 conf 0.97; judged item 41228 #18-24 conf 0.97; judged item 41229 #25-30 conf 0.97; judged item 41230 #31-36 conf 0.97; judged item 41231 #37-42 conf 0.97; judged item 41232 #43-48 conf 0.97; judged item 41233 #49-54 conf 0.97
+   CV linked:      vol 114209 "APOSIMZ" 2018 Kodansha Comics USA 9 issues; cached #1-9 (9); yearΔ 0; ratio 0/9; 2 of 9 judged fit
+   CV candidates:  (= linked) · 147380 "Aposimz" 2018 Cross Cult ? s30 · 153728 "Aposimz" 2018 Éditions Glénat ? s30 · 147382 "Aposimz: Master Edition" 2020 Cross Cult ? s18 · 142257 "Aposimz: Tierra de Glenes" 2020 Editorial Panini México ? s17 · 114818 "APOSIMZ Halloween ComicFest Comic" 2018 Kodansha Comics USA ? s17 · 101910 "Hasbro Heroes Sourcebook 2017" 2017 IDW Publishing ? s15   (v1 search)
+   CV local rip:   (= linked) · 147380 "Aposimz" 2018 Cross Cult 9 · 153728 "Aposimz" 2018 Éditions Glénat 9   (rip lookup)
+   GCD dump:       131225 "Aposimz" 2018-2021 Vertical [] 6 · 132504 "Aposimz" 2018-2018 Vertical [] 1 · 173844 "Aposimz" 2021-2022 Kodansha USA [] 3   (dump lookup)
+   MU / External:  MU 54781495811 "Aposimz" 2017 Manga · MuSeriesLink 54781495811 status 1 conf 1.0
+
+== S493 After the Rain  [tier B]   keys: After the Rain  years 2018-2021  6 files / 5 collections
+   folders: [5] Manga\After the Rain (2018) · [1] Graphic Novels\_Abrams ComicArts (& Amulet, Megascope, Surely)
+   files:   [26336] After the Rain (2021) (Digital) (XRA-Empire).cbz (134pp) | [46192] COL After the Rain Omnibus v01 (2018) (Digital) (danke-Empire).cbz (326pp)
+            [46193] COL After the Rain Omnibus v02 (2018) (Digital) (danke-Empire).cbz (327pp) | [46194] COL After the Rain Omnibus v03 (2019) (Digital) (danke-Empire).cbz (328pp)
+            [46195] COL After the Rain Omnibus v04 (2019) (Digital) (danke-Empire).cbz (328pp) | [46196] COL After the Rain Omnibus v05 (2019) (Digital) (danke-Empire).cbz (378pp)
+   ours:    judged item 46192 #1-16 conf 0.97; judged item 46193 #17-32 conf 0.97; judged item 46194 #33-48 conf 0.97; judged item 46195 #49-64 conf 0.97; judged item 46196 #65-82 conf 0.97; ComicInfo Series: "After the Rain"x1; ComicInfo Publisher: "Harry N. Abrams"x1
+   CV linked:      vol 114031 "After the Rain" 2018 Vertical Inc. 5 issues; cached #1-5 (5); yearΔ 0; ratio 0/5; 1 of 5 judged fit
+   CV candidates:  (= linked) · 165873 "After the Rain" 2018 Altraverse 10 s98 · 50483 "After the Rain" 1999 NBM 1 issue 345818 s81 · 44096 "Rain" 2011 TidalWave Productions 5 s65 · 99149 "Rain" 2009 Mag Garden 17 s52 · 58051 "Rain" 2013 Arcana Studio 1 issue 388824 s51 · 133043 "After the Rain" 2021 Harry N. Abrams 1 issue 823814 s50   (v1 search)
+   CV local rip:   (= linked) · 165873 "After the Rain" 2018 Altraverse 10 · 133043 "After the Rain" 2021 Harry N. Abrams 1 issue 823814 · 50483 "After the Rain" 1999 NBM 1 issue 345818   (rip lookup)
+   GCD dump:       129961 "After the Rain" [de] 2018-2020 Altraverse [] 10 · 130915 "After the Rain" 2018-2019 Vertical [] 5 · 169178 "After the Rain" 2021-2021 Harry N. Abrams [] 1 · 187370 "After the Rain" 2022-2022 Harry N. Abrams [] 1 · 51389 "After the Rain" 1999-1999 NBM [] 1   (dump lookup)
+   MU / External:  MU 30666103906 "After the Rain" 2010 Manga · MuSeriesLink 30666103906 status 1 conf 0.7692307692307693
+
+== S547 Aho Girl  [tier B]   keys: Aho-Girl  years 2013-2019  12 files / 12 collections
+   folders: [12] Manga\Aho-Girl (2012)
+   files:   [40464] COL Aho-Girl v01 (2017) (Digital) (danke-Empire).cbz (178pp) | [40465] COL Aho-Girl v02 (2017) (Digital) (danke-Empire).cbz (175pp)
+            [40466] COL Aho-Girl v03 (2017) (Digital) (danke-Empire).cbz (177pp) | [40467] COL Aho-Girl v04 (2017) (Digital) (danke-Empire).cbz (178pp)
+            [40468] COL Aho-Girl v05 (2018) (Digital) (danke-Empire).cbz (178pp) | [40469] COL Aho-Girl v06 (2018) (Digital) (danke-Empire).cbz (178pp)
+            [40470] COL Aho-Girl v07 (2018) (Digital) (danke-Empire).cbz (178pp) | [40471] COL Aho-Girl v08 (2018) (Digital) (danke-Empire).cbz (178pp)
+            [40472] COL Aho-Girl v09 (2018) (Digital) (danke-Empire).cbz (178pp) | [40473] COL Aho-Girl v10 (2018) (Digital) (danke-Empire).cbz (176pp)
+            [40474] COL Aho-Girl v11 (2019) (Digital) (danke-Empire).cbz (178pp) | [40475] COL Aho-Girl v12 (2019) (Digital) (danke-Empire).cbz (145pp)
+   ours:    judged item 40464 #1-19 conf 0.97; judged item 40465 #20-36 conf 0.97; judged item 40466 #37-54 conf 0.97; judged item 40467 #55-71 conf 0.97; judged item 40468 #72-85 conf 0.97; judged item 40469 #86-97 conf 0.97; judged item 40470 #98-105 conf 0.97; judged item 40471 #106-112 conf 0.97; judged item 40472 #113-119 conf 0.97; judged item 40474 #120-125 conf 0.97; judged item 40475 #126-130 conf 0.97
+   CV linked:      vol 96596 "Aho Girl" 2013 Kodansha 12 issues; cached #1-12 (12); yearΔ 0; ratio 0/12; 1 of 11 judged fit
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       117889 "Aho-Girl" 2017-2019 Kodansha USA [] 12   (dump lookup)
+   MU / External:  MU 43718544337 "Aho Girl" 2012 Manga · MuSeriesLink 43718544337 status 1 conf 0.7692307692307693
+
+== S555 Ajin: Demi-Human  [tier B]   keys: Ajin - Demi-Human  years 2014-2021  32 files / 17 collections
+   folders: [32] Manga\Ajin - Demi Human (2012)
+   files:   [40591] Ajin - Demi-Human 074 (2019) (Digital) (danke-Empire).cbz (19pp) | [40592] Ajin - Demi-Human 075 (2020) (Digital) (danke-Empire).cbz (31pp)
+            [40593] Ajin - Demi-Human 075.5 (2020) (Digital) (danke-Empire).cbz (20pp)
+            Ajin - Demi-Human 076 (2020) (Digital) (danke-Empire).cbz … Ajin - Demi-Human 083 (2020) (Digital) (danke-Empire).cbz  (8 files, pp 19-36)
+            [40602] Ajin - Demi-Human 083.5 (2020) (Digital) (danke-Empire).cbz (24pp) | [40603] Ajin - Demi-Human 084 (2020) (Digital) (danke-Empire).cbz (12pp)
+            [40604] Ajin - Demi-Human 085 (2021) (Digital) (danke-Empire).cbz (10pp) | [40605] Ajin - Demi-Human 086 (2021) (Digital) (danke-Empire).cbz (61pp)
+            [40606] COL Ajin - Demi-Human v01 (2014) (Digital) (danke-Empire).cbz (217pp) | [40607] COL Ajin - Demi-Human v02 (2014) (Digital) (danke-Empire).cbz (190pp)
+            [40608] COL Ajin - Demi-Human v03 (2015) (Digital) (danke-Empire).cbz (193pp) | [40609] COL Ajin - Demi-Human v04 (2015) (Digital) (danke-Empire).cbz (190pp)
+            [40610] COL Ajin - Demi-Human v05 (2015) (Digital) (danke-Empire).cbz (195pp) | [40611] COL Ajin - Demi-Human v06 (2015) (Digital) (danke-Empire).cbz (190pp)
+            [40612] COL Ajin - Demi-Human v07 (2016) (Digital) (danke-Empire).cbz (200pp) | [40613] COL Ajin - Demi-Human v08 (2016) (Digital) (danke-Empire).cbz (192pp)
+            [40614] COL Ajin - Demi-Human v09 (2017) (Digital) (danke-Empire).cbz (192pp) | [40615] COL Ajin - Demi-Human v10 (2017) (Digital) (danke-Empire).cbz (193pp)
+            [40616] COL Ajin - Demi-Human v11 (2018) (Digital) (danke-Empire).cbz (191pp) | [40617] COL Ajin - Demi-Human v12 (2019) (Digital) (danke-Empire).cbz (193pp)
+            [40618] COL Ajin - Demi-Human v13 (2019) (Digital) (danke-Empire).cbz (192pp) | [40619] COL Ajin - Demi-Human v14 (2020) (Digital) (danke-Empire).cbz (192pp)
+            [40620] COL Ajin - Demi-Human v15 (2020) (Digital) (danke-Empire).cbz (188pp) | [40621] COL Ajin - Demi-Human v16 (2021) (Digital) (danke-Empire).cbz (192pp)
+            [40622] COL Ajin - Demi-Human v17 (2021) (Digital) (danke-Empire).cbz (242pp)
+   ours:    ladder 74-86; 2 number(s) name more than one file: 75, 83; judged item 40606 #1-5 conf 0.97; judged item 40607 #6-9 conf 0.97; judged item 40608 #10-14 conf 0.97; judged item 40609 #15-19 conf 0.97; judged item 40610 #20-24 conf 0.97; judged item 40611 #25-28 conf 0.97; judged item 40612 #29-33 conf 0.97; judged item 40613 #34-38 conf 0.97; judged item 40614 #39-43 conf 0.97; judged item 40615 #44-48 conf 0.97; judged item 40616 #49-53 conf 0.97; judged item 40617 #54-57 conf 0.97; judged item 40618 #58-62 conf 0.97; judged item 40619 #63-67 conf 0.97; judged item 40620 #68-73 conf 0.97; judged item 40621 #74-78 conf 0.97; judged item 40622 #79-83 conf 0.97
+   CV linked:      vol 77588 "Ajin: Demi-Human" 2014 Vertical Inc. 17 issues; cached #1-17 (17); yearΔ 0; ratio 15/17 = 0.88; 4 of 17 judged fit
+   CV per-file (v1): vol 137576 "AJIN - Demi-Human" 2015 Egmont Ehapa Verlag 17 on 15/32 files
+   CV candidates:  (= linked) · 172058 "Ajin: Demi-Human Complete" 2024 Kodansha Comics USA ? s19 · 170924 "Demi-Human Sharehouse" 2026 Yen Press ? s0 · 122830 "Demi-Human Share-House" 2024 Fujimi Shobo ? s0 · 80091 "Ajin" 2013 Kodansha ? s0 · 148395 "Ajin" 2016 Studio JG ? s0 · 158624 "Ajin (Semihumano)" 2015 Norma Editorial ? s0   (v1 search); the local rip found nothing else
+   GCD dump:       91746 "Ajin: Demi-Human" 2014-2021 Vertical [] 16 · 103009 "Ajin - Demi Human" [de] 2015-2021 Egmont Ehapa [] 17 · 177949 "Ajin: Demi-Human" 2021-2021 Kodansha USA [] 1 · 217132 "Ajin: Demi-Human Complete" 2024-? Kodansha USA [] 6 (via CV candidate name "Ajin: Demi-Human Complete")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.5244755244755245
+
+== S23014 Alice in Borderland  [tier C] · gap 12  keys: Alice in Borderland  years 2010-2023  18 files / 18 collections
+   folders: [18] Manga\Alice in Borderland (2010)
+   files:   [46231] COL Alice in Borderland v01 c01-04.cbz (182pp) | [46232] COL Alice in Borderland v02 c05-09.cbz (194pp) | [46233] COL Alice in Borderland v03 c10-14.cbz (171pp)
+            [46234] COL Alice in Borderland v04 c15-19.cbz (169pp) | [46235] COL Alice in Borderland v05 c20-22 + Side Story.cbz (160pp)
+            [46236] COL Alice in Borderland v06 c23-25 + Side Story.cbz (170pp) | [46237] COL Alice in Borderland v07 c26-29.cbz (161pp)
+            [46238] COL Alice in Borderland v08 c30-32 + Side Story.cbz (165pp) | [46239] COL Alice in Borderland v09 c33-35 + Side Story.cbz (169pp)
+            [46240] COL Alice in Borderland v10 c36-37 + Side Story.cbz (165pp) | [46241] COL Alice in Borderland v11 c38-42.cbz (164pp) | [46242] COL Alice in Borderland v12 c43-46.cbz (169pp)
+            [46243] COL Alice in Borderland v13 c47-49 + Side Story.cbz (169pp) | [46244] COL Alice in Borderland v14 Side Story.cbz (171pp)
+            [46245] COL Alice in Borderland v15 c50-51 + Side Story.cbz (172pp) | [46246] COL Alice in Borderland v16 c52-54 + Side Story.cbz (176pp)
+            [46247] COL Alice in Borderland v17 c55-59.cbz (184pp) | [46248] COL Alice in Borderland v18 c60-65.cbz (200pp)
+   ours:    judged item 46231 #1-1 conf 0.97; judged item 46232 #5-5 conf 0.97; judged item 46233 #10-10 conf 0.97; judged item 46234 #15-15 conf 0.97; judged item 46235 #20-20 conf 0.97; judged item 46236 #23-23 conf 0.97; judged item 46237 #26-26 conf 0.97; judged item 46238 #30-30 conf 0.97; judged item 46239 #33-33 conf 0.97; judged item 46240 #36-36 conf 0.97; judged item 46241 #38-38 conf 0.97; judged item 46242 #43-43 conf 0.97; judged item 46243 #47-47 conf 0.97; judged item 46244 #49.3-49.7 conf 0.97; judged item 46245 #50-50 conf 0.97; judged item 46246 #52-52 conf 0.97; judged item 46247 #55-55 conf 0.97; judged item 46248 #60-60 conf 0.97
+   CV linked:      vol 142419 "Alice in Borderland" 2022 Viz 9 issues; cached #1-9 (9); yearΔ 12; ratio 0/9; 2 of 18 judged fit
+   CV candidates:  (= linked) · 96385 "Alice in Borderland" 2013 Delcourt 18 s50 · 155024 "Alice in Borderland" 2021 Editorial Ivrea 9 s43 · 161838 "Alice in Borderland" 2023 Carlsen Verlag 9 s43 · 166753 "Alice in Borderland" 2023 JBC 5 s38 · 153729 "Alice in Borderland Retry" 2021 Delcourt 2 s19 · 163358 "Alice in Borderland Retry" 2024 Editorial Ivrea 1 issue 1102674 s19   (v1 search)
+   CV local rip:   (= linked) · 96385 "Alice in Borderland" 2013 Delcourt 18 · 155024 "Alice in Borderland" 2021 Editorial Ivrea 9 · 161838 "Alice in Borderland" 2023 Carlsen Verlag 9 · 166753 "Alice in Borderland" 2023 JBC 5   (rip lookup)
+   GCD dump:       221292 "Alice in Borderland" [fr] 2013-2017 Delcourt [] 18 · 183019 "Alice in Borderland" 2022-2024 Viz [] 9 · 195748 "Alice in Borderland" [de] 2023-2024 Carlsen Comics [DE] [] 9   (dump lookup)
+   MU / External:  MU 16622002000 "Alice in Wonderland (ABE Jun)" 2009 Manga · MuSeriesLink 16622002000 status 1 conf 0.5857988165680474
+
+== S1159 AQUA  [tier C] · gap 6  keys: Aqua  years 2001-2001  2 files / 0 collections
+   folders: [2] Manga\Aria (2001)\01 Aqua (2001)
+   files:   [43229] Aqua_v01[Inane_MonE] (Waifu2x Upscale).cbz (179pp) | [43230] Aqua_v02[Complete][MonE] (Waifu2x Upscale).cbz (138pp)
+   CV linked:      vol 35032 "AQUA" 2007 Tokyopop 2 issues; cached #1-2 (2); yearΔ 6; ratio 0/2; no judged range
+   CV per-file (v1): vol 50083 "Aqua" 2001 Square Enix 2 on 2/2 files
+   CV candidates:  (= linked) · 103312 "Aqua Knight" 1999 Shueisha 3 s79 · 25116 "Aqua Knight" 2000 Viz 6 s74 · 78426 "AQUA" 2006 Tokyopop GmbH 2 s50 · 50082 "Aqua" 2003 Mag Garden 1 issue 343431 s43 · 78510 "AQUA" 2011 Tokyopop GmbH 1 issue 471698 s43 · 96611 "Aqua Work" 2015 Takeshobo 2 s34   (v1 search)
+   CV local rip:   (= linked) · 50082 "Aqua" 2003 Mag Garden 1 issue 343431 · 78426 "AQUA" 2006 Tokyopop GmbH 2 · 78510 "AQUA" 2011 Tokyopop GmbH 1 issue 471698 · 25116 "Aqua Knight" 2000 Viz 6 (via CV candidate name "Aqua Knight")   (rip lookup)
+   GCD dump:       168403 "Aqua" [ja-jp] 2003-2003 マッグガーデン [Maggu Gāden / Mag Garden] [] 2 · 96258 "Aqua" [de] 2006-2006 Tokyopop (de) [] 2 · 167457 "Aqua" [fr] 2006-2007 Kami [] 2 · 44070 "Aqua" 2007-2008 Tokyopop [] 2 · 96259 "Aqua" [de] 2011-2011 Tokyopop (de) [] 1 · 44254 "Aqua Knight" 2001-2002 Viz [] 3 (via CV candidate name "Aqua Knight")   (dump lookup)
+   MU / External:  MU 11695349868 "Aqua" 2001 Manga · MuSeriesLink 11695349868 status 1 conf 1.0
+
+== S1287 Aria  [tier C] · gap 2  keys: Aria  years 2001-2008  15 files / 12 collections
+   folders: [12] Manga\Aria (2001)\02 Aria (2002) · [3] Manga\Aria (2001)\03 Aria Specials (2006)
+   files:   [43231] COL Aria Vol.01 Complete [promfret] (Waifu2x Upscale).cbz (182pp) | [43232] COL Aria Vol.02 Complete [promfret] (Waifu2x Upscale).cbz (183pp)
+            [43233] COL Aria Vol.03 Complete [promfret] (Waifu2x Upscale).cbz (174pp) | [43234] COL Aria Vol.04 Complete [promfret] (Waifu2x Upscale).cbz (99pp)
+            [43235] COL Aria Vol.05 Complete [promfret] (Waifu2x Upscale).cbz (176pp) | [43236] COL Aria Vol.06 Complete [ACS][promfret] (Waifu2x Upscale).cbz (172pp)
+            [43237] COL Aria Vol.07 Complete [ACS] (Waifu2x Upscale).cbz (179pp) | [43238] COL Aria Vol.08 Complete [ACS] (Waifu2x Upscale).cbz (179pp)
+            [43239] COL Aria Vol.09 Complete [ACS] (Waifu2x Upscale).cbz (181pp) | [43240] COL Aria Vol.10 Complete [ACS] (Waifu2x Upscale).cbz (180pp)
+            [43241] COL Aria Vol.11 Complete [ACS] (Waifu2x Upscale).cbz (179pp) | [43242] COL Aria Vol.12 Complete [ACS] (Waifu2x Upscale).cbz (179pp)
+            [43243] Aria the Animation Perfect Guide Book Special Navigation (2006) (Waifu2x Upscale).cbz (11pp)
+            [43244] Aria the Natural Perfect Guide Book Special Navigation (2006) (Waifu2x Upscale).cbz (9pp)
+            [43245] Aria the Origination Perfect Guide Book Special Navigation (2008) (Waifu2x Upscale).cbz (9pp)
+   ours:    judged item 43231 #1-5 conf 0.97; judged item 43232 #6-10 conf 0.97; judged item 43233 #11-15 conf 0.97; judged item 43234 #16-20 conf 0.97; judged item 43235 #21-25 conf 0.97; judged item 43236 #26-30 conf 0.97; judged item 43237 #31-35 conf 0.97; judged item 43238 #36-40 conf 0.97; judged item 43239 #41-45 conf 0.97; judged item 43240 #46-50 conf 0.97; judged item 43241 #51-55 conf 0.97; judged item 43242 #56-60 conf 0.97
+   CV linked:      vol 50090 "Aria" 2003 Mag Garden 12 issues; cached #1-12 (12); yearΔ 2; ratio 0/12; 3 of 12 judged fit; v1 per-file: same volume on 3/15 files
+   CV candidates:  (= linked) · 10880 "Aria" 1999 Image 4 s90 · 135512 "Aria" 1982 Le Lombard 39 s84 · 9441 "Aria Angela" 2000 Image 2 s71 · 58663 "Aria Preview" 1998 Avalon Studios 1 issue 391573 s70 · 78864 "Aria" 2009 Tokyopop GmbH 6 s43 · 29198 "ARIA" 2008 Tokyopop 6 s43   (v1 search)
+   CV local rip:   (= linked) · 143428 "Aria" 2002 Devir Contenidos 3 · 10880 "Aria" 1999 Image 4 · 66244 "Aria" 2004 Image 1 issue 421389 · 29198 "ARIA" 2008 Tokyopop 6 · 78864 "Aria" 2009 Tokyopop GmbH 6   (rip lookup)
+   GCD dump:       55982 "Aria" [de] 2002-2011 Epsilon [] 10 · 83670 "アリア [Aria]" [ja-jp] 2002-2008 マッグガーデン [Maggu Gāden / Mag Garden] [] 12 · 11799 "Aria" 1999-1999 Image [] 4 · 63829 "Aria" [de] 1999-2000 Panini Deutschland [] 2 · 28168 "Aria" [nl-be] 1998-2021 Dupuis [] 40 · 83349 "Aria" 2004-2004 A.D. Vision [] 3   (dump lookup)
+   MU / External:  MU 75481162678 "Aria" 2002 Manga · MuSeriesLink 75481162678 status 1 conf 1.0
+
+== S1337 Arte  [tier B]   keys: Arte  years 2018-2019  2 files / 2 collections
+   folders: [2] Manga\Arte (2013)
+   files:   [43299] COL Arte v01 (2018) (Digital) (LuCaZ).cbz (191pp) | [43300] COL Arte v02 (2019) (Digital) (LuCaZ).cbz (192pp)
+   ours:    judged item 43299 #1-5 conf 0.97; judged item 43300 #6-10 conf 0.97
+   CV linked:      vol 114107 "Arte" 2018 North Stars Pictures 3 issues; cached #1-3 (3); yearΔ 0; ratio 0/3; 1 of 2 judged fit
+   CV candidates:  (= linked) · 140704 "El Arte de Volar" 2009 Edicions de Ponent 1 issue 900884 s76 · 162712 "Arte" 2019 Panini Comics 19 s35 · 162708 "Arte" 2021 Yermo Ediciones y Publicaciones 17 s35 · 162711 "Arte" 2015 Komikku Éditions 20 s35 · 96733 "Arte" 2014 Coamix 21 s35 · 143564 "Arte e Cor " 2021 Culturama Editora 1 issue 930173 s26   (v1 search)
+   CV local rip:   (= linked) · 162712 "Arte" 2019 Panini Comics 19 · 162708 "Arte" 2021 Yermo Ediciones y Publicaciones 17 · 162711 "Arte" 2015 Komikku Éditions 20 · 96733 "Arte" 2014 Coamix 21 · 140704 "El Arte de Volar" 2009 Edicions de Ponent 1 issue 900884 (via CV candidate name "El Arte de Volar")   (rip lookup)
+   GCD dump:       160007 "Arte" [de] 2020-? Carlsen Comics [DE] [] 20 · 195404 "Arte" [fr] 2015-2025 Komikku Éditions [] 21 · 146411 "El arte de volar" [es] 2009-2009 Edicions de Ponent [] 1 (via CV candidate name "El Arte de Volar")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.3986013986013986
+
+== S1352 Ascendance of A Bookworm  [tier B]   keys: Ascendance of a Bookworm  years 2019-2025  6 files / 6 collections
+   folders: [6] Manga\Ascendance of a Bookworm (2015)
+   files:   [43522] COL Ascendance of a Bookworm v01 (2019) (Digital) (danke-Empire).cbz (160pp) | [43523] COL Ascendance of a Bookworm v02 (2019) (Digital) (danke-Empire).cbz (181pp)
+            [43524] COL Ascendance of a Bookworm v03 (2020) (Digital) (danke-Empire).cbz (196pp) | [43525] COL Ascendance of a Bookworm v04 (2020) (Digital) (danke-Empire).cbz (178pp)
+            [43526] COL Ascendance of a Bookworm v05 (2020) (Digital) (danke-Empire).cbz (191pp) | [43527] COL Ascendance of a Bookworm v06 (2021) (Digital) (danke-Empire).cbz (195pp)
+   ours:    judged item 43522 #1-5 conf 0.97; judged item 43523 #6-10 conf 0.97; judged item 43524 #11-14 conf 0.97; judged item 43525 #15-19 conf 0.97; judged item 43526 #20-24 conf 0.97; judged item 43527 #25-29 conf 0.97
+   CV linked:      vol 119794 "Ascendance of A Bookworm" 2019 J-Novel Club 25 issues; cached #1-26 (26); yearΔ 0; ratio 0/25; 6 of 6 judged fit
+   CV candidates:  (= linked) · 81443 "Bookworm" 2006 self published ? s40 · 81727 "Worlds of Aspen 2015" 2015 Aspen MLT ? s27 · 139781 "Ascendance of a Bookworm Fanbook" 2021 Seven Seas Entertainment ? s19 · 81541 "Jetstream: 2015" 2015 ? ? s15 · 88433 "Lustiges Taschenbuch Sonderedition 2015" 2015 Egmont Ehapa Verlag ? s15 · 80913 "Regular Show 2015 Special" 2015 Boom! Studios ? s15   (v1 search)
+   CV local rip:   (= linked) · 81443 "Bookworm" 2006 self published 1 issue 486570 (via CV candidate name "Bookworm") · 81727 "Worlds of Aspen 2015" 2015 Aspen MLT 1 issue 487516 (via CV candidate name "Worlds of Aspen 2015")   (rip lookup)
+   GCD dump:       236813 "Ascendance of a Bookworm" [de] 2026-? Splitter Verlag [] 1 · 89144 "Worlds of Aspen 2015" 2015-2015 Aspen [] 1 (via CV candidate name "Worlds of Aspen 2015")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.4
+
+== S1361 ASHIDAKA - The Iron Hero  [tier B]   keys: Ashidaka - The Iron Hero  years 2020-2021  8 files / 3 collections
+   folders: [8] Manga\Ashidaka - The Iron Hero (2020)
+   files:   [43596] Ashidaka - The Iron Hero 015 (2021) (Digital) (danke-Empire).cbz (41pp) | [43597] Ashidaka - The Iron Hero 016 (2021) (Digital) (danke-Empire).cbz (34pp)
+            [43598] Ashidaka - The Iron Hero 017 (2021) (Digital) (danke-Empire).cbz (40pp) | [43599] Ashidaka - The Iron Hero 018 (2021) (Digital) (danke-Empire).cbz (47pp)
+            [43600] Ashidaka - The Iron Hero 019 (2021) (Digital) (danke-Empire).cbz (56pp) | [43601] COL Ashidaka - The Iron Hero v01 (2020) (Digital) (danke-Empire).cbz (181pp)
+            [43602] COL Ashidaka - The Iron Hero v02 (2021) (Digital) (danke-Empire).cbz (174pp) | [43603] COL Ashidaka - The Iron Hero v03 (2021) (Digital) (danke-Empire).cbz (184pp)
+   ours:    ladder 15-19; judged item 43601 #1-4 conf 0.97; judged item 43602 #5-9 conf 0.97; judged item 43603 #10-14 conf 0.97
+   CV linked:      vol 129852 "ASHIDAKA - The Iron Hero" 2020 Kodansha Comics USA 4 issues; cached #1-4 (4); yearΔ 0; ratio 5/4 = 1.25; 1 of 3 judged fit; v1 per-file: same volume on 5/8 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       230880 "Ashidaka - The Iron Hero" [fr] 2020-2022 Glénat [] 4   (dump lookup)
+   MU / External:  MU 14744577695 "Tekkai no Senshi" 2020 Manga · MuSeriesLink 14744577695 status 1 conf 0.6083916083916084
+
+== S2306 Battle Angel Alita  [tier B]   keys: Battle Angel Alita  years 2017-2018  10 files / 10 collections
+   folders: [9] Manga\Battle Angel Alita\01 Battle Angel Alita (1990) (New Translation) · [1] Manga\Battle Angel Alita\03 Battle Angel Alita - Mars Chronicle (2015)
+   files:   [40650] COL Battle Angel Alita v01 (2018) (Digital) (XRA-Empire).cbz (224pp) | [40651] COL Battle Angel Alita v02 (2018) (Digital) (XRA-Empire).cbz (212pp)
+            [40652] COL Battle Angel Alita v03 (2018) (Digital) (XRA-Empire).cbz (208pp) | [40653] COL Battle Angel Alita v04 (2018) (Digital) (XRA-Empire).cbz (208pp)
+            [40654] COL Battle Angel Alita v05 (2018) (Digital) (XRA-Empire).cbz (210pp) | [40655] COL Battle Angel Alita v06 (2018) (Digital) (XRA-Empire).cbz (226pp)
+            [40656] COL Battle Angel Alita v07 (2018) (Digital) (XRA-Empire).cbz (230pp) | [40657] COL Battle Angel Alita v08 (2018) (Digital) (XRA-Empire).cbz (230pp)
+            [40658] COL Battle Angel Alita v09 (2018) (Digital) (XRA-Empire).cbz (260pp) | [40668] COL Battle Angel Alita - Holy Night and Other Stories (2018) (Digital) (danke-Empire).cbz (271pp)
+   ours:    judged item 40655 #30-35 conf 0.97; judged item 40656 #36-41 conf 0.97; judged item 40657 #42-47 conf 0.97; ComicInfo Series: "Battle Angel Alita"x1, "Battle Angel Alita Volume 4"x1, "Battle Angel Alita Volume 5"x1, "Battle Angel Alita Volume 6"x1; ComicInfo Publisher: "Kodansha Comics"x7
+   CV linked:      vol 101680 "Battle Angel Alita" 2017 Kodansha Comics USA 9 issues; cached #1-9 (9); yearΔ 0; ratio 0/9; 0 of 3 judged fit
+   CV candidates:  (= linked) · 138128 "Battle Angel Alita" 2021 Kodansha Comics USA 6 s58 · 166953 "Battle Angel Alita" 2017 JBC 4 s50 · 23810 "Battle Angel Alita" 1993 Viz 2 s43 · 167061 "Battle Angel Alita" 2003 Japonica Polonica Fantastica 1 issue 1133648 s38 · 22392 "Battle Angel Alita" 2003 Viz 9 s38 · 22393 "Battle Angel Alita" 1995 Viz 9 s38   (v1 search)
+   CV local rip:   (= linked) · 166953 "Battle Angel Alita" 2017 JBC 4 · 138128 "Battle Angel Alita" 2021 Kodansha Comics USA 3 · 22392 "Battle Angel Alita" 2003 Viz 9 · 167061 "Battle Angel Alita" 2003 Japonica Polonica Fantastica 1 issue 1133648 · 22393 "Battle Angel Alita" 1995 Viz 9   (rip lookup)
+   GCD dump:       117981 "Battle Angel Alita" 2017-2017 Kodansha USA [] 1 · 148952 "Battle Angel Alita" [pt-br] 2017-2018 Editora JBC [] 4 · 124370 "Battle Angel Alita" [de] 2018-2018 Carlsen Comics [DE] [] 1 · 174743 "Battle Angel Alita" 2021-2022 Kodansha USA [] 6 · 41728 "Battle Angel Alita" [nl-be] 2007-2009 Glénat [] 9 · 44298 "Battle Angel Alita" 2003-2005 Viz [] 9   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.358974358974359
+
+== S2308 Battle Angel Alita: Last Order  [tier B]   keys: Battle Angel Alita - Last Order  years 2003-2014  9 files / 9 collections
+   folders: [9] Manga\Battle Angel Alita\02 Battle Angel Alita - Last Order (2000)
+   files:   [40659] COL Battle Angel Alita - Last Order Omnibus v01 (2013) (Digital) (danke-Empire).cbz (652pp)
+            [40660] COL Battle Angel Alita - Last Order Omnibus v02 (2013) (Digital) (danke-Empire).cbz (650pp)
+            [40661] COL Battle Angel Alita - Last Order Omnibus v03 (2014) (Digital) (danke-Empire).cbz (649pp)
+            [40662] COL Battle Angel Alita - Last Order Omnibus v04 (2014) (Digital) (danke-Empire).cbz (614pp)
+            [40663] COL Battle Angel Alita - Last Order Omnibus v05 (2014) (Digital) (danke-Empire).cbz (559pp)
+            [40664] COL Battle Angel Alita - Last Order v16 (2012) (Digital) (danke-Empire).cbz (183pp) | [40665] COL Battle Angel Alita - Last Order v17 (2013) (Digital) (danke-Empire).cbz (202pp)
+            [40666] COL Battle Angel Alita - Last Order v18 (2013) (Digital) (danke-Empire).cbz (223pp) | [40667] COL Battle Angel Alita - Last Order v19 (2014) (Digital) (danke-Empire).cbz (209pp)
+   ours:    judged item 40659 #1-18 conf 0.97; judged item 40660 #19-37 conf 0.97; judged item 40661 #38-55 conf 0.97; judged item 40662 #56-74 conf 0.97; judged item 40663 #75-93 conf 0.97; judged item 40664 #94-99 conf 0.97; judged item 40665 #100-105 conf 0.97; judged item 40666 #106-115 conf 0.97; judged item 40667 #116-124 conf 0.97
+   CV linked:      vol 27342 "Battle Angel Alita: Last Order" 2003 Kodansha Comics USA 19 issues; cached #1-19 (19); yearΔ 0; ratio 0/19; 2 of 9 judged fit
+   CV candidates:  (= linked) · 23810 "Battle Angel Alita" 1993 Viz ? s55 · 22393 "Battle Angel Alita" 1995 Viz ? s55 · 23801 "Battle Angel Alita" 1992 Viz ? s55 · 166930 "Battle Angel Alita: Last Order" 2019 JBC ? s30 · 148409 "Battle Angel Alita Last Order" 2020 Japonica Polonica Fantastica ? s30 · 59520 "Battle Angel Alita: Last Order Omnibus" 2013 Kodansha Comics USA ? s19   (v1 search)
+   CV local rip:   (= linked) · 166930 "Battle Angel Alita: Last Order" 2019 JBC 12 · 148409 "Battle Angel Alita Last Order" 2020 Japonica Polonica Fantastica 1 issue 978943 · 22392 "Battle Angel Alita" 2003 Viz 9 (via CV candidate name "Battle Angel Alita") · 167061 "Battle Angel Alita" 2003 Japonica Polonica Fantastica 1 issue 1133648 (via CV candidate name "Battle Angel Alita") · 22393 "Battle Angel Alita" 1995 Viz 9 (via CV candidate name "Battle Angel Alita")   (rip lookup)
+   GCD dump:       27829 "Battle Angel Alita - Last Order" [de] 2003-2015 Carlsen Comics [DE] [] 19 · 44297 "Battle Angel Alita: Last Order" 2003-2011 Viz [] 15 · 44296 "Battle Angel Alita: Last Order" 2002-2003 Viz [] 6 · 72458 "Battle Angel Alita: Last Order" 2012-2013 Kodansha USA [] 4 · 148953 "Battle Angel Alita: Last Order" [pt-br] 2019-2021 Editora JBC [] 12 · 44298 "Battle Angel Alita" 2003-2005 Viz [] 9 (via CV candidate name "Battle Angel Alita")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.3626373626373626
+
+== S2374 Beast Children  [tier B]   keys: Beast Children  years 2019-2020  3 files / 3 collections
+   folders: [3] Manga\Beast Children (2019)
+   files:   [43678] COL Beast Children v01 (2020) (Digital) (danke-Empire).cbz (184pp) | [43679] COL Beast Children v02 (2020) (Digital) (danke-Empire).cbz (173pp)
+            [43680] COL Beast Children v03 (2020) (Digital) (danke-Empire).cbz (219pp)
+   ours:    judged item 43678 #1-7 conf 0.97; judged item 43679 #8-16 conf 0.97; judged item 43680 #17-27 conf 0.97
+   CV linked:      vol 121130 "Beast Children" 2019 Shueisha 3 issues; cached #1-3 (3); yearΔ 0; ratio 0/3; 1 of 3 judged fit
+   CV candidates:  (= linked) · 120226 "Children" 2018 Square Enix 1 issue 1074193 s55 · 29815 "Beast" 2009 Image 1 issue 183529 s52 · 129850 "Beast Children" 2020 Viz 3 s50 · 144273 "Beast" 1994 Play Press 8 s47 · 114472 "The Children" 2018 Europe Comics 1 issue 689260 s44 · 76448 "Beast of the Beast" 2014 ZakMax 1 issue 462524 s41   (v1 search)
+   CV local rip:   (= linked) · 129850 "Beast Children" 2020 Viz 3 · 117378 "The Beast" 2019 Triple Threat Productions 1 issue 702216 (via CV candidate name "Beast") · 114472 "The Children" 2018 Europe Comics 1 issue 689260 (via CV candidate name "Children") · 120226 "Children" 2018 Square Enix 1 issue 1074193 (via CV candidate name "Children") · 155522 "Beast" 2010 Norma Editorial 1 issue 1036001 (via CV candidate name "Beast")   (rip lookup)
+   GCD dump:       151730 "ビーストチルドレン Beast Children" [ja-jp] 2019-2020 集英社 [Shueisha] [] 3 · 218073 "The Beast" [fr] 2016-2016 Dargaud [] 1 (via CV candidate name "Beast") · 112521 "Beast" 2009-2009 Image [] 1 (via CV candidate name "Beast") · 33281 "Beast" [nl-be] 2008-2008 Le Lombard [] 1 (via CV candidate name "Beast") · 11499 "Beast" 1997-1997 Marvel [] 3 (via CV candidate name "Beast") · 63431 "The Beast" 1988-1988 Chick Publications [] 1 (via CV candidate name "Beast")   (dump lookup)
+   MU / External:  MU 31053587751 "Beast Children" 2019 Manga · MuSeriesLink 31053587751 status 1 conf 1.0
+
+== S1728 BECK  [tier B]   keys: BECK  years 2018-2019  34 files / 34 collections
+   folders: [34] Manga\Beck (1999)
+   files:   [41791] COL BECK v01 (2018) (F) (Digital-Empire).cbr (214pp) | [41792] COL BECK v02 (2018) (Digital-Empire).cbr (195pp) | [41793] COL BECK v03 (2018) (Digital-Empire).cbr (189pp)
+            [41794] COL BECK v04 (2018) (Digital-Empire).cbr (196pp) | [41795] COL BECK v05 (2018) (Digital-Empire).cbr (197pp) | [41796] COL BECK v06 (2018) (Digital-Empire).cbr (198pp)
+            [41797] COL BECK v07 (2018) (Digital-Empire).cbr (198pp) | [41798] COL BECK v08 (2018) (Digital-Empire).cbr (199pp) | [41799] COL BECK v09 (2018) (Digital-Empire).cbr (200pp)
+            [41800] COL BECK v10 (2018) (Digital-Empire).cbr (196pp) | [41801] COL BECK v11 (2018) (Digital-Empire).cbr (216pp) | [41802] COL BECK v12 (2018) (Digital-Empire).cbr (201pp)
+            [41803] COL BECK v13 (2018) (Digital-Empire).cbr (195pp) | [41804] COL BECK v14 (2018) (Digital-Empire).cbr (202pp) | [41805] COL BECK v15 (2018) (Digital-Empire).cbr (195pp)
+            [41806] COL BECK v16 (2018) (Digital-Empire).cbr (200pp) | [41807] COL BECK v17 (2018) (Digital-Empire).cbr (199pp) | [41808] COL BECK v18 (2018) (Digital-Empire).cbr (210pp)
+            [41809] COL BECK v19 (2018) (Digital-Empire).cbr (196pp) | [41810] COL BECK v20 (2018) (Digital-Empire).cbr (198pp) | [41811] COL BECK v21 (2018) (Digital-Empire).cbr (197pp)
+            [41812] COL BECK v22 (2018) (Digital-Empire).cbr (196pp) | [41813] COL BECK v23 (2019) (Digital-Empire).cbr (200pp) | [41814] COL BECK v24 (2019) (Digital-Empire).cbr (197pp)
+            [41815] COL BECK v25 (2019) (Digital-Empire).cbr (195pp) | [41816] COL BECK v26 (2019) (Digital-Empire).cbr (200pp) | [41817] COL BECK v27 (2019) (Digital-Empire).cbr (203pp)
+            [41818] COL BECK v28 (2019) (Digital-Empire).cbr (196pp) | [41819] COL BECK v29 (2019) (Digital-Empire).cbr (197pp) | [41820] COL BECK v30 (2019) (Digital-Empire).cbr (198pp)
+            [41821] COL BECK v31 (2019) (Digital-Empire).cbr (196pp) | [41822] COL BECK v32 (2019) (Digital-Empire).cbr (204pp) | [41823] COL BECK v33 (2019) (Digital-Empire).cbr (199pp)
+            [41824] COL BECK v34 (2019) (Digital-Empire).cbr (206pp)
+   ours:    ComicInfo Series: "BECK"x12; ComicInfo Publisher: "Kodansha Comics"x12
+   CV linked:      vol 114029 "BECK" 2018 Kodansha Comics USA 34 issues; cached #1-34 (34); yearΔ 0; ratio 0/34; no judged range
+   CV candidates:  (= linked) · 50268 "Beck" 2000 Kodansha ? s30 · 41362 "Beck" 2004 Delcourt ? s30 · 164870 "Beck" 2022 Penguin Random House Grupo Editorial ? s30 · 79974 "Beck" 2004 Tokyopop GmbH ? s30 · 161751 "Beck Shinsōban" 2024 Kodansha ? s19 · 20140 "Cable 1999" 1999 Marvel ? s15   (v1 search)
+   CV local rip:   (= linked) · 164870 "Beck" 2022 Penguin Random House Grupo Editorial 6 · 41362 "Beck" 2004 Delcourt 34 · 79974 "Beck" 2004 Tokyopop GmbH 6 · 50268 "Beck" 2000 Kodansha 34   (rip lookup)
+   GCD dump:       96270 "Beck" [de] 2004-2008 Tokyopop (de) [] 17 · 120842 "Beck" [fr] 2004-2010 Delcourt [] 34   (dump lookup)
+   MU / External:  MU 57199464681 "Beck" 1999 Manga · MuSeriesLink 57199464681 status 1 conf 0.7692307692307693
+
+== S23118 Blade of the Immortal  [tier B]   keys: Blade of the Immortal  years 1996-2015  31 files / 31 collections
+   folders: [31] Manga\Blade of the Immortal (1997)
+   files:   [41679] COL Blade of the Immortal v01 - Blood of a Thousand (1997) (Digital) (danke-Empire).cbz (187pp)
+            [41680] COL Blade of the Immortal v02 - Cry of the Worm (1998) (Digital) (danke-Empire).cbz (177pp)
+            [41681] COL Blade of the Immortal v03 - Dreamsong (1999) (Digital) (danke-Empire).cbz (209pp)
+            [41682] COL Blade of the Immortal v04 - On Silent Wings (1999) (Digital) (danke-Empire).cbz (165pp)
+            [41683] COL Blade of the Immortal v05 - On Silent Wings II (2000) (Digital) (danke-Empire).cbz (181pp)
+            [41684] COL Blade of the Immortal v06 - Dark Shadows (2000) (Digital) (danke-Empire).cbz (190pp)
+            [41685] COL Blade of the Immortal v07 - Heart of Darkness (2001) (Digital) (danke-Empire).cbz (240pp)
+            [41686] COL Blade of the Immortal v08 - The Gathering (2001) (Digital) (danke-Empire).cbz (209pp)
+            [41687] COL Blade of the Immortal v09 - The Gathering II (2002) (Digital) (danke-Empire).cbz (216pp)
+            [41688] COL Blade of the Immortal v10 - Secrets (2002) (Digital) (danke-Empire).cbz (233pp) | [41689] COL Blade of the Immortal v11 - Beasts (2002) (Digital) (danke-Empire).cbz (194pp)
+            [41690] COL Blade of the Immortal v12 - Autumn Frost (2004) (Digital) (danke-Empire).cbz (229pp)
+            [41691] COL Blade of the Immortal v13 - Mirror of the Soul (2004) (Digital) (danke-Empire).cbz (249pp)
+            [41692] COL Blade of the Immortal v14 - Last Blood (2005) (Digital) (danke-Empire).cbz (253pp)
+            [41693] COL Blade of the Immortal v15 - Trickster (2006) (Digital) (danke-Empire).cbz (226pp) | [41694] COL Blade of the Immortal v16 - Shortcut (2007) (Digital) (danke-Empire).cbz (200pp)
+            [41695] COL Blade of the Immortal v17 - On the Perfection of Anatomy (2007) (Digital) (danke-Empire).cbz (186pp)
+            [41696] COL Blade of the Immortal v18 - The Sparrow Net (2008) (Digital) (danke-Empire).cbz (275pp)
+            [41697] COL Blade of the Immortal v19 - Badger Hole (2008) (Digital) (danke-Empire).cbz (167pp)
+            [41698] COL Blade of the Immortal v20 - Demon Lair (2008) (Digital) (danke-Empire).cbz (278pp)
+            [41699] COL Blade of the Immortal v21 - Demon Lair II (2009) (Digital) (danke-Empire).cbz (223pp)
+            [41700] COL Blade of the Immortal v22 - Footsteps (2010) (Digital) (danke-Empire).cbz (222pp)
+            [41701] COL Blade of the Immortal v23 - Scarlet Swords (2011) (Digital) (danke-Empire).cbz (228pp)
+            [41702] COL Blade of the Immortal v24 - Massacre (2011) (Digital) (danke-Empire).cbz (210pp)
+            [41703] COL Blade of the Immortal v25 - Snowfall at Dawn (2012) (Digital) (danke-Empire).cbz (225pp)
+            [41704] COL Blade of the Immortal v26 - Blizzard (2013) (Digital) (danke-Empire).cbz (215pp)
+            [41705] COL Blade of the Immortal v27 - Mist on the Spider's Web (2013) (Digital) (danke-Empire).cbz (241pp)
+            [41706] COL Blade of the Immortal v28 - Raining Chaos (2014) (Digital) (danke-Empire).cbz (213pp)
+            [41707] COL Blade of the Immortal v29 - Beyond Good and Evil (2014) (Digital) (danke-Empire).cbz (207pp)
+            [41708] COL Blade of the Immortal v30 - Vigilance (2014) (Digital) (danke-Empire).cbz (207pp)
+            [41709] COL Blade of the Immortal v31 - Final Curtain (2015) (Digital) (danke-Empire).cbz (275pp)
+   ours:    judged item 41679 #0-2 conf 0.95; judged item 41680 #3-6 conf 0.95; judged item 41681 #7-11 conf 0.95; judged item 41682 #12-15 conf 0.95; judged item 41683 #16-20 conf 0.95; judged item 41684 #21-24 conf 0.95; judged item 41685 #25-31 conf 0.95; judged item 41686 #32-39 conf 0.95; judged item 41687 #40-45 conf 0.95; judged item 41688 #46-52 conf 0.95; judged item 41689 #53-57 conf 0.95; judged item 41690 #58-65 conf 0.95; judged item 41691 #66-74 conf 0.95; judged item 41692 #75-83 conf 0.95; judged item 41693 #84-91 conf 0.95; judged item 41694 #92-98 conf 0.95; judged item 41695 #99-104 conf 0.95; judged item 41696 #105-113 conf 0.95; judged item 41697 #114-118 conf 0.95; judged item 41698 #119-127 conf 0.95; judged item 41699 #128-134 conf 0.95; judged item 41700 #135-141 conf 0.95; judged item 41701 #142-148 conf 0.95; judged item 41702 #149-155 conf 0.95; judged item 41703 #156-162 conf 0.95; judged item 41704 #163-169 conf 0.95; judged item 41705 #170-177 conf 0.95; judged item 41706 #178-184 conf 0.95; judged item 41707 #185-191 conf 0.95; judged item 41708 #192-197 conf 0.95; judged item 41709 #198-206 conf 0.95
+   GCD says: [41679] gcd_reprint 711117: s9797 Blade of the Immortal (1996) #1-6 [6 stories]
+             [41680] gcd_reprint 711118: s9797 Blade of the Immortal (1996) #7-11 [5 stories]
+             [41681] gcd_reprint 711119: s9797 Blade of the Immortal (1996) #12-18 [7 stories]
+             [41682] gcd_reprint 711120: s9797 Blade of the Immortal (1996) #19-23 [5 stories]
+             [41683] gcd_reprint 711121: s9797 Blade of the Immortal (1996) #23-28 [6 stories]
+             [41684] gcd_reprint 711122: s9797 Blade of the Immortal (1996) #29-34 [8 stories]
+             [41685] gcd_reprint 711123: s9797 Blade of the Immortal (1996) #35-42 [8 stories]
+             [41686] gcd_reprint 711124: s9797 Blade of the Immortal (1996) #43-50 [8 stories]
+             [41687] gcd_reprint 711125: s9797 Blade of the Immortal (1996) #51-57 [7 stories]
+             [41688] gcd_reprint 711126: s9797 Blade of the Immortal (1996) #58-65 [8 stories]
+             [41689] gcd_reprint 711127: s9797 Blade of the Immortal (1996) #66-72 [11 stories]
+             [41690] gcd_reprint 711128: s9797 Blade of the Immortal (1996) #73-80 [8 stories]
+             [41691] gcd_reprint 711129: s9797 Blade of the Immortal (1996) #81-89 [9 stories] · s76133 無限の住人 [Mugen no Jūnin] (1994) #12 [1 story]
+             [41692] gcd_reprint 711130: s9797 Blade of the Immortal (1996) #90-98 [9 stories]
+             [41693] gcd_reprint 711131: s9797 Blade of the Immortal (1996) #99-105 [7 stories]
+             [41694] gcd_reprint 711132: s9797 Blade of the Immortal (1996) #106-111 [6 stories]
+             [41695] gcd_reprint 711133: s9797 Blade of the Immortal (1996) #112-117 [6 stories]
+             [41696] gcd_reprint 711134: s9797 Blade of the Immortal (1996) #118-126 [9 stories]
+             [41697] gcd_reprint 711135: s9797 Blade of the Immortal (1996) #127-131 [5 stories]
+             [41702] gcd_reprint 888680: s76133 無限の住人 [Mugen no Jūnin] (1994) #23 [8 stories]
+   CV linked:      vol 9069 "Blade of the Immortal" 1996 Dark Horse Comics 131 issues; cached #1-131 (131); yearΔ 0; ratio 0/131; 21 of 31 judged fit; v1 per-file: same volume on 31/31 files
+   CV candidates:  (= linked) · 40331 "Blade of the Immortal" 2002 Egmont Ehapa Verlag 30 s50 · 55070 "Blade of the Immortal" 2008 Anubis Comics 10 s38 · 97402 "Blade of the Immortal Omnibus" 2016 Dark Horse Comics 10 s22 · 165800 "Blade of the Immortal Perfect Edition" 2020 Cross Cult 15 s21 · 40309 "Blade of the Immortal: Shortcut" 2007 Dark Horse Comics 1 issue 271242 s19 · 77799 "Blade of the Immortal: Vigilance" 2014 Dark Horse Comics 1 issue 468880 s19   (v1 search)
+   CV local rip:   (= linked) · 40331 "Blade of the Immortal" 2002 Egmont Ehapa Verlag 30 · 55070 "Blade of the Immortal" 2008 Anubis Comics 10   (rip lookup)
+   GCD dump:       9797 "Blade of the Immortal" 1996-2007 Dark Horse [] 131 · 42164 "Blade of the Immortal" 1997-2015 Dark Horse [] 31 · 41974 "Blade of the Immortal" [de] 2002-2013 Egmont Ehapa [] 30   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.3956043956043956
+
+== S2951 Blood on the Tracks  [tier B]   keys: Blood on the Tracks  years 2020-2024  17 files / 17 collections
+   folders: [17] Manga\Blood on the Tracks (2017)
+   files:   [43074] COL Blood on the Tracks v01 (2020) (Digital) (LuCaZ).cbz (210pp) | [43075] COL Blood on the Tracks v02 (2020) (Digital) (LuCaZ).cbz (206pp)
+            [43076] COL Blood on the Tracks v03 (2020) (Digital) (LuCaZ).cbz (230pp) | [43077] COL Blood on the Tracks v04 (2021) (Digital) (LuCaZ).cbz (229pp)
+            [43078] COL Blood on the Tracks v05 (2021) (Digital) (LuCaZ).cbz (219pp) | [43079] COL Blood on the Tracks v06 (2021) (Digital) (LuCaZ).cbz (217pp)
+            [43080] COL Blood on the Tracks v07 (2021) (Digital) (LuCaZ).cbz (218pp) | [43081] COL Blood on the Tracks v08 (2022) (Digital) (LuCaZ).cbz (219pp)
+            [43082] COL Blood on the Tracks v09 (2022) (Digital) (LuCaZ).cbz (244pp) | [43083] COL Blood on the Tracks v10 (2022) (Digital) (LuCaZ).cbz (243pp)
+            [43084] COL Blood on the Tracks v11 (2022) (Digital) (LuCaZ).cbz (234pp) | [43085] COL Blood on the Tracks v12 (2022) (Digital) (LuCaZ).cbz (243pp)
+            [43086] COL Blood on the Tracks v13 (2023) (Digital) (LuCaZ).cbz (220pp) | [43087] COL Blood on the Tracks v14 (2023) (Digital) (LuCaZ).cbz (242pp)
+            [43088] COL Blood on the Tracks v15 (2023) (Digital) (LuCaZ).cbz (221pp) | [43089] COL Blood on the Tracks v16 (2024) (Digital) (LuCaZ).cbz (216pp)
+            [43090] COL Blood on the Tracks v17 (2024) (Digital) (LuCaZ).cbz (199pp)
+   ours:    judged item 43074 #1-7 conf 0.97; judged item 43075 #8-15 conf 0.97; judged item 43076 #16-24 conf 0.97; judged item 43077 #25-33 conf 0.97; judged item 43078 #34-41 conf 0.97; judged item 43079 #42-50 conf 0.97; judged item 43080 #51-59 conf 0.97; judged item 43081 #60-68 conf 0.97; judged item 43082 #69-78 conf 0.97; judged item 43083 #79-88 conf 0.97; judged item 43084 #89-98 conf 0.97; judged item 43085 #99-108 conf 0.97; judged item 43086 #109-117 conf 0.97; judged item 43087 #118-127 conf 0.97; judged item 43088 #128-136 conf 0.97; judged item 43089 #137-145 conf 0.97; judged item 43090 #146-153 conf 0.97
+   CV linked:      vol 125341 "Blood on the Tracks" 2020 Vertical Inc. 17 issues; cached #1-17 (17); yearΔ 0; ratio 0/17; 3 of 17 judged fit
+   CV candidates:  (= linked) · 27751 "Punisher: Blood on the Moors" 1991 Marvel ? s43 · 40167 "Shadowland: Blood on the Streets" 2011 Marvel ? s43 · 147370 "Blood on the Tracks" 2022 Cross Cult ? s30 · 110872 "Blood on the Tracks" 2018 Brain Cloud Comics ? s30 · 126175 "Blood on the Tracks" 2020 Brain Cloud Comics ? s30 · 82887 "Hopster's Tracks" 1998 Bongo ? s20   (v1 search)
+   CV local rip:   (= linked) · 126175 "Blood on the Tracks" 2020 Brain Cloud Comics 1 issue 744693 · 110872 "Blood on the Tracks" 2018 Brain Cloud Comics 5 · 147370 "Blood on the Tracks" 2022 Cross Cult 17 · 40167 "Shadowland: Blood on the Streets" 2011 Marvel 1 issue 270099 (via CV candidate name "Shadowland: Blood on the Streets") · 34854 "Shadowland: Blood On the Streets" 2010 Marvel 4 (via CV candidate name "Shadowland: Blood on the Streets")   (rip lookup)
+   GCD dump:       156521 "Blood on the Tracks" 2020-2021 Vertical [] 4 · 171046 "Blood on the Tracks" 2021-2024 Kodansha USA [] 13 · 188574 "Blood on the Tracks" [de] 2022-2025 Cross Cult [] 17 · 107985 "Shadowland: Blood on the Streets" 2011-2011 Marvel [] 1 (via CV candidate name "Shadowland: Blood on the Streets") · 225265 "Shadowland: Blood on the Streets" 2011-2011 Marvel [] 1 (via CV candidate name "Shadowland: Blood on the Streets") · 51872 "Shadowland: Blood on the Streets" 2010-2011 Marvel [] 4 (via CV candidate name "Shadowland: Blood on the Streets")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.3296703296703297
+
+== S3034 Blue Period  [tier C] · ratio 0.33  keys: Blue Period  years 2017-2025  19 files / 13 collections
+   folders: [19] Manga\Blue Period (2017)
+   files:   [44109] Blue Period 057 (2023) (Digital) (danke-Empire).cbz (25pp) | [44110] Blue Period 058 (2023) (Digital) (danke-Empire).cbz (46pp)
+            [44111] Blue Period 059 (2023) (Digital) (danke-Empire).cbz (37pp) | [44112] Blue Period 060 (2023) (Digital) (danke-Empire).cbz (32pp)
+            [44113] Blue Period 061 (2023) (Digital) (danke-Empire).cbz (52pp) | [44114] Blue Period 068 (2024) (Digital) (F) (danke-Empire).cbz (47pp)
+            [44115] COL Blue Period v01 (2020) (Digital) (F) (danke-Empire).cbz (225pp) | [44116] COL Blue Period v02 (2021) (Digital) (F) (danke-Empire).cbz (193pp)
+            [44117] COL Blue Period v03 (2021) (Digital) (F) (danke-Empire).cbz (200pp) | [44118] COL Blue Period v04 (2021) (Digital) (danke-Empire).cbz (201pp)
+            [44119] COL Blue Period v05 (2021) (Digital) (danke-Empire).cbz (202pp) | [44120] COL Blue Period v06 (2022) (Digital) (danke-Empire).cbz (202pp)
+            [44121] COL Blue Period v07 (2022) (Digital) (danke-Empire).cbz (204pp) | [44122] COL Blue Period v08 (2022) (Digital) (danke-Empire).cbz (206pp)
+            [44123] COL Blue Period v09 (2022) (Digital) (danke-Empire).cbz (195pp) | [44124] COL Blue Period v10 (2022) (Digital) (danke-Empire).cbz (212pp)
+            [44125] COL Blue Period v11 (2022) (Digital) (danke-Empire).cbz (196pp) | [44126] COL Blue Period v12 (2023) (Digital) (danke-Empire).cbz (194pp)
+            [44127] COL Blue Period v13 (2023) (Digital) (danke-Empire).cbz (205pp)
+   ours:    ladder 57-61, 68; judged item 44115 #1-4 conf 0.97; judged item 44116 #5-8 conf 0.97; judged item 44117 #9-12 conf 0.97; judged item 44118 #13-16 conf 0.97; judged item 44119 #17-21 conf 0.97; judged item 44120 #22-25 conf 0.97; judged item 44121 #26-29 conf 0.97; judged item 44122 #30-33 conf 0.97; judged item 44123 #34-38 conf 0.97; judged item 44124 #39-42 conf 0.97; judged item 44125 #43-47 conf 0.97; judged item 44126 #48-52 conf 0.97; judged item 44127 #53-56 conf 0.97
+   CV linked:      vol 113349 "Blue Period" 2017 Kodansha 18 issues; cached #1-18 (18); yearΔ 0; ratio 6/18 = 0.33; 5 of 13 judged fit; v1 per-file: same volume on 6/19 files
+   CV local rip:   (= linked) · 148123 "Blue Period" 2019 Milky Way Ediciones 15 · 130899 "Blue Period" 2020 Kodansha Comics USA 15 · 165798 "Blue Period" 2020 Cross Cult 15 · 146206 "Blue Period" 2021 Pika Édition 14   (rip lookup)
+   GCD dump:       170169 "ブルーピリオド [Blue Period]" [ja-jp] 2017-? 講談社 [Kōdansha] [] 18 · 160287 "Blue Period" [de] 2020-? Cross Cult [] 16 · 165172 "Blue Period" 2020-? Kodansha USA [] 17 · 200769 "Blue Period" [fr] 2021-? Pika Édition [] 13 · 191205 "Blue Period" [pt-br] 2022-? Panini Brasil [] 13   (dump lookup)
+   MU / External:  MU 11255037735 "Blue Period." 2017 Manga · MuSeriesLink 11255037735 status 1 conf 1.0
+
+== S3052 Bokurano: Ours  [tier C] · gap 7  keys: Bokurano  years 2003-2012  11 files / 11 collections
+   folders: [11] Manga\Bokurano (2003)
+   files:   [44162] COL Bokurano v01 [MS] (Waifu2x Upscale).cbz (196pp) | [44163] COL Bokurano v02 [MS] (Waifu2x Upscale).cbz (215pp) | [44164] COL Bokurano v03 [MS] (Waifu2x Upscale).cbz (192pp)
+            [44165] COL Bokurano v04 [MS] (Waifu2x Upscale).cbz (178pp) | [44166] COL Bokurano v05 [MS] (Waifu2x Upscale).cbz (190pp) | [44167] COL Bokurano v06 [MS] (Waifu2x Upscale).cbz (190pp)
+            [44168] COL Bokurano v07 [MS] (Waifu2x Upscale).cbz (178pp) | [44169] COL Bokurano v08 [MS] (Waifu2x Upscale).cbz (203pp)
+            [44170] COL Bokurano v09 [MS & Dung Beetle] (Waifu2x Upscale).cbz (187pp) | [44171] COL Bokurano v10 [Dung Beetle & Hox] (Waifu2x Upscale).cbz (189pp)
+            [44172] COL Bokurano v11 [Hox] (Waifu2x Upscale).cbz (186pp)
+   ours:    judged item 44162 #1-6 conf 0.97; judged item 44163 #7-12 conf 0.97; judged item 44164 #13-18 conf 0.97; judged item 44165 #19-23 conf 0.97; judged item 44166 #24-29 conf 0.97; judged item 44167 #30-35 conf 0.97; judged item 44168 #36-41 conf 0.97; judged item 44169 #42-47 conf 0.97; judged item 44170 #48-53 conf 0.97; judged item 44171 #54-59 conf 0.97; judged item 44172 #60-65 conf 0.97
+   CV linked:      vol 38799 "Bokurano: Ours" 2010 Viz 11 issues; cached #1-11 (11); yearΔ 7; ratio 0/11; 2 of 11 judged fit
+   CV local rip:   (= linked) · 50275 "Bokurano" 2004 Shogakukan 11   (rip lookup)
+   GCD dump:       45795 "Bokurano: Ours" 2010-2014 Viz [] 11 · 147714 "Bokurano" [fr] 2008-2011 Asuka [] 11   (dump lookup)
+   MU / External:  MU 22355742922 "Bokurano" 2003 Manga · MuSeriesLink 22355742922 status 1 conf 1.0
+
+== S3300 City  [tier B]   keys: CITY  years 2018-2022  13 files / 13 collections
+   folders: [13] Manga\CITY (2016)
+   files:   [42188] COL CITY v01 (2018) (Digital) (danke-Empire).cbz (173pp) | [42189] COL CITY v02 (2018) (Digital) (danke-Empire).cbz (173pp)
+            [42190] COL CITY v03 (2018) (Digital) (danke-Empire).cbz (173pp) | [42191] COL CITY v04 (2018) (Digital) (danke-Empire).cbz (170pp)
+            [42192] COL CITY v05 (2019) (Digital) (danke-Empire).cbz (173pp) | [42193] COL CITY v06 (2019) (Digital) (danke-Empire).cbz (172pp)
+            [42194] COL CITY v07 (2020) (Digital) (danke-Empire).cbz (173pp) | [42195] COL CITY v08 (2020) (Digital) (danke-Empire).cbz (166pp)
+            [42196] COL CITY v09 (2020) (Digital) (danke-Empire).cbz (173pp) | [42197] COL CITY v10 (2021) (Digital) (danke-Empire).cbz (174pp)
+            [42198] COL CITY v11 (2021) (Digital) (danke-Empire).cbz (171pp) | [42199] COL CITY v12 (2021) (Digital) (danke-Empire).cbz (173pp)
+            [42200] COL CITY v13 (2022) (Digital) (danke-Empire).cbz (201pp)
+   ours:    judged item 42188 #1-12 conf 0.97; judged item 42189 #13-25 conf 0.97; judged item 42190 #26-39 conf 0.97; judged item 42191 #40-53 conf 0.97; judged item 42192 #54-66 conf 0.97; judged item 42193 #67-79 conf 0.97; judged item 42194 #80-93 conf 0.97; judged item 42195 #94-107 conf 0.97; judged item 42196 #108-121 conf 0.97; judged item 42197 #122-136 conf 0.97; judged item 42198 #137-152 conf 0.97; judged item 42199 #153-167 conf 0.97; judged item 42200 #168-186 conf 0.97
+   CV linked:      vol 109423 "City" 2018 Vertical Inc. 13 issues; cached #1-13 (13); yearΔ 0; ratio 0/13; 2 of 13 judged fit
+   CV candidates:  (= linked) · 128719 "The City" 1994 Pan Books ? s59 · 30686 "Land Of Oz The Manga: Return To The Emerald City" 2008 Antarctic Press ? s51 · 112215 "City" 2017 Kodansha ? s30 · 87352 "Valiant 2016 Preview" 2016 DMG/Valiant Entertainment ? s15 · 87618 "Hellboy Winter Special 2016" 2016 Dark Horse Comics ? s15 · 90334 "Especial DDCG 2016" 2016 Unknown Publisher ? s15   (v1 search)
+   CV local rip:   (= linked) · 112215 "City" 2017 Kodansha 14 · 128719 "The City" 1994 Pan Books 1 issue 780180 · 30686 "Land Of Oz The Manga: Return To The Emerald City" 2008 Antarctic Press 4 (via CV candidate name "Land Of Oz The Manga: Return To The Emerald City")   (rip lookup)
+   GCD dump:       123267 "CITY" 2018-2021 Vertical [] 10 · 172754 "CITY" [ja-jp] 2017-2021 講談社 [Kōdansha] [] 13 · 172756 "CITY" 2021-2022 Kodansha USA [] 3 · 45015 "The City" 2003-2003 Slave Labor [] 1 · 51710 "The City" [en-gb] 1994-1994 Pan Books [] 1 · 95566 "The City" [en-gb] 1988-1988 Redstone Press [] 1   (dump lookup)
+   MU / External:  MU 19210564372 "City" 2016 Manga · MuSeriesLink 19210564372 status 1 conf 0.7692307692307693
+
+== S3303 Coppelion  [tier B]   keys: COPPELION  years 2015-2016  26 files / 26 collections
+   folders: [26] Manga\COPPELION (2008)
+   files:   [39912] COL COPPELION v01 (2015) (Digital) (Shadowcat-Empire).cbz (195pp) | [39913] COL COPPELION v02 (2015) (Digital) (Shadowcat-Empire).cbz (192pp)
+            [39914] COL COPPELION v03 (2015) (Digital) (Shadowcat-Empire).cbz (192pp) | [39915] COL COPPELION v04 (2015) (Digital) (Shadowcat-Empire).cbz (192pp)
+            [39916] COL COPPELION v05 (2015) (Digital) (Shadowcat-Empire).cbz (190pp) | [39917] COL COPPELION v06 (2015) (Digital) (Shadowcat-Empire).cbz (191pp)
+            [39918] COL COPPELION v07 (2015) (Digital) (Shadowcat-Empire).cbz (208pp) | [39919] COL COPPELION v08 (2016) (Digital) (Shadowcat-Empire).cbz (190pp)
+            [39920] COL COPPELION v09 (2016) (Digital) (Shadowcat-Empire).cbz (197pp) | [39921] COL COPPELION v10 (2016) (Digital) (Shadowcat-Empire).cbz (190pp)
+            [39922] COL COPPELION v11 (2016) (Digital) (Shadowcat-Empire).cbz (208pp) | [39923] COL COPPELION v12 (2016) (Digital) (Shadowcat-Empire).cbz (191pp)
+            [39924] COL COPPELION v13 (2016) (Digital) (Shadowcat-Empire).cbz (208pp) | [39925] COL COPPELION v14 (2016) (Digital) (Shadowcat-Empire).cbz (190pp)
+            [39926] COL COPPELION v15 (2016) (Digital) (Shadowcat-Empire).cbz (208pp) | [39927] COL COPPELION v16 (2016) (Digital) (Shadowcat-Empire).cbz (208pp)
+            [39928] COL COPPELION v17 (2016) (Digital) (Shadowcat-Empire).cbz (190pp) | [39929] COL COPPELION v18 (2016) (Digital) (Shadowcat-Empire).cbz (178pp)
+            [39930] COL COPPELION v19 (2016) (Digital) (Shadowcat-Empire).cbz (216pp) | [39931] COL COPPELION v20 (2016) (Digital) (Shadowcat-Empire).cbz (220pp)
+            [39932] COL COPPELION v21 (2016) (Digital) (Shadowcat-Empire).cbz (214pp) | [39933] COL COPPELION v22 (2016) (Digital) (Shadowcat-Empire).cbz (216pp)
+            [39934] COL COPPELION v23 (2016) (Digital) (Shadowcat-Empire).cbz (207pp) | [39935] COL COPPELION v24 (2016) (Digital) (Shadowcat-Empire).cbz (221pp)
+            [39936] COL COPPELION v25 (2016) (Digital) (Shadowcat-Empire).cbz (191pp) | [39937] COL COPPELION v26 (2016) (Digital) (Shadowcat-Empire).cbz (211pp)
+   CV linked:      vol 86326 "Coppelion" 2015 Kodansha Comics USA 26 issues; cached #1-26 (26); yearΔ 0; ratio 0/26; no judged range
+   CV local rip:   (= linked) · 96887 "Coppelion" 2008 Kodansha 26 · 150211 "Coppelion" 2022 Noeve Grafx 4   (rip lookup)
+   MU / External:  MU 20166458571 "Coppelion" 2008 Manga · MuSeriesLink 20166458571 status 1 conf 1.0
+
+== S3370 Can You Just Die, My Darling?  [tier B]   keys: Can You Just Die, My Darling  years 2018-2019  10 files / 10 collections
+   folders: [10] Manga\Can You Just Die, My Darling (2015)
+   files:   [43104] COL Can You Just Die, My Darling v01 (2018) (Digital) (F2) (danke-Empire).cbz (163pp) | [43105] COL Can You Just Die, My Darling v02 (2018) (Digital) (F) (danke-Empire).cbz (176pp)
+            [43106] COL Can You Just Die, My Darling v03 (2018) (Digital) (F) (danke-Empire).cbz (191pp) | [43107] COL Can You Just Die, My Darling v04 (2018) (Digital) (F) (danke-Empire).cbz (183pp)
+            [43108] COL Can You Just Die, My Darling v05 (2018) (Digital) (F) (danke-Empire).cbz (199pp) | [43109] COL Can You Just Die, My Darling v06 (2018) (Digital) (F) (danke-Empire).cbz (200pp)
+            [43110] COL Can You Just Die, My Darling v07 (2019) (Digital) (F) (danke-Empire).cbz (199pp) | [43111] COL Can You Just Die, My Darling v08 (2019) (Digital) (danke-Empire).cbz (181pp)
+            [43112] COL Can You Just Die, My Darling v09 (2019) (Digital) (danke-Empire).cbz (203pp) | [43113] COL Can You Just Die, My Darling v10 (2019) (Digital) (danke-Empire).cbz (187pp)
+   ours:    judged item 43104 #1-3 conf 0.97; judged item 43105 #4-6 conf 0.97; judged item 43106 #7-9 conf 0.97; judged item 43107 #10-12 conf 0.97; judged item 43108 #13-15 conf 0.97; judged item 43109 #16-19 conf 0.97; judged item 43110 #20-23 conf 0.97; judged item 43111 #24-27 conf 0.97; judged item 43112 #28-31 conf 0.97; judged item 43113 #32-35 conf 0.97
+   CV linked:      vol 111020 "Can You Just Die, My Darling?" 2018 Kodansha Comics USA 10 issues; cached #1-10 (10); yearΔ 0; ratio 0/10; 4 of 10 judged fit
+   CV candidates:  (= linked) · 47548 "Criminal Macabre: Die, Die, My Darling!" 2012 Dark Horse Comics ? s35 · 45896 "My Darling! Miss Bancho" 2010 DC Comics ? s20 · 87063 "Can You Topless This?" 1967 Pyramid Books ? s20 · 64918 "You Can Draw Monsters" 2003 Antarctic Press ? s20 · 126836 "My Dress-Up Darling" 2020 Square Enix Manga & Books ? s1 · 38800 "All My Darling Daughters" 2016 Viz ? s0   (v1 search)
+   CV local rip:   (= linked) · 47548 "Criminal Macabre: Die, Die, My Darling!" 2012 Dark Horse Comics 1 issue 326892 (via CV candidate name "Criminal Macabre: Die, Die, My Darling!") · 45896 "My Darling! Miss Bancho" 2010 DC Comics 1 issue 315958 (via CV candidate name "My Darling! Miss Bancho")   (rip lookup)
+   GCD dump:       174722 "Criminal Macabre: Die Die My Darling" 2012-2012 Dark Horse [] 1 (via CV candidate name "Criminal Macabre: Die, Die, My Darling!") · 46077 "My Darling! Miss Bancho" 2010-2010 DC [] 1 (via CV candidate name "My Darling! Miss Bancho")   (dump lookup)
+   MU / External:  MU 18031837947 "My Darling Just Signed In" 2017 Manhwa · MuSeriesLink 18031837947 status 1 conf 0.6346153846153846
+
+== S3646 Case Closed  [tier C] · 102 files  keys: Case Closed  years 1994-2024  102 files / 102 collections
+   folders: [99] Manga\Case Closed aka Detective Conan (1994)\Volumes 1-99 · [3] Manga\Case Closed aka Detective Conan (1994)\Volumes 100+
+   files:   [41825] COL Case Closed v01 (2004) (Digital) (AnHeroGold-Empire).cbz (185pp) | [41826] COL Case Closed v02 (2004) (Digital) (AnHeroGold-Empire).cbz (181pp)
+            [41827] COL Case Closed v03 (2005) (Digital) (AnHeroGold-Empire).cbz (181pp) | [41828] COL Case Closed v04 (2005) (Digital) (AnHeroGold-Empire).cbz (181pp)
+            [41829] COL Case Closed v05 (2005) (Digital) (AnHeroGold-Empire).cbz (193pp) | [41830] COL Case Closed v06 (2005) (Digital) (AnHeroGold-Empire).cbz (181pp)
+            [41831] COL Case Closed v07 (2005) (Digital) (AnHeroGold-Empire).cbz (181pp) | [41832] COL Case Closed v08 (2005) (Digital) (AnHeroGold-Empire).cbz (189pp)
+            [41833] COL Case Closed v080 (2021) (Digital) (DigitalMangaFan).cbz (183pp) | [41834] COL Case Closed v081 (2022) (Digital) (DigitalMangaFan).cbz (183pp)
+            [41835] COL Case Closed v082 (2022) (Digital) (DigitalMangaFan).cbz (183pp) | [41836] COL Case Closed v083 (2022) (Digital) (DigitalMangaFan).cbz (177pp)
+            [41837] COL Case Closed v084 (2022) (Digital) (DigitalMangaFan).cbz (184pp) | [41838] COL Case Closed v085 (2023) (Digital) (DigitalMangaFan).cbz (183pp)
+            [41839] COL Case Closed v086 (2023) (Digital) (DigitalMangaFan).cbz (183pp) | [41840] COL Case Closed v087 (2023) (Digital) (DigitalMangaFan).cbz (183pp)
+            [41841] COL Case Closed v088 (2023) (Digital) (DigitalMangaFan).cbz (183pp) | [41842] COL Case Closed v089 (2024) (Digital) (DigitalMangaFan).cbz (183pp)
+            [41843] COL Case Closed v09 (2006) (Digital) (AnHeroGold-Empire).cbz (181pp) | [41844] COL Case Closed v090 (2024) (Digital) (DigitalMangaFan).cbz (184pp)
+            [41845] COL Case Closed v10 (2006) (Digital) (AnHeroGold-Empire).cbz (187pp) | [41846] COL Case Closed v11 (2006) (Digital) (AnHeroGold-Empire).cbz (183pp)
+            [41847] COL Case Closed v12 (2006) (Digital) (LostNerevarine-Empire).cbz (181pp) | [41848] COL Case Closed v13 (2006) (Digital) (LostNerevarine-Empire).cbz (183pp)
+            [41849] COL Case Closed v14 (2006) (Digital) (LostNerevarine-Empire).cbz (183pp) | [41850] COL Case Closed v15 (2007) (Digital) (LostNerevarine-Empire).cbz (181pp)
+            [41851] COL Case Closed v16 (2007) (Digital) (LostNerevarine-Empire).cbz (182pp) | [41852] COL Case Closed v17 (2007) (Digital) (LostNerevarine-Empire).cbz (183pp)
+            [41853] COL Case Closed v18 (2007) (Digital) (LostNerevarine-Empire).cbz (183pp) | [41854] COL Case Closed v19 (2007) (Digital) (LostNerevarine-Empire).cbz (180pp)
+            [41855] COL Case Closed v20 (2007) (Digital) (LostNerevarine-Empire).cbz (184pp) | [41856] COL Case Closed v21 (2008) (Digital) (LostNerevarine-Empire).cbz (194pp)
+            [41857] COL Case Closed v22 (2008) (Digital) (LostNerevarine-Empire).cbz (182pp) | [41858] COL Case Closed v23 (2008) (Digital) (LostNerevarine-Empire).cbz (182pp)
+            [41859] COL Case Closed v24 (2008) (Digital) (LostNerevarine-Empire).cbz (193pp) | [41860] COL Case Closed v25 (2008) (Digital) (LostNerevarine-Empire).cbz (196pp)
+            [41861] COL Case Closed v26 (2008) (Digital) (LostNerevarine-Empire).cbz (179pp) | [41862] COL Case Closed v27 (2009) (Digital) (LostNerevarine-Empire).cbz (180pp)
+            [41863] COL Case Closed v28 (2009) (Digital) (LostNerevarine-Empire).cbz (194pp) | [41864] COL Case Closed v29 (2009) (Digital) (LostNerevarine-Empire).cbz (196pp)
+            [41865] COL Case Closed v30 (2009) (Digital) (LostNerevarine-Empire).cbz (195pp) | [41866] COL Case Closed v31 (2009) (Digital) (LostNerevarine-Empire).cbz (198pp)
+            [41867] COL Case Closed v32 (2009) (Digital) (LostNerevarine-Empire).cbz (192pp) | [41868] COL Case Closed v33 (2010) (Digital) (LostNerevarine-Empire).cbz (193pp)
+            [41869] COL Case Closed v34 (2010) (Digital) (LostNerevarine-Empire).cbz (197pp) | [41870] COL Case Closed v35 (2010) (Digital) (LostNerevarine-Empire).cbz (193pp)
+            [41871] COL Case Closed v36 (2010) (Digital) (LostNerevarine-Empire).cbz (190pp) | [41872] COL Case Closed v37 (2011) (Digital) (LostNerevarine-Empire).cbz (179pp)
+            [41873] COL Case Closed v38 (2011) (Digital) (LostNerevarine-Empire).cbz (180pp) | [41874] COL Case Closed v39 (2011) (Digital) (LostNerevarine-Empire).cbz (194pp)
+            [41875] COL Case Closed v40 (2011) (Digital) (LostNerevarine-Empire).cbz (181pp) | [41876] COL Case Closed v41 (2012) (Digital) (LostNerevarine-Empire).cbz (195pp)
+            [41877] COL Case Closed v42 (2012) (Digital) (LostNerevarine-Empire).cbz (196pp) | [41878] COL Case Closed v43 (2012) (Digital) (LostNerevarine-Empire).cbz (193pp)
+            [41879] COL Case Closed v44 (2012) (Digital) (LostNerevarine-Empire).cbz (193pp) | [41880] COL Case Closed v45 (2013) (Digital) (LostNerevarine-Empire).cbz (190pp)
+            [41881] COL Case Closed v46 (2013) (Digital) (LostNerevarine-Empire).cbz (193pp) | [41882] COL Case Closed v47 (2013) (Digital) (LostNerevarine-Empire).cbz (191pp)
+            [41883] COL Case Closed v48 (2013) (Digital) (LostNerevarine-Empire).cbz (179pp) | [41884] COL Case Closed v49 (2014) (Digital) (LostNerevarine-Empire).cbz (181pp)
+            [41885] COL Case Closed v50 (2014) (Digital) (LostNerevarine-Empire).cbz (190pp) | [41886] COL Case Closed v51 (2014) (Digital) (LostNerevarine-Empire).cbz (190pp)
+            [41887] COL Case Closed v52 (2014) (Digital) (LostNerevarine-Empire).cbz (190pp) | [41888] COL Case Closed v53 (2015) (Digital) (LostNerevarine-Empire).cbz (177pp)
+            [41889] COL Case Closed v54 (2015) (Digital) (LostNerevarine-Empire).cbz (186pp) | [41890] COL Case Closed v55 (2015) (Digital) (LostNerevarine-Empire).cbz (186pp)
+            [41891] COL Case Closed v56 (2015) (Digital) (LostNerevarine-Empire).cbz (182pp) | [41892] COL Case Closed v57 (2016) (Digital) (LostNerevarine-Empire).cbz (184pp)
+            [41893] COL Case Closed v58 (2016) (Digital) (LostNerevarine-Empire).cbz (183pp) | [41894] COL Case Closed v59 (2016) (Digital) (LostNerevarine-Empire).cbz (184pp)
+            [41895] COL Case Closed v60 (2016) (Digital) (LostNerevarine-Empire).cbz (182pp) | [41896] COL Case Closed v61 (2017) (Digital) (LuCaZ).cbz (182pp)
+            [41897] COL Case Closed v62 (2017) (Digital) (LuCaZ).cbz (183pp) | [41898] COL Case Closed v63 (2017) (Digital) (LuCaZ).cbz (182pp)
+            [41899] COL Case Closed v64 (2017) (Digital) (LuCaZ).cbz (182pp) | [41900] COL Case Closed v65 (2018) (Digital) (LuCaZ).cbz (182pp)
+            [41901] COL Case Closed v66 (2018) (Digital) (LuCaZ).cbz (182pp) | [41902] COL Case Closed v67 (2018) (Digital) (LuCaZ).cbz (182pp)
+            [41903] COL Case Closed v68 (2018) (Digital) (LuCaZ).cbz (182pp) | [41904] COL Case Closed v69 (2019) (Digital) (LuCaZ).cbz (182pp)
+            [41905] COL Case Closed v70 (2019) (Digital) (LuCaZ).cbz (181pp) | [41906] COL Case Closed v71 (2019) (Digital) (LuCaZ).cbz (182pp)
+            [41907] COL Case Closed v72 (2019) (Digital) (LuCaZ).cbz (182pp) | [41908] COL Case Closed v73 (2020) (Digital) (c1fi7).cbz (184pp)
+            [41909] COL Case Closed v74 (2020) (Digital) (c1fi7).cbz (184pp) | [41910] COL Case Closed v75 (2020) (Digital) (Shellshock).cbz (182pp)
+            [41911] COL Case Closed v76 (2020) (Digital) (Shellshock).cbz (182pp) | [41912] COL Case Closed v77 (2021) (Digital) (DigitalMangaFan).cbz (183pp)
+            [41913] COL Case Closed v78 (2021) (Digital) (0v3r).cbz (182pp) | [41914] COL Case Closed v79 (2021) (Digital) (1r0n).cbz (182pp) | [41915] COL Case Closed v91 (Korn Scans).cbz (187pp)
+            [41916] COL Case Closed v92 (Korn Scans).cbz (187pp) | [41917] COL Case Closed v93 (Korn Scans).cbz (187pp) | [41918] COL Case Closed v94 (Beika Street Irregulars, Korn Scans).cbz (173pp)
+            [41919] COL Case Closed v95 (Beika Street Irregulars).cbz (196pp) | [41920] COL Case Closed v96 (Beika Street Irregulars).cbz (190pp)
+            [41921] COL Case Closed v97 (Beika Street Irregulars).cbz (192pp) | [41922] COL Case Closed v98 (Beika Street Irregulars).cbz (189pp)
+            [41923] COL Case Closed v99 (Beika Street Irregulars).cbz (192pp) | [41924] COL Case Closed v100 (Beika Street Irregulars).cbz (191pp)
+            [41925] COL Case Closed v101 (Reiwa Holmes Organization).cbz (192pp) | [41926] COL Case Closed v102 (Reiwa Holmes Organization).cbz (189pp)
+   ours:    judged item 41896 #631-641 conf 0.97; judged item 41897 #642-652 conf 0.97; judged item 41898 #653-663 conf 0.97; judged item 41899 #664-674 conf 0.97; judged item 41900 #675-685 conf 0.97; judged item 41901 #686-696 conf 0.97; judged item 41902 #697-707 conf 0.97; judged item 41903 #708-718 conf 0.97; judged item 41904 #719-729 conf 0.97; judged item 41905 #730-740 conf 0.97; judged item 41906 #741-751 conf 0.97; judged item 41907 #752-762 conf 0.97; judged item 41833 #840-850 conf 0.97; judged item 41834 #851-861 conf 0.97; judged item 41835 #862-872 conf 0.97; judged item 41836 #873-882 conf 0.97; judged item 41837 #883-893 conf 0.97; judged item 41838 #894-904 conf 0.97; judged item 41839 #905-915 conf 0.97; judged item 41840 #916-926 conf 0.97; judged item 41841 #927-937 conf 0.97; judged item 41842 #938-948 conf 0.97; judged item 41844 #949-959 conf 0.97; judged item 41915 #960-970 conf 0.97; judged item 41916 #971-981 conf 0.97; judged item 41917 #982-992 conf 0.97; judged item 41918 #993-1003 conf 0.97; judged item 41919 #1004-1014 conf 0.97; judged item 41920 #1015-1025 conf 0.97; judged item 41921 #1026-1036 conf 0.97; judged item 41922 #1037-1047 conf 0.97; judged item 41923 #1048-1058 conf 0.97; judged item 41924 #1059-1069 conf 0.97; judged item 41925 #1070-1080 conf 0.97; judged item 41926 #1081-1091 conf 0.97
+   GCD says: [41825] gcd_reprint 314899: s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #1 [10 stories]
+             [41826] gcd_reprint 314900: s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #2 [11 stories]
+             [41827] gcd_reprint 314901: s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #3 [12 stories]
+             [41833] gcd_reprint 2269755: s76108 週刊少年サンデー [Shūkan Shōnen Sandē / Weekly Shonen Sunday] (1959) (unnumbered) [11 stories] · s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #80 [1 story]
+             [41834] gcd_reprint 2299282: s76108 週刊少年サンデー [Shūkan Shōnen Sandē / Weekly Shonen Sunday] (1959) (unnumbered) [11 stories] · s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #81 [1 story]
+             [41835] gcd_reprint 2387083: s76108 週刊少年サンデー [Shūkan Shōnen Sandē / Weekly Shonen Sunday] (1959) (unnumbered) [11 stories] · s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #82 [1 story]
+             [41836] gcd_reprint 2425971: s76108 週刊少年サンデー [Shūkan Shōnen Sandē / Weekly Shonen Sunday] (1959) (unnumbered) [13 stories] · s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #83 [1 story]
+             [41837] gcd_reprint 2440059: s76108 週刊少年サンデー [Shūkan Shōnen Sandē / Weekly Shonen Sunday] (1959) (unnumbered) [11 stories] · s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #84 [1 story]
+             [41838] gcd_reprint 2479020: s76108 週刊少年サンデー [Shūkan Shōnen Sandē / Weekly Shonen Sunday] (1959) (unnumbered) [11 stories] · s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #85 [1 story]
+             [41839] gcd_reprint 2523344: s76108 週刊少年サンデー [Shūkan Shōnen Sandē / Weekly Shonen Sunday] (1959) (unnumbered) [11 stories] · s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #86 [1 story]
+             [41840] gcd_reprint 2555660: s76108 週刊少年サンデー [Shūkan Shōnen Sandē / Weekly Shonen Sunday] (1959) (unnumbered) [2 stories] · s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #87 [1 story]
+             [41841] gcd_reprint 2572553: s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #88 [1 story]
+             [41842] gcd_reprint 2597377: s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #89 [1 story]
+             [41844] gcd_reprint 2622662: s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #90 [1 story]
+             [41874] gcd_reprint 857299: s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #39 [1 story]
+             [41875] gcd_reprint 885894: s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #40 [1 story]
+             [41876] gcd_reprint 904953: s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #41 [1 story]
+             [41877] gcd_reprint 936467: s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #42 [1 story]
+             [41878] gcd_reprint 956217: s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #43 [1 story]
+             [41879] gcd_reprint 1015429: s83423 名探偵コナン [Meitantei Conan / Detective Conan] (1994) #44 [1 story]
+             … 43 more book(s) with GCD notes (`python gcdnotes.py --issue <id>`)
+   CV linked:      vol 34391 "Case Closed" 2004 Viz 96 issues; cached #1-96 (96); yearΔ 10; ratio 0/96; 0 of 35 judged fit
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       19958 "Case Closed" 2004-? Viz [] 98   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.3986013986013986
+
+== S3667 Cat Shit One  [tier B]   keys: Cat Shit One  years 2020-2022  1 files / 1 collections
+   folders: [1] Manga\Cat Shit One (1998)
+   files:   [43114] COL Cat Shit One Omnibus (2022) (Digital) (phillywilly-Empire).cbr (404pp)
+   CV linked:      vol 126022 "Cat Shit One" 2020 Antarctic Press 3 issues; cached #1-3 (3); yearΔ 0; ratio 0/3; no judged range
+   CV per-file (v1): vol 133909 "Cat Shit One" 2021 Antarctic Press 2 on 1/1 files
+   CV candidates:  (= linked) · 48396 "Tuff Shit" 1972 Print Mint 1 issue 333636 s39 · 132286 "Cat Shit One" 2020 Antarctic Press 3 s38 · 62497 "Darkchylde Preview Special 1998" 1998 Image 1 issue 407236 s30 · 160566 "Manga One" 2012 Panini Comics 31 s0 · 102788 "Shit and Piss" 2017 Retrofit Comics 1 issue 608154 s0 · 162705 "Magical Girl Holy Shit" 2018 Éditions Akata 12 s0   (v1 search)
+   CV local rip:   (= linked) · 132286 "Cat Shit One" 2020 Antarctic Press 3 · 48396 "Tuff Shit" 1972 Print Mint 1 issue 333636 (via CV candidate name "Tuff Shit")   (rip lookup)
+   GCD dump:       159764 "Cat Shit One" 2020-? Antarctic Press [] 3 · 183868 "Cat Shit One" 2020-? Antarctic Press [] 3 · 181486 "Cat Shit One" 2021-? Antarctic Press [] 3 · 183511 "Cat Shit One" 2022-? Antarctic Press [] 3 · 38766 "Cat Shit One" [pl] 2006-2006 Waneko [] 3 · 133845 "Cat Shit One" [fr] 2006-2007 Glénat [] 4   (dump lookup)
+   MU / External:  MU 75165114100 "Cat Shit One" 1998 Manga · MuSeriesLink 75165114100 status 1 conf 0.7692307692307693
+
+== S3705 Cells NOT at Work!  [tier B]   keys: Cells NOT at Work!  years 2019-2021  4 files / 4 collections
+   folders: [4] Manga\Cells at Work! (2015)\Cells NOT at Work! (2019)
+   files:   [43137] COL Cells NOT at Work! v01 (2019) (Digital) (danke-Empire).cbz (157pp) | [43138] COL Cells NOT at Work! v02 (2019) (Digital) (danke-Empire).cbz (186pp)
+            [43139] COL Cells NOT at Work! v03 (2020) (Digital) (danke-Empire).cbz (185pp) | [43140] COL Cells NOT at Work! v04 (2021) (Digital) (danke-Empire).cbz (193pp)
+   ours:    judged item 43137 #1-10 conf 0.97; judged item 43138 #11-18 conf 0.97; judged item 43139 #19-27 conf 0.97; judged item 43140 #28-37 conf 0.97
+   CV linked:      vol 121663 "Cells NOT at Work!" 2019 Kodansha Comics USA 5 issues; cached #1-5 (5); yearΔ 0; ratio 0/5; 1 of 4 judged fit
+   CV candidates:  (= linked) · 95389 "Cells at Work!" 2016 Kodansha Comics USA 6 s23 · 165793 "Cells at Work!" 2019 Cross Cult 6 s23 · 158701 "Cells at Work! Lady" 2023 Kodansha Comics USA 5 s19 · 128604 "Cells at Work: Platelets!" 2020 Kodansha Comics USA 4 s19 · 128877 "Cells at Work: Baby!" 2020 Kodansha Comics USA 4 s19 · 165794 "Cells at Work! Black" 2019 Cross Cult 8 s12   (v1 search)
+   CV local rip:   (= linked) · 165793 "Cells at Work!" 2019 Cross Cult 6 (via CV candidate name "Cells at Work!") · 95389 "Cells at Work!" 2016 Kodansha Comics USA 6 (via CV candidate name "Cells at Work!")   (rip lookup)
+   GCD dump:       143705 "Cells at Work!" [de] 2019-2021 Cross Cult [] 6 (via CV candidate name "Cells at Work!") · 145290 "Cells at Work!" [de] 2019-2019 Cross Cult [] 1 (via CV candidate name "Cells at Work!") · 119781 "Cells at Work!" 2016-2021 Kodansha USA [] 6 (via CV candidate name "Cells at Work!") · 191328 "Cells at Work!" [pt-br] 2022-2023 Panini Brasil [] 6 (via CV candidate name "Cells at Work!")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.49450549450549447
+
+== S3708 Cells at Work! Lady  [tier B]   keys: Cells at Work! Lady  years 2023-2024  5 files / 5 collections
+   folders: [5] Manga\Cells at Work! (2015)\Cells at Work! Lady (2023)
+   files:   [43128] COL Cells at Work! Lady v01 (2023) (Digital) (LuCaZ).cbz (187pp) | [43129] COL Cells at Work! Lady v02 (2023) (Digital) (LuCaZ).cbz (203pp)
+            [43130] COL Cells at Work! Lady v03 (2023) (Digital) (LuCaZ).cbz (191pp) | [43131] COL Cells at Work! Lady v04 (2024) (Digital) (LuCaZ).cbz (188pp)
+            [43132] COL Cells at Work! Lady v05 (2024) (Digital) (LuCaZ).cbz (188pp)
+   ours:    judged item 43128 #1-5 conf 0.97; judged item 43129 #6-10 conf 0.97; judged item 43130 #11-15 conf 0.97; judged item 43131 #16-20 conf 0.97; judged item 43132 #21-25 conf 0.97
+   CV linked:      vol 158701 "Cells at Work! Lady" 2023 Kodansha Comics USA 5 issues; cached #1-5 (5); yearΔ 0; ratio 0/5; 1 of 5 judged fit
+   CV candidates:  (= linked) · 95389 "Cells at Work!" 2016 Kodansha Comics USA ? s15 · 165793 "Cells at Work!" 2019 Cross Cult ? s15 · 165794 "Cells at Work! Black" 2019 Cross Cult ? s4 · 128604 "Cells at Work: Platelets!" 2020 Kodansha Comics USA ? s4 · 172062 "Cells at Work! Omnibus" 2023 Kodansha Comics USA ? s4 · 128480 "Cells at Work!: Bacteria" 2020 Kodansha Comics USA ? s4   (v1 search)
+   CV local rip:   (= linked) · 165793 "Cells at Work!" 2019 Cross Cult 6 (via CV candidate name "Cells at Work!") · 95389 "Cells at Work!" 2016 Kodansha Comics USA 6 (via CV candidate name "Cells at Work!")   (rip lookup)
+   GCD dump:       236534 "Cells at Work! Lady" 2026-? Kodansha USA [] ? · 191328 "Cells at Work!" [pt-br] 2022-2023 Panini Brasil [] 6 (via CV candidate name "Cells at Work!") · 143705 "Cells at Work!" [de] 2019-2021 Cross Cult [] 6 (via CV candidate name "Cells at Work!") · 145290 "Cells at Work!" [de] 2019-2019 Cross Cult [] 1 (via CV candidate name "Cells at Work!") · 119781 "Cells at Work!" 2016-2021 Kodansha USA [] 6 (via CV candidate name "Cells at Work!")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.47511312217194573
+
+== S3709 Cells at Work! Neo Bacteria!  [tier B]   keys: Cells at Work! Neo Bacteria!  years 2021-2021  1 files / 1 collections
+   folders: [1] Manga\Cells at Work! (2015)\Cells at Work! Neo Bacteria! (2021)
+   files:   [43997] COL Cells at Work! Neo Bacteria! v01 (2021) (Digital) (danke-Empire).cbz (110pp)
+   ours:    judged item 43997 #1-3 conf 0.97
+   CV linked:      vol 139930 "Cells at Work! Neo Bacteria!" 2021 Kodansha Comics USA 1 issues issue 892008; cached #1-1 (1); yearΔ 0; ratio 0/1; 1 of 1 judged fit
+   CV candidates:  (= linked) · 128480 "Cells at Work!: Bacteria" 2020 Kodansha Comics USA 7 s15 · 95389 "Cells at Work!" 2016 Kodansha Comics USA 6 s15 · 165793 "Cells at Work!" 2019 Cross Cult 6 s15 · 172062 "Cells at Work! Omnibus" 2023 Kodansha Comics USA 2 s3 · 158701 "Cells at Work! Lady" 2023 Kodansha Comics USA 5 s0 · 165794 "Cells at Work! Black" 2019 Cross Cult 8 s0   (v1 search)
+   CV local rip:   (= linked) · 165793 "Cells at Work!" 2019 Cross Cult 6 (via CV candidate name "Cells at Work!") · 95389 "Cells at Work!" 2016 Kodansha Comics USA 6 (via CV candidate name "Cells at Work!") · 128480 "Cells at Work!: Bacteria" 2020 Kodansha Comics USA 7 (via CV candidate name "Cells at Work!: Bacteria")   (rip lookup)
+   GCD dump:       191328 "Cells at Work!" [pt-br] 2022-2023 Panini Brasil [] 6 (via CV candidate name "Cells at Work!") · 143705 "Cells at Work!" [de] 2019-2021 Cross Cult [] 6 (via CV candidate name "Cells at Work!") · 145290 "Cells at Work!" [de] 2019-2019 Cross Cult [] 1 (via CV candidate name "Cells at Work!") · 119781 "Cells at Work!" 2016-2021 Kodansha USA [] 6 (via CV candidate name "Cells at Work!")   (dump lookup)
+   MU / External:  MU 68758474660 "Hataraku Saibou White" 2020 Manga · MuSeriesLink 68758474660 status 1 conf 0.5384615384615384
+
+== S3710 Cells at Work! White Brigade  [tier B]   keys: Cells at Work! White Brigade  years 2021-2023  4 files / 4 collections
+   folders: [4] Manga\Cells at Work! (2015)\Cells at Work! White Brigade (2021)
+   files:   [43133] COL Cells at Work! White Brigade v01 (2021) (Digital) (danke-Empire).cbz (127pp) | [43134] COL Cells at Work! White Brigade v02 (2022) (Digital) (danke-Empire).cbz (126pp)
+            [43135] COL Cells at Work! White Brigade v03 (2022) (Digital) (danke-Empire).cbz (129pp) | [43136] COL Cells at Work! White Brigade v04 (2023) (Digital) (danke-Empire).cbz (154pp)
+   ours:    judged item 43133 #1-6 conf 0.97; judged item 43134 #7-11 conf 0.97; judged item 43135 #12-17 conf 0.97; judged item 43136 #18-24 conf 0.97
+   CV linked:      vol 140322 "Cells at Work! White Brigade" 2021 Kodansha Comics USA 4 issues; cached #1-4 (4); yearΔ 0; ratio 0/4; 1 of 4 judged fit
+   CV candidates:  (= linked) · 95389 "Cells at Work!" 2016 Kodansha Comics USA 6 s23 · 165793 "Cells at Work!" 2019 Cross Cult 6 s23 · 158701 "Cells at Work! Lady" 2023 Kodansha Comics USA 5 s10 · 128604 "Cells at Work: Platelets!" 2020 Kodansha Comics USA 4 s10 · 121663 "Cells NOT at Work!" 2019 Kodansha Comics USA 5 s10 · 165794 "Cells at Work! Black" 2019 Cross Cult 8 s3   (v1 search)
+   CV local rip:   (= linked) · 165793 "Cells at Work!" 2019 Cross Cult 6 (via CV candidate name "Cells at Work!") · 95389 "Cells at Work!" 2016 Kodansha Comics USA 6 (via CV candidate name "Cells at Work!")   (rip lookup)
+   GCD dump:       191328 "Cells at Work!" [pt-br] 2022-2023 Panini Brasil [] 6 (via CV candidate name "Cells at Work!") · 143705 "Cells at Work!" [de] 2019-2021 Cross Cult [] 6 (via CV candidate name "Cells at Work!") · 145290 "Cells at Work!" [de] 2019-2019 Cross Cult [] 1 (via CV candidate name "Cells at Work!") · 119781 "Cells at Work!" 2016-2021 Kodansha USA [] 6 (via CV candidate name "Cells at Work!")   (dump lookup)
+   MU / External:  MU 68758474660 "Hataraku Saibou White" 2020 Manga · MuSeriesLink 68758474660 status 1 conf 0.5480769230769231
