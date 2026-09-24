@@ -192,6 +192,7 @@ def parse(path, ck, errors):
     decided, out = {}, {"S": [], "R": [], "F": [], "I": [], "C": [], "N": [], "landed": [],
                         "no_record": set(), "kind": "X" if items_batch else "S"}
     cv_seen, gcd_seen, merges, merge_lines = {}, {}, set(), []
+    split_joins = set()     # (sid, target): `F <sid> split-needed | ... join S<target>` (L-377, TOOLS_TODO 42/44b)
     out["warn"] = []
     # (itemId, leg, key) -> line number. Since TOOLS_TODO 17 a book may carry SEVERAL `C` lines — one per
     # (leg, run) — so the thing that may not be said twice is a run, not an item.
@@ -242,6 +243,9 @@ def parse(path, ck, errors):
             if sid not in ck.shelves:
                 _shelf_state(ck, sid, loc, errors, out)
             out["F"].append((sid, head[1], why))
+            if flag == "split-needed":
+                for tgt in re.findall(r"\bjoin\s+S?(\d+)", why, re.I):
+                    split_joins.add((sid, int(tgt)))
             if head[1].startswith("merge-with="):
                 merges.add(sid)
                 tgt = head[1].split("=", 1)[1].lstrip("S")
@@ -416,8 +420,13 @@ def parse(path, ck, errors):
         if len(set(sids)) > 1 and not (set(sids) & merges):
             errors.append(f"{base}: shelves {sorted(set(sids))} share cv={vid} with no 'F <sid> merge-with=' "
                           f"line — linking both MERGES them at the next books-resolve --series (PLAN §6.5)")
+    # L-377 (TOOLS_TODO 42/44b): shelves that share ONLY a GCD line meet by a split-lane join, never a forced
+    # merge-with (which cannot land without a shared cv) — so a shared gcd stands when every shelf of the group
+    # either joins another member (`F <sid> split-needed | ... join S<member>`) or is the target of such a join.
+    def _joined(group):
+        return all(any((s, t) in split_joins or (t, s) in split_joins for t in group if t != s) for s in group)
     for gid, sids in gcd_seen.items():
-        if len(set(sids)) > 1 and not (set(sids) & merges):
+        if len(set(sids)) > 1 and not (set(sids) & merges) and not _joined(set(sids)):
             errors.append(f"{base}: shelves {sorted(set(sids))} share gcd={gid} with no 'F <sid> merge-with=' line")
 
     # TOOLS_TODO 38: `F A merge-with=B` lands only through a SHARED CV (the resolve merges on canonical key `cv:<id>`),

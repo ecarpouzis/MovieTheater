@@ -1,0 +1,78 @@
+## Conventions for this batch (15 shown of 15 matched; 380 in LEDGER.md; 1 shelf/shelves: pub:idw ×1 · folder:events ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-175] (1 shelf/shelves) folder:bucket folder:events pass:item
+- In the chronology folders the RUN rule stands over the bucket rule: `S` = the numbered run, the tie-in's collected
+  record goes on the `I` line (B-072/073, ~90 shelves); the book's own record is the S only where no numbered run exists.
+[L-281] (1 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-014] (1 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-016] (1 shelf/shelves) sig:comicinfo
+- Glorith rips' ComicInfo `Web` ids are NOT GCD issue ids in our dump (29 checked: missing or unrelated). Never
+  claim 1.0 from one. A ComicInfo `Volume` holding a 6-digit number IS a ComicVine volume id (Lex and the City =
+  162184) — a genuine 1.0 assertion.
+[L-032] (1 shelf/shelves) sig:comicinfo
+- A Marika-Empire rip's ComicInfo `Web` id IS a ComicVine ISSUE id (21/21 resolve to the stored volume) — the
+  1.0 shape. The ripper decides: Glorith's Web ids are not GCD issue ids. Check one against the rip before
+  claiming 1.0 on a new ripper.
+[L-065] (1 shelf/shelves) sig:stamp
+- Ladder coincidence: two runs with the same issue COUNT (X 1994 vs X 2013, both 25) fool the per-file matcher;
+  the year in the filenames decides.
+[L-099] (1 shelf/shelves) sig:stamp
+- A spin-off family carries the PARENT run per-file (all eight Fairy Tail side shelves stamped 46777) — reject.
+[L-113] (1 shelf/shelves) sig:comicinfo sig:stamp
+- ComicInfo `Volume` holding a 4-digit ComicVine volume id (not a year) is a 1.0 assertion like the 6-digit
+  case (Ka-Zar v2 1974: `Volume 2692` + `Count 20` = CV 2692) and disproves the per-file matcher's pick.
+[L-114] (1 shelf/shelves) sig:comicinfo
+- Marika-Empire and Glorith-HD `Web` ids are ComicVine ISSUE ids of the stored volume (7 of 7 here).
+[L-123] (1 shelf/shelves) sig:round2 sig:stamp
+- `round2-folder` / `round2-series` was wrong on 10 of 13 shelves carrying it in B-053..B-055, including one link
+  stamped on four sibling one-shot shelves in one folder — verify each by title + count + years, never by method.
+[L-150] (1 shelf/shelves) sig:round2
+- `round2-folder` was wrong on every shelf carrying it in B-064..066 (Tank Girl Colour Classics ×2 right by accident;
+  Rotten & Zombies vs Cheerleaders got "Hack/Slash Meets Zombies vs Cheerleaders", a different crossover) — still ⚠ never a leg.
+[L-193] (1 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-194] (1 shelf/shelves) sig:legacy-stamp
+- A legacy-renumbered arc collected under its own title ("Punisher: War Machine") belongs to the parent volume's
+  count: CV 90118 / GCD 100917 count 28 = #1-17 + #218-228 — the arithmetic that split S66039.
+[L-262] (1 shelf/shelves) sig:stamp
+- A single-book "collected volume" shelf's S line often carries the book's own CV issue id — use it over a
+  mismatched per-file pick.
+[L-330] (1 shelf/shelves) sig:legacy-stamp
+- After a split or relaunch, a shelf's year span (and "year gap" signal) can come from per-file CV stamps of the
+  OLD volume (1965-68 cover dates on a 1999-run shelf) — read the filename years before hunting a foreign file.
+  Per-file stamps survive a Series-row fix; don't read them as evidence against a landed S (R-054, R-058).
+
+====================================================================================================
+
+== S7108 Snake Eyes and Storm Shadow  [split]  14 files / 0 collections  decided in R-121 (S)
+   decided: S 7108 cv=49362 gcd=66132 0.9 | "Snake Eyes v2 009-021" is ONE IDW numbering retitled at #13: #13-21 (nine of our thirteen issue files) are CV 49362 "Snake Eyes and Storm Shadow" (IDW 2012, 9, cached #13-21 "Serpent's Shadow" / "Target Snake Eyes") = GCD 66132 (IDW 2012-2013, 9); #9-12 are the first title's tail, CV 40244 "Snake Eyes" (IDW 2011, 12) / GCD 68465 (rows #8-12); 0.9 for the misfiled 2020 one-shot below
+   F 7108 split-needed | 32177 "G.I. Joe - A Real American Hero 278b - Snake Eyes - The Origin (2020)" 48pp -> new key "G.I. Joe: A Real American Hero: Snake Eyes: The Origin (2020)" (CV 129484, IDW 2020, 1 issue 792567; ComicInfo Series the same) — a different comic from the 2012 run (L-368; restates B-035's F misfiled)
+   N 7108 L-212/L-369 for the lead: the chain's FIRST record is CV 40244 / GCD 68465, but its opening issues #1-8 are not on this shelf (no shelf stores cv 40244), so the majority record stays; signal b (per-file CV 55158 "G.I. Joe: Snake Eyes" 2011, 2) is a same-title stamp
+   N 7108 flag #247 label-ambiguous (the Snake Eyes "collections" are 15-28pp single issues) is a label flag, not a conflation (L-367)
+   nearby: S103462 "G.I. Joe v3 (2013)" 6f [shares gcd=72256 — S cv=57548 gcd=72256 (R-043 0.95)] keys: "G.I. Joe v3 (2013)"
+   keys now: "G.I. Joe - Snake Eyes" x14
+   groups (title x folder): 6
+   G1 "G.I. Joe - Snake Eyes" in IDW Hasbro\G.I. Joe (IDW Chronology) (2008)\2012.01 - G.I. Joe - Cobra Command Vol. 01 — 1 file(s), numbers 9, pp 27-27; cv per-file 55158x1; gcd per-file 72256x1; key 'G.I. Joe - Snake Eyes'
+      [32088] 02 G.I. Joe - Snake Eyes v2 009 (2012) (HD) (digital-Empire).cbz (27pp)
+   G2 "G.I. Joe - Snake Eyes" in IDW Hasbro\G.I. Joe (IDW Chronology) (2008)\2012.02 - G.I. Joe - Cobra Command Vol. 02 — 2 file(s), numbers 10-11, pp 28-28; cv per-file 55158x2; gcd per-file 72256x2; key 'G.I. Joe - Snake Eyes'
+      [32091] 01 G.I. Joe - Snake Eyes v2 010 (2012) (HD) (digital-Empire).cbz (28pp)
+      [32094] 04 G.I. Joe - Snake Eyes v2 011 (2012) (HD) (digital-Empire).cbz (28pp)
+   G3 "G.I. Joe - Snake Eyes" in IDW Hasbro\G.I. Joe (IDW Chronology) (2008)\2012.04 - G.I. Joe - Cobra Command Vol. 03 — 1 file(s), numbers 12, pp 26-26; cv per-file 55158x1; key 'G.I. Joe - Snake Eyes'
+      [32098] 03 G.I. Joe - Snake Eyes v2 012 (2012) (HD) (digital-Empire).cbz (26pp)
+   G4 "G.I. Joe - Snake Eyes" in IDW Hasbro\G.I. Joe (IDW Chronology) (2008)\2012.05 - G.I. Joe - Snake Eyes-Storm Shadow Vol. 01 — 5 file(s), numbers 13-17, pp 24-24; cv per-file 55158x5; key 'G.I. Joe - Snake Eyes'
+      e.g. G.I. Joe - Snake Eyes v2 013 (2012) (HD) (digital-Empire).cbz
+        32099 #13 2012 24pp · 32100 #14 2012 24pp · 32101 #15 2012 24pp · 32102 #16 2012 24pp · 32103 #17 2012 24pp
+   G5 "G.I. Joe - Snake Eyes" in IDW Hasbro\G.I. Joe (IDW Chronology) (2008)\2012.10 - G.I. Joe - Target Snake Eyes — 4 file(s), numbers 18-21, pp 15-24; cv per-file 55158x4; key 'G.I. Joe - Snake Eyes'
+      e.g. 02 G.I. Joe - Snake Eyes v2 018 (2012) (HD) (digital-Empire).cbz
+        32105 #18 2012 24pp · 32107 #19 2012 15pp · 32109 #20 2012 24pp · 32111 #21 2013 24pp
+   G6 "G.I. Joe - A Real American Hero 278b - Snake Eyes - The Origin (2020) (Digital-Empire)" in IDW Hasbro\G.I. Joe - A Real American Hero (Larry Hama Chronology)\G.I. Joe - A Real American Hero (2010) (IDW) — 1 file(s), pp 48-48; cv per-file 129484x1; key 'G.I. Joe - Snake Eyes'
+      [32177] G.I. Joe - A Real American Hero 278b - Snake Eyes - The Origin (2020) (Digital-Empire).cbr (48pp)

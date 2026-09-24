@@ -1,0 +1,35 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S104072	G.I. Joe: A Real American Hero: Snake Eyes: The Origin (2020)	run={"cv": 129484}	P-046.jsonl	new	pair=7108
+S104087	Teenage Mutant Ninja Turtles Color Classics (2018)	run={"cv": 109577, "gcd": 145512}	P-046.jsonl	new	pair=17705
+S104091	Teenage Mutant Ninja Turtles Color Classics Micro Series: Raphael (2012)	run={"cv": 51141, "gcd": 81825}	P-046.jsonl	new	pair=17705
+S104090	Teenage Mutant Ninja Turtles Color Classics Micro Series: Michaelangelo (2012)	run={"cv": 54469, "gcd": 70291}	P-046.jsonl	new	pair=17705
+S104088	Teenage Mutant Ninja Turtles Color Classics Micro Series: Donatello (2013)	run={"cv": 26207, "gcd": 72873}	P-046.jsonl	new	pair=17705
+S104089	Teenage Mutant Ninja Turtles Color Classics Micro Series: Leonardo (2013)	run={"cv": 35206, "gcd": 73632}	P-046.jsonl	new	pair=17705
+S104082	Ghostbusters: Answer the Call (2017)	run={"cv": 105525, "gcd": 117848}	P-046.jsonl	new	pair=7474
+S104085	Ghostbusters: Year One v1 (2020)	run={"cv": 124398, "gcd": 155137}	P-046.jsonl	new	pair=7474
+S104083	Ghostbusters: Crossing Over (2018)	run={"cv": 109172, "gcd": 123184}	P-046.jsonl	new	pair=7474
+S104073	Ghostbusters 101 (2017)	run={"cv": 100059, "gcd": 112980}	P-046.jsonl	new	pair=7474
+S104084	Ghostbusters: Interdimensional Cross-Rip (2017)	run={"cv": 104914, "gcd": 117482}	P-046.jsonl	new	pair=7474
+S104078	Ghostbusters Annual 2017 (2017)	run={"cv": 98029, "gcd": 112049}	P-046.jsonl	new	pair=7474
+S104079	Ghostbusters Annual 2018 (2018)	run={"cv": 109056, "gcd": 123185}	P-046.jsonl	new	pair=7474
+S104080	Ghostbusters Deviations (2016)	run={"cv": 88813, "gcd": 98431}	P-046.jsonl	new	pair=7474
+S104081	Ghostbusters Funko Universe (2017)	run={"cv": 101372, "gcd": 114176}	P-046.jsonl	new	pair=7474
+S104075	Ghostbusters 35th Anniversary: Extreme (2019)	run={"cv": 118481, "gcd": 144484}	P-046.jsonl	new	pair=7474
+S104076	Ghostbusters 35th Anniversary: Ghostbusters (2019)	run={"cv": 118106, "gcd": 143542}	P-046.jsonl	new	pair=7474
+S104077	Ghostbusters 35th Anniversary: The Real Ghostbusters (2019)	run={"cv": 118205, "gcd": 143920}	P-046.jsonl	new	pair=7474
+S104074	Ghostbusters 35th Anniversary Collection (2019)	run={"cv": 121536, "gcd": 150650}	P-046.jsonl	new	pair=7474
+S104086	Half Past Danger (2013)	run={"cv": 61823, "gcd": 74568}	P-046.jsonl	new	pair=8278
+S104092	True Blood (2010)	run={"cv": 32697, "gcd": 51583}	P-046.jsonl	new	pair=20497
+S104093	True Blood: Tainted Love (2011)	run={"cv": 39120, "gcd": 56000}	P-046.jsonl	new	pair=20497
+S104071	Bliss (2013)	run=-	P-046.jsonl	new	pair=2923
+S66280	Winterworld (1987)	run={"cv": 6829, "gcd": 7347}	P-046.jsonl	new	pair=21724
+S7108	moved out -> S104072 "G.I. Joe: A Real American Hero: Snake Eyes: The Origin (2020)"	run=-	P-046.jsonl	kept	pair=7108	moved_cv=129484
+S17705	moved out -> S104087 "Teenage Mutant Ninja Turtles Color Classics (2018)"; S104091 "Teenage Mutant Ninja Turtles Color Classics Micro Series: Raphael (2012)"; S104090 "Teenage Mutant Ninja Turtles Color Classics Micro Series: Michaelangelo (2012)"; S104088 "Teenage Mutant Ninja Turtles Color Classics Micro Series: Donatello (2013)"; S104089 "Teenage Mutant Ninja Turtles Color Classics Micro Series: Leonardo (2013)"	run=-	P-046.jsonl	kept	pair=17705	moved_cv=109577,51141,54469,26207,35206
+S7474	moved out -> S104082 "Ghostbusters: Answer the Call (2017)"; S104085 "Ghostbusters: Year One v1 (2020)"; S104083 "Ghostbusters: Crossing Over (2018)"; S104073 "Ghostbusters 101 (2017)"; S104084 "Ghostbusters: Interdimensional Cross-Rip (2017)"; S104078 "Ghostbusters Annual 2017 (2017)"; S104079 "Ghostbusters Annual 2018 (2018)"; S104080 "Ghostbusters Deviations (2016)"; S104081 "Ghostbusters Funko Universe (2017)"; S104075 "Ghostbusters 35th Anniversary: Extreme (2019)"; S104076 "Ghostbusters 35th Anniversary: Ghostbusters (2019)"; S104077 "Ghostbusters 35th Anniversary: The Real Ghostbusters (2019)"; S104074 "Ghostbusters 35th Anniversary Collection (2019)"	run=-	P-046.jsonl	kept	pair=7474	moved_cv=105525,124398,109172,100059,104914,98029,109056,88813,101372,118481,118106,118205,121536
+S8278	moved out -> S104086 "Half Past Danger (2013)"	run=-	P-046.jsonl	kept	pair=8278	moved_cv=61823
+S20497	moved out -> S104092 "True Blood (2010)"; S104093 "True Blood: Tainted Love (2011)"	run=-	P-046.jsonl	kept	pair=20497	moved_cv=32697,39120
+S2923	moved out -> S104071 "Bliss (2013)"	run=-	P-046.jsonl	kept	pair=2923
+S21724	moved out -> S66280 "Winterworld (1987)"	run=-	P-046.jsonl	kept	pair=21724	moved_cv=6829

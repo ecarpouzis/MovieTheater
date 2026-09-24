@@ -1936,3 +1936,41 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Comics / Winterworld reprints: GCD's roll-up names the ORIGINAL Eclipse / Warp run. CV counts an IDW FCBD issue as #0 of
   the run (Unicron) while GCD files it as its own series — a merge that brings #0 under an unjudged trade halts
   audit_containment: write a `u` line (containment/decisions/S20426.txt) and wave_fix (R-121, wave 112).
+[L-377] pub:dark-horse pub:dc sig:split kind:collected-line
+- SUPERSEDES L-373's first sentence (lead ruling 2026-09-24): a split-lane join FROM a one-file shelf is NOT impossible.
+  Since 9f2bfea5 (09-23 07:56) check_splits lets a shelf EMPTY when every item it gives up lands on a live shelf its
+  `join` names (P-010's S14555 emptied that way). So two cv=- shelves that share only a GCD line meet by an ORDINARY P-
+  join (`F <sid> split-needed | items -> join S<survivor>`), never a lead-lane hand merge and never a forced inert
+  merge-with. After the join, restate the survivor as S68154 / S15358 are: cv empty, the GCD line as the leg, each book's
+  CV volume on its I line. The emptied shelf survives as an empty Series row until something prunes it. The Grandville,
+  Serenity, Don Rosa, EC Artists' Library, Monsters of Metal, Obscure Cities and S3615 -> S3613 cases are joins (P-046).
+[L-378] pub:gold-key-dell pub:marvel pub:idw sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-379] kind:foreign pub:delcourt pub:marvel
+- CORRECTS L-265 (lead ruling 2026-09-24): GCD 53252 is NOT an unrelated book — it is Marvel's 2009 Soleil-imprint English
+  floppy edition of Spin Angels albums 1-4. It is still the wrong leg for a seven-album shelf (four issues against seven
+  albums fails the ladder test): S24306 stores cv=90068 with the GCD leg empty (or the French Soleil original's GCD row if
+  lookup finds one) and names 53252 on an N line as the Marvel edition of albums 1-4.
+[L-380] pub:dark-horse kind:trade-only
+- Lead rulings 2026-09-24. EDITIONS OF ONE BOOK are item-level, one shelf: Fagin the Jew's 2013 Dark Horse reissue (S6390)
+  joins the 2003 first edition GCD indexes (S21684); the reissue's CV 71301 goes on its I line (like the EC Artists'
+  Library second rips). WEB SERIALIZATIONS a print record collects: Colonel Weird shorts (S104036, four files / 59 pp, a
+  partial rip of Lemire's 2022 Substack serialization) = the 2023 Dark Horse GN — S cv=148987 + merge-with=4038. But
+  MySpace Dark Horse Presents (S104039, 36 web issues) does NOT take the six-volume print record (CV 40417 / GCD 38394):
+  the ladder fails and no shelf stores that record — it stays its own shelf with no stored record, 40417 / 38394 on an
+  N line; print trades, if they ever arrive, get their own shelf on 40417.
+[L-381] pub:idw pub:dark-horse pub:gold-key-dell sig:split
+- REFINES L-378 (lead, wave 114): the "widest span" is measured on the SHELF'S OWN FILES, not the catalogue's issue count —
+  G.I. Joe ARAH S7094 stores IDW's CV 32910 / GCD 51579 because none of our issue files are Marvel-era, although Marvel's
+  record is 155 issues against IDW's 146. GCD can keep a reissue as its own "[Second Edition]" series (Fagin the Jew
+  98084 = the 2013 Dark Horse edition, beside the 2003 first edition 40684): check before calling two editions GCD-shared;
+  the join still stands (editions are item-level, L-380). A split key whose current spelling reaches the parent only
+  through a SeriesKeyLink cv (TMNT Color Classics Micro Series -> CV 48762) needs a NEW TITLE per record, not just a year
+  (P-046). A GN merged onto its web-serialized shorts (Colonel Weird S104036 -> S4038) nests them under an UNJUDGED span —
+  audit_containment halts; write a `u` line (containment/decisions/S4038.txt) and wave_fix (wave 114).

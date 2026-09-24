@@ -189,3 +189,7 @@
 WORKER_PROMPT_SPLITS.md tells multi-shelf batches to add one — fix one or the other. (b) `check_identity` FAILS two shelves
 sharing a GCD id unless a merge-with is declared, yet merges only land through a shared CV — the reader is forced to write an
 inert merge-with (Grandville 7836->7834, Don Rosa 21191->68154); same root as TODO 42.
+**(b) RESTATED 2026-09-24 (lead, L-377):** a shared GCD with no shared ComicVine id REQUIRES a split-lane `join` or a
+`pending_join` naming the partner, NEVER a forced merge-with — check_identity must accept that and stop demanding the merge-with.
+The split lane can empty a one-file shelf onto a live join target (check_splits, since 9f2bfea5), so L-373's "lead lane" was never needed.
+**DONE 2026-09-24 (42 + 44b):** check_identity accepts a shared gcd when every shelf of the group joins, or is joined by, another member through `F <sid> split-needed | … join S<member>`.

@@ -42,7 +42,9 @@ shelf from it. Your answer is exactly that list. Each packet shows:
 
 - One `shelf` line for EVERY shelf in the `.ids`. `split: false` (with a why) when the flag was wrong or the
   shelf is one dominant run with residue — then no item line for it.
-- One item line per item that MOVES. The largest run STAYS and is not written. A shelf never empties.
+- One item line per item that MOVES. The largest run STAYS and is not written. A shelf never empties — EXCEPT
+  by joins: a shelf may give up every item when each one lands on a live shelf its `"join"` names (L-377; this is
+  how two cv=- shelves sharing only a GCD line meet — never a forced merge-with, never a "lead-lane" hand merge).
 - One key per new run, spelled identically on every line: `<Title> v<N> (<Year>)` or `<Title> (<Year>)`. A
   one-shot or special takes its OWN name — `Aquaman Secret Files & Origins 2003 (2003)`, `Uncanny X-Men Special
   (2014)` — never the parent's key with `#0`. Never an existing shelf's key unless the F line names that shelf

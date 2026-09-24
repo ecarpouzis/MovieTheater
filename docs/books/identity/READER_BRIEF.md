@@ -167,7 +167,7 @@ F 16797 misfiled | items 82880-82882 ("11 Starlord 1.cbr" … 36-37pp) sit under
 - **A STALE open conflated/overlap flag (TODO 37):** write the `S` plus `F <sid> stale-flag=<id> | what the files
   show` per open flag (`#id` on `flags:`, ≥ 40 chars) — not R + F. The lead approves; the landing dismisses it.
 - **`merge-with` merges only via a SHARED cv**: a `cv=-` target never merges (wave 21: S10690 → S98212) — give
-  both S lines the same cv, or say why not.
+  both S lines the same cv, or say why not. GCD-only pairs meet by a split-lane join (L-377).
 - RESIDUE, defined (lead ruling after Secret Six S15276): a duplicate rip, an annual, a one-shot, a single misfiled
   book, or ONE trade of a run that lives on another shelf. Two or more whole trades of a DIFFERENT run with its own
   record are a co-equal run — `R` + split-needed even at 6:2 — and the shelf's overlap flag is NOT stale.
