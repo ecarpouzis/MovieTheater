@@ -1,0 +1,880 @@
+## Conventions for this batch (29 shown of 135 matched; 372 in LEDGER.md; 50 shelf/shelves: pub:dark-horse ×50 · kind:collected-line ×28 · kind:trade-only ×24 · folder:vn-year ×6 · folder:sequel-subfolder ×5 · folder:bucket ×3 · pub:caliber ×3 · pub:idw ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-234] (39 shelf/shelves) pub:dark-horse pub:dynamite sig:stamp sig:trade-link
+- The count-1-trade / first-mini stored-link artefact runs at full strength on Dark Horse and Dynamite chains
+  (Ether 95727, Briggs Land 93181, Brain Boy 67220, Itty Bitty Hellboy 66787, Pathfinder 51262, Ash 68723): the FIRST
+  mini's volume stamped across the whole chain.
+[L-139] (34 shelf/shelves) pub:dark-horse pub:millarworld pub:small-press sig:round2 sig:stamp
+- A folder-wide CV stamp exists too: Space Goat's Evil Dead 2 programme (CV 20289 on 37 files) and Millarworld's Dark
+  Horse folder (CV 115757 on the sequel) stamp ONE wrong volume across a folder — the `round2-folder` shape on the CV side.
+[L-228] (33 shelf/shelves) pub:dark-horse pub:dynamite pub:zenescope sig:legacy-stamp sig:split
+- Franchise folders that are genuinely several runs → `R` + split-needed, not residue: James Bond (three ladders),
+  Charmed (reboot + two Zenescope seasons), Green Hornet (three eras), Savage Tales (three publishers on a bare
+  title), Terminator (1999 Dark Horse mini + 2024 Dynamite), Vampirella (ongoing + "Year One"), Kirby: Genesis
+  (main + Dragonsbane), Tomb Raider (two same-numbered relaunches).
+[L-020] (28 shelf/shelves) kind:archive kind:collected-line pub:dark-horse
+- Reprint LIBRARY / omnibus lines over a run split across publishers (Fear Agent Final Edition, Kabuki Library,
+  Madman Library) have no single run record → the collected line at 0.9 with an `N` naming the underlying run.
+[L-188] (28 shelf/shelves) kind:collected-line kind:trade-only pub:berger pub:boom pub:dark-horse sig:trade-link
+- The matches-our-holdings collected-edition trap dominates Boom! / Berger Books trade-only shelves: a stored or
+  per-file count-N pick where N equals OUR trade count is almost always the trade record; the run's true (larger)
+  count is usually one candidate away.
+[L-219] (28 shelf/shelves) kind:collected-line pass:item pass:revisit pub:dark-horse sig:barcode sig:stale-flag sig:trade-link
+- A shelf holding ONE TRADE PER MINI of a chain (Blue Book "1961" / "1947", Brain Boy / The Men from G.E.S.T.A.L.T.,
+  Briggs Land / Lone Wolves, Vox Machina Origins I / II, Baltimore's minis + its #1-40 trade line) is SEVERAL runs
+  numbering from #1 — its conflated flag is TRUE of the shelf, never stale; `R` + split unless a provider holds a
+  collected LINE record coextensive with the shelf (then S the line, minis on `N`). Sonnet called 7 of these stale in
+  C-021; the lead sent them to R-020. **ERIC'S RULING 2026-09-16: ONE leg's coextensive line record is enough** —
+  the S carries that line at 0.9 (`cv=-` when ComicVine has no line volume), each book's own ComicVine count-1
+  volume / issue id, ISBN and LOCG bridge go on its `I` line, the minis underneath are named on `N` lines, and the
+  flag is declared stale so the lead can dismiss it. Refusing such a shelf recorded nothing; the correct data is the
+  line PLUS the per-book records. A shelf holding ISSUE files of several minis (Baltimore, Lobster Johnson) or
+  several publishers' runs (Angel) is still `R` + split — no single record describes it.
+[L-233] (28 shelf/shelves) kind:collected-line pass:item pass:revisit pub:dark-horse sig:trade-link
+- ComicVine does NOT index Dark Horse TRADE LINES: a plain "Hellboy" / "B.P.R.D." volume query returns nothing; CV
+  mints a count-1 volume per BOOK while GCD keeps one collected series per title (R-021: six of seven shelves).
+  RULED by Eric 2026-09-16 (see the chain-of-minis ruling above): the GCD line alone is the identity at 0.9, CV's
+  per-book volumes go on the `I` lines. R-020..R-022's one-leg refusals were flipped to S by the R-023 pass.
+[L-243] (28 shelf/shelves) kind:collected-line pass:item pass:revisit pub:dark-horse pub:dynamite sig:trade-link
+- Under the one-leg ruling every Dark Horse / Dynamite chain-of-minis shelf in R-020..R-022 became `S cv=- gcd=<line>
+  0.9` + `F wrong-cv-link` (the stored id was the FIRST mini's run in every case) + minis on N + a `C` per trade —
+  except the issue-file chains (Baltimore, Lobster Johnson), the several-publisher shelf (Angel), a shelf mixing one
+  season's issues with another's books (Angel & Faith), and Ash (three count-1 records, no line on either leg).
+[L-023] (24 shelf/shelves) kind:trade-only pub:dark-horse pub:dynamite sig:trade-link
+- 23 stored CV links in three batches pointed at the TPB record (count = the books we hold) instead of the run
+  — heavy on trade-only Dark Horse / Dynamite shelves. Expect it; `F wrong-cv-link`, `S` = the run.
+[L-029] (24 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
+- On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
+  collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
+[L-291] (29 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-135] (28 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-164] (28 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (28 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-244] (28 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (28 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (28 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+[L-248] (28 shelf/shelves) kind:collected-line
+- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
+  the sibling's landed S is evidence for the weak per-file matches on the others.
+[L-251] (28 shelf/shelves) kind:collected-line
+- Deluxe / Yearbook / Omnibus editions of the shelf's own ongoing with NO judged range get an `N` naming the
+  relationship, never an invented `C` range (the range is containment's to read).
+[L-258] (28 shelf/shelves) kind:collected-line sig:stamp
+- A degenerate packet block can stamp ONE GCD issue id onto every book of a shelf (Green Arrow S97350, six eras of
+  collected lines) — resolve only by each series' full issue list matched by title, never by the stamp.
+[L-269] (28 shelf/shelves) kind:collected-line kind:trade-only
+- An omnibus bundling several minis gets one `C` per mini at that mini's full range; an anthology TPB ("… and
+  Others") is not a numbered run and gets an `N`, not a forced `C`.
+[L-275] (28 shelf/shelves) kind:collected-line pass:item sig:probe sig:trade-link
+- A count-1/2/3 trade record the shelf's `N` called absent is often in the catalogs under a spelling the packet
+  never probed ("The Adventures of …", "Complete Collection", "Deluxe") — probe before writing no-record.
+[L-279] (28 shelf/shelves) kind:collected-line
+- Blade of the Immortal (S23118) is the canonical "line + run" shape: GCD's 31 collected-edition rows are the `I`
+  identities (cv=- — ComicVine mints only the floppy volume), and the floppy run CV 9069 is what every `C` names,
+  ranges #0-206 ascending across the 31 books. A single-leg shelf's books inherit the shelf's 0.9, never more.
+[L-282] (28 shelf/shelves) kind:collected-line
+- A `gcd=-` / dump-only shelf's books inherit the shelf's 0.9 (Cells at Work! Lady, Dragon Head); an exact edition
+  can exist on GCD alone and be absent from ComicVine entirely (Cat Shit One Omnibus GCD 186621 → 0.9, cv=-).
+[L-285] (28 shelf/shelves) kind:collected-line pass:item sig:stamp
+- ITEM PASS (X-031..X-033): JoJo's Bizarre Adventure part-shelves are double-stamped — per-file CV is the whole-saga
+  hardcover omnibus volume (165667, one issue per PART) and per-file GCD the umbrella whole-saga series (27115) by
+  raw issue number; both wrong for all 37 books. Parts 1-3 have no CV softcover record (cv=-); Parts 4-5 do.
+[L-286] (28 shelf/shelves) kind:collected-line sig:probe
+- A shelf-level "no record" `N` can be wrong for an English product too (Innocent Omnibus: CV 157999 / GCD 206125
+  under "Innocent Omnibus") — probe the edition's own name before inheriting the shelf's gap.
+[L-287] (28 shelf/shelves) kind:collected-line pass:item
+- A series can be wrong on BOTH legs at once (Hunter x Hunter, Inuyashiki, Kakegurui Twin): the header pool by
+  ordinal is the only source; an omnibus with no dedicated record on either leg is `N no-record`, never a mapping.
+[L-289] (28 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-309] (28 shelf/shelves) kind:collected-line pass:item sig:probe
+- A collected line's own issue rows carry the trade's SUBTITLE as the issue title, so once one book of a line is
+  identified, `--issues <volume>` or `gcd_issue WHERE series_id=?` resolves the whole Vol. 01-N run in one query —
+  "own container id not probed" is never a valid no-record.
+
++106 more matched entries not shown: L-314, L-030, L-151, L-160, L-193, L-014, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-113, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-123, L-065, L-085, L-099, L-194, L-230, L-236, L-262, L-330, L-064, L-101, L-310, L-060, L-016, L-032, L-114, L-191, L-112, L-361, L-124, L-281, L-087, L-272, L-321, L-349, L-290, L-092, L-235, L-268, L-328, L-343, L-007, L-175, L-217, L-223, L-302, L-041, L-150, L-192, L-097, L-252, L-274, L-288, L-293, L-352, L-354, L-026, L-033, L-046, L-047, L-051, L-055, L-069, L-086, L-090, L-130, L-140, L-142, L-148, L-152, L-158, L-168, L-174, L-238, L-242, L-271, L-297, L-299, L-340, L-350, L-359, L-054, L-128, L-181, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S1373 Assassin's Creed: Brahman  [tier B]   keys: Assassin's Creed - Brahman  years 2014-2014  2 files / 1 collections
+   folders: [1] Dark Horse\Assassin's Creed (2020) · [1] Misc\Assassin's Creed
+   files:   [14278] COL Assassin's Creed - Brahman (2013) (F) (PirateArchangel-Empire).cbr (114pp) | [104886] Assassin's Creed - Brahman  (Digital) (2014)(Pirate-Empire).cbr (114pp)
+   CV linked:      vol 71344 "Assassin's Creed: Brahman" 2014 Ubisoft Entertainment 1 issues issue 444067; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 108433 "Assassin's Creed" 2016 Splitter 3 s74 · 39500 "Assassin's Creed" 2012 Ubisoft Entertainment 1 issue 266849 s73 · 38239 "Assassin's Creed" 2008 Ubisoft Entertainment 1 issue 255947 s71 · 53747 "Assassin's Creed" 2012 Titan Comics 6 s68 · 39380 "Assassin's Creed" 2009 Les Deux Royaumes 6 s67 · 94845 "Assassin's Creed" 2011 Splitter 6 s67   (v1 search)
+   CV local rip:   (= linked) · 85264 "Assassin's Creed" 2015 Titan Comics 14 (via CV candidate name "Assassin's Creed") · 39500 "Assassin's Creed" 2012 Ubisoft Entertainment 1 issue 266849 (via CV candidate name "Assassin's Creed") · 53747 "Assassin's Creed" 2012 Titan Comics 6 (via CV candidate name "Assassin's Creed") · 108433 "Assassin's Creed" 2016 Splitter 3 (via CV candidate name "Assassin's Creed") · 94845 "Assassin's Creed" 2011 Splitter 6 (via CV candidate name "Assassin's Creed")   (rip lookup)
+   GCD dump:       197417 "Assassin's Creed Brahman" [en-ca] 2013-2013 Ubi Workshop [] 1 · 210055 "Assassin's Creed - Brahman" [fr] 2023-2023 Black River [] 1 · 93185 "Assassin's Creed" [en-gb] 2015-2017 Titan [] 14 (via CV candidate name "Assassin's Creed") · 169771 "Assassin's Creed" [pt-br] 2013-2014 Record [] 2 (via CV candidate name "Assassin's Creed") · 69151 "Assassin's Creed" [nl] 2012-2014 Dark Dragon Books [] 6 (via CV candidate name "Assassin's Creed") · 104185 "Assassin's Creed" [es-mx] 2016-2017 Editorial Panini México [] 9 (via CV candidate name "Assassin's Creed")   (dump lookup)
+
+== S103054 Assassin's Creed: Bloodstone (2020)  [tier B]   keys: Assassin's Creed: Bloodstone (2020)  years 2021-2021  1 files / 1 collections
+   folders: [1] Dark Horse\Assassin's Creed (2020)
+   files:   [14277] COL Assassin's Creed - Bloodstone - The Complete Collection (2021) (digital) (The Magicians-Empire).cbr (98pp)
+   ours:    ComicInfo Series: "Assassin's Creed: Bloodstone Collection"x1; ComicInfo Publisher: "Titan"x1
+   CV linked:      vol 125151 "Assassin's Creed: Bloodstone" 2020 Titan Comics 2 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV per-file (v1): vol 85264 "Assassin's Creed" 2015 Titan Comics 14 on 1/1 files
+   CV local rip:   (= linked) · 155990 "Assassin's Creed: Bloodstone" 2020 Splitter 1 issue 1039687 (via our own name without the filing suffix "Assassin's Creed: Bloodstone") · 108433 "Assassin's Creed" 2016 Splitter 3 (via CV name "Assassin's Creed") · 39500 "Assassin's Creed" 2012 Ubisoft Entertainment 1 issue 266849 (via CV name "Assassin's Creed") · 53747 "Assassin's Creed" 2012 Titan Comics 6 (via CV name "Assassin's Creed")   (rip lookup)
+   GCD dump:       156309 "Assassin's Creed: Bloodstone" [en-gb] 2020-2020 Titan [] 2 (via our own name without the filing suffix "Assassin's Creed: Bloodstone") · 166449 "Assassin's Creed - Bloodstone" [de] 2020-2020 Splitter Verlag [] 1 (via our own name without the filing suffix "Assassin's Creed: Bloodstone") · 200033 "Assassin's Creed - Bloodstone" [fr] 2019-2019 Les Deux Royaumes [] 2 (via our own name without the filing suffix "Assassin's Creed: Bloodstone") · 173471 "Assassin's Creed" [es-mx] 2017-2017 Editorial Panini México [] 6 (via CV name "Assassin's Creed") · 104185 "Assassin's Creed" [es-mx] 2016-2017 Editorial Panini México [] 9 (via CV name "Assassin's Creed") · 108651 "Assassin's Creed" [de] 2016-2018 Splitter Verlag [] 3 (via CV name "Assassin's Creed")   (dump lookup)
+
+== S1712 Aztec Ace  [tier B]   keys: Aztec Ace  years 1984-1984  1 files / 1 collections
+   folders: [1] Dark Horse\Aztec Ace - The Complete Collection (2022)
+   files:   [14284] COL Aztec Ace - The Complete Collection (2022) (digital) (Son of Ultron-Empire).cbr (477pp)
+   ours:    judged item 14284 #1-15 conf 0.8
+   GCD says: [14284] gcd_reprint 2426735: s2917 Aztec Ace (1984) #1-15 [36 stories] · s106484 David Anthony Kraft's Comics Interview (1983) #10 [1 story] · s3701 Total Eclipse (1988) #2 [1 story]
+   CV linked:      vol 3388 "Aztec Ace" 1984 Eclipse 15 issues; cached #1-15 (15); yearΔ 0; ratio 0/15; 1 of 1 judged fit
+   CV per-file (v1): vol 145481 "Aztec Ace: The Complete Collection" 2022 Dark Horse Comics 1 issue 950476 on 1/1 files
+   CV candidates:  (= linked) · 49682 "Dark Horse New Recruits" 2005 Dark Horse Comics 1 issue 340614 s37 · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 s35 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s22 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s22 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics 3 s20 · 49628 "Dark Horse Presenta" 2000 Norma Editorial 1 issue 339964 s20   (v1 search)
+   CV local rip:   (= linked) · 49682 "Dark Horse New Recruits" 2005 Dark Horse Comics 1 issue 340614 (via CV candidate name "Dark Horse New Recruits")   (rip lookup)
+   GCD dump:       2917 "Aztec Ace" 1984-1985 Eclipse [] 15 · 188480 "Aztec Ace: The Complete Collection" 2022-2022 Dark Horse [] 1 (via CV name "Aztec Ace: The Complete Collection") · 32958 "Dark Horse New Recruits" 2005-2005 Dark Horse [] 1 (via CV candidate name "Dark Horse New Recruits")   (dump lookup)
+
+== S18106 The Black Beetle  [tier C] · ratio 0.20  keys: The Black Beetle  years 2012-2012  1 files / 0 collections
+   folders: [1] Dark Horse\Black Beetle
+   files:   [12421] The Black Beetle 000 - Night Shift (2012) (digital) (Son of Ultron-Empire).cbr (30pp)
+   ours:    ladder 0
+   CV linked:      vol 54853 "The Black Beetle" 2012 Dark Horse Comics 5 issues; cached #0-4 (5); yearΔ 0; ratio 1/5 = 0.20; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 s30 · 49682 "Dark Horse New Recruits" 2005 Dark Horse Comics 1 issue 340614 s30 · 142472 "Dark Horse Legend Ashcan" 1996 Dark Horse Comics 1 issue 938079 s30 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s18 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s18 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics 3 s18   (v1 search)
+   CV local rip:   (= linked) · 49682 "Dark Horse New Recruits" 2005 Dark Horse Comics 1 issue 340614 (via CV candidate name "Dark Horse New Recruits") · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 (via CV candidate name "Dark Horse Maverick 2000")   (rip lookup)
+   GCD dump:       71160 "The Black Beetle" 2013-2013 Dark Horse [] 4 · 77103 "The Black Beetle" 2013-2013 Dark Horse [] 1 · 161396 "The Black Beetle" [fr] 2014-2014 Urban Comics [] 1 · 32958 "Dark Horse New Recruits" 2005-2005 Dark Horse [] 1 (via CV candidate name "Dark Horse New Recruits") · 14822 "Dark Horse Maverick 2000" 2000-2000 Dark Horse [] 1 (via CV candidate name "Dark Horse Maverick 2000")   (dump lookup)
+
+== S64298 Black Hammer  [tier C] · 3 number(s) x2+, 21 parsed key(s), ratio 0.54  keys: Black Hammer | Black Hammer '45 | Black Hammer (2016) | Black Hammer - Age of Doom Part I (2016) | Black Hammer - Colonel Weird and Little Andromeda Short (2016) | Black Hammer - Madame Dragonfly - Betwixt, Between | Black Hammer - Reborn Part I (2016) | Black Hammer - Reborn Part II (2016) | Black Hammer - Reborn Part III (2016) | Black Hammer - Secret Origins (2016) | Black Hammer - Streets of Spiral | Black Hammer - The End (2016) | Black Hammer - The Event (2016) | Black Hammer - Visions (2016) | Black Hammer Visions - Roberston and Henderson | Black Hammer/Justice League: Hammer of Justice! | The Last Days of Black Hammer | The World of Black Hammer | The World of Black Hammer (2016) | The World of Black Hammer Encyclopedia | World of Black Hammer Omnibus  years 2016-2025  38 files / 28 collections
+   folders: [8] Dark Horse\Black Hammer (2016)\_Library Editions · [7] Dark Horse\Black Hammer (2016)\_Omnibus Editions · [5] Dark Horse\Black Hammer (2016)\15 Black Hammer - Substack Shorts (2022) · [3] Dark Horse\Black Hammer (2016)\12 Black Hammer Reborn (2021) · [3] Dark Horse\Black Hammer (2016)\18 Black Hammer - Spiral City (2024) · [2] Dark Horse\Black Hammer (2016)\00 Annuals and Specials · [2] Dark Horse\Black Hammer (2016)\01 Black Hammer v1 (2016) · [2] Dark Horse\Black Hammer (2016)\11 Black Hammer - Visions (2021) · [1] Dark Horse\Black Hammer (2016)\04 Black Hammer v2 - Age of Doom (2018) · [1] Dark Horse\Black Hammer (2016)\06 Black Hammer '45 v1 (2019) · [1] Dark Horse\Black Hammer (2016)\07 Black Hammer - Justice League - Hammer of Justice! (2019) · [1] Dark Horse\Black Hammer (2016)\14 Last Days of Black Hammer (Substack) · [1] Dark Horse\Black Hammer (2016)\16 Black Hammer Visions Shorts (2022) · [1] Dark Horse\Black Hammer (2016)\17 Black Hammer - The End (2023)
+   files:   [14786] COL Black Hammer - Streets of Spiral (2019) (digital) (Son of Ultron II-Empire).cbr (123pp)
+            [14788] The World of Black Hammer Encyclopedia (2019) (digital) (F) (Son of Ultron-Empire).cbr (34pp)
+            [14789] COL Black Hammer v01 - Secret Origins (2017) (digital) (Son of Ultron II-Empire).cbr (184pp)
+            [14790] COL Black Hammer v02 - The Event (2017) (digital) (Son of Ultron II-Empire).cbr (171pp)
+            [14791] COL Black Hammer v03 - Age of Doom Part I (2019) (digital) (Son of Ultron II-Empire).cbr (132pp) | [15959] COL Black Hammer '45 (2019) (digital) (Son of Ultron-Empire).cbr (120pp)
+            [15960] COL Black Hammer - Justice League - Hammer of Justice! (2020) (digital) (Son of Ultron-Empire).cbr (160pp)
+            [14793] COL Black Hammer - Visions v01 (2021) (digital) (Son of Ultron II-Empire).cbr (130pp)
+            [14794] COL Black Hammer - Visions v02 (2022) (digital) (Son of Ultron II-Empire).cbr (117pp)
+            [14795] COL Black Hammer v05 - Reborn Part I (2022) (digital) (Son of Ultron II-Empire).cbr (111pp)
+            [14796] COL Black Hammer v06 - Reborn Part II (2022) (digital) (Son of Ultron II-Empire).cbr (98pp)
+            [14797] COL Black Hammer v07 - Reborn Part III (2022) (digital) (Son of Ultron II-Empire).cbr (113pp)
+            [15964] COL The Last Days of Black Hammer (2023) (digital) (Son of Ultron II-Empire).cbr (131pp)
+            [14798] Black Hammer - Colonel Weird & Little Andromeda Short 001 (2022) (Substack Short) (digital) (JeffAlbertson-DCP).cbz (33pp)
+            [14799] Black Hammer - Colonel Weird & Little Andromeda Short 002 (2022) (Substack Short) (digital) (JeffAlbertson-DCP).cbz (12pp)
+            [14800] Black Hammer - Colonel Weird & Little Andromeda Short 003 (2022) (Substack Short) (digital) (JeffAlbertson-DCP).cbz (12pp)
+            [14801] Black Hammer - Colonel Weird & Little Andromeda Short 004 (2022) (Substack Short) (digital) (JeffAlbertson-DCP).cbz (2pp)
+            [14802] Black Hammer - Madame Dragonfly - Betwixt, Between (2022) (Substack Short) (digital) (JeffAlbertson-DCP).cbz (11pp)
+            [15965] Black Hammer Visions - Roberston and Henderson (2022) (Substack Short) (digital) (JeffAlbertson-DCP).cbz (13pp)
+            [15966] COL Black Hammer v08 - The End (2024) (digital) (Son of Ultron II-Empire).cbr (162pp) | [14804] Black Hammer - Spiral City 001 (2024) (digital) (Son of Ultron-Empire).cbr (27pp)
+            [14805] Black Hammer - Spiral City 002 (2024) (digital) (Son of Ultron-Empire).cbr (27pp) | [14806] Black Hammer - Spiral City 003 (2025) (digital) (Son of Ultron-Empire).cbr (27pp)
+            [14807] COL 01 Black Hammer Library Edition Book 01 (2018) (digital) (Son of Ultron-Empire).cbr (406pp)
+            [14808] COL 02 The World of Black Hammer Library Edition Book 01 (2020) (digital) (Son of Ultron-Empire).cbr (218pp)
+            [14809] COL 03 Black Hammer Library Edition Book 02 (2020) (digital) (Son of Ultron-Empire).cbr (374pp)
+            [14810] COL 04 The World of Black Hammer Library Edition Book 02 (2020) (digital) (Son of Ultron-Empire).cbr (285pp)
+            [14811] COL 05 The World of Black Hammer Library Edition Book 03 (2021) (digital) (Son of Ultron-Empire).cbr (246pp)
+            [14812] COL 06 The World of Black Hammer Library Edition Book 04 (2022) (digital) (Son of Ultron-Empire).cbr (289pp)
+            [14813] COL 07 The World of Black Hammer Library Edition Book 05 (2023) (digital) (Son of Ultron-Empire).cbr (229pp)
+            [14814] COL 08 Black Hammer Library Edition Book 03 (2023) (digital) (Son of Ultron-Empire).cbr (307pp)
+            [14815] COL Black Hammer Omnibus Book 01 (2022) (digital) (Son of Ultron-Empire).cbr (404pp) | [14816] COL Black Hammer Omnibus Book 02 (2023) (digital) (Son of Ultron-Empire).cbr (375pp)
+            [14817] COL Black Hammer Omnibus v03 (2024) (digital) (Son of Ultron-Empire).cbr (308pp)
+            [14818] COL The World of Black Hammer Omnibus Book 01 (2023) (digital) (F) (Son of Ultron-Empire).cbr (215pp)
+            [14819] COL The World of Black Hammer Omnibus Book 02 (2023) (digital) (Son of Ultron-Empire).cbr (284pp)
+            [14820] COL The World of Black Hammer Omnibus Book 03 (2024) (digital) (Son of Ultron-Empire).cbr (246pp)
+            [14821] COL The World of Black Hammer Omnibus v04 (2024) (digital) (Son of Ultron-Empire).cbr (274pp)
+   ours:    ladder 1-4; 3 number(s) name more than one file: 1, 2, 3; ComicInfo Series: "The World of Black Hammer Library Edition"x4, "Black Hammer Library Edition"x3, "The World of Black Hammer Encyclopedia"x1, "Black Hammer Omnibus"x1; ComicInfo Publisher: "Dark Horse"x12
+   GCD says: [14786] gcd_reprint 2022052: s156116 The World of Black Hammer Encyclopedia (2019) (unnumbered) [36 stories] · s135569 Black Hammer: Cthu-Louise (2018) (unnumbered) [3 stories] · s111467 Black Hammer Giant-Sized Annual (2017) (unnumbered) [2 stories] · s144881 Free Comic Book Day 2019: General (2019) (unnumbered) [1 story]
+   CV linked:      vol 92354 "Black Hammer" 2016 Dark Horse Comics 13 issues; cached #1-13 (13); yearΔ 0; ratio 7/13 = 0.54; no judged range
+   CV per-file (v1): vol 92354 "Black Hammer" 2016 Dark Horse Comics 13 on 19/38 files · vol 161043 "Black Hammer: Spiral City" 2024 Dark Horse Comics 7 on 3/38 files
+   CV candidates:  (= linked) · 151233 "Black Hammer" ? Marmara Çizgi 2 s78 · 147808 "Dragonfly" 2015 Tyrannosaurus Books 1 issue 967429 s67 · 121867 "Black Hammer '45" 2019 Dark Horse Comics 1 issue 721714 s65 · 121557 "Black Hammer: Streets of Spiral" 2019 Dark Horse Comics 1 issue 720080 s65 · 125991 "Black Hammer/Justice League: Hammer of Justice!" 2020 Dark Horse Comics 1 issue 743360 s65 · 135820 "Hammer" 2014 Arnoldo Mondadori Editore 2 s60   (v1 search)
+   CV local rip:   (= linked) · 146625 "Black Hammer" 2017 Astiberri Ediciones 7 · 114167 "Black Hammer" 2018 Splitter 8 · 151233 "Black Hammer" ? Marmara Çizgi 2 · 117437 "Black Hammer '45" 2019 Dark Horse Comics 4 · 120037 "The World of Black Hammer Encyclopedia" 2019 Dark Horse Comics 1 issue 712978   (rip lookup)
+   GCD per-file:   methods round2-seriesx4 ⚠ · numx3  (⚠ copies a folder neighbour's series — verify); series 217537 "Black Hammer: Spiral City" 2024-2025 Dark Horse [limited series] 7 on 7/38 files
+   GCD dump:       104428 "Black Hammer" 2016-2017 Dark Horse [] 13 · 112945 "Black Hammer" 2017-? Dark Horse [] 9 · 161397 "Black Hammer" [fr] 2017-2019 Urban Comics [] 4 · 122966 "Black Hammer" [de] 2018-? Splitter Verlag [] 8 · 192037 "Black Hammer" [pt-br] 2018-? Intrínseca [] 4 · 147931 "Black Hammer" [pt] 2019-? Levoir [] 2   (dump lookup)
+
+== S1002 Angel  [tier A]   keys: Angel  years 2009-2011  27 files / 0 collections
+   folders: [27] Dark Horse\Buffy the Vampire Slayer (2006)\Angel (1999)\Angel (2009)
+   files:   [13050] Angel 018 (2009) (digital) (Son of Ultron-Empire).cbr (27pp) | [13051] Angel 019 (2009) (digital) (F) (Son of Ultron-Empire).cbr (26pp)
+            Angel 020 (2009) (digital) (Son of Ultron-Empire).cbr … Angel 040 (2010) (digital) (Son of Ultron-Empire).cbr  (21 files, pp 25-36)
+            [13073] Angel 041 (2011) (digital) (Son Of Ultron-Empire).cbr (25pp) | [13074] Angel 042 (2011) (digital) (Son Of Ultron-Empire).cbr (26pp)
+            [13075] Angel 043 (2011) (digital) (Son Of Ultron-Empire).cbr (26pp) | [13076] Angel 044 (2011) (digital) (Son Of Ultron-Empire).cbr (25pp)
+   ours:    ladder 18-44
+   CV linked:      vol 19692 "Angel" 2007 IDW Publishing 44 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); cached #1-44 (43); yearΔ 0; ratio 27/? = 1.00; no judged range; v1 per-file: same volume on 27/27 files
+   CV candidates:  57366 "The Art of Boom! Studios" 2010 Boom! Studios ? s0 · 90245 "BOOM! Studios 2016 Summer Blast" 2016 Boom! Studios ? s0 · 101256 "BOOM! Studios 2017 Summer Blast" 2017 Boom! Studios ? s0 · 51169 "Boom Boom" 1994 Mu Press ? s0 · 71540 "Boom!" 2014 Lucha Comics ? s0 · 77851 "Boom! Studios Halloween Fright Fest Mini-Comic" 2014 Boom! Studios ? s0   (v1 search)
+   CV local rip:   (= linked) · 140575 "Angel" 2008 Dargaud 2 · 86605 "Angel" 2015 Titan Comics 2 · 36748 "Angel" 2001 Dark Horse Comics 4 · 6695 "Angel" 1999 Dark Horse Comics 17 · 118417 "Angel" 2019 Boom! Studios 9   (rip lookup)
+   GCD per-file:   series 41648 "Angel" 2009-2011 IDW [was ongoing series] 27 on 27/27 files; methods numx27
+   GCD dump:       (= per-file) · 76673 "Angel" 2009-2010 IDW [] 2 · 102388 "Angel" [de] 2009-2012 Panini Deutschland [] 8 · 217263 "Angel" [fr] 2008-2008 Dargaud [] 2 · 218163 "Angel" 2010-2011 IDW [] 3 · 131628 "Angel" [fr] 2007-2008 Dargaud [] 2   (dump lookup)
+   bridges:        gcd 41648 -> LOCG 100531 "Angel" support 27
+
+== S1028 Angel: After the Fall  [tier A]   keys: Angel: After The Fall | Angel: After the Fall  years 2008-2011  11 files / 11 collections
+   flags: #155 label-ambiguous [Pending] item 30289 — every volume is held twice (13083/30289, 13084/30290, 13085/30291, 13086/30292, 13087/3029
+   folders: [6] Dark Horse\Buffy the Vampire Slayer (2006)\Angel (1999)\Angel - After the Fall (2007) · [5] IDW\Angel
+   files:   [13085] COL Angel - After the Fall Vol. 03 (2009) (Digital-HD) (Kileko-Empire).cbz (129pp) | [13086] COL Angel - After the Fall Vol. 04 (2009) (Digital-HD) (Kileko-Empire).cbz (147pp)
+            [13087] COL Angel - After the Fall Vol. 05 (2009) (Digital-HD) (Kileko-Empire).cbz (138pp) | [13088] COL Angel - After the Fall Vol. 06 (2010) (Digital-HD) (Kileko-Empire).cbz (189pp)
+            [13083] COL Angel - After the Fall v01 (2008) (Digital-HD) (Kileko-Empire).cbz (190pp) | [13084] COL Angel - After the Fall v02 (2008) (Digital-HD) (Kileko-Empire).cbz (98pp)
+            [30289] COL 01 Angel - After the Fall Vol. 01 (2008) (Digital-HD) (Kileko-Empire).cbz (190pp)
+            [30290] COL 02 Angel - After the Fall Vol. 02 - First Night (2008) (Digital-HD) (Kileko-Empire).cbz (98pp)
+            [30291] COL 03 Angel - After the Fall Vol. 03 (2009) (Digital-HD) (Kileko-Empire).cbz (129pp) | [30293] COL 05 Angel Vol. 05 - Aftermath (2009) (Digital-HD) (Kileko-Empire).cbz (138pp)
+            [30294] COL 06 Angel Vol. 06 - Last Angel in Hell (2010) (Digital-HD) (Kileko-Empire).cbz (189pp)
+   ours:    ComicInfo Series: "Angel: After the Fall"x9, "Angel: After The Fall"x2; ComicInfo Publisher: "IDW"x11
+   CV linked:      vol 30579 "Angel: After the Fall" 2008 IDW Publishing 4 issues; cached #1-4 (4); yearΔ 0; ratio 0/4; no judged range; v1 per-file: same volume on 7/11 files
+   CV candidates:  (= linked) · 63064 "IDW Publishing Scriptbooks: Angel" 2006 IDW Publishing 1 issue 409512 s50 · 30583 "Angel: After the Fall Cover Gallery" 2009 IDW Publishing 1 issue 188670 s41 · 54358 "Hundred Penny Press: Angel After the Fall" 2011 IDW Publishing 1 issue 370782 s40 · 109016 "Spike: After the Fall" 2009 IDW Publishing 1 issue 661512 s27 · 139211 "After the Fall" 2021 Magnetic Press 1 issue 886102 s23 · 138492 "After the Fall" 2021 Magnetic Press 3 s23   (v1 search)
+   CV local rip:   (= linked) · 30583 "Angel: After the Fall Cover Gallery" 2009 IDW Publishing 1 issue 188670 (via CV candidate name "Angel: After the Fall Cover Gallery") · 63064 "IDW Publishing Scriptbooks: Angel" 2006 IDW Publishing 1 issue 409512 (via CV candidate name "IDW Publishing Scriptbooks: Angel")   (rip lookup)
+   GCD per-file:   series 27635 "Angel: After the Fall" 2007-2009 IDW [Was Ongoing Series] 17 on 2/11 files; methods fulldump-rematchx2
+   GCD dump:       (= per-file) · 210766 "Angel: After the Fall" 2008-2009 IDW [] 4 · 218169 "Angel: After the Fall" 2009-2011 IDW [] 4 · 218162 "Angel: After the Fall Cover Gallery" 2009-2009 IDW [] 1 (via CV candidate name "Angel: After the Fall Cover Gallery")   (dump lookup)
+   bridges:        gcd 27635 -> LOCG 100531 "Angel" support 4
+
+== S3225 Buffy the Vampire Slayer: Tales of the Slayers  [tier B]   keys: Buffy the Vampire Slayer - Tales of the Slayers  years 2001-2001  1 files / 0 collections
+   folders: [1] Dark Horse\Buffy the Vampire Slayer (2006)\Buffy the Vampire Slayer (2006)\Buffy the Vampire Slayer - Tales
+   files:   [13110] Buffy the Vampire Slayer - Tales of the Slayers (2001) (digital) (Lynx-Empire).cbr (89pp)
+   CV linked:      vol 22356 "Buffy the Vampire Slayer: Tales of the Slayers" 2001 Dark Horse Comics 1 issues issue 134347; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV per-file (v1): vol 28241 "Buffy the Vampire Slayer: Tales of the Slayers" 2002 Dark Horse Comics 1 issue 173707 on 1/1 files
+   CV candidates:  (= linked) · 6239 "Buffy the Vampire Slayer" 1998 Dark Horse Comics 64 s80 · 38691 "Buffy the Vampire Slayer: Tales" 2011 Dark Horse Comics 1 issue 259533 s45 · 26610 "Buffy the Vampire Slayer: Tales of the Vampires" 2009 Dark Horse Comics 1 issue 159232 s41 · 114391 "Buffy the Vampire Slayer Omnibus: Tales" 2018 Dark Horse Comics 1 issue 688978 s26 · 142563 "Buffy the Vampire Slayer " 2020 Panini Verlag 6 s15 · 86286 "Buffy the Vampire Slayer: The Slayer Collection" 2015 Titan Comics 2 s3   (v1 search)
+   CV local rip:   (= linked) · 6239 "Buffy the Vampire Slayer" 1998 Dark Horse Comics 64 (via CV candidate name "Buffy the Vampire Slayer") · 28824 "Buffy the Vampire Slayer" 2007 Dark Horse Comics 8 (via CV candidate name "Buffy the Vampire Slayer") · 116678 "Buffy the Vampire Slayer" 2019 Boom! Studios 34 (via CV candidate name "Buffy the Vampire Slayer") · 142563 "Buffy the Vampire Slayer " 2020 Panini Verlag 6 (via CV candidate name "Buffy the Vampire Slayer")   (rip lookup)
+   GCD dump:       7859 "Buffy the Vampire Slayer: Tales of the Slayers" 2001-2001 Dark Horse [] 1 · 42386 "Buffy the Vampire Slayer: Tales of the Slayers" 2002-2002 Dark Horse [] 1 · 61727 "Buffy the Vampire Slayer" 1999-1999 Dark Horse; Wizard [] 1 (via CV candidate name "Buffy the Vampire Slayer") · 6061 "Buffy the Vampire Slayer" 1998-2003 Dark Horse [] 63 (via CV candidate name "Buffy the Vampire Slayer") · 94883 "Buffy the Vampire Slayer" [en-gb] 1998-? Titan [] 4 (via CV candidate name "Buffy the Vampire Slayer") · 31871 "Buffy the Vampire Slayer" 2007-2011 Dark Horse [] 8 (via CV candidate name "Buffy the Vampire Slayer")   (dump lookup)
+
+== S3748 Channel Zero  [tier B]   keys: Channel Zero  years 1998-2012  1 files / 1 collections
+   folders: [1] Dark Horse\Channel Zero (2000)
+   files:   [13886] COL Channel Zero - The Complete Collection (2012) (digital) (Son of Ultron-Empire).cbr (294pp)
+   GCD says: [13886] gcd_reprint 1689801: s6077 Channel Zero (1998) #1-5 [15 stories] · s95535 Channel Zero (2000) (unnumbered) [1 story] · s76666 Channel Zero: Jennie One (2003) (unnumbered) [1 story]
+   CV linked:      vol 6253 "Channel Zero" 1998 Image 6 issues; cached #0-5 (6); yearΔ 0; ratio 0/6; no judged range
+   CV per-file (v1): vol 33544 "Channel Zero" 2000 AiT/Planet Lar 1 issue 217664 on 1/1 files
+   CV candidates:  (= linked) · 49350 "Channel Zero: The Complete Collection" 2012 Dark Horse Comics 1 issue 337517 s47 · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 s45 · 31416 "Channel Zero: Jennie One" 2003 AiT/Planet Lar 1 issue 195725 s33 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s29 · 91633 "Dark Horse Insider" 1996 Dark Horse Comics 12 s26 · 56627 "Dark Horse Insider" 1992 Dark Horse Comics 48 s25   (v1 search)
+   CV local rip:   (= linked) · 49350 "Channel Zero: The Complete Collection" 2012 Dark Horse Comics 1 issue 337517 (via CV candidate name "Channel Zero: The Complete Collection")   (rip lookup)
+   GCD dump:       6077 "Channel Zero" 1998-1999 Image [] 6 · 76742 "Channel Zero" 1999-1999 Image [] 1 · 95535 "Channel Zero" 2000-2000 AiT/Planet Lar [] 1 · 113364 "Channel Zero: The Complete Collection" 2012-2012 Dark Horse [] 1 (via CV candidate name "Channel Zero: The Complete Collection")   (dump lookup)
+
+== S4346 Criminal Macabre Omnibus  [tier C] · gap 6  keys: Criminal Macabre  years 2005-2015  3 files / 3 collections
+   folders: [3] Dark Horse\Criminal Macabre
+   files:   [12911] COL Criminal Macabre Omnibus v01 (2011) (Digital) (Zone-Empire).cbr (381pp) | [12912] COL Criminal Macabre Omnibus v02 (2012) (Digital) (Zone-Empire).cbr (363pp)
+            [12913] COL Criminal Macabre Omnibus v03 (2015) (Digital) (Zone-Empire).cbr (369pp)
+   GCD says: [12912] gcd_reprint 1399985: s3301 Dark Horse Presents (1986) #102-105 [5 stories] · s42375 Criminal Macabre: Cell Block 666 (2008) #1-4 [5 stories] · s42377 Criminal Macabre: My Demon Baby (2007) #1-4 [5 stories] · s42378 Criminal Macabre: Two Red Eyes (2006) #1-4 [5 stories]
+   CV linked:      vol 46615 "Criminal Macabre Omnibus" 2011 Dark Horse Comics 3 issues; cached #1-3 (3); yearΔ 6; ratio 0/3; no judged range
+   CV per-file (v1): vol 132621 "Criminal Macabre" 2005 Infinity Verlag 1 issue 821445 on 3/3 files
+   CV candidates:  (= linked) · 76969 "Criminal Macabre: The Third Child" 2014 Dark Horse Comics 4 s87 · 19155 "Criminal Macabre: My Demon Baby" 2007 Dark Horse Comics 4 s87 · 22399 "Criminal Macabre: Cell Block 666" 2008 Dark Horse Comics 4 s87 · 67693 "Criminal Macabre: The Eyes of Frankenstein" 2013 Dark Horse Comics 4 s86 · 81475 "Criminal Macabre: The Third Child" 2015 Dark Horse Comics 1 issue 486692 s75 · 22400 "Criminal Macabre: Feat of Clay" 2006 Dark Horse Comics 1 issue 134576 s75   (v1 search)
+   CV local rip:   (= linked) · 19155 "Criminal Macabre: My Demon Baby" 2007 Dark Horse Comics 4 (via CV candidate name "Criminal Macabre: My Demon Baby") · 46618 "Criminal Macabre: My Demon Baby" 2008 Dark Horse Comics 1 issue 321775 (via CV candidate name "Criminal Macabre: My Demon Baby") · 76969 "Criminal Macabre: The Third Child" 2014 Dark Horse Comics 4 (via CV candidate name "Criminal Macabre: The Third Child") · 81475 "Criminal Macabre: The Third Child" 2015 Dark Horse Comics 1 issue 486692 (via CV candidate name "Criminal Macabre: The Third Child")   (rip lookup)
+   GCD dump:       90107 "Criminal Macabre Omnibus" 2011-2015 Dark Horse [] 3 · 32941 "Criminal Macabre" [de] 2005-2005 Infinity Verlag [] 1 · 138787 "Criminal Macabre" [fr] 2004-2004 Editions Carabas [] 1 · 42377 "Criminal Macabre: My Demon Baby" 2007-2008 Dark Horse [] 4 (via CV candidate name "Criminal Macabre: My Demon Baby") · 42770 "Criminal Macabre: My Demon Baby" 2008-2008 Dark Horse [] 1 (via CV candidate name "Criminal Macabre: My Demon Baby") · 82851 "Criminal Macabre: The Third Child" 2014-2014 Dark Horse [] 4 (via CV candidate name "Criminal Macabre: The Third Child")   (dump lookup)
+
+== S64506 Dark Horse Presents  [tier C] · 207 files  keys: Dark Horse Presents (1986) | Dark Horse Presents - Aliens | Dark Horse Presents Annual | Dark Horse Presents Annual (1986) | Dark Horse Presents Fifth Anniversary Special | Dark Horse Presents v1 (1986) | MySpace Dark Horse Presents (1986)  years 1986-2011  207 files / 0 collections
+   folders: [169] Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) · [36] Dark Horse\Dark Horse Presents\02 MySpace Dark Horse Presents (2007) · [1] Dark Horse\Concrete (1986)\Uncollected Short Stories · [1] Dark Horse\Hellboy, B.P.R.D. & Related\Sir Edward Grey, Witchfinder (2009)\Appearances & one-shots
+   files:   [13386] Dark Horse Presents 150.cbr (52pp) | [12422] Dark Horse Presents - Aliens (Platinum Edition) (1992).cbr (49pp)
+            [12423] Dark Horse Presents 001 (1st printing) (Dark Horse.1986) (c2c) (Pmack).cbz (36pp) | [12424] Dark Horse Presents 001 (Commemorative Edition - Evil Scan).cbr (38pp)
+            [12425] Dark Horse Presents 002.cbr (35pp) | [12426] Dark Horse Presents 003.cbr (36pp) | [12427] Dark Horse Presents 004.cbr (33pp) | [12428] Dark Horse Presents 005.cbr (34pp)
+            [12429] Dark Horse Presents 006.cbr (33pp) | [12430] Dark Horse Presents 007 [1987] (Imbie).cbr (35pp) | [12431] Dark Horse Presents 008.cbz (36pp)
+            [12432] Dark Horse Presents 009 (July 1987)(Ontology).cbz (36pp) | [12433] Dark Horse Presents 010.cbz (36pp) | [12434] Dark Horse Presents 011.cbz (36pp)
+            Dark Horse Presents 012.cbr … Dark Horse Presents 018.cbr  (7 files, pp 25-36) | [12442] Dark Horse Presents 019.cbz (35pp) | [12443] Dark Horse Presents 020.cbr (68pp)
+            [12444] Dark Horse Presents 021.cbr (32pp) | [12445] Dark Horse Presents 022.cbr (30pp) | [12446] Dark Horse Presents 023.cbr (36pp) | [12447] Dark Horse Presents 024 RESCAN.cbr (34pp)
+            [12448] Dark Horse Presents 025 [1988] (Imbie).cbr (36pp) | [12449] Dark Horse Presents 026.cbr (36pp) | [12450] Dark Horse Presents 027.cbr (35pp)
+            [12451] Dark Horse Presents 028.cbr (52pp) | [12452] Dark Horse Presents 029 (Imbie).cbr (34pp) | [12453] Dark Horse Presents 030.cbr (36pp) | [12454] Dark Horse Presents 031.cbr (36pp)
+            [12455] Dark Horse Presents 032.cbz (68pp) | [12456] Dark Horse Presents 033.cbr (43pp) | [12457] Dark Horse Presents 034 [re-edit].cbr (36pp)
+            Dark Horse Presents 035.cbr … Dark Horse Presents 051.cbr  (17 files, pp 27-51) | [12475] Dark Horse Presents 052 (1991)(Random-DCP).cbr (34pp) | [12476] Dark Horse Presents 053.cbr (36pp)
+            [12477] Dark Horse Presents 054.cbr (36pp) | [12478] Dark Horse Presents 055.cbr (36pp) | [12479] Dark Horse Presents 056 (1991) (c2c) (Pyramid).cbz (69pp)
+            [12480] Dark Horse Presents 057 (1991) (c2c) (Pyramid).cbz (53pp) | [12481] Dark Horse Presents 058.cbr (36pp) | [12482] Dark Horse Presents 059 [1992] (Imbie).cbr (36pp)
+            [12483] Dark Horse Presents 060 [1992] (Imbie).cbr (36pp) | [12484] Dark Horse Presents 061.cbr (36pp) | [12485] Dark Horse Presents 062.cbr (53pp)
+            [12486] Dark Horse Presents 063.cbr (37pp) | [12487] Dark Horse Presents 064.cbr (36pp) | [12488] Dark Horse Presents 065 [1992] (Imbie).cbr (36pp)
+            [12489] Dark Horse Presents 066.cbr (36pp) | [12490] Dark Horse Presents 067 [1992] (Imbie).cbr (67pp) | [12491] Dark Horse Presents 068.cbr (36pp)
+            [12492] Dark Horse Presents 069.cbr (36pp) | [12493] Dark Horse Presents 070.cbr (36pp) | [12494] Dark Horse Presents 071 (Imbie).cbr (36pp) | [12495] Dark Horse Presents 072.cbr (36pp)
+            [12496] Dark Horse Presents 073.cbr (36pp) | [12497] Dark Horse Presents 074.cbr (36pp) | [12498] Dark Horse Presents 075 [1993] (Imbie).cbr (36pp)
+            [12499] Dark Horse Presents 076.cbr (35pp) | [12500] Dark Horse Presents 077 [1993] (Imbie).cbr (36pp) | [12501] Dark Horse Presents 078.cbr (36pp)
+            [12502] Dark Horse Presents 079 [1993] (Imbie).cbr (36pp) | [12503] Dark Horse Presents 080 [soundscribe].cbz (36pp)
+            Dark Horse Presents 081.cbr … Dark Horse Presents 099.cbr  (19 files, pp 33-37) | Dark Horse Presents 100 [0of5].cbr … Dark Horse Presents 100 [5of5].cbr  (6 files, pp 19-36)
+            Dark Horse Presents 101.cbr … Dark Horse Presents 109.cbr  (9 files, pp 35-36) | [12538] Dark Horse Presents 110.cbz (30pp) | [12539] Dark Horse Presents 111.cbr (36pp)
+            [12540] Dark Horse Presents 112.cbr (35pp) | [12541] Dark Horse Presents 113.cbr (36pp) | [12542] Dark Horse Presents 114.cbr (36pp)
+            [12543] Dark Horse Presents 115 (1996) (Random-DCP).cbr (37pp) | [12544] Dark Horse Presents 116 (DH-1996).cbr (36pp) | [12545] Dark Horse Presents 117 [1997] (Imbie).cbr (36pp)
+            [12546] Dark Horse Presents 118.cbz (36pp) | [12547] Dark Horse Presents 119.cbz (36pp) | Dark Horse Presents 120.cbr … Dark Horse Presents 125.cbr  (6 files, pp 28-36)
+            [12554] Dark Horse Presents 126.cbz (51pp) | [12555] Dark Horse Presents 127.cbz (36pp) | [12556] Dark Horse Presents 128.cbr (35pp) | [12557] Dark Horse Presents 129.cbr (36pp)
+            [12558] Dark Horse Presents 130.cbr (36pp) | [12559] Dark Horse Presents 131.cbr (36pp) | [12560] Dark Horse Presents 132 (1998) (Random-DCP).cbr (37pp)
+            Dark Horse Presents 133.cbr … Dark Horse Presents 148.cbr  (16 files, pp 26-44) | [12577] Dark Horse Presents 149 (Obi).cbr (35pp) | [12578] Dark Horse Presents 150.cbr (52pp)
+            [12579] Dark Horse Presents 151.cbr (37pp) | [12580] Dark Horse Presents 152 (2000) (Random-DCP).cbr (35pp) | [12581] Dark Horse Presents 153.cbr (33pp)
+            [12582] Dark Horse Presents 154 (qlt).cbr (36pp) | [12583] Dark Horse Presents 155 (Obi).cbr (36pp) | [12584] Dark Horse Presents 156.cbr (36pp)
+            [12585] Dark Horse Presents 157 (last issue).cbr (36pp) | [12586] Dark Horse Presents Annual 1997.cbr (68pp) | [12587] Dark Horse Presents Annual 1998 (FIXED).cbr (64pp)
+            [12588] Dark Horse Presents Annual 1999.cbr (66pp) | [12589] Dark Horse Presents Annual 2000 - Girls Rule!.cbr (68pp)
+            [12590] Dark Horse Presents Fifth Anniversary Special (1991) (Random-DCP).cbr (111pp) | [12591] MySpace Dark Horse Presents 001 (2007) (webrip) (F) (Foyle-DCP).cbr (28pp)
+            [12592] MySpace Dark Horse Presents 002 (2007) (webrip) (F) (Foyle-DCP).cbr (30pp) | [12593] MySpace Dark Horse Presents 003 (2007) (webrip) (F) (Foyle-DCP).cbr (28pp)
+            [12594] MySpace Dark Horse Presents 004 (2007) (webrip) (F) (Foyle-DCP).cbr (28pp) | [12595] MySpace Dark Horse Presents 005 (2007) (webrip) (F) (Foyle-DCP).cbr (28pp)
+            [12596] MySpace Dark Horse Presents 006 (2008) (webrip) (Foyle-DCP).cbr (28pp) | [12597] MySpace Dark Horse Presents 007 (2008) (webrip) (Foyle-DCP).cbr (27pp)
+            [12598] MySpace Dark Horse Presents 008 (2008) (webrip) (F) (Foyle-DCP).cbr (28pp)
+            MySpace Dark Horse Presents 009 (2008) (webrip) (Foyle-DCP).cbr … MySpace Dark Horse Presents 033 (2010) (webrip) (Foyle-DCP).cbr  (25 files, pp 26-28)
+            [12624] MySpace Dark Horse Presents 034 (2010.) (webrip) (Foyle-DCP).cbr (28pp) | [12625] MySpace Dark Horse Presents 035 (2010.) (webrip) (Foyle-DCP).cbr (32pp)
+            [12626] MySpace Dark Horse Presents 036 (2010) (webrip) (Foyle-DCP).cbr (32pp) | [15000] Dark Horse Presents 036 (2014) (digital) (Son of Ultron-Empire).cbr (84pp)
+   ours:    ladder 1-157, 1997-1999; 37 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+   CV linked:      vol 3739 "Dark Horse Presents" 1986 Dark Horse Comics 162 issues; cached #1-157 (162); yearΔ 0; ratio 203/162 = 1.25; no judged range
+   CV per-file (v1): vol 3739 "Dark Horse Presents" 1986 Dark Horse Comics 162 on 199/207 files · vol 40417 "MySpace Dark Horse Presents" 2008 Dark Horse Comics 6 on 6/207 files · vol 19934 "Dark Horse Presents Aliens" 1992 Dark Horse Comics 1 issue 119265 on 1/207 files · vol 38627 "Dark Horse Presents: Fifth Anniversary Special" 1991 Dark Horse Comics 1 issue 259235 on 1/207 files
+   CV candidates:  (= linked) · 76530 "Dark Horse Presents" 2014 Dark Horse Comics 33 s30 · 39855 "Dark Horse Presents" 2011 Dark Horse Comics 36 s30 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s22 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics 3 s21 · 56627 "Dark Horse Insider" 1992 Dark Horse Comics 48 s4 · 91633 "Dark Horse Insider" 1996 Dark Horse Comics 12 s4   (v1 search)
+   CV local rip:   (= linked) · 39855 "Dark Horse Presents" 2011 Dark Horse Comics 36 · 76530 "Dark Horse Presents" 2014 Dark Horse Comics 33 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4   (rip lookup)
+   GCD per-file:   methods numx44 · round2-seriesx31 ⚠ · fulldump-rematchx6  (⚠ copies a folder neighbour's series — verify); series 3301 "Dark Horse Presents" 1986-2000 Dark Horse [was ongoing series] 162 on 78/207 files · series 38394 "MySpace Dark Horse Presents" 2008-2011 Dark Horse [collected edition] 6 on 2/207 files · series 19038 "Dark Horse Presents Annual" 1998-2000 Dark Horse [was ongoing series] 4 on 1/207 files
+   GCD dump:       (= per-file) · 52744 "Dark Horse Presents" 1992-1992 Dark Horse [] 1 · 57599 "Dark Horse Presents" 2011-2014 Dark Horse [] 36 · 82399 "Dark Horse Presents" 2014-2017 Dark Horse [] 33 · 4285 "Dark Horse Presents Fifth Anniversary Special" 1991-1991 Dark Horse [] 1 · 15810 "Dark Horse Presents: Aliens" 1992-1992 Dark Horse [] 1   (dump lookup)
+   bridges:        gcd 3301 -> LOCG 119154 "Dark Horse Presents" support 161 · gcd 38394 -> OL /works/OL21013563W "None" isbnSupport 6
+
+== S96259 Dark Horse Presents  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: Dark Horse Presents (2011) | Dark Horse Presents v2 (2011)  years 1989-2017  37 files / 0 collections
+   folders: [36] Dark Horse\Dark Horse Presents\03 Dark Horse Presents v2 (2011) · [1] Dark Horse\Hellboy, B.P.R.D. & Related\Lobster Johnson (2007)\# Appearances & one-shots
+   files:   [12627] Dark Horse Presents 001 (2011) (F) (digital-Empire).cbr (78pp)
+            Dark Horse Presents 002 (2011) (digital-Empire).cbr … Dark Horse Presents 010 (2012) (digital-Empire).cbr  (9 files, pp 83-107)
+            [12637] Dark Horse Presents 011 (2012) (digital) (Son of Ultron-Empire).cbr (85pp)
+            Dark Horse Presents 012 (2012) (F) (digital-Empire).cbr … Dark Horse Presents 017 (2012) (F) (digital-Empire).cbr  (6 files, pp 81-106)
+            Dark Horse Presents 018 (2012) (digital) (Son of Ultron-Empire).cbr … Dark Horse Presents 036 (2014) (digital) (Son of Ultron-Empire).cbr  (19 files, pp 83-93)
+            [15979] Dark Horse Presents 009 (2012) (digital-Empire).cbr (83pp)
+   ours:    ladder 1-36; 1 number(s) name more than one file: 9
+   CV linked:      vol 39855 "Dark Horse Presents" 2011 Dark Horse Comics 36 issues; cached #1-36 (36); yearΔ 22; ratio 37/36 = 1.03; no judged range
+   CV per-file (v1): vol 39855 "Dark Horse Presents" 2011 Dark Horse Comics 36 on 20/37 files · vol 76530 "Dark Horse Presents" 2014 Dark Horse Comics 33 on 14/37 files · vol 3739 "Dark Horse Presents" 1986 Dark Horse Comics 162 on 3/37 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   methods round2-seriesx3 ⚠ · numx2 · fulldump-rematchx1  (⚠ copies a folder neighbour's series — verify); series 3301 "Dark Horse Presents" 1986-2000 Dark Horse [was ongoing series] 162 on 3/37 files · series 82399 "Dark Horse Presents" 2014-2017 Dark Horse [was ongoing series] 33 on 2/37 files · series 57599 "Dark Horse Presents" 2011-2014 ? [] 36 on 1/37 files
+   GCD dump:       (= per-file) · 52744 "Dark Horse Presents" 1992-1992 Dark Horse [] 1   (dump lookup)
+   bridges:        gcd 3301 -> LOCG 119154 "Dark Horse Presents" support 161 · gcd 82399 -> LOCG 119154 "Dark Horse Presents" support 69
+
+== S5978 EVE: True Stories  [tier B]   keys: EVE - True Stories  years 2014-2014  1 files / 0 collections
+   folders: [1] Dark Horse\EVE\EVE - True Stories
+   files:   [13917] EVE - True Stories (2014) (digital) (Son of Ultron II-Empire).cbr (72pp)
+   CV linked:      vol 71981 "EVE: True Stories" 2014 Dark Horse Comics 4 issues; cached #1-4 (4); yearΔ 0; ratio 0/4; no judged range
+   CV per-file (v1): vol 74718 "EVE: True Stories" 2014 Dark Horse Comics 1 issue 455993 on 1/1 files
+   CV candidates:  (= linked) · 77844 "True Stories" 2014 Alternative Comics 4 s58 · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 s30 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s18 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s18 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics 3 s18 · 56627 "Dark Horse Insider" 1992 Dark Horse Comics 48 s15   (v1 search)
+   CV local rip:   (= linked) · 77844 "True Stories" 2014 Alternative Comics 4 (via CV candidate name "True Stories")   (rip lookup)
+   GCD dump:       90222 "True Stories" 2014-2018 Alternative Comics [] 4 (via CV candidate name "True Stories") · 152004 "True Stories" [fr] 2019-2019 çà et là [] 1 (via CV candidate name "True Stories") · 184828 "True Stories" [de] 2022-2022 Parallelallee [] 1 (via CV candidate name "True Stories")   (dump lookup)
+
+== S6093 ElfQuest: The Final Quest  [tier B]   keys: Elfquest - The Final Quest  years 2014-2018  4 files / 4 collections
+   folders: [4] Dark Horse\Elfquest\02 Elfquest - The Final Quest
+   files:   [12784] COL Elfquest - The Final Quest Vol. 01 (2015) (digital-Empire).cbr (192pp) | [12785] COL Elfquest - The Final Quest Vol. 02 (2016) (digital) (Son of Ultron II-Empire).cbr (136pp)
+            [12786] COL Elfquest - The Final Quest Vol. 03 (2017) (digital) (Son of Ultron II-Empire).cbr (138pp)
+            [12787] COL Elfquest - The Final Quest Vol. 04 (2018) (digital) (Son of Ultron II-Empire).cbr (165pp)
+   CV linked:      vol 71060 "ElfQuest: The Final Quest" 2014 Dark Horse Comics 24 issues; cached #1-24 (24); yearΔ 0; ratio 0/24; no judged range
+   CV per-file (v1): vol 81075 "ElfQuest: The Final Quest" 2015 Dark Horse Comics 4 on 4/4 files
+   CV candidates:  (= linked) · 68117 "Elfquest Special: The Final Quest" 2013 Dark Horse Comics 1 issue 428277 s77 · 62551 "ElfQuest" 1981 Starblaze Graphics 4 s55 · 131663 "ElfQuest" 2020 Amber 2 s48 · 127644 "ElfQuest" 1983 Arboris 63 s40 · 2986 "ElfQuest" 1978 Warp Graphics 21 s40 · 6580 "ElfQuest" 1996 Warp Graphics 33 s40   (v1 search)
+   CV local rip:   (= linked) · 68117 "Elfquest Special: The Final Quest" 2013 Dark Horse Comics 1 issue 428277 (via CV candidate name "Elfquest Special: The Final Quest")   (rip lookup)
+   GCD dump:       78640 "ElfQuest: The Final Quest" 2014-2018 Dark Horse [] 24 · 86816 "ElfQuest: The Final Quest" 2015-2018 Dark Horse [] 4 · 233544 "Elfquest: The Final Quest" 2026-2026 Dark Horse [] 1   (dump lookup)
+
+== S6147 Empowered  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: Empowered | Empowered Special | Empowered Unchained | Empowered and Sistah Spooky's High School Hell | Empowered and the Soldier of Love  years 2007-2024  25 files / 18 collections
+   flags: #587 overlap-in-series [Dismissed] item 12921 — three Empowered ladders (Vol. NN, Unchained, Omnibus Book NN) share one Series
+   folders: [13] Dark Horse\Empowered (2007) · [7] Dark Horse\Empowered (2007)\Empowered Special (2009) · [3] Dark Horse\Empowered (2007)\_Omnibus Editions · [1] Dark Horse\Empowered (2007)\Empowered and Sistah Spooky's High School Hell (2017) · [1] Dark Horse\Empowered (2007)\Empowered and the Soldier of Love (2017)
+   files:   [12914] Empowered Special 001 - The Wench with a Million Sighs (2009) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [12915] Empowered Special 002 - Ten Questions for the Maidman (2011) (digital) (Son of Ultron-Empire).cbr (32pp)
+            [12916] Empowered Special 003 - Hell Bent or Heaven Sent (2012) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [12917] Empowered Special 004 - Animal Style (2013) (digital) (Son of Ultron-Empire).cbr (34pp)
+            [12918] Empowered Special 005 - Nine Beers with Ninjette (2013) (digital) (Son of Ultron-Empire).cbr (34pp)
+            [12919] Empowered Special 006 - Internal Medicine (2014) (digital) (Son of Ultron-Empire).cbr (34pp)
+            [12920] Empowered Special 007 - PEW! PEW! PEW! (2015) (digital) (The Magicians-Empire).cbr (33pp)
+            [12921] COL Empowered Unchained Vol. 01 (2015) (digital) (The Magicians-Empire).cbr (208pp)
+            [12922] COL Empowered Vol. 01 - Not So Secret (2007) (digital) (The Magicians-Empire).cbr (249pp)
+            [12923] COL Empowered Vol. 02 - Thumperlame (2007) (digital) (The Magicians-Empire).cbr (208pp)
+            [12924] COL Empowered Vol. 03 - Feel the Uberburn (2008) (digital) (The Magicians-Empire).cbr (207pp)
+            [12925] COL Empowered Vol. 04 - Who da Ubermensch (2008) (digital) (The Magicians-Empire).cbr (207pp)
+            [12926] COL Empowered Vol. 05 - Reducing the Upitty (2009) (digital) (The Magicians-Empire).cbr (206pp)
+            [12927] COL Empowered Vol. 06 - The What-the-Fuckiest Five Minutes of My Career So Far (2010) (digital) (The Magicians-Empire).cbr (208pp)
+            [12928] COL Empowered Vol. 07 - Time's Arrow, Flying Differently (2012) (digital) (The Magicians-Empire).cbr (224pp)
+            [12929] COL Empowered Vol. 08 - Oh, Hell Yeah (2013) (digital) (The Magicians-Empire).cbr (208pp)
+            [12930] COL Empowered Vol. 09 - Not a Good Day to be Empowered (2015) (digital) (The Magicians-Empire).cbr (232pp)
+            [12931] COL Empowered Vol. 10 - Full-Time Super-Homey... Finally! (2017) (digital) (The Magicians-Empire).cbr (214pp)
+            [12932] COL Empowered Vol. 11 - You're Just Gonna Have to Kill Me (2019) (digital) (The Magicians-Empire).cbr (217pp)
+            [12933] COL Empowered Vol. 12 (2024) (digital) (gokusoda33).cbz (214pp) | [13852] COL Empowered and Sistah Spooky's High School Hell (2019) (digital) (The Magicians-Empire).cbr (146pp)
+            [13853] COL Empowered and the Soldier of Love (2018) (digital) (The Magicians-Empire).cbr (128pp)
+            [12934] COL Empowered Omnibus Book 01 (2020) (digital) (Son of Ultron-Empire).cbr (667pp) | [12935] COL Empowered Omnibus Book 02 (2021) (digital) (Son of Ultron-Empire).cbr (618pp)
+            [12936] COL Empowered Omnibus Book 03 (2021) (digital) (Son of Ultron-Empire).cbr (662pp)
+   ours:    ladder 1-7; ComicInfo Series: "Empowered Omnibus"x3, "Empowered"x1, "Empowered and Sistah Spooky's High School Hell"x1, "Empowered and the Soldier of Love"x1; ComicInfo Publisher: "Dark Horse"x6
+   GCD says: [12924] gcd_reprint 553237: s32719 Empowered (2007) #2 [1 story]
+             [12925] gcd_reprint 553238: s32719 Empowered (2007) #2 [1 story] · s38394 MySpace Dark Horse Presents (2008) #1 [1 story]
+             [12926] gcd_reprint 647989: s32719 Empowered (2007) #1 [1 story]
+             [12928] gcd_reprint 948041: s32719 Empowered (2007) #2 [1 story]
+             [12929] gcd_reprint 1170863: s32719 Empowered (2007) #2 [1 story]
+             [13852] gcd_reprint 1911039: s119444 Empowered and Sistah Spooky's High School Hell (2017) #1-6 [7 stories]
+   CV linked:      vol 19331 "Empowered" 2007 Dark Horse Comics 12 issues; cached #1-12 (12); yearΔ 0; ratio 7/12 = 0.58; no judged range
+   CV per-file (v1): vol 19331 "Empowered" 2007 Dark Horse Comics 12 on 7/25 files · vol 30237 "Empowered Special" 2009 Dark Horse Comics 7 on 1/25 files
+   CV candidates:  (= linked) · 81117 "Empowered Unchained" 2015 Dark Horse Comics 1 issue 484988 s65 · 116674 "Empowered and Sistah Spooky's High School Hell" 2019 Dark Horse Comics 1 issue 698506 s65 · 111824 "Empowered and the Soldier of Love" 2018 Dark Horse Comics 1 issue 675064 s65 · 98737 "Empowered and the Soldier of Love" 2017 Dark Horse Comics 3 s53 · 107143 "Empowered and Sistah Spooky's High School Hell" 2017 Dark Horse Comics 6 s50 · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 s40   (v1 search)
+   CV local rip:   (= linked) · 152138 "Empowered" ? Milady 4 · 81117 "Empowered Unchained" 2015 Dark Horse Comics 1 issue 484988 · 98737 "Empowered and the Soldier of Love" 2017 Dark Horse Comics 3 · 107143 "Empowered and Sistah Spooky's High School Hell" 2017 Dark Horse Comics 6   (rip lookup)
+   GCD per-file:   methods numx7 · round2-seriesx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 42113 "Empowered Special" 2009-2015 Dark Horse [Was ongoing] 7 on 6/25 files · series 32719 "Empowered" 2007-? Dark Horse [ongoing series] 12 on 1/25 files · series 88076 "Empowered Unchained" 2015-2015 Dark Horse [Collected Edition] 1 on 1/25 files
+   GCD dump:       (= per-file) · 151929 "Empowered" [fr] 2009-2011 Bragelonne [] 4 · 112010 "Empowered and the Soldier of Love" 2017-2017 Dark Horse [] 3 · 119444 "Empowered and Sistah Spooky's High School Hell" 2017-2018 Dark Horse [] 6   (dump lookup)
+   bridges:        gcd 32719 -> LOCG 102702 "Empowered Vol. 2 TP" support 12 · gcd 32719 -> OL /works/OL790103W "Empowered, part 4" isbnSupport 13
+
+== S6652 Fight Club 3  [tier B]   keys: Fight Club 3  years 2019-2020  1 files / 1 collections
+   folders: [1] Dark Horse\Fight Club
+   files:   [14826] COL Fight Club 3 (2020) (digital) (Son of Ultron-Empire).cbr (312pp)
+   ours:    ComicInfo Series: "Fight Club 3"x1; ComicInfo Publisher: "Dark Horse"x1
+   CV linked:      vol 116818 "Fight Club 3" 2019 Dark Horse Comics 12 issues; cached #1-12 (12); yearΔ 0; ratio 0/12; no judged range
+   CV per-file (v1): vol 126344 "Fight Club 3" 2020 Dark Horse Comics 1 issue 748150 on 1/1 files
+   CV candidates:  (= linked) · 115370 "Fight Club 3 #1 Preview" 2018 Dark Horse Comics 1 issue 692389 s88 · 123644 "Fight Club 3 " 2019 Splitter 2 s83 · 91281 "Fight Club 2" 2016 Dark Horse Comics 1 issue 535318 s69 · 82199 "Fight Club 2" 2015 Dark Horse Comics 10 s54 · 91490 "Rooster Rumble Fight Club" 2016 Sketcher Online 1 issue 535970 s53 · 115845 "Fight Club 2" 2015 Splitter 2 s47   (v1 search)
+   CV local rip:   (= linked) · 123644 "Fight Club 3 " 2019 Splitter 2 · 115370 "Fight Club 3 #1 Preview" 2018 Dark Horse Comics 1 issue 692389 (via CV candidate name "Fight Club 3 #1 Preview")   (rip lookup)
+   GCD dump:       139175 "Fight Club 3" 2019-2019 Dark Horse [] 12 · 180438 "Fight Club 3" [de] 2019-2020 Splitter Verlag [] 2 · 160050 "Fight Club 3" 2020-2020 Dark Horse [] 1   (dump lookup)
+
+== S15358 Serenity - Firefly Class  [tier D]   keys: Serenity - Firefly Class  years 2010-2014  4 files / 3 collections
+   folders: [4] Dark Horse\Firefly\Serenity - Firefly Class 03-K64 (2010)
+   files:   [13344] COL Serenity - Firefly Class 03-K64 Vol. 01 - Those Left Behind (2012, 2nd edition) (Digital) (Zone-Empire).cbr (95pp)
+            [13345] COL Serenity - Firefly Class 03-K64 Vol. 02 - Better Days and Other Stories (2011, 2nd edition) (digital) (Son of Ultron-Empire).cbr (127pp)
+            [13346] Serenity - Firefly Class 03-K64 Vol. 03 - The Shepherd's Tale (2010) (digital) (Son of Ultron-Empire).cbr (58pp)
+            [13347] COL Serenity - Firefly Class 03-K64 Vol. 04 - Leaves on the Wind (2014) (Digital) (Zone-Empire).cbr (178pp)
+   ours:    ladder 3
+   GCD says: [13345] gcd_reprint 1287525: s29946 Serenity Better Days (2008) #1-3 [6 stories] · s49434 Serenity: Float Out (2010) (unnumbered) [3 stories] · s16516 Serenity (2006) #2 [1 story] · s38394 MySpace Dark Horse Presents (2008) #3 [1 story]
+             [13347] gcd_reprint 1285652: s78795 Serenity: Firefly Class 03-K64 - Leaves on the Wind (2014) #1-6 [21 stories] · s65360 Free Comic Book Day: Star Wars / and Serenity: Firefly Class 03-K64 (2012) (unnumbered) [2 stories]
+   CV candidates:  18135 "Serenity" 2005 Dark Horse Comics ? s55 · 63647 "Serenity" 2005 Barbour Christian Comics ? s40 · 39571 "Serenity" 1995 Carnal Comics ? s40 · 95235 "Serenity: Firefly Class 03-K64⏤No Power In The 'Verse" 2016 Dark Horse Comics ? s30 · 103111 "Serenity: Firefly Class 03-K64⏤No Power In The 'Verse" 2017 Dark Horse Comics ? s30 · 104971 "Serenity: Firefly Class 03-K64-Everything's Shiny Adult Coloring Book" 2017 Dark Horse Comics ? s30   (v1 search)
+   CV local rip:   18135 "Serenity" 2005 Dark Horse Comics 3 (via CV candidate name "Serenity") · 63647 "Serenity" 2005 Barbour Christian Comics 6 (via CV candidate name "Serenity") · 39571 "Serenity" 1995 Carnal Comics 1 issue 267416 (via CV candidate name "Serenity")   (rip lookup)
+   GCD dump:       101450 "Serenity" [de] 2010-? Panini Deutschland [] 4 (via CV candidate name "Serenity") · 57314 "Serenity" 2008-2008 Thomas Nelson [] 4 (via CV candidate name "Serenity") · 16516 "Serenity" 2006-2008 Dark Horse [] 3 (via CV candidate name "Serenity") · 16487 "Serenity" 2005-2005 Dark Horse [] 3 (via CV candidate name "Serenity") · 25170 "Serenity" 2005-2006 Barbour Publishing, Inc [] 6 (via CV candidate name "Serenity")   (dump lookup)
+
+== S7417 Ghost Omnibus  [tier B]   keys: Ghost  years 2008-2023  6 files / 5 collections
+   folders: [5] Dark Horse\Ghost · [1] Graphic Novels\_Henry Holt, MacMillan
+   files:   [13767] COL Ghost Omnibus v01 (2008) (F) (digital-Empire).cbr (347pp) | [13768] COL Ghost Omnibus v02 (2009) (digital) (The Magicians-Empire).cbr (354pp)
+            [13769] COL Ghost Omnibus v03 (2012) (digital) (Son of Ultron II-Empire).cbr (360pp) | [13770] COL Ghost Omnibus v04 (2013) (digital) (Son of Ultron II-Empire).cbr (271pp)
+            [13771] COL Ghost Omnibus v05 (2014) (digital) (Son of Ultron II-Empire).cbr (290pp) | [26598] Ghost Book (2023) (digital) (DrVink-DCP).cbz (320pp)
+   ours:    ComicInfo Publisher: "Henry Holt and Co. (BYR)"x1
+   GCD says: [13767] gcd_reprint 640045: s14278 Ghost (1995) #1-12 [24 stories] · s41921 Ghost Special (1994) #1 [2 stories] · s5603 A Decade of Dark Horse (1996) #2 [1 story] · s41920 Ghost Handbook (1999) #1 [1 story]
+             [13768] gcd_reprint 640046: s14278 Ghost (1995) #13-26 [28 stories] · s42208 Ghost: Exhuming Elisa (1997) (unnumbered) [1 story]
+             [13769] gcd_reprint 1039362: s14278 Ghost (1995) #27-36 [21 stories] · s41921 Ghost Special (1994) #2-3 [5 stories] · s3301 Dark Horse Presents (1986) #145-147 [3 stories] · s41920 Ghost Handbook (1999) #1 [1 story]
+             [13770] gcd_reprint 1197937: s14279 Ghost (1998) #1-11 [22 stories] · s19038 Dark Horse Presents Annual (1998) #1999 [1 story] · s41920 Ghost Handbook (1999) #1 [1 story] · s14278 Ghost (1995) #26 [1 story]
+             [13771] gcd_reprint 1197944: s14279 Ghost (1998) #7, #12-22 [23 stories] · s10606 Dark Horse Extra (1998) #19-22 [4 stories] · s19038 Dark Horse Presents Annual (1998) #2000 [2 stories] · s41920 Ghost Handbook (1999) #1 [1 story]
+   CV linked:      vol 39057 "Ghost Omnibus" 2008 Dark Horse Comics 5 issues; cached #1-5 (5); yearΔ 0; ratio 0/5; no judged range
+   CV per-file (v1): vol 70051 "Ghost" 2013 Dark Horse Comics 12 on 6/6 files
+   CV candidates:  56627 "Dark Horse Insider" 1992 Dark Horse Comics ? s15 · 91633 "Dark Horse Insider" 1996 Dark Horse Comics ? s15 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics ? s15 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics ? s15 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics ? s15 · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics ? s15   (v1 search)
+   CV local rip:   (= linked) · 3774 "Ghost" 2012 Dark Horse Comics 5 · 87836 "Ghost" 2016 Insane Comics 1 issue 513535 · 148825 "Ghost" 2016 Panini Comics 18 · 19533 "Ghost" 1998 Dark Horse Comics 22   (rip lookup)
+   GCD dump:       37040 "Ghost Omnibus" 2008-2014 Dark Horse [] 5 · 68588 "Ghost" 2012-2013 Dark Horse [] 5 · 137323 "Ghost" [fr] 2012-2012 Ankama [] 1 · 78077 "Ghost" 2013-2015 Dark Horse [] 12 · 90108 "Ghost" 2013-2015 Dark Horse [] 4 · 156862 "Ghost" [da-dk] 2002-2002 debaser [] 1   (dump lookup)
+
+== S7834 Grandville Force Majeur  [tier B]   keys: Grandville Force Majeur  years 2017-2017  1 files / 1 collections
+   folders: [1] Dark Horse\Grandville
+   files:   [14139] COL Grandville v5 Force Majeure (2017) (digital) (Mr Norrell-Empire).cbr (178pp)
+   ours:    ComicInfo Series: "Grandville Force Majeur"x1; ComicInfo Publisher: "Dark Horse"x1
+   CV linked:      vol 105757 "Grandville Force Majeur" 2017 Dark Horse Comics 1 issues issue 634494; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 45516 "Grandville" 2009 Dark Horse Comics 1 issue 313493 s70 · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 s30 · 49682 "Dark Horse New Recruits" 2005 Dark Horse Comics 1 issue 340614 s30 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s18 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s18 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics 3 s18   (v1 search)
+   CV local rip:   (= linked) · 45516 "Grandville" 2009 Dark Horse Comics 1 issue 313493 (via CV candidate name "Grandville") · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 (via CV candidate name "Dark Horse Maverick 2000")   (rip lookup)
+   GCD dump:       124361 "Grandville" [de] 2018-2018 Schreiber & Leser [] 1 (via CV candidate name "Grandville") · 105427 "Grandville" [fi] 2013-2013 Like [] 1 (via CV candidate name "Grandville") · 175973 "Grandville" [es] 2013-2018 Astiberri Ediciones [] 5 (via CV candidate name "Grandville") · 92325 "Grandville" [de] 2012-2018 Schreiber & Leser [] 5 (via CV candidate name "Grandville") · 196598 "Grandville" [fr] 2023-? Delirium [] 5 (via CV candidate name "Grandville") · 60332 "Grandville" [fr] 2010-? Bragelonne [] 2 (via CV candidate name "Grandville")   (dump lookup)
+
+== S7836 Grandville Mon Amour  [tier B]   keys: Grandville Mon Amour  years 2010-2010  1 files / 1 collections
+   folders: [1] Dark Horse\Grandville
+   files:   [14136] COL Grandville v2 Mon Amour (2010).cbr (107pp)
+   GCD says: [14136] gcd_reprint 796672: s54897 Sidekick (2010) #1 [1 story]
+   CV linked:      vol 45517 "Grandville Mon Amour" 2010 Dark Horse Comics 1 issues issue 313494; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 140998 "Grandville: Mon Amour" 2013 Astiberri Ediciones 1 issue 901942 s90 · 45516 "Grandville" 2009 Dark Horse Comics 1 issue 313493 s70 · 56112 "New York Mon Amour" 2012 Fantagraphics 1 issue 381395 s53 · 25100 "Amour" 2006 Approbation Comics 6 s40 · 53312 "Attila... Mon amour" 1998 Éditions Glénat 6 s39 · 91918 "Attila... Mon amour" 1999 Kult Editionen 6 s39   (v1 search)
+   CV local rip:   (= linked) · 140998 "Grandville: Mon Amour" 2013 Astiberri Ediciones 1 issue 901942 · 45516 "Grandville" 2009 Dark Horse Comics 1 issue 313493 (via CV candidate name "Grandville")   (rip lookup)
+   GCD dump:       60332 "Grandville" [fr] 2010-? Bragelonne [] 2 (via CV candidate name "Grandville") · 42860 "Grandville" 2009-2017 Dark Horse [] 5 (via CV candidate name "Grandville") · 73009 "Grandville" [en-gb] 2009-2017 Jonathan Cape [] 5 (via CV candidate name "Grandville") · 92325 "Grandville" [de] 2012-2018 Schreiber & Leser [] 5 (via CV candidate name "Grandville") · 105427 "Grandville" [fi] 2013-2013 Like [] 1 (via CV candidate name "Grandville") · 175973 "Grandville" [es] 2013-2018 Astiberri Ediciones [] 5 (via CV candidate name "Grandville")   (dump lookup)
+
+== S8478 He-Man and the Masters of the Universe: A Character Guide and World Compendium  [tier B]   keys: He-Man and the Masters of the Universe - A Character Guide and World Compendium  years 2017-2017  2 files / 2 collections
+   flags: #275 label-ambiguous [Pending] item 27687 — both volumes are held twice (13322/27687, 13323/27688)
+   folders: [2] Dark Horse\He Man Compendium
+   files:   [13322] COL He-Man and the Masters of the Universe - A Character Guide and World Compendium v01 (2017)(digital)(b0bafett-Empire).cbr (382pp)
+            [13323] COL He-Man and the Masters of the Universe - A Character Guide and World Compendium v02 (2017)(digital)(b0bafett-Empire).cbr (331pp)
+   CV linked:      vol 101395 "He-Man and the Masters of the Universe: A Character Guide and World Compendium" 2017 Dark Horse Comics ? issues; cached #1-2 (2); yearΔ 0; ratio 0/?; no judged range
+   CV candidates:  (= linked) · 171916 "He-Man and the Masters of the Universe" 2026 Dark Horse Comics ? s70 · 59980 "He-Man and the Masters of the Universe" 2013 DC Comics ? s55 · 150305 "He-Man and the Masters of the Universe" 2011 DC Comics ? s55 · 50154 "He-Man and the Masters of the Universe" 2012 DC Comics ? s55 · 130860 "He-Man and the Masters of the Universe" 2020 DC Comics ? s55 · 65194 "He-Man and the Masters of the Universe" 2013 DC Comics ? s55   (v1 search)
+   CV local rip:   (= linked) · 130860 "He-Man and the Masters of the Universe" 2020 DC Comics 1 issue 806727 (via CV candidate name "He-Man and the Masters of the Universe") · 59980 "He-Man and the Masters of the Universe" 2013 DC Comics 19 (via CV candidate name "He-Man and the Masters of the Universe") · 65194 "He-Man and the Masters of the Universe" 2013 DC Comics 2 (via CV candidate name "He-Man and the Masters of the Universe") · 50154 "He-Man and the Masters of the Universe" 2012 DC Comics 6 (via CV candidate name "He-Man and the Masters of the Universe") · 150305 "He-Man and the Masters of the Universe" 2011 DC Comics 8 (via CV candidate name "He-Man and the Masters of the Universe")   (rip lookup)
+   GCD dump:       73684 "He-Man and the Masters of the Universe" 2013-2015 DC [] 19 (via CV candidate name "He-Man and the Masters of the Universe") · 90301 "He-Man and the Masters of the Universe" 2013-2015 DC [] 5 (via CV candidate name "He-Man and the Masters of the Universe") · 66586 "He-Man and the Masters of the Universe" 2012-2013 DC [] 6 (via CV candidate name "He-Man and the Masters of the Universe") · 172713 "He-Man and the Masters of the Universe" 2012-2016 DC [] 5 (via CV candidate name "He-Man and the Masters of the Universe") · 172714 "He-Man and the Masters of the Universe" 2011-2012 Dark Horse [] 3 (via CV candidate name "He-Man and the Masters of the Universe") · 227931 "He-Man and the Masters of the Universe" 2025-? Dark Horse [] 5 (via CV candidate name "He-Man and the Masters of the Universe")   (dump lookup)
+
+== S344 Abe Sapien: The Drowning  [tier A]   keys: Abe Sapien - The Drowning and Other Stories  years 2008-2023  6 files / 0 collections
+   folders: [5] Dark Horse\Hellboy, B.P.R.D. & Related\Abe Sapien (2008)\v1 (2008) · [1] Dark Horse\Hellboy, B.P.R.D. & Related\Abe Sapien (2008)\# Trades
+   files:   [14829] Abe Sapien - The Drowning and Other Stories (2023) (digital) (Son of Ultron-Empire).cbr (442pp)
+            [14839] Abe Sapien - 001 - The Drowning 01 (of 05) (2008) (Digital) (Empire-G85).cbr (27pp) | [14840] Abe Sapien - 002 - The Drowning 02 (of 05) (2008) (Digital) (Empire-G85).cbr (27pp)
+            [14841] Abe Sapien - 003 - The Drowning 03 (of 05) (2008) (Digital) (Empire-G85).cbr (27pp) | [14842] Abe Sapien - 004 - The Drowning 04 (of 05) (2008) (Digital) (Empire-G85).cbr (27pp)
+            [14843] Abe Sapien - 005 - The Drowning 05 (of 05) (2008) (Digital) (Empire-G85).cbr (28pp)
+   ours:    ladder 1-5; judged item 14829 #1-5 conf 0.95
+   CV linked:      vol 20473 "Abe Sapien: The Drowning" 2008 Dark Horse Comics 5 issues; cached #1-5 (5); yearΔ 0; ratio 5/5 = 1.00; 1 of 1 judged fit
+   CV per-file (v1): vol 59507 "Abe Sapien" 2013 Dark Horse Comics 36 on 5/6 files · vol 44829 "Abe Sapien: The Drowning" 2008 Dark Horse Comics 1 issue 308772 on 1/6 files
+   CV candidates:  (= linked) · 112158 "Abe Sapien: The Drowning and Other Stories" 2018 Dark Horse Comics 1 issue 676575 s65 · 101917 "Abe Sapien: Lost Lives and Other Stories" 2017 Dark Horse Comics 1 issue 599820 s30 · 152283 "Abe Sapien" 2012 Norma Editorial 2 s23 · 128305 "Abe Sapien" 2010 Delcourt 7 s15 · 29118 "Abe Sapien: The Haunted Boy" 2009 Dark Horse Comics 1 issue 179133 s14 · 79551 "Abe Sapien: Sacred Places" 2015 Dark Horse Comics 1 issue 476755 s10   (v1 search)
+   CV local rip:   (= linked) · 112158 "Abe Sapien: The Drowning and Other Stories" 2018 Dark Horse Comics 1 issue 676575 · 128305 "Abe Sapien" 2010 Delcourt 7 (via CV name "Abe Sapien") · 152283 "Abe Sapien" 2012 Norma Editorial 2 (via CV name "Abe Sapien")   (rip lookup)
+   GCD per-file:   series 32029 "Abe Sapien" 2008-2017 Dark Horse [Collected] 9 on 1/6 files; methods numx1
+   GCD dump:       (= per-file) · 31065 "Abe Sapien: The Drowning" 2008-2008 Dark Horse [] 5 · 126798 "Abe Sapien: The Drowning and Other Stories" 2018-2018 Dark Horse [] 1 · 202797 "Abe Sapien: The Drowning and Other Stories" 2023-2023 Dark Horse [] 1 · 67258 "Abe Sapien" [fr] 2010-2020 Delcourt [] 7 (via CV name "Abe Sapien") · 73562 "Abe Sapien" 2013-2016 Dark Horse [] 36 (via CV name "Abe Sapien")   (dump lookup)
+   bridges:        gcd 32029 -> LOCG 100323 "Abe Sapien" support 16 · gcd 32029 -> OL /works/OL17388608W "None" isbnSupport 16
+
+== S1715 B.P.R.D.  [tier D]   keys: B.P.R.D.  years 2001-2024  26 files / 25 collections
+   flags: #33 conflated-series [Dismissed] item 14890 — every B.P.R.D. mini restarts at #1, and locg gives volume after volume a range starting at
+   folders: [15] Dark Horse\Hellboy, B.P.R.D. & Related\B.P.R.D. (2001)\01 Plague of Frogs Cycle · [10] Dark Horse\Hellboy, B.P.R.D. & Related\B.P.R.D. (2001)\_Omnibus Editions · [1] Dark Horse\Hellboy, B.P.R.D. & Related\B.P.R.D. (2001)\00 BPRD - 1946-1948 and Others
+   files:   [14885] B.P.R.D. - 1946-1948 (2015) (digital) (Son of Ultron-Empire).cbr (470pp) | [14889] COL B.P.R.D. Vol. 00 - Being Human (2011) (digital) (Son of Ultron-Empire).cbr (154pp)
+            [14890] COL B.P.R.D. Vol. 01 - Hollow Earth & Other Stories (2004, 2nd edition) (Digital) (Zone-Empire).cbr (130pp)
+            [14891] COL B.P.R.D. Vol. 02 - The Soul of Venice & Other Stories (2004) (Digital) (Zone-Empire).cbr (129pp)
+            [14892] COL B.P.R.D. Vol. 03 - Plague of Frogs (2005) (Digital) (Zone-Empire).cbr (146pp) | [14893] COL B.P.R.D. Vol. 04 - The Dead (2005) (Digital) (Zone-Empire).cbr (161pp)
+            [14894] COL B.P.R.D. Vol. 05 - The Black Flame (2006) (Digital) (Zone-Empire).cbr (166pp) | [14895] COL B.P.R.D. Vol. 06 - The Universal Machine (2007) (Digital) (Zone-Empire).cbr (146pp)
+            [14896] COL B.P.R.D. Vol. 07 - Garden of Souls (2008) (Digital) (Zone-Empire).cbr (153pp) | [14897] COL B.P.R.D. Vol. 08 - Killing Ground (2008) (Digital) (Zone-Empire).cbr (146pp)
+            [14898] COL B.P.R.D. Vol. 09 - 1946 (2008) (Digital) (Zone-Empire).cbr (154pp) | [14899] COL B.P.R.D. Vol. 10 - The Warning (2009) (Digital) (Zone-Empire).cbr (146pp)
+            [14900] COL B.P.R.D. Vol. 11 - The Black Goddess (2009) (Digital) (Zone-Empire).cbr (146pp) | [14901] COL B.P.R.D. Vol. 12 - War on Frogs (2010) (Digital) (Zone-Empire).cbr (138pp)
+            [14902] COL B.P.R.D. Vol. 13 - 1947 (2010) (Digital) (Zone-Empire).cbr (161pp) | [14903] COL B.P.R.D. Vol. 14 - King of Fear (2010) (Digital) (Zone-Empire).cbr (141pp)
+            [14931] COL B.P.R.D. Omnibus Book 01 (2022) (digital) (Son of Ultron-Empire).cbr (410pp) | [14932] COL B.P.R.D. Omnibus Book 02 (2022) (digital) (Son of Ultron-Empire).cbr (469pp)
+            [14933] COL B.P.R.D. Omnibus Book 03 (2022) (digital) (Son of Ultron-Empire).cbr (448pp) | [14934] COL B.P.R.D. Omnibus Book 04 (2023) (digital) (F) (Son of Ultron-Empire).cbr (434pp)
+            [14935] COL B.P.R.D. Omnibus Book 05 (2023) (digital) (F) (Son of Ultron-Empire).cbr (442pp) | [14936] COL B.P.R.D. Omnibus Book 06 (2023) (digital) (F) (Son of Ultron-Empire).cbr (475pp)
+            [14937] COL B.P.R.D. Omnibus Book 07 (2023) (digital) (Son of Ultron-Empire).cbr (415pp) | [14938] COL B.P.R.D. Omnibus Book 08 (2023) (digital) (Son of Ultron-Empire).cbr (407pp)
+            [14939] COL B.P.R.D. Omnibus Book 09 (2024) (digital) (Son of Ultron-Empire).cbr (396pp) | [14940] COL B.P.R.D. Omnibus Book 10 (2024) (digital) (Son of Ultron-Empire).cbr (420pp)
+   ours:    ComicInfo Series: "B.P.R.D. Omnibus"x2; ComicInfo Publisher: "Dark Horse"x2
+   GCD says: [14889] gcd_reprint 944831: s57115 B.P.R.D.: The Dead Remembered (2011) #1-3 [7 stories] · s31375 B.P.R.D.: The Ectoplasmic Man (2008) (unnumbered) [2 stories] · s58559 Hellboy: Being Human (2011) (unnumbered) [2 stories]
+             [14891] gcd_reprint 713703: s12204 B.P.R.D. There's Something Under My Bed (2003) (unnumbered) [2 stories] · s21810 B.P.R.D. Night Train (2003) (unnumbered) [2 stories] · s17569 B.P.R.D. Dark Waters (2003) (unnumbered) [2 stories] · s17568 B.P.R.D. The Soul of Venice (2003) (unnumbered) [2 stories]
+             [14892] gcd_reprint 713694: s14365 B.P.R.D., Plague of Frogs (2004) #1-5 [10 stories]
+             [14893] gcd_reprint 713704: s14366 B.P.R.D., The Dead (2004) (unnumbered) [10 stories] · s19049 Hellboy Premiere Edition (2004) (unnumbered) [1 story]
+             [14894] gcd_reprint 713700: s15085 B.P.R.D., The Black Flame (2005) (unnumbered) [12 stories]
+             [14895] gcd_reprint 655510: s17571 B.P.R.D.: The Universal Machine (2006) (unnumbered) [10 stories]
+             [14896] gcd_reprint 713696: s26053 B.P.R.D.: Garden of Souls (2007) #1-5 [10 stories]
+             [14897] gcd_reprint 713697: s26054 B.P.R.D.: Killing Ground (2007) #1-5 [10 stories]
+             [14898] gcd_reprint 713695: s33239 B.P.R.D.: 1946 (2008) #1-5 [10 stories] · s30662 Hellboy: Free Comic Book Day (2008) (unnumbered) [1 story]
+             [14899] gcd_reprint 612934: s31638 B.P.R.D.: The Warning (2008) #1-5 [10 stories] · s30662 Hellboy: Free Comic Book Day (2008) (unnumbered) [1 story]
+             [14900] gcd_reprint 713702: s36496 B.P.R.D.: The Black Goddess (2009) #1-5 [10 stories]
+             [14901] gcd_reprint 752710: s31060 B.P.R.D.: War on Frogs (2008) #1-4 [8 stories] · s38394 MySpace Dark Horse Presents (2008) #2 [1 story]
+             [14902] gcd_reprint 925422: s38393 B.P.R.D.: 1947 (2009) #1-5 [10 stories] · s38394 MySpace Dark Horse Presents (2008) #4 [1 story]
+             [14903] gcd_reprint 925423: s41624 B.P.R.D.: King of Fear (2010) #1-5 [10 stories]
+             [14931] gcd_reprint 2431335: s14365 B.P.R.D., Plague of Frogs (2004) #1-5 [10 stories] · s32393 B.P.R.D. (2003) #2-3 [8 stories] · s19048 BPRD: Hollow Earth [B.P.R.D.: Hollow Earth] (2002) #1-3 [6 stories] · s10606 Dark Horse Extra (1998) #42-44 [3 stories]
+   CV candidates:  145580 "B.P.R.D. Omnibus" 2022 Dark Horse Comics ? s34 · 27001 "B.P.R.D.: 1947" 2009 Dark Horse Comics ? s34 · 41291 "B.P.R.D.: Casualties" 2011 Dark Horse Comics ? s34 · 50553 "B.P.R.D.: 1946" 2008 Dark Horse Comics ? s34 · 69555 "B.P.R.D.: Vampire" 2013 Dark Horse Comics ? s34 · 117329 "B.P.R.D.: Vampire" 2019 Dark Horse Comics ? s34   (v1 search)
+   CV local rip:   136599 "B.P.R.D." 2005 Magic Press 6 · 27001 "B.P.R.D.: 1947" 2009 Dark Horse Comics 5 (via CV candidate name "B.P.R.D.: 1947") · 50558 "B.P.R.D.: 1947" 2010 Dark Horse Comics 1 issue 346152 (via CV candidate name "B.P.R.D.: 1947") · 41291 "B.P.R.D.: Casualties" 2011 Dark Horse Comics 1 issue 278811 (via CV candidate name "B.P.R.D.: Casualties") · 145580 "B.P.R.D. Omnibus" 2022 Dark Horse Comics 10 (via CV candidate name "B.P.R.D. Omnibus")   (rip lookup)
+   GCD dump:       32393 "B.P.R.D." 2003-2010 Dark Horse [] 14 · 36097 "B.P.R.D." [fr] 2004-2013 Delcourt [] 11 · 38393 "B.P.R.D.: 1947" 2009-2009 Dark Horse [] 5 (via CV candidate name "B.P.R.D.: 1947") · 189332 "B.P.R.D. Omnibus" 2022-2024 Dark Horse [] 10 (via CV candidate name "B.P.R.D. Omnibus")   (dump lookup)
+
+== S103554 Lobster Johnson (2008)  [tier D]   keys: Lobster Johnson (2008)  years 2014-2018  3 files / 3 collections
+   folders: [3] Dark Horse\Hellboy, B.P.R.D. & Related\Lobster Johnson (2007)\# Trades
+   files:   [14962] COL Lobster Johnson Vol. 03 - Satan Smells a Rat (2014) (digital) (Son of Ultron-Empire).cbr (154pp)
+            [14964] COL Lobster Johnson Vol. 05 - The Pirate's Ghost and Metal Monsters of Midtown (2017) (digital) (Son of Ultron II-Empire).cbr (170pp)
+            [14965] COL Lobster Johnson Vol. 06 - A Chain Forged in Life (2018) (digital) (Son of Ultron II-Empire).cbr (147pp)
+   GCD says: [14962] gcd_reprint 1179203: s75655 Lobster Johnson: A Scent of Lotus (2013) #1-2 [3 stories] · s68201 Lobster Johnson: The Prayer of Neferu (2012) (unnumbered) [2 stories] · s57599 Dark Horse Presents (2011) (unnumbered) [2 stories] · s74594 Lobster Johnson: Satan Smells a Rat (2013) (unnumbered) [2 stories]
+   GCD dump:       42968 "Lobster Johnson" 2008-2018 Dark Horse [] 6 (via our own name without the filing suffix "Lobster Johnson")   (dump lookup)
+
+== S13449 Our Encounters with Evil & Other Stories Library Edition  [tier B]   keys: Our Encounters with Evil and Other Stories  years 2022-2022  1 files / 0 collections
+   folders: [1] Dark Horse\Hellboy, B.P.R.D. & Related\Our Encounters with Evil and Other Stories (2022)
+   files:   [15981] Our Encounters with Evil and Other Stories (2022) (digital) (Son of Ultron-Empire).cbr (242pp)
+   CV linked:      vol 147445 "Our Encounters with Evil & Other Stories Library Edition" 2023 Dark Horse Comics 1 issues issue 964322; cached #1-1 (1); yearΔ 1; ratio 0/1; no judged range
+   CV per-file (v1): vol 122799 "Our Encounters With Evil" 2019 Dark Horse Comics 1 issue 727065 on 1/1 files
+   CV candidates:  (= linked) · 126060 "Dark Encounters" 2020 The Pulp Press 1 issue 744041 s47 · 77898 "Last Caress and Other Uncanny Encounters" 2014 Tent City Comics 1 issue 469271 s47 · 69168 "Other Stories and the Horse You Rode In On" 2013 Conundrum Press 1 issue 433277 s43 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s22 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s22 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics 3 s20   (v1 search)
+   CV local rip:   (= linked) · 126060 "Dark Encounters" 2020 The Pulp Press 1 issue 744041 (via CV candidate name "Dark Encounters")   (rip lookup)
+   GCD dump:       193870 "Our Encounters with Evil & Other Stories Library Edition" 2022-2022 Dark Horse [] 1   (dump lookup)
+
+== S15695 Sir Edward Grey, Witchfinder  [tier C] · gap 4  keys: Sir Edward Grey, Witchfinder | Witchfinder  years 2008-2020  34 files / 8 collections
+   folders: [25] Dark Horse\Hellboy, B.P.R.D. & Related\Sir Edward Grey, Witchfinder (2009) · [6] Dark Horse\Hellboy, B.P.R.D. & Related\Sir Edward Grey, Witchfinder (2009)\Trades · [2] Dark Horse\Hellboy, B.P.R.D. & Related\Sir Edward Grey, Witchfinder (2009)\Omnibus Editions · [1] Dark Horse\Hellboy, B.P.R.D. & Related\Sir Edward Grey, Witchfinder (2009)\Appearances & one-shots
+   files:   [15002] Sir Edward Grey, Witchfinder 000 - Murderous Intent (2008) (from MySpace Dark Horse Presents #16) (digital).cbr (8pp)
+            [15003] COL Sir Edward Grey, Witchfinder Omnibus Book 01 (2019) (digital) (Son of Ultron-Empire).cbr (438pp)
+            [15004] COL Sir Edward Grey, Witchfinder Omnibus Book 02 (2021) (digital) (Son of Ultron-Empire).cbr (425pp)
+            [15005] Sir Edward Grey, Witchfinder 001 - In the Service of Angels 01 (of 05) (2009) (digital-Empire).cbr (24pp)
+            [15006] Sir Edward Grey, Witchfinder 002 - In the Service of Angels 02 (of 05) (2009) (digital-Empire).cbr (24pp)
+            [15007] Sir Edward Grey, Witchfinder 003 - In the Service of Angels 03 (of 05) (2009) (digital-Empire).cbr (24pp)
+            [15008] Sir Edward Grey, Witchfinder 004 - In the Service of Angels 04 (of 05) (2009) (digital-Empire).cbr (24pp)
+            [15009] Sir Edward Grey, Witchfinder 005 - In the Service of Angels 05 (of 05) (2009) (digital-Empire).cbr (24pp)
+            [15010] Sir Edward Grey, Witchfinder 006 - Lost and Gone Forever 01 (of 05) (2011) (digital-Empire).cbr (22pp)
+            [15011] Sir Edward Grey, Witchfinder 007 - Lost and Gone Forever 02 (of 05) (2011) (digital-Empire).cbr (24pp)
+            [15012] Sir Edward Grey, Witchfinder 008 - Lost and Gone Forever 03 (of 05) (2011) (digital-Empire).cbr (22pp)
+            [15013] Sir Edward Grey, Witchfinder 009 - Lost and Gone Forever 04 (of 05) (2011) (digital-Empire).cbr (24pp)
+            [15014] Sir Edward Grey, Witchfinder 010 - Lost and Gone Forever 05 (of 05) (2011) (digital-Empire).cbr (24pp)
+            [15015] Sir Edward Grey, Witchfinder 011 - The Mysteries of Unland 01 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr (26pp)
+            [15016] Sir Edward Grey, Witchfinder 012 - The Mysteries of Unland 02 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr (26pp)
+            [15017] Sir Edward Grey, Witchfinder 013 - The Mysteries of Unland 03 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr (26pp)
+            [15018] Sir Edward Grey, Witchfinder 014 - The Mysteries of Unland 04 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr (26pp)
+            [15019] Sir Edward Grey, Witchfinder 015 - The Mysteries of Unland 05 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr (25pp)
+            [15020] Sir Edward Grey, Witchfinder 016 - City of the Dead 01 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr (26pp)
+            [15021] Sir Edward Grey, Witchfinder 017 - City of the Dead 02 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr (25pp)
+            [15022] Sir Edward Grey, Witchfinder 018 - City of the Dead 03 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr (25pp)
+            [15023] Sir Edward Grey, Witchfinder 019 - City of the Dead 04 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr (24pp)
+            [15024] Sir Edward Grey, Witchfinder 020 - City of the Dead 05 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr (24pp)
+            [15025] Sir Edward Grey, Witchfinder 021 - The Gates of Heaven 01 (of 05) (2018) (digital) (Son of Ultron-Empire).cbr (24pp)
+            [15026] Sir Edward Grey, Witchfinder 022 - The Gates of Heaven 02 (of 05) (2018) (digital) (Son of Ultron-Empire).cbr (24pp)
+            [15027] Sir Edward Grey, Witchfinder 023 - The Gates of Heaven 03 (of 05) (2018) (digital) (Son of Ultron-Empire).cbr (25pp)
+            [15028] Sir Edward Grey, Witchfinder 024 - The Gates of Heaven 04 (of 05) (2018) (digital) (Son of Ultron-Empire).cbr (25pp)
+            [15029] Sir Edward Grey, Witchfinder 025 - The Gates of Heaven 05 (of 05) (2018) (digital) (Son of Ultron-Empire).cbr (25pp)
+            [15030] COL Sir Edward Grey, Witchfinder Vol. 01 - In the Service of Angels (2010) (digital) (Son of Ultron-Empire).cbr (153pp)
+            [15031] COL Sir Edward Grey, Witchfinder Vol. 02 - Lost and Gone Forever (2012) (digital) (Son of Ultron-Empire).cbr (134pp)
+            [15032] COL Sir Edward Grey, Witchfinder Vol. 03 - The Mysteries of Unland (2015) (digital) (Son of Ultron-Empire).cbr (155pp)
+            [15033] COL Sir Edward Grey, Witchfinder Vol. 04 - City of the Dead (2017) (digital) (Son of Ultron-Empire).cbr (135pp)
+            [15034] COL Sir Edward Grey, Witchfinder Vol. 05 - The Gates of Heaven (2019) (digital) (Son of Ultron-Empire).cbr (141pp)
+            [15035] COL Sir Edward Grey, Witchfinder Vol. 06 - The Reign of Darkness (2020) (digital) (Son of Ultron-Empire).cbr (144pp)
+   ours:    ladder 0-25; judged item 15003 #1-15 conf 0.93; judged item 15030 #1-5 conf 0.95; judged item 15031 #6-10 conf 0.95; judged item 15032 #11-15 conf 0.95; judged item 15004 #16-25 conf 0.9; judged item 15033 #16-20 conf 0.95; judged item 15034 #21-25 conf 0.95; ComicInfo Series: "Sir Edward Grey, Witchfinder Omnibus"x2, "Sir Edward Grey, Witchfinder"x1, "Witchfinder"x1; ComicInfo Publisher: "Dark Horse"x4
+   GCD says: [15003] gcd_reprint 2042559: s37909 Sir Edward Grey, Witchfinder: In the Service of Angels (2009) #1-5 [7 stories] · s81321 Sir Edward Grey, Witchfinder: The Mysteries of Unland (2014) #1-5 [5 stories] · s55453 Sir Edward Grey, Witchfinder: Lost and Gone Forever (2011) #1-5 [5 stories] · s39136 Hellboy: The Wild Hunt (2008) #7 [1 story]
+             [15030] gcd_reprint 745933: s37909 Sir Edward Grey, Witchfinder: In the Service of Angels (2009) #1-5 [10 stories] · s39136 Hellboy: The Wild Hunt (2008) #7 [1 story] · s38394 MySpace Dark Horse Presents (2008) #3 [1 story]
+             [15031] gcd_reprint 944826: s55453 Sir Edward Grey, Witchfinder: Lost and Gone Forever (2011) #1-5 [11 stories]
+             [15032] gcd_reprint 1325433: s81321 Sir Edward Grey, Witchfinder: The Mysteries of Unland (2014) #1-5 [5 stories] · s57599 Dark Horse Presents (2011) (unnumbered) [1 story]
+             [15033] gcd_reprint 1692609: s105793 Witchfinder:  City of the Dead (2016) #1-5 [10 stories]
+   CV linked:      vol 45124 "Sir Edward Grey, Witchfinder" 2012 Dark Horse Comics 5 issues; cached #2-6 (5); yearΔ 4; ratio 26/5 = 5.20; 3 of 7 judged fit
+   CV per-file (v1): vol 45124 "Sir Edward Grey, Witchfinder" 2012 Dark Horse Comics 5 on 27/34 files · vol 26959 "Sir Edward Grey, Witchfinder: In the Service of Angels" 2009 Dark Horse Comics 5 on 2/34 files
+   CV candidates:  28034 "The Witchfinder" 1999 Image 3 s71 · 49682 "Dark Horse New Recruits" 2005 Dark Horse Comics 1 issue 340614 s41 · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 s39 · 142472 "Dark Horse Legend Ashcan" 1996 Dark Horse Comics 1 issue 938079 s38 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s26 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s26   (v1 search)
+   CV local rip:   (= linked) · 28034 "The Witchfinder" 1999 Image 3 · 32436 "Sir Edward Grey, Witchfinder: In the Service of Angels" 2010 Dark Horse Comics 1 issue 204529 (via CV name "Sir Edward Grey, Witchfinder: In the Service of Angels") · 49682 "Dark Horse New Recruits" 2005 Dark Horse Comics 1 issue 340614 (via CV candidate name "Dark Horse New Recruits") · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 (via CV candidate name "Dark Horse Maverick 2000")   (rip lookup)
+   GCD per-file:   series 47084 "Sir Edward Grey, Witchfinder" 2010-? Dark Horse [] 6 on 8/34 files; methods numx8
+   GCD dump:       (= per-file) · 172455 "Witchfinder" [fr] 2013-? Delcourt [] 4 · 16717 "The Witchfinder" 1999-2000 Image [] 3 · 37909 "Sir Edward Grey, Witchfinder: In the Service of Angels" 2009-2009 Dark Horse [] 5 (via CV name "Sir Edward Grey, Witchfinder: In the Service of Angels") · 32958 "Dark Horse New Recruits" 2005-2005 Dark Horse [] 1 (via CV candidate name "Dark Horse New Recruits") · 14822 "Dark Horse Maverick 2000" 2000-2000 Dark Horse [] 1 (via CV candidate name "Dark Horse Maverick 2000")   (dump lookup)
+   bridges:        gcd 47084 -> OL /works/OL19939862W "Witchfinder" isbnSupport 31
+
+== S8942 Holler  [tier B]   keys: Holler  years 2020-2024  1 files / 0 collections
+   folders: [1] Dark Horse\Holler (2024)
+   files:   [14437] Holler (2024) (Digital) (XRA-Empire).cbz (281pp)
+   ours:    ComicInfo Series: "Holler"x1; ComicInfo Publisher: "Dark Horse Comics"x1
+   CV linked:      vol 128098 "Holler" 2020 It's Alive 4 issues; cached #1-4 (4); yearΔ 0; ratio 0/4; no judged range
+   CV per-file (v1): vol 123317 "Holler" 2019 Massie Makes Comics 1 issue 729872 on 1/1 files
+   CV candidates:  (= linked) · 104277 "Dark Horse Comics/DC Comics: The Mask" 2017 Dark Horse Comics 1 issue 621569 s40 · 92738 "Dark Horse Comics/DC Comics: Superman" 2016 Dark Horse Comics 1 issue 542590 s40 · 99469 "Dark Horse Comics/DC Comics: Justice League" 2017 Dark Horse Comics 1 issue 585047 s40 · 89925 "DC Comics/Dark Horse: Aliens" 2016 DC Comics 1 issue 527109 s25 · 95586 "DC Comics/Dark Horse Comics: Justice League" 2016 DC Comics 1 issue 557333 s25 · 4864 "Dark Horse Comics" 1992 Dark Horse Comics 25 s17   (v1 search)
+   CV local rip:   (= linked) · 104277 "Dark Horse Comics/DC Comics: The Mask" 2017 Dark Horse Comics 1 issue 621569 (via CV candidate name "Dark Horse Comics/DC Comics: The Mask")   (rip lookup)
+   GCD dump:       162499 "Holler" 2020-? It's Alive Press [] 3 · 215732 "Holler" 2024-2024 Dark Horse [] 1 · 116808 "Dark Horse Comics / DC Comics: The Mask" 2017-2017 Dark Horse [] 1 (via CV candidate name "Dark Horse Comics/DC Comics: The Mask")   (dump lookup)
+
+== S98038 Kabuki: Circle Of Blood  [tier B]   keys: Kabuki v01 (2014)  years 1995-1998  7 files / 0 collections
+   flags: #305 label-ambiguous [Pending] item 12359 — the Kabuki v01-v03 items are single issues, not collections
+   folders: [7] Dark Horse\Kabuki (1994)\Kabuki Vol. 01 - Circle of Blood (2014)
+   files:   [12359] Kabuki v01 001 - Fear the Reaper (2014) (digital) (Son of Ultron-Empire).cbr (45pp)
+            Kabuki v01 002 - Circle of Blood 01 (2014) (digital) (Son of Ultron-Empire).cbr … Kabuki v01 007 - Circle of Blood 06 (2014) (digital) (Son of Ultron-Empire).cbr  (6 files, pp 30-52)
+   ours:    ladder 1-6; 1 number(s) name more than one file: 1
+   CV linked:      vol 5642 "Kabuki: Circle Of Blood" 1995 Caliber Comics 6 issues; cached #1-6 (6); yearΔ 0; ratio 7/6 = 1.17; no judged range
+   CV per-file (v1): vol 6089 "Kabuki" 1997 Image 9 on 7/7 files
+   CV local rip:   (= linked) · 79155 "Kabuki: Circle of Blood" 2014 Dark Horse Comics 7 · 69990 "Kabuki ½" 1999 Image 1 issue 436749 (via the parsed key without the filing suffix "Kabuki") · 46892 "Kabuki" 2008 Digital Manga Publishing 4 (via the parsed key without the filing suffix "Kabuki")   (rip lookup)
+   GCD dump:       5389 "Kabuki: Circle of Blood" 1995-1995 Caliber Press [] 6 · 39833 "Kabuki: Circle of Blood" 1996-1996 Caliber Press [] 1 · 163394 "Kabuki Circle of Blood" 1997-1997 Image [] 1 · 61965 "Kabuki: Circle of Blood" 2010-2010 Marvel [] 1 · 5891 "Kabuki" 1997-2000 Image [] 9 (via the parsed key without the filing suffix "Kabuki") · 7881 "Kabuki" [de] 1999-2000 Infinity Verlag [] 6 (via the parsed key without the filing suffix "Kabuki")   (dump lookup)
+
+== S98039 Kabuki: Dreams  [tier B]   keys: Kabuki v02 (2014)  years 1997-1998  2 files / 0 collections
+   folders: [2] Dark Horse\Kabuki (1994)\Kabuki Vol. 02 - Dreams (2014)
+   files:   [12366] Kabuki v02 001 - Dreams (2014) (digital) (Son of Ultron-Empire).cbr (23pp) | [12369] Kabuki v02 004 - Dreams (2015) (digital) (Son of Ultron-Empire).cbr (28pp)
+   ours:    ladder 1, 4
+   CV linked:      vol 72764 "Kabuki: Dreams" 1998 Image 1 issues issue 449506; cached #1-1 (1); yearΔ 1; ratio 2/1 = 2.00; no judged range
+   CV per-file (v1): vol 6089 "Kabuki" 1997 Image 9 on 2/2 files
+   CV local rip:   (= linked) · 145877 "Kabuki - Dreams" 2014 Dark Horse Comics 4 · 69990 "Kabuki ½" 1999 Image 1 issue 436749 (via the parsed key without the filing suffix "Kabuki") · 46892 "Kabuki" 2008 Digital Manga Publishing 4 (via the parsed key without the filing suffix "Kabuki")   (rip lookup)
+   GCD dump:       30348 "Kabuki Dreams" 1998-1998 Image [] 1 · 163752 "Kabuki Dreams" 2001-2001 Image [] 1 · 5891 "Kabuki" 1997-2000 Image [] 9 (via the parsed key without the filing suffix "Kabuki") · 7881 "Kabuki" [de] 1999-2000 Infinity Verlag [] 6 (via the parsed key without the filing suffix "Kabuki") · 34478 "Kabuki" 1999-1999 Image; Wizard [] 1 (via the parsed key without the filing suffix "Kabuki") · 173288 "Kabuki" [fr] 1999-2000 Panini France [] 3 (via the parsed key without the filing suffix "Kabuki")   (dump lookup)
+
+== S98040 Kabuki: Masks of the Noh  [tier B]   keys: Kabuki v03 (2015)  years 1996-1998  4 files / 0 collections
+   folders: [4] Dark Horse\Kabuki (1994)\Kabuki Vol. 03 - Masks of the Noh (2015)
+   files:   [12370] Kabuki v03 001 - Masks of the Noh (2015) (digital) (Son of Ultron-Empire).cbr (31pp) | [12371] Kabuki v03 002 - Masks of the Noh (2015) (digital) (Son of Ultron-Empire).cbr (31pp)
+            [12372] Kabuki v03 003 - Masks of the Noh (2015) (digital) (Son of Ultron-Empire).cbr (28pp) | [12373] Kabuki v03 004 - Masks of the Noh (2015) (digital) (Son of Ultron-Empire).cbr (37pp)
+   ours:    ladder 1-4
+   CV linked:      vol 5858 "Kabuki: Masks of the Noh" 1996 Caliber Comics 4 issues; cached #1-4 (4); yearΔ 0; ratio 4/4 = 1.00; no judged range
+   CV per-file (v1): vol 6089 "Kabuki" 1997 Image 9 on 4/4 files
+   CV local rip:   (= linked) · 69990 "Kabuki ½" 1999 Image 1 issue 436749 (via the parsed key without the filing suffix "Kabuki") · 46892 "Kabuki" 2008 Digital Manga Publishing 4 (via the parsed key without the filing suffix "Kabuki")   (rip lookup)
+   GCD dump:       5636 "Kabuki: Masks of the Noh" 1996-1997 Caliber Press [] 4 · 163751 "Kabuki Masks of the Noh" 1998-1998 Image [] 1 · 233558 "Kabuki Masks of the Noh" 1998-1998 Image [] 1 · 5891 "Kabuki" 1997-2000 Image [] 9 (via the parsed key without the filing suffix "Kabuki") · 7881 "Kabuki" [de] 1999-2000 Infinity Verlag [] 6 (via the parsed key without the filing suffix "Kabuki") · 34478 "Kabuki" 1999-1999 Image; Wizard [] 1 (via the parsed key without the filing suffix "Kabuki")   (dump lookup)
+
+== S98041 Kabuki: Skin Deep  [tier B]   keys: Kabuki v04 (2015)  years 1996-1998  3 files / 0 collections
+   folders: [3] Dark Horse\Kabuki (1994)\Kabuki Vol. 04 - Skin Deep (2015)
+   files:   [12374] Kabuki v04 001 - Skin Deep (2015) (digital) (Son of Ultron-Empire).cbr (28pp) | [12375] Kabuki v04 002 - Skin Deep (2015) (digital) (Son of Ultron-Empire).cbr (34pp)
+            [12376] Kabuki v04 003 - Skin Deep (2015) (digital) (Son of Ultron-Empire).cbr (37pp)
+   ours:    ladder 1-3
+   CV linked:      vol 18089 "Kabuki: Skin Deep" 1996 Caliber Comics 4 issues; cached #1-4 (4); yearΔ 0; ratio 3/4 = 0.75; no judged range
+   CV per-file (v1): vol 6089 "Kabuki" 1997 Image 9 on 3/3 files
+   CV local rip:   (= linked) · 69990 "Kabuki ½" 1999 Image 1 issue 436749 (via the parsed key without the filing suffix "Kabuki") · 46892 "Kabuki" 2008 Digital Manga Publishing 4 (via the parsed key without the filing suffix "Kabuki")   (rip lookup)
+   GCD dump:       22055 "Kabuki: Skin Deep" 1996-1997 Caliber Press [] 3 · 6082 "Kabuki: Skin Deep" 1998-1998 Image [] 1 · 213588 "Kabuki: Skin Deep" 1999-1999 Image [] 1 · 5891 "Kabuki" 1997-2000 Image [] 9 (via the parsed key without the filing suffix "Kabuki") · 7881 "Kabuki" [de] 1999-2000 Infinity Verlag [] 6 (via the parsed key without the filing suffix "Kabuki") · 34478 "Kabuki" 1999-1999 Image; Wizard [] 1 (via the parsed key without the filing suffix "Kabuki")   (dump lookup)
+
+== S98044 Kabuki: The Alchemy  [tier C] · gap 7  keys: Kabuki v07 (2015)  years 1997-2000  8 files / 0 collections
+   folders: [8] Dark Horse\Kabuki (1994)\Kabuki Vol. 07 - The Alchemy (2015)
+   files:   Kabuki v07 001 - The Alchemy (2015) (digital) (Son of Ultron-Empire).cbr … Kabuki v07 009 - The Alchemy (2015) (digital) (Son of Ultron-Empire).cbr  (8 files, pp 25-31)
+   ours:    ladder 1-7, 9
+   CV linked:      vol 18090 "Kabuki: The Alchemy" 2004 Marvel 9 issues; cached #1-9 (9); yearΔ 7; ratio 8/9 = 0.89; no judged range
+   CV per-file (v1): vol 6089 "Kabuki" 1997 Image 9 on 8/8 files
+   CV local rip:   (= linked) · 29213 "Kabuki: The Alchemy" 2009 Marvel 1 issue 179991 · 69990 "Kabuki ½" 1999 Image 1 issue 436749 (via the parsed key without the filing suffix "Kabuki") · 46892 "Kabuki" 2008 Digital Manga Publishing 4 (via the parsed key without the filing suffix "Kabuki")   (rip lookup)
+   GCD dump:       233703 "Kabuki: The Alchemy" 2009-2009 Marvel [] 1 · 233704 "Kabuki: The Alchemy" 2009-2009 Marvel [] 1 · 5891 "Kabuki" 1997-2000 Image [] 9 (via the parsed key without the filing suffix "Kabuki") · 7881 "Kabuki" [de] 1999-2000 Infinity Verlag [] 6 (via the parsed key without the filing suffix "Kabuki") · 34478 "Kabuki" 1999-1999 Image; Wizard [] 1 (via the parsed key without the filing suffix "Kabuki") · 173288 "Kabuki" [fr] 1999-2000 Panini France [] 3 (via the parsed key without the filing suffix "Kabuki")   (dump lookup)
+
+== S10561 Lady Killer  [tier C] · ratio 0.20  keys: Lady Killer  years 2015-2017  3 files / 1 collections
+   folders: [2] Dark Horse\Lady Killer (2015) · [1] Dark Horse\Lady Killer (2015)\Deluxe Edition
+   files:   [13997] COL Lady Killer Library Edition Book 01 (2020) (digital) (Son of Ultron-Empire).cbr (282pp) | [13780] Lady Killer (2015) (digital) (Son of Ultron-Empire).cbr (135pp)
+            [13781] Lady Killer 2 (2017) (digital) (Son of Ultron-Empire).cbr (131pp)
+   ours:    ladder 2; ComicInfo Series: "Lady Killer Library Edition"x1; ComicInfo Publisher: "Dark Horse"x1
+   CV linked:      vol 79261 "Lady Killer" 2015 Dark Horse Comics 5 issues; cached #1-5 (5); yearΔ 0; ratio 1/5 = 0.20; no judged range
+   CV per-file (v1): vol 84282 "Lady Killer" 2015 Dark Horse Comics 2 on 2/3 files
+   CV candidates:  (= linked) · 107811 "Lady Killer" 2018 Éditions Glénat 2 s50 · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 s30 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s29 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s29 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics 3 s27 · 91633 "Dark Horse Insider" 1996 Dark Horse Comics 12 s21   (v1 search)
+   CV local rip:   (= linked) · 107811 "Lady Killer" 2018 Éditions Glénat 2   (rip lookup)
+   GCD per-file:   series 104557 "Lady Killer" [de] 2016-2017 Panini Deutschland [] 2 on 1/3 files; methods numx1
+   GCD dump:       (= per-file) · 85744 "Lady Killer" 2015-2015 Dark Horse [] 5 · 92157 "Lady Killer" 2015-2015 Dark Horse [] 2 · 104562 "Lady Killer" [de] 2016-2017 Panini Deutschland [] 2 · 183889 "Lady Killer" [fr] 2016-2018 Glénat [] 2   (dump lookup)
+   bridges:        gcd 104557 -> LOCG 115540 "Lady Killer TP" support 1
+
+== S10634 Leaving Megalopolis  [tier B]   keys: Leaving Megalopolis  years 2014-2017  3 files / 3 collections
+   flags: #311 label-ambiguous [Pending] item 106746 — items 13517 and 106746 are duplicate copies of Leaving Megalopolis Vol. 01
+   folders: [2] Dark Horse\Leaving Megalopolis (2014) · [1] Misc\Leaving Megalopolis (2014)
+   files:   [13517] COL 01 Leaving Megalopolis Vol. 01 (2014) (Digital HC) (Mephisto-Empire).cbr (125pp)
+            [13519] COL 03 Leaving Megalopolis Vol. 02 - Surviving Megalopolis (2017) (digital) (Son of Ultron-Empire).cbr (166pp)
+            [106746] COL Leaving Megalopolis (2014) (Digital HC) (Mephisto-Empire).cbr (125pp)
+   GCD says: [13517] gcd_reprint 1667478: s76611 Leaving Megalopolis (2013) (unnumbered) [2 stories]
+             [106746] gcd_reprint 1667478: s76611 Leaving Megalopolis (2013) (unnumbered) [2 stories]
+   CV linked:      vol 76971 "Leaving Megalopolis" 2014 Dark Horse Comics 1 issues issue 465816; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 3/3 files
+   CV candidates:  (= linked) · 69049 "Leaving Megalopolis" 2013 self published 1 issue 432965 s90 · 87327 "Leaving Megalopolis: Surviving Megalopolis" 2016 Dark Horse Comics 6 s41 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s37 · 98065 "Leaving Megalopolis: Surviving Megalopolis" 2017 Dark Horse Comics 1 issue 576582 s36 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s36 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics 3 s34   (v1 search)
+   CV local rip:   (= linked) · 69049 "Leaving Megalopolis" 2013 self published 1 issue 432965 · 87327 "Leaving Megalopolis: Surviving Megalopolis" 2016 Dark Horse Comics 6 (via CV candidate name "Leaving Megalopolis: Surviving Megalopolis") · 98065 "Leaving Megalopolis: Surviving Megalopolis" 2017 Dark Horse Comics 1 issue 576582 (via CV candidate name "Leaving Megalopolis: Surviving Megalopolis")   (rip lookup)
+   GCD dump:       104118 "Leaving Megalopolis" 2014-2017 Dark Horse [] 2 · 76611 "Leaving Megalopolis" 2013-2013 Gail Simone and Jim Calafiore [] 1 · 95634 "Leaving Megalopolis: Surviving Megalopolis" 2016-2016 Dark Horse [] 6 (via CV candidate name "Leaving Megalopolis: Surviving Megalopolis")   (dump lookup)
+
+== S35582 Leaving Megalopolis: Finding Megalopolis  [tier C] · by 2  keys: Leaving Megalopolis - Finding Megalopolis  years 2016-2016  2 files / 0 collections
+   folders: [1] Dark Horse\Leaving Megalopolis (2014) · [1] Misc\Leaving Megalopolis (2014)
+   files:   [13518] 02 Leaving Megalopolis - Finding Megalopolis (2016) (digital) (Son of Ultron-Empire).cbr (13pp)
+            [106747] Leaving Megalopolis - Finding Megalopolis (2016) (digital) (Son of Ultron-Empire).cbr (13pp)
+   ours:    ladder 2
+   CV linked:      vol 87412 "Leaving Megalopolis: Finding Megalopolis" 2016 Painfully Normal Productions 1 issues issue 511380; cached #1-1 (1); yearΔ 0; ratio 1/1 = 1.00; no judged range; v1 per-file: same volume on 2/2 files
+   CV candidates:  (= linked) · 76971 "Leaving Megalopolis" 2014 Dark Horse Comics 1 issue 465816 s93 · 69049 "Leaving Megalopolis" 2013 self published 1 issue 432965 s75 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s30 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s29 · 98065 "Leaving Megalopolis: Surviving Megalopolis" 2017 Dark Horse Comics 1 issue 576582 s27 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics 3 s27   (v1 search)
+   CV local rip:   (= linked) · 76971 "Leaving Megalopolis" 2014 Dark Horse Comics 1 issue 465816 (via CV candidate name "Leaving Megalopolis") · 69049 "Leaving Megalopolis" 2013 self published 1 issue 432965 (via CV candidate name "Leaving Megalopolis")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 104118 "Leaving Megalopolis" 2014-2017 Dark Horse [collected edition] 2 on 1/2 files
+   GCD dump:       (= per-file) · 76611 "Leaving Megalopolis" 2013-2013 Gail Simone and Jim Calafiore [] 1 (via CV candidate name "Leaving Megalopolis")   (dump lookup)
+   bridges:        gcd 104118 -> OL /works/OL21083938W "None" isbnSupport 4
+
+== S11087 The Adventures of Luther Arkwright  [tier C] · ratio 0.11  keys: Luther Arkwright  years 1990-2020  1 files / 0 collections
+   folders: [1] Dark Horse\Luther Arkwright
+   files:   [14493] 01 Luther Arkwright (2020) (digital) (Son of Ultron-Empire).cbr (529pp)
+   ours:    ladder 1; ComicInfo Series: "Luther Arkwright"x1; ComicInfo Publisher: "Dark Horse"x1
+   CV linked:      vol 21219 "The Adventures of Luther Arkwright" 1990 Dark Horse Comics 9 issues; cached #1-9 (9); yearΔ 0; ratio 1/9 = 0.11; no judged range
+   CV per-file (v1): vol 127745 "Luther Arkwright" 2020 Dark Horse Comics 1 issue 767253 on 1/1 files
+   CV candidates:  (= linked) · 26011 "The Adventures of Luther Arkwright" 1997 Dark Horse Comics 1 issue 153759 s87 · 71532 "Heart of Empire: The Legacy of Luther Arkwright" 2001 Dark Horse Comics 1 issue 444871 s84 · 161412 "The Legend of Luther Arkwright" 2022 Jonathan Cape 1 issue 1080203 s72 · 44987 "Heart of Empire: The Legacy of Luther Arkwright" 1999 Dark Horse Comics 9 s69 · 38821 "The Adventures of Luther Arkwright" 1987 Valkyrie Press 9 s57 · 75076 "Luther" 2012 Thrillbent 1 issue 457433 s55   (v1 search)
+   CV local rip:   (= linked) · 38821 "The Adventures of Luther Arkwright" 1987 Valkyrie Press 9 · 26011 "The Adventures of Luther Arkwright" 1997 Dark Horse Comics 1 issue 153759 · 44987 "Heart of Empire: The Legacy of Luther Arkwright" 1999 Dark Horse Comics 9 (via CV candidate name "Heart of Empire: The Legacy of Luther Arkwright") · 71532 "Heart of Empire: The Legacy of Luther Arkwright" 2001 Dark Horse Comics 1 issue 444871 (via CV candidate name "Heart of Empire: The Legacy of Luther Arkwright")   (rip lookup)
+   GCD dump:       23573 "The Adventures of Luther Arkwright" 1990-1991 Dark Horse [] 9 · 11956 "The Adventures of Luther Arkwright" [en-gb] 1987-1989 Valkyrie Press [] 9 · 7201 "Adventures of Luther Arkwright" 1997-1997 Dark Horse [] 1 · 160641 "Luther Arkwright" 2020-2020 Dark Horse [] 1 · 32684 "Heart of Empire: The Legacy of Luther Arkwright" 2001-2001 Dark Horse [] 1 (via CV candidate name "Heart of Empire: The Legacy of Luther Arkwright") · 32685 "Heart of Empire: The Legacy of Luther Arkwright" 2001-2001 Dark Horse [] 1 (via CV candidate name "Heart of Empire: The Legacy of Luther Arkwright")   (dump lookup)
+
+== S65102 Madman Library Edition  [tier B]   keys: Madman | Madman (2021)  years 2021-2024  5 files / 5 collections
+   folders: [5] Dark Horse\Madman (1990)
+   files:   [12353] COL Madman Library Edition Book 01 (2021) (digital) (Son of Ultron-Empire).cbr (678pp)
+            [12355] COL Madman Library Edition Book 03 (2022) (digital) (Son of Ultron-Empire).cbr (669pp)
+            [12356] COL Madman Library Edition Book 04 (2023) (digital) (Son of Ultron-Empire).cbr (456pp)
+            [12357] COL Madman Library Edition Book 05 (2023) (digital) (Son of Ultron-Empire).cbr (509pp)
+            [12358] COL Madman Library Edition Book 06 (2024) (digital) (Son of Ultron-Empire).cbr (505pp)
+   ours:    ComicInfo Series: "Madman Library Edition"x3; ComicInfo Publisher: "Dark Horse"x3
+   GCD says: [12353] gcd_reprint 2229928: s5113 Madman Comics (1994) #1-10, #14, #16-17, #20 [26 stories] · s32399 Madman Adventures (1992) #1-3 [7 stories] · s4596 Madman (1992) #1-3 [6 stories] · s4123 Creatures of the Id (1990) #1 [2 stories]
+             [12355] gcd notes 2431319 (#3 of Madman Library Edition): The Atomics #1-15; (AAA Pop, 2000 series); Red Rocket 7 #1-7
+             [12356] gcd notes 2515190 (#4 of Madman Library Edition): Madman Atomic Comics #1-17
+             [12357] gcd notes 2587774 (#5 of Madman Library Edition): Dead Air #[nn] (Slave Labor, 1989 series); The Everyman #1; (Marvel, 1991 series); Crash Metro and the Star Squad #1; (Oni Press, 1999 series); It Girl! and the Atomics #1-12; (Image, 2012 series); Dark Horse Extra #1-4
+             [12358] gcd notes 2645447 (#6 of Madman Library Edition): Grafik Muzik #1-4; (Caliber, 1990 series); Graphique Musique #1-3;  Labor, 1989 series); 
+Madman In Your Face 3D Special (Image, 2014 series); Liberty Comics #2; (Image, 2008 series), and X-Ray Robot #1-4
+   CV linked:      vol 136988 "Madman Library Edition" 2021 Dark Horse Comics 6 issues; cached #1-6 (6); yearΔ 0; ratio 0/6; no judged range
+   CV per-file (v1): vol 29781 "Madman" 2007 Image 3 on 2/5 files
+   CV candidates:  (= linked) · 4923 "Madman" 1992 Tundra 3 s50 · 149693 "Madman" 2022 Planeta DeAgostini 1 issue 985338 s38 · 56134 "Madman Atomica!" 2011 Image 1 issue 381491 s37 · 36184 "Image Firsts: Madman" 2010 Image 1 issue 238604 s36 · 67892 "Madman Adventures" 2002 Oni Press 1 issue 402065 s22 · 76546 "Monster & Madman" 2014 IDW Publishing 1 issue 462914 s21   (v1 search)
+   CV local rip:   (= linked) · 149693 "Madman" 2022 Planeta DeAgostini 1 issue 985338 · 4923 "Madman" 1992 Tundra 3   (rip lookup)
+   GCD dump:       173209 "Madman Library Edition" 2021-2024 Dark Horse [] 6 · 213429 "Madman" [es] 2022-? Planeta DeAgostini [] ? · 73516 "Madman" 2007-2008 Image [] 3 · 60115 "Madman" 1993-1993 Kitchen Sink Press [] 2 · 4596 "Madman" 1992-1992 Tundra [] 3   (dump lookup)
+
+== S11795 Mass Effect Omnibus  [tier C] · gap 6  keys: Mass Effect  years 2010-2011  2 files / 2 collections
+   folders: [2] Dark Horse\Mass Effect
+   files:   [13295] COL Mass Effect Omnibus Vol. 01 (2016) (digital) (Son of Ultron-Empire).cbr (403pp) | [13296] COL Mass Effect Omnibus Vol. 02 (2017) (digital) (Son of Ultron-Empire).cbr (327pp)
+   GCD says: [13295] gcd_reprint 1650060: s65211 Mass Effect: Homeworlds (2012) #1-4 [8 stories] · s55024 Mass Effect: Evolution (2011) #1-4 [7 stories] · s61675 Mass Effect: Invasion (2011) #1-4 [6 stories] · s41547 Mass Effect: Redemption (2010) #1-4 [6 stories]
+             [13296] gcd_reprint 1673996: s75652 Mass Effect: Foundation (2013) #1-13 [26 stories] · s74246 Free Comic Book Day: R.I.P.D. and the True Lives of the Fabulous Killjoys / Free Comic Book Day: Mass Effect (2013) (unnumbered) [2 stories]
+   CV linked:      vol 95737 "Mass Effect Omnibus" 2016 Dark Horse Comics 2 issues; cached #1-2 (2); yearΔ 6; ratio 0/2; no judged range
+   CV per-file (v1): vol 62116 "Mass Effect" 2010 Panini Verlag 8 on 2/2 files
+   CV candidates:  (= linked) · 30921 "Mass Effect: Redemption" 2010 Dark Horse Comics 4 s82 · 42923 "Mass Effect: Conviction" 2011 Dark Horse Comics 1 issue 293155 s82 · 57041 "Mass Effect: Invasion" 2012 Dark Horse Comics 1 issue 385694 s82 · 43391 "Mass Effect: Invasion" 2011 Dark Horse Comics 4 s82 · 57040 "Mass Effect: Evolution" 2011 Dark Horse Comics 1 issue 385693 s82 · 107951 "Mass Effect: Discovery" 2018 Dark Horse Comics 1 issue 654023 s82   (v1 search)
+   CV local rip:   (= linked) · 30921 "Mass Effect: Redemption" 2010 Dark Horse Comics 4 (via CV candidate name "Mass Effect: Redemption") · 44277 "Mass Effect: Redemption" 2010 Dark Horse Comics 1 issue 304666 (via CV candidate name "Mass Effect: Redemption") · 42923 "Mass Effect: Conviction" 2011 Dark Horse Comics 1 issue 293155 (via CV candidate name "Mass Effect: Conviction") · 43391 "Mass Effect: Invasion" 2011 Dark Horse Comics 4 (via CV candidate name "Mass Effect: Invasion")   (rip lookup)
+   GCD dump:       109289 "Mass Effect Omnibus" 2016-2017 Dark Horse [] 2 · 60604 "Mass Effect" [de] 2010-? Panini Deutschland [] 8 · 220457 "Mass Effect" 2010-2012 Dark Horse [] 4 · 41547 "Mass Effect: Redemption" 2010-2010 Dark Horse [] 4 (via CV candidate name "Mass Effect: Redemption") · 49894 "Mass Effect: Redemption" 2010-2010 Dark Horse [] 1 (via CV candidate name "Mass Effect: Redemption") · 61675 "Mass Effect: Invasion" 2011-2012 Dark Horse [] 4 (via CV candidate name "Mass Effect: Invasion")   (dump lookup)
+
+== S63804 The Victories  [tier B]   keys: The Victories  years 2013-2014  16 files / 1 collections
+   folders: [15] Dark Horse\Michael Avon Oeming's The Victories (2012)\The Victories v2 (2013) · [1] Dark Horse\The Victories (2013)
+   files:   Michael Avon Oeming's The Victories 001 (2013) (digital) (Son of Ultron-Empire).cbr … Michael Avon Oeming's The Victories 015 (2014) (digital) (Son of Ultron-Empire).cbr  (15 files, pp 21-30)
+            [14714] COL The Victories Omnibus (2021) (digital) (Son of Ultron-Empire).cbr (536pp)
+   ours:    ladder 1-15; judged item 14714 #1-15 conf 0.8; ComicInfo Series: "The Victories Omnibus"x1; ComicInfo Publisher: "Dark Horse"x1
+   GCD says: [14714] gcd_reprint 2256555: s68095 The Victories (2012) #5 [1 story]
+   CV linked:      vol 60539 "The Victories" 2013 Dark Horse Comics 15 issues; cached #1-15 (15); yearΔ 0; ratio 15/15 = 1.00; 1 of 1 judged fit
+   CV per-file (v1): vol 69862 "Michael Avon Oeming’s The Victories: Transhuman" 2013 Dark Horse Comics 1 issue 436178 on 15/16 files
+   CV local rip:   (= linked) · 2637 "The Victories" 2012 Dark Horse Comics 5   (rip lookup)
+   GCD dump:       74116 "The Victories" 2013-2014 Dark Horse [] 15 · 74916 "The Victories" 2013-2015 Dark Horse [] 4 · 68095 "The Victories" 2012-2012 Dark Horse [] 5   (dump lookup)
+
+== S12069 Mighty Samson  [tier B]   keys: Mighty Samson - Judgment  years 2010-2012  1 files / 0 collections
+   folders: [1] Dark Horse\Mighty Samson
+   files:   [14524] Mighty Samson - Judgment (2012) (digital) (Son of Ultron-Empire).cbr (96pp)
+   CV linked:      vol 37506 "Mighty Samson" 2010 Dark Horse Comics 4 issues; cached #1-4 (4); yearΔ 0; ratio 0/4; no judged range
+   CV per-file (v1): vol 43950 "Mighty Samson: Judgment" 2012 Dark Horse Comics 1 issue 302141 on 1/1 files
+   CV candidates:  (= linked) · 35266 "Mighty Samson Archives" 2010 Dark Horse Comics 4 s57 · 2206 "Mighty Samson" 1964 Western Publishing 32 s55 · 56421 "Samson" 2013 Kingstone Comics 1 issue 382862 s55 · 170183 "Samson" 2022 Ingraban Ewald Verlag 1 issue 1153133 s55 · 128766 "Samson" 1955 L. Miller & Son, Ltd 2 s48 · 1739 "Samson" 1955 Ajax-Farrell 3 s43   (v1 search)
+   CV local rip:   (= linked) · 2206 "Mighty Samson" 1964 Western Publishing 32 · 35266 "Mighty Samson Archives" 2010 Dark Horse Comics 4 (via CV candidate name "Mighty Samson Archives")   (rip lookup)
+   GCD dump:       52724 "Mighty Samson" 2010-2011 Dark Horse [] 4 · 54151 "Mighty Samson" 2010-2011 Dark Horse [] 4 · 64850 "Mighty Samson" 2012-2012 Dark Horse [] 1 · 1652 "Mighty Samson" 1964-1982 Western [] 32   (dump lookup)
+
+== S12893 Nexus Omnibus  [tier C] · gap 19  keys: Nexus  years 1993-2023  9 files / 9 collections
+   folders: [8] Dark Horse\Nexus (1981) · [1] Dark Horse\Nexus (1981)\Nexus - Nefarious (2023)
+   files:   [13995] COL Nexus - Nefarious (2023) (digital) (Son of Ultron II-Empire).cbr (66pp) | [13750] COL Nexus Omnibus v01 (2012) (digital) (Son of Ultron-Empire).cbr (413pp)
+            [13751] COL Nexus Omnibus v02 (2013) (digital) (Son of Ultron-Empire).cbr (424pp) | [13752] COL Nexus Omnibus v03 (2013) (digital) (Son of Ultron-Empire).cbr (408pp)
+            [13753] COL Nexus Omnibus v04 (2013) (digital) (Son of Ultron II-Empire).cbr (413pp) | [13754] COL Nexus Omnibus v05 (2014) (digital) (Son of Ultron-Empire).cbr (436pp)
+            [13755] COL Nexus Omnibus v06 (2014) (digital) (Son of Ultron-Empire).cbr (421pp) | [13756] COL Nexus Omnibus v07 (2016) (digital) (Son of Ultron-Empire).cbr (458pp)
+            [13757] COL Nexus Omnibus v08 (2016) (digital) (Son of Ultron-Empire).cbr (389pp)
+   ours:    ComicInfo Series: "Nexus"x1; ComicInfo Publisher: "Dark Horse"x1
+   GCD says: [13751] gcd_reprint 1096710: s3108 Nexus (1985) #12-25 [42 stories]
+             [13753] gcd_reprint 1165052: s3108 Nexus (1985) #40-52 [37 stories] · s3904 The Next Nexus (1989) #1 [2 stories]
+             [13754] gcd_reprint 1212051: s3108 Nexus (1985) #53-65 [37 stories] · s3904 The Next Nexus (1989) #2-4 [6 stories]
+             [13755] gcd_reprint 1252404: s3108 Nexus (1985) #66-80 [59 stories]
+             [13756] gcd_reprint 1600059: s4540 Nexus: Alien Justice (1992) #1-3 [4 stories] · s4541 Nexus the Liberator (1992) #1-4 [4 stories] · s23524 Hammer of God: Butch (1994) #1-3 [3 stories] · s25905 Clonezone Special (1989) #1 [1 story]
+   CV linked:      vol 54124 "Nexus Omnibus" 2012 Dark Horse Comics 8 issues; cached #1-8 (8); yearΔ 19; ratio 0/8; no judged range
+   CV per-file (v1): vol 48046 "Nexus" 1993 Dark Horse Comics 2 on 9/9 files
+   CV candidates:  3563 "Nexus" 1983 First ? s30 · 56627 "Dark Horse Insider" 1992 Dark Horse Comics ? s0 · 91633 "Dark Horse Insider" 1996 Dark Horse Comics ? s0 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics ? s0 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics ? s0 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics ? s0   (v1 search)
+   CV local rip:   (= linked) · 159286 "Nexus" 1995 Editorial Astri 1 issue 1066927 · 89727 "Nexus" 2001 Arboris 1 issue 525820 · 3563 "Nexus" 1983 First 83 · 3097 "Nexus" 1981 Capital Comics 3   (rip lookup)
+   GCD dump:       70032 "Nexus Omnibus" 2012-2016 Dark Horse [] 8 · 196642 "Nexus - Omnibus" [fr] 2022-? Delirium [] 2 · 30707 "Nexus" 1993-1993 Dark Horse [] 2 · 38621 "Nexus" [de] 1991-1991 Norbert Hethke Verlag [] 1 · 5615 "Nexus" 1996-1997 Dark Horse [] 10 · 32819 "Nexus" [es] 1988-1990 Ediciones B [] 16   (dump lookup)
+
+== S13057 Norse Mythology  [tier B]   keys: Norse Mythology | Norse Mythology I  years 2020-2023  3 files / 3 collections
+   flags: #138 duplicate-edition [Pending] item 14554 — #1-6 is claimed by this item and by 14557 — two editions of one block · #139 duplicate-edition [Pending] item 14555 — #7-12 is claimed by this item and by 14558 — two editions of one block · #359 label-ambiguous [Pending] item 14554 — vols 1-2 are each held twice (14557/14554, 14558/14555)
+   folders: [2] Dark Horse\Norse Mythology (2020)\_UHD Rips · [1] Dark Horse\Norse Mythology (2020)
+   files:   [14556] COL Norse Mythology Vol. 03 (2023) (digital) (Son of Ultron-Empire).cbr (161pp) | [14557] COL Norse Mythology Vol. 01 (2021) (digital) (Son of Ultron II-Empire).cbr (165pp)
+            [14558] COL Norse Mythology Vol. 02 (2022) (digital) (Son of Ultron II-Empire).cbr (157pp)
+   ours:    judged item 14554 #1-6 conf 0.75; judged item 14557 #1-6 conf 0.75; judged item 14555 #7-12 conf 0.65; judged item 14558 #7-12 conf 0.7; judged item 14556 #13-18 conf 0.7
+   CV linked:      vol 130953 "Norse Mythology" 2020 Dark Horse Comics 6 issues; cached #1-6 (6); yearΔ 0; ratio 0/6; 2 of 5 judged fit; v1 per-file: same volume on 2/3 files
+   CV candidates:  (= linked) · 91558 "Norse" 2015 Dynamite (France) 4 s54 · 93366 "American Mythology Dark" 2016 American Mythology Productions 2 s37 · 134584 "Norse Mythology" 2021 Dark Horse Comics 3 s33 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s23 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s22 · 91633 "Dark Horse Insider" 1996 Dark Horse Comics 12 s19   (v1 search)
+   CV local rip:   (= linked) · 134584 "Norse Mythology" 2021 Dark Horse Comics 3 · 91558 "Norse" 2015 Dynamite (France) 4 (via CV candidate name "Norse") · 93366 "American Mythology Dark" 2016 American Mythology Productions 2 (via CV candidate name "American Mythology Dark")   (rip lookup)
+   GCD dump:       164622 "Norse Mythology" 2020-2021 Dark Horse [] 6 · 170977 "Norse Mythology" 2021-2023 Dark Horse [] 3 · 156080 "Norse" [fr] 2015-? Dynamite [] 5 (via CV candidate name "Norse")   (dump lookup)
+
+== S13114 Oink - Heaven's Butcher  [tier B]   keys: OINK - Heaven's Butcher  years 1995-2015  1 files / 0 collections
+   folders: [1] Dark Horse\OINK (2015)
+   files:   [13860] OINK - Heaven's Butcher (2015) (digital) (Mr Norrell-Empire).cbr (124pp)
+   CV linked:      vol 19300 "Oink - Heaven's Butcher" 1995 Kitchen Sink 3 issues; cached #1-3 (3); yearΔ 0; ratio 0/3; no judged range
+   CV per-file (v1): vol 80771 "Oink: Heaven's Butcher" 2015 Dark Horse Comics 1 issue 482798 on 1/1 files
+   CV candidates:  (= linked) · 37584 "Oink!" 1986 IPC Magazines Ltd. 69 s43 · 41069 "The Butcher" 1990 DC Comics 5 s24 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s24 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s24 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics 3 s22 · 91633 "Dark Horse Insider" 1996 Dark Horse Comics 12 s21   (v1 search)
+   CV local rip:   (= linked) · 37584 "Oink!" 1986 IPC Magazines Ltd. 69 (via CV candidate name "Oink!")   (rip lookup)
+   GCD dump:       21713 "Oink: Heaven's Butcher" 1995-1996 Kitchen Sink Press [] 3 · 87482 "OINK: Heaven's Butcher" 2015-2015 Dark Horse [] 1 · 43724 "Oink" [sv-se] 1990-1991 Micke Carlson [] 2 (via CV candidate name "Oink!") · 107103 "Oink" [de] 1988-1990 Bastei Verlag [] 3 (via CV candidate name "Oink!") · 25511 "Oink!" [en-gb] 1986-1988 IPC [] 70 (via CV candidate name "Oink!")   (dump lookup)
+
+== S13384 Operation Sunshine: Already Dead  [tier A]   keys: Operation Sunshine - Already Dead | Operation Sunshine - Blood Run  years 2023-2024  5 files / 1 collections
+   folders: [4] Dark Horse\Operation Sunshine (2023)\Operation Sunshine v2 - Already Dead (2024) · [1] Dark Horse\Operation Sunshine (2023)
+   files:   [14561] COL Operation Sunshine v01 - Blood Run (2024) (digital) (Son of Ultron-Empire).cbr (121pp)
+            [14562] Operation Sunshine - Already Dead 001 (2024) (digital) (Son of Ultron-Empire).cbr (26pp)
+            [14563] Operation Sunshine - Already Dead 002 (2024) (digital) (Son of Ultron-Empire).cbr (25pp)
+            [14564] Operation Sunshine - Already Dead 003 (2024) (digital) (Son of Ultron-Empire).cbr (25pp)
+            [14565] Operation Sunshine - Already Dead 004 (2024) (digital) (Son of Ultron-Empire).cbr (26pp)
+   ours:    ladder 1-4; judged item 14561 #1-4 conf 0.8
+   CV linked:      vol 157852 "Operation Sunshine: Already Dead" 2024 Dark Horse Comics 4 issues; cached #1-4 (4); yearΔ 1; ratio 4/4 = 1.00; 1 of 1 judged fit
+   CV per-file (v1): vol 154163 "Operation Sunshine" 2023 Dark Horse Comics 4 on 5/5 files
+   CV candidates:  (= linked) · 157325 "Blood Run" 2023 Scout Comics 1 issue 1048813 s85 · 111265 "Sunshine" 2018 Advent Comics 1 issue 671619 s66 · 160483 "Operation Sunshine" 2024 Dark Horse Comics 1 issue 1074469 s45 · 20953 "BloodRayne: Red Blood Run" 2007 Digital Webbing 3 s38 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s22 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s21   (v1 search)
+   CV local rip:   (= linked) · 160483 "Operation Sunshine" 2024 Dark Horse Comics 1 issue 1074469 (via CV name "Operation Sunshine") · 111265 "Sunshine" 2018 Advent Comics 1 issue 671619 (via CV candidate name "Sunshine") · 157325 "Blood Run" 2023 Scout Comics 1 issue 1048813 (via CV candidate name "Blood Run")   (rip lookup)
+   GCD per-file:   series 211514 "Operation Sunshine: Already Dead" 2024-2024 Dark Horse [limited series] 4 on 4/5 files; methods numx4
+   GCD dump:       (= per-file) · 204867 "Operation Sunshine" 2023-2024 Dark Horse [] 4 (via CV name "Operation Sunshine") · 183591 "Sunshine" 2022-2022 Advent Comics [] 1 (via CV candidate name "Sunshine") · 213154 "Operation Sunshine" 2024-? Dark Horse [] 2 (via CV name "Operation Sunshine") · 71750 "Sunshine" [en-gb] 1938-1939 Target [] 39 (via CV candidate name "Sunshine") · 208830 "Blood Run" 2023-2023 Scout Comics [] 1 (via CV candidate name "Blood Run")   (dump lookup)
+
+== S13888 Plants vs. Zombies  [tier D]   keys: Plants vs. Zombies  years 2013-2024  23 files / 23 collections
+   flags: #94 conflated-series [Dismissed] item 13167 — 23 Plants vs. Zombies minis share this Series, each numbered from #1
+   folders: [23] Dark Horse\Plants vs Zombies (2013)
+   files:   [13166] COL Plants vs. Zombies Vol. 01 - Lawnmageddon (2013) (digital) (Son of Ultron-Empire).cbr (80pp)
+            [13167] COL Plants vs. Zombies Vol. 02 - Timepocalypse (2015) (digital) (The Magicians-Empire).cbr (80pp)
+            [13168] COL Plants vs. Zombies Vol. 03 - Bully For You (2015) (digital) (Son of Ultron-Empire).cbr (97pp)
+            [13169] COL Plants vs. Zombies Vol. 04 - Grown Sweet Home (2016) (digital) (Son of Ultron-Empire).cbr (88pp)
+            [13170] COL Plants vs. Zombies Vol. 05 - Petal to the Metal (2016) (digital) (Son of Ultron-Empire).cbr (90pp)
+            [13171] COL Plants vs. Zombies Vol. 06 - Boom Boom Mushroom (2017) (digital) (Son of Ultron-Empire).cbr (88pp)
+            [13172] COL Plants vs. Zombies Vol. 07 - Battle Extravagonzo (2017) (digital) (Son of Ultron-Empire).cbr (89pp)
+            [13173] COL Plants vs. Zombies Vol. 08 - Lawn of Doom (2017) (digital) (Son of Ultron-Empire).cbr (89pp)
+            [13174] COL Plants vs. Zombies Vol. 09 - The Greatest Show Unearthed (2018) (digital) (Son of Ultron-Empire).cbr (89pp)
+            [13175] COL Plants vs. Zombies Vol. 10 - Rumble at Lake Gumbo (2018) (digital) (Son of Ultron-Empire).cbr (90pp)
+            [13176] COL Plants vs. Zombies Vol. 11 - War and Peas (2018) (digital) (Son of Ultron-Empire).cbr (89pp)
+            [13177] COL Plants vs. Zombies Vol. 12 - Dino-Might (2019) (digital) (Son of Ultron-Empire).cbr (89pp)
+            [13178] COL Plants vs. Zombies Vol. 13 - Snow Thanks (2019) (digital) (Son of Ultron-Empire).cbr (90pp)
+            [13179] COL Plants vs. Zombies Vol. 14 - A Little Problem (2019) (digital) (Son of Ultron-Empire).cbr (90pp)
+            [13180] COL Plants vs. Zombies Vol. 15 - Better Homes and Guardens (2020) (digital) (Son of Ultron-Empire).cbr (90pp)
+            [13181] COL Plants vs. Zombies Vol. 16 - The Garden Path (2020) (digital) (Son of Ultron-Empire).cbr (90pp)
+            [13182] COL Plants vs. Zombies Vol. 17 - Multi-ball-istic (2020) (digital) (Son of Ultron-Empire).cbr (91pp)
+            [13183] COL Plants vs. Zombies Vol. 18 - Constructionary Tales (2021) (digital) (Son of Ultron-Empire).cbr (88pp)
+            [13184] COL Plants vs. Zombies Vol. 19 - Dream A Little Scheme (2021) (digital) (Son of Ultron-Empire).cbr (91pp)
+            [13185] COL Plants vs. Zombies Vol. 20 - Faulty Fables (2023) (digital) (Son of Ultron II-Empire).cbr (89pp)
+            [13186] COL Plants vs. Zombies Vol. 21 - Impfestation (2023) (digital) (Son of Ultron-Empire).cbr (92pp)
+            [13187] COL Plants vs. Zombies Vol. 22 - The Unpredictables (2023) (digital) (Son of Ultron-Empire).cbr (89pp)
+            [13188] COL Plants vs. Zombies Vol. 23 - Zapped (2024) (digital) (Son of Ultron-Empire).cbr (91pp)
+   ours:    judged item 13166 #1-6 conf 0.9; judged item 13167 #1-6 conf 0.9; judged item 13168 #1-3 conf 0.95; judged item 13169 #4-6 conf 0.95; judged item 13170 #7-9 conf 0.95; judged item 13171 #10-12 conf 0.95; ComicInfo Series: "Plants vs. Zombies"x11; ComicInfo Publisher: "Dark Horse"x11
+   GCD says: [13168] gcd_reprint 1489759: s90231 Plants vs Zombies (2015) #1-3 [4 stories] · s80553 Free Comic Book Day: All Ages (2014) (unnumbered) [1 story]
+             [13170] gcd_reprint 1670219: s90231 Plants vs Zombies (2015) #7-9 [4 stories]
+   CV candidates:  65722 "Plants vs. Zombies: Lawnmageddon" 2013 Dark Horse Comics 6 s92 · 68914 "Plants vs. Zombies: Lawnmageddon" 2013 Dark Horse Comics 1 issue 432313 s89 · 82701 "Plants Vs. Zombies" 2015 Dark Horse Comics 12 s58 · 75314 "Plants vs. Zombies: Timepocalypse" 2014 Dark Horse Comics 6 s37 · 140150 "Plants vs. Zombies: Zomnibus" 2021 Dark Horse Comics 2 s34 · 79418 "Plants vs. Zombies: Timepocalypse" 2015 Dark Horse Comics 1 issue 475909 s34   (v1 search)
+   CV local rip:   82701 "Plants Vs. Zombies" 2015 Dark Horse Comics 12 · 65722 "Plants vs. Zombies: Lawnmageddon" 2013 Dark Horse Comics 6 (via CV candidate name "Plants vs. Zombies: Lawnmageddon") · 68914 "Plants vs. Zombies: Lawnmageddon" 2013 Dark Horse Comics 1 issue 432313 (via CV candidate name "Plants vs. Zombies: Lawnmageddon")   (rip lookup)
+   GCD dump:       103080 "Plants vs. Zombies" [de] 2013-2013 Cross Cult [] 1 · 84167 "Plants vs. Zombies" 2014-2014 Dark Horse [] 1 · 198144 "Plants vs. Zombies" [fr] 2014-? Editions Jungle [] 19 · 90231 "Plants vs Zombies" 2015-2016 Dark Horse [] 12 · 96942 "Plants vs. Zombies" [es-mx] 2016-? Editorial Panini México [] 6 · 102900 "Plants vs. Zombies" 2016-? Dark Horse [] 22   (dump lookup)
+
+== S35804 Plants vs. Zombies: Zomnibus  [tier B]   keys: Plants vs. Zombies Zomnibus Book  years 2021-2022  1 files / 1 collections
+   folders: [1] Dark Horse\Plants vs Zombies (2013)\Omnibuses
+   files:   [13162] COL Plants vs. Zombies Zomnibus Book 02 (2022) (digital) (Son of Ultron-Empire).cbr (261pp)
+   CV linked:      vol 140150 "Plants vs. Zombies: Zomnibus" 2021 Dark Horse Comics 2 issues; cached #1-2 (2); yearΔ 0; ratio 0/2; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 68914 "Plants vs. Zombies: Lawnmageddon" 2013 Dark Horse Comics 1 issue 432313 s80 · 65722 "Plants vs. Zombies: Lawnmageddon" 2013 Dark Horse Comics 6 s65 · 82701 "Plants Vs. Zombies" 2015 Dark Horse Comics 12 s30 · 79418 "Plants vs. Zombies: Timepocalypse" 2015 Dark Horse Comics 1 issue 475909 s25 · 152748 "Plants vs. Zombies: Impfestation" 2023 Dark Horse Comics 1 issue 1005245 s25 · 161602 "Plants vs. Zombies: Zapped" 2024 Dark Horse Comics 1 issue 1081687 s25   (v1 search)
+   CV local rip:   (= linked) · 65722 "Plants vs. Zombies: Lawnmageddon" 2013 Dark Horse Comics 6 (via CV candidate name "Plants vs. Zombies: Lawnmageddon") · 68914 "Plants vs. Zombies: Lawnmageddon" 2013 Dark Horse Comics 1 issue 432313 (via CV candidate name "Plants vs. Zombies: Lawnmageddon")   (rip lookup)
+   GCD dump:       179720 "Plants vs. Zombies Zomnibus" 2021-? Dark Horse [] 4 · 93329 "Plants vs. Zombies: Lawnmageddon" 2013-2013 Dark Horse [] 1 (via CV candidate name "Plants vs. Zombies: Lawnmageddon")   (dump lookup)
+
+== S13889 Plants vs. Zombies: Lawnmageddon  [tier B]   keys: Plants vs. Zombies - Garden Warfare  years 2013-2019  4 files / 4 collections
+   folders: [3] Dark Horse\Plants vs Zombies (2013)\Plants vs. Zombies - Garden Warfare (2016) · [1] Dark Horse\Plants vs Zombies (2013)\Omnibuses
+   files:   [13161] COL Plants vs. Zombies Zomnibus Book 01 (2021) (digital) (Son of Ultron-Empire).cbr (259pp)
+            [13163] COL Plants vs. Zombies - Garden Warfare Vol. 01 (2016) (digital) (Son of Ultron-Empire).cbr (81pp)
+            [13164] COL Plants vs. Zombies - Garden Warfare Vol. 02 (2018) (digital) (Son of Ultron-Empire).cbr (90pp)
+            [13165] COL Plants vs. Zombies - Garden Warfare Vol. 03 (2019) (digital) (Son of Ultron-Empire).cbr (90pp)
+   ours:    ComicInfo Series: "Plants vs. Zombies Zomnibus"x1, "Plants vs. Zombies: Garden Warfare"x1; ComicInfo Publisher: "Dark Horse"x2
+   GCD says: [13163] gcd notes 1525208 (#[nn] of Plants vs. Zombies: Garden Warfare): Plants vs. Zombies: Garden Warfare #1-3  |  gcd_reprint 1525208: s93505 Plants vs Zombies: Garden Warfare (2015) #1-3 [3 stories]
+   CV linked:      vol 65722 "Plants vs. Zombies: Lawnmageddon" 2013 Dark Horse Comics 6 issues; cached #1-6 (6); yearΔ 0; ratio 0/6; no judged range; v1 per-file: same volume on 1/4 files
+   CV candidates:  (= linked) · 68914 "Plants vs. Zombies: Lawnmageddon" 2013 Dark Horse Comics 1 issue 432313 s68 · 85586 "Plants Vs. Zombies: Garden Warfare" 2015 Dark Horse Comics 3 s65 · 87446 "Plants Vs. Zombies: Garden Warfare" 2016 Dark Horse Comics 3 s65 · 82701 "Plants Vs. Zombies" 2015 Dark Horse Comics 12 s33 · 126894 "Plants vs. Zombies: The Garden Path" 2020 Dark Horse Comics 1 issue 760738 s24 · 75314 "Plants vs. Zombies: Timepocalypse" 2014 Dark Horse Comics 6 s18   (v1 search)
+   CV local rip:   (= linked) · 68914 "Plants vs. Zombies: Lawnmageddon" 2013 Dark Horse Comics 1 issue 432313 · 85586 "Plants Vs. Zombies: Garden Warfare" 2015 Dark Horse Comics 3 · 87446 "Plants Vs. Zombies: Garden Warfare" 2016 Dark Horse Comics 3   (rip lookup)
+   GCD dump:       93329 "Plants vs. Zombies: Lawnmageddon" 2013-2013 Dark Horse [] 1 · 93505 "Plants vs Zombies: Garden Warfare" 2015-2015 Dark Horse [] 3 · 95636 "Plants vs. Zombies: Garden Warfare" 2016-2016 Dark Horse [] 3 · 155916 "Plants vs. Zombies: Garden Warfare" 2016-2016 Dark Horse [] 1   (dump lookup)
+
+== S13935 Polar: Came From the Cold  [tier B]   keys: Polar | Polar - Came From the Cold  years 2013-2019  7 files / 7 collections
+   flags: #369 label-ambiguous [Pending] item 13493 — items 13493 and 14187 are duplicate copies of Polar v03
+   folders: [5] Dark Horse\Polar (2011) · [2] Dark Horse\Polar
+   files:   [14184] COL Polar Vol. 00 - The Black Kaiser (2019) (digital) (Son of Ultron-Empire).cbr (96pp)
+            [14185] COL Polar Vol. 01 - Came From the Cold (2019 - 2nd edition) (digital) (Son of Ultron-Empire).cbr (180pp)
+            [14186] COL Polar Vol. 02 - Eye for an Eye (2015) (Digital) (BlackManta-Empire).cbr (171pp)
+            [14187] COL Polar Vol. 03 - No Mercy for Sister Maria (2016) (Digital) (BlackManta-Empire).cbr (171pp)
+            [14188] COL Polar Vol. 04 - The Kaiser Falls (2019) (digital) (Son of Ultron-Empire).cbr (170pp)
+            [13491] COL Polar v01 - Came From the Cold (2013) (digital) (Son of Ultron-Empire).cbr (170pp) | [13493] COL Polar v03 (2016) (Digital) (BlackManta-Empire).cbr (171pp)
+   ours:    ComicInfo Series: "Polar"x3; ComicInfo Publisher: "Dark Horse"x3
+   GCD says: [14186] gcd_reprint 1340875: s82399 Dark Horse Presents (2014) #9 [1 story]
+   CV linked:      vol 69561 "Polar: Came From the Cold" 2013 Dark Horse Comics 1 issues issue 435034; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 1/7 files
+   CV candidates:  (= linked) · 64452 "They Came from the 50s" 1990 Malibu 1 issue 414191 s49 · 130325 "Polar" 2015 Tokyopop GmbH ? s30 · 56627 "Dark Horse Insider" 1992 Dark Horse Comics ? s15 · 91633 "Dark Horse Insider" 1996 Dark Horse Comics ? s15 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics ? s15 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics ? s15   (v1 search)
+   CV local rip:   (= linked) · 130325 "Polar" 2015 Tokyopop GmbH 3 · 64452 "They Came from the 50s" 1990 Malibu 1 issue 414191 (via CV candidate name "They Came from the 50s")   (rip lookup)
+   GCD dump:       88420 "Polar" 2013-2016 Dark Horse [] 4 · 96549 "Polar" [de] 2015-2017 Tokyopop (de) [] 3 · 135009 "Polar" [fr] 2016-2017 Glénat [] 2 · 141822 "Polar" 2019-? Dark Horse [] 1   (dump lookup)
+
+== S14470 Red Moon  [tier B]   keys: Red Moon  years 2014-2014  1 files / 0 collections
+   folders: [1] Dark Horse\Red Moon (2005)
+   files:   [14598] Red Moon (2014) (digital) (Son of Ultron II-Empire).cbr (251pp)
+   CV linked:      vol 76972 "Red Moon" 2014 Dark Horse Comics 1 issues issue 465817; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV per-file (v1): vol 68853 "Red Moon" 1995 Millennium Publications 2 on 1/1 files
+   CV candidates:  (= linked) · 49682 "Dark Horse New Recruits" 2005 Dark Horse Comics 1 issue 340614 s45 · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 s41 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s28 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s27 · 49628 "Dark Horse Presenta" 2000 Norma Editorial 1 issue 339964 s26 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics 3 s25   (v1 search)
+   CV local rip:   (= linked) · 49682 "Dark Horse New Recruits" 2005 Dark Horse Comics 1 issue 340614 (via CV candidate name "Dark Horse New Recruits")   (rip lookup)
+   GCD dump:       196537 "Red Moon" 2014-2014 Dark Horse [] 1 · 61340 "Red Moon" 2010-2010 Cossack Comics [] 1 · 85009 "Red Moon" [en-si] 2005-? SAF Comics [] 4 · 40106 "Red Moon" 1995-1995 Millennium Publications [] 2 · 32958 "Dark Horse New Recruits" 2005-2005 Dark Horse [] 1 (via CV candidate name "Dark Horse New Recruits")   (dump lookup)
+
+== S14648 Rex Mundi Omnibus  [tier C] · gap 10  keys: Rex Mundi  years 2002-2003  2 files / 2 collections
+   folders: [2] Dark Horse\Rex Mundi (2003)
+   files:   [13515] COL Rex Mundi Omnibus v01 (2012) (digital) (Son of Ultron-Empire).cbr (580pp) | [13516] COL Rex Mundi Omnibus v02 (2013) (digital) (Son of Ultron-Empire).cbr (596pp)
+   GCD says: [13516] gcd_reprint 1070878: s25353 Rex Mundi (2006) #1-19 [19 stories] · s12221 Rex Mundi (2002) #18 [1 story] · s35712 The Dark Horse Book of Monsters (2006) (unnumbered) [1 story] · s38394 MySpace Dark Horse Presents (2008) #2 [1 story]
+   CV linked:      vol 51621 "Rex Mundi Omnibus" 2012 Dark Horse Comics 2 issues; cached #1-2 (2); yearΔ 10; ratio 0/2; no judged range
+   CV per-file (v1): vol 11277 "Rex Mundi" 2003 Image 19 on 2/2 files
+   CV candidates:  (= linked) · 48564 "Rex Mundi" 2006 Dark Horse Comics 6 s53 · 18736 "Rex Mundi" 2006 Dark Horse Comics 19 s50 · 131873 "Rex Mundi" 2007 Egmont Ehapa Verlag 6 s38 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s33 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s33 · 46136 "Best of Dark Horse Presents" 1989 Dark Horse Comics 3 s31   (v1 search)
+   CV local rip:   (= linked) · 18736 "Rex Mundi" 2006 Dark Horse Comics 19 · 48564 "Rex Mundi" 2006 Dark Horse Comics 6 · 131873 "Rex Mundi" 2007 Egmont Ehapa Verlag 6   (rip lookup)
+   GCD dump:       68230 "Rex Mundi Omnibus" 2012-2013 Dark Horse [] 2 · 12221 "Rex Mundi" 2002-2006 Image [] 19 · 65413 "Rex Mundi" 2004-2005 Image [] 2 · 165704 "Rex Mundi" [fr] 2005-2005 Semic S.A. [] 1 · 25353 "Rex Mundi" 2006-2009 Dark Horse [] 19 · 31667 "Rex Mundi" 2006-2010 Dark Horse [] 6   (dump lookup)
