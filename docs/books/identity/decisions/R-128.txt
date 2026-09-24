@@ -1,0 +1,728 @@
+# R-128 — the triaged 0.9 tier, 45 manga shelves. Almost every shelf was triaged for signal `c` ("judged range does
+# not fit the S run"): the containment pass judged CHAPTER ranges (v01 #1-7 …) while both catalogs count VOLUMES, so
+# the misfit is the unit, not the identity (L-283/L-284: no chapter-indexed run exists; the books ARE the run, no C
+# lines). The re-read found real errors on nine shelves, all the L-383 shape — a stored link on the JAPANESE (or
+# Square Enix) CV line while an English-publisher volume dated with our files sits in the rip: Dandadan (Viz 145549),
+# Final Fantasy Lost Stranger (Yen 112931), Giant Killing (Kodansha USA 99428), MoMo (Seven Seas 144739), Innocent
+# (Dark Horse omnibus 157999), and three "ComicVine has no volume" claims that were wrong: Domu (Dark Horse 23070),
+# Fist of the North Star (Viz 2021 136896), March Comes in Like a Lion (Denpa 150064). Death Note's v09-v13 I lines
+# carried the wrong GCD rows (the packet's ⚠ stored-row warnings). Stone Ocean gains its Japanese GCD leg (206718).
+# Every other shelf is restated as read, its prior I lines carried forward after checking them against the packet.
+
+# --- S4760 Dandadan
+S 4760 cv=145549 gcd=190566 0.9 | Viz's English Dandadan: CV 145549 (Viz 2022, cached #1-16, #1 dated 2022-10-17) and GCD 190566 (Viz 2022-?, 18 rows, ISBNs 978-1-9747-3463-4 upward) agree on publisher and start year, and our nine COL v01-v09 dated 2022-2024 meet #1-9 by ordinal with dates in step (v09 = 2024-10) and pages within ~25pp; the 93 chapter files 077-169 (16-23pp, 2022-2024) are the digital chapters past volume 9 of the same comic; 0.9 because a chapter ladder cannot be checked against a volume count and CV 145549 has no CvVolume row
+F 4760 wrong-cv-link | stored cv 138036 "Dandadan" 2021 Shueisha is the Japanese original (issue #1 2021-08-09 "Volume 1"); C-034's I lines put its issue ids (876838 …) on our English Viz books — L-383, the English edition is CV 145549
+F 4760 needs-fetch cv=145549 | the Viz volume is named from the local ComicVine rip (15 issues, 16 cached) with no CvVolume row
+N 4760 triage c: the judged ranges #1-5 … #68-76 are chapter numbers across nine volumes; both legs count volumes and neither indexes a chapter run, so no C lines (L-283/L-284) and the misfit is the unit, not the identity
+I 44371 cv=951200 gcd=2444708 isbn=978-1-9747-3463-4 0.95 | our v01 (207pp) = CV 145549 (Viz 2022) #1 issue 951200 (2022-10-17) and GCD 190566 (Viz 2022-?) #1 row 2444708 (212pp) by ordinal; Viz's English Dandadan
+I 44372 cv=951605 gcd=2479745 isbn=978-1-9747-3530-3 0.95 | our v02 (196pp) = CV 145549 (Viz 2022) #2 issue 951605 (2023-01-01) and GCD 190566 (Viz 2022-?) #2 row 2479745 (214pp) by ordinal; Viz's English Dandadan
+I 44373 cv=982499 gcd=2524657 isbn=978-1-9747-3531-0 0.9 | our v03 (198pp) = CV 145549 (Viz 2022) #3 issue 982499 (2023-04-12) and GCD 190566 (Viz 2022-?) #3 row 2524657 (220pp) by ordinal; Viz's English Dandadan
+I 44374 cv=1000467 gcd=2555662 isbn=978-1-9747-3744-4 0.95 | our v04 (205pp) = CV 145549 (Viz 2022) #4 issue 1000467 (2023-07-12) and GCD 190566 (Viz 2022-?) #4 row 2555662 (220pp) by ordinal; Viz's English Dandadan
+I 44375 cv=1024104 gcd=2572575 isbn=978-1-9747-4059-8 0.95 | our v05 (208pp) = CV 145549 (Viz 2022) #5 issue 1024104 (2023-10-09) and GCD 190566 (Viz 2022-?) #5 row 2572575 (222pp) by ordinal; Viz's English Dandadan
+I 44376 cv=1039774 gcd=2611454 isbn=978-1-9747-4283-7 0.9 | our v06 (179pp) = CV 145549 (Viz 2022) #6 issue 1039774 (2024-01-08) and GCD 190566 (Viz 2022-?) #6 row 2611454 (206pp) by ordinal; Viz's English Dandadan
+I 44377 cv=1051080 gcd=2626241 isbn=978-1-9747-4339-1 0.95 | our v07 (189pp) = CV 145549 (Viz 2022) #7 issue 1051080 (2024-04-08) and GCD 190566 (Viz 2022-?) #7 row 2626241 (204pp) by ordinal; Viz's English Dandadan
+I 44378 cv=1063246 gcd=2650169 isbn=978-1-9747-4601-9 0.95 | our v08 (186pp) = CV 145549 (Viz 2022) #8 issue 1063246 (2024-07-15) and GCD 190566 (Viz 2022-?) #8 row 2650169 (204pp) by ordinal; Viz's English Dandadan
+I 44379 cv=1073850 gcd=2667470 isbn=978-1-9747-4897-6 0.95 | our v09 (186pp) = CV 145549 (Viz 2022) #9 issue 1073850 (2024-10-14) and GCD 190566 (Viz 2022-?) #9 row 2667470 (206pp) by ordinal; Viz's English Dandadan
+
+# --- S5203 Death Note
+S 5203 cv=20261 gcd=28547 0.95 | Viz's English Death Note: CV 20261 (Viz 2005, 13) and GCD 28547 (Viz 2005-2009, 12) agree on publisher and start year, and each of our twelve story volumes carries its row's own subtitle (Boredom, Confluence, Hard Run … Kindred Spirits, Finis) with pages within 10pp (v01 198/204, v12 214/220); the thirteenth book "How to Read" (256pp) is CV 20261's #13 and GCD's separate one-book series 93409 — the count difference is that companion, explained
+N 5203 C-034's GCD ids for v09-v13 were wrong: v09/v10 carried 1450182/1450183 (2007/2009 reprint rows of #8) and v11-v13 each carried the PREVIOUS volume's row (the packet's ⚠ stored GCD row warnings) — the I lines below match by subtitle
+N 5203 flag #703 provider-disagrees (item 41725): LOCG's degenerate one-chapter spans on vols 6-9 are a LOCG artefact; the thirteen files are one Viz line and the flag does not touch the identity
+N 5203 triage c: the judged ranges #1-7 … #99-108 are chapter numbers; both legs count volumes, no chapter run exists (L-284), no C lines
+I 41728 cv=124909 gcd=403699 isbn=978-1-4215-0630-2 0.95 | "Vol. 09 - Contact" 196pp = CV 20261 #9 issue 124909 "Contact" and GCD 28547 #9 row 403699 "Contact" (2007-01, 204pp) by subtitle
+I 41729 cv=124912 gcd=403700 isbn=978-1-4215-1155-9 0.95 | "Vol. 10 - Deletion" 190pp = CV 20261 #10 issue 124912 "Delete" and GCD 28547 #10 row 403700 "Deletion" (2007-03, 196pp) by subtitle
+I 41730 cv=124914 gcd=403701 isbn=978-1-4215-1178-8 0.95 | "Vol. 11 - Kindred Spirits" 214pp = CV 20261 #11 issue 124914 "Kindred Spirit" and GCD 28547 #11 row 403701 "Kindred Spirit" (2007-05, 220pp) by subtitle
+I 41731 cv=124915 gcd=403702 isbn=978-1-4215-1327-0 0.95 | "Vol. 12 - Finis" 214pp = CV 20261 #12 issue 124915 "Finis" and GCD 28547 #12 row 403702 "Finis" (2007-07, 220pp) by subtitle
+I 41732 cv=129856 gcd=1486970 isbn=978-1-4215-1888-6 0.9 | "Vol. 13 - How to Read" 256pp = CV 20261 #13 issue 129856 "Volume 13: How To Read" (2008-02) and GCD 93409 "Death Note How to Read 13" (Viz 2008) row 1486970 (2008-02, 286pp); 0.9 for the 30pp gap
+
+I 41720 cv=120949 gcd=403691 0.9 | ordinal position 1 of 13 in Viz's Death Note (CV 20261/GCD 28547, English); GCD's cached count (12) is one short of our 13 because vol. 13 'How to Read' is a companion book GCD indexes separately or not at all
+I 41721 cv=124911 gcd=403692 0.9 | ordinal position 2 of 13 in Viz's Death Note (CV 20261/GCD 28547, English); GCD's cached count (12) is one short of our 13 because vol. 13 'How to Read' is a companion book GCD indexes separately or not at all
+I 41722 cv=124899 gcd=403693 0.9 | ordinal position 3 of 13 in Viz's Death Note (CV 20261/GCD 28547, English); GCD's cached count (12) is one short of our 13 because vol. 13 'How to Read' is a companion book GCD indexes separately or not at all
+I 41723 cv=124902 gcd=403694 0.9 | ordinal position 4 of 13 in Viz's Death Note (CV 20261/GCD 28547, English); GCD's cached count (12) is one short of our 13 because vol. 13 'How to Read' is a companion book GCD indexes separately or not at all
+I 41724 cv=124903 gcd=403695 0.9 | ordinal position 5 of 13 in Viz's Death Note (CV 20261/GCD 28547, English); GCD's cached count (12) is one short of our 13 because vol. 13 'How to Read' is a companion book GCD indexes separately or not at all
+I 41725 cv=124904 gcd=403696 0.9 | ordinal position 6 of 13 in Viz's Death Note (CV 20261/GCD 28547, English); GCD's cached count (12) is one short of our 13 because vol. 13 'How to Read' is a companion book GCD indexes separately or not at all
+I 41726 cv=124905 gcd=403697 0.9 | ordinal position 7 of 13 in Viz's Death Note (CV 20261/GCD 28547, English); GCD's cached count (12) is one short of our 13 because vol. 13 'How to Read' is a companion book GCD indexes separately or not at all
+I 41727 cv=124907 gcd=403698 0.9 | ordinal position 8 of 13 in Viz's Death Note (CV 20261/GCD 28547, English); GCD's cached count (12) is one short of our 13 because vol. 13 'How to Read' is a companion book GCD indexes separately or not at all
+# --- S5436 Devilman
+S 5436 cv=39184 gcd=- 0.9 | Go Nagai's Devilman: CV 39184 "Devilman" (Kodansha 1972, 5) is our five COL v01-v05 (1972-1973, 187-252pp, c2c) by count and years, the ladder 1-5 being the volume ordinals; no GCD row holds the Kodansha tankobon (the 5-count rows are Dynamic Visions [fr-be] 226376, Black Box [fr] 226500 / 226522, Egmont [de] 212736); 0.9 for one leg and the two Verotik issues split below
+F 5436 split-needed | items 42107-42108 "Devilman 001-002 (1995)" (38/39pp, subfolder "Shin Devilman (1995) (Verotik)") -> new key "Devilman (1995)": Verotik's English comic, CV 62479 (Verotik 1995, 3) = GCD 23151 (Verotik 1995-1996, 6, rows 46pp / 44pp); --who-stores cv=62479 finds no shelf; restates C-034's F misfiled as L-368
+I 42107 cv=407204 gcd=350685 isbn=- 0.95 | "Devilman 001 (1995)" 38pp = CV 62479 #1 issue 407204 (1995-06) and GCD 23151 #1 row 350685 (1995-06, 46pp), Verotik
+I 42108 cv=633040 gcd=350686 isbn=- 0.95 | "Devilman 002 (1995)" 39pp = CV 62479 #2 issue 633040 (1995-09) and GCD 23151 #2 row 350686 (1995-09-10, 44pp), Verotik
+
+I 42102 cv=264351 gcd=- 0.9 | ordinal position 1 of 5 in Kodansha's Devilman (CV 39184, 5 volumes, matches our 5 files); GCD's dump holds only French/German editions, no English row
+I 42103 cv=264352 gcd=- 0.9 | ordinal position 2 of 5 in Kodansha's Devilman (CV 39184, 5 volumes, matches our 5 files); GCD's dump holds only French/German editions, no English row
+I 42104 cv=264353 gcd=- 0.9 | ordinal position 3 of 5 in Kodansha's Devilman (CV 39184, 5 volumes, matches our 5 files); GCD's dump holds only French/German editions, no English row
+I 42105 cv=264354 gcd=- 0.9 | ordinal position 4 of 5 in Kodansha's Devilman (CV 39184, 5 volumes, matches our 5 files); GCD's dump holds only French/German editions, no English row
+I 42106 cv=264355 gcd=- 0.9 | ordinal position 5 of 5 in Kodansha's Devilman (CV 39184, 5 volumes, matches our 5 files); GCD's dump holds only French/German editions, no English row
+# --- S5710 Domestic Girlfriend
+S 5710 cv=100674 gcd=- 0.9 | Kodansha USA's English line: CV 100674 "Domestic Girlfriend" (Kodansha Comics USA 2017, 28) is our twenty-eight COL v01-v28 dated 2017-2021 by count and years, each I line below its "Vol. N" issue; GCD indexes no English row and CV 92225 "Domestic na Kanojo" (Kodansha 2014) is the Japanese original
+F 5710 provider-missing | GCD indexes no Kodansha USA "Domestic Girlfriend" in any spelling
+N 5710 triage c: the judged ranges #1-5 … #266-276 are chapter numbers against a 28-volume count — the unit, not the identity; no chapter run exists (L-284), no C lines
+
+I 42557 cv=591665 gcd=- 0.9 | volume 1 of Kodansha USA's twenty-eight-volume line: CV issue 591665 named "Vol. 1" and no GCD issue, mapped by ordinal onto our own v01 file
+I 42558 cv=594885 gcd=- 0.9 | volume 2 of Kodansha USA's twenty-eight-volume line: CV issue 594885 named "Vol. 2" and no GCD issue, mapped by ordinal onto our own v02 file
+I 42559 cv=601611 gcd=- 0.9 | volume 3 of Kodansha USA's twenty-eight-volume line: CV issue 601611 named "Vol. 3" and no GCD issue, mapped by ordinal onto our own v03 file
+I 42560 cv=608357 gcd=- 0.9 | volume 4 of Kodansha USA's twenty-eight-volume line: CV issue 608357 named "Vol. 4" and no GCD issue, mapped by ordinal onto our own v04 file
+I 42561 cv=615880 gcd=- 0.9 | volume 5 of Kodansha USA's twenty-eight-volume line: CV issue 615880 named "Vol. 5" and no GCD issue, mapped by ordinal onto our own v05 file
+I 42562 cv=621788 gcd=- 0.9 | volume 6 of Kodansha USA's twenty-eight-volume line: CV issue 621788 named "Vol. 6" and no GCD issue, mapped by ordinal onto our own v06 file
+I 42563 cv=626209 gcd=- 0.9 | volume 7 of Kodansha USA's twenty-eight-volume line: CV issue 626209 named "Vol. 7" and no GCD issue, mapped by ordinal onto our own v07 file
+I 42564 cv=630665 gcd=- 0.9 | volume 8 of Kodansha USA's twenty-eight-volume line: CV issue 630665 named "Vol. 8" and no GCD issue, mapped by ordinal onto our own v08 file
+I 42565 cv=634233 gcd=- 0.9 | volume 9 of Kodansha USA's twenty-eight-volume line: CV issue 634233 named "Vol. 9" and no GCD issue, mapped by ordinal onto our own v09 file
+I 42566 cv=638226 gcd=- 0.9 | volume 10 of Kodansha USA's twenty-eight-volume line: CV issue 638226 named "Vol. 10" and no GCD issue, mapped by ordinal onto our own v10 file
+I 42567 cv=643241 gcd=- 0.9 | volume 11 of Kodansha USA's twenty-eight-volume line: CV issue 643241 named "Vol. 11" and no GCD issue, mapped by ordinal onto our own v11 file
+I 42568 cv=646297 gcd=- 0.9 | volume 12 of Kodansha USA's twenty-eight-volume line: CV issue 646297 named "Vol. 12" and no GCD issue, mapped by ordinal onto our own v12 file
+I 42569 cv=649387 gcd=- 0.9 | volume 13 of Kodansha USA's twenty-eight-volume line: CV issue 649387 named "Vol. 13" and no GCD issue, mapped by ordinal onto our own v13 file
+I 42570 cv=652422 gcd=- 0.9 | volume 14 of Kodansha USA's twenty-eight-volume line: CV issue 652422 named "Vol. 14" and no GCD issue, mapped by ordinal onto our own v14 file
+I 42571 cv=655306 gcd=- 0.9 | volume 15 of Kodansha USA's twenty-eight-volume line: CV issue 655306 named "Vol. 15" and no GCD issue, mapped by ordinal onto our own v15 file
+I 42572 cv=664159 gcd=- 0.9 | volume 16 of Kodansha USA's twenty-eight-volume line: CV issue 664159 named "Vol. 16" and no GCD issue, mapped by ordinal onto our own v16 file
+I 42573 cv=670612 gcd=- 0.9 | volume 17 of Kodansha USA's twenty-eight-volume line: CV issue 670612 named "Vol. 17" and no GCD issue, mapped by ordinal onto our own v17 file
+I 42574 cv=709891 gcd=- 0.9 | volume 18 of Kodansha USA's twenty-eight-volume line: CV issue 709891 named "Vol. 18" and no GCD issue, mapped by ordinal onto our own v18 file
+I 42575 cv=714491 gcd=- 0.9 | volume 19 of Kodansha USA's twenty-eight-volume line: CV issue 714491 named "Vol. 19" and no GCD issue, mapped by ordinal onto our own v19 file
+I 42576 cv=717236 gcd=- 0.9 | volume 20 of Kodansha USA's twenty-eight-volume line: CV issue 717236 named "Vol. 20" and no GCD issue, mapped by ordinal onto our own v20 file
+I 42577 cv=719875 gcd=- 0.9 | volume 21 of Kodansha USA's twenty-eight-volume line: CV issue 719875 named "Vol. 21" and no GCD issue, mapped by ordinal onto our own v21 file
+I 42578 cv=724732 gcd=- 0.9 | volume 22 of Kodansha USA's twenty-eight-volume line: CV issue 724732 named "Vol. 22" and no GCD issue, mapped by ordinal onto our own v22 file
+I 42579 cv=733468 gcd=- 0.9 | volume 23 of Kodansha USA's twenty-eight-volume line: CV issue 733468 named "Vol. 23" and no GCD issue, mapped by ordinal onto our own v23 file
+I 42580 cv=748126 gcd=- 0.9 | volume 24 of Kodansha USA's twenty-eight-volume line: CV issue 748126 named "Vol. 24" and no GCD issue, mapped by ordinal onto our own v24 file
+I 42581 cv=768351 gcd=- 0.9 | volume 25 of Kodansha USA's twenty-eight-volume line: CV issue 768351 named "Vol. 25" and no GCD issue, mapped by ordinal onto our own v25 file
+I 42582 cv=791534 gcd=- 0.9 | volume 26 of Kodansha USA's twenty-eight-volume line: CV issue 791534 named "Vol. 26" and no GCD issue, mapped by ordinal onto our own v26 file
+I 42583 cv=809792 gcd=- 0.9 | volume 27 of Kodansha USA's twenty-eight-volume line: CV issue 809792 named "Vol. 27" and no GCD issue, mapped by ordinal onto our own v27 file
+I 42584 cv=827943 gcd=- 0.9 | volume 28 of Kodansha USA's twenty-eight-volume line: CV issue 827943 named "Vol. 28" and no GCD issue, mapped by ordinal onto our own v28 file
+# --- S10285 Domu: A Child's Dream
+S 10285 cv=23070 gcd=41912 0.95 | the run wins: our two identical 244pp METASON rips are Dark Horse's Domu trade, which collects the three-issue 1995 mini — CV 23070 "Domu: A Child's Dream" (Dark Horse 1995, 3, issues 138966-138968) and GCD 41912 (Dark Horse 1995, 3 rows of 84pp = 252pp against our 244pp) agree on publisher, year and count; D-012's "ComicVine has no Dark Horse Domu" was wrong, 23070 is in the rip
+F 10285 needs-fetch cv=23070 | the run's CV volume is named from the local rip only, no CvVolume row
+N 10285 flag #306 label-ambiguous (item 42021) is true of the files: items 39997 and 42021 are the same 2001 printing ripped twice — duplicate-rip residue, nothing to split (L-367)
+N 10285 D-012's F provider-missing (no CV Dark Horse Domu) is withdrawn by the S line above
+I 39997 cv=868493 gcd=1052368 isbn=1-56971-611-0 0.9 | the trade's own records: CV 137391 "Domu: A Child's Dream" (Dark Horse 1996, 1) issue 868493 TPB and GCD 41604's 2001-printing row 1052368 (ISBN 1-56971-611-0; the 1996 first printing is 702882 at 242pp) against our 244pp rip
+I 42021 cv=868493 gcd=1052368 isbn=1-56971-611-0 0.9 | the same 2001 Dark Horse trade ripped a second time (244pp, METASON): CV 137391 issue 868493 and GCD 41604 row 1052368
+
+# --- S5726 Don't Toy with Me, Miss Nagatoro
+S 5726 cv=122895 gcd=152847 0.9 | CV 122895 "Don't Toy with Me, Miss Nagatoro" (Kodansha Comics USA 2019, 20) is the English line our nine danke-Empire COL v01-v09 (2019-2021) are, and GCD splits it at the imprint change: 152847 (Vertical 2019-2021, 5) holds our v01-v05 and 171408 (Kodansha USA 2021-2025, 15) our v06-v09; the majority row, whose start year matches CV's, is taken and the split named, hence 0.9
+N 5726 GCD's second series 171408 (Kodansha USA 2021-2025) carries our v06-v09 — the X-027 I lines use its rows (L-100 / L-276)
+N 5726 triage c: the judged ranges #1-8 … #63-70 are chapter numbers against a volume count; no chapter run (L-284)
+
+I 44461 cv=727964 gcd=2042152 isbn=9781947194861 0.95 | CV 122895 issue #1 (727964) and GCD issue #1 (2042152, ISBN 9781947194861) agree by ordinal, matching our v01
+I 44462 cv=737569 gcd=2072702 isbn=9781949980097 0.95 | CV 122895 issue #2 (737569) and GCD issue #2 (2072702, ISBN 9781949980097) agree by ordinal, matching our v02
+I 44463 cv=762263 gcd=2112081 isbn=9781949980103 0.95 | CV 122895 issue #3 (762263) and GCD issue #3 (2112081, ISBN 9781949980103) agree by ordinal, matching our v03
+I 44464 cv=814978 gcd=2160943 isbn=9781949980486 0.95 | CV 122895 issue #4 (814978) and GCD issue #4 (2160943, ISBN 9781949980486) agree by ordinal, matching our v04
+I 44465 cv=824236 gcd=2186054 isbn=9781949980851 0.95 | CV 122895 issue #5 (824236) and GCD issue #5 (2186054, ISBN 9781949980851) agree by ordinal, matching our v05
+I 44466 cv=839394 gcd=2213119 isbn=9781949980981 0.95 | CV 122895 issue #6 (839394) and GCD issue #6 (2213119, ISBN 9781949980981) agree by ordinal, matching our v06
+I 44467 cv=848344 gcd=2222458 isbn=9781647290108 0.95 | CV 122895 issue #7 (848344) and GCD issue #7 (2222458, ISBN 9781647290108) agree by ordinal, matching our v07
+I 44468 cv=880440 gcd=2264761 isbn=9781647290504 0.95 | CV 122895 issue #8 (880440) and GCD issue #8 (2264761, ISBN 9781647290504) agree by ordinal, matching our v08
+I 44469 cv=893640 gcd=2285221 isbn=9781647290726 0.95 | CV 122895 issue #9 (893640) and GCD issue #9 (2285221, ISBN 9781647290726) agree by ordinal, matching our v09
+# --- S5817 Dragon Head
+S 5817 cv=35447 gcd=16517 0.9 | the English ten-volume Dragon Head: CV 35447 (Tokyopop 2006, 10) and GCD 16517 (Tokyopop 2006-2008, 10) agree on publisher, start year and count against our ten volumes; 0.9 because our files are [Manga-Sketchbook] / [Illuminati & Null & Blackout] fan scanlations of the Kodansha volumes, not the Tokyopop rip
+N 5817 triage c: the judged ranges #1-11 … #84-89 are chapter numbers against a volume count; no chapter run (L-284)
+
+I 41234 cv=233956 gcd=273330 0.9 | CV 35447 issue #1 (233956) and GCD 16517 issue #1 (273330) agree by ordinal within the shelf's own header pool; the shelf's S line caps at 0.9 (GCD dump-only), inherited here
+I 41235 cv=233957 gcd=2797897 0.9 | CV 35447 issue #2 (233957) and GCD 16517 issue #2 (2797897) agree by ordinal within the shelf's own header pool; the shelf's S line caps at 0.9 (GCD dump-only), inherited here
+I 41236 cv=233958 gcd=2797898 0.9 | CV 35447 issue #3 (233958) and GCD 16517 issue #3 (2797898) agree by ordinal within the shelf's own header pool; the shelf's S line caps at 0.9 (GCD dump-only), inherited here
+I 41237 cv=233959 gcd=2797899 0.9 | CV 35447 issue #4 (233959) and GCD 16517 issue #4 (2797899) agree by ordinal within the shelf's own header pool; the shelf's S line caps at 0.9 (GCD dump-only), inherited here
+I 41238 cv=233960 gcd=2797900 0.9 | CV 35447 issue #5 (233960) and GCD 16517 issue #5 (2797900) agree by ordinal within the shelf's own header pool; the shelf's S line caps at 0.9 (GCD dump-only), inherited here
+I 41239 cv=233961 gcd=2797901 0.9 | CV 35447 issue #6 (233961) and GCD 16517 issue #6 (2797901) agree by ordinal within the shelf's own header pool; the shelf's S line caps at 0.9 (GCD dump-only), inherited here
+I 41240 cv=233962 gcd=2797902 0.9 | CV 35447 issue #7 (233962) and GCD 16517 issue #7 (2797902) agree by ordinal within the shelf's own header pool; the shelf's S line caps at 0.9 (GCD dump-only), inherited here
+I 41241 cv=233963 gcd=2797903 0.9 | CV 35447 issue #8 (233963) and GCD 16517 issue #8 (2797903) agree by ordinal within the shelf's own header pool; the shelf's S line caps at 0.9 (GCD dump-only), inherited here
+I 41242 cv=233964 gcd=2797904 0.9 | CV 35447 issue #9 (233964) and GCD 16517 issue #9 (2797904) agree by ordinal within the shelf's own header pool; the shelf's S line caps at 0.9 (GCD dump-only), inherited here
+I 41243 cv=233965 gcd=2797905 0.9 | CV 35447 issue #10 (233965) and GCD 16517 issue #10 (2797905) agree by ordinal within the shelf's own header pool; the shelf's S line caps at 0.9 (GCD dump-only), inherited here
+# --- S6002 Eden: It's an Endless World!
+S 6002 cv=27357 gcd=42822 0.9 | Dark Horse's English line: CV 27357 (Dark Horse 2005, 14) and GCD 42822 (Dark Horse 2005-2014, 14) agree on publisher, span and count, and our v01-v14 meet #1-14 by ordinal; our eighteen files are the complete Japanese eighteen, so the English line stops four short of our ladder — a count below our holdings, the real doubt that holds 0.9
+N 44543 no-record | "Eden - Its An Endless World! v15" 226pp: Dark Horse's English line ends at #14 (CV 27357 / GCD 42822); v15-v18 are scanlations of Kodansha's Japanese volumes and neither catalog holds an English volume 15
+N 44544 no-record | "Eden - Its An Endless World! v16" 223pp: beyond the English line's fourteen volumes (CV 27357 / GCD 42822); no English record exists in either catalog
+N 44545 no-record | "Eden - Its An Endless World! v17" 237pp: beyond the English line's fourteen volumes (CV 27357 / GCD 42822); no English record exists in either catalog
+N 44546 no-record | "Eden - Its An Endless World! v18" 281pp: the final Japanese volume, beyond Dark Horse's fourteen (CV 27357 / GCD 42822); no English record exists in either catalog
+N 6002 triage c: the judged ranges #98-118 on v15-v17 are chapter numbers past the English line's end — the gap above, not a wrong identity
+
+I 44529 cv=166650 gcd=714319 isbn=1-59307-406-9 0.9 | volume 1 of Dark Horse's fourteen-volume line: CV issue 166650 named "Vol. 1" and GCD issue 714319 numbered 1, mapped by ordinal onto our own v01 file
+I 44530 cv=172549 gcd=714320 isbn=1-59307-454-9 0.9 | volume 2 of Dark Horse's fourteen-volume line: CV issue 172549 named "Vol. 2" and GCD issue 714320 numbered 2, mapped by ordinal onto our own v02 file
+I 44531 cv=172548 gcd=714321 0.9 | volume 3 of Dark Horse's fourteen-volume line: CV issue 172548 named "Vol.3" and GCD issue 714321 numbered 3, mapped by ordinal onto our own v03 file
+I 44532 cv=172456 gcd=714322 0.9 | volume 4 of Dark Horse's fourteen-volume line: CV issue 172456 named "Vol. 4" and GCD issue 714322 numbered 4, mapped by ordinal onto our own v04 file
+I 44533 cv=172457 gcd=714323 0.9 | volume 5 of Dark Horse's fourteen-volume line: CV issue 172457 named "Vol. 5" and GCD issue 714323 numbered 5, mapped by ordinal onto our own v05 file
+I 44534 cv=172459 gcd=714324 0.9 | volume 6 of Dark Horse's fourteen-volume line: CV issue 172459 named "Vol. 6" and GCD issue 714324 numbered 6, mapped by ordinal onto our own v06 file
+I 44535 cv=172460 gcd=714325 0.9 | volume 7 of Dark Horse's fourteen-volume line: CV issue 172460 named "Vol. 7" and GCD issue 714325 numbered 7, mapped by ordinal onto our own v07 file
+I 44536 cv=172461 gcd=714326 0.9 | volume 8 of Dark Horse's fourteen-volume line: CV issue 172461 named "Vol. 8" and GCD issue 714326 numbered 8, mapped by ordinal onto our own v08 file
+I 44537 cv=172463 gcd=714327 0.9 | volume 9 of Dark Horse's fourteen-volume line: CV issue 172463 named "Vol. 9" and GCD issue 714327 numbered 9, mapped by ordinal onto our own v09 file
+I 44538 cv=172464 gcd=714328 0.9 | volume 10 of Dark Horse's fourteen-volume line: CV issue 172464 named "Vol. 10" and GCD issue 714328 numbered 10, mapped by ordinal onto our own v10 file
+I 44539 cv=172465 gcd=714329 0.9 | volume 11 of Dark Horse's fourteen-volume line: CV issue 172465 named "Vol. 11" and GCD issue 714329 numbered 11, mapped by ordinal onto our own v11 file
+I 44540 cv=172466 gcd=714330 0.9 | volume 12 of Dark Horse's fourteen-volume line: CV issue 172466 named "Vol. 12" and GCD issue 714330 numbered 12, mapped by ordinal onto our own v12 file
+I 44541 cv=326156 gcd=873401 isbn=978-1-59582-763-0 0.9 | volume 13 of Dark Horse's fourteen-volume line: CV issue 326156 named "Vol. 13" and GCD issue 873401 numbered 13, mapped by ordinal onto our own v13 file
+I 44542 cv=449567 gcd=1194811 isbn=978-1-61655-288-6 0.9 | volume 14 of Dark Horse's fourteen-volume line: CV issue 449567 named "Vol. 14" and GCD issue 1194811 numbered 14, mapped by ordinal onto our own v14 file
+# --- S73843 Emerging
+S 73843 cv=50750 gcd=- 0.9 | "Emerging" v01-v02 (c01-10, c11-22) is Masaya Hokazono's complete two-volume series in scanlation, and CV 50750 "Emerging" (Kodansha 2004, 2) is its Japanese original by count and year; GCD holds only Kurokawa's French 140956 and no English licence exists
+F 73843 provider-missing | neither catalog holds an English "Emerging"; GCD's only row is the French edition
+N 73843 triage c: v02's judged #11-11 is a chapter number (the filename's c11-22), against a two-volume count — the unit, not the identity
+
+I 42186 cv=347151 gcd=- 0.9 | volume 1 of Kodansha's two-volume Japanese original: CV issue 347151 named "Vol. 1" and no GCD issue, mapped by ordinal onto our own v01 file
+I 42187 cv=740371 gcd=- 0.9 | volume 2 of Kodansha's two-volume Japanese original: CV issue 740371 named "Vol. 2" and no GCD issue, mapped by ordinal onto our own v02 file
+# --- S6207 Erased
+S 6207 cv=98861 gcd=118174 0.9 | Yen Press's Erased: CV 98861 (Yen Press 2017, 9) is the single-volume shape our nine files dated 2017-2018 are, and GCD's only Yen Press row 118174 (2017-2018, 5) is the two-in-one hardcover shape of the same edition, so the counts disagree by construction (hence gcd=s118174 on the I lines, L-284); the per-file 166949 is JBC's Brazilian edition
+N 6207 triage c: the judged ranges #1-6 … #41-44 are chapter numbers; no chapter run (L-284)
+
+I 41417 cv=581453 gcd=1747622 0.9 | Erased: our nine files are CV 98861's SINGLE-volume shape (ordinal #1 581453); GCD's linked 118174 is the 5-count TWO-IN-ONE hardcover shape per the shelf's own N, so gcd=s118174 series-only rather than force an unverifiable per-book pairing
+I 41418 cv=582377 gcd=s118174 0.9 | CV 98861 single #2 (582377); GCD 118174 is the 2-in-1 hardcover shape (5 books for our 9 singles) with no confirmed per-book split, series-level only
+I 41419 cv=602965 gcd=s118174 0.9 | CV single #3 (602965); per-file gcd reused v01's issue id (1747622) across v03-v09, a title-only stamp — series-level gcd=s118174 instead
+I 41420 cv=602966 gcd=s118174 0.9 | CV single #4 (602966); same reused-stamp rejection, gcd=s118174
+I 41421 cv=634236 gcd=s118174 0.9 | CV single #5 (634236); gcd=s118174, 2-in-1 shape has no clean per-book issue mapping
+I 41422 cv=634237 gcd=s118174 0.9 | CV single #6 (634237); gcd=s118174, same 2-in-1 hardcover shape mismatch as v01-v05
+I 41423 cv=665851 gcd=s118174 0.9 | CV single #7 (665851); gcd=s118174, same 2-in-1 hardcover shape mismatch as v01-v06
+I 41424 cv=665852 gcd=s118174 0.9 | CV single #8 (665852); gcd=s118174, same 2-in-1 hardcover shape mismatch as v01-v07
+I 41425 cv=685633 gcd=s118174 0.9 | CV single #9 (685633); gcd=s118174; judged range was REFUSED but the book's own record still stands
+# --- S94533 Fairy Tail: 100 Years Quest
+S 94533 cv=120734 gcd=149749 0.9 | Kodansha USA's English sequel: CV 120734 "Fairy Tail: 100 Years Quest" (Kodansha Comics USA 2019, 18) and GCD 149749 (Kodansha USA 2019-?, 20) agree on publisher and start year; our fifteen COL v01-v15 (2019-2024) meet #1-15 by ordinal and the 27 chapter files 136-162 (2023-2024) continue past volume 15; 0.9 for the chapter ladder a volume count cannot check
+N 94533 per-file CV 46777 ("Fairy Tail" Kodansha 2006, 63) on all 27 chapter files is the parent run's stamp by raw number (triage b); flag #67 is already Dismissed
+N 94533 triage c: the judged ranges #1-9 … #127-135 are chapter numbers; no chapter run (L-284)
+
+I 40024 cv=716684 gcd=2011040 0.9 | ordinal position 1 of 15 in Kodansha USA's Fairy Tail: 100 Years Quest (CV 120734/GCD 149749, English); both legs run ahead of our 15 held volumes since the series continues
+I 40025 cv=727965 gcd=2039134 0.9 | ordinal position 2 of 15 in Kodansha USA's Fairy Tail: 100 Years Quest (CV 120734/GCD 149749, English); both legs run ahead of our 15 held volumes since the series continues
+I 40026 cv=737571 gcd=2072711 0.9 | ordinal position 3 of 15 in Kodansha USA's Fairy Tail: 100 Years Quest (CV 120734/GCD 149749, English); both legs run ahead of our 15 held volumes since the series continues
+I 40027 cv=762264 gcd=2133486 0.9 | ordinal position 4 of 15 in Kodansha USA's Fairy Tail: 100 Years Quest (CV 120734/GCD 149749, English); both legs run ahead of our 15 held volumes since the series continues
+I 40028 cv=814079 gcd=2159725 0.9 | ordinal position 5 of 15 in Kodansha USA's Fairy Tail: 100 Years Quest (CV 120734/GCD 149749, English); both legs run ahead of our 15 held volumes since the series continues
+I 40029 cv=821307 gcd=2177787 0.9 | ordinal position 6 of 15 in Kodansha USA's Fairy Tail: 100 Years Quest (CV 120734/GCD 149749, English); both legs run ahead of our 15 held volumes since the series continues
+I 40030 cv=850471 gcd=2224213 0.9 | ordinal position 7 of 15 in Kodansha USA's Fairy Tail: 100 Years Quest (CV 120734/GCD 149749, English); both legs run ahead of our 15 held volumes since the series continues
+I 40031 cv=886400 gcd=2266174 0.9 | ordinal position 8 of 15 in Kodansha USA's Fairy Tail: 100 Years Quest (CV 120734/GCD 149749, English); both legs run ahead of our 15 held volumes since the series continues
+I 40032 cv=904387 gcd=2294025 0.9 | ordinal position 9 of 15 in Kodansha USA's Fairy Tail: 100 Years Quest (CV 120734/GCD 149749, English); both legs run ahead of our 15 held volumes since the series continues
+I 40033 cv=944319 gcd=2418152 0.9 | ordinal position 10 of 15 in Kodansha USA's Fairy Tail: 100 Years Quest (CV 120734/GCD 149749, English); both legs run ahead of our 15 held volumes since the series continues
+I 40034 cv=960135 gcd=2523212 0.9 | ordinal position 11 of 15 in Kodansha USA's Fairy Tail: 100 Years Quest (CV 120734/GCD 149749, English); both legs run ahead of our 15 held volumes since the series continues
+I 40035 cv=982765 gcd=2523213 0.9 | ordinal position 12 of 15 in Kodansha USA's Fairy Tail: 100 Years Quest (CV 120734/GCD 149749, English); both legs run ahead of our 15 held volumes since the series continues
+I 40036 cv=1001889 gcd=2558261 0.9 | ordinal position 13 of 15 in Kodansha USA's Fairy Tail: 100 Years Quest (CV 120734/GCD 149749, English); both legs run ahead of our 15 held volumes since the series continues
+I 40037 cv=1027693 gcd=2572544 0.9 | ordinal position 14 of 15 in Kodansha USA's Fairy Tail: 100 Years Quest (CV 120734/GCD 149749, English); both legs run ahead of our 15 held volumes since the series continues
+I 40038 cv=1060385 gcd=2625569 0.9 | ordinal position 15 of 15 in Kodansha USA's Fairy Tail: 100 Years Quest (CV 120734/GCD 149749, English); both legs run ahead of our 15 held volumes since the series continues
+# --- S94535 Fairy Tail: City Hero
+S 94535 cv=121518 gcd=200930 0.9 | CV 121518 "Fairy Tail: City Hero" (Kodansha Comics USA 2019, 4) is exactly our four LuCaZ COL v01-v04 dated 2019-2020; the only GCD row is 200930, Pika Édition's French edition (2020-2021, 4), the same four volumes in another language, hence 0.9
+N 94535 triage c: the judged ranges #1-7 … #34-45 are chapter numbers; no chapter run (L-284)
+
+I 40110 cv=719877 gcd=2538379 0.9 | Fairy Tail - City Hero shelf pool ordinal #1: CV 719877 (2019), GCD 2538379 (isbn ...023-0, Pika Édition [fr]); per-file cv is the same parent-run stamp (46777) seen on the Blue Mistral shelf, rejected
+I 40111 cv=725969 gcd=2538380 0.9 | shelf pool ordinal #2: CV 725969, GCD 2538380 (isbn ...056-8) corrects per-file's reused #1 gcd stamp
+I 40112 cv=771811 gcd=2538381 0.9 | shelf pool ordinal #3: CV 771811, GCD 2538381 (isbn ...915-8)
+I 40113 cv=791535 gcd=2538382 0.9 | shelf pool ordinal #4: CV 791535, GCD 2538382 (isbn ...031-4)
+# --- S94536 Fairy Tail: Happy's Heroic Adventure
+S 94536 cv=121348 gcd=- 0.9 | one leg whose dates fit: CV 121348 "Fairy Tail: Happy's Heroic Adventure" (Kodansha Comics USA 2019, 8), issue #1 dated 2019-09-17, is our single 159pp v01 dated 2019; a contains-probe finds no GCD row in any language
+F 94536 provider-missing | GCD indexes no "Fairy Tail: Happy's Heroic Adventure"
+N 94536 triage c: the judged #1-10 is a chapter range inside volume 1; no chapter run (L-284)
+
+I 40114 cv=719186 gcd=- 0.9 | the book is volume 1 of the eight: CV issue 719186 (2019-09-17, "Volume 1") of volume 121348; GCD holds no record of this spin-off, so the book has no item-level GCD id
+# --- S6545 Farewell, My Dear Cramer
+S 6545 cv=120381 gcd=- 0.9 | CV 120381 "Farewell, My Dear Cramer" (Kodansha Comics USA 2019, 13) is the English line our fifty-five digital chapter files (001-055, 35-70pp, 2016-2020) belong to — CV counts the thirteen collected volumes where our rip is chapter-by-chapter; CV 163290 is the Spanish licence and GCD has no row in any language
+F 6545 provider-missing | GCD indexes no "Farewell, My Dear Cramer"
+N 6545 no collected editions on the shelf — the fifty-five files are numbered chapters, so no I lines are owed
+
+# --- S6682 Final Fantasy: Lost Stranger
+S 6682 cv=112931 gcd=128112 0.9 | Yen Press's English edition: CV 112931 "Final Fantasy Lost Stranger" (Yen Press 2018, 10 per the rip, 12 cached, #1 "Volume One" 2018-08-20) and GCD 128112 (Yen Press 2018-?, 12, #1 row 1839643 ISBN 9781975380908) agree on publisher and start year, and our COL v01 (2018, 218pp) is their #1; the 23 chapter files 004-025 + 036 (2017-2021) are Yen's digital simulpub chapters; 0.9 for the chapter ladder and no CvVolume row
+F 6682 wrong-cv-link | stored cv 106347 "Final Fantasy: Lost Stranger" 2017 Square Enix is the Japanese original; C-034's own I line for v01 already used the Yen Press volume 112931 — L-383
+F 6682 needs-fetch cv=112931 | the Yen Press volume is named from the local rip only
+
+I 43228 cv=680405 gcd=1839643 0.95 | vol. 1 of 12 in Yen Press's English edition (CV 112931/GCD 128112), title "Volume One" matching our COL v01
+# --- S6752 Fist of the North Star
+S 6752 cv=136896 gcd=173337 0.9 | Viz's 2021 English omnibus line: CV 136896 "Fist of the North Star" (Viz 2021, 18, "Volume 1" 2021-06-16) and GCD 173337 (Viz 2021-2025, 18, 292-326pp rows with ISBNs 978-1-9747-2156-6 upward) agree on publisher, start year and count, and our thirteen "(Omnibus Edition)" v01-v13 (2021-2024, 275-308pp) meet #1-13 by ordinal and date; C-034's "ComicVine holds no volume" was wrong. 0.9 for the ten 1987-89 Japanese volumes and three extras below
+F 6752 needs-fetch cv=136896 | the Viz volume is named from the local rip only
+N 6752 items 44576-44585 "v18-v27 (1987-1989)" 169-195pp are the ORIGINAL Shueisha Jump Comics volumes 18-27 of the same work (CV 56430 "Hokuto no Ken" Shueisha 1984, 27 / GCD 173339 Shueisha 1984-1989, 27; dates in step, v18 1987-09 … v27 1989-03) — an edition of the same comic, item-level on this shelf (L-380); their I lines name those records
+N 44560 no-record | "Fist of the North Star - Anniversary Special - DD HNK" 18pp: a short fan-scanlated special; probes on "Hokuto no Ken Special" (CV 95306 is a 1986 guidebook) and "DD Hokuto" found no record of this chapter
+N 44561 no-record | "Fist of the North Star - Ryuken Gaiden" 35pp: a single side-story chapter; "Ryuken" returns 0 hits on both the CV rip and the GCD dump
+N 44562 no-record | "Fist of the North Star Pilot" 100pp: the pre-serialisation pilot chapters; no CV or GCD record indexes them as a book of their own
+N 6752 triage c: the judged ranges #1-13 … #161-174 are chapter numbers against a volume count; no chapter run (L-284)
+I 44563 cv=859529 gcd=2233460 isbn=978-1-9747-2156-6 0.95 | our v01 (296pp) = CV 136896 (Viz 2021) #1 issue 859529 (2021-06-16) and GCD 173337 (Viz 2021-2025) #1 row 2233460 (314pp) by ordinal; Viz's 2021 English Fist of the North Star omnibus line
+I 44564 cv=885459 gcd=2265032 isbn=978-1-9747-2157-3 0.95 | our v02 (300pp) = CV 136896 (Viz 2021) #2 issue 885459 (2021-09-22) and GCD 173337 (Viz 2021-2025) #2 row 2265032 (318pp) by ordinal; Viz's 2021 English Fist of the North Star omnibus line
+I 44565 cv=899115 gcd=2293945 isbn=978-1-9747-2158-0 0.95 | our v03 (292pp) = CV 136896 (Viz 2021) #3 issue 899115 (2021-12-21) and GCD 173337 (Viz 2021-2025) #3 row 2293945 (308pp) by ordinal; Viz's 2021 English Fist of the North Star omnibus line
+I 44566 cv=912508 gcd=2380815 isbn=978-1-9747-2159-7 0.95 | our v04 (308pp) = CV 136896 (Viz 2021) #4 issue 912508 (2022-03-15) and GCD 173337 (Viz 2021-2025) #4 row 2380815 (322pp) by ordinal; Viz's 2021 English Fist of the North Star omnibus line
+I 44567 cv=934691 gcd=2415714 isbn=978-1-9747-2160-3 0.95 | our v05 (275pp) = CV 136896 (Viz 2021) #5 issue 934691 (2022-06-01) and GCD 173337 (Viz 2021-2025) #5 row 2415714 (292pp) by ordinal; Viz's 2021 English Fist of the North Star omnibus line
+I 44568 cv=949406 gcd=2435853 isbn=978-1-9747-2161-0 0.95 | our v06 (295pp) = CV 136896 (Viz 2021) #6 issue 949406 (2022-09-01) and GCD 173337 (Viz 2021-2025) #6 row 2435853 (304pp) by ordinal; Viz's 2021 English Fist of the North Star omnibus line
+I 44569 cv=961727 gcd=2479075 isbn=978-1-9747-2162-7 0.95 | our v07 (305pp) = CV 136896 (Viz 2021) #7 issue 961727 (2022-12-27) and GCD 173337 (Viz 2021-2025) #7 row 2479075 (318pp) by ordinal; Viz's 2021 English Fist of the North Star omnibus line
+I 44570 cv=979871 gcd=2512421 isbn=978-1-9747-2163-4 0.9 | our v08 (299pp) = CV 136896 (Viz 2021) #8 issue 979871 (2023-03-30) and GCD 173337 (Viz 2021-2025) #8 row 2512421 (320pp) by ordinal; Viz's 2021 English Fist of the North Star omnibus line
+I 44571 cv=997463 gcd=2551363 isbn=978-1-9747-2164-1 0.9 | our v09 (301pp) = CV 136896 (Viz 2021) #9 issue 997463 (2023-06-27) and GCD 173337 (Viz 2021-2025) #9 row 2551363 (326pp) by ordinal; Viz's 2021 English Fist of the North Star omnibus line
+I 44572 cv=1018053 gcd=2572415 isbn=978-1-9747-2165-8 0.9 | our v10 (291pp) = CV 136896 (Viz 2021) #10 issue 1018053 (2023-09-25) and GCD 173337 (Viz 2021-2025) #10 row 2572415 (314pp) by ordinal; Viz's 2021 English Fist of the North Star omnibus line
+I 44573 cv=1038450 gcd=2595475 isbn=978-1-9747-2166-5 0.9 | our v11 (296pp) = CV 136896 (Viz 2021) #11 issue 1038450 (2023-12-27) and GCD 173337 (Viz 2021-2025) #11 row 2595475 (322pp) by ordinal; Viz's 2021 English Fist of the North Star omnibus line
+I 44574 cv=1049281 gcd=2622671 isbn=978-1-9747-2167-2 0.9 | our v12 (288pp) = CV 136896 (Viz 2021) #12 issue 1049281 (2024-03-25) and GCD 173337 (Viz 2021-2025) #12 row 2622671 (312pp) by ordinal; Viz's 2021 English Fist of the North Star omnibus line
+I 44575 cv=1060957 gcd=2643248 isbn=978-1-9747-2168-9 0.95 | our v13 (288pp) = CV 136896 (Viz 2021) #13 issue 1060957 (2024-06-25) and GCD 173337 (Viz 2021-2025) #13 row 2643248 (306pp) by ordinal; Viz's 2021 English Fist of the North Star omnibus line
+I 44576 cv=382959 gcd=2231139 isbn=- 0.9 | our v18 (176pp) = CV 56430 (Shueisha 1984, 27) #18 issue 382959 (1987-09-15) and GCD 173339 (Shueisha 1984-1989, 27) #18 row 2231139 (?pp) by ordinal; Shueisha's original Hokuto no Ken tankobon
+I 44577 cv=382960 gcd=2231140 isbn=- 0.9 | our v19 (176pp) = CV 56430 (Shueisha 1984, 27) #19 issue 382960 (1987-11-15) and GCD 173339 (Shueisha 1984-1989, 27) #19 row 2231140 (?pp) by ordinal; Shueisha's original Hokuto no Ken tankobon
+I 44578 cv=382961 gcd=2231141 isbn=- 0.9 | our v20 (176pp) = CV 56430 (Shueisha 1984, 27) #20 issue 382961 (1988-01-15) and GCD 173339 (Shueisha 1984-1989, 27) #20 row 2231141 (?pp) by ordinal; Shueisha's original Hokuto no Ken tankobon
+I 44579 cv=382962 gcd=2231142 isbn=- 0.9 | our v21 (175pp) = CV 56430 (Shueisha 1984, 27) #21 issue 382962 (1988-03-15) and GCD 173339 (Shueisha 1984-1989, 27) #21 row 2231142 (?pp) by ordinal; Shueisha's original Hokuto no Ken tankobon
+I 44580 cv=382963 gcd=2231143 isbn=- 0.9 | our v22 (169pp) = CV 56430 (Shueisha 1984, 27) #22 issue 382963 (1988-05-15) and GCD 173339 (Shueisha 1984-1989, 27) #22 row 2231143 (?pp) by ordinal; Shueisha's original Hokuto no Ken tankobon
+I 44581 cv=382964 gcd=2231144 isbn=- 0.9 | our v23 (169pp) = CV 56430 (Shueisha 1984, 27) #23 issue 382964 (1988-07-15) and GCD 173339 (Shueisha 1984-1989, 27) #23 row 2231144 (?pp) by ordinal; Shueisha's original Hokuto no Ken tankobon
+I 44582 cv=382965 gcd=2231145 isbn=- 0.9 | our v24 (175pp) = CV 56430 (Shueisha 1984, 27) #24 issue 382965 (1988-09-15) and GCD 173339 (Shueisha 1984-1989, 27) #24 row 2231145 (?pp) by ordinal; Shueisha's original Hokuto no Ken tankobon
+I 44583 cv=382966 gcd=2231146 isbn=- 0.9 | our v25 (190pp) = CV 56430 (Shueisha 1984, 27) #25 issue 382966 (1988-11-15) and GCD 173339 (Shueisha 1984-1989, 27) #25 row 2231146 (?pp) by ordinal; Shueisha's original Hokuto no Ken tankobon
+I 44584 cv=382967 gcd=2231147 isbn=- 0.9 | our v26 (194pp) = CV 56430 (Shueisha 1984, 27) #26 issue 382967 (1989-01-15) and GCD 173339 (Shueisha 1984-1989, 27) #26 row 2231147 (?pp) by ordinal; Shueisha's original Hokuto no Ken tankobon
+I 44585 cv=382968 gcd=2231148 isbn=- 0.9 | our v27 (195pp) = CV 56430 (Shueisha 1984, 27) #27 issue 382968 (1989-03-15) and GCD 173339 (Shueisha 1984-1989, 27) #27 row 2231148 (?pp) by ordinal; Shueisha's original Hokuto no Ken tankobon
+
+# --- S6978 Freesia
+S 6978 cv=50829 gcd=140872 0.9 | Freesia was never licensed in English: CV 50829 (Shogakukan 2003, 12) is the Japanese line and GCD 140872 (Kazé 2010-2013, 12) the French, and both agree on the twelve-volume structure that is exactly our twelve scanlated volumes; 0.9 because neither leg is our language
+N 6978 triage c: the judged ranges #1-6 … #74-82 are chapter numbers; no chapter run (L-284)
+
+I 44617 cv=347590 gcd=1926359 0.9 | Freesia (Japanese CV 50829 / French GCD 140872, no English license) shelf pool ordinal #1: both ids match per-file pick exactly
+I 44618 cv=347589 gcd=1926360 0.9 | shelf pool ordinal #2: CV 347589 matches per-file; GCD 1926360 (isbn ...845-1) corrects the per-file's reused #1 stamp (1926359 shown on every one of the 12 books)
+I 44619 cv=347592 gcd=1926361 0.9 | shelf pool ordinal #3: CV 347592 matches per-file; GCD 1926361 (isbn ...947-2)
+I 44620 cv=347591 gcd=1926362 0.9 | shelf pool ordinal #4: CV 347591 matches per-file; GCD 1926362 (isbn ...996-0)
+I 44621 cv=347594 gcd=1926363 0.9 | shelf pool ordinal #5: CV 347594 matches per-file; GCD 1926363 (isbn ...062-1)
+I 44622 cv=347593 gcd=1926364 0.9 | shelf pool ordinal #6: CV 347593 matches per-file; GCD 1926364 (isbn ...124-6)
+I 44623 cv=347596 gcd=1926365 0.9 | shelf pool ordinal #7: CV 347596 matches per-file; GCD 1926365 (isbn ...179-6)
+I 44624 cv=347595 gcd=1926366 0.9 | shelf pool ordinal #8: CV 347595 matches per-file; GCD 1926366 (isbn ...244-1)
+I 44625 cv=347597 gcd=1926367 0.9 | shelf pool ordinal #9: CV 347597 matches per-file; GCD 1926367 (isbn ...288-5)
+I 44626 cv=347598 gcd=1926368 0.9 | shelf pool ordinal #10: CV 347598 matches per-file; GCD 1926368 (isbn ...364-6)
+I 44627 cv=347599 gcd=1926369 0.9 | shelf pool ordinal #11: CV 347599 matches per-file; GCD 1926369 (isbn ...459-9)
+I 44628 cv=726602 gcd=1926370 0.9 | shelf pool ordinal #12 (the 244pp bumper volume): CV 726602 matches per-file; GCD 1926370 (isbn ...555-8)
+# --- S7085 Fuuka
+S 7085 cv=85810 gcd=- 0.9 | one leg plus our own count and years: CV 85810 "Fuuka" (Kodansha Comics USA 2015, 20) against our twelve COL v01-v12 dated 2015-2017 (ordinals #1-12) and eighty digital chapter files 116-195 (2016-2018) continuing past them; CV 80255 is the Japanese original and GCD has no row
+F 7085 provider-missing | the GCD dump has no "Fuuka" row in any language
+N 7085 triage c: the judged ranges #1-8 … #106-115 are chapter numbers; no chapter run (L-284)
+
+I 43399 cv=504883 gcd=- 0.9 | Fuuka shelf pool ordinal #1: CV 504883 matches per-file pick; GCD has no row at all for this Kodansha line (provider-missing)
+I 43400 cv=504884 gcd=- 0.9 | shelf pool ordinal #2: CV 504884 matches per-file; gcd=- stands
+I 43401 cv=505432 gcd=- 0.9 | shelf pool ordinal #3: CV 505432 matches per-file; gcd=- stands
+I 43402 cv=506074 gcd=- 0.9 | shelf pool ordinal #4: CV 506074 matches per-file; gcd=- stands
+I 43403 cv=506558 gcd=- 0.9 | shelf pool ordinal #5: CV 506558 matches per-file; gcd=- stands
+I 43404 cv=510608 gcd=- 0.9 | shelf pool ordinal #6: CV 510608 matches per-file; gcd=- stands
+I 43405 cv=511416 gcd=- 0.9 | shelf pool ordinal #7: CV 511416 matches per-file; gcd=- stands
+I 43406 cv=512237 gcd=- 0.9 | shelf pool ordinal #8: CV 512237 matches per-file; gcd=- stands
+I 43407 cv=555364 gcd=- 0.9 | shelf pool ordinal #9: CV 555364 matches per-file; gcd=- stands
+I 43408 cv=557265 gcd=- 0.9 | shelf pool ordinal #10: CV 557265 matches per-file; gcd=- stands
+I 43409 cv=558898 gcd=- 0.9 | shelf pool ordinal #11: CV 558898 matches per-file; gcd=- stands
+I 43410 cv=606445 gcd=- 0.9 | shelf pool ordinal #12: CV 606445 matches per-file; gcd=- stands
+# --- S7148 GTO
+S 7148 cv=32732 gcd=20226 0.9 | the English twenty-five-volume GTO: CV 32732 "GTO" (Tokyopop 2002, 25) and GCD 20226 "GTO: Great Teacher Onizuka" (Tokyopop 2002-2005, 25) agree on publisher, start year and count against our twenty-five LuCaZ volumes; 0.9 because the 2022 in every filename is a digital re-release neither provider indexes (a contains-probe on "Great Teacher Onizuka" finds only Italian, German and Polish editions)
+N 7148 triage c: the judged ranges #1-5 … #196-200 are chapter numbers; no chapter run (L-284)
+
+I 41473 cv=209791 gcd=316976 0.9 | GTO (Tokyopop 2002) shelf pool ordinal #1: CV 32732/GCD 20226; per-file's 165716/211528 is an unrelated 2022 digital-reissue record stamped across the whole shelf, rejected
+I 41474 cv=209792 gcd=316977 0.9 | shelf pool ordinal #2, same GTO Tokyopop identity as v01, same per-file rejection
+I 41475 cv=209793 gcd=316978 0.9 | shelf pool ordinal #3, same GTO Tokyopop identity as v01, same per-file rejection
+I 41476 cv=209794 gcd=316979 0.9 | shelf pool ordinal #4, same GTO Tokyopop identity as v01, same per-file rejection
+I 41477 cv=209795 gcd=316980 0.9 | shelf pool ordinal #5, same GTO Tokyopop identity as v01, same per-file rejection
+I 41478 cv=209796 gcd=316981 0.9 | shelf pool ordinal #6, same GTO Tokyopop identity as v01, same per-file rejection
+I 41479 cv=209797 gcd=316982 0.9 | shelf pool ordinal #7, same GTO Tokyopop identity as v01, same per-file rejection
+I 41480 cv=209798 gcd=316983 0.9 | shelf pool ordinal #8, same GTO Tokyopop identity as v01, same per-file rejection
+I 41481 cv=209799 gcd=316984 0.9 | shelf pool ordinal #9, same GTO Tokyopop identity as v01, same per-file rejection
+I 41482 cv=209800 gcd=316985 0.9 | shelf pool ordinal #10, same GTO Tokyopop identity as v01, same per-file rejection
+I 41483 cv=209801 gcd=316986 0.9 | shelf pool ordinal #11, same GTO Tokyopop identity as v01, same per-file rejection
+I 41484 cv=209802 gcd=316987 0.9 | shelf pool ordinal #12, same GTO Tokyopop identity as v01, same per-file rejection
+I 41485 cv=209803 gcd=316988 0.9 | shelf pool ordinal #13, same GTO Tokyopop identity as v01, same per-file rejection
+I 41486 cv=209804 gcd=316989 0.9 | shelf pool ordinal #14, same GTO Tokyopop identity as v01, same per-file rejection
+I 41487 cv=209805 gcd=316990 0.9 | shelf pool ordinal #15, same GTO Tokyopop identity as v01, same per-file rejection
+I 41488 cv=209806 gcd=316991 0.9 | shelf pool ordinal #16, same GTO Tokyopop identity as v01, same per-file rejection
+I 41489 cv=209807 gcd=316992 0.9 | shelf pool ordinal #17, same GTO Tokyopop identity as v01, same per-file rejection
+I 41490 cv=209808 gcd=316993 0.9 | shelf pool ordinal #18, same GTO Tokyopop identity as v01, same per-file rejection
+I 41491 cv=209809 gcd=316994 0.9 | shelf pool ordinal #19, same GTO Tokyopop identity as v01, same per-file rejection
+I 41492 cv=209810 gcd=316995 0.9 | shelf pool ordinal #20, same GTO Tokyopop identity as v01, same per-file rejection
+I 41493 cv=209811 gcd=316996 0.9 | shelf pool ordinal #21, same GTO Tokyopop identity as v01, same per-file rejection
+I 41494 cv=209812 gcd=316997 0.9 | shelf pool ordinal #22, same GTO Tokyopop identity as v01, same per-file rejection
+I 41495 cv=209813 gcd=316998 0.9 | shelf pool ordinal #23, same GTO Tokyopop identity as v01, same per-file rejection
+I 41496 cv=209814 gcd=316999 0.9 | shelf pool ordinal #24, same GTO Tokyopop identity as v01, same per-file rejection
+I 41497 cv=209815 gcd=317000 0.9 | shelf pool ordinal #25, same GTO Tokyopop identity as v01, same per-file rejection
+# --- S7511 Giant Killing
+S 7511 cv=99428 gcd=84559 0.9 | Kodansha USA's English Giant Killing: CV 99428 (Kodansha Comics USA 2017, 47, "Vol. 1" 2017-03-31 … "Vol. 14" 2018-10-15) is our fourteen XRA-Empire COL v01-v14 dated 2017-2018 with ComicInfo Publisher "Kodansha Comics" on all fourteen; GCD holds only the Japanese original 84559 (Kodansha 2007-?, 68) whose rows match our pages (208-224pp), so 0.9 with the language named
+F 7511 wrong-cv-link | stored cv 44126 "Giant Killing" 2007 Kodansha is the Japanese original; A-020 named the English 99428 as "residue" — L-383, the English edition our files are is the identity
+F 7511 needs-fetch cv=99428 | the Kodansha USA volume is named from the local rip only
+N 7511 triage c: the judged ranges #1-7 … #128-137 are chapter numbers; no chapter run (L-284)
+I 44642 cv=584980 gcd=1280487 isbn=978-4-06-372593-3 0.9 | our v01 (210pp) = CV 99428 (Kodansha Comics USA 2017) #1 issue 584980 (2017-03-31) and GCD 84559 (the Japanese Kodansha original, no English GCD row) #1 row 1280487 (208pp) by ordinal; Kodansha USA's English Giant Killing
+I 44643 cv=604940 gcd=1280488 isbn=978-4-06-372618-3 0.9 | our v02 (224pp) = CV 99428 (Kodansha Comics USA 2017) #2 issue 604940 (2017-06-30) and GCD 84559 (the Japanese Kodansha original, no English GCD row) #2 row 1280488 (224pp) by ordinal; Kodansha USA's English Giant Killing
+I 44644 cv=610623 gcd=1280489 isbn=978-4-06-372637-4 0.9 | our v03 (224pp) = CV 99428 (Kodansha Comics USA 2017) #3 issue 610623 (2017-07-31) and GCD 84559 (the Japanese Kodansha original, no English GCD row) #3 row 1280489 (224pp) by ordinal; Kodansha USA's English Giant Killing
+I 44645 cv=614867 gcd=1280490 isbn=978-4-06-372660-2 0.9 | our v04 (224pp) = CV 99428 (Kodansha Comics USA 2017) #4 issue 614867 (2017-08-31) and GCD 84559 (the Japanese Kodansha original, no English GCD row) #4 row 1280490 (224pp) by ordinal; Kodansha USA's English Giant Killing
+I 44646 cv=617514 gcd=1280491 isbn=978-4-06-372682-4 0.9 | our v05 (216pp) = CV 99428 (Kodansha Comics USA 2017) #5 issue 617514 (2017-08-31) and GCD 84559 (the Japanese Kodansha original, no English GCD row) #5 row 1280491 (216pp) by ordinal; Kodansha USA's English Giant Killing
+I 44647 cv=625018 gcd=1280492 isbn=978-4-06-372716-6 0.9 | our v06 (224pp) = CV 99428 (Kodansha Comics USA 2017) #6 issue 625018 (2017-09-30) and GCD 84559 (the Japanese Kodansha original, no English GCD row) #6 row 1280492 (224pp) by ordinal; Kodansha USA's English Giant Killing
+I 44648 cv=634241 gcd=1280493 isbn=978-4-06-372740-1 0.9 | our v07 (224pp) = CV 99428 (Kodansha Comics USA 2017) #7 issue 634241 (2017-10-31) and GCD 84559 (the Japanese Kodansha original, no English GCD row) #7 row 1280493 (224pp) by ordinal; Kodansha USA's English Giant Killing
+I 44649 cv=643247 gcd=1280494 isbn=978-4-06-372753-1 0.9 | our v08 (224pp) = CV 99428 (Kodansha Comics USA 2017) #8 issue 643247 (2017-11-30) and GCD 84559 (the Japanese Kodansha original, no English GCD row) #8 row 1280494 (224pp) by ordinal; Kodansha USA's English Giant Killing
+I 44650 cv=649390 gcd=1280495 isbn=978-4-06-372769-2 0.9 | our v09 (224pp) = CV 99428 (Kodansha Comics USA 2017) #9 issue 649390 (2017-12-31) and GCD 84559 (the Japanese Kodansha original, no English GCD row) #9 row 1280495 (224pp) by ordinal; Kodansha USA's English Giant Killing
+I 44651 cv=656542 gcd=1280496 isbn=978-4-06-372789-0 0.9 | our v10 (224pp) = CV 99428 (Kodansha Comics USA 2017) #10 issue 656542 (2018-01-31) and GCD 84559 (the Japanese Kodansha original, no English GCD row) #10 row 1280496 (224pp) by ordinal; Kodansha USA's English Giant Killing
+I 44652 cv=663498 gcd=1280497 isbn=978-4-06-372818-7 0.9 | our v11 (226pp) = CV 99428 (Kodansha Comics USA 2017) #11 issue 663498 (2018-03-31) and GCD 84559 (the Japanese Kodansha original, no English GCD row) #11 row 1280497 (224pp) by ordinal; Kodansha USA's English Giant Killing
+I 44653 cv=666702 gcd=1280498 isbn=978-4-06-372840-8 0.9 | our v12 (226pp) = CV 99428 (Kodansha Comics USA 2017) #12 issue 666702 (2018-04-30) and GCD 84559 (the Japanese Kodansha original, no English GCD row) #12 row 1280498 (224pp) by ordinal; Kodansha USA's English Giant Killing
+I 44654 cv=680323 gcd=1280499 isbn=978-4-06-372868-2 0.9 | our v13 (226pp) = CV 99428 (Kodansha Comics USA 2017) #13 issue 680323 (2018-08-20) and GCD 84559 (the Japanese Kodansha original, no English GCD row) #13 row 1280499 (224pp) by ordinal; Kodansha USA's English Giant Killing
+I 44655 cv=688726 gcd=1280500 isbn=978-4-06-372897-2 0.9 | our v14 (226pp) = CV 99428 (Kodansha Comics USA 2017) #14 issue 688726 (2018-10-15) and GCD 84559 (the Japanese Kodansha original, no English GCD row) #14 row 1280500 (224pp) by ordinal; Kodansha USA's English Giant Killing
+
+# --- S103548 Goblin Slayer: Brand New Day
+S 103548 cv=120210 gcd=148899 0.9 | Yen Press's English edition: CV 120210 "Goblin Slayer: Brand New Day" (Yen Press 2019, 2) = GCD 148899 (Yen Press 2019-2020, 2), and our twelve digital chapters 001-010 + 006.5 + 009.5 (2018-2019) are its content; CV 114171 is the Square Enix Japanese edition and the per-file 94181 the parent Goblin Slayer stamp; 0.9 because our ladder is chapters and the records count volumes
+F 103548 needs-fetch cv=120210 | named from the rip only; no CvVolume row
+
+# --- S7764 Golgo 13
+R 7764 | two publications share the shelf: Viz's 2006-2008 thirteen-volume line (v01-v13, CV 38809 / GCD 16635, both Viz, 13, subtitles "Supergun" … "Flagburner" = our filenames) and two whole books of Lead Publishing's 1986-1987 English line — "Book 02 - Galinpero" and "Book 04 - The Ivory Connection" = GCD 161861 (Lead 1986-?, 4) #2 and #4 by title — a different publication with its own record; two whole trades of another run are a co-equal run (lead ruling on S15276), so the Viz identity cannot be stored until they move
+F 7764 split-needed | items 43421 (Book 02 - Galinpero, 1986, 159pp) and 43422 (Book 04 - The Ivory Connection, 1987, 173pp) -> new key "Golgo 13 (1986)", GCD 161861 (Lead Publishing 1986-?, 4; rows 2126174 / 2126176); no CV volume holds this line (CV 62832 / GCD 14036 are Lead's 1989-1990 two-issue comic); --who-stores gcd=161861 finds no shelf. Viz's thirteen stay, CV 38809 / GCD 16635
+I 43421 cv=- gcd=2126174 isbn=4947538597 0.9 | "Golgo 13 Book 02 - Galinpero (1986)" 159pp = GCD 161861 (Lead Publishing 1986-?) #2 row 2126174 "Galinpero" (1986, ISBN 4947538597) by title; no CV record for Lead's book line
+I 43422 cv=- gcd=2126176 isbn=4947538627 0.9 | "Golgo 13 Book 04 - The Ivory Connection (1987)" 173pp = GCD 161861 #4 row 2126176 "The Ivory Connection" (1987, ISBN 4947538627) by title; no CV record for Lead's book line
+N 7764 D-012's F partial-rip is restated as the split-needed line; triage c (judged #13-14 … #25-26) is the Viz volumes' two-chapter-per-book ranges, not an identity fault
+
+I 43423 cv=260481 gcd=274553 isbn=978-1-4215-0251-9 0.9 | volume 1 of Viz's thirteen-volume line: CV issue 260481 named "Supergun" and GCD issue 274553 numbered 1, mapped by ordinal onto our own v01 file
+I 43424 cv=260482 gcd=289034 isbn=978-1-4215-0382-0 0.9 | volume 2 of Viz's thirteen-volume line: CV issue 260482 named "Hydra" and GCD issue 289034 numbered 2, mapped by ordinal onto our own v02 file
+I 43425 cv=260483 gcd=299354 isbn=978-1-4215-0462-9 0.9 | volume 3 of Viz's thirteen-volume line: CV issue 260483 named "Power to the People" and GCD issue 299354 numbered 3, mapped by ordinal onto our own v03 file
+I 43426 cv=260484 gcd=307351 isbn=978-1-4215-0463-6 0.9 | volume 4 of Viz's thirteen-volume line: CV issue 260484 named "The Orbital Hit" and GCD issue 307351 numbered 4, mapped by ordinal onto our own v04 file
+I 43427 cv=260485 gcd=321628 isbn=978-1-4215-0464-3 0.9 | volume 5 of Viz's thirteen-volume line: CV issue 260485 named "Wiseguy" and GCD issue 321628 numbered 5, mapped by ordinal onto our own v05 file
+I 43428 cv=260486 gcd=328675 isbn=978-1-4215-0465-0 0.9 | volume 6 of Viz's thirteen-volume line: CV issue 260486 named "One Minute Past Midnight" and GCD issue 328675 numbered 6, mapped by ordinal onto our own v06 file
+I 43429 cv=260487 gcd=328676 isbn=978-1-4215-0962-4 0.9 | volume 7 of Viz's thirteen-volume line: CV issue 260487 named "Eye of God" and GCD issue 328676 numbered 7, mapped by ordinal onto our own v07 file
+I 43430 cv=260488 gcd=335782 isbn=978-1-4215-0963-1 0.9 | volume 8 of Viz's thirteen-volume line: CV issue 260488 named "Gravestone in Sicily" and GCD issue 335782 numbered 8, mapped by ordinal onto our own v08 file
+I 43431 cv=260489 gcd=355112 isbn=978-1-4215-0964-8 0.9 | volume 9 of Viz's thirteen-volume line: CV issue 260489 named "Headhunter" and GCD issue 355112 numbered 9, mapped by ordinal onto our own v09 file
+I 43432 cv=260490 gcd=355113 isbn=978-1-4215-0965-5 0.9 | volume 10 of Viz's thirteen-volume line: CV issue 260490 named "Wasteland" and GCD issue 355113 numbered 10, mapped by ordinal onto our own v10 file
+I 43433 cv=260491 gcd=383052 isbn=978-1-4215-0966-2 0.9 | volume 11 of Viz's thirteen-volume line: CV issue 260491 named "The Wrong Man" and GCD issue 383052 numbered 11, mapped by ordinal onto our own v11 file
+I 43434 cv=260492 gcd=383053 isbn=978-1-4215-0967-9 0.9 | volume 12 of Viz's thirteen-volume line: CV issue 260492 named "Shadow of Death" and GCD issue 383053 numbered 12, mapped by ordinal onto our own v12 file
+I 43435 cv=260493 gcd=383054 isbn=978-1-4215-1531-1 0.9 | volume 13 of Viz's thirteen-volume line: CV issue 260493 named "Flagburner" and GCD issue 383054 numbered 13, mapped by ordinal onto our own v13 file
+# --- S7857 Gravitation: Collector's Edition
+S 7857 cv=169702 gcd=215995 0.9 | Seven Seas' Collector's Edition: CV 169702 "Gravitation: Collector's Edition" (Seven Seas 2024) and GCD 215995 (Seven Seas 2024-2025, 7) are the same line on two legs and our two 378/381pp COL files are its first two volumes; 0.9 because the ComicVine rip caches one issue of the line against GCD's seven
+N 7857 triage c: the judged #1-8 / #9-17 are chapter ranges of the original's volumes inside each omnibus; no chapter run (L-284)
+
+I 44794 cv=1150791 gcd=2666612 0.9 | volume 1 of the Collector's Edition, June 2024 on the ComicVine side, against our 378pp rip
+I 44795 cv=- gcd=2666613 0.9 | volume 2 on the GCD side; ComicVine's rip caches no second issue for volume 169702
+# --- S8201 Gunslinger Girl
+S 8201 cv=106713 gcd=100027 0.9 | CV 106713 "Gunslinger Girl" (Seven Seas 2017, 15) is exactly our fifteen danke-Empire COL v01-v15 dated 2017; GCD holds no Seven Seas row and its only count-15 row is 100027, Egmont Ehapa's German edition (2005-2013) of the same fifteen volumes, hence 0.9; GCD 148656 (A.D. Vision 2003-2007, 6) is the earlier partial English edition
+N 8201 triage c: the judged ranges #1-5 … #91-100 are chapter numbers; no chapter run (L-284)
+
+I 42087 cv=644609 gcd=1557912 0.9 | Gunslinger Girl shelf pool (CV 106713/GCD 100027 [de]) ordinal #1; per-file's cv 38067 and gcd 155238 are both unrelated ids, rejected
+I 42088 cv=644610 gcd=1557913 0.9 | shelf pool ordinal #2, same German-dump pairing as v01, same per-file rejection
+I 42089 cv=644611 gcd=1557914 0.9 | shelf pool ordinal #3, same German-dump pairing as v01, same per-file rejection
+I 42090 cv=644612 gcd=1557915 0.9 | shelf pool ordinal #4, same German-dump pairing as v01, same per-file rejection
+I 42091 cv=644613 gcd=1557916 0.9 | shelf pool ordinal #5, same German-dump pairing as v01, same per-file rejection
+I 42092 cv=644614 gcd=1557917 0.9 | shelf pool ordinal #6, same German-dump pairing as v01, same per-file rejection
+I 42093 cv=644615 gcd=1557918 0.9 | shelf pool ordinal #7, same German-dump pairing as v01, same per-file rejection
+I 42094 cv=644616 gcd=1557919 0.9 | shelf pool ordinal #8, same German-dump pairing as v01, same per-file rejection
+I 42095 cv=644617 gcd=1557920 0.9 | shelf pool ordinal #9, same German-dump pairing as v01, same per-file rejection
+I 42096 cv=644618 gcd=1557921 0.9 | shelf pool ordinal #10, same German-dump pairing as v01, same per-file rejection
+I 42097 cv=644619 gcd=1557922 0.9 | shelf pool ordinal #11, same German-dump pairing as v01, same per-file rejection
+I 42098 cv=644620 gcd=1557923 0.9 | shelf pool ordinal #12, same German-dump pairing as v01, same per-file rejection
+I 42099 cv=644621 gcd=1557924 0.9 | shelf pool ordinal #13, same German-dump pairing as v01, same per-file rejection
+I 42100 cv=644622 gcd=1557925 0.9 | shelf pool ordinal #14, same German-dump pairing as v01, same per-file rejection
+I 42101 cv=644623 gcd=1557926 0.9 | shelf pool ordinal #15, same German-dump pairing as v01, same per-file rejection
+# --- S8869 Heroine for Hire
+S 8869 cv=130311 gcd=- 0.9 | one leg plus our own count and year: CV 130311 "Heroine for Hire" (Kodansha Comics USA 2020, 4) is exactly our four danke-Empire COL v01-v04 all dated 2020; a direct probe returns that one CV row and zero GCD rows
+F 8869 provider-missing | GCD indexes no "Heroine for Hire"; its "Heroine" hits are different comics
+N 8869 triage c: the judged ranges #1-4 … #13-16 are chapter numbers; no chapter run (L-284)
+
+I 43507 cv=799283 gcd=- 0.9 | header #1 of CV 130311 Heroine for Hire (Kodansha 2020), which is the shelfs only leg, no GCD row, provider-missing
+I 43508 cv=812559 gcd=- 0.9 | header #2 of CV 130311 Heroine for Hire (Kodansha 2020), which is the shelfs only leg, no GCD row, provider-missing
+I 43509 cv=818834 gcd=- 0.9 | header #3 of CV 130311 Heroine for Hire (Kodansha 2020), which is the shelfs only leg, no GCD row, provider-missing
+I 43510 cv=821310 gcd=- 0.9 | header #4 of CV 130311 Heroine for Hire (Kodansha 2020), which is the shelfs only leg, no GCD row, provider-missing
+# --- S8885 Hi-Fi Cluster
+S 8885 cv=125268 gcd=- 0.9 | one leg plus our own count and year: CV 125268 "Hi-Fi Cluster" (Viz 2020, 3) is exactly our three danke-Empire COL v01-v03 dated 2020; CV 90804 (Shueisha 2015, 3) is the Japanese line and GCD has no row at all
+F 8885 provider-missing | the GCD dump has no "Hi-Fi Cluster" row in any language
+N 8885 triage c: the judged ranges #1-7 … #15-18 are chapter numbers; no chapter run (L-284)
+
+I 43511 cv=738493 gcd=- 0.9 | header #1 of CV 125268 Hi-Fi Cluster (Viz 2020), the shelfs only leg, no GCD row, provider-missing
+I 43512 cv=738494 gcd=- 0.9 | header #2 of CV 125268 Hi-Fi Cluster (Viz 2020), the shelfs only leg, no GCD row, provider-missing
+I 43513 cv=738495 gcd=- 0.9 | header #3 of CV 125268 Hi-Fi Cluster (Viz 2020), the shelfs only leg, no GCD row, provider-missing
+# --- S9225 I Want to Eat Your Pancreas
+S 9225 cv=116471 gcd=- 0.9 | one leg plus our own year: CV 116471 "I Want to Eat Your Pancreas" (Seven Seas 2019, 1, issue 697315) is our single 433pp 2019 danke-Empire omnibus in title, year and count; CV 163209 (M&C) is another territory and GCD has no row
+F 9225 provider-missing | the GCD dump has no "I Want to Eat Your Pancreas" row in any language
+N 9225 triage c: the judged #1-10 is the chapter range inside the one omnibus; no chapter run (L-284)
+
+I 44856 cv=697315 gcd=- 0.9 | singleton: the book IS Seven Seas' 2019 one-volume omnibus, CV issue 697315 of volume 116471; GCD holds no record of it
+# --- S9229 I Am a Hero
+S 9229 cv=81033 gcd=99316 0.9 | CV 81033 "I Am a Hero" (Shogakukan 2009, 22) is the twenty-two-volume line our twenty-two scanlated volumes ([Illuminati-Manga] / [Gantz Waitingroom] / [Todome!]) are, and the GCD rows at that count are translations — 99316 Carlsen [de] 2012-?, 22 is taken; 0.9 with the language named; Dark Horse's English edition is an omnibus line of a different structure
+N 9229 the twenty-two files are volume files the scanner did not mark COL; their identity follows by ordinal from CV 81033 #1-22, no book-level record beyond that
+
+# --- S9236 I'm in Love and It's the End of the World
+S 9236 cv=106014 gcd=- 0.9 | one leg plus our own year and count: CV 106014 "I'm in Love and It's the End of the World" (Kodansha Comics USA 2017, 5) against our two danke-Empire COL v01-v02 dated 2017; no GCD row in any language
+F 9236 provider-missing | the GCD dump has no row for this title; its word-overlap hits are 1950s-60s American comics
+N 9236 triage c: v02's judged #5-8 is a chapter range; no chapter run (L-284)
+
+I 42614 cv=636517 gcd=- 0.9 | header #1 of CV 106014 I'm in Love and It's the End of the World (Kodansha 2017), the shelf's only leg, no GCD row, provider-missing
+I 42615 cv=642214 gcd=- 0.9 | header #2 of CV 106014 I'm in Love and It's the End of the World (Kodansha 2017), the shelf's only leg, no GCD row, provider-missing
+# --- S101949 Initial D
+S 101949 cv=118438 gcd=210241 0.9 | Kodansha USA's English digital line: CV 118438 "Initial D" (Kodansha Comics USA 2019, 48) is our forty-eight danke-Empire COL v01-v48 all dated 2019 by count and ordinal, paired with the Japanese original GCD 210241 "頭文字D" (Kodansha 1995-2013, 48) for want of an English GCD row; the three 2024 "(Omnibus Edition)" books are Kodansha USA's omnibus of the same work (CV 157329 / GCD 210242), an edition item-level on this shelf (L-380); 0.9 for the language of the GCD leg
+N 101949 B-044's F merge-with=64960 is spent: S64960 (v04-v48) was merged into this shelf by a landed wave
+
+I 43538 cv=706525 gcd=2618801 0.9 | header ladder v01: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43539 cv=706526 gcd=2618802 0.9 | header ladder v02: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43540 cv=706527 gcd=2618803 0.9 | header ladder v03: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43541 cv=706528 gcd=2618804 0.9 | header ladder v04: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43542 cv=706529 gcd=2618805 0.9 | header ladder v05: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43543 cv=706530 gcd=2618806 0.9 | header ladder v06: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43544 cv=706531 gcd=2618807 0.9 | header ladder v07: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43545 cv=706532 gcd=2618808 0.9 | header ladder v08: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43546 cv=706533 gcd=2618809 0.9 | header ladder v09: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43547 cv=706534 gcd=2618810 0.9 | header ladder v10: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43548 cv=706535 gcd=2618811 0.9 | header ladder v11: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43549 cv=706536 gcd=2618812 0.9 | header ladder v12: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43550 cv=706537 gcd=2618813 0.9 | header ladder v13: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43551 cv=706538 gcd=2618814 0.9 | header ladder v14: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43552 cv=706539 gcd=2618815 0.9 | header ladder v15: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43553 cv=706540 gcd=2618816 0.9 | header ladder v16: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43554 cv=706541 gcd=2618817 0.9 | header ladder v17: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43555 cv=706542 gcd=2618818 0.9 | header ladder v18: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43556 cv=706543 gcd=2618819 0.9 | header ladder v19: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43557 cv=706544 gcd=2618820 0.9 | header ladder v20: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43558 cv=706545 gcd=2618821 0.9 | header ladder v21: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43559 cv=706546 gcd=2618822 0.9 | header ladder v22: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43560 cv=706547 gcd=2618823 0.9 | header ladder v23: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43561 cv=706548 gcd=2618824 0.9 | header ladder v24: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43562 cv=706549 gcd=2618825 0.9 | header ladder v25: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43563 cv=706550 gcd=2618826 0.9 | header ladder v26: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43564 cv=706551 gcd=2618827 0.9 | header ladder v27: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43565 cv=706552 gcd=2618828 0.9 | header ladder v28: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43566 cv=706553 gcd=2618829 0.9 | header ladder v29: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43567 cv=706554 gcd=2618830 0.9 | header ladder v30: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43568 cv=706555 gcd=2618831 0.9 | header ladder v31: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43569 cv=706556 gcd=2618832 0.9 | header ladder v32: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43570 cv=706557 gcd=2618833 0.9 | header ladder v33: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43571 cv=706558 gcd=2618834 0.9 | header ladder v34: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43572 cv=706559 gcd=2618835 0.9 | header ladder v35: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43573 cv=706560 gcd=2618836 0.9 | header ladder v36: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43574 cv=706561 gcd=2618837 0.9 | header ladder v37: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43575 cv=706562 gcd=2618838 0.9 | header ladder v38: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43576 cv=713994 gcd=2618839 0.9 | header ladder v39: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43577 cv=713995 gcd=2618840 0.9 | header ladder v40: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43578 cv=713996 gcd=2618841 0.9 | header ladder v41: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43579 cv=713997 gcd=2618842 0.9 | header ladder v42: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43580 cv=713998 gcd=2618843 0.9 | header ladder v43: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43581 cv=713999 gcd=2618844 0.9 | header ladder v44: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43582 cv=714000 gcd=2618845 0.9 | header ladder v45: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43583 cv=714001 gcd=2618846 0.9 | header ladder v46: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43584 cv=714002 gcd=2618847 0.9 | header ladder v47: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43585 cv=714003 gcd=2618848 0.9 | header ladder v48: CV 118438's own English ladder pairs with GCD 210241 (dump-only Japanese original 頭文字D, no English GCD row exists); per-file cv stamps the Japanese-original CV volume 59344 and gcd stamps the French Kaze edition 153330, both rejected
+I 43586 cv=1048811 gcd=2619616 0.95 | CV 157329 / GCD 210242 'Initial D Omnibus' (Kodansha USA 2024, found via lookup.py) Vol.1, isbn 9798888770986; per-file's Japanese-original cv59344 stamp rejected
+I 43587 cv=1058807 gcd=2643067 0.95 | CV 157329 / GCD 210242 Initial D Omnibus Vol.2, isbn 9798888770993; per-file's Japanese-original cv59344 stamp rejected
+I 43588 cv=1068963 gcd=2656099 0.95 | CV 157329 / GCD 210242 Initial D Omnibus Vol.3, isbn 9798888771006; per-file's Japanese-original cv59344 stamp rejected
+# --- S9497 Innocent
+S 9497 cv=157999 gcd=206125 0.9 | Dark Horse's English omnibus: CV 157999 "Innocent Omnibus" (Dark Horse 2023, 3, "Volume 1-3") and GCD 206125 (Dark Horse 2023-?, 3, ISBNs 9781506738246 / -253 / -260) agree on publisher, year and count, and our three LuCaZ "(Omnibus Edition)" v01-v03 (2023-2024, 567-600pp) are its three books; the fourth file is a 1848pp single-file scan of the whole series, another edition of the same comic; 0.9 because the three-book count equals our holdings and the Japanese nine-volume line CV 82453 is what the shelf stored
+F 9497 wrong-cv-link | stored cv 82453 "Innocent" 2013 Shueisha is the Japanese nine-volume original; B-044's N "no English Innocent record exists" was wrong — CV 157999 / GCD 206125 (L-286, L-383)
+F 9497 needs-fetch cv=157999 | the Dark Horse omnibus volume is named from the local rip only
+N 43589 no-record | "Innocent (Waifu2x Upscale)" 1848pp is a fan-assembled single file of all nine Japanese volumes; no catalog indexes a one-book edition of that size, so the book has no record of its own
+N 9497 triage c: the judged ranges #1-31 / #32-64 / #65-99 are chapter numbers across the three omnibus books; no chapter run (L-284)
+
+I 43593 cv=1054025 gcd=2581735 0.95 | CV 157999 / GCD 206125 'Innocent Omnibus' (Dark Horse 2023-2024, found via lookup.py) Vol.1, isbn 9781506738246 -- the shelf's own N calling this absent was wrong
+I 43594 cv=1054026 gcd=2627443 0.95 | CV 157999 / GCD 206125 Innocent Omnibus Vol.2, isbn 9781506738253
+I 43595 cv=1080526 gcd=2684820 0.95 | CV 157999 / GCD 206125 Innocent Omnibus Vol.3, isbn 9781506738260
+# --- S28878 Is It Wrong to Try to Pick Up Girls in a Dungeon?
+S 28878 cv=82075 gcd=94977 0.9 | CV 82075 "Is It Wrong To Try To Pick Up Girls In A Dungeon?" (Yen Press 2015, 10) and GCD 94977 (Yen Press 2015-2019, 10) agree on publisher, start year and count, and our ten COL v01-v10 (2015-2019) fill it exactly with ComicInfo Publisher "Yen Press" on three; 0.9 for the four-panel book split below
+F 28878 split-needed | item 44873 "Is It Wrong to Try to Pick Up Girls in a Dungeon - Days of Goddess (2018)" 150pp -> new key "Is It Wrong to Try to Pick Up Girls in a Dungeon? Four-Panel Comic: Days of Goddess (2018)": CV 109299 (Yen Press 2018, 1, issue 663506) = GCD 123042 row 1793937 (ISBN 9780316480130), a separate one-volume four-panel collection; --who-stores cv=109299 finds no shelf; restates B-044's F misfiled as L-368
+N 28878 triage c: the judged ranges #15-22 … #78-86 are chapter numbers; no chapter run (L-284)
+
+I 44858 cv=489195 gcd=1514452 0.9 | header ladder #1 of CV 82075 / GCD 94977 Is It Wrong to Try to Pick Up Girls in a Dungeon? (Yen Press 2015-2019); v04-06 per-file dropped the gcd id, v07-08 jumped to a wrong series 116592, v09-10 to 124376, all corrected by ordinal
+I 44859 cv=497879 gcd=1514453 0.9 | header ladder #2 of CV 82075 / GCD 94977 Is It Wrong to Try to Pick Up Girls in a Dungeon? (Yen Press 2015-2019); v04-06 per-file dropped the gcd id, v07-08 jumped to a wrong series 116592, v09-10 to 124376, all corrected by ordinal
+I 44860 cv=506530 gcd=1514454 0.9 | header ladder #3 of CV 82075 / GCD 94977 Is It Wrong to Try to Pick Up Girls in a Dungeon? (Yen Press 2015-2019); v04-06 per-file dropped the gcd id, v07-08 jumped to a wrong series 116592, v09-10 to 124376, all corrected by ordinal
+I 44861 cv=516788 gcd=1772363 0.9 | header ladder #4 of CV 82075 / GCD 94977 Is It Wrong to Try to Pick Up Girls in a Dungeon? (Yen Press 2015-2019); v04-06 per-file dropped the gcd id, v07-08 jumped to a wrong series 116592, v09-10 to 124376, all corrected by ordinal
+I 44862 cv=531698 gcd=1772364 0.9 | header ladder #5 of CV 82075 / GCD 94977 Is It Wrong to Try to Pick Up Girls in a Dungeon? (Yen Press 2015-2019); v04-06 per-file dropped the gcd id, v07-08 jumped to a wrong series 116592, v09-10 to 124376, all corrected by ordinal
+I 44863 cv=558291 gcd=1772365 0.9 | header ladder #6 of CV 82075 / GCD 94977 Is It Wrong to Try to Pick Up Girls in a Dungeon? (Yen Press 2015-2019); v04-06 per-file dropped the gcd id, v07-08 jumped to a wrong series 116592, v09-10 to 124376, all corrected by ordinal
+I 44864 cv=608362 gcd=1772366 0.9 | header ladder #7 of CV 82075 / GCD 94977 Is It Wrong to Try to Pick Up Girls in a Dungeon? (Yen Press 2015-2019); v04-06 per-file dropped the gcd id, v07-08 jumped to a wrong series 116592, v09-10 to 124376, all corrected by ordinal
+I 44865 cv=643251 gcd=1772367 0.9 | header ladder #8 of CV 82075 / GCD 94977 Is It Wrong to Try to Pick Up Girls in a Dungeon? (Yen Press 2015-2019); v04-06 per-file dropped the gcd id, v07-08 jumped to a wrong series 116592, v09-10 to 124376, all corrected by ordinal
+I 44866 cv=670216 gcd=1808539 0.9 | header ladder #9 of CV 82075 / GCD 94977 Is It Wrong to Try to Pick Up Girls in a Dungeon? (Yen Press 2015-2019); v04-06 per-file dropped the gcd id, v07-08 jumped to a wrong series 116592, v09-10 to 124376, all corrected by ordinal
+I 44867 cv=697313 gcd=1922851 0.9 | header ladder #10 of CV 82075 / GCD 94977 Is It Wrong to Try to Pick Up Girls in a Dungeon? (Yen Press 2015-2019); v04-06 per-file dropped the gcd id, v07-08 jumped to a wrong series 116592, v09-10 to 124376, all corrected by ordinal
+I 44873 cv=663506 gcd=1793937 isbn=9780316480130 0.95 | the misfiled book's own record: CV volume 109299 "Is It Wrong to Try to Pick Up Girls in a Dungeon? Four-Panel Comic: Days of Goddess" 2018 Yen Press count 1, issue 663506, with GCD 123042's issue 1793937, ISBN 9780316480130 — the companion volume to S9651's "Odd Days"
+# --- S9656 Is Kichijoji the Only Place to Live?
+S 9656 cv=112427 gcd=- 0.9 | one leg plus our own count and years: CV 112427 "Is Kichijoji the Only Place to Live?" (Kodansha Comics USA 2018, 6) is exactly our six danke-Empire COL v01-v06 dated 2018-2019; no GCD row in any language
+F 9656 provider-missing | the GCD dump has no row for this Kodansha USA digital-first line
+N 9656 triage c: the judged ranges #1-5 … #26-30 are chapter numbers; no chapter run (L-284)
+
+I 39906 cv=677740 gcd=- 0.9 | header #1 of CV 112427 Is Kichijoji the Only Place to Live? (Kodansha 2018), the shelf's only leg, no GCD row, provider-missing
+I 39907 cv=682341 gcd=- 0.9 | header #2 of CV 112427 Is Kichijoji the Only Place to Live? (Kodansha 2018), the shelf's only leg, no GCD row, provider-missing
+I 39908 cv=686122 gcd=- 0.9 | header #3 of CV 112427 Is Kichijoji the Only Place to Live? (Kodansha 2018), the shelf's only leg, no GCD row, provider-missing
+I 39909 cv=689698 gcd=- 0.9 | header #4 of CV 112427 Is Kichijoji the Only Place to Live? (Kodansha 2018), the shelf's only leg, no GCD row, provider-missing
+I 39910 cv=693286 gcd=- 0.9 | header #5 of CV 112427 Is Kichijoji the Only Place to Live? (Kodansha 2018), the shelf's only leg, no GCD row, provider-missing
+I 39911 cv=705315 gcd=- 0.9 | header #6 of CV 112427 Is Kichijoji the Only Place to Live? (Kodansha 2018), the shelf's only leg, no GCD row, provider-missing
+# --- S16862 Stone Ocean
+S 16862 cv=60417 gcd=206718 0.9 | JoJo Part 6 complete in its original seventeen volumes: CV 60417 "Stone Ocean" (Shueisha 2000, 17) and GCD 206718 "ジョジョの奇妙な冒険 第6部 ストーンオーシャン" (Shueisha 2000-2003, 17) agree on publisher, span and count, exactly our seventeen scanlated volumes under "JoJo's Bizarre Adventure Part 06 - Stone Ocean (2000)"; 0.9 because the legs are the Japanese original and our files are fan translations (v01-v03 at 96-114pp are part-volumes)
+N 16862 the Viz English edition exists — CV 154935 / GCD 206717 "JoJo's Bizarre Adventure: Part 6 - Stone Ocean" (Viz 2023-2025, 9) — but as nine two-in-one hardcovers, a different structure from our seventeen; D-012's F provider-missing is superseded by the GCD leg above
+N 16862 triage c: the judged ranges #1-8 … #147-158 are chapter numbers; no chapter run (L-284)
+I 39836 cv=399633 gcd=2589289 isbn=- 0.9 | our v01 (103pp) = CV 60417 (Shueisha 2000, 17) #1 issue 399633 (2000-05-06) and GCD 206718 (Shueisha 2000-2003, 17) #1 row 2589289 (?pp) by ordinal; Shueisha's seventeen-volume Stone Ocean
+I 39837 cv=399634 gcd=2589290 isbn=- 0.9 | our v02 (96pp) = CV 60417 (Shueisha 2000, 17) #2 issue 399634 (2000-08-09) and GCD 206718 (Shueisha 2000-2003, 17) #2 row 2589290 (?pp) by ordinal; Shueisha's seventeen-volume Stone Ocean
+I 39838 cv=399635 gcd=2589291 isbn=- 0.9 | our v03 (114pp) = CV 60417 (Shueisha 2000, 17) #3 issue 399635 (2000-10-09) and GCD 206718 (Shueisha 2000-2003, 17) #3 row 2589291 (?pp) by ordinal; Shueisha's seventeen-volume Stone Ocean
+I 39839 cv=399636 gcd=2589292 isbn=- 0.9 | our v04 (191pp) = CV 60417 (Shueisha 2000, 17) #4 issue 399636 (2000-12-09) and GCD 206718 (Shueisha 2000-2003, 17) #4 row 2589292 (?pp) by ordinal; Shueisha's seventeen-volume Stone Ocean
+I 39840 cv=399637 gcd=2589293 isbn=- 0.9 | our v05 (199pp) = CV 60417 (Shueisha 2000, 17) #5 issue 399637 (2001-02-07) and GCD 206718 (Shueisha 2000-2003, 17) #5 row 2589293 (?pp) by ordinal; Shueisha's seventeen-volume Stone Ocean
+I 39841 cv=399638 gcd=2589294 isbn=- 0.9 | our v06 (198pp) = CV 60417 (Shueisha 2000, 17) #6 issue 399638 (2001-04-09) and GCD 206718 (Shueisha 2000-2003, 17) #6 row 2589294 (?pp) by ordinal; Shueisha's seventeen-volume Stone Ocean
+I 39842 cv=399639 gcd=2589295 isbn=- 0.9 | our v07 (182pp) = CV 60417 (Shueisha 2000, 17) #7 issue 399639 (2001-06-09) and GCD 206718 (Shueisha 2000-2003, 17) #7 row 2589295 (?pp) by ordinal; Shueisha's seventeen-volume Stone Ocean
+I 39843 cv=399640 gcd=2589296 isbn=- 0.9 | our v08 (177pp) = CV 60417 (Shueisha 2000, 17) #8 issue 399640 (2001-09-09) and GCD 206718 (Shueisha 2000-2003, 17) #8 row 2589296 (?pp) by ordinal; Shueisha's seventeen-volume Stone Ocean
+I 39844 cv=399641 gcd=2589297 isbn=- 0.9 | our v09 (164pp) = CV 60417 (Shueisha 2000, 17) #9 issue 399641 (2001-11-07) and GCD 206718 (Shueisha 2000-2003, 17) #9 row 2589297 (?pp) by ordinal; Shueisha's seventeen-volume Stone Ocean
+I 39845 cv=399642 gcd=2589298 isbn=- 0.9 | our v10 (180pp) = CV 60417 (Shueisha 2000, 17) #10 issue 399642 (2002-02-09) and GCD 206718 (Shueisha 2000-2003, 17) #10 row 2589298 (?pp) by ordinal; Shueisha's seventeen-volume Stone Ocean
+I 39846 cv=399643 gcd=2589299 isbn=- 0.9 | our v11 (180pp) = CV 60417 (Shueisha 2000, 17) #11 issue 399643 (2002-04-09) and GCD 206718 (Shueisha 2000-2003, 17) #11 row 2589299 (?pp) by ordinal; Shueisha's seventeen-volume Stone Ocean
+I 39847 cv=399644 gcd=2589300 isbn=- 0.9 | our v12 (180pp) = CV 60417 (Shueisha 2000, 17) #12 issue 399644 (2002-07-09) and GCD 206718 (Shueisha 2000-2003, 17) #12 row 2589300 (?pp) by ordinal; Shueisha's seventeen-volume Stone Ocean
+I 39848 cv=399645 gcd=2589301 isbn=- 0.9 | our v13 (173pp) = CV 60417 (Shueisha 2000, 17) #13 issue 399645 (2002-09-09) and GCD 206718 (Shueisha 2000-2003, 17) #13 row 2589301 (?pp) by ordinal; Shueisha's seventeen-volume Stone Ocean
+I 39849 cv=399646 gcd=2589302 isbn=- 0.9 | our v14 (171pp) = CV 60417 (Shueisha 2000, 17) #14 issue 399646 (2002-12-09) and GCD 206718 (Shueisha 2000-2003, 17) #14 row 2589302 (?pp) by ordinal; Shueisha's seventeen-volume Stone Ocean
+I 39850 cv=399647 gcd=2589303 isbn=- 0.9 | our v15 (173pp) = CV 60417 (Shueisha 2000, 17) #15 issue 399647 (2003-02-09) and GCD 206718 (Shueisha 2000-2003, 17) #15 row 2589303 (?pp) by ordinal; Shueisha's seventeen-volume Stone Ocean
+I 39851 cv=399648 gcd=2589304 isbn=- 0.9 | our v16 (198pp) = CV 60417 (Shueisha 2000, 17) #16 issue 399648 (2003-04-09) and GCD 206718 (Shueisha 2000-2003, 17) #16 row 2589304 (?pp) by ordinal; Shueisha's seventeen-volume Stone Ocean
+I 39852 cv=399649 gcd=2589305 isbn=- 0.9 | our v17 (217pp) = CV 60417 (Shueisha 2000, 17) #17 issue 399649 (2003-07-09) and GCD 206718 (Shueisha 2000-2003, 17) #17 row 2589305 (?pp) by ordinal; Shueisha's seventeen-volume Stone Ocean
+
+# --- S10056 Jujutsu Kaisen
+S 10056 cv=123211 gcd=153402 0.9 | Viz's English Jujutsu Kaisen: CV 123211 (Viz 2019, 29, cached #0-28) and GCD 153402 (Viz 2019-2026, 31) agree on publisher and start year, and our twenty-three COL v00-v22 (2019-2024) meet #0-22 by ordinal; residue that is a different publication is the four books in \Annuals and Specials, hence 0.9; the per-file 151274 is Norma Editorial's Spanish edition
+N 44886 no-record | "Jujutsu Kaisen - Summer of Ashes, Autumn of Dust (2022)" 131pp is a light-novel adaptation; "Summer of Ashes" returns 0 hits in the CV rip and the GCD dump
+N 44887 no-record | "Jujutsu Kaisen - The Official Anime Guide - Season 1 (2023)" 156pp; "Official Anime Guide" returns 0 hits in the CV rip and the GCD dump
+N 44889 no-record | "Jujutsu Kaisen - Thorny Road at Dawn (2023)" 133pp is a light-novel adaptation; "Thorny Road" returns 0 hits in the CV rip and the GCD dump
+N 10056 triage c: the judged ranges #1-7 … #191-199 are chapter numbers; no chapter run (L-284)
+
+I 44888 cv=1063820 gcd=2630835 0.95 | the residue book's own record: CV volume 158993 "Jujutsu Kaisen: The Official Character Guide" 2024 Viz count 1, issue 1063820, paired with GCD 212173's issue 2630835 of the identical title 2024-2024 Viz — a guide book, not volume 23
+I 44890 cv=823861 gcd=2183749 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44891 cv=729334 gcd=2047980 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44892 cv=736380 gcd=2065700 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44893 cv=745581 gcd=2105714 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44894 cv=766204 gcd=2115993 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44895 cv=786550 gcd=2132166 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44896 cv=805337 gcd=2151310 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44897 cv=819971 gcd=2171832 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44898 cv=827181 gcd=2195563 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44899 cv=841828 gcd=2215893 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44900 cv=856548 gcd=2230906 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44901 cv=876673 gcd=2252759 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44902 cv=888381 gcd=2268397 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44903 cv=897774 gcd=2286946 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44904 cv=906248 gcd=2305524 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44905 cv=915116 gcd=2385008 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44906 cv=931900 gcd=2415024 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44907 cv=942873 gcd=2425974 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44908 cv=961514 gcd=2479069 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44909 cv=963607 gcd=2511085 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44910 cv=978769 gcd=2564181 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44911 cv=1030753 gcd=2626266 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+I 44912 cv=1051656 gcd=2626267 0.9 | header ladder of CV 123211 / GCD 153402 Jujutsu Kaisen (Viz 2019-2025); per-file cv points at a different volume 151274 and per-file gcd scatters across three other wrong series (151550/211626/235619), all rejected for the header's own ladder by volume number/index
+# --- S10281 Kasane
+S 10281 cv=101754 gcd=110485 0.9 | CV 101754 "Kasane" (Kodansha Comics USA 2017, 14) is exactly our fourteen danke-Empire COL v01-v14 dated 2017-2019; GCD holds no Kodansha USA or Japanese row, so the second leg is 110485 "Kasane" (Tokyopop [de] 2016-2020, 14), the German edition of the same fourteen volumes — 0.9 with the language named
+N 10281 triage c: the judged ranges #1-8 … #117-126 are chapter numbers; no chapter run (L-284)
+
+I 42634 cv=598269 gcd=1659022 0.9 | header ladder #1 of CV 101754 / GCD 110485 [de] Kasane (Kodansha USA 2017-2019 / Tokyopop DE); per-file cv points at a different volume 93413, gcd stamps v01s id for v02+, both rejected
+I 42635 cv=606451 gcd=1681281 0.9 | header ladder #2 of CV 101754 / GCD 110485 [de] Kasane (Kodansha USA 2017-2019 / Tokyopop DE); per-file cv points at a different volume 93413, gcd stamps v01s id for v02+, both rejected
+I 42636 cv=609148 gcd=1714577 0.9 | header ladder #3 of CV 101754 / GCD 110485 [de] Kasane (Kodansha USA 2017-2019 / Tokyopop DE); per-file cv points at a different volume 93413, gcd stamps v01s id for v02+, both rejected
+I 42637 cv=612126 gcd=1734945 0.9 | header ladder #4 of CV 101754 / GCD 110485 [de] Kasane (Kodansha USA 2017-2019 / Tokyopop DE); per-file cv points at a different volume 93413, gcd stamps v01s id for v02+, both rejected
+I 42638 cv=622725 gcd=1766264 0.9 | header ladder #5 of CV 101754 / GCD 110485 [de] Kasane (Kodansha USA 2017-2019 / Tokyopop DE); per-file cv points at a different volume 93413, gcd stamps v01s id for v02+, both rejected
+I 42639 cv=630670 gcd=1791964 0.9 | header ladder #6 of CV 101754 / GCD 110485 [de] Kasane (Kodansha USA 2017-2019 / Tokyopop DE); per-file cv points at a different volume 93413, gcd stamps v01s id for v02+, both rejected
+I 42640 cv=640449 gcd=1816640 0.9 | header ladder #7 of CV 101754 / GCD 110485 [de] Kasane (Kodansha USA 2017-2019 / Tokyopop DE); per-file cv points at a different volume 93413, gcd stamps v01s id for v02+, both rejected
+I 42641 cv=648050 gcd=1845923 0.9 | header ladder #8 of CV 101754 / GCD 110485 [de] Kasane (Kodansha USA 2017-2019 / Tokyopop DE); per-file cv points at a different volume 93413, gcd stamps v01s id for v02+, both rejected
+I 42642 cv=653930 gcd=1882446 0.9 | header ladder #9 of CV 101754 / GCD 110485 [de] Kasane (Kodansha USA 2017-2019 / Tokyopop DE); per-file cv points at a different volume 93413, gcd stamps v01s id for v02+, both rejected
+I 42643 cv=660534 gcd=1938874 0.9 | header ladder #10 of CV 101754 / GCD 110485 [de] Kasane (Kodansha USA 2017-2019 / Tokyopop DE); per-file cv points at a different volume 93413, gcd stamps v01s id for v02+, both rejected
+I 42644 cv=663507 gcd=1979043 0.9 | header ladder #11 of CV 101754 / GCD 110485 [de] Kasane (Kodansha USA 2017-2019 / Tokyopop DE); per-file cv points at a different volume 93413, gcd stamps v01s id for v02+, both rejected
+I 42645 cv=671065 gcd=2016145 0.9 | header ladder #12 of CV 101754 / GCD 110485 [de] Kasane (Kodansha USA 2017-2019 / Tokyopop DE); per-file cv points at a different volume 93413, gcd stamps v01s id for v02+, both rejected
+I 42646 cv=679755 gcd=2045594 0.9 | header ladder #13 of CV 101754 / GCD 110485 [de] Kasane (Kodansha USA 2017-2019 / Tokyopop DE); per-file cv points at a different volume 93413, gcd stamps v01s id for v02+, both rejected
+I 42647 cv=696694 gcd=2078807 0.9 | header ladder #14 of CV 101754 / GCD 110485 [de] Kasane (Kodansha USA 2017-2019 / Tokyopop DE); per-file cv points at a different volume 93413, gcd stamps v01s id for v02+, both rejected
+# --- S23597 Kokō no Hito
+S 23597 cv=80580 gcd=223026 0.9 | both legs hold the Japanese original at exactly our extent: CV 80580 "Kokō no Hito" (Shueisha 2008, 17) and GCD 223026 "孤高の人" (Shueisha 2008-2011, 17) agree on publisher, start year and count, and our seventeen c01-c170 scanlation volumes are that series entire; 0.9 for the language
+F 23597 provider-missing | neither catalog holds an English "Kokou no Hito"
+N 23597 triage c: the judged ranges come from the filenames' chapter spans (c133-142 …) and several read as a single chapter (#43-43); chapter numbers, not the identity (L-284)
+
+I 44992 cv=482035 gcd=2815515 0.9 | volume 1 of Shueisha's seventeen-volume Japanese original: CV issue 482035 named "Kōsha Tōhan" and GCD issue 2815515 numbered 1, mapped by ordinal onto our own v01 file
+I 44993 cv=482036 gcd=2815516 0.9 | volume 2 of Shueisha's seventeen-volume Japanese original: CV issue 482036 named "Anti-Hero" and GCD issue 2815516 numbered 2, mapped by ordinal onto our own v02 file
+I 44994 cv=482037 gcd=2815517 0.9 | volume 3 of Shueisha's seventeen-volume Japanese original: CV issue 482037 named "Gō ka Higō ka" and GCD issue 2815517 numbered 3, mapped by ordinal onto our own v03 file
+I 44995 cv=482038 gcd=2815518 0.9 | volume 4 of Shueisha's seventeen-volume Japanese original: CV issue 482038 named "Mitō no Jōheki" and GCD issue 2815518 numbered 4, mapped by ordinal onto our own v04 file
+I 44996 cv=482039 gcd=2815519 0.9 | volume 5 of Shueisha's seventeen-volume Japanese original: CV issue 482039 named "Junshin" and GCD issue 2815519 numbered 5, mapped by ordinal onto our own v05 file
+I 44997 cv=482040 gcd=2815520 0.9 | volume 6 of Shueisha's seventeen-volume Japanese original: CV issue 482040 named "Nani ga Tame ni Kare wa Noboru" and GCD issue 2815520 numbered 6, mapped by ordinal onto our own v06 file
+I 44998 cv=482041 gcd=2815521 0.9 | volume 7 of Shueisha's seventeen-volume Japanese original: CV issue 482041 named "Kodoku no Yama" and GCD issue 2815521 numbered 7, mapped by ordinal onto our own v07 file
+I 44999 cv=482042 gcd=2815522 0.9 | volume 8 of Shueisha's seventeen-volume Japanese original: CV issue 482042 named "Memento Mori" and GCD issue 2815522 numbered 8, mapped by ordinal onto our own v08 file
+I 45000 cv=482043 gcd=2815523 0.9 | volume 9 of Shueisha's seventeen-volume Japanese original: CV issue 482043 named "Ketsubetsu Gyō" and GCD issue 2815523 numbered 9, mapped by ordinal onto our own v09 file
+I 45001 cv=482044 gcd=2815524 0.9 | volume 10 of Shueisha's seventeen-volume Japanese original: CV issue 482044 named "Yuihin" and GCD issue 2815524 numbered 10, mapped by ordinal onto our own v10 file
+I 45002 cv=482045 gcd=2815525 0.9 | volume 11 of Shueisha's seventeen-volume Japanese original: CV issue 482045 named "Tōtetsu no Takashi" and GCD issue 2815525 numbered 11, mapped by ordinal onto our own v11 file
+I 45003 cv=482046 gcd=2815526 0.9 | volume 12 of Shueisha's seventeen-volume Japanese original: CV issue 482046 named "Katō Buntarō" and GCD issue 2815526 numbered 12, mapped by ordinal onto our own v12 file
+I 45004 cv=482047 gcd=2815527 0.9 | volume 13 of Shueisha's seventeen-volume Japanese original: CV issue 482047 named "Niritsuhaihan" and GCD issue 2815527 numbered 13, mapped by ordinal onto our own v13 file
+I 45005 cv=482048 gcd=2815528 0.9 | volume 14 of Shueisha's seventeen-volume Japanese original: CV issue 482048 named "K2 Azuma Kabe" and GCD issue 2815528 numbered 14, mapped by ordinal onto our own v14 file
+I 45006 cv=482049 gcd=2815529 0.9 | volume 15 of Shueisha's seventeen-volume Japanese original: CV issue 482049 named "Eiyū" and GCD issue 2815529 numbered 15, mapped by ordinal onto our own v15 file
+I 45007 cv=482050 gcd=2815530 0.9 | volume 16 of Shueisha's seventeen-volume Japanese original: CV issue 482050 named "Tandoku Gyōja" and GCD issue 2815530 numbered 16, mapped by ordinal onto our own v16 file
+I 45008 cv=482051 gcd=2815531 0.9 | volume 17 of Shueisha's seventeen-volume Japanese original: CV issue 482051 named "Junkyōsha" and GCD issue 2815531 numbered 17, mapped by ordinal onto our own v17 file
+# --- S10723 Let's Kiss in Secret Tomorrow
+S 10723 cv=124797 gcd=201121 0.9 | CV 124797 "Let's Kiss In Secret Tomorrow" (Kodansha Comics USA 2020, 3) matches our two danke-Empire COL v01-v02 dated 2020; the only GCD row is 201121, Pika Édition's French edition (2022-?, 3), hence 0.9 with the language named
+N 10723 triage c: the judged #1-4 / #5-8 are chapter ranges; no chapter run (L-284)
+
+I 45059 cv=736346 gcd=2544160 0.9 | header ladder #1 of CV 124797 Let's Kiss in Secret Tomorrow (Kodansha USA 2020) / GCD 201121, the French Pika Édition of the same book (2022-?); per-file correct for v01, isbn 978-2-8116-5058-2
+I 45060 cv=744454 gcd=2544161 0.9 | header ladder #2 of CV 124797 / GCD 201121 French edition; per-file gcd stamps v01's id 2544160, corrected by ordinal, isbn 978-2-8116-7213-3
+# --- S11289 March Comes in Like a Lion
+S 11289 cv=150064 gcd=201159 0.9 | Denpa's English line: CV 150064 "March Comes in Like a Lion" (Denpa 2023, 3, "Volume 1" 2023-05-01) and GCD 201159 (Denpa 2023-?, 4) agree on publisher and start year, and our v01-v03 (2023-2024) are #1-3 by ordinal and date; D-012's "ComicVine has no English volume" was wrong. Our v04-v17 (2010-2023 .cbr) are fan translations of the Japanese volumes the English line has not reached — a provider count below our ladder, the real doubt that holds 0.9
+F 11289 needs-fetch cv=150064 | the Denpa volume is named from the local rip only
+N 11289 v04-v17 (items 43641-43654) have no English record: Denpa's line stands at 3 (CV) / 4 (GCD) volumes; the seventeen-volume counts are Dargaud's French 132291 / CV 168148 — the matches-our-holdings trap — and JBC's Portuguese; no I lines for them
+N 11289 triage c: the judged ranges #1-10 … #180-194 are chapter numbers; no chapter run (L-284)
+I 43638 cv=987377 gcd=2544385 isbn=1634428129 0.95 | our v01 (186pp) = CV 150064 (Denpa 2023) #1 issue 987377 (2023-05-01) and GCD 201159 (Denpa 2023-?) #1 row 2544385 (?pp) by ordinal; Denpa's English March Comes in Like a Lion
+I 43639 cv=1051949 gcd=2632587 isbn=1634429753 0.95 | our v02 (191pp) = CV 150064 (Denpa 2023) #2 issue 1051949 (2024-04-18) and GCD 201159 (Denpa 2023-?) #2 row 2632587 (?pp) by ordinal; Denpa's English March Comes in Like a Lion
+I 43640 cv=1076412 gcd=2690744 isbn=1634428366 0.95 | our v03 (195pp) = CV 150064 (Denpa 2023) #3 issue 1076412 (2024-10-01) and GCD 201159 (Denpa 2023-?) #3 row 2690744 (?pp) by ordinal; Denpa's English March Comes in Like a Lion
+
+# --- S12236 MoMo -the blood taker-
+S 12236 cv=144739 gcd=188537 0.95 | Seven Seas' English edition on both legs: CV 144739 "MoMo -the blood taker-" (Seven Seas 2022, 9, "Vol. 1" 2022-08-25 … "The Riveting Finale" 2024-07-01) and GCD 188537 (Seven Seas 2022-2024, 9, ISBNs 978-1-63858-531-2 upward) agree on publisher, span and count, exactly our nine LuCaZ COL v01-v09 dated 2022-2024
+F 12236 wrong-cv-link | stored cv 118350 "MoMo -the blood taker-" 2019 Shueisha is the Japanese original; B-045 paired it with the English GCD row — L-383, CV 144739 is the edition
+F 12236 needs-fetch cv=144739 | the Seven Seas volume is named from the local rip only
+N 12236 triage c: the judged ranges #1-8 … #86-96 are chapter numbers; no chapter run (L-284)
+I 45094 cv=943920 gcd=2428522 isbn=978-1-63858-531-2 0.95 | our v01 (227pp) = CV 144739 (Seven Seas 2022) #1 issue 943920 (2022-08-25) and GCD 188537 (Seven Seas 2022-2024) #1 row 2428522 (?pp) by ordinal; Seven Seas' MoMo -the blood taker-
+I 45095 cv=943921 gcd=2446247 isbn=978-1-63858-532-9 0.95 | our v02 (225pp) = CV 144739 (Seven Seas 2022) #2 issue 943921 (2022-10-01) and GCD 188537 (Seven Seas 2022-2024) #2 row 2446247 (?pp) by ordinal; Seven Seas' MoMo -the blood taker-
+I 45096 cv=966499 gcd=2485543 isbn=978-1-63858-533-6 0.95 | our v03 (222pp) = CV 144739 (Seven Seas 2022) #3 issue 966499 (2023-01-24) and GCD 188537 (Seven Seas 2022-2024) #3 row 2485543 (?pp) by ordinal; Seven Seas' MoMo -the blood taker-
+I 45097 cv=982347 gcd=2523366 isbn=978-1-63858-908-2 0.95 | our v04 (226pp) = CV 144739 (Seven Seas 2022) #4 issue 982347 (2023-04-11) and GCD 188537 (Seven Seas 2022-2024) #4 row 2523366 (?pp) by ordinal; Seven Seas' MoMo -the blood taker-
+I 45098 cv=1028617 gcd=2558349 isbn=978-1-68579-673-0 0.95 | our v05 (215pp) = CV 144739 (Seven Seas 2022) #5 issue 1028617 (2023-07-01) and GCD 188537 (Seven Seas 2022-2024) #5 row 2558349 (?pp) by ordinal; Seven Seas' MoMo -the blood taker-
+I 45099 cv=1028618 gcd=2573237 isbn=978-1-68579-932-8 0.95 | our v06 (218pp) = CV 144739 (Seven Seas 2022) #6 issue 1028618 (2023-10-01) and GCD 188537 (Seven Seas 2022-2024) #6 row 2573237 (?pp) by ordinal; Seven Seas' MoMo -the blood taker-
+I 45100 cv=1039172 gcd=2600954 isbn=979-8-88843-096-5 0.95 | our v07 (216pp) = CV 144739 (Seven Seas 2022) #7 issue 1039172 (2024-01-03) and GCD 188537 (Seven Seas 2022-2024) #7 row 2600954 (?pp) by ordinal; Seven Seas' MoMo -the blood taker-
+I 45101 cv=1052854 gcd=2632141 isbn=979-8-88843-371-3 0.95 | our v08 (214pp) = CV 144739 (Seven Seas 2022) #8 issue 1052854 (2024-04-23) and GCD 188537 (Seven Seas 2022-2024) #8 row 2632141 (?pp) by ordinal; Seven Seas' MoMo -the blood taker-
+I 45102 cv=1065644 gcd=2659732 isbn=979-8-88843-660-8 0.95 | our v09 (216pp) = CV 144739 (Seven Seas 2022) #9 issue 1065644 (2024-07-01) and GCD 188537 (Seven Seas 2022-2024) #9 row 2659732 (?pp) by ordinal; Seven Seas' MoMo -the blood taker-
+
+# --- S12239 Mobile Suit Gundam THE ORIGIN
+S 12239 cv=59572 gcd=91764 0.9 | CV 59572 "Mobile Suit Gundam THE ORIGIN" (Vertical 2013, cached #1-12) and GCD 91764 "Mobile Suit Gundam: The Origin" (Vertical 2013-2015, 12) are the same English edition; our thirty-seven chapter files 001-037 (36-86pp) are its content chapter by chapter, which is why the ladder runs past both twelve-volume counts — 0.9 for that unit mismatch
+N 12239 no collected editions on the shelf — no I lines are owed
+
+# --- S12516 My Clueless First Friend
+S 12516 cv=148760 gcd=- 0.9 | one leg plus our own year: CV 148760 "My Clueless First Friend" (Square Enix Manga & Books 2023, 8), issue #1 dated 2023-03-06, against our single 289pp 2023 "(Omnibus Edition)" v01; a direct probe returns that one CV row and zero GCD rows
+F 12516 provider-missing | the GCD dump has no "My Clueless First Friend" row in any language
+N 12516 triage c: the judged #1-29 is the chapter range inside the one book; no chapter run (L-284)
+
+I 45123 cv=975236 gcd=- 0.9 | the book is volume 1 of the eight: CV issue 975236 (2023-03-06, "Volume 1") of volume 148760; GCD holds no record of this line
+# --- S12716 Naruto
+S 12716 cv=18836 gcd=25323 0.9 | CV 18836 "Naruto" (Viz 2003, 72) and GCD 25323 (Viz 2003-2015, 72) agree on publisher, start year and count, and our seventy-two AnHeroGold-Empire COL v01-v72 dated 2003-2015 fill that count exactly; residue that is a different comic is the three books in \Extras (two 2024 spin-off volumes and the 2016 Seventh Hokage epilogue, each with its own record on its I line), hence 0.9; the per-file 116557 is the Polish edition
+N 12716 triage c: the judged ranges #1-7 … #691-700 are chapter numbers; no chapter run (L-284)
+
+I 39575 cv=1073712 gcd=2653079 isbn=9781974740857 0.95 | residue book: "Naruto - Konoha's Story—The Steam Ninja Scrolls - The Manga v01 (2024)" is volume 1 of a separate two-book spin-off — CV volume 160382 count 2, issue 1073712 (2024-07-01, "Vol. 1"), and GCD 214268's issue 2653079, ISBN 978-1-9747-4085-7
+I 39576 cv=1069610 gcd=2650143 isbn=9781974740840 0.95 | residue book: "Naruto - Sasuke's Story—The Uchiha and the Heavenly Stardust v01 (2024)" is volume 1 of another separate two-book spin-off — CV volume 159734 count 2, issue 1069610 (2024-06-01, "Vol. 1"), and GCD 213423's issue 2650143, ISBN 978-1-9747-4084-0
+I 39577 cv=502036 gcd=2739486 isbn=9781421584935 0.95 | residue book: "Naruto - The Seventh Hokage and the Scarlet Spring (2016)" 215pp is its own one-volume epilogue — CV volume 85069 count 1, issue 502036 (2016-01-31, "Uchiha Sarada"), and GCD 224110's issue 2739486, ISBN 9781421584935
+I 39578 cv=111264 gcd=361089 0.9 | header pool #1: CV 18836#1=111264, GCD 25323#1=361089 (196pp); per-file link cv697654/116557 gcd731707/44463 is the reused foreign-twin stamp, rejected
+I 39579 cv=124940 gcd=361090 0.9 | header pool #2: CV 18836#2=124940, GCD 25323#2=361090 (220pp isbn 978-1-59116-178-3); per-file link is the same reused stamp as v01
+I 39580 cv=124941 gcd=361091 0.9 | header pool #3: CV 18836#3=124941, GCD 25323#3=361091 (220pp isbn 978-1-59116-187-5); per-file link is the reused foreign-twin stamp
+I 39581 cv=130510 gcd=361092 0.9 | header pool #4: CV 18836#4=130510, GCD 25323#4=361092 (188pp isbn 978-1-59116-358-9); per-file link is the reused foreign-twin stamp
+I 39582 cv=130576 gcd=361093 0.9 | header pool #5: CV 18836#5=130576, GCD 25323#5=361093 (196pp isbn 978-1-59116-359-6); per-file link is the reused foreign-twin stamp
+I 39583 cv=133190 gcd=361094 0.9 | header pool #6: CV 18836#6=133190, GCD 25323#6=361094 (196pp isbn 978-1-59116-739-6); per-file link is the reused foreign-twin stamp
+I 39584 cv=133191 gcd=361095 0.9 | header pool #7: CV 18836#7=133191, GCD 25323#7=361095 (196pp isbn 978-1-59116-875-1); per-file link is the reused foreign-twin stamp
+I 39585 cv=133192 gcd=361096 0.9 | header pool #8: CV 18836#8=133192, GCD 25323#8=361096 (196pp isbn 978-1-4215-0124-6); per-file link is the reused foreign-twin stamp
+I 39586 cv=130354 gcd=361097 0.9 | header pool #9: CV 18836#9=130354, GCD 25323#9=361097 (196pp isbn 978-1-4215-0239-7); per-file link is the reused foreign-twin stamp
+I 39587 cv=130355 gcd=361098 0.9 | header pool #10: CV 18836#10=130355, GCD 25323#10=361098 (188pp isbn 978-1-4215-0240-3); per-file link is the reused foreign-twin stamp
+I 39588 cv=133193 gcd=361099 0.9 | header pool #11: CV 18836#11=133193, GCD 25323#11=361099 (196pp); per-file link is the reused foreign-twin stamp, rejected
+I 39589 cv=130356 gcd=361100 0.9 | header pool #12: CV 18836#12=130356, GCD 25323#12=361100 (196pp); per-file link is the reused foreign-twin stamp, rejected
+I 39590 cv=133194 gcd=651245 0.9 | header pool #13: CV 18836#13=133194, GCD 25323#13=651245 (196pp isbn 978-1-4215-1087-3); per-file link is the reused foreign-twin stamp
+I 39591 cv=133195 gcd=651246 0.9 | header pool #14: CV 18836#14=133195, GCD 25323#14=651246 (188pp isbn 978-1-4215-1088-0); per-file link is the reused foreign-twin stamp
+I 39592 cv=133196 gcd=651247 0.9 | header pool #15: CV 18836#15=133196, GCD 25323#15=651247 (196pp isbn 978-1-4215-1089-7); per-file link is the reused foreign-twin stamp
+I 39593 cv=133197 gcd=651248 0.9 | header pool #16: CV 18836#16=133197, GCD 25323#16=651248 (204pp isbn 978-1-4215-1090-3); per-file link is the reused foreign-twin stamp
+I 39594 cv=130447 gcd=651249 0.9 | header pool #17: CV 18836#17=130447, GCD 25323#17=651249 (196pp isbn 978-1-4215-1652-3); per-file link is the reused foreign-twin stamp
+I 39595 cv=130353 gcd=651250 0.9 | header pool #18: CV 18836#18=130353, GCD 25323#18=651250 (196pp isbn 978-1-4215-1653-0); per-file link is the reused foreign-twin stamp
+I 39596 cv=124130 gcd=651251 0.9 | header pool #19: CV 18836#19=124130, GCD 25323#19=651251 (196pp isbn 978-1-4215-1654-7); per-file link is the reused foreign-twin stamp
+I 39597 cv=133198 gcd=651252 0.9 | header pool #20: CV 18836#20=133198, GCD 25323#20=651252; per-file link is the reused foreign-twin stamp, rejected
+I 39598 cv=129733 gcd=651253 0.9 | header pool #21: CV 18836#21=129733, GCD 25323#21=651253 (220pp isbn 978-1-4215-1855-8); per-file link is the reused foreign-twin stamp
+I 39599 cv=130349 gcd=651254 0.9 | header pool #22: CV 18836#22=130349, GCD 25323#22=651254; per-file link is the reused foreign-twin stamp, rejected
+I 39600 cv=129732 gcd=651255 0.9 | header pool #23: CV 18836#23=129732, GCD 25323#23=651255; per-file link is the reused foreign-twin stamp, rejected
+I 39601 cv=133199 gcd=651256 0.9 | header pool #24: CV 18836#24=133199, GCD 25323#24=651256; per-file link is the reused foreign-twin stamp, rejected
+I 39602 cv=133200 gcd=651257 0.9 | header pool #25: CV 18836#25=133200, GCD 25323#25=651257; per-file link is the reused foreign-twin stamp, rejected
+I 39603 cv=133201 gcd=651258 0.9 | header pool #26: CV 18836#26=133201, GCD 25323#26=651258; per-file link is the reused foreign-twin stamp, rejected
+I 39604 cv=129648 gcd=651259 0.9 | header pool #27: CV 18836#27=129648, GCD 25323#27=651259 (196pp isbn 978-1-4215-1863-3); per-file link is the reused foreign-twin stamp
+I 39605 cv=133083 gcd=651260 0.9 | header pool #28: CV 18836#28=133083, GCD 25323#28=651260; per-file link is the reused foreign-twin stamp, rejected
+I 39606 cv=129649 gcd=651261 0.9 | header pool #29: CV 18836#29=129649, GCD 25323#29=651261; per-file link is the reused foreign-twin stamp, rejected
+I 39607 cv=133081 gcd=651262 0.9 | header pool #30: CV 18836#30=133081, GCD 25323#30=651262; per-file link is the reused foreign-twin stamp, rejected
+I 39608 cv=133082 gcd=651263 0.9 | header pool #31: CV 18836#31=133082, GCD 25323#31=651263; per-file link is the reused foreign-twin stamp, rejected
+I 39609 cv=130512 gcd=651264 0.9 | header pool #32: CV 18836#32=130512, GCD 25323#32=651264; per-file link is the reused foreign-twin stamp, rejected
+I 39610 cv=147469 gcd=651265 0.9 | header pool #33: CV 18836#33=147469, GCD 25323#33=651265; per-file link is the reused foreign-twin stamp, rejected
+I 39611 cv=162136 gcd=651266 0.9 | header pool #34: CV 18836#34=162136, GCD 25323#34=651266; per-file link is the reused foreign-twin stamp, rejected
+I 39612 cv=162137 gcd=651267 0.9 | header pool #35: CV 18836#35=162137, GCD 25323#35=651267; per-file link is the reused foreign-twin stamp, rejected
+I 39613 cv=162308 gcd=651268 0.9 | header pool #36: CV 18836#36=162308, GCD 25323#36=651268; per-file link is the reused foreign-twin stamp, rejected
+I 39614 cv=162408 gcd=651269 0.9 | header pool #37: CV 18836#37=162408, GCD 25323#37=651269; per-file link is the reused foreign-twin stamp, rejected
+I 39615 cv=162474 gcd=651270 0.9 | header pool #38: CV 18836#38=162474, GCD 25323#38=651270 (isbn 9781421521749); per-file link is the reused foreign-twin stamp
+I 39616 cv=162588 gcd=651271 0.9 | header pool #39: CV 18836#39=162588, GCD 25323#39=651271 (isbn 9781421521756); per-file link is the reused foreign-twin stamp
+I 39617 cv=162823 gcd=651272 0.9 | header pool #40: CV 18836#40=162823, GCD 25323#40=651272; per-file link is the reused foreign-twin stamp, rejected
+I 39618 cv=162824 gcd=651273 0.9 | header pool #41: CV 18836#41=162824, GCD 25323#41=651273; per-file link is the reused foreign-twin stamp, rejected
+I 39619 cv=162894 gcd=651274 0.9 | header pool #42: CV 18836#42=162894, GCD 25323#42=651274; per-file link is the reused foreign-twin stamp, rejected
+I 39620 cv=162962 gcd=651275 0.9 | header pool #43: CV 18836#43=162962, GCD 25323#43=651275; per-file link is the reused foreign-twin stamp, rejected
+I 39621 cv=163140 gcd=651276 0.9 | header pool #44: CV 18836#44=163140, GCD 25323#44=651276; per-file link is the reused foreign-twin stamp, rejected
+I 39622 cv=163575 gcd=651277 0.9 | header pool #45: CV 18836#45=163575, GCD 25323#45=651277; per-file link is the reused foreign-twin stamp, rejected
+I 39623 cv=178925 gcd=731492 0.9 | header pool #46: CV 18836#46=178925, GCD 25323#46=731492; per-file link is the reused foreign-twin stamp, rejected
+I 39624 cv=190378 gcd=731493 0.9 | header pool #47: CV 18836#47=190378, GCD 25323#47=731493; per-file link is the reused foreign-twin stamp, rejected
+I 39625 cv=189937 gcd=760245 0.9 | header pool #48: CV 18836#48=189937, GCD 25323#48=760245; per-file link is the reused foreign-twin stamp, rejected
+I 39626 cv=253001 gcd=781535 0.9 | header pool #49: CV 18836#49=253001, GCD 25323#49=781535; per-file link is the reused foreign-twin stamp, rejected
+I 39627 cv=260755 gcd=802910 0.9 | header pool #50: CV 18836#50=260755, GCD 25323#50=802910; per-file link is the reused foreign-twin stamp, rejected
+I 39628 cv=273242 gcd=846912 0.9 | header pool #51: CV 18836#51=273242, GCD 25323#51=846912 (isbn 978-1-42153-498-5); per-file link is the reused foreign-twin stamp
+I 39629 cv=291131 gcd=874789 0.9 | header pool #52: CV 18836#52=291131, GCD 25323#52=874789 (isbn 978-1-42153-957-7); per-file link is the reused foreign-twin stamp
+I 39630 cv=305658 gcd=901361 0.9 | header pool #53: CV 18836#53=305658, GCD 25323#53=901361 (isbn 978-1-42154-049-8); per-file link is the reused foreign-twin stamp
+I 39631 cv=317591 gcd=904067 0.9 | header pool #54: CV 18836#54=317591, GCD 25323#54=904067 (isbn 978-1-42154-102-0); per-file link is the reused foreign-twin stamp
+I 39632 cv=319080 gcd=927366 0.9 | header pool #55: CV 18836#55=319080, GCD 25323#55=927366 (isbn 978-1-42154-152-5); per-file link is the reused foreign-twin stamp
+I 39633 cv=334253 gcd=944875 0.9 | header pool #56: CV 18836#56=334253, GCD 25323#56=944875 (isbn 978-1-42154-207-2); per-file link is the reused foreign-twin stamp
+I 39634 cv=344223 gcd=956221 0.9 | header pool #57: CV 18836#57=344223, GCD 25323#57=956221 (isbn 978-1-421-54306-2); per-file link is the reused foreign-twin stamp
+I 39635 cv=356842 gcd=998390 0.9 | header pool #58: CV 18836#58=356842, GCD 25323#58=998390 (isbn 978-1-4215-4328-4); per-file link is the reused foreign-twin stamp
+I 39636 cv=365816 gcd=1032846 0.9 | header pool #59: CV 18836#59=365816, GCD 25323#59=1032846 (isbn 978-1-4215-4942-2); per-file link is the reused foreign-twin stamp
+I 39637 cv=385055 gcd=1071028 0.9 | header pool #60: CV 18836#60=385055, GCD 25323#60=1071028 (isbn 978-1-4215-4943-9); per-file link is the reused foreign-twin stamp
+I 39638 cv=401260 gcd=1110184 0.9 | header pool #61: CV 18836#61=401260, GCD 25323#61=1110184 (isbn 978-1-4215-5248-4); per-file link is the reused foreign-twin stamp
+I 39639 cv=419584 gcd=1136848 0.9 | header pool #62: CV 18836#62=419584, GCD 25323#62=1136848 (isbn 978-1-4215-5619-2); per-file link is the reused foreign-twin stamp
+I 39640 cv=432396 gcd=1159274 0.9 | header pool #63: CV 18836#63=432396, GCD 25323#63=1159274 (isbn 978-1-4215-5885-1); per-file link is the reused foreign-twin stamp
+I 39641 cv=441491 gcd=1173958 0.9 | header pool #64: CV 18836#64=441491, GCD 25323#64=1173958 (isbn 978-1-4215-6139-4); per-file link is the reused foreign-twin stamp
+I 39642 cv=449653 gcd=1203318 0.9 | header pool #65: CV 18836#65=449653, GCD 25323#65=1203318 (isbn 978-1-4215-6455-5); per-file link is the reused foreign-twin stamp
+I 39643 cv=459238 gcd=1236915 0.9 | header pool #66: CV 18836#66=459238, GCD 25323#66=1236915 (isbn 978-1-4215-6948-2); per-file link is the reused foreign-twin stamp
+I 39644 cv=467739 gcd=1448592 0.9 | header pool #67: CV 18836#67=467739, GCD 25323#67=1448592; per-file link is the reused foreign-twin stamp, rejected
+I 39645 cv=472034 gcd=1448593 0.9 | header pool #68: CV 18836#68=472034, GCD 25323#68=1448593; per-file link is the reused foreign-twin stamp, rejected
+I 39646 cv=481469 gcd=1448594 0.9 | header pool #69: CV 18836#69=481469, GCD 25323#69=1448594; per-file link is the reused foreign-twin stamp, rejected
+I 39647 cv=490688 gcd=1448595 0.9 | header pool #70: CV 18836#70=490688, GCD 25323#70=1448595; per-file link is the reused foreign-twin stamp, rejected
+I 39648 cv=496799 gcd=1448596 0.9 | header pool #71: CV 18836#71=496799, GCD 25323#71=1448596; per-file link is the reused foreign-twin stamp, rejected
+I 39649 cv=501545 gcd=1485817 0.9 | header pool #72: CV 18836#72=501545, GCD 25323#72=1485817 (220pp isbn 978-1-4215-8284-9, titled "Uzumaki Naruto" on the GCD row); per-file link is the reused stamp
+# --- S12878 New York, New York
+S 12878 cv=144146 gcd=182584 0.9 | CV 144146 "New York, New York" (Yen Press 2022, 2) is exactly our two 2022 "(Omnibus Edition)" LuCaZ books; GCD has no English row and its only record is 182584 "ニューヨーク・ニューヨーク" (Hakusensha 1998, 4), the four-volume Japanese line the two omnibuses collect, hence 0.9 with the language and the collecting named
+N 12878 triage c: the judged #1-6 / #7-16 are chapter ranges inside the omnibuses; no chapter run (L-284)
+
+I 45132 cv=938379 gcd=s182584 0.9 | CV 144146#1=938379 is the omnibus v01 (our judged #1-6); GCD 182584 is the 4-vol Japanese original with no safe 1:1 mapping onto our 2-vol English omnibus, so gcd=s182584
+I 45133 cv=944292 gcd=s182584 0.9 | CV 144146#2=944292 is the omnibus v02 (our judged #7-16); same no-safe-mapping reasoning as v01 — 4 Japanese volumes do not split evenly across our 2 omnibus books
+# --- S13015 No Longer Human
+S 13015 cv=46482 gcd=91766 0.9 | Usamaru Furuya's adaptation: CV 46482 "No Longer Human" (Vertical 2011, 3) and GCD 91766 (Vertical 2011-2012, 3) agree on publisher, start year and count, items 43716-43718 are those three volumes, and item 43715 is the same work's 2022 Complete Edition (CV 145847 / GCD 193237, an edition on this shelf, L-380); 0.9 for Junji Ito's separate adaptation split below
+F 13015 split-needed | item 43981 "COL No Longer Human Omnibus (2019)" 613pp (Manga\_Junji Ito\No Longer Human (2018)) -> new key "No Longer Human (2019)": Junji Ito's own adaptation, CV 123651 (Viz 2019, 1, issue 731270) = GCD 153693 row 2047999 (616pp, ISBN 978-1-9747-0709-6); --who-stores cv=123651 finds no shelf; restates B-045's F misfiled as L-368
+N 13015 triage c: item 43981's judged #1-24 is the Junji Ito book's chapter range, which is why it does not fit Furuya's three-volume run — the split above
+I 43715 cv=953623 gcd=2466918 isbn=9781647291563 0.95 | "COL No Longer Human - Complete Edition (2022)" 593pp is the Furuya line's own collected edition: CV volume 145847 "No Longer Human: Complete Edition" 2022 Vertical Inc. count 1, issue 953623 (2022-11-04, TPB), and GCD 193237's issue 2466918, ISBN 9781647291563
+I 43716 cv=320268 gcd=1448856 0.9 | per-file CV and GCD links match header #1 exactly: CV 46482#1=320268, GCD 91766#1=1448856 (180pp isbn 978-1-935654-19-3); direct agreement
+I 43717 cv=320270 gcd=1448857 0.9 | per-file CV matches header #2 (320270); GCD header #2=1448857 — per-file gcd (1448856) is v01's issue id reused as a stamp across the shelf, rejected
+I 43718 cv=320271 gcd=1448858 0.9 | per-file CV matches header #3 (320271); GCD header #3=1448858 — per-file gcd (1448856) is the same v01 stamp reused, rejected for the header pool
+I 43981 cv=731270 gcd=2047999 isbn=9781974707096 0.95 | the misfiled book's own record: CV volume 123651 "No Longer Human" 2019 Viz count 1, issue 731270, and GCD 153693's issue 2047999 at 616pp with ISBN 978-1-9747-0709-6 against our 613pp rip — Junji Ito's omnibus

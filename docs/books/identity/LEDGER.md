@@ -1989,3 +1989,12 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   edition — probe with `--contains` before accepting a stored link. DC 2018 "Powers" (CV 116809 / GCD 134252) and Dark
   Horse 2022 "Powers" (146264 / 189386) are library lines spanning several runs (own identity); a single-run trade filed
   there joins the run. Image Witchblade TPB sub-lines have CV per-line volumes but no GCD rows except Redemption (63620).
+[L-384] kind:manga pub:idw sig:split
+- R-127/R-128 (waves 119-120): an earlier "no English record" / "ComicVine has no volume" note on a manga shelf is NOT
+  reliable (8 of 45 triaged shelves were wrong: Domu 23070, Fist of the North Star 136896, March Comes in Like a Lion
+  150064, Dandadan 145549 …) — probe `--contains` and check dates before inheriting it. Viz Death Note GCD 28547 holds
+  2007/2009 reprint rows beside the originals — match by subtitle. JoJo Part 6: Viz English (CV 154935 / GCD 206717) is
+  9 HCs against 17 originals, so 17-file scanlation shelves stay on the Japanese records. Triage signal c on manga
+  (judged ranges in CHAPTERS, catalogues in volumes) is not an identity fault — N line citing L-284. A split's "new"
+  key already held by a one-run trade shelf (Transformers (2019) = S20376, IDW trade line GCD 155139) is a JOIN (L-371);
+  re-read that shelf as the run afterwards.
