@@ -1866,3 +1866,12 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   cited the Panini / Urban / Televisa row. A collected-series id stored as a shelf's GCD leg makes a judged range look
   impossible (signal c) — point the S at the run. Backup-feature reprint lines get an N, not a C. Digital-first DC series
   take the print GCD series as their second leg at 0.9 (R-105/R-107).
+
+[L-369] pub:dc sig:split
+- CLARIFIES L-368 (lead, wave 97): ANNUALS OF A MONTHLY that sit on the monthly's shelf are residue — S at <=0.9 with
+  the annuals named, no split (GL 1990 Annuals, Deathstroke / Lobo / Firestorm / JLA Annuals). Only a shelf that IS an
+  annual series (the Legion Annual 1985 / 1990 shelves) takes its own key. An L-212 retitle chain stores its FIRST
+  record once the chain's opening issues are on the shelf (JL 1987 CV 3796 -> JLI 3798 -> JLA 4198; Azrael 5490). DC
+  "#DC Events" Post-Crisis read-order folders hold UNDATED "Title 001.cbr" rips of the 1987 series inside a New 52
+  ladder — grep for undated names (extends L-365). X-batch I lines on "<Title> by <Creator> Book NN" lines were often
+  attached to same-name rows (Spanish ECC, a 2025 relaunch) — check `--gcd-series "<Title> by <Creator>"` (R-108).
