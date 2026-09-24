@@ -1918,3 +1918,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   0NN - Mini 0N (of 05)" ripper ladders: the (of 05) position is the issue number, 0NN is the ripper's running count.
   Split-out shelves with NO stored cv keep the parent's per-file stamp on an N line, not F wrong-cv-link (refines L-366,
   R-116). Grandville / Don Rosa Library: one GCD line, no shared cv — a merge-with there is inert; lead-lane (L-373).
+[L-375] pub:fantagraphics pub:oni pub:western pub:ec sig:split
+- A split key that NORMALIZES to the items' CURRENT key moves nothing (checker and replay both pass it): respell with
+  vN (Usagi Yojimbo: The Crow v1 (2024), P-044) — extends L-336. GCD files Fantagraphics' Segar Popeye Sundays under bare
+  "Popeye" (179342) and the French magazine as "Métal Hurlant" with the accent (41897; its "bis" rows = CV "NNbis").
+  CV's Western Bugs Bunny splits at #220/221 (11508 / 31736) while GCD 12477 spans both. Rippers number EC's Weird
+  Fantasy 1-22 in publication order (files 001-005 = EC's 1950 #13-17). Oni Courtney Crumrin: CV 44811 is the 2012
+  monthly, not the 7-volume trade line. A one-book title CV holds twice (Gabrielle Bell 49698 / 64883) merges by
+  restating one side onto the other's cv (R-119).
