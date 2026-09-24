@@ -1,0 +1,925 @@
+## Conventions for this batch (30 shown of 130 matched; 365 in LEDGER.md; 10 shelf/shelves: pub:dc ×10 · folder:vn-year ×8 · folder:events ×6 · folder:sequel-subfolder ×6 · folder:bucket ×4 · kind:foreign ×2 · folder:graphic-novels ×2 · folder:variant-covers ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-195] (10 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- Trade SUBTITLES tell two same-title relaunches apart when the per-file matcher cannot (Batman Beyond 2015 = Brave
+  New Worlds / City of Yesterday / Wired for Death; 2016 = Escaping the Grave / Rise of the Demon / The Long Payback).
+[L-197] (10 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- The per-file matcher's "wrong RELAUNCH" trap: it stamps the LATER same-title volume onto files dated to the earlier
+  era by issue-number coincidence (Wonder Woman 2016, Batman 2016, JLA v2/v3, Firestorm, Hawk and Dove v5, Atari Force
+  v2, Adventure Comics 2010) — the tell is files whose years or numbers predate or exceed the stamped volume's own.
+[L-052] (9 shelf/shelves) pub:dc sig:stamp sig:twin
+- The per-file CV matcher picks the LEGACY volume for every New 52 shelf (Batman 1940, Wonder Woman 1942, Nightwing
+  1996, Catwoman 1993) because it matched by issue number — the stored link on a 2011 shelf that names a 1940
+  volume is `wrong-cv-link`, the 2011 volume is in the rip.
+[L-210] (9 shelf/shelves) pub:dc sig:legacy-stamp sig:probe sig:stamp
+- The wrong-relaunch trap is near-universal on any DC title with 3+ relaunches (Green Arrow, Green Lantern, Harley
+  Quinn, Justice League, Legion, Lobo, Martian Manhunter, Doom Patrol): the matcher stamps the oldest legacy volume or
+  the largest/most-recent one across every sibling shelf; `lookup.py` by name + year recovers the true id.
+[L-212] (9 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-214] (9 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp sig:twin
+- The wrong-relaunch / legacy-volume stamp ran at 70-95% of files on Midnighter, Mister Miracle, Robin, Nightwing,
+  Supergirl, Plastic Man and Suicide Squad shelves in C-016 — assume it on any DC relaunch shelf and verify by year.
+[L-245] (9 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-365] (9 shelf/shelves) pub:dc
+- DC "#DC Events" read-order rips named "Title NNN - Month Year" or "Title # NN" are NEW 52 issues whose numbers fall
+  inside the legacy ladder — a ladder check cannot see them; grep the filenames on any big legacy shelf (Batman 1940,
+  Birds of Prey 1999, Green Arrow 2001 all hid other runs). One-run trade lines (Deluxe Editions, the "Batman: Detective
+  Comics" line, R.I.P. Vol. 07, the Bronze Age omnibus) take the run's ids and merge into the run shelf. GCD notes can
+  typo the series year (Batman B&W Vol. 1 says "1986 series" for the 1996 mini). CV 19721 is "Azrael: Agent of the Bat"
+  (#47-100, the 1995 run's retitle); the 2009 relaunch is CV 28873 / GCD 39888 (R-103, P-035).
+[L-040] (8 shelf/shelves) folder:bucket folder:events pub:dc pub:papercutz-nbm pub:scout pub:titan pub:valiant sig:twin
+- NBM / Papercutz album lines and Scout one-shots carry TWIN adjacent GCD rows for one book (120209/120210) —
+  cap at 0.9 and name both. Titan's Doctor Who "Year N" volumes number continuously across a Doctor (a ladder
+  starting at #6 is complete). A publisher's read-order crossover folder (Titan `Lost Dimension`, Valiant
+  `_Chronological Valiant`) = DC's `#DC Events` shape.
+[L-082] (8 shelf/shelves) pub:dc sig:comicinfo
+- A Glorith-HD rip's ComicInfo `Web` id CAN be a ComicVine ISSUE id of the stored volume (599834, DC 100-Page
+  Spectacular) — Glorith's Web ids are never GCD ids, but check them against the CV rip.
+[L-093] (8 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
+[L-199] (8 shelf/shelves) folder:bucket folder:events pub:dc
+- DC's "#DC Events" chronology folders resolve once the cross-referenced-run pattern is seen: a crossover reprint
+  bucket or a tie-in folder filed adjacent to the main run takes the main run's identity with the tie-ins named.
+[L-211] (8 shelf/shelves) folder:vn-year pub:dc sig:collision sig:stale-flag
+- An `overlap-in-series` flag on a franchise with many `vN` sibling shelves (Deathstroke, Harley Quinn, Green Lantern,
+  Justice League, JLD, Legion, Lobo) describes the CROSS-SHELF Vol. 01 collision, not conflation on the one shelf —
+  confirmed 14 of 14 in C-013..C-015; the stale-flag note must name the sibling shelf.
+[L-237] (8 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+[L-242] (8 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-364] (8 shelf/shelves) pub:dc
+- DC (R-101): GCD's notes can disagree with GCD's own REPRINT ROLL-UP (Batgirl 2016 Son of Penguin: notes "#7-12",
+  roll-up #7-11) — the roll-up and the next volume's range decide; the packet flags RANGE CONTRADICTED only against
+  notes, so wrong judged ranges can hide without the flag. DC Vertigo: a complete short mini in a "vN" subfolder of a
+  Golden/Silver Age title's shelf (Witching Hour 1999, Weird War Tales 1997) is a CO-EQUAL run, not residue. "#DC
+  Events" New 52 read-order folders carry whole runs onto the pre-2011 shelf of the same title (Batgirl 2000). A retitle
+  that continues the numbering stays one run (L-212) even when both catalogues and the folders split it.
+[L-124] (10 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-281] (10 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-011] (6 shelf/shelves) folder:events pub:dc
+- DC event folders: the leading number is a READING-ORDER position, and the same book is filed again under its own
+  title folder — n issues × 2 files is one run.
+[L-015] (6 shelf/shelves) folder:events pub:dc
+- DC `#DC Events` read-order folders hold a SECOND rip of issues that also live on the title's own shelf — the
+  source of nearly every DC ratio 2.00; residue, not a second run. Event umbrellas (GCD "Convergence", 9) get
+  handed to two-issue tie-in shelves — the hull shape.
+[L-051] (6 shelf/shelves) pub:bongo pub:dc pub:small-press sig:probe
+- GCD spellings that hide a hit: Bongo's annual is plainly "Treehouse of Horror" (5435); Miller's 1983 series is
+  "Rōnin" (2721); Comico's Primer is "Primer" (14288). DC's Blackest Night revival issues sit in the ORIGINAL
+  series (Power of SHAZAM! 5246 runs 1995-2010).
+[L-198] (6 shelf/shelves) pub:dc
+- ComicVine keeps ONE spanning volume across era-retitled arcs (L.E.G.I.O.N. / R.E.B.E.L.S., Deathstroke "The Hunted",
+  Green Lantern 1960, Detective, Action, All-Star) while GCD names each era its own row — majority GCD era + `N` the
+  rest; no split for that alone.
+[L-206] (6 shelf/shelves) pub:dc sig:probe
+- GCD's "&" spelling hides a run from every "and" probe (Batman & the Outsiders 2019: CV 118841 / GCD 144938, 17
+  issues) — probe both spellings.
+[L-363] (6 shelf/shelves) pub:dc
+- DC New 52 trade lines on GCD are HC/TPB TWIN series (BTDK 78638/78639, Batwoman 66358/71298); CV holds per-trade
+  count-1 volumes that subtitle probes often miss. The retitle cut shows on GCD only (Fury of Firestorm: The Nuclear
+  Men = 61180 #0-12 + 171997 #13-20 = CV 42987's 21); L.E.G.I.O.N. / R.E.B.E.L.S. are split into year series. A "#DC
+  Events" shelf holding #41-45 of a New 52 title is a FRAGMENT of the run shelf — merge it in. Deathstroke the
+  Terminator 1991 = CV 9645 (#0-60) while GCD splits it 10465 (#1-40) / 15127 The Hunted / 15128 (#48-60); the 1991
+  trades (GCD 88153) collect #1-34 (R-098/R-099).
+[L-175] (8 shelf/shelves) folder:bucket folder:events pass:item
+- In the chronology folders the RUN rule stands over the bucket rule: `S` = the numbered run, the tie-in's collected
+  record goes on the `I` line (B-072/073, ~90 shelves); the book's own record is the S only where no numbered run exists.
+[L-191] (8 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-272] (8 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-059] (5 shelf/shelves) pub:dc
+- A truncated parsed key reaching a different comic ("Riddle", "Batman - Death", "Once Upon") is `wrong-cv-link`.
+[L-257] (5 shelf/shelves) pub:dc sig:twin
+- Modern DC digital lines carry TWIN "Collected Edition" GCD rows for one trade (Detective 77783/77579, Stormwatch
+  65339 stub / 76642, Dark Knights of Steel 189483/203963, I Am Batman 188323/201985) — one `I`, capped at 0.9.
+[L-348] (5 shelf/shelves) pub:dc sig:probe
+- DC (R-073): the rip holds count-1 CV trade records under "Title: Subtitle" (Justice League Vol. 1-8, Teen Titans 2014,
+  Young Justice 2019, Doom Rising, Oz Effect) — probe the SUBTITLE with --contains. One-shots filed by event name ("Flash
+  Special" = the 50th anniversary special, "Joker: Last Laugh Secret Files"). CV keeps Daring New Adventures of Supergirl
+  #1-13 + Supergirl #14-23 as ONE volume (3113); GCD splits 2626 / 2722 — a C line per leg.
+
++100 more matched entries not shown: L-055, L-290, L-337, L-064, L-085, L-101, L-113, L-123, L-193, L-222, L-255, L-299, L-310, L-007, L-016, L-032, L-065, L-099, L-114, L-194, L-217, L-262, L-291, L-330, L-128, L-181, L-336, L-014, L-018, L-031, L-162, L-202, L-203, L-205, L-215, L-220, L-254, L-256, L-260, L-263, L-329, L-097, L-135, L-150, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-252, L-258, L-269, L-274, L-275, L-279, L-282, L-285, L-286, L-287, L-288, L-289, L-293, L-309, L-314, L-352, L-354, L-022, L-207, L-216, L-218, L-360, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-074, L-083, L-250 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S9027 House of Secrets  [split]  54 files / 0 collections  decided in R-102 (R)
+   decided: R 9027 | the new shelf holds House of Secrets (1996) whole — 50 files, ladder 1-25 twice (the DC and the Vertigo folder rips) = CV 5751 (DC 1996, 25) = GCD 5511 (1996-1998, 25) — but also the complete 2001 sequel mini "House of Secrets: Facade" #1-2 in two rips (55840-55841 51-52pp, 112772-112773 "House of Secrets v3 Facade 001-002" 52-53pp, folder "Vertigo\House of Secrets v3 (2001)") = CV 20358 (DC 2001, 2) = GCD 17784 (2001, 2); a complete short Vertigo mini in a vN subfolder with its own record is a CO-EQUAL run (L-364), not the residue R-099 called it
+   F 9027 split-needed | items 55840, 55841, 112772, 112773 ("House of Secrets - Facade #1-2" / "House of Secrets v3 Facade 001-002 (2001)") -> "House of Secrets: Facade (2001)" run cv=20358 gcd=17784 (who-stores cv=20358: per-file only); the 25-issue 1996 run stays as cv=5751 gcd=5511
+   N 9027 cv=5751 gcd=5511 — the S line for the kept 1996 run once Facade moves (0.95 then: both legs 25 = ladder 1-25, second rips cost nothing)
+   N 9027 flag #282 label-ambiguous (item 112772): the four Facade files are 51-53pp prestige single issues of the 2-issue mini, not collections — the lead may resolve it as "single issues" when they move
+   nearby: S9026 "House of Secrets" 155f [shares cv=1768 — S cv=1768 gcd=1192 (R-102 0.9)] keys: "House of Secrets" | "House of Secrets (1956)"
+   nearby: S15308 "Secrets of Haunted House" 46f [title+1 — S cv=2738 gcd=2224 (B-009 0.95)] keys: "Secrets of Haunted House"
+   nearby: S15309 "Secrets of Sinister House" 5f [title+1 — S cv=2554 gcd=2032 (C-010 0.9)] keys: "Secrets of Sinister House"
+   keys now: "House of Secrets (1996)" x50 · "House of Secrets - Facade" x4
+   groups (title x folder): 5
+   G1 "House of Secrets" in DC\House of Secrets\House of Secrets v2 (1996) — 25 file(s), numbers 1-25, pp 23-27; cv per-file 5751x25; gcd per-file 5511x25; key 'House of Secrets (1996)'
+      e.g. House of Secrets 01.cbz
+        55815 #1 26pp · 55816 #2 27pp · 55817 #3 26pp · 55818 #4 26pp · 55819 #5 24pp · 55820 #6 27pp · 55821 #7 27pp · 55822 #8 24pp · 55823 #9 26pp · 55824 #10 23pp · 55825 #11 27pp
+        55826 #12 27pp · 55827 #13 27pp · 55828 #14 27pp · 55829 #15 27pp · 55830 #16 26pp · 55831 #17 26pp · 55832 #18 25pp · 55833 #19 25pp · 55834 #20 24pp · 55835 #21 24pp · 55836 #22 23pp
+        55837 #23 23pp · 55838 #24 24pp · 55839 #25 24pp
+   G2 "House_of_Secrets_-_Facade_#1" in DC\House of Secrets\House of Secrets v2 (1996) — 1 file(s), numbers 1, pp 51-51; cv per-file 5751x1; key 'House of Secrets - Facade'
+      [55840] House_of_Secrets_-_Facade_#1.cbr (51pp)
+   G3 "House_of_Secrets_-_Facade_#2" in DC\House of Secrets\House of Secrets v2 (1996) — 1 file(s), numbers 2, pp 52-52; cv per-file 5751x1; key 'House of Secrets - Facade'
+      [55841] House_of_Secrets_-_Facade_#2.cbr (52pp)
+   G4 "House of Secrets" in Vertigo\House of Secrets v2 (1996) — 25 file(s), numbers 1-25, pp 23-27; cv per-file 5751x15, 1768x10; gcd per-file 5511x25; key 'House of Secrets (1996)'
+      e.g. House of Secrets 001 (1996) (Digital-Empire).cbr
+        112747 #1 1996 25pp · 112748 #2 1996 27pp · 112749 #3 1996 25pp · 112750 #4 1997 25pp · 112751 #5 1997 24pp · 112752 #6 1997 25pp · 112753 #7 1997 25pp · 112754 #8 1997 24pp
+        112755 #9 1997 26pp · 112756 #10 1997 23pp · 112757 #11 1997 26pp · 112758 #12 1997 25pp · 112759 #13 1997 26pp · 112760 #14 1997 26pp · 112761 #15 1997 26pp · 112762 #16 1998 25pp
+        112763 #17 1998 25pp · 112764 #18 1998 25pp · 112765 #19 1998 25pp · 112766 #20 1998 23pp · 112767 #21 1998 23pp · 112768 #22 1998 23pp · 112769 #23 1998 23pp · 112770 #24 1998 23pp
+        112771 #25 1998 23pp
+   G5 "House of Secrets" in Vertigo\House of Secrets v3 (2001) — 2 file(s), numbers 1-2, pp 52-53; cv per-file 20358x2; gcd per-file 17784x2; key 'House of Secrets - Facade'
+      [112772] House of Secrets v3 Facade 001 [DC] (2001) (Steam-DCP) c2c.cbr (52pp)
+      [112773] House of Secrets v3 Facade 002 [DC] (2001) (Steam-DCP) c2c.cbr (53pp)
+
+== S58099 Outsiders  [split]  74 files / 1 collections  decided in R-102 (S)
+   decided: S 58099 cv=10415 gcd=11298 0.9 | the shelf is the 2003 Outsiders after S100744 and S19320 merged in: "The Outsiders v3 (2003)" folder #1-50 plus the read-order rips ("Looking for trouble" #1-7, "Wanted" #21-23, "The Insiders" #24-25, "Crisis Intervention" #28-33, "The Good Fight" #34-41 — second rips, no cost) = CV 10415 (DC 2003, 50) = GCD 11298 (DC 2003-2007, 50), and the Judd Winick Book 01 trade collecting #1-7; 0.9 for the 1986 Annual / 1987 Special of the 1985 series (misfiled) and the two 2009 issues below
+   F 58099 split-needed | 16322, 16336 -> join S66031 — "31 Outsiders 24" and "45 Outsiders 25" (31pp, Blackest Night Oa read-order folder) are The Outsiders (2009) #24-25, the Blackest Night tie-ins = CV 25804 / GCD 34024, which S66031 stores (its own #24-25 are 62316-62317); the 2003 run's #24-25 are "02 Outsiders 24" / "04 Outsiders 25" in The Insiders folder
+   F 58099 misfiled | items 57839 and 57840 ("Outsiders Annual 001 (1986)" 44pp, "Outsiders Special 001 (1987)" 38pp) are the 1985 series' Annual (GCD 3162) and Special (CV 27683 / GCD 3373) — they belong beside S66029 "The Outsiders v1 (1985)"
+   named: S66031 The Outsiders  25 files  keys: "The Outsiders (2003)" | "The Outsiders (2009)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S99215 "Outsiders" 25f [shares cv=22453 — S cv=22453 gcd=14162 (R-005 0.95)] keys: "Outsiders v2 (1993)"
+   nearby: S20261 "Titans/Young Justice: Graduation Day" 9f [shares gcd=14380 (collected by item 58000) — S cv=19106 gcd=14380 (C-008 0.95)] keys: "Teen Titans Young Justice Graduation Day" | "Titans/Young Justice: Graduation Day"
+   nearby: S17694 "Teen Titans/Outsiders Secret Files 2003" 4f [shares gcd=17886 (collected by item 58000) — S cv=25401 gcd=17886 (R-032 0.95)] keys: "Teen Titans/Outsiders Secret Files 2003" | "Teen Titans/Outsiders Secret Files and Origins"
+   nearby: S99216 "Outsiders" 27f [title — S cv=154666 gcd=205368 (C-016 0.95)] keys: "Outsiders v3 (2024)" · S66029 "The Outsiders" 22f [title] keys: "The Outsiders (1985)" | "The Outsiders v1 (1985)"
+   keys now: "The Outsiders v3 (2003)" x44 · "Outsiders" x16 · "Outsiders (1993)" x13 · "The Outsiders by Judd Winick" x1
+   groups (title x folder): 10
+   G1 "Outsiders" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\144 Blackest Night — 2 file(s), numbers 24-25, pp 31-31; cv per-file 22453x2; key 'Outsiders (1993)' | 'Outsiders'
+      [16322] 31 Outsiders 24.cbr (31pp)  key="Outsiders (1993)"
+      [16336] 45 Outsiders 25.cbr (31pp)  key="Outsiders"
+   G2 "Outsiders" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\31 Outsiders - Looking for trouble — 7 file(s), numbers 1-7, pp 23-32; cv per-file 22453x7; key 'Outsiders (1993)'
+      e.g. Outsiders 01.cbr
+        17033 #1 32pp · 17034 #2 24pp · 17035 #3 24pp · 17036 #4 23pp · 17037 #5 24pp · 17038 #6 23pp · 17039 #7 23pp
+   G3 "Outsiders" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\57 Outsiders - Wanted — 2 file(s), numbers 21, 23, pp 25-25; cv per-file 22453x2; key 'Outsiders (1993)'
+      [17240] Outsiders 21.cbr (25pp)
+      [17242] Outsiders 23.cbr (25pp)
+   G4 "Outsiders" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\58 Teen Titans Outsiders - The Insiders — 3 file(s), numbers 24-25, 28, pp 23-25; cv per-file 22453x3; key 'Outsiders (1993)' | 'Outsiders'
+      [17244] 02 Outsiders 24.cbr (23pp)  key="Outsiders (1993)"
+      [17246] 04 Outsiders 25.cbr (25pp)  key="Outsiders"
+      [17248] 06 Outsiders 28.cbr (25pp)  key="Outsiders"
+   G5 "Outsiders" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\03 Outsiders - Crisis Intervention — 5 file(s), numbers 29-33, pp 23-25; cv per-file 22453x5; key 'Outsiders'
+      e.g. Outsiders 29.cbr
+        17377 #29 24pp · 17378 #30 23pp · 17379 #31 23pp · 17380 #32 25pp · 17381 #33 24pp
+   G6 "Outsiders" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Outsiders - The Good Fight — 8 file(s), numbers 34-41, pp 23-26; cv per-file 22453x8; key 'Outsiders'
+      e.g. Outsiders 34.cbr
+        17500 #34 25pp · 17501 #35 25pp · 17502 #36 25pp · 17503 #37 26pp · 17504 #38 24pp · 17505 #39 25pp · 17506 #40 25pp · 17507 #41 23pp
+   G7 "Outsiders Annual" in DC\The Outsiders — 1 file(s), numbers 1, pp 44-44; cv per-file 40726x1; gcd per-file 3162x1; key 'Outsiders (1993)'
+      [57839] Outsiders Annual 001 (1986) (Digital) (Shadowcat-Empire).cbz (44pp)
+   G8 "Outsiders Special" in DC\The Outsiders — 1 file(s), numbers 1, pp 38-38; cv per-file 27683x1; gcd per-file 3373x1; key 'Outsiders (1993)'
+      [57840] Outsiders Special 001 (1987) (Digital) (Shadowcat-Empire).cbz (38pp)
+   G9 "The Outsiders" in DC\The Outsiders\The Outsiders v3 (2003) — 44 file(s), numbers 1, 8-50, pp 22-42; cv per-file 10415x44; key 'The Outsiders v3 (2003)'
+      e.g. The Outsiders v3 008 (2004-03) (DeadmanWade-DCP) (digital).cbr
+        57863 #8 2004 24pp · 57864 #9 2004 23pp · 57865 #10 2004 24pp · 57866 #11 2004 24pp · 57867 #12 2004 24pp · 57868 #13 2004 23pp · 57869 #14 2004 24pp · 57870 #15 2004 24pp
+        57871 #16 2004 24pp · 57872 #17 2004 23pp · 57873 #18 2005 24pp · 57874 #19 2005 25pp · 57875 #20 2005 23pp · 57876 #21 2005 24pp · 57877 #22 2005 23pp · 57878 #23 2005 24pp
+        57879 #24 2005 24pp · 57880 #25 2005 26pp · 57881 #26 2005 24pp · 57882 #27 2005 24pp · 57883 #28 2005 23pp · 57884 #29 2005 23pp · 57885 #30 2006 24pp · 57886 #31 2006 24pp
+        57887 #32 2006 24pp · 57888 #33 2006 24pp · 57889 #34 2006 24pp · 57890 #35 2006 24pp · 57891 #36 2006 23pp · 57892 #37 2006 25pp · 57893 #38 2006 23pp · 57894 #39 2006 24pp
+        57895 #40 2006 24pp · 57896 #41 2006 23pp · 57897 #42 2007 24pp · 57898 #43 2007 24pp · 57899 #44 2007 23pp · 57900 #45 2007 24pp · 57901 #46 2007 23pp · 57902 #47 2007 22pp
+        57903 #48 2007 23pp · 57904 #49 2007 22pp · 57905 #50 2007 24pp
+      [57906] The Outsiders v3 Annual 01 (2007) (EXTREMEST-DCP).cbr (42pp)
+   G10 "The Outsiders by Judd Winick" in DC\The Outsiders\The Outsiders v3 (2003)\Trades — 1 file(s), 1 COL, pp 296-296; cv per-file 119300x1; gcd per-file 145562x1; key 'The Outsiders by Judd Winick'
+      [58000] COL The Outsiders by Judd Winick Book 01 - The Darker Side of Justice (2019) (digital) (Son of Ultron-Empire).cbr (296pp)
+         own record cv 119300 / gcd s145562 "The Outsiders by Judd Winick" (issue 1966693) COLLECTS: gcd=11298 Outsiders (2003) #1-7 · gcd=17886 Teen Titans / Outsiders Secret Files 2003 (2003) (unnumbered) · gcd=14380 Titans / Young Justice: Graduation Day (2003) #1-3
+
+== S64223 Batman  [split]  845 files / 7 collections  decided in R-103 (R)
+   decided: R 64223 | signal e (845 files) hides whole runs of four other shelves beside the 1940 Batman (CV 796 / GCD 141, #0-713, ~800 files): (1) seventeen New 52 Batman (2011) issues from the Trinity Read Order folders — "Batman 007 - May 2012", "Batman # 28", "Batman # 34"-"# 40" (the Endgame folder, 30-40pp), "Batman Annual # 3", "Batman 046-052 (2016)" — whose numbers sit inside the 1940 ladder, which is why R-048 saw only eight of them; (2) four Rebirth Batman (2016) issues; (3) fourteen Batman Annual (1961) files; (4) the Absolute Batman #1 pack (11 files). Each is a run with its own shelf, so this is a split, not residue at 0.9; signal a-C (cv 796 / gcd 141 named by C lines on S24285, S102900, S103667, S103668) is other shelves' trades collecting this run — benign; signal f (S103669 merged in) added no new run
+   F 64223 split-needed | items 18165, 18719, 18720, 18721, 18722, 18723, 18724, 18725, 18726, 19924, 19016, 19017, 19018, 19019, 19020, 19029, 19030 -> JOIN S95394 (key "Batman v2 (2011)", S cv=42721 gcd=61067 — the New 52 run #0-52, whose trades already collect #35-40 and #46-52); items 19072, 19075, 19095, 19097 -> JOIN S95396 (key "Batman v3 (2016)", S cv=91273 gcd=103016); items 61294-61307 (Batman Annual 001-028, 1961-2010) -> JOIN S103665 (key "Batman Annual v1 (1961)", S cv=3109 gcd=1468); items 59171, 59175-59184 (Absolute Batman 001 (2024) + ten 1pp variants) -> JOIN S66519 (key "Absolute Batman", S cv=160294 gcd=216143); everything else stays as cv=796 gcd=141
+   N 64223 cv=796 gcd=141 — the S line for the kept 1940 run once the four runs move (0.9: the Batman Special 001 (1984) rips, the 80-Page Giant 2011 and the two multi-run Bruce Wayne Murderer/Fugitive collections are residue that is other comics)
+   N 64223 flag #168 label-ambiguous (item 61078): "Batman 501 (1993) (digital-TPB)" is a 24pp single issue of the 1940 run; the "TPB" in the ripper tag is what read as a collection
+   named: S95394 Batman  55 files  keys: "Batman (2016)" | "Batman (2016-)" | "Batman - Zero Year" | "Batman v2 (2011)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S95396 Batman  185 files  keys: "Batman v3 (2016)" | "Batman v3 (2020)" | "Batman: City of Bane: The Complete Collection (2020)" | "Batman: The Deluxe Edition - Book 5" | "Batman: The Rebirth Deluxe Edition - Book 1" | "Batman: The Rebirth Deluxe Edition - Book 2" | "Batman: The Rebirth Deluxe Edition - Book 3" | "Batman: The Rebirth Deluxe Edition - Book 4"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S103665 Batman Annual v1 (1961)  2 files  keys: "Batman Annual v1 (1961)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S66519 Absolute Batman  3 files  keys: "Absolute Batman"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S5409 "Detective Comics" 912f [shares gcd=87 (collected by item 62713) — S cv=18058 gcd=87 (R-101 0.9)] keys: "Detective Comics" | "Detective Comics (1937)" | "Detective Comics v1 (1937)" | "aftermath" (+1 more: lookup.py --shelf 5409)
+   nearby: S65356 "Nightwing" 116f [shares gcd=5516 (collected by item 62713) — S cv=5755 gcd=5516 (R-044 0.9)] keys: "Nightwing (1996)" | "Nightwing The Resurrection of Ra s Al Ghul part" | "Nightwing v2 (1996)"
+   nearby: S2233 "Batman: Gotham Knights" 68f [shares gcd=7770 (collected by item 62713) — S cv=7207 gcd=7770 (R-049 0.95)] keys: "Batman: Gotham Knights" | "Batman: Gotham Knights: Transference" | "Gotham Kights"
+   nearby: S2271 "Batman: The Caped Crusader" 5f [shares cv=112794, shares gcd=127582 — S cv=112794 gcd=127582 (A-010 0.95)] keys: "Batman: The Caped Crusader"
+   nearby: S21634 "Who's Who: Update '87" 5f [shares gcd=3394 (collected by item 62812) — S cv=18595 gcd=3394 (A-009 0.95)] keys: "Who's Who: Update '87"
+   nearby: S1992 "Batman: Our Worlds at War" 1f [shares gcd=11679 (collected by item 62837) — S cv=30756 gcd=11679 (B-008 0.95)] keys: "Batman - Our Worlds at War"
+   nearby: S2033 "Batman: The Resurrection Of Ra's Al Ghul" 1f [shares gcd=30783 (collected by item 63985) — S cv=31003 gcd=30783 (B-011 0.95)] keys: "Batman - The Resurrection of Ra's Al Ghul"
+   nearby: S24285 "Batman Noir" 1f [named S24285 in the decision's R/N lines — S cv=62380 gcd=110362 (R-036 0.95)] keys: "Batman Noir"
+   nearby: S102900 "Batman Noir: Hush (2015)" 1f [named S102900 in the decision's R/N lines — S cv=84571 gcd=92481 (R-036 0.95)] keys: "Batman Noir: Hush (2015)"
+   nearby: S103667 "Batman by Brian Azzarello and Eduardo Risso: The Deluxe Edition (2017)" 1f [named S103667 in the decision's R/N lines — S cv=102446 gcd=115153 (R-048 0.95)] keys: "Batman by Brian Azzarello and Eduardo Risso: The Deluxe Edition (2017)"
+   nearby: S103668 "Batman by Brian K. Vaughan (2017)" 1f [named S103668 in the decision's R/N lines — S gcd=113044 (R-048 0.9)] keys: "Batman by Brian K. Vaughan (2017)"
+   nearby: S1886 "Batman '66" 114f [title — S cv=64763 gcd=75494 (R-103 0.9)] keys: "Batman '66" | "Batman '66 - The Lost Episode" | "batman '66" · S1881 "Batman" 5f [title] keys: "Batman"
+   nearby: S103666 "Batman Annual v2 (2012)" 2f [title — S cv=49197 gcd=66086 (R-048 0.95)] keys: "Batman Annual v2 (2012)" · S1893 "Batman '89" 1f [title — S cv=138183 gcd=174882 (B-010 0.95)] keys: "Batman '89"
+   nearby: S2049 "Batman 2021 Annual" 1f [title — S cv=140252 gcd=178493 (B-010 0.95)] keys: "Batman 2021 Annual (2021)"
+   nearby: S2099 "Batman Eternal" 55f [title+1 — S cv=72915 gcd=80064 (R-099 0.95)] keys: "Batman Eternal" · S2093 "Batman Confidential" 54f [title+1 — S cv=18231 gcd=20878 (B-010 0.95)] keys: "Batman Confidential"
+   nearby: S2139 "Batman and Robin" 53f [title+1 — S cv=42692 gcd=60920 (R-100 0.9)] keys: "Batman & Robin v2 (2011)" | "Batman and Robin" | "Robin and Batman"
+   nearby: S2302 "Batman/Superman" 40f [title+1 — S cv=64203 gcd=75117 (B-008 0.95)] keys: "Batman - Superman" | "Batman-Superman v1 (2013)" | "BatmanSuperman"
+   nearby: S17289 "Superman/Batman" 40f [title+1 — S cv=10938 gcd=11863 (C-020 0.9)] keys: "Superman Batman" | "Superman/Batman" · S1960 "Batman - Hush" 38f [title+1] keys: "Batman - Hush"
+   nearby: S18067 "The Batman Family" 24f [title+1 — S cv=2727 gcd=2213 (C-012 0.95)] keys: "Batman Family" | "The Batman Family" · (+65 more by title)
+   keys now: "Batman v1 (1940)" x746 · "Batman (1940)" x86 · "As the Crow Flies part" x5 · "All they do is watch us kill part" x3 · "A Robins Tale" x1 · "Bombastic Battle" x1 · "Franchise part" x1 · "Face the Face - Conclusion" x1 · "The Resurrection of Ra s Al Ghul A Prelude Countdown" x1
+   groups (title x folder): 73
+   G1 "Batman" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\12 Final Night\The Final Night Reading Order — 1 file(s), numbers 536, pp 23-23; cv per-file 796x1; gcd per-file 141x1; key 'Batman (1940)'
+      [16847] 008 Batman 536 (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (23pp)
+   G2 "Batman" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\01 bruce wayne murderer — 1 file(s), numbers 599, pp 24-24; cv per-file 796x1; key 'Batman (1940)'
+      [16974] 07 Batman 599.cbr (24pp)
+   G3 "Batman" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\02 bruce wayne fugitive — 6 file(s), numbers 600-601, 603, 605-607, pp 22-40; cv per-file 796x6; key 'Batman (1940)'
+      e.g. 01 Batman 600.cbr
+        16981 #600 33pp · 16985 #601 24pp · 16993 #603 25pp · 17000 #605 40pp · 17005 #606 22pp · 17006 #607 22pp
+   G4 "Batman" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\28 Batman - Hush\Hush part1 — 6 file(s), numbers 608-613, pp 23-27; cv per-file 796x6; key 'Batman (1940)'
+      e.g. Batman 608.cbr
+        17008 #608 26pp · 17009 #609 27pp · 17010 #610 27pp · 17011 #611 24pp · 17012 #612 23pp · 17013 #613 23pp
+   G5 "Batman" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\28 Batman - Hush\Hush part2 — 6 file(s), numbers 614-619, pp 22-25; cv per-file 796x6; key 'Batman (1940)'
+      e.g. Batman 614.cbr
+        17014 #614 22pp · 17015 #615 22pp · 17016 #616 22pp · 17018 #617 24pp · 17019 #618 25pp · 17020 #619 25pp
+   G6 "As_the_Crow_Flies_part_1" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\32 Batman - As the Crow Flies — 1 file(s), numbers 626, pp 24-24; key 'As the Crow Flies part'
+      [17040] 626_As_the_Crow_Flies_part_1.cbr (24pp)
+   G7 "As_the_Crow_Flies_part_2" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\32 Batman - As the Crow Flies — 1 file(s), numbers 627, pp 25-25; key 'As the Crow Flies part'
+      [17041] 627-As_the_Crow_Flies_part_2.cbr (25pp)
+   G8 "As_the_Crow_Flies_part_3" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\32 Batman - As the Crow Flies — 1 file(s), numbers 628, pp 25-25; key 'As the Crow Flies part'
+      [17042] 628_As_the_Crow_Flies_part_3.cbr (25pp)
+   G9 "As_the_Crow_Flies_part_4" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\32 Batman - As the Crow Flies — 2 file(s), numbers 629-630, pp 24-25; key 'As the Crow Flies part'
+      [17043] 629_As_the_Crow_Flies_part_4.cbz (24pp)
+      [17044] 630_As_the_Crow_Flies_part_4.cbr (25pp)
+   G10 "635" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\49 Batman - Under the Hood Volume 1 — 1 file(s), numbers 635, pp 25-25; cv per-file 796x1; key 'Batman (1940)'
+      [17173] 635.cbr (25pp)
+   G11 "636" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\49 Batman - Under the Hood Volume 1 — 1 file(s), numbers 636, pp 23-23; cv per-file 796x1; key 'Batman (1940)'
+      [17174] 636.cbr (23pp)
+   G12 "637" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\49 Batman - Under the Hood Volume 1 — 1 file(s), numbers 637, pp 23-23; cv per-file 796x1; key 'Batman (1940)'
+      [17175] 637.cbr (23pp)
+   G13 "638" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\49 Batman - Under the Hood Volume 1 — 1 file(s), numbers 638, pp 23-23; cv per-file 796x1; key 'Batman (1940)'
+      [17176] 638.cbr (23pp)
+   G14 "639" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\49 Batman - Under the Hood Volume 1 — 1 file(s), numbers 639, pp 23-23; cv per-file 796x1; key 'Batman (1940)'
+      [17177] 639.cbr (23pp)
+   G15 "640" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\49 Batman - Under the Hood Volume 1 — 1 file(s), numbers 640, pp 24-24; cv per-file 796x1; key 'Batman (1940)'
+      [17178] 640.cbr (24pp)
+   G16 "641" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\49 Batman - Under the Hood Volume 1 — 1 file(s), numbers 641, pp 25-25; cv per-file 796x1; key 'Batman (1940)'
+      [17179] 641.cbr (25pp)
+   G17 "A_Robins_Tale" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\06 Batman - Under the hood Volume 2 — 1 file(s), numbers 645, pp 23-23; key 'A Robins Tale'
+      [17394] 645_A_Robins_Tale.pdf (23pp)
+   G18 "All_they_do_is_watch_us_kill_part_1" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\06 Batman - Under the hood Volume 2 — 1 file(s), numbers 648, pp 24-24; key 'All they do is watch us kill part'
+      [17397] 648_All_they_do_is_watch_us_kill_part_1.cbr (24pp)
+   G19 "All_they_do_is_watch_us_kill_part_2" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\06 Batman - Under the hood Volume 2 — 1 file(s), numbers 649, pp 24-24; key 'All they do is watch us kill part'
+      [17398] 649_All_they_do_is_watch_us_kill_part_2.cbr (24pp)
+   G20 "All_they_do_is_watch_us_kill_part_3" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\06 Batman - Under the hood Volume 2 — 1 file(s), numbers 650, pp 24-24; key 'All they do is watch us kill part'
+      [17399] 650_All_they_do_is_watch_us_kill_part_3.cbr (24pp)
+   G21 "Bombastic_Battle" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\06 Batman - Under the hood Volume 2 — 1 file(s), numbers 646, pp 24-24; key 'Bombastic Battle'
+      [17395] 646_Bombastic_Battle.cbr (24pp)
+   G22 "Franchise_part_2" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\06 Batman - Under the hood Volume 2 — 1 file(s), numbers 647, pp 24-24; key 'Franchise part'
+      [17396] 647_Franchise_part_2.cbr (24pp)
+   G23 "651_1_Year_Later_-_Face_the_Face" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Batman - Face the Face — 1 file(s), numbers 2, pp 25-25; cv per-file 796x1; key 'Batman (1940)'
+      [17436] 02 651_1_Year_Later_-_Face_the_Face.cbr (25pp)
+   G24 "652_1_Year_Later_-_Face_the_Face" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Batman - Face the Face — 1 file(s), numbers 4, pp 25-25; cv per-file 796x1; key 'Batman (1940)'
+      [17438] 04 652_1_Year_Later_-_Face_the_Face.cbr (25pp)
+   G25 "653_1_Year_Later_-_Face_the_Face" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Batman - Face the Face — 1 file(s), numbers 6, pp 29-29; cv per-file 796x1; key 'Batman (1940)'
+      [17440] 06 653_1_Year_Later_-_Face_the_Face.cbr (29pp)
+   G26 "654_Face_the_Face_-_Conclusion" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Batman - Face the Face — 1 file(s), numbers 8, pp 23-23; key 'Face the Face - Conclusion'
+      [17442] 08 654_Face_the_Face_-_Conclusion.cbr (23pp)
+   G27 "817_1_Year_Later_-_Face_the_Face" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Batman - Face the Face — 1 file(s), numbers 1, pp 26-26; cv per-file 796x1; key 'Batman (1940)'
+      [17435] 01 817_1_Year_Later_-_Face_the_Face.cbr (26pp)
+   G28 "818_1_Year_Later_-_Face_the_Face" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Batman - Face the Face — 1 file(s), numbers 3, pp 24-24; cv per-file 796x1; key 'Batman (1940)'
+      [17437] 03 818_1_Year_Later_-_Face_the_Face.cbr (24pp)
+   G29 "819_1_Year_Later_-_Face_the_Face" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Batman - Face the Face — 1 file(s), numbers 5, pp 25-25; cv per-file 796x1; key 'Batman (1940)'
+      [17439] 05 819_1_Year_Later_-_Face_the_Face.cbr (25pp)
+   G30 "820_1_Year_Later_-_Face_the_Face" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Batman - Face the Face — 1 file(s), numbers 7, pp 25-25; cv per-file 796x1; key 'Batman (1940)'
+      [17441] 07 820_1_Year_Later_-_Face_the_Face.cbr (25pp)
+   G31 "Batman_663" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\82 Batman & Son — 1 file(s), numbers 663, pp 24-24; cv per-file 796x1; key 'Batman v1 (1940)'
+      [17677] Batman_663.cbr (24pp)
+   G32 "Batman_664__2007___Bchry-DCP" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\82 Batman & Son — 1 file(s), numbers 664, pp 23-23; cv per-file 796x1; key 'Batman v1 (1940)'
+      [17678] Batman_664__2007___Bchry-DCP_.cbr (23pp)
+   G33 "Batman_665 (2007) (Bchry-DCP)" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\82 Batman & Son — 1 file(s), numbers 665, pp 23-23; cv per-file 796x1; key 'Batman v1 (1940)'
+      [17679] Batman_665 (2007) (Bchry-DCP).CBR (23pp)
+   G34 "Batman_666" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\82 Batman & Son — 1 file(s), numbers 666, pp 25-25; cv per-file 796x1; key 'Batman v1 (1940)'
+      [17680] Batman_666.cbr (25pp)
+   G35 "batman_655__2006___rip-odb" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\82 Batman & Son — 1 file(s), numbers 655, pp 24-24; cv per-file 796x1; key 'Batman v1 (1940)'
+      [17673] batman_655__2006___rip-odb_.cbr (24pp)
+   G36 "batman_656" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\82 Batman & Son — 1 file(s), numbers 656, pp 23-23; cv per-file 796x1; key 'Batman v1 (1940)'
+      [17674] batman_656.cbr (23pp)
+   G37 "batman_657_-_grant_morrison_-_andy_kubert__2006___rip-odb" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\82 Batman & Son — 1 file(s), numbers 657, pp 23-23; cv per-file 796x1; key 'Batman v1 (1940)'
+      [17675] batman_657_-_grant_morrison_-_andy_kubert__2006___rip-odb_.cbr (23pp)
+   G38 "batman_658_-_grant_morrison_-_andy_kubert__2006___rip-odb" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\82 Batman & Son — 1 file(s), numbers 658, pp 24-24; cv per-file 796x1; key 'Batman v1 (1940)'
+      [17676] batman_658_-_grant_morrison_-_andy_kubert__2006___rip-odb_.cbr (24pp)
+   G39 "670_The_Resurrection_of_Ra_s_Al_Ghul_A_Prelude__Countdown_26" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\83 Resurrection of Ra's Al Ghul — 1 file(s), numbers 0, pp 23-23; key 'The Resurrection of Ra s Al Ghul A Prelude Countdown'
+      [17681] 00 670_The_Resurrection_of_Ra_s_Al_Ghul_A_Prelude__Countdown_26_.cbr (23pp)
+   G40 "Batman" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\84 Batman - Black Glove — 5 file(s), numbers 667-669, 672-673, pp 21-23; cv per-file 796x5; key 'Batman (1940)' | 'Batman v1 (1940)'
+      e.g. Batman 667.cbr
+        17692 #667 21pp key="Batman (1940)" · 17693 #668 23pp key="Batman (1940)" · 17694 #669 21pp key="Batman (1940)" · 17695 #672 23pp key="Batman (1940)"
+      [17696] Batman 673 - Grant Morrison - Tony Daniel  2008   RIP-ODB .cbr (23pp)
+   G41 "Batman 674  2008   Minutemen-Zone" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\84 Batman - Black Glove — 1 file(s), numbers 674, pp 24-24; cv per-file 796x1; key 'Batman v1 (1940)'
+      [17697] Batman 674  2008   Minutemen-Zone .cbr (24pp)
+   G42 "Batman 675  2008   Minutemen-Zone" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\84 Batman - Black Glove — 1 file(s), numbers 675, pp 23-23; cv per-file 796x1; key 'Batman v1 (1940)'
+      [17698] Batman 675  2008   Minutemen-Zone .cbr (23pp)
+   G43 "Batman_682_-_Grant_Morrison_-_Lee_Garbett__Final_Crisis___Last_Rites___2009___Team_RIP" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\95 Final Crisis — 1 file(s), numbers 23, pp 25-25; cv per-file 796x1; key 'Batman (1940)'
+      [17863] 23_Batman_682_-_Grant_Morrison_-_Lee_Garbett__Final_Crisis___Last_Rites___2009___Team_RIP_.cbr (25pp)
+   G44 "Batman_683__2009___Minutemen-DZs" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\95 Final Crisis — 1 file(s), numbers 24, pp 25-25; cv per-file 796x1; key 'Batman (1940)'
+      [17864] 24_Batman_683__2009___Minutemen-DZs_.cbz (25pp)
+   G45 "Batman_684__2009___Archangel___Sam_Tyler-DCP" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\96 Final Crisis Aftermath\01 RIP Tie-ins — 1 file(s), numbers 684, pp 26-26; cv per-file 796x1; key 'Batman v1 (1940)'
+      [17874] 02 Batman_684__2009___Archangel___Sam_Tyler-DCP_.cbr (26pp)
+   G46 "Batman_685__2009___Archangel-DCP" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\96 Final Crisis Aftermath\01 RIP Tie-ins — 1 file(s), numbers 685, pp 25-25; cv per-file 796x1; key 'Batman v1 (1940)'
+      [17876] 04 Batman_685__2009___Archangel-DCP_.cbr (25pp)
+   G47 "Batman_701_2010_noads_AngelicLegion-CPS" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\96 Final Crisis Aftermath\01 RIP Tie-ins\00 The Missing Chapter — 1 file(s), numbers 701, pp 23-23; cv per-file 796x1; key 'Batman v1 (1940)'
+      [17871] Batman_701_2010_noads_AngelicLegion-CPS.cbr (23pp)
+   G48 "Batman_702 (2010) (noads) AngelicLegion-CPS" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\96 Final Crisis Aftermath\01 RIP Tie-ins\00 The Missing Chapter — 1 file(s), numbers 702, pp 23-23; cv per-file 796x1; key 'Batman v1 (1940)'
+      [17872] Batman_702 (2010) (noads) AngelicLegion-CPS.cbr (23pp)
+   G49 "Batman_686__all_covers___2009___Archangel-DCP" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\96 Final Crisis Aftermath\03 Batman - Whatever Happened to the Caped Crusader — 1 file(s), numbers 686, pp 40-40; cv per-file 796x1; key 'Batman v1 (1940)'
+      [17886] 01 Batman_686__all_covers___2009___Archangel-DCP_.cbr (40pp)
+   G50 "Batman 1000000 (1998-11) (digital) (OkC.O.M.P.U.T.O.-Novus-HD)" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) — 1 file(s), pp 24-24; cv per-file 796x1; key 'Batman (1940)'
+      [18024] 09 Batman 1000000 (1998-11) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (24pp)
+   G51 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\014 Batman Vol. 1 Court of Owls — 1 file(s), numbers 7, pp 24-24; cv per-file 796x1; gcd per-file 65331x1; key 'Batman (1940)'
+      [18165] Batman 007 - May 2012.cbz (24pp)
+   G52 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\093 Batman Eternal\04 Batman Eternal - Interlude — 1 file(s), numbers 28, pp 26-26; cv per-file 796x1; key 'Batman (1940)'
+      [19924] Batman # 28.cbr (26pp)
+   G53 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\114 Batman - Endgame — 7 file(s), numbers 34-40, pp 25-40; cv per-file 796x7; key 'Batman (1940)'
+      e.g. Batman # 34.cbr
+        18719 #34 25pp · 18720 #35 40pp · 18721 #36 35pp · 18722 #37 35pp · 18723 #38 33pp · 18724 #39 31pp · 18725 #40 30pp
+   G54 "Batman Annual" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\114 Batman - Endgame — 1 file(s), numbers 3, pp 42-42; cv per-file 796x1; key 'Batman (1940)'
+      [18726] Batman Annual # 3.cbr (42pp)
+   G55 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\126 Batman - Superheavy - Part 2 - Bloom — 5 file(s), numbers 46-50, pp 25-56; cv per-file 796x5; gcd per-file 65331x5; key 'Batman (1940)'
+      e.g. 08 Batman 046 (2016) (2 covers) (Digital) (Zone-Empire).cbr
+        19016 #46 2016 28pp · 19017 #47 2016 30pp · 19018 #48 2016 27pp · 19019 #49 2016 25pp · 19020 #50 2016 56pp
+   G56 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\128 Batman - Rebirth Leadup — 2 file(s), numbers 51-52, pp 24-25; cv per-file 796x2; gcd per-file 65331x1, 61067x1; key 'Batman (1940)'
+      [19029] Batman 051 (2016) (2 covers) (Digital) (Zone-Empire).cbr (24pp)
+      [19030] Batman 052 (2016) (2 covers) (Digital) (Zone-Empire).cbr (25pp)
+   G57 "Batman" in DC\#DC Events\004 Major DC Events - Rebirth\002 Night of the Monster Men (2017) — 2 file(s), numbers 7-8, pp 26-26; cv per-file 796x2; gcd per-file 103016x2; key 'Batman (1940)'
+      [19072] 01 Batman 007 (2016) (2 covers) (Digital) (Zone-Empire).cbr (26pp)
+      [19075] 04 Batman 008 (2016) (2 covers) (Digital) (Zone-Empire).cbr (26pp)
+   G58 "Batman" in DC\#DC Events\004 Major DC Events - Rebirth\005 Batman - The Button (2017) — 2 file(s), numbers 21-22, pp 25-25; cv per-file 796x2; gcd per-file 140614x2; key 'Batman (1940)'
+      [19095] 01 Batman 021 (2017) (2 covers) (Digital) (Zone-Empire).cbr (25pp)
+      [19097] 03 Batman 022 (2017) (2 covers) (Digital) (Zone-Empire).cbr (25pp)
+   G59 "Absolute Batman" in DC\_Batman\Absolute Batman v1 (2024) — 1 file(s), numbers 1, pp 45-45; cv per-file 796x1; gcd per-file 111241x1; key 'Batman (1940)'
+      [59171] Absolute Batman 001 (2024) (digital) (Son of Ultron-Empire).cbr (45pp)
+   G60 "Absolute Batman" in DC\_Batman\Absolute Batman v1 (2024)\Variant Covers — 10 file(s), numbers 1, pp 1-1; cv per-file 796x10; gcd per-file 111241x10; key 'Batman (1940)'
+      e.g. Absolute Batman 001 (2024) (1-in-100 Jim Lee Black & White Variant) (Digital) (MikeNY76-Empire).cbz
+        59175 #1 2024 1pp · 59176 #1 2024 1pp · 59177 #1 2024 1pp · 59178 #1 2024 1pp · 59179 #1 2024 1pp · 59180 #1 2024 1pp · 59181 #1 2024 1pp · 59182 #1 2024 1pp · 59183 #1 2024 1pp
+        59184 #1 2024 1pp
+   G61 "Batman" in DC\_Batman\_Completed Series\01 Detective Comics v1 (1937)\Full Scans — 1 file(s), numbers 31, pp 53-53; cv per-file 796x1; key 'Batman (1940)'
+      [60575] Batman 031 (DC) (1945.10-11)-c2c -BMinor+Yoc-BrainDeath fills.cbz (53pp)
+   G62 "Batman" in DC\_Batman\_Completed Series\02 Batman v1 (1940) — 713 file(s), numbers 1-223, 225-326, 328-713, pp 13-100; cv per-file 796x708, 135845x5; gcd per-file 141x658, 28759x11, 19746x9; key 'Batman v1 (1940)'
+      e.g. Batman 001 (1940) (Digital) (G85-Empire).cbr
+        60578 #1 1940 55pp · 60579 #2 1940 54pp · 60580 #3 1940 55pp · 60581 #4 1940 54pp · 60582 #5 1941 54pp · 60583 #6 1941 54pp · 60584 #7 1941 54pp · 60585 #8 1941 54pp · 60586 #9 1942 52pp
+        60587 #10 1942 52pp · 60588 #11 1942 53pp · 60589 #12 1942 53pp · 60590 #13 1942 53pp · 60591 #14 1942 53pp · 60592 #15 1943 53pp · 60593 #16 1943 53pp · 60594 #17 1943 50pp
+        60595 #18 1943 49pp · 60596 #19 1943 51pp · 60597 #20 1943 49pp · 60598 #21 1943 49pp · 60599 #22 1943 40pp · 60600 #23 1943 41pp · 60601 #24 1943 41pp · 60602 #25 1944 41pp
+        60603 #26 1944 42pp · 60604 #27 1945 41pp · 60605 #28 1945 40pp · 60606 #29 1945 41pp · 60607 #30 1945 41pp · 60608 #31 1945 40pp · 60609 #32 1945 41pp · 60610 #33 1946 38pp
+        60611 #34 1946 41pp · 60612 #35 1946 38pp · 60613 #36 1946 40pp · 60614 #37 1946 39pp · 60615 #38 1947 41pp · 60616 #39 1947 43pp · 60617 #40 1947 41pp · 60620 #43 1947 53pp
+        60624 #47 1948 53pp · 60626 #49 1948 37pp · 60627 #50 1948 50pp · 60630 #53 1949 39pp · 60634 #57 1950 51pp · 60636 #59 1950 40pp · 60639 #62 1950 52pp · 60640 #63 1951 52pp
+        60642 #65 1951 52pp · 60647 #70 1952 52pp · 60648 #71 1952 52pp · 60652 #75 1953 45pp · 60653 #76 1953 44pp · 60654 #77 1953 41pp · 60655 #78 1953 44pp · 60656 #79 1953 44pp
+        60657 #80 1953 44pp · 60658 #81 1954 45pp · 60659 #82 1954 44pp · 60662 #85 1954 45pp · 60663 #86 1954 42pp · 60664 #87 1954 43pp · 60665 #88 1954 37pp · 60666 #89 1955 36pp
+        60667 #90 1955 32pp · 60668 #91 1955 36pp · 60669 #92 1955 36pp · 60670 #93 1955 36pp · 60671 #94 1955 36pp · 60673 #96 1955 36pp · 60674 #97 1956 36pp · 60675 #98 1956 36pp
+        60676 #99 1956 36pp · 60677 #100 1956 37pp · 60678 #101 1956 37pp · 60680 #103 1956 34pp · 60684 #107 1957 31pp · 60691 #114 1958 36pp · 60692 #115 1958 36pp · 60694 #117 1958 36pp
+        60695 #118 1958 37pp · 60698 #121 1959 36pp · 60699 #122 1959 37pp · 60700 #123 1959 37pp · 60702 #125 1959 37pp · 60703 #126 1959 37pp · 60706 #129 1960 37pp · 60707 #130 1960 36pp
+        60708 #131 1960 36pp · 60709 #132 1960 37pp · 60710 #133 1960 28pp · 60713 #136 1960 36pp · 60714 #137 1961 37pp · 60715 #138 1961 37pp · 60716 #139 1961 29pp · 60718 #141 1961 33pp
+        60719 #142 1961 28pp · 60722 #145 1962 37pp · 60723 #146 1962 37pp · 60725 #148 1962 37pp · 60728 #151 1962 37pp · 60730 #153 1962 27pp · 60731 #154 1963 37pp · 60732 #155 1963 37pp
+        60733 #156 1963 27pp · 60736 #159 1963 27pp · 60738 #161 1964 37pp · 60739 #162 1964 36pp · 60740 #163 1964 37pp · 60741 #164 1964 28pp · 60742 #165 1964 26pp · 60743 #166 1964 25pp
+        60744 #167 1964 25pp · 60745 #168 1964 26pp · 60746 #169 1965 25pp · 60747 #170 1965 26pp · 60748 #171 1965 26pp · 60749 #172 1965 37pp · 60750 #173 1965 37pp · 60751 #174 1965 37pp
+        60752 #175 1965 37pp · 60753 #176 1965 84pp · 60754 #177 1965 37pp · 60755 #178 1966 37pp · 60756 #179 1966 27pp · 60757 #180 1966 37pp · 60758 #181 1966 27pp · 60759 #182 1966 74pp
+        60760 #183 1966 26pp · 60761 #184 1966 25pp · 60762 #185 1966 74pp · 60763 #186 1967 26pp · 60764 #187 1967 74pp · 60765 #188 1967 26pp · 60766 #189 1967 24pp · 60767 #190 1967 24pp
+        60769 #192 1967 24pp · 60770 #193 1967 71pp · 60771 #194 1967 24pp · 60772 #195 1967 24pp · 60773 #196 1967 24pp · 60774 #197 1967 24pp · 60775 #198 1968 72pp · 60776 #199 1968 30pp
+        60777 #200 1968 23pp · 60778 #201 1968 24pp · 60779 #202 1968 24pp · 60780 #203 1968 73pp · 60781 #204 1968 23pp · 60782 #205 1968 24pp · 60783 #206 1968 25pp · 60784 #207 1969 25pp
+        60785 #208 1969 71pp · 60786 #209 1969 23pp · 60787 #210 1969 25pp · 60788 #211 1969 26pp · 60789 #212 1969 24pp · 60790 #213 1969 58pp · 60791 #214 1969 24pp · 60792 #215 1969 25pp
+        60793 #216 1969 28pp · 60794 #217 1969 25pp · 60795 #218 1970 55pp · 60796 #219 1970 25pp · 60797 #220 1970 24pp · 60798 #221 1970 26pp · 60799 #222 1970 25pp · 60800 #223 1970 56pp
+        60801 #244 1970 25pp · 60802 #225 1970 26pp · 60803 #226 1971 27pp · 60804 #227 1970 37pp · 60805 #228 1971 68pp · 60806 #229 1971 36pp · 60807 #230 1971 36pp · 60808 #231 1971 37pp
+        60809 #232 1971 24pp · 60810 #233 1971 53pp · 60811 #234 1971 39pp · 60812 #235 1971 39pp · 60813 #236 1971 37pp · 60814 #237 1971 38pp · 60815 #238 1972 100pp · 60816 #239 1972 52pp
+        60817 #240 1972 40pp · 60818 #241 1972 40pp · 60819 #242 1972 39pp · 60820 #243 1972 26pp · 60821 #244 1972 25pp · 60822 #245 1972 26pp · 60823 #246 1976 24pp · 60824 #247 1973 25pp
+        60825 #248 1973 37pp · 60826 #249 1973 36pp · 60827 #250 1973 35pp · 60828 #251 1973 25pp · 60829 #252 1973 22pp · 60830 #253 1973 36pp · 60831 #254 1974 100pp · 60832 #255 1974 82pp
+        60833 #256 1974 83pp · 60837 #260 1975 100pp · 60838 #261 1975 100pp · 60839 #262 1975 68pp · 60840 #263 1975 22pp · 60841 #264 1975 36pp · 60842 #265 1975 22pp · 60843 #266 1975 38pp
+        60844 #267 1975 36pp · 60845 #268 1975 20pp · 60846 #269 1975 20pp · 60847 #270 1975 36pp · 60848 #271 1976 40pp · 60849 #272 1976 20pp · 60850 #273 1976 36pp · 60851 #274 1976 36pp
+        60852 #275 1976 36pp · 60853 #276 1976 36pp · 60854 #277 1976 36pp · 60855 #278 1976 37pp · 60856 #279 1976 36pp · 60857 #280 1976 36pp · 60858 #281 1976 35pp · 60859 #282 1976 36pp
+        60860 #283 1977 18pp · 60861 #284 1977 36pp · 60862 #285 1977 19pp · 60863 #286 1977 37pp · 60864 #287 1977 19pp · 60865 #288 1977 37pp · 60866 #289 1977 19pp · 60867 #290 1977 19pp
+        60868 #291 1977 18pp · 60869 #292 1977 18pp · 60870 #293 1977 18pp · 60871 #294 1978 18pp · 60872 #295 1977 19pp · 60873 #296 1977 19pp · 60874 #297 1978 19pp · 60875 #298 1978 19pp
+        60876 #299 1978 19pp · 60877 #300 1978 35pp · 60878 #301 1978 19pp · 60879 #302 1978 19pp · 60880 #303 1978 26pp · 60881 #304 1978 27pp · 60882 #305 1978 27pp · 60883 #306 1978 25pp
+        60884 #307 1978 19pp · 60885 #308 1978 25pp · 60886 #309 1979 20pp · 60887 #310 1979 19pp · 60888 #311 1979 19pp · 60889 #312 1979 19pp · 60890 #313 1979 19pp · 60891 #314 1979 19pp
+        60892 #315 1979 19pp · 60893 #316 1979 19pp · 60894 #317 1979 19pp · 60895 #318 1979 19pp · 60896 #319 1979 19pp · 60897 #320 1979 19pp · 60898 #321 1980 20pp · 60899 #322 1980 19pp
+        60900 #323 1980 19pp · 60901 #324 1980 19pp · 60902 #325 1980 19pp · 60903 #326 1980 19pp · 60904 #326 1980 19pp · 60905 #328 1980 27pp · 60906 #329 1980 27pp · 60907 #330 1980 27pp
+        60908 #331 1980 27pp · 60909 #332 1980 27pp · 60910 #333 1981 27pp · 60911 #334 1981 27pp · 60912 #335 1981 27pp · 60913 #336 1981 27pp · 60914 #337 1981 28pp · 60915 #338 1981 27pp
+        60916 #339 1981 27pp · 60917 #340 1981 29pp · 60918 #341 1981 29pp · 60919 #342 1981 29pp · 60920 #343 1981 28pp · 60921 #344 1981 29pp · 60922 #345 1982 28pp · 60923 #346 1982 27pp
+        60924 #347 1982 26pp · 60925 #348 1982 27pp · 60926 #349 1982 36pp · 60927 #350 1982 27pp · 60928 #351 1982 27pp · 60929 #352 1982 25pp · 60930 #353 1983 25pp · 60931 #354 1982 25pp
+        60932 #355 1982 25pp · 60933 #356 1982 25pp · 60934 #357 1983 25pp · 60935 #358 1983 25pp · 60936 #359 1983 25pp · 60937 #360 1983 25pp · 60938 #361 1983 25pp · 60939 #362 1983 25pp
+        60940 #363 1983 25pp · 60941 #364 1983 25pp · 60942 #365 1983 25pp · 60943 #366 1983 25pp · 60944 #367 1983 25pp · 60945 #368 1984 24pp · 60946 #369 1984 25pp · 60947 #370 1984 25pp
+        60948 #371 1984 25pp · 60949 #372 1984 25pp · 60950 #373 1984 25pp · 60951 #374 1984 25pp · 60952 #375 1984 25pp · 60953 #376 1984 25pp · 60954 #377 1984 25pp · 60955 #378 1984 25pp
+        60956 #379 1984 25pp · 60957 #380 1984 25pp · 60958 #381 1985 24pp · 60959 #382 1985 25pp · 60960 #383 1985 25pp · 60961 #384 1985 26pp · 60962 #385 1985 24pp · 60963 #386 1985 24pp
+        60964 #387 1985 25pp · 60965 #388 1985 24pp · 60966 #389 1985 25pp · 60967 #390 1985 25pp · 60968 #391 1985 24pp · 60969 #392 1985 23pp · 60970 #393 1986 24pp · 60971 #394 1986 25pp
+        60972 #395 1986 24pp · 60973 #396 1986 24pp · 60974 #397 1986 24pp · 60975 #398 1986 23pp · 60976 #399 1986 23pp · 60977 #400 1986 66pp · 60978 #401 1987 24pp · 60979 #402 1986 25pp
+        60980 #403 1987 24pp · 60981 #404 1987 23pp · 60982 #405 1987 23pp · 60983 #406 1987 23pp · 60984 #407 1987 25pp · 60985 #408 1987 24pp · 60986 #409 1987 24pp · 60987 #410 1987 24pp
+        60988 #411 1987 24pp · 60989 #412 1987 24pp · 60990 #413 1987 24pp · 60991 #414 1987 24pp · 60992 #415 1988 23pp · 60993 #416 1988 23pp · 60994 #417 1988 21pp · 60995 #418 1988 23pp
+        60996 #419 1988 23pp · 60997 #420 1988 24pp · 60998 #421 1988 24pp · 60999 #422 1988 25pp · 61000 #423 1988 24pp · 61001 #424 1988 25pp · 61002 #425 1988 24pp · 61003 #426 1988 46pp
+        61004 #427 1988 46pp · 61005 #428 1988 24pp · 61006 #429 1989 24pp · 61007 #430 1989 24pp · 61008 #431 1989 24pp · 61009 #432 1989 24pp · 61010 #433 1989 24pp · 61011 #434 1989 24pp
+        61012 #435 1989 24pp · 61013 #436 1989 23pp · 61014 #437 1989 23pp · 61015 #438 1989 23pp · 61016 #439 1989 25pp · 61017 #440 1989 24pp · 61018 #441 1990 24pp · 61019 #442 1989 24pp
+        61020 #443 1990 24pp · 61021 #444 1990 24pp · 61022 #445 1990 24pp · 61023 #446 1990 24pp · 61024 #447 1990 24pp · 61025 #448 1990 24pp · 61026 #449 1990 24pp · 61027 #450 1990 23pp
+        61028 #451 1990 23pp · 61029 #452 1990 24pp · 61030 #453 1990 24pp · 61031 #454 1990 24pp · 61032 #455 1990 24pp · 61033 #456 1990 23pp · 61034 #457 1990 23pp · 61035 #458 1990 24pp
+        61036 #459 1990 24pp · 61037 #460 1991 24pp · 61038 #461 1991 24pp · 61039 #462 1991 24pp · 61040 #463 1991 24pp · 61041 #464 1991 24pp · 61042 #465 1991 23pp · 61043 #466 1991 24pp
+        61044 #467 1991 24pp · 61045 #468 1991 25pp · 61046 #469 1991 25pp · 61047 #470 1991 24pp · 61048 #471 1991 23pp · 61049 #472 1991 23pp · 61050 #473 1992 23pp · 61051 #474 1992 21pp
+        61052 #475 1992 24pp · 61053 #476 1992 24pp · 61054 #477 1992 24pp · 61055 #478 1992 24pp · 61056 #479 1992 24pp · 61057 #480 1992 23pp · 61058 #481 1992 24pp · 61059 #482 1992 24pp
+        61060 #483 1992 24pp · 61061 #484 1992 24pp · 61062 #485 1992 24pp · 61063 #486 1992 24pp · 61064 #487 1992 24pp · 61065 #488 1993 24pp · 61066 #489 1993 23pp · 61067 #490 1993 23pp
+        61068 #491 1993 24pp · 61069 #492 1993 24pp · 61070 #493 1993 24pp · 61071 #494 1993 24pp · 61072 #495 1993 24pp · 61073 #496 1993 24pp · 61074 #497 1993 24pp · 61075 #498 1993 24pp
+        61076 #499 1993 24pp · 61077 #500 1993 59pp · 61078 #501 1993 24pp · 61079 #502 1993 23pp · 61080 #503 1994 22pp · 61081 #504 1994 22pp · 61082 #505 1994 22pp · 61083 #506 1994 22pp
+        61084 #507 1994 22pp · 61085 #508 1994 23pp · 61086 #509 1994 42pp · 61087 #510 1994 24pp · 61088 #511 1994 23pp · 61089 #512 1994 24pp · 61090 #513 1994 24pp · 61091 #514 24pp
+        61092 #515 1995 24pp · 61093 #516 1995 24pp · 61094 #517 1995 24pp · 61095 #518 1995 24pp · 61096 #519 1995 25pp · 61097 #520 1995 24pp · 61098 #521 1995 24pp · 61099 #522 1995 23pp
+        61100 #523 1995 24pp · 61101 #524 1995 24pp · 61102 #525 1995 24pp · 61103 #526 1996 24pp · 61104 #527 1996 24pp · 61105 #528 1996 24pp · 61106 #529 1996 24pp · 61107 #530 1996 24pp
+        61108 #531 1996 24pp · 61109 #532 1996 23pp · 61110 #533 1996 24pp · 61111 #534 1996 24pp · 61112 #535 1996 40pp · 61113 #536 1996 23pp · 61114 #537 1996 24pp · 61115 #538 1997 24pp
+        61116 #539 1997 24pp · 61117 #540 1997 24pp · 61118 #541 1997 23pp · 61119 #542 1997 24pp · 61120 #543 1997 24pp · 61121 #544 1997 24pp · 61122 #545 1997 24pp · 61123 #546 1997 24pp
+        61124 #547 1997 24pp · 61125 #548 1997 24pp · 61126 #549 1997 24pp · 61127 #550 1997 40pp · 61128 #551 1997 24pp · 61129 #552 1998 24pp · 61130 #553 1998 23pp · 61131 #554 1998 23pp
+        61132 #555 1998 23pp · 61133 #556 1998 23pp · 61134 #557 1998 23pp · 61135 #558 1998 21pp · 61136 #559 1998 23pp · 61137 #560 1998 23pp · 61138 #561 1999 23pp · 61139 #562 1999 23pp
+        61140 #563 1999 24pp · 61141 #564 1999 23pp · 61142 #565 1999 23pp · 61143 #566 1999 22pp · 61144 #567 1999 23pp · 61145 #568 1999 23pp · 61146 #569 1999 23pp · 61147 #570 1999 23pp
+        61148 #571 1999 22pp · 61149 #572 1999 23pp · 61150 #573 2000 22pp · 61151 #574 2000 21pp · 61152 #575 2000 23pp · 61153 #576 2000 22pp · 61154 #577 2000 23pp · 61155 #578 2000 23pp
+        61156 #579 2000 23pp · 61157 #580 2000 22pp · 61158 #581 2000 23pp · 61159 #582 2000 22pp · 61160 #583 2000 23pp · 61161 #584 2000 22pp · 61162 #585 2001 22pp · 61163 #586 2001 22pp
+        61164 #587 2001 22pp · 61165 #588 2001 23pp · 61166 #589 2001 23pp · 61167 #590 2001 23pp · 61168 #591 2001 23pp · 61169 #592 2001 23pp · 61170 #593 2001 23pp · 61171 #594 2001 23pp
+        61172 #595 2001 23pp · 61173 #596 2001 24pp · 61174 #597 2002 22pp · 61175 #598 2002 23pp · 61176 #599 2002 23pp · 61177 #600 2002 54pp · 61178 #601 2002 23pp · 61179 #602 2002 23pp
+        61180 #603 2002 22pp · 61181 #604 2002 21pp · 61182 #605 2002 39pp · 61183 #606 2002 21pp · 61184 #607 2002 22pp · 61185 #608 2002 23pp · 61186 #609 2003 21pp · 61187 #610 2003 22pp
+        61188 #611 2003 21pp · 61189 #612 2003 21pp · 61190 #613 2003 21pp · 61191 #614 2003 22pp · 61192 #615 2003 21pp · 61193 #616 2003 22pp · 61194 #617 2003 21pp · 61195 #618 2003 21pp
+        61196 #619 2003 22pp · 61197 #620 2003 23pp · 61198 #621 2004 23pp · 61199 #622 2004 23pp · 61200 #623 2004 23pp · 61201 #624 2004 23pp · 61202 #625 2004 23pp · 61203 #626 2004 22pp
+        61204 #627 2004 23pp · 61205 #628 2004 23pp · 61206 #629 2004 23pp · 61207 #630 2004 23pp · 61208 #631 2004 23pp · 61209 #632 2004 23pp · 61210 #633 2004 30pp · 61211 #634 2005 23pp
+        61212 #635 2005 22pp · 61213 #636 2005 23pp · 61214 #637 2005 23pp · 61215 #638 2005 23pp · 61216 #639 2004 23pp · 61217 #640 2005 23pp · 61218 #641 2005 23pp · 61219 #642 2005 23pp
+        61220 #643 2005 23pp · 61221 #644 2005 23pp · 61222 #645 2005 22pp · 61223 #646 2005 23pp · 61224 #647 2006 23pp · 61225 #648 2006 23pp · 61226 #649 2006 23pp · 61227 #650 2006 23pp
+        61228 #651 2006 23pp · 61229 #652 2006 23pp · 61230 #653 2006 22pp · 61231 #654 2006 22pp · 61232 #655 2006 23pp · 61233 #656 2006 22pp · 61234 #657 2006 22pp · 61235 #658 2006 23pp
+        61236 #659 2007 23pp · 61237 #660 2007 23pp · 61238 #661 2007 23pp · 61239 #662 2007 23pp · 61240 #663 2007 13pp · 61241 #664 2007 22pp · 61242 #665 2007 23pp · 61243 #666 2007 23pp
+        61244 #667 2007 20pp · 61245 #668 2007 22pp · 61246 #669 2007 21pp · 61247 #670 2007 23pp · 61248 #671 2008 25pp · 61249 #672 2008 23pp · 61250 #673 2008 23pp · 61251 #674 2008 24pp
+        61252 #675 2008 23pp · 61253 #676 2008 21pp · 61254 #677 2008 23pp · 61255 #678 2008 24pp · 61256 #679 2008 24pp · 61257 #680 2008 25pp · 61258 #681 2008 33pp · 61259 #682 2009 26pp
+        61260 #683 2009 26pp · 61261 #684 2009 25pp · 61262 #685 2009 24pp · 61263 #686 2009 34pp · 61264 #687 2009 31pp · 61265 #688 2009 23pp · 61266 #689 2009 23pp · 61267 #690 2009 23pp
+        61268 #691 2009 24pp · 61269 #692 2009 22pp · 61270 #693 2010 22pp · 61271 #694 2010 23pp · 61272 #695 2010 23pp · 61273 #696 2010 23pp · 61274 #697 2010 23pp · 61275 #698 2010 24pp
+        61276 #699 2010 23pp · 61277 #700 2010 46pp · 61278 #701 2010 22pp · 61279 #702 2010 22pp · 61280 #703 2010 24pp · 61281 #704 2011 24pp · 61282 #705 2011 23pp · 61283 #706 2011 22pp
+        61284 #707 2011 21pp · 61285 #708 2011 23pp · 61286 #709 2011 22pp · 61287 #710 2011 22pp · 61288 #711 2011 22pp · 61289 #712 2011 22pp · 61290 #713 2011 22pp
+      [60618] Batman 041 (1947) (Flattermann) c2c.cbr (53pp)
+      [60619] Batman 042 (1947) 52p c2c.cbr (52pp)
+      [60621] Batman 044 (1947) 52p c2c.cbr (52pp)
+      [60622] Batman 045 (1948) 52p c2c.cbr (52pp)
+      [60623] Batman 046 (1948) (F) c2c.cbr (52pp)
+      [60625] Batman 048 (1948) (Flattermann) c2c.cbr (53pp)
+      [60628] Batman 051 (1949) (Flattermann) c2c.cbr (53pp)
+      [60629] Batman 052 (1949) (Flattermann Teachbug) c2c.cbr (53pp)
+      [60631] Batman 054 (1949) (Flattermann) c2c.cbr (53pp)
+      [60632] Batman 055 (1949) (Flattermann) c2c.cbr (53pp)
+      [60633] Batman 056 (1949) (Flattermann) c2c.cbr (53pp)
+      [60635] Batman 058 (1950) (Flattermann) c2c.cbr (53pp)
+      [60637] Batman 060 (1950) (Flattermann Teachbug) c2c.cbr (53pp)
+      [60638] Batman 061 (1950) (Flattermann) c2c.cbr (53pp)
+      [60641] Batman 064 (1951) (Flattermann) c2c.cbr (53pp)
+      [60643] Batman 066 (1951) (Flattermann) c2c.cbr (53pp)
+      [60644] Batman 067 (1951) (Flattermann Teachbug) c2c.cbr (53pp)
+      [60645] Batman 068 (1951) (Flattermann) c2c.cbr (53pp)
+      [60646] Batman 069 (1952) (Flattermann) c2c.cbr (53pp)
+      [60649] Batman 072 (1952) (Flattermann) c2c.cbr (54pp)
+      [60650] Batman 073 (1952) (Flattermann) c2c.cbr (45pp)
+      [60651] Batman 074 (1952) (Flattermann) c2c.cbr (45pp)
+      [60660] Batman 083 (1954) (Flattermann) c2c.cbr (45pp)
+      [60661] Batman 084 (1954) 44p (Spectre99).cbz (44pp)
+      [60672] Batman 095 (1955) best edit [still needs rescan].cbr (36pp)
+      [60679] Batman 102 (1956) (Flattermann) c2c.cbr (37pp)
+      [60681] Batman 104 (1956) Flattermann) c2c.cbr (37pp)
+      [60682] Batman 105 (1957) (Flattermann) c2c.cbr (36pp)
+      [60683] Batman 106 (1957) (Flattermann) c2c.cbr (37pp)
+      [60685] Batman 108 (1957) (Flattermann) c2c.cbr (37pp)
+      [60686] Batman 109 (1957) (Flattermann) c2c.cbr (37pp)
+      [60687] Batman 110 (1957) (Flattermann) c2c.cbr (37pp)
+      [60688] Batman 111 (1957) Flattermann) c2c.cbr (37pp)
+      [60689] Batman 112 (1957) Flattermann) c2c.cbr (35pp)
+      [60690] Batman 113 (1958) c2c (F).cbr (36pp)
+      [60693] Batman 116 (1958) c2c.cbr (36pp)
+      [60696] Batman 119 (1958) c2c (F).cbr (36pp)
+      [60697] Batman 120 (1958) (Flattermann) c2c.cbr (37pp)
+      [60701] Batman 124 (1959) c2c (fixed).cbr (36pp)
+      [60704] Batman 127 (1959) c2c (fixed).cbr (36pp)
+      [60705] Batman 128 (1959) (Flattermann) c2c.cbr (37pp)
+      [60711] Batman 134 (1960) (Flattermann) c2c.cbr (37pp)
+      [60712] Batman 135 (1960) flattermann.cbr (37pp)
+      [60717] Batman 140 (1961) flattermann.cbr (36pp)
+      [60720] Batman 143 (1961) 32p.cbz (32pp)
+      [60721] Batman 144 (1961) (Flattermann) c2c.cbr (36pp)
+      [60724] Batman 147 (1962) (Flattermann) c2c.cbr (37pp)
+      [60726] Batman 149 (1962) flattermann.cbr (37pp)
+      [60727] Batman 150 (1962) (Flattermann) c2c.cbr (37pp)
+      [60729] Batman 152 (1962) (Flattermann) c2c.cbr (37pp)
+      [60734] Batman 157 (1963) (Flattermann) c2c.cbr (37pp)
+      [60735] Batman 158  (1963) flattermann.cbr (37pp)
+      [60737] Batman 160  (1963) flattermann.cbr (37pp)
+      [60768] Batman 191 (1967) (Digital) (Shadowcat-Empire.cbz (24pp)
+      [60834] Batman 257 (1974-08-DC) 100p.cbr (100pp)
+      [60835] Batman 258 (1974-10-DC) 100p.cbz (100pp)
+      [60836] Batman 259 (1974-12-DC) 100p.cbz (100pp)
+   G63 "Batman" in DC\_Batman\_Completed Series\02 Batman v1 (1940)\Annuals and Specials — 2 file(s), numbers 0, 80, pp 24-73; cv per-file 796x2; gcd per-file 141x1; key 'Batman v1 (1940)'
+      [61291] Batman 000 (1994) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (24pp)
+      [61293] Batman 80-Page Giant 2011 (2011) (Digital -) (TheHand-Empire).cbr (73pp)
+   G64 "Batman 1000000 (1998) (digital) (OkC.O.M.P.U.T.O.-Novus)" in DC\_Batman\_Completed Series\02 Batman v1 (1940)\Annuals and Specials — 1 file(s), pp 24-24; cv per-file 796x1; key 'Batman v1 (1940)'
+      [61292] Batman 1000000 (1998) (digital) (OkC.O.M.P.U.T.O.-Novus).cbz (24pp)
+   G65 "Batman Annual" in DC\_Batman\_Completed Series\02 Batman v1 (1940)\Annuals and Specials — 14 file(s), numbers 1, 4, 6-7, 12-15, 25-28, pp 40-112; cv per-file 796x14; gcd per-file 31735x2, 141x1, 116867x1; key 'Batman v1 (1940)'
+      e.g. Batman Annual 001 (1961).cbz
+        61294 #1 1961 84pp · 61295 #4 1962 84pp · 61296 #4 1962 85pp · 61297 #6 1963 84pp · 61298 #7 1964 84pp · 61299 #12 1988 48pp · 61300 #13 1989 48pp · 61301 #13 1989 112pp
+        61302 #14 1990 57pp · 61303 #15 1991 58pp · 61304 #25 2006 40pp · 61305 #26 2007 40pp · 61306 #27 2009 44pp · 61307 #28 2010 49pp
+   G66 "Batman - Special" in DC\_Batman\_Miniseries and One-shots — 1 file(s), numbers 1, pp 41-41; cv per-file 796x1; gcd per-file 18155x1; key 'Batman (1940)'
+      [62562] Batman - Special 001 (1984) (Digital) (AnHeroGold-Empire).cbz (41pp)
+   G67 "Batman Special" in DC\_Batman\_Miniseries and One-shots — 1 file(s), numbers 1, pp 42-42; cv per-file 796x1; gcd per-file 18155x1; key 'Batman (1940)'
+      [62612] Batman Special 001 (1984) (b&w) (Bchry-DCP).cbz (42pp)
+   G68 "Batman" in DC\_Batman\_Trades, and Graphic Novels\Batman - Bruce Wayne - Murderer-Fugitive (2002) — 2 file(s), 2 COL, pp 418-610; cv per-file 796x1, 75550x1; gcd per-file 110535x1, 110593x1; key 'Batman (1940)'
+      [62713] COL Batman Vol. 01 - Bruce Wayne - Murderer (2014) (digital-Empire).cbz (610pp)
+         own record cv 796 / gcd s110535 "Batman: Bruce Wayne - Murderer?" (issue 1659376) COLLECTS: gcd=7770 Batman: Gotham Knights (2000) #25-29 · gcd=87 Detective Comics (1937) #766-770 · gcd=5516 Nightwing (1996) #65-66, #68-69 · gcd=141 Batman (1940) #599-602
+      [62714] COL Batman Vol. 02 - Bruce Wayne - Fugitive (2014) (digital-Empire).cbz (418pp)
+         own record cv 75550 / gcd s110593 "Batman: Bruce Wayne - Fugitive" (issue 1659552) COLLECTS: gcd=141 Batman (1940) #603-607 · gcd=87 Detective Comics (1937) #771-775 · gcd=7770 Batman: Gotham Knights (2000) #30-32 · gcd=7768 Batgirl (2000) #29, #33
+   G69 "Batman - The Caped Crusader" in DC\_Batman\_Trades, and Graphic Novels\Batman - The Caped Crusader (2018) — 1 file(s), 1 COL, pp 246-246; cv per-file 112794x1; gcd per-file 127582x1; key 'Batman (1940)'
+      [62783] COL Batman - The Caped Crusader Vol. 06 (2021) (digital) (Son of Ultron-Empire).cbr (246pp)
+         own record cv 112794 / gcd s127582 "Batman: The Caped Crusader" (issue 2337869) COLLECTS: gcd=141 Batman (1940) #475-483 · gcd=87 Detective Comics (1937) #642
+   G70 "Batman - Year One - The Deluxe Edition (2017) (digital) (Son of Ultron-Empire)" in DC\_Batman\_Trades, and Graphic Novels\Batman - Year One, etc (1987) — 1 file(s), 1 COL, pp 135-135; cv per-file 104042x1; gcd per-file 116550x1; key 'Batman (1940)'
+      [62812] COL 01 Batman - Year One - The Deluxe Edition (2017) (digital) (Son of Ultron-Empire).cbr (135pp)
+         own record cv 104042 / gcd s116550 "Batman: Year One - The Deluxe Edition" (issue 1732323) COLLECTS: gcd=141 Batman (1940) #404-407 · gcd=24331 Batman: Year One Deluxe Edition (2005) (unnumbered) · gcd=25730 Batman: Year One (1988) (unnumbered) · gcd=3394 Who's Who: Update '87 (1987) #2
+   G71 "Batman by Ed Brubaker" in DC\_Batman\_Trades, and Graphic Novels\Batman by Ed Brubaker (2016) — 2 file(s), 2 COL, pp 282-318; cv per-file 87598x2; gcd per-file 96084x2; key 'Batman (1940)'
+      [62837] COL Batman by Ed Brubaker Vol. 01 (2016) (Digital) (Zone-Empire).cbr (318pp)
+         own record cv 87598 / gcd s96084 "Batman by Ed Brubaker" (issue 1528102) COLLECTS: gcd=141 Batman (1940) #582-586, #591-597 · gcd=11679 Batman: Our Worlds at War (2001) #1
+      [62838] COL Batman by Ed Brubaker Vol. 02 (2016) (Digital) (Zone-Empire).cbr (282pp)
+         own record cv 87598 / gcd s96084 "Batman by Ed Brubaker" (issue 1637891) COLLECTS: gcd=141 Batman (1940) #598-607
+   G72 "Batman by Grant Morrison" in DC\_Batman\_Trades, and Graphic Novels\Batman by Grant Morrison (2024) — 1 file(s), 1 COL, pp 411-411; cv per-file 160521x1; gcd per-file 215351x1; key 'Batman (1940)'
+      [63985] COL Batman by Grant Morrison Book 01 (2024) (digital) (Son of Ultron-Empire).cbr (411pp)
+         own record cv 160521 / gcd s215351 "Batman by Grant Morrison" (issue 2658086) COLLECTS: gcd=141 Batman (1940) #655-658, #663-675 · gcd=126575 Batman by Grant Morrison Omnibus (2018) #1 · gcd=30783 Batman: The Resurrection of Ra's Al Ghul (2008) (unnumbered) · gcd=31920 Batman: The Black Glove (2008) (unnumbered)
+   G73 "Batman" in DC\_DC Facsimilie Editions — 3 file(s), numbers 181, 232, 251, pp 35-36; cv per-file 796x3; gcd per-file 141x3; key 'Batman (1940)'
+      [63918] Batman 181 - Facsimile Edition (1966) (Digital) (Shadowcat-Empire).cbz (35pp)
+      [63919] Batman 232 - Facsimile Edition (1971) (Digital) (Shadowcat-Empire).cbz (36pp)
+      [63920] Batman 251 - Facsimile Edition (1973) (Digital) (Shadowcat-Empire).cbz (36pp)
+
+== S2613 Birds of Prey  [split]  131 files / 5 collections  decided in R-103 (R)
+   decided: R 2613 | signal e (131 files) hides whole runs of other shelves beside the 1999 Birds of Prey (CV 6498 / GCD 6991, 127; ladder 1-13, 22-103 + the 2015-2016 Vol. 01-03 trades): (1) fourteen New 52 issues from the Trinity Read Order folders — "Birds of Prey 001 - November 2011" … "013 - December 2012" and "014 Birds of Prey 025 - January 2014" — = CV 42806 / GCD 61066, the run S95488 holds; (2) the 2010 Birds of Prey — "10/18/29/41/54 Birds of Prey 1-5" (Brightest Day read order, 23-31pp) and the two "Birds of Prey v2 (2010)" trades End Run / The Death of Oracle — = CV 33087 (DC 2010, 15) = GCD 47799 (2010-2011, 15), no shelf; (3) two rips of the 1998 one-shot Birds of Prey: Batgirl, which S2607 is (signal a-I there). Whole runs with their own records are not residue; signal a-C (gcd 6991 named by a C line on S65356's books) is benign
+   F 2613 split-needed | items 18187-18194, 18262, 18286-18289, 18072 -> JOIN S95488 (key "Birds of Prey v3 (2011)", S cv=42806 gcd=61066); items 16382, 16391, 16403, 16417, 16431, 63021, 63022 -> "Birds of Prey v2 (2010)" run cv=33087 gcd=47799 (who-stores cv=33087: no shelf); items 63008, 63093 ("Birds of Prey - Batgirl 001 (1998)", 38-39pp) -> JOIN S2607 (key "Birds of Prey - Black Canary-Batgirl", S cv=18996 gcd=5957, the same one-shot); everything else stays as cv=6498 gcd=6991
+   F 2613 needs-fetch cv=33087 | CV 33087 "Birds of Prey" 2010 is named from the rip only
+   N 2613 cv=6498 gcd=6991 — the S line for the kept 1999 run once the three move (0.9: the Batgirl/Catwoman and Catwoman/Oracle one-shots (CV 22825 / 1604), Secret Files 2003, Futures End (two rips), The End of the Beginning and Whitewater are residue that is other comics)
+   named: S95488 Birds of Prey v3 (2011)  6 files  keys: "Birds of Prey v3 (2011)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S2607 Birds of Prey: Black Canary/Batgirl  1 files  keys: "Birds of Prey - Black Canary-Batgirl"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S65356 "Nightwing" 116f [shares gcd=5516 (collected by item 63020), named S65356 in the decision's R/N lines — S cv=5755 gcd=5516 (R-044 0.9)] keys: "Nightwing (1996)" | "Nightwing The Resurrection of Ra s Al Ghul part" | "Nightwing v2 (1996)"
+   nearby: S2618 "Birds of Prey: Manhunt" 4f [shares gcd=7134 (collected by item 63018) — S cv=6634 gcd=7134 (A-010 0.95)] keys: "Birds of Prey: Manhunt"
+   nearby: S2612 "Birds of Prey: Revolution" 2f [shares gcd=5726 (collected by item 63018) — S cv=18993 gcd=5726 (A-010 0.9)] keys: "Birds of Prey - Revolution"
+   nearby: S2621 "Birds of Prey: Wolves" 2f [shares gcd=5727 (collected by item 63018) — S cv=18995 gcd=5727 (A-010 0.9)] keys: "Birds of Prey: Wolves"
+   nearby: S2614 "Birds of Prey: The Ravens" 1f [shares gcd=7135 (collected by item 63019) — S cv=18994 gcd=7135 (A-010 0.95)] keys: "Birds of Prey - The Ravens"
+   nearby: S95489 "Birds of Prey" 63f [title — S cv=153328 gcd=203335 (R-103 0.9)] keys: "Birds of Prey v5 (2023)"
+   nearby: S2601 "Birds of Prey Uncovered" 1f [title — S cv=155312 gcd=206631 (B-011 0.95)] keys: "Birds Of Prey" | "Birds of Prey - Uncovered"
+   nearby: S2604 "Birds of Prey" 1f [title — S cv=127620 gcd=160322 (A-010 0.95)] keys: "Birds of Prey (2020-)"
+   nearby: S2617 "Birds of Prey: Huntress" 1f [title+1 — S cv=123845 gcd=154232 (B-009 0.95)] keys: "Birds of Prey: Huntress"
+   nearby: S45747 "Birds of Prey: Fighters by Trade" 1f [title+1 — S cv=139075 gcd=176193 (B-011 0.95)] keys: "Birds of Prey - Fighters"
+   nearby: S45748 "Birds of Prey: Progeny" 1f [title+1 — S cv=158002 gcd=210359 (B-011 0.95)] keys: "Birds of Prey - Progeny"
+   keys now: "Birds of Prey v1 (1999)" x75 · "Birds of Prey (1999)" x33 · "Birds of Prey" x14 · "Birds of Prey - Batgirl (1999)" x2 · "Birds of Prey - Batgirl-Catwoman" x2 · "Birds of Prey - Futures End (1999)" x1 · "Birds of Prey Secret Files and Origins (1999)" x1 · "Birds of Prey - The End of the Beginning" x1 · "Birds of Prey - Futures End" x1 · "Birds of Prey - Catwoman-Oracle" x1
+   groups (title x folder): 26
+   G1 "Birds of Prey 009  Girls Rules" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\090 In Effigy — 1 file(s), numbers 9, pp 24-24; cv per-file 6498x1; gcd per-file 6991x1; key 'Birds of Prey (1999)'
+      [15899] 10 Birds of Prey 009  Girls Rules.cbz (24pp)
+   G2 "Birds of Prey 010  The Wrong Guy" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\090 In Effigy — 1 file(s), numbers 10, pp 24-24; cv per-file 6498x1; gcd per-file 6991x1; key 'Birds of Prey (1999)'
+      [15900] 11 Birds of Prey 010  The Wrong Guy.cbz (24pp)
+   G3 "Birds of Prey 011  State of War" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\090 In Effigy — 1 file(s), numbers 11, pp 22-22; cv per-file 6498x1; gcd per-file 6991x1; key 'Birds of Prey (1999)'
+      [15901] 12 Birds of Prey 011  State of War.cbz (22pp)
+   G4 "Birds of Prey" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\147 Brightest Day — 5 file(s), numbers 1-5, pp 23-31; cv per-file 6498x5; key 'Birds of Prey (1999)'
+      e.g. 10 Birds of Prey 1.cbr
+        16382 #1 31pp · 16391 #2 31pp · 16403 #3 25pp · 16417 #4 24pp · 16431 #5 23pp
+   G5 "Birds of Prey" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\01 bruce wayne murderer — 2 file(s), numbers 39-40, pp 24-24; cv per-file 6498x2; key 'Birds of Prey (1999)'
+      [16972] 05 Birds of Prey #39.cbr (24pp)
+      [16980] 12 Birds of Prey #40.cbr (24pp)
+   G6 "Birds of Prey" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\02 bruce wayne fugitive — 2 file(s), numbers 41, 43, pp 22-24; cv per-file 6498x2; key 'Birds of Prey (1999)'
+      [16983] 02 Birds of Prey 41.cbr (24pp)
+      [16992] 10 Birds of Prey 43.cbr (22pp)
+   G7 "Birds of Prey" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\48 Birds of Prey - The Battle Within — 10 file(s), numbers 76-85, pp 22-26; cv per-file 6498x10; key 'Birds of Prey (1999)'
+      e.g. Birds of Prey 076.cbz
+        17163 #76 26pp · 17164 #77 24pp · 17165 #78 25pp · 17166 #79 25pp · 17167 #80 25pp · 17168 #81 23pp · 17169 #82 24pp · 17170 #83 22pp · 17171 #84 24pp · 17172 #85 24pp
+   G8 "Birds of Prey" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\69 Birds of Prey - Perfect Pitch — 5 file(s), numbers 86-90, pp 24-25; cv per-file 6498x5; key 'Birds of Prey (1999)'
+      e.g. Birds of Prey 086.cbr
+        17337 #86 24pp · 17338 #87 24pp · 17339 #88 24pp · 17340 #89 24pp · 17341 #90 25pp
+   G9 "Birds of Prey" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Birds of Prey - Progeny — 4 file(s), numbers 92-95, pp 25-25; cv per-file 6498x4; key 'Birds of Prey (1999)'
+      e.g. Birds of Prey 092.cbr
+        17443 #92 25pp · 17444 #93 25pp · 17445 #94 25pp · 17446 #95 25pp
+   G10 "Birds of Prey" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\002 Zero Year Secret City — 1 file(s), numbers 25, pp 31-31; cv per-file 6498x1; key 'Birds of Prey'
+      [18072] 014 Birds of Prey 025 - January 2014.cbr (31pp)
+   G11 "Birds of Prey" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\018 Birds of Prey Vol. 1 Trouble in Mind — 8 file(s), numbers 1-8, pp 21-24; cv per-file 6498x8; key 'Birds of Prey'
+      [18187] Birds of Prey 001 - November 2011.cbr (22pp)
+      [18188] Birds of Prey 002 - December 2011.cbr (21pp)
+      [18189] Birds of Prey 003 - January 2012.cbz (21pp)
+      [18190] Birds of Prey 004 - February 2012.cbz (21pp)
+      [18191] Birds of Prey 005 - March 2012.cbr (21pp)
+      [18192] Birds of Prey 006 - April 2012.cbz (22pp)
+      [18193] Birds of Prey 007 - May 2012.cbz (24pp)
+      [18194] Birds of Prey 008 - June 2012.cbr (22pp)
+   G12 "Birds of Prey" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\028 Batman Night of the Owls — 1 file(s), numbers 9, pp 22-22; cv per-file 6498x1; key 'Birds of Prey'
+      [18262] 008 Birds of Prey 009 - July 2012.cbr (22pp)
+   G13 "Birds of Prey" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\033 Birds of Prey Vol. 2 Your Kiss Might Kill — 4 file(s), numbers 10-13, pp 22-23; cv per-file 6498x4; key 'Birds of Prey'
+      [18286] Birds of Prey 010 - August 2012.cbr (23pp)
+      [18287] Birds of Prey 011 - September 2012.cbr (22pp)
+      [18288] Birds of Prey 012 - October 2012.cbr (22pp)
+      [18289] Birds of Prey 013 - December 2012.cbr (22pp)
+   G14 "Birds of Prey - Futures End" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\116 The Futures End - New 52 — 1 file(s), numbers 1, pp 24-24; cv per-file 6498x1; key 'Birds of Prey - Futures End (1999)'
+      [18786] Birds of Prey - Futures End # 1.cbr (24pp)
+   G15 "Birds of Prey" in DC\_Birds of Prey\Birds of Prey v1 (1999) — 71 file(s), numbers 22-80, 92-103, pp 22-39; cv per-file 6498x71; gcd per-file 6991x71; key 'Birds of Prey v1 (1999)'
+      e.g. Birds of Prey 022 (2000) (digital-Empire).cbz
+        62935 #22 2000 22pp · 62936 #23 2000 23pp · 62937 #24 2000 23pp · 62938 #25 2001 23pp · 62939 #26 2001 23pp · 62940 #27 2001 23pp · 62941 #28 2001 22pp · 62942 #29 2001 23pp
+        62943 #30 2001 23pp · 62944 #31 2001 23pp · 62945 #32 2001 23pp · 62946 #33 2001 23pp · 62947 #34 2001 23pp · 62948 #35 2001 23pp · 62949 #36 2001 23pp · 62950 #37 2002 23pp
+        62951 #38 2002 24pp · 62952 #39 2002 22pp · 62953 #40 2002 22pp · 62954 #41 2002 23pp · 62955 #42 2002 24pp · 62956 #43 2002 22pp · 62957 #44 2002 23pp · 62958 #45 2002 22pp
+        62959 #46 2002 23pp · 62960 #47 2002 24pp · 62961 #48 2002 23pp · 62962 #49 2003 23pp · 62963 #50 2003 23pp · 62964 #51 2003 23pp · 62965 #52 2003 23pp · 62966 #53 2003 23pp
+        62967 #54 2003 24pp · 62968 #55 2003 24pp · 62969 #56 2003 24pp · 62970 #57 2003 24pp · 62971 #58 2003 24pp · 62972 #59 2003 24pp · 62973 #60 2003 23pp · 62974 #61 2004 24pp
+        62975 #62 2004 24pp · 62976 #63 2004 24pp · 62977 #64 2004 24pp · 62978 #65 2004 24pp · 62979 #66 2004 24pp · 62980 #67 2004 24pp · 62981 #68 2004 24pp · 62982 #69 2004 24pp
+        62983 #70 2004 24pp · 62984 #71 2004 24pp · 62985 #72 2004 24pp · 62986 #73 2004 24pp · 62987 #74 2004 24pp · 62988 #75 2004 32pp · 62989 #76 2005 24pp · 62990 #77 2005 24pp
+        62991 #78 2005 24pp · 62992 #79 2005 24pp · 62993 #80 2005 24pp · 62994 #92 2006 24pp · 62995 #93 2006 24pp · 62996 #94 2006 24pp · 62997 #95 2006 24pp · 62998 #96 2006 24pp
+        62999 #97 2006 24pp · 63000 #98 2006 24pp · 63001 #99 2006 24pp · 63002 #100 2007 39pp · 63003 #101 2007 24pp · 63004 #102 2007 24pp · 63005 #103 2007 24pp
+   G16 "Birds of Prey - Batgirl" in DC\_Birds of Prey\Birds of Prey v1 (1999)\Specials — 1 file(s), numbers 1, pp 38-38; cv per-file 18996x1; gcd per-file 402x1; key 'Birds of Prey - Batgirl (1999)'
+      [63008] 03 Birds of Prey - Batgirl 001 (1998) (digital-Empire).cbr (38pp)
+   G17 "Birds of Prey - Batgirl-Catwoman" in DC\_Birds of Prey\Birds of Prey v1 (1999)\Specials — 1 file(s), numbers 1, pp 50-50; cv per-file 22825x1; gcd per-file 723x1; key 'Birds of Prey - Batgirl-Catwoman'
+      [63012] 07 Birds of Prey - Batgirl-Catwoman 01 (of 02) (2003) (digital) (Minutemen-PhD).cbr (50pp)
+   G18 "Birds of Prey Secret Files & Origins" in DC\_Birds of Prey\Birds of Prey v1 (1999)\Specials — 1 file(s), numbers 1, pp 41-41; cv per-file 6498x1; gcd per-file 6991x1; key 'Birds of Prey Secret Files and Origins (1999)'
+      [63011] 06 Birds of Prey Secret Files & Origins 001 (2003).cbr (41pp)
+   G19 "Birds of Prey" in DC\_Birds of Prey\Birds of Prey v1 (1999)\Trades — 3 file(s), 3 COL, pp 286-294; cv per-file 85740x3; gcd per-file 93560x3; key 'Birds of Prey v1 (1999)'
+      [63018] COL Birds of Prey Vol. 01 (2015) (digital) (Son of Ultron-Empire).cbr (294pp)
+         own record cv 85740 / gcd s93560 "Birds of Prey" (issue 1491656) COLLECTS: gcd=7134 Birds of Prey: Manhunt (1996) #1-4 · gcd=5957 Birds of Prey: Batgirl (1998) #1 · gcd=5727 Birds of Prey: Wolves (1997) #1 · gcd=5726 Birds of Prey: Revolution (1997) #1
+      [63019] COL Birds of Prey Vol. 02 (2016) (digital) (Son of Ultron-Empire).cbr (286pp)
+         own record cv 85740 / gcd s93560 "Birds of Prey" (issue 1540354) COLLECTS: gcd=6991 Birds of Prey (1999) #1-11 · gcd=7135 Birds of Prey: The Ravens (1998) #1 · gcd=23258 Birds of Prey (1999) #2
+      [63020] COL Birds of Prey Vol. 03 (2016) (digital) (Son of Ultron-Empire).cbr (294pp)
+         own record cv 85740 / gcd s93560 "Birds of Prey" (issue 1661598) COLLECTS: gcd=6991 Birds of Prey (1999) #12-21 · gcd=5516 Nightwing (1996) #45-46 · gcd=14195 Batman: Gotham City Secret Files (2000) #1 · gcd=10152 Batman Secret Files (1997) #1
+   G20 "Birds of Prey - The End of the Beginning (2023) (digital) (Son of Ultron-Empire)" in DC\_Birds of Prey\Birds of Prey v1 (1999)\Trades — 1 file(s), pp 364-364; cv per-file 148627x1; key 'Birds of Prey - The End of the Beginning'
+      [63016] Birds of Prey - The End of the Beginning (2023) (digital) (Son of Ultron-Empire).cbr (364pp)
+   G21 "Birds of Prey - Whitewater (2022) (digital) (Son of Ultron-Empire)" in DC\_Birds of Prey\Birds of Prey v1 (1999)\Trades — 1 file(s), pp 212-212; cv per-file 6498x1; key 'Birds of Prey v1 (1999)'
+      [63017] Birds of Prey - Whitewater (2022) (digital) (Son of Ultron-Empire).cbr (212pp)
+   G22 "Birds of Prey" in DC\_Birds of Prey\Birds of Prey v2 (2010)\Trades — 2 file(s), 2 COL, pp 157-199; cv per-file 6498x2; gcd per-file 59297x2; key 'Birds of Prey (1999)'
+      [63021] COL Birds of Prey Vol. 01 - End Run (2011) (digital) (Son of Ultron-Empire).cbr (157pp)
+         own record cv 6498 / gcd s59297 "Birds of Prey" (issue 847218) COLLECTS: gcd=47799 Birds of Prey (2010) #1-6  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [63022] COL Birds of Prey Vol. 02 - The Death of Oracle (2011) (digital) (Son of Ultron-Empire).cbr (199pp)
+   G23 "Birds of Prey - Futures End" in DC\_Birds of Prey\Birds of Prey v3 (2011)\Annuals and Specials — 1 file(s), numbers 1, pp 23-23; cv per-file 76840x1; gcd per-file 82710x1; key 'Birds of Prey - Futures End'
+      [63023] Birds of Prey - Futures End 001 (2014) (Digital) (HD) (Thornn-Empire).cbr (23pp)
+   G24 "Birds of Prey - Batgirl" in DC\_Birds of Prey\_Trades, Minis and one-shots — 1 file(s), numbers 1, pp 39-39; cv per-file 6498x1; gcd per-file 5957x1; key 'Birds of Prey - Batgirl (1999)'
+      [63093] Birds of Prey - Batgirl, 1997-12-00 (#01) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (39pp)
+   G25 "Birds of Prey - Batgirl-Catwoman" in DC\_Birds of Prey\_Trades, Minis and one-shots — 1 file(s), numbers 1, pp 50-50; cv per-file 22825x1; gcd per-file 11167x1; key 'Birds of Prey - Batgirl-Catwoman'
+      [63094] Birds of Prey - Batgirl-Catwoman 001 (2003) (Digital) (AnHeroGold-Empire).cbz (50pp)
+   G26 "Birds of Prey - Catwoman-Oracle" in DC\_Birds of Prey\_Trades, Minis and one-shots — 1 file(s), numbers 2, pp 49-49; cv per-file 1604x1; gcd per-file 11171x1; key 'Birds of Prey - Catwoman-Oracle'
+      [63096] Birds of Prey - Catwoman-Oracle 002 (2003) (Digital) (AnHeroGold-Empire).cbz (49pp)
+
+== S64393 Catwoman  [split]  86 files / 2 collections  decided in R-103 (R)
+   decided: R 64393 | signals e (86 files) and d (#197) expose whole issues of two other shelves' runs beside the 1993 Catwoman (CV 4955 / GCD 4634, 96; ladder 1-2, 25-94 + annuals + the Balent books #1-24): (1) "Catwoman V2 053-058 (2006)" (17447-17452, the One Year Later "Replacements" read order) and "53 Catwoman 83" (16344, Blackest Night) are the 2002 Catwoman #53-58 and #83 = CV 7328 / GCD 7910, the run S96003 holds; (2) "Catwoman 034-037 (2021-2022)" (61464-61467, Fear State tie-ins) are the 2018 Catwoman = CV 112028 / GCD 126584, the run S96005 holds — eleven issues of two other shelves' runs are not residue
+   F 64393 split-needed | items 16344, 17447, 17448, 17449, 17450, 17451, 17452 -> JOIN S96003 (key "Catwoman v3 (2002)", S cv=7328 gcd=7910); items 61464, 61465, 61466, 61467 -> JOIN S96005 (key "Catwoman v5 (2018)", S cv=112028 gcd=126584); everything else stays as cv=4955 gcd=4634
+   N 64393 cv=4955 gcd=4634 — the S line for the kept 1993 run once the eleven move (0.9: the Annual 001-002 are the separate Catwoman Annual series, GCD 4951; both legs 96 and the Balent books collect #0-24 on s4634)
+   N 64393 flag #197 label-ambiguous (item 17447): "Catwoman V2 053-058" are single issues of the 2002 run — correct once they move
+   named: S96003 Catwoman  6 files  keys: "Catwoman v3 (2002)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S96005 Catwoman  133 files  keys: "Catwoman v5 (2018)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S21630 "Who's Who in the DC Universe" 16f [shares gcd=4008 (collected by item 63637) — S cv=19954 gcd=4008 (A-009 0.95)] keys: "Who's Who in the DC Universe"
+   nearby: S15577 "Showcase '95" 13f [shares gcd=10020 (collected by item 63638) — S cv=22878 gcd=10020 (A-009 0.9)] keys: "Showcase '95"
+   nearby: S3683 "Catwoman" 28f [title — S cv=42722 gcd=61074 (B-008 0.95)] keys: "Catwoman" | "Catwoman v4 (2011)" · S64392 "Catwoman" 4f [title — S cv=4176 gcd=3782 (A-010 0.95)] keys: "Catwoman (1989)"
+   nearby: S2187 "Batman/Catwoman" 13f [title+1 — S cv=132336 gcd=167146 (B-007 0.95)] keys: "Batman - Catwoman" | "Batman/Catwoman (2020-)"
+   nearby: S3696 "Catwoman/Wildcat" 4f [title+1 — S cv=6151 gcd=5960 (A-010 0.95)] keys: "Catwoman/Wildcat"
+   nearby: S4185 "Convergence Catwoman" 2f [title+1 — S cv=81336 gcd=88323 (A-007 0.95)] keys: "Convergence - Catwoman"
+   nearby: S3689 "Catwoman: Uncovered" 1f [title+1 — S cv=153249 gcd=203400 (B-011 0.95)] keys: "Catwoman - Uncovered"
+   nearby: S3693 "Catwoman Defiant" 1f [title+1 — S cv=27117 gcd=11210 (B-011 0.95)] keys: "Catwoman Defiant"
+   nearby: S3698 "Catwoman: Soulstealer" 1f [title+1 — S cv=136524 gcd=172862 (B-007 0.95)] keys: "Catwoman: Soulstealer"
+   keys now: "Catwoman v2 (1993)" x74 · "Catwoman (1993)" x12
+   groups (title x folder): 7
+   G1 "Catwoman" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\144 Blackest Night — 1 file(s), numbers 83, pp 25-25; cv per-file 4955x1; key 'Catwoman (1993)'
+      [16344] 53 Catwoman 83.cbr (25pp)
+   G2 "Catwoman" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Catwoman - The Replacements — 6 file(s), numbers 53-58, pp 24-25; cv per-file 4955x6; gcd per-file 7910x6; key 'Catwoman (1993)'
+      e.g. Catwoman V2 053 (2006) (DCBabes-DCP).cbr
+        17447 #53 2006 25pp · 17448 #54 2006 24pp · 17449 #55 2006 24pp · 17450 #56 2006 24pp · 17451 #57 2006 25pp · 17452 #58 2006 25pp
+   G3 "Catwoman (1998-11) 1000000 (digital) (OkC.O.M.P.U.T.O.-Novus-HD)" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) — 1 file(s), pp 26-26; cv per-file 4955x1; key 'Catwoman (1993)'
+      [18043] 28 Catwoman (1998-11) 1000000 (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (26pp)
+   G4 "Catwoman" in DC\_Batman\_Completed Series\08 Batman v3.1 (2020)\Batman Vol. 05 - Fear State Tie Ins (2021) — 4 file(s), numbers 34-37, pp 24-25; cv per-file 4955x4; gcd per-file 126584x4; key 'Catwoman (1993)'
+      e.g. Catwoman 034 (2021) (digital) (Son of Ultron-Empire).cbr
+        61464 #34 2021 24pp · 61465 #35 2021 24pp · 61466 #36 2021 25pp · 61467 #37 2022 24pp
+   G5 "Catwoman" in DC\_Catwoman\Catwoman v2 (1993) — 70 file(s), numbers 25-94, pp 21-40; cv per-file 4955x70; gcd per-file 4634x70; key 'Catwoman v2 (1993)'
+      e.g. Catwoman 025 (1995) (Digital) (Nahga-Empire).cbr
+        63567 #25 1995 40pp · 63568 #26 1995 24pp · 63569 #27 1995 24pp · 63570 #28 1996 23pp · 63571 #29 1996 24pp · 63572 #30 1996 23pp · 63573 #31 1996 23pp · 63574 #32 1996 24pp
+        63575 #33 1996 24pp · 63576 #34 1996 24pp · 63577 #35 1996 23pp · 63578 #36 1996 24pp · 63579 #37 1996 24pp · 63580 #38 1996 25pp · 63581 #39 1996 23pp · 63582 #40 1996 24pp
+        63583 #41 1997 24pp · 63584 #42 1997 24pp · 63585 #43 1997 24pp · 63586 #44 1997 23pp · 63587 #45 1997 24pp · 63588 #46 1997 24pp · 63589 #47 1997 24pp · 63590 #48 1997 23pp
+        63591 #49 1997 24pp · 63592 #50 1997 40pp · 63593 #51 1997 24pp · 63594 #52 1997 24pp · 63595 #53 1998 24pp · 63596 #54 1998 24pp · 63597 #55 1998 24pp · 63598 #56 1998 23pp
+        63599 #57 1998 24pp · 63600 #58 1998 24pp · 63601 #59 1998 24pp · 63602 #60 1998 24pp · 63603 #61 1998 24pp · 63604 #62 1998 24pp · 63605 #63 1998 24pp · 63606 #64 1999 24pp
+        63607 #65 1999 24pp · 63608 #66 1999 24pp · 63609 #67 1999 24pp · 63610 #68 1999 24pp · 63611 #69 1999 24pp · 63612 #70 1999 24pp · 63613 #71 1999 24pp · 63614 #72 1999 24pp
+        63615 #73 1999 24pp · 63616 #74 1999 24pp · 63617 #75 1999 24pp · 63618 #76 2000 24pp · 63619 #77 2000 23pp · 63620 #78 2000 24pp · 63621 #79 2000 24pp · 63622 #80 2000 24pp
+        63623 #81 2000 24pp · 63624 #82 2000 24pp · 63625 #83 2000 25pp · 63626 #84 2000 21pp · 63627 #85 2000 24pp · 63628 #86 2000 24pp · 63629 #87 2000 24pp · 63630 #88 2001 24pp
+        63631 #89 2001 23pp · 63632 #90 2001 23pp · 63633 #91 2001 24pp · 63634 #92 2001 24pp · 63635 #93 2001 24pp · 63636 #94 2001 23pp
+   G6 "Catwoman Annual" in DC\_Catwoman\Catwoman v2 (1993)\Annuals and Specials — 2 file(s), numbers 1-2, pp 50-55; cv per-file 4955x2; gcd per-file 4634x1; key 'Catwoman v2 (1993)'
+      [63565] Catwoman Annual 001 (1994) (Digital) (Nahga-Empire).cbr (55pp)
+      [63566] Catwoman Annual 002 (1995) (Digital) (Nahga-Empire).cbr (50pp)
+   G7 "Catwoman by Jim Balent" in DC\_Catwoman\Catwoman v2 (1993)\Trades — 2 file(s), 2 COL, pp 326-354; cv per-file 112028x1, 4955x1; gcd per-file 116779x2; key 'Catwoman v2 (1993)'
+      [63637] COL Catwoman by Jim Balent Book 01 (2017) (Digital-Empire).cbr (326pp)
+         own record cv 112028 / gcd s116779 "Catwoman by Jim Balent" (issue 1735473) COLLECTS: gcd=4634 Catwoman (1993) #1-13 · gcd=4008 Who's Who in the DC Universe (1990) #16
+      [63638] COL Catwoman by Jim Balent Book 02 (2019) (Digital-Empire).cbr (354pp)
+         own record cv 4955 / gcd s116779 "Catwoman by Jim Balent" (issue 1932153) COLLECTS: gcd=4634 Catwoman (1993) #0, #14-24 · gcd=23256 Catwoman: The Catfile (1996) (unnumbered) · gcd=4951 Catwoman Annual (1994) #2 · gcd=10020 Showcase '95 (1995) #4
+
+== S5755 Doom Patrol  [split]  54 files / 5 collections  decided in R-103 (R)
+   decided: R 5755 | signal e (54 files) hides a co-equal run and two stray issues beside the 1987 Doom Patrol (CV 3786 / GCD 3353, 87; #1-18, #64-87 + Books 01-03 collecting #19-63 + annuals + the DP/Suicide Squad Special): "Young Animal\Doom Patrol v6 (2016)" holds the Director's Cut #1 (115739, 67pp) and two trades — Brick by Brick and Nada, GCD roll-ups Doom Patrol (2016) #1-6 / #7-12 (s106334) — = CV 94114 (DC 2016, 12) = GCD 106334 (2016-2018, 12), two whole trades of a different run (C-028 capped them as residue; the RESIDUE ruling says split); and "25 Doom Patrol 4" / "40 Doom Patrol 5" (Blackest Night read order, 38/33pp) are the 2009 Doom Patrol #4-5 tie-ins, S64605's run
+   F 5755 split-needed | items 115739, 115740, 115741 -> "Doom Patrol v6 (2016)" run cv=94114 gcd=106334 (who-stores cv=94114: no shelf); items 16316, 16331 -> JOIN S64605 (key "Doom Patrol v5 (2009)", S cv=27258 gcd=38783, whose #4-5 these are second rips of); everything else stays as cv=3786 gcd=3353
+   F 5755 needs-fetch cv=3786 | CV volume 3786 has no CvVolume row, named from the local rip
+   N 5755 cv=3786 gcd=3353 — the S line for the kept 1987 run once the others move (0.9: the DP/Suicide Squad Special one-shot and the annuals)
+   named: S64605 Doom Patrol  22 files  keys: "Doom Patrol (2009)" | "Doom Patrol v5 (2009)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S94542 "Suicide Squad" 10f [shares gcd=3385 — S cv=3815 gcd=3385 (C-016 0.9)] keys: "Suicide Squad v1 (1987)"
+   nearby: S96545 "Doom Patrol" 37f [title — S cv=2177 gcd=1622 (C-014 0.95)] keys: "Doom Patrol v1 (1946)"
+   nearby: S64603 "Doom Patrol" 22f [title — S cv=7329 gcd=7911 (R-103 0.95)] keys: "Doom Patrol (2001)" | "Doom Patrol v3 (2001)"
+   nearby: S64604 "Doom Patrol" 19f [title — S cv=11053 gcd=11984 (R-103 0.95)] keys: "Doom Patrol (2004)" | "Doom Patrol v4 (2004)"
+   nearby: S20814 "Unstoppable Doom Patrol" 1f [title+1 — S cv=149034 gcd=196927 (B-012 0.95)] keys: "Unstoppable Doom Patrol"
+   keys now: "Doom Patrol v2 (1987)" x47 · "Doom Patrol (1987)" x6 · "Doom Patrol and Suicide Squad Special" x1
+   groups (title x folder): 8
+   G1 "Doom Patrol" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\144 Blackest Night — 2 file(s), numbers 4-5, pp 33-38; cv per-file 3786x2; key 'Doom Patrol (1987)'
+      [16316] 25 Doom Patrol 4.cbr (38pp)
+      [16331] 40 Doom Patrol 5.cbr (33pp)
+   G2 "Doom Patrol" in DC\_Doom Patrol\Doom Patrol v2 (1987) — 42 file(s), numbers 1-18, 64-87, pp 23-38; cv per-file 3786x42; gcd per-file 3353x42; key 'Doom Patrol v2 (1987)'
+      e.g. Doom Patrol 001 (1987) (digital) (F) (iUltron-Empire).cbr
+        64469 #1 1987 31pp · 64470 #2 1987 24pp · 64471 #3 1987 24pp · 64472 #4 1988 24pp · 64473 #5 1988 24pp · 64474 #6 1988 24pp · 64475 #7 1988 23pp · 64476 #8 1988 24pp · 64477 #9 1988 38pp
+        64478 #10 1988 24pp · 64479 #11 1988 23pp · 64480 #12 1988 24pp · 64481 #13 1988 24pp · 64482 #14 1988 23pp · 64483 #15 1988 24pp · 64484 #16 1988 24pp · 64485 #17 1988 24pp
+        64486 #18 1989 24pp · 64487 #64 1993 26pp · 64488 #65 1993 24pp · 64489 #66 1993 26pp · 64490 #67 1993 25pp · 64491 #68 1993 25pp · 64492 #69 1993 25pp · 64493 #70 1993 25pp
+        64494 #71 1993 25pp · 64495 #72 1993 25pp · 64496 #73 1993 25pp · 64497 #74 1994 25pp · 64498 #75 1994 25pp · 64499 #76 1994 25pp · 64500 #77 1994 26pp · 64501 #78 1994 24pp
+        64502 #79 1994 25pp · 64503 #80 1994 25pp · 64504 #81 1994 25pp · 64505 #82 1994 25pp · 64506 #83 1994 25pp · 64507 #84 1994 25pp · 64508 #85 1994 25pp · 64509 #86 1995 25pp
+        64510 #87 1995 25pp
+   G3 "Doom Patrol Annual" in DC\_Doom Patrol\Doom Patrol v2 (1987)\Annuals — 2 file(s), numbers 1-2, pp 47-57; cv per-file 3786x2; gcd per-file 3353x1; key 'Doom Patrol v2 (1987)'
+      [64467] Doom Patrol Annual 001 (1988) (Digital) (Shadowcat-Empire).cbz (47pp)
+      [64468] Doom Patrol Annual 002 (1994) (digital) (F) (Son of Ultron-Empire).cbr (57pp)
+   G4 "Doom Patrol" in DC\_Doom Patrol\Doom Patrol v2 (1987)\Trades — 3 file(s), 3 COL, pp 420-446; cv per-file 3786x3; gcd per-file 97270x3; key 'Doom Patrol v2 (1987)'
+      [64511] COL Doom Patrol Book 01 (2016) (Digital) (Zone-Empire).cbr (421pp)
+         own record cv 3786 / gcd s97270 "Doom Patrol" (issue 1536949) COLLECTS: gcd=3353 Doom Patrol (1987) #19-34 · gcd=23249 Doom Patrol (1992) (unnumbered)
+      [64512] COL Doom Patrol Book 02 (2016) (Digital) (Zone-Empire).cbr (446pp)
+         own record cv 3786 / gcd s97270 "Doom Patrol" (issue 1604115) COLLECTS: gcd=3353 Doom Patrol (1987) #35-50 · gcd=23249 Doom Patrol (1992) #3 · gcd=82055 The Doom Patrol Omnibus (2014) (unnumbered)
+      [64513] COL Doom Patrol Book 03 (2017) (Digital) (Zone-Empire).cbr (420pp)
+         own record cv 3786 / gcd s97270 "Doom Patrol" (issue 1687120) COLLECTS: gcd=3353 Doom Patrol (1987) #51-63 · gcd=4393 Doom Force Special (1992) #1 · gcd=23249 Doom Patrol (1992) #5
+   G5 "Doom Patrol and Suicide Squad Special" in DC\_Suicide Squad\01 Suicide Squad v1 (1987)\Annuals and Specials — 1 file(s), numbers 1, pp 45-45; cv per-file 3786x1; gcd per-file 3385x1; key 'Doom Patrol and Suicide Squad Special'
+      [69943] Doom Patrol and Suicide Squad Special, 1987-11-00 (#01) (digital) (Glorith-Novus-HD).cbz (45pp)
+   G6 "Doom Patrol Annual" in Vertigo\Sandman and Death (1989)\The Children's Crusade — 1 file(s), numbers 2, pp 58-58; cv per-file 3786x1; key 'Doom Patrol (1987)'
+      [113043] 05. Doom Patrol Annual 02.cbr (58pp)
+   G7 "Doom Patrol" in Young Animal\Doom Patrol v6 (2016) — 2 file(s), 2 COL, pp 165-176; cv per-file 101772x1, 116057x1; gcd per-file 114408x2; key 'Doom Patrol (1987)'
+      [115740] COL Doom Patrol Vol. 01 - Brick by Brick (2017) (digital) (Son of Ultron-Empire).cbr (176pp)
+         own record cv 101772 / gcd s114408 "Doom Patrol" (issue 1708148) COLLECTS: gcd=106334 Doom Patrol (2016) #1-6
+      [115741] COL Doom Patrol Vol. 02 - Nada (2018) (digital) (Son of Ultron-Empire).cbr (165pp)
+         own record cv 116057 / gcd s114408 "Doom Patrol" (issue 1884036) COLLECTS: gcd=106334 Doom Patrol (2016) #7-12
+   G8 "Doom Patrol 001 Director's Cut (2017) (Digital) (Zone-Empire)" in Young Animal\Doom Patrol v6 (2016) — 1 file(s), numbers 1, pp 67-67; cv per-file 3786x1; gcd per-file 114408x1; key 'Doom Patrol (1987)'
+      [115739] Doom Patrol 001 Director's Cut (2017) (Digital) (Zone-Empire).cbr (67pp)
+
+== S64817 Green Arrow  [split]  128 files / 5 collections  decided in R-103 (R)
+   decided: R 64817 | signal e (128 files) hides whole issues of four other shelves' runs beside the 2001 Green Arrow (CV 9113 / GCD 9846, 75; #1-75 + read-order rips + the Kevin Smith / Archer's Quest / Straight Shooter trades): (1) ten "Green Arrow v2 96-136" files (Oa read-order, 22-39pp) and "009 Green Arrow v2 114 (1996)" are the 1988 Green Arrow = CV 4003 / GCD 3594, which S97347 holds; (2) "20/37/48/60/70/77 Green Arrow 1-6" (Brightest Day read order) and "COL Green Arrow Vol. 01 - Into the Woods (2011)" are the 2010 Green Arrow = CV 33909 (DC 2010, 15) = GCD 50143 (2010-2011, 15), no shelf; (3) "Green Arrow and Black Canary 031-032 (2010)" are S7891's run (CV 19240); (4) "COL Green Arrow Vol. 02 - Family First (2024)" collects Green Arrow (2023) #7-12 (GCD 2660411), S97352's run. Signal b (per-file 4003 on 127/128) is the legacy stamp; d (#258) names one of the 1988 issues
+   F 64817 split-needed | items 15748, 15772, 15794, 15806, 15808, 15843, 15845, 15851, 15864, 16848 -> JOIN S97347 (key "Green Arrow v2 (1988)", stored cv=4003 gcd=3594); items 16394, 16412, 16424, 16438, 16449, 16456, 64807 -> "Green Arrow v4 (2010)" run cv=33909 gcd=50143 (who-stores cv=33909: no shelf); items 64805, 64806 -> JOIN S7891 (key "Green Arrow/Black Canary", stored cv=19240); item 64885 -> JOIN S97352 (key "Green Arrow v7 (2023)", S cv=149738 gcd=199330); everything else stays as cv=9113 gcd=9846
+   F 64817 needs-fetch cv=33909 | CV 33909 "Green Arrow" 2010 is named from the rip only
+   N 64817 cv=9113 gcd=9846 — the S line for the kept 2001 run once the four move (0.95 then: both legs 75 = ladder 1-75, the three trades are its own; #1000000 is the run's own)
+   N 64817 flag #258 label-ambiguous (item 16848): "Green Arrow v2 114 (1996)" is a single issue of the 1988 run — correct once it moves
+   named: S97347 Green Arrow  67 files  keys: "Green Arrow v2 (1988)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S7891 Green Arrow/Black Canary  31 files  keys: "Green Arrow and Black Canary" | "Green Arrow/Black Canary"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S97352 Green Arrow  42 files  keys: "Green Arrow v7 (2023)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S97351 "Green Arrow" 8f [shares cv=91284, shares gcd=103085 — S cv=91284 gcd=103085 (C-014 0.9)] keys: "Green Arrow v6 (2016)"
+   nearby: S2723 "Green Arrow" 1f [shares gcd=44347 — S cv=32002 gcd=44347 (B-008 0.95)] keys: "Black Lantern Green Arrow"
+   nearby: S97350 "Green Arrow" 11f [title — S cv=42598 gcd=60831 (R-103 0.9)] keys: "Green Arrow" | "Green Arrow v5 (2011)"
+   nearby: S64816 "Green Arrow" 4f [title — S cv=3197 gcd=2717 (A-010 0.95)] keys: "Green Arrow (1983)"
+   nearby: S4190 "Convergence Green Arrow" 2f [title+1 — S cv=81337 gcd=88324 (A-007 0.95)] keys: "Convergence - Green Arrow"
+   nearby: S7878 "Green Arrow: Rebirth" 1f [title+1 — S cv=90872 gcd=102637 (A-008 0.95)] keys: "Green Arrow - Rebirth"
+   nearby: S7879 "Green Arrow: Stranded" 1f [title+1 — S cv=141833 gcd=182378 (B-007 0.95)] keys: "Green Arrow - Stranded"
+   nearby: S7893 "Green Arrow: Salvation" 1f [title+1 — S cv=57236 (C-014 0.9)] keys: "Green Arrow: Salvation"
+   nearby: S7964 "Green Lantern/Green Arrow" 1f [title+1 — S cv=51323 gcd=71245 (B-012 0.95)] keys: "Green Lantern-Green Arrow"
+   keys now: "Green Arrow (1988)" x71 · "Green Arrow v3 (2001)" x57
+   groups (title x folder): 24
+   G1 "Green Arrow" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\069 Parallax View — 1 file(s), numbers 96, pp 27-27; cv per-file 4003x1; gcd per-file 3594x1; key 'Green Arrow (1988)'
+      [15748] 01 Green Arrow v2 96  The Ring and the Arrow.cbz (27pp)
+   G2 "Green Arrow" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\072 Fast Friends_ — 1 file(s), numbers 101, pp 25-25; cv per-file 4003x1; gcd per-file 3594x1; key 'Green Arrow (1988)'
+      [15772] 06 Green Arrow v2 101  Run of the Arrow.cbz (25pp)
+   G3 "Green Arrow" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\075 Hero Quest — 1 file(s), numbers 104, pp 23-23; cv per-file 4003x1; gcd per-file 3594x1; key 'Green Arrow (1988)'
+      [15794] 01 Green Arrow v2 104  Bad Blood.cbz (23pp)
+   G4 "Green Arrow" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\077 Hard-Traveling Heroes The Next Generation — 2 file(s), numbers 110-111, pp 24-25; cv per-file 4003x2; gcd per-file 3594x2; key 'Green Arrow (1988)'
+      [15806] 02 Green Arrow v2 110  Desolation Again.cbz (24pp)
+      [15808] 04 Green Arrow v2 111  Chapter 4 Final Appeal.cbz (25pp)
+   G5 "Green Arrow" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\082 Hate Crimes — 2 file(s), numbers 125-126, pp 24-39; cv per-file 4003x2; gcd per-file 3594x2; key 'Green Arrow (1988)'
+      [15843] 01 Green Arrow v2 125  The Fiery Furnace.cbz (39pp)
+      [15845] 03 Green Arrow v2 126  All The Colors Of Hate.cbz (24pp)
+   G6 "Green Arrow" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\084 Three of a Kind — 1 file(s), numbers 130, pp 24-24; cv per-file 4003x1; gcd per-file 3594x1; key 'Green Arrow (1988)'
+      [15851] 02 Green Arrow v2 130  Death At The Top Of The World.cbz (24pp)
+   G7 "Green Arrow" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\086 Emerald Knights — 1 file(s), numbers 136, pp 22-22; cv per-file 4003x1; gcd per-file 3594x1; key 'Green Arrow (1988)'
+      [15864] 09 Green Arrow v2 136  In The Garden.cbz (22pp)
+   G8 "Green Arrow" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\101 House on Fire — 2 file(s), numbers 7-8, pp 24-24; cv per-file 4003x2; gcd per-file 9846x2; key 'Green Arrow (1988)'
+      [16023] 01 Green Arrow v3 07  Quiver Chapter 7 Hard Travelling Heroes.cbz (24pp)
+      [16024] 02 Green Arrow v3 08  Quiver Chapter 8 When Ollie Met Ollie.cbz (24pp)
+   G9 "Green Arrow" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\107 Hate Crime — 1 file(s), numbers 19, pp 23-23; cv per-file 4003x1; gcd per-file 9846x1; key 'Green Arrow (1988)'
+      [16061] 01 Green Arrow v3 19  The Archers Quest Part 4 Superfriends.cbz (23pp)
+   G10 "Green Arrow" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\111 Black Circle- Urban Knights — 3 file(s), numbers 23-25, pp 21-24; cv per-file 4003x3; gcd per-file 9846x3; key 'Green Arrow (1988)'
+      [16079] 01 Green Arrow v3 23  Busted.cbz (21pp)
+      [16081] 03 Green Arrow v3 24  Hero Worship.cbz (24pp)
+      [16083] 05 Green Arrow v3 25  Know Thy Enemy.cbz (23pp)
+   G11 "Green Arrow" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\147 Brightest Day — 6 file(s), numbers 1-6, pp 23-34; cv per-file 4003x6; key 'Green Arrow (1988)'
+      e.g. 20 Green Arrow 1.cbr
+        16394 #1 30pp · 16412 #2 27pp · 16424 #3 24pp · 16438 #4 34pp · 16449 #5 24pp · 16456 #6 23pp
+   G12 "Green Arrow" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\12 Final Night\The Final Night Reading Order — 1 file(s), numbers 114, pp 23-23; cv per-file 4003x1; gcd per-file 3594x1; key 'Green Arrow (1988)'
+      [16848] 009 Green Arrow v2 114 (1996).cbr (23pp)
+   G13 "Green Arrow" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\23 Green Arrow - Quiver — 10 file(s), numbers 1-10, pp 22-26; cv per-file 4003x10; gcd per-file 9846x10; key 'Green Arrow (1988)'
+      e.g. Green Arrow 001 (2001).cbz
+        16946 #1 2001 26pp · 16947 #2 2001 23pp · 16948 #3 2001 22pp · 16949 #4 2001 22pp · 16950 #5 2001 23pp · 16951 #6 2001 22pp · 16952 #7 2001 25pp · 16953 #8 2001 24pp · 16954 #9 2001 24pp
+        16955 #10 2002 24pp
+   G14 "Green Arrow" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\24 Green Arrow - Sounds of Violence — 5 file(s), numbers 11-15, pp 23-24; cv per-file 4003x5; gcd per-file 9846x5; key 'Green Arrow (1988)'
+      e.g. Green Arrow 011 (2002).cbz
+        16956 #11 2002 23pp · 16957 #12 2002 23pp · 16958 #13 2002 24pp · 16959 #14 2002 24pp · 16960 #15 2002 24pp
+   G15 "Green Arrow" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\25 Green Arrow - The Archer's Quest — 6 file(s), numbers 16-21, pp 23-25; cv per-file 4003x6; gcd per-file 9846x6; key 'Green Arrow (1988)'
+      e.g. Green Arrow 016 (2002).cbz
+        16961 #16 2002 24pp · 16962 #17 2002 25pp · 16963 #18 2002 23pp · 16964 #19 2003 24pp · 16965 #20 2003 23pp · 16966 #21 2003 24pp
+   G16 "Green Arrow" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\08 Green Arrow - Heading into the Light — 7 file(s), numbers 52, 54-59, pp 22-25; cv per-file 4003x7; gcd per-file 9846x7; key 'Green Arrow (1988)'
+      e.g. Green Arrow 052 (2005).cbr
+        17409 #52 2005 24pp · 17410 #54 2005 25pp · 17411 #55 2005 24pp · 17412 #56 2006 24pp · 17413 #57 2006 23pp · 17414 #58 2006 24pp · 17415 #59 2006 22pp
+   G17 "Green Arrow" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Green Arrow - Crawling from the Wreckage — 6 file(s), numbers 60-65, pp 24-25; cv per-file 4003x6; gcd per-file 9846x6; key 'Green Arrow (1988)'
+      e.g. Green Arrow 060 (2006) (Team-DCP).cbr
+        17453 #60 2006 25pp · 17454 #61 2006 25pp · 17455 #62 2006 25pp · 17456 #63 2006 25pp · 17457 #64 2006 24pp · 17458 #65 2006 25pp
+   G18 "Green Arrow" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Green Arrow - Road to Jericho — 10 file(s), numbers 66-75, pp 24-33; cv per-file 4003x10; gcd per-file 9846x10; key 'Green Arrow (1988)'
+      e.g. Green Arrow 066 (2006) (CamelotScans-DCP).cbr
+        17459 #66 2006 25pp · 17460 #67 2006 25pp · 17461 #68 2007 25pp · 17462 #69 2007 25pp · 17463 #70 2007 25pp · 17464 #71 2007 24pp · 17465 #72 2007 26pp · 17466 #73 2007 25pp
+        17467 #74 2007 25pp · 17468 #75 2007 33pp
+   G19 "Green Arrow (1998-11) 1000000 (digital) (OkC.O.M.P.U.T.O.-Novus)" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) — 1 file(s), pp 25-25; cv per-file 4003x1; key 'Green Arrow (1988)'
+      [18028] 13 Green Arrow (1998-11) 1000000 (digital) (OkC.O.M.P.U.T.O.-Novus).cbz (25pp)
+   G20 "Green Arrow" in DC\_Green Arrow\03 Green Arrow v3 (2001) — 54 file(s), numbers 22-75, pp 22-32; cv per-file 4003x54; gcd per-file 9846x54; key 'Green Arrow v3 (2001)'
+      e.g. Green Arrow 022 (2003) (digital-Empire).cbz
+        64718 #22 2003 24pp · 64719 #23 2003 22pp · 64720 #24 2003 24pp · 64721 #25 2003 23pp · 64722 #26 2003 24pp · 64723 #27 2003 23pp · 64724 #28 2003 24pp · 64725 #29 2003 24pp
+        64726 #30 2003 24pp · 64727 #31 2003 24pp · 64728 #32 2004 24pp · 64729 #33 2004 23pp · 64730 #34 2004 24pp · 64731 #35 2004 24pp · 64732 #36 2004 24pp · 64733 #37 2004 24pp
+        64734 #38 2004 24pp · 64735 #39 2004 24pp · 64736 #40 2004 24pp · 64737 #41 2004 24pp · 64738 #42 2004 24pp · 64739 #43 2004 24pp · 64740 #44 2005 24pp · 64741 #45 2005 24pp
+        64742 #46 2005 23pp · 64743 #47 2005 23pp · 64744 #48 2005 24pp · 64745 #49 2005 24pp · 64746 #50 2005 32pp · 64747 #51 2005 23pp · 64748 #52 2005 24pp · 64749 #53 2005 22pp
+        64750 #54 2005 24pp · 64751 #55 2005 23pp · 64752 #56 2006 24pp · 64753 #57 2006 23pp · 64754 #58 2006 24pp · 64755 #59 2006 23pp · 64756 #60 2006 24pp · 64757 #61 2006 24pp
+        64758 #62 2006 24pp · 64759 #63 2006 24pp · 64760 #64 2006 23pp · 64761 #65 2006 24pp · 64762 #66 2006 24pp · 64763 #67 2006 24pp · 64764 #68 2007 24pp · 64765 #69 2007 24pp
+        64766 #70 2007 24pp · 64767 #71 2007 24pp · 64768 #72 2007 24pp · 64769 #73 2007 24pp · 64770 #74 2007 24pp · 64771 #75 2007 32pp
+   G21 "Green Arrow" in DC\_Green Arrow\03 Green Arrow v3 (2001)\Trades — 3 file(s), 3 COL, pp 72-145; cv per-file 4003x2, 91284x1; gcd per-file 25676x2, 103085x1; key 'Green Arrow v3 (2001)'
+      [64772] COL Green Arrow Vol. 01-02 - Green Arrow by Kevin Smith (2016) (digital) (Son of Ultron-Empire).cbr (72pp)
+      [64773] COL Green Arrow Vol. 03 - The Archer's Quest - Deluxe Edition (2015) (digital) (Son of Ultron-Empire).cbr (92pp)
+         own record cv 4003 / gcd s25676 "Green Arrow" (issue 354848) COLLECTS: gcd=25675 Green Arrow: The Archer's Quest (2003) (unnumbered) · gcd=9846 Green Arrow (2001) #16-21  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [64774] COL Green Arrow Vol. 04 - Straight Shooter (2004) (Digital TPB) (Zone-Empire).cbr (145pp)
+         own record cv 4003 / gcd s25676 "Green Arrow" (issue 354861) COLLECTS: gcd=9846 Green Arrow (2001) #26-31 · gcd=10317 Green Arrow Secret Files & Origins (2002) #1  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+   G22 "Green Arrow and Black Canary" in DC\_Green Arrow\04 Green Arrow-Black Canary v1 (2007) — 2 file(s), numbers 31-32, pp 22-22; cv per-file 4003x2; gcd per-file 44347x2; key 'Green Arrow (1988)'
+      [64805] Green Arrow and Black Canary 031 (2010) (two covers) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (22pp)
+      [64806] Green Arrow and Black Canary 032 (2010) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (22pp)
+   G23 "Green Arrow" in DC\_Green Arrow\05 Green Arrow v4 (2010) — 1 file(s), 1 COL, pp 171-171; cv per-file 4003x1; gcd per-file 76474x1; key 'Green Arrow (1988)'
+      [64807] COL Green Arrow Vol. 01 - Into the Woods (2011) (digital) (Son of Ultron-Empire).cbr (171pp)
+         own record cv 4003 / gcd s76474 "Green Arrow" (issue 1599820) COLLECTS: gcd=60831 Green Arrow (2011) #41-47 · gcd=88147 Convergence Speed Force (2015) #2  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+   G24 "Green Arrow" in DC\_Green Lantern\10 Green Lantern v7 (2023) — 1 file(s), 1 COL, pp 125-125; cv per-file 4003x1; gcd per-file 209566x1; key 'Green Arrow (1988)'
+      [64885] COL Green Arrow Vol. 02 - Family First (2024) (digital) (Son of Ultron-Empire).cbr (125pp)
+         own record cv 4003 / gcd s209566 "Green Arrow" (issue 2660411) COLLECTS: gcd=199330 Green Arrow (2023) #7-12
+
+== S1979 Batman - No Man's Land  [split]  6 files / 6 collections  decided in R-103 (R)
+   decided: R 1979 | signal b (per-file CV 44947 on 1/6) exposes a wrong stored link and a co-equal line: the four "Batman - No Man's Land Vol. 01-04 (2011-2012)" (540/506/471/542pp) are the 2011-2012 edition CV 44947 (DC 2011, 4, issues 309367/348789/348790/371496) = GCD 92620 (2011-2012, 4, rows 1461268-1461271) — NOT the stored CV 19706, the 1999 five-book edition — and the two "Road to No Man's Land Vol. 01-02 (2015-2016)" are another collected line with its own record, CV 85081 (DC 2015, 2) = GCD 92866 (2015-2016, 2, rows 1466448 / 1599806); two whole books of a different line are co-equal, not residue
+   F 1979 split-needed | items 62761, 62762 ("COL 01/02 Batman - Road to No Man's Land Vol. 01-02") -> "Batman: Road to No Man's Land (2015)" run cv=85081 gcd=92866 (who-stores cv=85081: per-file only); the four No Man's Land volumes stay as cv=44947 gcd=92620
+   F 1979 wrong-cv-link | stored CV 19706 "Batman: No Man's Land" (1999, 5 — Book One … Five) is the first edition; our 2011-2012 four-volume edition is CV 44947, and X-008's I lines citing 19706 issues (118196, 131428, 131446) are corrected below
+   F 1979 needs-fetch cv=85081 | CV 85081 "Batman: Road To No Man's Land" is named from the rip only
+   N 1979 cv=44947 gcd=92620 — the S line for the kept four-volume edition once Road to No Man's Land moves (0.95 then: both legs 4 = our Vol. 01-04, page counts within 12pp)
+   nearby:
+   nearby: S5409 "Detective Comics" 912f [shares gcd=87 (collected by item 62761) — S cv=18058 gcd=87 (R-101 0.9)] keys: "Detective Comics" | "Detective Comics (1937)" | "Detective Comics v1 (1937)" | "aftermath" (+1 more: lookup.py --shelf 5409)
+   nearby: S95385 "Batman: Legends of the Dark Knight" 215f [shares gcd=4378 (collected by item 62764) — S cv=4720 gcd=4378 (C-012 0.95)] keys: "Batman - Legends of the Dark Knight v1 (1989)"
+   nearby: S99532 "Robin" 205f [shares gcd=4656 (collected by item 62765) — S cv=4975 gcd=4656 (C-016 0.95)] keys: "Robin" | "Robin The Resurrection of Ra s Al Ghul part" | "Robin v4 (1993)"
+   nearby: S65356 "Nightwing" 116f [shares gcd=5516 (collected by item 62764) — S cv=5755 gcd=5516 (R-044 0.9)] keys: "Nightwing (1996)" | "Nightwing The Resurrection of Ra s Al Ghul part" | "Nightwing v2 (1996)"
+   nearby: S2256 "Batman: Shadow of the Bat" 58f [shares gcd=4382 (collected by item 62761) — S cv=4724 gcd=4382 (R-103 0.9)] keys: "Batman: Shadow of the Bat"
+   nearby: S18066 "The Batman Chronicles" 22f [shares gcd=7095 (collected by item 62761) — S cv=6598 gcd=7095 (C-012 0.95)] keys: "Batman Chronicles" | "The Batman Chronicles"
+   nearby: S2248 "Batman: No Man's Land Secret Files" 1f [shares gcd=14767 (collected by item 62762) — S cv=33363 gcd=14767 (A-010 0.95)] keys: "Batman: No Man's Land: Secret Files"
+   keys now: "Batman - No Man's Land" x6
+   groups (title x folder): 2
+   G1 "Batman - No Man's Land" in DC\_Batman\_Trades, and Graphic Novels\Batman - No Man's Land (1999) — 4 file(s), 4 COL, pp 471-542; cv per-file 44947x4; gcd per-file 92620x4; key "Batman - No Man's Land"
+      [62763] COL 03 Batman - No Man's Land Vol. 01 (2011, 2nd edition) (Digital) (Zone-Empire).cbr (540pp)
+         own record cv 44947 / gcd s92620 "Batman: No Man's Land" (issue 1461268) COLLECTS: gcd=13575 Azrael: Agent of the Bat (1998) #51-55 · gcd=87 Detective Comics (1937) #730-733 · gcd=4382 Batman: Shadow of the Bat (1992) #83-86 · gcd=141 Batman (1940) #563-566
+      [62764] COL 04 Batman - No Man's Land Vol. 02 (2012) (Digital-Empire).cbr (506pp)
+         own record cv 44947 / gcd s92620 "Batman: No Man's Land" (issue 1461269) COLLECTS: gcd=14764 Batman: No Man's Land Gallery (1999) #1 · gcd=4378 Batman: Legends of the Dark Knight (1992) #119-121 · gcd=4634 Catwoman (1993) #72-74 · gcd=5516 Nightwing (1996) #35-37
+      [62765] COL 05 Batman - No Man's Land Vol. 03 (2012) (Digital-Empire).cbr (471pp)
+         own record cv 44947 / gcd s92620 "Batman: No Man's Land" (issue 1461270) COLLECTS: gcd=14767 Batman: No Man's Land Secret Files (1999) #1 · gcd=4656 Robin (1993) #68-72 · gcd=4382 Batman: Shadow of the Bat (1992) #89-92 · gcd=4378 Batman: Legends of the Dark Knight (1992) #120, #122-124
+      [62766] COL 06 Batman - No Man's Land Vol. 04 (2012) (Digital-Empire).cbr (542pp)
+         own record cv 44947 / gcd s92620 "Batman: No Man's Land" (issue 1461271) COLLECTS: gcd=141 Batman (1940) #572-574 · gcd=13575 Azrael: Agent of the Bat (1998) #59-61 · gcd=4634 Catwoman (1993) #75-77 · gcd=87 Detective Comics (1937) #739-741
+   G2 "Batman - Road to No Man's Land" in DC\_Batman\_Trades, and Graphic Novels\Batman - No Man's Land (1999) — 2 file(s), 2 COL, pp 388-417; cv per-file 85081x2; gcd per-file 92866x2; key "Batman - No Man's Land"
+      [62761] COL 01 Batman - Road to No Man's Land Vol. 01 (2015) (Digital-Empire).cbr (417pp)
+         own record cv 85081 / gcd s92866 "Batman: Road to No Man's Land" (issue 1466448) COLLECTS: gcd=4382 Batman: Shadow of the Bat (1992) #75-79 · gcd=141 Batman (1940) #555-559 · gcd=87 Detective Comics (1937) #722, #724-726 · gcd=7095 The Batman Chronicles (1995) #14
+      [62762] COL 02 Batman - Road to No Man's Land Vol. 02 (2016) (Digital-HD) (Shadowcat-Empire).cbz (388pp)
+         own record cv 85081 / gcd s92866 "Batman: Road to No Man's Land" (issue 1599806) COLLECTS: gcd=14767 Batman: No Man's Land Secret Files (1999) #1 · gcd=13575 Azrael: Agent of the Bat (1998) #47-50 · gcd=141 Batman (1940) #560-562 · gcd=87 Detective Comics (1937) #727-729
+
+== S4631 DC vs. Vampires: World War V  [split]  23 files / 3 collections  decided in R-103 (R)
+   decided: R 4631 | signal b (per-file CV 139800, the 2021 mini, on 21/23) is the title stamp, but signal e shows four comics on this shelf: the dominant DC vs. Vampires: World War V #1-6 + 12 variant covers = CV 159245 (DC 2024, 12) = GCD 214135 (2024-2025, 12); the two "DC vs. Vampires Vol. 01-02" trades collect the 2021 mini #1-6 / #7-12 (GCD roll-ups on s177225) = CV 139800 (DC 2021, 12) = GCD 177225 — two whole trades of a different run, co-equal; the two "All-Out War Part 01-02" books (145/142pp) = the 2022 mini CV 144085 (6) = GCD 187126 (6), collected as CV 154671 / GCD 201858; and the Hunters one-shot (CV 143107 / GCD 185305)
+   F 4631 split-needed | items 64208, 64209 -> "DC vs. Vampires (2021)" run cv=139800 gcd=177225 (who-stores cv=139800: per-file only); items 64206, 64207 -> "DC vs. Vampires: All-Out War (2022)" run cv=144085 gcd=187126 (no shelf); item 65972 -> "DC vs. Vampires: Hunters (2022)" run cv=143107 gcd=185305; the World War V issues and covers stay as cv=159245 gcd=214135
+   N 4631 cv=159245 gcd=214135 — the S line for the kept World War V once the others move (0.95 then: two legs, 12, our #1-6 + covers)
+   N 4631 flag #220 label-ambiguous (item 64194): the 1pp variant covers and 38-39pp World War V issues are singles, not collections
+   nearby: S96227 "DC vs. Vampires: Killers" 1f [title+1 — S cv=143848 gcd=186445 (B-011 0.95)] keys: "DC vs. Vampires - Killers v1 (2022)"
+   keys now: "DC Vs Vampires World War V" x7 · "DC vs Vampires World War V" x6 · "Dc Vs Vampires World War V" x5 · "DC vs. Vampires" x2 · "DC vs. Vampires - All-Out War Part" x1 · "DC vs. Vampires: All-Out War" x1 · "DC vs. Vampires - Hunters" x1
+   groups (title x folder): 8
+   G1 "DC vs. Vampires" in DC\_DC vs. Vampires v1 (2021) — 2 file(s), 2 COL, pp 158-161; cv per-file 139800x2; gcd per-file 189801x2; key 'DC vs. Vampires'
+      [64208] COL DC vs. Vampires Vol. 01 (2022) (digital) (Son of Ultron-Empire).cbr (158pp)
+         own record cv 139800 / gcd s189801 "DC vs. Vampires" (issue 2435293) COLLECTS: gcd=177225 DC vs. Vampires (2021) #1-6
+      [64209] COL DC vs. Vampires Vol. 02 (2023) (digital) (Son of Ultron-Empire).cbr (161pp)
+         own record cv 139800 / gcd s189801 "DC vs. Vampires" (issue 2514870) COLLECTS: gcd=177225 DC vs. Vampires (2021) #7-12
+   G2 "DC vs Vampires - World War V" in DC\_DC vs. Vampires v1 (2021)\DC vs Vampires - World War V (2024) — 5 file(s), numbers 1-5, pp 38-39; cv per-file 139800x5; gcd per-file 214135x5; key 'DC Vs Vampires World War V'
+      e.g. DC vs Vampires - World War V 001 (2024) (digital) (Son of Ultron-Empire).cbr
+        64188 #1 2024 38pp · 64189 #2 2024 39pp · 64190 #3 2024 39pp · 64191 #4 2025 39pp · 64192 #5 2025 39pp
+   G3 "DC vs Vampires World War V" in DC\_DC vs. Vampires v1 (2021)\DC vs Vampires - World War V (2024) — 1 file(s), numbers 6, pp 38-38; cv per-file 139800x1; gcd per-file 214135x1; key 'DC vs Vampires World War V'
+      [64193] DC vs Vampires World War V 006 (2025) (Webrip) (The Last Kryptonian-DCP).cbr (38pp)
+   G4 "DC Vs Vampires World War V" in DC\_DC vs. Vampires v1 (2021)\DC vs Vampires - World War V (2024)\Variant Covers — 2 file(s), numbers 3, pp 1-1; cv per-file 139800x2; gcd per-file 214135x2; key 'DC Vs Vampires World War V'
+      [64202] DC Vs Vampires World War V 003 (2024) (Daniel Bayliss Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+      [64203] DC Vs Vampires World War V 003 (2024) (Kendrick Kunkka Lim Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   G5 "DC vs Vampires World War V" in DC\_DC vs. Vampires v1 (2021)\DC vs Vampires - World War V (2024)\Variant Covers — 5 file(s), numbers 1, pp 1-1; cv per-file 139800x5; gcd per-file 214135x5; key 'DC vs Vampires World War V'
+      e.g. DC vs Vampires World War V 001 (2024) (1-in-25 Riley Rossmo Variant) (Digital) (MikeNY76-Empire).cbz
+        64194 #1 2024 1pp · 64195 #1 2024 1pp · 64196 #1 2024 1pp · 64197 #1 2024 1pp · 64198 #1 2024 1pp
+   G6 "Dc Vs Vampires World War V" in DC\_DC vs. Vampires v1 (2021)\DC vs Vampires - World War V (2024)\Variant Covers — 5 file(s), numbers 2, 4, pp 1-1; cv per-file 139800x5; gcd per-file 214135x5; key 'Dc Vs Vampires World War V'
+      e.g. Dc Vs Vampires World War V 002 (2024) (1-in-25 Daniele Di Nicuolo Variant) (Digital) (MikeNY76-Empire).cbz
+        64199 #2 2024 1pp · 64200 #2 2024 1pp · 64201 #2 2024 1pp · 64204 #4 2024 1pp · 64205 #4 2024 1pp
+   G7 "DC vs. Vampires - All-Out War Part" in DC\_DC vs. Vampires v1 (2021)\DC vs. Vampires - All-Out War (2022) — 2 file(s), 1 COL, pp 142-145; cv per-file 139800x2; gcd per-file 214135x1; key 'DC vs. Vampires - All-Out War Part' | 'DC vs. Vampires: All-Out War'
+      [64206] COL DC vs. Vampires - All-Out War Part 01 (2023) (digital) (Son of Ultron-Empire).cbr (145pp)  key="DC vs. Vampires - All-Out War Part"
+      [64207] DC vs. Vampires - All-Out War Part 02 (2023) (digital) (Son of Ultron-Empire).cbr (142pp)  key="DC vs. Vampires: All-Out War"
+   G8 "DC vs. Vampires - Hunters" in DC\_DC vs. Vampires v1 (2021)\DC vs. Vampires - Hunters (2022) — 1 file(s), numbers 1, pp 27-27; cv per-file 139800x1; gcd per-file 185305x1; key 'DC vs. Vampires - Hunters'
+      [65972] DC vs. Vampires - Hunters 001 (2022) (Digital) (Zone-Empire).cbr (27pp)
+
+== S4684 DCeased: War of the Undead Gods  [split]  10 files / 2 collections  decided in R-103 (R)
+   decided: R 4684 | signal b (per-file CV 118648 on 10/10) is the title stamp, and the shelf holds two runs: the dominant DCeased: War of the Undead Gods 01-08 (of 08) = CV 144434 (DC 2022, 8) = GCD 187858 (2022-2023, 8), and two whole books of the 2019 DCeased mini — the 227pp trade and the 290pp Deluxe Edition, both collecting DCeased #1-6 + A Good Day to Die per GCD rows 2039470 / 2212015 = CV 118648 (DC 2019, 6) = GCD 144592 (6); two trades of a different run with its own record are co-equal (RESIDUE ruling), and no shelf holds that run
+   F 4684 split-needed | items 64213, 65974 ("COL DCeased (2019)", "COL DCeased - The Deluxe Edition (2023)") -> "DCeased (2019)" run cv=118648 gcd=144592 (who-stores cv=118648: per-file only); the eight War of the Undead Gods issues stay as cv=144434 gcd=187858
+   N 64223 cv=796 gcd=141 — the S line for the kept 1940 run once the four runs move (0.9: the Batman Special 001 (1984) rips, the 80-Page Giant 2011 and the two multi-run Bruce Wayne Murderer/Fugitive collections are residue that is other comics)
+   N 64223 flag #168 label-ambiguous (item 61078): "Batman 501 (1993) (digital-TPB)" is a 24pp single issue of the 1940 run; the "TPB" in the ripper tag is what read as a collection
+   N 4684 cv=144434 gcd=187858 — the S line for the kept War of the Undead Gods once DCeased moves (0.95 then: two legs 8 = "01-08 (of 08)")
+   nearby: S64223 "Batman" 845f [shares stored cv=796 (N line)] keys: "A Robins Tale" | "All they do is watch us kill part" | "As the Crow Flies part" | "Batman (1940)" (+5 more: lookup.py --shelf 64223)
+   keys now: "DCeased - War of the Undead Gods" x8 · "DCeased" x2
+   groups (title x folder): 3
+   G1 "DCeased (2019) (digital) (Son of Ultron-Empire)" in DC\_DCeased (2019) — 1 file(s), 1 COL, pp 227-227; cv per-file 118648x1; gcd per-file 152884x1; key 'DCeased'
+      [64213] COL DCeased (2019) (digital) (Son of Ultron-Empire).cbr (227pp)
+         own record cv 118648 / gcd s152884 "DCeased" (issue 2039470) COLLECTS: gcd=144592 DCeased (2019) #1-6 · gcd=150035 DCeased: A Good Day to Die (2019) #1
+   G2 "DCeased - War of the Undead Gods" in DC\_DCeased (2019)\DCeased - War of the Undead Gods (2022) — 8 file(s), numbers 1-8, pp 27-38; cv per-file 118648x8; gcd per-file 187858x8; key 'DCeased - War of the Undead Gods'
+      e.g. DCeased - War of the Undead Gods 01 (of 08) (2022) (Digital) (Zone-Empire).cbr
+        64217 #1 2022 30pp · 64218 #2 2022 33pp · 64219 #3 2022 27pp · 64220 #4 2023 27pp · 64221 #5 2023 28pp · 64222 #6 2023 27pp · 64223 #7 2023 27pp · 64224 #8 2023 38pp
+   G3 "DCeased - The Deluxe Edition (2023) (digital) (Son of Ultron-Empire)" in DC\_DCeased (2019)\_Deluxe Edition — 1 file(s), 1 COL, pp 290-290; cv per-file 118648x1; gcd per-file 171162x1; key 'DCeased'
+      [65974] COL DCeased - The Deluxe Edition (2023) (digital) (Son of Ultron-Empire).cbr (290pp)
+         own record cv 118648 / gcd s171162 "DCeased" (issue 2212015) COLLECTS: gcd=144592 DCeased (2019) #1-6 · gcd=150035 DCeased: A Good Day to Die (2019) #1

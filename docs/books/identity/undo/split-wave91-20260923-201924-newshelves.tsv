@@ -1,0 +1,37 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S103991	House of Secrets: Facade (2001)	run={"cv": 20358, "gcd": 17784}	P-036.jsonl	new	pair=9027
+S66031	The Outsiders (2009)	run=-	P-036.jsonl	new	pair=58099
+S95394	Batman v2 (2011)	run=-	P-036.jsonl	new	pair=64223
+S103666	Batman Annual v2 (2012)	run=-	P-036.jsonl	new	pair=64223
+S95396	Batman v3 (2016)	run=-	P-036.jsonl	new	pair=64223
+S103665	Batman Annual v1 (1961)	run=-	P-036.jsonl	new	pair=64223
+S66519	Absolute Batman	run=-	P-036.jsonl	new	pair=64223
+S95488	Birds of Prey v3 (2011)	run=-	P-036.jsonl	new	pair=2613
+S95487	Birds of Prey v2 (2010)	run={"cv": 33087, "gcd": 47799}	P-036.jsonl	new	pair=2613
+S2607	Birds of Prey - Black Canary-Batgirl	run=-	P-036.jsonl	new	pair=2613
+S96003	Catwoman v3 (2002)	run=-	P-036.jsonl	new	pair=64393
+S96005	Catwoman v5 (2018)	run=-	P-036.jsonl	new	pair=64393
+S103987	Doom Patrol v6 (2016)	run={"cv": 94114, "gcd": 106334}	P-036.jsonl	new	pair=5755
+S64605	Doom Patrol v5 (2009)	run=-	P-036.jsonl	new	pair=5755
+S97347	Green Arrow v2 (1988)	run=-	P-036.jsonl	new	pair=64817
+S97349	Green Arrow v4 (2010)	run={"cv": 33909, "gcd": 50143}	P-036.jsonl	new	pair=64817
+S7891	Green Arrow and Black Canary	run=-	P-036.jsonl	new	pair=64817
+S97352	Green Arrow v7 (2023)	run=-	P-036.jsonl	new	pair=64817
+S103977	Batman: Road to No Man's Land (2015)	run={"cv": 85081, "gcd": 92866}	P-036.jsonl	new	pair=1979
+S103982	DC vs. Vampires (2021)	run={"cv": 139800, "gcd": 177225}	P-036.jsonl	new	pair=4631
+S103983	DC vs. Vampires: All-Out War (2022)	run={"cv": 144085, "gcd": 187126}	P-036.jsonl	new	pair=4631
+S103984	DC vs. Vampires: Hunters (2022)	run={"cv": 143107, "gcd": 185305}	P-036.jsonl	new	pair=4631
+S103985	DCeased (2019)	run={"cv": 118648, "gcd": 144592}	P-036.jsonl	new	pair=4684
+S9027	moved out -> S103991 "House of Secrets: Facade (2001)"	run=-	P-036.jsonl	kept	pair=9027	moved_cv=20358
+S58099	moved out -> S66031 "The Outsiders (2009)"	run=-	P-036.jsonl	kept	pair=58099
+S64223	moved out -> S95394 "Batman v2 (2011)"; S103666 "Batman Annual v2 (2012)"; S95396 "Batman v3 (2016)"; S103665 "Batman Annual v1 (1961)"; S66519 "Absolute Batman"	run=-	P-036.jsonl	kept	pair=64223
+S2613	moved out -> S95488 "Birds of Prey v3 (2011)"; S95487 "Birds of Prey v2 (2010)"; S2607 "Birds of Prey - Black Canary-Batgirl"	run=-	P-036.jsonl	kept	pair=2613	moved_cv=33087
+S64393	moved out -> S96003 "Catwoman v3 (2002)"; S96005 "Catwoman v5 (2018)"	run=-	P-036.jsonl	kept	pair=64393
+S5755	moved out -> S103987 "Doom Patrol v6 (2016)"; S64605 "Doom Patrol v5 (2009)"	run=-	P-036.jsonl	kept	pair=5755	moved_cv=94114
+S64817	moved out -> S97347 "Green Arrow v2 (1988)"; S97349 "Green Arrow v4 (2010)"; S7891 "Green Arrow and Black Canary"; S97352 "Green Arrow v7 (2023)"	run=-	P-036.jsonl	kept	pair=64817	moved_cv=33909
+S1979	moved out -> S103977 "Batman: Road to No Man's Land (2015)"	run=-	P-036.jsonl	kept	pair=1979	moved_cv=85081
+S4631	moved out -> S103982 "DC vs. Vampires (2021)"; S103983 "DC vs. Vampires: All-Out War (2022)"; S103984 "DC vs. Vampires: Hunters (2022)"	run=-	P-036.jsonl	kept	pair=4631	moved_cv=139800,144085,143107
+S4684	moved out -> S103985 "DCeased (2019)"	run=-	P-036.jsonl	kept	pair=4684	moved_cv=118648
