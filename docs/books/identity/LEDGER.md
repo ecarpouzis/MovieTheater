@@ -1855,3 +1855,14 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   volume was running in 1998. DC Deluxe Editions: GCD keeps the earlier TPB beside the Deluxe (DCeased 2021 236pp vs
   2023) — pick by page count. Label-ambiguous ContainmentFlags do NOT gate an S and cannot take `stale-flag=`; answer
   them on an N line (R-106).
+
+[L-368] pub:dc sig:split
+- R vs S + split (lead, wave 95): a CO-EQUAL second run on a shelf means no identity can stand until the split — R +
+  split-needed (JL 3000/3001, JLA: Year One). A few MISFILED books that belong to another live run are residue — the
+  shelf keeps its S, plus `F <sid> split-needed | items -> join S<run>` (Batman 2011 holding two 2016 trades). A
+  separate annual series is its own run and takes its own key. DC "#DC Events" "(New 52) Title NNN (2024)
+  (digital-mobile)" re-rips are DUPLICATES, not another run. GCD's New 52 / Rebirth / 2021 trade lines are HC/TPB twins
+  (JL 76777/76126, Nightwing 179196/201017, Harley 88183/88152, Injustice 2 117796/123824); X-batch 0.7 I lines often
+  cited the Panini / Urban / Televisa row. A collected-series id stored as a shelf's GCD leg makes a judged range look
+  impossible (signal c) — point the S at the run. Backup-feature reprint lines get an N, not a C. Digital-first DC series
+  take the print GCD series as their second leg at 0.9 (R-105/R-107).
