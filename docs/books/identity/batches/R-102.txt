@@ -1,0 +1,465 @@
+## Conventions for this batch (32 shown of 114 matched; 364 in LEDGER.md; 10 shelf/shelves: pub:dc ×10 · folder:vn-year ×8 · folder:sequel-subfolder ×5 · folder:events ×4 · kind:golden-age ×2 · folder:bucket ×1 · kind:trade-only ×1 · kind:collected-line ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-212] (10 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-222] (10 shelf/shelves) pub:dc sig:collision
+- Second-rip fragments of shelves already read in earlier batches (Flash Secret Files, Spectre 1992, Teen Titans
+  2003/2016, Wonder Woman 1942/2016, Zatanna 1993, Donna Troy) surface as `--all` collisions — `merge-with` after
+  grepping the partner's name and count.
+[L-237] (10 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+[L-245] (10 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-082] (8 shelf/shelves) pub:dc sig:comicinfo
+- A Glorith-HD rip's ComicInfo `Web` id CAN be a ComicVine ISSUE id of the stored volume (599834, DC 100-Page
+  Spectacular) — Glorith's Web ids are never GCD ids, but check them against the CV rip.
+[L-093] (8 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
+[L-211] (8 shelf/shelves) folder:vn-year pub:dc sig:collision sig:stale-flag
+- An `overlap-in-series` flag on a franchise with many `vN` sibling shelves (Deathstroke, Harley Quinn, Green Lantern,
+  Justice League, JLD, Legion, Lobo) describes the CROSS-SHELF Vol. 01 collision, not conflation on the one shelf —
+  confirmed 14 of 14 in C-013..C-015; the stale-flag note must name the sibling shelf.
+[L-197] (7 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- The per-file matcher's "wrong RELAUNCH" trap: it stamps the LATER same-title volume onto files dated to the earlier
+  era by issue-number coincidence (Wonder Woman 2016, Batman 2016, JLA v2/v3, Firestorm, Hawk and Dove v5, Atari Force
+  v2, Adventure Comics 2010) — the tell is files whose years or numbers predate or exceed the stamped volume's own.
+[L-281] (10 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-191] (9 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-210] (6 shelf/shelves) pub:dc sig:legacy-stamp sig:probe sig:stamp
+- The wrong-relaunch trap is near-universal on any DC title with 3+ relaunches (Green Arrow, Green Lantern, Harley
+  Quinn, Justice League, Legion, Lobo, Martian Manhunter, Doom Patrol): the matcher stamps the oldest legacy volume or
+  the largest/most-recent one across every sibling shelf; `lookup.py` by name + year recovers the true id.
+[L-363] (6 shelf/shelves) pub:dc
+- DC New 52 trade lines on GCD are HC/TPB TWIN series (BTDK 78638/78639, Batwoman 66358/71298); CV holds per-trade
+  count-1 volumes that subtitle probes often miss. The retitle cut shows on GCD only (Fury of Firestorm: The Nuclear
+  Men = 61180 #0-12 + 171997 #13-20 = CV 42987's 21); L.E.G.I.O.N. / R.E.B.E.L.S. are split into year series. A "#DC
+  Events" shelf holding #41-45 of a New 52 title is a FRAGMENT of the run shelf — merge it in. Deathstroke the
+  Terminator 1991 = CV 9645 (#0-60) while GCD splits it 10465 (#1-40) / 15127 The Hunted / 15128 (#48-60); the 1991
+  trades (GCD 88153) collect #1-34 (R-098/R-099).
+[L-124] (8 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-272] (8 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-052] (5 shelf/shelves) pub:dc sig:stamp sig:twin
+- The per-file CV matcher picks the LEGACY volume for every New 52 shelf (Batman 1940, Wonder Woman 1942, Nightwing
+  1996, Catwoman 1993) because it matched by issue number — the stored link on a 2011 shelf that names a 1940
+  volume is `wrong-cv-link`, the 2011 volume is in the rip.
+[L-195] (5 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- Trade SUBTITLES tell two same-title relaunches apart when the per-file matcher cannot (Batman Beyond 2015 = Brave
+  New Worlds / City of Yesterday / Wired for Death; 2016 = Escaping the Grave / Rise of the Demon / The Long Payback).
+[L-214] (5 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp sig:twin
+- The wrong-relaunch / legacy-volume stamp ran at 70-95% of files on Midnighter, Mister Miracle, Robin, Nightwing,
+  Supergirl, Plastic Man and Suicide Squad shelves in C-016 — assume it on any DC relaunch shelf and verify by year.
+[L-242] (5 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-364] (5 shelf/shelves) pub:dc
+- DC (R-101): GCD's notes can disagree with GCD's own REPRINT ROLL-UP (Batgirl 2016 Son of Penguin: notes "#7-12",
+  roll-up #7-11) — the roll-up and the next volume's range decide; the packet flags RANGE CONTRADICTED only against
+  notes, so wrong judged ranges can hide without the flag. DC Vertigo: a complete short mini in a "vN" subfolder of a
+  Golden/Silver Age title's shelf (Witching Hour 1999, Weird War Tales 1997) is a CO-EQUAL run, not residue. "#DC
+  Events" New 52 read-order folders carry whole runs onto the pre-2011 shelf of the same title (Batgirl 2000). A retitle
+  that continues the numbering stays one run (L-212) even when both catalogues and the folders split it.
+[L-011] (4 shelf/shelves) folder:events pub:dc
+- DC event folders: the leading number is a READING-ORDER position, and the same book is filed again under its own
+  title folder — n issues × 2 files is one run.
+[L-015] (4 shelf/shelves) folder:events pub:dc
+- DC `#DC Events` read-order folders hold a SECOND rip of issues that also live on the title's own shelf — the
+  source of nearly every DC ratio 2.00; residue, not a second run. Event umbrellas (GCD "Convergence", 9) get
+  handed to two-issue tie-in shelves — the hull shape.
+[L-040] (4 shelf/shelves) folder:bucket folder:events pub:dc pub:papercutz-nbm pub:scout pub:titan pub:valiant sig:twin
+- NBM / Papercutz album lines and Scout one-shots carry TWIN adjacent GCD rows for one book (120209/120210) —
+  cap at 0.9 and name both. Titan's Doctor Who "Year N" volumes number continuously across a Doctor (a ladder
+  starting at #6 is complete). A publisher's read-order crossover folder (Titan `Lost Dimension`, Valiant
+  `_Chronological Valiant`) = DC's `#DC Events` shape.
+[L-199] (4 shelf/shelves) folder:bucket folder:events pub:dc
+- DC's "#DC Events" chronology folders resolve once the cross-referenced-run pattern is seen: a crossover reprint
+  bucket or a tie-in folder filed adjacent to the main run takes the main run's identity with the tie-ins named.
+[L-030] (10 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-113] (10 shelf/shelves) sig:comicinfo sig:stamp
+- ComicInfo `Volume` holding a 4-digit ComicVine volume id (not a year) is a 1.0 assertion like the 6-digit
+  case (Ka-Zar v2 1974: `Volume 2692` + `Count 20` = CV 2692) and disproves the per-file matcher's pick.
+[L-151] (10 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (10 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-290] (5 shelf/shelves) folder:sequel-subfolder pass:item sig:stamp
+- A spin-off filed in its own subfolder on the parent's shelf gets the PARENT's v01 ids stamped by the per-file
+  matcher (Rent-a-(Really Shy!)-Girlfriend on Rent-A-Girlfriend) — `N no-record` (or the shelf note), never the
+  parent's record; it is a misfiling for the lead.
+[L-198] (3 shelf/shelves) pub:dc
+- ComicVine keeps ONE spanning volume across era-retitled arcs (L.E.G.I.O.N. / R.E.B.E.L.S., Deathstroke "The Hunted",
+  Green Lantern 1960, Detective, Action, All-Star) while GCD names each era its own row — majority GCD era + `N` the
+  rest; no split for that alone.
+[L-016] (8 shelf/shelves) sig:comicinfo
+- Glorith rips' ComicInfo `Web` ids are NOT GCD issue ids in our dump (29 checked: missing or unrelated). Never
+  claim 1.0 from one. A ComicInfo `Volume` holding a 6-digit number IS a ComicVine volume id (Lex and the City =
+  162184) — a genuine 1.0 assertion.
+[L-032] (8 shelf/shelves) sig:comicinfo
+- A Marika-Empire rip's ComicInfo `Web` id IS a ComicVine ISSUE id (21/21 resolve to the stored volume) — the
+  1.0 shape. The ripper decides: Glorith's Web ids are not GCD issue ids. Check one against the rip before
+  claiming 1.0 on a new ripper.
+[L-114] (8 shelf/shelves) sig:comicinfo
+- Marika-Empire and Glorith-HD `Web` ids are ComicVine ISSUE ids of the stored volume (7 of 7 here).
+
++82 more matched entries not shown: L-175, L-051, L-123, L-193, L-206, L-216, L-218, L-220, L-348, L-065, L-099, L-194, L-262, L-330, L-128, L-181, L-336, L-014, L-031, L-055, L-059, L-064, L-085, L-101, L-203, L-205, L-215, L-254, L-255, L-257, L-260, L-299, L-310, L-329, L-337, L-007, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-135, L-157, L-159, L-163, L-164, L-177, L-186, L-204, L-217, L-244, L-246, L-247, L-248, L-251, L-253, L-258, L-264, L-267, L-269, L-273, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-292, L-294, L-309, L-314, L-341, L-346, L-347, L-150 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S94965 Adventure Comics  [tier C] · 8 number(s) x2+, 3 parsed key(s), ratio 1.33  keys: Adventure Comics | Adventure Comics v1 (2010) | Adventure Comics v2 (2009)  years 1938-2011  36 files / 0 collections
+   split run: "Adventure Comics v2 (2009)" run={"cv": 25643, "gcd": 32602} (new shelf from P-034) — seed the S line from these ids, then verify them
+   folders: [13] DC\Adventure Comics\02 Adventure Comics v2 (2009) · [8] DC\Adventure Comics\03 Adventure Comics v1 (2010) · [6] DC\Adventure Comics\01 Adventure Comics v1 (1938) · [4] DC\_Superman\_Completed Series\09 Superman - New Krypton (2009)\06 Superman - Last Stand of New Krypton (2010) · [3] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\144 Blackest Night · [1] DC\Adventure Comics\02 Adventure Comics v2 (2009)\Annuals and Specials · [1] DC\_JSA\_Trades, Minis and One-shots\JSA Returns - All-Star Comics
+   files:   [16321] 30 Adventure Comics 4.cbr (34pp) | [16329] 38 Adventure Comics 5.cbr (31pp) | [16356] 65 Adventure Comics 7.cbr (35pp)
+            Adventure Comics 516 (2010) (digital) (Son of Ultron-Empire).cbr … Adventure Comics 521 (2011) (digital) (Son of Ultron-Empire).cbr  (6 files, pp 30-33)
+            [54050] Adventure Comics 000 (2009) (Minutemen-Resin).cbr (23pp) | [54051] Adventure Comics 001 (2009) (2 covers) (digital) (Glorith-Novus-HD).cbz (31pp)
+            [54052] Adventure Comics 002 (2009) (2 covers) (digital) (Glorith-Novus-HD).cbz (32pp) | [54053] Adventure Comics 003 (2009) (2 covers) (digital) (Glorith-Novus-HD).cbz (31pp)
+            [54054] Adventure Comics 004 (2010) (2 covers) (digital-Empire).cbr (33pp) | [54055] Adventure Comics 005 (2010) (2 covers) (digital-Empire).cbr (30pp)
+            [54056] Adventure Comics 006 (2010) (Digital) (AnHeroGold-Empire).cbz (31pp) | [54057] Adventure Comics 007 (2010) (2 covers) (digital-Empire).cbr (29pp)
+            [54058] Adventure Comics 008 (2010) (2 covers) (Digital-HD) (Shadowcat-Empire).cbz (29pp) | [54059] Adventure Comics 009 (2010) (2 covers) (Digital-HD) (Shadowcat-Empire).cbz (25pp)
+            [54060] Adventure Comics 010 (2010) (2 covers) (Digital-HD) (Shadowcat-Empire).cbz (31pp) | [54061] Adventure Comics 011 (2010) (2 covers) (Digital-HD) (Shadowcat-Empire).cbz (28pp)
+            [54062] Adventure Comics 012 (2010) (2 Covers) (Digital) (Shadowcat-Empire).cbz (32pp)
+            [55985] Adventure Comics Special featuring the Guardian 001 (2009) (2 covers) (Digital-HD) (Shadowcat-Empire).cbz (24pp)
+            Adventure Comics 522 (2011) (Digital) (Shadowcat-Empire).cbz … Adventure Comics 529 (2011) (Digital) (Shadowcat-Empire).cbz  (8 files, pp 18-21)
+            [66652] 02 Adventure Comics, 1999-03-00 (#01) (digital) (Glorith-Novus-HD).cbz (23pp) | [72548] 01 Adventure Comics 008 (2010) (2 covers) (Digital-HD) (Shadowcat-Empire).cbz (29pp)
+            [72553] 06 Adventure Comics 009 (2010) (2 covers) (Digital-HD) (Shadowcat-Empire).cbz (25pp) | [72556] 09 Adventure Comics 010 (2010) (2 covers) (Digital-HD) (Shadowcat-Empire).cbz (31pp)
+            [72560] 14 Adventure Comics 011 (2010) (2 covers) (Digital-HD) (Shadowcat-Empire).cbz (28pp)
+   ours:    ladder 0-12, 516-529; 8 number(s) name more than one file: 1, 4, 5, 7, 8, 9, 10, 11; ComicInfo Series: "Adventure Comics"x15, "Adventure Comics Special featuring the Guardian"x1; ComicInfo Volume: "2009"x3, "1999"x1; ComicInfo Count: "529"x3, "1"x1; ComicInfo Publisher: "DC"x12, "DC Comics"x4
+   CV linked:      vol 25643 "Adventure Comics" 2009 DC Comics 27 issues; cached #0-529 (27); yearΔ 71; ratio 36/27 = 1.33; no judged range
+   CV per-file (v1): vol 3105 "Adventure Comics" 1938 DC Comics 472 on 35/36 files
+   CV local rip:   (= linked) · 28289 "Adventure Comics" 1979 Murray Comics 6 · 25938 "Adventure Comics" 1999 DC Comics 1 issue 153273   (rip lookup)
+   GCD per-file:   series 32602 "Adventure Comics" 2009-2011 DC [was ongoing series] 27 on 15/36 files; methods numx15
+   GCD dump:       98 "Adventure Comics" 1938-1983 DC [] 472 · 107987 "Adventure Comics" [en-au] 1945-? H. E. Hoffman [] 1 · 183730 "Adventure Comics" [en-nz] 1945-1945 [Frank Johnson NZ] [] 1 · 32363 "Adventure Comics" [en-ca] 1948-1948 National Comics Publications of Canada Ltd [] 6 · 15352 "Adventure Comics" [en-ca] 1950-1950 Simcoe Publishing & Distribution [] 5 · 158807 "Adventure Comics" [en-za] 1959-1961 Atlas Publications [] 8   (dump lookup)
+   bridges:        gcd 32602 -> LOCG 100184 "Adventure Comics" support 15
+
+== S94963 Adventure Comics  [tier C] · 281 files  keys: Adventure Comics v1 (1938)  years 1938-1983  281 files / 0 collections
+   split: the KEPT half of the P-034 split — moved out -> S94965 "Adventure Comics v2 (2009)"; re-identify what stayed
+   folders: [281] DC\Adventure Comics\01 Adventure Comics v1 (1938)
+   files:   [53690] Adventure Comics 035 (1939) (c2c) (Superscan+friends).cbz (69pp) | [53691] Adventure Comics 052 (DC) (Jul 1940) (c2c) (Superscan & friends).cbz (68pp)
+            [53692] Adventure Comics 066 (1941) (c2c) (Superscan).cbz (69pp) | [53693] Adventure Comics 081 (1942) (c2c) (Superscan).cbz (68pp)
+            [53694] Adventure Comics 087 (1943) (10 fiche) (MSoG+Superscan).cbz (75pp) | [53695] Adventure Comics 094 (1944) (c2c) (Superscan).cbz (53pp)
+            [53696] Adventure Comics 102 (1946) (c2c) (Superscan).cbz (53pp) | [53697] Adventure Comics 108 (1946) (c2c) (Superscan).cbz (53pp)
+            [53698] Adventure Comics 109 (1946) (c2c) (Superscan).cbz (53pp) | [53699] Adventure Comics 112 (1947) (c2c) (Superscan).cbz (53pp)
+            [53700] Adventure Comics 113 (DC) (Feb 1947) (c2c) (Superscan).cbz (53pp) | [53701] Adventure Comics 115 (DC) (Apr 1947) (c2c) (Superscan).cbz (53pp)
+            [53702] Adventure Comics 118 (1947) (c2c) (BMinor+DaveH).cbz (52pp) | [53703] Adventure Comics 118 (DC) (Jul 1947) (c2c) (Superscan).cbz (53pp)
+            [53704] Adventure Comics 120 (DC) (Sep 1947) (c2c) (Superscan).cbz (53pp)
+            Adventure Comics 124 (1948) (c2c) (Superscan).cbz … Adventure Comics 156 (1950) (c2c) (Superscan).cbz  (11 files, pp 52-53) | [53716] Adventure Comics 165 (1951) (c2c).cbr (52pp)
+            [53717] Adventure Comics 166 (1951) (c2c).cbr (52pp) | [53718] Adventure Comics 167 (1951) (c2c) (ABPC).cbr (52pp) | [53719] Adventure Comics 168 (1951) (c2c) (numpty).cbz (53pp)
+            [53720] Adventure Comics 170 (1951) (c2c).cbr (44pp) | [53721] Adventure Comics 171 (1951) (c2c) (ABPC).cbr (44pp) | [53722] Adventure Comics 172 (1952) (c2c) (numpty).cbz (45pp)
+            [53723] Adventure Comics 173 (1952) (INC) (Ontology).cbr (42pp) | [53724] Adventure Comics 174 (1952) (c2c) (ABPC).cbr (44pp) | [53725] Adventure Comics 175 (1952) (c2c).cbr (44pp)
+            [53726] Adventure Comics 176 (1952) (c2c).cbz (44pp) | [53727] Adventure Comics 177 (1952) (c2c) (numpty).cbz (45pp) | [53728] Adventure Comics 178 (1952) (c2c) (ABPC).cbr (44pp)
+            [53729] Adventure Comics 179 (1952) (c2c) (numpty).cbz (45pp) | [53730] Adventure Comics 180 (1952) (c2c).cbr (44pp) | [53731] Adventure Comics 181 (1952) (INC).cbr (42pp)
+            [53732] Adventure Comics 182 (1952) (c2c) (ABPC).cbr (44pp) | [53733] Adventure Comics 183 (1952) (c2c) (ABPC).cbr (44pp) | [53734] Adventure Comics 184 (1953) (c2c) (numpty).cbz (45pp)
+            [53735] Adventure Comics 185 (1953) (c2c).cbr (44pp) | [53736] Adventure Comics 186 (1953) (c2c).cbr (44pp) | [53737] Adventure Comics 187 (1953) (c2c).cbr (44pp)
+            [53738] Adventure Comics 188 (1953) (c2c) (ABPC).cbr (44pp) | [53739] Adventure Comics 189 (1953) (c2c) (ABPC).cbr (44pp) | [53740] Adventure Comics 190 (1953) (c2c).cbr (44pp)
+            [53741] Adventure Comics 191 (1953) (c2c) (numpty).cbz (45pp) | [53742] Adventure Comics 192 (1953) (c2c).cbr (44pp) | [53743] Adventure Comics 193 (1953) (c2c) (ABPC).cbr (44pp)
+            [53744] Adventure Comics 194 (1953) (c2c) (ABPC).cbr (44pp) | [53745] Adventure Comics 195 (1953) (c2c).cbr (44pp) | [53746] Adventure Comics 196 (1954) (c2c).cbr (44pp)
+            [53747] Adventure Comics 197 (1954) (c2c) (ABPC).cbr (44pp) | [53748] Adventure Comics 198 (1954) (c2c).cbz (44pp) | [53749] Adventure Comics 199 (1954) (INC).cbr (34pp)
+            [53750] Adventure Comics 200 (1954) (c2c) (ABPC).cbr (44pp) | [53751] Adventure Comics 201 (1954) (c2c).cbr (44pp) | [53752] Adventure Comics 202 (1954) (c2c).cbr (44pp)
+            [53753] Adventure Comics 203 (1954) (c2c).cbr (44pp) | [53754] Adventure Comics 204 (1954) (c2c) (Punkrat).cbr (45pp) | [53755] Adventure Comics 205 (1954) (INC).cbr (32pp)
+            [53756] Adventure Comics 206 (1954) (c2c) (Punkrat).cbr (37pp) | Adventure Comics 208 (1955) (c2c).cbr … Adventure Comics 215 (1955) (c2c).cbr  (8 files, pp 36-36)
+            [53765] Adventure Comics 216 (1955) (INC).cbz (35pp) | [53766] Adventure Comics 217 (1955) (c2c).cbz (36pp) | [53767] Adventure Comics 218 (1955) (c2c) (Superscan).cbz (37pp)
+            [53768] Adventure Comics 219 (1955) (c2c).cbr (36pp) | [53769] Adventure Comics 220 (1956) (c2c) (Punkrat).cbr (36pp) | [53770] Adventure Comics 221 (1956) (c2c).cbr (36pp)
+            [53771] Adventure Comics 222 (1956) (c2c).cbr (36pp) | [53772] Adventure Comics 223 (1956) (c2c).cbr (36pp) | [53773] Adventure Comics 224 (1956) (c2c).cbr (35pp)
+            [53774] Adventure Comics 225 (1956) (c2c).cbr (36pp) | [53775] Adventure Comics 226 (1956) (c2c) (Superscan).cbz (37pp) | [53776] Adventure Comics 227 (1956) (c2c).cbr (36pp)
+            [53777] Adventure Comics 228 (1956) (c2c).cbr (36pp) | [53778] Adventure Comics 229 (1956) (c2c).cbr (36pp) | [53779] Adventure Comics 230 (1956) (c2c).cbr (36pp)
+            [53780] Adventure Comics 231 (1956) (c2c) (Superscan).cbz (37pp) | [53781] Adventure Comics 232 (1957) (c2c).cbz (36pp) | [53782] Adventure Comics 233 (1957) (c2c).cbr (36pp)
+            [53783] Adventure Comics 234 (1957) (c2c).cbz (36pp) | [53784] Adventure Comics 235 (1957) (c2c).cbz (36pp) | [53785] Adventure Comics 236 (1957) (c2c).cbr (36pp)
+            [53786] Adventure Comics 237 (1957) (c2c).cbr (36pp) | [53787] Adventure Comics 238 (1957) (c2c).cbr (36pp) | [53788] Adventure Comics 239 (1957) (c2c).cbr (36pp)
+            [53789] Adventure Comics 240 (1957) (c2c) (JM).cbz (36pp) | [53790] Adventure Comics 241 (1957) (c2c).cbr (36pp) | [53791] Adventure Comics 242 (1957) (c2c).cbr (36pp)
+            [53792] Adventure Comics 243 (1957) (c2c).cbr (35pp) | [53793] Adventure Comics 244 (1958) (c2c) (ABPC).cbr (36pp) | [53794] Adventure Comics 245 (1958) (c2c) (ABPC).cbr (36pp)
+            [53795] Adventure Comics 246 (1958) (c2c) (ABPC).cbr (36pp) | [53796] Adventure Comics 247 (1958) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [53797] Adventure Comics 248 (1958) (c2c).cbz (36pp) | [53798] Adventure Comics 249 (1958) (c2c).cbz (36pp) | [53799] Adventure Comics 250 (1958) (c2c) (Superscan).cbz (37pp)
+            [53800] Adventure Comics 251 (1958) (c2c).cbz (36pp) | [53801] Adventure Comics 252 (1958) (c2c).cbz (36pp) | [53802] Adventure Comics 253 (1958) (c2c).cbr (36pp)
+            [53803] Adventure Comics 254 (1958) (c2c) (Superscan).cbz (37pp) | [53804] Adventure Comics 255 (1958) (c2c).cbr (36pp) | [53805] Adventure Comics 256 (1959) (c2c).cbz (36pp)
+            [53806] Adventure Comics 257 (1959) (c2c).cbz (36pp) | [53807] Adventure Comics 258 (1959) (c2c) (Superscan).cbz (37pp) | [53808] Adventure Comics 259 (1959) (c2c).cbz (36pp)
+            [53809] Adventure Comics 260 (1959) (c2c).cbz (36pp) | [53810] Adventure Comics 260 (1959).cbz (36pp) | [53811] Adventure Comics 261 (1959) (c2c).cbz (36pp)
+            [53812] Adventure Comics 261 (1959).cbz (36pp) | [53813] Adventure Comics 262 (1959) (c2c).cbz (36pp) | [53814] Adventure Comics 262 (1959).cbz (36pp)
+            [53815] Adventure Comics 263 (1959) (c2c) (Superscan).cbz (37pp) | [53816] Adventure Comics 264 (1959) (c2c).cbz (36pp) | [53817] Adventure Comics 264 (1959).cbz (36pp)
+            [53818] Adventure Comics 265 (1959) (c2c).cbz (36pp) | [53819] Adventure Comics 265 (1959).cbz (36pp) | [53820] Adventure Comics 266 (1959) (c2c).cbz (36pp)
+            [53821] Adventure Comics 267 (1959) (Digital) (Shadowcat-Empire).cbz (27pp) | [53822] Adventure Comics 268 (1959) (c2c).cbr (36pp) | [53823] Adventure Comics 269 (1960) (c2c).cbr (36pp)
+            [53824] Adventure Comics 270 (1960) (c2c).cbz (36pp) | [53825] Adventure Comics 271 (1960) (c2c).cbz (36pp) | [53826] Adventure Comics 272 (1960) (c2c).cbr (36pp)
+            [53827] Adventure Comics 273 (1960) (c2c).cbz (36pp) | [53828] Adventure Comics 274 (1960) (c2c).cbz (36pp) | [53829] Adventure Comics 275 (1960) (c2c).cbz (36pp)
+            [53830] Adventure Comics 276 (1960) (c2c).cbz (38pp) | [53831] Adventure Comics 277 (1960) (c2c).cbz (36pp) | [53832] Adventure Comics 278 (1960) (Digital) (Shadowcat-Empire).cbz (28pp)
+            [53833] Adventure Comics 279 (1960) (c2c).cbz (36pp) | [53834] Adventure Comics 280 (1961) (c2c).cbr (36pp) | [53835] Adventure Comics 282 (1961) (digital-Empire).cbr (14pp)
+            [53836] Adventure Comics 283 (1961) (partial) (digital-Empire).cbr (15pp)
+            Adventure Comics 284 (1961) (digital-Empire).cbr … Adventure Comics 290 (1961) (digital-Empire).cbr  (7 files, pp 26-27)
+            [53844] Adventure Comics 300 (1962) (Digital) (Shadowcat-Empire).cbz (25pp) | [53845] Adventure Comics 304 (1963) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [53846] Adventure Comics 306 (1963) (Digital) (Shadowcat-Empire).cbz (27pp) | [53847] Adventure Comics 309 (1963) (c2c) (Superscan).cbz (37pp)
+            [53848] Adventure Comics 310 (1963) (Digital) (Shadowcat-Empire).cbz (26pp) | [53849] Adventure Comics 312 (1963) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [53850] Adventure Comics 316 (1964) (Digital) (Shadowcat-Empire).cbz (26pp) | [53851] Adventure Comics 329 (1965) (c2c) (Superscan).cbz (37pp)
+            [53852] Adventure Comics 335 (1965) (c2c) (Superscan).cbz (37pp)
+            Adventure Comics 340 (1966) (Digital) (Shadowcat-Empire).cbz … Adventure Comics 357 (1967) (Digital) (Shadowcat-Empire).cbz  (11 files, pp 23-26)
+            [53864] Adventure Comics 358 (1967) (c2c) (Superscan).cbz (37pp) | [53865] Adventure Comics 360 (1967) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [53866] Adventure Comics 368 (1968) (Digital) (Shadowcat-Empire).cbz (25pp) | [53867] Adventure Comics 369 (1968) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [53868] Adventure Comics 370 (1968) (Digital) (Shadowcat-Empire).cbz (26pp) | [53869] Adventure Comics 374 (1968) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [53870] Adventure Comics 381 (1969) (Digital) (Shadowcat-Empire).cbz (25pp) | [53871] Adventure Comics 382 (1969) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [53872] Adventure Comics 383 (1969) (Digital) (Shadowcat-Empire).cbz (25pp) | [53873] Adventure Comics 384 (1969) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [53874] Adventure Comics 385 (1969) (Digital) (Shadowcat-Empire).cbz (24pp) | [53875] Adventure Comics 386 (1969) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [53876] Adventure Comics 387 (1969) (Digital) (Shadowcat-Empire).cbz (26pp) | [53877] Adventure Comics 388 (1970) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [53878] Adventure Comics 389 (1970) (Digital) (Shadowcat-Empire).cbz (27pp) | [53879] Adventure Comics 390 (1970) (Digital) (Shadowcat-Empire).cbz (59pp)
+            [53880] Adventure Comics 391 (1970) (Digital) (Shadowcat-Empire).cbz (25pp) | [53881] Adventure Comics 392 (1970) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [53882] Adventure Comics 393 (1970) (Digital) (Shadowcat-Empire).cbz (27pp) | [53883] Adventure Comics 394 (1970) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [53884] Adventure Comics 395 (1970) (Digital) (Shadowcat-Empire).cbz (26pp) | [53885] Adventure Comics 396 (1970) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [53886] Adventure Comics 397 (1970) (Digital) (Shadowcat-Empire).cbz (23pp) | [53887] Adventure Comics 398 (1970) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [53888] Adventure Comics 399 (1970) (Digital) (Shadowcat-Empire).cbz (29pp) | [53889] Adventure Comics 400 (1970) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [53890] Adventure Comics 401 (1971) (Digital) (Shadowcat-Empire).cbz (25pp) | [53891] Adventure Comics 402 (1971) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [53892] Adventure Comics 403 (1971) (Digital) (Shadowcat-Empire).cbz (55pp) | [53893] Adventure Comics 404 (1971) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [53894] Adventure Comics 405 (1971) (Digital) (Shadowcat-Empire).cbz (23pp) | [53895] Adventure Comics 406 (1971) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [53896] Adventure Comics 407 (1971) (Digital) (Shadowcat-Empire).cbz (23pp) | [53897] Adventure Comics 408 (1971) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [53898] Adventure Comics 409 (1971) (Digital) (Shadowcat-Empire).cbz (39pp) | [53899] Adventure Comics 410 (1971) (Digital) (Shadowcat-Empire).cbz (39pp)
+            [53900] Adventure Comics 411 (1971) (Digital) (Shadowcat-Empire).cbz (32pp) | [53901] Adventure Comics 412 (1971) (Digital) (Shadowcat-Empire).cbz (39pp)
+            [53902] Adventure Comics 413 (1971) (Digital) (Shadowcat-Empire).cbz (40pp) | [53903] Adventure Comics 414 (1972) (Digital) (Shadowcat-Empire).cbz (40pp)
+            [53904] Adventure Comics 415 (1972) (Digital) (Shadowcat-Empire).cbz (40pp) | [53905] Adventure Comics 416 (1972) (Digital) (Shadowcat-Empire).cbz (95pp)
+            [53906] Adventure Comics 417 (1972) (Digital) (Shadowcat-Empire).cbz (39pp) | [53907] Adventure Comics 418 (1972) (Digital) (Shadowcat-Empire).cbz (40pp)
+            [53908] Adventure Comics 419 (1972) (Digital) (Shadowcat-Empire).cbz (40pp) | [53909] Adventure Comics 420 (1972) (Digital) (Shadowcat-Empire).cbz (39pp)
+            [53910] Adventure Comics 421 (1972) (Digital) (Shadowcat-Empire).cbz (25pp) | [53911] Adventure Comics 422 (1972) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [53912] Adventure Comics 423 (1972) (Digital) (Shadowcat-Empire).cbz (25pp) | [53913] Adventure Comics 424 (1972) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [53914] Adventure Comics 431 (1974) (Digital) (Shadowcat-Empire).cbz (21pp) | [53915] Adventure Comics 433 (1974) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [53916] Adventure Comics 434 (1974) (Digital) (Shadowcat-Empire).cbz (21pp) | [53917] Adventure Comics 438 (1975) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [53918] Adventure Comics 439 (1975) (Digital) (Shadowcat-Empire).cbz (19pp) | [53919] Adventure Comics 440 (1975) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [53920] Adventure Comics 446 (1976) (Digital) (BlackManta-Empire).cbr (13pp) | [53921] Adventure Comics 447 (1976) (Digital) (BlackManta-Empire).cbr (13pp)
+            [53922] Adventure Comics 448 (1976) (Digital) (BlackManta-Empire).cbr (19pp) | [53923] Adventure Comics 449 (1977) (Digital) (BlackManta-Empire).cbr (13pp)
+            [53924] Adventure Comics 450 (1977) (Digital) (BlackManta-Empire).cbr (13pp) | [53925] Adventure Comics 453 (1977) (Digital) (BlackManta-Empire).cbr (8pp)
+            [53926] Adventure Comics 454 (1977) (Digital) (BlackManta-Empire).cbr (8pp) | [53927] Adventure Comics 455 (1977) (Digital) (BlackManta-Empire).cbr (8pp)
+            [54001] Adventure Comics 461 (1979) (Digital-SD) (Shadowcat-Empire).cbz (69pp) | [54002] Adventure Comics 462 (1979) (Digital-SD) (Shadowcat-Empire).cbz (68pp)
+            [54003] Adventure Comics 464 (1979) (Digital-SD) (Shadowcat-Empire).cbz (69pp) | [54004] Adventure Comics 465 (1979) (Digital-SD) (Shadowcat-Empire).cbz (55pp)
+            [54005] Adventure Comics 466 (1979) (Digital-SD) (Shadowcat-Empire).cbz (54pp)
+            Adventure Comics 467 (1980) (Digital) (Shadowcat-Empire).cbz … Adventure Comics 478 (1980) (Digital) (Shadowcat-Empire).cbz  (12 files, pp 18-26)
+            Adventure Comics 479-Dial H for Hero 3 stories (03-1981).cbr … Adventure Comics 484-Dial H for Hero 2 stories (08-1981).cbr  (6 files, pp 25-29)
+            [54024] Adventure Comics 485-Dial H for Hero ctc (09-1981).cbr (36pp) | [54025] Adventure Comics 486-Dial H for Hero 3 stories (10-1981).cbr (27pp)
+            [54026] Adventure Comics 487-Dial H for Hero 2 stories (11-1981).cbr (30pp) | [54027] Adventure Comics 488-Dial H for Hero 2 stories (alt) (12-1981).cbr (31pp)
+            [54028] Adventure Comics 488-Dial H for Hero 2 stories ctc (12-1981).cbr (41pp) | [54029] Adventure Comics 489-Dial H for Hero 2 stories ctc (11-1982).cbr (36pp)
+            [54030] Adventure Comics 490-Dial H for Hero ctc (02-1982).cbr (36pp) | [54031] Adventure Comics 491-Shazam, Superboy, Aquaman, Black Canary, Sandman, Spectre ctc (09-1982).cbr (99pp)
+            [54032] Adventure Comics 492 (remix)(10-1982).cbr (99pp) | [54033] Adventure Comics 493 (remix)(11-1982).cbr (100pp)
+            [54034] Adventure Comics 494-Challengers, Legion, Aquaman, Shazam, Superman, Spectre ctc (12-1982).cbr (100pp)
+            [54035] Adventure Comics 495-Challengers, Superboy, Aquaman, Shazam, Sandman, Spectre ctc (01-1983).cbr (100pp) | [54036] Adventure Comics 496 (remix)(02-1983).cbr (101pp)
+            [54037] Adventure Comics 497 (remix)(03-1983).cbr (100pp) | [54038] Adventure Comics 498 (remix)(04-1983).cbr (99pp)
+            [54039] Adventure Comics 499-Plastic Man, Legion, Aquaman, Shazam, Sandman, Spectre ctc (05-1983).cbr (100pp)
+            [54040] Adventure Comics 500-Legion of Super-Heroes 11 stories ctc (06-1983).cbr (148pp) | [54041] Adventure Comics 501 (remix)(07-1983).cbr (100pp)
+            [54042] Adventure Comics 502-Plastic Man, Legion, Aquaman, Shazam, Sandman, Spectre ctc (08-1983).cbr (100pp)
+            [54043] Adventure Comics 503-Legion, Plastic Man, Aquaman, Zatanna, Guardian ctc (09-1983).cbr (100pp)
+   ours:    ladder 35, 52, 66, 81, 87, 94, 102, 108-109, 112-113, 115, 118, 120, 124, 130-133, 137-138, 140-141, 152, 156, 165-168, 170-206, 208-280, 282-290, 300, 304, 306, 309-310, 312, 316, 329, 335, 340-341, 346-349, 352-354, 356-358, 360, 368-370, 374, 381-424, 431, 433-434, 438-440, 446-450, 453-455, 461-462, 464-503; 7 number(s) name more than one file: 118, 260, 261, 262, 264, 265, 488; ComicInfo Series: "Adventure Comics"x6; ComicInfo Volume: "1935"x6; ComicInfo Publisher: "DC"x6
+   CV linked:      vol 3105 "Adventure Comics" 1938 DC Comics 472 issues; cached #32-503 (472); yearΔ 0; ratio 281/472 = 0.60; no judged range; v1 per-file: same volume on 281/281 files
+   CV local rip:   (= linked) · 28289 "Adventure Comics" 1979 Murray Comics 6 · 25938 "Adventure Comics" 1999 DC Comics 1 issue 153273 · 25643 "Adventure Comics" 2009 DC Comics 27   (rip lookup)
+   GCD per-file:   series 98 "Adventure Comics" 1938-1983 DC [was ongoing series] 472 on 243/281 files · series 150355 "Adventure Comics" [en-ph] 1976-1978 National Book Store [was ongoing series] 12 on 7/281 files · series 32363 "Adventure Comics" [en-ca] 1948-1948 National Comics Publications of Canada Ltd [] 6 on 1/281 files; methods numx251
+   GCD dump:       (= per-file) · 107987 "Adventure Comics" [en-au] 1945-? H. E. Hoffman [] 1 · 183730 "Adventure Comics" [en-nz] 1945-1945 [Frank Johnson NZ] [] 1 · 15352 "Adventure Comics" [en-ca] 1950-1950 Simcoe Publishing & Distribution [] 5 · 158807 "Adventure Comics" [en-za] 1959-1961 Atlas Publications [] 8   (dump lookup)
+   bridges:        gcd 98 -> LOCG 111684 "Adventure Comics" support 253 · gcd 150355 -> LOCG 111684 "Adventure Comics" support 7 · gcd 32363 -> LOCG 111684 "Adventure Comics" support 1
+
+== S9027 House of Secrets  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: House of Secrets (1996) | House of Secrets - Facade  years 1959-2001  54 files / 0 collections
+   split run: "House of Secrets (1996)" run={"cv": 5751, "gcd": 5511} (new shelf from P-034) — seed the S line from these ids, then verify them
+   flags: #282 label-ambiguous [Pending] item 112772 — House of Secrets v3 Facade 001-002 are single issues, not collections
+   folders: [27] DC\House of Secrets\House of Secrets v2 (1996) · [25] Vertigo\House of Secrets v2 (1996) · [2] Vertigo\House of Secrets v3 (2001)
+   files:   House of Secrets 01.cbz … House of Secrets 25.cbz  (25 files, pp 23-27) | [55840] House_of_Secrets_-_Facade_#1.cbr (51pp) | [55841] House_of_Secrets_-_Facade_#2.cbr (52pp)
+            [112747] House of Secrets 001 (1996) (Digital-Empire).cbr (25pp)
+            House of Secrets 002 (1996) (Digital) (Shadowcat-Empire).cbz … House of Secrets 025 (1998) (Digital) (Shadowcat-Empire).cbz  (24 files, pp 23-27)
+            [112772] House of Secrets v3 Facade 001 [DC] (2001) (Steam-DCP) c2c.cbr (52pp) | [112773] House of Secrets v3 Facade 002 [DC] (2001) (Steam-DCP) c2c.cbr (53pp)
+   ours:    ladder 1-25; 25 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+   CV linked:      vol 5751 "House of Secrets" 1996 DC Comics 25 issues; cached #1-25 (25); yearΔ 37; ratio 54/25 = 2.16; no judged range
+   CV per-file (v1): vol 5751 "House of Secrets" 1996 DC Comics 25 on 42/54 files · vol 1768 "House of Secrets" 1956 DC Comics 80 on 10/54 files · vol 20358 "House of Secrets: Facade" 2001 DC Comics 2 on 2/54 files
+   CV candidates:  (= linked) · 2435 "House of Secrets" 1969 DC Comics 74 s73 · 71820 "DC Silver Age Classics: House of Secrets 92" 1992 DC Comics 1 issue 445896 s69 · 114932 "Facade" 1991 Shinshokan 26 s51 · 38667 "Showcase Presents: The House of Secrets" 2008 DC Comics 2 s25 · 29775 "House of Secrets: Foundation" 1997 DC Comics 1 issue 183218 s22 · 27236 "Secrets of the House of M" 2005 Marvel 1 issue 165923 s5   (v1 search)
+   CV local rip:   (= linked) · 2435 "House of Secrets" 1969 DC Comics 74   (rip lookup)
+   GCD per-file:   series 5511 "House of Secrets" 1996-1998 DC [was ongoing series] 25 on 50/54 files · series 17784 "House of Secrets: Facade" 2001-2001 DC [limited series] 2 on 2/54 files; methods numx52
+   GCD dump:       (= per-file) · 1192 "House of Secrets" 1956-1978 DC [] 154 · 109728 "House of Secrets" [en-ph] 1974-1978 National Book Store [] 4 · 98485 "House of Secrets" [en-au] 1980-? K. G. Murray [] 1   (dump lookup)
+   bridges:        gcd 5511 -> LOCG 116544 "House of Secrets" support 50
+
+== S9026 House of Secrets  [tier C] · 155 files  keys: House of Secrets | House of Secrets (1956)  years 1956-1978  155 files / 0 collections
+   split: the KEPT half of the P-034 split — moved out -> S9027 "House of Secrets (1996)"; re-identify what stayed
+   folders: [154] DC\House of Secrets\House of Secrets v1 (1956) · [1] DC\_DC Facsimilie Editions
+   files:   [55661] House of Secrets 001 (DC) (Nov-Dec 1956) (c2c) (Superscan).cbz (37pp) | [55662] House of Secrets 002 (1957) (c2c).cbr (36pp)
+            [55663] House of Secrets 003 (DC) (Mar-Apr 1957) (c2c) (Superscan).cbz (37pp) | [55664] House of Secrets 004 (DC) (May-Jun 1957) (c2c) (Superscan).cbz (37pp)
+            [55665] House of Secrets 005 (DC) (Jul-Aug 1957) (c2c) (Superscan).cbz (37pp) | [55666] House of Secrets 006 (1957) (c2c) (Pmack).cbr (36pp)
+            [55667] House of Secrets 007 (1957) (c2c) (Cimmerian32).cbr (37pp) | [55668] House of Secrets 008 (c2c) (Pmack).cbr (37pp) | [55669] House of Secrets 009 (1958) (c2c) (Pmack).cbr (36pp)
+            [55670] House of Secrets 010 (DC) (Jun 1958) (c2c) (Superscan).cbz (37pp) | [55671] House of Secrets 011 (1958) (c2c).cbz (36pp)
+            [55672] House of Secrets 012 (1958) (c2c) (Ontology).cbr (36pp) | [55673] House of Secrets 013 (1958) (c2c) (Pmack).cbr (36pp) | [55674] House of Secrets 014 (1958) (c2c) (ABPC).cbr (36pp)
+            [55675] House of Secrets 015 (1958) (c2c) (Pmack).cbr (36pp) | [55676] House of Secrets 016 (DC) (Jan 1959) (c2c) (Superscan).cbz (37pp)
+            [55677] House of Secrets 017 (1959) (c2c).cbr (36pp) | [55678] House of Secrets 018 (1958) (c2c) (ABPC).cbr (36pp) | [55679] House of Secrets 019 (1959) (c2c) (Pmack).cbz (36pp)
+            [55680] House of Secrets 020 (1959) (Max Zeus).cbz (36pp) | [55681] House of Secrets 021 (1959) (c2c).cbz (36pp) | [55682] House of Secrets 022 (1959) (c2c) (Pmack).cbr (36pp)
+            [55683] House of Secrets 023 (1959) (c2c) (ABPC).cbr (36pp) | [55684] House of Secrets 024 (1959) (c2c) (ABPC).cbr (36pp) | [55685] House of Secrets 025 (1959) (c2c) (Ontology).cbz (36pp)
+            [55686] House of Secrets 026 (1959) (c2c).cbz (36pp) | [55687] House of Secrets 027 (1959) (c2c) (Pmack).cbr (36pp) | [55688] House of Secrets 028 (1960) (c2c).cbr (36pp)
+            [55689] House of Secrets 029 (1960) (c2c) (Max Zeus).cbr (36pp) | [55690] House of Secrets 030 (1960) (c2c) (ABPC).cbr (36pp) | [55691] House of Secrets 031 (1960) (c2c) (ABPC).cbr (36pp)
+            [55692] House of Secrets 032 (1960) (c2c).cbr (36pp) | [55693] House of Secrets 033 (1960) (c2c).cbr (36pp) | [55694] House of Secrets 034 (1960) (c2c).cbr (36pp)
+            [55695] House of Secrets 035 (1960) (c2c) (WarEagle).cbr (36pp) | [55696] House of Secrets 036 (1960) (c2c).cbz (36pp) | [55697] House of Secrets 037 (1960) (c2c).cbr (36pp)
+            [55698] House of Secrets 038 (1960) (c2c) (Pmack).cbr (36pp) | [55699] House of Secrets 039 (1960) (c2c).cbr (36pp) | [55700] House of Secrets 040 (1961) (c2c) (Pmack).cbr (36pp)
+            [55701] House of Secrets 041 (1961) (c2c) (Punkrat).cbr (36pp) | [55702] House of Secrets 042 (1961) (c2c).cbr (36pp) | [55703] House of Secrets 043 (1961) (c2c) (Pmack).cbr (36pp)
+            [55704] House of Secrets 044 (1961) (c2c).cbz (36pp) | [55705] House of Secrets 045 (1961) (c2c).cbr (36pp) | [55706] House of Secrets 046 (1961) (c2c) (ABPC).cbr (36pp)
+            [55707] House of Secrets 047 (1961) (c2c) (Max Zeus).cbr (36pp) | [55708] House of Secrets 048 (1961) (c2c) (ABPC).cbr (36pp)
+            [55709] House of Secrets 049 (1961) (c2c) (Ontology).cbr (36pp) | [55710] House of Secrets 050 (1961) (c2c) (Pmack).cbr (36pp) | [55711] House of Secrets 051 (1961) (c2c) (ABPC).cbr (36pp)
+            [55712] House of Secrets 052 (1962) (c2c).cbr (36pp) | [55713] House of Secrets 053 (1962) (c2c) (Ontology).cbr (36pp) | [55714] House of Secrets 054 (1962) (c2c).cbr (36pp)
+            [55715] House of Secrets 055 (DC) (Jul-Aug 1962) (c2c) (Superscan).cbz (37pp) | [55716] House of Secrets 056 (1962) (c2c) (Ontology).cbz (36pp)
+            [55717] House of Secrets 057 (1962) (c2c) (Pmack).cbr (36pp) | [55718] House of Secrets 058 (1963) (c2c) (Pmack).cbr (36pp)
+            [55719] House of Secrets 059 (1963) (c2c) (Tomander).cbr (36pp) | [55720] House of Secrets 060 (1963) (c2c).cbz (36pp) | [55721] House of Secrets 061 (1964) (c2c) (Jaklar-DCP).cbr (36pp)
+            [55722] House of Secrets 062 (1963) (c2c).cbz (36pp) | [55723] House of Secrets 063 (1963) (c2c).cbr (36pp) | [55724] House of Secrets 064 (1964) (c2c).cbz (36pp)
+            [55725] House of Secrets 065 (1964) (c2c).cbz (?pp) | [55726] House of Secrets 066 (1964) (c2c).cbr (36pp) | [55727] House of Secrets 067 (1964) (c2c).cbr (37pp)
+            [55728] House of Secrets 068 (1964) (c2c) (OldWayne).cbr (37pp) | [55729] House of Secrets 069 (1964) (c2c).cbz (?pp) | [55730] House of Secrets 070 (1965) (c2c).cbr (35pp)
+            [55731] House of Secrets 071 (1965) (c2c).cbz (?pp) | [55732] House of Secrets 072 (1965) (c2c).cbr (36pp) | [55733] House of Secrets 073 (1965) (c2c).cbr (36pp)
+            [55734] House of Secrets 074 (1965) (c2c).cbr (36pp) | [55735] House of Secrets 075 (1965) (c2c).cbz (36pp) | [55736] House of Secrets 076 (1966) (c2c).cbz (36pp)
+            [55737] House of Secrets 077 (DC) (Mar-Apr 1966) (c2c) (Superscan).cbz (37pp) | [55738] House of Secrets 078 (1966) (c2c) (Pmack).cbr (36pp)
+            [55739] House of Secrets 079 (1966) (c2c) (Max Zeus).cbz (36pp) | [55740] House of Secrets 080 (DC) (Sep-Oct 1966) (c2c) (Superscan).cbz (37pp)
+            [55741] House of Secrets 081 (1969) (c2c).cbr (36pp) | [55742] House of Secrets 082 (1969) (c2c) (Max Zeus).cbr (36pp) | [55743] House of Secrets 083 (1970) (c2c).cbr (36pp)
+            [55744] House of Secrets 084 (1970) (c2c) (Flattermann).cbr (36pp) | [55745] House of Secrets 085 (1970) (c2c) (ABPC).cbr (35pp)
+            [55746] House of Secrets 086 (1970) (c2c) (Pmack).cbr (36pp) | [55747] House of Secrets 087 (1970) (c2c) (ABPC).cbr (36pp) | [55748] House of Secrets 088 (1970) (c2c).cbr (36pp)
+            [55749] House of Secrets 089 (1970) (c2c) (Flattermann).cbr (36pp) | [55750] House of Secrets 090 (1971) (c2c) (Mr. Woodman).cbz (36pp)
+            [55751] House of Secrets 091 (1971) (c2c) (ABPC).cbr (36pp) | [55752] House of Secrets 092 (1971) (c2c) (Flattermann).cbr (37pp) | [55753] House of Secrets 093 (1971) (c2c).cbr (52pp)
+            [55754] House of Secrets 094 (1971) (c2c) (Pmack).cbr (52pp) | [55755] House of Secrets 095 (1972) (c2c) (ABPC).cbr (52pp)
+            [55756] House of Secrets 096 (1972) (c2c) (Flattermann).cbr (51pp) | [55757] House of Secrets 097 (1972) (c2c).cbr (52pp) | [55758] House of Secrets 098 (1972) (c2c) (ABPC).cbr (52pp)
+            [55759] House of Secrets 099 (1972) (c2c) (lindalee.cimmerian32).cbr (36pp) | [55760] House of Secrets 100 (1972) (c2c) (ABPC).cbr (35pp)
+            [55761] House of Secrets 101 (1972) (c2c) (Flattermann).cbr (36pp) | [55762] House of Secrets 102 (1972) (c2c) (Flattermann).cbr (36pp)
+            [55763] House of Secrets 103 (1972) (c2c) (Flattermann).cbr (36pp) | [55764] House of Secrets 104 (1973) (c2c) (Flattermann).cbr (36pp)
+            [55765] House of Secrets 105 (1973) (c2c) (Teachbug).cbr (37pp) | [55766] House of Secrets 106 (1973) (c2c) (Flattermann).cbr (36pp)
+            [55767] House of Secrets 107 (1973) (c2c) (Flattermann).cbr (36pp) | [55768] House of Secrets 108 (1973) (c2c) (Flattermann).cbr (35pp)
+            [55769] House of Secrets 109 (1973) (c2c) (Argent Age).cbr (36pp) | [55770] House of Secrets 110 (1973) (c2c) (ABPC).cbr (36pp)
+            [55771] House of Secrets 111 (1973) (c2c) (Flattermann).cbr (36pp) | [55772] House of Secrets 112 (1973) (c2c) (ABPC).cbr (36pp)
+            [55773] House of Secrets 113 (1973) (c2c) (ABPC).cbr (35pp) | [55774] House of Secrets 114 (1973) (c2c).cbr (36pp) | [55775] House of Secrets 115 (1974) (c2c).cbz (36pp)
+            [55776] House of Secrets 116 (1974) (c2c) (ABPC).cbr (36pp) | [55777] House of Secrets 117 (1974) (c2c).cbr (36pp) | [55778] House of Secrets 118 (1974) (c2c) (ABPC).cbr (35pp)
+            [55779] House of Secrets 119 (1974) (c2c) (ABPC).cbr (35pp) | [55780] House of Secrets 120 (1974) (c2c) (ABPC).cbr (36pp)
+            [55781] House of Secrets 121 (1974) (c2c) (Mr.Woodman).cbz (35pp) | [55782] House of Secrets 122 (1974) (c2c) (Grant Gardner).cbr (36pp)
+            [55783] House of Secrets 123 (1974) (c2c) (Teachbug).cbr (37pp) | [55784] House of Secrets 124 (1974) (c2c) (Mr.Woodman).cbz (35pp) | [55785] House of Secrets 125 (1974) (c2c).cbr (36pp)
+            [55786] House of Secrets 126 (1974) (c2c).cbr (36pp) | [55787] House of Secrets 127 (1975) (c2c) (Flattermann).cbr (35pp)
+            [55788] House of Secrets 128 (1975) (c2c) (Alhazred-Teachbug).cbr (37pp) | [55789] House of Secrets 129 (1975) (c2c).cbr (36pp)
+            [55790] House of Secrets 130 (1975) (c2c) (Flattermann).cbr (36pp) | [55791] House of Secrets 131 (1975) (c2c) (Bumblebee-man).cbr (36pp)
+            [55792] House of Secrets 132 (1975) (c2c).cbr (35pp) | [55793] House of Secrets 133 (1975) (c2c) (Teachbug).cbz (37pp) | [55794] House of Secrets 134 (1975) (c2c) (Pmack).cbr (36pp)
+            [55795] House of Secrets 135 (1975) (c2c).cbr (36pp) | [55796] House of Secrets 136 (1975) (c2c).cbr (36pp) | [55797] House of Secrets 137 (1975) (c2c).cbr (35pp)
+            [55798] House of Secrets 138 (1975) (c2c).cbr (35pp) | [55799] House of Secrets 139 (1976) (c2c) (Teachbug).cbz (37pp) | [55800] House of Secrets 140 (1976) (c2c).cbr (36pp)
+            [55801] House of Secrets 141 (1976) (c2c).cbr (37pp) | [55802] House of Secrets 142 (1976) (c2c) (Teachbug).cbr (37pp) | [55803] House of Secrets 143 (1977) (c2c) (Teachbug).cbr (37pp)
+            [55804] House of Secrets 144 (1977) (Teachbug).cbr (37pp) | [55805] House of Secrets 145 (1977) (c2c).cbr (36pp) | [55806] House of Secrets 146 (1977) (c2c) (Flattermann).cbr (36pp)
+            [55807] House of Secrets 147 (1977) (c2c) (Teachbug).cbr (38pp) | [55808] House of Secrets 148 (1977) (c2c) (Pmack).cbz (36pp)
+            [55809] House of Secrets 149 (1978) (c2c) (Mr.Woodman).cbz (36pp) | [55810] House of Secrets 150 (1978) (c2c) (Teachbug).cbr (37pp)
+            [55811] House of Secrets 151 (1978) (c2c) (Teachbug).cbr (37pp) | [55812] House of Secrets 152 (1978) (c2c) (Mr.Woodman).cbz (36pp)
+            [55813] House of Secrets 153 (1978) (c2c) (Teachbug).cbr (37pp) | [55814] House of Secrets 154 (1978) (c2c).cbr (43pp)
+            [64001] House of Secrets 092 - Facsimile Edition (1971) (Digital) (Shadowcat-Empire).cbz (36pp)
+   ours:    ladder 1-154; 1 number(s) name more than one file: 92; ComicInfo Series: "House of Secrets"x1; ComicInfo Volume: "1956"x1; ComicInfo Publisher: "DC"x1
+   CV linked:      vol 1768 "House of Secrets" 1956 DC Comics 80 issues; cached #1-80 (80); yearΔ 0; ratio 155/80 = 1.94; no judged range; v1 per-file: same volume on 155/155 files
+   CV local rip:   (= linked) · 2435 "House of Secrets" 1969 DC Comics 74 · 5751 "House of Secrets" 1996 DC Comics 25   (rip lookup)
+   GCD per-file:   series 1192 "House of Secrets" 1956-1978 DC [was ongoing series] 154 on 152/155 files; methods numx152
+   GCD dump:       (= per-file) · 109728 "House of Secrets" [en-ph] 1974-1978 National Book Store [] 4 · 98485 "House of Secrets" [en-au] 1980-? K. G. Murray [] 1 · 5511 "House of Secrets" 1996-1998 DC [] 25   (dump lookup)
+   bridges:        gcd 1192 -> LOCG 116544 "House of Secrets" support 155
+
+== S96886 Firestorm  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Firestorm v3 (2004)  years 1982-2007  35 files / 0 collections
+   split run: "Firestorm v3 (2004)" run={"cv": 11157, "gcd": 15983} (new shelf from P-034) — seed the S line from these ids, then verify them
+   folders: [35] DC\Firestorm\Firestorm v3 (2004)
+   files:   Firestorm - The Nuclear Man, 2006-03-00 (#23) (digital) (Glorith-Novus-HD).cbz … Firestorm - The Nuclear Man, 2007-04-00 (#35) (digital) (Glorith-Novus-HD).cbz  (13 files, pp 23-24)
+            [55095] Firestorm, 2004-05-00 (#01) (Digital-Empire).cbr (23pp) | [55096] Firestorm, 2004-06-00 (#02) (Digital-Empire).cbr (23pp)
+            [55097] Firestorm, 2004-07-00 (#03) (Digital-Empire).cbr (22pp) | [55098] Firestorm, 2004-08-00 (#04) (Digital-Empire).cbr (23pp)
+            [55099] Firestorm, 2004-09-00 (#05) (Digital-Empire).cbr (23pp)
+            Firestorm, 2004-10-00 (#06) (digital) (Glorith-Novus-HD).cbz … Firestorm, 2005-11-00 (#19) (digital) (Glorith-Novus-HD).cbz  (14 files, pp 23-24)
+            [55114] Firestorm, 2005-12-00 (#20) (digital) (Son of Ultron-Empire).cbr (24pp) | [55115] Firestorm, 2006-01-00 (#21) (digital) (Son of Ultron-Empire).cbr (24pp)
+            [55116] Firestorm, 2006-02-00 (#22) (digital) (Glorith-Novus-HD).cbz (24pp)
+   ours:    ladder 1-35; ComicInfo Series: "Firestorm"x15, "Firestorm: The Nuclear Man"x13; ComicInfo Volume: "2004"x28; ComicInfo Count: "22"x15, "35"x13; ComicInfo Publisher: "DC Comics"x28; ComicInfo Web: "107949"x1, "107951"x1, "107952"x1, "107953"x1
+   CV linked:      vol 11157 "Firestorm" 2004 DC Comics 35 issues; cached #1-35 (35); yearΔ 22; ratio 35/35 = 1.00; no judged range
+   CV per-file (v1): vol 11157 "Firestorm" 2004 DC Comics 35 on 18/35 files · vol 3789 "Firestorm, the Nuclear Man" 1987 DC Comics 28 on 13/35 files · vol 3115 "The Fury of Firestorm" 1982 DC Comics 64 on 4/35 files
+   CV local rip:   (= linked) · 18409 "Firestorm" 1978 DC Comics 5 · 149680 "Firestorm" 1989 DC Comics 8 · 61522 "Firestorm" 2012 Panini Verlag 2   (rip lookup)
+   GCD per-file:   series 12092 "Firestorm" 2004-2006 DC [was ongoing series] 22 on 22/35 files · series 15983 "Firestorm: The Nuclear Man" 2006-2007 DC [was ongoing series] 13 on 13/35 files; methods numx35
+   GCD dump:       (= per-file) · 34691 "Firestorm" [en-au] 1982-1982 K. G. Murray [] 1 · 2444 "Firestorm" 1978-1978 DC [] 5 · 143403 "Firestorm" 1990-1990 DC [] 8 · 69870 "Firestorm" [de] 2012-2013 Panini Deutschland [] 3 · 3357 "Firestorm the Nuclear Man" 1987-1990 DC [] 28 (via CV name "Firestorm, the Nuclear Man")   (dump lookup)
+   bridges:        gcd 12092 -> LOCG 178798 "Firestorm: The Nuclear Man" support 22 · gcd 15983 -> LOCG 178798 "Firestorm: The Nuclear Man" support 13
+
+== S6739 Firestorm, the Nuclear Man  [tier A]   keys: Firestorm, The Nuclear Man | Firestorm: The Nuclear Man  years 1987-1989  28 files / 0 collections
+   split: the KEPT half of the P-034 split — moved out -> S96886 "Firestorm v3 (2004)"; re-identify what stayed
+   folders: [28] DC\Firestorm\Firestorm v2 (1982)
+   files:   [54982] Firestorm - The Nuclear Man Annual, 1987-07-21 (#05) (digital) (Glorith-HD).cbz (40pp)
+            Firestorm, The Nuclear Man, 1987-09-00 (#65) (digital) (Glorith-Novus-HD).cbz … Firestorm, The Nuclear Man, 1989-10-17 (#92) (digital) (Glorith-Novus-HD).cbz  (27 files, pp 23-25)
+   ours:    ladder 5, 65-70, 72-92; ComicInfo Series: "Firestorm, The Nuclear Man"x27, "Firestorm: The Nuclear Man Annual"x1; ComicInfo Volume: "1987"x28; ComicInfo Count: "92"x25, "69"x2; ComicInfo Publisher: "DC Comics"x28; ComicInfo Web: "115927"x1, "28747"x1, "29086"x1, "28868"x1
+   CV linked:      vol 3789 "Firestorm, the Nuclear Man" 1987 DC Comics 28 issues; cached #65-92 (28); yearΔ 0; ratio 28/28 = 1.00; no judged range; v1 per-file: same volume on 28/28 files
+   CV candidates:  (= linked) · 18409 "Firestorm" 1978 DC Comics ? s55 · 39600 "Firestorm The Nuclear Man: Reborn" 2007 DC Comics ? s34 · 42987 "The Fury of Firestorm: The Nuclear Man" 2011 DC Comics ? s32 · 70056 "The Fury of Firestorm: The Nuclear Man" 2013 DC Comics ? s32 · 96286 "Firestorm: The Nuclear Man: United We Fall" 2016 DC Comics ? s32 · 52140 "The Fury of Firestorm - The Nuclear Men" 2012 DC Comics ? s16   (v1 search)
+   CV local rip:   (= linked) · 149680 "Firestorm" 1989 DC Comics 8 (via CV candidate name "Firestorm") · 18409 "Firestorm" 1978 DC Comics 5 (via CV candidate name "Firestorm") · 11157 "Firestorm" 2004 DC Comics 35 (via CV candidate name "Firestorm") · 39600 "Firestorm The Nuclear Man: Reborn" 2007 DC Comics 1 issue 267482 (via CV candidate name "Firestorm The Nuclear Man: Reborn") · 61522 "Firestorm" 2012 Panini Verlag 2 (via CV candidate name "Firestorm")   (rip lookup)
+   GCD per-file:   series 3357 "Firestorm the Nuclear Man" 1987-1990 DC [was ongoing series] 28 on 27/28 files; methods numx27
+   GCD dump:       (= per-file) · 15983 "Firestorm: The Nuclear Man" 2006-2007 DC [] 13 · 61315 "Firestorm: The Nuclear Man" 2011-2011 DC [] 1 · 143403 "Firestorm" 1990-1990 DC [] 8 (via CV candidate name "Firestorm") · 34691 "Firestorm" [en-au] 1982-1982 K. G. Murray [] 1 (via CV candidate name "Firestorm") · 2444 "Firestorm" 1978-1978 DC [] 5 (via CV candidate name "Firestorm")   (dump lookup)
+   bridges:        gcd 3357 -> LOCG 116375 "Firestorm: The Nuclear Man" support 27
+
+== S103963 Crisis on Infinite Earths Companion Deluxe Edition (2018)  [tier D]   keys: Crisis on Infinite Earths Companion Deluxe Edition (2018)  years 2018-2019  3 files / 3 collections
+   split run: "Crisis on Infinite Earths Companion Deluxe Edition (2018)" run={"cv": 115046, "gcd": 133135} (new shelf from P-034) — seed the S line from these ids, then verify them
+   folders: [3] DC\#DC Events\Crisis on Infinite Earths (1985)
+   files:   [19129] COL Crisis on Infinite Earths Companion Deluxe Edition Vol. 01 (2018) (digital) (Son of Ultron-Empire).cbr (505pp)
+            [19130] COL Crisis on Infinite Earths Companion Deluxe Edition Vol. 02 (2019) (digital) (Son of Ultron-Empire).cbr (535pp)
+            [19131] COL Crisis on Infinite Earths Companion Deluxe Edition Vol. 03 (2019) (digital) (Son of Ultron-Empire).cbr (528pp)
+   ours:    ComicInfo Series: "Crisis on Infinite Earths Companion Deluxe Edition"x2, "Crisis on Infinite Earths Companion Deluxe"x1; ComicInfo Publisher: "DC"x3
+   GCD says: [19129] gcd notes 1871484 (#1 of Crisis on Infinite Earths Companion Deluxe Edition): DC Comics Presents (DC, 1978 series) #78; All-Star Squadron (DC, 1981 series) #50-60; The Fury of Firestorm (DC, 1982 series) #41-42; Green Lantern (DC, 1960 series) #194-198  |  gcd_reprint 1871484: s2583 All-Star Squadron (1981) #50-60 [33 stories] · s1448 Green Lantern (1960) #194-198 [11 stories] · s2628 The Fury of Firestorm (1982) #41-42 [4 stories] · s2440 DC Comics Presents (1978) #78 [2 stories]
+             [19130] gcd notes 1960075 (#2 of Crisis on Infinite Earths Companion Deluxe Edition): Detective Comics (DC, 1937 series) #558; DC Comics Presents (DC, 1978 series) #86; Swamp Thing (DC, 1985 series) #44; The Losers Special (DC, 1985 series) #1; Legends of the DCU: Crisis on Infinite Earths (DC, 1999 series) #1; Infinity, Inc  |  gcd_reprint 1960075: s2833 Infinity, Inc. (1984) #18-25 [16 stories] · s2842 The New Teen Titans (1984) #13-14 [5 stories] · s1449 Justice League of America (1960) #244-245 [4 stories] · s6167 Legends of the DCU: Crisis on Infinite Earths (1999) #1 [4 stories]
+             [19131] gcd notes 2023146 (#3 of Crisis on Infinite Earths Companion Deluxe Edition): Amethyst (DC, 1985 series) #13; The Omega Men (DC, 1983 series) #31; a story from #33; Blue Devil (DC, 1984 series) #17-18; Wonder Woman (DC, 1942 series) #327-329; Swamp Thing (DC, 1985 series) #46; Legion of Super-Heroes (DC, 1984 series)  |  gcd_reprint 2023146: s2440 DC Comics Presents (1978) #87-88, #94-95 [10 stories] · s116 Superman (1939) #413-415 [6 stories] · s277 Wonder Woman (1942) #327-329 [6 stories] · s2835 Legion of Super-Heroes (1984) #16, #18 [4 stories]
+   CV local rip:   115046 "Crisis on Infinite Earths Companion Deluxe Edition" 2018 DC Comics 3 (via our own name without the filing suffix "Crisis on Infinite Earths Companion Deluxe Edition")   (rip lookup)
+   GCD dump:       133135 "Crisis on Infinite Earths Companion Deluxe Edition" 2018-2019 DC [] 3 (via our own name without the filing suffix "Crisis on Infinite Earths Companion Deluxe Edition")   (dump lookup)
+
+== S62538 Crisis on Infinite Earths  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Crisis On Infinite Earths | Crisis on Infinite Earths | Crisis on Infinite Earths: 35th Anniversary Deluxe Edition  years 1985-2019  27 files / 2 collections
+   split: the KEPT half of the P-034 split — moved out -> S103963 "Crisis on Infinite Earths Companion Deluxe Edition (2018)"; re-identify what stayed
+   flags: #129 duplicate-edition [Pending] item 19128 — #1-12 is claimed by this item and by 16771 — two editions of one block · #206 label-ambiguous [Pending] item 19128 — items 16771 and 19128 are two editions of the same twelve-issue maxi
+   folders: [13] DC\#DC Events\Crisis on Infinite Earths (1985)\Variant Covers · [9] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\027 Crisis on Infinite Earths · [3] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\02 Crisis on Infinite earths · [1] DC\#DC Events\Crisis on Infinite Earths (1985) · [1] DC\_DC Facsimilie Editions
+   files:   [15444] 01 Crisis on Infinite Earths HC Part 01  The Summoning.cbz (31pp) | [15446] 03 Crisis on Infinite Earths HC Part 02  Time and Time Again.cbz (25pp)
+            [15448] 05 Crisis on Infinite Earths HC Part 03  Oblivion Upon Us.cbz (26pp) | [15449] 06 Crisis on Infinite Earths HC Part 04  And Thus Shall the World DIE.cbz (25pp)
+            [15450] 07 Crisis on Infinite Earths HC Part 05  Worlds in Limbo.cbz (25pp) | [15451] 08 Crisis on Infinite Earths HC Part 06  3 Earths 3 Deaths.cbz (26pp)
+            [15452] 09 Crisis on Infinite Earths HC Part 07  Beyond the Silent Night.cbz (43pp) | [15453] 10 Crisis on Infinite Earths HC Part 08  A Flash Of The Lightning.cbz (26pp)
+            [15454] 11 Crisis on Infinite Earths HC Part 09  War Zone.cbz (26pp) | [16771] COL Crisis on Infinite Earths TPB (jxsi-DCP).cbr (359pp)
+            [16772] Crisis_on_Infinite_Earths_Crossover_Index__OCD_.cbr (37pp) | [16773] Crisis_on_Infinite_Earths__0_-_The_Untold_Story.cbr (57pp)
+            [19128] COL Crisis on Infinite Earths - 35th Anniversary Deluxe Edition (2019) (digital) (Son of Ultron-Empire).cbr (460pp)
+            [19137] Crisis On Infinite Earths 003 (2024) (Facsimile Edition Blank Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [19138] Crisis On Infinite Earths 003 (2024) (Facsimile Edition George Perez Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [19139] Crisis On Infinite Earths 004 (2024) (Facsimile Edition Blank Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [19140] Crisis On Infinite Earths 004 (2024) (Facsimile Edition George Perez Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [19141] Crisis On Infinite Earths 005 (2024) (Facsimile Edition Blank Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [19142] Crisis On Infinite Earths 005 (2024) (Facsimile Edition George Perez Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [19143] Crisis On Infinite Earths 007 (2024) (Facsimile Edition Blank Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [19144] Crisis On Infinite Earths 007 (2024) (Facsimile Edition George Perez Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [19132] Crisis on Infinite Earths 001 (2024) (Facsimile Edition (2024) (Blank Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [19133] Crisis on Infinite Earths 001 (2024) (Facsimile Edition (2024) (Wraparound Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [19134] Crisis on Infinite Earths 001 (2024) (Facsimile Edition (2024) (Wraparound Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [19135] Crisis on Infinite Earths 002 (2024) (Facsimile Edition (2024) (Blank Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [19136] Crisis on Infinite Earths 002 (2024) (Facsimile Edition (2024) (Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [63921] Crisis on Infinite Earths 008 - Facsimile Edition (1985) (Digital) (Shadowcat-Empire).cbz (36pp)
+   ours:    ladder 1-5, 7-8; 6 number(s) name more than one file: 1, 2, 3, 4, 5, 7; judged item 16771 #1-12 conf 0.8; judged item 19128 #1-12 conf 0.8; ComicInfo Series: "Crisis on Infinite Earths HC"x9, "Crisis on Infinite Earths: 35th Anniversary Deluxe Edition"x1, "Crisis on Infinite Earths"x1; ComicInfo Publisher: "DC Comics"x9, "DC"x2
+   GCD says: [16771] gcd notes 275452 (#[nn] of Crisis on Infinite Earths): Crisis on Infinite Earths (DC, 1985 series) #1-12  |  gcd_reprint 275452: s2973 Crisis on Infinite Earths (1985) #1-12 [24 stories] · s23255 Crisis on Infinite Earths (1998) (unnumbered) [9 stories]
+             [19128] gcd_reprint 2017071: s2973 Crisis on Infinite Earths (1985) #1-12 [25 stories] · s92869 Crisis on Infinite Earths Deluxe Edition (2015) (unnumbered) [12 stories] · s24026 History of the DC Universe (2002) (unnumbered) [2 stories] · s23255 Crisis on Infinite Earths (1998) (unnumbered) [1 story]
+   CV linked:      vol 3441 "Crisis on Infinite Earths" 1985 DC Comics 12 issues; cached #1-12 (12); yearΔ 0; ratio 14/12 = 1.17; 2 of 2 judged fit; v1 per-file: same volume on 25/27 files
+   CV candidates:  (= linked) · 25735 "Crisis on Infinite Earths" 2000 DC Comics 1 issue 151666 s50 · 121545 "Crisis On Infinite Earths: 35th Anniversary Deluxe Edition" 2019 DC Comics 1 issue 720039 s50 · 124249 "Crisis On Infinite Earths Giant" 2020 DC Comics 2 s37 · 115046 "Crisis on Infinite Earths Companion Deluxe Edition" 2018 DC Comics 3 s35 · 25048 "Absolute Crisis On Infinite Earths" 2005 DC Comics 1 issue 147954 s34 · 152100 "Dark Crisis on Infinite Earths" 2023 DC Comics 1 issue 1000145 s34   (v1 search)
+   CV local rip:   (= linked) · 25735 "Crisis on Infinite Earths" 2000 DC Comics 1 issue 151666 · 121545 "Crisis On Infinite Earths: 35th Anniversary Deluxe Edition" 2019 DC Comics 1 issue 720039 · 115046 "Crisis on Infinite Earths Companion Deluxe Edition" 2018 DC Comics 3 (via GCD name "Crisis on Infinite Earths Companion Deluxe Edition")   (rip lookup)
+   GCD per-file:   methods round2-seriesx7 ⚠ · numx1  (⚠ copies a folder neighbour's series — verify); series 133135 "Crisis on Infinite Earths Companion Deluxe Edition" 2018-2019 DC [collected edition] 3 on 7/27 files · series 2973 "Crisis on Infinite Earths" 1985-1986 DC [maxiseries] 12 on 1/27 files
+   GCD dump:       (= per-file) · 34611 "Crisis on Infinite Earths" [en-au] 1985-1985 Federal [] 4 · 23255 "Crisis on Infinite Earths" 1998-1998 DC [] 1 · 207222 "Crisis on Infinite Earths" [de] 1999-1999 Dino Verlag [] 1 · 16790 "Crisis on Infinite Earths" 2000-2000 DC [] 1 · 165342 "Crisis on Infinite Earths" [fr] 2001-2003 Semic S.A. [] 4   (dump lookup)
+   bridges:        gcd 133135 -> LOCG 101874 "Crisis on Infinite Earths" support 7 · gcd 133135 -> OL /works/OL19764048W "None" isbnSupport 10 · gcd 2973 -> LOCG 101874 "Crisis on Infinite Earths" support 5
+
+== S58099 Outsiders  [tier C] · 19 number(s) x2+, 4 parsed key(s), ratio 1.46  keys: Outsiders | Outsiders (1993) | The Outsiders by Judd Winick | The Outsiders v3 (2003)  years 1985-2019  74 files / 1 collections
+   folders: [44] DC\The Outsiders\The Outsiders v3 (2003) · [8] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Outsiders - The Good Fight · [7] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\31 Outsiders - Looking for trouble · [5] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\03 Outsiders - Crisis Intervention · [3] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\58 Teen Titans Outsiders - The Insiders · [2] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\144 Blackest Night · [2] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\57 Outsiders - Wanted · [2] DC\The Outsiders · [1] DC\The Outsiders\The Outsiders v3 (2003)\Trades
+   files:   [16322] 31 Outsiders 24.cbr (31pp) | [16336] 45 Outsiders 25.cbr (31pp) | Outsiders 01.cbr … Outsiders 23.cbr  (9 files, pp 23-32) | [17244] 02 Outsiders 24.cbr (23pp)
+            [17246] 04 Outsiders 25.cbr (25pp) | [17248] 06 Outsiders 28.cbr (25pp) | Outsiders 29.cbr … Outsiders 41.cbr  (13 files, pp 23-26)
+            [57839] Outsiders Annual 001 (1986) (Digital) (Shadowcat-Empire).cbz (44pp) | [57840] Outsiders Special 001 (1987) (Digital) (Shadowcat-Empire).cbz (38pp)
+            The Outsiders v3 008 (2004-03) (DeadmanWade-DCP) (digital).cbr … The Outsiders v3 048 (2007-08) (DeadmanWade-DCP) (digital).cbr  (41 files, pp 22-26)
+            [57904] The Outsiders v3 049 (2007-09) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (22pp) | [57905] The Outsiders v3 050 (2007-11) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (24pp)
+            [57906] The Outsiders v3 Annual 01 (2007) (EXTREMEST-DCP).cbr (42pp)
+            [58000] COL The Outsiders by Judd Winick Book 01 - The Darker Side of Justice (2019) (digital) (Son of Ultron-Empire).cbr (296pp)
+   ours:    ladder 1-50; 19 number(s) name more than one file: 1, 21, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34; ComicInfo Series: "The Outsiders"x2, "The Outsiders by Judd Winick"x1; ComicInfo Volume: "2003"x2; ComicInfo Count: "50"x2; ComicInfo Publisher: "DC Comics"x2, "DC"x1
+   GCD says: [58000] gcd notes 1966693 (#[1] of The Outsiders by Judd Winick): Titans / Young Justice: Graduation Day #1-3; Teen Titans / Outsiders Secret Files 2003 #1; Outsiders (DC, 2003 series) #1-7  |  gcd_reprint 1966693: s11298 Outsiders (2003) #1-7 [15 stories] · s17886 Teen Titans / Outsiders Secret Files 2003 (2003) (unnumbered) [8 stories] · s14380 Titans / Young Justice: Graduation Day (2003) #1-3 [6 stories]
+   CV linked:      vol 10415 "Outsiders" 2003 DC Comics 50 issues; cached #1-50 (50); yearΔ 18; ratio 73/50 = 1.46; no judged range
+   CV per-file (v1): vol 10415 "Outsiders" 2003 DC Comics 50 on 44/74 files · vol 22453 "Outsiders" 1993 DC Comics 26 on 27/74 files
+   CV candidates:  (= linked) · 3455 "The Outsiders" 1985 DC Comics 28 s87 · 40726 "The Outsiders Annual" 1986 DC Comics 1 issue 274606 s83 · 119300 "The Outsiders by Judd Winick" 2019 DC Comics 1 issue 709704 s65 · 154666 "Outsiders" 2024 DC Comics 11 s50 · 25401 "Teen Titans/Outsiders Secret Files 2003" 2003 DC Comics 1 issue 149907 s45 · 25804 "The Outsiders" 2009 DC Comics 26 s37   (v1 search)
+   CV local rip:   (= linked) · 3455 "The Outsiders" 1985 DC Comics 28 · 25804 "The Outsiders" 2009 DC Comics 26 · 149983 "Outsiders" 2021 Ki-oon 1 issue 1030712 · 153207 "Outsiders" 2022 Kadokawa Shoten 5   (rip lookup)
+   GCD dump:       2989 "The Outsiders" 1985-1988 DC [] 28 · 178215 "Outsiders" [fr] 1985-1985 Les Humanoïdes Associés [] 1 · 14162 "Outsiders" 1993-1995 DC [] 26 · 134902 "Outsiders" [fr] 1998-2000 Glénat [] 3 · 94904 "The Outsiders" 1971-1972 University of Rhode Island [] 2 · 11298 "Outsiders" 2003-2007 DC [] 50   (dump lookup)
+
+== S66031 The Outsiders  [tier C] · gap 3  keys: The Outsiders (2003) | The Outsiders (2009)  years 2006-2010  25 files / 0 collections
+   folders: [25] DC\_Batman\_Completed Series\Batman and the Outsiders\03 Batman and the Outsiders v2 (2008)
+   files:   16 The Outsiders 015 (2009) (digital) (Son of Ultron-Empire).cbr … 23 The Outsiders 022 (2009) (digital) (Son of Ultron-Empire).cbr  (8 files, pp 24-26)
+            [62315] 24 The Outsiders 023 (2009) (digital-SD) (Li'l Ultron-Empire).cbr (23pp) | [62316] 25 The Outsiders 024 (2010) (Digital-SD) (Monafekk-Empire).cbz (33pp)
+            [62317] 26 The Outsiders 025 (2010) (Digital-SD) (Monafekk-Empire).cbz (33pp)
+            27 The Outsiders 026 (2010) (digital) (Son of Ultron-Empire).cbr … 40 The Outsiders 039 (2011) (digital) (Son of Ultron-Empire).cbr  (14 files, pp 21-25)
+   ours:    ladder 15-39
+   CV linked:      vol 25804 "The Outsiders" 2009 DC Comics 26 issues; cached #15-40 (26); yearΔ 3; ratio 25/26 = 0.96; no judged range
+   CV per-file (v1): vol 25804 "The Outsiders" 2009 DC Comics 26 on 19/25 files · vol 10415 "Outsiders" 2003 DC Comics 50 on 6/25 files
+   CV local rip:   (= linked) · 22453 "Outsiders" 1993 DC Comics 26 · 149983 "Outsiders" 2021 Ki-oon 1 issue 1030712 · 153207 "Outsiders" 2022 Kadokawa Shoten 5 · 154666 "Outsiders" 2024 DC Comics 11   (rip lookup)
+   GCD per-file:   series 34024 "The Outsiders" 2009-2011 DC [was ongoing series] 25 on 25/25 files; methods numx25
+   GCD dump:       (= per-file) · 41064 "Outsiders" [es] 2005-2007 Planeta DeAgostini [] 20 · 23838 "Outsiders" 2004-2007 DC [] 6 · 11298 "Outsiders" 2003-2007 DC [] 50 · 134902 "Outsiders" [fr] 1998-2000 Glénat [] 3 · 14162 "Outsiders" 1993-1995 DC [] 26   (dump lookup)
+   bridges:        gcd 34024 -> LOCG 115007 "Outsiders" support 30

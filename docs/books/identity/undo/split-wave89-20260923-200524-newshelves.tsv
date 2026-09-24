@@ -1,0 +1,17 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S103965	Flash & Green Lantern: The Brave and the Bold (1999)	run={"cv": 6801, "gcd": 7317}	P-035.jsonl	new	pair=18176
+S103966	The Brave and the Bold v2 (1991)	run={"cv": 4546, "gcd": 4190}	P-035.jsonl	new	pair=18176
+S94858	The Brave and the Bold v3 (2007)	run=-	P-035.jsonl	new	pair=18176
+S103969	The Witching Hour v2 (1999)	run={"cv": 20074, "gcd": 6178}	P-035.jsonl	new	pair=19960
+S103968	The Witching Hour (2024)	run=-	P-035.jsonl	new	pair=19960
+S103971	Weird War Tales v2 (1997)	run={"cv": 7450, "gcd": 8045}	P-035.jsonl	new	pair=58610
+S103970	Weird War Tales Special (2000)	run={"cv": 25676, "gcd": 6287}	P-035.jsonl	new	pair=58610
+S95379	Batgirl v4 (2011)	run=-	P-035.jsonl	new	pair=1868
+S18176	moved out -> S103965 "Flash & Green Lantern: The Brave and the Bold (1999)"; S103966 "The Brave and the Bold v2 (1991)"; S94858 "The Brave and the Bold v3 (2007)"	run=-	P-035.jsonl	kept	pair=18176	moved_cv=6801,4546
+S19960	moved out -> S103969 "The Witching Hour v2 (1999)"; S103968 "The Witching Hour (2024)"	run=-	P-035.jsonl	kept	pair=19960	moved_cv=20074
+S58610	moved out -> S103971 "Weird War Tales v2 (1997)"; S103970 "Weird War Tales Special (2000)"	run=-	P-035.jsonl	kept	pair=58610	moved_cv=7450,25676
+S1868	moved out -> S95379 "Batgirl v4 (2011)"	run=-	P-035.jsonl	kept	pair=1868
+S1711	kept whole (split: false): LEAD RULING (L-212 / L-364): a retitle that continues the numbering is ONE run. Every file here is the one 1995 DC series numbered #0, #1-100 + #1000000: 'Azrae…	run=-	P-035.jsonl	kept-whole	pair=1711

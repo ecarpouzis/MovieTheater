@@ -1832,3 +1832,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Golden/Silver Age title's shelf (Witching Hour 1999, Weird War Tales 1997) is a CO-EQUAL run, not residue. "#DC
   Events" New 52 read-order folders carry whole runs onto the pre-2011 shelf of the same title (Batgirl 2000). A retitle
   that continues the numbering stays one run (L-212) even when both catalogues and the folders split it.
+
+[L-365] pub:dc
+- DC "#DC Events" read-order rips named "Title NNN - Month Year" or "Title # NN" are NEW 52 issues whose numbers fall
+  inside the legacy ladder — a ladder check cannot see them; grep the filenames on any big legacy shelf (Batman 1940,
+  Birds of Prey 1999, Green Arrow 2001 all hid other runs). One-run trade lines (Deluxe Editions, the "Batman: Detective
+  Comics" line, R.I.P. Vol. 07, the Bronze Age omnibus) take the run's ids and merge into the run shelf. GCD notes can
+  typo the series year (Batman B&W Vol. 1 says "1986 series" for the 1996 mini). CV 19721 is "Azrael: Agent of the Bat"
+  (#47-100, the 1995 run's retitle); the 2009 relaunch is CV 28873 / GCD 39888 (R-103, P-035).

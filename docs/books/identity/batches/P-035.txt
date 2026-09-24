@@ -1,0 +1,350 @@
+## Conventions for this batch (31 shown of 58 matched; 364 in LEDGER.md; 5 shelf/shelves: folder:vn-year ×5 · pub:dc ×5 · folder:events ×3 · folder:sequel-subfolder ×3 · kind:golden-age ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-211] (5 shelf/shelves) folder:vn-year pub:dc sig:collision sig:stale-flag
+- An `overlap-in-series` flag on a franchise with many `vN` sibling shelves (Deathstroke, Harley Quinn, Green Lantern,
+  Justice League, JLD, Legion, Lobo) describes the CROSS-SHELF Vol. 01 collision, not conflation on the one shelf —
+  confirmed 14 of 14 in C-013..C-015; the stale-flag note must name the sibling shelf.
+[L-364] (5 shelf/shelves) pub:dc
+- DC (R-101): GCD's notes can disagree with GCD's own REPRINT ROLL-UP (Batgirl 2016 Son of Penguin: notes "#7-12",
+  roll-up #7-11) — the roll-up and the next volume's range decide; the packet flags RANGE CONTRADICTED only against
+  notes, so wrong judged ranges can hide without the flag. DC Vertigo: a complete short mini in a "vN" subfolder of a
+  Golden/Silver Age title's shelf (Witching Hour 1999, Weird War Tales 1997) is a CO-EQUAL run, not residue. "#DC
+  Events" New 52 read-order folders carry whole runs onto the pre-2011 shelf of the same title (Batgirl 2000). A retitle
+  that continues the numbering stays one run (L-212) even when both catalogues and the folders split it.
+[L-052] (4 shelf/shelves) pub:dc sig:stamp sig:twin
+- The per-file CV matcher picks the LEGACY volume for every New 52 shelf (Batman 1940, Wonder Woman 1942, Nightwing
+  1996, Catwoman 1993) because it matched by issue number — the stored link on a 2011 shelf that names a 1940
+  volume is `wrong-cv-link`, the 2011 volume is in the rip.
+[L-082] (4 shelf/shelves) pub:dc sig:comicinfo
+- A Glorith-HD rip's ComicInfo `Web` id CAN be a ComicVine ISSUE id of the stored volume (599834, DC 100-Page
+  Spectacular) — Glorith's Web ids are never GCD ids, but check them against the CV rip.
+[L-093] (4 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
+[L-195] (4 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- Trade SUBTITLES tell two same-title relaunches apart when the per-file matcher cannot (Batman Beyond 2015 = Brave
+  New Worlds / City of Yesterday / Wired for Death; 2016 = Escaping the Grave / Rise of the Demon / The Long Payback).
+[L-197] (4 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- The per-file matcher's "wrong RELAUNCH" trap: it stamps the LATER same-title volume onto files dated to the earlier
+  era by issue-number coincidence (Wonder Woman 2016, Batman 2016, JLA v2/v3, Firestorm, Hawk and Dove v5, Atari Force
+  v2, Adventure Comics 2010) — the tell is files whose years or numbers predate or exceed the stamped volume's own.
+[L-237] (4 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+[L-245] (4 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-124] (5 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-191] (5 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-272] (5 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-281] (5 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-011] (3 shelf/shelves) folder:events pub:dc
+- DC event folders: the leading number is a READING-ORDER position, and the same book is filed again under its own
+  title folder — n issues × 2 files is one run.
+[L-015] (3 shelf/shelves) folder:events pub:dc
+- DC `#DC Events` read-order folders hold a SECOND rip of issues that also live on the title's own shelf — the
+  source of nearly every DC ratio 2.00; residue, not a second run. Event umbrellas (GCD "Convergence", 9) get
+  handed to two-issue tie-in shelves — the hull shape.
+[L-040] (3 shelf/shelves) folder:bucket folder:events pub:dc pub:papercutz-nbm pub:scout pub:titan pub:valiant sig:twin
+- NBM / Papercutz album lines and Scout one-shots carry TWIN adjacent GCD rows for one book (120209/120210) —
+  cap at 0.9 and name both. Titan's Doctor Who "Year N" volumes number continuously across a Doctor (a ladder
+  starting at #6 is complete). A publisher's read-order crossover folder (Titan `Lost Dimension`, Valiant
+  `_Chronological Valiant`) = DC's `#DC Events` shape.
+[L-199] (3 shelf/shelves) folder:bucket folder:events pub:dc
+- DC's "#DC Events" chronology folders resolve once the cross-referenced-run pattern is seen: a crossover reprint
+  bucket or a tie-in folder filed adjacent to the main run takes the main run's identity with the tie-ins named.
+[L-257] (3 shelf/shelves) pub:dc sig:twin
+- Modern DC digital lines carry TWIN "Collected Edition" GCD rows for one trade (Detective 77783/77579, Stormwatch
+  65339 stub / 76642, Dark Knights of Steel 189483/203963, I Am Batman 188323/201985) — one `I`, capped at 0.9.
+[L-363] (3 shelf/shelves) pub:dc
+- DC New 52 trade lines on GCD are HC/TPB TWIN series (BTDK 78638/78639, Batwoman 66358/71298); CV holds per-trade
+  count-1 volumes that subtitle probes often miss. The retitle cut shows on GCD only (Fury of Firestorm: The Nuclear
+  Men = 61180 #0-12 + 171997 #13-20 = CV 42987's 21); L.E.G.I.O.N. / R.E.B.E.L.S. are split into year series. A "#DC
+  Events" shelf holding #41-45 of a New 52 title is a FRAGMENT of the run shelf — merge it in. Deathstroke the
+  Terminator 1991 = CV 9645 (#0-60) while GCD splits it 10465 (#1-40) / 15127 The Hunted / 15128 (#48-60); the 1991
+  trades (GCD 88153) collect #1-34 (R-098/R-099).
+[L-051] (2 shelf/shelves) pub:bongo pub:dc pub:small-press sig:probe
+- GCD spellings that hide a hit: Bongo's annual is plainly "Treehouse of Horror" (5435); Miller's 1983 series is
+  "Rōnin" (2721); Comico's Primer is "Primer" (14288). DC's Blackest Night revival issues sit in the ORIGINAL
+  series (Power of SHAZAM! 5246 runs 1995-2010).
+[L-055] (2 shelf/shelves) pub:dc pub:small-press sig:probe
+- ComicVine splits ONE line across two spellings of its own ("Batman Arkham: X" vs "Batman: Arkham: X"). GCD
+  prefixes titles the packet probes without ("Batman: Catwoman Defiant", "The Blue Beetle" for the 2006 series).
+[L-059] (2 shelf/shelves) pub:dc
+- A truncated parsed key reaching a different comic ("Riddle", "Batman - Death", "Once Upon") is `wrong-cv-link`.
+[L-175] (3 shelf/shelves) folder:bucket folder:events pass:item
+- In the chronology folders the RUN rule stands over the bucket rule: `S` = the numbered run, the tie-in's collected
+  record goes on the `I` line (B-072/073, ~90 shelves); the book's own record is the S only where no numbered run exists.
+[L-206] (2 shelf/shelves) pub:dc sig:probe
+- GCD's "&" spelling hides a run from every "and" probe (Batman & the Outsiders 2019: CV 118841 / GCD 144938, 17
+  issues) — probe both spellings.
+[L-210] (2 shelf/shelves) pub:dc sig:legacy-stamp sig:probe sig:stamp
+- The wrong-relaunch trap is near-universal on any DC title with 3+ relaunches (Green Arrow, Green Lantern, Harley
+  Quinn, Justice League, Legion, Lobo, Martian Manhunter, Doom Patrol): the matcher stamps the oldest legacy volume or
+  the largest/most-recent one across every sibling shelf; `lookup.py` by name + year recovers the true id.
+[L-212] (2 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-214] (2 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp sig:twin
+- The wrong-relaunch / legacy-volume stamp ran at 70-95% of files on Midnighter, Mister Miracle, Robin, Nightwing,
+  Supergirl, Plastic Man and Suicide Squad shelves in C-016 — assume it on any DC relaunch shelf and verify by year.
+[L-222] (2 shelf/shelves) pub:dc sig:collision
+- Second-rip fragments of shelves already read in earlier batches (Flash Secret Files, Spectre 1992, Teen Titans
+  2003/2016, Wonder Woman 1942/2016, Zatanna 1993, Donna Troy) surface as `--all` collisions — `merge-with` after
+  grepping the partner's name and count.
+[L-242] (2 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-290] (3 shelf/shelves) folder:sequel-subfolder pass:item sig:stamp
+- A spin-off filed in its own subfolder on the parent's shelf gets the PARENT's v01 ids stamped by the per-file
+  matcher (Rent-a-(Really Shy!)-Girlfriend on Rent-A-Girlfriend) — `N no-record` (or the shelf note), never the
+  parent's record; it is a misfiling for the lead.
+[L-337] (2 shelf/shelves) pub:dc sig:probe
+- DC: GCD and CV both file relaunches under "&" ("Batgirl & the Birds of Prey", "Red Hood & the Outlaws", "Batman &
+  the Signal") — probe the "&" AND "and" spellings before provider-missing. GCD's collected-edition series for DC
+  relaunch trades are separate same-name rows of 2-5 issues (77516, 115808, 74348, 113651, 33019) whose per-book
+  "collects" notes give exact C ranges. A "GCD says" row on a JLA trade can be a German Panini edition (78606) — void
+  it on an N line (R-062).
+
++27 more matched entries not shown: L-348, L-113, L-016, L-032, L-114, L-092, L-123, L-128, L-181, L-198, L-216, L-218, L-220, L-299, L-336, L-014, L-064, L-065, L-085, L-099, L-101, L-150, L-193, L-194, L-262, L-310, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S18176 The Brave and the Bold  [split]  126 files / 0 collections  decided in R-101 (R)
+   decided: R 18176 | signal e (126 files) hides three other published runs beside the 1955 ongoing (CV 1683 / GCD 1098, 200, which holds ~95 files): the six-issue 1999 mini "Flash & Green Lantern - The Brave and the Bold 01-06 (of 06)" in THREE rips (18 files, key "Flash and Green Lantern - The Brave and the Bold") = CV 6801 / GCD 7317; the 1991 mini "Brave and the Bold v2 01-06 (of 6)" = CV 4546 / GCD 4190 (6 files — what flag #463 is about); and six issues of the 2007 series ("Brave and the Bold v3 01-06 Lords of Luck", "Brave and the Bold 008 (2008)") = CV 18207 / GCD 21522, which S94858 holds — whole runs with their own records are co-equal runs, not residue; the C-009 S line missed them
+   F 18176 split-needed | (1) items 15223, 15235, 15258, 15298, 15345, 15374 ("NN Flash and Green Lantern The Brave and the Bold 01-06", Oa read-order folders), 74062-74066 ("Flash & Green Lantern - The Brave and the Bold #1-5", Flash v2 Specials) and the six "Flash & Green Lantern - The Brave and the Bold 01-06 (of 06) (1999)" (folder "Flash & Green Lantern - The Brave and the Bold (1999)") -> "Flash & Green Lantern: The Brave and the Bold (1999)" run cv=6801 gcd=7317 (who-stores cv=6801: no shelf); (2) items 57760-57765 ("Brave and the Bold v2 01-06 (of 6) (1991-1992)") -> "The Brave and the Bold v2 (1991)" run cv=4546 gcd=4190 (no shelf); (3) items 16168-16172 ("0N Brave and the Bold v3 01/02/04/05/06 The Lords of Luck") and 74073 ("Brave and the Bold 008 (2008)") -> JOIN S94858 (stores cv=18207, key "The Brave and the Bold v3 (2007)"); everything else stays as cv=1683 gcd=1098
+   N 18176 cv=1683 gcd=1098 — the S line for the kept 1955 ongoing once the three runs move (0.9: GCD's round2-series per-file links on 24 files are the neighbour-copy trap; ComicInfo Volume 1955 x56, Count 200 x59); S2017's misfiled item 55335 (#93) belongs here
+   N 18176 flag #463 label-ambiguous on 57760: the six Brave and the Bold v2 files are 20-27pp single issues of the 1991 mini, not collections — correct once they move
+   named: S94858 The Brave and the Bold v3 (2007)  30 files  keys: "The Brave and the Bold v3 (2007)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S2017 "Batman: The Brave and the Bold" 24f [named S2017 in the decision's R/N lines — S cv=25544 gcd=33598 (R-101 0.9)] keys: "Batman - The Brave and the Bold" | "Batman - The Brave and the Bold (2009)"
+   nearby: S2018 "Batman: The Brave and the Bold" 53f [title+1 — S cv=150430 gcd=200392 (R-101 0.95)] keys: "Batman - The Brave and the Bold - The Winning Card" | "Batman - The Brave and the Bold v2 (2023)"
+   keys now: "The Brave and the Bold v1 (1955)" x89 · "Flash and Green Lantern - The Brave and the Bold" x17 · "The Brave and the Bold" x12 · "Brave and the Bold" x7 · "The Brave and the Bold #195 - Batman and I... Vampire!" x1
+   groups (title x folder): 19
+   G1 "Flash and Green Lantern The Brave and the Bold 01  Those Who Worship Evils Might" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\005 The Duel of the Super-Heroes — 1 file(s), numbers 1, pp 23-23; cv per-file 1683x1; gcd per-file 1098x1; key 'Flash and Green Lantern - The Brave and the Bold'
+      [15223] 07 Flash and Green Lantern The Brave and the Bold 01  Those Who Worship Evils Might.cbz (23pp)
+   G2 "Flash and Green Lantern The Brave and the Bold 02  Lightspeed" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\006 The Secret Life of Star Sapphire — 1 file(s), numbers 2, pp 23-23; cv per-file 1683x1; gcd per-file 1098x1; key 'Flash and Green Lantern - The Brave and the Bold'
+      [15235] 12 Flash and Green Lantern The Brave and the Bold 02  Lightspeed.cbz (23pp)
+   G3 "Brave and the Bold" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\007 In Brightest Day — 1 file(s), numbers 59, pp 36-36; cv per-file 1683x1; gcd per-file 1098x1; key 'The Brave and the Bold'
+      [15245] 10 Brave and the Bold v1 059  The TickTock Traps of the Time Commander.cbz (36pp)
+   G4 "Flash and Green Lantern The Brave and the Bold 03  A World Of Hurt" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\008 Secret Origin of the Guardians — 1 file(s), numbers 3, pp 23-23; cv per-file 1683x1; gcd per-file 1098x1; key 'Flash and Green Lantern - The Brave and the Bold'
+      [15258] 10 Flash and Green Lantern The Brave and the Bold 03  A World Of Hurt.cbz (23pp)
+   G5 "Flash and Green Lantern The Brave and the Bold 04  How Many Times Can a Man Turn His Head" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\012 Hard Hitting Heroes — 1 file(s), numbers 4, pp 23-23; cv per-file 1683x1; gcd per-file 1098x1; key 'Flash and Green Lantern - The Brave and the Bold'
+      [15298] 10 Flash and Green Lantern The Brave and the Bold 04  How Many Times Can a Man Turn His Head_.cbz (23pp)
+   G6 "Brave and the Bold" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\014 ''No Man Escapes the Manhunters!'' — 1 file(s), numbers 134, pp 19-19; cv per-file 1683x1; gcd per-file 1098x1; key 'The Brave and the Bold'
+      [15336] 09 Brave and the Bold v1 134  Demolishment.cbz (19pp)
+   G7 "Flash and Green Lantern The Brave and the Bold 05  The Man Without Fearlessness" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\015 Assault on Replikon — 1 file(s), numbers 5, pp 23-23; cv per-file 1683x1; gcd per-file 1098x1; key 'Flash and Green Lantern - The Brave and the Bold'
+      [15345] 09 Flash and Green Lantern The Brave and the Bold 05  The Man Without Fearlessness.cbz (23pp)
+   G8 "Brave and the Bold" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\017 The Steel Vengeance — 1 file(s), numbers 155, pp 18-18; cv per-file 1683x1; gcd per-file 1098x1; key 'The Brave and the Bold'
+      [15365] 07 Brave and the Bold v1 155  Fugitive from Two Worlds.cbz (18pp)
+   G9 "Flash and Green Lantern The Brave and the Bold 06  Running On Empty" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\018 The Powers War — 1 file(s), numbers 6, pp 23-23; cv per-file 1683x1; gcd per-file 1098x1; key 'Flash and Green Lantern - The Brave and the Bold'
+      [15374] 09 Flash and Green Lantern The Brave and the Bold 06  Running On Empty.cbz (23pp)
+   G10 "Brave and the Bold" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\019 Mind over Magnetism — 2 file(s), numbers 173-174, pp 26-27; cv per-file 1683x2; gcd per-file 1098x2; key 'The Brave and the Bold'
+      [15387] 13 Brave and the Bold v1 173  One of Us Is Not One of Us.cbz (27pp)
+      [15388] 14 Brave and the Bold v1 174  To Trap an Immortal.cbz (26pp)
+   G11 "Brave and the Bold" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\126 The Lords of Luck — 5 file(s), numbers 1-2, 4-6, pp 24-30; cv per-file 1683x5; gcd per-file 21522x5; key 'The Brave and the Bold'
+      [16168] 01 Brave and the Bold v3 01  The Lords of Luck Chapter One Roulette.cbz (26pp)
+      [16169] 02 Brave and the Bold v3 02  The Lords of Luck Chapter Two Ventura.cbz (26pp)
+      [16170] 03 Brave and the Bold v3 04  The Lords of Luck Chapter Four The Garden of Destiny.cbz (24pp)
+      [16171] 04 Brave and the Bold v3 05  The Lords of Luck Chapter Five The Batman of Tomorrow.cbz (24pp)
+      [16172] 05 Brave and the Bold v3 06  The Lords of Luck Chapter Six The Girl Who Knew Too Much.cbz (30pp)
+   G12 "The_Brave_and_the_Bold__1955_061" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\01 Crisis on Multiple Earths\00 The Team ups\Vol. 1 — 1 file(s), numbers 61, pp 36-36; cv per-file 1683x1; key 'The Brave and the Bold'
+      [16710] The_Brave_and_the_Bold__1955_061.cbr (36pp)
+   G13 "The_Brave_and_the_Bold__1955_062" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\01 Crisis on Multiple Earths\00 The Team ups\Vol. 2 — 1 file(s), numbers 62, pp 25-25; cv per-file 1683x1; key 'The Brave and the Bold'
+      [16718] The_Brave_and_the_Bold__1955_062.cbr (25pp)
+   G14 "Flash & Green Lantern - The Brave and the Bold" in DC\Flash & Green Lantern - The Brave and the Bold (1999) — 6 file(s), numbers 1-6, pp 24-24; cv per-file 1683x6; gcd per-file 1098x6; key 'Flash and Green Lantern - The Brave and the Bold'
+      e.g. Flash & Green Lantern - The Brave and the Bold 01 (of 06) (1999) (digital) (Son of Ultron-Empire).cbr
+        55127 #1 1999 24pp · 55128 #2 1999 24pp · 55129 #3 1999 24pp · 55130 #4 2000 24pp · 55131 #5 2000 24pp · 55132 #6 2000 24pp
+   G15 "The Brave and the Bold" in DC\House of Mystery v1 (Complete)\Annuals and Specials — 1 file(s), numbers 195, pp 28-28; cv per-file 43971x1; gcd per-file 1098x1; key 'The Brave and the Bold #195 - Batman and I... Vampire!'
+      [55337] The Brave and the Bold v1 #195 - Batman & I... Vampire!.cbz (28pp)
+   G16 "The Brave and the Bold" in DC\The Brave and the Bold\The Brave and the Bold v1 (1955) — 89 file(s), numbers 28-30, 37-39, 42-49, 54, 60, 63, 66-72, 74-89, 94, 97, 100, 107, 110-139, 141, 147-150, 152-156, 160, 173-174, 176, 200, pp 18-84; cv per-file 1683x89; gcd per-file 1098x76, 149569x1; key 'The Brave and the Bold v1 (1955)'
+      e.g. The Brave and the Bold 028 (1960-01) (digital) (Minutemen-Phantasm).cbr
+        57671 #28 1960 28pp · 57672 #29 1960 27pp · 57673 #30 1960 28pp · 57674 #37 1961 26pp · 57675 #38 1961 26pp · 57676 #39 1961 26pp · 57677 #42 1962 27pp · 57678 #43 1962 27pp
+        57679 #44 1962 27pp · 57680 #45 1962 28pp · 57681 #46 1963 26pp · 57682 #47 1963 27pp · 57683 #48 1963 27pp · 57684 #49 1963 26pp · 57685 #54 1964 27pp · 57686 #60 1965 28pp
+        57687 #63 1965 27pp · 57688 #66 1966 26pp · 57689 #67 1966 26pp · 57690 #68 1966 25pp · 57691 #69 1967 25pp · 57692 #70 1967 25pp · 57693 #71 1967 24pp · 57694 #72 1967 25pp
+        57695 #74 1967 27pp · 57696 #75 1967 27pp · 57697 #76 1968 33pp · 57698 #77 1968 26pp · 57699 #78 1968 28pp · 57700 #79 1968 26pp · 57701 #80 1968 25pp · 57702 #81 1968 26pp
+        57703 #82 1969 25pp · 57704 #83 1969 26pp · 57705 #84 1969 25pp · 57706 #85 1969 24pp · 57707 #86 1969 25pp · 57708 #87 1969 24pp · 57709 #88 1970 26pp · 57710 #89 1970 26pp
+        57711 #94 1971 26pp · 57712 #97 1971 24pp · 57713 #100 1972 40pp · 57714 #107 1973 25pp · 57715 #110 1973 22pp · 57716 #111 1974 22pp · 57717 #112 1974 82pp · 57718 #113 1974 79pp
+        57719 #114 1974 83pp · 57720 #115 1974 84pp · 57721 #116 1974 82pp · 57722 #117 1975 82pp · 57723 #118 1975 20pp · 57724 #119 1975 20pp · 57725 #120 1975 50pp · 57726 #121 1975 20pp
+        57727 #122 1975 19pp · 57728 #123 1975 20pp · 57729 #124 1975 20pp · 57730 #125 1975 20pp · 57731 #126 1976 20pp · 57732 #127 1976 19pp · 57733 #128 1976 19pp · 57734 #129 1976 19pp
+        57735 #130 1976 19pp · 57736 #131 1976 19pp · 57737 #132 1976 19pp · 57738 #133 1977 19pp · 57739 #134 1977 18pp · 57740 #135 1977 19pp · 57741 #136 1977 19pp · 57742 #137 1977 18pp
+        57743 #138 1977 19pp · 57744 #139 1977 19pp · 57745 #141 1978 19pp · 57746 #147 1978 19pp · 57747 #148 1979 19pp · 57748 #149 1979 18pp · 57749 #150 1979 21pp · 57750 #152 1979 18pp
+        57751 #153 1979 18pp · 57752 #154 1979 18pp · 57753 #155 1979 18pp · 57754 #156 1979 18pp · 57755 #160 1980 18pp · 57756 #173 1981 27pp · 57757 #174 1981 26pp · 57758 #176 1981 26pp
+        57759 #200 1983 57pp
+   G17 "Brave and the Bold" in DC\The Brave and the Bold\The Brave and the Bold v2 (1991) — 6 file(s), numbers 1-6, pp 20-27; cv per-file 1683x6; gcd per-file 1098x6; key 'Brave and the Bold'
+      e.g. Brave and the Bold v2 01 (of 6) (1991).cbz
+        57760 #1 1991 25pp · 57761 #2 1992 22pp · 57762 #3 1992 23pp · 57763 #4 1992 24pp · 57764 #5 1992 27pp · 57765 #6 1992 20pp
+   G18 "Flash & Green Lantern - The Brave and the Bold" in DC\_The Flash\_Completed Seres\04 The Flash v2 (1987)\Flash v2 Specials\Brave and Bold mini — 5 file(s), numbers 1-5, pp 23-23; cv per-file 1683x5; gcd per-file 1098x5; key 'Flash and Green Lantern - The Brave and the Bold'
+      e.g. Flash & Green Lantern - The Brave and the Bold #1.cbr
+        74062 #1 23pp · 74063 #2 23pp · 74064 #3 23pp · 74065 #4 23pp · 74066 #5 23pp
+   G19 "Brave and the Bold" in DC\_The Flash\_Completed Seres\04 The Flash v2 (1987)\Flash v2 Specials\Crossovers — 1 file(s), numbers 8, pp 25-25; cv per-file 1683x1; gcd per-file 1098x1; key 'Brave and the Bold'
+      [74073] Brave and the Bold 008 (2008) (RacerX-DCP).cbz (25pp)
+
+== S19960 The Witching Hour  [split]  39 files / 0 collections  decided in R-101 (R)
+   decided: R 19960 | signal e (39 files) hides a whole second run: 35 files in "The Witching Hour v1 (1969)" are CV 2439 (DC 1969, 85) = GCD 1905 (1969-1978, 85), but "The Witching Hour 001-003" in "The Witching Hour v2" (46-50pp) are the complete 1999 Vertigo mini CV 20074 (DC 1999, 3) = GCD 6178 (1999-2000, 3) — why #1-3 each name two files — and "The Witching Hour (2024)" (147pp, DC Black Label) is a third comic whose record neither leg names; a complete mini with its own record is not residue
+   F 19960 split-needed | items 58047, 58048, 58049 ("The Witching Hour 001-003", folder "The Witching Hour v2") -> "The Witching Hour (1999)" run cv=20074 gcd=6178 (who-stores cv=20074: no shelf); item 19982 "The Witching Hour (2024)" -> "The Witching Hour (2024)" (no record in CV rip or GCD dump); the 35 1969 issues stay as cv=2439 gcd=1905
+   F 19960 needs-fetch cv=20074 | CV 20074 "The Witching Hour" 1999 is named from the rip only
+   N 19960 cv=2439 gcd=1905 — the S line for the kept 1969 run once the 1999 mini and the 2024 book move (ladder 1-79 in 35 files inside CV's cached #1-85)
+   keys now: "The Witching Hour" x39
+   groups (title x folder): 3
+   G1 "The Witching Hour (2024) (digital) (Son of Ultron-Empire)" in DC Black Label\The Witching Hour (2024) — 1 file(s), pp 147-147; cv per-file 2439x1; key 'The Witching Hour'
+      [19982] The Witching Hour (2024) (digital) (Son of Ultron-Empire).cbr (147pp)
+   G2 "The Witching Hour" in DC\The Witching Hour v1 (1969) — 35 file(s), numbers 1-13, 15-16, 18-20, 23, 25, 34, 37, 41-42, 50-51, 56-57, 59-60, 67, 69, 72, 74, 79, pp 19-52; cv per-file 2439x35; gcd per-file 1905x20; key 'The Witching Hour'
+      e.g. The Witching Hour 001 (1969) (Digital) (Shadowcat-Empire).cbz
+        58012 #1 1969 27pp · 58013 #2 1969 27pp · 58014 #3 36pp · 58015 #4 1969 25pp · 58016 #5 1969 25pp · 58017 #6 1969 27pp · 58018 #7 1970 29pp · 58019 #8 1970 27pp · 58020 #9 1970 27pp
+        58021 #10 1970 27pp · 58022 #11 1970 24pp · 58023 #12 1971 24pp · 58024 #13 1971 26pp · 58025 #15 23pp · 58026 #16 39pp · 58027 #18 41pp · 118932 #19 52pp · 58029 #20 40pp · 58030 #23 35pp
+        58031 #25 36pp · 118933 #34 36pp · 118934 #37 36pp · 58034 #41 36pp · 58035 #42 35pp · 58036 #50 36pp · 58037 #51 23pp · 58038 #56 33pp · 58039 #57 27pp · 58040 #59 36pp · 58041 #60 34pp
+        58042 #67 19pp · 58043 #69 36pp · 58044 #72 19pp · 58045 #74 36pp · 58046 #79 34pp
+   G3 "The Witching Hour" in DC\The Witching Hour v2 — 3 file(s), numbers 1-3, pp 46-50; cv per-file 2439x3; key 'The Witching Hour'
+      [58047] The Witching Hour 001.cbr (48pp)
+      [58048] The Witching Hour 002.cbr (46pp)
+      [58049] The Witching Hour 003.cbr (50pp)
+
+== S58610 Weird War Tales  [split]  135 files / 0 collections  decided in R-101 (R)
+   decided: R 58610 | signal e (135 files) hides a whole second run: 124 files are the 1971 run CV 2507 (DC 1971, 124) = GCD 1983 (1971-1983, 124), ladder 1-124 exact, but the complete 1997 Vertigo mini "Weird War Tales 01-04 (of 04) (1997)" sits here in two rips plus a third #3 (9 files, folders "Weird War Tales v2", "Vertigo\Weird War Tales v2 (1997)", "Vertigo\_Grant Morrison") = CV 7450 (DC 1997, 4) = GCD 8045 (1997, 4) — why #1-4 name two files; and two rips of the 2000 Special (CV 25676 / GCD 6287); a complete mini with its own record is not residue. Signal a-I (gcd 1983 "named" on S102929) is a stray per-file link on a Marvel Dark Tower one-shot, not a claim on this run
+   F 58610 split-needed | items 58357, 58358, 58359, 58360 ("Weird War Tales 01-04", folder "DC\Weird War Tales v2"), 113473-113476 ("Weird War Tales 01-04 (of 04) (1997)") and 113992 ("Weird War Tales 003 (1997) (Rosie-DCP)") -> "Weird War Tales v2 (1997)" run cv=7450 gcd=8045 (who-stores cv=7450: no shelf); items 58356 ("Weird War Tales - Special", 58pp) and 113472 ("Weird War Tales (2000)", 59pp) -> "Weird War Tales Special (2000)" run cv=25676 gcd=6287 (not the "Weird War Tales - Special" spelling, already linked to cv=7450, L-336); the 124 1971 issues stay as cv=2507 gcd=1983
+   N 58610 cv=2507 gcd=1983 — the S line for the kept 1971 run once the 1997 mini and the 2000 Special move (0.95 then: both legs 124 = ladder 1-124)
+   nearby: S102929 "Dark Tower: Gunslinger's Guidebook (2007)" 1f [named S102929 in the decision's R/N lines — S cv=20562 (R-036 0.9)] keys: "Dark Tower: Gunslinger's Guidebook (2007)"
+   keys now: "Weird War Tales" x134 · "Weird war tales" x1
+   groups (title x folder): 7
+   G1 "Weird War Tales" in DC\Weird War Tales (1971 - 1983) — 123 file(s), numbers 1-71, 73-124, pp 18-61; cv per-file 2507x123; key 'Weird War Tales'
+      e.g. Weird War Tales 001.cbr
+        58232 #1 57pp · 58233 #2 61pp · 58234 #3 42pp · 58235 #4 40pp · 58236 #5 53pp · 58237 #6 27pp · 58238 #7 37pp · 58239 #8 36pp · 58240 #9 24pp · 58241 #10 25pp · 58242 #11 27pp
+        58243 #12 32pp · 58244 #13 43pp · 58245 #14 36pp · 58246 #15 25pp · 58247 #16 26pp · 58248 #17 23pp · 58249 #18 23pp · 58250 #19 26pp · 58251 #20 29pp · 58252 #21 24pp · 58253 #22 29pp
+        58254 #23 26pp · 58255 #24 36pp · 58256 #25 43pp · 58257 #26 26pp · 58258 #27 46pp · 58259 #28 37pp · 58260 #29 22pp · 58261 #30 37pp · 58262 #31 26pp · 58263 #32 35pp · 58264 #33 36pp
+        58265 #34 37pp · 58266 #35 37pp · 58267 #36 56pp · 58268 #37 21pp · 58269 #38 37pp · 58270 #39 36pp · 58271 #40 30pp · 58272 #41 37pp · 58273 #42 27pp · 58274 #43 19pp · 58275 #44 19pp
+        58276 #45 19pp · 58277 #46 37pp · 58278 #47 21pp · 58279 #48 37pp · 58280 #49 19pp · 58281 #50 36pp · 58282 #51 29pp · 58283 #52 36pp · 58284 #53 18pp · 58285 #54 20pp · 58286 #55 21pp
+        58287 #56 36pp · 58288 #57 18pp · 58289 #58 19pp · 58290 #59 20pp · 58291 #60 18pp · 58292 #61 20pp · 58293 #62 20pp · 58294 #63 36pp · 58295 #64 20pp · 58296 #65 36pp · 58297 #66 38pp
+        58298 #67 29pp · 58299 #68 31pp · 58300 #69 44pp · 58301 #70 36pp · 58302 #71 36pp · 58304 #73 37pp · 58305 #74 39pp · 58306 #75 20pp · 58307 #76 36pp · 58308 #77 24pp · 58309 #78 36pp
+        58310 #79 36pp · 58311 #80 36pp · 58312 #81 20pp · 58313 #82 20pp · 58314 #83 37pp · 58315 #84 20pp · 58316 #85 24pp · 58317 #86 24pp · 58318 #87 36pp · 58319 #88 36pp · 58320 #89 20pp
+        58321 #90 20pp · 58322 #91 40pp · 58323 #92 27pp · 58324 #93 27pp · 58325 #94 27pp · 58326 #95 36pp · 58327 #96 37pp · 58328 #97 27pp · 58329 #98 36pp · 58330 #99 27pp · 58331 #100 27pp
+        58332 #101 36pp · 58333 #102 27pp · 58334 #103 27pp · 58335 #104 29pp · 58336 #105 36pp · 58337 #106 29pp · 58338 #107 36pp · 58339 #108 29pp · 58340 #109 36pp · 58341 #110 28pp
+        58342 #111 27pp · 58343 #112 27pp · 58344 #113 27pp · 58345 #114 27pp · 58346 #115 28pp · 58347 #116 26pp · 58348 #117 26pp · 58349 #118 25pp · 58350 #119 36pp · 58351 #120 26pp
+        58352 #121 26pp · 58353 #122 28pp · 58354 #123 36pp · 58355 #124 29pp
+   G2 "Weird war tales" in DC\Weird War Tales (1971 - 1983) — 1 file(s), numbers 72, pp 25-25; cv per-file 7450x1; key 'Weird war tales'
+      [58303] Weird war tales 072.cbr (25pp)
+   G3 "Weird War Tales" in DC\Weird War Tales v2 — 4 file(s), numbers 1-4, pp 26-27; cv per-file 2507x4; key 'Weird War Tales'
+      e.g. Weird War Tales 01.cbz
+        58357 #1 26pp · 58358 #2 27pp · 58359 #3 27pp · 58360 #4 27pp
+   G4 "Weird War Tales - Special" in DC\Weird War Tales v2 — 1 file(s), pp 58-58; cv per-file 25676x1; gcd per-file 6287x1; key 'Weird War Tales'
+      [58356] Weird War Tales - Special.cbr (58pp)
+   G5 "Weird War Tales" in Vertigo\Weird War Tales v2 (1997) — 4 file(s), numbers 1-4, pp 26-28; cv per-file 2507x3, 7450x1; gcd per-file 8045x4; key 'Weird War Tales'
+      e.g. Weird War Tales 01 (of 04) (1997) (digital) (Son of Ultron-Empire).cbr
+        113473 #1 1997 27pp · 113474 #2 1997 26pp · 113475 #3 1997 28pp · 113476 #4 1997 28pp
+   G6 "Weird War Tales (2000) (digital) (Son of Ultron-Empire)" in Vertigo\Weird War Tales v2 (1997) — 1 file(s), pp 59-59; cv per-file 25676x1; gcd per-file 6287x1; key 'Weird War Tales'
+      [113472] Weird War Tales (2000) (digital) (Son of Ultron-Empire).cbr (59pp)
+   G7 "Weird War Tales" in Vertigo\_Grant Morrison\Weird War Tales (1997) — 1 file(s), numbers 3, pp 29-29; cv per-file 2507x1; gcd per-file 8045x1; key 'Weird War Tales'
+      [113992] Weird War Tales 003 (1997) (Rosie-DCP).cbr (29pp)
+
+== S1868 Batgirl  [split]  64 files / 4 collections  decided in R-101 (R)
+   decided: R 1868 | signal e (64 files) hides a second shelf's run: 41 files are Batgirl (2000) CV 7205 (DC 2000, 73) = GCD 7768 (2000-2006, 73) — "Batgirl 038-073", the Murderer/Fugitive read-order #24/#27/#29/#33 and the three trades Vol. 01-03 (GCD roll-ups s7768 #1-12, #13-25, #26-37) — but 19 files in the New 52 read-order folders ("Batgirl 001 - November 2011" … "Batgirl 019 - June 2013", "004 Batgirl 000 - November 2012", "010 Batgirl 025 - January 2014", "Batgirl Annual 001 - December 2012") are the New 52 Batgirl CV 42604 (DC 2011, 53) = GCD 60829, which S95379 stores — nineteen issues of another shelf's run are not residue
+   F 1868 split-needed | items 18174-18179 (#1-6), 18263 (#9), 18275-18279 (#10-12, #0, #13), 18389-18391 (#14-16), 18428 (#18), 18430 (#19), 18068 (#25) and 19919 ("Batgirl Annual 001 - December 2012") -> JOIN S95379 (stores cv=42604, key "Batgirl v4 (2011)"); everything else stays as cv=7205 gcd=7768
+   N 18176 cv=1683 gcd=1098 — the S line for the kept 1955 ongoing once the three runs move (0.9: GCD's round2-series per-file links on 24 files are the neighbour-copy trap; ComicInfo Volume 1955 x56, Count 200 x59); S2017's misfiled item 55335 (#93) belongs here
+   N 18176 flag #463 label-ambiguous on 57760: the six Brave and the Bold v2 files are 20-27pp single issues of the 1991 mini, not collections — correct once they move
+   N 1868 cv=7205 gcd=7768 — the S line for the kept 2000 run once the New 52 issues move (0.9: "Batgirl Special 001 (1988)" and the Year One Deluxe are other records)
+   named: S95379 Batgirl  12 files  keys: "Batgirl v4 (2011)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S18176 "The Brave and the Bold" 126f [shares stored cv=1683 (N line)] keys: "Brave and the Bold" | "Flash and Green Lantern - The Brave and the Bold" | "The Brave and the Bold" | "The Brave and the Bold #195 - Batman and I... Vampire!" (+1 more: lookup.py --shelf 18176)
+   nearby: S2017 "Batman: The Brave and the Bold" 24f [named S2017 in the decision's R/N lines — S cv=25544 gcd=33598 (R-101 0.9)] keys: "Batman - The Brave and the Bold" | "Batman - The Brave and the Bold (2009)"
+   nearby: S1876 "Batgirl Secret Files and Origins" 1f [shares gcd=17991 (collected by item 59987) — S cv=28426 gcd=17991 (A-009 0.95)] keys: "Batgirl Secret Files and Origins"
+   nearby: S95380 "Batgirl" 8f [title — S cv=92542 gcd=104513 (R-101 0.95)] keys: "Batgirl v5 (2016)" · S95378 "Batgirl" 6f [title — S cv=22245 gcd=31350 (C-011 0.95)] keys: "Batgirl v2 (2008)"
+   nearby: S95381 "Batgirl" 4f [title — S cv=160861 gcd=215073 (R-101 0.95)] keys: "Batgirl v6 (2025)" · S1873 "Batgirl" 1f [title — S cv=27457 gcd=38961 (B-010 0.9)] keys: "Batgirl - Stephanie Brown"
+   nearby: S2212 "Batman: Batgirl" 2f [title+1 — S cv=25378 gcd=10166 (D-003 0.95)] keys: "Batman: Batgirl (1998)" | "Batman: Batgirl: Girlfrenzy"
+   nearby: S4179 "Convergence Batgirl" 2f [title+1 — S cv=81215 gcd=88143 (A-007 0.95)] keys: "Convergence - Batgirl"
+   nearby: S1870 "Batgirl: Endgame" 1f [title+1 — S cv=80711 gcd=87533 (B-010 0.95)] keys: "Batgirl - Endgame" · S1874 "Batgirl Adventures" 1f [title+1 — S cv=29408 gcd=7253 (C-012 0.95)] keys: "Batgirl Adventures"
+   nearby: S2211 "Batman: Batgirl" 1f [title+1 — S cv=28021 gcd=10165 (R-030 0.95)] keys: "Batman: Batgirl"
+   keys now: "Batgirl v1 (2000)" x39 · "Batgirl" x25
+   groups (title x folder): 13
+   G1 "Batgirl" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\01 bruce wayne murderer — 1 file(s), numbers 24, pp 24-24; cv per-file 7205x1; key 'Batgirl'
+      [16969] 02 Batgirl 024.cbr (24pp)
+   G2 "Batgirl" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\02 bruce wayne fugitive — 3 file(s), numbers 27, 29, 33, pp 24-25; cv per-file 7205x3; key 'Batgirl'
+      [16987] 05 Batgirl 27.cbr (25pp)
+      [16995] 13 Batgirl 29.cbr (24pp)
+      [17007] 25 Batgirl 33.cbr (24pp)
+   G3 "Batgirl" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\002 Zero Year Secret City — 1 file(s), numbers 25, pp 32-32; cv per-file 7205x1; key 'Batgirl'
+      [18068] 010 Batgirl 025 - January 2014.cbr (32pp)
+   G4 "Batgirl" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\016 Batgirl Vol. 1 The Darkest Reflection — 6 file(s), numbers 1-6, pp 21-25; cv per-file 7205x6; key 'Batgirl'
+      [18174] Batgirl 001 - November 2011.cbr (25pp)
+      [18175] Batgirl 002 - December 2011.cbr (23pp)
+      [18176] Batgirl 003 - January 2012.cbr (21pp)
+      [18177] Batgirl 004 - February 2012.cbr (22pp)
+      [18178] Batgirl 005 - March 2012.cbr (22pp)
+      [18179] Batgirl 006 - April 2012.cbr (22pp)
+   G5 "Batgirl" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\028 Batman Night of the Owls — 1 file(s), numbers 9, pp 25-25; cv per-file 7205x1; key 'Batgirl'
+      [18263] 009 Batgirl 009 - July 2012.cbr (25pp)
+   G6 "Batgirl" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\031 Batgirl Vol. 2 Knightfall Descends — 5 file(s), numbers 0, 10-13, pp 22-23; cv per-file 7205x5; key 'Batgirl'
+      [18275] 001 Batgirl 010 - August 2012.cbr (22pp)
+      [18276] 002 Batgirl 011 - September 2012.cbr (22pp)
+      [18277] 003 Batgirl 012 - October 2012.cbr (22pp)
+      [18278] 004 Batgirl 000 - November 2012.cbr (23pp)
+      [18279] 005 Batgirl 013 - December 2012.cbr (22pp)
+   G7 "Batgirl" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\059 Batgirl Vol. 3 Death of the Family 1 — 3 file(s), numbers 14-16, pp 21-22; cv per-file 7205x3; key 'Batgirl'
+      [18389] 001 Batgirl 014 - January 2013.cbr (22pp)
+      [18390] 002 Batgirl 015 - February 2013.cbr (21pp)
+      [18391] 003 Batgirl 016 - March 2013.cbr (21pp)
+   G8 "Batgirl Annual" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\075 Batgirl Vol. 3 Death of the Family 2 — 1 file(s), numbers 1, pp 38-38; cv per-file 7205x1; key 'Batgirl'
+      [19919] Batgirl Annual 001 - December 2012.cbr (38pp)
+   G9 "Batgirl" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\083 REQUIEM FOR DAMIAN — 2 file(s), numbers 18-19, pp 24-25; cv per-file 7205x2; key 'Batgirl'
+      [18428] 003 Batgirl 018 - May 2013.cbr (24pp)
+      [18430] 005 Batgirl 019 - June 2013.cbr (25pp)
+   G10 "Batgirl Special" in DC\_Batgirl — 1 file(s), numbers 1, pp 38-38; cv per-file 28070x1; gcd per-file 3569x1; key 'Batgirl'
+      [58995] Batgirl Special 001 (1988) (Digital) (Shadowcat-Empire).cbz (38pp)
+   G11 "Batgirl - Year One Deluxe Edition (2019) (digital) (Son of Ultron-Empire)" in DC\_Batgirl\00 Batgirl - Year One (2003) — 1 file(s), 1 COL, pp 239-239; cv per-file 117196x1; gcd per-file 140692x1; key 'Batgirl'
+      [59987] COL Batgirl - Year One Deluxe Edition (2019) (digital) (Son of Ultron-Empire).cbr (239pp)
+         own record cv 117196 / gcd s140692 "Batgirl: Year One Deluxe Edition" (issue 1925512) COLLECTS: gcd=10948 Batgirl Year One (2003) #1-9 · gcd=23845 Batgirl: Year One (2003) (unnumbered) · gcd=17991 Batgirl Secret Files and Origins (2002) #1
+   G12 "Batgirl" in DC\_Batgirl\01 Batgirl v1 (2000) — 36 file(s), numbers 38-73, pp 22-32; cv per-file 7205x36; gcd per-file 7768x36; key 'Batgirl v1 (2000)'
+      e.g. Batgirl 038 (2003) (Digital) (AnHeroGold-Empire).cbz
+        58918 #38 2003 24pp · 58919 #39 2003 24pp · 58920 #40 2003 24pp · 58921 #41 2003 24pp · 58922 #42 2003 23pp · 58923 #43 2003 24pp · 58924 #44 2003 24pp · 58925 #45 2003 24pp
+        58926 #46 2004 24pp · 58927 #47 2004 24pp · 58928 #48 2004 24pp · 58929 #49 2004 24pp · 58930 #50 2004 32pp · 58931 #51 2004 24pp · 58932 #52 2004 23pp · 58933 #53 2004 24pp
+        58934 #54 2004 24pp · 58935 #55 2004 23pp · 58936 #56 2004 24pp · 58937 #57 2004 24pp · 58938 #58 2005 24pp · 58939 #59 2005 24pp · 58940 #60 2005 24pp · 58941 #61 2005 24pp
+        58942 #62 2005 24pp · 58943 #63 2005 24pp · 58944 #64 2005 24pp · 58945 #65 2005 24pp · 58946 #66 2005 23pp · 58947 #67 2005 23pp · 58948 #68 2005 23pp · 58949 #69 2005 23pp
+        58950 #70 2006 22pp · 58951 #71 2006 22pp · 58952 #72 2006 23pp · 58953 #73 2006 23pp
+   G13 "Batgirl" in DC\_Batgirl\01 Batgirl v1 (2000)\Trades — 3 file(s), 3 COL, pp 286-322; cv per-file 7205x3; gcd per-file 95734x3; key 'Batgirl v1 (2000)'
+      [58954] COL Batgirl Vol. 01 - Silent Knight (2015) (digital) (Son of Ultron-Empire).cbr (322pp)
+         own record cv 7205 / gcd s95734 "Batgirl" (issue 1526435) COLLECTS: gcd=7768 Batgirl (2000) #1-12 · gcd=19633 Batgirl Annual (2000) #1
+      [58955] COL Batgirl Vol. 02 - To the Death (2016) (digital) (Son of Ultron-Empire).cbr (317pp)
+         own record cv 7205 / gcd s95734 "Batgirl" (issue 1604113) COLLECTS: gcd=7768 Batgirl (2000) #13-25 · gcd=17991 Batgirl Secret Files and Origins (2002) #1
+      [58956] COL Batgirl Vol. 03 - Point Blank (2017) (digital) (Son of Ultron-Empire).cbr (286pp)
+         own record cv 7205 / gcd s95734 "Batgirl" (issue 1667222) COLLECTS: gcd=7768 Batgirl (2000) #26-37 · gcd=17991 Batgirl Secret Files and Origins (2002) #1
+
+== S1711 Azrael  [split]  90 files / 1 collections  decided in R-101 (R)
+   decided: R 1711 | signal e (90 files) exposes two runs on both legs: CV splits them — 5490 "Azrael" (DC 1995, 47 = #1-46 + #1000000) and 19721 "Azrael: Agent of the Bat" (DC 1998, 54 = #47-100) — and GCD splits them the same way (5220, 47 / 13575, 54); our folders split them too ("Azrael v1" 33 files #8-39 + the Fallen Angel trade; "Azrael - Agent of the Bat v1 (1995)" 54 files #47-100), ComicInfo Volume 1995/Count 46 x33 against 1998/Count 100 x51; the stored cv=5490 cannot hold #47-100 (a ladder past its count), and C-011's S mixed cv=5490 with gcd=13575 — the continuous numbering does not make one record where both providers keep two
+   F 1711 split-needed | the 33 files in "DC\_Azrael\Azrael v1" ("Azrael 1995-07 (08)" … "Azrael 1998-03 (39)"), item 59985 ("COL Azrael Vol. 01 - Fallen Angel (2016)", Azrael v1\Trades) and item 18030 ("15 Azrael (1998-11) 1000000", CV 5490's #1000000) -> "Azrael (1995)" run cv=5490 gcd=5220; the 54 Agent of the Bat issues #47-100 + item 16997 ("15 Azrael 091", a second rip of #91) stay as cv=19721 gcd=13575
+   F 1711 needs-fetch cv=19721 | CV 19721 "Azrael: Agent of the Bat" 1998 is named from the rip only
+   N 1711 cv=19721 gcd=13575 — the S line for the kept Agent of the Bat run (#47-100) once the 1995 run moves; lead: L-212 says continued legacy numbering is ONE run, but there both shelves shared a record — here both providers keep two records, so this is presented as a lead decision
+   nearby: S15576 "Showcase '94" 12f [shares gcd=4967 (collected by item 59985) — S cv=21865 gcd=4967 (A-009 0.95)] keys: "Showcase '94"
+   keys now: "Azrael: Agent of the Bat" x54 · "Azrael" x36
+   groups (title x folder): 5
+   G1 "Azrael" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\02 bruce wayne fugitive — 1 file(s), numbers 91, pp 24-24; cv per-file 5490x1; gcd per-file 13575x1; key 'Azrael'
+      [16997] 15 Azrael 091.cbr (24pp)
+   G2 "Azrael (1998-11) 1000000 (digital) (OkC.O.M.P.U.T.O.-Novus)" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) — 1 file(s), pp 25-25; cv per-file 5490x1; key 'Azrael'
+      [18030] 15 Azrael (1998-11) 1000000 (digital) (OkC.O.M.P.U.T.O.-Novus).cbz (25pp)
+   G3 "Azrael - Agent of the Bat" in DC\_Azrael\Azrael - Agent of the Bat v1 (1995) — 54 file(s), numbers 47-100, pp 23-39; cv per-file 5490x54; gcd per-file 13575x54; key 'Azrael: Agent of the Bat'
+      e.g. Azrael - Agent of the Bat, 1998-10-00 (#47) (digital) (Marika-Empire).cbz
+        58824 #47 24pp · 58825 #48 24pp · 58826 #49 24pp · 58827 #50 24pp · 58828 #51 24pp · 58829 #52 24pp · 58830 #53 25pp · 58831 #54 24pp · 58832 #55 23pp · 58833 #56 24pp · 58834 #57 24pp
+        58835 #58 24pp · 58836 #59 24pp · 58837 #60 24pp · 58838 #61 24pp · 58839 #62 24pp · 58840 #63 24pp · 58841 #64 24pp · 58842 #65 24pp · 58843 #66 24pp · 58844 #67 24pp · 58845 #68 24pp
+        58846 #69 24pp · 58847 #70 24pp · 58848 #71 24pp · 58849 #72 24pp · 58850 #73 24pp · 58851 #74 24pp · 58852 #75 39pp · 58853 #76 24pp · 58854 #77 24pp · 58855 #78 24pp · 58856 #79 24pp
+        58857 #80 24pp · 58858 #81 24pp · 58859 #82 24pp · 58860 #83 24pp · 58861 #84 24pp · 58862 #85 24pp · 58863 #86 24pp · 58864 #87 24pp · 58865 #88 25pp · 58866 #89 23pp · 58867 #90 24pp
+        58868 #91 24pp · 58869 #92 24pp · 58870 #93 24pp · 58871 #94 24pp · 58872 #95 24pp · 58873 #96 23pp · 58874 #97 24pp · 58875 #98 24pp · 58876 #99 24pp · 58877 #100 24pp
+   G4 "Azrael" in DC\_Azrael\Azrael v1 — 33 file(s), numbers 0, 8-39, pp 22-25; cv per-file 5490x33; gcd per-file 5220x32; key 'Azrael'
+      e.g. Azrael 1995-07-00 (08) (digital) (Glorith-Novus-HD).cbz
+        58878 #8 24pp · 58879 #9 24pp · 58880 #10 23pp · 58881 #11 23pp · 58882 #12 23pp · 58883 #13 23pp · 58884 #14 23pp · 58885 #15 24pp · 58886 #16 24pp · 58887 #17 24pp · 58888 #18 23pp
+        58889 #19 23pp · 58890 #20 24pp · 58891 #21 23pp · 58892 #22 23pp · 58893 #23 24pp · 58894 #24 22pp · 58895 #25 23pp · 58896 #26 23pp · 58897 #27 22pp · 58898 #28 23pp · 58899 #29 24pp
+        58900 #30 24pp · 58901 #31 24pp · 58902 #32 24pp · 58903 #33 24pp · 58904 #34 24pp · 58905 #35 24pp · 58906 #36 24pp · 58907 #37 24pp · 58908 #38 24pp · 58909 #0 23pp · 58910 #39 25pp
+   G5 "Azrael" in DC\_Azrael\Azrael v1\Trades — 1 file(s), 1 COL, pp 314-314; cv per-file 5490x1; gcd per-file 98246x1; key 'Azrael'
+      [59985] COL Azrael Vol. 01 - Fallen Angel (2016) (digital) (F) (Son of Ultron-Empire).cbr (314pp)
+         own record cv 5490 / gcd s98246 "Azrael" (issue 1544850) COLLECTS: gcd=5220 Azrael (1995) #1-7 · gcd=9987 Batman: Sword of Azrael (1992) #1-4 · gcd=4967 Showcase '94 (1994) #10 · gcd=10532 Batman: Sword of Azrael (1993) (unnumbered)
