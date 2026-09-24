@@ -1884,3 +1884,10 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   CV side too (cv=33054 on an I line) — the a-I signal catches it. A split's warrant is the shelf's WINNING F
   split-needed: an unlanded R- file that restates the shelf must carry the F line too, or check_splits --all refuses
   the P- line (P-039 / R-109, S16896).
+
+[L-371] pub:marvel sig:split
+- A split F line's "new key" can already be a LIVE shelf's key (a trade-only shelf of the same run, e.g. Superboy v6
+  (2011) = S100132's key) — check `nearby:` / `lookup.py --shelf` and write it as an explicit join. Stored GCD rows on
+  Marvel 2022+ trades can be the PANINI FRANCE edition — `--collects` on the English row confirms the right one.
+  Digital rips of Marvel trades run ~88-92% of GCD's printed page count — a usable per-book fit when the filename year is
+  the digital release date (R-111).

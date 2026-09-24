@@ -1,0 +1,573 @@
+## Conventions for this batch (29 shown of 75 matched; 370 in LEDGER.md; 2 shelf/shelves: folder:sequel-subfolder ×2 · folder:vn-year ×2 · pub:dc ×2 · folder:events ×2 · kind:foreign ×2 · kind:golden-age ×2 · folder:variant-covers ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-011] (2 shelf/shelves) folder:events pub:dc
+- DC event folders: the leading number is a READING-ORDER position, and the same book is filed again under its own
+  title folder — n issues × 2 files is one run.
+[L-015] (2 shelf/shelves) folder:events pub:dc
+- DC `#DC Events` read-order folders hold a SECOND rip of issues that also live on the title's own shelf — the
+  source of nearly every DC ratio 2.00; residue, not a second run. Event umbrellas (GCD "Convergence", 9) get
+  handed to two-issue tie-in shelves — the hull shape.
+[L-018] (2 shelf/shelves) kind:foreign pub:dc
+- Stored links that are the PARENT ongoing (Harley Quinn Road Trip → the ongoing), a different publisher
+  (Justice → Panini; Inferno → Games Workshop), or an empty stub (Arkham Horror) → `F wrong-cv-link`.
+[L-040] (2 shelf/shelves) folder:bucket folder:events pub:dc pub:papercutz-nbm pub:scout pub:titan pub:valiant sig:twin
+- NBM / Papercutz album lines and Scout one-shots carry TWIN adjacent GCD rows for one book (120209/120210) —
+  cap at 0.9 and name both. Titan's Doctor Who "Year N" volumes number continuously across a Doctor (a ladder
+  starting at #6 is complete). A publisher's read-order crossover folder (Titan `Lost Dimension`, Valiant
+  `_Chronological Valiant`) = DC's `#DC Events` shape.
+[L-051] (2 shelf/shelves) pub:bongo pub:dc pub:small-press sig:probe
+- GCD spellings that hide a hit: Bongo's annual is plainly "Treehouse of Horror" (5435); Miller's 1983 series is
+  "Rōnin" (2721); Comico's Primer is "Primer" (14288). DC's Blackest Night revival issues sit in the ORIGINAL
+  series (Power of SHAZAM! 5246 runs 1995-2010).
+[L-052] (2 shelf/shelves) pub:dc sig:stamp sig:twin
+- The per-file CV matcher picks the LEGACY volume for every New 52 shelf (Batman 1940, Wonder Woman 1942, Nightwing
+  1996, Catwoman 1993) because it matched by issue number — the stored link on a 2011 shelf that names a 1940
+  volume is `wrong-cv-link`, the 2011 volume is in the rip.
+[L-082] (2 shelf/shelves) pub:dc sig:comicinfo
+- A Glorith-HD rip's ComicInfo `Web` id CAN be a ComicVine ISSUE id of the stored volume (599834, DC 100-Page
+  Spectacular) — Glorith's Web ids are never GCD ids, but check them against the CV rip.
+[L-093] (2 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
+[L-162] (2 shelf/shelves) kind:foreign pub:dc sig:probe
+- A SPACE inside a title hides the English record in BOTH providers: "Gen 13: Armageddon" (CV 19859/GCD 27648) and
+  "Superman/Gen 13" (CV 26595/GCD 16731) are invisible to a "Gen13" probe — that is why such packets offer only foreign editions.
+[L-195] (2 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- Trade SUBTITLES tell two same-title relaunches apart when the per-file matcher cannot (Batman Beyond 2015 = Brave
+  New Worlds / City of Yesterday / Wired for Death; 2016 = Escaping the Grave / Rise of the Demon / The Long Payback).
+[L-197] (2 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- The per-file matcher's "wrong RELAUNCH" trap: it stamps the LATER same-title volume onto files dated to the earlier
+  era by issue-number coincidence (Wonder Woman 2016, Batman 2016, JLA v2/v3, Firestorm, Hawk and Dove v5, Atari Force
+  v2, Adventure Comics 2010) — the tell is files whose years or numbers predate or exceed the stamped volume's own.
+[L-198] (2 shelf/shelves) pub:dc
+- ComicVine keeps ONE spanning volume across era-retitled arcs (L.E.G.I.O.N. / R.E.B.E.L.S., Deathstroke "The Hunted",
+  Green Lantern 1960, Detective, Action, All-Star) while GCD names each era its own row — majority GCD era + `N` the
+  rest; no split for that alone.
+[L-199] (2 shelf/shelves) folder:bucket folder:events pub:dc
+- DC's "#DC Events" chronology folders resolve once the cross-referenced-run pattern is seen: a crossover reprint
+  bucket or a tie-in folder filed adjacent to the main run takes the main run's identity with the tie-ins named.
+[L-210] (2 shelf/shelves) pub:dc sig:legacy-stamp sig:probe sig:stamp
+- The wrong-relaunch trap is near-universal on any DC title with 3+ relaunches (Green Arrow, Green Lantern, Harley
+  Quinn, Justice League, Legion, Lobo, Martian Manhunter, Doom Patrol): the matcher stamps the oldest legacy volume or
+  the largest/most-recent one across every sibling shelf; `lookup.py` by name + year recovers the true id.
+[L-211] (2 shelf/shelves) folder:vn-year pub:dc sig:collision sig:stale-flag
+- An `overlap-in-series` flag on a franchise with many `vN` sibling shelves (Deathstroke, Harley Quinn, Green Lantern,
+  Justice League, JLD, Legion, Lobo) describes the CROSS-SHELF Vol. 01 collision, not conflation on the one shelf —
+  confirmed 14 of 14 in C-013..C-015; the stale-flag note must name the sibling shelf.
+[L-212] (2 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-214] (2 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp sig:twin
+- The wrong-relaunch / legacy-volume stamp ran at 70-95% of files on Midnighter, Mister Miracle, Robin, Nightwing,
+  Supergirl, Plastic Man and Suicide Squad shelves in C-016 — assume it on any DC relaunch shelf and verify by year.
+[L-216] (2 shelf/shelves) kind:golden-age pub:dc
+- Regional reprint editions (Canadian, Philippine, Australian) recur as small harmless residue on Golden Age DC shelves.
+[L-218] (2 shelf/shelves) kind:golden-age pass:revisit pub:dc sig:legacy-stamp
+- ComicVine keeps Action Comics as ONE volume (18005) across the 1938 run and the 2018 legacy-numbered continuation
+  while GCD splits the eras (97 / 59922) — whether the two era shelves merge is a revisit question (R-019).
+[L-220] (2 shelf/shelves) kind:foreign kind:golden-age pub:dc sig:legacy-stamp sig:stamp
+- The wrong-relaunch / legacy-volume stamp runs in BOTH directions on DC legacy titles: the 1938/1959/1942 volume on
+  modern relaunch files AND a modern or FOREIGN volume on legacy files (a 1976 French Éditions Lug "Titans" reprint,
+  CV 44350, is the per-file majority on every US Titans shelf) — reject on publisher and language.
+[L-237] (2 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+[L-242] (2 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-245] (2 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-255] (2 shelf/shelves) kind:foreign kind:trade-only pass:item pub:dc sig:barcode sig:twin
+- ITEM PASS (X-007..X-009): foreign-language GCD twins are the commonest per-book trap on DC trade shelves —
+  Spanish (84-…), German (3-86201 / 3-95798), French (2-365-77… / 979-10-268…), Dutch rows beside the English one;
+  the ISBN prefix is the fast tell (Aquaman, Green Arrow, Catwoman, Checkmate, Deathstroke Inc. 185111 vs 187856).
+[L-261] (2 shelf/shelves) pass:item pub:dc sig:twin
+- Sibling-era shelves of one franchise cross-contaminate each other's per-file GCD picks by "Vol N" ordinal
+  (Harley Quinn S94832↔S94833, Nightwing S65356↔S94872, Legion S98212↔S65063; Supergirl's five shelves so badly
+  that S94709's thirteen books are all no-record) — read the shelf's own list, not the neighbour's.
+[L-263] (2 shelf/shelves) kind:foreign pass:item pub:dc sig:legacy-stamp sig:stamp
+- ITEM PASS (X-013..X-015): the per-file CV matcher stamps a SPANNING legacy volume on every modern Wonder Woman
+  trade and the French Éditions Lug 1976 reprint (CV 44350) on every US Titans trade — reject on era / language.
+[L-348] (2 shelf/shelves) pub:dc sig:probe
+- DC (R-073): the rip holds count-1 CV trade records under "Title: Subtitle" (Justice League Vol. 1-8, Teen Titans 2014,
+  Young Justice 2019, Doom Rising, Oz Effect) — probe the SUBTITLE with --contains. One-shots filed by event name ("Flash
+  Special" = the 50th anniversary special, "Joker: Last Laugh Secret Files"). CV keeps Daring New Adventures of Supergirl
+  #1-13 + Supergirl #14-23 as ONE volume (3113); GCD splits 2626 / 2722 — a C line per leg.
+[L-363] (2 shelf/shelves) pub:dc
+- DC New 52 trade lines on GCD are HC/TPB TWIN series (BTDK 78638/78639, Batwoman 66358/71298); CV holds per-trade
+  count-1 volumes that subtitle probes often miss. The retitle cut shows on GCD only (Fury of Firestorm: The Nuclear
+  Men = 61180 #0-12 + 171997 #13-20 = CV 42987's 21); L.E.G.I.O.N. / R.E.B.E.L.S. are split into year series. A "#DC
+  Events" shelf holding #41-45 of a New 52 title is a FRAGMENT of the run shelf — merge it in. Deathstroke the
+  Terminator 1991 = CV 9645 (#0-60) while GCD splits it 10465 (#1-40) / 15127 The Hunted / 15128 (#48-60); the 1991
+  trades (GCD 88153) collect #1-34 (R-098/R-099).
+[L-364] (2 shelf/shelves) pub:dc
+- DC (R-101): GCD's notes can disagree with GCD's own REPRINT ROLL-UP (Batgirl 2016 Son of Penguin: notes "#7-12",
+  roll-up #7-11) — the roll-up and the next volume's range decide; the packet flags RANGE CONTRADICTED only against
+  notes, so wrong judged ranges can hide without the flag. DC Vertigo: a complete short mini in a "vN" subfolder of a
+  Golden/Silver Age title's shelf (Witching Hour 1999, Weird War Tales 1997) is a CO-EQUAL run, not residue. "#DC
+  Events" New 52 read-order folders carry whole runs onto the pre-2011 shelf of the same title (Batgirl 2000). A retitle
+  that continues the numbering stays one run (L-212) even when both catalogues and the folders split it.
+
++46 more matched entries not shown: L-365, L-366, L-367, L-368, L-369, L-370, L-097, L-124, L-175, L-191, L-252, L-272, L-274, L-281, L-288, L-290, L-291, L-293, L-352, L-354, L-207, L-222, L-256, L-299, L-016, L-032, L-065, L-099, L-113, L-114, L-123, L-128, L-181, L-193, L-194, L-262, L-330, L-336, L-014, L-064, L-074, L-083, L-085, L-101, L-150, L-250 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S17121 Superboy  [split]  113 files / 0 collections  decided in R-109 (R)
+   decided: R 17121 | signal e (113 files) hides whole runs of other shelves beside the 1949 Superboy (CV 19154 / GCD 614, 230; #97-230 in "01 Superboy v1 (1949)", the seven Glorith "Superboy and the Legion of Super-Heroes 222-229 (1976)" second rips of #222-229, and Superboy Annual 001 (1964)): (1) twenty-one New 52 Superboy (2011) issues from the Trinity Read Order folders — "Superboy 001 - November 2011" … "Superboy 013 - December 2012", "Superboy 018 - May 2013" … "024 - December 2013" and "002 Superboy 025 - January 2014" — whose numbers sit inside the 1949 ladder's low end = CV 42685 (DC 2011, 35, named from the rip) = GCD 60456 (DC 2011-2014, 35), a run no shelf stores; (2) four issues of the 1994 Superboy — "Superboy v3 047 Idol Worship Part 2", "Superboy v3 033 (1996)" (Final Night), "Superboy (1998-11) 1000000", "Superboy 074 (2000)" (Sins of Youth) — = CV 5261 / GCD 4973, the run S100130 holds; (3) "Superboy Annual 001-004 (1994-1997)" in "04 Superboy v4 (1994)\Annuals and Specials" = CV 5262 / GCD 4974, the annuals of that 1994 monthly. A whole unshelved run is co-equal, so this is a split, not residue at 0.9
+   F 17121 split-needed | items 18333, 18334, 18335, 18336, 18337, 18338, 18345, 18346, 18349, 18350, 19910, 18372, 18373, 18410, 18411, 18412, 18413, 18414, 18415, 18416, 18469 -> new key 'Superboy v6 (2011)' (CV 42685 / GCD 60456, the New 52 Superboy #1-13, 18-25); items 15848, 16854, 18032, 76523 -> JOIN S100130 (key "Superboy v4 (1994)", S cv=5261 gcd=4973, C-017); items 70246, 70247, 70248, 70249 (Superboy Annual 001-004, 1994-1997) -> JOIN S100130 as that monthly's annuals (L-369); everything else stays as cv=19154 gcd=614
+   F 17121 needs-fetch cv=42685 | CV 42685 "Superboy" 2011 has no CvVolume row (named from the local rip)
+   N 17121 cv=19154 gcd=614 — the S line for the kept 1949 run once the three groups move: CV 19154 (DC 1949, 230, cached #1-230) = GCD 614 (DC 1949-1977, 230), ladder #97-230 + 1964 Annual #1 (the monthly's own annual, L-369 residue) — 0.9 for that annual; per-file GCD 34628 (K. G. Murray [en-au], 5 files) and CV 64304 are regional-reprint coincidence stamps (L-216)
+   N 17121 flag #443 label-ambiguous (item 16854): "015 Superboy v3 033 (1996) (digital) (OkC.O.M.P.U.T.O.-Novus-HD)" is a 24pp single issue — Superboy (1994) #33 from the Final Night read order, which the split sends to S100130; nothing on it reads as a collection
+   named: S100130 Superboy  92 files  keys: "Superboy (1994)" | "Superboy v4 (1994)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S100129 "Superboy" 23f [title — S cv=4378 gcd=4002 (C-017 0.95)] keys: "Superboy v3 (1990)" · S100131 "Superboy v5 (2010)" 11f [title — S gcd=53013 (C-017 0.9)] keys: "Superboy v5 (2010)"
+   nearby: S17128 "Superboy and the Legion of Super-Heroes" 6f [title — S cv=2894 gcd=2385 (C-016 0.95)] keys: "Superboy and the Legion of Super-Heroes"
+   nearby: S100132 "Superboy v6 (2011)" 5f [title — S gcd=74702 (C-017 0.9)] keys: "Superboy v6 (2011)" · S17126 "Superboy Plus" 4f [title+1 — S cv=5971 gcd=5762 (A-011 0.95)] keys: "Superboy Plus"
+   nearby: S4207 "Convergence Superboy" 2f [title+1 — S cv=81341 gcd=88327 (A-008 0.95)] keys: "Convergence - Superboy"
+   nearby: S4208 "Convergence Superboy and the Legion of Super-Heroes" 2f [title+1 — S cv=81470 gcd=88479 (A-008 0.95)] keys: "Convergence - Superboy and The Legion of Superheroes" | "Convergence - Superboy and the Legion of Super-Heroes"
+   keys now: "Superboy v1 (1949)" x76 · "Superboy" x18 · "Superboy (1949)" x14 · "Superboy Annual" x3 · "Superboy Annual (1949)" x2
+   groups (title x folder): 26
+   G1 "Superboy" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\083 Idol Worship — 1 file(s), numbers 47, pp 24-24; cv per-file 19154x1; gcd per-file 4973x1; key 'Superboy (1949)'
+      [15848] 02 Superboy v3 047  Idol Worship Part 2.cbz (24pp)
+   G2 "Superboy" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\12 Final Night\The Final Night Reading Order — 1 file(s), numbers 33, pp 24-24; cv per-file 19154x1; gcd per-file 4973x1; key 'Superboy (1949)'
+      [16854] 015 Superboy v3 033 (1996) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (24pp)
+   G3 "Superboy (1998-11) 1000000 (digital) (OkC.O.M.P.U.T.O.-Novus)" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) — 1 file(s), pp 24-24; cv per-file 19154x1; key 'Superboy'
+      [18032] 17 Superboy (1998-11) 1000000 (digital) (OkC.O.M.P.U.T.O.-Novus).cbz (24pp)
+   G4 "Superboy" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\042 Superboy (1-6) — 6 file(s), numbers 1-6, pp 20-35; cv per-file 19154x6; gcd per-file 69865x3; key 'Superboy' | 'Superboy (1949)'
+      [18333] Superboy 001 - November 2011.cbr (34pp)  key="Superboy"
+      [18334] Superboy 002 - December 2011.cbr (35pp)  key="Superboy"
+      [18335] Superboy 003 - January 2012.cbz (20pp)  key="Superboy (1949)"
+      [18336] Superboy 004 - February 2012.cbz (21pp)  key="Superboy (1949)"
+      [18337] Superboy 005 - March 2012.cbz (20pp)  key="Superboy (1949)"
+      [18338] Superboy 006 - April 2012.cbr (21pp)  key="Superboy"
+   G5 "Superboy" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\043 Superman - Superboy - Supergirl — 4 file(s), numbers 7-10, pp 20-32; cv per-file 19154x4; gcd per-file 60456x1; key 'Superboy (1949)' | 'Superboy'
+      [18345] 007 Superboy 007 - May 2012.cbz (20pp)  key="Superboy (1949)"
+      [18346] 008 Superboy 008 - June 2012.cbr (32pp)  key="Superboy"
+      [18349] 012 Superboy 009 - July 2012.cbr (20pp)  key="Superboy"
+      [18350] 013 Superboy 010 - August 2012.cbr (21pp)  key="Superboy"
+   G6 "Superboy" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\045 Superboy (11) — 1 file(s), numbers 11, pp 32-32; cv per-file 19154x1; key 'Superboy'
+      [19910] Superboy 011 - September 2012.cbr (32pp)
+   G7 "Superboy" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\050 Superboy (12-13) — 2 file(s), numbers 12-13, pp 21-33; cv per-file 19154x2; key 'Superboy'
+      [18372] Superboy 012 - October 2012.cbr (21pp)
+      [18373] Superboy 013 - December 2012.cbr (33pp)
+   G8 "Superboy" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\072 Superboy (18-24) — 7 file(s), numbers 18-24, pp 17-24; cv per-file 19154x7; key 'Superboy'
+      [18410] Superboy 018 - May 2013.cbr (17pp)
+      [18411] Superboy 019 - June 2013.cbr (19pp)
+      [18412] Superboy 020 - July 2013.cbr (22pp)
+      [18413] Superboy 021 - August 2013.cbr (24pp)
+      [18414] Superboy 022 - September 2013.cbr (23pp)
+      [18415] Superboy 023 - October 2013.cbr (22pp)
+      [18416] Superboy 024 - December 2013.cbr (22pp)
+   G9 "Superboy" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\090 Krypton Returns — 1 file(s), numbers 25, pp 15-15; cv per-file 19154x1; key 'Superboy'
+      [18469] 002 Superboy 025 - January 2014.cbr (15pp)
+   G10 "Superboy" in DC\_Superboy\01 Superboy v1 (1949) — 64 file(s), numbers 97, 99, 101-104, 114, 151-196, 200, 222-230, pp 18-101; cv per-file 19154x64; gcd per-file 614x58, 34628x5; key 'Superboy v1 (1949)'
+      e.g. Superboy 114 (1964).cbr
+        70117 #114 1964 36pp · 70121 #151 1968 35pp · 70122 #152 1968 24pp · 70123 #153 1969 36pp · 70124 #154 1969 36pp · 70125 #155 1969 36pp · 70126 #156 1969 68pp · 70127 #157 1969 36pp
+        70128 #158 1969 36pp · 70129 #159 1969 36pp · 70130 #160 1969 35pp · 70131 #161 1969 35pp · 70132 #162 1970 35pp · 70133 #163 1970 36pp · 70134 #164 1970 36pp · 70135 #165 1970 68pp
+        70136 #166 1970 36pp · 70137 #167 1970 36pp · 70138 #168 1970 35pp · 70139 #169 1970 34pp · 70140 #170 1970 36pp · 70141 #171 1971 36pp · 70142 #172 1971 35pp · 70143 #173 1971 34pp
+        70144 #174 1971 67pp · 70145 #175 1971 35pp · 70146 #176 1971 22pp · 70147 #177 1971 50pp · 70148 #178 1971 50pp · 70149 #179 1971 39pp · 70150 #180 1971 51pp · 70151 #181 1972 37pp
+        70152 #182 1972 37pp · 70153 #183 1972 38pp · 70154 #184 1971 53pp · 70155 #185 1972 101pp · 70156 #186 1972 52pp · 70157 #187 1972 52pp · 70158 #188 1972 26pp · 70159 #189 1972 24pp
+        70160 #190 1972 35pp · 70161 #191 1972 26pp · 70162 #192 1972 25pp · 70163 #193 1973 36pp · 70164 #194 1973 25pp · 70165 #195 1973 18pp · 70166 #195 1973 18pp · 70167 #196 1973 36pp
+        70168 #200 1974 22pp · 70169 #222 1976 19pp · 70170 #223 1976 19pp · 70171 #224 1976 19pp · 70172 #225 1977 19pp · 70173 #226 1977 19pp · 70174 #227 1977 19pp · 70175 #228 1977 19pp
+        70176 #229 1977 19pp · 70177 #230 1977 25pp
+      [70102] Superboy 097 (1962-06) c2c (the coot).cbz (36pp)
+      [70103] Superboy 099 (1962-09) c2c (the coot).cbz (36pp)
+      [70104] Superboy 101 (1962-12) c2c (the coot).cbz (36pp)
+      [70105] Superboy 102 (1963-01) c2c (the coot).cbz (36pp)
+      [70106] Superboy 103 (1963-03) c2c (the coot).cbz (36pp)
+      [70107] Superboy 104 (1963-04) c2c (the coot).cbz (36pp)
+   G11 "Superboy 105 HD (Jun 1963)" in DC\_Superboy\01 Superboy v1 (1949) — 1 file(s), numbers 105, pp 36-36; cv per-file 19154x1; key 'Superboy v1 (1949)'
+      [70108] Superboy 105 HD (Jun 1963).cbz (36pp)
+   G12 "Superboy 106 HD (Jul 1963)" in DC\_Superboy\01 Superboy v1 (1949) — 1 file(s), numbers 106, pp 36-36; cv per-file 19154x1; key 'Superboy v1 (1949)'
+      [70109] Superboy 106 HD (Jul 1963).cbz (36pp)
+   G13 "Superboy 107 HD (Sep 1963)" in DC\_Superboy\01 Superboy v1 (1949) — 1 file(s), numbers 107, pp 36-36; cv per-file 19154x1; key 'Superboy v1 (1949)'
+      [70110] Superboy 107 HD (Sep 1963).cbz (36pp)
+   G14 "Superboy 108 HD (Oct 1963)" in DC\_Superboy\01 Superboy v1 (1949) — 1 file(s), numbers 108, pp 36-36; cv per-file 19154x1; key 'Superboy v1 (1949)'
+      [70111] Superboy 108 HD (Oct 1963).cbz (36pp)
+   G15 "Superboy 109 HD (Dec 1963)" in DC\_Superboy\01 Superboy v1 (1949) — 1 file(s), numbers 109, pp 36-36; cv per-file 19154x1; key 'Superboy v1 (1949)'
+      [70112] Superboy 109 HD (Dec 1963).cbz (36pp)
+   G16 "Superboy 110 HD (Jan 1964)" in DC\_Superboy\01 Superboy v1 (1949) — 1 file(s), numbers 110, pp 35-35; cv per-file 19154x1; key 'Superboy v1 (1949)'
+      [70113] Superboy 110 HD (Jan 1964).cbz (35pp)
+   G17 "Superboy 111 HD (Mar 1964)" in DC\_Superboy\01 Superboy v1 (1949) — 1 file(s), numbers 111, pp 36-36; cv per-file 19154x1; key 'Superboy v1 (1949)'
+      [70114] Superboy 111 HD (Mar 1964).cbz (36pp)
+   G18 "Superboy 112 HD (Apr 1964)" in DC\_Superboy\01 Superboy v1 (1949) — 1 file(s), numbers 112, pp 36-36; cv per-file 19154x1; key 'Superboy v1 (1949)'
+      [70115] Superboy 112 HD (Apr 1964).cbz (36pp)
+   G19 "Superboy 113 HD (Jun 1964)" in DC\_Superboy\01 Superboy v1 (1949) — 1 file(s), numbers 113, pp 36-36; cv per-file 19154x1; key 'Superboy v1 (1949)'
+      [70116] Superboy 113 HD (Jun 1964).cbz (36pp)
+   G20 "Superboy 115 HD (Sep 1964)" in DC\_Superboy\01 Superboy v1 (1949) — 1 file(s), numbers 115, pp 36-36; cv per-file 19154x1; key 'Superboy v1 (1949)'
+      [70118] Superboy 115 HD (Sep 1964).cbz (36pp)
+   G21 "Superboy 116 HD (Oct 1964)" in DC\_Superboy\01 Superboy v1 (1949) — 1 file(s), numbers 116, pp 36-36; cv per-file 19154x1; key 'Superboy v1 (1949)'
+      [70119] Superboy 116 HD (Oct 1964).cbz (36pp)
+   G22 "Superboy 117 HD (Dec 1964)" in DC\_Superboy\01 Superboy v1 (1949) — 1 file(s), numbers 117, pp 36-36; cv per-file 19154x1; key 'Superboy v1 (1949)'
+      [70120] Superboy 117 HD (Dec 1964).cbz (36pp)
+   G23 "Superboy Annual" in DC\_Superboy\01 Superboy v1 (1949)\Annuals and Specials — 1 file(s), numbers 1, pp 84-84; cv per-file 33694x1; gcd per-file 1625x1; key 'Superboy Annual'
+      [71991] Superboy Annual 001 (1964).cbz (84pp)
+   G24 "Superboy and the Legion of Super-Heroes" in DC\_Superboy\02 Superboy and the Legion of Super-Heroes v1 (1976) — 7 file(s), numbers 222-226, 228-229, pp 19-19; cv per-file 19154x7; gcd per-file 614x7; key 'Superboy (1949)'
+      e.g. Superboy and the Legion of Super-Heroes 222 (1976) (digital) (Glorith-HD).cbz
+        70178 #222 1976 19pp · 70179 #223 1977 19pp · 70180 #224 1977 19pp · 70181 #225 1977 19pp · 70182 #226 1977 19pp · 70184 #228 1977 19pp · 70185 #229 1977 19pp
+   G25 "Superboy Annual" in DC\_Superboy\04 Superboy v4 (1994)\Annuals and Specials — 4 file(s), numbers 1-4, pp 40-56; cv per-file 5262x2, 19154x2; gcd per-file 4974x4; key 'Superboy Annual' | 'Superboy Annual (1949)'
+      e.g. Superboy Annual 001 (1994).cbr
+        70246 #1 1994 56pp key="Superboy Annual" · 70247 #2 1995 47pp key="Superboy Annual" · 70248 #3 1996 40pp key="Superboy Annual (1949)" · 70249 #4 1997 50pp key="Superboy Annual (1949)"
+   G26 "Superboy" in DC\_Young Justice\Young Justice - Sins of Youth (2000) — 1 file(s), numbers 74, pp 24-24; cv per-file 19154x1; gcd per-file 4973x1; key 'Superboy (1949)'
+      [76523] 02 Superboy 074 (2000) (digital-Empire).cbr (24pp)
+
+== S381 Action Comics  [split]  1068 files / 0 collections  decided in R-110 (R)
+   decided: R 381 | signal e (1068 files) hides whole issues of two other shelves' runs beside the 1938 Action Comics (CV 18005 / GCD 97; #0-904 + #1,000,000 in "01 Action Comics v1 (1938)", the Action Comics Weekly #601-642 including the 36 "GL only" 9pp feature extracts, Annuals #1-13 (1987-2011) and the #DC Events second rips of legacy numbers): (1) fifty-five New 52 Action Comics (2011) files from the Trinity Read Order folders — "Action Comics 001 - November 2011" … "021 - August 2013", "023.1"-"023.4", "Action Comics # 35"-"# 39", "Action Comics # 41-44 (2015)", "048-052 (2016)", "Action Comics 000 - November 2012", "Annual 002 - December 2013", "Annual # 3" — whose numbers sit inside the 1938 ladder; ComicInfo barcode 0761941306377 on 18112-18115 is the New 52 UPC stem (GCD 59922 #2 = 76194130637700211) = CV 42563 (DC 2011, 57) / GCD 59922, the run S94962 holds; (2) five Rebirth issues — "Action Comics 957 (2016)" (DC Rebirth folder) and "973-976 (2017)" (Superman Reborn) — and sixteen 1pp variant covers "Action Comics 1064-1066 (2024)" in "21 House of Brainiac (2024)\Variant Covers" = CV 91078 (DC 2016, 136, cached #957-1094) / GCD 59922, the run S94961 holds. Each is a run with its own shelf, so this is a split, not residue at 0.9
+   F 381 split-needed | items 18054, 18055, 18065, 18111, 18112, 18113, 18114, 18115, 18116, 18117, 18118, 18126, 18127, 18128, 18129, 18130, 18131, 18132, 18133, 18134, 18135, 18407, 18408, 18409, 19918, 18445, 18452, 18453, 18464, 18466, 18468, 18566, 18567, 18568, 18569, 18578, 18584, 18588, 18590, 18592, 18594, 18615, 18616, 18617, 18618, 18619, 18942, 18946, 18950, 18954, 19000, 19003, 19006, 19023, 19026 -> JOIN S94962 (key "Action Comics v2 (2011)", S cv=42563 gcd=59922 — the New 52 run #0-52, which already holds #23.1-23.4 and Annual 01 (2012), so the two New 52 annuals 18468 / 18592 go with it as that monthly's annuals, L-369); items 19055, 19088, 19089, 19090, 19091, 70592, 70593, 70594, 70595, 70596, 70597, 70598, 70599, 70600, 70601, 70602, 70603, 70604, 70605, 70606, 70607 -> JOIN S94961 (key "Action Comics v1 (2018)", S cv=91078 gcd=59922 — #957, #973-976 and the #1064-1066 variant covers); everything else stays as cv=18005 gcd=97
+   N 381 cv=18005 gcd=97 — the S line for the kept 1938 run once the two groups move: CV 18005 (DC 1938, 864, cached #0-904, per-file 1064/1068) = GCD 97 (DC 1938-2011, 866, per-file 836/1068), ComicInfo Volume 1938 x40 / Count 904 x30, ladder #0-904 with gaps + #1,000,000; the Weekly #601-642 is the same run retitled (L-212); Annuals #1-13 are the monthly's own annuals (L-369) — 0.9 for them and the 36 "GL only" 9pp feature extracts
+   N 381 signal a-C (gcd 97 named by C 16823 on S18388, the 1993 Death of Superman TPB collecting Action #683-684) is another shelf's trade collecting this run — benign
+   N 381 signal a-I is a BROKEN I line on another shelf: I 77976 (S3420, "Captain America - Sentinel of Liberty (2018)" 343pp) wrote gcd=13268, which is the GCD SERIES id of Captain America: Sentinel of Liberty (1998-1999) — read as an issue id, gcdi 13268 is Action Comics #224 (1956) of series 97. That line needs repair on S3420 (gcd=s13268 or the book's own issue row); nothing on this shelf is wrong
+   N 381 per-file GCD 16410 / 13586 (Canadian 1948-1950 reprints, 11 files), 102398, 109385 and 3564 are regional / coincidence stamps on legacy issues (L-216); the run's GCD is 97
+   named: S94962 Action Comics  6 files  keys: "Action Comics (2011)" | "Action Comics v2 (2011)" | "rebuilt.000 Action Comics"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S94961 Action Comics  102 files  keys: "Action Comics v1 (2016)" | "Action Comics v1 (2018)" | "Action Comics.5 - Lois and Clark - Doom Rising" | "Action Comics.5 - The Oz Effect" | "Superman: Action Comics v2 (2019)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S18388 "The Death of Superman" 13f [named S18388 in the decision's R/N lines — S cv=112576 (R-062 0.9)] keys: "The Death of Superman - Part"
+   nearby: S3420 "Captain America: Sentinel of Liberty" 10f [named S3420 in the decision's R/N lines — S cv=143632 gcd=185536 (C-042 0.9)] keys: "Captain America - Sentinel of Liberty"
+   nearby: S383 "Action Comics 2021 Annual" 1f [title — S cv=137551 gcd=173957 (B-013 0.95)] keys: "Action Comics 2021 Annual (2021)"
+   nearby: S17172 "Superman - Action Comics" 9f [title+1 — S cv=50973 gcd=78050 (R-039 0.9)] keys: "Superman - Action Comics" | "Superman - Action Comics (2012)"
+   nearby: S4175 "Convergence Action Comics" 2f [title+1 — S cv=81577 gcd=88635 (A-007 0.95)] keys: "Convergence - Action Comics"
+   nearby: S385 "Action Comics Special" 1f [title+1 — S cv=110490 gcd=123953 (C-019 0.95)] keys: "Action Comics Presents - Doomsday Special"
+   keys now: "Action Comics v1 (1938)" x919 · "Action Comics" x71 · "Action Comics (1938)" x41 · "Action Comics Weekly" x37
+   groups (title x folder): 88
+   G1 "Action Comics 589  Green on Green" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\031 I Think, Therefore I Am — 1 file(s), numbers 589, pp 23-23; cv per-file 18005x1; gcd per-file 97x1; key 'Action Comics (1938)'
+      [15482] 06 Action Comics 589  Green on Green.cbz (23pp)
+   G2 "Action Comics Weekly 601 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 601, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15504] 01 Action Comics Weekly 601 GL only.cbz (9pp)
+   G3 "Action Comics Weekly 602 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 602, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15505] 02 Action Comics Weekly 602 GL only.cbz (9pp)
+   G4 "Action Comics Weekly 603 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 603, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15506] 03 Action Comics Weekly 603 GL only.cbz (9pp)
+   G5 "Action Comics Weekly 604 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 604, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15507] 04 Action Comics Weekly 604 GL only.cbz (9pp)
+   G6 "Action Comics Weekly 605 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 605, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15508] 05 Action Comics Weekly 605 GL only.cbz (9pp)
+   G7 "Action Comics Weekly 606 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 606, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15509] 06 Action Comics Weekly 606 GL only.cbz (9pp)
+   G8 "Action Comics Weekly 607 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 607, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15510] 07 Action Comics Weekly 607 GL only.cbz (9pp)
+   G9 "Action Comics Weekly 608 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 608, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15511] 08 Action Comics Weekly 608 GL only.cbz (9pp)
+   G10 "Action Comics Weekly 609 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 609, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15512] 09 Action Comics Weekly 609 GL only.cbz (9pp)
+   G11 "Action Comics Weekly 610 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 610, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15513] 10 Action Comics Weekly 610 GL only.cbz (9pp)
+   G12 "Action Comics Weekly 611 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 611, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15514] 11 Action Comics Weekly 611 GL only.cbz (9pp)
+   G13 "Action Comics Weekly 612 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 612, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15515] 12 Action Comics Weekly 612 GL only.cbz (9pp)
+   G14 "Action Comics Weekly 613 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 613, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15516] 13 Action Comics Weekly 613 GL only.cbz (9pp)
+   G15 "Action Comics Weekly 614 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 614, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15517] 14 Action Comics Weekly 614 GL only.cbz (9pp)
+   G16 "Action Comics Weekly 615 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 615, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15518] 15 Action Comics Weekly 615 GL only.cbz (9pp)
+   G17 "Action Comics Weekly 616 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 616, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15519] 16 Action Comics Weekly 616 GL only.cbz (9pp)
+   G18 "Action Comics Weekly 617 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 617, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15520] 17 Action Comics Weekly 617 GL only.cbz (9pp)
+   G19 "Action Comics Weekly 618 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 618, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15521] 18 Action Comics Weekly 618 GL only.cbz (9pp)
+   G20 "Action Comics Weekly 619 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 619, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15522] 19 Action Comics Weekly 619 GL only.cbz (9pp)
+   G21 "Action Comics Weekly 620 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 620, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15523] 20 Action Comics Weekly 620 GL only.cbz (9pp)
+   G22 "Action Comics Weekly 621 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 621, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15524] 21 Action Comics Weekly 621 GL only.cbz (9pp)
+   G23 "Action Comics Weekly 622 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 622, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15525] 22 Action Comics Weekly 622 GL only.cbz (9pp)
+   G24 "Action Comics Weekly 623 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 623, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15526] 23 Action Comics Weekly 623 GL only.cbz (9pp)
+   G25 "Action Comics Weekly 624 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 624, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15527] 24 Action Comics Weekly 624 GL only.cbz (9pp)
+   G26 "Action Comics Weekly 625 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 625, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15528] 25 Action Comics Weekly 625 GL only.cbz (9pp)
+   G27 "Action Comics Weekly 626 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 626, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15529] 26 Action Comics Weekly 626 GL only.cbz (9pp)
+   G28 "Action Comics Weekly 627 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 627, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15530] 27 Action Comics Weekly 627 GL only.cbz (9pp)
+   G29 "Action Comics Weekly 628 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 628, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15531] 28 Action Comics Weekly 628 GL only.cbz (9pp)
+   G30 "Action Comics Weekly 629 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 629, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15532] 29 Action Comics Weekly 629 GL only.cbz (9pp)
+   G31 "Action Comics Weekly 630 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 630, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15533] 30 Action Comics Weekly 630 GL only.cbz (9pp)
+   G32 "Action Comics Weekly 631 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 631, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15534] 31 Action Comics Weekly 631 GL only.cbz (9pp)
+   G33 "Action Comics Weekly 632 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 632, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15535] 32 Action Comics Weekly 632 GL only.cbz (9pp)
+   G34 "Action Comics Weekly 633 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 633, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15536] 33 Action Comics Weekly 633 GL only.cbz (9pp)
+   G35 "Action Comics Weekly 634 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 634, pp 8-8; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15537] 34 Action Comics Weekly 634 GL only.cbz (8pp)
+   G36 "Action Comics Weekly 635 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 635, pp 9-9; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15538] 35 Action Comics Weekly 635 GL only.cbz (9pp)
+   G37 "Action Comics Weekly 642 GL only" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\035 Action Comics Weekly — 1 file(s), numbers 642, pp 39-39; cv per-file 18005x1; key 'Action Comics Weekly'
+      [15539] 36 Action Comics Weekly 642 GL only.cbz (39pp)
+   G38 "Action Comics 688  An Eye for an Eye" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\054 The Medusa Plague — 1 file(s), numbers 688, pp 26-26; cv per-file 18005x1; gcd per-file 97x1; key 'Action Comics (1938)'
+      [15655] 03 Action Comics 688  An Eye for an Eye.cbz (26pp)
+   G39 "Action Comics 709  Crime Tunnel" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\068 Grand Opening — 1 file(s), numbers 709, pp 24-24; cv per-file 18005x1; gcd per-file 97x1; key 'Action Comics (1938)'
+      [15738] 02 Action Comics 709  Crime Tunnel.cbz (24pp)
+   G40 "Action Comics 780  The End of the Beginning" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\102 Our Worlds at War — 1 file(s), numbers 780, pp 23-23; cv per-file 18005x1; gcd per-file 97x1; key 'Action Comics (1938)'
+      [16028] 02 Action Comics 780  The End of the Beginning.cbz (23pp)
+   G41 "Action Comics 782  Trial By Fire" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\102 Our Worlds at War — 1 file(s), numbers 782, pp 24-24; cv per-file 18005x1; gcd per-file 97x1; key 'Action Comics (1938)'
+      [16032] 06 Action Comics 782  Trial By Fire.cbz (24pp)
+   G42 "Action Comics 789  Man  Beast" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\106 Guy Gardner, Warrior of Hell — 1 file(s), numbers 789, pp 23-23; cv per-file 18005x1; gcd per-file 97x1; key 'Action Comics (1938)'
+      [16055] 01 Action Comics 789  Man  Beast.cbz (23pp)
+   G43 "Action Comics 790  Man  Beast Pt" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\106 Guy Gardner, Warrior of Hell — 1 file(s), numbers 790, pp 23-23; cv per-file 18005x1; gcd per-file 97x1; key 'Action Comics (1938)'
+      [16056] 02 Action Comics 790  Man  Beast Pt 2.cbz (23pp)
+   G44 "Action Comics" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\12 Final Night\The Final Night Reading Order — 1 file(s), numbers 727, pp 23-23; cv per-file 18005x1; gcd per-file 97x1; key 'Action Comics (1938)'
+      [16851] 012 Action Comics, 1996-09-00 (_727) (digital) (Glorith-Novus-HD).cbz (23pp)
+   G45 "Action Comics" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\21 Superman - Emperor Joker — 2 file(s), numbers 769-770, pp 23-38; cv per-file 18005x2; key 'Action Comics (1938)'
+      [16940] 04 Action Comics 769.cbr (23pp)
+      [16945] 09 Action Comics 770.cbr (38pp)
+   G46 "Action_Comics_829" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\47 Superman - Sacrifice (After OMAC project 3) — 1 file(s), numbers 829, pp 25-25; cv per-file 18005x1; key 'Action Comics (1938)'
+      [17157] 02 Action_Comics_829.cbr (25pp)
+   G47 "Action_Comics_831" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\64 Superman - The Journey — 1 file(s), numbers 831, pp 23-23; cv per-file 18005x1; key 'Action Comics'
+      [17278] Action_Comics_831.cbr (23pp)
+   G48 "Action_Comics_827" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\65 Superman - Strange Attractors — 1 file(s), numbers 827, pp 23-23; cv per-file 18005x1; key 'Action Comics'
+      [17285] Action_Comics_827.cbr (23pp)
+   G49 "Action_Comics_828" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\65 Superman - Strange Attractors — 1 file(s), numbers 828, pp 22-22; cv per-file 18005x1; key 'Action Comics'
+      [17286] Action_Comics_828.cbr (22pp)
+   G50 "Action_Comics_830" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\65 Superman - Strange Attractors — 1 file(s), numbers 830, pp 25-25; cv per-file 18005x1; key 'Action Comics'
+      [17287] Action_Comics_830.cbr (25pp)
+   G51 "Action_Comics_831" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\65 Superman - Strange Attractors — 1 file(s), numbers 831, pp 23-23; cv per-file 18005x1; key 'Action Comics'
+      [17288] Action_Comics_831.cbr (23pp)
+   G52 "Action_Comics_832" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\65 Superman - Strange Attractors — 1 file(s), numbers 832, pp 24-24; cv per-file 18005x1; key 'Action Comics'
+      [17289] Action_Comics_832.cbr (24pp)
+   G53 "Action_Comics_833" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\65 Superman - Strange Attractors — 1 file(s), numbers 833, pp 25-25; cv per-file 18005x1; key 'Action Comics'
+      [17290] Action_Comics_833.cbr (25pp)
+   G54 "Action_Comics_834" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\65 Superman - Strange Attractors — 1 file(s), numbers 834, pp 24-24; cv per-file 18005x1; key 'Action Comics'
+      [17291] Action_Comics_834.cbr (24pp)
+   G55 "Action_Comics_835" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\65 Superman - Strange Attractors — 1 file(s), numbers 835, pp 35-35; cv per-file 18005x1; key 'Action Comics'
+      [17292] Action_Comics_835.cbr (35pp)
+   G56 "Action_Comics_836" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\09 Superman - Infinite Crisis — 1 file(s), numbers 836, pp 24-24; cv per-file 18005x1; key 'Action Comics (1938)'
+      [17417] 02 Action_Comics_836.cbr (24pp)
+   G57 "Action Comics" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Superman - Up, Up and Away — 4 file(s), numbers 837-840, pp 24-25; cv per-file 18005x4; key 'Action Comics (1938)'
+      e.g. 02 Action Comics 837.cbr
+        17515 #837 24pp · 17517 #838 24pp · 17519 #839 25pp · 17521 #840 25pp
+   G58 "Action Comics" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\92 Superman - The legion of Super heroes — 5 file(s), numbers 859-863, pp 23-27; cv per-file 18005x5; key 'Action Comics (1938)'
+      e.g. Action Comics 859.cbr
+        17823 #859 23pp · 17824 #860 25pp · 17825 #861 25pp · 17826 #862 25pp · 17827 #863 27pp
+   G59 "Action Comics 858__2007___CamelotScans-DCP" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\92 Superman - The legion of Super heroes — 1 file(s), numbers 858, pp 32-32; cv per-file 18005x1; key 'Action Comics'
+      [17822] Action Comics 858__2007___CamelotScans-DCP_.cbr (32pp)
+   G60 "Action Comics (1998-11) 1000000 (hybrid) (DreamGirl-Novus-HD)" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) — 1 file(s), pp 26-26; cv per-file 18005x1; key 'Action Comics (1938)'
+      [18017] 02 Action Comics (1998-11) 1000000 (hybrid) (DreamGirl-Novus-HD).cbz (26pp)
+   G61 "Action Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\001 Forever Evil 1 — 2 file(s), numbers 0, 23.2, pp 24-24; cv per-file 18005x2; key 'Action Comics'
+      [18054] 000 Action Comics 023-2 - November 2013.cbr (24pp)
+      [18055] 001 Action Comics 000 - November 2012.cbz (?pp)
+   G62 "Action Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\002 Zero Year Secret City — 1 file(s), numbers 25, pp 31-31; cv per-file 18005x1; key 'Action Comics'
+      [18065] 007 Action Comics 025 - January 2014.cbr (31pp)
+   G63 "Action Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\008 Action Comics v2 - (1-8 w Annual 1) — 8 file(s), numbers 1-8, pp 29-31; cv per-file 18005x8; key 'Action Comics'
+      [18111] Action Comics 001 - November 2011.cbz (?pp)
+      [18112] Action Comics 002 - December 2011.cbz (30pp)
+      [18113] Action Comics 003 - January 2012.cbz (30pp)
+      [18114] Action Comics 004 - February 2012.cbz (30pp)
+      [18115] Action Comics 005 - March 2012.cbz (31pp)
+      [18116] Action Comics 006 - April 2012.cbz (29pp)
+      [18117] Action Comics 007 - May 2012.cbz (29pp)
+      [18118] Action Comics 008 - June 2012.cbz (31pp)
+   G64 "Action Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\010 Action Comics v2 - (9-12) — 4 file(s), numbers 9-12, pp 31-35; cv per-file 18005x4; key 'Action Comics'
+      [18126] Action Comics 009 - July 2012.cbr (35pp)
+      [18127] Action Comics 010 - August 2012.cbz (31pp)
+      [18128] Action Comics 011 - September 2012.cbz (31pp)
+      [18129] Action Comics 012 - October 2012.cbz (32pp)
+   G65 "Action Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\012 Action Comics v2 - (13-18) — 6 file(s), numbers 13-18; cv per-file 18005x6; key 'Action Comics'
+      [18130] Action Comics 013 - December 2012.cbz (?pp)
+      [18131] Action Comics 014 - January 2013.cbz (?pp)
+      [18132] Action Comics 015 - February 2013.cbz (?pp)
+      [18133] Action Comics 016 - March 2013.cbz (?pp)
+      [18134] Action Comics 017 - April 2013.cbz (?pp)
+      [18135] Action Comics 018 - May 2013.cbz (?pp)
+   G66 "Action Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\071 Action Comics (19-21) — 3 file(s), numbers 19-21, pp 30-40; cv per-file 18005x3; key 'Action Comics'
+      [18407] Action Comics 019 - June 2013.cbz (?pp)
+      [18408] Action Comics 020 - July 2013.cbr (30pp)
+      [18409] Action Comics 021 - August 2013.cbr (40pp)
+   G67 "Action Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\074 Forever Evil 3 — 1 file(s), numbers 23.4, pp 24-24; cv per-file 18005x1; key 'Action Comics'
+      [19918] Action Comics 023.4 - November 2013.cbr (24pp)
+   G68 "Action Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\087 Superman - Supergirl — 3 file(s), numbers 22-23, 23.1, pp 21-28; cv per-file 18005x3; key 'Action Comics'
+      [18445] 007 Action Comics 023.1 - November 2013.cbr (21pp)
+      [18452] 014 Action Comics 022 - September 2013.cbr (28pp)
+      [18453] 015 Action Comics 023 - October 2013.cbr (28pp)
+   G69 "Action Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\088 Psi War — 1 file(s), numbers 24, pp 26-26; cv per-file 18005x1; key 'Action Comics'
+      [18464] 002 Action Comics 024 - December 2013.cbr (26pp)
+   G70 "Action Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\089 Forever Evil 3 — 1 file(s), numbers 23.3, pp 23-23; cv per-file 18005x1; key 'Action Comics'
+      [18466] 001 Action Comics 023.3 - November 2013.cbr (23pp)
+   G71 "Action Comics Annual" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\090 Krypton Returns — 1 file(s), numbers 2, pp 22-22; cv per-file 18005x1; key 'Action Comics'
+      [18468] 001 Action Comics Annual 002 - December 2013.cbr (22pp)
+   G72 "Action Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\095 Superman — 4 file(s), numbers 26-29, pp 24-26; cv per-file 18005x4; key 'Action Comics'
+      [18566] 001 Action Comics 026 - February 2014.cbr (25pp)
+      [18567] 002 Action Comics 027 - March 2014.cbr (24pp)
+      [18568] 003 Action Comics 028 - April 2014.cbr (26pp)
+      [18569] 004 Action Comics 029 - May 2014.cbr (25pp)
+   G73 "Action Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\096 Doomed Prelude — 1 file(s), numbers 30, pp 24-24; cv per-file 18005x1; key 'Action Comics'
+      [18578] 007 Action Comics 030 - June 2014.cbr (24pp)
+   G74 "Action Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\097 Doomed — 4 file(s), numbers 31-34, pp 26-28; cv per-file 18005x4; key 'Action Comics'
+      [18584] 002 Action Comics 031 - July 2014.cbr (28pp)
+      [18588] 006 Action Comics 032 - August 2014.cbr (27pp)
+      [18590] 008 Action Comics 033 - September 2014.cbr (26pp)
+      [18594] 012 Action Comics 034 - October 2014.cbr (27pp)
+   G75 "Action Comics Annual" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\097 Doomed — 1 file(s), numbers 3, pp 42-42; cv per-file 18005x1; key 'Action Comics (1938)'
+      [18592] 010 Action Comics Annual # 3.cbr (42pp)
+   G76 "Action Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\100 Action Comics - Horrorville — 5 file(s), numbers 35-39, pp 24-30; cv per-file 18005x5; key 'Action Comics (1938)'
+      e.g. Action Comics # 35.cbr
+        18615 #35 24pp · 18616 #36 26pp · 18617 #37 24pp · 18618 #38 25pp · 18619 #39 30pp
+   G77 "Action Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\120 Truth — 4 file(s), numbers 41-44, pp 27-28; cv per-file 18005x4; gcd per-file 59922x4; key 'Action Comics (1938)'
+      e.g. 01 Action Comics # 41 (2015) (Digital-Empire).cbr
+        18942 #41 2015 27pp · 18946 #42 2015 28pp · 18950 #43 2015 27pp · 18954 #44 2015 27pp
+   G78 "Action Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\125 Superman - Savage Dawn — 3 file(s), numbers 48-50, pp 26-42; cv per-file 18005x3; gcd per-file 59922x3; key 'Action Comics (1938)'
+      [19000] 02 Action Comics 048 (2016) (Digital-Empire).cbr (27pp)
+      [19003] 05 Action Comics 049 (2016) (2 covers) (Digital) (Zone-Empire).cbr (26pp)
+      [19006] 08 Action Comics 050 (2016) (4 covers) (Digital) (Zone-Empire).cbr (42pp)
+   G79 "Action Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\127 The Final Days of Superman (2016) — 2 file(s), numbers 51-52, pp 24-25; cv per-file 18005x2; gcd per-file 59922x2; key 'Action Comics (1938)'
+      [19023] 03 Action Comics 051 (2016) (2 covers) (Digital) (Zone-Empire).cbr (24pp)
+      [19026] 06 Action Comics 052 (2016) (2 covers) (Digital) (Zone-Empire).cbr (25pp)
+   G80 "Action Comics" in DC\#DC Events\004 Major DC Events - Rebirth\001 DC Rebirth (2016) — 1 file(s), numbers 957, pp 30-30; cv per-file 18005x1; gcd per-file 59922x1; key 'Action Comics'
+      [19055] Action Comics 957 (2016) (2 covers) (Digital) (Zone-Empire).cbr (30pp)
+   G81 "Action Comics" in DC\#DC Events\004 Major DC Events - Rebirth\004 Superman Reborn (2017) — 4 file(s), numbers 973-976, pp 24-42; cv per-file 18005x4; gcd per-file 59922x4; key 'Action Comics'
+      e.g. Action Comics 973 (2017) (2 covers) (Digital) (Zone-Empire).cbr
+        19088 #973 2017 32pp · 19089 #974 2017 25pp · 19090 #975 2017 42pp · 19091 #976 2017 24pp
+   G82 "Action Comics" in DC\_Superman\21 House of Brainiac (2024)\Variant Covers — 16 file(s), numbers 1064-1066, pp 1-1; cv per-file 18005x16; gcd per-file 59922x16; key 'Action Comics'
+      e.g. Action Comics 1064 (2024) (1-in-25 Ariel Colón Variant) (Digital) (MikeNY76-Empire).cbz
+        70592 #1064 2024 1pp · 70593 #1064 2024 1pp · 70594 #1064 2024 1pp · 70595 #1064 2024 1pp · 70596 #1064 2024 1pp · 70597 #1064 2024 1pp · 70598 #1065 2024 1pp · 70599 #1065 2024 1pp
+        70600 #1065 2024 1pp · 70601 #1065 2024 1pp · 70602 #1065 2024 1pp · 70603 #1066 2024 1pp · 70604 #1066 2024 1pp · 70605 #1066 2024 1pp · 70606 #1066 2024 1pp · 70607 #1066 2024 1pp
+   G83 "Action Comics" in DC\_Superman\_Completed Series\01 Action Comics v1 (1938) — 900 file(s), numbers 1-611, 613-657, 659-706, 709-879, 881-887, 889-891, 893, 895-899, 901-904, 958, pp 1-100; cv per-file 18005x897, 42563x3; gcd per-file 97x823, 16410x6, 13586x5; key 'Action Comics v1 (1938)' | 'Action Comics Weekly'
+      e.g. Action Comics 001 (1938) (Digital) (Shadowcat-Empire).cbz
+        70765 #1 1938 14pp · 70766 #2 1938 14pp · 70767 #3 1938 14pp · 70768 #4 1938 14pp · 70769 #5 1938 10pp · 70770 #6 1938 14pp · 70771 #7 1938 14pp · 70772 #8 1939 14pp · 70773 #9 1939 14pp
+        70774 #10 1939 14pp · 70775 #11 1939 14pp · 70776 #12 1939 14pp · 70777 #13 1939 14pp · 70778 #14 1939 14pp · 70779 #15 1939 14pp · 70780 #16 1939 14pp · 70781 #17 1939 14pp
+        70782 #18 1939 14pp · 70783 #19 1939 14pp · 70784 #20 1940 14pp · 70785 #21 1940 14pp · 70786 #22 1940 14pp · 70787 #23 1940 14pp · 70788 #24 1940 14pp · 70789 #25 1940 14pp
+        70790 #26 1940 14pp · 70791 #27 1940 14pp · 70792 #28 1940 14pp · 70793 #29 1940 14pp · 70794 #30 1940 14pp · 70795 #31 1940 13pp · 70796 #32 1940 14pp · 70797 #33 1940 14pp
+        70798 #34 1940 14pp · 70799 #35 1940 14pp · 70800 #36 1940 14pp · 70801 #37 1940 14pp · 70802 #38 1940 13pp · 70803 #39 1940 13pp · 70804 #40 1940 14pp · 70805 #41 1941 14pp
+        70806 #42 1941 15pp · 70807 #43 1941 15pp · 70808 #44 1942 15pp · 70809 #45 1942 15pp · 70810 #46 1942 15pp · 70811 #47 1942 15pp · 70812 #48 1942 15pp · 70813 #49 1942 15pp
+        70814 #50 1942 15pp · 70815 #51 1942 15pp · 70816 #52 1942 15pp · 70817 #53 1942 15pp · 70818 #54 1942 15pp · 70819 #55 1942 15pp · 70820 #56 1943 15pp · 70821 #57 1943 15pp
+        70822 #58 1943 15pp · 70823 #59 1943 15pp · 70824 #60 1943 14pp · 70825 #61 1943 14pp · 70826 #62 1943 14pp · 70827 #63 1943 14pp · 70828 #64 1943 14pp · 70829 #65 1943 14pp
+        70830 #66 1943 14pp · 70831 #67 1943 14pp · 70832 #68 1944 14pp · 70833 #69 1944 13pp · 70834 #70 1944 14pp · 70835 #71 1944 14pp · 70836 #72 1944 14pp · 70837 #73 1944 14pp
+        70838 #74 1944 14pp · 70839 #75 1944 14pp · 70840 #76 1944 14pp · 70841 #77 1944 14pp · 70842 #78 1944 13pp · 70843 #79 1944 13pp · 70844 #80 1945 12pp · 70845 #81 1945 13pp
+        70846 #82 1945 13pp · 70847 #83 1945 14pp · 70848 #84 1945 14pp · 70849 #85 1945 26pp · 70850 #86 1945 12pp · 70851 #87 1945 14pp · 70852 #88 1945 13pp · 70853 #89 1945 13pp
+        70854 #90 1945 13pp · 70855 #91 1945 13pp · 70856 #92 1946 12pp · 70857 #93 1946 17pp · 70858 #94 1946 13pp · 70859 #95 1946 13pp · 70860 #96 1946 13pp · 70861 #97 1946 13pp
+        70862 #98 1946 13pp · 70863 #99 1946 13pp · 70864 #100 1946 13pp · 70865 #101 1946 13pp · 70866 #102 1946 13pp · 70867 #103 1946 13pp · 70868 #104 1947 13pp · 70869 #105 1947 15pp
+        70870 #106 1947 53pp · 70871 #107 1947 53pp · 70872 #108 1947 53pp · 70873 #109 1947 53pp · 70874 #110 1947 53pp · 70875 #111 1947 53pp · 70876 #112 1947 53pp · 70877 #113 1957 53pp
+        70878 #114 1947 53pp · 70879 #115 1947 53pp · 70880 #116 1948 53pp · 70881 #117 1948 53pp · 70882 #118 1948 53pp · 70883 #119 1948 53pp · 70884 #120 1948 53pp · 70885 #121 1948 50pp
+        70886 #122 1948 52pp · 70887 #123 1948 52pp · 70888 #124 1948 53pp · 70889 #125 1948 53pp · 70890 #126 1948 53pp · 70891 #127 1948 53pp · 70892 #128 1949 41pp · 70893 #129 1949 53pp
+        70894 #130 1949 53pp · 70895 #131 1949 53pp · 70896 #132 1949 53pp · 70897 #133 1949 53pp · 70898 #134 1949 53pp · 70899 #135 1949 53pp · 70900 #136 1949 53pp · 70901 #137 1949 53pp
+        70902 #138 1949 49pp · 70903 #139 1949 52pp · 70904 #140 1950 52pp · 70905 #141 1950 49pp · 70906 #142 1950 50pp · 70907 #143 1950 43pp · 70908 #144 1950 52pp · 70909 #145 1950 37pp
+        70910 #146 1950 52pp · 70911 #147 1950 51pp · 70912 #148 1950 41pp · 70913 #149 1950 41pp · 70914 #150 1950 40pp · 70915 #151 1950 50pp · 70916 #152 1951 52pp · 70917 #153 1951 42pp
+        70918 #154 1951 52pp · 70919 #155 1951 52pp · 70920 #156 1951 49pp · 70921 #157 1951 44pp · 70922 #158 1951 46pp · 70923 #159 1951 53pp · 70924 #160 1951 52pp · 70925 #161 1951 52pp
+        70926 #162 1951 34pp · 70927 #163 1951 45pp · 70928 #164 1952 44pp · 70929 #165 1952 42pp · 70930 #166 1952 42pp · 70931 #167 1952 44pp · 70932 #168 1952 34pp · 70933 #169 1952 45pp
+        70934 #170 1952 45pp · 70935 #171 1952 45pp · 70936 #172 1952 45pp · 70937 #173 1952 45pp · 70938 #174 1952 44pp · 70939 #175 1952 44pp · 70940 #176 1953 45pp · 70941 #177 1953 44pp
+        70942 #178 1953 44pp · 70943 #179 1953 42pp · 70944 #180 1953 44pp · 70945 #181 1953 42pp · 70946 #182 1953 44pp · 70947 #183 1953 44pp · 70948 #184 1953 45pp · 70949 #185 1953 45pp
+        70950 #186 1953 34pp · 70951 #187 1953 44pp · 70952 #188 1954 44pp · 70953 #189 1954 44pp · 70954 #190 1954 44pp · 70955 #191 1954 44pp · 70956 #192 1954 44pp · 70957 #193 1954 44pp
+        70958 #194 1954 33pp · 70959 #195 1954 44pp · 70960 #196 1954 44pp · 70961 #197 1954 36pp · 70962 #198 1954 36pp · 70963 #199 1954 37pp · 70964 #200 1955 37pp · 70965 #201 1955 ?pp
+        70966 #202 1955 37pp · 70967 #203 1955 36pp · 70968 #204 1955 37pp · 70969 #205 1955 37pp · 70970 #206 1955 37pp · 70971 #207 1955 37pp · 70972 #208 1955 33pp · 70973 #209 1955 36pp
+        70974 #210 1955 37pp · 70975 #211 1955 36pp · 70976 #212 1956 36pp · 70977 #213 1956 36pp · 70978 #214 1956 36pp · 70979 #215 1956 36pp · 70980 #216 1956 38pp · 70981 #217 1956 25pp
+        70982 #218 1956 31pp · 70983 #219 1956 38pp · 70984 #220 1956 37pp · 70985 #221 1956 36pp · 70986 #222 1956 34pp · 70987 #223 1956 37pp · 70988 #224 1957 36pp · 70989 #225 1957 36pp
+        70990 #226 1957 36pp · 70991 #227 1957 36pp · 70992 #228 1957 36pp · 70993 #229 1957 37pp · 70994 #230 1957 37pp · 70995 #231 1957 36pp · 70996 #232 1957 36pp · 70997 #233 1957 36pp
+        70998 #234 1957 36pp · 70999 #235 1957 26pp · 71000 #236 1958 36pp · 71001 #237 1958 37pp · 71002 #238 1958 36pp · 71003 #239 1958 36pp · 71004 #240 1958 36pp · 71005 #241 1958 36pp
+        71006 #242 1958 37pp · 71007 #243 1958 36pp · 71008 #244 1958 72pp · 71009 #245 1958 36pp · 71010 #246 1958 37pp · 71011 #247 1958 37pp · 71012 #248 1959 36pp · 71013 #249 1959 36pp
+        71014 #250 1959 36pp · 71015 #251 1959 36pp · 71016 #252 1959 28pp · 71017 #253 1959 36pp · 71018 #254 1959 37pp · 71019 #255 1959 36pp · 71020 #256 1959 36pp · 71021 #257 1959 36pp
+        71022 #258 1959 45pp · 71023 #259 1959 36pp · 71024 #260 1960 36pp · 71025 #261 1960 36pp · 71026 #262 1960 36pp · 71027 #263 1960 36pp · 71028 #264 1960 36pp · 71029 #265 1960 36pp
+        71030 #266 1960 36pp · 71031 #267 1960 27pp · 71032 #268 1960 36pp · 71033 #269 1960 36pp · 71034 #270 1960 36pp · 71035 #271 1960 36pp · 71036 #272 1961 29pp · 71037 #273 1961 36pp
+        71039 #275 1961 31pp · 71041 #277 1961 36pp · 71042 #278 1961 36pp · 71043 #279 1961 36pp · 71044 #280 1961 36pp · 71045 #281 1961 36pp · 71046 #282 1961 36pp · 71047 #283 1961 36pp
+        71048 #284 1962 29pp · 71049 #285 1962 37pp · 71050 #286 1962 36pp · 71052 #288 1962 37pp · 71054 #290 1962 36pp · 71055 #291 1962 36pp · 71056 #292 1962 36pp · 71057 #293 1962 42pp
+        71058 #294 1962 35pp · 71059 #295 1962 33pp · 71060 #296 1963 36pp · 71061 #297 1963 36pp · 71062 #298 1963 36pp · 71063 #299 1963 36pp · 71064 #300 1963 36pp · 71065 #301 1963 36pp
+        71066 #302 1963 29pp · 71067 #303 1963 28pp · 71068 #304 1963 36pp · 71069 #305 1963 36pp · 71070 #306 1963 29pp · 71071 #307 1963 36pp · 71072 #308 1964 27pp · 71073 #309 1964 27pp
+        71074 #310 1964 27pp · 71075 #311 1964 27pp · 71076 #312 1964 27pp · 71077 #313 1964 28pp · 71078 #314 1964 27pp · 71079 #315 1964 24pp · 71080 #316 1964 25pp · 71081 #317 1964 26pp
+        71082 #318 1964 26pp · 71083 #319 1964 26pp · 71084 #320 1965 26pp · 71085 #321 1965 26pp · 71086 #322 1965 27pp · 71087 #323 1965 26pp · 71088 #324 1965 26pp · 71089 #325 1965 26pp
+        71090 #326 1965 25pp · 71091 #327 1965 26pp · 71092 #328 1965 25pp · 71093 #329 1965 24pp · 71094 #330 1965 25pp · 71095 #331 1965 25pp · 71096 #332 1966 26pp · 71097 #333 1966 28pp
+        71098 #334 1966 77pp · 71099 #335 1966 26pp · 71100 #336 1966 25pp · 71101 #337 1966 26pp · 71102 #338 1966 26pp · 71103 #339 1966 25pp · 71104 #340 1966 26pp · 71105 #341 1966 36pp
+        71106 #342 1966 25pp · 71107 #343 1967 24pp · 71108 #344 1966 25pp · 71109 #345 1967 26pp · 71110 #346 1967 25pp · 71111 #347 1967 75pp · 71112 #348 1967 25pp · 71113 #349 1967 26pp
+        71114 #350 1967 25pp · 71115 #351 1967 24pp · 71116 #352 1967 24pp · 71117 #353 1967 26pp · 71118 #354 1967 25pp · 71119 #355 1967 25pp · 71120 #356 1967 26pp · 71121 #357 1967 25pp
+        71122 #358 1968 25pp · 71123 #359 1968 27pp · 71124 #360 1968 78pp · 71125 #361 1968 36pp · 71126 #362 1968 36pp · 71127 #363 1968 36pp · 71128 #364 1968 26pp · 71129 #365 1968 25pp
+        71130 #366 1968 24pp · 71131 #367 1968 24pp · 71132 #368 1968 24pp · 71133 #369 1968 24pp · 71134 #370 1968 25pp · 71135 #371 1969 25pp · 71136 #372 1969 27pp · 71137 #373 1969 60pp
+        71138 #374 1969 26pp · 71139 #375 1969 23pp · 71140 #376 1969 25pp · 71141 #377 1969 36pp · 71142 #378 1969 36pp · 71143 #379 1969 36pp · 71144 #380 1969 36pp · 71145 #381 1969 36pp
+        71146 #382 1969 36pp · 71147 #383 1969 36pp · 71148 #384 1970 36pp · 71149 #385 1970 36pp · 71150 #386 1970 36pp · 71151 #387 1970 36pp · 71152 #388 1970 36pp · 71153 #389 1970 36pp
+        71154 #390 1970 36pp · 71155 #391 1970 36pp · 71156 #392 1970 36pp · 71157 #393 1970 37pp · 71158 #394 1970 37pp · 71159 #395 1970 37pp · 71160 #396 1971 35pp · 71161 #397 1971 36pp
+        71162 #398 1971 36pp · 71163 #399 1971 37pp · 71164 #400 1971 35pp · 71165 #401 1971 37pp · 71166 #402 1971 36pp · 71167 #403 1971 53pp · 71168 #404 1971 53pp · 71169 #405 1971 54pp
+        71170 #406 1971 52pp · 71171 #407 1971 53pp · 71172 #408 1972 51pp · 71173 #409 1972 52pp · 71174 #410 1972 52pp · 71175 #411 1972 53pp · 71176 #412 1972 53pp · 71177 #413 1972 53pp
+        71178 #414 1972 37pp · 71179 #415 1972 35pp · 71180 #416 1972 35pp · 71181 #417 1972 35pp · 71182 #418 1972 36pp · 71183 #419 1973 36pp · 71184 #420 1973 36pp · 71185 #421 1973 26pp
+        71186 #422 1973 36pp · 71187 #423 1973 33pp · 71188 #424 1973 35pp · 71189 #425 1973 35pp · 71190 #426 1973 36pp · 71191 #427 1973 36pp · 71192 #428 1973 36pp · 71193 #429 1973 21pp
+        71194 #430 1973 35pp · 71195 #431 1974 21pp · 71196 #432 1974 35pp · 71197 #433 1974 36pp · 71198 #434 1974 26pp · 71199 #435 1974 35pp · 71200 #436 1974 21pp · 71201 #437 1974 82pp
+        71202 #438 1974 21pp · 71203 #439 1974 21pp · 71204 #440 1974 35pp · 71205 #441 1974 22pp · 71206 #442 1974 35pp · 71207 #443 1975 100pp · 71208 #444 1975 35pp · 71209 #445 1975 36pp
+        71210 #446 1975 36pp · 71211 #447 1975 35pp · 71212 #448 1975 35pp · 71213 #449 1975 68pp · 71214 #450 1975 36pp · 71215 #451 1975 36pp · 71216 #452 1975 36pp · 71217 #453 1975 35pp
+        71218 #454 1975 35pp · 71219 #455 1976 36pp · 71220 #456 1976 36pp · 71221 #457 1976 19pp · 71222 #458 1976 21pp · 71223 #459 1976 20pp · 71224 #460 1976 21pp · 71225 #461 1976 19pp
+        71226 #462 1976 36pp · 71227 #463 1976 36pp · 71228 #464 1976 36pp · 71229 #465 1976 36pp · 71230 #466 1976 36pp · 71231 #467 1977 36pp · 71232 #468 1977 36pp · 71233 #469 1977 36pp
+        71234 #470 1977 36pp · 71235 #471 1977 36pp · 71236 #472 1977 36pp · 71237 #473 1977 36pp · 71238 #474 1977 36pp · 71239 #475 1977 36pp · 71240 #476 1977 36pp · 71241 #477 1977 35pp
+        71242 #478 1977 36pp · 71243 #479 1978 21pp · 71244 #480 1978 20pp · 71245 #481 1978 20pp · 71246 #482 1978 20pp · 71247 #483 1978 20pp · 71248 #484 1978 24pp · 71249 #485 1978 36pp
+        71250 #486 1978 34pp · 71251 #487 1978 28pp · 71252 #488 1978 43pp · 71253 #489 1978 43pp · 71254 #490 1978 20pp · 71255 #491 1979 22pp · 71256 #492 1979 35pp · 71257 #493 1979 35pp
+        71258 #494 1979 35pp · 71259 #495 1979 36pp · 71260 #496 1979 36pp · 71261 #497 1979 35pp · 71262 #498 1979 36pp · 71263 #499 1979 36pp · 71264 #500 1979 68pp · 71265 #501 1979 36pp
+        71266 #502 1979 35pp · 71267 #503 1980 36pp · 71268 #504 1980 21pp · 71269 #505 1980 35pp · 71270 #506 1980 36pp · 71271 #507 1980 38pp · 71272 #508 1980 36pp · 71273 #509 1980 68pp
+        71274 #510 1980 21pp · 71275 #511 1980 36pp · 71276 #512 1980 36pp · 71277 #513 1980 29pp · 71278 #514 1980 28pp · 71279 #515 1981 40pp · 71280 #516 1981 28pp · 71281 #517 1981 36pp
+        71282 #518 1981 36pp · 71283 #519 1981 29pp · 71284 #520 1981 29pp · 71285 #521 1981 26pp · 71286 #522 1981 29pp · 71287 #523 1981 29pp · 71288 #524 1981 31pp · 71289 #525 1981 36pp
+        71290 #526 1981 41pp · 71291 #527 1982 29pp · 71292 #528 1982 36pp · 71293 #529 1982 28pp · 71294 #530 1982 36pp · 71295 #531 1982 1pp · 71296 #532 1982 16pp · 71297 #533 1982 27pp
+        71298 #534 1982 27pp · 71299 #535 1982 22pp · 71300 #536 1982 26pp · 71301 #537 1982 36pp · 71302 #538 1982 25pp · 71303 #539 1983 26pp · 71304 #540 1983 27pp · 71305 #541 1983 27pp
+        71306 #542 1983 27pp · 71307 #543 1983 27pp · 71308 #544 1983 58pp · 71309 #545 1983 27pp · 71310 #546 1983 27pp · 71311 #547 1986 37pp · 71312 #548 1983 37pp · 71313 #549 1983 28pp
+        71314 #550 1983 27pp · 71315 #551 1984 26pp · 71316 #552 1984 25pp · 71317 #553 1984 26pp · 71318 #554 1984 26pp · 71319 #555 1984 26pp · 71320 #556 1984 26pp · 71321 #557 1984 26pp
+        71322 #558 1984 26pp · 71323 #559 1984 26pp · 71324 #560 1984 27pp · 71325 #561 1984 27pp · 71326 #562 1984 26pp · 71327 #563 1985 26pp · 71328 #564 1985 25pp · 71329 #565 1985 28pp
+        71330 #566 1985 28pp · 71331 #567 1985 32pp · 71332 #568 1985 33pp · 71333 #569 1985 29pp · 71334 #570 1985 28pp · 71335 #571 1985 27pp · 71336 #572 1985 27pp · 71337 #573 1985 45pp
+        71338 #574 1985 35pp · 71339 #575 1986 37pp · 71340 #576 1986 37pp · 71341 #577 1986 37pp · 71342 #578 1986 39pp · 71343 #579 1985 36pp · 71344 #580 1986 36pp · 71345 #581 1986 36pp
+        71346 #582 1986 40pp · 71347 #583 1986 25pp · 71348 #584 1987 23pp · 71349 #585 1987 23pp · 71350 #586 1987 24pp · 71351 #587 1987 23pp · 71352 #588 1987 24pp · 71353 #589 1987 24pp
+        71354 #590 1987 24pp · 71355 #591 1987 24pp · 71356 #592 1987 24pp · 71357 #593 1987 24pp · 71358 #594 1987 24pp · 71359 #595 1987 23pp · 71360 #596 1987 23pp · 71361 #597 1987 24pp
+        71362 #598 1988 24pp · 71363 #599 1988 38pp · 71364 #600 1988 72pp · 71365 #601 1988 42pp · 71366 #602 1988 43pp · 71367 #603 1988 51pp · 71368 #604 1988 44pp · 71369 #605 1988 47pp
+        71370 #606 1988 47pp · 71371 #607 1988 51pp · 71372 #608 1988 47pp · 71373 #609 1988 47pp · 71374 #610 1988 51pp · 71375 #611 1988 46pp · 71377 #613 1988 46pp · 71378 #614 1988 46pp
+        71379 #615 1988 42pp · 71380 #616 1988 42pp · 71381 #617 1988 45pp · 71382 #618 1989 40pp · 71383 #619 1989 40pp · 71384 #620 1989 40pp · 71385 #621 1990 40pp · 71386 #622 1990 39pp
+        71387 #623 1990 41pp · 71388 #624 1990 40pp · 71389 #625 1990 40pp · 71390 #626 1990 40pp · 71391 #627 1988 43pp · 71392 #628 1988 51pp · 71393 #629 1988 40pp · 71394 #630 1988 42pp
+        71395 #631 1988 42pp · 71396 #632 1988 42pp · 71397 #633 1989 42pp · 71398 #634 1989 41pp · 71399 #635 1989 40pp · 71400 #636 1989 40pp · 71401 #637 1989 39pp · 71402 #638 1989 38pp
+        71403 #639 1989 39pp · 71404 #640 1989 39pp · 71405 #641 1989 51pp · 71406 #642 1989 42pp key="Action Comics Weekly" · 71407 #643 1989 20pp · 71408 #644 1989 23pp · 71409 #645 1989 23pp
+        71410 #646 1989 23pp · 71411 #647 1989 23pp · 71412 #648 1990 23pp · 71413 #649 1990 23pp · 71414 #650 1990 42pp · 71415 #651 1990 23pp · 71416 #652 1990 23pp · 71417 #653 1990 23pp
+        71418 #654 1990 25pp · 71419 #655 1990 34pp · 71420 #656 1990 38pp · 71421 #657 1990 36pp · 71422 #958 1990 25pp · 71423 #659 1990 25pp · 71424 #660 1990 26pp · 71425 #661 1990 23pp
+        71426 #662 1990 23pp · 71427 #663 1991 26pp · 71428 #664 1991 26pp · 71429 #665 1991 25pp · 71430 #666 1991 35pp · 71431 #667 1991 41pp · 71432 #668 1991 25pp · 71433 #669 1991 23pp
+        71434 #670 1991 23pp · 71435 #671 1991 22pp · 71436 #672 1991 22pp · 71437 #673 1992 23pp · 71438 #674 1992 23pp · 71439 #675 1992 22pp · 71440 #676 1992 23pp · 71441 #677 1992 23pp
+        71442 #678 1992 22pp · 71443 #679 1992 23pp · 71444 #680 1992 23pp · 71445 #681 1992 23pp · 71446 #682 1992 23pp · 71447 #683 1992 25pp · 71448 #684 1992 23pp · 71449 #685 1992 23pp
+        71450 #686 1993 22pp · 71451 #687 1993 25pp · 71452 #688 1993 24pp · 71453 #689 1993 23pp · 71454 #690 1993 23pp · 71455 #691 1993 23pp · 71456 #692 1993 23pp · 71457 #693 1993 28pp
+        71458 #694 1993 22pp · 71459 #695 1994 23pp · 71460 #696 1994 22pp · 71461 #697 1994 22pp · 71462 #698 1994 21pp · 71463 #699 1994 21pp · 71464 #700 1994 54pp · 71465 #701 1994 21pp
+        71466 #702 1994 22pp · 71467 #703 1994 23pp · 71468 #704 1994 23pp · 71469 #705 1994 22pp · 71470 #706 1995 22pp · 71471 #709 1995 22pp · 71472 #709 1995 23pp · 71473 #710 1995 23pp
+        71474 #711 1995 23pp · 71475 #712 1995 22pp · 71476 #713 1995 22pp · 71477 #714 1995 22pp · 71478 #715 1995 24pp · 71479 #716 1995 22pp · 71480 #717 1996 22pp · 71481 #718 1996 22pp
+        71482 #719 1996 22pp · 71483 #720 1996 22pp · 71484 #721 1996 22pp · 71485 #722 1996 22pp · 71486 #723 1996 23pp · 71487 #724 1996 22pp · 71488 #725 1996 22pp · 71489 #726 1996 22pp
+        71490 #727 1996 22pp · 71491 #728 1996 22pp · 71492 #729 1996 24pp · 71493 #730 1997 22pp · 71494 #731 1997 22pp · 71495 #732 1997 22pp · 71496 #733 1997 22pp · 71497 #734 1997 22pp
+        71498 #735 1997 24pp · 71499 #736 1997 23pp · 71500 #737 1997 24pp · 71501 #738 1997 24pp · 71502 #739 1997 23pp · 71503 #740 1997 22pp · 71504 #741 1998 23pp · 71505 #742 1998 23pp
+        71506 #743 1998 23pp · 71507 #744 1998 22pp · 71508 #745 1998 22pp · 71509 #746 1998 23pp · 71510 #747 1998 21pp · 71511 #748 1998 24pp · 71512 #749 1998 24pp · 71513 #750 1999 39pp
+        71514 #751 1999 23pp · 71515 #752 1999 23pp · 71516 #753 1999 23pp · 71517 #754 1999 24pp · 71518 #755 1999 23pp · 71519 #756 1999 21pp · 71520 #757 1999 23pp · 71521 #758 1999 23pp
+        71522 #759 1999 23pp · 71523 #760 1999 23pp · 71524 #761 2000 22pp · 71525 #762 2000 23pp · 71526 #763 2000 21pp · 71527 #764 2000 20pp · 71528 #765 2000 20pp · 71529 #766 2000 22pp
+        71530 #767 2000 19pp · 71531 #768 2000 20pp · 71532 #769 2000 21pp · 71533 #770 2000 37pp · 71534 #771 2000 23pp · 71535 #772 2000 22pp · 71536 #773 2001 24pp · 71537 #774 2001 20pp
+        71538 #775 2001 39pp · 71539 #776 2001 23pp · 71540 #777 2001 22pp · 71541 #778 2001 23pp · 71542 #779 2001 22pp · 71543 #780 2001 21pp · 71544 #781 2001 22pp · 71545 #782 2001 22pp
+        71546 #783 2001 22pp · 71547 #784 2001 22pp · 71548 #785 2002 22pp · 71549 #786 2002 22pp · 71550 #787 2002 23pp · 71551 #788 2002 21pp · 71552 #789 2002 23pp · 71553 #790 2002 22pp
+        71554 #791 2002 23pp · 71555 #792 2002 22pp · 71556 #793 2002 23pp · 71557 #794 2002 23pp · 71558 #795 2002 23pp · 71559 #796 2002 21pp · 71560 #797 2003 22pp · 71561 #798 2003 23pp
+        71562 #799 2003 23pp · 71563 #800 2003 53pp · 71564 #801 2003 23pp · 71565 #802 2003 23pp · 71566 #803 2003 22pp · 71567 #804 2003 23pp · 71568 #805 2003 22pp · 71569 #806 2003 23pp
+        71570 #807 2003 21pp · 71571 #808 2003 22pp · 71572 #809 2004 23pp · 71573 #810 2004 23pp · 71574 #811 2004 22pp · 71575 #812 2004 22pp · 71576 #813 2004 23pp · 71577 #814 2004 22pp
+        71578 #815 2004 21pp · 71579 #816 2004 21pp · 71580 #817 2004 21pp · 71581 #818 2004 22pp · 71582 #819 2004 23pp · 71583 #820 2004 23pp · 71584 #821 2005 23pp · 71585 #822 2005 23pp
+        71586 #823 2005 21pp · 71587 #824 2005 23pp · 71588 #825 2005 27pp · 71589 #826 2005 23pp · 71590 #827 2005 24pp · 71591 #828 2005 23pp · 71592 #829 2005 23pp · 71593 #830 2005 25pp
+        71594 #831 2005 24pp · 71595 #832 2005 24pp · 71596 #833 2006 25pp · 71597 #834 2006 25pp · 71598 #835 2006 25pp · 71599 #836 2006 24pp · 71600 #837 2006 23pp · 71601 #838 2006 23pp
+        71602 #839 2006 24pp · 71603 #840 2006 24pp · 71604 #841 24pp · 71605 #842 2006 23pp · 71606 #843 2006 22pp · 71607 #844 2006 20pp · 71608 #845 2006 21pp · 71609 #846 2006 19pp
+        71610 #847 2007 23pp · 71611 #848 2007 22pp · 71612 #849 2007 22pp · 71613 #850 2007 39pp · 71614 #851 2007 17pp · 71615 #852 2007 25pp · 71616 #853 2007 24pp · 71617 #854 2007 24pp
+        71618 #855 2007 20pp · 71619 #856 2007 24pp · 71620 #857 2007 24pp · 71621 #858 2007 33pp · 71622 #859 2008 24pp · 71623 #860 2008 25pp · 71624 #861 2008 25pp · 71625 #862 2008 26pp
+        71626 #863 2008 25pp · 71627 #864 2008 24pp · 71628 #865 2008 24pp · 71629 #866 2008 24pp · 71630 #867 2008 25pp · 71631 #868 2008 25pp · 71632 #869 2008 24pp · 71633 #870 2008 25pp
+        71634 #871 2009 24pp · 71635 #872 2009 22pp · 71636 #873 2009 22pp · 71637 #874 2009 25pp · 71638 #875 2009 22pp · 71639 #876 2009 20pp · 71640 #877 2009 23pp · 71641 #878 2009 23pp
+        71642 #879 2009 26pp · 71644 #881 2009 29pp · 71645 #882 2009 27pp · 71646 #883 2010 26pp · 71647 #884 2010 26pp · 71648 #885 2010 28pp · 71649 #886 2010 28pp · 71650 #887 2010 23pp
+        71652 #889 2010 27pp · 71653 #890 2010 32pp · 71654 #891 2010 32pp · 71655 #2 2010 33pp · 71656 #893 2010 33pp · 71657 #2 2010 33pp · 71658 #895 2011 32pp · 71659 #896 2011 32pp
+        71660 #897 2011 22pp · 71661 #898 2011 22pp · 71662 #899 2011 25pp · 71663 #3 2011 94pp · 71664 #901 2011 23pp · 71665 #902 2011 23pp · 71666 #903 2011 23pp · 71667 #904 2011 23pp
+      [71038] Action Comics 274 (1961) (c2c) flattermann.cbr (37pp)
+      [71040] Action Comics 276 (1961) (c2c) flattermann.cbr (37pp)
+      [71051] Action Comics 287 (1962) (c2c) flattermann.cbr (37pp)
+      [71053] Action Comics 289 (1962) (c2c) flattermann.cbr (37pp)
+   G84 "Action Comics 612 ctc (Weekly" in DC\_Superman\_Completed Series\01 Action Comics v1 (1938) — 1 file(s), numbers 612, pp 51-51; cv per-file 18005x1; key 'Action Comics v1 (1938)'
+      [71376] Action Comics 612 ctc (Weekly(1988).cbr (51pp)
+   G85 "Action Comics" in DC\_Superman\_Completed Series\01 Action Comics v1 (1938)\Annuals and Specials — 1 file(s), numbers 0, pp 23-23; cv per-file 18005x1; gcd per-file 97x1; key 'Action Comics v1 (1938)'
+      [71668] Action Comics 000 (1994-08) (digital) (Glorith-Novus-HD).cbz (23pp)
+   G86 "Action Comics Annual" in DC\_Superman\_Completed Series\01 Action Comics v1 (1938)\Annuals and Specials — 18 file(s), numbers 1-13, pp 36-68; cv per-file 18005x17, 42563x1; gcd per-file 59922x1; key 'Action Comics v1 (1938)'
+      e.g. Action Comics Annual 002 (1989) (Digital) (Shadowcat-Empire).cbz
+        71669 #2 1989 51pp · 71670 #5 1993 53pp · 71671 #10 2007 40pp · 71672 #11 2008 40pp · 71673 #12 2009 36pp · 71674 #3 1991 58pp · 71675 #4 1992 57pp · 71676 #6 1994 68pp · 71677 #7 1995 48pp
+        71679 #9 1997 67pp · 71680 #10 2007 40pp · 71681 #11 2008 40pp · 71682 #12 2009 37pp · 71683 #13 2011 54pp
+      [71678] Action Comics Annual 08 - Legends of the Dead Earth (1996).cbr (37pp)
+      [71684] Action Comics Annual, 1987-11-00 (#01) (DobisP.R.-Novus-HD).cbz (40pp)
+      [71685] Action Comics Annual, 1989-12-00 (#02) (digital) (Glorith-HD).cbz (50pp)
+      [71686] Action Comics Annual, 1993-01-00 (#05) (digital) (Glorith-Novus-HD).cbz (54pp)
+   G87 "Action Comics" in DC\_Superman\_Completed Series\09 Superman - New Krypton (2009)\04 Superman - Codename Patriot (2009) — 1 file(s), numbers 880, pp 29-29; cv per-file 18005x1; gcd per-file 97x1; key 'Action Comics (1938)'
+      [72541] Action Comics 880 (2009) (Digital) (Shadowcat-Empire).cbz (29pp)
+   G88 "Action Comics" in DC\_Superman\_Completed Series\09 Superman - New Krypton (2009)\06 Superman - Last Stand of New Krypton (2010) — 3 file(s), numbers 887-889, pp 23-27; cv per-file 18005x3; gcd per-file 97x3; key 'Action Comics (1938)'
+      [72550] 03 Action Comics 887 (2010) (Digital) (Shadowcat-Empire).cbz (23pp)
+      [72555] 08 Action Comics 888 (2010) (Digital) (Shadowcat-Empire).cbz (24pp)
+      [72561] Action Comics 889 (2010) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (27pp)

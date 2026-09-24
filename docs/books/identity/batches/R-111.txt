@@ -1,0 +1,467 @@
+## Conventions for this batch (26 shown of 169 matched; 370 in LEDGER.md; 12 shelf/shelves: folder:vn-year ×11 · pub:dc ×10 · folder:sequel-subfolder ×10 · folder:events ×6 · folder:bucket ×4 · kind:collected-line ×2 · kind:golden-age ×2 · kind:trade-only ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-211] (10 shelf/shelves) folder:vn-year pub:dc sig:collision sig:stale-flag
+- An `overlap-in-series` flag on a franchise with many `vN` sibling shelves (Deathstroke, Harley Quinn, Green Lantern,
+  Justice League, JLD, Legion, Lobo) describes the CROSS-SHELF Vol. 01 collision, not conflation on the one shelf —
+  confirmed 14 of 14 in C-013..C-015; the stale-flag note must name the sibling shelf.
+[L-212] (10 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-222] (10 shelf/shelves) pub:dc sig:collision
+- Second-rip fragments of shelves already read in earlier batches (Flash Secret Files, Spectre 1992, Teen Titans
+  2003/2016, Wonder Woman 1942/2016, Zatanna 1993, Donna Troy) surface as `--all` collisions — `merge-with` after
+  grepping the partner's name and count.
+[L-237] (10 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+[L-245] (10 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-210] (9 shelf/shelves) pub:dc sig:legacy-stamp sig:probe sig:stamp
+- The wrong-relaunch trap is near-universal on any DC title with 3+ relaunches (Green Arrow, Green Lantern, Harley
+  Quinn, Justice League, Legion, Lobo, Martian Manhunter, Doom Patrol): the matcher stamps the oldest legacy volume or
+  the largest/most-recent one across every sibling shelf; `lookup.py` by name + year recovers the true id.
+[L-369] (9 shelf/shelves) pub:dc sig:split
+- CLARIFIES L-368 (lead, wave 97): ANNUALS OF A MONTHLY that sit on the monthly's shelf are residue — S at <=0.9 with
+  the annuals named, no split (GL 1990 Annuals, Deathstroke / Lobo / Firestorm / JLA Annuals). Only a shelf that IS an
+  annual series (the Legion Annual 1985 / 1990 shelves) takes its own key. An L-212 retitle chain stores its FIRST
+  record once the chain's opening issues are on the shelf (JL 1987 CV 3796 -> JLI 3798 -> JLA 4198; Azrael 5490). DC
+  "#DC Events" Post-Crisis read-order folders hold UNDATED "Title 001.cbr" rips of the 1987 series inside a New 52
+  ladder — grep for undated names (extends L-365). X-batch I lines on "<Title> by <Creator> Book NN" lines were often
+  attached to same-name rows (Spanish ECC, a 2025 relaunch) — check `--gcd-series "<Title> by <Creator>"` (R-108).
+[L-124] (12 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-191] (12 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-242] (8 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-281] (12 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-368] (8 shelf/shelves) pub:dc sig:split
+- R vs S + split (lead, wave 95): a CO-EQUAL second run on a shelf means no identity can stand until the split — R +
+  split-needed (JL 3000/3001, JLA: Year One). A few MISFILED books that belong to another live run are residue — the
+  shelf keeps its S, plus `F <sid> split-needed | items -> join S<run>` (Batman 2011 holding two 2016 trades). A
+  separate annual series is its own run and takes its own key. DC "#DC Events" "(New 52) Title NNN (2024)
+  (digital-mobile)" re-rips are DUPLICATES, not another run. GCD's New 52 / Rebirth / 2021 trade lines are HC/TPB twins
+  (JL 76777/76126, Nightwing 179196/201017, Harley 88183/88152, Injustice 2 117796/123824); X-batch 0.7 I lines often
+  cited the Panini / Urban / Televisa row. A collected-series id stored as a shelf's GCD leg makes a judged range look
+  impossible (signal c) — point the S at the run. Backup-feature reprint lines get an N, not a C. Digital-first DC series
+  take the print GCD series as their second leg at 0.9 (R-105/R-107).
+[L-272] (11 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-214] (7 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp sig:twin
+- The wrong-relaunch / legacy-volume stamp ran at 70-95% of files on Midnighter, Mister Miracle, Robin, Nightwing,
+  Supergirl, Plastic Man and Suicide Squad shelves in C-016 — assume it on any DC relaunch shelf and verify by year.
+[L-290] (10 shelf/shelves) folder:sequel-subfolder pass:item sig:stamp
+- A spin-off filed in its own subfolder on the parent's shelf gets the PARENT's v01 ids stamped by the per-file
+  matcher (Rent-a-(Really Shy!)-Girlfriend on Rent-A-Girlfriend) — `N no-record` (or the shelf note), never the
+  parent's record; it is a misfiling for the lead.
+[L-040] (6 shelf/shelves) folder:bucket folder:events pub:dc pub:papercutz-nbm pub:scout pub:titan pub:valiant sig:twin
+- NBM / Papercutz album lines and Scout one-shots carry TWIN adjacent GCD rows for one book (120209/120210) —
+  cap at 0.9 and name both. Titan's Doctor Who "Year N" volumes number continuously across a Doctor (a ladder
+  starting at #6 is complete). A publisher's read-order crossover folder (Titan `Lost Dimension`, Valiant
+  `_Chronological Valiant`) = DC's `#DC Events` shape.
+[L-052] (6 shelf/shelves) pub:dc sig:stamp sig:twin
+- The per-file CV matcher picks the LEGACY volume for every New 52 shelf (Batman 1940, Wonder Woman 1942, Nightwing
+  1996, Catwoman 1993) because it matched by issue number — the stored link on a 2011 shelf that names a 1940
+  volume is `wrong-cv-link`, the 2011 volume is in the rip.
+[L-082] (6 shelf/shelves) pub:dc sig:comicinfo
+- A Glorith-HD rip's ComicInfo `Web` id CAN be a ComicVine ISSUE id of the stored volume (599834, DC 100-Page
+  Spectacular) — Glorith's Web ids are never GCD ids, but check them against the CV rip.
+[L-093] (6 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
+[L-195] (6 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- Trade SUBTITLES tell two same-title relaunches apart when the per-file matcher cannot (Batman Beyond 2015 = Brave
+  New Worlds / City of Yesterday / Wired for Death; 2016 = Escaping the Grave / Rise of the Demon / The Long Payback).
+[L-197] (6 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- The per-file matcher's "wrong RELAUNCH" trap: it stamps the LATER same-title volume onto files dated to the earlier
+  era by issue-number coincidence (Wonder Woman 2016, Batman 2016, JLA v2/v3, Firestorm, Hawk and Dove v5, Atari Force
+  v2, Adventure Comics 2010) — the tell is files whose years or numbers predate or exceed the stamped volume's own.
+[L-199] (6 shelf/shelves) folder:bucket folder:events pub:dc
+- DC's "#DC Events" chronology folders resolve once the cross-referenced-run pattern is seen: a crossover reprint
+  bucket or a tie-in folder filed adjacent to the main run takes the main run's identity with the tie-ins named.
+[L-261] (6 shelf/shelves) pass:item pub:dc sig:twin
+- Sibling-era shelves of one franchise cross-contaminate each other's per-file GCD picks by "Vol N" ordinal
+  (Harley Quinn S94832↔S94833, Nightwing S65356↔S94872, Legion S98212↔S65063; Supergirl's five shelves so badly
+  that S94709's thirteen books are all no-record) — read the shelf's own list, not the neighbour's.
+[L-348] (6 shelf/shelves) pub:dc sig:probe
+- DC (R-073): the rip holds count-1 CV trade records under "Title: Subtitle" (Justice League Vol. 1-8, Teen Titans 2014,
+  Young Justice 2019, Doom Rising, Oz Effect) — probe the SUBTITLE with --contains. One-shots filed by event name ("Flash
+  Special" = the 50th anniversary special, "Joker: Last Laugh Secret Files"). CV keeps Daring New Adventures of Supergirl
+  #1-13 + Supergirl #14-23 as ONE volume (3113); GCD splits 2626 / 2722 — a C line per leg.
+[L-364] (6 shelf/shelves) pub:dc
+- DC (R-101): GCD's notes can disagree with GCD's own REPRINT ROLL-UP (Batgirl 2016 Son of Penguin: notes "#7-12",
+  roll-up #7-11) — the roll-up and the next volume's range decide; the packet flags RANGE CONTRADICTED only against
+  notes, so wrong judged ranges can hide without the flag. DC Vertigo: a complete short mini in a "vN" subfolder of a
+  Golden/Silver Age title's shelf (Witching Hour 1999, Weird War Tales 1997) is a CO-EQUAL run, not residue. "#DC
+  Events" New 52 read-order folders carry whole runs onto the pre-2011 shelf of the same title (Batgirl 2000). A retitle
+  that continues the numbering stays one run (L-212) even when both catalogues and the folders split it.
+[L-365] (6 shelf/shelves) pub:dc
+- DC "#DC Events" read-order rips named "Title NNN - Month Year" or "Title # NN" are NEW 52 issues whose numbers fall
+  inside the legacy ladder — a ladder check cannot see them; grep the filenames on any big legacy shelf (Batman 1940,
+  Birds of Prey 1999, Green Arrow 2001 all hid other runs). One-run trade lines (Deluxe Editions, the "Batman: Detective
+  Comics" line, R.I.P. Vol. 07, the Bronze Age omnibus) take the run's ids and merge into the run shelf. GCD notes can
+  typo the series year (Batman B&W Vol. 1 says "1986 series" for the 1996 mini). CV 19721 is "Azrael: Agent of the Bat"
+  (#47-100, the 1995 run's retitle); the 2009 relaunch is CV 28873 / GCD 39888 (R-103, P-035).
+
++143 more matched entries not shown: L-366, L-175, L-011, L-015, L-363, L-030, L-151, L-160, L-193, L-113, L-031, L-220, L-370, L-007, L-016, L-032, L-085, L-114, L-194, L-217, L-330, L-064, L-101, L-310, L-014, L-033, L-065, L-099, L-121, L-123, L-127, L-129, L-130, L-136, L-142, L-174, L-216, L-218, L-255, L-260, L-262, L-269, L-291, L-319, L-329, L-367, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-018, L-034, L-051, L-055, L-059, L-060, L-076, L-109, L-115, L-116, L-117, L-128, L-132, L-133, L-162, L-169, L-181, L-187, L-196, L-202, L-203, L-205, L-206, L-207, L-215, L-254, L-257, L-263, L-295, L-296, L-298, L-299, L-306, L-307, L-308, L-312, L-313, L-327, L-328, L-332, L-336, L-337, L-343, L-345, L-357, L-041, L-097, L-192, L-252, L-274, L-288, L-293, L-352, L-354, L-150 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S94641 Justice League International  [tier C] · ratio 0.37  keys: Justice League International v1 (1987)  years 1987-2012  13 files / 6 collections
+   split run: "Justice League International v1 (1987)" run={"cv": 3798, "gcd": 3366} (new shelf from P-039) — seed the S line from these ids, then verify them
+   folders: [7] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\05 Justice league - A New Beginning · [6] DC\_Justice League\_Completed Series\Justice League International v1 (1987)
+   files:   Justice League 001.cbr … Justice League 006.cbr  (6 files, pp 23-26) | [16795] Justice League International 007.cbr (39pp)
+            [67060] COL Justice League International v01 (2008) (Digital) (Zone-Empire).cbr (192pp) | [67061] COL Justice League International v02 (2008) (Digital) (Zone-Empire).cbr (211pp)
+            [67062] COL Justice League International v03 (2008) (Digital) (Zone-Empire).cbr (222pp) | [67063] COL Justice League International v04 (2009) (Digital) (Zone-Empire).cbr (211pp)
+            [67064] COL Justice League International v05 (2011) (Digital) (Zone-Empire).cbr (241pp) | [67065] COL Justice League International v06 (2011) (Digital) (Zone-Empire).cbr (241pp)
+   ours:    ladder 1-7
+   GCD says: [67060] gcd notes 508221 (#1 of Justice League International): Justice League (DC, 1987 series) #1-6; Justice League International (DC, 1987 series) #7  |  gcd_reprint 508221: s3364 Justice League (1987) #1-6 [14 stories] · s3366 Justice League International (1987) #7 [2 stories] · s3394 Who's Who: Update '87 (1987) #3 [1 story]
+             [67061] gcd notes 537491 (#2 of Justice League International): Justice League Annual (DC, 1987 series) #1; Justice League International (DC, 1987 series) #8-13; Suicide Squad (DC, 1987 series) #13  |  gcd_reprint 537491: s3366 Justice League International (1987) #8-13 [15 stories] · s3365 Justice League Annual (1987) #1 [2 stories] · s3385 Suicide Squad (1987) #13 [2 stories]
+             [67062] gcd notes 549268 (#3 of Justice League International): Justice League International (DC, 1987 series) #14-22  |  gcd_reprint 549268: s3366 Justice League International (1987) #14-22 [18 stories] · s5976 JLA Secret Files (1997) #3 [1 story] · s14378 JLA-Z (2003) #2 [1 story] · s20863 Justice League International: The Secret Gospel of Maxwell Lord (1992) (unnumbered) [1 story]
+             [67063] gcd notes 590333 (#4 of Justice League International): Justice League International (DC, 1987 series) #23-25; Justice League America (DC, 1989 series) #26-30  |  gcd_reprint 590333: s3804 Justice League America (1989) #26-30 [10 stories] · s3366 Justice League International (1987) #23-25 [8 stories]
+             [67064] gcd notes 797801 (#5 of Justice League International): Justice League Annual (DC, 1987 series) #2-3; Justice League Europe (DC, 1989 series) #1-6  |  gcd_reprint 797801: s3365 Justice League Annual (1987) #2-3 [17 stories] · s3805 Justice League Europe (1989) #1-6 [13 stories]
+             [67065] gcd notes 839661 (#6 of Justice League International): Justice League America (DC, 1989 series) #31-35; Justice League Europe (DC, 1989 series) #7-11  |  gcd_reprint 839661: s3805 Justice League Europe (1989) #7-11 [11 stories] · s3804 Justice League America (1989) #31-35 [10 stories]
+   CV linked:      vol 3798 "Justice League International" 1987 DC Comics 19 issues; cached #7-25 (19); yearΔ 0; ratio 7/19 = 0.37; no judged range
+   CV per-file (v1): vol 42488 "Justice League" 2011 DC Comics 57 on 6/13 files · vol 3798 "Justice League International" 1987 DC Comics 19 on 1/13 files
+   CV local rip:   (= linked) · 4966 "Justice League International" 1993 DC Comics 18 · 27019 "Justice League International" 2009 DC Comics 6 · 42590 "Justice League International" 2011 DC Comics 12 · 55320 "Justice League International" 2012 DC Comics 2 · 110178 "Justice League International" 2012 Panini Verlag 2   (rip lookup)
+   GCD dump:       3366 "Justice League International" 1987-1989 DC [] 19 · 4646 "Justice League International" 1993-1994 DC [] 18 · 29969 "Justice League International" 2008-2009 DC [] 4 · 34438 "Justice League International" 2009-2011 DC [] 6 · 59309 "Justice League International" 2011-2012 DC [] 12 · 67624 "Justice League International" [de] 2012-2013 Panini Deutschland [] 2   (dump lookup)
+
+== S10105 Justice League  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Justice League | Justice League v2 (2011)  years 2011-2016  87 files / 9 collections
+   split: the KEPT half of the P-039 split — moved out -> S94641 "Justice League International v1 (1987)"; re-identify what stayed
+   folders: [14] DC\_Justice League\(New 52) Justice League (2024) (Mobile) · [12] DC\_Justice League\_Completed Series\Justice League - Darkseid War (2016) · [10] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\109 InJustice League - Amazo Virus · [10] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\122 Justice League - Darkseid War (2016) · [10] DC\_Justice League\_Completed Series\Justice League v2 (2011) · [7] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\092 Forever Evil 4 · [6] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\009 Justice League Vol. 1 Origin · [5] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\091 Trinity War · [4] DC\_Justice League\_Completed Series\Justice League v2 (2011)\Annuals and Specials · [3] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\051 Justice League Vol. 3 Throne of Atlantis 2 · [2] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\048 Justice League Vol. 3 Throne of Atlantis 1 · [2] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\129 Justice League - Rebirth Leadup · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\007 Forever Evil 2 · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\086 Justice League (18)
+   files:   [19908] Justice League 023.1 - November 2013.cbr (23pp) | [18120] Justice League 001 - October 2011.cbr (32pp) | [18121] Justice League 002 - December 2011.cbr (23pp)
+            [18122] Justice League 003 - January 2012.cbr (30pp) | [18123] Justice League 004 - February 2012.cbr (31pp) | [18124] Justice League 005 - March 2012.cbr (28pp)
+            [18125] Justice League 006 - April 2012.cbr (32pp) | [18364] Justice League 013 - December 2012.cbr (29pp) | [18365] Justice League 014 - January 2013.cbr (38pp)
+            [18374] 001 Justice League 015 - February 2013.cbr (40pp) | [18376] 003 Justice League 016 - March 2013.cbr (33pp) | [18378] 005 Justice League 017 - April 2013.cbr (31pp)
+            [19923] Justice League 018 - May 2013.cbr (39pp) | [18473] 002 Justice League 019 - June 2013.cbr (33pp) | [18474] 003 Justice League 020 - July 2013.cbr (34pp)
+            [18475] 004 Justice League 021 - August 2013.cbr (34pp) | [18476] 005 Justice League 022 - September 2013.cbr (34pp) | [18485] 014 Justice League 023 - October 2013.cbr (29pp)
+            [18489] 004 Justice League 024 - December 2013.cbr (26pp) | [18491] 006 Justice League 025 - January 2014.cbr (27pp) | [18493] 008 Justice League 026 - February 2014.cbr (25pp)
+            [18494] 009 Justice League 027 - March 2014.cbr (25pp) | [18495] 010 Justice League 028 - April 2014.cbr (28pp) | [18498] 013 Justice League 029 - May 2014.cbr (29pp)
+            [18500] 015 Justice League 030 - July 2014.cbr (30pp) | Justice League # 30.cbr … Justice League # 39.cbr  (10 files, pp 21-29)
+            [18965] 02 Justice League 040 (2015) (digital-Empire).cbr (22pp) | [18967] 04 Justice League 042 (2015) (Digital) (Thornn-Empire).cbr (27pp)
+            [18968] 05 Justice League 043 (2015) (Digital) (Thornn-Empire).cbr (27pp) | [18969] 06 Justice League 044 (2015) (Digital) (Thornn-Empire).cbr (24pp)
+            [18971] 08 Justice League 045 (2015) (Digital) (Thornn-Empire).cbr (26pp) | [18974] 11 Justice League 046 (2016) (Digital) (Thornn-Empire).cbr (26pp)
+            [18979] 16 Justice League 047 (2016) (Digital) (Thornn-Empire).cbr (28pp) | [18980] 17 Justice League 048 (2016) (Digital) (Thornn-Empire).cbr (24pp)
+            [18982] 19 Justice League 049 (2015) (Digital) (Thornn-Empire).cbr (24pp) | [18983] 20 Justice League 050 (2015) (Digital) (Thornn-Empire).cbr (49pp)
+            [19031] 21 Justice League 051 (2016) (Digital) (Thornn-Empire).cbr (29pp) | [19032] 22 Justice League 052 (2016) (Digital) (Thornn-Empire).cbr (24pp)
+            [66678] (New 52) Justice League 001 (2024) (digital-mobile) (Son of Ultron-Empire).cbr (37pp)
+            [66679] (New 52) Justice League 002 (2024) (digital-mobile) (Son of Ultron-Empire).cbr (28pp)
+            [66680] (New 52) Justice League 005 (2024) (digital-mobile) (Son of Ultron-Empire).cbr (38pp)
+            [66681] (New 52) Justice League 006 (2024) (digital-mobile) (Son of Ultron-Empire).cbr (34pp)
+            [66682] (New 52) Justice League 007 (2024) (digital-mobile) (Son of Ultron-Empire).cbr (36pp)
+            [66683] (New 52) Justice League 008 (2024) (digital-mobile) (Son of Ultron-Empire).cbr (29pp)
+            [66684] (New 52) Justice League 009 (2024) (digital-mobile) (Son of Ultron-Empire).cbr (53pp)
+            [66685] (New 52) Justice League 010 (2024) (digital-mobile) (Son of Ultron-Empire).cbr (52pp)
+            [66686] (New 52) Justice League 011 (2024) (digital-mobile) (Son of Ultron-Empire).cbr (92pp)
+            [66687] (New 52) Justice League 012 (2024) (digital-mobile) (Son of Ultron-Empire).cbr (44pp)
+            [66688] (New 52) Justice League 017 (2025) (digital-mobile) (Son of Ultron-Empire).cbr (55pp)
+            [66689] (New 52) Justice League 018 (2025) (digital-mobile) (Son of Ultron-Empire).cbr (85pp)
+            [66690] (New 52) Justice League 019 (2025) (digital-mobile) (Son of Ultron-Empire).cbr (61pp)
+            [66691] (New 52) Justice League 020 (2025) (digital-mobile) (Son of Ultron-Empire).cbr (61pp) | [66811] 02 Justice League 040 (2015) (digital-Empire).cbr (22pp)
+            [66812] 03 Justice League 041 (2015) (2 covers) (digital-Empire).cbr (44pp) | [66813] 04 Justice League 042 (2015) (Digital) (Thornn-Empire).cbr (27pp)
+            [66814] 05 Justice League 043 (2015) (Digital) (Thornn-Empire).cbr (27pp) | [66815] 06 Justice League 044 (2015) (Digital) (Thornn-Empire).cbr (24pp)
+            [66817] 08 Justice League 045 (2015) (Digital) (Thornn-Empire).cbr (26pp) | [66820] 11 Justice League 046 (2016) (Digital) (Thornn-Empire).cbr (26pp)
+            [66825] 16 Justice League 047 (2016) (Digital) (Thornn-Empire).cbr (28pp) | [66826] 17 Justice League 048 (2016) (Digital) (Thornn-Empire).cbr (24pp)
+            [66828] 19 Justice League 049 (2015) (Digital) (Thornn-Empire).cbr (24pp) | [66829] 20 Justice League 050 (2015) (Digital) (Thornn-Empire).cbr (49pp)
+            [66830] 21 Justice League 051 (2016) (Digital) (Thornn-Empire).cbr (29pp) | [67452] Justice League 023.1 - Darkseid (2013) (digital-Empire).cbr (22pp)
+            [67453] Justice League 023.2 - Lobo(2013) (Digital) (Zone-Empire).cbr (24pp) | [67454] Justice League 023.3 - Dial E (2013) (Digital) (Zone-Empire).cbr (24pp)
+            [67455] Justice League 023.4 - Secret Society (2013) (digital-Empire).cbr (23pp) | [67456] Justice League 052 (2016) (Digital) (Thornn-Empire).cbr (24pp)
+            [67457] COL Justice League Vol. 01 - Origin (2012) (digital) (Minutemen-PhD).cbr (173pp)
+            [67458] COL Justice League Vol. 02 - The Villain's Journey (2013) (Digital) (Zone-Empire).cbr (165pp)
+            [67459] COL Justice League Vol. 03 - Throne of Atlantis (2013) (Digital) (Zone-Empire).cbr (177pp)
+            [67460] COL Justice League Vol. 04 - The Grid (2014) (Digital) (Zone-Empire).cbr (144pp) | [67461] COL Justice League Vol. 05 - Forever Heroes (2014) (Digital) (Zone-Empire).cbr (164pp)
+            [67462] COL Justice League Vol. 06 - Injustice League (2015) (Digital) (Zone-Empire).cbr (242pp)
+            [67463] COL Justice League Vol. 07 - Darkseid War Part 01 (2016) (Digital) (Zone-Empire).cbr (161pp)
+            [67464] COL Justice League Vol. 08 - Darkseid War Part 02 (2016) (digital) (Son of Ultron-Empire).cbr (192pp)
+            [67465] COL Justice League Vol. 09 - Darkseid War Part 03 - Power of the Gods (2016) (digital) (Son of Ultron-Empire).cbr (140pp)
+   ours:    ladder 1-23, 23.1, 24-52; 22 number(s) name more than one file: 1, 2, 5, 6, 17, 18, 19, 20, 23, 30, 40, 42
+   GCD says: [67457] gcd_reprint 1142606: s60709 Justice League (2011) #1-6 [39 stories]
+             [67458] gcd_reprint 1142598: s60709 Justice League (2011) #0, #7-12 [37 stories]
+             [67459] gcd_reprint 1142625: s60709 Justice League (2011) #13-17 [18 stories] · s61178 Aquaman (2011) #15-16 [5 stories]
+             [67460] gcd_reprint 1252499: s60709 Justice League (2011) #18-20, #22-23 [24 stories] · s61184 Justice League Dark (2011) #22-23 [4 stories] · s72153 Justice League of America (2013) #6-7 [4 stories] · s76777 Justice League (2012) #4 [1 story]
+             [67461] gcd_reprint 1252501: s60709 Justice League (2011) #24-29 [19 stories]
+             [67462] gcd_reprint 1431970: s60709 Justice League (2011) #30-39 [39 stories]
+             [67463] gcd_reprint 1544786: s60709 Justice League (2011) #40-44 [19 stories] · s88986 Divergence FCBD Special Edition [Free Comic Book Day] (2015) #1 [1 story]
+             [67464] gcd_reprint 1624181: s60709 Justice League (2011) #45-50 [19 stories] · s99282 Justice League Darkseid War Special (2016) #1 [4 stories] · s76971 Superman / Wonder Woman (2013) #26 [1 story] · s61069 Wonder Woman (2011) #49 [1 story]
+             [67465] gcd_reprint 1559050: s93364 Justice League: Darkseid War: Batman (2015) #1 [3 stories] · s94718 Justice League: Darkseid War: Lex Luthor (2016) #1 [2 stories] · s93775 Justice League: Darkseid War: Green Lantern (2016) #1 [2 stories] · s93776 Justice League: Darkseid War: Shazam (2016) #1 [2 stories]
+   CV linked:      vol 42488 "Justice League" 2011 DC Comics 57 issues; cached #0-52 (57); yearΔ 0; ratio 78/57 = 1.37; no judged range
+   CV per-file (v1): vol 42488 "Justice League" 2011 DC Comics 57 on 86/87 files · vol 92373 "Justice League" 2016 DC Comics 43 on 1/87 files
+   CV local rip:   (= linked) · 48879 "Justice League" 2012 Panini Verlag 1 issue 335624 · 50894 "Justice League" 2012 Editorial Televisa 11 · 61598 "Justice League" 2012 Panini Verlag 57 · 92409 "Justice League" 2012 RW Edizioni 1 issue 943828 · 94280 "Justice League" 2012 DC Comics 8   (rip lookup)
+   GCD per-file:   series 60709 "Justice League" 2011-2016 DC [was ongoing series] 57 on 29/87 files · series 199306 "Justice League" 2023-? DC [collected edition] 2 on 2/87 files; methods numx31
+   GCD dump:       (= per-file) · 66338 "Justice League" [fr] 2012-2016 Urban Comics [] 11 · 66615 "Justice League" [de] 2012-2017 Panini Deutschland [] 57 · 66799 "Justice League" [es-mx] 2012-? Editorial Televisa [] 53 · 76777 "Justice League" 2012-2016 DC [] 8 · 76126 "Justice League" 2013-2017 DC [] 8   (dump lookup)
+   bridges:        gcd 60709 -> LOCG 100053 "Justice League" support 43 · gcd 199306 -> LOCG 100053 "Justice League" support 2
+
+== S94706 Strange Adventures  [tier C] · gap 63  keys: Strange Adventures v4 (2011)  years 1951-2014  2 files / 2 collections
+   split run: "Strange Adventures v4 (2011)" run={"cv": 71454, "gcd": 110480} (new shelf from P-039) — seed the S line from these ids, then verify them
+   folders: [1] DC\_Strange Adventures\Strange Adventures v4 (2011) · [1] Vertigo\Strange Adventures (1999)
+   files:   [69999] COL Strange Adventures (2014) (digital) (Minutemen-Faessla).cbz (154pp) | [113967] COL Strange Adventures (2014) (digital) (Minutemen-Faessla).cbz (154pp)
+   GCD says: [69999] gcd_reprint 1659004: s58877 Strange Adventures (2011) #1 [12 stories] · s65417 Mystery in Space (2012) #1 [11 stories]
+             [113967] gcd_reprint 1659004: s58877 Strange Adventures (2011) #1 [12 stories] · s65417 Mystery in Space (2012) #1 [11 stories]
+   CV linked:      vol 71454 "Strange Adventures" 2014 DC Comics 1 issues issue 444522; cached #1-1 (1); yearΔ 63; ratio 0/1; no judged range
+   CV local rip:   69725 "Strange Adventures" 1951 Simcoe Publishing & Distribution 1 issue 435729 · 1328 "Strange Adventures" 1950 DC Comics 244 · 69826 "Strange Adventures" 1954 Murray Comics 34 · 69785 "Strange Adventures" 1992 Petting Zoo Press 1 issue 435867 · 6344 "Strange Adventures" 1999 DC Comics 4 · 25909 "Strange Adventures" 2009 DC Comics 8   (rip lookup)
+   GCD dump:       32468 "Strange Adventures" [en-ca] 1951-1951 Simcoe Publishing & Distribution [] 1 · 704 "Strange Adventures" 1950-1973 DC [] 244 · 58019 "Strange Adventures" [en-au] 1954-1958 K. G. Murray [] 43 · 118198 "Strange Adventures" [en-ph] 1973-? National Book Store [] 4 · 29632 "Strange Adventures" [en-ca] 1992-1998 Petting Zoo Press [] 6 · 6173 "Strange Adventures" 1999-2000 DC [] 4   (dump lookup)
+
+== S16896 Strange Adventures  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: Strange Adventures | Strange Adventures v1 (1950)  years 1950-1994  33 files / 0 collections
+   split: the KEPT half of the P-039 split — moved out -> S94706 "Strange Adventures v4 (2011)"; re-identify what stayed
+   folders: [32] DC\_Strange Adventures\Strange Adventures v1 (1950) · [1] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\75 Fifty Two - The Companion
+   files:   [17606] Strange_Adventures_226(Adam_Strange).cbr (18pp)
+            Strange Adventures 001 (1950) (Digital) (Shadowcat-Empire).cbz … Strange Adventures 157 (1963) (Digital) (Shadowcat-Empire).cbz  (11 files, pp 26-45)
+            [69917] Strange Adventures 177 (1965) (digital-Empire).cbr (26pp) | [69918] Strange Adventures 180 (DC) (Sep 1965) (c2c) (Superscan).cbz (37pp)
+            [69919] Strange Adventures 190 (DC) (Jul 1966) (c2c) (Superscan).cbz (37pp)
+            Strange Adventures 205 (1967) (Digital) (Shadowcat-Empire).cbz … Strange Adventures 210 (1968) (Digital) (Shadowcat-Empire).cbz  (6 files, pp 22-29)
+            [69926] Strange Adventures 213 (1968) (c2c) (SuperMack).cbz (36pp) | [69927] Strange Adventures 217 (1969) (digital-Empire).cbr (24pp)
+            [69928] Strange Adventures 218 (1969) (digital-Empire).cbr (27pp) | [69929] Strange Adventures 220 (1969) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [69930] Strange Adventures 222 (1970) (Digital) (Shadowcat-Empire).cbz (24pp) | [69931] Strange Adventures 224 (1970) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [69932] Strange Adventures 226 (1970) (Digital) (Shadowcat-Empire).cbz (57pp) | [69933] Strange Adventures 235 (1972) (digital-Empire).cbr (39pp)
+            [69934] Strange Adventures 241 (1973) (Digital) (Shadowcat-Empire).cbz (26pp) | [69935] Strange Adventures 242 (1973) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [69936] Strange Adventures 243 (1973) (Digital) (Shadowcat-Empire).cbz (24pp) | [69937] Strange Adventures 244 (1973) (Digital) (Shadowcat-Empire).cbz (22pp)
+   ours:    ladder 1-10, 157, 177, 180, 190, 205-210, 213, 217-218, 220, 222, 224, 226, 235, 241-244; 1 number(s) name more than one file: 226; ComicInfo Series: "Strange Adventures"x21, "Static"x1; ComicInfo Volume: "1950"x9; ComicInfo Publisher: "DC"x22
+   CV linked:      vol 1328 "Strange Adventures" 1950 DC Comics 244 issues; cached #1-244 (244); yearΔ 0; ratio 33/244 = 0.14; no judged range
+   CV per-file (v1): vol 1328 "Strange Adventures" 1950 DC Comics 244 on 32/33 files · vol 5215 "Static" 1993 DC Comics 45 on 1/33 files
+   CV local rip:   (= linked) · 69725 "Strange Adventures" 1951 Simcoe Publishing & Distribution 1 issue 435729 · 69826 "Strange Adventures" 1954 Murray Comics 34 · 69785 "Strange Adventures" 1992 Petting Zoo Press 1 issue 435867 · 6344 "Strange Adventures" 1999 DC Comics 4 · 25909 "Strange Adventures" 2009 DC Comics 8   (rip lookup)
+   GCD per-file:   methods numx29 · round2-seriesx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 704 "Strange Adventures" 1950-1973 DC [was ongoing series] 244 on 27/33 files · series 118198 "Strange Adventures" [en-ph] 1973-? National Book Store [Was ongoing series] 4 on 2/33 files · series 4925 "Static" 1993-1997 DC [was ongoing series] 45 on 1/33 files
+   GCD dump:       (= per-file) · 32468 "Strange Adventures" [en-ca] 1951-1951 Simcoe Publishing & Distribution [] 1 · 58019 "Strange Adventures" [en-au] 1954-1958 K. G. Murray [] 43 · 29632 "Strange Adventures" [en-ca] 1992-1998 Petting Zoo Press [] 6 · 6173 "Strange Adventures" 1999-2000 DC [] 4   (dump lookup)
+   bridges:        gcd 704 -> LOCG 116388 "Strange Adventures" support 29 · gcd 118198 -> LOCG 116388 "Strange Adventures" support 2 · gcd 4925 -> LOCG 112374 "Static" support 47
+
+== S6788 Flash Plus  [tier B]   keys: Flash plus Nightwing  years 1997-1997  2 files / 0 collections
+   split run: "Flash plus Nightwing" run={"cv": 28597, "gcd": 5738} (new shelf from P-039) — seed the S line from these ids, then verify them
+   folders: [1] DC\_Nightwing-Dick Grayson\_Trades, Minis and One-shots\The Flash Plus Nightwing (1996) · [1] DC\_The Flash\_Completed Seres\04 The Flash v2 (1987)\Flash v2 Specials\One Shots
+   files:   [69963] The Flash Plus Nightwing 001 (1996) (digital-Empire).cbz (39pp) | [74084] Flash plus Nightwing #01.cbr (41pp)
+   ours:    ladder 1; 1 number(s) name more than one file: 1
+   CV linked:      vol 28597 "Flash Plus" 1997 DC Comics 1 issues issue 176277; cached #1-1 (1); yearΔ 0; ratio 2/1 = 2.00; no judged range
+   CV candidates:  (= linked) · 5755 "Nightwing" 1996 DC Comics 155 s15 · 42123 "DC Retroactive: Flash - The '90s" 2011 DC Comics 1 issue 286893 s6 · 29574 "DC Comics Presents: The Flash" 2004 DC Comics 1 issue 182336 s6 · 40268 "DC Comics Presents: The Flash" 2011 DC Comics 1 issue 270831 s6 · 82229 "DC Sneak Peek: The Flash" 2015 DC Comics 1 issue 489857 s6 · 41399 "DC Retroactive: The Flash - The '70s" 2011 DC Comics 1 issue 280119 s5   (v1 search)
+   CV local rip:   (= linked) · 5755 "Nightwing" 1996 DC Comics 155 (via CV candidate name "Nightwing") · 5514 "Nightwing" 1995 DC Comics 4 (via CV candidate name "Nightwing") · 142685 "Nightwing" 2008 Planeta DeAgostini 9 (via CV candidate name "Nightwing") · 132018 "Nightwing" 2009 Planeta DeAgostini 7 (via CV candidate name "Nightwing") · 142687 "Nightwing" 2009 Planeta DeAgostini 7 (via CV candidate name "Nightwing")   (rip lookup)
+   GCD dump:       5738 "Flash Plus" 1997-1997 DC [] 1 · 5516 "Nightwing" 1996-2009 DC [] 154 (via CV candidate name "Nightwing") · 23145 "Nightwing" 1998-2005 DC [] 7 (via CV candidate name "Nightwing") · 5244 "Nightwing" 1995-1995 DC [] 4 (via CV candidate name "Nightwing") · 40938 "Nightwing" [es] 2008-2008 Planeta DeAgostini [] 7 (via CV candidate name "Nightwing") · 41047 "Nightwing" [es] 2009-2010 Planeta DeAgostini [] 7 (via CV candidate name "Nightwing")   (dump lookup)
+
+== S65356 Nightwing  [tier C] · 110 files  keys: Nightwing (1996) | Nightwing The Resurrection of Ra s Al Ghul part | Nightwing v2 (1996)  years 1996-2024  110 files / 9 collections
+   split: the KEPT half of the P-039 split — moved out -> S6788 "Flash plus Nightwing"; re-identify what stayed
+   folders: [83] DC\_Nightwing-Dick Grayson\01 Nightwing v1 (1995) + v2 (1996) · [8] DC\_Nightwing-Dick Grayson\01 Nightwing v1 (1995) + v2 (1996)\v1+v2 TPBs · [5] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Nightwing - Brothers in blood · [3] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\01 bruce wayne murderer · [3] DC\_Nightwing-Dick Grayson\01 Nightwing v1 (1995) + v2 (1996)\Annuals and Specials · [2] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\02 bruce wayne fugitive · [2] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\83 Resurrection of Ra's Al Ghul · [2] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\96 Final Crisis Aftermath\01 RIP Tie-ins · [1] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) · [1] DC\_Nightwing-Dick Grayson\_Trades, Minis and One-shots
+   files:   [16970] 03 Nightwing #065.cbr (24pp) | [16976] 09 Nightwing #066.cbr (24pp) | [16977] 09b Nightwing #067.cbr (24pp) | [16988] 06 Nightwing 68.cbr (24pp)
+            [16991] 09 Nightwing 69.cbr (25pp) | [17495] Nightwing_118__2006_.cbr (24pp) | [17496] Nightwing_119__2006_.cbr (24pp) | [17497] Nightwing_120__2006_.cbr (24pp)
+            [17498] Nightwing_121__2006_.cbr (24pp) | [17499] Nightwing_122__2006_.cbr (24pp) | [17683] 02 138__Nightwing__The_Resurrection_of_Ra_s_Al_Ghul_part_2__Countdown_24_.cbr (34pp)
+            [17687] 06 139__Nightwing__The_Resurrection_of_Ra_s_Al_Ghul_part_6__Countdown_20_.cbr (24pp) | [17877] 05 Nightwing_152__2009___GCPD-OCD_.cbr (29pp)
+            [17878] 06 Nightwing_153__2009___GreenRacer-DCP_.cbr (27pp) | [18020] 04 Nightwing (1998-11) 1000000 (digital) (OkC.O.M.P.U.T.O.-Novus).cbz (24pp)
+            [68477] Nightwing 000.5 (1997) (HD) (digital-Empire).cbr (20pp) | [68478] Nightwing 80-Page Giant 001 (2000) (HD) (digital-Empire).cbr (70pp)
+            [68479] Nightwing Annual 02 (2007) (HD) (digital-Empire).cbz (38pp)
+            Nightwing 071 (2002) (Digital) (AnHeroGold-Empire).cbz … Nightwing 100 (2005) (Digital) (AnHeroGold-Empire).cbz  (30 files, pp 22-32)
+            Nightwing 101 (2005) (HD) (digital-Empire).cbr … Nightwing 106 (2005) (HD) (digital-Empire).cbr  (6 files, pp 23-23)
+            Nightwing 107 (2005) (Digital) (AnHeroGold-Empire).cbz … Nightwing 117 (2006) (Digital) (AnHeroGold-Empire).cbz  (11 files, pp 23-24)
+            Nightwing 118 (2006) (HD) (digital-Empire).cbz … Nightwing 153 (2009) (HD) (digital-Empire).cbz  (36 files, pp 22-40)
+            [68564] COL Nightwing Vol. 01 - Bludhaven (2014) (digital) (Son of Ultron-Empire).cbr (287pp)
+            [68565] COL Nightwing Vol. 02 - Rough Justice (2015) (digital) (Son of Ultron-Empire).cbr (293pp)
+            [68566] COL Nightwing Vol. 03 - False Starts (2015) (digital) (Son of Ultron-Empire).cbr (291pp)
+            [68567] COL Nightwing Vol. 04 - Love and Bullets (2016) (digital) (Son of Ultron-Empire).cbr (297pp)
+            [68568] COL Nightwing Vol. 05 - The Hunt for Oracle (2016) (digital) (Son of Ultron-Empire).cbr (332pp)
+            [68569] COL Nightwing Vol. 06 - To Serve and Protect (2017) (digital) (Son of Ultron-Empire).cbr (257pp)
+            [68570] COL Nightwing Vol. 07 - Shrike (2018) (digital) (Son of Ultron-Empire).cbr (255pp)
+            [68571] COL Nightwing Vol. 08 - Lethal Force (2018) (digital) (Son of Ultron-Empire).cbr (243pp)
+            [68780] COL Nightwing - Year One - 20th Anniversary Deluxe Edition (2024) (digital) (Son of Ultron-Empire).cbr (207pp)
+   ours:    ladder 0-2, 6, 65-69, 71-153; 8 number(s) name more than one file: 2, 118, 119, 120, 121, 122, 152, 153; ComicInfo Series: "Nightwing"x2; ComicInfo Volume: "1996"x2; ComicInfo Count: "153"x1; ComicInfo Publisher: "DC Comics"x1, "DC"x1
+   GCD says: [68564] gcd_reprint 1389228: s5516 Nightwing (1996) #1-8 [17 stories] · s5244 Nightwing (1995) #1-4 [8 stories] · s23145 Nightwing (1998) (unnumbered) [1 story]
+             [68565] gcd_reprint 1389229: s5516 Nightwing (1996) #9-18 [21 stories] · s12449 Nightwing Annual (1997) #1 [2 stories]
+             [68566] gcd_reprint 1516907: s5516 Nightwing (1996) #19-25 [15 stories] · s14159 Nightwing and Huntress (1998) #1-4 [8 stories] · s30344 Wizard Presents: Nightwing (1997) (unnumbered) [3 stories]
+             [68567] gcd_reprint 1559088: s5516 Nightwing (1996) #26-34 [22 stories] · s14857 Nightwing Secret Files (1999) #1 [22 stories]
+             [68568] gcd_reprint 1641209: s5516 Nightwing (1996) #35-46 [25 stories] · s6991 Birds of Prey (1999) #20-21 [4 stories]
+             [68569] gcd_reprint 1721558: s5516 Nightwing (1996) #47-53 [15 stories] · s17844 Nightwing 80-Page Giant (2000) #1 [5 stories]
+             [68570] gcd_reprint 1784519: s5516 Nightwing (1996) #54-60 [15 stories] · s17843 Nightwing: The Target (2001) #1 [2 stories] · s11690 Nightwing: Our Worlds at War (2001) #1 [2 stories]
+             [68571] gcd_reprint 1872600: s5516 Nightwing (1996) #61-70 [21 stories]
+             [68780] gcd notes 2649555 (#[nn] of Nightwing: Year One 20th Anniversary Deluxe Edition): Nightwing (DC, 1996 series) #101-106  |  gcd_reprint 2649555: s5516 Nightwing (1996) #101-106 [12 stories] · s161522 Nightwing: Year One The Deluxe Edition (2020) (unnumbered) [2 stories] · s40939 Nightwing. Año Uno (2007) (unnumbered) [1 story] · s104515 Nightwing (2016) #107 [1 story]
+   CV linked:      vol 5755 "Nightwing" 1996 DC Comics 155 issues; cached #1-153 (155); yearΔ 0; ratio 100/155 = 0.65; no judged range
+   CV per-file (v1): vol 5755 "Nightwing" 1996 DC Comics 155 on 98/110 files · vol 142685 "Nightwing" 2008 Planeta DeAgostini 9 on 1/110 files
+   CV candidates:  31003 "Batman: The Resurrection Of Ra's Al Ghul" 2008 DC Comics 1 issue 192100 s54 · 34687 "The Saga of Ra's Al Ghul" 1988 DC Comics 4 s49 · 21686 "Year One: Batman/Ra's al Ghul" 2006 DC Comics 2 s46 · 117730 "Batman Arkham: Ra's Al Ghul" 2019 DC Comics 1 issue 703917 s39 · 145253 "Batman vs. Ra's Al Ghul" 2022 DC Comics 1 issue 948864 s39 · 135214 "Batman Arkham: Talia al Ghul" 2021 DC Comics 1 issue 841675 s39   (v1 search)
+   CV local rip:   (= linked) · 5514 "Nightwing" 1995 DC Comics 4 · 132018 "Nightwing" 2009 Planeta DeAgostini 7 · 142687 "Nightwing" 2009 Planeta DeAgostini 7 · 42720 "Nightwing" 2011 DC Comics 31   (rip lookup)
+   GCD per-file:   series 5516 "Nightwing" 1996-2009 DC [was ongoing series] 154 on 83/110 files · series 40938 "Nightwing" [es] 2008-2008 Planeta DeAgostini [was ongoing series] 7 on 1/110 files; methods numx84
+   GCD dump:       (= per-file) · 5244 "Nightwing" 1995-1995 DC [] 4 · 23145 "Nightwing" 1998-2005 DC [] 7 · 41047 "Nightwing" [es] 2009-2010 Planeta DeAgostini [] 7 · 61072 "Nightwing" 2011-2014 DC [] 31   (dump lookup)
+   bridges:        gcd 5516 -> LOCG 111812 "Nightwing" support 95 · gcd 40938 -> LOCG 111812 "Nightwing" support 1
+
+== S104013 Legion of Super-Heroes Annual (1985)  [tier C] · gap 5  keys: Legion of Super-Heroes Annual (1985)  years 1989-1990  4 files / 0 collections
+   split run: "Legion of Super-Heroes Annual (1985)" run={"cv": 3451, "gcd": 2984} (new shelf from P-039) — seed the S line from these ids, then verify them
+   folders: [4] DC\_Legion of Super-Heroes\04 Legion of Super-Heroes v3 (1984)\Annuals
+   files:   [67656] Legion of Super-Heroes Annual 01 (1985) (digital) (Glorith-HD).cbz (41pp) | [67657] Legion of Super-Heroes Annual 02 (1986) (digital) (TolEressea-Novus-HD).cbz (50pp)
+            [67658] Legion of Super-Heroes Annual 03 (1987) (digital) (Glorith-HD).cbz (45pp) | [67659] Legion of Super-Heroes Annual 04 (1988) (digital) (Glorith-HD).cbz (45pp)
+   ours:    ladder 1-4; ComicInfo Series: "Legion of Super-Heroes Annual"x4; ComicInfo Volume: "1985"x4; ComicInfo Count: "4"x4; ComicInfo Publisher: "DC Comics"x4; ComicInfo Web: "25936"x1, "27564"x1, "29029"x1
+   CV per-file (v1): vol 4201 "Legion of Super-Heroes" 1989 DC Comics 127 on 4/4 files
+   CV local rip:   (= per-file) · 4371 "Legion of Super-Heroes Annual" 1990 DC Comics 7 (via our own name without the filing suffix "Legion of Super-Heroes Annual") · 3451 "Legion of Super-Heroes Annual" 1985 DC Comics 4 (via our own name without the filing suffix "Legion of Super-Heroes Annual") · 3310 "Legion of Super-Heroes" 1984 DC Comics 63 (via CV name "Legion of Super-Heroes") · 69728 "Legion of Super-Heroes" 1984 Federal 7 (via CV name "Legion of Super-Heroes") · 3116 "Legion of Super-Heroes Annual" 1982 DC Comics 3 (via our own name without the filing suffix "Legion of Super-Heroes Annual")   (rip lookup)
+   GCD per-file:   series 2835 "Legion of Super-Heroes" 1984-1989 DC [was ongoing series] 63 on 1/4 files; methods numx1
+   GCD dump:       (= per-file) · 3810 "Legion of Super-Heroes" 1989-2000 DC [] 127 (via CV name "Legion of Super-Heroes") · 3995 "Legion of Super-Heroes Annual" 1990-1996 DC [] 7 (via our own name without the filing suffix "Legion of Super-Heroes Annual") · 2984 "Legion of Super-Heroes Annual" 1985-1988 DC [] 4 (via our own name without the filing suffix "Legion of Super-Heroes Annual") · 34658 "The Legion of Super-Heroes Annual" [en-au] 1985-1985 Federal [] 1 (via our own name without the filing suffix "Legion of Super-Heroes Annual") · 34539 "The Legion of Super-Heroes" [en-au] 1984-1985 Federal [] 7 (via CV name "Legion of Super-Heroes")   (dump lookup)
+   bridges:        gcd 2835 -> LOCG 111213 "Legion of Super-Heroes" support 83
+
+== S98213 Legion of Super-Heroes v3 (1984)  [tier C] · gap 5  keys: Legion of Super-Heroes v3 (1984)  years 1989-2008  79 files / 1 collections
+   split: the KEPT half of the P-039 split — moved out -> S104013 "Legion of Super-Heroes Annual (1985)"; re-identify what stayed
+   folders: [78] DC\_Legion of Super-Heroes\04 Legion of Super-Heroes v3 (1984) · [1] DC\_Legion of Super-Heroes
+   files:   [67660] Legion of Super-Heroes, 1984-06-00 (#01) (digital) (DreamGirl-Empire).cbz (26pp) | [67661] Legion of Super-Heroes, 1984-07-00 (#02) (digital) (DreamGirl-Empire).cbz (25pp)
+            [67662] Legion of Super-Heroes, 1984-08-00 (#03) (digital) (DreamGirl-Empire).cbz (25pp) | [67663] Legion of Super-Heroes, 1984-09-00 (#04) (digital) (DreamGirl-Empire).cbz (25pp)
+            [67664] Legion of Super-Heroes, 1984-10-00 (#05) (digital) (DreamGirl-Empire).cbz (25pp)
+            Legion of Super-Heroes, 1984-11-00 (#06) (digital) (Glorith-Novus-HD).cbz … Legion of Super-Heroes, 1986-05-00 (#24) (digital) (Glorith-Novus-HD).cbz  (19 files, pp 23-30)
+            [67684] Legion of Super-Heroes, 1986-05-00 (#24) (hybrid) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (34pp) | [67685] Legion of Super-Heroes, 1986-06-00 (#25) (digital) (Glorith-Novus-HD).cbz (29pp)
+            [67687] Legion of Super-Heroes, 1986-07-00 (#26) (TolEressea-Novus-HD).cbz (34pp) | [67686] Legion of Super-Heroes, 1986-07-00 (#26) (digital) (Glorith-Novus-HD).cbz (29pp)
+            [67688] Legion of Super-Heroes, 1986-08-00 (#27) (digital) (Glorith-Novus-HD).cbz (30pp) | [67689] Legion of Super-Heroes, 1986-08-00 (#27) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (34pp)
+            [67691] Legion of Super-Heroes, 1986-09-00 (#28) (TolEressea-Novus-HD).cbz (34pp) | [67690] Legion of Super-Heroes, 1986-09-00 (#28) (digital) (Glorith-Novus-HD).cbz (29pp)
+            [67693] Legion of Super-Heroes, 1986-10-00 (#29) (TolEressea-Novus-HD).cbz (34pp) | [67692] Legion of Super-Heroes, 1986-10-00 (#29) (digital) (Glorith-Novus-HD).cbz (29pp)
+            [67695] Legion of Super-Heroes, 1986-11-00 (#30) (TolEressea-Novus-HD).cbz (33pp) | [67694] Legion of Super-Heroes, 1986-11-00 (#30) (digital) (Glorith-Novus-HD).cbz (29pp)
+            [67697] Legion of Super-Heroes, 1986-12-00 (#31) (TolEressea-Novus-HD).cbz (33pp) | [67696] Legion of Super-Heroes, 1986-12-00 (#31) (digital) (Glorith-Novus-HD).cbz (29pp)
+            [67698] Legion of Super-Heroes, 1987-01-00 (#32) (digital) (Glorith-Novus).cbz (29pp) | [67699] Legion of Super-Heroes, 1987-01-00 (#32) (hybrid) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (32pp)
+            [67700] Legion of Super-Heroes, 1987-02-00 (#33) (digital) (Glorith-Novus).cbz (30pp) | [67701] Legion of Super-Heroes, 1987-02-00 (#33) (hybrid) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (33pp)
+            [67702] Legion of Super-Heroes, 1987-03-00 (#34) (digital) (Glorith-Novus).cbz (29pp) | [67703] Legion of Super-Heroes, 1987-04-00 (#35) (digital) (Glorith-Novus).cbz (28pp)
+            [67704] Legion of Super-Heroes, 1987-04-00 (#35) (hybrid) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (31pp) | [67706] Legion of Super-Heroes, 1987-05-00 (#36) (TolEressea-Novus-HD).cbz (33pp)
+            [67705] Legion of Super-Heroes, 1987-05-00 (#36) (digital) (Glorith-Novus-HD).cbz (28pp) | [67708] Legion of Super-Heroes, 1987-06-00 (#37) (TolEressea-Novus-HD).cbz (32pp)
+            [67707] Legion of Super-Heroes, 1987-06-00 (#37) (digital) (Glorith-Novus-HD).cbz (22pp) | [67709] Legion of Super-Heroes, 1987-07-00 (#38) (digital) (Glorith-HD).cbz (28pp)
+            [67710] Legion of Super-Heroes, 1987-08-00 (#39) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (29pp) | [67712] Legion of Super-Heroes, 1987-09-00 (#40) (TolEressea-Novus-HD).cbz (32pp)
+            [67711] Legion of Super-Heroes, 1987-09-00 (#40) (digital) (Glorith-Novus-HD).cbz (28pp) | [67714] Legion of Super-Heroes, 1987-10-00 (#41) (TolEressea-Novus-HD).cbz (32pp)
+            [67713] Legion of Super-Heroes, 1987-10-00 (#41) (digital) (Glorith-Novus-HD).cbz (28pp) | [67715] Legion of Super-Heroes, 1987-10-13 (#42) (digital) (Glorith-Novus-HD).cbz (28pp)
+            [67716] Legion of Super-Heroes, 1987-11-00 (#42) (TolEressea-Novus-HD).cbz (31pp) | [67717] Legion of Super-Heroes, 1987-11-10 (#43) (digital) (Glorith-Novus-HD).cbz (28pp)
+            [67718] Legion of Super-Heroes, 1988-01-00 (#44) (digital) (Glorith-Novus-HD).cbz (28pp) | [67719] Legion of Super-Heroes, 1988-02-00 (#45) (digital) (Glorith-Novus-HD).cbz (58pp)
+            [67720] Legion of Super-Heroes, 1988-03-00 (#46) (digital) (Glorith-Novus-HD).cbz (28pp) | [67721] Legion of Super-Heroes, 1988-04-00 (#47) (digital) (Glorith-Novus-HD).cbz (28pp)
+            [67722] Legion of Super-Heroes, 1988-05-00 (#48) (digital) (Glorith-Novus-HD).cbz (28pp) | [67723] Legion of Super-Heroes, 1988-06-00 (#49) (digital) (Glorith-Novus-HD).cbz (28pp)
+            [67724] Legion of Super-Heroes, 1988-07-00 (#50) (digital) (Glorith-Novus-HD).cbz (43pp) | [67725] Legion of Super-Heroes, 1988-08-00 (#51) (digital) (Glorith-Novus-HD).cbz (29pp)
+            [67726] Legion of Super-Heroes, 1988-09-00 (#52) (digital) (Glorith-Novus-HD).cbz (28pp) | [67727] Legion of Super-Heroes, 1988-10-00 (#53) (digital) (Glorith-Novus-HD).cbz (28pp)
+            [67728] Legion of Super-Heroes, 1988-10-00 (#54) (digital) (Glorith-Novus-HD).cbz (28pp) | [67729] Legion of Super-Heroes, 1988-10-00 (#55) (digital) (Glorith-Novus-HD).cbz (28pp)
+            [67730] Legion of Super-Heroes, 1988-11-00 (#56) (digital) (Glorith-Novus-HD).cbz (28pp) | [67731] Legion of Super-Heroes, 1988-12-00 (#57) (digital) (Glorith-Novus-HD).cbz (28pp)
+            [67732] Legion of Super-Heroes, 1989-01-00 (#58) (digital) (Glorith-Novus-HD).cbz (29pp) | [67733] Legion of Super-Heroes, 1989-02-00 (#59) (digital) (Glorith-Novus-HD).cbz (28pp)
+            [67734] Legion of Super-Heroes, 1989-03-00 (#60) (hybrid) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (32pp)
+            [67735] Legion of Super-Heroes, 1989-04-00 (#61) (hybrid) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (32pp)
+            [67736] Legion of Super-Heroes, 1989-05-00 (#62) (hybrid) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (32pp)
+            [67737] Legion of Super-Heroes, 1989-06-00 (#63) (hybrid) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (32pp)
+            [68031] COL Legion of Super-Heroes - The More Things Change (2008) (digital) (Son of Ultron-Empire).cbr (176pp)
+   ours:    ladder 1-63; 15 number(s) name more than one file: 24, 26, 27, 28, 29, 30, 31, 32, 33, 35, 36, 37; ComicInfo Series: "Legion of Super-Heroes"x55; ComicInfo Volume: "1984"x66; ComicInfo Count: "59"x29, "63"x13; ComicInfo Publisher: "DC Comics"x65, "DC"x1; ComicInfo Web: "28520"x1
+   GCD says: [68031] gcd_reprint 556208: s2835 Legion of Super-Heroes (1984) #7-13 [17 stories] · s2850 Tales of the Legion of Super-Heroes (1984) #332-338 [7 stories]
+   CV linked:      vol 3310 "Legion of Super-Heroes" 1984 DC Comics 63 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ 5; ratio 78/? = 1.24; none cached
+   CV per-file (v1): vol 4201 "Legion of Super-Heroes" 1989 DC Comics 127 on 78/79 files
+   CV local rip:   (= linked) · 69728 "Legion of Super-Heroes" 1984 Federal 7 (via our own name without the filing suffix "Legion of Super-Heroes") · 3033 "The Legion of Super-Heroes" 1980 DC Comics 55 (via our own name without the filing suffix "Legion of Super-Heroes") · 2616 "Legion of Super-Heroes" 1973 DC Comics 4 (via our own name without the filing suffix "Legion of Super-Heroes") · 11059 "Legion of Super-Heroes" 2005 DC Comics 30 (via our own name without the filing suffix "Legion of Super-Heroes")   (rip lookup)
+   GCD per-file:   series 2835 "Legion of Super-Heroes" 1984-1989 DC [was ongoing series] 63 on 78/79 files; methods numx78
+   GCD dump:       (= per-file) · 3810 "Legion of Super-Heroes" 1989-2000 DC [] 127 (via our own name without the filing suffix "Legion of Super-Heroes") · 34539 "The Legion of Super-Heroes" [en-au] 1984-1985 Federal [] 7 (via our own name without the filing suffix "Legion of Super-Heroes") · 2540 "The Legion of Super-Heroes" 1980-1984 DC [] 55 (via our own name without the filing suffix "Legion of Super-Heroes") · 2099 "Legion of Super-Heroes" 1973-1973 DC [] 4 (via our own name without the filing suffix "Legion of Super-Heroes") · 11990 "Legion of Super-Heroes" 2005-2006 DC [] 15 (via our own name without the filing suffix "Legion of Super-Heroes")   (dump lookup)
+   bridges:        gcd 2835 -> LOCG 111213 "Legion of Super-Heroes" support 83
+
+== S104014 Legion of Super-Heroes Annual (1990)  [tier C] · ratio 0.06  keys: Legion of Super-Heroes Annual (1990)  years 1989-1990  7 files / 0 collections
+   split run: "Legion of Super-Heroes Annual (1990)" run={"cv": 4371, "gcd": 3995} (new shelf from P-039) — seed the S line from these ids, then verify them
+   folders: [7] DC\_Legion of Super-Heroes\05 Legion of Super-Heroes v4 (1989)\Annuals
+   files:   [67738] Legion of Super-Heroes Annual 03 (1992) (digital) (Glorith-HD).cbz (58pp) | [67739] Legion of Super-Heroes Annual 04 (1993) (digital) (Glorith-HD).cbz (55pp)
+            [67740] Legion of Super-Heroes Annual 05 (1994) (digital) (Glorith-HD).cbz (59pp) | [67741] Legion of Super-Heroes Annual 07 (1996) (digital) (Glorith-HD).cbz (39pp)
+            [67742] Legion of Super-Heroes Annual, 1990-07-24 (#01) (digital) (Glorith-HD).cbz (56pp) | [67743] Legion of Super-Heroes Annual, 1991-01-00 (#02) (digital) (Glorith-HD).cbz (56pp)
+            [67744] Legion of Super-Heroes Annual, 1995-01-00 (#06) (digital) (fixed) (Glorith-HD).cbz (49pp)
+   ours:    ladder 1-7; ComicInfo Series: "Legion of Super-Heroes Annual"x7; ComicInfo Volume: "1990"x7; ComicInfo Count: "7"x7; ComicInfo Publisher: "DC Comics"x7; ComicInfo Web: "36566"x1, "38317"x1, "169340"x1, "33583"x1
+   CV per-file (v1): vol 4201 "Legion of Super-Heroes" 1989 DC Comics 127 on 7/7 files
+   CV local rip:   (= per-file) · 4371 "Legion of Super-Heroes Annual" 1990 DC Comics 7 (via our own name without the filing suffix "Legion of Super-Heroes Annual") · 3451 "Legion of Super-Heroes Annual" 1985 DC Comics 4 (via our own name without the filing suffix "Legion of Super-Heroes Annual") · 3310 "Legion of Super-Heroes" 1984 DC Comics 63 (via CV name "Legion of Super-Heroes") · 69728 "Legion of Super-Heroes" 1984 Federal 7 (via CV name "Legion of Super-Heroes") · 3116 "Legion of Super-Heroes Annual" 1982 DC Comics 3 (via our own name without the filing suffix "Legion of Super-Heroes Annual")   (rip lookup)
+   GCD per-file:   series 3810 "Legion of Super-Heroes" 1989-2000 DC [was ongoing series] 127 on 1/7 files; methods numx1
+   GCD dump:       (= per-file) · 3995 "Legion of Super-Heroes Annual" 1990-1996 DC [] 7 (via our own name without the filing suffix "Legion of Super-Heroes Annual") · 2984 "Legion of Super-Heroes Annual" 1985-1988 DC [] 4 (via our own name without the filing suffix "Legion of Super-Heroes Annual") · 34658 "The Legion of Super-Heroes Annual" [en-au] 1985-1985 Federal [] 1 (via our own name without the filing suffix "Legion of Super-Heroes Annual") · 2835 "Legion of Super-Heroes" 1984-1989 DC [] 63 (via CV name "Legion of Super-Heroes") · 34539 "The Legion of Super-Heroes" [en-au] 1984-1985 Federal [] 7 (via CV name "Legion of Super-Heroes")   (dump lookup)
+   bridges:        gcd 3810 -> LOCG 111213 "Legion of Super-Heroes" support 136
+
+== S98214 Legion of Super-Heroes  [tier C] · 128 files  keys: Legion of Super-Heroes v4 (1989)  years 1989-2000  128 files / 0 collections
+   split: the KEPT half of the P-039 split — moved out -> S104014 "Legion of Super-Heroes Annual (1990)"; re-identify what stayed
+   folders: [126] DC\_Legion of Super-Heroes\05 Legion of Super-Heroes v4 (1989) · [1] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\12 Final Night\The Final Night Reading Order · [1] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998)
+   files:   [16858] 019 Legion of Super-Heroes_2C 1996-09-00 (_86) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [18052] 38 Legion of Super-Heroes (1998-11) 1000000 (digital) (OkC.O.M.P.U.T.O.-Novus).cbz (25pp) | [67747] Legion of Super-Heroes, 1989-09-00 (#01) (digital) (Glorith-Novus-HD).cbz (27pp)
+            [67748] Legion of Super-Heroes, 1989-10-00 (#02) (digital) (Glorith-Novus-HD).cbz (24pp) | [67749] Legion of Super-Heroes, 1989-11-00 (#03) (digital) (Glorith-Novus-HD).cbz (26pp)
+            [67750] Legion of Super-Heroes, 1989-12-00 (#04) (digital) (Glorith-Novus-HD).cbz (25pp) | [67751] Legion of Super-Heroes, 1990-01-00 (#05) (digital) (Glorith-Novus-HD).cbz (24pp)
+            [67752] Legion of Super-Heroes, 1990-02-00 (#06) (digital) (Glorith-Novus-HD).cbz (25pp) | [67753] Legion of Super-Heroes, 1990-03-00 (#07) (digital) (Glorith-Novus-HD).cbz (26pp)
+            [67754] Legion of Super-Heroes, 1990-04-00 (#08) (digital) (Glorith-Novus-HD).cbz (25pp) | [67755] Legion of Super-Heroes, 1990-05-00 (#09) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67756] Legion of Super-Heroes, 1990-06-00 (#10) (digital) (Glorith-Novus-HD).cbz (25pp) | [67757] Legion of Super-Heroes, 1990-07-00 (#11) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67758] Legion of Super-Heroes, 1990-08-00 (#12) (digital) (Glorith-Novus-HD).cbz (25pp) | [67759] Legion of Super-Heroes, 1990-09-00 (#13) (digital) (Glorith-Novus-HD).cbz (27pp)
+            [67760] Legion of Super-Heroes, 1990-11-00 (#14) (digital) (Glorith-Novus-HD).cbz (25pp) | [67761] Legion of Super-Heroes, 1990-12-00 (#15) (digital) (Glorith-Novus-HD).cbz (26pp)
+            [67762] Legion of Super-Heroes, 1991-01-00 (#16) (digital) (Glorith-Novus-HD).cbz (25pp) | [67763] Legion of Super-Heroes, 1991-02-00 (#17) (digital) (Glorith-Novus-HD).cbz (26pp)
+            [67764] Legion of Super-Heroes, 1991-03-00 (#18) (digital) (Glorith-Novus-HD).cbz (26pp) | [67765] Legion of Super-Heroes, 1991-04-00 (#19) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67766] Legion of Super-Heroes, 1991-05-00 (#20) (digital) (Glorith-Novus-HD).cbz (25pp) | [67767] Legion of Super-Heroes, 1991-06-00 (#21) (digital) (Glorith-Novus-HD).cbz (26pp)
+            [67768] Legion of Super-Heroes, 1991-07-00 (#22) (digital) (Glorith-Novus-HD).cbz (26pp) | [67769] Legion of Super-Heroes, 1991-08-00 (#23) (digital) (Glorith-Novus-HD).cbz (26pp)
+            [67770] Legion of Super-Heroes, 1991-10-00 (#24) (digital) (Glorith-Novus-HD).cbz (26pp) | [67771] Legion of Super-Heroes, 1991-11-00 (#25) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67772] Legion of Super-Heroes, 1991-12-00 (#26) (digital) (Glorith-Novus-HD).cbz (26pp) | [67773] Legion of Super-Heroes, 1992-01-00 (#27) (digital) (Glorith-Novus-HD).cbz (26pp)
+            [67774] Legion of Super-Heroes, 1992-02-00 (#28) (digital) (Glorith-Novus-HD).cbz (25pp) | [67775] Legion of Super-Heroes, 1992-03-00 (#29) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67776] Legion of Super-Heroes, 1992-04-00 (#30) (digital) (Glorith-Novus-HD).cbz (24pp) | [67777] Legion of Super-Heroes, 1992-05-00 (#31) (digital) (Glorith-Novus-HD).cbz (26pp)
+            [67778] Legion of Super-Heroes, 1992-06-00 (#32) (digital) (Glorith-Novus-HD).cbz (26pp) | [67779] Legion of Super-Heroes, 1992-07-00 (#33) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67780] Legion of Super-Heroes, 1992-08-00 (#34) (digital) (Glorith-Novus-HD).cbz (31pp) | [67781] Legion of Super-Heroes, 1992-09-00 (#35) (digital) (Glorith-Novus-HD).cbz (26pp)
+            [67782] Legion of Super-Heroes, 1992-09-00 (#36) (digital) (Glorith-Novus-HD).cbz (25pp) | [67783] Legion of Super-Heroes, 1992-10-00 (#37) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67784] Legion of Super-Heroes, 1992-10-00 (#38) (digital) (Glorith-Novus-HD).cbz (24pp) | [67785] Legion of Super-Heroes, 1992-11-00 (#39) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67786] Legion of Super-Heroes, 1992-12-00 (#40) (digital) (Glorith-Novus-HD).cbz (24pp) | [67787] Legion of Super-Heroes, 1993-01-00 (#41) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67788] Legion of Super-Heroes, 1993-02-00 (#42) (digital) (Glorith-Novus-HD).cbz (25pp) | [67789] Legion of Super-Heroes, 1993-03-00 (#43) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67790] Legion of Super-Heroes, 1993-04-00 (#44) (digital) (Glorith-Novus-HD).cbz (25pp) | [67791] Legion of Super-Heroes, 1993-05-00 (#45) (digital) (Glorith-Novus-HD).cbz (24pp)
+            [67792] Legion of Super-Heroes, 1993-06-00 (#46) (digital) (Glorith-Novus-HD).cbz (25pp) | [67793] Legion of Super-Heroes, 1993-07-00 (#47) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67794] Legion of Super-Heroes, 1993-08-00 (#48) (digital) (Glorith-Novus-HD).cbz (25pp) | [67795] Legion of Super-Heroes, 1993-09-00 (#49) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67796] Legion of Super-Heroes, 1993-09-00 (#50) (digital) (Glorith-Novus-HD).cbz (56pp) | [67797] Legion of Super-Heroes, 1993-10-00 (#51) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67798] Legion of Super-Heroes, 1993-10-00 (#52) (digital) (Glorith-Novus-HD).cbz (25pp) | [67799] Legion of Super-Heroes, 1993-11-00 (#53) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67800] Legion of Super-Heroes, 1993-12-00 (#54) (digital) (Glorith-Novus-HD).cbz (27pp) | [67801] Legion of Super-Heroes, 1994-01-00 (#55) (digital) (Glorith-Novus-HD).cbz (24pp)
+            [67802] Legion of Super-Heroes, 1994-02-00 (#56) (digital) (Glorith-Novus-HD).cbz (25pp) | [67803] Legion of Super-Heroes, 1994-03-00 (#57) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67804] Legion of Super-Heroes, 1994-04-00 (#58) (digital) (Glorith-Novus-HD).cbz (26pp) | [67805] Legion of Super-Heroes, 1994-05-00 (#59) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67806] Legion of Super-Heroes, 1994-06-00 (#60) (digital) (Glorith-Novus-HD).cbz (24pp) | [67807] Legion of Super-Heroes, 1994-07-00 (#61) (digital) (Glorith-Novus-HD).cbz (24pp)
+            [67808] Legion of Super-Heroes, 1994-08-00 (#00) (digital) (Glorith-Novus).cbz (25pp) | [67809] Legion of Super-Heroes, 1994-09-00 (#62) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67810] Legion of Super-Heroes, 1994-10-00 (#63) (digital) (Glorith-Novus-HD).cbz (25pp) | [67811] Legion of Super-Heroes, 1994-11-00 (#64) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67812] Legion of Super-Heroes, 1994-12-00 (#65) (digital) (Glorith-Novus-HD).cbz (23pp) | [67813] Legion of Super-Heroes, 1995-01-00 (#66) (digital) (Glorith-Novus-HD).cbz (26pp)
+            [67814] Legion of Super-Heroes, 1995-02-00 (#67) (digital) (Glorith-Novus-HD).cbz (26pp) | [67815] Legion of Super-Heroes, 1995-03-00 (#68) (digital) (Glorith-Novus-HD).cbz (25pp)
+            [67816] Legion of Super-Heroes, 1995-04-00 (#69) (digital) (Glorith-Novus-HD).cbz (26pp) | [67817] Legion of Super-Heroes, 1995-05-00 (#70) (digital) (Glorith-Novus-HD).cbz (22pp)
+            [67818] Legion of Super-Heroes, 1995-06-00 (#71) (digital) (Glorith-Novus-HD).cbz (21pp) | [67819] Legion of Super-Heroes, 1995-07-00 (#72) (digital) (Glorith-Novus-HD).cbz (22pp)
+            [67820] Legion of Super-Heroes, 1995-08-00 (#73) (digital) (Glorith-Novus-HD).cbz (23pp) | [67821] Legion of Super-Heroes, 1995-09-00 (#74) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [67822] Legion of Super-Heroes, 1995-10-00 (#75) (digital) (Glorith-Novus-HD).cbz (23pp) | [67823] Legion of Super-Heroes, 1995-11-00 (#76) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [67824] Legion of Super-Heroes, 1995-12-00 (#77) (digital) (Glorith-Novus-HD).cbz (23pp) | [67825] Legion of Super-Heroes, 1996-01-00 (#78) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [67826] Legion of Super-Heroes, 1996-02-00 (#79) (digital) (Glorith-Novus-HD).cbz (22pp) | [67827] Legion of Super-Heroes, 1996-03-00 (#80) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [67828] Legion of Super-Heroes, 1996-04-00 (#81) (digital) (Glorith-Novus-HD).cbz (23pp) | [67829] Legion of Super-Heroes, 1996-05-00 (#82) (digital) (Glorith-Novus-HD).cbz (22pp)
+            [67830] Legion of Super-Heroes, 1996-06-00 (#83) (digital) (Glorith-Novus-HD).cbz (22pp) | [67831] Legion of Super-Heroes, 1996-07-00 (#84) (digital) (Glorith-Novus-HD).cbz (21pp)
+            [67832] Legion of Super-Heroes, 1996-08-00 (#85) (digital) (Glorith-Novus-HD).cbz (22pp) | [67833] Legion of Super-Heroes, 1996-09-00 (#86) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [67834] Legion of Super-Heroes, 1996-10-00 (#87) (digital) (Glorith-Novus-HD).cbz (23pp) | [67835] Legion of Super-Heroes, 1996-11-00 (#88) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [67836] Legion of Super-Heroes, 1996-12-00 (#89) (digital) (Glorith-Novus-HD).cbz (22pp) | [67837] Legion of Super-Heroes, 1997-01-00 (#90) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [67838] Legion of Super-Heroes, 1997-02-00 (#91) (digital) (Glorith-Novus-HD).cbz (22pp) | [67839] Legion of Super-Heroes, 1997-03-00 (#92) (digital) (Glorith-Novus-HD).cbz (24pp)
+            [67840] Legion of Super-Heroes, 1997-04-00 (#93) (digital) (Glorith-Novus-HD).cbz (23pp) | [67841] Legion of Super-Heroes, 1997-05-00 (#94) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [67842] Legion of Super-Heroes, 1997-06-00 (#95) (digital) (Glorith-Novus-HD).cbz (23pp) | [67843] Legion of Super-Heroes, 1997-07-00 (#96) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [67844] Legion of Super-Heroes, 1997-08-00 (#97) (digital) (Glorith-Novus-HD).cbz (22pp) | [67845] Legion of Super-Heroes, 1997-09-00 (#98) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [67846] Legion of Super-Heroes, 1997-10-00 (#99) (digital) (Glorith-Novus-HD).cbz (23pp) | [67847] Legion of Super-Heroes, 1997-11-00 (#100) (digital) (Glorith-Novus-HD).cbz (85pp)
+            [67848] Legion of Super-Heroes, 1997-12-00 (#101) (digital) (Glorith-Novus-HD).cbz (23pp) | [67849] Legion of Super-Heroes, 1998-01-00 (#102) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [67850] Legion of Super-Heroes, 1998-02-00 (#103) (digital) (Glorith-Novus-HD).cbz (22pp) | [67851] Legion of Super-Heroes, 1998-03-00 (#104) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [67852] Legion of Super-Heroes, 1998-04-00 (#105) (digital) (Glorith-Novus-HD).cbz (21pp) | [67853] Legion of Super-Heroes, 1998-05-00 (#106) (digital) (Glorith-Novus-HD).cbz (22pp)
+            [67854] Legion of Super-Heroes, 1998-06-00 (#107) (digital) (Glorith-Novus-HD).cbz (23pp) | [67855] Legion of Super-Heroes, 1998-07-00 (#108) (digital) (Glorith-Novus-HD).cbz (21pp)
+            [67856] Legion of Super-Heroes, 1998-08-00 (#109) (digital) (Glorith-Novus-HD).cbz (23pp) | [67857] Legion of Super-Heroes, 1998-10-00 (#110) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [67858] Legion of Super-Heroes, 1998-11-00 (#111) (digital) (Glorith-Novus-HD).cbz (23pp) | [67859] Legion of Super-Heroes, 1998-12-00 (#112) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [67860] Legion of Super-Heroes, 1999-01-00 (#113) (digital) (Glorith-Novus-HD).cbz (22pp) | [67861] Legion of Super-Heroes, 1999-01-00 (#114) (digital) (Glorith-Novus-HD).cbz (22pp)
+            [67862] Legion of Super-Heroes, 1999-02-00 (#115) (digital) (Glorith-Novus-HD).cbz (21pp) | [67863] Legion of Super-Heroes, 1999-03-00 (#116) (digital) (Glorith-Novus-HD).cbz (22pp)
+            [67864] Legion of Super-Heroes, 1999-04-00 (#117) (digital) (Glorith-Novus-HD).cbz (23pp) | [67865] Legion of Super-Heroes, 1999-06-00 (#118) (digital) (Glorith-Novus-HD).cbz (22pp)
+            [67866] Legion of Super-Heroes, 1999-07-00 (#119) (digital) (Glorith-Novus-HD).cbz (22pp) | [67867] Legion of Super-Heroes, 1999-08-00 (#120) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [67868] Legion of Super-Heroes, 1999-09-00 (#121) (digital) (Glorith-Novus-HD).cbz (22pp) | [67869] Legion of Super-Heroes, 1999-10-00 (#122) (digital) (Glorith-Novus-HD).cbz (23pp)
+            [67870] Legion of Super-Heroes, 1999-11-00 (#123) (digital) (Glorith-Novus-HD).cbz (24pp) | [67871] Legion of Super-Heroes, 1999-12-00 (#124) (digital) (Glorith-Novus).cbz (23pp)
+            [67872] Legion of Super-Heroes, 2000-01-00 (#125) (digital) (Glorith-Novus).cbz (23pp)
+   ours:    ladder 0-125; 1 number(s) name more than one file: 86; ComicInfo Series: "Legion of Super-Heroes"x128; ComicInfo Volume: "1989"x128; ComicInfo Count: "125"x128; ComicInfo Publisher: "DC Comics"x128
+   CV linked:      vol 4201 "Legion of Super-Heroes" 1989 DC Comics 127 issues; cached #0-125 (127); yearΔ 0; ratio 127/127 = 1.00; no judged range; v1 per-file: same volume on 128/128 files
+   CV local rip:   (= linked) · 3310 "Legion of Super-Heroes" 1984 DC Comics 63 · 69728 "Legion of Super-Heroes" 1984 Federal 7 · 3033 "The Legion of Super-Heroes" 1980 DC Comics 55 · 2616 "Legion of Super-Heroes" 1973 DC Comics 4 · 11059 "Legion of Super-Heroes" 2005 DC Comics 30   (rip lookup)
+   GCD per-file:   series 3810 "Legion of Super-Heroes" 1989-2000 DC [was ongoing series] 127 on 127/128 files; methods numx127
+   GCD dump:       (= per-file) · 2835 "Legion of Super-Heroes" 1984-1989 DC [] 63 · 34539 "The Legion of Super-Heroes" [en-au] 1984-1985 Federal [] 7 · 2540 "The Legion of Super-Heroes" 1980-1984 DC [] 55 · 2099 "Legion of Super-Heroes" 1973-1973 DC [] 4 · 11990 "Legion of Super-Heroes" 2005-2006 DC [] 15   (dump lookup)
+   bridges:        gcd 3810 -> LOCG 111213 "Legion of Super-Heroes" support 136
+
+== S3420 Captain America: Sentinel of Liberty  [tier C] · gap 43  keys: Captain America - Sentinel of Liberty  years 1979-2022  10 files / 2 collections
+   folders: [8] Marvel\_Captain America\20 Captain America - Sentinel of Liberty v2 (2022) · [1] Marvel\_Captain America\_Omnibus Editions · [1] Marvel\_Captain America\_Trades, Minis and One-shots\Captain America - Sentinel of Libery v1 (1998)
+   files:   Captain America - Sentinel of Liberty 001 (2022) (Digital) (Zone-Empire).cbr … Captain America - Sentinel of Liberty 011 (2023) (Digital) (Zone-Empire).cbr  (7 files, pp 21-32)
+            [77305] COL Captain America - Sentinel of Liberty Vol, 02 - The Invader (2023) (Digital-Empire).cbr (129pp)
+            [77348] COL Captain America - Sentinel of Liberty Book 01 - Revolution (2023) (Digital-Empire).cbr (169pp)
+            [77976] Captain America - Sentinel of Liberty (2018) (Digital-Empire).cbz (343pp)
+   ours:    ladder 1-6, 11; judged item 77348 #1-6 conf 0.85; ComicInfo Series: "Captain America: Sentinel Of Liberty"x1, "Captain America: Sentinel of Liberty"x1; ComicInfo Publisher: "Marvel"x2
+   GCD says: [77348] gcd_reprint 2558383: s185536 Captain America: Sentinel of Liberty (2022) #1-6 [6 stories] · s184244 Captain America (2022) #0 [1 story] · s196837 Captain America: Sentinel of Liberty (2022) #1 [1 story]
+   CV linked:      vol 143632 "Captain America: Sentinel of Liberty" 2022 Marvel 13 issues; cached #1-13 (13); yearΔ 43; ratio 7/13 = 0.54; 1 of 1 judged fit
+   CV per-file (v1): vol 19381 "Captain America: Sentinel of Liberty" 1998 Marvel ? on 7/10 files
+   CV candidates:  (= linked) · 50816 "Captain America: Sentinel of Liberty Rough Cut" 1998 Marvel ? s88 · 40077 "Captain America: Sentinel of Liberty" 1979 Simon and Schuster ? s81 · 39489 "Captain America: Sentinel of Liberty" 2011 Marvel ? s50 · 148888 "Captain America: Sentinel of Liberty" 2023 Marvel ? s50 · 129192 "Marvel-Verse: Captain America" 2020 Marvel ? s1 · 120133 "Marvel Tales: Captain America" 2019 Marvel ? s0   (v1 search)
+   CV local rip:   (= linked) · 40077 "Captain America: Sentinel of Liberty" 1979 Simon and Schuster 1 issue 269778 · 39489 "Captain America: Sentinel of Liberty" 2011 Marvel 1 issue 266800 · 148888 "Captain America: Sentinel of Liberty" 2023 Marvel 2 · 50816 "Captain America: Sentinel of Liberty Rough Cut" 1998 Marvel 1 issue 347507 (via CV candidate name "Captain America: Sentinel of Liberty Rough Cut")   (rip lookup)
+   GCD per-file:   series 185536 "Captain America: Sentinel of Liberty" 2022-2023 Marvel [was ongoing series] 13 on 7/10 files; methods numx7
+   GCD dump:       (= per-file) · 25989 "Captain America Sentinel of Liberty" 1979-1979 Simon and Schuster [] 1 · 137581 "Captain America Sentinel of Liberty" 1979-1979 Simon and Schuster [] 1 · 13268 "Captain America: Sentinel of Liberty" 1998-1999 Marvel [] 12 · 73825 "Captain America: Sentinel of Liberty" 2011-2011 Marvel [] 1 · 196837 "Captain America: Sentinel of Liberty" 2022-? Marvel [] 2   (dump lookup)
+   bridges:        gcd 185536 -> LOCG 101512 "Captain America: Sentinel of Liberty" support 7
+
+== S12794 New Avengers: Illuminati  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: New Avengers - Illuminati  years 1990-2012  4 files / 2 collections
+   folders: [1] Marvel\_Avengers\04.5 New Avengers - Illuminati (2008) · [1] Marvel\_Avengers\_One Shots and Minis\New Avengers - Illuminati (2005) · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0719 Civil War - Phase One · [1] _Marvel Major Event Chronology (digital)\2008.06 - Secret Invasion\01 Prelude - The Infiltration
+   files:   [53951] COL New Avengers - Illuminati (2008) (Digital) (F) (ZoneKing-Empire).cbr (115pp) | [53987] COL New Avengers - Illuminati HC (2012) (Digital) (ZoneKing-Empire).cbr (111pp)
+            [90460] 001 New Avengers - Illuminati 01 (2006) (digital) (Minutemen-InnerDemons).cbr (31pp)
+            [116943] 02 New Avengers - Illuminati 05 (of 5) (2008) (digital) (Minutemen-InnerDemons).cbr (20pp)
+   ours:    ladder 1, 5; ComicInfo Series: "New Avengers: Illuminati"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [53951] gcd_reprint 911798: s21219 New Avengers: Illuminati (2007) #1-5 [13 stories]
+             [53987] gcd notes 911797 (#[nn] of New Avengers: Illuminati): New Avengers: Illuminati (Marvel, 2007 series) #1-5  |  gcd_reprint 911797: s21219 New Avengers: Illuminati (2007) #1 [1 story]
+   CV linked:      vol 18113 "New Avengers: Illuminati" 2007 Marvel 5 issues; cached #1-5 (5); yearΔ 17; ratio 2/5 = 0.40; no judged range; v1 per-file: same volume on 3/4 files
+   CV candidates:  (= linked) · 18180 "New Avengers: Illuminati" 2006 Marvel 1 issue 106482 s53 · 33054 "New Avengers: Illuminati" 2008 Marvel 1 issue 212987 s53 · 65738 "Official Handbook of the Marvel Universe: Avengers 2005" 2005 Marvel 1 issue 106606 s46 · 18829 "New Avengers Illuminati: Secret History" 2007 Marvel 1 issue 111204 s36 · 85951 "Illuminati" 2015 Marvel 7 s23 · 150481 "Illuminati" 2022 Marvel 1 issue 989964 s18   (v1 search)
+   CV local rip:   (= linked) · 18180 "The New Avengers: Illuminati" 2006 Marvel 1 issue 106482 · 33054 "New Avengers: Illuminati" 2008 Marvel 1 issue 212987   (rip lookup)
+   GCD per-file:   series 17392 "New Avengers: Illuminati" 2006-2006 Marvel [one-shot] 1 on 1/4 files · series 21219 "New Avengers: Illuminati" 2007-2007 Marvel [limited series] 5 on 1/4 files; methods numx2
+   GCD dump:       (= per-file) · 63033 "New Avengers: Illuminati" 2008-2008 Marvel [] 1 · 63034 "New Avengers: Illuminati" 2008-2008 Marvel [] 1   (dump lookup)
+   bridges:        gcd 17392 -> LOCG 105569 "The New Avengers: Illuminati" support 1 · gcd 21219 -> LOCG 105569 "The New Avengers: Illuminati" support 1
