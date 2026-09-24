@@ -1891,3 +1891,12 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Marvel 2022+ trades can be the PANINI FRANCE edition — `--collects` on the English row confirms the right one.
   Digital rips of Marvel trades run ~88-92% of GCD's printed page count — a usable per-book fit when the filename year is
   the digital release date (R-111).
+
+[L-372] pub:dc
+- DC (R-112/R-113): every Superman 1939 / 1987 shelf carries a per-file stamp of CV 119775 "Superman Year One" (noise).
+  GCD roll-ups can index only PART of a trade (Flash 2023 Vol. 1, WW 2023 Vol. 1 show #5-6 only) — the notes and the
+  next volume's start decide. Digital-first trades (WW '77, Legend of WW, Truth & Justice) are numbered in PRINT issues —
+  C lines name the print volume. Brightest Day read-order folders: undated "Titans NN" = the 2008 series. The Superman:
+  The Man of Steel trade lines reprint the BYRNE era, not the 1991 ongoing. Superman #1-423 -> Adventures of Superman
+  #424-649 -> Superman #650-714 is ONE numbering (L-212): the shelves meet by a split-lane join, not a cv merge. GCD
+  59922 (Action Comics 2011-?) belongs to the New 52 shelf where its numbering starts (L-331).
