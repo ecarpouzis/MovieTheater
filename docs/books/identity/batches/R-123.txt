@@ -1,0 +1,571 @@
+## Conventions for this batch (32 shown of 91 matched; 381 in LEDGER.md; 41 shelf/shelves: pub:idw ×29 · kind:trade-only ×11 · kind:collected-line ×11 · pub:fantagraphics ×9 · folder:vn-year ×5 · folder:events ×2 · pub:image ×2 · kind:strip ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-087] (31 shelf/shelves) pub:cinebook pub:idw pub:image sig:collision
+- The Cinebook shape (one GCD series, a CV volume per book) recurs inside IDW/Image (Godzilla Rivals, Obscure
+  Cities, MLP Annual, Cyberforce Origins, Hinges, Image+, Bloodstrike, X-Files specials): siblings take
+  `merge-with`; where CV has no series-level volume the S line is `cv=-`.
+[L-378] (29 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-030] (41 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-151] (41 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (41 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-193] (39 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-014] (38 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-013] (36 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-043] (36 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (36 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (36 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (36 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (36 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (36 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (36 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (36 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (36 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (36 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (36 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (36 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (36 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-204] (36 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (36 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (36 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (36 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (36 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (36 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (36 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (36 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (36 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (36 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
+[L-021] (9 shelf/shelves) pub:dark-horse pub:disney pub:dstlry pub:dynamite pub:fantagraphics pub:idw
+- The Disney folder is publisher-agnostic (Joe Books, Dark Horse, IDW, Dynamite, Fantagraphics, Yen Press on one
+  shelf) — the provider's publisher column is the only test. DSTLRY filenames' "(N covers)" is a cover count.
+
++59 more matched entries not shown: L-321, L-342, L-375, L-164, L-135, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-113, L-381, L-016, L-032, L-114, L-064, L-085, L-101, L-281, L-310, L-094, L-302, L-374, L-376, L-124, L-191, L-272, L-123, L-041, L-192, L-194, L-330, L-065, L-099, L-150, L-175, L-262, L-046, L-051, L-055, L-139, L-140, L-148, L-182, L-271, L-165 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S104072 G.I. Joe: A Real American Hero: Snake Eyes: The Origin (2020)  [tier D]   keys: G.I. Joe: A Real American Hero: Snake Eyes: The Origin (2020)  years 2020-2020  1 files / 0 collections
+   split run: "G.I. Joe: A Real American Hero: Snake Eyes: The Origin (2020)" run={"cv": 129484} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW Hasbro\G.I. Joe - A Real American Hero (Larry Hama Chronology)\G.I. Joe - A Real American Hero (2010) (IDW)
+   files:   [32177] G.I. Joe - A Real American Hero 278b - Snake Eyes - The Origin (2020) (Digital-Empire).cbr (48pp)
+   ours:    ComicInfo Series: "G.I. Joe: A Real American Hero: Snake Eyes: The Origin"x1; ComicInfo Publisher: "IDW"x1
+   CV local rip:   129484 "G.I. Joe: A Real American Hero: Snake Eyes: The Origin" 2020 IDW Publishing 1 issue 792567 (via our own name without the filing suffix "G.I. Joe: A Real American Hero: Snake Eyes: The Origin")   (rip lookup)
+   GCD dump:       162876 "G.I. Joe: A Real American Hero: Snake Eyes: The Origin" 2020-2020 IDW [] 1 (via our own name without the filing suffix "G.I. Joe: A Real American Hero: Snake Eyes: The Origin")   (dump lookup)
+
+== S7108 Snake Eyes and Storm Shadow  [tier A]   keys: G.I. Joe - Snake Eyes  years 2012-2013  13 files / 0 collections
+   split: the KEPT half of the P-046 split — moved out -> S104072 "G.I. Joe: A Real American Hero: Snake Eyes: The Origin (2020)"; re-identify what stayed
+   flags: #247 label-ambiguous [Pending] item 32088 — all thirteen Snake Eyes "collections" are 15-28 pp single issues
+   folders: [5] IDW Hasbro\G.I. Joe (IDW Chronology) (2008)\2012.05 - G.I. Joe - Snake Eyes-Storm Shadow Vol. 01 · [4] IDW Hasbro\G.I. Joe (IDW Chronology) (2008)\2012.10 - G.I. Joe - Target Snake Eyes · [2] IDW Hasbro\G.I. Joe (IDW Chronology) (2008)\2012.02 - G.I. Joe - Cobra Command Vol. 02 · [1] IDW Hasbro\G.I. Joe (IDW Chronology) (2008)\2012.01 - G.I. Joe - Cobra Command Vol. 01 · [1] IDW Hasbro\G.I. Joe (IDW Chronology) (2008)\2012.04 - G.I. Joe - Cobra Command Vol. 03
+   files:   [32088] 02 G.I. Joe - Snake Eyes v2 009 (2012) (HD) (digital-Empire).cbz (27pp) | [32091] 01 G.I. Joe - Snake Eyes v2 010 (2012) (HD) (digital-Empire).cbz (28pp)
+            [32094] 04 G.I. Joe - Snake Eyes v2 011 (2012) (HD) (digital-Empire).cbz (28pp) | [32098] 03 G.I. Joe - Snake Eyes v2 012 (2012) (HD) (digital-Empire).cbz (26pp)
+            [32099] G.I. Joe - Snake Eyes v2 013 (2012) (HD) (digital-Empire).cbz (24pp) | [32100] G.I. Joe - Snake Eyes v2 014 (2012) (HD) (digital-Empire).cbz (24pp)
+            [32101] G.I. Joe - Snake Eyes v2 015 (2012) (HD) (digital-Empire).cbz (24pp) | [32102] G.I. Joe - Snake Eyes v2 016 (2012) (HD) (digital-Empire).cbz (24pp)
+            [32103] G.I. Joe - Snake Eyes v2 017 (2012) (HD) (digital-Empire).cbz (24pp) | [32105] 02 G.I. Joe - Snake Eyes v2 018 (2012) (HD) (digital-Empire).cbz (24pp)
+            [32107] 04 G.I. Joe - Snake Eyes v2 019 (2012) (HD) (digital-Empire).cbz (15pp) | [32109] 06 G.I. Joe - Snake Eyes v2 020 (2012) (HD) (digital-Empire).cbz (24pp)
+            [32111] 08 G.I. Joe - Snake Eyes v2 021 (2013) (HD) (digital-Empire).cbz (24pp)
+   ours:    ladder 9-21
+   CV linked:      vol 49362 "Snake Eyes and Storm Shadow" 2012 IDW Publishing 9 issues; cached #13-21 (9); yearΔ 0; ratio 13/9 = 1.44; no judged range
+   CV per-file (v1): vol 55158 "G.I. Joe: Snake Eyes" 2011 IDW Publishing 2 on 13/13 files
+   CV candidates:  (= linked) · 29746 "G.I. Joe: Snake Eyes" 2009 IDW Publishing ? s30 · 59191 "G.I. Joe: Target Snake Eyes" 2013 IDW Publishing ? s19 · 60160 "G.I. Joe: Best of Snake Eyes" 2009 IDW Publishing ? s18 · 79562 "G.I. Joe: Snake Eyes, Agent of Cobra" 2015 IDW Publishing ? s17 · 83815 "G.I. Joe: Snake Eyes, Agent of Cobra" 2015 IDW Publishing ? s17 · 129484 "G.I. Joe: A Real American Hero: Snake Eyes: The Origin" 2020 IDW Publishing ? s14   (v1 search)
+   CV local rip:   (= linked) · 54664 "Snake-Eyes and Storm Shadow" 2012 IDW Publishing 1 issue 372424 · 29746 "G.I. Joe: Snake Eyes" 2009 IDW Publishing 4 · 40103 "G.I. Joe" 2011 IDW Publishing 21 (via GCD name "G.I. Joe") · 55157 "G.I. Joe" 2011 IDW Publishing 2 (via GCD name "G.I. Joe")   (rip lookup)
+   GCD per-file:   methods round2-folderx3 ⚠  (⚠ copies a folder neighbour's series — verify); series 72256 "G.I. Joe" 2013-2014 IDW [was ongoing series] 15 on 3/13 files
+   GCD dump:       66132 "Snake Eyes and Storm Shadow" 2012-2013 IDW [] 9 · 58679 "G.I. Joe: Snake Eyes" 2011-2011 IDW [] 7 · 159341 "G.I. Joe: Snake Eyes" 2011-2012 IDW [] 2 · 222327 "G.I. Joe: Snake Eyes" 2010-2010 IDW [] 1 · 43765 "G.I. Joe: Snake Eyes" 2009-2010 IDW [] 4 · 222255 "G.I. Joe: Target: Snake Eyes" 2013-2013 IDW [] 1 (via CV candidate name "G.I. Joe: Target Snake Eyes")   (dump lookup)
+
+== S104087 Teenage Mutant Ninja Turtles Color Classics (2018)  [tier D]   keys: Teenage Mutant Ninja Turtles Color Classics (2018)  years 2018-2020  3 files / 3 collections
+   split run: "Teenage Mutant Ninja Turtles Color Classics (2018)" run={"cv": 109577, "gcd": 145512} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [3] IDW Hasbro\Teenage Mutant Ninja Turtles\Teenage Mutant Ninja Turtles - Color Classics (2012)
+   files:   [32298] COL Teenage Mutant Ninja Turtles Color Classics Vol. 01 (2018) (digital) (Raphael-Empire).cbr (335pp)
+            [32299] COL Teenage Mutant Ninja Turtles Color Classics Vol. 02 (2019) (digital) (Raphael-Empire).cbr (287pp)
+            [32300] COL Teenage Mutant Ninja Turtles Color Classics Vol. 03 (2020) (digital) (Raphael-Empire).cbr (295pp)
+   ours:    ComicInfo Series: "Teenage Mutant Ninja Turtles Color Classics"x3; ComicInfo Publisher: "IDW"x3
+   GCD says: [32298] gcd_reprint 1964900: s66318 Teenage Mutant Ninja Turtles Color Classics (2012) #1-7 [7 stories] · s70291 Teenage Mutant Ninja Turtles Color Classics: Michaelangelo Micro-Series One-Shot (2012) #1 [1 story] · s81825 Teenage Mutant Ninja Turtles Color Classics: Micro-Series (2012) #1 [1 story]
+             [32299] gcd_reprint 1964899: s66318 Teenage Mutant Ninja Turtles Color Classics (2012) #9-11 [3 stories] · s13912 Teenage Mutant Ninja Turtles (1984) #8, #13 [2 stories] · s73632 Teenage Mutant Ninja Turtles Color Classics: Leonardo Micro-Series One-Shot (2013) (unnumbered) [1 story] · s72873 Teenage Mutant Ninja Turtles Color Classics: Donatello Micro-Series One-Shot (2013) (unnumbered) [1 story]
+             [32300] gcd notes 2118497 (#3 of Teenage Mutant Ninja Turtles Color Classics): Teenage Mutant Ninja Turtles (Mirage, 1984 Series) #14-21  |  gcd_reprint 2118497: s77669 Teenage Mutant Ninja Turtles Color Classics Vol. 2 (2013) #2-7 [6 stories] · s13912 Teenage Mutant Ninja Turtles (1984) #16, #18-19 [3 stories]
+   CV local rip:   109577 "Teenage Mutant Ninja Turtles Color Classics" 2018 IDW Publishing 3 (via our own name without the filing suffix "Teenage Mutant Ninja Turtles Color Classics") · 79498 "Teenage Mutant Ninja Turtles Color Classics" 2015 IDW Publishing 15 (via our own name without the filing suffix "Teenage Mutant Ninja Turtles Color Classics") · 69133 "Teenage Mutant Ninja Turtles Color Classics" 2013 IDW Publishing 7 (via our own name without the filing suffix "Teenage Mutant Ninja Turtles Color Classics") · 48762 "Teenage Mutant Ninja Turtles Color Classics" 2012 IDW Publishing 10 (via our own name without the filing suffix "Teenage Mutant Ninja Turtles Color Classics")   (rip lookup)
+   GCD dump:       145512 "Teenage Mutant Ninja Turtles Color Classics" 2018-? IDW [] 3 (via our own name without the filing suffix "Teenage Mutant Ninja Turtles Color Classics") · 66318 "Teenage Mutant Ninja Turtles Color Classics" 2012-2013 IDW [] 10 (via our own name without the filing suffix "Teenage Mutant Ninja Turtles Color Classics")   (dump lookup)
+
+== S104091 Teenage Mutant Ninja Turtles Color Classics Micro Series: Raphael (2012)  [tier B]   keys: Teenage Mutant Ninja Turtles Color Classics Micro Series: Raphael (2012)  years 2012-2012  1 files / 0 collections
+   split run: "Teenage Mutant Ninja Turtles Color Classics Micro Series: Raphael (2012)" run={"cv": 51141, "gcd": 81825} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW Hasbro\Teenage Mutant Ninja Turtles\TMNT - Color Classics Micro Series (2012)
+   files:   [32360] Teenage Mutant Ninja Turtles Color Classics Micro Series 001 - Raphael (2012) (digital-TheGroup).cbr (29pp)
+   ours:    ladder 1
+   CV per-file (v1): vol 48762 "Teenage Mutant Ninja Turtles Color Classics" 2012 IDW Publishing ? on 1/1 files
+   CV local rip:   (= per-file) · 51141 "Teenage Mutant Ninja Turtles Color Classics Micro Series: Raphael" 2012 IDW Publishing 1 issue 350000 (via our own name without the filing suffix "Teenage Mutant Ninja Turtles Color Classics Micro Series: Raphael") · 69133 "Teenage Mutant Ninja Turtles Color Classics" 2013 IDW Publishing 7 (via CV name "Teenage Mutant Ninja Turtles Color Classics") · 79498 "Teenage Mutant Ninja Turtles Color Classics" 2015 IDW Publishing 15 (via CV name "Teenage Mutant Ninja Turtles Color Classics") · 109577 "Teenage Mutant Ninja Turtles Color Classics" 2018 IDW Publishing 3 (via CV name "Teenage Mutant Ninja Turtles Color Classics")   (rip lookup)
+   GCD per-file:   series 81825 "Teenage Mutant Ninja Turtles Color Classics: Micro-Series" 2012-2012 IDW [One-Shot] 1 on 1/1 files; methods numx1
+   GCD dump:       66318 "Teenage Mutant Ninja Turtles Color Classics" 2012-2013 IDW [] 10 (via CV name "Teenage Mutant Ninja Turtles Color Classics") · 145512 "Teenage Mutant Ninja Turtles Color Classics" 2018-? IDW [] 3 (via CV name "Teenage Mutant Ninja Turtles Color Classics")   (dump lookup)
+
+== S104090 Teenage Mutant Ninja Turtles Color Classics Micro Series: Michaelangelo (2012)  [tier C] · gap 6  keys: Teenage Mutant Ninja Turtles Color Classics Micro Series: Michaelangelo (2012)  years 2012-2012  1 files / 0 collections
+   split run: "Teenage Mutant Ninja Turtles Color Classics Micro Series: Michaelangelo (2012)" run={"cv": 54469, "gcd": 70291} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW Hasbro\Teenage Mutant Ninja Turtles\TMNT - Color Classics Micro Series (2012)
+   files:   [32361] Teenage Mutant Ninja Turtles Color Classics Micro Series 002 - Michaelangelo (2012) (digital-TheGroup).cbr (32pp)
+   ours:    ladder 2
+   CV per-file (v1): vol 48762 "Teenage Mutant Ninja Turtles Color Classics" 2012 IDW Publishing ? on 1/1 files
+   CV local rip:   (= per-file) · 54469 "Teenage Mutant Ninja Turtles Color Classics Micro Series: Michaelangelo" 2012 IDW Publishing 1 issue 371218 (via our own name without the filing suffix "Teenage Mutant Ninja Turtles Color Classics Micro Series: Michaelangelo") · 69133 "Teenage Mutant Ninja Turtles Color Classics" 2013 IDW Publishing 7 (via CV name "Teenage Mutant Ninja Turtles Color Classics") · 79498 "Teenage Mutant Ninja Turtles Color Classics" 2015 IDW Publishing 15 (via CV name "Teenage Mutant Ninja Turtles Color Classics") · 109577 "Teenage Mutant Ninja Turtles Color Classics" 2018 IDW Publishing 3 (via CV name "Teenage Mutant Ninja Turtles Color Classics")   (rip lookup)
+   GCD per-file:   methods round2-seriesx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 145512 "Teenage Mutant Ninja Turtles Color Classics" 2018-? IDW [Collected Edition] 3 on 1/1 files
+   GCD dump:       (= per-file) · 66318 "Teenage Mutant Ninja Turtles Color Classics" 2012-2013 IDW [] 10 (via CV name "Teenage Mutant Ninja Turtles Color Classics")   (dump lookup)
+   bridges:        gcd 145512 -> LOCG 108509 "Teenage Mutant Ninja Turtles Color Classics Vol. 2 TP" support 4 · gcd 145512 -> OL /works/OL21194475W "None" isbnSupport 5
+
+== S104088 Teenage Mutant Ninja Turtles Color Classics Micro Series: Donatello (2013)  [tier C] · gap 6  keys: Teenage Mutant Ninja Turtles Color Classics Micro Series: Donatello (2013)  years 2012-2012  1 files / 0 collections
+   split run: "Teenage Mutant Ninja Turtles Color Classics Micro Series: Donatello (2013)" run={"cv": 26207, "gcd": 72873} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW Hasbro\Teenage Mutant Ninja Turtles\TMNT - Color Classics Micro Series (2012)
+   files:   [32362] Teenage Mutant Ninja Turtles Color Classics Micro Series 003 - Donatello (2013) (digital-TheGroup).cbr (31pp)
+   ours:    ladder 3
+   CV per-file (v1): vol 48762 "Teenage Mutant Ninja Turtles Color Classics" 2012 IDW Publishing ? on 1/1 files
+   CV local rip:   (= per-file) · 69133 "Teenage Mutant Ninja Turtles Color Classics" 2013 IDW Publishing 7 (via CV name "Teenage Mutant Ninja Turtles Color Classics") · 79498 "Teenage Mutant Ninja Turtles Color Classics" 2015 IDW Publishing 15 (via CV name "Teenage Mutant Ninja Turtles Color Classics") · 109577 "Teenage Mutant Ninja Turtles Color Classics" 2018 IDW Publishing 3 (via CV name "Teenage Mutant Ninja Turtles Color Classics")   (rip lookup)
+   GCD per-file:   methods round2-seriesx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 145512 "Teenage Mutant Ninja Turtles Color Classics" 2018-? IDW [Collected Edition] 3 on 1/1 files
+   GCD dump:       (= per-file) · 66318 "Teenage Mutant Ninja Turtles Color Classics" 2012-2013 IDW [] 10 (via CV name "Teenage Mutant Ninja Turtles Color Classics")   (dump lookup)
+   bridges:        gcd 145512 -> LOCG 108509 "Teenage Mutant Ninja Turtles Color Classics Vol. 2 TP" support 4 · gcd 145512 -> OL /works/OL21194475W "None" isbnSupport 5
+
+== S104089 Teenage Mutant Ninja Turtles Color Classics Micro Series: Leonardo (2013)  [tier C] · ratio 0.10  keys: Teenage Mutant Ninja Turtles Color Classics Micro Series: Leonardo (2013)  years 2012-2012  1 files / 0 collections
+   split run: "Teenage Mutant Ninja Turtles Color Classics Micro Series: Leonardo (2013)" run={"cv": 35206, "gcd": 73632} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW Hasbro\Teenage Mutant Ninja Turtles\TMNT - Color Classics Micro Series (2012)
+   files:   [32363] Teenage Mutant Ninja Turtles Color Classics Micro Series 004 - Leonardo (2013) (digital-TheGroup).cbr (32pp)
+   ours:    ladder 4
+   CV per-file (v1): vol 48762 "Teenage Mutant Ninja Turtles Color Classics" 2012 IDW Publishing ? on 1/1 files
+   CV local rip:   (= per-file) · 69133 "Teenage Mutant Ninja Turtles Color Classics" 2013 IDW Publishing 7 (via CV name "Teenage Mutant Ninja Turtles Color Classics") · 79498 "Teenage Mutant Ninja Turtles Color Classics" 2015 IDW Publishing 15 (via CV name "Teenage Mutant Ninja Turtles Color Classics") · 109577 "Teenage Mutant Ninja Turtles Color Classics" 2018 IDW Publishing 3 (via CV name "Teenage Mutant Ninja Turtles Color Classics")   (rip lookup)
+   GCD per-file:   series 66318 "Teenage Mutant Ninja Turtles Color Classics" 2012-2013 IDW [Was Ongoing Series] 10 on 1/1 files; methods fulldump-rematchx1
+   GCD dump:       (= per-file) · 145512 "Teenage Mutant Ninja Turtles Color Classics" 2018-? IDW [] 3 (via CV name "Teenage Mutant Ninja Turtles Color Classics")   (dump lookup)
+   bridges:        gcd 66318 -> LOCG 126976 "Teenage Mutant Ninja Turtles: Color Classics" support 10
+
+== S17705 Teenage Mutant Ninja Turtles - Color Classics  [tier C] · 2 volumes  keys: Teenage Mutant Ninja Turtles - Color Classics  years 2012-2016  15 files / 0 collections
+   split: the KEPT half of the P-046 split — moved out -> S104087 "Teenage Mutant Ninja Turtles Color Classics (2018)"; S104091 "Teenage Mutant Ninja Turtles Color Classics Micro Series: Raphael (2012)"; S104090 "Teenage Mutant Ninja Turtles Color Classics Micro Series: Michaelangelo (2012)"; S104088 "Teenage Mutant Ninja Turtles Color Classics Micro Series: Donatello (2013)"; S104089 "Teenage Mutant Ninja Turtles Color Classics Micro Series: Leonardo (2013)"; re-identify what stayed
+   flags: #457 label-ambiguous [Pending] item 32283 — TMNT Color Classics v3 001-015 are single issues, not collections
+   folders: [15] IDW Hasbro\Teenage Mutant Ninja Turtles\Teenage Mutant Ninja Turtles - Color Classics (2012)\Teenage Mutant Ninja Turtles - Color Classics v3 (2015)
+   files:   [32283] Teenage Mutant Ninja Turtles - Color Classics v3 001 (2015) (b0bafett-Empire).cbr (29pp)
+            [32284] Teenage Mutant Ninja Turtles - Color Classics v3 002 (2015) (digital-Empire).cbr (26pp)
+            [32285] Teenage Mutant Ninja Turtles - Color Classics v3 003 (2015) (F) (digital-Empire).cbr (36pp)
+            [32286] Teenage Mutant Ninja Turtles - Color Classics v3 004 (2015) (digital-Empire).cbr (26pp)
+            [32287] Teenage Mutant Ninja Turtles - Color Classics v3 005 (2015) (digital-Empire).cbr (27pp)
+            [32288] Teenage Mutant Ninja Turtles - Color Classics v3 006 (2015) (digital-Empire).cbr (25pp)
+            [32289] Teenage Mutant Ninja Turtles - Color Classics v3 007 (2015) (digital-Empire).cbr (28pp)
+            [32290] Teenage Mutant Ninja Turtles - Color Classics v3 008 (2015) (b0bafett-Empire).cbr (25pp)
+            Teenage Mutant Ninja Turtles - Color Classics v3 009 (2015) (digital-Empire).cbr … Teenage Mutant Ninja Turtles - Color Classics v3 015 (2016) (digital-Empire).cbr  (7 files, pp 22-28)
+   ours:    ladder 1-15
+   CV per-file (v1): vol 48762 "Teenage Mutant Ninja Turtles Color Classics" 2012 IDW Publishing ? on 12/15 files · vol 79498 "Teenage Mutant Ninja Turtles Color Classics" 2015 IDW Publishing 15 on 3/15 files
+   CV candidates:  (= per-file) · 51627 "Teenage Mutant Ninja Turtles Classics" 2012 IDW Publishing ? s70 · 42285 "Teenage Mutant Ninja Turtles" 2011 IDW Publishing ? s67 · 35309 "Teenage Mutant Ninja Turtles" 2003 Dreamwave Productions ? s64 · 109577 "Teenage Mutant Ninja Turtles Color Classics" 2018 IDW Publishing ? s35 · 69133 "Teenage Mutant Ninja Turtles Color Classics" 2013 IDW Publishing ? s35 · 159035 "Teenage Mutant Ninja Turtles" 2024 IDW Publishing ? s15   (v1 search)
+   CV local rip:   (= per-file) · 69133 "Teenage Mutant Ninja Turtles Color Classics" 2013 IDW Publishing 7 · 109577 "Teenage Mutant Ninja Turtles Color Classics" 2018 IDW Publishing 3 · 42285 "Teenage Mutant Ninja Turtles" 2011 IDW Publishing 150 (via CV candidate name "Teenage Mutant Ninja Turtles") · 72209 "Teenage Mutant Ninja Turtles" 2013 Marvel UK/Panini UK 1 issue 447271 (via CV candidate name "Teenage Mutant Ninja Turtles")   (rip lookup)
+   GCD dump:       66318 "Teenage Mutant Ninja Turtles Color Classics" 2012-2013 IDW [] 10 · 145512 "Teenage Mutant Ninja Turtles Color Classics" 2018-? IDW [] 3 · 74123 "Teenage Mutant Ninja Turtles" 2012-2020 IDW [] 23 (via CV candidate name "Teenage Mutant Ninja Turtles") · 60636 "Teenage Mutant Ninja Turtles" 2011-2024 IDW [] 150 (via CV candidate name "Teenage Mutant Ninja Turtles") · 76486 "Teenage Mutant Ninja Turtles" [no] 2013-2015 Hjemmet / Egmont [] 14 (via CV candidate name "Teenage Mutant Ninja Turtles") · 77862 "Teenage Mutant Ninja Turtles" [nl] 2013-? Dark Dragon Books [] 6 (via CV candidate name "Teenage Mutant Ninja Turtles")   (dump lookup)
+
+== S104082 Ghostbusters: Answer the Call (2017)  [tier C] · gap 6  keys: Ghostbusters: Answer the Call (2017)  years 2011-2012  5 files / 0 collections
+   split run: "Ghostbusters: Answer the Call (2017)" run={"cv": 105525, "gcd": 117848} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [5] IDW\Ghostbusters (2011)\Ghostbusters - Answer the Call (2017)
+   files:   [30564] Ghostbusters - Answer the Call 001 (2017) (digital) (Knight Ripper-Empire).cbr (20pp)
+            [30565] Ghostbusters - Answer the Call 002 (2017) (digital) (Knight Ripper-Empire).cbr (18pp)
+            [30566] Ghostbusters - Answer the Call 003 (2017) (digital) (Knight Ripper-Empire).cbr (22pp)
+            [30567] Ghostbusters - Answer the Call 004 (2018) (digital) (Knight Ripper-Empire).cbr (21pp)
+            [30568] Ghostbusters - Answer the Call 005 (2018) (digital) (Knight Ripper-Empire).cbr (21pp)
+   ours:    ladder 1-5
+   CV per-file (v1): vol 43066 "Ghostbusters" 2011 IDW Publishing 16 on 5/5 files
+   CV local rip:   (= per-file) · 53939 "Ghostbusters" 2012 IDW Publishing 9 (via CV name "Ghostbusters") · 57184 "Ghostbusters" 2013 IDW Publishing 20 (via CV name "Ghostbusters") · 105525 "Ghostbusters: Answer the Call" 2017 IDW Publishing 5 (via our own name without the filing suffix "Ghostbusters: Answer the Call") · 111651 "Ghostbusters: Answer the Call" 2018 IDW Publishing 1 issue 673831 (via our own name without the filing suffix "Ghostbusters: Answer the Call") · 52983 "Ghostbusters" 1988 Bastei Verlag 6 (via CV name "Ghostbusters")   (rip lookup)
+   GCD per-file:   series 117848 "Ghostbusters: Answer the Call" 2017-2018 IDW [limited series] 5 on 5/5 files; methods numx5
+   GCD dump:       (= per-file) · 61188 "Ghostbusters" 2011-2012 IDW [] 16 (via CV name "Ghostbusters") · 66831 "Ghostbusters" 2012-2014 IDW [] 9 (via CV name "Ghostbusters") · 71934 "Ghostbusters" 2013-2014 IDW [] 20 (via CV name "Ghostbusters") · 193944 "Ghostbusters" [hr] 2008-2008 Večernji list [] 1 (via CV name "Ghostbusters") · 222527 "Ghostbusters: Answer the Call" 2018-2018 IDW [] 1 (via our own name without the filing suffix "Ghostbusters: Answer the Call")   (dump lookup)
+
+== S104085 Ghostbusters: Year One v1 (2020)  [tier B]   keys: Ghostbusters: Year One v1 (2020)  years 2020-2020  4 files / 0 collections
+   split run: "Ghostbusters: Year One v1 (2020)" run={"cv": 124398, "gcd": 155137} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [4] IDW\Ghostbusters (2011)\Ghostbusters - Year One (2020)
+   files:   [30578] Ghostbusters - Year One 01 (of 04) (2020) (digital) (Knight Ripper-Empire).cbr (23pp)
+            [30579] Ghostbusters - Year One 02 (of 04) (2020) (digital) (Knight Ripper-Empire).cbr (23pp)
+            [30580] Ghostbusters - Year One 03 (of 04) (2020) (digital) (Knight Ripper-Empire).cbr (23pp)
+            [30581] Ghostbusters - Year One 04 (of 04) (2020) (digital) (Knight Ripper-Empire).cbr (23pp)
+   ours:    ladder 1-4; ComicInfo Series: "Ghostbusters: Year One"x4; ComicInfo Publisher: "IDW"x4
+   CV per-file (v1): vol 124398 "Ghostbusters: Year One" 2020 IDW Publishing 4 on 4/4 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 155137 "Ghostbusters: Year One" 2020-2020 IDW [limited series] 4 on 4/4 files; methods numx4; the dump names no other series
+
+== S104083 Ghostbusters: Crossing Over (2018)  [tier D]   keys: Ghostbusters: Crossing Over (2018)  years 2019-2019  1 files / 1 collections
+   split run: "Ghostbusters: Crossing Over (2018)" run={"cv": 109172, "gcd": 123184} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW\Ghostbusters (2011)\Ghostbusters - Crossing Over (2018)
+   files:   [31822] COL Ghostbusters - Crossing Over (2019) (digital) (Knight Ripper-Empire).cbr (242pp)
+   ours:    ComicInfo Series: "Ghostbusters: Crossing Over"x1; ComicInfo Publisher: "IDW"x1
+   GCD says: [31822] gcd notes 1915326 (#[nn] of Ghostbusters: Crossing Over): Ghostbusters: Crossing Over (IDW, 2018 series) #1-8
+   CV local rip:   116798 "Ghostbusters: Crossing Over" 2019 IDW Publishing 1 issue 699115 (via our own name without the filing suffix "Ghostbusters: Crossing Over") · 109172 "Ghostbusters: Crossing Over" 2018 IDW Publishing 8 (via our own name without the filing suffix "Ghostbusters: Crossing Over")   (rip lookup)
+   GCD dump:       139319 "Ghostbusters: Crossing Over" 2019-2019 IDW [] 1 (via our own name without the filing suffix "Ghostbusters: Crossing Over") · 123184 "Ghostbusters: Crossing Over" 2018-2018 IDW [] 8 (via our own name without the filing suffix "Ghostbusters: Crossing Over")   (dump lookup)
+
+== S104073 Ghostbusters 101 (2017)  [tier B]   keys: Ghostbusters 101 (2017)  years 2018-2018  1 files / 0 collections
+   split run: "Ghostbusters 101 (2017)" run={"cv": 100059, "gcd": 112980} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW\Ghostbusters (2011)\Ghostbusters 101 (2017)
+   files:   [31826] Ghostbusters 101 - Everyone Answers The Call (2018) (Digital) (Kileko-Empire).cbr (159pp)
+   ours:    ladder 101; judged item 31826 #1-6 conf 0.95
+   CV per-file (v1): vol 43066 "Ghostbusters" 2011 IDW Publishing 16 on 1/1 files
+   CV local rip:   (= per-file) · 100059 "Ghostbusters 101" 2017 IDW Publishing 6 (via our own name without the filing suffix "Ghostbusters 101") · 57184 "Ghostbusters" 2013 IDW Publishing 20 (via CV name "Ghostbusters") · 53939 "Ghostbusters" 2012 IDW Publishing 9 (via CV name "Ghostbusters") · 52983 "Ghostbusters" 1988 Bastei Verlag 6 (via CV name "Ghostbusters") · 38443 "Ghostbusters" 1987 First 4 (via CV name "Ghostbusters")   (rip lookup)
+   GCD dump:       112980 "Ghostbusters 101" 2017-2017 IDW [] 6 (via our own name without the filing suffix "Ghostbusters 101") · 71934 "Ghostbusters" 2013-2014 IDW [] 20 (via CV name "Ghostbusters") · 66831 "Ghostbusters" 2012-2014 IDW [] 9 (via CV name "Ghostbusters") · 61188 "Ghostbusters" 2011-2012 IDW [] 16 (via CV name "Ghostbusters") · 193944 "Ghostbusters" [hr] 2008-2008 Večernji list [] 1 (via CV name "Ghostbusters") · 58448 "Ghostbusters" [de] 1988-1989 Bastei Verlag [] 6 (via CV name "Ghostbusters")   (dump lookup)
+
+== S104084 Ghostbusters: Interdimensional Cross-Rip (2017)  [tier B]   keys: Ghostbusters: Interdimensional Cross-Rip (2017)  years 2017-2017  1 files / 0 collections
+   split run: "Ghostbusters: Interdimensional Cross-Rip (2017)" run={"cv": 104914, "gcd": 117482} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW\Ghostbusters (2011)\Ghostbusters - Interdimensional Cross-Rip (2015)
+   files:   [31824] Ghostbusters - Interdimensional Cross-Rip (2017) (Digital) (Kileko-Empire).cbr (382pp)
+   CV per-file (v1): vol 43066 "Ghostbusters" 2011 IDW Publishing 16 on 1/1 files
+   CV local rip:   (= per-file) · 104914 "Ghostbusters: Interdimensional Cross-Rip" 2017 IDW Publishing 1 issue 628339 (via our own name without the filing suffix "Ghostbusters: Interdimensional Cross-Rip") · 57184 "Ghostbusters" 2013 IDW Publishing 20 (via CV name "Ghostbusters") · 53939 "Ghostbusters" 2012 IDW Publishing 9 (via CV name "Ghostbusters") · 52983 "Ghostbusters" 1988 Bastei Verlag 6 (via CV name "Ghostbusters") · 38443 "Ghostbusters" 1987 First 4 (via CV name "Ghostbusters")   (rip lookup)
+   GCD dump:       117482 "Ghostbusters Interdimensional Cross-Rip" 2017-2017 IDW [] 1 (via our own name without the filing suffix "Ghostbusters: Interdimensional Cross-Rip") · 71934 "Ghostbusters" 2013-2014 IDW [] 20 (via CV name "Ghostbusters") · 66831 "Ghostbusters" 2012-2014 IDW [] 9 (via CV name "Ghostbusters") · 61188 "Ghostbusters" 2011-2012 IDW [] 16 (via CV name "Ghostbusters") · 193944 "Ghostbusters" [hr] 2008-2008 Večernji list [] 1 (via CV name "Ghostbusters") · 58448 "Ghostbusters" [de] 1988-1989 Bastei Verlag [] 6 (via CV name "Ghostbusters")   (dump lookup)
+
+== S104078 Ghostbusters Annual 2017 (2017)  [tier B]   keys: Ghostbusters Annual 2017 (2017)  years 2017-2017  1 files / 0 collections
+   split run: "Ghostbusters Annual 2017 (2017)" run={"cv": 98029, "gcd": 112049} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW\Ghostbusters (2011)\Annuals and Specials
+   files:   [30559] Ghostbusters Annual 2017 (2017) (Digital) (AnHeroGold-Empire).cbr (50pp)
+   ours:    ladder 2017
+   CV per-file (v1): vol 43066 "Ghostbusters" 2011 IDW Publishing 16 on 1/1 files
+   CV local rip:   (= per-file) · 98029 "Ghostbusters Annual 2017" 2017 IDW Publishing 1 issue 576551 (via our own name without the filing suffix "Ghostbusters Annual 2017") · 57184 "Ghostbusters" 2013 IDW Publishing 20 (via CV name "Ghostbusters") · 53939 "Ghostbusters" 2012 IDW Publishing 9 (via CV name "Ghostbusters") · 52983 "Ghostbusters" 1988 Bastei Verlag 6 (via CV name "Ghostbusters") · 38443 "Ghostbusters" 1987 First 4 (via CV name "Ghostbusters")   (rip lookup)
+   GCD dump:       112049 "Ghostbusters Annual 2017" 2017-2017 IDW [] 1 (via our own name without the filing suffix "Ghostbusters Annual 2017") · 71934 "Ghostbusters" 2013-2014 IDW [] 20 (via CV name "Ghostbusters") · 66831 "Ghostbusters" 2012-2014 IDW [] 9 (via CV name "Ghostbusters") · 61188 "Ghostbusters" 2011-2012 IDW [] 16 (via CV name "Ghostbusters") · 193944 "Ghostbusters" [hr] 2008-2008 Večernji list [] 1 (via CV name "Ghostbusters") · 58448 "Ghostbusters" [de] 1988-1989 Bastei Verlag [] 6 (via CV name "Ghostbusters")   (dump lookup)
+
+== S104079 Ghostbusters Annual 2018 (2018)  [tier B]   keys: Ghostbusters Annual 2018 (2018)  years 2018-2018  1 files / 0 collections
+   split run: "Ghostbusters Annual 2018 (2018)" run={"cv": 109056, "gcd": 123185} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW\Ghostbusters (2011)\Annuals and Specials
+   files:   [30560] Ghostbusters Annual 2018 (2018) (digital) (Knight Ripper-Empire).cbr (44pp)
+   ours:    ladder 2018
+   CV per-file (v1): vol 43066 "Ghostbusters" 2011 IDW Publishing 16 on 1/1 files
+   CV local rip:   (= per-file) · 109056 "Ghostbusters Annual 2018" 2018 IDW Publishing 1 issue 661798 (via our own name without the filing suffix "Ghostbusters Annual 2018") · 57184 "Ghostbusters" 2013 IDW Publishing 20 (via CV name "Ghostbusters") · 53939 "Ghostbusters" 2012 IDW Publishing 9 (via CV name "Ghostbusters") · 52983 "Ghostbusters" 1988 Bastei Verlag 6 (via CV name "Ghostbusters") · 38443 "Ghostbusters" 1987 First 4 (via CV name "Ghostbusters")   (rip lookup)
+   GCD dump:       123185 "Ghostbusters Annual 2018" 2018-2018 IDW [] 1 (via our own name without the filing suffix "Ghostbusters Annual 2018") · 71934 "Ghostbusters" 2013-2014 IDW [] 20 (via CV name "Ghostbusters") · 66831 "Ghostbusters" 2012-2014 IDW [] 9 (via CV name "Ghostbusters") · 61188 "Ghostbusters" 2011-2012 IDW [] 16 (via CV name "Ghostbusters") · 193944 "Ghostbusters" [hr] 2008-2008 Večernji list [] 1 (via CV name "Ghostbusters") · 58448 "Ghostbusters" [de] 1988-1989 Bastei Verlag [] 6 (via CV name "Ghostbusters")   (dump lookup)
+
+== S104080 Ghostbusters Deviations (2016)  [tier B]   keys: Ghostbusters Deviations (2016)  years 2016-2016  1 files / 0 collections
+   split run: "Ghostbusters Deviations (2016)" run={"cv": 88813, "gcd": 98431} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW\Ghostbusters (2011)\Annuals and Specials
+   files:   [30561] Ghostbusters Deviations 001 (2016) (Digital) (BlackManta-Empire).cbr (33pp)
+   ours:    ladder 1
+   CV per-file (v1): vol 88813 "Ghostbusters Deviations" 2016 IDW Publishing 1 issue 519156 on 1/1 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 98431 "Ghostbusters Deviations" 2016-2016 IDW [one-shot] 1 on 1/1 files; methods numx1; the dump names no other series
+
+== S104081 Ghostbusters Funko Universe (2017)  [tier B]   keys: Ghostbusters Funko Universe (2017)  years 2017-2017  1 files / 0 collections
+   split run: "Ghostbusters Funko Universe (2017)" run={"cv": 101372, "gcd": 114176} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW\Ghostbusters (2011)\Annuals and Specials
+   files:   [30562] Ghostbusters Funko Universe (2017) (digital) (Salem-Empire).cbr (26pp)
+   CV per-file (v1): vol 43066 "Ghostbusters" 2011 IDW Publishing 16 on 1/1 files
+   CV local rip:   (= per-file) · 57184 "Ghostbusters" 2013 IDW Publishing 20 (via CV name "Ghostbusters") · 53939 "Ghostbusters" 2012 IDW Publishing 9 (via CV name "Ghostbusters") · 52983 "Ghostbusters" 1988 Bastei Verlag 6 (via CV name "Ghostbusters") · 38443 "Ghostbusters" 1987 First 4 (via CV name "Ghostbusters")   (rip lookup)
+   GCD dump:       114176 "Ghostbusters Funko Universe" 2017-2017 IDW [] 1 (via our own name without the filing suffix "Ghostbusters Funko Universe") · 71934 "Ghostbusters" 2013-2014 IDW [] 20 (via CV name "Ghostbusters") · 66831 "Ghostbusters" 2012-2014 IDW [] 9 (via CV name "Ghostbusters") · 61188 "Ghostbusters" 2011-2012 IDW [] 16 (via CV name "Ghostbusters") · 193944 "Ghostbusters" [hr] 2008-2008 Večernji list [] 1 (via CV name "Ghostbusters") · 58448 "Ghostbusters" [de] 1988-1989 Bastei Verlag [] 6 (via CV name "Ghostbusters")   (dump lookup)
+
+== S104075 Ghostbusters 35th Anniversary: Extreme (2019)  [tier B]   keys: Ghostbusters 35th Anniversary: Extreme (2019)  years 2019-2019  1 files / 0 collections
+   split run: "Ghostbusters 35th Anniversary: Extreme (2019)" run={"cv": 118481, "gcd": 144484} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW\Ghostbusters (2011)\Ghostbusters 35th Anniversary (2019)
+   files:   [30583] Ghostbusters 35th Anniversary - Extreme (2019) (digital) (Knight Ripper-Empire).cbr (24pp)
+   ours:    ComicInfo Series: "Ghostbusters 35th Anniversary: Extreme"x1; ComicInfo Publisher: "IDW"x1
+   CV per-file (v1): vol 43066 "Ghostbusters" 2011 IDW Publishing 16 on 1/1 files
+   CV local rip:   (= per-file) · 57184 "Ghostbusters" 2013 IDW Publishing 20 (via CV name "Ghostbusters") · 53939 "Ghostbusters" 2012 IDW Publishing 9 (via CV name "Ghostbusters") · 52983 "Ghostbusters" 1988 Bastei Verlag 6 (via CV name "Ghostbusters") · 38443 "Ghostbusters" 1987 First 4 (via CV name "Ghostbusters")   (rip lookup)
+   GCD dump:       71934 "Ghostbusters" 2013-2014 IDW [] 20 (via CV name "Ghostbusters") · 66831 "Ghostbusters" 2012-2014 IDW [] 9 (via CV name "Ghostbusters") · 61188 "Ghostbusters" 2011-2012 IDW [] 16 (via CV name "Ghostbusters") · 193944 "Ghostbusters" [hr] 2008-2008 Večernji list [] 1 (via CV name "Ghostbusters") · 58448 "Ghostbusters" [de] 1988-1989 Bastei Verlag [] 6 (via CV name "Ghostbusters") · 148029 "Ghostbusters" [fi] 1988-1990 Semic [] 26 (via CV name "Ghostbusters")   (dump lookup)
+
+== S104076 Ghostbusters 35th Anniversary: Ghostbusters (2019)  [tier B]   keys: Ghostbusters 35th Anniversary: Ghostbusters (2019)  years 2019-2019  1 files / 0 collections
+   split run: "Ghostbusters 35th Anniversary: Ghostbusters (2019)" run={"cv": 118106, "gcd": 143542} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW\Ghostbusters (2011)\Ghostbusters 35th Anniversary (2019)
+   files:   [30584] Ghostbusters 35th Anniversary - Ghostbusters (2019) (digital) (Knight Ripper-Empire).cbr (24pp)
+   ours:    ComicInfo Series: "Ghostbusters 35th Anniversary: Ghostbusters"x1; ComicInfo Publisher: "IDW"x1
+   CV per-file (v1): vol 43066 "Ghostbusters" 2011 IDW Publishing 16 on 1/1 files
+   CV local rip:   (= per-file) · 57184 "Ghostbusters" 2013 IDW Publishing 20 (via CV name "Ghostbusters") · 53939 "Ghostbusters" 2012 IDW Publishing 9 (via CV name "Ghostbusters") · 52983 "Ghostbusters" 1988 Bastei Verlag 6 (via CV name "Ghostbusters") · 38443 "Ghostbusters" 1987 First 4 (via CV name "Ghostbusters")   (rip lookup)
+   GCD dump:       71934 "Ghostbusters" 2013-2014 IDW [] 20 (via CV name "Ghostbusters") · 66831 "Ghostbusters" 2012-2014 IDW [] 9 (via CV name "Ghostbusters") · 61188 "Ghostbusters" 2011-2012 IDW [] 16 (via CV name "Ghostbusters") · 193944 "Ghostbusters" [hr] 2008-2008 Večernji list [] 1 (via CV name "Ghostbusters") · 58448 "Ghostbusters" [de] 1988-1989 Bastei Verlag [] 6 (via CV name "Ghostbusters") · 148029 "Ghostbusters" [fi] 1988-1990 Semic [] 26 (via CV name "Ghostbusters")   (dump lookup)
+
+== S104077 Ghostbusters 35th Anniversary: The Real Ghostbusters (2019)  [tier B]   keys: Ghostbusters 35th Anniversary: The Real Ghostbusters (2019)  years 2019-2019  1 files / 0 collections
+   split run: "Ghostbusters 35th Anniversary: The Real Ghostbusters (2019)" run={"cv": 118205, "gcd": 143920} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW\Ghostbusters (2011)\Ghostbusters 35th Anniversary (2019)
+   files:   [30585] Ghostbusters 35th Anniversary - The Real Ghostbusters (2019) (digital) (Knight Ripper-Empire).cbr (24pp)
+   ours:    ComicInfo Series: "Ghostbusters 35th Anniversary: The Real Ghostbusters"x1; ComicInfo Publisher: "IDW"x1
+   CV per-file (v1): vol 43066 "Ghostbusters" 2011 IDW Publishing 16 on 1/1 files
+   CV local rip:   (= per-file) · 57184 "Ghostbusters" 2013 IDW Publishing 20 (via CV name "Ghostbusters") · 53939 "Ghostbusters" 2012 IDW Publishing 9 (via CV name "Ghostbusters") · 52983 "Ghostbusters" 1988 Bastei Verlag 6 (via CV name "Ghostbusters") · 38443 "Ghostbusters" 1987 First 4 (via CV name "Ghostbusters")   (rip lookup)
+   GCD dump:       71934 "Ghostbusters" 2013-2014 IDW [] 20 (via CV name "Ghostbusters") · 66831 "Ghostbusters" 2012-2014 IDW [] 9 (via CV name "Ghostbusters") · 61188 "Ghostbusters" 2011-2012 IDW [] 16 (via CV name "Ghostbusters") · 193944 "Ghostbusters" [hr] 2008-2008 Večernji list [] 1 (via CV name "Ghostbusters") · 58448 "Ghostbusters" [de] 1988-1989 Bastei Verlag [] 6 (via CV name "Ghostbusters") · 148029 "Ghostbusters" [fi] 1988-1990 Semic [] 26 (via CV name "Ghostbusters")   (dump lookup)
+
+== S104074 Ghostbusters 35th Anniversary Collection (2019)  [tier B]   keys: Ghostbusters 35th Anniversary Collection (2019)  years 2019-2019  1 files / 0 collections
+   split run: "Ghostbusters 35th Anniversary Collection (2019)" run={"cv": 121536, "gcd": 150650} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW\Ghostbusters (2011)
+   files:   [30586] Ghostbusters 35th Anniversary Collection (2019) (Digital) (Kileko-Empire).cbz (99pp)
+   ours:    ComicInfo Series: "Ghostbusters 35th Anniversary Collection"x1; ComicInfo Publisher: "IDW"x1
+   CV per-file (v1): vol 43066 "Ghostbusters" 2011 IDW Publishing 16 on 1/1 files
+   CV local rip:   (= per-file) · 121536 "Ghostbusters 35th Anniversary Collection" 2019 IDW Publishing 1 issue 719966 (via our own name without the filing suffix "Ghostbusters 35th Anniversary Collection") · 57184 "Ghostbusters" 2013 IDW Publishing 20 (via CV name "Ghostbusters") · 53939 "Ghostbusters" 2012 IDW Publishing 9 (via CV name "Ghostbusters") · 52983 "Ghostbusters" 1988 Bastei Verlag 6 (via CV name "Ghostbusters") · 38443 "Ghostbusters" 1987 First 4 (via CV name "Ghostbusters")   (rip lookup)
+   GCD dump:       150650 "Ghostbusters 35th Anniversary Collection" 2019-2019 IDW [] 1 (via our own name without the filing suffix "Ghostbusters 35th Anniversary Collection") · 71934 "Ghostbusters" 2013-2014 IDW [] 20 (via CV name "Ghostbusters") · 66831 "Ghostbusters" 2012-2014 IDW [] 9 (via CV name "Ghostbusters") · 61188 "Ghostbusters" 2011-2012 IDW [] 16 (via CV name "Ghostbusters") · 193944 "Ghostbusters" [hr] 2008-2008 Večernji list [] 1 (via CV name "Ghostbusters") · 58448 "Ghostbusters" [de] 1988-1989 Bastei Verlag [] 6 (via CV name "Ghostbusters")   (dump lookup)
+
+== S7474 Ghostbusters  [tier C] · ratio 0.06  keys: Ghostbusters | Ghostbusters - Holiday Special (2011) | Ghostbusters v1 (2011)  years 2011-2013  5 files / 4 collections
+   split: the KEPT half of the P-046 split — moved out -> S104082 "Ghostbusters: Answer the Call (2017)"; S104085 "Ghostbusters: Year One v1 (2020)"; S104083 "Ghostbusters: Crossing Over (2018)"; S104073 "Ghostbusters 101 (2017)"; S104084 "Ghostbusters: Interdimensional Cross-Rip (2017)"; S104078 "Ghostbusters Annual 2017 (2017)"; S104079 "Ghostbusters Annual 2018 (2018)"; S104080 "Ghostbusters Deviations (2016)"; S104081 "Ghostbusters Funko Universe (2017)"; S104075 "Ghostbusters 35th Anniversary: Extreme (2019)"; S104076 "Ghostbusters 35th Anniversary: Ghostbusters (2019)"; S104077 "Ghostbusters 35th Anniversary: The Real Ghostbusters (2019)"; S104074 "Ghostbusters 35th Anniversary Collection (2019)"; re-identify what stayed
+   folders: [4] IDW\Ghostbusters (2011)\Ghostbusters v1 (2011) · [1] IDW\Ghostbusters (2011)\Annuals and Specials
+   files:   [30556] Ghostbusters - Holiday Special 001 (2011) (Digital-SD) (Kileko-Empire).cbr (25pp)
+            [30587] COL Ghostbusters Vol. 01 - The Man from the Mirror (2012) (Digital TPB) (Emachine-Empire).cbr (166pp)
+            [30588] COL Ghostbusters Vol. 02 - The Most Magical Place on Earth (2012) (Digital TPB) (Emachine-Empire).cbr (130pp)
+            [30589] COL Ghostbusters Vol. 03 - Haunted America (2012) (Digital TPB) (Emachine-Empire).cbr (134pp)
+            [30590] COL Ghostbusters Vol. 04 - Who Ya Gonna Call (2013) (Digital TPB) (Emachine-Empire).cbr (104pp)
+   ours:    ladder 1
+   CV linked:      vol 43066 "Ghostbusters" 2011 IDW Publishing 16 issues; cached #1-16 (16); yearΔ 0; ratio 1/16 = 0.06; no judged range; v1 per-file: same volume on 1/5 files
+   CV candidates:  (= linked) · 52983 "Ghostbusters" 1988 Bastei Verlag ? s80 · 38443 "Ghostbusters" 1987 First ? s79 · 53160 "Real Ghostbusters" 1988 Atlantic Förlags AB ? s64 · 22441 "Ghostbusters II" 1989 Now Comics ? s64 · 40083 "The Real Ghostbusters" 1988 Marvel UK/Panini UK ? s63 · 21440 "The Real Ghostbusters" 1988 Now Comics ? s63   (v1 search)
+   CV local rip:   (= linked) · 53939 "Ghostbusters" 2012 IDW Publishing 9 · 57184 "Ghostbusters" 2013 IDW Publishing 20 · 52983 "Ghostbusters" 1988 Bastei Verlag 6 · 38443 "Ghostbusters" 1987 First 4   (rip lookup)
+   GCD per-file:   methods round2-seriesx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 66831 "Ghostbusters" 2012-2014 IDW [collected edition] 9 on 1/5 files
+   GCD dump:       (= per-file) · 61188 "Ghostbusters" 2011-2012 IDW [] 16 · 71934 "Ghostbusters" 2013-2014 IDW [] 20 · 193944 "Ghostbusters" [hr] 2008-2008 Večernji list [] 1 · 58448 "Ghostbusters" [de] 1988-1989 Bastei Verlag [] 6 · 148029 "Ghostbusters" [fi] 1988-1990 Semic [] 26   (dump lookup)
+   bridges:        gcd 66831 -> LOCG 100135 "Ghostbusters" support 6 · gcd 66831 -> OL /works/OL19991617W "None" isbnSupport 9
+
+== S104086 Half Past Danger (2013)  [tier D]   keys: Half Past Danger (2013)  years 2014-2014  1 files / 0 collections
+   split run: "Half Past Danger (2013)" run={"cv": 61823, "gcd": 74568} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW\Half Past Danger\Half Past Danger v1 (2013)
+   files:   [31842] Half Past Danger (2014) (Digital) (DR & Quinch-Empire).cbr (212pp)
+   CV local rip:   71327 "Half Past Danger" 2014 IDW Publishing 1 issue 444002 (via our own name without the filing suffix "Half Past Danger") · 61823 "Half Past Danger" 2013 IDW Publishing 6 (via our own name without the filing suffix "Half Past Danger")   (rip lookup)
+   GCD dump:       87707 "Half Past Danger" [de] 2014-? dani books [] 1 (via our own name without the filing suffix "Half Past Danger") · 160269 "Half Past Danger" 2014-2014 IDW [] 1 (via our own name without the filing suffix "Half Past Danger") · 232531 "Half Past Danger" [de] 2014-2014 dani books [] 1 (via our own name without the filing suffix "Half Past Danger") · 74568 "Half Past Danger" 2013-2013 IDW [] 6 (via our own name without the filing suffix "Half Past Danger")   (dump lookup)
+
+== S8278 Half Past Danger II: Dead To Reichs  [tier C] · gap 4  keys: Half Past Danger  years 2013-2013  5 files / 0 collections
+   split: the KEPT half of the P-046 split — moved out -> S104086 "Half Past Danger (2013)"; re-identify what stayed
+   folders: [5] IDW\Half Past Danger\Half Past Danger 2 - Dead to Reichs (2017)
+   files:   [30788] Half Past Danger 2 001 - Dead to Reichs (2017) (digital) (Son of Ultron-Empire).cbr (31pp)
+            [30789] Half Past Danger 2 002 - Dead to Reichs (2017) (digital) (Son of Ultron-Empire).cbr (29pp)
+            [30790] Half Past Danger 2 003 - Dead to Reichs (2017) (digital) (Son of Ultron-Empire).cbr (30pp)
+            [30791] Half Past Danger 2 004 - Dead to Reichs (2017) (digital) (Son of Ultron-Empire).cbr (29pp)
+            [30792] Half Past Danger 2 005 - Dead to Reichs (2018) (digital) (Son of Ultron-Empire).cbr (30pp)
+   ours:    ladder 1-5
+   CV linked:      vol 104446 "Half Past Danger II: Dead To Reichs" 2017 IDW Publishing 5 issues; cached #1-5 (5); yearΔ 4; ratio 5/5 = 1.00; no judged range
+   CV per-file (v1): vol 61823 "Half Past Danger" 2013 IDW Publishing 6 on 5/5 files
+   CV local rip:   (= linked) · 71327 "Half Past Danger" 2014 IDW Publishing 1 issue 444002   (rip lookup)
+   GCD dump:       116828 "Half Past Danger II: Dead to Reichs" 2017-2018 IDW [] 5 · 74568 "Half Past Danger" 2013-2013 IDW [] 6 · 87707 "Half Past Danger" [de] 2014-? dani books [] 1 · 160269 "Half Past Danger" 2014-2014 IDW [] 1 · 232531 "Half Past Danger" [de] 2014-2014 dani books [] 1   (dump lookup)
+
+== S104092 True Blood (2010)  [tier B]   keys: True Blood (2010)  years 2012-2012  1 files / 1 collections
+   split run: "True Blood (2010)" run={"cv": 32697, "gcd": 51583} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW\True Blood
+   files:   [31692] COL True Blood v01 - All Together Now  (2011) (Digital TPB) (Danger-Empire).cbr (161pp)
+   CV per-file (v1): vol 49195 "True Blood" 2012 IDW Publishing 14 on 1/1 files
+   CV local rip:   (= per-file) · 39211 "True Blood" 2011 IDW Publishing 3 (via our own name without the filing suffix "True Blood") · 62099 "True Blood" 2011 Panini Verlag 3 (via our own name without the filing suffix "True Blood") · 32697 "True Blood" 2010 IDW Publishing 6 (via our own name without the filing suffix "True Blood")   (rip lookup)
+   GCD dump:       65845 "True Blood" 2012-2013 IDW [] 14 (via our own name without the filing suffix "True Blood") · 60454 "True Blood" [de] 2011-? Panini Deutschland [] 5 (via our own name without the filing suffix "True Blood") · 61167 "True Blood" 2011-2013 IDW [] 6 (via our own name without the filing suffix "True Blood") · 77794 "True Blood" 2013-2014 IDW [] 3 (via our own name without the filing suffix "True Blood") · 151916 "True Blood" [fr] 2011-? Bragelonne [] 1 (via our own name without the filing suffix "True Blood") · 51583 "True Blood" 2010-2011 IDW [] 6 (via our own name without the filing suffix "True Blood")   (dump lookup)
+
+== S104093 True Blood: Tainted Love (2011)  [tier D]   keys: True Blood: Tainted Love (2011)  years 1994-1994  1 files / 1 collections
+   split run: "True Blood: Tainted Love (2011)" run={"cv": 39120, "gcd": 56000} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] IDW\True Blood
+   files:   [31690] COL True Blood - Tainted Love (2011) (Digital TPB) (Danger-Empire).cbr (164pp)
+   CV local rip:   39120 "True Blood: Tainted Love" 2011 IDW Publishing 6 (via our own name without the filing suffix "True Blood: Tainted Love")   (rip lookup)
+   GCD dump:       56000 "True Blood: Tainted Love" 2011-2011 IDW [] 6 (via our own name without the filing suffix "True Blood: Tainted Love")   (dump lookup)
+
+== S20497 True Blood  [tier C] · gap 4  keys: True Blood  years 2008-2013  15 files / 0 collections
+   split: the KEPT half of the P-046 split — moved out -> S104092 "True Blood (2010)"; S104093 "True Blood: Tainted Love (2011)"; re-identify what stayed
+   flags: #505 label-ambiguous [Pending] item 31693 — True Blood v2 001-014 are single issues, not collections
+   folders: [14] IDW\True Blood\True Blood v2 · [1] IDW\True Blood
+   files:   [31691] True Blood - The Great Revelation (2008) (Minutemen-ReZone).cbr (29pp) | [31693] True Blood v2 001 (2012) (3 Covers) (Digital) (Zone-Empire).cbr (26pp)
+            [31694] True Blood v2 002 (2012) (Digital) (Zone-Empire).cbr (24pp) | [31695] True Blood v2 003 (2012) (Digital) (Zone-Empire).cbr (25pp)
+            [31696] True Blood v2 004 (2012) (Digital) (Son Of Anarchy-Novus).cbr (25pp) | [31697] True Blood v2 005 (2012) (2 covers) (Digital) (Son Of Anarchy-Novus).cbr (25pp)
+            [31698] True Blood v2 006 (2012) (2 covers) (Digital) (fixed) (Son Of Anarchy-Novus).cbr (25pp) | [31699] True Blood v2 007 (2012) (Digital) (K6DVR-Empire).cbr (25pp)
+            [31700] True Blood v2 008 (2013) (Digital) (K6DVR-Empire).cbr (25pp) | [31701] True Blood v2 009 (2013) (Digital) (K6DVR-Empire).cbr (25pp)
+            [31702] True Blood v2 010 (2013) (Digital) (K6-Empire).cbr (26pp) | [31703] True Blood v2 011 (2013) (2 covers) (Digital) (K6-Empire).cbr (27pp)
+            [31704] True Blood v2 012 (2013) (Digital) (K6-Empire).cbr (25pp) | [31705] True Blood v2 013 (2013) (Digital) (K6-Empire).cbr (27pp)
+            [31706] True Blood v2 014 (2013) (F) (Digital) (K6-Empire).cbr (26pp)
+   ours:    ladder 1-14
+   CV linked:      vol 49195 "True Blood" 2012 IDW Publishing 14 issues; cached #1-14 (14); yearΔ 4; ratio 14/14 = 1.00; no judged range; v1 per-file: same volume on 15/15 files
+   CV candidates:  (= linked) · 32697 "True Blood" 2010 IDW Publishing 6 s93 · 39211 "True Blood" 2011 IDW Publishing 3 s90 · 39120 "True Blood: Tainted Love" 2011 IDW Publishing 6 s76 · 42929 "True Blood: French Quarter" 2011 IDW Publishing 6 s76 · 62099 "True Blood" 2011 Panini Verlag 3 s75 · 78888 "True Blood Omnibus" 2014 IDW Publishing 1 issue 473682 s74   (v1 search)
+   CV local rip:   (= linked) · 32697 "True Blood" 2010 IDW Publishing 6 · 39211 "True Blood" 2011 IDW Publishing 3 · 62099 "True Blood" 2011 Panini Verlag 3   (rip lookup)
+   GCD per-file:   series 65845 "True Blood" 2012-2013 IDW [was ongoing series] 14 on 14/15 files; methods numx14
+   GCD dump:       (= per-file) · 51583 "True Blood" 2010-2011 IDW [] 6 · 60454 "True Blood" [de] 2011-? Panini Deutschland [] 5 · 61167 "True Blood" 2011-2013 IDW [] 6 · 151916 "True Blood" [fr] 2011-? Bragelonne [] 1 · 77794 "True Blood" 2013-2014 IDW [] 3   (dump lookup)
+   bridges:        gcd 65845 -> LOCG 108674 "True Blood" support 14
+
+== S104071 Bliss (2013)  [tier B]   keys: Bliss (2013)  years 2013-2013  1 files / 0 collections
+   split run: "Bliss (2013)" run=- (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [1] Webcomics and Strips\Bliss (2013)
+   files:   [113995] Bliss (2013) (DCP Webrips).cbr (313pp)
+   CV per-file (v1): vol 20840 "Bliss Alley" 1997 Image 2 on 1/1 files
+   CV local rip:   (= per-file) · 78399 "Bliss" 2006 Hero Universe 1 issue 471461 (via our own name without the filing suffix "Bliss") · 128906 "Bliss" 2020 Image 8 (via our own name without the filing suffix "Bliss") · 137707 "Bliss" 2021 Image 1 issue 872923 (via our own name without the filing suffix "Bliss")   (rip lookup)
+   GCD dump:       162083 "Bliss" 2020-2021 Image [] 8 (via our own name without the filing suffix "Bliss") · 66883 "Bliss" [en-gb] 1961-1961 City Magazines [] 2 (via our own name without the filing suffix "Bliss") · 24822 "Bliss Alley" 1997-1997 Image [] 2 (via CV name "Bliss Alley")   (dump lookup)
+
+== S2923 Bliss  [tier B]   keys: Bliss  years 2020-2021  1 files / 0 collections
+   split: the KEPT half of the P-046 split — moved out -> S104071 "Bliss (2013)"; re-identify what stayed
+   folders: [1] Image\Bliss (2020)
+   files:   [36099] Bliss (2021) (Digital) (Zone-Empire).cbr (185pp)
+   ours:    ComicInfo Series: "Bliss"x1; ComicInfo Publisher: "Image"x1
+   CV linked:      vol 128906 "Bliss" 2020 Image 8 issues; cached #1-8 (8); yearΔ 0; ratio 0/8; no judged range
+   CV candidates:  (= linked) · 20840 "Bliss Alley" 1997 Image 2 s96 · 78399 "Bliss" 2006 Hero Universe 1 issue 471461 s93 · 24529 "Metallic Bliss" 1994 Unknown Publisher 4 s73 · 1708 "Meet Miss Bliss" 1955 Marvel 4 s68 · 137707 "Bliss" 2021 Image 1 issue 872923 s58 · 140161 "Lucky Luke: Swiss Bliss" 2021 Europe Comics 1 issue 894630 s25   (v1 search)
+   CV local rip:   (= linked) · 137707 "Bliss" 2021 Image 1 issue 872923 · 78399 "Bliss" 2006 Hero Universe 1 issue 471461 · 20840 "Bliss Alley" 1997 Image 2 (via CV candidate name "Bliss Alley") · 24529 "Metallic Bliss" 1994 Unknown Publisher 4 (via CV candidate name "Metallic Bliss")   (rip lookup)
+   GCD dump:       162083 "Bliss" 2020-2021 Image [] 8 · 66883 "Bliss" [en-gb] 1961-1961 City Magazines [] 2 · 24822 "Bliss Alley" 1997-1997 Image [] 2 (via CV candidate name "Bliss Alley") · 24724 "Metallic Bliss" 1994-1994 Silver Tongue [] 3 (via CV candidate name "Metallic Bliss")   (dump lookup)
+
+== S66280 Winterworld  [tier A]   keys: Winterworld (1987)  years 1987-1988  4 files / 1 collections
+   split run: "Winterworld (1987)" run={"cv": 6829, "gcd": 7347} (new shelf from P-046) — seed the S line from these ids, then verify them
+   folders: [3] IDW\Winterworld\Winterworld · [1] IDW\Winterworld
+   files:   [32029] COL Winterworld (2009) (Digital-HD) (Bean-Empire).cbz (154pp) | [32026] WinterWorld 001 (1987) (Bchry-DCP).cbz (27pp) | [32027] WinterWorld 002 (1988) (Bchry-DCP).cbz (27pp)
+            [32028] WinterWorld 003 (1988) (Bchry-DCP).cbz (29pp)
+   ours:    ladder 1-3; judged item 32029 #1-3 conf 0.95
+   GCD says: [32029] gcd_reprint 1461528: s7347 Winterworld (1987) #1-3 [7 stories]
+   CV linked:      vol 6829 "Winterworld" 1987 Eclipse 3 issues; cached #1-3 (3); yearΔ 0; ratio 3/3 = 1.00; 1 of 1 judged fit
+   CV per-file (v1): vol 6829 "Winterworld" 1987 Eclipse 3 on 3/4 files · vol 74900 "Winterworld" 2014 IDW Publishing ? on 1/4 files
+   CV local rip:   (= linked) · 162892 "Winterworld" 2021 Aleta Ediciones 1 issue 1099657   (rip lookup)
+   GCD per-file:   series 7347 "Winterworld" 1987-1988 Eclipse [limited series] 3 on 3/4 files; methods numx3
+   GCD dump:       (= per-file) · 92717 "Winterworld" 2011-2015 IDW [] 2 · 81962 "Winterworld" 2014-2015 IDW [] 8 · 224800 "Winterworld" 2014-? IDW [] 1   (dump lookup)
+   bridges:        gcd 7347 -> LOCG 113487 "Winterworld" support 3
+
+== S21724 Winterworld  [tier A]   keys: Winterworld | Winterworld (2014)  years 2014-2015  8 files / 0 collections
+   split: the KEPT half of the P-046 split — moved out -> S66280 "Winterworld (1987)"; re-identify what stayed
+   flags: #536 label-ambiguous [Pending] item 32030 — Winterworld v2 000-007 are single issues, not collections
+   folders: [8] IDW\Winterworld\Winterworld v2
+   files:   [32030] Winterworld v2 000 (2015) (digital-Empire).cbr (32pp) | [32031] Winterworld v2 001 (2014) (digital-Empire).cbr (23pp)
+            [32032] Winterworld v2 002 (2014) (digital-Empire).cbr (23pp) | [32033] Winterworld v2 003 (2014) (digital) (CompetentRipper-Empire).cbr (24pp)
+            [32034] Winterworld v2 004 (2014) (digital) (CompetentRipper-Empire).cbr (24pp) | [32035] Winterworld v2 005 (2014) (2 covers) (digital-Empire).cbr (24pp)
+            [32036] Winterworld v2 006 (2015) (digital-Empire).cbr (22pp) | [32037] Winterworld v2 007 (2015) (digital-Empire).cbr (23pp)
+   ours:    ladder 0-7
+   CV linked:      vol 74900 "Winterworld" 2014 IDW Publishing ? issues; cached #0-7 (8); yearΔ 0; ratio 8/? = 1.00; no judged range; v1 per-file: same volume on 8/8 files
+   CV candidates:  (= linked) · 162892 "Winterworld" 2021 Aleta Ediciones ? s75 · 6829 "Winterworld" 1987 Eclipse ? s75 · 81499 "Winterworld: The Stranded" 2015 IDW Publishing ? s73 · 82118 "Winterworld: Frozen Fleet" 2015 IDW Publishing ? s73 · 78889 "Winterworld: La Nina" 2014 IDW Publishing ? s73 · 85607 "Winterworld: The Mechanic's Song" 2015 IDW Publishing ? s72   (v1 search)
+   CV local rip:   (= linked) · 162892 "Winterworld" 2021 Aleta Ediciones 1 issue 1099657 · 6829 "Winterworld" 1987 Eclipse 3   (rip lookup)
+   GCD per-file:   series 81962 "Winterworld" 2014-2015 IDW [] 8 on 8/8 files; methods numx8
+   GCD dump:       (= per-file) · 224800 "Winterworld" 2014-? IDW [] 1 · 92717 "Winterworld" 2011-2015 IDW [] 2 · 7347 "Winterworld" 1987-1988 Eclipse [] 3   (dump lookup)
+   bridges:        gcd 81962 -> LOCG 113487 "Winterworld" support 8
+
+== S241 A Slight Case of Murder and Other Stories  [tier B]   keys: A Slight Case of Murder and Other Stories  years 2021-2021  2 files / 1 collections
+   folders: [1] Fantagraphics\The EC Artists' Library (2012) · [1] Fantagraphics\_EC Comics
+   files:   [25005] COL The EC Artists' Library v30 - A Slight Case of Murder and Other Stories (2021) (Digital) (Bean-Empire).cbz (232pp)
+            [25975] A Slight Case of Murder and Other Stories (2021) (Digital) (Bean-Empire).cbz (232pp)
+   ours:    ComicInfo Series: "A Slight Case of Murder and Other Stories"x2; ComicInfo Publisher: "Fantagraphics"x2
+   GCD says: [25005] gcd_reprint 2186961: s784 Haunt of Fear (1950) #15-19, #22-25, #27 [10 stories] · s761 Tales from the Crypt (1950) #32-34, #36, #40-41, #43, #46 [8 stories] · s12404 Vault of Horror (1950) #27-28, #30, #32-33 [5 stories] · s1152 Impact (1955) #1, #4-5 [3 stories]
+   CV linked:      vol 133141 "A Slight Case of Murder and Other Stories" 2021 Fantagraphics 1 issues issue 824233; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 1/2 files
+   CV candidates:  (= linked) · 47841 "Armed Garden and Other Stories" 2011 Fantagraphics 1 issue 329687 s59 · 62081 "Lost Women and Other Stories" 1988 Fantagraphics 1 issue 406023 s51 · 69598 "Recipe for Disaster and Other Stories" 1998 Fantagraphics 1 issue 435168 s51 · 54413 "The Fixer and Other Stories" 2009 Drawn & Quarterly 1 issue 371062 s43 · 42113 "Child's Life and Other Stories" 1998 ? 1 issue 286857 s40 · 55083 "Now, Endsville and Other Stories" 1993 Kitchen Sink 1 issue 375122 s38   (v1 search)
+   CV local rip:   (= linked) · 47841 "Armed Garden and Other Stories" 2011 Fantagraphics 1 issue 329687 (via CV candidate name "Armed Garden and Other Stories") · 62081 "Lost Women and Other Stories" 1988 Fantagraphics 1 issue 406023 (via CV candidate name "Lost Women and Other Stories")   (rip lookup)
+   GCD dump:       62045 "The Armed Garden and Other Stories" 2011-2011 Fantagraphics [] 1 (via CV candidate name "Armed Garden and Other Stories") · 56872 "The Lost Women and Other Stories" 1988-1988 Fantagraphics [] 1 (via CV candidate name "Lost Women and Other Stories")   (dump lookup)
+
+== S371 Accidents and Old Lace and Other Stories  [tier B]   keys: Accidents and Old Lace and Other Stories  years 2020-2021  2 files / 1 collections
+   folders: [1] Fantagraphics · [1] Fantagraphics\The EC Artists' Library (2012)
+   files:   [24820] Accidents and Old Lace and Other Stories (2020) (Digital) (Bean-Empire).cbz (237pp)
+            [25004] COL The EC Artists' Library v29 - Accidents and Old Lace and Other Stories (2020) (Digital) (Bean-Empire).cbz (237pp)
+   ours:    ComicInfo Series: "Accidents and Old Lace and Other Stories"x2; ComicInfo Publisher: "Fantagraphics"x2
+   GCD says: [25004] gcd_reprint 2169479: s761 Tales from the Crypt (1950) #39-46 [8 stories] · s784 Haunt of Fear (1950) #22-28 [7 stories] · s12404 Vault of Horror (1950) #34-40 [7 stories] · s1152 Impact (1955) #1-5 [5 stories]
+   CV linked:      vol 132197 "Accidents and Old Lace and Other Stories" 2020 Fantagraphics 1 issues issue 819387; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 47841 "Armed Garden and Other Stories" 2011 Fantagraphics 1 issue 329687 s59 · 49698 "When I'm Old and Other Stories" 2002 Alternative Comics 1 issue 340869 s49 · 64883 "When I'm Old and Other Stories" 2002 Alternative Comics 1 issue 415906 s49 · 57224 "Leather & Lace" 1992 Personality Comics 1 issue 386273 s40 · 42113 "Child's Life and Other Stories" 1998 ? 1 issue 286857 s40 · 100406 "Migawari Accidents" 1999 Shueisha 1 issue 589766 s36   (v1 search)
+   CV local rip:   (= linked) · 47841 "Armed Garden and Other Stories" 2011 Fantagraphics 1 issue 329687 (via CV candidate name "Armed Garden and Other Stories") · 49698 "When I'm Old and Other Stories" 2002 Alternative Comics 1 issue 340869 (via CV candidate name "When I'm Old and Other Stories") · 64883 "When I'm Old and Other Stories" 2002 Alternative Comics 1 issue 415906 (via CV candidate name "When I'm Old and Other Stories")   (rip lookup)
+   GCD dump:       62045 "The Armed Garden and Other Stories" 2011-2011 Fantagraphics [] 1 (via CV candidate name "Armed Garden and Other Stories") · 54528 "When I'm Old and Other Stories" 2003-2003 Alternative Comics [] 1 (via CV candidate name "When I'm Old and Other Stories")   (dump lookup)
+
+== S1461 Atom Bomb and Other Stories  [tier B]   keys: Atom Bomb and Other Stories  years 2019-2019  2 files / 1 collections
+   folders: [1] Fantagraphics\The EC Artists' Library (2012) · [1] Fantagraphics\_Wallace Wood
+   files:   [25001] COL The EC Artists' Library v26 - Atom Bomb and Other Stories (Wallace Wood) (2019) (Digital) (Bean-Empire).cbz (289pp)
+            [24545] Atom Bomb and Other Stories (2019) (Digital) (Bean-Empire).cbz (289pp)
+   ours:    ComicInfo Series: "Atom Bomb and Other Stories"x2; ComicInfo Publisher: "Fantagraphics"x2
+   GCD says: [25001] gcd_reprint 2035751: s762 Two-Fisted Tales (1950) #18-28, #30-35, #41 [18 stories] · s834 Frontline Combat (1951) #1-4, #6-10, #12-15 [13 stories] · s1149 Aces High (1955) #1-5 [5 stories] · s1692 Blazing Combat (1965) #3-4 [2 stories]
+   CV linked:      vol 122566 "Atom Bomb and Other Stories" 2019 Fantagraphics 1 issues issue 725815; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 1/2 files
+   CV candidates:  (= linked) · 47841 "Armed Garden and Other Stories" 2011 Fantagraphics 1 issue 329687 s69 · 54413 "The Fixer and Other Stories" 2009 Drawn & Quarterly 1 issue 371062 s53 · 42113 "Child's Life and Other Stories" 1998 ? 1 issue 286857 s50 · 6092 "Replacement God and Other Stories" 1997 Image 5 s44 · 49763 "The Bomb" 2007 A10 Comics 4 s39 · 69458 "The Bomb" 2008 Asylum Press 1 issue 434147 s39   (v1 search)
+   CV local rip:   (= linked) · 47841 "Armed Garden and Other Stories" 2011 Fantagraphics 1 issue 329687 (via CV candidate name "Armed Garden and Other Stories") · 54413 "The Fixer and Other Stories" 2009 Drawn & Quarterly 1 issue 371062 (via CV candidate name "The Fixer and Other Stories")   (rip lookup)
+   GCD dump:       62045 "The Armed Garden and Other Stories" 2011-2011 Fantagraphics [] 1 (via CV candidate name "Armed Garden and Other Stories") · 53560 "The Fixer and Other Stories" [en-ca] 2009-2009 Drawn & Quarterly [] 1 (via CV candidate name "The Fixer and Other Stories")   (dump lookup)
+
+== S7590 Girls  [tier C] · ratio 0.04  keys: Girls  years 2005-2014  2 files / 1 collections
+   folders: [1] Fantagraphics\_Jim Woodring · [1] Image\Girls (2011)
+   files:   [24774] 50 Girls 50 And Other Stories (2014) (Digital) (TLK-EMPIRE-HD).cbr (266pp) | [34243] COL Girls - The Complete Collection (2011) (Digital-TPB) (JK-Empire).cbz (654pp)
+   ours:    ladder 50
+   CV linked:      vol 18163 "Girls" 2005 Image 24 issues; cached #1-24 (24); yearΔ 0; ratio 1/24 = 0.04; no judged range; v1 per-file: same volume on 2/2 files
+   CV candidates:  (= linked) · 92535 "Girls" 2005 Image 4 s93 · 156895 "A Girls" 2004 Mag Garden 3 s77 · 111869 "Girls" 2018 Silver Sprocket 1 issue 674989 s43 · 145550 "Happy Birthday Fantagraphics" 2006 Fantagraphics 1 issue 951210 s34 · 59658 "Transformers Generations 2011" 2011 Million Publishing 2 s30 · 124116 "Usagi Yojimbo Fantagraphics Collection" 2017 Planeta DeAgostini 2 s0   (v1 search)
+   CV local rip:   (= linked) · 92535 "Girls" 2005 Image 4 · 156895 "A Girls" 2004 Mag Garden 3 · 111869 "Girls" 2018 Silver Sprocket 1 issue 674989   (rip lookup)
+   GCD dump:       18558 "Girls" 2005-2007 Image [] 24 · 200605 "Girls" 2005-? Image [] 4 · 121197 "Girls" [fr] 2006-2007 Delcourt [] 4 · 117102 "A Girls" [fr] 2010-2011 Soleil [] 3 · 126413 "Girls" 2018-2018 Silver Sprocket [] 1 · 60843 "Girls" [no] 1989-2002 Hjemmet / Egmont [] 326   (dump lookup)
+
+== S10258 Kamen's Kalamity and Other Stories  [tier B]   keys: Kamen's Kalamity and Other Stories  years 2024-2024  1 files / 0 collections
+   folders: [1] Fantagraphics
+   files:   [25118] Kamen's Kalamity and Other Stories (2024) (digital) (DrVink-DCP).cbz (259pp)
+   CV linked:      vol 161538 "Kamen's Kalamity and Other Stories" 2024 Fantagraphics 1 issues issue 1080662; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 47841 "Armed Garden and Other Stories" 2011 Fantagraphics 1 issue 329687 s64 · 62081 "Lost Women and Other Stories" 1988 Fantagraphics 1 issue 406023 s64 · 69617 "Reticent Heart and Other Stories" 1988 Fantagraphics 1 issue 435251 s64 · 66579 "Child of Tomorrow and Other Stories" 2013 Fantagraphics 1 issue 422552 s63 · 69598 "Recipe for Disaster and Other Stories" 1998 Fantagraphics 1 issue 435168 s63 · 42113 "Child's Life and Other Stories" 1998 ? 1 issue 286857 s49   (v1 search)
+   CV local rip:   (= linked) · 47841 "Armed Garden and Other Stories" 2011 Fantagraphics 1 issue 329687 (via CV candidate name "Armed Garden and Other Stories") · 62081 "Lost Women and Other Stories" 1988 Fantagraphics 1 issue 406023 (via CV candidate name "Lost Women and Other Stories")   (rip lookup)
+   GCD dump:       62045 "The Armed Garden and Other Stories" 2011-2011 Fantagraphics [] 1 (via CV candidate name "Armed Garden and Other Stories") · 56872 "The Lost Women and Other Stories" 1988-1988 Fantagraphics [] 1 (via CV candidate name "Lost Women and Other Stories")   (dump lookup)
+
+== S11252 Man and Superman and Other Stories  [tier B]   keys: Man and Superman and Other Stories  years 2020-2020  2 files / 1 collections
+   folders: [1] Fantagraphics · [1] Fantagraphics\The EC Artists' Library (2012)
+   files:   [25126] Man and Superman and Other Stories (2020) (Digital) (Bean-Empire).cbz (188pp)
+            [25002] COL The EC Artists' Library v27 - Man and Superman and Other Stories (Harvey Kurtzman) (2020) (Digital) (Bean-Empire).cbz (188pp)
+   ours:    ComicInfo Series: "Man and Superman and Other Stories"x2; ComicInfo Publisher: "Fantagraphics"x2
+   GCD says: [25002] gcd_reprint 2063711: s763 Weird Fantasy (1950) #13-17 [5 stories] · s764 Weird Science (1950) #12-15 [4 stories] · s836 Weird Science (1951) #5-7 [3 stories] · s759 Crime SuspenStories (1950) #1, #3 [2 stories]
+   CV linked:      vol 124661 "Man and Superman and Other Stories" 2020 Fantagraphics 1 issues issue 735457; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 47841 "Armed Garden and Other Stories" 2011 Fantagraphics 1 issue 329687 s63 · 55265 "The Push Man and Other Stories" 2007 Drawn & Quarterly 1 issue 376435 s57 · 62081 "Lost Women and Other Stories" 1988 Fantagraphics 1 issue 406023 s55 · 54413 "The Fixer and Other Stories" 2009 Drawn & Quarterly 1 issue 371062 s47 · 42113 "Child's Life and Other Stories" 1998 ? 1 issue 286857 s44 · 55083 "Now, Endsville and Other Stories" 1993 Kitchen Sink 1 issue 375122 s42   (v1 search)
+   CV local rip:   (= linked) · 47841 "Armed Garden and Other Stories" 2011 Fantagraphics 1 issue 329687 (via CV candidate name "Armed Garden and Other Stories") · 55265 "The Push Man and Other Stories" 2007 Drawn & Quarterly 1 issue 376435 (via CV candidate name "The Push Man and Other Stories")   (rip lookup)
+   GCD dump:       87453 "The Push Man and Other Stories" [en-ca] 2012-2012 Drawn & Quarterly [] 1 (via CV candidate name "The Push Man and Other Stories") · 62045 "The Armed Garden and Other Stories" 2011-2011 Fantagraphics [] 1 (via CV candidate name "Armed Garden and Other Stories") · 18527 "The Push Man and Other Stories" [en-ca] 2005-2005 Drawn & Quarterly [] 1 (via CV candidate name "The Push Man and Other Stories")   (dump lookup)
+
+== S19071 The Martian Monster and Other Stories  [tier B]   keys: The Martian Monster and Other Stories  years 2019-2019  1 files / 1 collections
+   folders: [1] Fantagraphics\The EC Artists' Library (2012)
+   files:   [24999] COL The EC Artists' Library v24 - The Martian Monster and Other Stories (Jack Kamen) (2019) (Digital) (Bean-Empire).cbz (178pp)
+   ours:    ComicInfo Series: "The Martian Monster and Other Stories"x1; ComicInfo Publisher: "Fantagraphics"x1
+   GCD says: [24999] gcd_reprint 1912061: s836 Weird Science (1951) #5-10 [6 stories] · s835 Weird Fantasy (1951) #6-10 [5 stories] · s763 Weird Fantasy (1950) #13-17 [5 stories] · s764 Weird Science (1950) #12-15 [4 stories]
+   CV linked:      vol 116718 "The Martian Monster and Other Stories" 2019 Fantagraphics 1 issues issue 698643; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 47841 "Armed Garden and Other Stories" 2011 Fantagraphics 1 issue 329687 s70 · 54413 "The Fixer and Other Stories" 2009 Drawn & Quarterly 1 issue 371062 s65 · 69598 "Recipe for Disaster and Other Stories" 1998 Fantagraphics 1 issue 435168 s65 · 62081 "Lost Women and Other Stories" 1988 Fantagraphics 1 issue 406023 s62 · 42113 "Child's Life and Other Stories" 1998 ? 1 issue 286857 s51 · 55083 "Now, Endsville and Other Stories" 1993 Kitchen Sink 1 issue 375122 s49   (v1 search)
+   CV local rip:   (= linked) · 47841 "Armed Garden and Other Stories" 2011 Fantagraphics 1 issue 329687 (via CV candidate name "Armed Garden and Other Stories") · 54413 "The Fixer and Other Stories" 2009 Drawn & Quarterly 1 issue 371062 (via CV candidate name "The Fixer and Other Stories")   (rip lookup)
+   GCD dump:       62045 "The Armed Garden and Other Stories" 2011-2011 Fantagraphics [] 1 (via CV candidate name "Armed Garden and Other Stories") · 53560 "The Fixer and Other Stories" [en-ca] 2009-2009 Drawn & Quarterly [] 1 (via CV candidate name "The Fixer and Other Stories")   (dump lookup)
+
+== S19963 The Woman Who Loved Life and Other Stories  [tier B]   keys: The Woman Who Loved Life and Other Stories  years 2019-2019  2 files / 1 collections
+   folders: [1] Fantagraphics\The EC Artists' Library (2012) · [1] Fantagraphics
+   files:   [25000] COL The EC Artists' Library v25 - Woman Who Loved Life and Other Stories (Johnny Craig) (2019) (Digital) (Bean-Empire).cbr (233pp)
+            [25221] The Woman Who Loved Life and Other Stories (2019) (Digital) (Bean-Empire).cbz (233pp)
+   ours:    ComicInfo Series: "The Woman Who Loved Life and Other Stories"x2; ComicInfo Publisher: "Fantagraphics"x2
+   GCD says: [25000] gcd_reprint 2016534: s594 Crime Patrol (1948) #7, #9, #13-16 [8 stories] · s12814 War Against Crime (1948) #1, #5-7, #9-11 [7 stories] · s760 The Crypt of Terror (1950) #17-19 [4 stories] · s682 Modern Love (1949) #2-3 [2 stories]
+   CV linked:      vol 121296 "The Woman Who Loved Life and Other Stories" 2019 Fantagraphics 1 issues issue 718799; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 1/2 files
+   CV candidates:  (= linked) · 42113 "Child's Life and Other Stories" 1998 ? 1 issue 286857 s48 · 36405 "The Man Who Loved Breasts" 2008 Top Shelf 1 issue 240302 s43 · 52090 "Doctor Who Special 2012" 2012 IDW Publishing 1 issue 356905 s33 · 29018 "Hansi: The Girl Who Loved The Swastika" 1973 Spire Christian Comics 1 issue 178537 s32 · 130166 "The Other Woman" 2020 Harlequin Comics 1 issue 797921 s23 · 138497 "The Other Woman" 2021 Harlequin Comics 1 issue 881576 s23   (v1 search)
+   CV local rip:   (= linked) · 36405 "The Man Who Loved Breasts" 2008 Top Shelf 1 issue 240302 (via CV candidate name "The Man Who Loved Breasts") · 42113 "Child's Life and Other Stories" 1998 ? 1 issue 286857 (via CV candidate name "Child's Life and Other Stories")   (rip lookup)
+   GCD dump:       41130 "The Man Who Loved Breasts" 2008-2008 Top Shelf [] 1 (via CV candidate name "The Man Who Loved Breasts") · 62522 "A Child's Life and Other Stories" 1998-1998 North Atlantic Books [] 1 (via CV candidate name "Child's Life and Other Stories")   (dump lookup)
+
+== S36038 Terror Train And Other Stories  [tier B]   keys: Terror Train and Other Stories  years 2020-2020  2 files / 1 collections
+   folders: [1] Fantagraphics · [1] Fantagraphics\The EC Artists' Library (2012)
+   files:   [25184] Terror Train and Other Stories (2020) (Digital) (Bean-Empire).cbz (329pp)
+            [25003] COL The EC Artists' Library v28 - Terror Train and Other Stories (Al Feldstein) (2020) (Digital) (Bean-Empire).cbz (329pp)
+   ours:    ComicInfo Series: "Terror Train and Other Stories"x2; ComicInfo Publisher: "Fantagraphics"x2
+   GCD says: [25003] gcd_reprint 2133397: s12814 War Against Crime (1948) #3-11 [10 stories] · s594 Crime Patrol (1948) #9-12, #14-16 [8 stories] · s761 Tales from the Crypt (1950) #20-23 [4 stories] · s12404 Vault of Horror (1950) #12-14, #16 [4 stories]
+   CV linked:      vol 128132 "Terror Train And Other Stories" 2020 Fantagraphics 1 issues issue 769904; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 29770 "Train Train" 2009 Digital Manga Publishing 3 s74 · 47841 "Armed Garden and Other Stories" 2011 Fantagraphics 1 issue 329687 s69 · 40410 "Train + Train" 2005 Go! Comi 6 s68 · 62081 "Lost Women and Other Stories" 1988 Fantagraphics 1 issue 406023 s61 · 54413 "The Fixer and Other Stories" 2009 Drawn & Quarterly 1 issue 371062 s53 · 42113 "Child's Life and Other Stories" 1998 ? 1 issue 286857 s50   (v1 search)
+   CV local rip:   (= linked) · 47841 "Armed Garden and Other Stories" 2011 Fantagraphics 1 issue 329687 (via CV candidate name "Armed Garden and Other Stories") · 29770 "Train Train" 2009 Digital Manga Publishing 3 (via CV candidate name "Train Train") · 40410 "Train + Train" 2005 Go! Comi 6 (via CV candidate name "Train Train")   (rip lookup)
+   GCD dump:       62045 "The Armed Garden and Other Stories" 2011-2011 Fantagraphics [] 1 (via CV candidate name "Armed Garden and Other Stories") · 52613 "Train + Train" 2007-2008 Go! Media Entertainment [] 6 (via CV candidate name "Train Train") · 99697 "Train Train" [de] 2007-2008 Egmont Ehapa [] 3 (via CV candidate name "Train Train")   (dump lookup)
+
+== S3612 Carmen Sandiego: The Chasing Paper Caper  [tier B]   keys: Carmen Sandiego - The Chasing Paper Caper  years 2020-2020  1 files / 0 collections
+   folders: [1] Graphic Novels\_Houghton Mifflin Harcourt\Carmen San Diego
+   files:   [26604] Carmen Sandiego - The Chasing Paper Caper (2019) (Digital) (Walkabout-Empire).cbz (136pp)
+   CV linked:      vol 130792 "Carmen Sandiego: The Chasing Paper Caper" 2020 Houghton Mifflin Harcourt 1 issues issue 805325; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 106742 "Carmen" 2017 Soleil 1 issue 644826 s55 · 157802 "Carmen" 2023 Éditions Glénat 1 issue 1052698 s55 · 118810 "Carmen Sandiego: The Sticky Rice Caper" 2019 Houghton Mifflin Harcourt 1 issue 707945 s53 · 121679 "Carmen Sandiego: The Fishy Treasure Caper" 2019 Houghton Mifflin Harcourt 1 issue 720893 s53 · 136962 "Carmen Sandiego: The Need For Speed Caper" 2021 Houghton Mifflin Harcourt 1 issue 862005 s52 · 11146 "Caper" 2003 DC Comics 12 s40   (v1 search)
+   CV local rip:   (= linked) · 106742 "Carmen" 2017 Soleil 1 issue 644826 (via CV candidate name "Carmen") · 157802 "Carmen" 2023 Éditions Glénat 1 issue 1052698 (via CV candidate name "Carmen") · 87501 "Carmen" 2015 Source Point Press 2 (via CV candidate name "Carmen")   (rip lookup)
+   GCD dump:       131127 "Carmen" [de] 2018-2018 Verlagshaus Jacoby & Stuart [] 1 (via CV candidate name "Carmen") · 194406 "Carmen" 2022-2022 Clover Press [] 1 (via CV candidate name "Carmen") · 219956 "Carmen" [fr] 2023-2023 Glénat [] 1 (via CV candidate name "Carmen") · 120886 "Carmen" [fr] 2012-2012 Delcourt [] 1 (via CV candidate name "Carmen") · 93044 "Carmen" 1995-1995 NBM [] 1 (via CV candidate name "Carmen") · 72222 "Carmen" [da-dk] 1985-1985 Interpresse [] 1 (via CV candidate name "Carmen")   (dump lookup)

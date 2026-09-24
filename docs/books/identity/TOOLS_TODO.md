@@ -193,3 +193,5 @@ inert merge-with (Grandville 7836->7834, Don Rosa 21191->68154); same root as TO
 `pending_join` naming the partner, NEVER a forced merge-with — check_identity must accept that and stop demanding the merge-with.
 The split lane can empty a one-file shelf onto a live join target (check_splits, since 9f2bfea5), so L-373's "lead lane" was never needed.
 **DONE 2026-09-24 (42 + 44b):** check_identity accepts a shared gcd when every shelf of the group joins, or is joined by, another member through `F <sid> split-needed | … join S<member>`.
+45. **`lookup.py --batch` passes only the FIRST WORD of a plain-name line** (R-123 reader, 2026-09-24): "Ghostbusters Get
+Real" was probed as "ghostbusters". `--issues` / `--gcd-issues` lines work. Fix the name-line parse (quote-aware or whole line).

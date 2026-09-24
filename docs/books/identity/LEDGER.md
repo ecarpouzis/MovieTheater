@@ -1974,3 +1974,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   through a SeriesKeyLink cv (TMNT Color Classics Micro Series -> CV 48762) needs a NEW TITLE per record, not just a year
   (P-046). A GN merged onto its web-serialized shorts (Colonel Weird S104036 -> S4038) nests them under an UNJUDGED span —
   audit_containment halts; write a `u` line (containment/decisions/S4038.txt) and wave_fix (wave 114).
+[L-382] pub:image pub:idw kind:trade-only kind:collected-line
+- R-123/R-124 (waves 115-116): Image deluxe / compendium / massive lines carry their OWN CV and GCD records (IHF Deluxe
+  106678 / 119101, Radiant Black Massive 216939) — probe the line name WITHOUT "Book NN". Benitez Lady Mechanika: GCD
+  splits the first mini by publisher (Aspen 54501 #0-3, Benitez 86916 #4-5) while CV keeps one volume 35855. IDW
+  Ghostbusters: every one-shot and trade has its own count-1 record on both legs, and v1 stamped CV 43066 on all of them.
+  Rat Queens trade line GCD 111005: roll-ups on rows #1-3 only. Spawn Origins Collection reprints only Spawn 1992 —
+  run-wins merge onto S15978 (reverses C-032); Prophet's run is GCD 63020, not the trade line 68348. The P-047 joins
+  emptied 15 one-file shelves onto their survivors (L-377 in practice).

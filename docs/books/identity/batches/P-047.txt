@@ -1,0 +1,273 @@
+## Conventions for this batch (29 shown of 82 matched; 381 in LEDGER.md; 15 shelf/shelves: pub:fantagraphics ×7 · pub:dark-horse ×5 · kind:collected-line ×3 · kind:trade-only ×3 · kind:new ×2 · kind:archive ×1 · pub:ec-archives ×1 · pub:idw ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-021] (7 shelf/shelves) pub:dark-horse pub:disney pub:dstlry pub:dynamite pub:fantagraphics pub:idw
+- The Disney folder is publisher-agnostic (Joe Books, Dark Horse, IDW, Dynamite, Fantagraphics, Yen Press on one
+  shelf) — the provider's publisher column is the only test. DSTLRY filenames' "(N covers)" is a cover count.
+[L-321] (7 shelf/shelves) kind:foreign kind:new pub:dark-horse pub:drawn-quarterly pub:fantagraphics pub:first-second sig:probe sig:split tier:D
+- TIER D (D-004..D-006): one CV volume per LINE vs one GCD row per BOOK is what cuts a tier-D folder into shelves
+  (Maakies, Black Moon Chronicles, Wunderwaffen, Ekho, Moebius Library) — `--issues <line volume>` resolves the whole
+  folder by subtitle; the reverse (GCD keeps the line, CV per book: Don Rosa Library, Complete Crepax, History
+  Comics) → cv=- on the S, per-book CV issues on the I. 2022-25 Fantagraphics / D&Q / First Second / Dark Horse
+  singletons are past the rip's horizon → GCD-only cv=- + provider-missing (~150 of 360). A GCD row with count 0 and a
+  "do not add issues" note naming its constituents IS the finding (R + split with those ids); a GCD row with zero
+  indexed issues but the right title still carries the S, the I takes `gcd=s<series>`. GCD splits a run at a mid-run
+  trademark retitle (Tommy Gun: Wizards 149904 / Machine Gun: Wizards 153050 vs CV's one 120928). LEAD RULING: when
+  the ONLY catalog record of a comic is a third-territory licence (a German Splitter edition of a French album whose
+  original is in neither catalog) link it at 0.7 + provider-missing — the review queue, not an applied identity —
+  so the web lane gets a concrete question instead of a refusal.
+[L-342] (7 shelf/shelves) pub:fantagraphics
+- Fantagraphics singletons are often ONE numbered row of a GCD line (EC Artists' Library, Freak Brothers Follies) while
+  CV mints a volume per book — probe the LINE name before provider-missing. A line spanning several works keeps its
+  own identity; a one-volume edition / omnibus of ONE run on its own shelf is a merge into the live run shelf (Bone,
+  Mask of Fudo, Tenement — R-065).
+[L-375] (7 shelf/shelves) pub:fantagraphics pub:oni sig:split
+- A split key that NORMALIZES to the items' CURRENT key moves nothing (checker and replay both pass it): respell with
+  vN (Usagi Yojimbo: The Crow v1 (2024), P-044) — extends L-336. GCD files Fantagraphics' Segar Popeye Sundays under bare
+  "Popeye" (179342) and the French magazine as "Métal Hurlant" with the accent (41897; its "bis" rows = CV "NNbis").
+  CV's Western Bugs Bunny splits at #220/221 (11508 / 31736) while GCD 12477 spans both. Rippers number EC's Weird
+  Fantasy 1-22 in publication order (files 001-005 = EC's 1950 #13-17). Oni Courtney Crumrin: CV 44811 is the 2012
+  monthly, not the 7-volume trade line. A one-book title CV holds twice (Gabrielle Bell 49698 / 64883) merges by
+  restating one side onto the other's cv (R-119).
+[L-013] (15 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (15 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-043] (15 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (15 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (15 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (15 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (15 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (15 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (15 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (15 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (15 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (15 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (15 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (15 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (15 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (15 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (15 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (15 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (15 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (15 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (15 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (15 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (15 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (15 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (15 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+
++53 more matched entries not shown: L-347, L-020, L-164, L-064, L-085, L-101, L-023, L-029, L-135, L-186, L-188, L-219, L-233, L-243, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-373, L-374, L-376, L-377, L-380, L-074, L-083, L-250, L-069, L-093, L-229, L-238, L-270, L-299, L-310, L-350, L-381, L-016, L-032, L-054, L-113, L-114 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S11814 Master Race and Other Stories  [split]  1 files / 0 collections  decided in R-122 (S)
+   decided: S 11814 cv=107952 gcd=- 0.9 | as read: CV 107952 "Master Race and Other Stories" (Fantagraphics 2018, 1, issue 654115) plus our own naming and year against a 240pp 2018 rip; GCD holds the book only as #21 of the EC Artists' Library line 69863 (row 1776839)
+   F 11814 split-needed | 25128 -> join S68158 — a second rip of S68158's v21 (item 24996: the same CV issue 654115 and GCD row 1776839, 240pp both); S68158 stores gcd=69863 with cv=-, so a split-lane join (L-377)
+   named: S68158 The EC Artists' Library  28 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Master Race and Other Stories" x1
+   groups (title x folder): 1
+   G1 "Master Race and Other Stories (2018) (Digital) (Bean-Empire)" in Fantagraphics — 1 file(s), pp 240-240; cv per-file 107952x1; gcd per-file 69863x1; key 'Master Race and Other Stories'
+      [25128] Master Race and Other Stories (2018) (Digital) (Bean-Empire).cbz (240pp)
+
+== S12316 Monsters of Metal - Krampus in Concert  [split]  1 files / 0 collections  decided in R-122 (S)
+   decided: S 12316 cv=- gcd=203061 0.9 | as read: the file's own EAN-13 0085930100723 is the UPC core of GCD 203061's issue barcodes and ComicInfo Publisher "Opus Comics" is that row's publisher; "Krampus in Concert" is a titled issue of the same Opus series whose shelf is S12315, joined below
+   F 12316 split-needed | 106885 -> join S12315 — the same Opus Comics series GCD 203061 (same barcode core 0085930100723) that S12315 stores (cv=- gcd=203061); cv=- on both sides, so the split-lane join (L-377) replaces the old forced merge-with and empties this one-file shelf
+   named: S12315 Monsters of Metal  2 files  keys: "Monsters of Metal"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S12317 "Monsters of Metal - My Bloody Valentine" 1f [shares gcd=203061 — S gcd=203061 (R-122 0.9)] keys: "Monsters of Metal - My Bloody Valentine"
+   keys now: "Monsters of Metal - Krampus in Concert" x1
+   groups (title x folder): 1
+   G1 "Monsters of Metal - Krampus in Concert (2022) (digital) (DrVink-HD-DCP)" in Misc\Monsters of Metal (2022) (Opus) — 1 file(s), pp 30-30; gcd per-file 203061x1; key 'Monsters of Metal - Krampus in Concert'
+      [106885] Monsters of Metal - Krampus in Concert (2022) (digital) (DrVink-HD-DCP).cbz (30pp)
+
+== S12317 Monsters of Metal - My Bloody Valentine  [split]  1 files / 0 collections  decided in R-122 (S)
+   decided: S 12317 cv=- gcd=203061 0.9 | as read: this file's EAN-13 is again 0085930100723, the UPC core of GCD 203061's issue barcodes, and ComicInfo says Opus Comics; "My Bloody Valentine" is a second titled issue of that series, whose shelf is S12315, joined below
+   F 12317 split-needed | 106886 -> join S12315 — the same Opus Comics series GCD 203061 (barcode core 0085930100723) that S12315 stores; cv=- on both sides, so the split-lane join (L-377) replaces R-119/D-016's inert merge-with=12316
+   named: S12315 Monsters of Metal  2 files  keys: "Monsters of Metal"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S12316 "Monsters of Metal - Krampus in Concert" 1f [shares gcd=203061 — S gcd=203061 (R-122 0.9)] keys: "Monsters of Metal - Krampus in Concert"
+   keys now: "Monsters of Metal - My Bloody Valentine" x1
+   groups (title x folder): 1
+   G1 "Monsters of Metal - My Bloody Valentine (2023) (2 covers) (digital) (DrVink-HD-DCP)" in Misc\Monsters of Metal (2022) (Opus) — 1 file(s), pp 31-31; gcd per-file 203061x1; key 'Monsters of Metal - My Bloody Valentine'
+      [106886] Monsters of Metal - My Bloody Valentine (2023) (2 covers) (digital) (DrVink-HD-DCP).cbz (31pp)
+
+== S15362 Serenity: The Shepherd’s Tale  [split]  1 files / 0 collections  decided in R-122 (S)
+   decided: S 15362 cv=35227 gcd=84943 0.9 | as read: the one book "Serenity - The Shepherds Tale (2010)" 56pp, barcode ISBN 9781595825612 = CV 35227 (Dark Horse 2010, 1, issue 232233) = GCD 84943 "Serenity: Firefly Class 03-K64" row #3 "The Shepherd's Tale"; 0.9 because it is a second rip of the line book S15358 holds, joined below
+   F 15362 split-needed | 13945 -> join S15358 — a second rip of S15358's Vol. 03 The Shepherd's Tale (same GCD 84943 row 1287526, same ISBN 9781595825612); S15358 stores the line gcd=84943 with cv=-, so the pair meets by the split-lane join (L-377), emptying this one-file shelf
+   named: S15358 Serenity - Firefly Class  4 files  keys: "Serenity - Firefly Class"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Serenity - The Shepherds Tale" x1
+   groups (title x folder): 1
+   G1 "Serenity - The Shepherds Tale (2010) (Minutemen-DTs)" in Dark Horse\Serenity\The Shepherds Tale (2010) — 1 file(s), pp 56-56; cv per-file 35227x1; gcd per-file 84943x1; key 'Serenity - The Shepherds Tale'
+      [13945] Serenity - The Shepherds Tale (2010) (Minutemen-DTs).cbz (56pp)
+
+== S18777 The High Cost of Dying and Other Stories  [split]  1 files / 0 collections  decided in R-122 (S)
+   decided: S 18777 cv=87949 gcd=- 0.9 | as read: CV 87949 "The High Cost of Dying and Other Stories" (Fantagraphics 2016, 1, issue 514536) plus our own naming and year against a 177pp 2016 rip; GCD holds the book only as #15 of the EC Artists' Library line 69863 (row 1536899)
+   F 18777 split-needed | 24162 -> join S68158 — a second rip of S68158's v15 (item 24990: the same CV issue 514536 and GCD row 1536899, 177pp both); S68158 stores gcd=69863 with cv=-, so a split-lane join (L-377)
+   named: S68158 The EC Artists' Library  28 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "The High Cost of Dying and Other Stories" x1
+   groups (title x folder): 1
+   G1 "The High Cost of Dying and Other Stories (2016) (Digital) (TLK-EMPIRE-HD)" in Fantagraphics — 1 file(s), pp 177-177; cv per-file 87949x1; gcd per-file 69863x1; key 'The High Cost of Dying and Other Stories'
+      [24162] The High Cost of Dying and Other Stories (2016) (Digital) (TLK-EMPIRE-HD).cbr (177pp)
+
+== S19142 The Million Year Picnic and Other Stories  [split]  1 files / 0 collections  decided in R-122 (S)
+   decided: S 19142 cv=97920 gcd=- 0.9 | as read: CV 97920 "The Million Year Picnic and Other Stories" (Fantagraphics 2017, 1, issue 575949) carries our filename and year exactly against a 220pp rip; GCD holds the book only as #18 of the EC Artists' Library line 69863 (row 1666527)
+   F 19142 split-needed | 23810 -> join S68158 — a second rip of S68158's v18 (item 24993: the same CV issue 575949 and GCD 69863 row 1666527, 220pp both); S68158 stores the line gcd=69863 with cv=-, so the pair meets by the split-lane join (L-377)
+   named: S68158 The EC Artists' Library  28 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "The Million Year Picnic and Other Stories" x1
+   groups (title x folder): 1
+   G1 "The Million Year Picnic and Other Stories (2017) (Digital) (Bean-Empire)" in EC Comics & Others Archives (Dark Horse)\Will Edler — 1 file(s), pp 220-220; cv per-file 97920x1; gcd per-file 69863x1; key 'The Million Year Picnic and Other Stories'
+      [23810] The Million Year Picnic and Other Stories (2017) (Digital) (Bean-Empire).cbz (220pp)
+
+== S19751 Theory of the Grain of Sand  [split]  1 files / 0 collections  decided in R-122 (S)
+   decided: S 19751 cv=96106 gcd=117236 0.9 | as read: our own file asserts the book — the EAN-13 on the page reads 9781631404894 and GCD issue 2768685, #[1] of series 117236 "The Obscure Cities" (IDW 2016, 128pp) titled "Theory of the Grain of Sand", prints that ISBN; ComicVine mints a volume per album (96106, IDW 2016); 0.9 because it is a second rip of the line book S19246 holds, joined below
+   F 19751 split-needed | 31981 -> join S19246 — a second rip of S19246's item 31624 (Vols. 10-11 Theory of the Grain of Sand, 2016, 134pp both, same GCD row 2768685); S19246 stores the line gcd=117236 with cv=-, so a split-lane join (L-377)
+   named: S19246 Obscure Cities - the Return of Captain Nemo  9 files  keys: "The Obscure Cities"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "The Theory of the Grain of Sand - The Obscure Cities Vols." x1
+   groups (title x folder): 1
+   G1 "The Theory of the Grain of Sand - The Obscure Cities Vols. 10 &" in IDW\The Theory of the Grain of Sand (2016) — 1 file(s), numbers 11, pp 134-134; cv per-file 96106x1; gcd per-file 117236x1; key 'The Theory of the Grain of Sand - The Obscure Cities Vols.'
+      [31981] The Theory of the Grain of Sand - The Obscure Cities Vols. 10 & 11 (2016) (c2c) (fylgja).cbz (134pp)
+
+== S19760 The Thing from the Grave and Other Stories  [split]  1 files / 0 collections  decided in R-122 (S)
+   decided: S 19760 cv=103273 gcd=- 0.9 | as read: CV 103273 "The Thing from the Grave and Other Stories" (Fantagraphics 2017, 1, issue 612109) plus our own naming and year against a 240pp 2017 rip; GCD holds the book only as #19 of the EC Artists' Library line 69863 (row 1724162)
+   F 19760 split-needed | 25218 -> join S68158 — a second rip of S68158's v19 (item 24994: the same CV issue 612109 and GCD row 1724162, 240pp both); S68158 stores gcd=69863 with cv=-, so a split-lane join (L-377)
+   named: S68158 The EC Artists' Library  28 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "The Thing from the Grave and Other Stories" x1
+   groups (title x folder): 1
+   G1 "The Thing from the Grave and Other Stories (2017) (Digital) (Bean-Empire)" in Fantagraphics — 1 file(s), pp 240-240; cv per-file 103273x1; gcd per-file 69863x1; key 'The Thing from the Grave and Other Stories'
+      [25218] The Thing from the Grave and Other Stories (2017) (Digital) (Bean-Empire).cbz (240pp)
+
+== S20150 Three for the Money and Other Stories  [split]  1 files / 0 collections  decided in R-122 (S)
+   decided: S 20150 cv=137525 gcd=- 0.9 | as read: CV 137525 "Three for the Money and Other Stories" (Fantagraphics 2021, 1, issue 869671) plus our own naming and year against a 240pp 2021 rip; GCD holds the book only as #31 of the EC Artists' Library line 69863 (row 2270040)
+   F 20150 split-needed | 25223 -> join S68158 — a second rip of S68158's v31 (item 25006: the same CV issue 869671 and GCD row 2270040, 240pp both); S68158 stores gcd=69863 with cv=-, so a split-lane join (L-377)
+   named: S68158 The EC Artists' Library  28 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Three for the Money and Other Stories" x1
+   groups (title x folder): 1
+   G1 "Three for the Money and Other Stories (2021) (Digital) (Bean-Empire)" in Fantagraphics — 1 file(s), pp 240-240; cv per-file 137525x1; gcd per-file 69863x1; key 'Three for the Money and Other Stories'
+      [25223] Three for the Money and Other Stories (2021) (Digital) (Bean-Empire).cbz (240pp)
+
+== S21191 Walt Disney Uncle Scrooge and Donald Duck  [split]  2 files / 2 collections  decided in R-122 (S)
+   decided: S 21191 cv=- gcd=82739 0.9 | as read: our two books are GCD 82739 "The Don Rosa Library" (Fantagraphics 2014-2018, 10) #9 (September 2018, 228pp, ISBN 978-1-68396-102-4, against our 223pp) and #10 "The Old Castle's Other Secret" (December 2018, 240pp, ISBN 978-1-68396-134-5, against our 234pp), ComicInfo Publisher "Fantagraphics" on both; ComicVine mints a volume per book (112364 / 115287), so cv is empty; 0.9 because the line's shelf is S68154, joined below
+   F 21191 split-needed | 20166, 20167 -> join S68154 — Vols. 09-10 of the same line GCD 82739 whose Vols. 01-08 S68154 holds and stores (cv=- gcd=82739); both sides are cv=-, so they meet by the split-lane join (L-377), emptying this shelf
+   N 21191 the stored CV 73601 (the 2014 FCBD giveaway, S21192's book) that R-117 called wrong-cv-link is already cleared on this shelf (stored cv none) — the F is spent
+   named: S68154 The Don Rosa Library - Uncle Scrooge and Donald Duck  8 files  keys: "The Don Rosa Library - Uncle Scrooge and Donald Duck"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S21192 "Walt Disney Uncle Scrooge and Donald Duck - A Matter of Serious Gravity" 1f [named S21192 in the decision's R/N lines — S gcd=80519 (R-063 0.95)] keys: "Walt Disney Uncle Scrooge and Donald Duck - A Matter of Serious Gravity"
+   keys now: "Walt Disney Uncle Scrooge and Donald Duck" x2
+   groups (title x folder): 1
+   G1 "The Don Rosa Library - Uncle Scrooge and Donald Duck" in Disney\_Donald Duck Family\The Don Rosa Library - Uncle Scrooge and Donald Duck (2014) (Fantagraphics) — 2 file(s), 2 COL, pp 223-234; cv per-file 112364x1, 115287x1; gcd per-file 82739x2; key 'Walt Disney Uncle Scrooge and Donald Duck'
+      [20166] COL The Don Rosa Library - Uncle Scrooge and Donald Duck Vol. 09 - The Three Caballeros Ride Again! (2018) (digital) (Salem-Empire).cbr (223pp)
+         own record cv 112364 / gcd s82739 "The Don Rosa Library" (issue 1825391) COLLECTS: gcd=64714 Picsou Magazine (1972) #333, #338, #340, #342-343, #345-347, #349, #384-391 · gcd=58267 Anders And & Co. (1949) (unnumbered) · gcd=56399 Aku Ankka (1951) (unnumbered) · gcd=11204 Walt Disney's Uncle Scrooge (2003) #321, #328, #332
+      [20167] COL The Don Rosa Library - Uncle Scrooge and Donald Duck Vol. 10 - The Old Castle's Other Secret (2018) (digital) (Salem-Empire).cbr (234pp)
+         own record cv 115287 / gcd s82739 "The Don Rosa Library" (issue 1873500) COLLECTS: gcd=58267 Anders And & Co. (1949) (unnumbered) · gcd=10562 Donald Duck & Co (1948) (unnumbered) · gcd=39153 Hall of Fame (2004) (unnumbered) · gcd=56399 Aku Ankka (1951) (unnumbered)
+
+== S3615 Carmen Sandiego: The Sticky Rice Caper  [split]  1 files / 0 collections  decided in R-122 (S)
+   decided: S 3615 cv=118810 gcd=145017 0.9 | as read: "Carmen Sandiego - The Sticky Rice Caper (2019)" 129pp = CV 118810 (HMH 2019, 1, issue 707945) = GCD 145017 #[1] row 1961277; 0.9 because the book belongs to the line whose shelf is S3613, joined below
+   F 3615 split-needed | 26607 -> join S3613 — book #[1] of the Houghton Mifflin line GCD 145017 that S3613 stores (restated cv=- gcd=145017); no shared cv (per-book CV volumes), so the split-lane join (L-377) replaces R-119's forced merge-with=3613
+   named: S3613 Carmen Sandiego: The Fishy Treasure Caper  1 files  keys: "Carmen Sandiego - The Fishy Treasure Caper"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S3612 "Carmen Sandiego: The Chasing Paper Caper" 1f [shares gcd=145017 — S cv=130792 gcd=145017 (B-033 0.9)] keys: "Carmen Sandiego - The Chasing Paper Caper"
+   keys now: "Carmen Sandiego - The Sticky Rice Caper" x1
+   groups (title x folder): 1
+   G1 "Carmen Sandiego - The Sticky Rice Caper (2019) (Digital) (Walkabout-Empire)" in Graphic Novels\_Houghton Mifflin Harcourt\Carmen San Diego — 1 file(s), pp 129-129; cv per-file 118810x1; gcd per-file 145017x1; key 'Carmen Sandiego - The Sticky Rice Caper'
+      [26607] Carmen Sandiego - The Sticky Rice Caper (2019) (Digital) (Walkabout-Empire).cbz (129pp)
+
+== S5213 Death Stand and Other Stories  [split]  1 files / 0 collections  decided in R-122 (S)
+   decided: S 5213 cv=111664 gcd=- 0.9 | as read: CV 111664 "Death Stand and Other Stories" (Fantagraphics 2018, 1, issue 674151) plus our own naming and year against a 277pp 2018 rip; GCD holds the book only as #22 of the EC Artists' Library line 69863 (row 1819506; GCD series 111664 is an unrelated French title)
+   F 5213 split-needed | 25978 -> join S68158 — a second rip of S68158's v22 (item 24997: the same CV issue 674151 and GCD row 1819506, 277pp both); S68158 stores gcd=69863 with cv=-, so a split-lane join (L-377)
+   named: S68158 The EC Artists' Library  28 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Death Stand and Other Stories" x1
+   groups (title x folder): 1
+   G1 "Death Stand and Other Stories (2018) (Digital) (Bean-Empire)" in Fantagraphics\Death Stand and Other Stories (2018) — 1 file(s), pp 277-277; cv per-file 111664x1; gcd per-file 69863x1; key 'Death Stand and Other Stories'
+      [25978] Death Stand and Other Stories (2018) (Digital) (Bean-Empire).cbz (277pp)
+
+== S6390 Fagin the Jew  [split]  1 files / 0 collections  decided in R-122 (S)
+   decided: S 6390 cv=71301 gcd=98084 0.95 | as read: "Fagin the Jew (tenth-anniversary edition) (2013, 2nd print)" 140pp = CV 71301 "Fagin the Jew" (Dark Horse 2013, 1, issue 443884) = GCD 98084 "Fagin the Jew [Second Edition]" (Dark Horse 2013, 1, row 1542373, 144pp, ISBN 978-1-61655-126-1): two legs on publisher, year and pages — correcting R-117's gcd=40684, which is the 2003 Random House first edition
+   F 6390 split-needed | 12957 -> join S21684 — the lead's ruling (L-377 list): the 2013 Dark Horse tenth-anniversary reissue is a second printing of the work whose first edition S21684 stores (CV 34805 / GCD 40684); per L-064 the shelf keeps the first edition and this book keeps its own records on its I line, emptying this one-file shelf
+   named: S21684 Fagin the Jew  1 files  keys: "Will Eisner - Fagin The Jew"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Fagin the Jew" x1
+   groups (title x folder): 1
+   G1 "Fagin the Jew (tenth-anniversary edition) (2013, 2nd print) (digital) (Son of Ultron II-Empire)" in Dark Horse\_Will Eisner — 1 file(s), pp 140-140; cv per-file 71301x1; gcd per-file 98084x1; key 'Fagin the Jew'
+      [12957] Fagin the Jew (tenth-anniversary edition) (2013, 2nd print) (digital) (Son of Ultron II-Empire).cbr (140pp)
+
+== S7834 Grandville Force Majeur  [split]  1 files / 1 collections  decided in R-122 (S)
+   decided: S 7834 cv=105757 gcd=42860 0.9 | as read: "Grandville v5 Force Majeure (2017)" 178pp (ComicInfo Dark Horse) = CV 105757 "Grandville Force Majeur" (Dark Horse 2017, 1, issue 634494) = GCD 42860 "Grandville" row 1746580 [5] Force Majeure (184pp, ISBN 978-1-50670-380-0); 0.9 because the album is book 5 of a line whose shelf is S7832, joined below
+   F 7834 split-needed | 14139 -> join S7832 — book [5] of the one Grandville album line GCD 42860 (row 1746580), which S7832 stores (restated cv=- gcd=42860); no shared cv, so a split-lane join (L-377) empties this one-file shelf
+   named: S7832 Grandville  3 files  keys: "Grandville" | "Grandville Bete Noire" | "Grandville Noel"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S7836 "Grandville Mon Amour" 1f [shares gcd=42860 — S cv=45517 gcd=42860 (R-122 0.9)] keys: "Grandville Mon Amour"
+   nearby: S7835 "Grandville Intégral" 1f [title+1 — S cv=136943 gcd=173208 (D-003 0.95)] keys: "Grandville Integral"
+   keys now: "Grandville Force Majeur" x1
+   groups (title x folder): 1
+   G1 "Grandville" in Dark Horse\Grandville — 1 file(s), 1 COL, pp 178-178; cv per-file 105757x1; gcd per-file 42860x1; key 'Grandville Force Majeur'
+      [14139] COL Grandville v5 Force Majeure (2017) (digital) (Mr Norrell-Empire).cbr (178pp)
+
+== S7836 Grandville Mon Amour  [split]  1 files / 1 collections  decided in R-122 (S)
+   decided: S 7836 cv=45517 gcd=42860 0.9 | as read: "Grandville v2 Mon Amour (2010)" 107pp = CV 45517 "Grandville Mon Amour" (Dark Horse 2010, 1, issue 313494) = GCD 42860 "Grandville" row 796672 [2] Mon Amour (112pp, ISBN 978-1-59582-574-2); 0.9 because the album is book 2 of a line whose shelf is S7832, joined below
+   F 7836 split-needed | 14136 -> join S7832 — book [2] of the one Grandville album line GCD 42860 (row 796672), which S7832 stores (restated cv=- gcd=42860) and holds books 1, 3 and 4 of; the pair shares no cv (ComicVine mints a volume per album), so they meet by the split-lane join (L-377), emptying this one-file shelf
+   N 7836 GCD row 796672's "gcd_reprint" roll-up (Sidekick 2010 #1, one story) is a short reprinted in the album, not a range it collects
+   named: S7832 Grandville  3 files  keys: "Grandville" | "Grandville Bete Noire" | "Grandville Noel"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S7834 "Grandville Force Majeur" 1f [shares gcd=42860 — S cv=105757 gcd=42860 (R-122 0.9)] keys: "Grandville Force Majeur"
+   nearby: S7835 "Grandville Intégral" 1f [title+1 — S cv=136943 gcd=173208 (D-003 0.95)] keys: "Grandville Integral"
+   keys now: "Grandville Mon Amour" x1
+   groups (title x folder): 1
+   G1 "Grandville" in Dark Horse\Grandville — 1 file(s), 1 COL, pp 107-107; cv per-file 45517x1; gcd per-file 42860x1; key 'Grandville Mon Amour'
+      [14136] COL Grandville v2 Mon Amour (2010).cbr (107pp)
+         own record cv 45517 / gcd s42860 "Grandville" (issue 796672) COLLECTS: gcd=54897 Sidekick (2010) #1
