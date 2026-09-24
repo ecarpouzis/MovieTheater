@@ -1,0 +1,1074 @@
+## Conventions for this batch (26 shown of 139 matched; 368 in LEDGER.md; 16 shelf/shelves: pub:dc ×16 · folder:vn-year ×13 · folder:events ×12 · folder:sequel-subfolder ×8 · folder:bucket ×5 · kind:foreign ×4 · kind:golden-age ×3 · kind:collected-line ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-210] (16 shelf/shelves) pub:dc sig:legacy-stamp sig:probe sig:stamp
+- The wrong-relaunch trap is near-universal on any DC title with 3+ relaunches (Green Arrow, Green Lantern, Harley
+  Quinn, Justice League, Legion, Lobo, Martian Manhunter, Doom Patrol): the matcher stamps the oldest legacy volume or
+  the largest/most-recent one across every sibling shelf; `lookup.py` by name + year recovers the true id.
+[L-348] (15 shelf/shelves) pub:dc sig:probe
+- DC (R-073): the rip holds count-1 CV trade records under "Title: Subtitle" (Justice League Vol. 1-8, Teen Titans 2014,
+  Young Justice 2019, Doom Rising, Oz Effect) — probe the SUBTITLE with --contains. One-shots filed by event name ("Flash
+  Special" = the 50th anniversary special, "Joker: Last Laugh Secret Files"). CV keeps Daring New Adventures of Supergirl
+  #1-13 + Supergirl #14-23 as ONE volume (3113); GCD splits 2626 / 2722 — a C line per leg.
+[L-366] (15 shelf/shelves) pub:dc sig:split
+- A split-out shelf INHERITS its parent's per-file legacy stamp on 100% of its files — every new vN shelf needs F
+  wrong-cv-link for that stamp. "#DC Events" New 52 folders hide ANNUALS too ("Batman Annual # 3" = the New 52 annual
+  shelf, not the monthly). DC "Bronze Age" trade lines: CV naming is swapped — 107354 (named "Omnibus", 2 issues) is the
+  TPB line, 98324 (3 issues) the Omnibus; only the dates tell them apart. C lines written in an ITEM batch (X-) survive
+  a later shelf re-read (R-): a revisit must restate or retract them explicitly (R-104, S5272).
+[L-368] (15 shelf/shelves) pub:dc sig:split
+- R vs S + split (lead, wave 95): a CO-EQUAL second run on a shelf means no identity can stand until the split — R +
+  split-needed (JL 3000/3001, JLA: Year One). A few MISFILED books that belong to another live run are residue — the
+  shelf keeps its S, plus `F <sid> split-needed | items -> join S<run>` (Batman 2011 holding two 2016 trades). A
+  separate annual series is its own run and takes its own key. DC "#DC Events" "(New 52) Title NNN (2024)
+  (digital-mobile)" re-rips are DUPLICATES, not another run. GCD's New 52 / Rebirth / 2021 trade lines are HC/TPB twins
+  (JL 76777/76126, Nightwing 179196/201017, Harley 88183/88152, Injustice 2 117796/123824); X-batch 0.7 I lines often
+  cited the Panini / Urban / Televisa row. A collected-series id stored as a shelf's GCD leg makes a judged range look
+  impossible (signal c) — point the S at the run. Backup-feature reprint lines get an N, not a C. Digital-first DC series
+  take the print GCD series as their second leg at 0.9 (R-105/R-107).
+[L-212] (14 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-211] (13 shelf/shelves) folder:vn-year pub:dc sig:collision sig:stale-flag
+- An `overlap-in-series` flag on a franchise with many `vN` sibling shelves (Deathstroke, Harley Quinn, Green Lantern,
+  Justice League, JLD, Legion, Lobo) describes the CROSS-SHELF Vol. 01 collision, not conflation on the one shelf —
+  confirmed 14 of 14 in C-013..C-015; the stale-flag note must name the sibling shelf.
+[L-237] (13 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+[L-245] (13 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-363] (13 shelf/shelves) pub:dc
+- DC New 52 trade lines on GCD are HC/TPB TWIN series (BTDK 78638/78639, Batwoman 66358/71298); CV holds per-trade
+  count-1 volumes that subtitle probes often miss. The retitle cut shows on GCD only (Fury of Firestorm: The Nuclear
+  Men = 61180 #0-12 + 171997 #13-20 = CV 42987's 21); L.E.G.I.O.N. / R.E.B.E.L.S. are split into year series. A "#DC
+  Events" shelf holding #41-45 of a New 52 title is a FRAGMENT of the run shelf — merge it in. Deathstroke the
+  Terminator 1991 = CV 9645 (#0-60) while GCD splits it 10465 (#1-40) / 15127 The Hunted / 15128 (#48-60); the 1991
+  trades (GCD 88153) collect #1-34 (R-098/R-099).
+[L-011] (12 shelf/shelves) folder:events pub:dc
+- DC event folders: the leading number is a READING-ORDER position, and the same book is filed again under its own
+  title folder — n issues × 2 files is one run.
+[L-015] (12 shelf/shelves) folder:events pub:dc
+- DC `#DC Events` read-order folders hold a SECOND rip of issues that also live on the title's own shelf — the
+  source of nearly every DC ratio 2.00; residue, not a second run. Event umbrellas (GCD "Convergence", 9) get
+  handed to two-issue tie-in shelves — the hull shape.
+[L-040] (12 shelf/shelves) folder:bucket folder:events pub:dc pub:papercutz-nbm pub:scout pub:titan pub:valiant sig:twin
+- NBM / Papercutz album lines and Scout one-shots carry TWIN adjacent GCD rows for one book (120209/120210) —
+  cap at 0.9 and name both. Titan's Doctor Who "Year N" volumes number continuously across a Doctor (a ladder
+  starting at #6 is complete). A publisher's read-order crossover folder (Titan `Lost Dimension`, Valiant
+  `_Chronological Valiant`) = DC's `#DC Events` shape.
+[L-082] (12 shelf/shelves) pub:dc sig:comicinfo
+- A Glorith-HD rip's ComicInfo `Web` id CAN be a ComicVine ISSUE id of the stored volume (599834, DC 100-Page
+  Spectacular) — Glorith's Web ids are never GCD ids, but check them against the CV rip.
+[L-093] (12 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
+[L-195] (12 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- Trade SUBTITLES tell two same-title relaunches apart when the per-file matcher cannot (Batman Beyond 2015 = Brave
+  New Worlds / City of Yesterday / Wired for Death; 2016 = Escaping the Grave / Rise of the Demon / The Long Payback).
+[L-199] (12 shelf/shelves) folder:bucket folder:events pub:dc
+- DC's "#DC Events" chronology folders resolve once the cross-referenced-run pattern is seen: a crossover reprint
+  bucket or a tie-in folder filed adjacent to the main run takes the main run's identity with the tie-ins named.
+[L-214] (12 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp sig:twin
+- The wrong-relaunch / legacy-volume stamp ran at 70-95% of files on Midnighter, Mister Miracle, Robin, Nightwing,
+  Supergirl, Plastic Man and Suicide Squad shelves in C-016 — assume it on any DC relaunch shelf and verify by year.
+[L-242] (12 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-364] (12 shelf/shelves) pub:dc
+- DC (R-101): GCD's notes can disagree with GCD's own REPRINT ROLL-UP (Batgirl 2016 Son of Penguin: notes "#7-12",
+  roll-up #7-11) — the roll-up and the next volume's range decide; the packet flags RANGE CONTRADICTED only against
+  notes, so wrong judged ranges can hide without the flag. DC Vertigo: a complete short mini in a "vN" subfolder of a
+  Golden/Silver Age title's shelf (Witching Hour 1999, Weird War Tales 1997) is a CO-EQUAL run, not residue. "#DC
+  Events" New 52 read-order folders carry whole runs onto the pre-2011 shelf of the same title (Batgirl 2000). A retitle
+  that continues the numbering stays one run (L-212) even when both catalogues and the folders split it.
+[L-365] (12 shelf/shelves) pub:dc
+- DC "#DC Events" read-order rips named "Title NNN - Month Year" or "Title # NN" are NEW 52 issues whose numbers fall
+  inside the legacy ladder — a ladder check cannot see them; grep the filenames on any big legacy shelf (Batman 1940,
+  Birds of Prey 1999, Green Arrow 2001 all hid other runs). One-run trade lines (Deluxe Editions, the "Batman: Detective
+  Comics" line, R.I.P. Vol. 07, the Bronze Age omnibus) take the run's ids and merge into the run shelf. GCD notes can
+  typo the series year (Batman B&W Vol. 1 says "1986 series" for the 1996 mini). CV 19721 is "Azrael: Agent of the Bat"
+  (#47-100, the 1995 run's retitle); the 2009 relaunch is CV 28873 / GCD 39888 (R-103, P-035).
+[L-197] (11 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- The per-file matcher's "wrong RELAUNCH" trap: it stamps the LATER same-title volume onto files dated to the earlier
+  era by issue-number coincidence (Wonder Woman 2016, Batman 2016, JLA v2/v3, Firestorm, Hawk and Dove v5, Atari Force
+  v2, Adventure Comics 2010) — the tell is files whose years or numbers predate or exceed the stamped volume's own.
+[L-281] (16 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-052] (10 shelf/shelves) pub:dc sig:stamp sig:twin
+- The per-file CV matcher picks the LEGACY volume for every New 52 shelf (Batman 1940, Wonder Woman 1942, Nightwing
+  1996, Catwoman 1993) because it matched by issue number — the stored link on a 2011 shelf that names a 1940
+  volume is `wrong-cv-link`, the 2011 volume is in the rip.
+[L-124] (14 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-191] (14 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-272] (13 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+
++113 more matched entries not shown: L-175, L-367, L-220, L-222, L-290, L-064, L-085, L-101, L-206, L-207, L-255, L-310, L-113, L-193, L-016, L-018, L-031, L-032, L-051, L-114, L-162, L-198, L-260, L-263, L-291, L-337, L-194, L-330, L-007, L-065, L-099, L-123, L-217, L-262, L-055, L-059, L-128, L-181, L-202, L-203, L-205, L-215, L-216, L-218, L-254, L-257, L-329, L-336, L-097, L-252, L-269, L-274, L-288, L-293, L-352, L-354, L-014, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-256, L-258, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-299, L-309, L-314, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-060, L-139, L-150, L-223, L-228, L-234, L-261, L-343, L-360, L-074, L-083, L-250 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S65956 The Fury of Firestorm  [split]  93 files / 1 collections  decided in R-107 (S)
+   decided: S 65956 cv=3115 gcd=2628 0.9 | one run #1-92 across the 1987 retitle (lead ruling L-212): The Fury of Firestorm #1-64 = CV 3115 (DC 1982, 64, cached #1-64) = GCD 2628 (DC 1982-1987, 64), ComicInfo Count "64" x59; #65-92 "Firestorm, The Nuclear Man" (1987-09 .. 1989-10, the same "Firestorm v2 (1982)" folder, ComicInfo Count "92") continue the numbering the month after #64 (1987-07); ladder 1-54, 57-70, 72-92; 0.9 for the five annuals (their own records, below) and the New 52 trade 55117 that leaves by split
+   F 65956 split-needed | 55117 -> join S18658 — "COL The Fury of Firestorm - The Nuclear Men v01 - God Particle (2012)" 144pp, in its own folder "The Fury of Firestorm - The Nuclear Men v1 (2011)", collects the New 52 run CV 42987 / GCD 61180 #1-6; S18658 (S cv=42987 gcd=61180, R-099) holds that run's v02 and v03 trades
+   N 65956 the retitled half #65-92 is recorded by both providers under its own name: CV 3789 "Firestorm, the Nuclear Man" (DC 1987, 28, cached #65-92) and GCD 3357 "Firestorm the Nuclear Man" (1987-1990, 28), per-file 27/27; ComicInfo Web 28747 / 28868 / 29086 are CV 3789 issue ids; those records are the per-issue identity of #65-92, the shelf's stored ids stay 3115 / 2628
+   N 65956 the annuals: The Fury of Firestorm Annual #1-4 (items 55018-55021, 1983-1986) = CV 3196 "Fury of Firestorm Annual" (1983, 4, named from the rip) = GCD 2716 (1983-1986, 4); Annual #5 (54982, 1987) = CV 19313 "Firestorm Annual" issue 115927 = GCD 3356 row 42302 — the annual numbering also continues across the retitle
+   named: S18658 The Fury of Firestorm: The Nuclear Man  2 files  keys: "The Fury of Firestorm: The Nuclear Men"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "The Fury of Firestorm (1982)" x88 · "The Fury of Firestorm Annual (1982)" x4 · "The Fury of Firestorm - The Nuclear Men - God Particle (1982)" x1
+   groups (title x folder): 5
+   G1 "Firestorm - The Nuclear Man Annual" in DC\Firestorm\Firestorm v2 (1982) — 1 file(s), numbers 5, pp 40-40; cv per-file 19313x1; gcd per-file 3356x1; key 'The Fury of Firestorm (1982)'
+      [54982] Firestorm - The Nuclear Man Annual, 1987-07-21 (#05) (digital) (Glorith-HD).cbz (40pp)
+   G2 "Firestorm, The Nuclear Man" in DC\Firestorm\Firestorm v2 (1982) — 27 file(s), numbers 65-70, 72-92, pp 23-25; cv per-file 3789x27; gcd per-file 3357x27; key 'The Fury of Firestorm (1982)'
+      e.g. Firestorm, The Nuclear Man, 1987-09-00 (#65) (digital) (Glorith-Novus-HD).cbz
+        54991 #65 24pp · 54992 #67 24pp · 54993 #66 24pp · 54994 #68 24pp · 54995 #69 24pp · 54996 #70 24pp · 54997 #72 24pp · 54998 #73 24pp · 54999 #74 24pp · 55000 #75 24pp · 55001 #76 25pp
+        55002 #80 24pp · 55003 #77 23pp · 55004 #78 24pp · 55005 #79 24pp · 55006 #81 24pp · 55007 #82 24pp · 55008 #83 24pp · 55009 #84 24pp · 55010 #85 24pp · 55011 #86 24pp · 55012 #87 24pp
+        55013 #88 24pp · 55014 #89 24pp · 55015 #90 24pp · 55016 #91 23pp · 55017 #92 23pp
+   G3 "The Fury of Firestorm" in DC\Firestorm\Firestorm v2 (1982) — 60 file(s), numbers 1-3, 6-54, 57-64, pp 23-40; cv per-file 3115x60; gcd per-file 2628x60; key 'The Fury of Firestorm (1982)'
+      e.g. The Fury of Firestorm, 1982-04-00 (#01) (digital) (Glorith-Novus-HD).cbz
+        55022 #1 26pp · 55023 #2 27pp · 55024 #3 26pp · 55025 #6 25pp · 55026 #7 25pp · 55027 #8 25pp · 55028 #9 25pp · 55029 #10 24pp · 55030 #11 25pp · 55031 #12 26pp · 55032 #13 25pp
+        55033 #14 25pp · 55034 #15 26pp · 55035 #16 23pp · 55036 #17 25pp · 55037 #18 25pp · 55039 #20 25pp · 55040 #21 25pp · 55041 #22 25pp · 55042 #23 25pp · 55043 #24 26pp · 55044 #25 25pp
+        55045 #26 24pp · 55046 #27 26pp · 55047 #28 25pp · 55048 #29 25pp · 55049 #30 25pp · 55050 #31 25pp · 55051 #32 25pp · 55052 #33 25pp · 55053 #34 24pp · 55054 #35 25pp · 55055 #36 25pp
+        55056 #37 25pp · 55057 #38 25pp · 55058 #39 23pp · 55059 #40 25pp · 55060 #41 25pp · 55061 #42 24pp · 55062 #43 25pp · 55063 #44 24pp · 55064 #45 24pp · 55065 #46 24pp · 55066 #47 24pp
+        55067 #48 24pp · 55068 #49 24pp · 55069 #50 40pp · 55070 #51 24pp · 55071 #52 24pp · 55072 #53 24pp · 55073 #54 25pp · 55074 #57 24pp · 55075 #58 24pp · 55076 #59 24pp · 55077 #60 24pp
+        55078 #61 25pp · 55079 #62 24pp · 55080 #63 24pp · 55081 #64 24pp
+      [55038] The Fury of Firestorm, 1983-11-00 (#19) v2 (digital) (Glorith-Novus-HD).cbz (24pp)
+   G4 "The Fury of Firestorm Annual" in DC\Firestorm\Firestorm v2 (1982) — 4 file(s), numbers 1-4, pp 40-43; cv per-file 3115x4; gcd per-file 2628x4; key 'The Fury of Firestorm Annual (1982)'
+      e.g. The Fury of Firestorm Annual, 1983-01-00 (#01) (digital) (Glorith-Novus-HD).cbz
+        55018 #01 43pp · 55019 #02 42pp · 55020 #03 41pp · 55021 #4 40pp
+   G5 "The Fury of Firestorm - The Nuclear Men" in DC\Firestorm\The Fury of Firestorm - The Nuclear Men v1 (2011) — 1 file(s), 1 COL, pp 144-144; cv per-file 52140x1; gcd per-file 78091x1; key 'The Fury of Firestorm - The Nuclear Men - God Particle (1982)'
+      [55117] COL The Fury of Firestorm - The Nuclear Men v01 - God Particle (2012) (Digital) (Zone-Empire).cbr (144pp)
+         own record cv 52140 / gcd s78091 "The Fury of Firestorm: The Nuclear Men" (issue 1171054) COLLECTS: gcd=61180 The Fury of Firestorm: The Nuclear Men (2011) #1-6
+
+== S36640 Tales of the Green Lantern Corps  [split]  9 files / 3 collections  decided in R-105 (R)
+   decided: R 36640 | signal d (label-ambiguous #452) led to the contents: this shelf is three co-equal records — the 1981 mini #1-3 (items 15389-15391, CV 3077 / GCD 2590, 3), the 1985-1987 Annuals #1-3 (15436, 15461, 15483, CV 21324 "Tales of the Green Lantern Corps Annual" 3 / GCD 33216) and the 2009-2010 TPB line Vol. 01-03 (65629-65631, CV 39681 / GCD 34167, 3); only Vol. 01 collects the mini (GCD 575313: s2590 #1-3 + GL 1960 backups) — Vol. 02 and Vol. 03 are GL 1960 backup stories (#127-190, #201-205) and Annual #1, two whole trades of a different record, so the mini's S would hand them its identity (the residue ruling)
+   F 36640 split-needed | three runs: mini "Tales of the Green Lantern Corps (1981)" 15389-15391 (cv=3077 gcd=2590); "Tales of the Green Lantern Corps Annual (1985)" 15436, 15461, 15483 (cv=21324 gcd=33216); TPB line "Tales of the Green Lantern Corps (2009)" 65629-65631 (cv=39681 gcd=34167)
+   N 36640 flag #452 label-ambiguous: the three TPBs 65629-65631 have second rips 65471-65473 on another shelf — duplicates, answered, not a conflation
+   N 65629 Vol. 01 also reprints Green Lantern (1960) backup features from #148, #151-154, #161-162, #164-167 (s1448) — backups inside those issues, not whole issues, so no C line
+   N 65630 Vol. 02 otherwise reprints Green Lantern (1960) backup features from #127, #168-190 (s1448, 17 stories) — gapped backups, no C line
+   N 65631 Vol. 03 reprints Green Lantern (1960) #201-205 backup features (s1448, 11 stories) and The Green Lantern Corps (1986) #206 — backups, no C line
+   nearby: S64823 "Green Lantern" 364f [shares gcd=1448 (collected by item 65629) — S cv=2839 gcd=1448 (R-057 0.95)] keys: "Green Lantern (1960)" | "Green Lantern Corps v1 (1986)" | "Green Lantern v2 (1960)"
+   nearby: S103836 "The Green Lantern Corps (1986)" 47f [shares gcd=3148 (collected by item 65631) — S cv=3600 gcd=3148 (R-054 1.0)] keys: "The Green Lantern Corps (1986)"
+   nearby: S94800 "Tales of the Green Lantern Corps" 3f [shares cv=39681, shares gcd=34167 — S cv=39681 gcd=34167 (B-012 0.9)] keys: "Tales of the Green Lantern Corps v1 (1981)"
+   nearby: S102410 "Tales of the Green Lantern Corps Annual" 2f [shares cv=21324, shares gcd=33216 (collected by item 65630) — S cv=21324 gcd=33216 (R-103 0.9)] keys: "Tales of the Green Lantern Corps Annual"
+   keys now: "Tales of the Green Lantern Corps" x6 · "Tales of The Green Lantern Corps" x3
+   groups (title x folder): 7
+   G1 "Tales of the Green Lantern Corps 01  Challenge" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\020 The Krona War — 1 file(s), numbers 1, pp 29-29; cv per-file 3077x1; gcd per-file 2590x1; key 'Tales of the Green Lantern Corps'
+      [15389] 01 Tales of the Green Lantern Corps 01  Challenge.cbz (29pp)
+   G2 "Tales of the Green Lantern Corps 02  Defeat" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\020 The Krona War — 1 file(s), numbers 2, pp 29-29; cv per-file 3077x1; gcd per-file 2590x1; key 'Tales of the Green Lantern Corps'
+      [15390] 02 Tales of the Green Lantern Corps 02  Defeat.cbz (29pp)
+   G3 "Tales of the Green Lantern Corps 03  Triumph" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\020 The Krona War — 1 file(s), numbers 3, pp 29-29; cv per-file 3077x1; gcd per-file 2590x1; key 'Tales of the Green Lantern Corps'
+      [15391] 03 Tales of the Green Lantern Corps 03  Triumph.cbz (29pp)
+   G4 "Tales of the Green Lantern Corps Annual 01  Those Who Worship Evils Might" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\025 Successor — 1 file(s), pp 40-40; cv per-file 3077x1; key 'Tales of the Green Lantern Corps'
+      [15436] 05 Tales of the Green Lantern Corps Annual 01  Those Who Worship Evils Might.cbz (40pp)
+   G5 "Tales of the Green Lantern Corps Annual 02  Escapist Entertainment" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\028 Setting Up Shop — 1 file(s), pp 41-41; cv per-file 3077x1; key 'Tales of the Green Lantern Corps'
+      [15461] 02 Tales of the Green Lantern Corps Annual 02  Escapist Entertainment.cbz (41pp)
+   G6 "Tales of the Green Lantern Corps Annual 03  In Blackest Night" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\031 I Think, Therefore I Am — 1 file(s), pp 39-39; cv per-file 3077x1; key 'Tales of the Green Lantern Corps'
+      [15483] 07 Tales of the Green Lantern Corps Annual 03  In Blackest Night.cbz (39pp)
+   G7 "Tales of The Green Lantern Corps" in DC\_Green Lantern\_Trades, Minis and One-shots\Tales of The Green Lantern Corp — 3 file(s), 3 COL, pp 144-158; cv per-file 39681x3; gcd per-file 34167x3; key 'Tales of The Green Lantern Corps'
+      [65629] COL Tales of The Green Lantern Corps Vol. 01 (2009-01) TPB (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (158pp)
+         own record cv 39681 / gcd s34167 "Tales of the Green Lantern Corps" (issue 575313) COLLECTS: gcd=1448 Green Lantern (1960) #148, #151-154, #161-162, #164-167 · gcd=2590 Tales of the Green Lantern Corps (1981) #1-3
+      [65630] COL Tales of The Green Lantern Corps Vol. 02 (2010-01) TPB (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (144pp)
+         own record cv 39681 / gcd s34167 "Tales of the Green Lantern Corps" (issue 705458) COLLECTS: gcd=1448 Green Lantern (1960) #127, #168-169, #171-173, #177, #179-183, #185, #187-190 · gcd=33216 Tales of the Green Lantern Corps Annual (1985) #1
+      [65631] COL Tales of The Green Lantern Corps Vol. 03 (2010-05) TPB (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (146pp)
+         own record cv 39681 / gcd s34167 "Tales of the Green Lantern Corps" (issue 793559) COLLECTS: gcd=1448 Green Lantern (1960) #201-205 · gcd=3148 The Green Lantern Corps (1986) #206
+
+== S10125 Justice League Beyond  [split]  27 files / 3 collections  decided in R-105 (R)
+   decided: R 10125 | signal e (27 files) opened the folder: the 24 files are "Justice League Beyond 2.0 001-024 (2013-2014)" in "Justice League Beyond 2.0 (2013)" = CV 66176 "Justice League Beyond 2.0" (DC 2013, 24, #1-8 titled "Power Struggle, Part 1-8"), not the stored CV 45573 "Justice League Beyond" (DC 2012, 25 — the Batman Beyond Unlimited feature); the three trades in "Justice League Beyond v1 (2012)" are Konstriction and In Gods We Trust (the 2012 series, two whole trades) and Power Struggle (2.0 #1-8) — two records, co-equal under the residue ruling
+   F 10125 split-needed | 67001, 67002 -> "Justice League Beyond (2012)" (cv=45573; GCD indexes only the trades); the 24 "Justice League Beyond 2.0" chapters and 67003 Power Struggle stay as cv=66176
+   F 10125 wrong-cv-link | stored CV 45573 is Justice League Beyond (2012); the 24 chapters here are Justice League Beyond 2.0 = CV 66176
+   F 10125 needs-fetch cv=66176 | CV 66176 "Justice League Beyond 2.0" 2013 is named from the rip only
+   F 10125 provider-missing | GCD indexes neither digital series, only the three trades as one-book series (110365, 110541, 110634)
+   N 10125 the judged ranges #1-10 (0.65) on 67001 and #11-24 (0.75) on 67002 are unverified — GCD 1658410 says Konstriction reprints Batman Beyond Unlimited #1-11 (the print home of the 2012 chapters); no C written for them
+   nearby: S2088 "Batman Beyond Unlimited" 18f [shares gcd=63749 (collected by item 67001) — S cv=46147 gcd=63749 (A-009 0.95)] keys: "Batman Beyond Unlimited"
+   keys now: "Justice League Beyond" x27
+   groups (title x folder): 2
+   G1 "Justice League Beyond 2.0" in DC\_Justice League\_Completed Series\Justice League Beyond\Justice League Beyond 2.0 (2013) — 24 file(s), numbers 1-24, pp 24-24; cv per-file 45573x24; key 'Justice League Beyond'
+      e.g. Justice League Beyond 2.0 001 (2013) (digital) (Son of Ultron-Empire).cbr
+        66977 #1 2013 24pp · 66978 #2 2013 24pp · 66979 #3 2013 24pp · 66980 #4 2013 24pp · 66981 #5 2013 24pp · 66982 #6 2013 24pp · 66983 #7 2013 24pp · 66984 #8 2013 24pp · 66985 #9 2013 24pp
+        66986 #10 2013 24pp · 66987 #11 2014 24pp · 66988 #12 2014 24pp · 66989 #13 2014 24pp · 66990 #14 2014 24pp · 66991 #15 2014 24pp · 66992 #16 2014 24pp · 66993 #17 2014 24pp
+        66994 #18 2014 24pp · 66995 #19 2014 24pp · 66996 #20 2014 24pp · 66997 #21 2014 24pp · 66998 #22 2014 24pp · 66999 #23 2014 24pp · 67000 #24 2014 24pp
+   G2 "Justice League Beyond" in DC\_Justice League\_Completed Series\Justice League Beyond\Justice League Beyond v1 (2012) — 3 file(s), 3 COL, pp 177-211; cv per-file 45573x3; gcd per-file 110365x1, 110541x1, 110634x1; key 'Justice League Beyond'
+      [67001] COL Justice League Beyond Vol. 01 - Konstriction (2013) (digital) (Son of Ultron-Empire).cbr (177pp)
+         own record cv 45573 / gcd s110365 "Justice League Beyond: Konstriction" (issue 1658410) COLLECTS: gcd=63749 Batman Beyond Unlimited (2012) #1-11
+      [67002] COL Justice League Beyond Vol. 02 - In Gods We Trust (2014) (digital) (Son of Ultron-Empire).cbr (211pp)
+      [67003] COL Justice League Beyond Vol. 03 - Power Struggle (2014) (digital) (Son of Ultron-Empire).cbr (178pp)
+
+== S16815 Static  [split]  49 files / 0 collections  decided in R-105 (S)
+   decided: S 16815 cv=5215 gcd=4925 0.9 | signal e (49 files) is benign: Static 001-045 (1993-1997) in "Static v1 (1993)" = CV 5215 (DC 1993, 45) = GCD 4925 (1993-1997, 45); ladder 1-45 complete; 0.9 for the two Milestone-revival trades (one book each of Static: Season One 2021 and Shadows of Dakota 2023, their own records) and two foreign books that leave by split
+   F 16815 split-needed | 69915 -> join S16896 — "Strange Adventures 010 (1951)" 45pp (folder "Strange Adventures v1 (1950)") is Strange Adventures (1950) #10, S16896's run (cv=1328); 14629 -> "Static (2021)" in its own name — Dark Horse's 117pp Static (GCD 172380 / CV 136076, ComicInfo Publisher Dark Horse), not Milestone's
+   named: S16896 Strange Adventures  33 files  keys: "Strange Adventures" | "Strange Adventures v1 (1950)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S100041 "Strange Adventures" 4f [title — S cv=6344 gcd=6173 (B-013 0.95)] keys: "Strange Adventures v2 (1999)"
+   nearby: S16897 "Strange Adventures Director's Cut" 1f [title — S cv=131614 gcd=165913 (D-003 0.95)] keys: "Strange Adventures (2020-)"
+   nearby: S94706 "Strange Adventures" 1f [title — S cv=71454 gcd=110480 (B-013 0.9)] keys: "Strange Adventures v4 (2011)"
+   nearby: S100042 "Strange Adventures" 1f [title — S cv=125426 gcd=156766 (B-013 0.95)] keys: "Strange Adventures v5 (2020)"
+   nearby: S9745 "JSA: Strange Adventures" 12f [title+1 — S cv=23539 gcd=11338 (C-015 0.95)] keys: "JSA: Strange Adventures"
+   nearby: S16817 "Static Shock: Trial By Fire" 3f [title+1 — S cv=27151 gcd=15143 (C-016 1.0)] keys: "Static Shock" | "Static Shock!: Trial by Fire"
+   nearby: S16818 "Static Shock" 1f [title+1 — S cv=42603 gcd=60837 (B-013 0.95)] keys: "Static Shock - Supercharged"
+   nearby: S16910 "Strange Love Adventures" 1f [title+1 — S cv=141611 gcd=180850 (A-010 0.95)] keys: "Strange Love Adventures"
+   keys now: "Static" x49
+   groups (title x folder): 5
+   G1 "Static - Season" in DC\_Static\Static (Season One) v1 (2021) — 1 file(s), numbers 1, pp 196-196; cv per-file 136076x1; gcd per-file 185804x1; key 'Static'
+      [69993] Static - Season 01 (2022) (digital) (Son of Ultron-Empire).cbr (196pp)
+   G2 "Static - Shadows of Dakota (2023) (digital) (Son of Ultron-Empire)" in DC\_Static\Static - Shadows of Dakota v1 (2023) — 1 file(s), pp 207-207; cv per-file 5215x1; gcd per-file 208616x1; key 'Static'
+      [69994] Static - Shadows of Dakota (2023) (digital) (Son of Ultron-Empire).cbr (207pp)
+   G3 "Static" in DC\_Static\Static v1 (1993) — 45 file(s), numbers 1-45, pp 21-39; cv per-file 5215x45; gcd per-file 4925x45; key 'Static'
+      e.g. Static 001 (1993) (Digital) (Shadowcat-Empire).cbz
+        69802 #1 1993 25pp · 69803 #2 1993 23pp · 69804 #3 1993 23pp · 69805 #4 1993 23pp · 69806 #5 1993 23pp · 69807 #6 1993 21pp · 69808 #7 1994 22pp · 69809 #8 1994 22pp · 69810 #9 1994 23pp
+        69811 #10 1994 23pp · 69812 #11 1994 23pp · 69813 #12 1994 23pp · 69814 #13 1994 22pp · 69815 #14 1994 39pp · 69816 #15 1994 23pp · 69817 #16 1994 24pp · 69818 #17 1994 22pp
+        69819 #18 1994 23pp · 69820 #19 1995 23pp · 69821 #20 1995 23pp · 69822 #21 1995 24pp · 69823 #22 1995 23pp · 69824 #23 1995 23pp · 69825 #24 1995 23pp · 69826 #25 1995 38pp
+        69827 #26 1995 22pp · 69828 #27 1995 22pp · 69829 #28 1995 22pp · 69830 #29 1995 22pp · 69831 #30 1995 23pp · 69832 #31 1996 23pp · 69833 #32 1996 23pp · 69834 #33 1996 24pp
+        69835 #34 1996 23pp · 69836 #35 1996 23pp · 69837 #36 1996 23pp · 69838 #37 1996 23pp · 69839 #38 1996 23pp · 69840 #39 1996 23pp · 69841 #40 1996 23pp · 69842 #41 1996 23pp
+        69843 #42 1996 23pp · 69844 #43 1997 23pp · 69845 #44 1997 23pp · 69846 #45 1997 23pp
+   G4 "Strange Adventures" in DC\_Strange Adventures\Strange Adventures v1 (1950) — 1 file(s), numbers 10, pp 45-45; cv per-file 5215x1; gcd per-file 4925x1; key 'Static'
+      [69915] Strange Adventures 010 (1951) (Digital) (Shadowcat-Empire).cbz (45pp)
+   G5 "Static (2021) (digital) (Son of Ultron-Empire)" in Dark Horse\Static (2021) — 1 file(s), pp 117-117; cv per-file 5215x1; gcd per-file 172380x1; key 'Static'
+      [14629] Static (2021) (digital) (Son of Ultron-Empire).cbr (117pp)
+
+== S10137 Justice League International  [split]  14 files / 1 collections  decided in R-105 (S)
+   decided: S 10137 cv=42590 gcd=59309 0.9 | signal b (per-file CV 3798, JLI 1987, on 14/14) is the wrong-relaunch stamp: "Justice League International 001-006 - November 2011 … April 2012" + #7-12 (2012) = CV 42590 (DC 2011, 12, cached #1-12) = GCD 59309 (2011-2012, 12) — ladder 1-12 complete, plus Vol. 01 The Signal Masters (#1-6); 0.9 until the one 1987 issue below leaves
+   F 10137 split-needed | 16795 -> join S94641 — "Justice League International 007.cbr" 39pp in "05 Justice league - A New Beginning" is the 1987 series' #7, the first issue under the International title; S94641 is that run (S cv=3798 gcd=3366; its v01 collects Justice League #1-6 + JLI #7)
+   F 10137 wrong-cv-link | per-file CV 3798 (JLI 1987) on 14/14 files is the stamp
+   named: S94641 Justice League International  6 files  keys: "Justice League International v1 (1987)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S94642 "Justice League International" 18f [title — S cv=4966 gcd=4646 (B-012 0.95)] keys: "Justice League International v2 (1993)"
+   nearby: S4198 "Convergence Justice League International" 2f [title+1 — S cv=81339 gcd=88325 (A-007 0.95)] keys: "Convergence - Justice League International"
+   keys now: "Justice League International" x7 · "Justice League International v3 (2011)" x7
+   groups (title x folder): 3
+   G1 "Justice League International" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\05 Justice league - A New Beginning — 1 file(s), numbers 7, pp 39-39; cv per-file 3798x1; key 'Justice League International'
+      [16795] Justice League International 007.cbr (39pp)
+   G2 "Justice League International" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\022 Justice League International Vol. 1 The Signal Masters — 6 file(s), numbers 1-6, pp 24-35; cv per-file 3798x6; key 'Justice League International'
+      [18216] Justice League International 001 - November 2011.cbr (24pp)
+      [18217] Justice League International 002 - December 2011.cbr (35pp)
+      [18218] Justice League International 003 - January 2012.cbr (34pp)
+      [18219] Justice League International 004 - February 2012.cbr (35pp)
+      [18220] Justice League International 005 - March 2012.cbr (35pp)
+      [18221] Justice League International 006 - April 2012.cbr (34pp)
+   G3 "Justice League International" in DC\_Justice League\_Completed Series\Justice League International v3 (2011) — 7 file(s), 1 COL, numbers 7-12, pp 21-141; cv per-file 3798x6, 55320x1; gcd per-file 59309x6, 67624x1; key 'Justice League International v3 (2011)'
+      e.g. Justice League International 007 (2012) (Digital -) (AnHeroGold-Empire).cbz
+        67083 #7 2012 21pp · 67084 #8 2012 23pp · 67085 #9 2012 24pp · 67086 #10 2012 25pp · 67087 #11 2012 23pp · 67088 #12 2012 23pp
+      [67089] COL Justice League International Vol. 01 - The Signal Masters (2012) (Digital) (Zone-Empire).cbr (141pp)
+         own record cv 55320 / gcd s67624 "Justice League International" (issue 978699) COLLECTS: gcd=59309 Justice League International (2011) #1-6  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+
+== S65356 Nightwing  [split]  116 files / 9 collections  decided in R-105 (S)
+   decided: S 65356 cv=5755 gcd=5516 0.9 | signals e (116 files) and f (S103500 merged) are benign for the run, and the L-365 grep finds the foreign files: "Nightwing 000.5, 065-153 (1997-2009)", the 80-Page Giant, Annual 02 (2007), #1,000,000, the Countdown Ra's al Ghul chapters #138-139 and Vol. 01-08 + the Year One deluxe (GCD roll-ups s5516 #1-8 … #61-70, #101-106) = CV 5755 (DC 1996, 155, cached #1-153) = GCD 5516 (1996-2009, 154); the a-I signal (5755 on an I line of S5149, "Deadpool by Skottie Young") is that other shelf's error, not this one's; 0.9 for the #0.5 / 80-Page Giant / Annual and The Flash Plus Nightwing one-shot, plus the five later-run issues that leave by split
+   F 65356 split-needed | 18264 ("010 Nightwing 008 - June 2012", Night of the Owls folder) -> join S94871 (Nightwing 2011, cv=42720); 19073, 19076 ("Nightwing 005/006 (2016)", Night of the Monster Men folder) and 61476, 61477 ("Nightwing 084/085 (2021)", Fear State tie-ins folder) -> join S94872 (Nightwing 2016, cv=92569 gcd=104515)
+   F 65356 misfiled | item 69963 "The Flash Plus Nightwing 001 (1996)" 39pp is its own one-shot (filed in "_Trades, Minis and One-shots\The Flash Plus Nightwing (1996)"), not an issue of the run
+   N 65356 the a-I signal: an I line on S5149 (Deadpool by Skottie Young) names cv 5755, a VOLUME id of this run used where an issue id belongs — that line should be checked by the lead
+   named: S94871 Nightwing  24 files  keys: "Nightwing" | "Nightwing v3 (2011)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S94872 Nightwing  178 files  keys: "Nightwing - Rebirth" | "Nightwing v4 (2016)" | "Nightwing: The Rebirth Deluxe Edition - Book 1" | "Nightwing: The Rebirth Deluxe Edition - Book 2" | "Nightwing: The Rebirth Deluxe Edition - Book 3"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S2613 "Birds of Prey" 108f [shares gcd=6991 (collected by item 68568) — S cv=6498 gcd=6991 (R-106 0.9)] keys: "Birds of Prey (1999)" | "Birds of Prey - Batgirl-Catwoman" | "Birds of Prey - Catwoman-Oracle" | "Birds of Prey - Futures End" (+4 more: lookup.py --shelf 2613)
+   nearby: S12958 "Nightwing and Huntress" 4f [shares gcd=14159 (collected by item 68566) — S cv=20240 gcd=14159 (A-009 0.95)] keys: "Nightwing - Huntress"
+   nearby: S5149 "Deadpool by Skottie Young" 3f [named S5149 in the decision's R/N lines — S gcd=162795 (C-043 0.9)] keys: "Deadpool by Skottie Young"
+   nearby: S12961 "Nightwing: Our Worlds at War" 3f [shares gcd=11690 (collected by item 68570) — S cv=30760 gcd=11690 (B-008 0.95)] keys: "Nightwing - Our Worlds at War"
+   nearby: S12964 "Nightwing: The Target" 1f [shares gcd=17843 (collected by item 68570) — S cv=32358 gcd=17843 (B-013 0.95)] keys: "Nightwing - The Target"
+   nearby: S6788 "Flash Plus" 1f [title — S cv=28597 gcd=5738 (D-003 0.95)] keys: "Flash plus Nightwing"
+   nearby: S12966 "Nightwing 2021 Annual" 1f [title — S cv=140259 gcd=178497 (B-013 0.95)] keys: "Nightwing 2021 Annual (2021)"
+   nearby: S12969 "Nightwing: Uncovered" 5f [title+1 — S cv=159702 gcd=215152 (C-016 0.95)] keys: "Nightwing Uncovered"
+   keys now: "Nightwing v2 (1996)" x102 · "Nightwing (1996)" x12 · "Nightwing The Resurrection of Ra s Al Ghul part" x2
+   groups (title x folder): 22
+   G1 "09b Nightwing" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\01 bruce wayne murderer — 1 file(s), numbers 67, pp 24-24; cv per-file 5755x1; key 'Nightwing (1996)'
+      [16977] 09b Nightwing #067.cbr (24pp)
+   G2 "Nightwing" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\01 bruce wayne murderer — 2 file(s), numbers 65-66, pp 24-24; cv per-file 5755x2; key 'Nightwing (1996)'
+      [16970] 03 Nightwing #065.cbr (24pp)
+      [16976] 09 Nightwing #066.cbr (24pp)
+   G3 "Nightwing" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\02 bruce wayne fugitive — 2 file(s), numbers 68-69, pp 24-25; cv per-file 5755x2; key 'Nightwing (1996)'
+      [16988] 06 Nightwing 68.cbr (24pp)
+      [16991] 09 Nightwing 69.cbr (25pp)
+   G4 "Nightwing_118__2006" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Nightwing - Brothers in blood — 1 file(s), numbers 118, pp 24-24; cv per-file 5755x1; key 'Nightwing v2 (1996)'
+      [17495] Nightwing_118__2006_.cbr (24pp)
+   G5 "Nightwing_119__2006" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Nightwing - Brothers in blood — 1 file(s), numbers 119, pp 24-24; cv per-file 5755x1; key 'Nightwing v2 (1996)'
+      [17496] Nightwing_119__2006_.cbr (24pp)
+   G6 "Nightwing_120__2006" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Nightwing - Brothers in blood — 1 file(s), numbers 120, pp 24-24; cv per-file 5755x1; key 'Nightwing v2 (1996)'
+      [17497] Nightwing_120__2006_.cbr (24pp)
+   G7 "Nightwing_121__2006" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Nightwing - Brothers in blood — 1 file(s), numbers 121, pp 24-24; cv per-file 5755x1; key 'Nightwing v2 (1996)'
+      [17498] Nightwing_121__2006_.cbr (24pp)
+   G8 "Nightwing_122__2006" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Nightwing - Brothers in blood — 1 file(s), numbers 122, pp 24-24; cv per-file 5755x1; key 'Nightwing v2 (1996)'
+      [17499] Nightwing_122__2006_.cbr (24pp)
+   G9 "138__Nightwing__The_Resurrection_of_Ra_s_Al_Ghul_part_2__Countdown_24" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\83 Resurrection of Ra's Al Ghul — 1 file(s), numbers 2, pp 34-34; key 'Nightwing The Resurrection of Ra s Al Ghul part'
+      [17683] 02 138__Nightwing__The_Resurrection_of_Ra_s_Al_Ghul_part_2__Countdown_24_.cbr (34pp)
+   G10 "139__Nightwing__The_Resurrection_of_Ra_s_Al_Ghul_part_6__Countdown_20" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\83 Resurrection of Ra's Al Ghul — 1 file(s), numbers 6, pp 24-24; key 'Nightwing The Resurrection of Ra s Al Ghul part'
+      [17687] 06 139__Nightwing__The_Resurrection_of_Ra_s_Al_Ghul_part_6__Countdown_20_.cbr (24pp)
+   G11 "Nightwing_152__2009___GCPD-OCD" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\96 Final Crisis Aftermath\01 RIP Tie-ins — 1 file(s), numbers 152, pp 29-29; cv per-file 5755x1; key 'Nightwing v2 (1996)'
+      [17877] 05 Nightwing_152__2009___GCPD-OCD_.cbr (29pp)
+   G12 "Nightwing_153__2009___GreenRacer-DCP" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\96 Final Crisis Aftermath\01 RIP Tie-ins — 1 file(s), numbers 153, pp 27-27; cv per-file 5755x1; key 'Nightwing v2 (1996)'
+      [17878] 06 Nightwing_153__2009___GreenRacer-DCP_.cbr (27pp)
+   G13 "Nightwing (1998-11) 1000000 (digital) (OkC.O.M.P.U.T.O.-Novus)" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) — 1 file(s), pp 24-24; cv per-file 5755x1; key 'Nightwing (1996)'
+      [18020] 04 Nightwing (1998-11) 1000000 (digital) (OkC.O.M.P.U.T.O.-Novus).cbz (24pp)
+   G14 "Nightwing" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\028 Batman Night of the Owls — 1 file(s), numbers 8, pp 22-22; cv per-file 5755x1; gcd per-file 61072x1; key 'Nightwing (1996)'
+      [18264] 010 Nightwing 008 - June 2012.cbz (22pp)
+   G15 "Nightwing" in DC\#DC Events\004 Major DC Events - Rebirth\002 Night of the Monster Men (2017) — 2 file(s), numbers 5-6, pp 24-26; cv per-file 5755x2; gcd per-file 104515x2; key 'Nightwing (1996)'
+      [19073] 02 Nightwing 005 (2016) (2 covers) (Digital) (Zone-Empire).cbr (26pp)
+      [19076] 05 Nightwing 006 (2016) (2 covers) (Digital) (Zone-Empire).cbr (24pp)
+   G16 "Nightwing" in DC\_Batman\_Completed Series\08 Batman v3.1 (2020)\Batman Vol. 05 - Fear State Tie Ins (2021) — 2 file(s), numbers 84-85, pp 26-28; cv per-file 5755x2; gcd per-file 104515x2; key 'Nightwing (1996)'
+      [61476] Nightwing 084 (2021) (Digital) (Zone-Empire).cbr (26pp)
+      [61477] Nightwing 085 (2021) (Digital) (Zone-Empire).cbr (28pp)
+   G17 "Nightwing" in DC\_Nightwing-Dick Grayson\01 Nightwing v1 (1995) + v2 (1996) — 83 file(s), numbers 71-153, pp 22-40; cv per-file 5755x83; gcd per-file 5516x83; key 'Nightwing v2 (1996)'
+      e.g. Nightwing 071 (2002) (Digital) (AnHeroGold-Empire).cbz
+        68480 #71 2002 24pp · 68481 #72 2002 23pp · 68482 #73 2002 23pp · 68483 #74 2002 24pp · 68484 #75 2003 32pp · 68485 #76 2003 22pp · 68486 #77 2003 24pp · 68487 #78 2003 23pp
+        68488 #79 2003 24pp · 68489 #80 2003 24pp · 68490 #81 2003 24pp · 68491 #82 2003 23pp · 68492 #83 2003 24pp · 68493 #84 2003 24pp · 68494 #85 2003 23pp · 68495 #86 2003 23pp
+        68496 #87 2004 23pp · 68497 #88 2004 24pp · 68498 #89 2004 23pp · 68499 #90 2004 24pp · 68500 #91 2004 23pp · 68501 #92 2004 24pp · 68502 #93 2004 24pp · 68503 #94 2004 23pp
+        68504 #95 2004 24pp · 68505 #96 2004 24pp · 68506 #97 2004 23pp · 68507 #98 2004 24pp · 68508 #99 2005 24pp · 68509 #100 2005 31pp · 68510 #101 2005 23pp · 68511 #102 2005 23pp
+        68512 #103 2005 23pp · 68513 #104 2005 23pp · 68514 #105 2005 23pp · 68515 #106 2005 23pp · 68516 #107 2005 24pp · 68517 #108 2005 24pp · 68518 #109 2005 24pp · 68519 #110 2005 24pp
+        68520 #111 2005 24pp · 68521 #112 2005 24pp · 68522 #113 2005 24pp · 68523 #114 2006 24pp · 68524 #115 2006 24pp · 68525 #116 2006 24pp · 68526 #117 2006 23pp · 68527 #118 2006 24pp
+        68528 #119 2006 24pp · 68529 #120 2006 24pp · 68530 #121 2006 24pp · 68531 #122 2006 24pp · 68532 #123 2006 24pp · 68533 #124 2006 24pp · 68534 #125 2006 24pp · 68535 #126 2007 24pp
+        68536 #127 2007 24pp · 68537 #128 2007 23pp · 68538 #129 2007 24pp · 68539 #130 2007 23pp · 68540 #131 2007 24pp · 68541 #132 2007 24pp · 68542 #133 2007 24pp · 68543 #134 2007 22pp
+        68544 #135 2007 24pp · 68545 #136 2007 24pp · 68546 #137 2007 24pp · 68547 #138 2008 25pp · 68548 #139 2008 24pp · 68549 #140 2008 24pp · 68550 #141 2008 24pp · 68551 #142 2008 24pp
+        68552 #143 2008 23pp · 68553 #144 2008 23pp · 68554 #145 2008 23pp · 68555 #146 2008 23pp · 68556 #147 2008 23pp · 68557 #148 2008 23pp · 68558 #149 2008 23pp · 68559 #150 2009 40pp
+        68560 #151 2009 23pp · 68561 #152 2009 23pp · 68562 #153 2009 25pp
+   G18 "Nightwing" in DC\_Nightwing-Dick Grayson\01 Nightwing v1 (1995) + v2 (1996)\Annuals and Specials — 2 file(s), numbers 0-1, pp 20-70; cv per-file 5755x2; key 'Nightwing v2 (1996)'
+      [68477] Nightwing 000.5 (1997) (HD) (digital-Empire).cbr (20pp)
+      [68478] Nightwing 80-Page Giant 001 (2000) (HD) (digital-Empire).cbr (70pp)
+   G19 "Nightwing Annual" in DC\_Nightwing-Dick Grayson\01 Nightwing v1 (1995) + v2 (1996)\Annuals and Specials — 1 file(s), numbers 2, pp 38-38; cv per-file 142685x1; gcd per-file 40938x1; key 'Nightwing v2 (1996)'
+      [68479] Nightwing Annual 02 (2007) (HD) (digital-Empire).cbz (38pp)
+   G20 "Nightwing" in DC\_Nightwing-Dick Grayson\01 Nightwing v1 (1995) + v2 (1996)\v1+v2 TPBs — 8 file(s), 8 COL, pp 243-332; cv per-file 78544x1, 82533x1, 86985x1; gcd per-file 89991x8; key 'Nightwing v2 (1996)'
+      [68564] COL Nightwing Vol. 01 - Bludhaven (2014) (digital) (Son of Ultron-Empire).cbr (287pp)
+         own record cv 78544 / gcd s89991 "Nightwing" (issue 1389228) COLLECTS: gcd=5516 Nightwing (1996) #1-8 · gcd=5244 Nightwing (1995) #1-4 · gcd=23145 Nightwing (1998) (unnumbered)
+      [68565] COL Nightwing Vol. 02 - Rough Justice (2015) (digital) (Son of Ultron-Empire).cbr (293pp)
+         own record cv 82533 / gcd s89991 "Nightwing" (issue 1389229) COLLECTS: gcd=5516 Nightwing (1996) #9-18 · gcd=12449 Nightwing Annual (1997) #1
+      [68566] COL Nightwing Vol. 03 - False Starts (2015) (digital) (Son of Ultron-Empire).cbr (291pp)
+         own record cv 86985 / gcd s89991 "Nightwing" (issue 1516907) COLLECTS: gcd=5516 Nightwing (1996) #19-25 · gcd=14159 Nightwing and Huntress (1998) #1-4 · gcd=30344 Wizard Presents: Nightwing (1997) (unnumbered)
+      [68567] COL Nightwing Vol. 04 - Love and Bullets (2016) (digital) (Son of Ultron-Empire).cbr (297pp)
+         own record cv 89797 / gcd s89991 "Nightwing" (issue 1559088) COLLECTS: gcd=5516 Nightwing (1996) #26-34 · gcd=14857 Nightwing Secret Files (1999) #1
+      [68568] COL Nightwing Vol. 05 - The Hunt for Oracle (2016) (digital) (Son of Ultron-Empire).cbr (332pp)
+         own record cv 95230 / gcd s89991 "Nightwing" (issue 1641209) COLLECTS: gcd=5516 Nightwing (1996) #35-46 · gcd=6991 Birds of Prey (1999) #20-21
+      [68569] COL Nightwing Vol. 06 - To Serve and Protect (2017) (digital) (Son of Ultron-Empire).cbr (257pp)
+         own record cv 102768 / gcd s89991 "Nightwing" (issue 1721558) COLLECTS: gcd=5516 Nightwing (1996) #47-53 · gcd=17844 Nightwing 80-Page Giant (2000) #1
+      [68570] COL Nightwing Vol. 07 - Shrike (2018) (digital) (Son of Ultron-Empire).cbr (255pp)
+         own record cv 108747 / gcd s89991 "Nightwing" (issue 1784519) COLLECTS: gcd=5516 Nightwing (1996) #54-60 · gcd=17843 Nightwing: The Target (2001) #1 · gcd=11690 Nightwing: Our Worlds at War (2001) #1
+      [68571] COL Nightwing Vol. 08 - Lethal Force (2018) (digital) (Son of Ultron-Empire).cbr (243pp)
+         own record cv 115268 / gcd s89991 "Nightwing" (issue 1872600) COLLECTS: gcd=5516 Nightwing (1996) #61-70
+   G21 "Nightwing - Year One - 20th Anniversary Deluxe Edition (2024) (digital) (Son of Ultron-Empire)" in DC\_Nightwing-Dick Grayson\_Trades, Minis and One-shots — 1 file(s), 1 COL, pp 207-207; cv per-file 159618x1; gcd per-file 214182x1; key 'Nightwing v2 (1996)'
+      [68780] COL Nightwing - Year One - 20th Anniversary Deluxe Edition (2024) (digital) (Son of Ultron-Empire).cbr (207pp)
+         own record cv 159618 / gcd s214182 "Nightwing: Year One 20th Anniversary Deluxe Edition" (issue 2649555) COLLECTS: gcd=5516 Nightwing (1996) #101-106 · gcd=161522 Nightwing: Year One The Deluxe Edition (2020) (unnumbered) · gcd=40939 Nightwing. Año Uno (2007) (unnumbered) · gcd=104515 Nightwing (2016) #107
+   G22 "The Flash Plus Nightwing" in DC\_Nightwing-Dick Grayson\_Trades, Minis and One-shots\The Flash Plus Nightwing (1996) — 1 file(s), numbers 1, pp 39-39; cv per-file 5755x1; gcd per-file 5516x1; key 'Nightwing (1996)'
+      [69963] The Flash Plus Nightwing 001 (1996) (digital-Empire).cbz (39pp)
+
+== S58099 Outsiders  [split]  72 files / 1 collections  decided in R-107 (S)
+   decided: S 58099 cv=10415 gcd=11298 0.9 | CV 10415 "Outsiders" (DC 2003, 50, cached #1-50) = GCD 11298 (DC 2003-2007, 50); ladder 1-50 from "The Outsiders v3 (2003)" (#8-50 DeadmanWade/Novus rips) plus the #DC Events read-order second rips (#1-7, 21-25, 28-41 — "Looking for trouble", "Wanted", "The Insiders", "Crisis Intervention", "The Good Fight"), ComicInfo Volume 2003 / Count 50; the Judd Winick Book 01 collects #1-7; 0.9 for the 2007 Annual (its own record) and the two 1985-series books that leave by split
+   F 58099 split-needed | 57839, 57840 -> join S66029 — "Outsiders Annual 001 (1986)" 44pp = CV 40726 "The Outsiders Annual" issue 274606 / GCD 3162 row 40846 and "Outsiders Special 001 (1987)" 38pp = CV 27683 "The Outsiders Special" issue 169326 / GCD 3373 row 43789, both filed in DC\The Outsiders beside "The Outsiders v1 (1985)", are the 1985 series' companions (Dec 1986 / Jul 1987, inside its 1985-1988 run) — S66029 is that series
+   F 58099 wrong-cv-link | per-file CV 22453 (Outsiders 1993, 26) on 25/72 files is the wrong-relaunch stamp on the 2003-2007 read-order rips
+   named: S66029 The Outsiders  22 files  keys: "The Outsiders (1985)" | "The Outsiders v1 (1985)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S99215 "Outsiders" 25f [shares cv=22453 — S cv=22453 gcd=14162 (R-005 0.95)] keys: "Outsiders v2 (1993)"
+   nearby: S20261 "Titans/Young Justice: Graduation Day" 9f [shares gcd=14380 (collected by item 58000) — S cv=19106 gcd=14380 (C-008 0.95)] keys: "Teen Titans Young Justice Graduation Day" | "Titans/Young Justice: Graduation Day"
+   nearby: S17694 "Teen Titans/Outsiders Secret Files 2003" 4f [shares gcd=17886 (collected by item 58000) — S cv=25401 gcd=17886 (R-032 0.95)] keys: "Teen Titans/Outsiders Secret Files 2003" | "Teen Titans/Outsiders Secret Files and Origins"
+   nearby: S66031 "The Outsiders" 43f [title — S cv=25804 gcd=34024 (R-107 0.9)] keys: "The Outsiders (2003)" | "The Outsiders (2009)"
+   nearby: S99216 "Outsiders" 27f [title — S cv=154666 gcd=205368 (C-016 0.95)] keys: "Outsiders v3 (2024)"
+   keys now: "The Outsiders v3 (2003)" x44 · "Outsiders" x15 · "Outsiders (1993)" x12 · "The Outsiders by Judd Winick" x1
+   groups (title x folder): 9
+   G1 "Outsiders" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\31 Outsiders - Looking for trouble — 7 file(s), numbers 1-7, pp 23-32; cv per-file 22453x7; key 'Outsiders (1993)'
+      e.g. Outsiders 01.cbr
+        17033 #1 32pp · 17034 #2 24pp · 17035 #3 24pp · 17036 #4 23pp · 17037 #5 24pp · 17038 #6 23pp · 17039 #7 23pp
+   G2 "Outsiders" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\57 Outsiders - Wanted — 2 file(s), numbers 21, 23, pp 25-25; cv per-file 22453x2; key 'Outsiders (1993)'
+      [17240] Outsiders 21.cbr (25pp)
+      [17242] Outsiders 23.cbr (25pp)
+   G3 "Outsiders" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\58 Teen Titans Outsiders - The Insiders — 3 file(s), numbers 24-25, 28, pp 23-25; cv per-file 22453x3; key 'Outsiders (1993)' | 'Outsiders'
+      [17244] 02 Outsiders 24.cbr (23pp)  key="Outsiders (1993)"
+      [17246] 04 Outsiders 25.cbr (25pp)  key="Outsiders"
+      [17248] 06 Outsiders 28.cbr (25pp)  key="Outsiders"
+   G4 "Outsiders" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\03 Outsiders - Crisis Intervention — 5 file(s), numbers 29-33, pp 23-25; cv per-file 22453x5; key 'Outsiders'
+      e.g. Outsiders 29.cbr
+        17377 #29 24pp · 17378 #30 23pp · 17379 #31 23pp · 17380 #32 25pp · 17381 #33 24pp
+   G5 "Outsiders" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Outsiders - The Good Fight — 8 file(s), numbers 34-41, pp 23-26; cv per-file 22453x8; key 'Outsiders'
+      e.g. Outsiders 34.cbr
+        17500 #34 25pp · 17501 #35 25pp · 17502 #36 25pp · 17503 #37 26pp · 17504 #38 24pp · 17505 #39 25pp · 17506 #40 25pp · 17507 #41 23pp
+   G6 "Outsiders Annual" in DC\The Outsiders — 1 file(s), numbers 1, pp 44-44; cv per-file 40726x1; gcd per-file 3162x1; key 'Outsiders (1993)'
+      [57839] Outsiders Annual 001 (1986) (Digital) (Shadowcat-Empire).cbz (44pp)
+   G7 "Outsiders Special" in DC\The Outsiders — 1 file(s), numbers 1, pp 38-38; cv per-file 27683x1; gcd per-file 3373x1; key 'Outsiders (1993)'
+      [57840] Outsiders Special 001 (1987) (Digital) (Shadowcat-Empire).cbz (38pp)
+   G8 "The Outsiders" in DC\The Outsiders\The Outsiders v3 (2003) — 44 file(s), numbers 1, 8-50, pp 22-42; cv per-file 10415x43, 18696x1; gcd per-file 23566x1; key 'The Outsiders v3 (2003)'
+      e.g. The Outsiders v3 008 (2004-03) (DeadmanWade-DCP) (digital).cbr
+        57863 #8 2004 24pp · 57864 #9 2004 23pp · 57865 #10 2004 24pp · 57866 #11 2004 24pp · 57867 #12 2004 24pp · 57868 #13 2004 23pp · 57869 #14 2004 24pp · 57870 #15 2004 24pp
+        57871 #16 2004 24pp · 57872 #17 2004 23pp · 57873 #18 2005 24pp · 57874 #19 2005 25pp · 57875 #20 2005 23pp · 57876 #21 2005 24pp · 57877 #22 2005 23pp · 57878 #23 2005 24pp
+        57879 #24 2005 24pp · 57880 #25 2005 26pp · 57881 #26 2005 24pp · 57882 #27 2005 24pp · 57883 #28 2005 23pp · 57884 #29 2005 23pp · 57885 #30 2006 24pp · 57886 #31 2006 24pp
+        57887 #32 2006 24pp · 57888 #33 2006 24pp · 57889 #34 2006 24pp · 57890 #35 2006 24pp · 57891 #36 2006 23pp · 57892 #37 2006 25pp · 57893 #38 2006 23pp · 57894 #39 2006 24pp
+        57895 #40 2006 24pp · 57896 #41 2006 23pp · 57897 #42 2007 24pp · 57898 #43 2007 24pp · 57899 #44 2007 23pp · 57900 #45 2007 24pp · 57901 #46 2007 23pp · 57902 #47 2007 22pp
+        57903 #48 2007 23pp · 57904 #49 2007 22pp · 57905 #50 2007 24pp
+      [57906] The Outsiders v3 Annual 01 (2007) (EXTREMEST-DCP).cbr (42pp)
+   G9 "The Outsiders by Judd Winick" in DC\The Outsiders\The Outsiders v3 (2003)\Trades — 1 file(s), 1 COL, pp 296-296; cv per-file 119300x1; gcd per-file 145562x1; key 'The Outsiders by Judd Winick'
+      [58000] COL The Outsiders by Judd Winick Book 01 - The Darker Side of Justice (2019) (digital) (Son of Ultron-Empire).cbr (296pp)
+         own record cv 119300 / gcd s145562 "The Outsiders by Judd Winick" (issue 1966693) COLLECTS: gcd=11298 Outsiders (2003) #1-7 · gcd=17886 Teen Titans / Outsiders Secret Files 2003 (2003) (unnumbered) · gcd=14380 Titans / Young Justice: Graduation Day (2003) #1-3
+
+== S95396 Batman  [split]  189 files / 30 collections  decided in R-107 (S)
+   decided: S 95396 cv=91273 gcd=103016 0.9 | the Rebirth-onward Batman: issues #1-5, 7-8, 19, 21-22, 50, 64-89, 92, 99-100, 108, 121-157 ("05 Batman v3 (2016)", "08 Batman v3.1 (2020)", "09 Batman v3.2 (2023)" plus the 1pp variant packs), the Rebirth trades Vol. 01-13 (GCD 111241 rows, roll-ups #1-6 .. #80-85 on s103016), Deluxe Books 01-06, the Tynion Vol. 01-07 and Zdarsky Vol. 01-03 lines and City of Bane = CV 91273 (DC 2016, 162, cached #1-162) = GCD 103016 (2016-2026, 163; per-file 123/189); the Joker War Saga (#95-100) and Ghost-Maker (#107-111) join from S95394; 0.9 for residue that is other records — Annuals #1-5 and 2022, the FCBD / Batman Day specials, the #428 one-shot, the 2024 #181 facsimile variant (59108), Shadow War and Fear State Saga
+   F 95396 split-needed | 59004 -> the 2024 one-shot "Batman 428: Robin Lives!" (CV 155359 / GCD 206659) in its own name "Batman 428: Robin Lives! (2024)" — 36pp, a standalone special, not an issue of the 2016 run (was F misfiled in R-101 / R-106)
+   F 95396 wrong-cv-link | per-file CV 796 (Batman 1940) on 174/189 files is the legacy stamp
+   N 95396 flag #178 label-ambiguous (items 61332 / 61401): both are "COL Batman - Deluxe Edition Book 04 (2019)" 339pp, GCD 1986017 (Batman 2016 #45-57) — genuinely two copies of one book, as the flag says
+   nearby:
+   nearby: S64223 "Batman" 799f [shares cv=796, shares gcd=141 — S cv=796 gcd=141 (R-106 0.9)] keys: "A Robins Tale" | "All they do is watch us kill part" | "As the Crow Flies part" | "Batman (1940)" (+5 more: lookup.py --shelf 64223)
+   nearby: S95394 "Batman" 71f [named S95394 in the decision's R/N lines — S cv=42721 gcd=61067 (R-107 0.9)] keys: "Batman (2016)" | "Batman (2016-)" | "Batman - Zero Year" | "Batman v2 (2011)"
+   nearby: S96415 "Detective Comics" 53f [shares gcd=60830 (collected by item 61460) — S cv=42594 gcd=60830 (R-099 0.9)] keys: "Detective Comics (2011)" | "Detective Comics v2 (2011)"
+   nearby: S2123 "Batman Secret Files" 4f [shares gcd=132577 (collected by item 61355) — S cv=114871 gcd=132577 (C-012 0.95)] keys: "Batman Secret Files" | "Batman Secret Files (2020)"
+   nearby: S5271 "Deathstroke Inc." 4f [shares gcd=176363 (collected by item 61479) — S cv=139232 gcd=176363 (R-103 0.95)] keys: "Deathstroke Inc."
+   nearby: S99533 "Robin v5 (2021)" 3f [shares gcd=172101 (collected by item 61479) — S cv=135660 gcd=172101 (R-105 0.95)] keys: "Robin v5 (2021)"
+   nearby: S1917 "Batman/Catwoman: The Wedding Album: The Deluxe Edition" 1f [shares gcd=128727 (collected by item 61332) — S cv=113219 gcd=128727 (D-003 0.95)] keys: "Batman - Catwoman - The Wedding Album"
+   nearby: S1943 "Batman - Faux-simile Edition" 1f [shares cv=155359, shares gcd=206659 — S cv=155359 gcd=206659 (R-062 0.9)] keys: "Batman - Faux-simile Edition"
+   nearby: S1995 "Batman: Rebirth" 1f [shares gcd=102636 (collected by item 61344) — S cv=90863 gcd=102636 (A-008 0.95)] keys: "Batman - Rebirth"
+   nearby: S2184 "Batman: Night of the Monster Men" 1f [shares gcd=112283 (collected by item 61398) — S cv=99020 gcd=112283 (B-010 0.9)] keys: "Batman.5 - Night of the Monster Men"
+   nearby: S2210 "Batman: Bane" 1f [shares cv=33242 — S cv=33242 gcd=14768 (R-030 0.95)] keys: "Batman: Bane"
+   nearby: S1886 "Batman '66" 114f [title — S cv=64763 gcd=75494 (R-103 0.9)] keys: "Batman '66" | "Batman '66 - The Lost Episode" | "batman '66"
+   nearby: S103665 "Batman Annual v1 (1961)" 16f [title — S cv=3109 gcd=1468 (R-106 1.0)] keys: "Batman Annual v1 (1961)" · S1881 "Batman" 5f [title] keys: "Batman"
+   nearby: S103666 "Batman Annual v2 (2012)" 3f [title — S cv=49197 gcd=66086 (R-106 0.95)] keys: "Batman Annual v2 (2012)" · S1893 "Batman '89" 1f [title — S cv=138183 gcd=174882 (B-010 0.95)] keys: "Batman '89"
+   nearby: S2049 "Batman 2021 Annual" 1f [title — S cv=140252 gcd=178493 (B-010 0.95)] keys: "Batman 2021 Annual (2021)"
+   nearby: S2099 "Batman Eternal" 55f [title+1 — S cv=72915 gcd=80064 (R-099 0.95)] keys: "Batman Eternal" · S2093 "Batman Confidential" 54f [title+1 — S cv=18231 gcd=20878 (B-010 0.95)] keys: "Batman Confidential"
+   nearby: S2139 "Batman and Robin" 53f [title+1 — S cv=42692 gcd=60920 (R-100 0.9)] keys: "Batman & Robin v2 (2011)" | "Batman and Robin" | "Robin and Batman"
+   nearby: S2302 "Batman/Superman" 40f [title+1 — S cv=64203 gcd=75117 (B-008 0.95)] keys: "Batman - Superman" | "Batman-Superman v1 (2013)" | "BatmanSuperman"
+   nearby: S17289 "Superman/Batman" 40f [title+1 — S cv=10938 gcd=11863 (C-020 0.9)] keys: "Superman Batman" | "Superman/Batman" · S1960 "Batman - Hush" 38f [title+1] keys: "Batman - Hush" · (+66 more by title)
+   keys now: "Batman v3 (2020)" x122 · "Batman v3 (2016)" x60 · "Batman: The Rebirth Deluxe Edition - Book 4" x2 · "Batman: City of Bane: The Complete Collection (2020)" x1 · "Batman: The Rebirth Deluxe Edition - Book 1" x1 · "Batman: The Rebirth Deluxe Edition - Book 2" x1 · "Batman: The Rebirth Deluxe Edition - Book 3" x1 · "Batman: The Deluxe Edition - Book 5" x1
+   groups (title x folder): 17
+   G1 "Batman" in DC\#DC Events\004 Major DC Events - Rebirth\002 Night of the Monster Men (2017) — 2 file(s), numbers 7-8, pp 26-26; cv per-file 796x2; gcd per-file 103016x2; key 'Batman v3 (2016)'
+      [19072] 01 Batman 007 (2016) (2 covers) (Digital) (Zone-Empire).cbr (26pp)
+      [19075] 04 Batman 008 (2016) (2 covers) (Digital) (Zone-Empire).cbr (26pp)
+   G2 "Batman" in DC\#DC Events\004 Major DC Events - Rebirth\005 Batman - The Button (2017) — 2 file(s), numbers 21-22, pp 25-25; cv per-file 796x2; gcd per-file 140614x2; key 'Batman v3 (2016)'
+      [19095] 01 Batman 021 (2017) (2 covers) (Digital) (Zone-Empire).cbr (25pp)
+      [19097] 03 Batman 022 (2017) (2 covers) (Digital) (Zone-Empire).cbr (25pp)
+   G3 "Batman" in DC\_Batman\09 Batman v3.2 (2023) — 16 file(s), 3 COL, numbers 145-157, pp 30-239; cv per-file 796x13, 149312x3; gcd per-file 103016x13, 177397x3; key 'Batman v3 (2020)'
+      e.g. Batman 145 (2024) (Digital) (Walkabout-Empire).cbz
+        59005 #145 2024 34pp · 59006 #146 2024 36pp · 59007 #147 2024 35pp · 59008 #148 2024 41pp · 59009 #149 2024 39pp · 59010 #150 2024 45pp · 59011 #151 2024 40pp · 59012 #152 2024 35pp
+        59013 #153 2024 31pp · 59014 #154 2025 31pp · 59015 #155 2025 31pp · 59016 #156 2025 30pp · 59017 #157 2025 38pp
+      [59018] COL Batman Vol. 01 - Failsafe (2023) (Digital) (EJGriffin-Empire).cbz (227pp)
+         own record cv 149312 / gcd s177397 "Batman" (issue 2271934) COLLECTS: gcd=103016 Batman (2016) #85-94 · gcd=132577 Batman Secret Files (2018) #3 · gcd=165285 Batman (2020) #1  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [59019] COL Batman Vol. 02 - The Bat-Man of Gotham (2023) (digital) (Son of Ultron-Empire).cbr (239pp)
+         own record cv 149312 / gcd s177397 "Batman" (issue 2306167) COLLECTS: gcd=103016 Batman (2016) #95-100  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [59021] COL Batman Vol. 03 - The Joker Year One (2024) (digital) (Son of Ultron-Empire).cbr (234pp)
+         own record cv 149312 / gcd s177397 "Batman" (issue 2561102) COLLECTS: gcd=103016 Batman (2016) #101-105 · gcd=109697 Batman Annual (2017) #5 · gcd=60830 Detective Comics (2011) #1027 · gcd=165285 Batman (2020) #3  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+   G4 "Batman 428 Robin Lives (2024) (digital) (Goobadaddy-Empire)" in DC\_Batman\09 Batman v3.2 (2023)\Annuals and Specials — 1 file(s), numbers 428, pp 36-36; cv per-file 155359x1; gcd per-file 206659x1; key 'Batman v3 (2020)'
+      [59004] Batman 428 Robin Lives (2024) (digital) (Goobadaddy-Empire).cbz (36pp)
+   G5 "Batman" in DC\_Batman\09 Batman v3.2 (2023)\Variant Covers — 87 file(s), numbers 121, 125-127, 135, 138-153, 181, pp 1-1; cv per-file 796x87; gcd per-file 103016x78, 141x6; key 'Batman v3 (2020)'
+      e.g. Batman 121 (2024) (Carnivore Comics Santa Fung Virgin Variant) (Digital) (MikeNY76-Empire).cbz
+        59022 #121 2024 1pp · 59024 #121 2024 1pp · 59023 #121 2024 1pp · 59025 #125 2022 1pp · 59026 #125 2022 1pp · 59027 #125 2022 1pp · 59028 #126 2022 1pp · 59029 #127 2022 1pp
+        59030 #135 2023 1pp · 59031 #135 2023 1pp · 59032 #138 2023 1pp · 59033 #139 2023 1pp · 59034 #140 2023 1pp · 59035 #141 2024 1pp · 59036 #141 2024 1pp · 59037 #141 2024 1pp
+        59038 #141 2024 1pp · 59039 #141 2024 1pp · 59040 #142 2024 1pp · 59041 #142 2024 1pp · 59042 #142 2024 1pp · 59043 #142 2024 1pp · 59044 #142 2024 1pp · 59045 #142 2024 1pp
+        59046 #142 2024 1pp · 59047 #142 2024 1pp · 59048 #143 2024 1pp · 59049 #143 2024 1pp · 59050 #143 2024 1pp · 59051 #143 2024 1pp · 59052 #143 2024 1pp · 59053 #144 2024 1pp
+        59054 #144 2024 1pp · 59055 #144 2024 1pp · 59056 #144 2024 1pp · 59057 #145 2024 1pp · 59058 #145 2024 1pp · 59059 #145 2024 1pp · 59060 #145 2024 1pp · 59061 #145 2024 1pp
+        59062 #146 2024 1pp · 59063 #146 2024 1pp · 59064 #146 2024 1pp · 59065 #146 2024 1pp · 59066 #146 2024 1pp · 59067 #147 2024 1pp · 59068 #147 2024 1pp · 59069 #147 2024 1pp
+        59070 #147 2024 1pp · 59071 #147 2024 1pp · 59072 #148 2024 1pp · 59073 #148 2024 1pp · 59074 #148 2024 1pp · 59075 #148 2024 1pp · 59076 #148 2024 1pp · 59077 #149 2024 1pp
+        59078 #149 2024 1pp · 59079 #149 2024 1pp · 59080 #149 2024 1pp · 59081 #150 2024 1pp · 59082 #150 2024 1pp · 59083 #150 2024 1pp · 59084 #150 2024 1pp · 59085 #150 2024 1pp
+        59086 #151 2024 1pp · 59087 #151 2024 1pp · 59088 #151 2024 1pp · 59089 #151 2024 1pp · 59090 #151 2024 1pp · 59091 #151 2024 1pp · 59092 #151 2024 1pp · 59093 #151 2024 1pp
+        59094 #152 2024 1pp · 59095 #152 2024 1pp · 59096 #152 2024 1pp · 59097 #152 2024 1pp · 59098 #152 2024 1pp · 59099 #152 2024 1pp · 59100 #152 2024 1pp · 59101 #152 2024 1pp
+        59102 #153 2024 1pp · 59103 #153 2024 1pp · 59104 #153 2024 1pp · 59105 #153 2024 1pp · 59106 #153 2024 1pp · 59107 #153 2024 1pp · 59108 #181 2024 1pp
+   G6 "Batman - Deluxe Edition" in DC\_Batman\_Completed Series\04 Batman v2 (2011)\Deluxe Editions — 1 file(s), 1 COL, pp 339-339; gcd per-file 162378x1; key 'Batman: The Rebirth Deluxe Edition - Book 4'
+      [61332] COL Batman - Deluxe Edition Book 04 (2019) (digital) (Son of Ultron-Empire).cbr (339pp)
+         own record gcd s162378 "Batman: Deluxe Edition" (issue 1986017) COLLECTS: gcd=103016 Batman (2016) #45-57 · gcd=123954 DC Nation (2018) #0 · gcd=128727 Batman / Catwoman: The Wedding Album - The Deluxe Edition (2018) (unnumbered)
+   G7 "Batman" in DC\_Batman\_Completed Series\05 Batman v3 (2016) — 13 file(s), 13 COL, pp 143-201; cv per-file 796x13; gcd per-file 111241x13; key 'Batman v3 (2016)'
+      [61344] COL Batman Vol. 01 - I Am Gotham (2017) (Digital) (Zone-Empire).cbr (189pp)
+         own record cv 796 / gcd s111241 "Batman" (issue 1665158) COLLECTS: gcd=103016 Batman (2016) #1-6 · gcd=102636 Batman: Rebirth (2016) #1
+      [61346] COL Batman Vol. 02 - I Am Suicide (2017) (Digital) (Zone-Empire).cbr (151pp)
+         own record cv 796 / gcd s111241 "Batman" (issue 1690698) COLLECTS: gcd=103016 Batman (2016) #9-15
+      [61347] COL Batman Vol. 03 - I Am Bane (2017) (Digital) (Zone-Empire).cbr (174pp)
+         own record cv 796 / gcd s111241 "Batman" (issue 1730385) COLLECTS: gcd=103016 Batman (2016) #16-20, #23-24 · gcd=109697 Batman Annual (2017) #1
+      [61349] COL Batman Vol. 04 - The War of Jokes and Riddles (2017) (Digital) (Zone-Empire).cbr (184pp)
+         own record cv 796 / gcd s111241 "Batman" (issue 1765758) COLLECTS: gcd=103016 Batman (2016) #25-32
+      [61350] COL Batman Vol. 05 - The Rules of Engagement (2018) (Digital) (Zone-Empire).cbr (158pp)
+         own record cv 796 / gcd s111241 "Batman" (issue 1801095) COLLECTS: gcd=103016 Batman (2016) #33-37 · gcd=109697 Batman Annual (2017) #2
+      [61351] COL Batman Vol. 06 - Bride or Burglar (2018) (Digital) (Zone-Empire).cbr (162pp)
+         own record cv 796 / gcd s111241 "Batman" (issue 1826880) COLLECTS: gcd=103016 Batman (2016) #38-44
+      [61353] COL Batman Vol. 07 - The Wedding (2018) (Digital) (Zone-Empire).cbr (173pp)
+         own record cv 796 / gcd s111241 "Batman" (issue 1860574) COLLECTS: gcd=103016 Batman (2016) #45-50 · gcd=128727 Batman / Catwoman: The Wedding Album - The Deluxe Edition (2018) (unnumbered) · gcd=123954 DC Nation (2018) #0
+      [61354] COL Batman Vol. 08 - Cold Days (2018) (Digital) (Zone-Empire).cbr (169pp)
+         own record cv 796 / gcd s111241 "Batman" (issue 1884035) COLLECTS: gcd=103016 Batman (2016) #51-57
+      [61355] COL Batman Vol. 09 - The Tyrant Wing (2019) (digital) (Son of Ultron-Empire).cbr (148pp)
+         own record cv 796 / gcd s111241 "Batman" (issue 1938968) COLLECTS: gcd=103016 Batman (2016) #58-60 · gcd=132577 Batman Secret Files (2018) #1 · gcd=109697 Batman Annual (2017) #3
+      [61356] COL Batman Vol. 10 - Knightmares (2019) (digital) (Son of Ultron-Empire).cbr (169pp)
+         own record cv 796 / gcd s111241 "Batman" (issue 2014692) COLLECTS: gcd=103016 Batman (2016) #61-63, #66-69
+      [61361] COL Batman Vol. 11 - The Fall and the Fallen (2019) (digital) (Son of Ultron-Empire).cbr (155pp)
+         own record cv 796 / gcd s111241 "Batman" (issue 2047847) COLLECTS: gcd=103016 Batman (2016) #70-74 · gcd=132577 Batman Secret Files (2018) #2
+      [61362] COL Batman Vol. 12 - The City of Bane Part 01 (2020) (digital) (Son of Ultron-Empire).cbr (143pp)
+         own record cv 796 / gcd s111241 "Batman" (issue 2102067) COLLECTS: gcd=103016 Batman (2016) #75-79
+      [61363] COL Batman Vol. 13 - The City of Bane Part 02 (2020) (digital) (Son of Ultron-Empire).cbr (201pp)
+         own record cv 796 / gcd s111241 "Batman" (issue 2125369) COLLECTS: gcd=103016 Batman (2016) #80-85 · gcd=109697 Batman Annual (2017) #4
+   G8 "Batman" in DC\_Batman\_Completed Series\05 Batman v3 (2016)\Annuals and Specials — 1 file(s), numbers 1, pp 25-25; cv per-file 796x1; key 'Batman v3 (2016)'
+      [61343] Batman, 2016-09-17 (#01 (Batman Day Special Edition)) (digital) (Glorith-Novus-HD).cbz (25pp)
+   G9 "Batman Annual" in DC\_Batman\_Completed Series\05 Batman v3 (2016)\Annuals and Specials — 5 file(s), numbers 1-5, pp 39-47; cv per-file 796x5; gcd per-file 111241x2, 171384x2, 177857x1; key 'Batman v3 (2016)'
+      e.g. Batman Annual 001 (2017) (Digital) (Zone-Empire).cbr
+        61335 #1 2017 43pp · 61336 #2 2018 42pp · 61337 #003 2019 47pp · 61338 #004 2019 42pp · 61339 #5 2021 39pp
+   G10 "Batman Special Edition (FCBD)" in DC\_Batman\_Completed Series\05 Batman v3 (2016)\Annuals and Specials — 1 file(s), numbers 1, pp 31-31; cv per-file 796x1; gcd per-file 177857x1; key 'Batman v3 (2016)'
+      [61342] Batman Special Edition (FCBD) 001 (2021) (digital-Empire).cbr (31pp)
+   G11 "Batman" in DC\_Batman\_Completed Series\05 Batman v3 (2016)\Batman Vol. 10.5 - The Price (2019) — 2 file(s), numbers 64-65, pp 23-24; cv per-file 796x2; gcd per-file 103016x2; key 'Batman v3 (2016)'
+      [61357] 01 Batman 064 (2019) (2 covers) (Digital) (Zone-Empire).cbr (23pp)
+      [61359] 03 Batman 065 (2019) (2 covers) (Digital) (Zone-Empire).cbr (24pp)
+   G12 "Batman" in DC\_Batman\_Completed Series\05 Batman v3 (2016)\Variant Covers — 33 file(s), numbers 1-5, 19, 50, 64, 66-73, 76-85, pp 1-1; cv per-file 796x33; gcd per-file 103016x27, 171384x4, 140614x1; key 'Batman v3 (2016)'
+      e.g. Batman 001 (2016) (Lee Bermejo NEC Exclusive Variant Cover) (Digital) (Minutemen-PETA).cbr
+        61364 #1 2016 1pp · 61365 #1 2016 1pp · 61366 #2 2016 1pp · 61367 #3 2016 1pp · 61368 #4 2016 1pp · 61369 #5 2016 1pp · 61370 #19 2017 1pp · 61371 #50 2016 1pp · 61372 #50 2018 1pp
+        61373 #50 2018 1pp · 61374 #64 2019 1pp · 61375 #66 2019 1pp · 61376 #67 2019 1pp · 61377 #68 2019 1pp · 61378 #69 2019 1pp · 61379 #70 2019 1pp · 61380 #71 2019 1pp · 61381 #71 2019 1pp
+        61382 #72 2019 1pp · 61383 #73 2019 1pp · 61384 #73 2019 1pp · 61385 #76 2019 1pp · 61386 #77 2019 1pp · 61387 #78 2019 1pp · 61388 #78 2019 1pp · 61389 #79 2019 1pp · 61390 #79 2019 1pp
+        61391 #80 2019 1pp · 61392 #81 2019 1pp · 61393 #82 2020 1pp · 61394 #83 2020 1pp · 61395 #84 2020 1pp · 61396 #85 2020 1pp
+   G13 "Batman - City of Bane - The Complete Collection (2020) (digital) (Son of Ultron-Empire)" in DC\_Batman\_Completed Series\05 Batman v3 (2016)\_Deluxe Editions — 1 file(s), 1 COL, pp 338-338; cv per-file 33242x1; gcd per-file 167677x1; key 'Batman: City of Bane: The Complete Collection (2020)'
+      [61397] COL Batman - City of Bane - The Complete Collection (2020) (digital) (Son of Ultron-Empire).cbr (338pp)
+         own record cv 33242 / gcd s167677 "Batman: City of Bane: The Complete Collection" (issue 2176238) COLLECTS: gcd=103016 Batman (2016) #75-85 · gcd=109697 Batman Annual (2017) #4
+   G14 "Batman - Deluxe Edition" in DC\_Batman\_Completed Series\05 Batman v3 (2016)\_Deluxe Editions — 6 file(s), 6 COL, pp 278-484; cv per-file 103802x3, 128991x2; gcd per-file 116109x3, 162378x1, 165285x1; key 'Batman: The Rebirth Deluxe Edition - Book 1' | 'Batman: The Rebirth Deluxe Edition - Book 2' | 'Batman: The Rebirth Deluxe Edition - Book 3' | 'Batman: The Rebirth Deluxe Edition - Book 4' | 'Batman: The Deluxe Edition - Book 5' | 'Batman v3 (2016)'
+      [61398] COL Batman - Deluxe Edition Book 01 (2017) (digital) (Son of Ultron-Empire).cbr (379pp)  key="Batman: The Rebirth Deluxe Edition - Book 1"
+         own record cv 103802 / gcd s116109 "Batman: Rebirth Deluxe Edition" (issue 1731199) COLLECTS: gcd=103016 Batman (2016) #1-15 · gcd=111241 Batman (2017) #1 · gcd=102636 Batman: Rebirth (2016) #1 · gcd=112283 Batman: Night of the Monster Men (2017) (unnumbered)
+      [61399] COL Batman - Deluxe Edition Book 02 (2018) (digital) (Son of Ultron-Empire).cbr (428pp)  key="Batman: The Rebirth Deluxe Edition - Book 2"
+         own record cv 103802 / gcd s116109 "Batman: Rebirth Deluxe Edition" (issue 1814646) COLLECTS: gcd=103016 Batman (2016) #16-32 · gcd=109697 Batman Annual (2017) #1
+      [61400] COL Batman - Deluxe Edition Book 03 (2018) (digital) (Son of Ultron-Empire).cbr (311pp)  key="Batman: The Rebirth Deluxe Edition - Book 3"
+         own record cv 103802 / gcd s116109 "Batman: Rebirth Deluxe Edition" (issue 1878692) COLLECTS: gcd=103016 Batman (2016) #33-44 · gcd=109697 Batman Annual (2017) #2
+      [61401] COL Batman - Deluxe Edition Book 04 (2019) (digital) (Son of Ultron-Empire).cbr (339pp)  key="Batman: The Rebirth Deluxe Edition - Book 4"
+         own record gcd s162378 "Batman: Deluxe Edition" (issue 1986017) COLLECTS: gcd=103016 Batman (2016) #45-57 · gcd=123954 DC Nation (2018) #0 · gcd=128727 Batman / Catwoman: The Wedding Album - The Deluxe Edition (2018) (unnumbered)
+      [61402] COL Batman - Deluxe Edition Book 05 (2020) (digital) (Son of Ultron-Empire).cbr (278pp)  key="Batman: The Deluxe Edition - Book 5"
+      [61403] COL Batman - Deluxe Edition Book 06 (2022) (Digital) (EJGriffin-Empire).cbz (484pp)  key="Batman v3 (2016)"
+         own record cv 128991 / gcd s177857 "Batman" (issue 2371660) COLLECTS: gcd=175619 Batman: Fear State: Alpha (2021) #1 · gcd=103016 Batman (2016) #111
+   G15 "Batman" in DC\_Batman\_Completed Series\08 Batman v3.1 (2020) — 6 file(s), 6 COL, pp 165-310; cv per-file 796x4, 144512x1, 145866x1; gcd per-file 165285x4, 184235x1, 191856x1; key 'Batman v3 (2020)'
+      [61458] COL Batman Vol. 01 - Their Dark Designs (2020) (Digital) (EJGriffin-Empire).cbz (260pp)
+         own record cv 796 / gcd s165285 "Batman" (issue 2157657) COLLECTS: gcd=103016 Batman (2016) #85-94 · gcd=132577 Batman Secret Files (2018) #3
+      [61460] COL Batman Vol. 03 - Ghost Stories (2021) (Digital) (EJGriffin-Empire).cbz (172pp)
+         own record cv 796 / gcd s165285 "Batman" (issue 2229701) COLLECTS: gcd=103016 Batman (2016) #101-105 · gcd=109697 Batman Annual (2017) #5 · gcd=60830 Detective Comics (2011) #1027
+      [61461] COL Batman Vol. 04 - The Cowardly Lot (2021) (digital) (Son of Ultron-Empire).cbr (165pp)
+         own record cv 796 / gcd s165285 "Batman" (issue 2262137) COLLECTS: gcd=103016 Batman (2016) #106-111 · gcd=170023 Infinite Frontier (2021) #0
+      [61462] COL Batman Vol. 05 - Fear State Saga (2022) (digital) (Son of Ultron-Empire).cbr (310pp)
+         own record cv 144512 / gcd s184235 "Batman: Fear State Saga" (issue 2394974) COLLECTS: gcd=103016 Batman (2016) #112-117 · gcd=175619 Batman: Fear State: Alpha (2021) #1 · gcd=178470 Batman: Fear State: Omega (2022) #1 · gcd=177785 Batman Secret Files: The Gardener (2022) #1
+      [61478] COL Batman Vol. 06 - Abyss (2022) (Digital) (EJGriffin-Empire).cbz (169pp)
+         own record cv 796 / gcd s165285 "Batman" (issue 2422055) COLLECTS: gcd=103016 Batman (2016) #118-121, #124
+      [61479] COL Batman Vol. 07 - Shadow War (2022) (digital) (Son of Ultron-Empire).cbr (290pp)
+         own record cv 145866 / gcd s191856 "Batman: Shadow War" (issue 2446279) COLLECTS: gcd=103016 Batman (2016) #122-123 · gcd=172101 Robin (2021) #13-14 · gcd=176363 Deathstroke Inc. (2021) #8-9 · gcd=185130 Shadow War Zone (2022) #1
+   G16 "Batman 2022 Annual" in DC\_Batman\_Completed Series\08 Batman v3.1 (2020)\Annuals and Specials — 1 file(s), numbers 1, pp 43-43; cv per-file 149312x1; gcd per-file 177397x1; key 'Batman v3 (2020)'
+      [61457] Batman 2022 Annual 001 (2022) (Digital) (Zone-Empire).cbr (43pp)
+   G17 "Batman" in DC\_Batman\_Completed Series\08 Batman v3.1 (2020)\Variant Covers — 11 file(s), numbers 86-89, 92, 99-100, 108, pp 1-1; cv per-file 796x11; gcd per-file 171384x10, 103016x1; key 'Batman v3 (2020)'
+      e.g. Batman 086 (2020) (Variant Cover) (Digital) (Phantom-SWA).cbr
+        61480 #86 2020 1pp · 61481 #87 2020 1pp · 61482 #88 2020 1pp · 61483 #89 2020 1pp · 61484 #92 2020 1pp · 61485 #99 2020 1pp · 61486 #100 2020 1pp · 61487 #100 2020 1pp · 61488 #100 2020 1pp
+        61489 #100 2020 1pp · 61490 #108 2021 1pp
+
+== S95394 Batman  [split]  71 files / 11 collections  decided in R-107 (S)
+   decided: S 95394 cv=42721 gcd=61067 0.9 | the New 52 Batman: #0-52 + #23.1-23.4 (Villains Month) from the Trinity Read Order folders and "04 Batman v2 (2011)" (the five "Batman (2016)"-keyed files are #46-52 dated 2016, same run) and the run's own ten trades, whose GCD roll-ups are all on s61067 (#1-7, #8-12, #13-17, #21-24, #25-33, #0/18-20/28/34, #35-40, #41-45, #46-50, #51-52) = CV 42721 (DC 2011, 57, cached #0-52) = GCD 61067 (2011-2016, 57); 0.9 until the two Batman (2016) books below leave
+   F 95394 split-needed | 61459, 55144 -> join S95396 — "COL Batman Vol. 02 - The Joker War Saga (2021)" 330pp (GCD 2199714: Batman 2016 #95-100) and "Ghost-Maker - Clownhunter by James Tynion IV (2023)" 177pp (GCD 2571137: Batman 2016 #107-111), both from DC\Ghost-Maker / "08 Batman v3.1 (2020)", are books of the 2016 run that S95396 is (S cv=91273 gcd=103016)
+   F 95394 wrong-cv-link | per-file CV 796 (Batman 1940) on 53/71 files is the legacy stamp (L-052); the per-file GCD 65331 on 11 files is the Spanish ECC edition
+   named: S95396 Batman  189 files  keys: "Batman v3 (2016)" | "Batman v3 (2020)" | "Batman: City of Bane: The Complete Collection (2020)" | "Batman: The Deluxe Edition - Book 5" | "Batman: The Rebirth Deluxe Edition - Book 1" | "Batman: The Rebirth Deluxe Edition - Book 2" | "Batman: The Rebirth Deluxe Edition - Book 3" | "Batman: The Rebirth Deluxe Edition - Book 4"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S64223 "Batman" 799f [shares cv=796 — S cv=796 gcd=141 (R-106 0.9)] keys: "A Robins Tale" | "All they do is watch us kill part" | "As the Crow Flies part" | "Batman (1940)" (+5 more: lookup.py --shelf 64223)
+   nearby: S94872 "Nightwing" 178f [shares gcd=104515 (collected by item 61459) — S cv=92569 gcd=104515 (R-105 0.9)] keys: "Nightwing - Rebirth" | "Nightwing v4 (2016)" | "Nightwing: The Rebirth Deluxe Edition - Book 1" | "Nightwing: The Rebirth Deluxe Edition - Book 2" (+1 more: lookup.py --shelf 94872)
+   nearby: S96005 "Catwoman" 137f [shares gcd=126584 (collected by item 61459) — S cv=112028 gcd=126584 (R-106 0.95)] keys: "Catwoman v5 (2018)"
+   nearby: S100136 "Superman" 63f [shares gcd=59921 (collected by item 61330) — S cv=42986 gcd=59921 (R-049 0.95)] keys: "Superman v3 (2011)"
+   nearby: S96415 "Detective Comics" 53f [shares gcd=60830 (collected by item 61327) — S cv=42594 gcd=60830 (R-099 0.9)] keys: "Detective Comics (2011)" | "Detective Comics v2 (2011)"
+   nearby: S103666 "Batman Annual v2 (2012)" 3f [shares gcd=66086 (collected by item 61323) — S cv=49197 gcd=66086 (R-106 0.95)] keys: "Batman Annual v2 (2012)"
+   nearby: S1946 "Batman: Futures End" 1f [shares gcd=82709 (collected by item 61331) — S cv=76848 gcd=82709 (B-008 0.95)] keys: "Batman - Futures End"
+   nearby: S1995 "Batman: Rebirth" 1f [shares gcd=102636 (collected by item 61331) — S cv=90863 gcd=102636 (A-008 0.95)] keys: "Batman - Rebirth"
+   nearby: S7470 "Ghost-Maker/Clownhunter by James Tynion IV" 1f [shares cv=156713, shares gcd=204514 — S cv=156713 gcd=204514 (B-012 0.95)] keys: "Ghost-Maker/Clownhunter by James Tynion"
+   nearby: S1886 "Batman '66" 114f [title — S cv=64763 gcd=75494 (R-103 0.9)] keys: "Batman '66" | "Batman '66 - The Lost Episode" | "batman '66" · S1881 "Batman" 5f [title] keys: "Batman"
+   nearby: S1893 "Batman '89" 1f [title — S cv=138183 gcd=174882 (B-010 0.95)] keys: "Batman '89" · S2099 "Batman Eternal" 55f [title+1 — S cv=72915 gcd=80064 (R-099 0.95)] keys: "Batman Eternal"
+   nearby: S2093 "Batman Confidential" 54f [title+1 — S cv=18231 gcd=20878 (B-010 0.95)] keys: "Batman Confidential"
+   nearby: S2139 "Batman and Robin" 53f [title+1 — S cv=42692 gcd=60920 (R-100 0.9)] keys: "Batman & Robin v2 (2011)" | "Batman and Robin" | "Robin and Batman"
+   nearby: S2302 "Batman/Superman" 40f [title+1 — S cv=64203 gcd=75117 (B-008 0.95)] keys: "Batman - Superman" | "Batman-Superman v1 (2013)" | "BatmanSuperman"
+   nearby: S17289 "Superman/Batman" 40f [title+1 — S cv=10938 gcd=11863 (C-020 0.9)] keys: "Superman Batman" | "Superman/Batman" · S1960 "Batman - Hush" 38f [title+1] keys: "Batman - Hush"
+   nearby: S18067 "The Batman Family" 24f [title+1 — S cv=2727 gcd=2213 (C-012 0.95)] keys: "Batman Family" | "The Batman Family"
+   nearby: S94747 "Batman Beyond" 24f [title+1 — S cv=6421 gcd=6259 (R-101 0.95)] keys: "Batman Beyond v2 (1999)"
+   nearby: S18066 "The Batman Chronicles" 22f [title+1 — S cv=6598 gcd=7095 (C-012 0.95)] keys: "Batman Chronicles" | "The Batman Chronicles" · (+62 more by title)
+   keys now: "Batman v2 (2011)" x63 · "Batman (2016)" x5 · "Batman (2016-)" x1 · "Batman - Zero Year" x1 · "The Joker War Saga" x1
+   groups (title x folder): 24
+   G1 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\001 Forever Evil 1 — 1 file(s), numbers 0, pp 35-35; cv per-file 796x1; key 'Batman v2 (2011)'
+      [18057] 003 Batman 000 - November 2012.cbr (35pp)
+   G2 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\002 Zero Year Secret City — 13 file(s), numbers 21-33, pp 26-57; cv per-file 796x13; key 'Batman v2 (2011)'
+      [18059] 001 Batman 022 - September 2013.cbr (33pp)
+      [18060] 002 Batman 023 - October 2013.cbr (32pp)
+      [18061] 003 Batman 024 - December 2013.cbr (57pp)
+      [18062] 004 Batman 021 - August 2013.cbr (34pp)
+      [18066] 008 Batman 025 - January 2014.cbr (32pp)
+      [18076] 018 Batman 026 - February 2014.cbr (27pp)
+      [18077] 019 Batman 027 - March 2014.cbr (26pp)
+      [18078] 020 Batman 028 - April 2014.cbr (26pp)
+      [18079] 021 Batman 029 - May 2014.cbr (44pp)
+      [18080] 022 Batman 030 - June 2014.cbr (30pp)
+      [18081] 023 Batman 031 - July 2014.cbr (27pp)
+      [18082] 024 Batman 032 - August 2014.cbr (30pp)
+      [18083] 025 Batman 033 - September 2014.cbr (37pp)
+   G3 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\014 Batman Vol. 1 Court of Owls — 7 file(s), numbers 1-7, pp 22-25; cv per-file 796x7; gcd per-file 65331x1; key 'Batman v2 (2011)'
+      [18159] Batman 001 - November 2011.cbr (25pp)
+      [18160] Batman 002 - December 2011.cbr (24pp)
+      [18161] Batman 003 - January 2012.cbr (23pp)
+      [18162] Batman 004 - February 2012.cbr (25pp)
+      [18163] Batman 005 - March 2012.cbr (22pp)
+      [18164] Batman 006 - April 2012.cbr (25pp)
+      [18165] Batman 007 - May 2012.cbz (24pp)
+   G4 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\028 Batman Night of the Owls — 2 file(s), numbers 8-9, pp 31-33; cv per-file 796x2; key 'Batman v2 (2011)'
+      [18255] 001 Batman 008 - June 2012.cbr (31pp)
+      [18256] 002 Batman 009 - July 2012.cbr (33pp)
+   G5 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\029 Batman Vol. 2 City of Owls — 3 file(s), numbers 10-12, pp 34-37; cv per-file 796x3; key 'Batman v2 (2011)'
+      [18267] 001 Batman 010 - August 2012.cbr (34pp)
+      [18268] 002 Batman 011 - September 2012.cbr (37pp)
+      [18269] 003 Batman 012 - October 2012.cbr (34pp)
+   G6 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\055 Batman Vol. 3 Death of the Family 1 — 1 file(s), numbers 13, pp 37-37; cv per-file 796x1; key 'Batman v2 (2011)'
+      [19911] Batman 013 - December 2012.cbr (37pp)
+   G7 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\057 Batman Vol. 3 Death of the Family 2 — 1 file(s), numbers 14, pp 32-32; cv per-file 796x1; key 'Batman v2 (2011)'
+      [19912] Batman 014 - January 2013.cbr (32pp)
+   G8 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\060 Batman Vol. 3 Death of the Family 3 — 1 file(s), numbers 15, pp 33-33; cv per-file 796x1; key 'Batman v2 (2011)'
+      [19914] Batman 015 - February 2013.cbr (33pp)
+   G9 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\065 Batman Vol. 3 Death of the Family 4 — 2 file(s), numbers 16-17, pp 32-40; cv per-file 796x2; key 'Batman v2 (2011)'
+      [18402] Batman 016 - March 2013.cbr (32pp)
+      [18403] Batman 017 - April 2013.cbr (40pp)
+   G10 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\083 REQUIEM FOR DAMIAN — 1 file(s), numbers 18, pp 33-33; cv per-file 796x1; key 'Batman v2 (2011)'
+      [18426] 001 Batman 018 - May 2013.cbr (33pp)
+   G11 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\093 Batman Eternal\04 Batman Eternal - Interlude — 1 file(s), numbers 28, pp 26-26; cv per-file 796x1; key 'Batman v2 (2011)'
+      [19924] Batman # 28.cbr (26pp)
+   G12 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\099 Batman (19-20 an) — 2 file(s), numbers 19-20, pp 33-34; cv per-file 796x2; key 'Batman v2 (2011)'
+      [18612] Batman 019 - June 2013.cbr (33pp)
+      [18613] Batman 020 - July 2013.cbr (34pp)
+   G13 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\114 Batman - Endgame — 7 file(s), numbers 34-40, pp 25-40; cv per-file 796x7; key 'Batman v2 (2011)'
+      e.g. Batman # 34.cbr
+        18719 #34 25pp · 18720 #35 40pp · 18721 #36 35pp · 18722 #37 35pp · 18723 #38 33pp · 18724 #39 31pp · 18725 #40 30pp
+   G14 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\118 Batman - Superheavy Part 1 — 4 file(s), numbers 41-44, pp 27-35; cv per-file 91273x4; gcd per-file 65331x4; key 'Batman (2016)'
+      e.g. 01 Batman # 41 (2015) (Digital) (Zone-Empire).cbr
+        18843 #41 2015 28pp · 18844 #42 2015 29pp · 18845 #43 2015 27pp · 18846 #44 2015 35pp
+   G15 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\126 Batman - Superheavy - Part 2 - Bloom — 6 file(s), numbers 45-50, pp 25-56; cv per-file 796x5, 91273x1; gcd per-file 65331x5, 61067x1; key 'Batman (2016)' | 'Batman v2 (2011)'
+      e.g. 08 Batman 046 (2016) (2 covers) (Digital) (Zone-Empire).cbr
+        19016 #46 2016 28pp · 19017 #47 2016 30pp · 19018 #48 2016 27pp · 19019 #49 2016 25pp · 19020 #50 2016 56pp
+      [19015] 07 Batman # 45 (2015) (Digital) (Zone-Empire).cbr (28pp)  key="Batman (2016)"
+   G16 "Batman" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\128 Batman - Rebirth Leadup — 2 file(s), numbers 51-52, pp 24-25; cv per-file 796x2; gcd per-file 65331x1, 61067x1; key 'Batman v2 (2011)'
+      [19029] Batman 051 (2016) (2 covers) (Digital) (Zone-Empire).cbr (24pp)
+      [19030] Batman 052 (2016) (2 covers) (Digital) (Zone-Empire).cbr (25pp)
+   G17 "Ghost-Maker - Clownhunter by James Tynion IV (2023) (digital) (DrVink-DCP)" in DC\Ghost-Maker — 1 file(s), pp 177-177; cv per-file 156713x1; gcd per-file 204514x1; key 'Batman (2016-)'
+      [55144] Ghost-Maker - Clownhunter by James Tynion IV (2023) (digital) (DrVink-DCP).cbz (177pp)
+   G18 "Batman" in DC\_Batman\_Completed Series\04 Batman v2 (2011) — 10 file(s), 10 COL, pp 133-430; cv per-file 48729x10; gcd per-file 72998x10; key 'Batman v2 (2011)'
+      [61322] COL Batman Vol. 01 - The Court of Owls (2012) (Digital) (Zone-Empire).cbr (174pp)
+         own record cv 48729 / gcd s72998 "Batman" (issue 1096623) COLLECTS: gcd=61067 Batman (2011) #1-7
+      [61323] COL Batman Vol. 02 - The City of Owls (2013) (Digital) (Zone-Empire).cbr (202pp)
+         own record cv 48729 / gcd s72998 "Batman" (issue 1145605) COLLECTS: gcd=61067 Batman (2011) #8-12 · gcd=66086 Batman Annual (2012) #1
+      [61324] COL Batman Vol. 03 - The Joker - Death of the Family (2013) (Digital) (Zone-Empire).cbr (430pp)
+         own record cv 48729 / gcd s72998 "Batman" (issue 1204905) COLLECTS: gcd=61067 Batman (2011) #13-17 · gcd=70151 Batman (2012) #3
+      [61325] COL Batman Vol. 04 - Zero Year - Secret City (2014) (Digital) (Zone-Empire).cbr (175pp)
+         own record cv 48729 / gcd s72998 "Batman" (issue 1342927) COLLECTS: gcd=61067 Batman (2011) #21-24 · gcd=85417 Batman Zero Year Director's Cut (2013) #1
+      [61326] COL Batman Vol. 05 - Zero Year - Dark City (2014) (Digital) (Zone-Empire).cbr (251pp)
+         own record cv 48729 / gcd s72998 "Batman" (issue 1342951) COLLECTS: gcd=61067 Batman (2011) #25-27, #29-33
+      [61327] COL Batman Vol. 06 - Graveyard Shift (2015) (Digital) (Zone-Empire).cbr (215pp)
+         own record cv 48729 / gcd s72998 "Batman" (issue 1462096) COLLECTS: gcd=61067 Batman (2011) #0, #18-20, #28, #34 · gcd=66086 Batman Annual (2012) #2 · gcd=60830 Detective Comics (2011) #27 · gcd=70151 Batman (2012) #6
+      [61328] COL Batman Vol. 07 - The Joker - Endgame (2015) (Digital) (Zone-Empire).cbr (303pp)
+         own record cv 48729 / gcd s72998 "Batman" (issue 1546556) COLLECTS: gcd=61067 Batman (2011) #35-40
+      [61329] COL Batman Vol. 08 - Superheavy (2016) (Digital) (Zone-Empire).cbr (152pp)
+         own record cv 48729 / gcd s72998 "Batman" (issue 1620540) COLLECTS: gcd=61067 Batman (2011) #41-45 · gcd=88986 Divergence FCBD Special Edition [Free Comic Book Day] (2015) #1
+      [61330] COL Batman Vol. 09 - Bloom (2016) (Digital) (Zone-Empire).cbr (178pp)
+         own record cv 48729 / gcd s72998 "Batman" (issue 1658475) COLLECTS: gcd=61067 Batman (2011) #46-50 · gcd=59921 Superman (2011) #50 · gcd=60830 Detective Comics (2011) #27
+      [61331] COL Batman Vol. 10 - Epilogue (2016) (Digital) (Zone-Empire).cbr (133pp)
+         own record cv 48729 / gcd s72998 "Batman" (issue 1692368) COLLECTS: gcd=61067 Batman (2011) #51-52 · gcd=102636 Batman: Rebirth (2016) #1 · gcd=82709 Batman: Futures End (2014) #1 · gcd=66086 Batman Annual (2012) #4
+   G19 "Batman 023.1 Joker (2013) (Webrip) (The Last Kryptonian-DCP)" in DC\_Batman\_Completed Series\04 Batman v2 (2011)\Annuals and Specials — 1 file(s), numbers 23, pp 22-22; cv per-file 796x1; gcd per-file 61067x1; key 'Batman v2 (2011)'
+      [61318] Batman 023.1 Joker (2013) (Webrip) (The Last Kryptonian-DCP).cbr (22pp)
+   G20 "Batman 023.2 The Riddler (2013) (Digtal) (Zone-Empire)" in DC\_Batman\_Completed Series\04 Batman v2 (2011)\Annuals and Specials — 1 file(s), numbers 23, pp 24-24; cv per-file 796x1; gcd per-file 61067x1; key 'Batman v2 (2011)'
+      [61319] Batman 023.2 The Riddler (2013) (Digtal) (Zone-Empire).cbr (24pp)
+   G21 "Batman 023.3 Penguin (2013) (Digital) (Zone-Empire)" in DC\_Batman\_Completed Series\04 Batman v2 (2011)\Annuals and Specials — 1 file(s), numbers 23, pp 24-24; cv per-file 796x1; gcd per-file 61067x1; key 'Batman v2 (2011)'
+      [61320] Batman 023.3 Penguin (2013) (Digital) (Zone-Empire).cbr (24pp)
+   G22 "Batman 023.4 Bane (2013) (Webrip) (The Last Kryptonian-DCP)" in DC\_Batman\_Completed Series\04 Batman v2 (2011)\Annuals and Specials — 1 file(s), numbers 23, pp 22-22; cv per-file 796x1; gcd per-file 61067x1; key 'Batman v2 (2011)'
+      [61321] Batman 023.4 Bane (2013) (Webrip) (The Last Kryptonian-DCP).cbr (22pp)
+   G23 "Batman - Zero Year (2021) (digital) (Son of Ultron-Empire)" in DC\_Batman\_Completed Series\04 Batman v2 (2011)\Deluxe Editions — 1 file(s), pp 391-391; cv per-file 138641x1; gcd per-file 175623x1; key 'Batman - Zero Year'
+      [61333] Batman - Zero Year (2021) (digital) (Son of Ultron-Empire).cbr (391pp)
+   G24 "Batman" in DC\_Batman\_Completed Series\08 Batman v3.1 (2020) — 1 file(s), 1 COL, pp 330-330; cv per-file 133947x1; gcd per-file 169734x1; key 'The Joker War Saga'
+      [61459] COL Batman Vol. 02 - The Joker War Saga (2021) (digital) (Son of Ultron-Empire).cbr (330pp)
+         own record cv 133947 / gcd s169734 "The Joker War Saga" (issue 2199714) COLLECTS: gcd=103016 Batman (2016) #95-100 · gcd=164350 Batman: The Joker War Zone (2020) #1 · gcd=126584 Catwoman (2018) #25 · gcd=104515 Nightwing (2016) #74
+
+== S5272 Deathstroke the Terminator  [split]  40 files / 5 collections  decided in R-107 (S)
+   decided: S 5272 cv=9645 gcd=10465 0.9 | the 1991 run CV 9645 "Deathstroke the Terminator" (DC 1991, 61 = #0-60): the five trades whose GCD rows (88153: 1338945 … 1905239) collect "Deathstroke, the Terminator (1991)" #1-9, #10-13, #14-20, #21-25, #26-34 on s10465 (judged ranges agree), issue #13 and "Deathstroke 035-060 (1994-1996)" with Oa second rips of #48-50; GCD splits the run 10465 (#1-40) / 15127 / 15128 (#48-60), the majority by content being 10465 (L-363); 0.9 for Deathstroke Annual 001-004 (GCD 11010, its own record) and the 2016 #19 that leaves by split
+   F 5272 split-needed | 19101 -> join S2173 — "03 Deathstroke 019 (2017) (2 covers)" 26pp in "#DC Events\004 Major DC Events - Rebirth\006 Teen Titans - The Lazarus Contract (2017)" is Deathstroke (2016) #19 (per-file GCD 105634), a Lazarus Contract tie-in; S2173 is that run (S cv=93375 gcd=105634)
+   F 5272 needs-fetch cv=81226 | CV 81226 "Deathstroke the Terminator" 2015 (the five trades' own volume) is named from the rip only
+   N 5272 retract X-009's C lines on items 64306-64308 (cv=77678 gcd=83897, the 2014 Higgins run) and its "no-record-for-C" N lines on 64309-64310 (as R-104 asked): the trades collect the 1991 run, restated below
+   named: S2173 Deathstroke  9 files  keys: "Batman vs. Deathstroke" | "Deathstroke v4 (2016)" | "Deathstroke: Arkham" | "Deathstroke: R.I.P."  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S100135 "Superman" 209f [shares gcd=3386 (collected by item 64307) — S cv=3816 gcd=3386 (R-049 0.9)] keys: "Aftermath Superman" | "Superman v2 (1987)"
+   nearby: S21630 "Who's Who in the DC Universe" 16f [shares gcd=4008 (collected by item 64308) — S cv=19954 gcd=4008 (A-009 0.95)] keys: "Who's Who in the DC Universe"
+   nearby: S15575 "Showcase '93" 13f [shares gcd=10379 (collected by item 64308) — S cv=18340 gcd=10379 (A-009 0.9)] keys: "Showcase '93"
+   nearby: S12853 "The New Titans" 12f [shares gcd=3606 (collected by item 64306) — S cv=4014 gcd=3606 (C-008 0.95)] keys: "New Titans" | "The New Titans"
+   nearby: S94583 "Deathstroke" 4f [shares cv=77678 (N line), shares gcd=83897 (N line) — S cv=77678 gcd=83897 (R-103 0.95)] keys: "Deathstroke v3 (2014)"
+   nearby: S94582 "Deathstroke" 2f [title — S cv=42807 gcd=60921 (B-012 0.95)] keys: "Deathstroke v2 (2011)" · S5271 "Deathstroke Inc." 4f [title+1 — S cv=139232 gcd=176363 (R-103 0.95)] keys: "Deathstroke Inc."
+   nearby: S5268 "Deathstroke: Rebirth" 1f [title+1 — S cv=92955 gcd=105111 (A-008 0.95)] keys: "Deathstroke - Rebirth"
+   keys now: "Deathstroke v1 (1991)" x30 · "Deathstroke the Terminator" x6 · "Deathstroke" x4
+   groups (title x folder): 8
+   G1 "Deathstroke the Terminator 13  The Powers That Be" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\045 Evil Star Rising — 1 file(s), numbers 13, pp 25-25; cv per-file 9645x1; gcd per-file 10465x1; key 'Deathstroke the Terminator'
+      [15603] 07 Deathstroke the Terminator 13  The Powers That Be.cbz (25pp)
+   G2 "Deathstroke 48  Third Strike" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\068 Grand Opening — 1 file(s), numbers 48, pp 26-26; gcd per-file 15128x1; key 'Deathstroke'
+      [15742] 06 Deathstroke 48  Third Strike.cbz (26pp)
+   G3 "Deathstroke 49  All the Kings Men" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\068 Grand Opening — 1 file(s), numbers 49, pp 24-24; gcd per-file 15128x1; key 'Deathstroke'
+      [15745] 09 Deathstroke 49  All the Kings Men.cbz (24pp)
+   G4 "Deathstroke 50  Revelations" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\068 Grand Opening — 1 file(s), numbers 50, pp 38-38; gcd per-file 15128x1; key 'Deathstroke'
+      [15746] 10 Deathstroke 50  Revelations.cbz (38pp)
+   G5 "Deathstroke" in DC\#DC Events\004 Major DC Events - Rebirth\006 Teen Titans - The Lazarus Contract (2017) — 1 file(s), numbers 19, pp 26-26; gcd per-file 105634x1; key 'Deathstroke'
+      [19101] 03 Deathstroke 019 (2017) (2 covers) (Digital) (Zone-Empire).cbr (26pp)
+   G6 "Deathstroke" in DC\_Deathstroke\Deathstroke v1 (1991) — 26 file(s), numbers 35-60, pp 22-36; gcd per-file 15128x13; key 'Deathstroke v1 (1991)'
+      e.g. Deathstroke 035 (1994) (digital) (Minutemen-Midas).cbr
+        64280 #35 1994 25pp · 64281 #36 1994 25pp · 64282 #37 1994 25pp · 64283 #38 1994 25pp · 64284 #39 1994 25pp · 64285 #40 1994 26pp · 64286 #41 1994 24pp · 64287 #42 1994 25pp
+        64288 #43 1995 24pp · 64289 #44 1995 24pp · 64290 #45 1995 23pp · 64291 #46 1995 25pp · 64292 #47 1995 24pp · 64293 #48 1995 24pp · 64294 #49 1995 24pp · 64295 #50 1995 36pp
+        64296 #51 1995 23pp · 64297 #52 1995 23pp · 64298 #53 1995 23pp · 64299 #54 1995 23pp · 64300 #55 1996 23pp · 64301 #56 1996 22pp · 64302 #57 1996 23pp · 64303 #58 1996 23pp
+        64304 #59 1996 23pp · 64305 #60 1996 22pp
+   G7 "Deathstroke Annual" in DC\_Deathstroke\Deathstroke v1 (1991)\Annuals — 4 file(s), numbers 1-4, pp 48-55; key 'Deathstroke v1 (1991)'
+      e.g. Deathstroke Annual 001 (1992) (digital) (Minutemen-Midas).cbr
+        64276 #1 1992 55pp · 64277 #2 1993 52pp · 64278 #3 1994 55pp · 64279 #4 1995 48pp
+   G8 "Deathstroke the Terminator" in DC\_Deathstroke\Deathstroke v1 (1991)\Trades — 5 file(s), 5 COL, pp 191-265; cv per-file 81226x5; gcd per-file 88153x5; key 'Deathstroke the Terminator'
+      [64306] COL Deathstroke the Terminator Vol. 01 - Assassins (2015) (digital) (Son of Ultron-Empire).cbr (265pp)
+         own record cv 81226 / gcd s88153 "Deathstroke the Terminator" (issue 1338945) COLLECTS: gcd=10465 Deathstroke, the Terminator (1991) #1-9 · gcd=3606 The New Titans (1988) #70 · gcd=22888 Deathstroke, the Terminator -- Full Cycle (1992) (unnumbered)
+      [64307] COL Deathstroke the Terminator Vol. 02 - Sympathy for the Devil (2015) (digital) (Son of Ultron-Empire).cbr (191pp)
+         own record cv 81226 / gcd s88153 "Deathstroke the Terminator" (issue 1514274) COLLECTS: gcd=10465 Deathstroke, the Terminator (1991) #10-13 · gcd=11010 Deathstroke, the Terminator Annual (1992) #1 · gcd=3386 Superman (1987) #68
+      [64308] COL Deathstroke the Terminator Vol. 03 - Nuclear Winter (2017) (digital) (Son of Ultron-Empire).cbr (258pp)
+         own record cv 81226 / gcd s88153 "Deathstroke the Terminator" (issue 1742281) COLLECTS: gcd=10465 Deathstroke, the Terminator (1991) #14-20 · gcd=10379 Showcase '93 (1993) #6-11 · gcd=4008 Who's Who in the DC Universe (1990) #9
+      [64309] COL Deathstroke the Terminator Vol. 04 - Crash or Burn (2018) (digital) (Son of Ultron-Empire).cbr (197pp)
+         own record cv 81226 / gcd s88153 "Deathstroke the Terminator" (issue 1806559) COLLECTS: gcd=10465 Deathstroke, the Terminator (1991) #21-25 · gcd=11010 Deathstroke, the Terminator Annual (1992) #2
+      [64310] COL Deathstroke the Terminator Vol. 05 - World Tour (2018) (digital) (Son of Ultron-Empire).cbr (237pp)
+         own record cv 81226 / gcd s88153 "Deathstroke the Terminator" (issue 1905239) COLLECTS: gcd=10465 Deathstroke, the Terminator (1991) #26-34
+
+== S34675 Green Lantern  [split]  4 files / 2 collections  decided in R-105 (S)
+   decided: S 34675 cv=115055 gcd=133126 0.9 | the two trades are The Green Lantern (Morrison): Vol. 01 Intergalactic Lawman (GCD 2047851 roll-up s133126 #1-6) and Vol. 02 The Day the Stars Fell (2125110: s133126 #7-12) = CV 115055 (DC 2018, 12, cached #1-12) = GCD 133126 (DC 2019, 12) — the run, not GCD 153638 (the 2-volume collected series the shelf stored); ComicInfo Volume 2018 x2; 0.9 until the two foreign issues below leave
+   F 34675 split-needed | 16292 -> join S64826 — "01 Green Lantern 43 Prologue" 23pp in "#DC Events\000 … Green Lantern Corps\144 Blackest Night" is Green Lantern (2005) #43, the Blackest Night prologue (S64826's ladder lacks exactly #43); 18021 -> join S64824 — "05 Green Lantern 1000000 (1998)" 23pp in "DC - One Million (1998)", ComicInfo Volume 1990 / Count 181, is Green Lantern (1990) #1,000,000 = S64824's run (S cv=4363 gcd=3986)
+   N 34675 flag #259 label-ambiguous (item 65393): the per-file CV rows it names as "Green Lantern Archives" were the 1960 stamp (CV 2839) on the two single issues; the trades' own rows are GCD 2047851 / 2125110 — answered, no stale-flag line owed
+   named: S64826 Green Lantern  110 files  keys: "Green Lantern (2005)" | "Green Lantern v4 (2005)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S64824 Green Lantern  380 files  keys: "Green Lantern (1990)" | "Green Lantern v3 (1990)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64823 "Green Lantern" 364f [shares cv=2839 — S cv=2839 gcd=1448 (R-057 0.95)] keys: "Green Lantern (1960)" | "Green Lantern Corps v1 (1986)" | "Green Lantern v2 (1960)"
+   nearby: S94613 "Green Lantern" 64f [title — S cv=42808 gcd=60924 (R-097 0.9)] keys: "Green Lantern v5 (2011)"
+   nearby: S94615 "Green Lantern v7 (2023)" 60f [title — S cv=150172 gcd=200158 (R-054 0.95)] keys: "Green Lantern v7 (2023)"
+   nearby: S64822 "Green Lantern" 7f [title — S cv=25944 gcd=212 (C-028 0.9)] keys: "Green Lantern (1941)" | "Green Lantern v1 (1941)"
+   nearby: S64825 "Green Lantern Annual" 3f [title — S cv=4740 gcd=4399 (R-076 0.95)] keys: "Green Lantern (1999)"
+   nearby: S35332 "Green Lantern / Green Lantern" 2f [title — S cv=22221 gcd=10305 (R-035 0.95)] keys: "Green Lantern # 40b" | "Green Lantern and Green Lantern" | "Green Lantern/Green Lantern"
+   nearby: S94614 "Green Lantern v6 (2021)" 2f [title — S cv=135228 gcd=171616 (R-073 0.95)] keys: "Green Lantern v6 (2021)"
+   nearby: S7938 "Green Lantern Corps" 107f [title+1 — S cv=18248 gcd=18427 (R-056 0.95)] keys: "Epilogue - Green Lantern Corps" | "Green Lantern Corps" | "Green Lantern Corps v2 (2006)" | "Green Lantern corps" (+1 more: lookup.py --shelf 7938)
+   nearby: S103791 "Green Lantern Corps (2011)" 54f [title+1 — S cv=42916 gcd=61068 (R-097 0.9)] keys: "Green Lantern Corps (2011)"
+   nearby: S103836 "The Green Lantern Corps (1986)" 47f [title+1 — S cv=3600 gcd=3148 (R-054 1.0)] keys: "The Green Lantern Corps (1986)"
+   nearby: S7983 "Green Lantern: Mosaic" 29f [title+1 — S cv=4742 gcd=4402 (C-014 0.95)] keys: "Green Lantern: Mosaic"
+   nearby: S7924 "Green Lantern: Rebirth" 13f [title+1 — S cv=21531 gcd=11336 (A-007 0.9)] keys: "Green Lantern - Rebirth"
+   nearby: S18737 "Green Lantern Chronicles" 4f [title+1 — S cv=38191 gcd=36133 (A-010 0.95)] keys: "The Green Lantern Chronicles" · (+12 more by title)
+   keys now: "Green Lantern" x2 · "The Green Lantern" x2
+   groups (title x folder): 3
+   G1 "Green Lantern 43 Prologue" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\144 Blackest Night — 1 file(s), numbers 43, pp 23-23; cv per-file 2839x1; key 'Green Lantern'
+      [16292] 01 Green Lantern 43 Prologue.cbr (23pp)
+   G2 "Green Lantern 1000000 (1998) (digital) (OkC.O.M.P.U.T.O.-Novus)" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) — 1 file(s), pp 23-23; cv per-file 2839x1; key 'Green Lantern'
+      [18021] 05 Green Lantern 1000000 (1998) (digital) (OkC.O.M.P.U.T.O.-Novus).cbz (23pp)
+   G3 "The Green Lantern" in DC\_Green Lantern\_Completed Series\07 The Green Lantern Season 01 (2019) — 2 file(s), 2 COL, pp 176-204; cv per-file 115055x2; gcd per-file 153638x2; key 'The Green Lantern'
+      [65393] COL The Green Lantern Vol. 01 - Intergalactic Lawman (2019) (digital) (Son of Ultron-Empire).cbr (176pp)
+         own record cv 115055 / gcd s153638 "The Green Lantern" (issue 2047851) COLLECTS: gcd=133126 The Green Lantern (2019) #1-6 · gcd=148661 The Green Lantern (2019) #1
+      [65394] COL The Green Lantern Vol. 02 - The Day the Stars Fell (2019) (digital) (F) (Son of Ultron-Empire).cbr (204pp)
+         own record cv 115055 / gcd s153638 "The Green Lantern" (issue 2125110) COLLECTS: gcd=133126 The Green Lantern (2019) #7-12 · gcd=149299 The Green Lantern Annual (2019) #1
+
+== S10146 Justice League Unlimited  [split]  58 files / 3 collections  decided in R-105 (R)
+   decided: R 10146 | signal e (58 files) hides a second run: the dominant Justice League Unlimited (DC 2004) #1-46 = CV 11057 (46) = GCD 11988 (2004-2008, 46, per-file 46/58) with the three 2020 digests that reprint it — and nine files in "Justice League Unlimited (2025)": #1-3 (2025) and six 1pp variants of #3 = the 2025 series (CV 161311 / GCD 216154, 19, ComicInfo Volume 2025 x3), a different run with its own issues, not residue
+   F 10146 split-needed | 66694-66702 -> "Justice League Unlimited (2025)" (cv=161311 gcd=216154); the 2004 run (cv=11057 gcd=11988) stays
+   F 10146 needs-fetch cv=161311 | CV 161311 "Justice League Unlimited" 2025 is named from the rip only
+   keys now: "Justice League Unlimited" x55 · "Justice League Unlimited: Galactic Justice" x1 · "Justice League Unlimited: Hocus Pocus" x1 · "Justice League Unlimited: Time After Time" x1
+   groups (title x folder): 6
+   G1 "Justice League Unlimited" in DC\_Justice League\Justice League Unlimited (2025) — 3 file(s), numbers 1-3, pp 28-35; cv per-file 11057x3; gcd per-file 216154x3; key 'Justice League Unlimited'
+      [66694] Justice League Unlimited 001 (2025) (digital) (Marika-Empire).cbz (30pp)
+      [66695] Justice League Unlimited 002 (2025) (digital) (Marika-Empire).cbz (35pp)
+      [66696] Justice League Unlimited 003 (2025) (digital) (Marika-Empire).cbz (28pp)
+   G2 "Justice League Unlimited" in DC\_Justice League\Justice League Unlimited (2025)\Variant Covers — 6 file(s), numbers 3, pp 1-1; cv per-file 11057x6; gcd per-file 216154x6; key 'Justice League Unlimited'
+      e.g. Justice League Unlimited 003 (2025) (1-in-25 Tyler Kirkham Variant) (Digital) (MikeNY76-Empire).cbz
+        66697 #3 2025 1pp · 66698 #3 2025 1pp · 66699 #3 2025 1pp · 66700 #3 2025 1pp · 66701 #3 2025 1pp · 66702 #3 2025 1pp
+   G3 "Justice League Unlimited" in DC\_Justice League\_Completed Series\Justice League Unlimited v1 (2004) — 46 file(s), numbers 1-46, pp 20-24; cv per-file 11057x46; gcd per-file 11988x46; key 'Justice League Unlimited'
+      e.g. Justice League Unlimited 01 (2004) (digital) (Minutemen-Phantasm).cbr
+        67395 #1 2004 21pp · 67396 #2 2004 21pp · 67397 #21 2006 21pp · 67398 #22 2006 21pp · 67399 #23 2006 21pp · 67400 #24 2006 21pp · 67401 #25 2006 21pp · 67402 #28 2007 21pp
+        67403 #3 2005 21pp · 67404 #36 2007 24pp · 67405 #37 2007 21pp · 67406 #38 2007 23pp · 67407 #39 2008 24pp · 67408 #4 2005 21pp · 67409 #40 2008 24pp · 67410 #41 2008 24pp
+        67411 #42 2008 24pp · 67412 #43 2008 24pp · 67413 #44 2008 24pp · 67414 #45 2008 24pp · 67415 #46 2008 23pp · 67416 #5 2005 21pp · 67417 #6 2005 20pp · 67418 #7 2005 20pp
+        67419 #8 2005 21pp · 67420 #9 2005 20pp · 67421 #10 2005 21pp · 67422 #11 2005 21pp · 67423 #12 2005 21pp · 67424 #13 2005 20pp · 67425 #14 2005 21pp · 67426 #15 2006 21pp
+        67427 #16 2006 20pp · 67428 #17 2006 20pp · 67429 #18 2006 21pp · 67430 #19 2006 21pp · 67431 #20 2006 21pp · 67432 #26 2006 21pp · 67433 #27 2007 21pp · 67434 #29 2007 20pp
+        67435 #30 2007 21pp · 67436 #31 2007 21pp · 67437 #32 2007 21pp · 67438 #33 2007 21pp · 67439 #34 2007 21pp · 67440 #35 2007 21pp
+   G4 "Justice League Unlimited - Galactic Justice (2020) (digital) (Son of Ultron-Empire)" in DC\_Justice League\_Completed Series\Justice League Unlimited v1 (2004)\Trades — 1 file(s), 1 COL, pp 150-150; cv per-file 129772x1; key 'Justice League Unlimited: Galactic Justice'
+      [67441] COL Justice League Unlimited - Galactic Justice (2020) (digital) (Son of Ultron-Empire).cbr (150pp)
+   G5 "Justice League Unlimited - Hocus Pocus (2020) (digital) (Son of Ultron-Empire)" in DC\_Justice League\_Completed Series\Justice League Unlimited v1 (2004)\Trades — 1 file(s), 1 COL, pp 143-143; cv per-file 133529x1; key 'Justice League Unlimited: Hocus Pocus'
+      [67442] COL Justice League Unlimited - Hocus Pocus (2020) (digital) (Son of Ultron-Empire).cbr (143pp)
+   G6 "Justice League Unlimited - Time After Time (2020) (digital) (Son of Ultron-Empire)" in DC\_Justice League\_Completed Series\Justice League Unlimited v1 (2004)\Trades — 1 file(s), 1 COL, pp 158-158; cv per-file 131618x1; key 'Justice League Unlimited: Time After Time'
+      [67443] COL Justice League Unlimited - Time After Time (2020) (digital) (Son of Ultron-Empire).cbr (158pp)
+
+== S10820 Lobo: A Contract on Gawd  [split]  6 files / 1 collections  decided in R-105 (S)
+   decided: S 10820 cv=19235 gcd=14700 0.9 | signal b (per-file CV 18356, Lobo 1993, on 5/6) is the stamp: the run is "Lobo - A Contract on Gawd 001-04 (of 04) (1994)" in its own folder = CV 19235 (DC 1994, 4, cached #1-4) = GCD 14700 (1994, limited series, 4, per-file 4/4); ladder 1-4 complete; 0.9 until the two foreign books below leave
+   F 10820 split-needed | 18050 -> join S94655 — "36 Lobo 1000000 (1998)" 26pp (One Million read-order folder) is Lobo (1993) #1,000,000, S94655's run (cv=18356 gcd=14695); 68171 -> join S10831 — "COL Lobo by Keith Giffen & Alan Grant Vol. 01 (2018)" 320pp is volume 1 of the two-volume line S10831 holds volume 2 of (cv=108107 gcd=120374)
+   N 10820 no C line for item 68171: its GCD roll-up (1777757) reprints Lobo (1990) #1-4, Lobo's Back #1-4, the Convention Special and Who's Who pages — several runs, none of them this 1994 mini
+   named: S94655 Lobo  65 files  keys: "Lobo v2 (1993)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S10831 Lobo by Keith Giffen & Alan Grant  1 files  keys: "Lobo by Keith Giffen & Alan Grant"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S21630 "Who's Who in the DC Universe" 16f [shares gcd=4008 (collected by item 68171) — S cv=19954 gcd=4008 (A-009 0.95)] keys: "Who's Who in the DC Universe"
+   nearby: S10828 "Lobo Convention Special" 1f [shares gcd=14701 (collected by item 68171) — S cv=31932 gcd=14701 (A-011 0.95)] keys: "Lobo Convention Special"
+   keys now: "Lobo - A Contract on Gawd" x4 · "Lobo" x2
+   groups (title x folder): 4
+   G1 "Lobo 1000000 (1998) (digital) (OkC.O.M.P.U.T.O.-Novus)" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) — 1 file(s), pp 26-26; cv per-file 18356x1; key 'Lobo'
+      [18050] 36 Lobo 1000000 (1998) (digital) (OkC.O.M.P.U.T.O.-Novus).cbz (26pp)
+   G2 "Lobo - A Contract on Gawd" in DC\_Lobo\Lobo v2 (1993)\Annuals and Specials — 1 file(s), numbers 1, pp 25-25; cv per-file 18356x1; gcd per-file 14700x1; key 'Lobo - A Contract on Gawd'
+      [68083] Lobo - A Contract on Gawd 001 (1994) (Digital) (Shadowcat-Empire).cbz (25pp)
+   G3 "Lobo - A Contract on Gawd" in DC\_Lobo\_Trades, Minis and One-shots\Lobo - A Contract On Gawd (1994) — 3 file(s), numbers 2-4, pp 24-25; cv per-file 18356x3; gcd per-file 14700x3; key 'Lobo - A Contract on Gawd'
+      [68160] Lobo - A Contract on Gawd 02 (of 04) (1994) (digital-Empire).cbr (25pp)
+      [68161] Lobo - A Contract on Gawd 03 (of 04) (1994) (digital-Empire).cbr (24pp)
+      [68162] Lobo - A Contract on Gawd 04 (of 04) (1994) (digital-Empire).cbr (24pp)
+   G4 "Lobo by Keith Giffen & Alan Grant" in DC\_Lobo\_Trades, Minis and One-shots\Lobo by Keith Giffen & Alan Grant (2018) — 1 file(s), 1 COL, pp 320-320; cv per-file 108107x1; gcd per-file 120374x1; key 'Lobo'
+      [68171] COL Lobo by Keith Giffen & Alan Grant Vol. 01 (2018) (digital) (Son of Ultron-Empire).cbr (320pp)
+         own record cv 108107 / gcd s120374 "Lobo by Keith Giffen & Alan Grant" (issue 1777757) COLLECTS: gcd=14712 Lobo's Back (1992) #1-4 · gcd=14694 Lobo (1990) #1-4 · gcd=4008 Who's Who in the DC Universe (1990) #8 · gcd=14701 Lobo Convention Special (1993) #1
+
+== S64455 Crisis On Multiple Earths  [split]  10 files / 10 collections  decided in R-105 (R)
+   decided: R 64455 | signals c (four RANGE CONTRADICTED) and d (#207) come from two collection lines on one shelf: the 2002-2013 TPB line Vol. 01-06 (66703-66708, CV 23382 / GCD 10316, 6) and the 2021-2023 Book line Book 01-03 (19145/67982, 19146, 19147; CV 133945 / GCD 169731, 3) — three whole books of a different record, so a co-equal line under the residue ruling; both reprint the JLA-JSA team-ups from Justice League of America (1960) in two-part pairs (Book 01 = Vol. 1-2's #21-83, Book 02 = #91-148, Book 03 = #171-232 + All-Star Squadron #14-15), which is why GCD's notes contradict the judged "#1-2 / #3-4 / #5-6" — those are the 2002 line's volume numbers, not issues
+   F 64455 split-needed | the Book line 19145, 67982, 19146, 19147 -> "Crisis on Multiple Earths (2021)" (cv=133945 gcd=169731); the 2002 line 66703-66708 (cv=23382 gcd=10316) stays
+   N 64455 retract the judged ranges #1-2 / #3-4 / #5-6 on 19145, 67982, 19146, 19147 and X-011's C lines on them (cv=23382 gcd=10316): a Book reprints JLA (1960) two-part stories, not volumes of the 2002 line — the contents are gapped pairs of s1449 that one C range cannot state (the gap rule), so no C is written
+   N 64455 flag #207 label-ambiguous (items 19145 / 67982): both are Book 01 - Crossing Over (416pp), GCD 2200622 — genuinely two rips of one book
+   nearby: S94644 "Justice League of America" 261f [shares gcd=1449 (collected by item 19145) — S cv=2014 gcd=1449 (C-015 0.95)] keys: "Justice League of America v1 (1960)"
+   nearby: S764 "All-Star Squadron" 73f [shares gcd=2583 (collected by item 19147) — S cv=3070 gcd=2583 (C-009 0.95)] keys: "All-Star Squadron" | "All-Star Squadron Annual"
+   nearby: S67356 "Limited Collectors' Edition" 2f [shares gcd=2100 (collected by item 19145) — S cv=29993 gcd=2100 (C-020 0.95)] keys: "Limited Collectors' Edition"
+   keys now: "Crisis on Multiple Earths (2002)" x7 · "Crisis on Multiple Earths (2021)" x3
+   groups (title x folder): 3
+   G1 "Crisis on Multiple Earths" in DC\#DC Events\Crisis on Multiple Earths — 3 file(s), 3 COL, pp 416-466; cv per-file 133945x3; gcd per-file 169731x3; key 'Crisis on Multiple Earths (2021)' | 'Crisis on Multiple Earths (2002)'
+      [19145] COL Crisis on Multiple Earths Book 01 - Crossing Over (2020) (digital) (Son of Ultron-Empire).cbr (416pp)  key="Crisis on Multiple Earths (2021)"
+         own record cv 133945 / gcd s169731 "Crisis on Multiple Earths" (issue 2200622) COLLECTS: gcd=1449 Justice League of America (1960) #21-22, #29-30, #37-38, #46-47, #55-56, #64-65, #73-74, #76, #82-83 · gcd=10316 Crisis on Multiple Earths (2002) #2 · gcd=2100 Limited Collectors' Edition (1972) (unnumbered)
+      [19146] COL Crisis on Multiple Earths Book 02 - Crisis Crossed (2021) (digital) (Son of Ultron-Empire).cbr (418pp)  key="Crisis on Multiple Earths (2021)"
+         own record cv 133945 / gcd s169731 "Crisis on Multiple Earths" (issue 2302782) COLLECTS: gcd=1449 Justice League of America (1960) #91-92, #100-102, #107-108, #113, #123-124, #135-137, #147-148, #159-160 · gcd=10316 Crisis on Multiple Earths (2002) #3-4
+      [19147] COL Crisis on Multiple Earths Book 03 - Countdown to Crisis (2023) (digital) (Son of Ultron-Empire).cbr (466pp)
+         own record cv 133945 / gcd s169731 "Crisis on Multiple Earths" (issue 2551128) COLLECTS: gcd=1449 Justice League of America (1960) #171-172, #183-185, #195-197, #207-209, #219-220, #231-232 · gcd=2583 All-Star Squadron (1981) #14-15 · gcd=2627 DC Comics Presents Annual (1982) #1 · gcd=10316 Crisis on Multiple Earths (2002) #5
+   G2 "Crisis on Multiple Earths" in DC\_Justice League\_Completed Series\Crisis on Multiple Earths (2002) — 6 file(s), 6 COL, pp 171-210; cv per-file 23382x6; gcd per-file 10316x6; key 'Crisis on Multiple Earths (2002)'
+      [66703] COL Crisis on Multiple Earths Vol. 01 (2002) (Digital) (Zone-Empire).cbr (210pp)
+         own record cv 23382 / gcd s10316 "Crisis on Multiple Earths" (issue 98148) COLLECTS: gcd=1449 Justice League of America (1960) #21-22, #29-30, #37-38, #46-47
+      [66704] COL Crisis on Multiple Earths Vol. 02 (2003) (Digital) (Zone-Empire).cbr (207pp)
+         own record cv 23382 / gcd s10316 "Crisis on Multiple Earths" (issue 531996) COLLECTS: gcd=1449 Justice League of America (1960) #55-56, #64-65, #73-74, #76, #82-83 · gcd=2100 Limited Collectors' Edition (1972) (unnumbered)
+      [66705] COL Crisis on Multiple Earths Vol. 03 (2004) (Digital) (Zone-Empire).cbr (195pp)
+         own record cv 23382 / gcd s10316 "Crisis on Multiple Earths" (issue 531997) COLLECTS: gcd=1449 Justice League of America (1960) #91-92, #100-102, #107-108, #113
+      [66706] COL Crisis on Multiple Earths Vol. 04 (2006) (Digital) (Zone-Empire).cbr (171pp)
+         own record cv 23382 / gcd s10316 "Crisis on Multiple Earths" (issue 531998) COLLECTS: gcd=1449 Justice League of America (1960) #123-124, #135-137, #147-148
+      [66707] COL Crisis on Multiple Earths Vol. 05 (2010) (Digital) (Zone-Empire).cbr (174pp)
+         own record cv 23382 / gcd s10316 "Crisis on Multiple Earths" (issue 752700) COLLECTS: gcd=1449 Justice League of America (1960) #159-160, #171-172, #183-185
+      [66708] COL Crisis on Multiple Earths Vol. 06 (2013) (Digital) (Zone-Empire).cbr (206pp)
+         own record cv 23382 / gcd s10316 "Crisis on Multiple Earths" (issue 1119066) COLLECTS: gcd=1449 Justice League of America (1960) #195-197, #207-209 · gcd=2583 All-Star Squadron (1981) #14-15
+   G3 "Crisis on Multiple Earths" in DC\_Justice League\_Completed Series\Crisis on Multiple Earths (2002)\Deluxe Editions — 1 file(s), 1 COL, pp 416-416; cv per-file 133945x1; gcd per-file 169731x1; key 'Crisis on Multiple Earths (2021)'
+      [67982] COL Crisis on Multiple Earths Book 01 - Crossing Over (2020) (digital) (Son of Ultron-Empire).cbr (416pp)
+         own record cv 133945 / gcd s169731 "Crisis on Multiple Earths" (issue 2200622) COLLECTS: gcd=1449 Justice League of America (1960) #21-22, #29-30, #37-38, #46-47, #55-56, #64-65, #73-74, #76, #82-83 · gcd=10316 Crisis on Multiple Earths (2002) #2 · gcd=2100 Limited Collectors' Edition (1972) (unnumbered)
+
+== S9704 JLA  [split]  95 files / 10 collections  decided in R-105 (R)
+   decided: R 9704 | signals d (#298) and e (95 files) hide a second run: the dominant JLA (DC 1997) = CV 5957 (126, cached #1-125) = GCD 5747 (1997-2006, 126) — issues #0-23, 28-31, 35, 46, 59, 107-125 (the One Million / Rock of Ages / Tower of Babel / Syndicate Rules / Crisis of Conscience read-order folders are all this run), #1,000,000, Annuals #2-3 and Vol. 01-09 (GCD 81721, roll-ups s5747 #10-17 … #107-125) — shares the shelf with the twelve "JLA - Year One 001-012 (1998)" files in "JLA Year One (1997)" (ComicInfo Series "JLA: Year One" x12) and their trade 67542: JLA: Year One (DC 1998, 12-issue mini, CV 6171 / GCD 5981), a whole co-equal run, not residue
+   F 9704 split-needed | "JLA: Year One (1998)" (cv=6171 gcd=5981): the twelve "JLA - Year One 001 (1998)" … "012 (1998)" files and 67542 "COL JLA - Year One (2024)"; the JLA (1997) run (cv=5957 gcd=5747) stays
+   F 9704 needs-fetch cv=6171 | CV 6171 "JLA: Year One" 1998 is named from the rip only
+   N 9704 flag #298 label-ambiguous (item 16933): JLA v3 043-046 "Tower of Babel 1-4" are single 23-24pp issues of this run, as the flag says — answered
+   N 67542 no-record | "COL JLA - Year One (2024)" 322pp: its stored GCD row 2620938 is the 620pp "JLA Book One" (JLA #1-9) — another book; CV has only the 1999 one-issue TPB 51383 and GCD 22898; no 2024 Year One edition row in either leg
+   nearby: S16884 "JLA Secret Files" 3f [shares gcd=5976 (collected by item 66789) — S cv=6166 gcd=5976 (A-011 0.9)] keys: "JLA - Secret Files and Origins" | "Story from JLA Secret Files"
+   nearby: S9718 "JLA/WildC.A.T.s" 1f [shares gcd=14839 (collected by item 66790) — S cv=26593 gcd=14839 (D-002 0.95)] keys: "JLA - Wildcats"
+   nearby: S9719 "JLA: Classified" 57f [title+1 — S cv=11105 gcd=12038 (B-012 0.95)] keys: "JLA Classified"
+   nearby: S10655 "Legends" 12f [title+1 — S cv=3607 gcd=3156 (C-007 0.95)] keys: "JLA - Legends01" | "JLA - Legends02" | "JLA - Legends03" | "JLA - Legends04" (+3 more: lookup.py --shelf 10655)
+   nearby: S9729 "JLA: Incarnations" 7f [title+1 — S cv=7219 gcd=7782 (A-011 0.95)] keys: "JLA: Incarnations" · S9728 "JLA: Destiny" 4f [title+1 — S cv=10771 gcd=11684 (A-011 0.95)] keys: "JLA: Destiny"
+   nearby: S9723 "JLA/Titans" 3f [title+1 — S cv=6168 gcd=5978 (B-013 0.95)] keys: "JLA-The Titans" · S9724 "JLA-Z" 3f [title+1 — S cv=21995 gcd=14378 (A-011 0.95)] keys: "JLA-Z"
+   nearby: S9708 "JLA: Earth-2" 1f [title+1 — S cv=18121 gcd=11685 (D-002 0.95)] keys: "JLA - Earth"
+   keys now: "JLA" x95
+   groups (title x folder): 41
+   G1 "JLA Annual 02  Life Itself" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\088 The Choice — 1 file(s), pp 39-39; cv per-file 5957x1; key 'JLA'
+      [15876] 02 JLA Annual 02  Life Itself.cbz (39pp)
+   G2 "JLA Annual 03  Gorilla Warfare" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\090 In Effigy — 1 file(s), pp 39-39; cv per-file 5957x1; key 'JLA'
+      [15896] 07 JLA Annual 03  Gorilla Warfare.cbz (39pp)
+   G3 "JLA 035  The Guilty" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\091 Day of Judgement — 1 file(s), numbers 35, pp 25-25; cv per-file 5957x1; gcd per-file 5747x1; key 'JLA'
+      [15909] 08 JLA 035  The Guilty.cbz (25pp)
+   G4 "JLA 059  Bipolar Disorder" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\104 Last Laugh — 1 file(s), numbers 59, pp 23-23; cv per-file 5957x1; gcd per-file 5747x1; key 'JLA'
+      [16048] 02 JLA 059  Bipolar Disorder.cbz (23pp)
+   G5 "JLA_v3__028" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\15 Crisis Time 5 — 1 file(s), numbers 28, pp 23-23; cv per-file 5957x1; key 'JLA'
+      [16867] JLA_v3__028.cbr (23pp)
+   G6 "JLA_v3__029" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\15 Crisis Time 5 — 1 file(s), numbers 29, pp 23-23; cv per-file 5957x1; key 'JLA'
+      [16868] JLA_v3__029.cbr (23pp)
+   G7 "JLA_v3__030" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\15 Crisis Time 5 — 1 file(s), numbers 30, pp 23-23; cv per-file 5957x1; key 'JLA'
+      [16869] JLA_v3__030.cbr (23pp)
+   G8 "JLA_v3__031" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\15 Crisis Time 5 — 1 file(s), numbers 31, pp 23-23; cv per-file 5957x1; key 'JLA'
+      [16870] JLA_v3__031.cbr (23pp)
+   G9 "JLA 023 2pg Intro" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\17 DC One Million — 1 file(s), numbers 0, pp 2-2; cv per-file 5957x1; key 'JLA'
+      [16871] 0 JLA 023 2pg Intro.cbr (2pp)
+   G10 "JLA" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\20 JLA - Tower of Babel — 4 file(s), numbers 1-3, 46, pp 23-24; cv per-file 5957x4; key 'JLA'
+      [16933] JLA v3 043 Tower of Babel 1.cbz (23pp)
+      [16934] JLA v3 044 Tower of Babel 2.cbz (23pp)
+      [16935] JLA v3 045 Tower of Babel 3.cbz (23pp)
+      [16936] JLA v3 046 (Tower of Babel 4 of 4).cbr (24pp)
+   G11 "JLA_v3__010_-_Rock_of_Ages_Prologue" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\20 JLA - Tower of Babel\14 JLA - Rock of ages — 1 file(s), numbers 10, pp 23-23; cv per-file 5957x1; key 'JLA'
+      [16918] JLA_v3__010_-_Rock_of_Ages_Prologue.cbr (23pp)
+   G12 "JLA_v3__011_-_Rock_of_Ages_Part_2" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\20 JLA - Tower of Babel\14 JLA - Rock of ages — 1 file(s), numbers 11, pp 25-25; cv per-file 5957x1; key 'JLA'
+      [16919] JLA_v3__011_-_Rock_of_Ages_Part_2.cbr (25pp)
+   G13 "JLA_v3__012_-_Rock_of_Ages_Part_3" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\20 JLA - Tower of Babel\14 JLA - Rock of ages — 1 file(s), numbers 12, pp 25-25; cv per-file 5957x1; key 'JLA'
+      [16920] JLA_v3__012_-_Rock_of_Ages_Part_3.cbr (25pp)
+   G14 "JLA_v3__013_-_Rock_of_Ages_Part_4" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\20 JLA - Tower of Babel\14 JLA - Rock of ages — 1 file(s), numbers 13, pp 24-24; cv per-file 5957x1; key 'JLA'
+      [16921] JLA_v3__013_-_Rock_of_Ages_Part_4.cbr (24pp)
+   G15 "JLA_v3__014_-_Rock_of_Ages_Part_5" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\20 JLA - Tower of Babel\14 JLA - Rock of ages — 1 file(s), numbers 14, pp 25-25; cv per-file 5957x1; key 'JLA'
+      [16922] JLA_v3__014_-_Rock_of_Ages_Part_5.cbr (25pp)
+   G16 "JLA_v3__015_-_Rock_of_Ages_Part_6" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\20 JLA - Tower of Babel\14 JLA - Rock of ages — 1 file(s), numbers 15, pp 39-39; cv per-file 5957x1; key 'JLA'
+      [16923] JLA_v3__015_-_Rock_of_Ages_Part_6.cbz (39pp)
+   G17 "JLA_v3_107" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\42 JLA - Syndicate Rules — 1 file(s), numbers 107, pp 23-23; cv per-file 5957x1; key 'JLA'
+      [17110] JLA_v3_107.cbr (23pp)
+   G18 "JLA_v3_108" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\42 JLA - Syndicate Rules — 1 file(s), numbers 108, pp 25-25; cv per-file 5957x1; key 'JLA'
+      [17111] JLA_v3_108.cbr (25pp)
+   G19 "JLA_v3_109" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\42 JLA - Syndicate Rules — 1 file(s), numbers 109, pp 25-25; cv per-file 5957x1; key 'JLA'
+      [17112] JLA_v3_109.cbr (25pp)
+   G20 "JLA_v3_110" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\42 JLA - Syndicate Rules — 1 file(s), numbers 110, pp 25-25; cv per-file 5957x1; key 'JLA'
+      [17113] JLA_v3_110.cbr (25pp)
+   G21 "JLA_v3_111" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\42 JLA - Syndicate Rules — 1 file(s), numbers 111, pp 24-24; cv per-file 5957x1; key 'JLA'
+      [17114] JLA_v3_111.cbr (24pp)
+   G22 "JLA_v3_112" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\42 JLA - Syndicate Rules — 1 file(s), numbers 112, pp 24-24; cv per-file 5957x1; key 'JLA'
+      [17115] JLA_v3_112.cbr (24pp)
+   G23 "JLA_v3_113" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\42 JLA - Syndicate Rules — 1 file(s), numbers 113, pp 24-24; cv per-file 5957x1; key 'JLA'
+      [17116] JLA_v3_113.cbr (24pp)
+   G24 "JLA_v3_114" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\42 JLA - Syndicate Rules — 1 file(s), numbers 114, pp 27-27; cv per-file 5957x1; key 'JLA'
+      [17117] JLA_v3_114.cbr (27pp)
+   G25 "02a JLA_v3__115" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\70 JLA - Crisis of Conscience — 1 file(s), numbers 115, pp 22-22; cv per-file 5957x1; key 'JLA'
+      [17342] 02a JLA_v3__115.cbr (22pp)
+   G26 "02b JLA_v3__116" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\70 JLA - Crisis of Conscience — 1 file(s), numbers 116, pp 23-23; cv per-file 5957x1; key 'JLA'
+      [17343] 02b JLA_v3__116.cbr (23pp)
+   G27 "02c JLA_v3__117" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\70 JLA - Crisis of Conscience — 1 file(s), numbers 117, pp 21-21; cv per-file 5957x1; key 'JLA'
+      [17344] 02c JLA_v3__117.cbr (21pp)
+   G28 "02d JLA_v3__118" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\70 JLA - Crisis of Conscience — 1 file(s), numbers 118, pp 22-22; cv per-file 5957x1; key 'JLA'
+      [17345] 02d JLA_v3__118.cbr (22pp)
+   G29 "02e JLA_v3__119" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\70 JLA - Crisis of Conscience — 1 file(s), numbers 119, pp 23-23; cv per-file 5957x1; key 'JLA'
+      [17346] 02e JLA_v3__119.cbr (23pp)
+   G30 "JLA_v3__121" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\05 JLA - World without a justice — 1 file(s), numbers 121, pp 23-23; cv per-file 5957x1; key 'JLA'
+      [17389] JLA_v3__121.cbr (23pp)
+   G31 "JLA_v3__122" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\05 JLA - World without a justice — 1 file(s), numbers 122, pp 24-24; cv per-file 5957x1; key 'JLA'
+      [17390] JLA_v3__122.cbr (24pp)
+   G32 "JLA_v3__123" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\05 JLA - World without a justice — 1 file(s), numbers 123, pp 25-25; cv per-file 5957x1; key 'JLA'
+      [17391] JLA_v3__123.cbr (25pp)
+   G33 "JLA_v3__124" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\05 JLA - World without a justice — 1 file(s), numbers 124, pp 25-25; cv per-file 5957x1; key 'JLA'
+      [17392] JLA_v3__124.cbr (25pp)
+   G34 "JLA_v3__125" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\05 JLA - World without a justice — 1 file(s), numbers 125, pp 24-24; cv per-file 5957x1; key 'JLA'
+      [17393] JLA_v3__125.cbr (24pp)
+   G35 "JLA_v3__122" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\10 Supergirl - Candor — 1 file(s), numbers 122, pp 24-24; cv per-file 5957x1; key 'JLA'
+      [17420] 01 JLA_v3__122.cbr (24pp)
+   G36 "JLA_v3__123" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\10 Supergirl - Candor — 1 file(s), numbers 123, pp 25-25; cv per-file 5957x1; key 'JLA'
+      [17421] 02 JLA_v3__123.cbr (25pp)
+   G37 "JLA 1000000 (1998) (digital) (OkC.O.M.P.U.T.O.-Novus)" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) — 1 file(s), pp 48-48; cv per-file 5957x1; key 'JLA'
+      [18034] 19 JLA 1000000 (1998) (digital) (OkC.O.M.P.U.T.O.-Novus).cbz (48pp)
+   G38 "JLA" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998)\00 Prologue — 14 file(s), numbers 10-23, pp 23-40; cv per-file 5957x14; gcd per-file 5747x7, 45080x7; key 'JLA'
+      e.g. JLA 010 (1997) (digital-Empire).cbz
+        18002 #10 1997 23pp · 18003 #11 1997 25pp · 18004 #12 1997 25pp · 18005 #13 1997 24pp · 18006 #14 1998 26pp · 18007 #15 1998 40pp · 18008 #16 1998 23pp · 18009 #17 1998 25pp
+        18010 #18 1998 25pp · 18011 #19 1998 25pp · 18012 #20 1998 23pp · 18013 #21 1998 25pp · 18014 #22 1998 25pp · 18015 #23 1998 24pp
+   G39 "JLA - Year One" in DC\_Justice League\_Completed Series\JLA Year One (1997) — 12 file(s), numbers 1-12, pp 22-38; cv per-file 5957x12; gcd per-file 45080x10, 165579x2; key 'JLA'
+      e.g. JLA - Year One 001 (1998) (digital-Empire).cbr
+        66798 #1 1998 38pp · 66799 #2 1998 23pp · 66800 #3 1998 23pp · 66801 #4 1998 23pp · 66802 #5 1998 23pp · 66803 #6 1998 24pp · 66804 #7 1998 22pp · 66805 #8 1998 23pp · 66806 #9 1998 23pp
+        66807 #10 1998 23pp · 66808 #11 1998 22pp · 66809 #12 1998 38pp
+   G40 "JLA" in DC\_Justice League\_Completed Series\JLA v1 (1997) — 28 file(s), 9 COL, numbers 107-125, pp 22-461; cv per-file 5957x19, 74723x9; gcd per-file 5747x19, 81721x9; key 'JLA'
+      e.g. JLA 107 (2004) (digital-Empire).cbz
+        66770 #107 2004 22pp · 66771 #108 2005 24pp · 66772 #109 2005 23pp · 66773 #110 2005 24pp · 66774 #111 2005 23pp · 66775 #112 2005 23pp · 66776 #113 2005 23pp · 66777 #114 2005 23pp
+        66778 #115 2005 22pp · 66779 #116 2005 23pp · 66780 #117 2005 22pp · 66781 #118 2005 23pp · 66782 #119 2005 23pp · 66783 #120 2005 24pp · 66784 #121 2005 23pp · 66785 #122 2006 24pp
+        66786 #123 2006 24pp · 66787 #124 2006 24pp · 66788 #125 2006 23pp
+      [66789] COL JLA Vol. 01 (2008) (Digital) (Zone-Empire).cbr (256pp)
+         own record cv 74723 / gcd s81721 "JLA" (issue 1237320) COLLECTS: gcd=5747 JLA (1997) #1-9 · gcd=5976 JLA Secret Files (1997) #1
+      [66790] COL JLA Vol. 02 (2012) (Digital) (Zone-Empire).cbr (322pp)
+         own record cv 74723 / gcd s81721 "JLA" (issue 1237321) COLLECTS: gcd=5747 JLA (1997) #10-17 · gcd=14839 JLA / WildC.A.T.s (1997) (unnumbered) · gcd=5992 Prometheus (Villains) (1998) #1 · gcd=5976 JLA Secret Files (1997) #2
+      [66791] COL JLA Vol. 03 (2012) (Digital) (F) (Zone-Empire).cbr (336pp)
+         own record cv 74723 / gcd s81721 "JLA" (issue 1237322) COLLECTS: gcd=5747 JLA (1997) #18-31
+      [66792] COL JLA Vol. 04 (2014) (Digital) (F) (Zone-Empire).cbr (369pp)
+         own record cv 74723 / gcd s81721 "JLA" (issue 1237323) COLLECTS: gcd=5747 JLA (1997) #32-46 · gcd=11686 JLA (1997) #7
+      [66793] COL JLA Vol. 05 (2014) (digital-hd-Empire).cbr (433pp)
+         own record cv 74723 / gcd s81721 "JLA" (issue 1237324) COLLECTS: gcd=5747 JLA (1997) #47-60 · gcd=5976 JLA Secret Files (1997) #3 · gcd=7248 JLA: Heaven's Ladder (2000) #1
+      [66794] COL JLA Vol. 06 (2015) (digital-hd-Empire).cbr (411pp)
+         own record cv 74723 / gcd s81721 "JLA" (issue 1356161) COLLECTS: gcd=5747 JLA (1997) #61-76
+      [66795] COL JLA Vol. 07 (2015) (digital-hd-Empire).cbr (408pp)
+         own record cv 74723 / gcd s81721 "JLA" (issue 1356198) COLLECTS: gcd=5747 JLA (1997) #77-93
+      [66796] COL JLA Vol. 08 (2016) (digital-hd-Empire).cbr (344pp)
+         own record cv 74723 / gcd s81721 "JLA" (issue 1565295) COLLECTS: gcd=5747 JLA (1997) #94-106 · gcd=12160 JLA Secret Files 2004 (2004) #1
+      [66797] COL JLA Vol. 09 (2016) (digital) (Son of Ultron-Empire).cbr (461pp)
+         own record cv 74723 / gcd s81721 "JLA" (issue 1661607) COLLECTS: gcd=5747 JLA (1997) #107-125 · gcd=11686 JLA (1997) #18 · gcd=12160 JLA Secret Files 2004 (2004) #1
+   G41 "JLA - Year One (2024) (digital) (Son of Ultron-Empire)" in DC\_Justice League\_Trades, Minis & One-shots — 1 file(s), 1 COL, pp 322-322; cv per-file 5957x1; gcd per-file 210606x1; key 'JLA'
+      [67542] COL JLA - Year One (2024) (digital) (Son of Ultron-Empire).cbr (322pp)
+         own record cv 5957 / gcd s210606 "JLA" (issue 2620938) COLLECTS: gcd=14838 JLA Gallery (1997) (unnumbered) · gcd=5976 JLA Secret Files (1997) #1 · gcd=5747 JLA (1997) #1-9 · gcd=5974 JLA 80-Page Giant (1998) #1
+
+== S10105 Justice League  [split]  99 files / 13 collections  decided in R-105 (R)
+   decided: R 10105 | signal e (99 files) hid two other runs: the dominant New 52 Justice League #1-52 + #23.1-23.4 (CV 42488 / GCD 60709, 57; the Trinity Read Order folders, the "(New 52) Justice League (2024) (Mobile)" rips and Vol. 01-09) shares the shelf with four whole trades in "Justice League 3000-3001 (2014)" — Justice League 3000 Vol. 01-02 (CV 69851 / GCD 78022, 15) and Justice League 3001 Vol. 01-02 (CV 82816 / GCD 90342, 12), two records with their own runs (the residue ruling: two or more whole trades = co-equal) — and two Rebirth issues (below); the a-C signal (S15489's Shazam! backups naming 42488 / 60709) is benign
+   F 10105 split-needed | JL 3000: 66855, 66856 -> "Justice League 3000 (2013)" (cv=69851 gcd=78022); JL 3001: 66857, 66858 -> "Justice League 3001 (2015)" (cv=82816 gcd=90342); 19084, 19085 ("Justice League 012/013 (2017) (Webrip)", "Justice League vs Suicide Squad (2017)\Tie-ins") -> join S94650 (Justice League 2016, cv=92373, per-file CV 92373 on both); the New 52 run (cv=42488 gcd=60709) stays
+   N 10105 the fourteen "(New 52) Justice League NNN (2024-2025) (digital-mobile)" files (37-92pp) are mobile re-rips of this run's #1-20 — duplicates, not another run
+   named: S94650 Justice League  12 files  keys: "Justice League v3 (2016)" | "Justice League: The Rebirth Deluxe Edition - Book 1" | "Justice League: The Rebirth Deluxe Edition - Book 2" | "Justice League: The Rebirth Deluxe Edition - Book 3"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S21955 "Wonder Woman" 74f [shares gcd=61069 (collected by item 67464) — S cv=42953 gcd=61069 (R-100 0.9)] keys: "Wonder Woman" | "Wonder Woman (2016)" | "Wonder Woman v4 (2012)"
+   nearby: S17339 "Superman/Wonder Woman" 32f [shares gcd=76971 (collected by item 67464) — S cv=68150 gcd=76971 (C-008 0.95)] keys: "Superman - Wonder Woman" | "SupermanWonder Woman"
+   nearby: S1160 "Aquaman" 13f [shares gcd=61178 (collected by item 67459) — S cv=43022 gcd=61178 (R-101 0.9)] keys: "Aquaman" | "Aquaman v7 (2011)"
+   nearby: S10127 "Justice League Dark" 8f [shares gcd=61184 (collected by item 67460) — S cv=42996 gcd=61184 (C-008 0.95)] keys: "Justice League Dark" | "Justice League Dark v1 (2011)"
+   nearby: S94646 "Justice League of America v3 (2013)" 4f [shares gcd=72153 (collected by item 67460) — S cv=57485 gcd=72153 (R-079 0.95)] keys: "Justice League of America v3 (2013)"
+   nearby: S10108 "Justice League: Darkseid War: Batman" 3f [shares gcd=93364 (collected by item 67465) — S cv=85576 gcd=93364 (C-008 0.95)] keys: "Justice League - Darkseid War - Batman"
+   nearby: S10109 "Justice League: Darkseid War: Green Lantern" 3f [shares gcd=93775 (collected by item 67465) — S cv=85952 gcd=93775 (C-008 0.95)] keys: "Justice League - Darkseid War - Green Lantern"
+   nearby: S10110 "Justice League: Darkseid War: Lex Luthor" 3f [shares gcd=94718 (collected by item 67465) — S cv=86540 gcd=94718 (C-008 0.95)] keys: "Justice League - Darkseid War - Lex Luthor"
+   nearby: S10111 "Justice League: Darkseid War: Shazam" 3f [shares gcd=93776 (collected by item 67465) — S cv=85953 gcd=93776 (C-008 0.95)] keys: "Justice League - Darkseid War - Shazam"
+   nearby: S4198 "Convergence Justice League International" 2f [shares gcd=88325 (collected by item 66857) — S cv=81339 gcd=88325 (A-007 0.95)] keys: "Convergence - Justice League International"
+   nearby: S10132 "Justice League Darkseid War Special" 2f [shares gcd=99282 (collected by item 67464) — S cv=89370 gcd=99282 (A-008 0.9)] keys: "Justice League Darkseid War Special"
+   nearby: S15489 "Shazam!" 1f [named S15489 in the decision's R/N lines — S cv=67696 gcd=76778 (R-031 0.95)] keys: "Shazam!"
+   nearby: S94867 "Justice League v4 (2018)" 15f [title — S cv=111428 gcd=125721 (R-073 0.9)] keys: "Justice League v4 (2018)"
+   nearby: S65010 "Justice League America" 89f [title+1 — S cv=4198 gcd=3804 (R-105 0.9)] keys: "Justice League America (1960)" | "Justice League America (1989)" | "Justice League America v1 (1989)"
+   nearby: S10146 "Justice League Unlimited" 58f [title+1] keys: "Justice League Unlimited" | "Justice League Unlimited: Galactic Justice" | "Justice League Unlimited: Hocus Pocus" | "Justice League Unlimited: Time After Time"
+   nearby: S10133 "Justice League Europe" 39f [title+1 — S cv=4199 gcd=3805 (A-011 0.95)] keys: "Justice League Europe"
+   nearby: S10122 "Justice League Adventures" 34f [title+1 — S cv=10065 gcd=10924 (C-015 0.95)] keys: "Justice League Adventures" · S10125 "Justice League Beyond" 27f [title+1] keys: "Justice League Beyond"
+   nearby: S94642 "Justice League International" 18f [title+1 — S cv=4966 gcd=4646 (B-012 0.95)] keys: "Justice League International v2 (1993)"
+   nearby: S10137 "Justice League International" 14f [title+1 — S cv=42590 gcd=59309 (R-105 0.9)] keys: "Justice League International" | "Justice League International v3 (2011)"
+   nearby: S10140 "Justice League Quarterly" 13f [title+1 — S cv=9634 gcd=10453 (A-011 0.95)] keys: "Justice League Quarterly"
+   nearby: S10142 "Justice League United" 10f [title+1 — S cv=73216 gcd=80308 (C-015 0.9)] keys: "Justice League United" | "Justice League United 010b"
+   nearby: S94780 "Justice League Dark" 8f [title+1 — S cv=112455 gcd=127112 (R-105 0.95)] keys: "Justice League Dark v2 (2018)"
+   nearby: S94641 "Justice League International" 6f [title+1 — S cv=3798 gcd=3366 (R-005 0.95)] keys: "Justice League International v1 (1987)" · (+12 more by title)
+   keys now: "Justice League" x85 · "Justice League v2 (2011)" x14
+   groups (title x folder): 18
+   G1 "Justice League" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\05 Justice league - A New Beginning — 6 file(s), numbers 1-6, pp 23-26; cv per-file 42488x6; key 'Justice League'
+      e.g. Justice League 001.cbr
+        16789 #1 26pp · 16790 #2 23pp · 16791 #3 24pp · 16792 #4 23pp · 16793 #5 23pp · 16794 #6 23pp
+   G2 "Justice League" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\007 Forever Evil 2 — 1 file(s), numbers 23.1, pp 23-23; cv per-file 42488x1; key 'Justice League'
+      [19908] Justice League 023.1 - November 2013.cbr (23pp)
+   G3 "Justice League" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\009 Justice League Vol. 1 Origin — 6 file(s), numbers 1-6, pp 23-32; cv per-file 42488x6; key 'Justice League'
+      [18120] Justice League 001 - October 2011.cbr (32pp)
+      [18121] Justice League 002 - December 2011.cbr (23pp)
+      [18122] Justice League 003 - January 2012.cbr (30pp)
+      [18123] Justice League 004 - February 2012.cbr (31pp)
+      [18124] Justice League 005 - March 2012.cbr (28pp)
+      [18125] Justice League 006 - April 2012.cbr (32pp)
+   G4 "Justice League" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\048 Justice League Vol. 3 Throne of Atlantis 1 — 2 file(s), numbers 13-14, pp 29-38; cv per-file 42488x2; key 'Justice League'
+      [18364] Justice League 013 - December 2012.cbr (29pp)
+      [18365] Justice League 014 - January 2013.cbr (38pp)
+   G5 "Justice League" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\051 Justice League Vol. 3 Throne of Atlantis 2 — 3 file(s), numbers 15-17, pp 31-40; cv per-file 42488x3; key 'Justice League'
+      [18374] 001 Justice League 015 - February 2013.cbr (40pp)
+      [18376] 003 Justice League 016 - March 2013.cbr (33pp)
+      [18378] 005 Justice League 017 - April 2013.cbr (31pp)
+   G6 "Justice League" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\086 Justice League (18) — 1 file(s), numbers 18, pp 39-39; cv per-file 42488x1; key 'Justice League'
+      [19923] Justice League 018 - May 2013.cbr (39pp)
+   G7 "Justice League" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\091 Trinity War — 5 file(s), numbers 19-23, pp 29-34; cv per-file 42488x5; key 'Justice League'
+      [18473] 002 Justice League 019 - June 2013.cbr (33pp)
+      [18474] 003 Justice League 020 - July 2013.cbr (34pp)
+      [18475] 004 Justice League 021 - August 2013.cbr (34pp)
+      [18476] 005 Justice League 022 - September 2013.cbr (34pp)
+      [18485] 014 Justice League 023 - October 2013.cbr (29pp)
+   G8 "Justice League" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\092 Forever Evil 4 — 7 file(s), numbers 24-30, pp 25-30; cv per-file 42488x7; key 'Justice League'
+      [18489] 004 Justice League 024 - December 2013.cbr (26pp)
+      [18491] 006 Justice League 025 - January 2014.cbr (27pp)
+      [18493] 008 Justice League 026 - February 2014.cbr (25pp)
+      [18494] 009 Justice League 027 - March 2014.cbr (25pp)
+      [18495] 010 Justice League 028 - April 2014.cbr (28pp)
+      [18498] 013 Justice League 029 - May 2014.cbr (29pp)
+      [18500] 015 Justice League 030 - July 2014.cbr (30pp)
+   G9 "Justice League" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\109 InJustice League - Amazo Virus — 10 file(s), numbers 30-39, pp 21-29; cv per-file 42488x10; key 'Justice League'
+      e.g. Justice League # 30.cbr
+        18682 #30 29pp · 18683 #31 26pp · 18684 #32 24pp · 18685 #33 24pp · 18686 #34 24pp · 18687 #35 26pp · 18688 #36 22pp · 18689 #37 21pp · 18690 #38 23pp · 18691 #39 25pp
+   G10 "Justice League" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\122 Justice League - Darkseid War (2016) — 10 file(s), numbers 40, 42-50, pp 22-49; cv per-file 42488x10; gcd per-file 60709x10; key 'Justice League'
+      e.g. 02 Justice League 040 (2015) (digital-Empire).cbr
+        18965 #40 2015 22pp · 18967 #42 2015 27pp · 18968 #43 2015 27pp · 18969 #44 2015 24pp · 18971 #45 2015 26pp · 18974 #46 2016 26pp · 18979 #47 2016 28pp · 18980 #48 2016 24pp
+        18982 #49 2015 24pp · 18983 #50 2015 49pp
+   G11 "Justice League" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\129 Justice League - Rebirth Leadup — 2 file(s), numbers 51-52, pp 24-29; cv per-file 42488x2; gcd per-file 60709x2; key 'Justice League'
+      [19031] 21 Justice League 051 (2016) (Digital) (Thornn-Empire).cbr (29pp)
+      [19032] 22 Justice League 052 (2016) (Digital) (Thornn-Empire).cbr (24pp)
+   G12 "Justice League" in DC\#DC Events\004 Major DC Events - Rebirth\003 Justice League vs Suicide Squad (2017)\Tie-ins — 2 file(s), numbers 12-13, pp 25-25; cv per-file 42488x2; gcd per-file 113474x2; key 'Justice League'
+      [19084] Justice League 012 (2017) (Webrip) (The Last Kryptonian-DCP).cbr (25pp)
+      [19085] Justice League 013 (2017) (Webrip) (The Last Kryptonian-DCP).cbr (25pp)
+   G13 "(New 52) Justice League" in DC\_Justice League\(New 52) Justice League (2024) (Mobile) — 14 file(s), numbers 1-2, 5-12, 17-20, pp 28-92; cv per-file 42488x14; gcd per-file 199306x2; key 'Justice League'
+      e.g. (New 52) Justice League 001 (2024) (digital-mobile) (Son of Ultron-Empire).cbr
+        66678 #1 2024 37pp · 66679 #2 2024 28pp · 66680 #5 2024 38pp · 66681 #6 2024 34pp · 66682 #7 2024 36pp · 66683 #8 2024 29pp · 66684 #9 2024 53pp · 66685 #10 2024 52pp · 66686 #11 2024 92pp
+        66687 #12 2024 44pp · 66688 #17 2025 55pp · 66689 #18 2025 85pp · 66690 #19 2025 61pp · 66691 #20 2025 61pp
+   G14 "Justice League" in DC\_Justice League\_Completed Series\Justice League - Darkseid War (2016) — 12 file(s), numbers 40-51, pp 22-49; cv per-file 42488x12; gcd per-file 60709x12; key 'Justice League'
+      e.g. 02 Justice League 040 (2015) (digital-Empire).cbr
+        66811 #40 2015 22pp · 66812 #41 2015 44pp · 66813 #42 2015 27pp · 66814 #43 2015 27pp · 66815 #44 2015 24pp · 66817 #45 2015 26pp · 66820 #46 2016 26pp · 66825 #47 2016 28pp
+        66826 #48 2016 24pp · 66828 #49 2015 24pp · 66829 #50 2015 49pp · 66830 #51 2016 29pp
+   G15 "Justice League 3000" in DC\_Justice League\_Completed Series\Justice League 3000-3001 (2014) — 2 file(s), 2 COL, pp 144-174; cv per-file 42488x1, 92373x1; gcd per-file 88471x2; key 'Justice League'
+      [66855] COL Justice League 3000 Vol. 01 - Yesterday Lives (2014) (digital) (Son of Ultron-Empire).cbr (174pp)
+         own record cv 42488 / gcd s88471 "Justice League 3000" (issue 1343051) COLLECTS: gcd=78022 Justice League 3000 (2014) #1-7
+      [66856] COL Justice League 3000 Vol. 02 - The Camelot War (2015) (digital) (Son of Ultron-Empire).cbr (144pp)
+         own record cv 92373 / gcd s88471 "Justice League 3000" (issue 1343213) COLLECTS: gcd=78022 Justice League 3000 (2014) #8-13
+   G16 "Justice League 3001" in DC\_Justice League\_Completed Series\Justice League 3000-3001 (2014) — 2 file(s), 2 COL, pp 149-187; cv per-file 42488x2; gcd per-file 98463x2; key 'Justice League'
+      [66857] COL Justice League 3001 Vol. 01 - Déjà Vu All Over Again  (2016) (digital) (Son of Ultron-Empire).cbr (187pp)
+         own record cv 42488 / gcd s98463 "Justice League 3001" (issue 1546546) COLLECTS: gcd=90342 Justice League 3001 (2015) #1-6 · gcd=78022 Justice League 3000 (2014) #14-15 · gcd=88325 Convergence Justice League International (2015) #2
+      [66858] COL Justice League 3001 Vol. 02 - Things Fall Apart (2016) (digital) (Son of Ultron-Empire).cbr (149pp)
+         own record cv 42488 / gcd s98463 "Justice League 3001" (issue 1628454) COLLECTS: gcd=90342 Justice League 3001 (2015) #7-12
+   G17 "Justice League" in DC\_Justice League\_Completed Series\Justice League v2 (2011) — 10 file(s), 9 COL, numbers 52, pp 24-242; cv per-file 42488x9, 92373x1; gcd per-file 76777x6, 76126x2, 60709x1; key 'Justice League v2 (2011)'
+      [67456] Justice League 052 (2016) (Digital) (Thornn-Empire).cbr (24pp)
+      [67457] COL Justice League Vol. 01 - Origin (2012) (digital) (Minutemen-PhD).cbr (173pp)
+         own record cv 42488 / gcd s76777 "Justice League" (issue 1142606) COLLECTS: gcd=60709 Justice League (2011) #1-6
+      [67458] COL Justice League Vol. 02 - The Villain's Journey (2013) (Digital) (Zone-Empire).cbr (165pp)
+         own record cv 42488 / gcd s76126 "Justice League" (issue 1142598) COLLECTS: gcd=60709 Justice League (2011) #0, #7-12
+      [67459] COL Justice League Vol. 03 - Throne of Atlantis (2013) (Digital) (Zone-Empire).cbr (177pp)
+         own record cv 42488 / gcd s76777 "Justice League" (issue 1142625) COLLECTS: gcd=60709 Justice League (2011) #13-17 · gcd=61178 Aquaman (2011) #15-16
+      [67460] COL Justice League Vol. 04 - The Grid (2014) (Digital) (Zone-Empire).cbr (144pp)
+         own record cv 42488 / gcd s76126 "Justice League" (issue 1252499) COLLECTS: gcd=60709 Justice League (2011) #18-20, #22-23 · gcd=61184 Justice League Dark (2011) #22-23 · gcd=72153 Justice League of America (2013) #6-7 · gcd=76777 Justice League (2012) #4
+      [67461] COL Justice League Vol. 05 - Forever Heroes (2014) (Digital) (Zone-Empire).cbr (164pp)
+         own record cv 42488 / gcd s76777 "Justice League" (issue 1252501) COLLECTS: gcd=60709 Justice League (2011) #24-29
+      [67462] COL Justice League Vol. 06 - Injustice League (2015) (Digital) (Zone-Empire).cbr (242pp)
+         own record cv 92373 / gcd s76777 "Justice League" (issue 1431970) COLLECTS: gcd=60709 Justice League (2011) #30-39
+      [67463] COL Justice League Vol. 07 - Darkseid War Part 01 (2016) (Digital) (Zone-Empire).cbr (161pp)
+         own record cv 42488 / gcd s76777 "Justice League" (issue 1544786) COLLECTS: gcd=60709 Justice League (2011) #40-44 · gcd=88986 Divergence FCBD Special Edition [Free Comic Book Day] (2015) #1
+      [67464] COL Justice League Vol. 08 - Darkseid War Part 02 (2016) (digital) (Son of Ultron-Empire).cbr (192pp)
+         own record cv 42488 / gcd s76777 "Justice League" (issue 1624181) COLLECTS: gcd=60709 Justice League (2011) #45-50 · gcd=99282 Justice League Darkseid War Special (2016) #1 · gcd=76971 Superman / Wonder Woman (2013) #26 · gcd=61069 Wonder Woman (2011) #49
+      [67465] COL Justice League Vol. 09 - Darkseid War Part 03 - Power of the Gods (2016) (digital) (Son of Ultron-Empire).cbr (140pp)
+         own record cv 42488 / gcd s100286 "Justice League: Darkseid War - Power of the Gods" (issue 1559050) COLLECTS: gcd=93364 Justice League: Darkseid War: Batman (2015) #1 · gcd=94718 Justice League: Darkseid War: Lex Luthor (2016) #1 · gcd=93775 Justice League: Darkseid War: Green Lantern (2016) #1 · gcd=93776 Justice League: Darkseid War: Shazam (2016) #1
+   G18 "Justice League" in DC\_Justice League\_Completed Series\Justice League v2 (2011)\Annuals and Specials — 4 file(s), numbers 23, pp 22-24; cv per-file 42488x4; gcd per-file 60709x4; key 'Justice League v2 (2011)'
+      [67452] Justice League 023.1 - Darkseid (2013) (digital-Empire).cbr (22pp)
+      [67453] Justice League 023.2 - Lobo(2013) (Digital) (Zone-Empire).cbr (24pp)
+      [67454] Justice League 023.3 - Dial E (2013) (Digital) (Zone-Empire).cbr (24pp)
+      [67455] Justice League 023.4 - Secret Society (2013) (digital-Empire).cbr (23pp)

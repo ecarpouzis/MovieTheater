@@ -1,0 +1,44 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S18658	The Fury of Firestorm: The Nuclear Men	run=-	P-038.jsonl	new	pair=65956
+S16896	Strange Adventures v1 (1950)	run=-	P-038.jsonl	new	pair=16815
+S104010	Static (2021)	run={"cv": 136076, "gcd": 172380}	P-038.jsonl	new	pair=16815
+S94641	Justice League International v1 (1987)	run=-	P-038.jsonl	new	pair=10137
+S94871	Nightwing v3 (2011)	run=-	P-038.jsonl	new	pair=65356
+S94872	Nightwing v4 (2016)	run=-	P-038.jsonl	new	pair=65356
+S66029	The Outsiders v1 (1985)	run=-	P-038.jsonl	new	pair=58099
+S95396	Batman v3 (2020)	run=-	P-038.jsonl	new	pair=95394
+S7470	Ghost-Maker/Clownhunter by James Tynion	run=-	P-038.jsonl	new	pair=95394
+S1943	Batman - Faux-simile Edition	run=-	P-038.jsonl	new	pair=95396
+S2173	Deathstroke v4 (2016)	run=-	P-038.jsonl	new	pair=5272
+S64826	Green Lantern v4 (2005)	run=-	P-038.jsonl	new	pair=34675
+S64824	Green Lantern v3 (1990)	run=-	P-038.jsonl	new	pair=34675
+S94655	Lobo v2 (1993)	run=-	P-038.jsonl	new	pair=10820
+S10831	Lobo by Keith Giffen & Alan Grant	run=-	P-038.jsonl	new	pair=10820
+S94800	Tales of the Green Lantern Corps v1 (1981)	run=-	P-038.jsonl	new	pair=36640
+S102410	Tales of the Green Lantern Corps Annual	run=-	P-038.jsonl	new	pair=36640
+S104002	Justice League Beyond (2012)	run={"cv": 45573}	P-038.jsonl	new	pair=10125
+S104004	Justice League Unlimited (2025)	run={"cv": 161311, "gcd": 216154}	P-038.jsonl	new	pair=10146
+S103994	Crisis on Multiple Earths v2 (2021)	run={"cv": 133945, "gcd": 169731}	P-038.jsonl	new	pair=64455
+S103999	JLA: Year One (1998)	run={"cv": 6171, "gcd": 5981}	P-038.jsonl	new	pair=9704
+S104000	Justice League 3000 (2013)	run={"cv": 69851, "gcd": 78022}	P-038.jsonl	new	pair=10105
+S104001	Justice League 3001 (2015)	run={"cv": 82816, "gcd": 90342}	P-038.jsonl	new	pair=10105
+S94650	Justice League v3 (2016)	run=-	P-038.jsonl	new	pair=10105
+S65956	moved out -> S18658 "The Fury of Firestorm: The Nuclear Men"	run=-	P-038.jsonl	kept	pair=65956
+S16815	moved out -> S16896 "Strange Adventures v1 (1950)"; S104010 "Static (2021)"	run=-	P-038.jsonl	kept	pair=16815	moved_cv=136076
+S10137	moved out -> S94641 "Justice League International v1 (1987)"	run=-	P-038.jsonl	kept	pair=10137
+S65356	moved out -> S94871 "Nightwing v3 (2011)"; S94872 "Nightwing v4 (2016)"	run=-	P-038.jsonl	kept	pair=65356
+S58099	moved out -> S66029 "The Outsiders v1 (1985)"	run=-	P-038.jsonl	kept	pair=58099
+S95394	moved out -> S95396 "Batman v3 (2020)"; S7470 "Ghost-Maker/Clownhunter by James Tynion"	run=-	P-038.jsonl	kept	pair=95394
+S95396	moved out -> S1943 "Batman - Faux-simile Edition"	run=-	P-038.jsonl	kept	pair=95396
+S5272	moved out -> S2173 "Deathstroke v4 (2016)"	run=-	P-038.jsonl	kept	pair=5272
+S34675	moved out -> S64826 "Green Lantern v4 (2005)"; S64824 "Green Lantern v3 (1990)"	run=-	P-038.jsonl	kept	pair=34675
+S10820	moved out -> S94655 "Lobo v2 (1993)"; S10831 "Lobo by Keith Giffen & Alan Grant"	run=-	P-038.jsonl	kept	pair=10820
+S36640	moved out -> S94800 "Tales of the Green Lantern Corps v1 (1981)"; S102410 "Tales of the Green Lantern Corps Annual"	run=-	P-038.jsonl	kept	pair=36640
+S10125	moved out -> S104002 "Justice League Beyond (2012)"	run=-	P-038.jsonl	kept	pair=10125	moved_cv=45573
+S10146	moved out -> S104004 "Justice League Unlimited (2025)"	run=-	P-038.jsonl	kept	pair=10146	moved_cv=161311
+S64455	moved out -> S103994 "Crisis on Multiple Earths v2 (2021)"	run=-	P-038.jsonl	kept	pair=64455	moved_cv=133945
+S9704	moved out -> S103999 "JLA: Year One (1998)"	run=-	P-038.jsonl	kept	pair=9704	moved_cv=6171
+S10105	moved out -> S104000 "Justice League 3000 (2013)"; S104001 "Justice League 3001 (2015)"; S94650 "Justice League v3 (2016)"	run=-	P-038.jsonl	kept	pair=10105	moved_cv=69851,82816
