@@ -1,0 +1,35 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S104030	Black Hammer Library Edition (2018)	run={"gcd": 134590}	P-042.jsonl	new	pair=64298
+S104046	The World of Black Hammer Library Edition (2020)	run={"gcd": 164637}	P-042.jsonl	new	pair=64298
+S104031	Black Hammer Omnibus (2022)	run={"cv": 146097, "gcd": 189334}	P-042.jsonl	new	pair=64298
+S104047	The World of Black Hammer Omnibus (2023)	run={"gcd": 201911}	P-042.jsonl	new	pair=64298
+S104035	Black Hammer: Visions (2021)	run={"cv": 139485, "gcd": 176262}	P-042.jsonl	new	pair=64298
+S104033	Black Hammer: Spiral City v1 (2024)	run={"cv": 161043, "gcd": 217537}	P-042.jsonl	new	pair=64298
+S104036	Colonel Weird and Little Andromeda Shorts (2022)	run=-	P-042.jsonl	new	pair=64298
+S104034	Black Hammer: Streets of Spiral (2019)	run={"cv": 121557, "gcd": 150837}	P-042.jsonl	new	pair=64298
+S104045	The World of Black Hammer Encyclopedia (2019)	run={"cv": 120037, "gcd": 156116}	P-042.jsonl	new	pair=64298
+S104029	Black Hammer '45 (2019)	run={"cv": 117437, "gcd": 141788}	P-042.jsonl	new	pair=64298
+S104032	Black Hammer/Justice League: Hammer of Justice! (2019)	run={"cv": 120103, "gcd": 148655}	P-042.jsonl	new	pair=64298
+S104044	The Last Days of Black Hammer (2023)	run={"gcd": 196991}	P-042.jsonl	new	pair=64298
+S104039	MySpace Dark Horse Presents (2007)	run=-	P-042.jsonl	new	pair=64506
+S96259	Dark Horse Presents v2 (2011)	run={"cv": 39855, "gcd": 57599}	P-042.jsonl	new	pair=64506
+S104038	Empowered Special (2009)	run={"cv": 30237, "gcd": 42113}	P-042.jsonl	new	pair=6147
+S104028	B.P.R.D. Omnibus (2022)	run={"cv": 145580, "gcd": 189332}	P-042.jsonl	new	pair=1715
+S104041	Sir Edward Grey, Witchfinder: In the Service of Angels (2009)	run={"cv": 26959, "gcd": 37909}	P-042.jsonl	new	pair=15695
+S104042	Sir Edward Grey, Witchfinder: Lost and Gone Forever (2011)	run={"cv": 38774, "gcd": 55453}	P-042.jsonl	new	pair=15695
+S104043	Sir Edward Grey, Witchfinder: The Mysteries of Unland (2014)	run={"cv": 74882, "gcd": 81321}	P-042.jsonl	new	pair=15695
+S104049	Witchfinder: City of the Dead (2016)	run={"cv": 93687, "gcd": 105793}	P-042.jsonl	new	pair=15695
+S21752	Witchfinder - The Gates of Heaven	run={"cv": 111060, "gcd": 124634}	P-042.jsonl	new	pair=15695
+S35804	Plants vs. Zombies Zomnibus Book	run={"cv": 140150, "gcd": 179720}	P-042.jsonl	new	pair=13889
+S64298	moved out -> S104030 "Black Hammer Library Edition (2018)"; S104046 "The World of Black Hammer Library Edition (2020)"; S104031 "Black Hammer Omnibus (2022)"; S104047 "The World of Black Hammer Omnibus (2023)"; S104035 "Black Hammer: Visions (2021)"; S104033 "Black Hammer: Spiral City v1 (2024)"; S104036 "Colonel Weird and Little Andromeda Shorts (2022)"; S104034 "Black Hammer: Streets of Spiral (2019)"; S104045 "The World of Black Hammer Encyclopedia (2019)"; S104029 "Black Hammer '45 (2019)"; S104032 "Black Hammer/Justice League: Hammer of Justice! (2019)"; S104044 "The Last Days of Black Hammer (2023)"	run=-	P-042.jsonl	kept	pair=64298	moved_cv=146097,139485,161043,121557,120037,117437,120103
+S64506	moved out -> S104039 "MySpace Dark Horse Presents (2007)"; S96259 "Dark Horse Presents v2 (2011)"	run=-	P-042.jsonl	kept	pair=64506	moved_cv=39855
+S6147	moved out -> S104038 "Empowered Special (2009)"	run=-	P-042.jsonl	kept	pair=6147	moved_cv=30237
+S1715	moved out -> S104028 "B.P.R.D. Omnibus (2022)"	run=-	P-042.jsonl	kept	pair=1715	moved_cv=145580
+S15695	moved out -> S104041 "Sir Edward Grey, Witchfinder: In the Service of Angels (2009)"; S104042 "Sir Edward Grey, Witchfinder: Lost and Gone Forever (2011)"; S104043 "Sir Edward Grey, Witchfinder: The Mysteries of Unland (2014)"; S104049 "Witchfinder: City of the Dead (2016)"; S21752 "Witchfinder - The Gates of Heaven"	run=-	P-042.jsonl	kept	pair=15695	moved_cv=26959,38774,74882,93687,111060
+S13889	moved out -> S35804 "Plants vs. Zombies Zomnibus Book"	run=-	P-042.jsonl	kept	pair=13889	moved_cv=140150
+S18106	kept whole (split: false): The one file 12421 'The Black Beetle 000 - Night Shift (2012)' 30pp is #0 (issue 373279) of CV 54853 'The Black Beetle' (Dark Horse 2012, 5: #0 + #1-4 No Way Ou…	run=-	P-042.jsonl	kept-whole	pair=18106	pending_join=18106
+S7834	kept whole (split: false): The one album 14139 is GCD 42860 row 1746580 [5] Force Majeure of the ONE Grandville album series, whose line shelf is S7832 ('Grandville', albums [1],[3],[4]);…	run=-	P-042.jsonl	kept-whole	pair=7834	pending_join=7832,7836
+S7836	kept whole (split: false): The one album 14136 is GCD 42860 row 796672 [2] Mon Amour of the ONE Grandville album series, whose line shelf is S7832 ('Grandville', albums [1],[3],[4]); S783…	run=-	P-042.jsonl	kept-whole	pair=7836	pending_join=7832,7834

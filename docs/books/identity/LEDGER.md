@@ -1900,3 +1900,12 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   The Man of Steel trade lines reprint the BYRNE era, not the 1991 ongoing. Superman #1-423 -> Adventures of Superman
   #424-649 -> Superman #650-714 is ONE numbering (L-212): the shelves meet by a split-lane join, not a cv merge. GCD
   59922 (Action Comics 2011-?) belongs to the New 52 shelf where its numbering starts (L-331).
+
+[L-373] pub:dark-horse pub:dc sig:split kind:collected-line
+- A split-lane join FROM a one-file shelf is impossible by construction (check_splits refuses emptying a shelf): write
+  it as split:false + pending_join, then fix the partner's stored cv so the two meet by a cv merge (Black Beetle S18107 ->
+  S18106 via CV 54853, R-115); where the catalogue keeps one CV volume per album (Grandville 45516/45517/105757) they
+  meet only through the shared GCD row -- a lead-lane merge. Dark Horse Hellboy-universe "Title 0NN - Mini 0N (of 05)"
+  ripper ladders can duplicate a live mini shelf (Witchfinder / Gates of Heaven S21752) -- check --who-stores on each
+  mini's cv before minting a key. DC "#DC Events" GL Corps read-order folders: "Spectre vN NN" names DC's volume ordinal
+  (v4 = 2001), not the ripper's folder vN (P-042 / R-115, waves 105-106).

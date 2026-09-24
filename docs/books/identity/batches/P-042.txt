@@ -1,0 +1,482 @@
+## Conventions for this batch (28 shown of 93 matched; 372 in LEDGER.md; 9 shelf/shelves: pub:dark-horse ×9 · kind:collected-line ×7 · kind:trade-only ×4 · folder:sequel-subfolder ×3 · folder:vn-year ×2 · folder:bucket ×2 · kind:archive ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-020] (7 shelf/shelves) kind:archive kind:collected-line pub:dark-horse
+- Reprint LIBRARY / omnibus lines over a run split across publishers (Fear Agent Final Edition, Kabuki Library,
+  Madman Library) have no single run record → the collected line at 0.9 with an `N` naming the underlying run.
+[L-188] (7 shelf/shelves) kind:collected-line kind:trade-only pub:berger pub:boom pub:dark-horse sig:trade-link
+- The matches-our-holdings collected-edition trap dominates Boom! / Berger Books trade-only shelves: a stored or
+  per-file count-N pick where N equals OUR trade count is almost always the trade record; the run's true (larger)
+  count is usually one candidate away.
+[L-219] (7 shelf/shelves) kind:collected-line pass:item pass:revisit pub:dark-horse sig:barcode sig:stale-flag sig:trade-link
+- A shelf holding ONE TRADE PER MINI of a chain (Blue Book "1961" / "1947", Brain Boy / The Men from G.E.S.T.A.L.T.,
+  Briggs Land / Lone Wolves, Vox Machina Origins I / II, Baltimore's minis + its #1-40 trade line) is SEVERAL runs
+  numbering from #1 — its conflated flag is TRUE of the shelf, never stale; `R` + split unless a provider holds a
+  collected LINE record coextensive with the shelf (then S the line, minis on `N`). Sonnet called 7 of these stale in
+  C-021; the lead sent them to R-020. **ERIC'S RULING 2026-09-16: ONE leg's coextensive line record is enough** —
+  the S carries that line at 0.9 (`cv=-` when ComicVine has no line volume), each book's own ComicVine count-1
+  volume / issue id, ISBN and LOCG bridge go on its `I` line, the minis underneath are named on `N` lines, and the
+  flag is declared stale so the lead can dismiss it. Refusing such a shelf recorded nothing; the correct data is the
+  line PLUS the per-book records. A shelf holding ISSUE files of several minis (Baltimore, Lobster Johnson) or
+  several publishers' runs (Angel) is still `R` + split — no single record describes it.
+[L-233] (7 shelf/shelves) kind:collected-line pass:item pass:revisit pub:dark-horse sig:trade-link
+- ComicVine does NOT index Dark Horse TRADE LINES: a plain "Hellboy" / "B.P.R.D." volume query returns nothing; CV
+  mints a count-1 volume per BOOK while GCD keeps one collected series per title (R-021: six of seven shelves).
+  RULED by Eric 2026-09-16 (see the chain-of-minis ruling above): the GCD line alone is the identity at 0.9, CV's
+  per-book volumes go on the `I` lines. R-020..R-022's one-leg refusals were flipped to S by the R-023 pass.
+[L-243] (7 shelf/shelves) kind:collected-line pass:item pass:revisit pub:dark-horse pub:dynamite sig:trade-link
+- Under the one-leg ruling every Dark Horse / Dynamite chain-of-minis shelf in R-020..R-022 became `S cv=- gcd=<line>
+  0.9` + `F wrong-cv-link` (the stored id was the FIRST mini's run in every case) + minis on N + a `C` per trade —
+  except the issue-file chains (Baltimore, Lobster Johnson), the several-publisher shelf (Angel), a shelf mixing one
+  season's issues with another's books (Angel & Faith), and Ash (three count-1 records, no line on either leg).
+[L-234] (6 shelf/shelves) pub:dark-horse pub:dynamite sig:stamp sig:trade-link
+- The count-1-trade / first-mini stored-link artefact runs at full strength on Dark Horse and Dynamite chains
+  (Ether 95727, Briggs Land 93181, Brain Boy 67220, Itty Bitty Hellboy 66787, Pathfinder 51262, Ash 68723): the FIRST
+  mini's volume stamped across the whole chain.
+[L-228] (5 shelf/shelves) pub:dark-horse pub:dynamite pub:zenescope sig:legacy-stamp sig:split
+- Franchise folders that are genuinely several runs → `R` + split-needed, not residue: James Bond (three ladders),
+  Charmed (reboot + two Zenescope seasons), Green Hornet (three eras), Savage Tales (three publishers on a bare
+  title), Terminator (1999 Dark Horse mini + 2024 Dynamite), Vampirella (ongoing + "Year One"), Kirby: Genesis
+  (main + Dragonsbane), Tomb Raider (two same-numbered relaunches).
+[L-230] (5 shelf/shelves) pass:revisit pub:dark-horse
+- Tier-C Dark Horse: a reader-derived CV id can be a FOREIGN edition (Magic Press "B.P.R.D." 136599), a hardcover
+  Book-ladder record (Hell on Earth Book 1-5 = 107353) or the ISSUE-form ongoing behind the trades (Plants vs.
+  Zombies 82701 = the 2015 12-issue run) — read the id's own issue list against the files before pairing it with a
+  GCD collected-line row; a mismatched pair is not a 0.9 S. (Lead, C-022 verification → R-021.)
+[L-236] (5 shelf/shelves) pub:dark-horse
+- GCD 102900 Plants vs. Zombies starts its volume numbering at #4; B.P.R.D. Hell on Earth is continuously numbered
+  #103-147 from 2012 (CV 61307 / GCD 71228), not a pure chain.
+[L-135] (7 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-164] (7 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (7 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-244] (7 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (7 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (7 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+[L-248] (7 shelf/shelves) kind:collected-line
+- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
+  the sibling's landed S is evidence for the weak per-file matches on the others.
+[L-251] (7 shelf/shelves) kind:collected-line
+- Deluxe / Yearbook / Omnibus editions of the shelf's own ongoing with NO judged range get an `N` naming the
+  relationship, never an invented `C` range (the range is containment's to read).
+[L-258] (7 shelf/shelves) kind:collected-line sig:stamp
+- A degenerate packet block can stamp ONE GCD issue id onto every book of a shelf (Green Arrow S97350, six eras of
+  collected lines) — resolve only by each series' full issue list matched by title, never by the stamp.
+[L-269] (7 shelf/shelves) kind:collected-line kind:trade-only
+- An omnibus bundling several minis gets one `C` per mini at that mini's full range; an anthology TPB ("… and
+  Others") is not a numbered run and gets an `N`, not a forced `C`.
+[L-275] (7 shelf/shelves) kind:collected-line pass:item sig:probe sig:trade-link
+- A count-1/2/3 trade record the shelf's `N` called absent is often in the catalogs under a spelling the packet
+  never probed ("The Adventures of …", "Complete Collection", "Deluxe") — probe before writing no-record.
+[L-279] (7 shelf/shelves) kind:collected-line
+- Blade of the Immortal (S23118) is the canonical "line + run" shape: GCD's 31 collected-edition rows are the `I`
+  identities (cv=- — ComicVine mints only the floppy volume), and the floppy run CV 9069 is what every `C` names,
+  ranges #0-206 ascending across the 31 books. A single-leg shelf's books inherit the shelf's 0.9, never more.
+[L-282] (7 shelf/shelves) kind:collected-line
+- A `gcd=-` / dump-only shelf's books inherit the shelf's 0.9 (Cells at Work! Lady, Dragon Head); an exact edition
+  can exist on GCD alone and be absent from ComicVine entirely (Cat Shit One Omnibus GCD 186621 → 0.9, cv=-).
+[L-285] (7 shelf/shelves) kind:collected-line pass:item sig:stamp
+- ITEM PASS (X-031..X-033): JoJo's Bizarre Adventure part-shelves are double-stamped — per-file CV is the whole-saga
+  hardcover omnibus volume (165667, one issue per PART) and per-file GCD the umbrella whole-saga series (27115) by
+  raw issue number; both wrong for all 37 books. Parts 1-3 have no CV softcover record (cv=-); Parts 4-5 do.
+[L-286] (7 shelf/shelves) kind:collected-line sig:probe
+- A shelf-level "no record" `N` can be wrong for an English product too (Innocent Omnibus: CV 157999 / GCD 206125
+  under "Innocent Omnibus") — probe the edition's own name before inheriting the shelf's gap.
+[L-287] (7 shelf/shelves) kind:collected-line pass:item
+- A series can be wrong on BOTH legs at once (Hunter x Hunter, Inuyashiki, Kakegurui Twin): the header pool by
+  ordinal is the only source; an omnibus with no dedicated record on either leg is `N no-record`, never a mapping.
+[L-289] (7 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-291] (7 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-309] (7 shelf/shelves) kind:collected-line pass:item sig:probe
+- A collected line's own issue rows carry the trade's SUBTITLE as the issue title, so once one book of a line is
+  identified, `--issues <volume>` or `gcd_issue WHERE series_id=?` resolves the whole Vol. 01-N run in one query —
+  "own container id not probed" is never a valid no-record.
+
++65 more matched entries not shown: L-314, L-023, L-029, L-139, L-193, L-014, L-064, L-085, L-101, L-113, L-310, L-016, L-032, L-060, L-114, L-124, L-191, L-223, L-268, L-281, L-290, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-194, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-330, L-341, L-346, L-347, L-007, L-065, L-099, L-123, L-175, L-217, L-262, L-272, L-069, L-150, L-238, L-343, L-350, L-361, L-054, L-128, L-181, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S18106 The Black Beetle  [split]  1 files / 0 collections  decided in R-114 (S)
+   decided: S 18106 cv=54853 gcd=71160 0.9 | CV 54853 "The Black Beetle" (Dark Horse 2012, 5) caches #0 "Night Shift" (issue 373279, 2012-12) + #1-4 "No Way Out, Part 1-4 of 4" — our 30pp "The Black Beetle 000 - Night Shift (2012)" is its #0; GCD 71160 "The Black Beetle" (Dark Horse 2013, 4) holds the same run's #1-4 without the #0, hence 0.9. Signal a-S (gcd 71160 also on S18107): benign in kind — S18107 holds this very run's #1-4 ("No Way Out 01-04 (of 04)"), so the two shelves are ONE run; see the F
+   F 18106 split-needed | item 12421 (the #0) -> join S18107 (key "The Black Beetle - No Way Out"), whose four files are #1-4 of the same CV 54853 / GCD 71160 run; a cv merge cannot do it because S18107 stores CV 68312 "The Black Beetle: No Way Out" 2013 count 1 (issue 428838 "HC") — the trade, not the run — which S18107's own revisit should call wrong-cv-link in favour of 54853 (L-368)
+   named: S18107 The Black Beetle: No Way Out  4 files  keys: "The Black Beetle - No Way Out"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "The Black Beetle" x1
+   groups (title x folder): 1
+   G1 "The Black Beetle" in Dark Horse\Black Beetle — 1 file(s), numbers 0, pp 30-30; cv per-file 54853x1; key 'The Black Beetle'
+      [12421] The Black Beetle 000 - Night Shift (2012) (digital) (Son of Ultron-Empire).cbr (30pp)
+
+== S64298 Black Hammer  [split]  38 files / 28 collections  decided in R-114 (R)
+   decided: R 64298 | the shelf is not one run but the whole Black Hammer franchise folder: the Black Hammer trade LINE GCD 112945 (Dark Horse 2017-?, 9; rows #1 Secret Origins … #8 The End, 7 of them here: 14789 / 14790 / 14791 / 14795 / 14796 / 14797 / 15966) spanning four separate runs (Black Hammer 2016 #1-13 CV 92354 / GCD 104428, Age of Doom CV 109942 / GCD 123737, Reborn CV 137051 / GCD 173356, The End CV 153339 / GCD 203538); beside it FOUR more collected lines with their own records (Black Hammer Library Edition GCD 134590 x3, The World of Black Hammer Library Edition GCD 164637 x5, Black Hammer Omnibus CV 146097 / GCD 189334 x3, The World of Black Hammer Omnibus GCD 201911 x4), the two-volume Visions trade line (CV 139485 / GCD 176262), three issue files of the 7-issue Black Hammer: Spiral City (CV 161043 / GCD 217537), four Substack "Colonel Weird & Little Andromeda Short" files and five one-shot books. The in-force S (the 2016 run CV 92354 / GCD 104428) describes two of 38 files; two or more whole books of a different line with its own record are co-equal (ruling after S15276), so no single identity stands
+   F 64298 split-needed | proposed runs: STAYS the Black Hammer trade line GCD 112945 (items 14789, 14790, 14791, 14795, 14796, 14797, 15966); 14807, 14809, 14814 -> new key "Black Hammer Library Edition (2018)" (GCD 134590, 3); 14808, 14810, 14811, 14812, 14813 -> new key "The World of Black Hammer Library Edition (2020)" (GCD 164637, 5); 14815, 14816, 14817 -> new key "Black Hammer Omnibus (2022)" (CV 146097 / GCD 189334, 3); 14818, 14819, 14820, 14821 -> new key "The World of Black Hammer Omnibus (2023)" (GCD 201911); 14793, 14794 -> new key "Black Hammer: Visions (2021)" (CV 139485 / GCD 176262, the trades of CV 133717 / GCD 169311); 14804, 14805, 14806 -> new key "Black Hammer: Spiral City (2024)" (CV 161043 / GCD 217537, 7); 14798-14801 -> new key "Colonel Weird and Little Andromeda (2022)" (the Substack serial; its 2023 print book is CV 148987 / GCD 198043); one-shots each to its own name: 14786 "Black Hammer: Streets of Spiral (2019)" (CV 121557 / GCD 150837), 14788 "The World of Black Hammer Encyclopedia (2019)" (CV 120037 / GCD 156116), 15959 "Black Hammer '45 (2019)" (run CV 117437 / GCD 141788), 15960 "Black Hammer/Justice League: Hammer of Justice! (2019)" (run CV 120103 / GCD 148655), 15964 "The Last Days of Black Hammer (2023)" (GCD 196991); the Substack shorts 14802 / 15965 have no record and stay
+   N 64298 cv=- gcd=112945 — the S line for the kept trade line once the rest moves: GCD 112945 rows #1-#8 carry our subtitles (Secret Origins, The Event, Age of Doom Part 1, Reborn, Reborn Part Two, Reborn Part Three, The End); ComicVine mints one volume per book (100357, 116241, 141698, 144066, 146222, 161067), 0.9 on one leg (L-233)
+   N 64298 the in-force S's CV 92354 / GCD 104428 (Black Hammer 2016, 13) is right for what v01/v02 collect (C lines) — it is the first run's id stamped on the whole franchise (L-234), and needs retracting with the R
+   N 14790 also collects Black Hammer (2016) #13 per GCD row 1769900's roll-up (#12 is not in it)
+   N 14795 Reborn Part I / 14796 Part II / 14797 Part III collect Black Hammer Reborn (CV 137051 / GCD 173356, 12) in thirds; GCD rows 2305345 / 2413507 / 2437787 carry no roll-up, so no C range is stated
+   nearby: S15276 "Secret Six" 6f [named S15276 in the decision's R/N lines — S cv=22841 gcd=31829 (R-105 0.9)] keys: "Secret Six"
+   nearby: S2694 "Black Hammer: Age of Doom" 1f [shares cv=109942 (R clause), shares gcd=123737 (R clause) — S cv=109942 gcd=123737 (B-016 0.95)] keys: "Black Hammer - Age of Doom Part II"
+   nearby: S4038 "Colonel Weird and Little Andromeda" 1f [shares cv=148987, shares gcd=198043 — S cv=148987 gcd=198043 (B-016 0.95)] keys: "Colonel Weird and Little Andromeda"
+   keys now: "Black Hammer - Colonel Weird and Little Andromeda Short (2016)" x4 · "The World of Black Hammer (2016)" x4 · "The World of Black Hammer" x4 · "Black Hammer - Spiral City (2024)" x3 · "Black Hammer (2016)" x3 · "Black Hammer" x3 · "Black Hammer - Visions (2016)" x2 · "Black Hammer - Streets of Spiral" x1 · "The World of Black Hammer Encyclopedia" x1 · "Black Hammer - Secret Origins (2016)" x1 · "Black Hammer - The Event (2016)" x1 · "Black Hammer - Age of Doom Part I (2016)" x1 · "Black Hammer '45" x1 · "Black Hammer/Justice League: Hammer of Justice!" x1 · "Black Hammer - Reborn Part I (2016)" x1 · "Black Hammer - Reborn Part II (2016)" x1 · "Black Hammer - Reborn Part III (2016)" x1 · "The Last Days of Black Hammer" x1 · "Black Hammer - Madame Dragonfly - Betwixt, Between" x1 · "Black Hammer Visions - Roberston and Henderson" x1 · "Black Hammer - The End (2016)" x1 · "World of Black Hammer Omnibus" x1
+   groups (title x folder): 18
+   G1 "Black Hammer - Streets of Spiral (2019) (digital) (Son of Ultron II-Empire)" in Dark Horse\Black Hammer (2016)\00 Annuals and Specials — 1 file(s), 1 COL, pp 123-123; cv per-file 121557x1; gcd per-file 150837x1; key 'Black Hammer - Streets of Spiral'
+      [14786] COL Black Hammer - Streets of Spiral (2019) (digital) (Son of Ultron II-Empire).cbr (123pp)
+         own record cv 121557 / gcd s150837 "Black Hammer: Streets of Spiral" (issue 2022052) COLLECTS: gcd=156116 The World of Black Hammer Encyclopedia (2019) (unnumbered) · gcd=135569 Black Hammer: Cthu-Louise (2018) (unnumbered) · gcd=111467 Black Hammer Giant-Sized Annual (2017) (unnumbered) · gcd=144881 Free Comic Book Day 2019: General (2019) (unnumbered)
+   G2 "The World of Black Hammer Encyclopedia (2019) (digital) (F) (Son of Ultron-Empire)" in Dark Horse\Black Hammer (2016)\00 Annuals and Specials — 1 file(s), pp 34-34; cv per-file 120037x1; gcd per-file 156116x1; key 'The World of Black Hammer Encyclopedia'
+      [14788] The World of Black Hammer Encyclopedia (2019) (digital) (F) (Son of Ultron-Empire).cbr (34pp)
+   G3 "Black Hammer" in Dark Horse\Black Hammer (2016)\01 Black Hammer v1 (2016) — 2 file(s), 2 COL, pp 171-184; cv per-file 100357x1, 92354x1; gcd per-file 112945x2; key 'Black Hammer - Secret Origins (2016)' | 'Black Hammer - The Event (2016)'
+      [14789] COL Black Hammer v01 - Secret Origins (2017) (digital) (Son of Ultron II-Empire).cbr (184pp)  key="Black Hammer - Secret Origins (2016)"
+         own record cv 100357 / gcd s112945 "Black Hammer" (issue 1683662) COLLECTS: gcd=104428 Black Hammer (2016) #1-6
+      [14790] COL Black Hammer v02 - The Event (2017) (digital) (Son of Ultron II-Empire).cbr (171pp)  key="Black Hammer - The Event (2016)"
+         own record cv 92354 / gcd s112945 "Black Hammer" (issue 1769900) COLLECTS: gcd=104428 Black Hammer (2016) #7-11, #13
+   G4 "Black Hammer" in Dark Horse\Black Hammer (2016)\04 Black Hammer v2 - Age of Doom (2018) — 1 file(s), 1 COL, pp 132-132; cv per-file 116241x1; gcd per-file 112945x1; key 'Black Hammer - Age of Doom Part I (2016)'
+      [14791] COL Black Hammer v03 - Age of Doom Part I (2019) (digital) (Son of Ultron II-Empire).cbr (132pp)
+         own record cv 116241 / gcd s112945 "Black Hammer" (issue 1889695) COLLECTS: gcd=123737 Black Hammer: Age of Doom (2018) #1-5
+   G5 "Black Hammer '45 (2019) (digital) (Son of Ultron-Empire)" in Dark Horse\Black Hammer (2016)\06 Black Hammer '45 v1 (2019) — 1 file(s), 1 COL, pp 120-120; cv per-file 121867x1; gcd per-file 150908x1; key "Black Hammer '45"
+      [15959] COL Black Hammer '45 (2019) (digital) (Son of Ultron-Empire).cbr (120pp)
+         own record cv 121867 / gcd s150908 "Black Hammer '45" (issue 2022914) COLLECTS: gcd=141788 Black Hammer '45 (2019) #1-4
+   G6 "Black Hammer - Justice League - Hammer of Justice! (2020) (digital) (Son of Ultron-Empire)" in Dark Horse\Black Hammer (2016)\07 Black Hammer - Justice League - Hammer of Justice! (2019) — 1 file(s), 1 COL, pp 160-160; cv per-file 125991x1; gcd per-file 158188x1; key 'Black Hammer/Justice League: Hammer of Justice!'
+      [15960] COL Black Hammer - Justice League - Hammer of Justice! (2020) (digital) (Son of Ultron-Empire).cbr (160pp)
+         own record cv 125991 / gcd s158188 "Black Hammer / Justice League: Hammer of Justice!" (issue 2094751) COLLECTS: gcd=148655 Black Hammer / Justice League: Hammer of Justice! (2019) #1-5
+   G7 "Black Hammer - Visions" in Dark Horse\Black Hammer (2016)\11 Black Hammer - Visions (2021) — 2 file(s), 2 COL, pp 117-130; cv per-file 139485x2; gcd per-file 176262x2; key 'Black Hammer - Visions (2016)'
+      [14793] COL Black Hammer - Visions v01 (2021) (digital) (Son of Ultron II-Empire).cbr (130pp)
+      [14794] COL Black Hammer - Visions v02 (2022) (digital) (Son of Ultron II-Empire).cbr (117pp)
+   G8 "Black Hammer" in Dark Horse\Black Hammer (2016)\12 Black Hammer Reborn (2021) — 3 file(s), 3 COL, pp 98-113; cv per-file 141698x1, 144066x1, 146222x1; gcd per-file 112945x3; key 'Black Hammer - Reborn Part I (2016)' | 'Black Hammer - Reborn Part II (2016)' | 'Black Hammer - Reborn Part III (2016)'
+      [14795] COL Black Hammer v05 - Reborn Part I (2022) (digital) (Son of Ultron II-Empire).cbr (111pp)  key="Black Hammer - Reborn Part I (2016)"
+      [14796] COL Black Hammer v06 - Reborn Part II (2022) (digital) (Son of Ultron II-Empire).cbr (98pp)  key="Black Hammer - Reborn Part II (2016)"
+      [14797] COL Black Hammer v07 - Reborn Part III (2022) (digital) (Son of Ultron II-Empire).cbr (113pp)  key="Black Hammer - Reborn Part III (2016)"
+   G9 "The Last Days of Black Hammer (2023) (digital) (Son of Ultron II-Empire)" in Dark Horse\Black Hammer (2016)\14 Last Days of Black Hammer (Substack) — 1 file(s), 1 COL, pp 131-131; cv per-file 92354x1; gcd per-file 196991x1; key 'The Last Days of Black Hammer'
+      [15964] COL The Last Days of Black Hammer (2023) (digital) (Son of Ultron II-Empire).cbr (131pp)
+   G10 "Black Hammer - Colonel Weird & Little Andromeda Short" in Dark Horse\Black Hammer (2016)\15 Black Hammer - Substack Shorts (2022) — 4 file(s), numbers 1-4, pp 2-33; cv per-file 92354x4; gcd per-file 217537x4; key 'Black Hammer - Colonel Weird and Little Andromeda Short (2016)'
+      e.g. Black Hammer - Colonel Weird & Little Andromeda Short 001 (2022) (Substack Short) (digital) (JeffAlbertson-DCP).cbz
+        14798 #1 2022 33pp · 14799 #2 2022 12pp · 14800 #3 2022 12pp · 14801 #4 2022 2pp
+   G11 "Black Hammer - Madame Dragonfly - Betwixt, Between (2022) (Substack Short) (digital) (JeffAlbertson-DCP)" in Dark Horse\Black Hammer (2016)\15 Black Hammer - Substack Shorts (2022) — 1 file(s), pp 11-11; cv per-file 92354x1; key 'Black Hammer - Madame Dragonfly - Betwixt, Between'
+      [14802] Black Hammer - Madame Dragonfly - Betwixt, Between (2022) (Substack Short) (digital) (JeffAlbertson-DCP).cbz (11pp)
+   G12 "Black Hammer Visions - Roberston and Henderson (2022) (Substack Short) (digital) (JeffAlbertson-DCP)" in Dark Horse\Black Hammer (2016)\16 Black Hammer Visions Shorts (2022) — 1 file(s), pp 13-13; cv per-file 92354x1; key 'Black Hammer Visions - Roberston and Henderson'
+      [15965] Black Hammer Visions - Roberston and Henderson (2022) (Substack Short) (digital) (JeffAlbertson-DCP).cbz (13pp)
+   G13 "Black Hammer" in Dark Horse\Black Hammer (2016)\17 Black Hammer - The End (2023) — 1 file(s), 1 COL, pp 162-162; cv per-file 161067x1; gcd per-file 112945x1; key 'Black Hammer - The End (2016)'
+      [15966] COL Black Hammer v08 - The End (2024) (digital) (Son of Ultron II-Empire).cbr (162pp)
+         own record cv 161067 / gcd s112945 "Black Hammer" (issue 2649016) COLLECTS: gcd=203538 Black Hammer: The End (2023) #1-6
+   G14 "Black Hammer - Spiral City" in Dark Horse\Black Hammer (2016)\18 Black Hammer - Spiral City (2024) — 3 file(s), numbers 1-3, pp 27-27; cv per-file 161043x3; gcd per-file 217537x3; key 'Black Hammer - Spiral City (2024)'
+      [14804] Black Hammer - Spiral City 001 (2024) (digital) (Son of Ultron-Empire).cbr (27pp)
+      [14805] Black Hammer - Spiral City 002 (2024) (digital) (Son of Ultron-Empire).cbr (27pp)
+      [14806] Black Hammer - Spiral City 003 (2025) (digital) (Son of Ultron-Empire).cbr (27pp)
+   G15 "Black Hammer Library Edition" in Dark Horse\Black Hammer (2016)\_Library Editions — 3 file(s), 3 COL, pp 307-406; cv per-file 92354x3; gcd per-file 134590x3; key 'Black Hammer (2016)' | 'Black Hammer'
+      [14807] COL 01 Black Hammer Library Edition Book 01 (2018) (digital) (Son of Ultron-Empire).cbr (406pp)  key="Black Hammer (2016)"
+      [14809] COL 03 Black Hammer Library Edition Book 02 (2020) (digital) (Son of Ultron-Empire).cbr (374pp)  key="Black Hammer (2016)"
+      [14814] COL 08 Black Hammer Library Edition Book 03 (2023) (digital) (Son of Ultron-Empire).cbr (307pp)  key="Black Hammer"
+   G16 "The World of Black Hammer Library Edition" in Dark Horse\Black Hammer (2016)\_Library Editions — 5 file(s), 5 COL, pp 218-289; cv per-file 92354x4; gcd per-file 164637x5; key 'The World of Black Hammer (2016)' | 'The World of Black Hammer'
+      [14808] COL 02 The World of Black Hammer Library Edition Book 01 (2020) (digital) (Son of Ultron-Empire).cbr (218pp)  key="The World of Black Hammer (2016)"
+      [14810] COL 04 The World of Black Hammer Library Edition Book 02 (2020) (digital) (Son of Ultron-Empire).cbr (285pp)  key="The World of Black Hammer (2016)"
+      [14811] COL 05 The World of Black Hammer Library Edition Book 03 (2021) (digital) (Son of Ultron-Empire).cbr (246pp)  key="The World of Black Hammer (2016)"
+      [14812] COL 06 The World of Black Hammer Library Edition Book 04 (2022) (digital) (Son of Ultron-Empire).cbr (289pp)  key="The World of Black Hammer"
+      [14813] COL 07 The World of Black Hammer Library Edition Book 05 (2023) (digital) (Son of Ultron-Empire).cbr (229pp)  key="The World of Black Hammer"
+   G17 "Black Hammer Omnibus" in Dark Horse\Black Hammer (2016)\_Omnibus Editions — 3 file(s), 3 COL, pp 308-404; cv per-file 146097x3; gcd per-file 189334x3; key 'Black Hammer' | 'Black Hammer (2016)'
+      [14815] COL Black Hammer Omnibus Book 01 (2022) (digital) (Son of Ultron-Empire).cbr (404pp)  key="Black Hammer"
+      [14816] COL Black Hammer Omnibus Book 02 (2023) (digital) (Son of Ultron-Empire).cbr (375pp)  key="Black Hammer"
+      [14817] COL Black Hammer Omnibus v03 (2024) (digital) (Son of Ultron-Empire).cbr (308pp)  key="Black Hammer (2016)"
+   G18 "The World of Black Hammer Omnibus" in Dark Horse\Black Hammer (2016)\_Omnibus Editions — 4 file(s), 4 COL, pp 215-284; cv per-file 92354x2; gcd per-file 201911x4; key 'World of Black Hammer Omnibus' | 'The World of Black Hammer' | 'The World of Black Hammer (2016)'
+      [14818] COL The World of Black Hammer Omnibus Book 01 (2023) (digital) (F) (Son of Ultron-Empire).cbr (215pp)  key="World of Black Hammer Omnibus"
+      [14819] COL The World of Black Hammer Omnibus Book 02 (2023) (digital) (Son of Ultron-Empire).cbr (284pp)  key="The World of Black Hammer"
+      [14820] COL The World of Black Hammer Omnibus Book 03 (2024) (digital) (Son of Ultron-Empire).cbr (246pp)  key="The World of Black Hammer"
+      [14821] COL The World of Black Hammer Omnibus v04 (2024) (digital) (Son of Ultron-Empire).cbr (274pp)  key="The World of Black Hammer (2016)"
+
+== S64506 Dark Horse Presents  [split]  207 files / 0 collections  decided in R-114 (R)
+   decided: R 64506 | the shelf is two co-equal runs: "01 Dark Horse Presents v1 (1986)" = CV 3739 / GCD 3301 (Dark Horse 1986-2000, 162; ladder 1-157, the #100 [0of5]-[5of5] parts, second rips of #1, the Annuals 1997-2000 = GCD 19038 / CV 19043, the Fifth Anniversary Special and the Aliens Platinum one-shot as its residue) and "02 MySpace Dark Horse Presents (2007)" — 36 webcomic issue files 001-036 (2007-2010, 26-32pp) in their own folder, a separate anthology whose only records are the six-volume print collection CV 40417 / GCD 38394 (2008-2011, rows 164-180pp); 36 issues of another comic are not residue (the in-force S called them a spin-off on an N). Plus item 15000 "Dark Horse Presents 036 (2014)" 84pp, the 2011 volume's #36. Signal a-C (C lines on S103649's Angel Omnibus naming gcd 3301) is another shelf's book collecting DHP stories — benign
+   F 64506 split-needed | items 12591-12626 (MySpace Dark Horse Presents 001-036, 2007-2010) -> new key "MySpace Dark Horse Presents (2007)" (records: only the print collection CV 40417 / GCD 38394; the web issues have none); item 15000 "Dark Horse Presents 036 (2014)" (84pp, per the 2014 date and page count the 2011 series' #36) -> join S96259 (key "Dark Horse Presents v2 (2011)", CV 39855 / GCD 57599, which holds another rip of #36); everything else stays as cv=3739 gcd=3301
+   N 64506 cv=3739 gcd=3301 — the S line for the kept 1986 run once MySpace moves: CV 3739 (per-file 199/207) = GCD 3301 (1986-2000, 162), ladder 1-157 inside both; 0.9 for the Annuals 1997-2000 (the monthly's own annual series, L-369), the Fifth Anniversary Special (CV 38627 / GCD 4285) and Dark Horse Presents: Aliens (CV 19934 / GCD 15810)
+   named: S96259 Dark Horse Presents  37 files  keys: "Dark Horse Presents (2011)" | "Dark Horse Presents v2 (2011)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S4689 "Dark Horse Presents Annual" 2f [shares cv=19043 (R clause), shares gcd=19038 — S cv=19043 gcd=19038 (D-003 0.95)] keys: "DHP Annual" | "DHP Jr. Annual"
+   nearby: S653 "Dark Horse Presents Aliens" 1f [shares cv=19934, shares gcd=15810 (N line) — S cv=19934 gcd=15810 (B-015 0.95)] keys: "Aliens - Dark Horse Presents"
+   nearby: S103649 "Angel Omnibus (2011)" 1f [named S103649 in the decision's R/N lines — S cv=44744 gcd=60302 (R-047 0.95)] keys: "Angel Omnibus (2011)"
+   nearby: S96260 "Dark Horse Presents" 35f [title — S cv=76530 gcd=82399 (C-021 0.95)] keys: "Dark Horse Presents (2014)" | "Dark Horse Presents v3 (2014)"
+   keys now: "Dark Horse Presents v1 (1986)" x163 · "MySpace Dark Horse Presents (1986)" x30 · "MySpace Dark Horse Presents (2008)" x6 · "Dark Horse Presents Annual" x3 · "Dark Horse Presents (1986)" x2 · "Dark Horse Presents - Aliens" x1 · "Dark Horse Presents Annual (1986)" x1 · "Dark Horse Presents Fifth Anniversary Special" x1
+   groups (title x folder): 26
+   G1 "Dark Horse Presents" in Dark Horse\Concrete (1986)\Uncollected Short Stories — 1 file(s), numbers 150, pp 52-52; cv per-file 3739x1; key 'Dark Horse Presents (1986)'
+      [13386] Dark Horse Presents 150.cbr (52pp)
+   G2 "Dark Horse Presents" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 144 file(s), numbers 1-6, 8-23, 26-33, 35-58, 61-64, 66, 68-74, 76, 78, 81-99, 101-116, 118-157, pp 25-69; cv per-file 3739x144; gcd per-file 3301x38; key 'Dark Horse Presents v1 (1986)'
+      e.g. Dark Horse Presents 001 (1st printing) (Dark Horse.1986) (c2c) (Pmack).cbz
+        12423 #1 1986 36pp · 12424 #1 38pp · 12425 #2 35pp · 12426 #3 36pp · 12427 #4 33pp · 12428 #5 34pp · 12429 #6 33pp · 12431 #8 36pp · 12432 #9 1987 36pp · 12433 #10 36pp · 12434 #11 36pp
+        12435 #12 27pp · 12436 #13 36pp · 12437 #14 25pp · 12438 #15 28pp · 12439 #16 36pp · 12440 #17 29pp · 12441 #18 36pp · 12442 #19 35pp · 12443 #20 68pp · 12444 #21 32pp · 12445 #22 30pp
+        12446 #23 36pp · 12449 #26 36pp · 12450 #27 35pp · 12451 #28 52pp · 12452 #29 34pp · 12453 #30 36pp · 12454 #31 36pp · 12455 #32 68pp · 12456 #33 43pp · 12458 #35 34pp · 12459 #36 34pp
+        12460 #37 36pp · 12461 #38 34pp · 12462 #39 27pp · 12463 #40 51pp · 12464 #41 30pp · 12465 #42 35pp · 12466 #43 32pp · 12467 #44 37pp · 12468 #45 35pp · 12469 #46 36pp · 12470 #47 36pp
+        12471 #48 37pp · 12472 #49 29pp · 12473 #50 32pp · 12474 #51 33pp · 12475 #52 1991 34pp · 12476 #53 36pp · 12477 #54 36pp · 12478 #55 36pp · 12479 #56 1991 69pp · 12480 #57 1991 53pp
+        12481 #58 36pp · 12484 #61 36pp · 12485 #62 53pp · 12486 #63 37pp · 12487 #64 36pp · 12489 #66 36pp · 12491 #68 36pp · 12492 #69 36pp · 12493 #70 36pp · 12494 #71 36pp · 12495 #72 36pp
+        12496 #73 36pp · 12497 #74 36pp · 12499 #76 35pp · 12501 #78 36pp · 12504 #81 36pp · 12505 #82 36pp · 12506 #83 36pp · 12507 #84 36pp · 12508 #85 35pp · 12509 #86 36pp · 12510 #87 36pp
+        12511 #88 37pp · 12512 #89 36pp · 12513 #90 33pp · 12514 #91 33pp · 12515 #92 37pp · 12516 #93 37pp · 12517 #94 36pp · 12518 #95 35pp · 12519 #96 36pp · 12520 #97 36pp · 12521 #98 36pp
+        12522 #99 36pp · 12529 #101 36pp · 12530 #102 36pp · 12531 #103 35pp · 12532 #104 35pp · 12533 #105 35pp · 12534 #106 36pp · 12535 #107 36pp · 12536 #108 36pp · 12537 #109 36pp
+        12538 #110 30pp · 12539 #111 36pp · 12540 #112 35pp · 12541 #113 36pp · 12542 #114 36pp · 12543 #115 1996 37pp · 12544 #116 1996 36pp · 12546 #118 36pp · 12547 #119 36pp · 12548 #120 35pp
+        12549 #121 36pp · 12550 #122 36pp · 12551 #123 36pp · 12552 #124 36pp · 12553 #125 28pp · 12554 #126 51pp · 12555 #127 36pp · 12556 #128 35pp · 12557 #129 36pp · 12558 #130 36pp
+        12559 #131 36pp · 12560 #132 1998 37pp · 12561 #133 37pp · 12562 #134 37pp · 12563 #135 44pp · 12564 #136 36pp · 12565 #137 36pp · 12566 #138 29pp · 12567 #139 36pp · 12568 #140 35pp
+        12569 #141 26pp · 12570 #142 28pp · 12571 #143 34pp · 12572 #144 36pp · 12573 #145 30pp · 12574 #146 28pp · 12575 #147 30pp · 12576 #148 35pp · 12577 #149 35pp · 12578 #150 52pp
+        12579 #151 37pp · 12580 #152 2000 35pp · 12581 #153 33pp · 12582 #154 36pp · 12583 #155 36pp · 12584 #156 36pp · 12585 #157 36pp
+   G3 "Dark Horse Presents - Aliens (Platinum Edition)" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), pp 49-49; cv per-file 19934x1; key 'Dark Horse Presents - Aliens'
+      [12422] Dark Horse Presents - Aliens (Platinum Edition) (1992).cbr (49pp)
+   G4 "Dark Horse Presents 007 [1987] (Imbie)" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 7, pp 35-35; cv per-file 3739x1; gcd per-file 3301x1; key 'Dark Horse Presents v1 (1986)'
+      [12430] Dark Horse Presents 007 [1987] (Imbie).cbr (35pp)
+   G5 "Dark Horse Presents 024 RESCAN" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), pp 34-34; cv per-file 3739x1; key 'Dark Horse Presents v1 (1986)'
+      [12447] Dark Horse Presents 024 RESCAN.cbr (34pp)
+   G6 "Dark Horse Presents 025 [1988] (Imbie)" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 25, pp 36-36; cv per-file 3739x1; gcd per-file 3301x1; key 'Dark Horse Presents v1 (1986)'
+      [12448] Dark Horse Presents 025 [1988] (Imbie).cbr (36pp)
+   G7 "Dark Horse Presents 034 [re-edit]" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 34, pp 36-36; cv per-file 3739x1; gcd per-file 3301x1; key 'Dark Horse Presents v1 (1986)'
+      [12457] Dark Horse Presents 034 [re-edit].cbr (36pp)
+   G8 "Dark Horse Presents 059 [1992] (Imbie)" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 59, pp 36-36; cv per-file 3739x1; key 'Dark Horse Presents v1 (1986)'
+      [12482] Dark Horse Presents 059 [1992] (Imbie).cbr (36pp)
+   G9 "Dark Horse Presents 060 [1992] (Imbie)" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 60, pp 36-36; cv per-file 3739x1; key 'Dark Horse Presents v1 (1986)'
+      [12483] Dark Horse Presents 060 [1992] (Imbie).cbr (36pp)
+   G10 "Dark Horse Presents 065 [1992] (Imbie)" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 65, pp 36-36; cv per-file 3739x1; key 'Dark Horse Presents v1 (1986)'
+      [12488] Dark Horse Presents 065 [1992] (Imbie).cbr (36pp)
+   G11 "Dark Horse Presents 067 [1992] (Imbie)" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 67, pp 67-67; cv per-file 3739x1; key 'Dark Horse Presents v1 (1986)'
+      [12490] Dark Horse Presents 067 [1992] (Imbie).cbr (67pp)
+   G12 "Dark Horse Presents 075 [1993] (Imbie)" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 75, pp 36-36; cv per-file 3739x1; key 'Dark Horse Presents v1 (1986)'
+      [12498] Dark Horse Presents 075 [1993] (Imbie).cbr (36pp)
+   G13 "Dark Horse Presents 077 [1993] (Imbie)" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 77, pp 36-36; cv per-file 3739x1; key 'Dark Horse Presents v1 (1986)'
+      [12500] Dark Horse Presents 077 [1993] (Imbie).cbr (36pp)
+   G14 "Dark Horse Presents 079 [1993] (Imbie)" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 79, pp 36-36; cv per-file 3739x1; key 'Dark Horse Presents v1 (1986)'
+      [12502] Dark Horse Presents 079 [1993] (Imbie).cbr (36pp)
+   G15 "Dark Horse Presents 080 [soundscribe]" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 80, pp 36-36; cv per-file 3739x1; key 'Dark Horse Presents v1 (1986)'
+      [12503] Dark Horse Presents 080 [soundscribe].cbz (36pp)
+   G16 "Dark Horse Presents 100 [0of5]" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 100, pp 19-19; cv per-file 3739x1; gcd per-file 3301x1; key 'Dark Horse Presents v1 (1986)'
+      [12523] Dark Horse Presents 100 [0of5].cbr (19pp)
+   G17 "Dark Horse Presents 100 [1of5]" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 100, pp 36-36; cv per-file 3739x1; gcd per-file 3301x1; key 'Dark Horse Presents v1 (1986)'
+      [12524] Dark Horse Presents 100 [1of5].cbr (36pp)
+   G18 "Dark Horse Presents 100 [2of5]" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 100, pp 36-36; cv per-file 3739x1; gcd per-file 3301x1; key 'Dark Horse Presents v1 (1986)'
+      [12525] Dark Horse Presents 100 [2of5].cbr (36pp)
+   G19 "Dark Horse Presents 100 [3of5]" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 100, pp 36-36; cv per-file 3739x1; gcd per-file 3301x1; key 'Dark Horse Presents v1 (1986)'
+      [12526] Dark Horse Presents 100 [3of5].cbr (36pp)
+   G20 "Dark Horse Presents 100 [4of5]" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 100, pp 36-36; cv per-file 3739x1; gcd per-file 3301x1; key 'Dark Horse Presents v1 (1986)'
+      [12527] Dark Horse Presents 100 [4of5].cbr (36pp)
+   G21 "Dark Horse Presents 100 [5of5]" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 100, pp 36-36; cv per-file 3739x1; gcd per-file 3301x1; key 'Dark Horse Presents v1 (1986)'
+      [12528] Dark Horse Presents 100 [5of5].cbr (36pp)
+   G22 "Dark Horse Presents 117 [1997] (Imbie)" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), numbers 117, pp 36-36; cv per-file 3739x1; key 'Dark Horse Presents v1 (1986)'
+      [12545] Dark Horse Presents 117 [1997] (Imbie).cbr (36pp)
+   G23 "Dark Horse Presents Annual" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 4 file(s), numbers 1997-1999, pp 64-68; cv per-file 3739x4; gcd per-file 19038x1; key 'Dark Horse Presents Annual' | 'Dark Horse Presents Annual (1986)'
+      [12586] Dark Horse Presents Annual 1997.cbr (68pp)  key="Dark Horse Presents Annual"
+      [12587] Dark Horse Presents Annual 1998 (FIXED).cbr (64pp)  key="Dark Horse Presents Annual"
+      [12588] Dark Horse Presents Annual 1999.cbr (66pp)  key="Dark Horse Presents Annual"
+      [12589] Dark Horse Presents Annual 2000 - Girls Rule!.cbr (68pp)  key="Dark Horse Presents Annual (1986)"
+   G24 "Dark Horse Presents Fifth Anniversary Special (1991) (Random-DCP)" in Dark Horse\Dark Horse Presents\01 Dark Horse Presents v1 (1986) — 1 file(s), pp 111-111; cv per-file 38627x1; key 'Dark Horse Presents Fifth Anniversary Special'
+      [12590] Dark Horse Presents Fifth Anniversary Special (1991) (Random-DCP).cbr (111pp)
+   G25 "MySpace Dark Horse Presents" in Dark Horse\Dark Horse Presents\02 MySpace Dark Horse Presents (2007) — 36 file(s), numbers 1-36, pp 26-32; cv per-file 3739x30, 40417x6; gcd per-file 3301x30, 38394x2; key 'MySpace Dark Horse Presents (2008)' | 'MySpace Dark Horse Presents (1986)'
+      e.g. MySpace Dark Horse Presents 001 (2007) (webrip) (F) (Foyle-DCP).cbr
+        12591 #1 2007 28pp key="MySpace Dark Horse Presents (2008)" · 12592 #2 2007 30pp key="MySpace Dark Horse Presents (2008)" · 12593 #3 2007 28pp key="MySpace Dark Horse Presents (2008)"
+        12594 #4 2007 28pp key="MySpace Dark Horse Presents (2008)" · 12595 #5 2007 28pp key="MySpace Dark Horse Presents (2008)" · 12596 #6 2008 28pp key="MySpace Dark Horse Presents (2008)"
+        12597 #7 2008 27pp key="MySpace Dark Horse Presents (1986)" · 12598 #8 2008 28pp key="MySpace Dark Horse Presents (1986)" · 12599 #9 2008 27pp key="MySpace Dark Horse Presents (1986)"
+        12600 #10 2008 27pp key="MySpace Dark Horse Presents (1986)" · 12601 #11 2008 27pp key="MySpace Dark Horse Presents (1986)" · 12602 #12 2008 27pp key="MySpace Dark Horse Presents (1986)"
+        12603 #13 2008 27pp key="MySpace Dark Horse Presents (1986)" · 12604 #14 2008 27pp key="MySpace Dark Horse Presents (1986)" · 12605 #15 2008 27pp key="MySpace Dark Horse Presents (1986)"
+        12606 #16 2008 27pp key="MySpace Dark Horse Presents (1986)" · 12607 #17 2008 27pp key="MySpace Dark Horse Presents (1986)" · 12608 #18 2009 27pp key="MySpace Dark Horse Presents (1986)"
+        12609 #19 2009 27pp key="MySpace Dark Horse Presents (1986)" · 12610 #20 2009 27pp key="MySpace Dark Horse Presents (1986)" · 12611 #21 2009 27pp key="MySpace Dark Horse Presents (1986)"
+        12612 #22 2009 26pp key="MySpace Dark Horse Presents (1986)" · 12613 #23 2009 27pp key="MySpace Dark Horse Presents (1986)" · 12614 #24 2009 28pp key="MySpace Dark Horse Presents (1986)"
+        12615 #25 2009 27pp key="MySpace Dark Horse Presents (1986)" · 12616 #26 2009 27pp key="MySpace Dark Horse Presents (1986)" · 12617 #27 2009 27pp key="MySpace Dark Horse Presents (1986)"
+        12618 #28 2009 27pp key="MySpace Dark Horse Presents (1986)" · 12619 #29 2009 27pp key="MySpace Dark Horse Presents (1986)" · 12620 #30 2010 27pp key="MySpace Dark Horse Presents (1986)"
+        12621 #31 2010 27pp key="MySpace Dark Horse Presents (1986)" · 12622 #32 2010 27pp key="MySpace Dark Horse Presents (1986)" · 12623 #33 2010 28pp key="MySpace Dark Horse Presents (1986)"
+        12624 #34 2010 28pp key="MySpace Dark Horse Presents (1986)" · 12625 #35 2010 32pp key="MySpace Dark Horse Presents (1986)" · 12626 #36 2010 32pp key="MySpace Dark Horse Presents (1986)"
+   G26 "Dark Horse Presents" in Dark Horse\Hellboy, B.P.R.D. & Related\Sir Edward Grey, Witchfinder (2009)\Appearances & one-shots — 1 file(s), numbers 36, pp 84-84; cv per-file 3739x1; gcd per-file 3301x1; key 'Dark Horse Presents (1986)'
+      [15000] Dark Horse Presents 036 (2014) (digital) (Son of Ultron-Empire).cbr (84pp)
+
+== S6147 Empowered  [split]  25 files / 18 collections  decided in R-114 (R)
+   decided: R 6147 | the shelf holds the Empowered core line (Vol. 01-12 = CV 19331 / GCD 32719, 12, both legs volume for volume) with its own Omnibus reprint (CV 127658 / GCD 161851, 3) and three one-book spin-offs, AND the seven "Empowered Special 001-007 (2009-2015)" issue files in their own "Empowered Special (2009)" subfolder = CV 30237 / GCD 42113 (Dark Horse 2009-2015, 7) — a complete separate run of issues, not residue (the in-force S called it misfiled); no live shelf stores cv 30237 (--who-stores), so it needs a key of its own. Signal e (25 files) is those two runs plus the residue books
+   F 6147 split-needed | items 12914, 12915, 12916, 12917, 12918, 12919, 12920 (Empowered Special 001-007) -> new key "Empowered Special (2009)" (CV 30237 / GCD 42113, 7); everything else stays as cv=19331 gcd=32719
+   N 6147 cv=19331 gcd=32719 — the S line for the kept core line once the Specials move: CV 19331 = GCD 32719 "Empowered" (2007-, Dark Horse, 12) volume for volume (I lines); the Omnibus Books 01-03 reprint that same line (one comic, two editions); 0.9 for the one-book spin-offs Unchained Vol. 01 (CV 81117 / GCD 88076), Sistah Spooky's High School Hell and the Soldier of Love (C lines)
+   keys now: "Empowered" x15 · "Empowered Special" x7 · "Empowered Unchained" x1 · "Empowered and Sistah Spooky's High School Hell" x1 · "Empowered and the Soldier of Love" x1
+   groups (title x folder): 6
+   G1 "Empowered" in Dark Horse\Empowered (2007) — 12 file(s), 12 COL, pp 206-249; cv per-file 19331x12; gcd per-file 32719x12; key 'Empowered'
+      [12922] COL Empowered Vol. 01 - Not So Secret (2007) (digital) (The Magicians-Empire).cbr (249pp)
+      [12923] COL Empowered Vol. 02 - Thumperlame (2007) (digital) (The Magicians-Empire).cbr (208pp)
+      [12924] COL Empowered Vol. 03 - Feel the Uberburn (2008) (digital) (The Magicians-Empire).cbr (207pp)
+      [12925] COL Empowered Vol. 04 - Who da Ubermensch (2008) (digital) (The Magicians-Empire).cbr (207pp)
+         own record cv 19331 / gcd s32719 "Empowered" (issue 553238) COLLECTS: gcd=38394 MySpace Dark Horse Presents (2008) #1
+      [12926] COL Empowered Vol. 05 - Reducing the Upitty (2009) (digital) (The Magicians-Empire).cbr (206pp)
+      [12927] COL Empowered Vol. 06 - The What-the-Fuckiest Five Minutes of My Career So Far (2010) (digital) (The Magicians-Empire).cbr (208pp)
+      [12928] COL Empowered Vol. 07 - Time's Arrow, Flying Differently (2012) (digital) (The Magicians-Empire).cbr (224pp)
+      [12929] COL Empowered Vol. 08 - Oh, Hell Yeah (2013) (digital) (The Magicians-Empire).cbr (208pp)
+      [12930] COL Empowered Vol. 09 - Not a Good Day to be Empowered (2015) (digital) (The Magicians-Empire).cbr (232pp)
+      [12931] COL Empowered Vol. 10 - Full-Time Super-Homey... Finally! (2017) (digital) (The Magicians-Empire).cbr (214pp)
+      [12932] COL Empowered Vol. 11 - You're Just Gonna Have to Kill Me (2019) (digital) (The Magicians-Empire).cbr (217pp)
+      [12933] COL Empowered Vol. 12 (2024) (digital) (gokusoda33).cbz (214pp)
+   G2 "Empowered Unchained" in Dark Horse\Empowered (2007) — 1 file(s), 1 COL, pp 208-208; cv per-file 81117x1; gcd per-file 88076x1; key 'Empowered Unchained'
+      [12921] COL Empowered Unchained Vol. 01 (2015) (digital) (The Magicians-Empire).cbr (208pp)
+   G3 "Empowered Special" in Dark Horse\Empowered (2007)\Empowered Special (2009) — 7 file(s), numbers 1-7, pp 32-34; cv per-file 19331x6, 30237x1; gcd per-file 42113x6, 32719x1; key 'Empowered Special'
+      [12914] Empowered Special 001 - The Wench with a Million Sighs (2009) (digital) (Son of Ultron-Empire).cbr (33pp)
+      [12915] Empowered Special 002 - Ten Questions for the Maidman (2011) (digital) (Son of Ultron-Empire).cbr (32pp)
+      [12916] Empowered Special 003 - Hell Bent or Heaven Sent (2012) (digital) (Son of Ultron-Empire).cbr (33pp)
+      [12917] Empowered Special 004 - Animal Style (2013) (digital) (Son of Ultron-Empire).cbr (34pp)
+      [12918] Empowered Special 005 - Nine Beers with Ninjette (2013) (digital) (Son of Ultron-Empire).cbr (34pp)
+      [12919] Empowered Special 006 - Internal Medicine (2014) (digital) (Son of Ultron-Empire).cbr (34pp)
+      [12920] Empowered Special 007 - PEW! PEW! PEW! (2015) (digital) (The Magicians-Empire).cbr (33pp)
+   G4 "Empowered and Sistah Spooky's High School Hell (2019) (digital) (The Magicians-Empire)" in Dark Horse\Empowered (2007)\Empowered and Sistah Spooky's High School Hell (2017) — 1 file(s), 1 COL, pp 146-146; cv per-file 19331x1; gcd per-file 138370x1; key "Empowered and Sistah Spooky's High School Hell"
+      [13852] COL Empowered and Sistah Spooky's High School Hell (2019) (digital) (The Magicians-Empire).cbr (146pp)
+         own record cv 19331 / gcd s138370 "Empowered and Sistah Spooky's High School Hell" (issue 1911039) COLLECTS: gcd=119444 Empowered and Sistah Spooky's High School Hell (2017) #1-6
+   G5 "Empowered and the Soldier of Love (2018) (digital) (The Magicians-Empire)" in Dark Horse\Empowered (2007)\Empowered and the Soldier of Love (2017) — 1 file(s), 1 COL, pp 128-128; cv per-file 111824x1; gcd per-file 126336x1; key 'Empowered and the Soldier of Love'
+      [13853] COL Empowered and the Soldier of Love (2018) (digital) (The Magicians-Empire).cbr (128pp)
+   G6 "Empowered Omnibus" in Dark Horse\Empowered (2007)\_Omnibus Editions — 3 file(s), 3 COL, pp 618-667; cv per-file 127658x3; gcd per-file 161851x3; key 'Empowered'
+      [12934] COL Empowered Omnibus Book 01 (2020) (digital) (Son of Ultron-Empire).cbr (667pp)
+      [12935] COL Empowered Omnibus Book 02 (2021) (digital) (Son of Ultron-Empire).cbr (618pp)
+      [12936] COL Empowered Omnibus Book 03 (2021) (digital) (Son of Ultron-Empire).cbr (662pp)
+
+== S7834 Grandville Force Majeur  [split]  1 files / 1 collections  decided in R-114 (S)
+   decided: S 7834 cv=105757 gcd=42860 0.9 | restated for the one album on this shelf: "Grandville v5 Force Majeure (2017)" 178pp = CV 105757 (Dark Horse 2017, 1, issue 634494) = GCD 42860 row 1746580 (184pp). Signal a-S (gcd 42860 also the S of S7836 and S7832): benign in kind — GCD keeps the five albums as ONE series while CV mints a volume per book, so every Grandville shelf shares it; the albums belong on one shelf (F)
+   F 7834 split-needed | item 14139 -> join S7832 (key "Grandville"), the album line's shelf (GCD 42860, which already holds books [1], [3] and [4]); the in-force F 7832 merge-with=7834 cannot land because the two S lines share no cv (CV mints one volume per album), so the split lane is the only road
+   named: S7832 Grandville  3 files  keys: "Grandville" | "Grandville Bete Noire" | "Grandville Noel"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S7836 "Grandville Mon Amour" 1f [shares gcd=42860, named S7836 in the decision's R/N lines — S cv=45517 gcd=42860 (R-114 0.9)] keys: "Grandville Mon Amour"
+   nearby: S7835 "Grandville Intégral" 1f [title+1 — S cv=136943 gcd=173208 (D-003 0.95)] keys: "Grandville Integral"
+   keys now: "Grandville Force Majeur" x1
+   groups (title x folder): 1
+   G1 "Grandville" in Dark Horse\Grandville — 1 file(s), 1 COL, pp 178-178; cv per-file 105757x1; gcd per-file 42860x1; key 'Grandville Force Majeur'
+      [14139] COL Grandville v5 Force Majeure (2017) (digital) (Mr Norrell-Empire).cbr (178pp)
+
+== S7836 Grandville Mon Amour  [split]  1 files / 1 collections  decided in R-114 (S)
+   decided: S 7836 cv=45517 gcd=42860 0.9 | restated for the one album on this shelf: "Grandville v2 Mon Amour (2010)" 107pp = CV 45517 (Dark Horse 2010, 1, issue 313494) = GCD 42860 row 796672 (112pp). Signal a-S (gcd 42860 shared with S7834 / S7832) is the one-series-per-line shape on GCD — benign; the album belongs with its line (F)
+   F 7836 split-needed | item 14136 -> join S7832 (key "Grandville"), the Grandville album line's shelf (GCD 42860 rows [1]-[5]); F 7832 merge-with=7836 cannot land without a shared cv, CV having one volume per album
+   F 7836 merge-with=7834 | both are single albums of the ONE Grandville line (GCD 42860 rows [2] Mon Amour and [5] Force Majeure); they share no cv (CV 45517 / 105757, one volume per album), so the merge cannot run on cv — the two split-lane joins to S7832 above are what actually brings them together
+   named: S7832 Grandville  3 files  keys: "Grandville" | "Grandville Bete Noire" | "Grandville Noel"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S7834 "Grandville Force Majeur" 1f [shares gcd=42860, named S7834 in the decision's R/N lines — S cv=105757 gcd=42860 (R-114 0.9)] keys: "Grandville Force Majeur"
+   nearby: S7835 "Grandville Intégral" 1f [title+1 — S cv=136943 gcd=173208 (D-003 0.95)] keys: "Grandville Integral"
+   keys now: "Grandville Mon Amour" x1
+   groups (title x folder): 1
+   G1 "Grandville" in Dark Horse\Grandville — 1 file(s), 1 COL, pp 107-107; cv per-file 45517x1; gcd per-file 42860x1; key 'Grandville Mon Amour'
+      [14136] COL Grandville v2 Mon Amour (2010).cbr (107pp)
+         own record cv 45517 / gcd s42860 "Grandville" (issue 796672) COLLECTS: gcd=54897 Sidekick (2010) #1
+
+== S1715 B.P.R.D.  [split]  26 files / 25 collections  decided in R-114 (R)
+   decided: R 1715 | two co-equal collected LINES share the shelf: the trade line GCD 32393 "B.P.R.D." (Dark Horse 2003-2010, 14, rows #1-14 = our Vol. 01-14 by subtitle; Vol. 00 Being Human and the 1946-1948 HC as residue) and the ten "_Omnibus Editions" books = "B.P.R.D. Omnibus" CV 145580 (2022, 10) = GCD 189332 (2022-2024, 10), both legs, our Book 01-10 issue for issue (I lines). The omnibus line spans the Plague of Frogs cycle AND the later Hell on Earth cycle, which GCD 32393 never reaches, so it is a different line with its own record (L-186), not another edition of this one; ten whole books of it are co-equal (ruling after S15276). Signal e (26 files) is that
+   F 1715 split-needed | items 14931, 14932, 14933, 14934, 14935, 14936, 14937, 14938, 14939, 14940 (B.P.R.D. Omnibus Book 01-10) -> new key "B.P.R.D. Omnibus (2022)" (CV 145580 / GCD 189332, 10); everything else stays as cv=- gcd=32393
+   F 1715 wrong-cv-link | the stored CV 136599 "B.P.R.D." 2005 Magic Press count 6 is the ITALIAN edition, stamped on all 26 files; ComicVine has no English line volume, only one per book (I lines)
+   N 1715 cv=- gcd=32393 — the S line for the kept trade line once the omnibus moves: GCD 32393 rows #1-14 carry our Vol. 01-14 subtitles at 132-164pp against our 129-166pp; ComicInfo Publisher Dark Horse; 0.9 on one leg (L-233) with Vol. 00 (CV 48826 / GCD 65544) and the 1946-1948 HC (CV 82481 / GCD 90112) as residue
+   N 1715 no C for items 14885, 14889, 14890, 14891 and the omnibus books: Vol. 00 collects three one-shots, Vol. 01 the Hollow Earth mini plus shorts, Vol. 02 four 2003 one-shots, the 1946-1948 HC three minis, each omnibus several trades — no single run's range describes any of them
+   nearby: S15276 "Secret Six" 6f [named S15276 in the decision's R/N lines — S cv=22841 gcd=31829 (R-105 0.9)] keys: "Secret Six"
+   nearby: S1716 "B.P.R.D.: Night Train" 1f [shares gcd=21810 (collected by item 14891) — S cv=18287 gcd=21810 (B-017 0.95)] keys: "B.P.R.D. - Night Train"
+   nearby: S1723 "B.P.R.D.: Vampire" 1f [title+1 — S cv=59360 gcd=71232 (B-017 0.95)] keys: "B.P.R.D.: Vampire (Second Edition)"
+   keys now: "B.P.R.D." x26
+   groups (title x folder): 3
+   G1 "B.P.R.D." in Dark Horse\Hellboy, B.P.R.D. & Related\B.P.R.D. (2001)\00 BPRD - 1946-1948 and Others — 1 file(s), pp 470-470; cv per-file 82481x1; gcd per-file 90112x1; key 'B.P.R.D.'
+      [14885] B.P.R.D. - 1946-1948 (2015) (digital) (Son of Ultron-Empire).cbr (470pp)
+   G2 "B.P.R.D." in Dark Horse\Hellboy, B.P.R.D. & Related\B.P.R.D. (2001)\01 Plague of Frogs Cycle — 15 file(s), 15 COL, pp 129-166; cv per-file 48826x1, 32946x1, 50079x1; gcd per-file 32393x14, 65544x1; key 'B.P.R.D.'
+      [14889] COL B.P.R.D. Vol. 00 - Being Human (2011) (digital) (Son of Ultron-Empire).cbr (154pp)
+         own record cv 48826 / gcd s65544 "B.P.R.D.: Being Human" (issue 944831) COLLECTS: gcd=57115 B.P.R.D.: The Dead Remembered (2011) #1-3 · gcd=31375 B.P.R.D.: The Ectoplasmic Man (2008) (unnumbered) · gcd=58559 Hellboy: Being Human (2011) (unnumbered)
+      [14890] COL B.P.R.D. Vol. 01 - Hollow Earth & Other Stories (2004, 2nd edition) (Digital) (Zone-Empire).cbr (130pp)
+      [14891] COL B.P.R.D. Vol. 02 - The Soul of Venice & Other Stories (2004) (Digital) (Zone-Empire).cbr (129pp)
+         own record cv 50079 / gcd s32393 "B.P.R.D." (issue 713703) COLLECTS: gcd=12204 B.P.R.D. There's Something Under My Bed (2003) (unnumbered) · gcd=21810 B.P.R.D. Night Train (2003) (unnumbered) · gcd=17569 B.P.R.D. Dark Waters (2003) (unnumbered) · gcd=17568 B.P.R.D. The Soul of Venice (2003) (unnumbered)
+      [14892] COL B.P.R.D. Vol. 03 - Plague of Frogs (2005) (Digital) (Zone-Empire).cbr (146pp)
+         own record cv 50058 / gcd s32393 "B.P.R.D." (issue 713694) COLLECTS: gcd=14365 B.P.R.D., Plague of Frogs (2004) #1-5
+      [14893] COL B.P.R.D. Vol. 04 - The Dead (2005) (Digital) (Zone-Empire).cbr (161pp)
+         own record cv 64103 / gcd s32393 "B.P.R.D." (issue 713704) COLLECTS: gcd=14366 B.P.R.D., The Dead (2004) (unnumbered) · gcd=19049 Hellboy Premiere Edition (2004) (unnumbered)
+      [14894] COL B.P.R.D. Vol. 05 - The Black Flame (2006) (Digital) (Zone-Empire).cbr (166pp)
+         own record cv 50552 / gcd s32393 "B.P.R.D." (issue 713700) COLLECTS: gcd=15085 B.P.R.D., The Black Flame (2005) (unnumbered)
+      [14895] COL B.P.R.D. Vol. 06 - The Universal Machine (2007) (Digital) (Zone-Empire).cbr (146pp)
+         own record cv 50551 / gcd s32393 "B.P.R.D." (issue 655510) COLLECTS: gcd=17571 B.P.R.D.: The Universal Machine (2006) (unnumbered)
+      [14896] COL B.P.R.D. Vol. 07 - Garden of Souls (2008) (Digital) (Zone-Empire).cbr (153pp)
+         own record cv 50550 / gcd s32393 "B.P.R.D." (issue 713696) COLLECTS: gcd=26053 B.P.R.D.: Garden of Souls (2007) #1-5
+      [14897] COL B.P.R.D. Vol. 08 - Killing Ground (2008) (Digital) (Zone-Empire).cbr (146pp)
+         own record cv 50549 / gcd s32393 "B.P.R.D." (issue 713697) COLLECTS: gcd=26054 B.P.R.D.: Killing Ground (2007) #1-5
+      [14898] COL B.P.R.D. Vol. 09 - 1946 (2008) (Digital) (Zone-Empire).cbr (154pp)
+         own record cv 50553 / gcd s32393 "B.P.R.D." (issue 713695) COLLECTS: gcd=33239 B.P.R.D.: 1946 (2008) #1-5 · gcd=30662 Hellboy: Free Comic Book Day (2008) (unnumbered)
+      [14899] COL B.P.R.D. Vol. 10 - The Warning (2009) (Digital) (Zone-Empire).cbr (146pp)
+         own record cv 50555 / gcd s32393 "B.P.R.D." (issue 612934) COLLECTS: gcd=31638 B.P.R.D.: The Warning (2008) #1-5 · gcd=30662 Hellboy: Free Comic Book Day (2008) (unnumbered)
+      [14900] COL B.P.R.D. Vol. 11 - The Black Goddess (2009) (Digital) (Zone-Empire).cbr (146pp)
+         own record cv 50548 / gcd s32393 "B.P.R.D." (issue 713702) COLLECTS: gcd=36496 B.P.R.D.: The Black Goddess (2009) #1-5
+      [14901] COL B.P.R.D. Vol. 12 - War on Frogs (2010) (Digital) (Zone-Empire).cbr (138pp)
+         own record cv 49111 / gcd s32393 "B.P.R.D." (issue 752710) COLLECTS: gcd=31060 B.P.R.D.: War on Frogs (2008) #1-4 · gcd=38394 MySpace Dark Horse Presents (2008) #2
+      [14902] COL B.P.R.D. Vol. 13 - 1947 (2010) (Digital) (Zone-Empire).cbr (161pp)
+         own record cv 50558 / gcd s32393 "B.P.R.D." (issue 925422) COLLECTS: gcd=38393 B.P.R.D.: 1947 (2009) #1-5 · gcd=38394 MySpace Dark Horse Presents (2008) #4
+      [14903] COL B.P.R.D. Vol. 14 - King of Fear (2010) (Digital) (Zone-Empire).cbr (141pp)
+         own record cv 36454 / gcd s32393 "B.P.R.D." (issue 925423) COLLECTS: gcd=41624 B.P.R.D.: King of Fear (2010) #1-5
+   G3 "B.P.R.D. Omnibus" in Dark Horse\Hellboy, B.P.R.D. & Related\B.P.R.D. (2001)\_Omnibus Editions — 10 file(s), 10 COL, pp 396-475; cv per-file 145580x10; gcd per-file 189332x10; key 'B.P.R.D.'
+      [14931] COL B.P.R.D. Omnibus Book 01 (2022) (digital) (Son of Ultron-Empire).cbr (410pp)
+         own record cv 145580 / gcd s189332 "B.P.R.D. Omnibus" (issue 2431335) COLLECTS: gcd=14365 B.P.R.D., Plague of Frogs (2004) #1-5 · gcd=32393 B.P.R.D. (2003) #2-3 · gcd=19048 BPRD: Hollow Earth [B.P.R.D.: Hollow Earth] (2002) #1-3 · gcd=10606 Dark Horse Extra (1998) #42-44
+      [14932] COL B.P.R.D. Omnibus Book 02 (2022) (digital) (Son of Ultron-Empire).cbr (469pp)
+      [14933] COL B.P.R.D. Omnibus Book 03 (2022) (digital) (Son of Ultron-Empire).cbr (448pp)
+      [14934] COL B.P.R.D. Omnibus Book 04 (2023) (digital) (F) (Son of Ultron-Empire).cbr (434pp)
+      [14935] COL B.P.R.D. Omnibus Book 05 (2023) (digital) (F) (Son of Ultron-Empire).cbr (442pp)
+      [14936] COL B.P.R.D. Omnibus Book 06 (2023) (digital) (F) (Son of Ultron-Empire).cbr (475pp)
+      [14937] COL B.P.R.D. Omnibus Book 07 (2023) (digital) (Son of Ultron-Empire).cbr (415pp)
+      [14938] COL B.P.R.D. Omnibus Book 08 (2023) (digital) (Son of Ultron-Empire).cbr (407pp)
+      [14939] COL B.P.R.D. Omnibus Book 09 (2024) (digital) (Son of Ultron-Empire).cbr (396pp)
+      [14940] COL B.P.R.D. Omnibus Book 10 (2024) (digital) (Son of Ultron-Empire).cbr (420pp)
+
+== S15695 Sir Edward Grey, Witchfinder  [split]  34 files / 8 collections  decided in R-114 (R)
+   decided: R 15695 | the Baltimore / Lobster Johnson shape: the 25 numbered issue files are the ripper's continuous 001-025 over FIVE separately published Dark Horse minis, and every filename carries its own mini and "(of 05)": In the Service of Angels 01-05 (2009) = CV 26959 / GCD 37909, Lost and Gone Forever 01-05 (2011) = CV 38774 / GCD 55453, The Mysteries of Unland 01-05 (2014) = CV 74882 / GCD 81321, City of the Dead 01-05 (2016) = CV 93687 / GCD 105793, The Gates of Heaven 01-05 (2018) = CV 111060 / GCD 124634 — each 5 issues on both legs, none a spanning run. The stored CV 45124 / GCD 47084 are the TRADE line (CV issues "Volume 2-6", GCD rows #1-6 with our six subtitles, S21751's Vol. 06 now merged in), which is what the six trades are; the two Omnibus books are a third record (CV 123111 / GCD 153051, 2). A shelf of issue files of several minis is R + split (L-219, L-243)
+   F 15695 split-needed | proposed runs with their records: Sir Edward Grey, Witchfinder: In the Service of Angels (2009) items 15005-15009 = CV 26959 / GCD 37909, 5; Lost and Gone Forever (2011) items 15010-15014 = CV 38774 / GCD 55453, 5; The Mysteries of Unland (2014) items 15015-15019 = CV 74882 / GCD 81321, 5; Witchfinder: City of the Dead (2016) items 15020-15024 = CV 93687 / GCD 105793, 5; Witchfinder: The Gates of Heaven (2018) items 15025-15029 = CV 111060 / GCD 124634, 5; the six trades Vol. 01-06 stay as the trade line cv=45124 gcd=47084; the two omnibus books (15003, 15004) and the 8pp #0 "Murderous Intent" (15002, a MySpace DHP #16 story) stay as residue
+   N 15695 cv=45124 gcd=47084 — the S line for the kept trade line once the minis move: CV 45124 issues 310999 / 486698 / 592561 / 696275 / 803140 are "Volume 2-6" and GCD 47084 rows #1-6 carry our six subtitles (Vol. 01 is CV 32436 issue 204529); both legs, 0.95 once only the trades and the omnibus remain
+   N 15695 signal c: the judged ranges #6-10, #11-15, #16-20, #21-25, #1-15 and #16-25 are the RIPPER'S continuous numbering (files 006-025), not any run's — every trade collects its own mini #1-5; corrected by the C lines below, which must replace them (the judged #6-10 … #21-25 should be retracted where no C lands)
+   N 15004 Omnibus Book 02 (425pp) may also hold The Reign of Darkness (CV 123113 / GCD 153052), as Book 01 holds three minis in 438pp; no roll-up confirms it, so no C
+   nearby: S96259 "Dark Horse Presents" 37f [shares gcd=57599 (collected by item 15032) — S cv=39855 gcd=57599 (R-114 0.95)] keys: "Dark Horse Presents (2011)" | "Dark Horse Presents v2 (2011)"
+   nearby: S21752 "Witchfinder: The Gates of Heaven" 5f [shares cv=111060, shares gcd=124634 — S cv=111060 gcd=124634 (A-012 0.95)] keys: "Witchfinder - The Gates of Heaven"
+   nearby: S21753 "Witchfinder: The Reign of Darkness" 5f [shares cv=123113 (N line), shares gcd=153052 (N line) — S cv=123113 gcd=153052 (A-012 0.95)] keys: "Witchfinder: The Reign of Darkness"
+   keys now: "Sir Edward Grey, Witchfinder" x33 · "Witchfinder" x1
+   groups (title x folder): 4
+   G1 "Sir Edward Grey, Witchfinder" in Dark Horse\Hellboy, B.P.R.D. & Related\Sir Edward Grey, Witchfinder (2009) — 25 file(s), numbers 1-25, pp 22-26; cv per-file 45124x25; gcd per-file 47084x8; key 'Sir Edward Grey, Witchfinder'
+      e.g. Sir Edward Grey, Witchfinder 001 - In the Service of Angels 01 (of 05) (2009) (digital-Empire).cbr
+        15005 #1 2009 24pp · 15006 #2 2009 24pp · 15007 #3 2009 24pp · 15008 #4 2009 24pp · 15009 #5 2009 24pp
+      [15010] Sir Edward Grey, Witchfinder 006 - Lost and Gone Forever 01 (of 05) (2011) (digital-Empire).cbr (22pp)
+      [15011] Sir Edward Grey, Witchfinder 007 - Lost and Gone Forever 02 (of 05) (2011) (digital-Empire).cbr (24pp)
+      [15012] Sir Edward Grey, Witchfinder 008 - Lost and Gone Forever 03 (of 05) (2011) (digital-Empire).cbr (22pp)
+      [15013] Sir Edward Grey, Witchfinder 009 - Lost and Gone Forever 04 (of 05) (2011) (digital-Empire).cbr (24pp)
+      [15014] Sir Edward Grey, Witchfinder 010 - Lost and Gone Forever 05 (of 05) (2011) (digital-Empire).cbr (24pp)
+      [15015] Sir Edward Grey, Witchfinder 011 - The Mysteries of Unland 01 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr (26pp)
+      [15016] Sir Edward Grey, Witchfinder 012 - The Mysteries of Unland 02 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr (26pp)
+      [15017] Sir Edward Grey, Witchfinder 013 - The Mysteries of Unland 03 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr (26pp)
+      [15018] Sir Edward Grey, Witchfinder 014 - The Mysteries of Unland 04 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr (26pp)
+      [15019] Sir Edward Grey, Witchfinder 015 - The Mysteries of Unland 05 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr (25pp)
+      [15020] Sir Edward Grey, Witchfinder 016 - City of the Dead 01 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr (26pp)
+      [15021] Sir Edward Grey, Witchfinder 017 - City of the Dead 02 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr (25pp)
+      [15022] Sir Edward Grey, Witchfinder 018 - City of the Dead 03 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr (25pp)
+      [15023] Sir Edward Grey, Witchfinder 019 - City of the Dead 04 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr (24pp)
+      [15024] Sir Edward Grey, Witchfinder 020 - City of the Dead 05 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr (24pp)
+      [15025] Sir Edward Grey, Witchfinder 021 - The Gates of Heaven 01 (of 05) (2018) (digital) (Son of Ultron-Empire).cbr (24pp)
+      [15026] Sir Edward Grey, Witchfinder 022 - The Gates of Heaven 02 (of 05) (2018) (digital) (Son of Ultron-Empire).cbr (24pp)
+      [15027] Sir Edward Grey, Witchfinder 023 - The Gates of Heaven 03 (of 05) (2018) (digital) (Son of Ultron-Empire).cbr (25pp)
+      [15028] Sir Edward Grey, Witchfinder 024 - The Gates of Heaven 04 (of 05) (2018) (digital) (Son of Ultron-Empire).cbr (25pp)
+      [15029] Sir Edward Grey, Witchfinder 025 - The Gates of Heaven 05 (of 05) (2018) (digital) (Son of Ultron-Empire).cbr (25pp)
+   G2 "Sir Edward Grey, Witchfinder" in Dark Horse\Hellboy, B.P.R.D. & Related\Sir Edward Grey, Witchfinder (2009)\Appearances & one-shots — 1 file(s), numbers 0, pp 8-8; cv per-file 45124x1; key 'Sir Edward Grey, Witchfinder'
+      [15002] Sir Edward Grey, Witchfinder 000 - Murderous Intent (2008) (from MySpace Dark Horse Presents #16) (digital).cbr (8pp)
+   G3 "Sir Edward Grey, Witchfinder Omnibus" in Dark Horse\Hellboy, B.P.R.D. & Related\Sir Edward Grey, Witchfinder (2009)\Omnibus Editions — 2 file(s), 2 COL, pp 425-438; cv per-file 123111x2; gcd per-file 153051x2; key 'Sir Edward Grey, Witchfinder'
+      [15003] COL Sir Edward Grey, Witchfinder Omnibus Book 01 (2019) (digital) (Son of Ultron-Empire).cbr (438pp)
+         own record cv 123111 / gcd s153051 "Sir Edward Grey Witchfinder Omnibus" (issue 2042559) COLLECTS: gcd=37909 Sir Edward Grey, Witchfinder: In the Service of Angels (2009) #1-5 · gcd=81321 Sir Edward Grey, Witchfinder: The Mysteries of Unland (2014) #1-5 · gcd=55453 Sir Edward Grey, Witchfinder: Lost and Gone Forever (2011) #1-5 · gcd=39136 Hellboy: The Wild Hunt (2008) #7
+      [15004] COL Sir Edward Grey, Witchfinder Omnibus Book 02 (2021) (digital) (Son of Ultron-Empire).cbr (425pp)
+   G4 "Sir Edward Grey, Witchfinder" in Dark Horse\Hellboy, B.P.R.D. & Related\Sir Edward Grey, Witchfinder (2009)\Trades — 6 file(s), 6 COL, pp 134-155; cv per-file 45124x5, 32436x1; gcd per-file 47084x6; key 'Sir Edward Grey, Witchfinder' | 'Witchfinder'
+      [15030] COL Sir Edward Grey, Witchfinder Vol. 01 - In the Service of Angels (2010) (digital) (Son of Ultron-Empire).cbr (153pp)
+         own record cv 32436 / gcd s47084 "Sir Edward Grey, Witchfinder" (issue 745933) COLLECTS: gcd=37909 Sir Edward Grey, Witchfinder: In the Service of Angels (2009) #1-5 · gcd=39136 Hellboy: The Wild Hunt (2008) #7 · gcd=38394 MySpace Dark Horse Presents (2008) #3
+      [15031] COL Sir Edward Grey, Witchfinder Vol. 02 - Lost and Gone Forever (2012) (digital) (Son of Ultron-Empire).cbr (134pp)
+         own record cv 45124 / gcd s47084 "Sir Edward Grey, Witchfinder" (issue 944826) COLLECTS: gcd=55453 Sir Edward Grey, Witchfinder: Lost and Gone Forever (2011) #1-5
+      [15032] COL Sir Edward Grey, Witchfinder Vol. 03 - The Mysteries of Unland (2015) (digital) (Son of Ultron-Empire).cbr (155pp)
+         own record cv 45124 / gcd s47084 "Sir Edward Grey, Witchfinder" (issue 1325433) COLLECTS: gcd=81321 Sir Edward Grey, Witchfinder: The Mysteries of Unland (2014) #1-5 · gcd=57599 Dark Horse Presents (2011) (unnumbered)
+      [15033] COL Sir Edward Grey, Witchfinder Vol. 04 - City of the Dead (2017) (digital) (Son of Ultron-Empire).cbr (135pp)
+         own record cv 45124 / gcd s47084 "Sir Edward Grey, Witchfinder" (issue 1692609) COLLECTS: gcd=105793 Witchfinder:  City of the Dead (2016) #1-5
+      [15034] COL Sir Edward Grey, Witchfinder Vol. 05 - The Gates of Heaven (2019) (digital) (Son of Ultron-Empire).cbr (141pp)
+      [15035] COL Sir Edward Grey, Witchfinder Vol. 06 - The Reign of Darkness (2020) (digital) (Son of Ultron-Empire).cbr (144pp)  key="Witchfinder"
+
+== S13889 Plants vs. Zombies - Garden Warfare  [split]  4 files / 4 collections  decided in R-114 (S)
+   decided: S 13889 cv=87446 gcd=95636 0.95 | FIX: the shelf's own books are "Plants vs. Zombies - Garden Warfare Vol. 01-03" (2016 / 2018 / 2019, ComicInfo "Plants vs. Zombies: Garden Warfare") = CV 87446 "Plants Vs. Zombies: Garden Warfare" (Dark Horse 2016, 3, issues 511449 / 684787 / 727066 "Volume 1-3") = GCD 95636 (Dark Horse 2016, 3, rows 1525208 / 1845209 / 2037015), both legs volume for volume; Vol. 01 collects the 2015 three-issue mini (C line), Vols. 02-03 are original books, so the line is the identity (L-219)
+   F 13889 wrong-cv-link | the stored CV 65722 "Plants vs. Zombies: Lawnmageddon" (2013, 6) is the mini S13888's Vol. 01 collects (its C line) — nothing on this shelf; that is also why signal a-C fired (cv 65722 named by C 13166 on S13888), which is benign once this S leaves 65722
+   F 13889 split-needed | item 13161 "COL Plants vs. Zombies Zomnibus Book 01 (2021)" (259pp, GCD 179720 #1 row 2290374) -> join S35804 (key "Plants vs. Zombies Zomnibus Book"), the Zomnibus line's shelf holding Book 02 (CV 140150 / GCD 179720) (L-368)
+   named: S35804 Plants vs. Zombies: Zomnibus  1 files  keys: "Plants vs. Zombies Zomnibus Book"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Plants vs. Zombies - Garden Warfare" x4
+   groups (title x folder): 2
+   G1 "Plants vs. Zombies Zomnibus" in Dark Horse\Plants vs Zombies (2013)\Omnibuses — 1 file(s), 1 COL, pp 259-259; cv per-file 65722x1; gcd per-file 179720x1; key 'Plants vs. Zombies - Garden Warfare'
+      [13161] COL Plants vs. Zombies Zomnibus Book 01 (2021) (digital) (Son of Ultron-Empire).cbr (259pp)
+   G2 "Plants vs. Zombies - Garden Warfare" in Dark Horse\Plants vs Zombies (2013)\Plants vs. Zombies - Garden Warfare (2016) — 3 file(s), 3 COL, pp 81-90; cv per-file 87446x3; gcd per-file 95636x3; key 'Plants vs. Zombies - Garden Warfare'
+      [13163] COL Plants vs. Zombies - Garden Warfare Vol. 01 (2016) (digital) (Son of Ultron-Empire).cbr (81pp)
+         own record cv 87446 / gcd s95636 "Plants vs. Zombies: Garden Warfare" (issue 1525208) COLLECTS: gcd=93505 Plants vs Zombies: Garden Warfare (2015) #1-3
+      [13164] COL Plants vs. Zombies - Garden Warfare Vol. 02 (2018) (digital) (Son of Ultron-Empire).cbr (90pp)
+      [13165] COL Plants vs. Zombies - Garden Warfare Vol. 03 (2019) (digital) (Son of Ultron-Empire).cbr (90pp)
