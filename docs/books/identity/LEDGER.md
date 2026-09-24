@@ -1909,3 +1909,12 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   ripper ladders can duplicate a live mini shelf (Witchfinder / Gates of Heaven S21752) -- check --who-stores on each
   mini's cv before minting a key. DC "#DC Events" GL Corps read-order folders: "Spectre vN NN" names DC's volume ordinal
   (v4 = 2001), not the ripper's folder vN (P-042 / R-115, waves 105-106).
+[L-374] pub:dark-horse pub:dynamite pub:idw sig:stamp kind:trade-only
+- One-book Dark Horse / Dynamite shelves: a per-file count-1 volume dated a year after the run is the trade's OWN record
+  (I line); the run is the S. IDW Disney trades (Uncle Scrooge, Timeless Tales) and Dark Horse Disney Princess GNs carry a
+  count-1 record per book on BOTH CV and GCD — probe by subtitle. GCD counts VARIANT rows in a series' issue count (Shock
+  Shop 189080): read the rows before calling a count mismatch. Soleil English digital: CV can hold a French-titled AND an
+  English-titled volume of one album series — match issue titles to filenames (Olympus Mons, R-117). Dark Horse "Title
+  0NN - Mini 0N (of 05)" ripper ladders: the (of 05) position is the issue number, 0NN is the ripper's running count.
+  Split-out shelves with NO stored cv keep the parent's per-file stamp on an N line, not F wrong-cv-link (refines L-366,
+  R-116). Grandville / Don Rosa Library: one GCD line, no shared cv — a merge-with there is inert; lead-lane (L-373).
