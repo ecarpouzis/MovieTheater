@@ -1,0 +1,157 @@
+## Conventions for this batch (32 shown of 36 matched; 366 in LEDGER.md; 2 shelf/shelves: pub:dc ×2 · folder:vn-year ×2 · folder:sequel-subfolder ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-082] (2 shelf/shelves) pub:dc sig:comicinfo
+- A Glorith-HD rip's ComicInfo `Web` id CAN be a ComicVine ISSUE id of the stored volume (599834, DC 100-Page
+  Spectacular) — Glorith's Web ids are never GCD ids, but check them against the CV rip.
+[L-093] (2 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
+[L-197] (2 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- The per-file matcher's "wrong RELAUNCH" trap: it stamps the LATER same-title volume onto files dated to the earlier
+  era by issue-number coincidence (Wonder Woman 2016, Batman 2016, JLA v2/v3, Firestorm, Hawk and Dove v5, Atari Force
+  v2, Adventure Comics 2010) — the tell is files whose years or numbers predate or exceed the stamped volume's own.
+[L-211] (2 shelf/shelves) folder:vn-year pub:dc sig:collision sig:stale-flag
+- An `overlap-in-series` flag on a franchise with many `vN` sibling shelves (Deathstroke, Harley Quinn, Green Lantern,
+  Justice League, JLD, Legion, Lobo) describes the CROSS-SHELF Vol. 01 collision, not conflation on the one shelf —
+  confirmed 14 of 14 in C-013..C-015; the stale-flag note must name the sibling shelf.
+[L-237] (2 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+[L-124] (2 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-191] (2 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-272] (2 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-281] (2 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-052] (1 shelf/shelves) pub:dc sig:stamp sig:twin
+- The per-file CV matcher picks the LEGACY volume for every New 52 shelf (Batman 1940, Wonder Woman 1942, Nightwing
+  1996, Catwoman 1993) because it matched by issue number — the stored link on a 2011 shelf that names a 1940
+  volume is `wrong-cv-link`, the 2011 volume is in the rip.
+[L-055] (1 shelf/shelves) pub:dc pub:small-press sig:probe
+- ComicVine splits ONE line across two spellings of its own ("Batman Arkham: X" vs "Batman: Arkham: X"). GCD
+  prefixes titles the packet probes without ("Batman: Catwoman Defiant", "The Blue Beetle" for the 2006 series).
+[L-059] (1 shelf/shelves) pub:dc
+- A truncated parsed key reaching a different comic ("Riddle", "Batman - Death", "Once Upon") is `wrong-cv-link`.
+[L-195] (1 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- Trade SUBTITLES tell two same-title relaunches apart when the per-file matcher cannot (Batman Beyond 2015 = Brave
+  New Worlds / City of Yesterday / Wired for Death; 2016 = Escaping the Grave / Rise of the Demon / The Long Payback).
+[L-206] (1 shelf/shelves) pub:dc sig:probe
+- GCD's "&" spelling hides a run from every "and" probe (Batman & the Outsiders 2019: CV 118841 / GCD 144938, 17
+  issues) — probe both spellings.
+[L-210] (1 shelf/shelves) pub:dc sig:legacy-stamp sig:probe sig:stamp
+- The wrong-relaunch trap is near-universal on any DC title with 3+ relaunches (Green Arrow, Green Lantern, Harley
+  Quinn, Justice League, Legion, Lobo, Martian Manhunter, Doom Patrol): the matcher stamps the oldest legacy volume or
+  the largest/most-recent one across every sibling shelf; `lookup.py` by name + year recovers the true id.
+[L-212] (1 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-214] (1 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp sig:twin
+- The wrong-relaunch / legacy-volume stamp ran at 70-95% of files on Midnighter, Mister Miracle, Robin, Nightwing,
+  Supergirl, Plastic Man and Suicide Squad shelves in C-016 — assume it on any DC relaunch shelf and verify by year.
+[L-242] (1 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-245] (1 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-257] (1 shelf/shelves) pub:dc sig:twin
+- Modern DC digital lines carry TWIN "Collected Edition" GCD rows for one trade (Detective 77783/77579, Stormwatch
+  65339 stub / 76642, Dark Knights of Steel 189483/203963, I Am Batman 188323/201985) — one `I`, capped at 0.9.
+[L-337] (1 shelf/shelves) pub:dc sig:probe
+- DC: GCD and CV both file relaunches under "&" ("Batgirl & the Birds of Prey", "Red Hood & the Outlaws", "Batman &
+  the Signal") — probe the "&" AND "and" spellings before provider-missing. GCD's collected-edition series for DC
+  relaunch trades are separate same-name rows of 2-5 issues (77516, 115808, 74348, 113651, 33019) whose per-book
+  "collects" notes give exact C ranges. A "GCD says" row on a JLA trade can be a German Panini edition (78606) — void
+  it on an N line (R-062).
+[L-363] (1 shelf/shelves) pub:dc
+- DC New 52 trade lines on GCD are HC/TPB TWIN series (BTDK 78638/78639, Batwoman 66358/71298); CV holds per-trade
+  count-1 volumes that subtitle probes often miss. The retitle cut shows on GCD only (Fury of Firestorm: The Nuclear
+  Men = 61180 #0-12 + 171997 #13-20 = CV 42987's 21); L.E.G.I.O.N. / R.E.B.E.L.S. are split into year series. A "#DC
+  Events" shelf holding #41-45 of a New 52 title is a FRAGMENT of the run shelf — merge it in. Deathstroke the
+  Terminator 1991 = CV 9645 (#0-60) while GCD splits it 10465 (#1-40) / 15127 The Hunted / 15128 (#48-60); the 1991
+  trades (GCD 88153) collect #1-34 (R-098/R-099).
+[L-365] (1 shelf/shelves) pub:dc
+- DC "#DC Events" read-order rips named "Title NNN - Month Year" or "Title # NN" are NEW 52 issues whose numbers fall
+  inside the legacy ladder — a ladder check cannot see them; grep the filenames on any big legacy shelf (Batman 1940,
+  Birds of Prey 1999, Green Arrow 2001 all hid other runs). One-run trade lines (Deluxe Editions, the "Batman: Detective
+  Comics" line, R.I.P. Vol. 07, the Bronze Age omnibus) take the run's ids and merge into the run shelf. GCD notes can
+  typo the series year (Batman B&W Vol. 1 says "1986 series" for the 1996 mini). CV 19721 is "Azrael: Agent of the Bat"
+  (#47-100, the 1995 run's retitle); the 2009 relaunch is CV 28873 / GCD 39888 (R-103, P-035).
+[L-366] (1 shelf/shelves) pub:dc sig:split
+- A split-out shelf INHERITS its parent's per-file legacy stamp on 100% of its files — every new vN shelf needs F
+  wrong-cv-link for that stamp. "#DC Events" New 52 folders hide ANNUALS too ("Batman Annual # 3" = the New 52 annual
+  shelf, not the monthly). DC "Bronze Age" trade lines: CV naming is swapped — 107354 (named "Omnibus", 2 issues) is the
+  TPB line, 98324 (3 issues) the Omnibus; only the dates tell them apart. C lines written in an ITEM batch (X-) survive
+  a later shelf re-read (R-): a revisit must restate or retract them explicitly (R-104, S5272).
+[L-016] (2 shelf/shelves) sig:comicinfo
+- Glorith rips' ComicInfo `Web` ids are NOT GCD issue ids in our dump (29 checked: missing or unrelated). Never
+  claim 1.0 from one. A ComicInfo `Volume` holding a 6-digit number IS a ComicVine volume id (Lex and the City =
+  162184) — a genuine 1.0 assertion.
+[L-032] (2 shelf/shelves) sig:comicinfo
+- A Marika-Empire rip's ComicInfo `Web` id IS a ComicVine ISSUE id (21/21 resolve to the stored volume) — the
+  1.0 shape. The ripper decides: Glorith's Web ids are not GCD issue ids. Check one against the rip before
+  claiming 1.0 on a new ripper.
+[L-113] (2 shelf/shelves) sig:comicinfo sig:stamp
+- ComicInfo `Volume` holding a 4-digit ComicVine volume id (not a year) is a 1.0 assertion like the 6-digit
+  case (Ka-Zar v2 1974: `Volume 2692` + `Count 20` = CV 2692) and disproves the per-file matcher's pick.
+[L-114] (2 shelf/shelves) sig:comicinfo
+- Marika-Empire and Glorith-HD `Web` ids are ComicVine ISSUE ids of the stored volume (7 of 7 here).
+[L-290] (1 shelf/shelves) folder:sequel-subfolder pass:item sig:stamp
+- A spin-off filed in its own subfolder on the parent's shelf gets the PARENT's v01 ids stamped by the per-file
+  matcher (Rent-a-(Really Shy!)-Girlfriend on Rent-A-Girlfriend) — `N no-record` (or the shelf note), never the
+  parent's record; it is a misfiling for the lead.
+[L-065] (1 shelf/shelves) sig:stamp
+- Ladder coincidence: two runs with the same issue COUNT (X 1994 vs X 2013, both 25) fool the per-file matcher;
+  the year in the filenames decides.
+[L-099] (1 shelf/shelves) sig:stamp
+- A spin-off family carries the PARENT run per-file (all eight Fairy Tail side shelves stamped 46777) — reject.
+[L-123] (1 shelf/shelves) sig:round2 sig:stamp
+- `round2-folder` / `round2-series` was wrong on 10 of 13 shelves carrying it in B-053..B-055, including one link
+  stamped on four sibling one-shot shelves in one folder — verify each by title + count + years, never by method.
+
++4 more matched entries not shown: L-193, L-194, L-262, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S6739 Firestorm, the Nuclear Man  [split]  28 files / 0 collections  decided in R-104 (S)
+   decided: S 6739 cv=3789 gcd=3357 0.9 | Firestorm, the Nuclear Man #65-92 (1987-1989, folder "Firestorm v2 (1982)" — the same folder as Fury of Firestorm #1-64) = CV 3789 (DC 1987, 28, cached #65-92) = GCD 3357 (DC 1987-1990, 28); ComicInfo Web 28747 / 28868 / 29086 are CV 3789's issue ids, Count 92; 0.9 for Annual #5 (54982, its own record); the shelf is the retitled continuation of S65956 and joins it below
+   F 6739 split-needed | join S65956 — LEAD RULING L-212 / L-364: all 28 items (the 27 "Firestorm, The Nuclear Man (#65)" … "(#92)" and item 54982 "Firestorm - The Nuclear Man Annual (#05) 1987", which continues Fury of Firestorm Annual #1-4) -> S65956's exact key "The Fury of Firestorm (1982)"; #65 picks up where S65956's #64 (1987-07) ends (1987-09), in the same folder; both providers keep two records (3115/3789, 2628/3357), so a shared-cv merge cannot land it — the smaller shelf joins the larger
+   named: S65956 The Fury of Firestorm  65 files  keys: "The Fury of Firestorm (1982)" | "The Fury of Firestorm - The Nuclear Men - God Particle (1982)" | "The Fury of Firestorm Annual (1982)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Firestorm, The Nuclear Man" x27 · "Firestorm: The Nuclear Man" x1
+   groups (title x folder): 2
+   G1 "Firestorm - The Nuclear Man Annual" in DC\Firestorm\Firestorm v2 (1982) — 1 file(s), numbers 5, pp 40-40; cv per-file 19313x1; gcd per-file 3356x1; key 'Firestorm: The Nuclear Man'
+      [54982] Firestorm - The Nuclear Man Annual, 1987-07-21 (#05) (digital) (Glorith-HD).cbz (40pp)
+   G2 "Firestorm, The Nuclear Man" in DC\Firestorm\Firestorm v2 (1982) — 27 file(s), numbers 65-70, 72-92, pp 23-25; cv per-file 3789x27; gcd per-file 3357x27; key 'Firestorm, The Nuclear Man'
+      e.g. Firestorm, The Nuclear Man, 1987-09-00 (#65) (digital) (Glorith-Novus-HD).cbz
+        54991 #65 24pp · 54992 #67 24pp · 54993 #66 24pp · 54994 #68 24pp · 54995 #69 24pp · 54996 #70 24pp · 54997 #72 24pp · 54998 #73 24pp · 54999 #74 24pp · 55000 #75 24pp · 55001 #76 25pp
+        55002 #80 24pp · 55003 #77 23pp · 55004 #78 24pp · 55005 #79 24pp · 55006 #81 24pp · 55007 #82 24pp · 55008 #83 24pp · 55009 #84 24pp · 55010 #85 24pp · 55011 #86 24pp · 55012 #87 24pp
+        55013 #88 24pp · 55014 #89 24pp · 55015 #90 24pp · 55016 #91 23pp · 55017 #92 23pp
+
+== S95392 Batman and the Outsiders  [split]  16 files / 0 collections  decided in R-104 (S)
+   decided: S 95392 cv=19660 gcd=27224 0.9 | Batman and the Outsiders #1-14 dated 2007-2008 = CV 19660 (DC 2007, 14) = GCD 27224 (2007-2009, 14); ComicInfo Web 117960 is CV 19660's #1 "The Chrysalis", Count 14 x14; per-file CV 3194 (the 1983 series) on 13/16 is the wrong-relaunch stamp; 0.9 for the Special #1 (62306) and the stray #40 (62332, The Outsiders #40 retitled back — CV 25804 caches #15-40, GCD files it as one-shot 59475)
+   F 95392 split-needed | join S66031 — LEAD RULING L-212 / L-364: all 16 items ("01 Batman and the Outsiders (#01)" … "14 (#14)" in "03 Batman and the Outsiders v2 (2008)", "15 Batman and the Outsiders Special (#01)" 62306, "41 Batman and the Outsiders 040 (2011)" 62332) -> S66031's exact key "The Outsiders (2009)"; the files share one folder numbered 01-41 continuously, and #15-40 on S66031 continue this run's numbering after the 2009 retitle; both providers keep two records (19660/25804, 27224/34024) so a shared-cv merge cannot land it — the smaller shelf joins the larger
+   named: S66031 The Outsiders  27 files  keys: "The Outsiders (2003)" | "The Outsiders (2009)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S102451 "Batman and the Outsiders" 3f [shares cv=3194 — S cv=3194 gcd=2714 (B-031 0.95)] keys: "Batman and the Outsiders v1 (1983)"
+   nearby: S4182 "Convergence Batman and the Outsiders" 2f [title+1 — S cv=81465 gcd=88477 (A-007 0.95)] keys: "Convergence - Batman and the Outsiders"
+   keys now: "Batman and the Outsiders v2 (2008)" x16
+   groups (title x folder): 2
+   G1 "Batman and the Outsiders" in DC\_Batman\_Completed Series\Batman and the Outsiders\03 Batman and the Outsiders v2 (2008) — 15 file(s), numbers 1-14, 40, pp 19-25; cv per-file 3194x12, 19660x3; gcd per-file 27224x14, 59475x1; key 'Batman and the Outsiders v2 (2008)'
+      e.g. 01 Batman and the Outsiders, 2007-11-14 (#01) (digital) (Glorith-Novus).cbz
+        62292 #1 25pp · 62293 #2 24pp · 62294 #3 24pp · 62295 #4 25pp · 62296 #5 25pp · 62297 #6 24pp · 62298 #7 25pp · 62299 #8 24pp · 62300 #9 25pp · 62301 #10 25pp · 62302 #11 25pp
+        62303 #12 25pp · 62304 #13 24pp · 62305 #14 25pp
+      [62332] 41 Batman and the Outsiders 040 (2011) (digital) (Son of Ultron-Empire).cbr (19pp)
+   G2 "Batman and the Outsiders Special" in DC\_Batman\_Completed Series\Batman and the Outsiders\03 Batman and the Outsiders v2 (2008) — 1 file(s), numbers 1, pp 20-20; cv per-file 25752x1; gcd per-file 32194x1; key 'Batman and the Outsiders v2 (2008)'
+      [62306] 15 Batman and the Outsiders Special, 2009-02-11 (#01) (digital) (Glorith-Novus).cbz (20pp)

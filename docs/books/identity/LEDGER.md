@@ -1847,3 +1847,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   shelf, not the monthly). DC "Bronze Age" trade lines: CV naming is swapped — 107354 (named "Omnibus", 2 issues) is the
   TPB line, 98324 (3 issues) the Omnibus; only the dates tell them apart. C lines written in an ITEM batch (X-) survive
   a later shelf re-read (R-): a revisit must restate or retract them explicitly (R-104, S5272).
+
+[L-367] pub:dc
+- DC: collected PARTS of a mini can each add a one-shot (All-Out War Part 1 carries Hunters #1, Part 2 carries Killers
+  #1) — check GCD notes for extra runs on any "Part NN" collection. GCD 97270, the 2016 "Doom Patrol Book 01-03" line,
+  reprints the 1987 Morrison run (#19-63), not the 2016 run. A "(1998-11) 1000000" One Million file belongs to whichever
+  volume was running in 1998. DC Deluxe Editions: GCD keeps the earlier TPB beside the Deluxe (DCeased 2021 236pp vs
+  2023) — pick by page count. Label-ambiguous ContainmentFlags do NOT gate an S and cannot take `stale-flag=`; answer
+  them on an N line (R-106).
