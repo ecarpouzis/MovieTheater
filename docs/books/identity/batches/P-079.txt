@@ -1,0 +1,325 @@
+## Conventions for this batch (22 shown of 68 matched; 414 in LEDGER.md; 1 shelf/shelves: kind:collected-line ×1 · folder:vn-year ×1 · pub:marvel ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-031] (1 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-060] (1 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-076] (1 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (1 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (1 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-116] (1 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-117] (1 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-127] (1 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-132] (1 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-136] (1 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-196] (1 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (1 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (1 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-298] (1 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-306] (1 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (1 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (1 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-313] (1 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-327] (1 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (1 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+[L-329] (1 shelf/shelves) kind:collected-line pub:dc pub:marvel
+- DC/Marvel trade lines often store a GCD row that belongs to a FOREIGN or other edition (Urban Comics' French GL
+  2011, a German GL 2023 Vol. 1) — check the stored row's series before using its roll-up. GCD carries twin HC/SC
+  series for most 2006-2016 DC/Marvel trades (77116/77117, 77936/77937) → cap those I lines at 0.9. CV keeps count-1
+  "Title: Subtitle" volumes per trade before ~2016, numbered TPB-line volumes after (R-054).
+[L-332] (1 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection one-rule (lead, wave 44): each Epic book is its OWN shelf; its S line carries the book's own
+  count-1 CV volume and `gcd=-`; the line's GCD series (74602 ASM, 74592 Iron Man) goes on the book's I line with
+  its ISBN; C lines name the runs reprinted. `lookup.py "<Line> Epic Collection" --contains` lists every volume.
+
++46 more matched entries not shown: L-389, L-392, L-397, L-400, L-401, L-405, L-406, L-407, L-409, L-410, L-414, L-124, L-135, L-164, L-186, L-191, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-272, L-275, L-279, L-281, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-014, L-016, L-032, L-064, L-085, L-101, L-113, L-114, L-123, L-150, L-310 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S96118 Conan the Barbarian  [split]  219 files / 5 collections  decided in R-180 (S)
+   decided: S 96118 cv=2471 gcd=1939 0.9 | Conan the Barbarian (Marvel 1970-1994): CV 2471 (275 cached #1-275) and GCD 1939 (Marvel 1970-1994, 275) agree on publisher, span and count; our #1-213 (two naming conventions, ComicInfo Volume 1970 on 213, per-file CV 2471 on 213) are the run; 0.9 for the 2022 "Facsimile Edition 001" 77753, its own one-shot (CV 157977 / GCD 179544, I line), and the Epic Collection books split below
+   F 96118 split-needed | items 118017, 78061, 118018, 78062, 78063 "Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 01-05" (267-348pp) are books of the Epic Collection LINE GCD 163625 (Marvel 2020-2022, 6 rows #1-5 = rows 2145960 / 2212921 / 2248636 / 2282302 / 2383420 by subtitle and ISBN); L-409 keeps an Epic line as ONE shelf and no shelf holds this line (who-stores gcd=163625: none) -> new key "Conan the Barbarian: The Original Marvel Years Epic Collection" (cv=-, GCD 163625)
+   N 96118 revisit R-144 (stray per-file CV 152857 / 116245) is answered by R-145 - moot: 77753's I line carries its own record, and 116245 sits on no file here. Flag #701 (provider-disagrees, 78063) is right and answered by its I line (CV 144787 issue 944347); flag #712 (span-retracted) is answered by GCD row 2383420's own note #60-71 (the C line R-145 wrote); Vol. 01 / Vol. 05 C lines stand
+   nearby: S94686 "The Savage Sword of Conan" 128f [shares gcd=2187 (collected by item 78062) — S cv=2701 gcd=2187 (R-144 0.9)] keys: "Savage Sword of Conan v1 (1974)"
+   nearby: S4104 "Conan the Barbarian Annual" 13f [shares gcd=2114 (collected by item 118018) — S cv=2630 gcd=2114 (R-043 0.95)] keys: "Conan The Barbarian"
+   nearby: S103451 "Conan the Barbarian" 13f [shares cv=152857 (N line) — S cv=152857 gcd=202916 (R-043 0.95)] keys: "Conan the Barbarian v4 (2023)"
+   nearby: S4111 "Giant-Size Conan" 4f [shares gcd=2165 (collected by item 78062) — S cv=2679 gcd=2165 (A-023 0.95)] keys: "Conan The Barbarian Giant-Size"
+   nearby: S11628 "Marvel Treasury Edition" 3f [shares gcd=2180 (collected by item 78062) — S cv=2694 gcd=2180 (C-039 0.9)] keys: "Marvel Treasury Edition"
+   nearby: S4112 "Conan the Barbarian" 4f [title — S cv=116245 gcd=136765 (C-043 0.9)] keys: "Conan The Barbarian by Jim Zub" | "Conan the Barbarian v3 (2019)"
+   nearby: S4110 "Conan: The Barbarian FCBD" 1f [title+1 — S cv=150405 gcd=199335 (R-030 0.95)] keys: "Conan The Barbarian FCBD"
+   nearby: S4126 "Conan the Barbarian: Exodus" 1f [title+1 — S cv=120636 gcd=149628 (A-023 0.95)] keys: "Conan the Barbarian: Exodus"
+   nearby: S102470 "Conan the Barbarian FCBD 2024 (2024)" 1f [title+1 — S cv=158057 gcd=211754 (R-030 0.95)] keys: "Conan the Barbarian FCBD 2024 (2024)"
+   keys now: "Conan the Barbarian v1 (1970)" x219
+   groups (title x folder): 82
+   G1 "Conan The Barbarian" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 83 file(s), numbers 116-135, 150-170, 172-213, pp 22-40; cv per-file 2471x83; gcd per-file 1939x83; key 'Conan the Barbarian v1 (1970)'
+      e.g. Conan The Barbarian 116 (1980) (Digital) (Shadowcat-Empire).cbz
+        77882 #116 1980 23pp · 77883 #117 1980 24pp · 77884 #118 1981 24pp · 77885 #119 1981 23pp · 77886 #120 1981 24pp · 77887 #121 1981 23pp · 77888 #122 1981 24pp · 77889 #123 1981 24pp
+        77890 #124 1981 23pp · 77891 #125 1981 23pp · 77892 #126 1981 23pp · 77893 #127 1981 23pp · 77894 #128 1981 22pp · 77895 #129 1981 22pp · 77896 #130 1982 24pp · 77897 #131 1982 23pp
+        77898 #132 1982 25pp · 77899 #133 1982 24pp · 77900 #134 1982 24pp · 77901 #135 1982 24pp · 77916 #150 1983 24pp · 77917 #151 1983 24pp · 77918 #152 1983 24pp · 77919 #153 1983 23pp
+        77920 #154 1984 24pp · 78001 #155 1984 24pp · 78002 #156 1984 23pp · 78003 #157 1984 23pp · 78004 #158 1984 23pp · 78005 #159 1984 24pp · 78006 #160 1984 23pp · 78007 #161 1984 24pp
+        78008 #162 1984 23pp · 78009 #163 1984 24pp · 78010 #164 1984 24pp · 78011 #165 1984 24pp · 78012 #166 1985 23pp · 78013 #167 1986 24pp · 78014 #168 1986 24pp · 78015 #169 1986 24pp
+        78016 #170 1986 24pp · 78018 #172 1985 24pp · 78019 #173 1985 24pp · 78020 #174 1985 24pp · 78021 #175 1985 24pp · 78022 #176 1985 24pp · 78023 #177 1985 24pp · 78024 #178 1986 24pp
+        78025 #179 1986 24pp · 78026 #180 1986 24pp · 78027 #181 1986 24pp · 78028 #182 1986 24pp · 78029 #183 1986 24pp · 78030 #184 1986 24pp · 78031 #185 1986 24pp · 78032 #186 1986 24pp
+        78033 #187 1986 24pp · 78034 #188 1986 24pp · 78035 #189 1986 23pp · 78036 #190 1987 24pp · 78037 #191 1987 24pp · 78038 #192 1987 24pp · 78039 #193 1987 24pp · 78040 #194 1987 23pp
+        78041 #195 1987 24pp · 78042 #196 1987 24pp · 78043 #197 1987 23pp · 78044 #198 1987 23pp · 78045 #199 1987 24pp · 78046 #200 1987 40pp · 78047 #201 1987 24pp · 78048 #202 1988 23pp
+        78049 #203 1988 23pp · 78050 #204 1988 23pp · 78051 #205 1988 24pp · 78052 #206 1988 22pp · 78053 #207 1988 24pp · 78054 #208 1988 23pp · 78055 #209 1988 24pp · 78056 #210 1988 24pp
+        78057 #211 1988 24pp · 78058 #212 1988 23pp · 78059 #213 1989 24pp
+   G2 "Conan The Barbarian 001 [Marvel Edition] (1970) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 1, pp 21-21; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77767] Conan The Barbarian 001 [Marvel Edition] (1970) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz (21pp)
+   G3 "Conan The Barbarian 002 [Marvel Edition] (1970) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 2, pp 22-22; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77768] Conan The Barbarian 002 [Marvel Edition] (1970) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz (22pp)
+   G4 "Conan The Barbarian 003 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 3, pp 21-21; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77769] Conan The Barbarian 003 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz (21pp)
+   G5 "Conan The Barbarian 004 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 4, pp 22-22; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77770] Conan The Barbarian 004 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz (22pp)
+   G6 "Conan The Barbarian 005 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 5, pp 22-22; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77771] Conan The Barbarian 005 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz (22pp)
+   G7 "Conan The Barbarian 006 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 6, pp 22-22; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77772] Conan The Barbarian 006 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz (22pp)
+   G8 "Conan The Barbarian 007 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 7, pp 22-22; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77773] Conan The Barbarian 007 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz (22pp)
+   G9 "Conan The Barbarian 008 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 8, pp 22-22; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77774] Conan The Barbarian 008 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz (22pp)
+   G10 "Conan The Barbarian 009 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 9, pp 21-21; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77775] Conan The Barbarian 009 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz (21pp)
+   G11 "Conan The Barbarian 010 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 10, pp 26-26; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77776] Conan The Barbarian 010 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz (26pp)
+   G12 "Conan The Barbarian 011 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 11, pp 37-37; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77777] Conan The Barbarian 011 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz (37pp)
+   G13 "Conan The Barbarian 012 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 12, pp 24-24; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77778] Conan The Barbarian 012 [Marvel Edition] (1971) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz (24pp)
+   G14 "Conan The Barbarian 013 [Marvel Edition] (1972) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 13, pp 24-24; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77779] Conan The Barbarian 013 [Marvel Edition] (1972) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz (24pp)
+   G15 "Conan The Barbarian 052 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 52, pp 20-20; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77818] Conan The Barbarian 052 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+   G16 "Conan The Barbarian 053 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 53, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77819] Conan The Barbarian 053 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G17 "Conan The Barbarian 054 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 54, pp 20-20; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77820] Conan The Barbarian 054 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+   G18 "Conan The Barbarian 055 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 55, pp 20-20; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77821] Conan The Barbarian 055 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+   G19 "Conan The Barbarian 056 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 56, pp 20-20; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77822] Conan The Barbarian 056 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+   G20 "Conan The Barbarian 057 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 57, pp 20-20; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77823] Conan The Barbarian 057 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+   G21 "Conan The Barbarian 058 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 58, pp 20-20; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77824] Conan The Barbarian 058 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (20pp)
+   G22 "Conan The Barbarian 059 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 59, pp 20-20; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77825] Conan The Barbarian 059 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (20pp)
+   G23 "Conan The Barbarian 060 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 60, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77826] Conan The Barbarian 060 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G24 "Conan The Barbarian 061 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 61, pp 18-18; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77827] Conan The Barbarian 061 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+   G25 "Conan The Barbarian 062 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 62, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77828] Conan The Barbarian 062 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G26 "Conan The Barbarian 063 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 63, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77829] Conan The Barbarian 063 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G27 "Conan The Barbarian 064 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 64, pp 20-20; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77830] Conan The Barbarian 064 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (20pp)
+   G28 "Conan The Barbarian 065 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 65, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77831] Conan The Barbarian 065 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G29 "Conan The Barbarian 066 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 66, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77832] Conan The Barbarian 066 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G30 "Conan The Barbarian 067 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 67, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77833] Conan The Barbarian 067 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G31 "Conan The Barbarian 068 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 68, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77834] Conan The Barbarian 068 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G32 "Conan The Barbarian 069 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 69, pp 18-18; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77835] Conan The Barbarian 069 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+   G33 "Conan The Barbarian 070 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 70, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77836] Conan The Barbarian 070 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G34 "Conan The Barbarian 071 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 71, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77837] Conan The Barbarian 071 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G35 "Conan The Barbarian 072 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 72, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77838] Conan The Barbarian 072 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G36 "Conan The Barbarian 073 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 73, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77839] Conan The Barbarian 073 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G37 "Conan The Barbarian 074 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 74, pp 18-18; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77840] Conan The Barbarian 074 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (18pp)
+   G38 "Conan The Barbarian 075 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 75, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77841] Conan The Barbarian 075 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G39 "Conan The Barbarian 076 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 76, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77842] Conan The Barbarian 076 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G40 "Conan The Barbarian 077 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 77, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77843] Conan The Barbarian 077 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G41 "Conan The Barbarian 078 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 78, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77844] Conan The Barbarian 078 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G42 "Conan The Barbarian 079 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 79, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77845] Conan The Barbarian 079 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G43 "Conan The Barbarian 080 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 80, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77846] Conan The Barbarian 080 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G44 "Conan The Barbarian 081 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 81, pp 18-18; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77847] Conan The Barbarian 081 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (18pp)
+   G45 "Conan The Barbarian 082 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 82, pp 20-20; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77848] Conan The Barbarian 082 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (20pp)
+   G46 "Conan The Barbarian 083 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 83, pp 20-20; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77849] Conan The Barbarian 083 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (20pp)
+   G47 "Conan The Barbarian 084 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 84, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77850] Conan The Barbarian 084 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G48 "Conan The Barbarian 085 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 85, pp 20-20; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77851] Conan The Barbarian 085 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (20pp)
+   G49 "Conan The Barbarian 086 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 86, pp 18-18; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77852] Conan The Barbarian 086 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+   G50 "Conan The Barbarian 087 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 87, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77853] Conan The Barbarian 087 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G51 "Conan The Barbarian 088 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 88, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77854] Conan The Barbarian 088 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G52 "Conan The Barbarian 089 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 89, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77855] Conan The Barbarian 089 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G53 "Conan The Barbarian 090 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 90, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77856] Conan The Barbarian 090 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G54 "Conan The Barbarian 091 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 91, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77857] Conan The Barbarian 091 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G55 "Conan The Barbarian 092 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 92, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77858] Conan The Barbarian 092 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G56 "Conan The Barbarian 093 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 93, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77859] Conan The Barbarian 093 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G57 "Conan The Barbarian 094 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 94, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77860] Conan The Barbarian 094 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G58 "Conan The Barbarian 095 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 95, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77861] Conan The Barbarian 095 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G59 "Conan The Barbarian 096 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 96, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77862] Conan The Barbarian 096 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G60 "Conan The Barbarian 097 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 97, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77863] Conan The Barbarian 097 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G61 "Conan The Barbarian 098 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 98, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77864] Conan The Barbarian 098 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G62 "Conan The Barbarian 099 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 99, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77865] Conan The Barbarian 099 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G63 "Conan The Barbarian 100 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 100, pp 35-35; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77866] Conan The Barbarian 100 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (35pp)
+   G64 "Conan The Barbarian 101 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 101, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77867] Conan The Barbarian 101 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G65 "Conan The Barbarian 102 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 102, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77868] Conan The Barbarian 102 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G66 "Conan The Barbarian 103 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 103, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77869] Conan The Barbarian 103 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G67 "Conan The Barbarian 104 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 104, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77870] Conan The Barbarian 104 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G68 "Conan The Barbarian 105 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 105, pp 18-18; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77871] Conan The Barbarian 105 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (18pp)
+   G69 "Conan The Barbarian 106 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 106, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77872] Conan The Barbarian 106 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G70 "Conan The Barbarian 107 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 107, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77873] Conan The Barbarian 107 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G71 "Conan The Barbarian 108 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 108, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77874] Conan The Barbarian 108 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G72 "Conan The Barbarian 109 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 109, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77875] Conan The Barbarian 109 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G73 "Conan The Barbarian 110 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 110, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77876] Conan The Barbarian 110 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G74 "Conan The Barbarian 111 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 111, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77877] Conan The Barbarian 111 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G75 "Conan The Barbarian 112 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 112, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77878] Conan The Barbarian 112 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G76 "Conan The Barbarian 113 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 113, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77879] Conan The Barbarian 113 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G77 "Conan The Barbarian 114 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 114, pp 19-19; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77880] Conan The Barbarian 114 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+   G78 "Conan The Barbarian 115 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 115, pp 37-37; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [77881] Conan The Barbarian 115 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (37pp)
+   G79 "Conan The Barbarian 171 1986) (Digital) (Shadowcat-Empire)" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 1 file(s), numbers 171, pp 24-24; cv per-file 2471x1; gcd per-file 1939x1; key 'Conan the Barbarian v1 (1970)'
+      [78017] Conan The Barbarian 171 1986) (Digital) (Shadowcat-Empire).cbz (24pp)
+   G80 "Conan the Barbarian" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) — 52 file(s), numbers 14-51, 136-149, pp 11-37; cv per-file 2471x52; gcd per-file 1939x52; key 'Conan the Barbarian v1 (1970)'
+      e.g. Conan the Barbarian 014 (1972) (Digital) [Marvel Edition] (Shadowcat-Empire).cbz
+        77780 #14 1972 23pp · 77781 #15 1972 23pp · 77782 #16 1972 14pp · 77783 #17 1972 22pp · 77784 #18 1972 22pp · 77785 #19 1972 22pp · 77786 #20 1972 22pp · 77787 #21 1972 22pp
+        77788 #22 1973 37pp · 77789 #23 1973 22pp · 77790 #24 1973 22pp · 77791 #25 1973 22pp · 77792 #26 1973 22pp · 77793 #27 1973 22pp · 77794 #28 1973 21pp · 77795 #29 1973 21pp
+        77796 #30 1973 21pp · 77797 #31 1973 21pp · 77798 #32 1973 21pp · 77799 #33 1973 20pp · 77800 #34 1974 21pp · 77801 #35 1974 20pp · 77802 #36 1974 20pp · 77803 #37 1974 21pp
+        77804 #38 1974 21pp · 77805 #39 1974 21pp · 77806 #40 1974 17pp · 77807 #41 1974 20pp · 77808 #42 1974 21pp · 77809 #43 1974 21pp · 77810 #44 1974 21pp · 77811 #45 1974 21pp
+        77812 #46 1975 21pp · 77813 #47 1975 14pp · 77814 #48 1975 11pp · 77815 #49 1975 20pp · 77816 #50 1975 20pp · 77817 #51 1975 20pp · 77902 #136 1982 24pp · 77903 #137 1982 24pp
+        77904 #138 1982 24pp · 77905 #139 1982 23pp · 77906 #140 1982 24pp · 77907 #141 1982 24pp · 77908 #142 1983 24pp · 77909 #143 1983 23pp · 77910 #144 1983 23pp · 77911 #145 1983 24pp
+        77912 #146 1983 24pp · 77913 #147 1983 23pp · 77914 #148 1983 23pp · 77915 #149 1983 23pp
+   G81 "Conan The Barbarian - Facsimile Edition" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970)\Annuals and Specials — 1 file(s), numbers 1, pp 36-36; cv per-file 157977x1; gcd per-file 179544x1; key 'Conan the Barbarian v1 (1970)'
+      [77753] Conan The Barbarian - Facsimile Edition 001 (2022) (Digital) (Shadowcat-Empire).cbz (36pp)
+   G82 "Conan the Barbarian - The Original Marvel Years Epic Collection" in Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970)\Trades & Epic Collections — 5 file(s), 5 COL, pp 267-348; cv per-file 129254x1, 134428x1, 137983x1; gcd per-file 163625x5; key 'Conan the Barbarian v1 (1970)'
+      [118017] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 01 - The Coming of Conan (2020) (Digital) (Bean-Empire).cbz (326pp)
+         own record cv 129254 / gcd s163625 "Conan the Barbarian: The Original Marvel Years Epic Collection" (issue 2145960) COLLECTS: gcd=1939 Conan the Barbarian (1970) #1-13 · gcd=4999 Conan Classic (1994) #1-11 · gcd=25052 Conan (1978) (unnumbered) · gcd=1907 Chamber of Darkness (1969) #4
+      [78061] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 02 - Hawks From The Sea (2021) (Digital) (Bean-Empire).cbz (267pp)
+         own record cv 134428 / gcd s163625 "Conan the Barbarian: The Original Marvel Years Epic Collection" (issue 2212921) COLLECTS: gcd=1939 Conan the Barbarian (1970) #14-26
+      [118018] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 03 - The Curse of the Golden Skull (2021) (Digital) (Bean-Empire).cbz (324pp)
+         own record cv 137983 / gcd s163625 "Conan the Barbarian: The Original Marvel Years Epic Collection" (issue 2248636) COLLECTS: gcd=1939 Conan the Barbarian (1970) #27-42 · gcd=2114 Conan Annual (1973) #1
+      [78062] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 04 - Queen of the Black Coast (2021) (Digital-Empire).cbr (345pp)
+         own record cv 141052 / gcd s163625 "Conan the Barbarian: The Original Marvel Years Epic Collection" (issue 2282302) COLLECTS: gcd=1939 Conan the Barbarian (1970) #43-59 · gcd=2180 Marvel Treasury Edition (1974) #4, #19 · gcd=2187 The Savage Sword of Conan (1974) #1 · gcd=2165 Giant-Size Conan (1974) #5
+      [78063] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 05 - Of Once and Future Kings (2022) (Digital-Empire).cbr (348pp)
+         own record cv 144787 / gcd s163625 "Conan the Barbarian: The Original Marvel Years Epic Collection" (issue 2383420) COLLECTS: gcd=1939 Conan the Barbarian (1970) #60-71 · gcd=2114 Conan Annual (1973) #2-3 · gcd=16305 Conan the Barbarian: The Crawler in the Mists! [Book and Record Set] (1976) (unnumbered) · gcd=2187 The Savage Sword of Conan (1974) #16, #40
