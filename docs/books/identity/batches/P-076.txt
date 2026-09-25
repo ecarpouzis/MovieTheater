@@ -1,0 +1,321 @@
+## Conventions for this batch (35 shown of 79 matched; 411 in LEDGER.md; 4 shelf/shelves: folder:vn-year ×2 · pub:dark-horse ×1 · pub:small-press ×1 · pub:dc ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-064] (4 shelf/shelves) pass:item sig:twin
+- GCD indexes PRINTINGS: the S line takes the first edition both legs agree on; the `I` line takes the printing
+  we hold (page counts match the edition's row). GCD issue ids for books come from `gcd_issue` — prefer the
+  issue id to the `s<series>` form; use `s<series>` only for twin/variant rows.
+[L-085] (4 shelf/shelves) sig:barcode sig:trade-link sig:twin
+- `gcd_issue` carries the trade's page count AND ISBN: it matched our rips within ±10pp on 100+ books and told
+  two same-title count-1 rows apart (an 8pp ashcan is not a twin of the trade).
+[L-101] (4 shelf/shelves) sig:twin
+- Page count tells GCD twins apart (a 32pp sampler vs the 256pp anthology); a count-0 GCD row (236534 "Cells at
+  Work! Lady") is an empty stub, not a leg.
+[L-124] (2 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-191] (2 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-272] (2 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-281] (2 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-046] (1 shelf/shelves) pub:action-lab pub:aftershock pub:small-press sig:probe
+- Small-press American floppies (Action Lab, Aftershock minis, Behemoth) are thin in GCD → `provider-missing` on
+  the GCD side is common and honest.
+[L-051] (1 shelf/shelves) pub:bongo pub:dc pub:small-press sig:probe
+- GCD spellings that hide a hit: Bongo's annual is plainly "Treehouse of Horror" (5435); Miller's 1983 series is
+  "Rōnin" (2721); Comico's Primer is "Primer" (14288). DC's Blackest Night revival issues sit in the ORIGINAL
+  series (Power of SHAZAM! 5246 runs 1995-2010).
+[L-052] (1 shelf/shelves) pub:dc sig:stamp sig:twin
+- The per-file CV matcher picks the LEGACY volume for every New 52 shelf (Batman 1940, Wonder Woman 1942, Nightwing
+  1996, Catwoman 1993) because it matched by issue number — the stored link on a 2011 shelf that names a 1940
+  volume is `wrong-cv-link`, the 2011 volume is in the rip.
+[L-055] (1 shelf/shelves) pub:dc pub:small-press sig:probe
+- ComicVine splits ONE line across two spellings of its own ("Batman Arkham: X" vs "Batman: Arkham: X"). GCD
+  prefixes titles the packet probes without ("Batman: Catwoman Defiant", "The Blue Beetle" for the 2006 series).
+[L-060] (1 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-065] (3 shelf/shelves) sig:stamp
+- Ladder coincidence: two runs with the same issue COUNT (X 1994 vs X 2013, both 25) fool the per-file matcher;
+  the year in the filenames decides.
+[L-099] (3 shelf/shelves) sig:stamp
+- A spin-off family carries the PARENT run per-file (all eight Fairy Tail side shelves stamped 46777) — reject.
+[L-113] (3 shelf/shelves) sig:comicinfo sig:stamp
+- ComicInfo `Volume` holding a 4-digit ComicVine volume id (not a year) is a 1.0 assertion like the 6-digit
+  case (Ka-Zar v2 1974: `Volume 2692` + `Count 20` = CV 2692) and disproves the per-file matcher's pick.
+[L-123] (3 shelf/shelves) sig:round2 sig:stamp
+- `round2-folder` / `round2-series` was wrong on 10 of 13 shelves carrying it in B-053..B-055, including one link
+  stamped on four sibling one-shot shelves in one folder — verify each by title + count + years, never by method.
+[L-139] (1 shelf/shelves) pub:dark-horse pub:millarworld pub:small-press sig:round2 sig:stamp
+- A folder-wide CV stamp exists too: Space Goat's Evil Dead 2 programme (CV 20289 on 37 files) and Millarworld's Dark
+  Horse folder (CV 115757 on the sequel) stamp ONE wrong volume across a folder — the `round2-folder` shape on the CV side.
+[L-140] (1 shelf/shelves) kind:strip pub:lion-forge-magnetic pub:scout pub:small-press sig:probe
+- Bubble Comics (Exlibrium, Major Grom, Igor Grom, Meteora), Space Between, Scout/Roar, Strip For Me, Studio D., Imagine
+  Bin, SAF Comics, Magnetic Press and Lost His Keys Man are total GCD holes — ComicVine-only is the honest answer there.
+[L-148] (1 shelf/shelves) pub:small-press sig:probe
+- GCD files New England Comics' Tick specials under the POSSESSIVE ComicVine drops ("The Tick's Big Romantic Adventure"
+  15953, "The Tick's Big Back to School Special" 15958) — re-probe with `Tick's`.
+[L-193] (3 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-194] (3 shelf/shelves) sig:legacy-stamp
+- A legacy-renumbered arc collected under its own title ("Punisher: War Machine") belongs to the parent volume's
+  count: CV 90118 / GCD 100917 count 28 = #1-17 + #218-228 — the arithmetic that split S66039.
+[L-195] (1 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- Trade SUBTITLES tell two same-title relaunches apart when the per-file matcher cannot (Batman Beyond 2015 = Brave
+  New Worlds / City of Yesterday / Wired for Death; 2016 = Escaping the Grave / Rise of the Demon / The Long Payback).
+[L-197] (1 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- The per-file matcher's "wrong RELAUNCH" trap: it stamps the LATER same-title volume onto files dated to the earlier
+  era by issue-number coincidence (Wonder Woman 2016, Batman 2016, JLA v2/v3, Firestorm, Hawk and Dove v5, Atari Force
+  v2, Adventure Comics 2010) — the tell is files whose years or numbers predate or exceed the stamped volume's own.
+[L-210] (1 shelf/shelves) pub:dc sig:legacy-stamp sig:probe sig:stamp
+- The wrong-relaunch trap is near-universal on any DC title with 3+ relaunches (Green Arrow, Green Lantern, Harley
+  Quinn, Justice League, Legion, Lobo, Martian Manhunter, Doom Patrol): the matcher stamps the oldest legacy volume or
+  the largest/most-recent one across every sibling shelf; `lookup.py` by name + year recovers the true id.
+[L-211] (1 shelf/shelves) folder:vn-year pub:dc sig:collision sig:stale-flag
+- An `overlap-in-series` flag on a franchise with many `vN` sibling shelves (Deathstroke, Harley Quinn, Green Lantern,
+  Justice League, JLD, Legion, Lobo) describes the CROSS-SHELF Vol. 01 collision, not conflation on the one shelf —
+  confirmed 14 of 14 in C-013..C-015; the stale-flag note must name the sibling shelf.
+[L-212] (1 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-214] (1 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp sig:twin
+- The wrong-relaunch / legacy-volume stamp ran at 70-95% of files on Midnighter, Mister Miracle, Robin, Nightwing,
+  Supergirl, Plastic Man and Suicide Squad shelves in C-016 — assume it on any DC relaunch shelf and verify by year.
+[L-223] (1 shelf/shelves) pub:dark-horse sig:split sig:stale-flag
+- Dark Horse conflated-series flags split about evenly between real conflation (Alabaster, Aliens, American Gods, Barb
+  Wire, Billy the Kid, Canto, Captain Midnight — R + split) and a stale flag on a 2-file shelf holding only ONE of the
+  conflated minis — but check the two files are the SAME mini before calling it stale (Blue Book was not).
+[L-228] (1 shelf/shelves) pub:dark-horse pub:dynamite pub:zenescope sig:legacy-stamp sig:split
+- Franchise folders that are genuinely several runs → `R` + split-needed, not residue: James Bond (three ladders),
+  Charmed (reboot + two Zenescope seasons), Green Hornet (three eras), Savage Tales (three publishers on a bare
+  title), Terminator (1999 Dark Horse mini + 2024 Dynamite), Vampirella (ongoing + "Year One"), Kirby: Genesis
+  (main + Dragonsbane), Tomb Raider (two same-numbered relaunches).
+[L-234] (1 shelf/shelves) pub:dark-horse pub:dynamite sig:stamp sig:trade-link
+- The count-1-trade / first-mini stored-link artefact runs at full strength on Dark Horse and Dynamite chains
+  (Ether 95727, Briggs Land 93181, Brain Boy 67220, Itty Bitty Hellboy 66787, Pathfinder 51262, Ash 68723): the FIRST
+  mini's volume stamped across the whole chain.
+[L-242] (1 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-245] (1 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-256] (1 shelf/shelves) pub:dc sig:barcode
+- The packet's shelf-level `identity:` list of the shelf's own per-book GCD rows (pages + ISBN) outranks a book's
+  own mismatched `linked` pick — read the shelf list first (Detective Comics 2012, Curse of Brimstone, Wonder Twins).
+[L-262] (3 shelf/shelves) sig:stamp
+- A single-book "collected volume" shelf's S line often carries the book's own CV issue id — use it over a
+  mismatched per-file pick.
+[L-271] (1 shelf/shelves) pub:small-press sig:round2 sig:stamp
+- round2-folder can stamp ONE wrong id across several UNRELATED shelves (gcd 212845 on three Avery Hill singletons,
+  56736 on Dead Beats and Wait, What?) — never a leg, anywhere.
+
++44 more matched entries not shown: L-310, L-330, L-349, L-366, L-368, L-369, L-370, L-381, L-387, L-389, L-128, L-181, L-336, L-013, L-014, L-016, L-032, L-043, L-050, L-072, L-074, L-083, L-088, L-089, L-095, L-096, L-114, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-250, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S14176 PunchLine  [split]  11 files / 1 collections  decided in R-175 (S)
+   decided: S 14176 cv=115918 gcd=143453 0.9 | PunchLine (Antarctic Press 2018-): CV 115918 (2018, 14 cached, #8 2019-10 ... #14 2023-03) and GCD 143453 (2018-?, 15) agree on publisher and start year and hold our #8-15 (22-24pp, 2019-2023) and the Antarctic "Punchline v01 (2024)" trade; ownership is settled only after the split below, hence 0.9
+   F 14176 split-needed | items 107094 / 107095 "PunchLine 006 / 007 (2018)" 16 / 17pp are #6-7 of the Lone Star Press run (CV 103555, 7 issues, #6 "New Kid in Town" 2018-05, #7 "Unwanted Help" 2018-09) - Antarctic's own #6-7 are 36pp 2019 issues - and no shelf stores that run (lookup --who-stores cv=103555: 0 Series rows) -> new key "PunchLine (2017)" (CV 103555; GCD indexes no Lone Star run)
+   F 14176 wrong-cv-link | the per-file CV 103555 (Lone Star 2017) sits on all 11 files, including the nine Antarctic books
+   N 14176 the Antarctic volume restarts at #1 and reprints the Lone Star issues ("Written in Blood" #1, "New Kid in Town" #3, "Unwanted Help" #4), so the numbering does NOT continue across the publisher change - two runs, not one (L-378 does not apply)
+   N 107104 no-record | "COL Punchline v01 (2024) (Antarctic Press)" 132pp, ComicInfo Volume 2024 / Count 1, judged #1-5 at 0.6: no CV or GCD record of the 2024 trade is in our data (lookup "Punchline" --contains); GCD 166151 is DC's 2021 Punchline
+   keys now: "PunchLine" x10 · "Punchline" x1
+   groups (title x folder): 2
+   G1 "PunchLine" in Misc\Punchline (2017) (Antarctic Press)\Punchline (2017) — 10 file(s), numbers 6-15, pp 16-24; cv per-file 103555x10; gcd per-file 143453x6; key 'PunchLine'
+      e.g. PunchLine 006 (2018) (digital) (Son of Ultron-Empire).cbr
+        107094 #6 2018 16pp · 107095 #7 2018 17pp · 107096 #008 2019 24pp · 107097 #009 2020 24pp · 107098 #10 2020 23pp · 107099 #11 2020 24pp · 107100 #12 2021 24pp · 107101 #13 2022 23pp
+        107102 #14 2023 24pp · 107103 #15 2023 22pp
+   G2 "Punchline" in Misc\Punchline (2017) (Antarctic Press)\Punchline (2017) — 1 file(s), 1 COL, pp 132-132; cv per-file 103555x1; key 'Punchline'
+      [107104] COL Punchline v01 (2024) (Antarctic Press) (Digital-HD) (LeDuch).cbz (132pp)
+
+== S64804 Gore Shriek  [split]  9 files / 1 collections  decided in R-175 (S)
+   decided: S 64804 cv=43283 gcd=15573 0.9 | Gore Shriek (FantaCo 1986-1989, 7 = #1-6 + #6 1/2): CV 43283 (1986, 7 cached #1-6.5) and GCD 15573 (1986-1989, 7) agree issue for issue with our "Gore Shriek v01 001-006.5" (#5 68pp = GCD's 68pp, #4 56pp = 56pp); 0.9 for the two v02 books, whose run has its own shelf (join below)
+   F 64804 split-needed | items 106097 "Gore Shriek v02 002 (1990)" 36pp and 106098 "Gore Shriek v02 002.5 (1990)" 19pp are #2 and #2 1/2 of Gore Shriek (FantaCo 1990-1991, 4; CV 43314 issues 296635 / 296636, GCD 30779 rows 528169 36pp / 528173 20pp), which S101892 stores -> join S101892 on its key "Gore Shriek (1990)" (L-368); C-058's "CV keeps ONE volume spanning v01/v02" was wrong - CV 43314 is the second volume
+   N 64804 flag #256 label-ambiguous (item 106089) is a label question - the v01 / v02 items are single issues - answered here, no stale-flag (L-367)
+   named: S101892 Gore Shriek  3 files  keys: "Gore Shriek (1990)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Gore Shriek (1986)" x9
+   groups (title x folder): 1
+   G1 "Gore Shriek" in Misc\Gore Shriek (Complete) — 9 file(s), 1 COL, numbers 1-4, 6, pp 19-67; cv per-file 43283x9; gcd per-file 15573x6, 30779x2; key 'Gore Shriek (1986)'
+      e.g. Gore Shriek v01 001 (1986).cbr
+        106089 #1 1986 37pp · 106090 #2 1988 34pp · 106091 #3 1987 36pp · 106092 #4 1987 56pp · 106094 #6 1988 59pp · 106097 #2 1990 36pp
+      [106093] COL Gore Shriek v01 005 (1988).cbr (67pp)
+      [106095] Gore Shriek v01 006.5 (1989).cbr (32pp)
+      [106098] Gore Shriek v02 002.5 (1990).cbr (19pp)
+
+== S7700 Gold Digger  [split]  55 files / 1 collections  decided in R-175 (S)
+   decided: S 7700 cv=19589 gcd=14580 0.9 | Gold Digger (Antarctic 1993-1999, 50): CV 19589 (1993, 50) and GCD 14580 (1993-1999, 50) agree and hold our "Gold_Digger_v1_010 ... 050a" (26-34pp); the two Collected Gold Digger GNs (#1-4, #5-8) are the run's own books; 0.9 for residue of other records - three "Special -18" files, a v0 #0, the 134pp Color Remix of the 1992 mini - and the one v2 #35 that joins below
+   F 7700 split-needed | item 106026 "COL Gold Digger v2 035a.cbr" 23pp (folder Misc\Gold Digger\v2) is #35 of Gold Digger (Antarctic 1999, CV 18720 / GCD 14582), which S102388 stores - its ladder there runs 034, 036 with #35 missing -> join S102388 on its ParsedKey "Gold Digger v2 (1999)" (L-368 / L-388)
+   F 7700 wrong-cv-link | the per-file CV 18720 (the 1999 monthly) sits on 39 of 55 files of the 1993 run
+   N 7700 the Specials (-18a/b/c), v0 #0 and the Color Remix of #1-4 have no record pinned here: CV names several candidates (19588 Color Remix 2006, 31330 Halloween Special, 31336 Adventures Stand Alone Special, GCD 27633 Collected Color Gold Digger) and none is a clean fit by page count and date
+   named: S102388 Gold Digger  89 files  keys: "Gold Digger 024a" | "Gold Digger 063a" | "Gold Digger 075a" | "Gold Digger v2 (1999)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S7736 "Gold Digger Swimsuit Special" 13f [title+1 — S cv=27560 gcd=46523 (B-063 0.95)] keys: "Gold Digger Swimsuit"
+   nearby: S102387 "Gold Digger Annual" 12f [title+1 — S cv=31253 gcd=46445 (R-175 0.95)] keys: "Gold Digger Annual"
+   nearby: S7732 "Gold Digger Sourcebook" 8f [title+1 — S gcd=46633 (D-015 0.9)] keys: "Gold Digger Sourcebook"
+   nearby: S7704 "Gold Digger: Tangent" 2f [title+1 — S cv=31332 gcd=35199 (B-063 0.9)] keys: "Gold Digger - Tangent"
+   keys now: "Gold Digger" x41 · "Gold Digger 035a" x2 · "Gold Digger 009a" x1 · "Gold Digger 029a" x1 · "Gold Digger 032a" x1 · "Gold Digger 032b" x1 · "Gold Digger 033a" x1 · "Gold Digger 033b" x1 · "Gold Digger 034a" x1 · "Gold Digger 034b" x1 · "Gold Digger 035b" x1 · "Gold Digger 040a" x1 · "Gold Digger 040b" x1 · "Gold Digger 050a" x1
+   groups (title x folder): 55
+   G1 "Gold_Digger_Special_-18a" in Misc\Gold Digger\v1 — 1 file(s), pp 25-25; cv per-file 18720x1; key 'Gold Digger'
+      [105831] Gold_Digger_Special_-18a.cbr (25pp)
+   G2 "Gold_Digger_Special_-18b - Halloween Special" in Misc\Gold Digger\v1 — 1 file(s), pp 34-34; cv per-file 18720x1; key 'Gold Digger'
+      [105832] Gold_Digger_Special_-18b - Halloween Special.cbz (34pp)
+   G3 "Gold_Digger_Special_-18c - GD Adventures" in Misc\Gold Digger\v1 — 1 file(s), pp 27-27; cv per-file 18720x1; key 'Gold Digger'
+      [105833] Gold_Digger_Special_-18c - GD Adventures.cbr (27pp)
+   G4 "Gold_Digger_v0_0" in Misc\Gold Digger\v1 — 1 file(s), numbers 0, pp 29-29; cv per-file 18720x1; key 'Gold Digger'
+      [105834] Gold_Digger_v0_0.cbr (29pp)
+   G5 "Gold_Digger_v0_1-4_Color_Remix" in Misc\Gold Digger\v1 — 1 file(s), pp 134-134; cv per-file 18720x1; key 'Gold Digger'
+      [105835] Gold_Digger_v0_1-4_Color_Remix.cbr (134pp)
+   G6 "Gold_Digger_v1_001_-_004_GN_02" in Misc\Gold Digger\v1 — 1 file(s), pp 102-102; cv per-file 51994x1; gcd per-file 46383x1; key 'Gold Digger'
+      [105836] Gold_Digger_v1_001_-_004_GN_02.cbr (102pp)
+   G7 "Gold_Digger_v1_005_-_008_GN_03" in Misc\Gold Digger\v1 — 1 file(s), pp 104-104; cv per-file 51994x1; gcd per-file 46383x1; key 'Gold Digger'
+      [105837] Gold_Digger_v1_005_-_008_GN_03.cbr (104pp)
+   G8 "Gold_Digger_v1_009a" in Misc\Gold Digger\v1 — 1 file(s), pp 26-26; key 'Gold Digger 009a'
+      [105838] Gold_Digger_v1_009a.cbr (26pp)
+   G9 "Gold_Digger_v1_010" in Misc\Gold Digger\v1 — 1 file(s), numbers 10, pp 28-28; cv per-file 18720x1; key 'Gold Digger'
+      [105840] Gold_Digger_v1_010.cbr (28pp)
+   G10 "Gold_Digger_v1_011" in Misc\Gold Digger\v1 — 1 file(s), numbers 11, pp 26-26; cv per-file 18720x1; key 'Gold Digger'
+      [105841] Gold_Digger_v1_011.cbr (26pp)
+   G11 "Gold_Digger_v1_012" in Misc\Gold Digger\v1 — 1 file(s), numbers 12, pp 26-26; cv per-file 18720x1; key 'Gold Digger'
+      [105842] Gold_Digger_v1_012.cbr (26pp)
+   G12 "Gold_Digger_v1_013" in Misc\Gold Digger\v1 — 1 file(s), numbers 13, pp 28-28; cv per-file 18720x1; key 'Gold Digger'
+      [105843] Gold_Digger_v1_013.cbr (28pp)
+   G13 "Gold_Digger_v1_014" in Misc\Gold Digger\v1 — 1 file(s), numbers 14, pp 29-29; cv per-file 18720x1; key 'Gold Digger'
+      [105844] Gold_Digger_v1_014.cbr (29pp)
+   G14 "Gold_Digger_v1_015" in Misc\Gold Digger\v1 — 1 file(s), numbers 15, pp 29-29; cv per-file 18720x1; key 'Gold Digger'
+      [105845] Gold_Digger_v1_015.cbr (29pp)
+   G15 "Gold_Digger_v1_016" in Misc\Gold Digger\v1 — 1 file(s), numbers 16, pp 26-26; cv per-file 18720x1; key 'Gold Digger'
+      [105846] Gold_Digger_v1_016.cbr (26pp)
+   G16 "Gold_Digger_v1_017" in Misc\Gold Digger\v1 — 1 file(s), numbers 17, pp 28-28; cv per-file 18720x1; key 'Gold Digger'
+      [105847] Gold_Digger_v1_017.cbr (28pp)
+   G17 "Gold_Digger_v1_018" in Misc\Gold Digger\v1 — 1 file(s), numbers 18, pp 26-26; cv per-file 18720x1; key 'Gold Digger'
+      [105848] Gold_Digger_v1_018.cbr (26pp)
+   G18 "Gold_Digger_v1_019" in Misc\Gold Digger\v1 — 1 file(s), numbers 19, pp 29-29; cv per-file 18720x1; key 'Gold Digger'
+      [105849] Gold_Digger_v1_019.cbr (29pp)
+   G19 "Gold_Digger_v1_020" in Misc\Gold Digger\v1 — 1 file(s), numbers 20, pp 28-28; cv per-file 18720x1; key 'Gold Digger'
+      [105850] Gold_Digger_v1_020.cbr (28pp)
+   G20 "Gold_Digger_v1_021" in Misc\Gold Digger\v1 — 1 file(s), numbers 21, pp 30-30; cv per-file 18720x1; key 'Gold Digger'
+      [105851] Gold_Digger_v1_021.cbr (30pp)
+   G21 "Gold_Digger_v1_022" in Misc\Gold Digger\v1 — 1 file(s), numbers 22, pp 29-29; cv per-file 18720x1; key 'Gold Digger'
+      [105852] Gold_Digger_v1_022.cbr (29pp)
+   G22 "Gold_Digger_v1_023" in Misc\Gold Digger\v1 — 1 file(s), numbers 23, pp 30-30; cv per-file 18720x1; key 'Gold Digger'
+      [105853] Gold_Digger_v1_023.cbr (30pp)
+   G23 "Gold_Digger_v1_024" in Misc\Gold Digger\v1 — 1 file(s), numbers 24, pp 29-29; cv per-file 18720x1; key 'Gold Digger'
+      [105854] Gold_Digger_v1_024.cbr (29pp)
+   G24 "Gold_Digger_v1_025" in Misc\Gold Digger\v1 — 1 file(s), numbers 25, pp 29-29; cv per-file 18720x1; key 'Gold Digger'
+      [105855] Gold_Digger_v1_025.cbr (29pp)
+   G25 "Gold_Digger_v1_026" in Misc\Gold Digger\v1 — 1 file(s), numbers 26, pp 29-29; cv per-file 18720x1; key 'Gold Digger'
+      [105856] Gold_Digger_v1_026.cbr (29pp)
+   G26 "Gold_Digger_v1_027" in Misc\Gold Digger\v1 — 1 file(s), numbers 27, pp 29-29; cv per-file 18720x1; key 'Gold Digger'
+      [105857] Gold_Digger_v1_027.cbr (29pp)
+   G27 "Gold_Digger_v1_028" in Misc\Gold Digger\v1 — 1 file(s), numbers 28, pp 34-34; cv per-file 18720x1; key 'Gold Digger'
+      [105858] Gold_Digger_v1_028.cbr (34pp)
+   G28 "Gold_Digger_v1_029a" in Misc\Gold Digger\v1 — 1 file(s), pp 29-29; key 'Gold Digger 029a'
+      [105859] Gold_Digger_v1_029a.cbr (29pp)
+   G29 "Gold_Digger_v1_030" in Misc\Gold Digger\v1 — 1 file(s), numbers 30, pp 30-30; cv per-file 18720x1; key 'Gold Digger'
+      [105861] Gold_Digger_v1_030.cbr (30pp)
+   G30 "Gold_Digger_v1_031" in Misc\Gold Digger\v1 — 1 file(s), numbers 31, pp 29-29; cv per-file 18720x1; key 'Gold Digger'
+      [105862] Gold_Digger_v1_031.cbr (29pp)
+   G31 "Gold_Digger_v1_032a" in Misc\Gold Digger\v1 — 1 file(s), pp 27-27; key 'Gold Digger 032a'
+      [105863] Gold_Digger_v1_032a.cbr (27pp)
+   G32 "Gold_Digger_v1_032b" in Misc\Gold Digger\v1 — 1 file(s), pp 27-27; key 'Gold Digger 032b'
+      [105864] Gold_Digger_v1_032b.cbr (27pp)
+   G33 "Gold_Digger_v1_033a" in Misc\Gold Digger\v1 — 1 file(s), pp 30-30; key 'Gold Digger 033a'
+      [105865] Gold_Digger_v1_033a.cbr (30pp)
+   G34 "Gold_Digger_v1_033b" in Misc\Gold Digger\v1 — 1 file(s), pp 26-26; key 'Gold Digger 033b'
+      [105866] Gold_Digger_v1_033b.cbr (26pp)
+   G35 "Gold_Digger_v1_034a" in Misc\Gold Digger\v1 — 1 file(s), pp 29-29; key 'Gold Digger 034a'
+      [105867] Gold_Digger_v1_034a.cbr (29pp)
+   G36 "Gold_Digger_v1_034b" in Misc\Gold Digger\v1 — 1 file(s), pp 26-26; key 'Gold Digger 034b'
+      [105868] Gold_Digger_v1_034b.cbr (26pp)
+   G37 "Gold_Digger_v1_035a" in Misc\Gold Digger\v1 — 1 file(s), pp 26-26; key 'Gold Digger 035a'
+      [105869] Gold_Digger_v1_035a.cbr (26pp)
+   G38 "Gold_Digger_v1_035b" in Misc\Gold Digger\v1 — 1 file(s), pp 25-25; key 'Gold Digger 035b'
+      [105870] Gold_Digger_v1_035b.cbr (25pp)
+   G39 "Gold_Digger_v1_036" in Misc\Gold Digger\v1 — 1 file(s), numbers 36, pp 30-30; cv per-file 18720x1; key 'Gold Digger'
+      [105871] Gold_Digger_v1_036.cbr (30pp)
+   G40 "Gold_Digger_v1_037" in Misc\Gold Digger\v1 — 1 file(s), numbers 37, pp 27-27; cv per-file 18720x1; key 'Gold Digger'
+      [105872] Gold_Digger_v1_037.cbr (27pp)
+   G41 "Gold_Digger_v1_038" in Misc\Gold Digger\v1 — 1 file(s), numbers 38, pp 30-30; cv per-file 18720x1; key 'Gold Digger'
+      [105873] Gold_Digger_v1_038.cbr (30pp)
+   G42 "Gold_Digger_v1_039" in Misc\Gold Digger\v1 — 1 file(s), numbers 39, pp 28-28; cv per-file 18720x1; key 'Gold Digger'
+      [105874] Gold_Digger_v1_039.cbr (28pp)
+   G43 "Gold_Digger_v1_040a" in Misc\Gold Digger\v1 — 1 file(s), pp 28-28; key 'Gold Digger 040a'
+      [105875] Gold_Digger_v1_040a.cbr (28pp)
+   G44 "Gold_Digger_v1_040b" in Misc\Gold Digger\v1 — 1 file(s), pp 28-28; key 'Gold Digger 040b'
+      [105876] Gold_Digger_v1_040b.cbr (28pp)
+   G45 "Gold_Digger_v1_041" in Misc\Gold Digger\v1 — 1 file(s), numbers 41, pp 28-28; cv per-file 18720x1; key 'Gold Digger'
+      [105877] Gold_Digger_v1_041.cbr (28pp)
+   G46 "Gold_Digger_v1_042" in Misc\Gold Digger\v1 — 1 file(s), numbers 42, pp 28-28; cv per-file 18720x1; key 'Gold Digger'
+      [105878] Gold_Digger_v1_042.cbr (28pp)
+   G47 "Gold_Digger_v1_043" in Misc\Gold Digger\v1 — 1 file(s), numbers 43, pp 27-27; cv per-file 18720x1; key 'Gold Digger'
+      [105879] Gold_Digger_v1_043.cbr (27pp)
+   G48 "Gold_Digger_v1_044" in Misc\Gold Digger\v1 — 1 file(s), numbers 44, pp 28-28; cv per-file 18720x1; key 'Gold Digger'
+      [105880] Gold_Digger_v1_044.cbr (28pp)
+   G49 "Gold_Digger_v1_045" in Misc\Gold Digger\v1 — 1 file(s), numbers 45, pp 27-27; cv per-file 18720x1; key 'Gold Digger'
+      [105881] Gold_Digger_v1_045.cbr (27pp)
+   G50 "Gold_Digger_v1_046" in Misc\Gold Digger\v1 — 1 file(s), numbers 46, pp 32-32; cv per-file 18720x1; key 'Gold Digger'
+      [105882] Gold_Digger_v1_046.cbr (32pp)
+   G51 "Gold_Digger_v1_047" in Misc\Gold Digger\v1 — 1 file(s), numbers 47, pp 29-29; cv per-file 18720x1; key 'Gold Digger'
+      [105883] Gold_Digger_v1_047.cbr (29pp)
+   G52 "Gold_Digger_v1_048" in Misc\Gold Digger\v1 — 1 file(s), numbers 48, pp 28-28; cv per-file 18720x1; key 'Gold Digger'
+      [105884] Gold_Digger_v1_048.cbr (28pp)
+   G53 "Gold_Digger_v1_049" in Misc\Gold Digger\v1 — 1 file(s), numbers 49, pp 24-24; cv per-file 18720x1; key 'Gold Digger'
+      [105885] Gold_Digger_v1_049.cbr (24pp)
+   G54 "Gold_Digger_v1_050a" in Misc\Gold Digger\v1 — 1 file(s), pp 34-34; key 'Gold Digger 050a'
+      [105886] Gold_Digger_v1_050a.cbr (34pp)
+   G55 "Gold Digger" in Misc\Gold Digger\v2 — 1 file(s), 1 COL, pp 23-23; cv per-file 18720x1; gcd per-file 14582x1; key 'Gold Digger 035a'
+      [106026] COL Gold Digger v2 035a.cbr (23pp)
+
+== S956 American Splendor  [split]  37 files / 0 collections  decided in R-175 (R)
+   decided: R 956 | two co-equal runs and residue share this shelf: American Splendor (Harvey Pekar 1976-1999; CV 28361, 26 cached #1-26 / GCD 32010 1976-1991, 16) - our #1-26 (1976-1999, 28-61pp) plus two later Pekar books the ripper numbered 027 / 028 (2000, 2001); American Splendor: Unsung Hero (Dark Horse 2002, 3-issue mini; CV 33223 / GCD 42369) - all three issues 104826-104828, which no shelf stores (lookup --who-stores cv=33223: 0 Series rows; its key "American Splendor - Unsung Hero (2002)" is an orphan link); and three issues of the 2006 DC mini, whose run lives on S95059; a whole second mini is a co-equal run (L-368 / L-388), so C-058's "named not merged" S cannot stand
+   F 956 split-needed | American Splendor (1976, CV 28361 / GCD 32010) stays with #1-28 and its three GNs; items 104826 / 104827 / 104828 "American Splendor - Unsung Hero 001-003 (2002)" 28pp -> new key "American Splendor: Unsung Hero (2002)" (CV 33223 / GCD 42369; the orphan key link "American Splendor - Unsung Hero (2002)" already carries cv=33223); items 104813 / 104814 / 104818 "American Splendor 003 / 004 / 004 (2007)" 33-34pp are #3-4 of the DC mini (CV 23553 / GCD 19825) -> join S95059 on its ParsedKey "American Splendor v1 (2006)" (L-368)
+   N 956 "American Splendor 027 - Bedtime Stories (2000)" and "028 - A Portrait of the Author in his Declining Years (2001)" run past CV 28361's 26: they are later Pekar one-shots the ripper numbered on, residue of the kept run
+   named: S95059 American Splendor  9 files  keys: "American Splendor (2006)" | "American Splendor v1 (2006)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S13448 "Our Cancer Year" 1f [shares cv=34349, shares gcd=50516 — S cv=34349 gcd=50516 (B-030 0.95)] keys: "Our Cancer Year"
+   nearby: S95060 "American Splendor" 8f [title — S cv=21818 gcd=37709 (B-069 0.95)] keys: "American Splendor (2008)" | "American Splendor v2 (2008)"
+   keys now: "American Splendor (1976)" x29 · "American Splendor - Unsung Hero (2002)" x3 · "American Splendor" x2 · "American Splendor - Ego and Hubris" x1 · "American Splendor - Our Cancer Year" x1 · "American Splendor - Our Movie Year" x1
+   groups (title x folder): 7
+   G1 "American Splendor - Ego and Hubris (2006) (Ballentine Books)" in Misc\American Splendor (1976) (and Misc Harvey Pekar Stuff) — 1 file(s), pp 168-168; cv per-file 71437x1; gcd per-file 58485x1; key 'American Splendor - Ego and Hubris'
+      [104823] American Splendor - Ego and Hubris (2006) (Ballentine Books) .cbr (168pp)
+   G2 "American Splendor - Our Cancer Year (1994) (Four Walls, Eight Windows)" in Misc\American Splendor (1976) (and Misc Harvey Pekar Stuff) — 1 file(s), pp 229-229; cv per-file 34349x1; gcd per-file 50516x1; key 'American Splendor - Our Cancer Year'
+      [104824] American Splendor - Our Cancer Year (1994) (Four Walls, Eight Windows).cbr (229pp)
+   G3 "American Splendor - Our Movie Year (2004) (Ballantine Books) (TGS scans)" in Misc\American Splendor (1976) (and Misc Harvey Pekar Stuff) — 1 file(s), pp 172-172; cv per-file 70566x1; gcd per-file 57138x1; key 'American Splendor - Our Movie Year'
+      [104825] American Splendor - Our Movie Year (2004) (Ballantine Books) (TGS scans).cbz (172pp)
+   G4 "American Splendor" in Misc\American Splendor (1976) (and Misc Harvey Pekar Stuff)\American Splendor (2006) — 2 file(s), numbers 3-4, pp 33-34; cv per-file 28361x2; gcd per-file 19825x2; key 'American Splendor (1976)'
+      [104813] American Splendor 003 (2007) (Digital) (Shadowcat-Empire).cbz (33pp)
+      [104814] American Splendor 004 (2007) (Digital) (Shadowcat-Empire).cbz (34pp)
+   G5 "American Splendor" in Misc\American Splendor (1976) (and Misc Harvey Pekar Stuff)\American Splendor - Another Day (2002) — 1 file(s), numbers 4, pp 34-34; cv per-file 28361x1; gcd per-file 19825x1; key 'American Splendor (1976)'
+      [104818] American Splendor 004 (2007) (Solfood-DCP).cbr (34pp)
+   G6 "American Splendor - Unsung Hero" in Misc\American Splendor (1976) (and Misc Harvey Pekar Stuff)\American Splendor - Unsung Hero (2002) — 3 file(s), numbers 1-3, pp 28-28; cv per-file 33223x3; gcd per-file 42369x3; key 'American Splendor - Unsung Hero (2002)'
+      [104826] American Splendor - Unsung Hero 001 (2002) (FBScan).cbr (28pp)
+      [104827] American Splendor - Unsung Hero 002 (2002) (FBScan).cbr (28pp)
+      [104828] American Splendor - Unsung Hero 003 (2002) (FBScan).cbr (28pp)
+   G7 "American Splendor" in Misc\American Splendor (1976) (and Misc Harvey Pekar Stuff)\American Splendor v1 (1976) — 28 file(s), numbers 1-28, pp 28-61; cv per-file 28361x28; gcd per-file 32010x16, 43343x1; key 'American Splendor (1976)' | 'American Splendor'
+      e.g. American Splendor 001 (1976).cbr
+        104829 #1 1976 52pp · 104830 #2 1977 60pp · 104831 #3 1978 60pp · 104832 #4 1979 60pp · 104833 #5 1980 60pp · 104834 #6 1981 60pp · 104835 #7 1982 60pp · 104836 #8 1983 60pp
+        104837 #9 1984 60pp · 104838 #10 1985 60pp · 104839 #11 1986 61pp · 104840 #12 1987 61pp · 104841 #13 1988 60pp · 104842 #14 1989 52pp · 104843 #15 1990 45pp · 104844 #16 1991 61pp
+        104845 #17 1993 60pp
+      [104846] American Splendor 018 - A Step Out of the Nest (1994).cbr (36pp)
+      [104847] American Splendor 019 - Windfall 1 (1995).cbr (43pp)
+      [104848] American Splendor 020 - Windfall 2 (1995).cbr (44pp)
+      [104849] American Splendor 021 - Comic-Con Comics (1996).cbr (28pp)
+      [104850] American Splendor 022 - On the Job (1997).cbz (29pp)
+      [104851] American Splendor 023 - Music Comics (1997).cbr (28pp)
+      [104852] American Splendor 024 - Odd & Ends (1997).cbr (28pp)
+      [104853] American Splendor 025 - Transatlantic Comics (1998).cbr (28pp)
+      [104854] American Splendor 026 - Terminal (1999).cbz (29pp)
+      [104855] American Splendor 027 - Bedtime Stories (2000).cbr (28pp)  key="American Splendor"
+      [104856] American Splendor 028 - A Portrait of the Author in his Declining Years (2001).cbz (29pp)  key="American Splendor"
