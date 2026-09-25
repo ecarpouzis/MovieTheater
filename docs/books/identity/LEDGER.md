@@ -2022,7 +2022,7 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   cv would collide with its canonical cv. The key normalizer keeps the year: a key differing only by year is new; respell
   only when the exact spelling is a ParsedKey, alias or SeriesKeyLink. A split seed can be a book's own count-1 record —
   re-check against L-124 when the book sits alone in a run's folder (The Other Side 2017 -> DC mini CV 19537 / GCD 21941).
-[L-388] pub:marvel sig:split kind:omnibus
+[L-388] pub:marvel sig:split
 - R-134 (wave 128, lead ruling): RESIDUE vs co-equal — two or more whole trades of another run are a co-equal run (R +
   split-needed) only when that run has NO shelf of its own; when its run or line already has a shelf, they are misfiled
   books: S + `F split-needed | items -> join S<home>` (L-368; X-Factor 2024 S66336's two Peter David omnibuses -> S22172).
