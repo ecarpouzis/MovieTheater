@@ -2212,3 +2212,10 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   page counts separate the runs. A later edition's rip (240pp 2021 printing) against a stored earlier record (128pp
   1990) = F wrong-cv-link and the edition's own GCD line (S22477 -> gcd 178998). A book whose page count fits NO
   edition (AvX 347pp, Infinity HC 1046pp) stays an I line at 0.7.
+[L-411] pub:image kind:collected-line sig:split
+- Waves 173-174: a split-lane JOIN of a run's issues onto a shelf of its UNJUDGED trades halts audit_containment
+  (Uncanny X-Force 2013 S94816): `u` every edition on the shelf, not only the live containers — pass2 demands a line
+  for each one. A merge can make an omnibus a live container while it still reads IsCollection=0 (Scud The Whole
+  Shebang, 781pp, S15199): iscollection-read-wave174.csv + apply_read_iscollection.py, then wave_fix. A reprint line
+  merged onto its floppy run (Tank Girl Full Colour Classics -> the run, shared cv 110540) may survive under the
+  LINE's shelf id (S17597, not S17602) — merge_count_check counts the drop, not which id survives.

@@ -1,0 +1,1036 @@
+## Conventions for this batch (35 shown of 192 matched; 410 in LEDGER.md; 60 shelf/shelves: folder:vn-year ×14 · pub:small-press ×9 · kind:collected-line ×8 · kind:trade-only ×8 · pub:image ×6 · folder:sequel-subfolder ×5 · pub:dark-horse ×4 · pub:millarworld ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-030] (60 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-151] (60 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (60 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-193] (50 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-014] (43 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-013] (39 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-043] (39 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (39 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (39 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (39 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (39 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (39 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (39 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (39 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (39 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (39 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (39 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (39 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (39 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-204] (39 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (39 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (39 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (39 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (39 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (39 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (39 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (39 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (39 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (39 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
+[L-113] (38 shelf/shelves) sig:comicinfo sig:stamp
+- ComicInfo `Volume` holding a 4-digit ComicVine volume id (not a year) is a 1.0 assertion like the 6-digit
+  case (Ka-Zar v2 1974: `Volume 2692` + `Count 20` = CV 2692) and disproves the per-file matcher's pick.
+[L-123] (37 shelf/shelves) sig:round2 sig:stamp
+- `round2-folder` / `round2-series` was wrong on 10 of 13 shelves carrying it in B-053..B-055, including one link
+  stamped on four sibling one-shot shelves in one folder — verify each by title + count + years, never by method.
+[L-139] (12 shelf/shelves) pub:dark-horse pub:millarworld pub:small-press sig:round2 sig:stamp
+- A folder-wide CV stamp exists too: Space Goat's Evil Dead 2 programme (CV 20289 on 37 files) and Millarworld's Dark
+  Horse folder (CV 115757 on the sequel) stamp ONE wrong volume across a folder — the `round2-folder` shape on the CV side.
+[L-191] (18 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-194] (36 shelf/shelves) sig:legacy-stamp
+- A legacy-renumbered arc collected under its own title ("Punisher: War Machine") belongs to the parent volume's
+  count: CV 90118 / GCD 100917 count 28 = #1-17 + #218-228 — the arithmetic that split S66039.
+[L-330] (36 shelf/shelves) sig:legacy-stamp
+- After a split or relaunch, a shelf's year span (and "year gap" signal) can come from per-file CV stamps of the
+  OLD volume (1965-68 cover dates on a 1999-run shelf) — read the filename years before hunting a foreign file.
+  Per-file stamps survive a Series-row fix; don't read them as evidence against a landed S (R-054, R-058).
+
++157 more matched entries not shown: L-065, L-099, L-262, L-281, L-124, L-140, L-272, L-046, L-051, L-055, L-148, L-271, L-085, L-064, L-101, L-310, L-087, L-291, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-016, L-032, L-114, L-228, L-383, L-290, L-152, L-158, L-168, L-234, L-302, L-321, L-359, L-020, L-021, L-023, L-026, L-029, L-047, L-049, L-056, L-060, L-079, L-120, L-128, L-156, L-175, L-181, L-182, L-188, L-211, L-212, L-219, L-222, L-233, L-237, L-242, L-243, L-245, L-319, L-335, L-336, L-342, L-357, L-361, L-362, L-373, L-374, L-375, L-376, L-377, L-380, L-382, L-387, L-389, L-007, L-150, L-217, L-006, L-033, L-034, L-045, L-052, L-068, L-073, L-081, L-091, L-092, L-106, L-111, L-112, L-119, L-127, L-130, L-136, L-142, L-167, L-169, L-174, L-176, L-178, L-184, L-185, L-187, L-195, L-197, L-210, L-214, L-223, L-256, L-323, L-326, L-328, L-333, L-337, L-345, L-349, L-363, L-366, L-368, L-369, L-370, L-378, L-381, L-388, L-391, L-395, L-399, L-074, L-083, L-097, L-250, L-252, L-274, L-288, L-293, L-352, L-354, L-041, L-192 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S10308 Kick-Ass: The Dave Lizewski Years  [tier B]   keys: Kick-Ass - The Dave Lizewski Years Book  years 2018-2018  4 files / 4 collections
+   folders: [4] Millarworld (Dark Horse)\Kick-Ass (2018)
+   files:   [104727] COL Kick-Ass - The Dave Lizewski Years Book 01 (2018) (Digital) (XRA-Empire).cbr (207pp)
+            [104728] COL Kick-Ass - The Dave Lizewski Years Book 02 (2018) (Digital) (XRA-Empire).cbr (135pp)
+            [104729] COL Kick-Ass - The Dave Lizewski Years Book 03 (2018) (Digital) (XRA-Empire).cbz (176pp)
+            [104730] COL Kick-Ass - The Dave Lizewski Years Book 04 (2018) (Digital) (XRA-Empire).cbz (230pp)
+   ours:    ComicInfo Series: "Kick-Ass"x1; ComicInfo Publisher: "Image"x1
+   GCD says: [104727] gcd_reprint 1785954: s29792 Kick-Ass (2008) #1-8 [23 stories]
+             [104728] gcd_reprint 1785955: s66455 Hit-Girl (2012) #1-5 [20 stories]
+             [104729] gcd_reprint 1785956: s52947 Kick-Ass 2 (2010) #1-7 [17 stories] · s29792 Kick-Ass (2008) #3 [1 story]
+             [104730] gcd_reprint 1785957: s74791 Kick-Ass 3 (2013) #1-8 [16 stories]
+   CV linked:      vol 108739 "Kick-Ass: The Dave Lizewski Years" 2018 Image 4 issues; cached #1-4 (4); yearΔ 0; ratio 0/4; no judged range
+   CV candidates:  (= linked) · 61776 "Kick-Ass" 2010 Panini Verlag 2 s58 · 108738 "Kick-Ass" 2018 Image 18 s55 · 42483 "Kick-Ass" 2010 Panini España 1 issue 290412 s53 · 32190 "Kick-Ass" 2010 Marvel 1 issue 202009 s53 · 33036 "Kick-Ass" 2010 Titan Comics 1 issue 212791 s53 · 20680 "Kick-Ass" 2008 Marvel 8 s52   (v1 search)
+   CV local rip:   (= linked) · 108738 "Kick-Ass" 2018 Image 18 (via CV candidate name "Kick-Ass") · 32190 "Kick-Ass" 2010 Marvel 1 issue 202009 (via CV candidate name "Kick-Ass") · 33036 "Kick-Ass" 2010 Titan Comics 1 issue 212791 (via CV candidate name "Kick-Ass") · 42483 "Kick-Ass" 2010 Panini España 1 issue 290412 (via CV candidate name "Kick-Ass") · 61776 "Kick-Ass" 2010 Panini Verlag 2 (via CV candidate name "Kick-Ass")   (rip lookup)
+   GCD dump:       121870 "Kick-Ass: The Dave Lizewski Years" 2018-2018 Image [] 4 · 121869 "Kick-Ass" 2018-2019 Image [] 18 (via CV candidate name "Kick-Ass") · 217031 "Kick-Ass" 2013-2013 Marvel [] 1 (via CV candidate name "Kick-Ass") · 112456 "Kick-Ass" [nl] 2011-2011 Nona Arte [] 1 (via CV candidate name "Kick-Ass") · 226177 "Kick-Ass" 2011-2011 Marvel [] 1 (via CV candidate name "Kick-Ass") · 231643 "Kick-Ass" [fr] 2025-2025 Panini France [] 3 (via CV candidate name "Kick-Ass")   (dump lookup)
+
+== S12914 Night Club II  [tier C] · gap 2  keys: Night Club II  years 2022-2024  6 files / 1 collections
+   folders: [5] Millarworld (Dark Horse)\Night Club (2022)\Night Club II (2024) · [1] Millarworld (Dark Horse)\Night Club (2022)
+   files:   [104749] Night Club II 001 (2024) (digital) (Son of Ultron-Empire).cbr (27pp) | [104750] Night Club II 002 (2024) (digital) (Son of Ultron-Empire).cbr (26pp)
+            [104751] Night Club II 003 (2024) (digital) (Son of Ultron-Empire).cbr (28pp) | [104752] Night Club II 004 (2024) (digital) (Son of Ultron-Empire).cbr (27pp)
+            [104753] Night Club II 005 (2025) (digital) (Son of Ultron-Empire).cbr (26pp) | [104754] COL Night Club v01 (2024) (digital) (Son of Ultron-Empire).cbr (169pp)
+   ours:    ladder 1-5; judged item 104754 #1-5 conf 0.8
+   CV linked:      vol 159353 "Night Club II" 2024 Dark Horse Comics 6 issues; cached #1-6 (6); yearΔ 2; ratio 5/6 = 0.83; 1 of 1 judged fit
+   CV per-file (v1): vol 146892 "Night Club" 2022 Image 6 on 6/6 files
+   CV local rip:   (= linked) · 157369 "Night Club " 2024 Panini Verlag 1 issue 1049010 (via CV name "Night Club") · 160490 "Night Club" 2024 Dark Horse Comics 2 (via CV name "Night Club") · 24204 "Night Club" 2005 Image 4 (via CV name "Night Club")   (rip lookup)
+   GCD per-file:   series 214834 "Night Club II" 2024-2025 Dark Horse [limited series] 6 on 5/6 files; methods numx5
+   GCD dump:       (= per-file) · 193882 "Night Club" 2022-2023 Image [] 6 (via CV name "Night Club") · 203791 "Night Club" 2023-? Image [] 1 (via CV name "Night Club") · 214099 "Night Club" 2024-? Dark Horse [] 2 (via CV name "Night Club") · 44350 "Night Club" 2005-2006 Image [] 4 (via CV name "Night Club") · 57378 "Night Club" 2005-2005 Abbycomix! [] 1 (via CV name "Night Club")   (dump lookup)
+
+== S21214 Wanted  [tier B]   keys: Wanted  years 2003-2018  2 files / 2 collections
+   folders: [2] Millarworld (Dark Horse)\Wanted (2009)
+   files:   [104790] COL Wanted (2009) (Digital TPB) (DR & Quinch-Empire).cbr (187pp) | [104791] COL Wanted (2018) (Digital) (Millarworld Edition) (DR & Quinch-Empire).cbr (183pp)
+   ours:    judged item 104790 #1-6 conf 0.8
+   CV linked:      vol 18009 "Wanted" 2003 Image 7 issues; cached #0-6 (7); yearΔ 0; ratio 0/7; 1 of 1 judged fit
+   CV per-file (v1): vol 62096 "Wanted" 2009 Panini Verlag 1 issue 406062 on 2/2 files
+   CV candidates:  49682 "Dark Horse New Recruits" 2005 Dark Horse Comics 1 issue 340614 s19 · 20899 "Dark Horse Maverick 2000" 2000 Dark Horse Comics 1 issue 125144 s17 · 49628 "Dark Horse Presenta" 2000 Norma Editorial 1 issue 339964 s17 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s16 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s16 · 142472 "Dark Horse Legend Ashcan" 1996 Dark Horse Comics 1 issue 938079 s16   (v1 search)
+   CV local rip:   (= linked) · 74926 "Wanted" 2005 Studiocomix 1 issue 456675 · 137902 "Wanted!" 2006 Carlsen Verlag 1 issue 874850 · 41472 "Wanted" 2007 Image 1 issue 281014 · 23042 "Wanted!" 1998 Shueisha 1 issue 138862 · 39103 "Wanted" 2008 Viz 1 issue 263451   (rip lookup)
+   GCD dump:       14133 "Wanted" 2003-2005 Image [] 6 · 31755 "Wanted" 2005-2005 Image [] 1 · 31756 "Wanted" 2005-2005 Image [] 1 · 105320 "Wanted" [de] 2005-? Infinity Verlag [] 1 · 98947 "Wanted!" [de] 2006-? Carlsen Comics [DE] [] 1 · 145463 "Wanted" [fr] 1999-1999 [treize étrange] [] 1   (dump lookup)
+
+== S956 American Splendor  [tier C] · 4 named, the minority on >= 2 files or >= 10%  keys: American Splendor | American Splendor (1976) | American Splendor - Ego and Hubris | American Splendor - Our Cancer Year | American Splendor - Our Movie Year  years 1976-2006  37 files / 0 collections
+   folders: [28] Misc\American Splendor (1976) (and Misc Harvey Pekar Stuff)\American Splendor v1 (1976) · [3] Misc\American Splendor (1976) (and Misc Harvey Pekar Stuff) · [3] Misc\American Splendor (1976) (and Misc Harvey Pekar Stuff)\American Splendor - Unsung Hero (2002) · [2] Misc\American Splendor (1976) (and Misc Harvey Pekar Stuff)\American Splendor (2006) · [1] Misc\American Splendor (1976) (and Misc Harvey Pekar Stuff)\American Splendor - Another Day (2002)
+   files:   [104813] American Splendor 003 (2007) (Digital) (Shadowcat-Empire).cbz (33pp) | [104814] American Splendor 004 (2007) (Digital) (Shadowcat-Empire).cbz (34pp)
+            [104818] American Splendor 004 (2007) (Solfood-DCP).cbr (34pp) | [104823] American Splendor - Ego and Hubris (2006) (Ballentine Books) .cbr (168pp)
+            [104824] American Splendor - Our Cancer Year (1994) (Four Walls, Eight Windows).cbr (229pp) | [104825] American Splendor - Our Movie Year (2004) (Ballantine Books) (TGS scans).cbz (172pp)
+            [104826] American Splendor - Unsung Hero 001 (2002) (FBScan).cbr (28pp) | [104827] American Splendor - Unsung Hero 002 (2002) (FBScan).cbr (28pp)
+            [104828] American Splendor - Unsung Hero 003 (2002) (FBScan).cbr (28pp) | American Splendor 001 (1976).cbr … American Splendor 009 (1984).cbr  (9 files, pp 52-60)
+            [104838] American Splendor 010 (1985) (sir real).cbz (60pp) | [104839] American Splendor 011 (1986) (sir real).cbz (61pp) | [104840] American Splendor 012 (1987) (sir real).cbz (61pp)
+            [104841] American Splendor 013 (1988).cbr (60pp) | [104842] American Splendor 014 (1989).cbr (52pp) | [104843] American Splendor 015 (1990).cbr (45pp)
+            [104844] American Splendor 016 (1991).cbr (61pp) | [104845] American Splendor 017 (1993).cbr (60pp) | [104846] American Splendor 018 - A Step Out of the Nest (1994).cbr (36pp)
+            [104847] American Splendor 019 - Windfall 1 (1995).cbr (43pp) | [104848] American Splendor 020 - Windfall 2 (1995).cbr (44pp)
+            [104849] American Splendor 021 - Comic-Con Comics (1996).cbr (28pp) | [104850] American Splendor 022 - On the Job (1997).cbz (29pp)
+            [104851] American Splendor 023 - Music Comics (1997).cbr (28pp) | [104852] American Splendor 024 - Odd & Ends (1997).cbr (28pp)
+            [104853] American Splendor 025 - Transatlantic Comics (1998).cbr (28pp) | [104854] American Splendor 026 - Terminal (1999).cbz (29pp)
+            [104855] American Splendor 027 - Bedtime Stories (2000).cbr (28pp) | [104856] American Splendor 028 - A Portrait of the Author in his Declining Years (2001).cbz (29pp)
+   ours:    ladder 1-28; 4 number(s) name more than one file: 1, 2, 3, 4; barcode item 104856 [{"type": "EAN13", "data": "0761568004489", "page": " Years/
+   CV linked:      vol 28361 "American Splendor" 1976 Harvey Pekar 26 issues; cached #1-26 (26); yearΔ 0; ratio 34/26 = 1.31; no judged range
+   CV per-file (v1): vol 28361 "American Splendor" 1976 Harvey Pekar 26 on 31/37 files · vol 33223 "American Splendor: Unsung Hero" 2002 Dark Horse Comics 3 on 3/37 files
+   CV candidates:  (= linked) · 71437 "American Splendor: Ego & Hubris: The Michael Malice Story" 2006 Ballantine Books 1 issue 444462 s31 · 34349 "Our Cancer Year" 1994 Four Walls Eight Windows 1 issue 224212 s30 · 70566 "American Splendor: Our Movie Year" 2004 Ballantine Books 1 issue 440408 s22 · 73407 "My Movie Year: American Splendor DVD Comic" 2003 Dark Horse Comics 1 issue 451735 s20 · 23553 "American Splendor" 2006 DC Comics 4 s18 · 21818 "American Splendor" 2008 DC Comics 4 s18   (v1 search)
+   CV local rip:   (= linked) · 23553 "American Splendor" 2006 DC Comics 4 · 21818 "American Splendor" 2008 DC Comics 4 · 70566 "American Splendor: Our Movie Year" 2004 Ballantine Books 1 issue 440408 · 71437 "American Splendor: Ego & Hubris: The Michael Malice Story" 2006 Ballantine Books 1 issue 444462 (via CV candidate name "American Splendor: Ego & Hubris: The Michael Malice Story")   (rip lookup)
+   GCD per-file:   series 32010 "American Splendor" 1976-1991 Harvey Pekar [was ongoing series] 16 on 16/37 files · series 19825 "American Splendor" 2006-2007 DC [was ongoing series] 4 on 3/37 files · series 42369 "American Splendor: Unsung Hero" 2002-2002 Dark Horse [limited series] 3 on 3/37 files · series 43343 "American Splendor" 1993-1993 Dark Horse [was ongoing series] 1 on 1/37 files; methods numx23
+   GCD dump:       (= per-file) · 48844 "American Splendor" 2003-2003 Random House [] 1 · 37709 "American Splendor" 2008-2008 DC [] 4 · 151962 "American Splendor" [fr] 2009-2011 çà et là [] 3   (dump lookup)
+   bridges:        gcd 32010 -> LOCG 152544 "American Splendor" support 16 · gcd 19825 -> LOCG 152544 "American Splendor" support 12
+
+== S1376 Assassin's Creed: The Chain  [tier B]   keys: Assassin's Creed - The Chain  years 2012-2012  1 files / 0 collections
+   folders: [1] Misc\Assassin's Creed
+   files:   [104887] Assassin's Creed - The Chain (2012).cbr (93pp)
+   CV linked:      vol 57197 "Assassin's Creed: The Chain" 2013 Ubisoft Entertainment 1 issues issue 386204; cached #1-1 (1); yearΔ 1; ratio 0/1; no judged range
+   CV per-file (v1): vol 62104 "Assassin's Creed: The Chain" 2012 Panini Verlag 1 issue 406083 on 1/1 files
+   CV candidates:  (= linked) · 122467 "Assassin's Creed: The Fall & The Chain" 2019 Titan Comics 1 issue 725165 s72 · 38239 "Assassin's Creed" 2008 Ubisoft Entertainment 1 issue 255947 s70 · 39500 "Assassin's Creed" 2012 Ubisoft Entertainment 1 issue 266849 s70 · 108433 "Assassin's Creed" 2016 Splitter 3 s58 · 85264 "Assassin's Creed" 2015 Titan Comics 14 s55 · 39380 "Assassin's Creed" 2009 Les Deux Royaumes 6 s55   (v1 search)
+   CV local rip:   (= linked) · 122467 "Assassin's Creed: The Fall & The Chain" 2019 Titan Comics 1 issue 725165 (via CV candidate name "Assassin's Creed: The Fall & The Chain")   (rip lookup)
+   GCD dump:       197416 "Assassin's Creed The Chain" [en-ca] 2012-2012 Ubi Workshop [] 1 · 151488 "Assassin's Creed: The Fall & The Chain" [en-gb] 2019-2019 Titan [] 1 (via CV candidate name "Assassin's Creed: The Fall & The Chain")   (dump lookup)
+
+== S2510 Beyond  [tier C] · gap 2  keys: Beyond  years 2006-2007  6 files / 2 collections
+   folders: [4] Misc\Beyond (2014) (Graphic India) · [1] Marvel\Beyond! (2006) · [1] _Marvel Major Event Chronology (digital)\1984.05 - Marvel Super-Heroes Secret Wars\Extra\Beyond! (2006)
+   files:   [98417] COL Beyond! (2007) (Digital-Empire).cbr (143pp) | [104984] Beyond 01 (of 04) (2014) (Digital-Empire).cbr (24pp) | [104985] Beyond 02 (of 04) (2014) (Digital-Empire).cbr (24pp)
+            [104986] Beyond 03 (of 04) (2014) (Digital-Empire).cbr (26pp) | [104987] Beyond 04 (of 04) (2014) (Digital-Empire).cbr (30pp)
+            [118000] COL Beyond! (2007) (Digital) (Shadowcat-Empire).cbz (140pp)
+   ours:    ladder 1-4; ComicInfo Series: "Beyond!"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 22708 "Beyond" 2008 Virgin Comics 4 issues; cached #1-4 (4); yearΔ 2; ratio 4/4 = 1.00; no judged range
+   CV per-file (v1): vol 18221 "Beyond!" 2006 Marvel 6 on 4/6 files
+   CV candidates:  (= linked) · 59089 "Beyond!" 2008 Marvel 1 issue 394141 s88 · 35117 "Beyond the Beyond" 2006 Tokyopop 4 s83 · 72784 "Batman Beyond: Batgirl Beyond" 2014 DC Comics 1 issue 449579 s75 · 39247 "Batman Beyond: Hush Beyond" 2011 DC Comics 1 issue 264798 s71 · 42789 "The Beyond" 1950 Ace Magazines 30 s61 · 160399 "Beyond the Beyond" 2022 Scout Comics 4 s33   (v1 search)
+   CV local rip:   (= linked) · 59089 "Beyond!" 2008 Marvel 1 issue 394141 · 42789 "The Beyond" 1950 Ace Magazines 30   (rip lookup)
+   GCD dump:       18783 "Beyond!" 2006-2007 Marvel [] 6 · 27786 "Beyond!" 2007-2007 Marvel [] 1 · 31165 "Beyond" 2008-2008 Virgin [] 3 · 106559 "Beyond!" 2008-2008 Marvel [] 1 · 105676 "Beyond" 2014-2014 Bluewater / Storm / Stormfront / Tidalwave [] 3 · 197960 "Beyond" 1996-1996 Blue Comics [] 1   (dump lookup)
+
+== S8808 Chris Ware Building Stories  [tier C] · gap 12  keys: Actual Size | As A Kid, Recently | Branford - The Best Bee In The World | Disconnect, Repetition, Browsing | Her Laugh Is Like A Flock Of Tiny Birds | I Just Met | September 23rd | Sometimes I Really Hate It Here | The Big Book | The Board | The Daily Bee | The Old Woman | The Walk  years 2000-2000  15 files / 0 collections
+   folders: [2] Misc\Building Stories - Chris Ware\Her Laugh Is Like A Flock Of Tiny Birds · [2] Misc\Building Stories - Chris Ware\The Walk · [1] Misc\Building Stories - Chris Ware\(It All Happened So Fast) Actual Size · [1] Misc\Building Stories - Chris Ware\(god...) Sometimes I Really Hate It Here (The Heavy Paper) · [1] Misc\Building Stories - Chris Ware\As A Kid, Recently · [1] Misc\Building Stories - Chris Ware\Branford - The Best Bee In The World · [1] Misc\Building Stories - Chris Ware\Disconnect, Repetition, Browsing · [1] Misc\Building Stories - Chris Ware\I Just Met (Touch Sensitive) · [1] Misc\Building Stories - Chris Ware\September 23rd, 2000 · [1] Misc\Building Stories - Chris Ware\The Big Book (I Just Want To Fall Asleep) (Acme Novelty Library 18) · [1] Misc\Building Stories - Chris Ware\The Board · [1] Misc\Building Stories - Chris Ware\The Daily Bee · [1] Misc\Building Stories - Chris Ware\The Old Woman
+   files:   [105960] (It All Happened So Fast) Actual Size.cbz (5pp) | [105959] (god...) Sometimes I Really Hate It Here (The Heavy Paper).cbz (21pp) | [105961] As A Kid, Recently.cbz (2pp)
+            [105962] Branford - The Best Bee In The World.cbz (32pp) | [105963] Disconnect, Repetition, Browsing.cbz (15pp)
+            [105024] Her Laugh Is Like A Flock Of Tiny Birds (Original Strip Format).cbz (2pp) | [105025] Her Laugh Is Like A Flock Of Tiny Birds (Page Format).cbz (2pp)
+            [105964] I Just Met (Touch Sensitive).cbz (11pp) | [105965] September 23rd, 2000.cbz (35pp) | [105966] The Big Book (I Just Want To Fall Asleep) (Acme Novelty Library 18).cbz (43pp)
+            [105967] The Board.cbz (8pp) | [105969] The Daily Bee.cbz (4pp) | [105970] The Old Woman.cbz (11pp) | [105028] The Walk (Original Strip Format).cbr (2pp)
+            [105029] The Walk (Page Format).cbz (2pp)
+   ours:    ladder 2000
+   CV linked:      vol 52853 "Chris Ware Building Stories" 2012 Pantheon Books 1 issues issue 360845; cached #1-1 (1); yearΔ 12; ratio 1/1 = 1.00; no judged range
+   CV per-file (v1): vol 122111 "Walk of the Dead" 2016 Splitter 1 issue 723303 on 2/15 files
+   CV candidates:  (= linked) · 29111 "The Big Big Big Bristow Book" 2001 ? 1 issue 179057 s72 · 22379 "The Big Book of Urban Legends" 1994 DC Comics 1 issue 134522 s72 · 137434 "Jonna and the Unpossible Monsters: Drawing Board Edition" 2021 Oni Press 1 issue 869079 s69 · 35421 "The Flintstones Big Book" 1992 Harvey 2 s67 · 75200 "The Big Gay Comic Book" 2014 TidalWave Productions 2 s66 · 123314 "Disconnect" 2019 Mallet Productions 1 issue 729869 s55   (v1 search)
+   CV local rip:   (= linked) · 156096 "The Walk" 2023 AAM/Markosia 1 issue 1040715 · 29111 "The Big Big Big Bristow Book" 2001 ? 1 issue 179057 (via CV candidate name "The Big Big Big Bristow Book") · 22379 "The Big Book of Urban Legends" 1994 DC Comics 1 issue 134522 (via CV candidate name "The Big Book of Urban Legends")   (rip lookup)
+   GCD dump:       23014 "The Big Book of Urban Legends" 1994-1994 DC [] 1 (via CV candidate name "The Big Book of Urban Legends") · 102822 "Walk of the Dead" [de] 2016-2016 Splitter Verlag [] 1 (via CV name "Walk of the Dead") · 126684 "Walk of the Dead" [fr-be] 2016-2016 Le Lombard [] 1 (via CV name "Walk of the Dead")   (dump lookup)
+
+== S3523 Captain Canuck: Invasion (Canada Day 2018)  [tier B]   keys: Captain Canuck Invasion  years 2018-?  1 files / 0 collections
+   folders: [1] Misc\Captain Canuck
+   files:   [105032] Captain Canuck Invasion (Canada Day 2018)(2 covers)(Digital)(TLK-EMPIRE-HD).cbr (36pp)
+   CV linked:      vol 111919 "Captain Canuck: Invasion (Canada Day 2018)" 2018 Chapterhouse Comics 1 issues issue 675454; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV per-file (v1): vol 133216 "Captain Canuck: Invasion" 2020 Chapterhouse Comics 2 on 1/1 files
+   CV candidates:  (= linked) · 103074 "Captain Canuck" 2017 Chapterhouse Comics 4 s58 · 24687 "Captain Canuck" 1975 Comely Comix 15 s55 · 82255 "Captain Canuck" 2015 Chapterhouse Comics 11 s55 · 66186 "Captain Canuck Legacy" 2006 Comely Comix 1 issue 421266 s54 · 123875 "Captain Canuck: Harbinger" 2020 Chapterhouse Comics 1 issue 732053 s54 · 85701 "Captain Canuck: Unholy War" 2015 Chapterhouse Comics 1 issue 504744 s53   (v1 search)
+   CV local rip:   (= linked) · 103074 "Captain Canuck" 2017 Chapterhouse Comics 4 (via CV candidate name "Captain Canuck") · 82255 "Captain Canuck" 2015 Chapterhouse Comics 11 (via CV candidate name "Captain Canuck") · 24687 "Captain Canuck" 1975 Comely Comix 15 (via CV candidate name "Captain Canuck")   (rip lookup)
+   GCD dump:       122827 "Captain Canuck" [en-ca] 2018-? Chapterhouse Comics Group [] 1 (via CV candidate name "Captain Canuck") · 120413 "Captain Canuck" [en-ca] 2017-? Chapterhouse Comics Group [] 4 (via CV candidate name "Captain Canuck") · 89240 "Captain Canuck" [en-ca] 2015-2017 Chapterhouse Comics Group [] 13 (via CV candidate name "Captain Canuck") · 200222 "Captain Canuck" 2021-2022 Lev Gleason [2020s] [] 2 (via CV candidate name "Captain Canuck") · 70606 "Captain Canuck" 2009-2010 IDW [] 2 (via CV candidate name "Captain Canuck") · 2287 "Captain Canuck" [en-ca] 1975-2004 Comely Comix [] 16 (via CV candidate name "Captain Canuck")   (dump lookup)
+
+== S3725 Cerebus World Tour Book  [tier D]   keys: Cerebus World Tour Book  years 1977-1977  1 files / 0 collections
+   folders: [1] Misc\Cerebus (1977)\One-shots & Misc
+   files:   [105405] Cerebus World Tour Book.cbr (85pp)
+   CV candidates:  20422 "Cerebus World Tour Book" 1995 Aardvark 1 issue 122225 s50 · 72766 "Tusk World Tour Book 2001" 2001 Tusk Entertainment 1 issue 449511 s18 · 116293 "Cerebus" 2019 Aardvark 2 s8 · 132108 "The Book Tour" 2020 Top Shelf 1 issue 819040 s4 · 165127 "Dazzler: World Tour" 2025 Marvel 1 issue 1116599 s4 · 95207 "Carnage: World Tour" 2016 Marvel 1 issue 555513 s4   (v1 search)
+   CV local rip:   20422 "Cerebus World Tour Book" 1995 Aardvark 1 issue 122225 · 2930 "Cerebus" 1977 Aardvark 298 (via CV candidate name "Cerebus") · 116293 "Cerebus" 2019 Aardvark 2 (via CV candidate name "Cerebus") · 72766 "Tusk World Tour Book 2001" 2001 Tusk Entertainment 1 issue 449511 (via CV candidate name "Tusk World Tour Book 2001")   (rip lookup)
+   GCD dump:       5337 "Cerebus World Tour Book" [en-ca] 1995-1995 Aardvark-Vanaheim [] 1 · 2424 "Cerebus" [en-ca] 1977-2004 Aardvark-Vanaheim [] 298 (via CV candidate name "Cerebus") · 3216 "Cerebus" [en-ca] 1986-2004 Aardvark-Vanaheim [] 17 (via CV candidate name "Cerebus") · 23396 "Cerebus" [en-ca] 1993-1993 Aardvark-Vanaheim [] 1 (via CV candidate name "Cerebus") · 64805 "Cerebus" [es] 2010-2012 Ponent Mon [] 4 (via CV candidate name "Cerebus") · 71488 "Cerebus" [fr] 2010-2012 Vertige Graphic [] 2 (via CV candidate name "Cerebus")   (dump lookup)
+
+== S96327 Deadworld  [tier B]   keys: Deadworld v1 (1986)  years 1986-1993  26 files / 26 collections
+   flags: #221 label-ambiguous [Pending] item 105462 — all 41 "collections" of Deadworld are 23-41 pp single issues
+   folders: [26] Misc\Deadworld\Deadworld v1 (1986)
+   files:   [105462] COL Deadworld Vol 01 01 (1986) (Digital) (Minutemen-The Undead).cbr (35pp) | [105463] COL Deadworld Vol 01 02 (1987) (Digital) (Minutemen-The Undead).cbr (34pp)
+            [105464] COL Deadworld Vol 01 03 (1987) (Digital) (Minutemen-The Undead).cbr (32pp) | [105465] COL Deadworld Vol 01 04 (1987) (Digital) (Minutemen-The Undead).cbr (31pp)
+            [105466] COL Deadworld Vol 01 05 (1987) (Digital) (Minutemen-The Undead).cbr (32pp) | [105467] COL Deadworld Vol 01 06 (1987) (Digital) (Minutemen-The Undead).cbr (29pp)
+            [105468] COL Deadworld Vol 01 07 (1988) (Digital) (Minutemen-The Undead).cbr (25pp) | [105469] COL Deadworld Vol 01 08 (1988) (Digital) (Minutemen-The Undead).cbr (27pp)
+            [105470] COL Deadworld Vol 01 09 (1988) (Digital) (Minutemen-The Undead).cbr (27pp) | [105471] COL Deadworld Vol 01 10 (1988) (Digital) (Minutemen-The Undead).cbr (27pp)
+            [105472] COL Deadworld Vol 01 11 (1989) (Digital) (Minutemen-The Undead).cbr (27pp) | [105473] COL Deadworld Vol 01 12 (1989) (Digital) (Minutemen-The Undead).cbr (26pp)
+            [105474] COL Deadworld Vol 01 13 (1989) (Digital) (Minutemen-The Undead).cbr (26pp) | [105475] COL Deadworld Vol 01 14 (1990) (Digital) (Minutemen-The Undead).cbr (26pp)
+            [105476] COL Deadworld Vol 01 15 (1990) (Digital) (Minutemen-The Undead).cbr (27pp) | [105477] COL Deadworld Vol 01 16 (1990) (Digital) (Minutemen-The Undead).cbr (26pp)
+            [105478] COL Deadworld Vol 01 17 (1990) (Digital) (Minutemen-The Undead).cbr (31pp) | [105479] COL Deadworld Vol 01 18 (1990) (Digital) (Minutemen-The Undead).cbr (27pp)
+            [105480] COL Deadworld Vol 01 19 (1991) (Digital) (Minutemen-The Undead).cbr (26pp) | [105481] COL Deadworld Vol 01 20 (1991) (Digital) (Minutemen-The Undead).cbr (27pp)
+            [105482] COL Deadworld Vol 01 21 (1991) (Digital) (Minutemen-The Undead).cbr (25pp) | [105483] COL Deadworld Vol 01 22 (1991) (Digital) (Minutemen-The Undead).cbr (23pp)
+            [105484] COL Deadworld Vol 01 23 (1991) (Digital) (Minutemen-The Undead).cbr (24pp) | [105485] COL Deadworld Vol 01 24 (1992) (Digital) (Minutemen-The Undead).cbr (27pp)
+            [105486] COL Deadworld Vol 01 25 (1992) (Digital) (Minutemen-The Undead).cbr (24pp) | [105487] COL Deadworld Vol 01 26 (1993) (Digital) (Minutemen-The Undead).cbr (41pp)
+   GCD says: [105487] gcd_reprint 260163: s15166 Deadworld (1989) #17-18 [2 stories]  |  ⚠ stored GCD row is another book: our vol 1 vs GCD #26 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+   CV linked:      vol 23983 "Deadworld" 1986 Caliber Comics 26 issues; cached #1-26 (26); yearΔ 0; ratio 0/26; no judged range
+   CV local rip:   (= linked) · 46281 "Deadworld" 1989 Caliber Comics 1 issue 318859 · 44047 "Deadworld" 1992 Caliber Comics 15 · 19353 "Deadworld" 2005 Image 6   (rip lookup)
+   GCD dump:       15165 "Deadworld" 1986-1988 Arrow [] 9 · 15166 "Deadworld" 1989-1992 Caliber Press [] 17 · 38439 "Deadworld" 1989-1989 Caliber Press [] 1 · 39761 "Deadworld" 1993-1995 Caliber Press [] 15 · 47704 "Deadworld" 2005-2006 Image [] 6   (dump lookup)
+
+== S5338 Delete  [tier C] · ratio 0.25  keys: Delete  years 2016-2016  1 files / 0 collections
+   folders: [1] Misc\Delete (2016) (Devil's Due-1First Comics)
+   files:   [105982] Delete 001 (2016) (digital) (Son of Ultron-Empire).cbr (27pp)
+   ours:    ladder 1
+   CV linked:      vol 88615 "Delete" 2016 1First Comics 4 issues; cached #1-4 (4); yearΔ 0; ratio 1/4 = 0.25; no judged range
+   CV per-file (v1): vol 94490 "Delete" 2016 1First Comics 1 issue 551535 on 1/1 files
+   CV candidates:  (= linked) · 62483 "Delete" 2004 Digital Noixe Productions 1 issue 407209 s98 · 92275 "Delete" 2016 Kodansha 3 s93 · 80480 "Alt Control Delete" 2015 Black Mast Studios 1 issue 481690 s85 · 82197 "Deathlok: Control. Alt. Delete." 2015 Marvel 1 issue 489899 s84 · 120688 "Trump Punch Man: Delete This!" 2019 Antarctic Press 1 issue 716401 s31 · 87352 "Valiant 2016 Preview" 2016 DMG/Valiant Entertainment 1 issue 511085 s30   (v1 search)
+   CV local rip:   (= linked) · 92275 "Delete" 2016 Kodansha 3 · 62483 "Delete" 2004 Digital Noixe Productions 1 issue 407209   (rip lookup)
+   GCD per-file:   series 98600 "Delete" 2016-2016 Devil's Due / 1First Comics [limited series] 4 on 1/1 files; methods numx1
+   GCD dump:       (= per-file) · 224144 "Delete" 2016-2016 Devil's Due / 1First Comics [] 1 · 119317 "Delete" 2004-2008 Digital Noixe Productions [] 5   (dump lookup)
+   bridges:        gcd 98600 -> LOCG 122452 "Delete" support 1
+
+== S5404 Destiny, NY  [tier B]   keys: Destiny, NY | Destiny, NY: Summer Special  years 2017-2020  23 files / 0 collections
+   folders: [22] Misc\Destiny, NY (2017) (Space Between) · [1] Misc\Destiny, NY (2017) (Space Between)\Annuals and Specials
+   files:   [105983] Destiny, NY - Summer Special (2020) (Digital-Empire).cbr (21pp) | [105534] Destiny, NY 001 (2017) (Digital-Empire).cbr (31pp)
+            [105535] Destiny, NY 002 (2017) (Digital-Empire).cbr (21pp) | [105536] Destiny, NY 003 (2017) (Digital-Empire).cbr (24pp) | [105537] Destiny, NY 004 (2017) (Digital-Empire).cbr (23pp)
+            [105538] Destiny, NY 005 (2017) (Digital-Empire).cbr (36pp) | [105539] Destiny, NY 006 (2017) (Digital-Empire).cbr (24pp) | [105540] Destiny, NY 007 (2019) (Digital-Empire).cbr (31pp)
+            [105541] Destiny, NY 008 (2019) (Digital-Empire).cbr (23pp) | [105542] Destiny, NY 009 (2019) (Digital-Empire).cbr (23pp) | [105543] Destiny, NY 010 (2019) (Digital-Empire).cbr (25pp)
+            [105544] Destiny, NY 011 (2019) (Digital-Empire).cbr (33pp) | [105545] Destiny, NY 012 (2019) (Digital-Empire).cbr (16pp) | [105546] Destiny, NY 013 (2019) (Digital-Empire).cbr (52pp)
+            [105547] Destiny, NY 014 (2019) (Digital-Empire).cbr (24pp) | [105548] Destiny, NY 015 (2019) (Digital-Empire).cbr (22pp) | [105549] Destiny, NY 016 (2019) (Digital-Empire).cbr (24pp)
+            [105550] Destiny, NY 017 (2020) (Digital-Empire).cbr (24pp) | [105551] Destiny, NY 018 (2020) (Digital-Empire).cbr (26pp) | [105552] Destiny, NY 019 (2020) (Digital-Empire).cbr (22pp)
+            [105553] Destiny, NY 020 (2020) (Digital-Empire).cbr (22pp) | [105554] Destiny, NY 021 (2020) (Digital-Empire).cbr (20pp) | [105555] Destiny, NY 022 (2020) (Digital-Empire).cbr (46pp)
+   ours:    ladder 1-22; ComicInfo Series: "Destiny, NY"x16, "Destiny, NY: Summer Special"x1; ComicInfo Publisher: "Space Between Entertainment"x17
+   CV linked:      vol 107704 "Destiny, NY" 2017 Space Between Entertainment 22 issues; cached #1-22 (22); yearΔ 0; ratio 22/22 = 1.00; no judged range; v1 per-file: same volume on 23/23 files
+   CV candidates:  (= linked) · 129492 "Destiny, NY: Summer Special" 2020 Space Between Entertainment 1 issue 793025 s65 · 31252 "House of Mystery: The Space Between" 2010 DC Comics 1 issue 194436 s25 · 121152 "Destiny, NY: Who I Am Now" 2019 Space Between Entertainment 1 issue 718307 s16 · 135102 "Destiny, NY" 2021 Black Mask Studios 7 s15 · 128366 "Destiny, NY: Who I'm Going to Be" 2020 Space Between Entertainment 1 issue 773263 s15 · 119316 "Destiny, NY: Who I Used to Be" 2019 Space Between Entertainment 1 issue 709682 s15   (v1 search)
+   CV local rip:   (= linked) · 135102 "Destiny, NY" 2021 Black Mask Studios 7 · 129492 "Destiny, NY: Summer Special" 2020 Space Between Entertainment 1 issue 793025 · 31252 "House of Mystery: The Space Between" 2010 DC Comics 1 issue 194436 (via CV candidate name "House of Mystery: The Space Between")   (rip lookup)
+   GCD dump:       171490 "Destiny, NY" 2021-? Black Mask Studios [] 3   (dump lookup)
+
+== S11857 Maxi Dylan Dog  [tier C] · ratio 0.03  keys: Maxi Dylan Dog  years 1998-2015  1 files / 0 collections
+   folders: [1] Misc\Dylan Dog\Maxi Dylan Dog (2015)
+   files:   [105987] Maxi Dylan Dog 23 - Story 1 of 3 - Locked in the Nightmare (2015) (Scanlation) (dylandogscanscausepeopleneedthem).cbr (95pp)
+   ours:    ladder 3
+   CV linked:      vol 46298 "Maxi Dylan Dog" 1998 Sergio Bonelli Editore 38 issues; cached #1-38 (38); yearΔ 0; ratio 1/38 = 0.03; no judged range
+   CV per-file (v1): vol 117781 "Dylan Dog" 2014 Libellus 3 on 1/1 files
+   CV candidates:  (= linked) · 53180 "Dylan Dog" 2009 Silvester Strips 3 s68 · 53326 "Dylan Dog" 2010 Silvester Strips 12 s66 · 141098 "Dylan Dog" 2008 Veseli Četvrtak 145 s65 · 129057 "Dylan Dog" 2001 Bum Projekt 16 s63 · 51293 "Dylan Dog" 2001 Schwarzer Klecks 62 s63 · 23117 "Dylan Dog" 1999 Dark Horse Comics 6 s62   (v1 search)
+   CV local rip:   (= linked) · 23117 "Dylan Dog" 1999 Dark Horse Comics 6 (via CV name "Dylan Dog") · 51293 "Dylan Dog" 2001 Schwarzer Klecks 62 (via CV name "Dylan Dog") · 129057 "Dylan Dog" 2001 Bum Projekt 16 (via CV name "Dylan Dog") · 51177 "Dylan Dog" 1991 Hjemmet 5 (via CV name "Dylan Dog") · 141098 "Dylan Dog" 2008 Veseli Četvrtak 145 (via CV name "Dylan Dog")   (rip lookup)
+   GCD dump:       86950 "Maxi Dylan Dog" [it] 1998-2020 Sergio Bonelli Editore [] 38 · 18937 "Dylan Dog" 1999-1999 Dark Horse [] 6 (via CV name "Dylan Dog") · 38309 "Dylan Dog" [de] 2001-2002 Carlsen Comics [DE] [] 20 (via CV name "Dylan Dog") · 77035 "Dylan Dog" [pl] 2001-2004 Egmont Polska [] 6 (via CV name "Dylan Dog") · 187751 "Dylan Dog" [fr] 2001-2002 Editions Hors Collection [] 4 (via CV name "Dylan Dog") · 145205 "Dylan Dog" [hr] 1994-2001 Slobodna Dalmacija [] 60 (via CV name "Dylan Dog")   (dump lookup)
+
+== S102377 Evil Dead 2: Beyond Dead By Dawn  [tier C] · gap 7  keys: Evil Dead 2 - Beyond Dead By Dawn (2015)  years 2008-2016  7 files / 0 collections
+   folders: [7] Misc\Evil Dead 2\Evil Dead 2 - Beyond Dead By Dawn (2015)
+   files:   Evil Dead 2 Beyond Dead By Dawn 000(2015)(Digital)(TLK-EMPIRE-HD).cbr … Evil Dead 2 Beyond Dead By Dawn 006(2016)(Digital)(TLK-EMPIRE-HD).cbr  (7 files, pp 17-27)
+   ours:    ladder 0-6
+   CV linked:      vol 85506 "Evil Dead 2: Beyond Dead By Dawn" 2015 Space Goat Productions 7 issues; cached #0-6 (7); yearΔ 7; ratio 7/7 = 1.00; no judged range
+   CV per-file (v1): vol 20289 "Evil Dead" 2008 Dark Horse Comics 4 on 7/7 files
+   CV local rip:   (= linked) · 82869 "Evil Dead 2: Beyond Dead By Dawn" 2015 Space Goat Productions 3 · 88562 "Evil Dead 2: Beyond Dead By Dawn" 2016 Space Goat Productions 1 issue 517898 · 52513 "Evil Dead" 2008 Dark Horse Comics 1 issue 359231 (via CV name "Evil Dead")   (rip lookup)
+   GCD dump:       93849 "Evil Dead 2: Beyond Dead by Dawn" 2015-2015 Space Goat Productions [] 5 · 28551 "Evil Dead" 2008-2008 Dark Horse [] 4 (via CV name "Evil Dead") · 42832 "The Evil Dead" 2008-2008 Dark Horse [] 1 (via CV name "Evil Dead")   (dump lookup)
+
+== S102379 Evil Dead 2: Dark Ones Rising  [tier C] · gap 9  keys: Evil Dead 2 - Dark Ones Rising (2016)  years 2008-2017  6 files / 0 collections
+   folders: [6] Misc\Evil Dead 2\Evil Dead 2 - Dark Ones Rising (2016)
+   files:   Evil Dead 2 Dark Ones Rising 001(2017)(Digital)(TLK-EMPIRE-HD).cbr … Evil Dead 2 Dark Ones Rising 006(2017)(Digital)(TLK-EMPIRE-HD).cbr  (6 files, pp 25-26)
+   ours:    ladder 1-6
+   CV linked:      vol 100572 "Evil Dead 2: Dark Ones Rising" 2017 Space Goat Productions 6 issues; cached #1-6 (6); yearΔ 9; ratio 6/6 = 1.00; no judged range
+   CV per-file (v1): vol 20289 "Evil Dead" 2008 Dark Horse Comics 4 on 6/6 files
+   CV local rip:   (= linked) · 95009 "Evil Dead 2: Dark Ones Rising" 2016 Space Goat Productions 3 · 98050 "Evil Dead 2: Dark Ones Rising" 2017 Space Goat Productions 1 issue 576698 · 52513 "Evil Dead" 2008 Dark Horse Comics 1 issue 359231 (via CV name "Evil Dead")   (rip lookup)
+   GCD dump:       108458 "Evil Dead 2: Dark Ones Rising" 2016-2016 Space Goat Productions [] 3 · 111586 "Evil Dead 2: Dark Ones Rising" 2017-2017 Space Goat Productions [] 1 · 28551 "Evil Dead" 2008-2008 Dark Horse [] 4 (via CV name "Evil Dead") · 42832 "The Evil Dead" 2008-2008 Dark Horse [] 1 (via CV name "Evil Dead")   (dump lookup)
+
+== S6321 Exlibrium  [tier B]   keys: Exlibrium  years 2015-2021  13 files / 0 collections
+   folders: [13] Misc\Exlibrium (2015)
+   files:   Exlibrium 001 (2015) (Digital) (BlurPixel-Empire).cbr … Exlibrium 008 (2017) (Digital) (BlurPixel-Empire).cbr  (8 files, pp 22-38)
+            [105703] Exlibrium 009 (2017) (digital) (d'argh-Empire).cbr (32pp) | [105704] Exlibrium 010 (2018) (digital) (d'argh-Empire).cbr (33pp)
+            [105705] Exlibrium 011 (2018) (digital) (d'argh-Empire).cbr (28pp) | [105706] Exlibrium 012 (2018) (digital) (d'argh-Empire).cbr (36pp)
+            [105707] Exlibrium 013 (2018) (digital) (d'argh-Empire).cbr (32pp)
+   ours:    ladder 1-13
+   CV linked:      vol 85704 "Exlibrium" 2015 Bubble 13 issues; cached #1-13 (13); yearΔ 0; ratio 13/13 = 1.00; no judged range
+   CV per-file (v1): vol 150522 "Exlibrium" 2015 Bubble 18 on 13/13 files
+   CV candidates:  (= linked) · 88433 "Lustiges Taschenbuch Sonderedition 2015" 2015 Egmont Ehapa Verlag 4 s18 · 81541 "Jetstream: 2015" 2015 ? 1 issue 486978 s15 · 80913 "Regular Show 2015 Special" 2015 Boom! Studios 1 issue 483428 s15 · 81727 "Worlds of Aspen 2015" 2015 Aspen MLT 1 issue 487516 s15 · 81792 "Wytches: FCBD France 2015" 2015 Urban Comics 1 issue 487595 s15 · 85559 "BOO! Halloween Stories 2015" 2015 MonkeyBrain Comics 1 issue 504421 s15   (v1 search)
+   CV local rip:   (= linked) · 88433 "Lustiges Taschenbuch Sonderedition 2015" 2015 Egmont Ehapa Verlag 4 (via CV candidate name "Lustiges Taschenbuch Sonderedition 2015")   (rip lookup)
+
+== S102387 Gold Digger Annual  [tier B]   keys: Gold Digger Annual  years 1995-2000  12 files / 0 collections
+   folders: [12] Misc\Gold Digger\Annuals
+   files:   [105786] Gold Digger Annual 01.cbr (52pp) | [105787] Gold Digger Annual 012.cbz (52pp) | Gold Digger Annual 02.cbr … Gold Digger Annual 11.cbr  (10 files, pp 30-52)
+   ours:    ladder 1-12
+   CV linked:      vol 31253 "Gold Digger Annual" 1995 Antarctic Press 21 issues; cached #1-20 (21); yearΔ 0; ratio 12/21 = 0.57; no judged range
+   CV per-file (v1): vol 18720 "Gold Digger" 1999 Antarctic Press 251 on 12/12 files
+   CV local rip:   (= linked) · 19589 "Gold Digger" 1993 Antarctic Press 50 (via CV name "Gold Digger") · 27333 "Gold Digger" 1992 Antarctic Press 4 (via CV name "Gold Digger")   (rip lookup)
+   GCD dump:       46445 "Gold Digger Annual" 1995-? Antarctic Press [] 20 · 14580 "Gold Digger" 1993-1999 Antarctic Press [] 50 (via CV name "Gold Digger") · 14581 "Gold Digger" 1992-1993 Antarctic Press [] 4 (via CV name "Gold Digger") · 14582 "Gold Digger" 1999-2023 Antarctic Press [] 251 (via CV name "Gold Digger") · 96756 "Gold Digger" [de] 2001-2002 Eidalon [] 8 (via CV name "Gold Digger") · 96742 "Gold Digger" [de] 2003-2005 Eidalon [] 5 (via CV name "Gold Digger")   (dump lookup)
+
+== S7700 Gold Digger  [tier B]   keys: Gold Digger | Gold Digger 009a | Gold Digger 029a | Gold Digger 032a | Gold Digger 032b | Gold Digger 033a | Gold Digger 033b | Gold Digger 034a | Gold Digger 034b | Gold Digger 035a | Gold Digger 035b | Gold Digger 040a | Gold Digger 040b | Gold Digger 050a  years 1993-2002  55 files / 1 collections
+   folders: [54] Misc\Gold Digger\v1 · [1] Misc\Gold Digger\v2
+   files:   [105831] Gold_Digger_Special_-18a.cbr (25pp) | [105832] Gold_Digger_Special_-18b - Halloween Special.cbz (34pp) | [105833] Gold_Digger_Special_-18c - GD Adventures.cbr (27pp)
+            [105834] Gold_Digger_v0_0.cbr (29pp) | [105835] Gold_Digger_v0_1-4_Color_Remix.cbr (134pp) | [105836] Gold_Digger_v1_001_-_004_GN_02.cbr (102pp)
+            [105837] Gold_Digger_v1_005_-_008_GN_03.cbr (104pp) | [105838] Gold_Digger_v1_009a.cbr (26pp) | Gold_Digger_v1_010.cbr … Gold_Digger_v1_028.cbr  (19 files, pp 26-34)
+            [105859] Gold_Digger_v1_029a.cbr (29pp) | [105861] Gold_Digger_v1_030.cbr (30pp) | [105862] Gold_Digger_v1_031.cbr (29pp) | [105863] Gold_Digger_v1_032a.cbr (27pp)
+            [105864] Gold_Digger_v1_032b.cbr (27pp) | [105865] Gold_Digger_v1_033a.cbr (30pp) | [105866] Gold_Digger_v1_033b.cbr (26pp) | [105867] Gold_Digger_v1_034a.cbr (29pp)
+            [105868] Gold_Digger_v1_034b.cbr (26pp) | [105869] Gold_Digger_v1_035a.cbr (26pp) | [105870] Gold_Digger_v1_035b.cbr (25pp) | [105871] Gold_Digger_v1_036.cbr (30pp)
+            [105872] Gold_Digger_v1_037.cbr (27pp) | [105873] Gold_Digger_v1_038.cbr (30pp) | [105874] Gold_Digger_v1_039.cbr (28pp) | [105875] Gold_Digger_v1_040a.cbr (28pp)
+            [105876] Gold_Digger_v1_040b.cbr (28pp) | Gold_Digger_v1_041.cbr … Gold_Digger_v1_049.cbr  (9 files, pp 24-32) | [105886] Gold_Digger_v1_050a.cbr (34pp)
+            [106026] COL Gold Digger v2 035a.cbr (23pp)
+   ours:    ladder 0, 10-28, 30-31, 36-39, 41-49
+   CV linked:      vol 19589 "Gold Digger" 1993 Antarctic Press 50 issues; cached #1-50 (50); yearΔ 0; ratio 35/50 = 0.70; no judged range
+   CV per-file (v1): vol 18720 "Gold Digger" 1999 Antarctic Press 251 on 39/55 files
+   CV candidates:  (= linked) · 27333 "Gold Digger" 1992 Antarctic Press 4 s75 · 31253 "Gold Digger Annual" 1995 Antarctic Press 21 s59 · 64854 "Gold Digger Platinum" 2010 Antarctic Press 6 s59 · 97470 "Gold Digger Gold Brick" 2001 Antarctic Press 10 s58 · 51994 "The Collected Gold Digger" 1994 Antarctic Press 9 s58 · 62780 "Gold Digger: Perfect Memory" 1996 Antarctic Press 5 s58   (v1 search)
+   CV local rip:   (= linked) · 27333 "Gold Digger" 1992 Antarctic Press 4   (rip lookup)
+   GCD dump:       14580 "Gold Digger" 1993-1999 Antarctic Press [] 50 · 14581 "Gold Digger" 1992-1993 Antarctic Press [] 4 · 14582 "Gold Digger" 1999-2023 Antarctic Press [] 251 · 96756 "Gold Digger" [de] 2001-2002 Eidalon [] 8 · 96742 "Gold Digger" [de] 2003-2005 Eidalon [] 5 · 118000 "Gold Digger" [fr] 2007-2007 Wetta-Vestron [] 1   (dump lookup)
+
+== S64804 Gore Shriek  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Gore Shriek (1986)  years 1986-1989  9 files / 1 collections
+   flags: #256 label-ambiguous [Pending] item 106089 — the Gore Shriek v01/v02 items are single issues, not collections
+   folders: [9] Misc\Gore Shriek (Complete)
+   files:   [106089] Gore Shriek v01 001 (1986).cbr (37pp) | [106090] Gore Shriek v01 002 (1988).cbr (34pp) | [106091] Gore Shriek v01 003 (1987).cbr (36pp)
+            [106092] Gore Shriek v01 004 (1987).cbr (56pp) | [106093] COL Gore Shriek v01 005 (1988).cbr (67pp) | [106094] Gore Shriek v01 006 (1988).cbr (59pp)
+            [106095] Gore Shriek v01 006.5 (1989).cbr (32pp) | [106097] Gore Shriek v02 002 (1990).cbr (36pp) | [106098] Gore Shriek v02 002.5 (1990).cbr (19pp)
+   ours:    ladder 1-4, 6; 2 number(s) name more than one file: 2, 6
+   CV linked:      vol 43283 "Gore Shriek" 1986 FantaCo Enterprises 7 issues; cached #1-6.5 (7); yearΔ 0; ratio 8/7 = 1.14; no judged range; v1 per-file: same volume on 8/9 files
+   CV local rip:   (= linked) · 43314 "Gore Shriek" 1990 FantaCo Enterprises 4   (rip lookup)
+   GCD per-file:   series 15573 "Gore Shriek" 1986-1989 FantaCo Enterprises [was ongoing series] 7 on 5/9 files · series 30779 "Gore Shriek" 1990-1991 FantaCo Enterprises [was ongoing series] 4 on 2/9 files; methods numx7; the dump names no other series
+   bridges:        gcd 15573 -> LOCG 143197 "Gore Shriek" support 7 · gcd 30779 -> LOCG 143197 "Gore Shriek" support 5
+
+== S7842 18 Days  [tier B]   keys: Grant Morrison's  years 2015-2017  21 files / 0 collections
+   folders: [21] Misc\Grant Morrison's 18 Days (2015) (Graphic India)
+   files:   Grant Morrison's 18 Days 001 (2015) (Digital-Empire).cbr … Grant Morrison's 18 Days 010 (2015) (Digital-Empire).cbr  (10 files, pp 26-34)
+            [106114] Grant Morrison's 18 Days 011 (2016) (F) (Digital-Empire).cbr (29pp) | [106115] Grant Morrison's 18 Days 012 (2016) (F) (Digital-Empire).cbr (28pp)
+            Grant Morrison's 18 Days 013 (2016) (Digital-Empire).cbr … Grant Morrison's 18 Days 021 (2017) (Digital-Empire).cbr  (9 files, pp 25-29)
+   ours:    ladder 1-21
+   CV linked:      vol 83051 "18 Days" 2015 Graphic India 26 issues; cached #1-26 (26); yearΔ 0; ratio 21/26 = 0.81; no judged range
+   CV local rip:   (= linked) · 95768 "18 Days" 2014 Graphic India 19 · 62836 "18 Days" 2010 Dynamite Entertainment 1 issue 408765   (rip lookup)
+   GCD dump:       90555 "18 Days" [en-sg] 2015-? Graphic India [] 14 · 95212 "18 Days" [en-sg] 2015-? Graphic India [] 5   (dump lookup)
+
+== S8903 Hillbilly: Red-Eyed Witchery From Beyond  [tier A]   keys: Hillbilly - Red-Eyed Witchery from Beyond  years 2018-2018  2 files / 0 collections
+   folders: [2] Misc\Hillbilly (2016)\Hillbilly - Red-Eyed Witchery from Beyond (2018)
+   files:   [106302] Hillbilly - Red-Eyed Witchery from Beyond 01 (of 04) (2018) (digital) (Knight Ripper-Empire).cbr (24pp)
+            [106303] Hillbilly - Red-Eyed Witchery from Beyond 02 (of 04) (2018) (digital) (Knight Ripper-Empire).cbr (24pp)
+   ours:    ladder 1-2
+   CV linked:      vol 113073 "Hillbilly: Red-Eyed Witchery From Beyond" 2018 Exploding Albatross Funnybooks 4 issues; cached #1-4 (4); yearΔ 0; ratio 2/4 = 0.50; no judged range; v1 per-file: same volume on 2/2 files
+   CV candidates:  (= linked) · 91891 "Hillbilly" 2016 Exploding Albatross Funnybooks 12 s55 · 20842 "Shadows From Beyond" 1966 Charlton 1 issue 124924 s36 · 89468 "From Beyond the Fridge" 1995 Pinoccio Revival Centre 1 issue 523868 s35 · 61290 "Call from Beyond" ? Gredown 1 issue 402224 s29 · 2434 "From Beyond the Unknown" 1969 DC Comics 25 s24 · 107804 "Hillbilly" 2018 Delcourt 4 s8   (v1 search)
+   CV local rip:   (= linked) · 107804 "Hillbilly" 2018 Delcourt 4 (via CV candidate name "Hillbilly") · 100431 "Hillbilly" 2017 Exploding Albatross Funnybooks 3 (via CV candidate name "Hillbilly") · 91891 "Hillbilly" 2016 Exploding Albatross Funnybooks 12 (via CV candidate name "Hillbilly") · 20842 "Shadows From Beyond" 1966 Charlton 1 issue 124924 (via CV candidate name "Shadows From Beyond")   (rip lookup)
+   GCD per-file:   series 140647 "Hillbilly: Red-eyed Witchery from Beyond" 2018-2019 Albatross [limited series] 4 on 2/2 files; methods numx2
+   GCD dump:       (= per-file) · 121245 "Hillbilly" [fr] 2018-2022 Delcourt [] 4 (via CV candidate name "Hillbilly") · 128693 "Hillbilly" 2018-? Albatross [] ? (via CV candidate name "Hillbilly") · 119464 "Hillbilly" 2017-? Albatross [] 3 (via CV candidate name "Hillbilly") · 107194 "Hillbilly" 2016-? Albatross [] 12 (via CV candidate name "Hillbilly") · 162808 "Hillbilly" 2020-2020 Albatross [] 1 (via CV candidate name "Hillbilly")   (dump lookup)
+
+== S9282 Igor Grom  [tier B]   keys: Igor Grom  years 2017-2017  12 files / 0 collections
+   folders: [12] Misc\Igor Grom (2017) (Bubble Comics)
+   files:   Igor Grom 001 (2017) (digital) (d'argh-Empire).cbr … Igor Grom 012 (2018) (digital) (d'argh-Empire).cbr  (12 files, pp 23-34)
+   ours:    ladder 1-12
+   CV linked:      vol 99913 "Igor Grom" 2017 Bubble 12 issues; cached #1-12 (12); yearΔ 0; ratio 12/12 = 1.00; no judged range
+   CV per-file (v1): vol 107806 "Igor Grom" 2017 Bubble 13 on 12/12 files
+   CV candidates:  (= linked) · 85710 "Major Grom" 2015 Bubble 15 s56 · 67423 "Igor" 1976 Edizioni del Vascello 6 s50 · 53590 "Mayor Grom" 2012 Bubble 50 s40 · 80165 "Igor the Cat" 2015 Modesty Comics 1 issue 480176 s40 · 63065 "Igor Movie Prequel" 2008 IDW Publishing 4 s40 · 79796 "Mayor Grom: Chumnoy doktor" 2014 Bubble 2 s38   (v1 search)
+   CV local rip:   (= linked) · 85710 "Major Grom" 2015 Bubble 15 (via CV candidate name "Major Grom")   (rip lookup)
+
+== S97925 Jirni v3 (2018)  [tier C] · gap 5  keys: Jirni v3 (2018)  years 2013-2013  5 files / 0 collections
+   flags: #297 label-ambiguous [Pending] item 106354 — Jirni v3 001-005 are single issues, not collections
+   folders: [5] Misc\Jirni\Jirni v3 (2018)
+   files:   [106354] Jirni v3 001 (2018) (Digital) (Thornn-Empire).cbr (29pp) | [106355] Jirni v3 002 (2018) (Digital) (Thornn-Empire).cbr (28pp)
+            [106356] Jirni v3 003 (2018) (Digital) (Thornn-Empire).cbr (28pp) | [106357] Jirni v3 004 (2018) (Digital) (Thornn-Empire).cbr (27pp)
+            [106358] Jirni v3 005 (2018) (Digital) (Thornn-Empire).cbr (29pp)
+   ours:    ladder 1-5; ComicInfo Series: "Jirni"x1; ComicInfo Publisher: "Aspen Comics"x1
+   CV per-file (v1): vol 60017 "Jirni" 2013 Aspen MLT 5 on 5/5 files
+   CV local rip:   (= per-file) · 72018 "Jirni" 2014 Aspen MLT 1 issue 446675 (via our own name without the filing suffix "Jirni") · 74532 "Jirni" 2014 Aspen MLT 1 issue 455530 (via our own name without the filing suffix "Jirni") · 83698 "Jirni" 2015 Aspen MLT 5 (via our own name without the filing suffix "Jirni") · 109324 "Jirni" 2018 Aspen MLT 5 (via our own name without the filing suffix "Jirni") · 115438 "Jirni" 2018 Aspen MLT 1 issue 692584 (via our own name without the filing suffix "Jirni")   (rip lookup)
+   GCD per-file:   series 123176 "Jirni" 2018-2018 Aspen [ongoing series ?] 5 on 5/5 files; methods numx5
+   GCD dump:       (= per-file) · 73688 "Jirni" 2013-2013 Aspen [] 5 (via our own name without the filing suffix "Jirni") · 81123 "Jirni" 2014-2014 Aspen [] 1 (via our own name without the filing suffix "Jirni") · 91357 "Jirni" 2015-2017 Aspen [] 5 (via our own name without the filing suffix "Jirni") · 207435 "Jirni" [fr] 2021-? Alayone Comics [] 1 (via our own name without the filing suffix "Jirni")   (dump lookup)
+   bridges:        gcd 123176 -> LOCG 104348 "Jirni" support 5
+
+== S10469 Knights of the Dinner Table  [tier C] · 287 files  keys: Knights Of The Dinner Table Men That Hack, Tales From The Hack Files | Knights Of The Dinner Table The CattlePunk Chronicles, The Four Herdsmen Of The Apocalypse | Knights Of The Dinner Table The CattlePunk Chronicles, The Outlaw Trail | Knights of the Dinner Table  years 1994-2023  287 files / 0 collections
+   folders: [281] Misc\Knights of the Dinner Table (1994) · [6] Misc\Knights of the Dinner Table (1994)\Extras
+   files:   [106417] Knights Of The Dinner Table-Special Edition 1.pdf (37pp) | [106418] Knights Of The Dinner Table-Special Edition 2.pdf (37pp)
+            [106419] Knights Of The Dinner Table-Special Edition 3.pdf (37pp) | [106427] Knights Of The Dinner Table_ The CattlePunk Chronicles, The Four Herdsmen Of The Apocalypse.pdf (130pp)
+            [106428] Knights Of The Dinner Table_ The CattlePunk Chronicles, The Outlaw Trail.pdf (116pp) | [106429] Knights Of The Dinner Table_Men That Hack, Tales From The Hack Files.pdf (98pp)
+            [106430] Knights of the Dinner Table 001 - Not Ready for Syndication (1994) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106431] Knights of the Dinner Table 002 - Gluttons for Punishment (1994) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106432] Knights of the Dinner Table 003 - License to Loot (1995) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106433] Knights of the Dinner Table 004 - Have Dice Will Travel (1996) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106434] Knights of the Dinner Table 005 - Master of the Game (1997) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106435] Knights of the Dinner Table 006 - Plays Well with Others (1997) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106436] Knights of the Dinner Table 007 - The Dice Man Cometh!! (1997) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106437] Knights of the Dinner Table 008 - An Orc by Any Other Name (1997) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106438] Knights of the Dinner Table 009 - Two Dice for Sister Sara (1997) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106439] Knights of the Dinner Table 010 - Let the Dice Fall Where They May (1997) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106440] Knights of the Dinner Table 011 - When in Doubt.. Hack!!! (1997) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106441] Knights of the Dinner Table 012 - The Good, The Bad, and the Unlucky! (1997) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106442] Knights of the Dinner Table 013 - Men That Hack (1997) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106443] Knights of the Dinner Table 014 - A Fist Full of Dice and a Bad Attitude!! (1997) (Digital) (Monafekk-Empire).cbr (52pp)
+            [106444] Knights of the Dinner Table 015 - Mama Told Me Not to Play (1998) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106445] Knights of the Dinner Table 016 - The Dice of Wrath! (1998) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106446] Knights of the Dinner Table 017 - This Sword For Hire (1998) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106447] Knights of the Dinner Table 018 - Against All Odds (1998) (Digital) (Monafekk-Empire).cbr (53pp)
+            [106448] Knights of the Dinner Table 019 - Heroes of the HackLeague (1998) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106449] Knights of the Dinner Table 020 - Hack in Space (1998) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106450] Knights of the Dinner Table 021 - Home is Where You Hang Your Dice Bag (1998) (Digital) (Monafekk-Empire).cbr (38pp)
+            [106451] Knights of the Dinner Table 022 - Opportunity Knocks!! (1998) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106452] Knights of the Dinner Table 023 - Dice Follies! (1998) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106453] Knights of the Dinner Table 024 - Hackzilla (1998) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106454] Knights of the Dinner Table 025 - Secrets of the Hackfiles (1998) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106455] Knights of the Dinner Table 026 - The Mask of El Ravager (1998) (Digital) (Monafekk-Empire).cbr (37pp)
+            [106456] Knights of the Dinner Table 027 - Hackburger Hill (1999) (Digital) (Monafekk-Empire).cbr (45pp)
+            [106457] Knights of the Dinner Table 028 - Hoody Freakin' Hoo!! (1999) (Digital) (Monafekk-Empire).cbr (45pp)
+            [106458] Knights of the Dinner Table 029 - Bad Moon Risin' (1999) (Digital) (Monafekk-Empire).cbr (45pp)
+            [106459] Knights of the Dinner Table 030 - No Honor (1999) (Digital) (Monafekk-Empire).cbr (45pp) | [106460] Knights of the Dinner Table 031 - Don't Fear The Reaper.cbr (60pp)
+            [106461] Knights of the Dinner Table 032 - Tales From Hog Wallers.cbr (44pp) | [106462] Knights of the Dinner Table 033 - Wild Wild Hack.cbr (60pp)
+            [106463] Knights of the Dinner Table 034 (1999).cbz (76pp) | [106464] Knights of the Dinner Table 035 (1999).cbz (44pp) | [106465] Knights of the Dinner Table 036 (1999).cbz (44pp)
+            [106466] Knights of the Dinner Table 037 (1999).cbz (60pp) | [106467] Knights of the Dinner Table 038 (1999).cbz (74pp) | [106468] Knights of the Dinner Table 039 (2000).cbz (44pp)
+            [106469] Knights of the Dinner Table 040 (2000).cbz (44pp) | [106470] Knights of the Dinner Table 041 (2000).cbz (60pp) | [106471] Knights of the Dinner Table 042 (2000).cbz (60pp)
+            [106472] Knights of the Dinner Table 043 (2000).cbz (60pp) | [106473] Knights of the Dinner Table 044 (2000).cbz (68pp) | [106474] Knights of the Dinner Table 045 (2000).cbz (68pp)
+            [106475] Knights of the Dinner Table 046 (2000).cbz (60pp) | [106476] Knights of the Dinner Table 047 (2000).cbz (52pp) | [106477] Knights of the Dinner Table 048 (2000).cbz (52pp)
+            [106478] Knights of the Dinner Table 049 (2000).cbz (52pp) | [106479] Knights of the Dinner Table 050 (2000).cbz (92pp) | [106480] Knights of the Dinner Table 051 (2001) 42p.cbr (42pp)
+            [106481] Knights of the Dinner Table 052 (2001) 44p.cbr (44pp) | [106482] Knights of the Dinner Table 053 (2001).cbr (44pp) | [106483] Knights of the Dinner Table 054 (2001).cbr (44pp)
+            [106484] Knights of the Dinner Table 055 (2001).cbr (52pp) | [106485] Knights of the Dinner Table 056 (2001).cbr (46pp) | [106486] Knights of the Dinner Table 057 (2001).cbr (68pp)
+            [106487] Knights of the Dinner Table 058 (2001) 68p.cbr (68pp) | Knights of the Dinner Table 059 (2001).cbr … Knights of the Dinner Table 066 (2002).cbr  (8 files, pp 44-76)
+            [106496] Knights of the Dinner Table 067 (2002) 68p.cbr (68pp) | [106497] Knights of the Dinner Table 068 (2002).cbr (84pp) | [106498] Knights of the Dinner Table 069 (2002) 84p.cbr (84pp)
+            [106499] Knights of the Dinner Table 070 (2002).cbr (104pp) | [106500] Knights of the Dinner Table 071 (2002).cbr (100pp) | [106501] Knights of the Dinner Table 072 (2002) 92p.cbr (92pp)
+            [106502] Knights of the Dinner Table 073 (2002) 92p.cbr (92pp) | [106503] Knights of the Dinner Table 074 (2002) 92p.cbr (92pp) | [106504] Knights of the Dinner Table 075 (2003).cbr (92pp)
+            [106505] Knights of the Dinner Table 076 (2003) - crits and giggles.cbr (100pp) | [106506] Knights of the Dinner Table 077 (2003) 100p.cbr (100pp)
+            Knights of the Dinner Table 078 (2003).cbr … Knights of the Dinner Table 091 (2004).cbr  (14 files, pp 84-100) | [106521] Knights of the Dinner Table 092 (2004) (antiwesleyp).cbr (35pp)
+            [106522] Knights of the Dinner Table 093 (2004) (antiwesley-dcp).cbr (37pp) | Knights of the Dinner Table 094 (2004).cbr … Knights of the Dinner Table 100 (2005).cbr  (7 files, pp 65-84)
+            [106530] Knights of the Dinner Table 101 (2005) (mendax-dcp).cbr (78pp) | [106531] Knights of the Dinner Table 102 (2005) (mendax-dcp).cbr (79pp)
+            [106532] Knights of the Dinner Table 103 (2005) (mendax-dcp).cbr (77pp) | [106533] Knights of the Dinner Table 104 - Last Knight In Town.cbr (84pp)
+            [106534] Knights of the Dinner Table 105 - The Incredible Hack.cbr (84pp) | [106535] Knights of the Dinner Table 106 - Where Angels Fear To Hack.cbr (84pp)
+            [106536] Knights of the Dinner Table 107 - Boom.cbr (84pp) | [106537] Knights of the Dinner Table 108 - Resident Medieval.cbr (84pp)
+            [106538] Knights of the Dinner Table 109 - Hackmasters of the Universe.cbr (84pp) | [106539] Knights of the Dinner Table 110 - 8th Blunder of the Wurld.cbr (85pp)
+            [106540] Knights of the Dinner Table 111 - Fright Knight.cbr (84pp) | [106541] Knights of the Dinner Table 112 - Blackhand's Down.cbr (85pp)
+            [106542] Knights of the Dinner Table 113 - Squirrilous George.cbr (84pp) | [106543] Knights of the Dinner Table 114 - Cool Hack Luke.cbr (85pp)
+            [106544] Knights of the Dinner Table 115 - Fear No Stevil.cbr (84pp) | [106545] Knights of the Dinner Table 116 - Ninja Hack School.cbr (84pp)
+            [106546] Knights of the Dinner Table 117 - Hall of Famer, Baby.cbr (84pp) | [106547] Knights of the Dinner Table 118 - The Vectra Code.cbr (84pp)
+            [106548] Knights of the Dinner Table 119 - End Game.cbr (84pp) | [106549] Knights of the Dinner Table 120 - Daze of Blunder.cbr (83pp)
+            [106550] Knights of the Dinner Table 121 - You Get What You Slay For.cbr (83pp) | [106551] Knights of the Dinner Table 122 - The Games Pit and the Pendulum.cbr (83pp)
+            [106552] Knights of the Dinner Table 123 - Tinker, Tailor, Fighter, Spy.cbr (84pp) | [106553] Knights of the Dinner Table 124 - Bride of Hackenstein.cbr (85pp)
+            [106554] Knights of the Dinner Table 125 - Beware Of Dawg.cbr (84pp) | [106555] Knights of the Dinner Table 126 - Fumble in the Bronx.cbr (91pp)
+            [106556] Knights of the Dinner Table 127 - Heroez.cbr (84pp) | [106557] Knights of the Dinner Table 128 - A Fool and his Money....cbr (87pp)
+            [106558] Knights of the Dinner Table 129 - Thrill of Kuchooloo.cbr (84pp) | [106559] Knights of the Dinner Table 130 - 300 (+1).cbr (83pp)
+            [106560] Knights of the Dinner Table 131 - All in a Knight's Work.cbr (84pp) | [106561] Knights of the Dinner Table 132 - Take the Money and Run.cbr (84pp)
+            [106562] Knights of the Dinner Table 133 - Pair O' Dice Lost.cbr (85pp) | [106563] Knights of the Dinner Table 134 - Back to Basics.cbr (84pp)
+            [106564] Knights of the Dinner Table 135 - The Empire Strikes Jack.cbr (84pp) | [106565] Knights of the Dinner Table 136 - The Wizard of Woh.cbr (83pp)
+            [106566] Knights of the Dinner Table 137 - Behind the Hard8 Ball.cbr (84pp) | [106567] Knights of the Dinner Table 138 - The Game Goes On!! (2008) (NightLite).cbr (84pp)
+            [106568] Knights of the Dinner Table 139 - Dr. Derangelove (2008) (NightLite).cbr (84pp) | [106569] Knights of the Dinner Table 140 - On the Road Again (2008) (NightLite).cbr (84pp)
+            [106570] Knights of the Dinner Table 141 - Elementary, My Dear Bozwell (2008) (NightLite).cbr (84pp) | [106571] Knights of the Dinner Table 142 - Dawgs of War.cbr (84pp)
+            [106572] Knights of the Dinner Table 143 - Malpractice Makes Perfect.cbr (84pp)
+            [106573] Knights of the Dinner Table 144 - Bob and Dave's Excellent Adventure (2008) (NightLite).cbr (84pp)
+            [106574] Knights of the Dinner Table 145 - The Day the Wurld Stood Still (2008) (NightLite).cbr (84pp) | [106575] Knights of the Dinner Table 146 - Zero Clix.cbr (84pp)
+            [106576] Knights of the Dinner Table 147 - 310 to Muskeegie.cbr (84pp) | [106577] Knights of the Dinner Table 148 - The Perp Walk.cbr (84pp)
+            [106578] Knights of the Dinner Table 149 - Dragonslayer.cbr (84pp) | [106579] Knights of the Dinner Table 150 - G-Jay Day.cbr (148pp)
+            [106580] Knights of the Dinner Table 151 - Jump the Shark.cbr (84pp) | [106581] Knights of the Dinner Table 152 - Warp Factor Five.cbr (84pp)
+            [106582] Knights of the Dinner Table 153 - It's on like Donkey Kong.cbr (84pp) | [106583] Knights of the Dinner Table 154 - The Boys are Back in Town.cbr (84pp)
+            [106584] Knights of the Dinner Table 155 - Dead Knights Tell no Tales.cbr (84pp) | [106585] Knights of the Dinner Table 156 - American Goth.cbr (84pp)
+            [106586] Knights of the Dinner Table 157 - Maws.cbr (84pp) | [106587] Knights of the Dinner Table 158 - Viva Lost Vegas.cbr (84pp)
+            [106588] Knights of the Dinner Table 159 - Saving The Wurld At $7.50 per Hour.cbr (84pp) | [106589] Knights of the Dinner Table 160 - More Than Meets the Die.cbr (84pp)
+            [106590] Knights of the Dinner Table 161 - The Natural.cbz (84pp) | [106591] Knights of the Dinner Table 162 - SpaceHack 3000.cbz (84pp)
+            [106592] Knights of the Dinner Table 163 - Every Picture Tells a Story (2010).cbz (84pp) | [106593] Knights of the Dinner Table 164 - Mummy Dearest (2010).cbz (84pp)
+            [106594] Knights of the Dinner Table 165 - The Better Part of Valor.cbz (84pp) | [106595] Knights of the Dinner Table 166 - 15 Minutes of Shame (2010).cbz (84pp)
+            [106596] Knights of the Dinner Table 167 - Me Tarzan You Slain (2010).cbz (84pp) | [106597] Knights of the Dinner Table 168 - Rolling Thunder (2010) (Digital) (Monafekk-Empire).cbr (85pp)
+            [106598] Knights of the Dinner Table 169 - Third Time's a Charm (2010) (Digital) (Monafekk-Empire).cbr (85pp)
+            [106599] Knights of the Dinner Table 170 - Easy Money (2010) (Digital) (Monafekk-Empire).cbr (85pp)
+            [106600] Knights of the Dinner Table 171 - Better Gate than Lever (2011) (Digital) (Monafekk-Empire).cbr (85pp)
+            [106601] Knights of the Dinner Table 172 - Nerds in a Guild'ed Cage (2011) (Digital) (Monafekk-Empire).cbr (85pp)
+            [106602] Knights of the Dinner Table 173 - Clean Sweep (2011) (Digital) (Monafekk-Empire).cbr (101pp)
+            [106603] Knights of the Dinner Table 174 - Monkeybot Mayhem (2011) (Digital) (Monafekk-Empire).cbr (85pp)
+            [106604] Knights of the Dinner Table 175 - Like it Needs to be Said (2011) (Digital) (Monafekk-Empire).cbr (85pp)
+            [106605] Knights of the Dinner Table 176 - The Gawdfather (2011) (Digital) (Monafekk-Empire).cbr (85pp)
+            [106606] Knights of the Dinner Table 177 - Deja Vu All Over Again (2011) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106607] Knights of the Dinner Table 178 - Against All Oz (2011) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106608] Knights of the Dinner Table 179 - Party Like It's 1979 (2011) (Digital) (Monafekk-Empire).cbr (73pp)
+            [106609] Knights of the Dinner Table 180 - Crazy Random Happenstance (2011) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106610] Knights of the Dinner Table 181 - Who Maimed Roger Rabbit (2011) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106611] Knights of the Dinner Table 182 - It Ain't Over Til The Fat Mage Rolls (2011) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106612] Knights of the Dinner Table 183 - Better The Devil You Know (2012) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106613] Knights of the Dinner Table 184 - Cowabunga! (2012) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106614] Knights of the Dinner Table 185 - Dancin' with the Devil (2012) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106615] Knights of the Dinner Table 186 - Gawd Smacked (2012) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106616] Knights of the Dinner Table 187 - All our Friends are All Aboard (2012) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106617] Knights of the Dinner Table 188 - Lawyersaurus Rex (2012) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106618] Knights of the Dinner Table 189 - I Believe! I Believe! (2012) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106619] Knights of the Dinner Table 190 - The Lady's Got Game (2012) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106620] Knights of the Dinner Table 191 - Unearthing the Arcana (2012) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106621] Knights of the Dinner Table 192 - The Hackfest Club (2012) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106622] Knights of the Dinner Table 193 - I am the Walrus (2012) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106623] Knights of the Dinner Table 194 - Fee-Fi-Fo-Fumble (2012) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106624] Knights of the Dinner Table 195 - Giant-Size XXL-Men (2012) (Digital) (Monafekk-Empire).cbz (69pp)
+            [106625] Knights of the Dinner Table 196 - Mean Girls (2013) (Digital) (Monafekk-Empire).cbz (69pp)
+            [106626] Knights of the Dinner Table 197 - Hacktastic Four (2013) (c2c) (Monafekk-Empire).cbr (69pp)
+            [106627] Knights of the Dinner Table 198 - Jolly Hatchet (2013) (Digital) (Monafekk-Empire).cbz (69pp)
+            [106628] Knights of the Dinner Table 199 - Thieves Wurld (2013) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106629] Knights of the Dinner Table 200 - It Takes 200 to Tango (2013) (Digital) (Monafekk-Empire).cbz (101pp)
+            [106630] Knights of the Dinner Table 201 - Ain't Afraid of no Ghost (2013) (Digital) (Monafekk-Empire).cbz (69pp)
+            [106631] Knights of the Dinner Table 202 - Angry Nerds (2013) (Digital) (Monafekk-Empire).cbz (69pp)
+            [106632] Knights of the Dinner Table 203 - Get Your Motor Runnin' (2013) (Digital) (Monafekk-Empire).cbz (69pp)
+            [106633] Knights of the Dinner Table 204 - Ready for Primetime (2013) (Digital) (Monafekk-Empire).cbz (68pp)
+            [106634] Knights of the Dinner Table 205 - The Untouchable Fab Four (2014) (Digital) (Monafekk-Empire).cbz (69pp)
+            [106635] Knights of the Dinner Table 206 - I Got Nowhere Else to Go! (2014) (Digital) (Monafekk-Empire).cbz (69pp)
+            [106636] Knights of the Dinner Table 207 - Hack Dealer (2014) (Digital) (Monafekk-Empire).cbz (70pp)
+            [106637] Knights of the Dinner Table 208 - Requiem for the Tramp (2014) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106638] Knights of the Dinner Table 209 - Will you walk into my parlour (2014) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106639] Knights of the Dinner Table 210 - Gamers League of Muncie (2014) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106640] Knights of the Dinner Table 211 - Monster Mash (2014) (Digital) (Monafekk-Empire).cbr (69pp)
+            [106641] Knights of the Dinner Table 212 - Let's Get This Party Started (2014) (Digital) (Monafekk-Empire).cbr (69pp)
+            Knights of the Dinner Table 213.pdf … Knights of the Dinner Table 249.pdf  (37 files, pp 68-73) | [106679] Knights of the Dinner Table 250 - 50 Mile Tavern.pdf (69pp)
+            [106680] Knights of the Dinner Table 251 - Hack World.pdf (69pp) | [106681] Knights of the Dinner Table 252 - The End of Bob.pdf (71pp)
+            [106682] Knights of the Dinner Table 253 - Please Don't Go.pdf (71pp) | [106683] Knights of the Dinner Table 254 - Samurai Hack.pdf (70pp)
+            [106684] Knights of the Dinner Table 255 - Hack-Scovery.pdf (76pp) | [106685] Knights of the Dinner Table 256 - This Be GM's Day.pdf (69pp)
+            [106686] Knights of the Dinner Table 257 - Never Say Hack.pdf (69pp) | [106687] Knights of the Dinner Table 258 - Star Hack-Tiers.pdf (72pp)
+            [106688] Knights of the Dinner Table 259 - Mystery Hack Theatre D3000.pdf (69pp) | [106689] Knights of the Dinner Table 260 - Cosmic Fun House.pdf (69pp)
+            [106690] Knights of the Dinner Table 261 - The Usual Suspects.pdf (73pp) | [106691] Knights of the Dinner Table 262 - In A Galaxy Far, Far Away.pdf (69pp)
+            [106692] Knights of the Dinner Table 263 - Horton Rolls a Two.pdf (68pp) | [106693] Knights of the Dinner Table 264 - After the Big Game.pdf (68pp)
+            [106694] Knights of the Dinner Table 265 - Dangerous Things.pdf (68pp) | [106695] Knights of the Dinner Table 266 - Right this Way.pdf (68pp)
+            [106696] Knights of the Dinner Table 267-We Accuse.pdf (68pp) | [106697] Knights of the Dinner Table 268-Deadly Dooms.pdf (68pp)
+            [106698] Knights of the Dinner Table 269-Black Cover.pdf (68pp) | [106699] Knights of the Dinner Table 270-The Game Goes Ever On.pdf (68pp)
+            [106700] Knights of the Dinner Table 271-Prisoners Of The Gamemaster.pdf (68pp) | Knights of the Dinner Table 272.pdf … Knights of the Dinner Table 280.pdf  (9 files, pp 68-68)
+            [106710] Knights of the Dinner Table 281 - Hopelessly Insane.pdf (68pp)
+   ours:    ladder 1-129, 131-161, 163-165, 167-281, 300, 3000; 4 number(s) name more than one file: 1, 2, 3, 15; barcode item 106590 [{"type": "EAN13", "data": "0606256009004", "page": "KDT161/; barcode item 106591 [{"type": "EAN13", "data": "0606256009004", "page": "hts of ; barcode item 106594 [{"type": "EAN13", "data": "0606256009004", "page": "Blnrts1
+   CV linked:      vol 9179 "Knights of the Dinner Table" 1994 Kenzer and Company 320 issues; cached #1-320 (320); yearΔ 0; ratio 284/320 = 0.89; no judged range; v1 per-file: same volume on 283/287 files
+   CV candidates:  (= linked) · 98345 "Knights of the Dinner Table: The Cattlepunk Chronicles: The Four Herdsmen of the Apocalypse" 2017 Kenzer and Company 1 issue 578539 s50 · 140159 "Men That Hack: Tales from the Hack Files" 2017 Kenzer and Company 1 issue 894612 s30 · 46155 "Knights of the Dinner Table Special" 2008 Kenzer and Company 1 issue 317660 s8 · 94644 "Knights of the Dinner Table: Cattlepunk Chronicles: The Outlaw Trail" 2016 Kenzer and Company 1 issue 552266 s7 · 140158 "Knights of the Dinner Table: The Java Joint" 2011 Kenzer and Company 1 issue 894610 s5 · 160886 ".hack" 2004 Norma Editorial 4 s3   (v1 search)
+   CV local rip:   (= linked) · 98345 "Knights of the Dinner Table: The Cattlepunk Chronicles: The Four Herdsmen of the Apocalypse" 2017 Kenzer and Company 1 issue 578539 · 140159 "Men That Hack: Tales from the Hack Files" 2017 Kenzer and Company 1 issue 894612 (via CV candidate name "Men That Hack: Tales from the Hack Files")   (rip lookup)
+   GCD per-file:   methods numx108 · round2-seriesx25 ⚠  (⚠ copies a folder neighbour's series — verify); series 9923 "Knights of the Dinner Table" 1997-? Kenzer and Company [Ongoing Series] 318 on 127/287 files · series 14445 "Knights of the Dinner Table" 1994-1995 Alderac Group [was ongoing series] 3 on 6/287 files
+   GCD dump:       (= per-file) · 116845 "Knights of the Dinner Table" [de] 2003-2003 Erbstößer & Holzer [] 2   (dump lookup)
+   bridges:        gcd 9923 -> LOCG 104575 "Knights of the Dinner Table" support 199 · gcd 14445 -> LOCG 104575 "Knights of the Dinner Table" support 6
+
+== S10456 Knights of the Dinner Table: Black Hands 2010 Special  [tier C] · gap 16  keys: Knights Of The Dinner Table-BlackHands  years 1994-1994  3 files / 0 collections
+   folders: [3] Misc\Knights of the Dinner Table (1994)\Extras
+   files:   [106402] Knights Of The Dinner Table-BlackHands_2010_Special01.pdf (38pp) | [106403] Knights Of The Dinner Table-BlackHands_2010_Special02.pdf (36pp)
+            [106404] Knights Of The Dinner Table-BlackHands_2011_Special.pdf (35pp)
+   CV linked:      vol 36220 "Knights of the Dinner Table: Black Hands 2010 Special" 2010 Kenzer and Company 2 issues; cached #1-2 (2); yearΔ 16; ratio 0/2; no judged range
+   CV per-file (v1): vol 9179 "Knights of the Dinner Table" 1994 Kenzer and Company 320 on 3/3 files
+   CV candidates:  (= linked) · 46158 "Knights of the Dinner Table Special" 2003 Kenzer and Company 3 s21 · 46156 "Knights of the Dinner Table: Black Hands" 2003 Kenzer and Company 2 s13 · 46157 "Knights of the Dinner Table Origins Special" 2003 Kenzer and Company 2 s13 · 46155 "Knights of the Dinner Table Special" 2008 Kenzer and Company 1 issue 317660 s9 · 140158 "Knights of the Dinner Table: The Java Joint" 2011 Kenzer and Company 1 issue 894610 s7 · 56640 "Knights of the Dinner Table: Black Hands 2011 Special" 2011 Kenzer and Company 1 issue 384240 s6   (v1 search)
+   CV local rip:   (= linked) · 46156 "Knights of the Dinner Table: Black Hands" 2003 Kenzer and Company 2 (via CV candidate name "Knights of the Dinner Table: Black Hands") · 46158 "Knights of the Dinner Table Special" 2003 Kenzer and Company 3 (via CV candidate name "Knights of the Dinner Table Special") · 46155 "Knights of the Dinner Table Special" 2008 Kenzer and Company 1 issue 317660 (via CV candidate name "Knights of the Dinner Table Special")   (rip lookup)
+   GCD dump:       114392 "Knights of the Dinner Table: Black Hands 2010 Special" 2010-2010 Kenzer and Company [] 2 · 14445 "Knights of the Dinner Table" 1994-1995 Alderac Group [] 3 (via CV name "Knights of the Dinner Table") · 9923 "Knights of the Dinner Table" 1997-? Kenzer and Company [] 318 (via CV name "Knights of the Dinner Table") · 115491 "Knights of the Dinner Table: Black Hands" 2003-2004 Kenzer and Company [] 2 (via CV candidate name "Knights of the Dinner Table: Black Hands") · 116845 "Knights of the Dinner Table" [de] 2003-2003 Erbstößer & Holzer [] 2 (via CV name "Knights of the Dinner Table")   (dump lookup)
+
+== S103163 Lady Death: Apocalyptic Abyss (2018)  [tier B]   keys: Lady Death: Apocalyptic Abyss (2018)  years 2012-2012  1 files / 0 collections
+   folders: [1] Misc\Lady Death
+   files:   [106732] Lady Death (Chapter 07) - Apocalyptic Abyss 001 (2018) (Digital) (DR & Quinch-Empire).cbr (47pp)
+   ours:    ladder 1; ComicInfo Series: "Lady Death"x1; ComicInfo Publisher: "Coffin Comics"x1
+   CV linked:      vol 116973 "Lady Death: Apocalyptic Abyss" 2019 Coffin Comics 2 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 1/?; none cached
+   CV per-file (v1): vol 46516 "Lady Death" 2012 Panini Verlag 2 on 1/1 files
+   CV local rip:   (= linked) · 37096 "Lady Death" 2010 Avatar Press 27 (via CV name "Lady Death") · 137922 "Lady Death: Apocalyptic Abyss" 2018 Coffin Comics 1 issue 875696 (via our own name without the filing suffix "Lady Death: Apocalyptic Abyss") · 20760 "Lady Death" 1997 Chaos! Comics 17 (via CV name "Lady Death") · 19344 "Lady Death" 1994 Chaos! Comics 4 (via CV name "Lady Death")   (rip lookup)
+   GCD dump:       101730 "Lady Death" [de] 2012-2013 Panini Deutschland [] 3 (via CV name "Lady Death") · 119853 "Lady Death" 2012-2012 Avatar Press [] 2 (via CV name "Lady Death") · 154954 "Lady Death" [fr] 2013-2013 French Eyes [] 1 (via CV name "Lady Death") · 54521 "Lady Death" 2010-2013 Avatar Press [] 27 (via CV name "Lady Death") · 139825 "Lady Death: Apocalyptic Abyss" 2019-? Coffin Comics [] 2 (via our own name without the filing suffix "Lady Death: Apocalyptic Abyss") · 160366 "Lady Death" [pt-br] 2000-2000 Mythos Editora [] 1 (via CV name "Lady Death")   (dump lookup)
+
+== S103167 Lady Death: Malevolent Decimation (2020)  [tier B]   keys: Lady Death: Malevolent Decimation (2020)  years 2012-2012  1 files / 0 collections
+   folders: [1] Misc\Lady Death
+   files:   [106736] Lady Death (Chapter 11) - Malevolent Decimation 001 (2020) (Digital) (DR & Quinch-Empire).cbr (47pp)
+   ours:    ladder 1; ComicInfo Series: "Lady Death"x1; ComicInfo Publisher: "Coffin Comics"x1
+   CV linked:      vol 135108 "Lady Death: Malevolent Decimation" 2021 Coffin Comics 2 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 1/?; none cached
+   CV per-file (v1): vol 46516 "Lady Death" 2012 Panini Verlag 2 on 1/1 files
+   CV local rip:   (= linked) · 37096 "Lady Death" 2010 Avatar Press 27 (via CV name "Lady Death") · 127689 "Lady Death: Malevolent Decimation" 2020 Coffin Comics 1 issue 766897 (via our own name without the filing suffix "Lady Death: Malevolent Decimation") · 20760 "Lady Death" 1997 Chaos! Comics 17 (via CV name "Lady Death") · 19344 "Lady Death" 1994 Chaos! Comics 4 (via CV name "Lady Death")   (rip lookup)
+   GCD dump:       101730 "Lady Death" [de] 2012-2013 Panini Deutschland [] 3 (via CV name "Lady Death") · 119853 "Lady Death" 2012-2012 Avatar Press [] 2 (via CV name "Lady Death") · 154954 "Lady Death" [fr] 2013-2013 French Eyes [] 1 (via CV name "Lady Death") · 54521 "Lady Death" 2010-2013 Avatar Press [] 27 (via CV name "Lady Death") · 171399 "Lady Death: Malevolent Decimation" 2021-? Coffin Comics [] 2 (via our own name without the filing suffix "Lady Death: Malevolent Decimation") · 160366 "Lady Death" [pt-br] 2000-2000 Mythos Editora [] 1 (via CV name "Lady Death")   (dump lookup)
+
+== S103169 Lady Death: Nightmare Symphony (2018)  [tier B]   keys: Lady Death: Nightmare Symphony (2018)  years 2012-2012  1 files / 0 collections
+   folders: [1] Misc\Lady Death
+   files:   [106733] Lady Death (Chapter 08) - Nightmare Symphony 001 (2018) (Digital) (DR & Quinch-Empire).cbr (48pp)
+   ours:    ladder 1; ComicInfo Series: "Lady Death"x1; ComicInfo Publisher: "Coffin Comics"x1
+   CV linked:      vol 122024 "Lady Death: Nightmare Symphony" 2019 Coffin Comics 2 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 1/?; none cached
+   CV per-file (v1): vol 46516 "Lady Death" 2012 Panini Verlag 2 on 1/1 files
+   CV local rip:   (= linked) · 37096 "Lady Death" 2010 Avatar Press 27 (via CV name "Lady Death") · 137924 "Lady Death: Nightmare Symphony" 2018 Coffin Comics 1 issue 875713 (via our own name without the filing suffix "Lady Death: Nightmare Symphony") · 20760 "Lady Death" 1997 Chaos! Comics 17 (via CV name "Lady Death") · 19344 "Lady Death" 1994 Chaos! Comics 4 (via CV name "Lady Death")   (rip lookup)
+   GCD dump:       101730 "Lady Death" [de] 2012-2013 Panini Deutschland [] 3 (via CV name "Lady Death") · 119853 "Lady Death" 2012-2012 Avatar Press [] 2 (via CV name "Lady Death") · 154954 "Lady Death" [fr] 2013-2013 French Eyes [] 1 (via CV name "Lady Death") · 54521 "Lady Death" 2010-2013 Avatar Press [] 27 (via CV name "Lady Death") · 151085 "Lady Death: Nightmare Symphony" 2019-? Coffin Comics [] 2 (via our own name without the filing suffix "Lady Death: Nightmare Symphony") · 160366 "Lady Death" [pt-br] 2000-2000 Mythos Editora [] 1 (via CV name "Lady Death")   (dump lookup)
+
+== S103173 Lady Death: Unholy Ruin (2017)  [tier B]   keys: Lady Death: Unholy Ruin (2017)  years 2012-2012  1 files / 0 collections
+   folders: [1] Misc\Lady Death
+   files:   [106731] Lady Death (Chapter 06) - Unholy Ruin 001 (2017) (Digital) (DR & Quinch-Empire).cbr (44pp)
+   ours:    ladder 1; ComicInfo Series: "Lady Death"x1; ComicInfo Publisher: "Coffin Comics"x1
+   CV linked:      vol 110103 "Lady Death: Unholy Ruin" 2018 Coffin Comics 2 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 1/?; none cached
+   CV per-file (v1): vol 46516 "Lady Death" 2012 Panini Verlag 2 on 1/1 files
+   CV local rip:   (= linked) · 37096 "Lady Death" 2010 Avatar Press 27 (via CV name "Lady Death") · 137923 "Lady Death: Unholy Ruin" 2017 Coffin Comics 1 issue 875707 (via our own name without the filing suffix "Lady Death: Unholy Ruin") · 20760 "Lady Death" 1997 Chaos! Comics 17 (via CV name "Lady Death") · 19344 "Lady Death" 1994 Chaos! Comics 4 (via CV name "Lady Death")   (rip lookup)
+   GCD dump:       101730 "Lady Death" [de] 2012-2013 Panini Deutschland [] 3 (via CV name "Lady Death") · 119853 "Lady Death" 2012-2012 Avatar Press [] 2 (via CV name "Lady Death") · 154954 "Lady Death" [fr] 2013-2013 French Eyes [] 1 (via CV name "Lady Death") · 54521 "Lady Death" 2010-2013 Avatar Press [] 27 (via CV name "Lady Death") · 123857 "Lady Death: Unholy Ruin" 2018-? Coffin Comics [] 2 (via our own name without the filing suffix "Lady Death: Unholy Ruin") · 160366 "Lady Death" [pt-br] 2000-2000 Mythos Editora [] 1 (via CV name "Lady Death")   (dump lookup)
+
+== S10538 La Muerta/Lady Death: Inferno  [tier C] · gap 12  keys: La Muerta - Lady Death  years 2012-2012  1 files / 0 collections
+   folders: [1] Misc\Lady Death\La Muerta - Lady Death (2024)
+   files:   [107946] La Muerta - Lady Death 001 - Inferno (2024) (Digital) (DR & Quinch-Empire).cbr (110pp)
+   ours:    ladder 1
+   CV linked:      vol 160933 "La Muerta/Lady Death: Inferno" 2024 Coffin Comics 1 issues issue 1076735; cached #1-1 (1); yearΔ 12; ratio 1/1 = 1.00; no judged range
+   CV per-file (v1): vol 46516 "Lady Death" 2012 Panini Verlag 2 on 1/1 files
+   CV candidates:  (= linked) · 91756 "La Muerta" 2016 Coffin Comics 1 issue 537316 s80 · 114836 "Lady Mechanika: La Dama de la Muerta: Halloween ComicFest" 2018 Benitez Productions 1 issue 690356 s64 · 37096 "Lady Death" 2010 Avatar Press 27 s63 · 157523 "La Muerta: Devious" 2023 Coffin Comics 1 issue 1050626 s56 · 137284 "La Muerta: Retaliation" 2021 Coffin Comics 1 issue 866886 s55 · 98901 "La Muerta Pin Ups" 2017 Coffin Comics 1 issue 581668 s53   (v1 search)
+   CV local rip:   (= linked) · 37096 "Lady Death" 2010 Avatar Press 27 (via CV name "Lady Death") · 91756 "La Muerta" 2016 Coffin Comics 1 issue 537316 (via CV candidate name "La Muerta") · 20760 "Lady Death" 1997 Chaos! Comics 17 (via CV name "Lady Death") · 19344 "Lady Death" 1994 Chaos! Comics 4 (via CV name "Lady Death")   (rip lookup)
+   GCD dump:       220534 "La Muerta: Lady Death Inferno" 2025-2025 Coffin Comics [] 1 · 101730 "Lady Death" [de] 2012-2013 Panini Deutschland [] 3 (via CV name "Lady Death") · 119853 "Lady Death" 2012-2012 Avatar Press [] 2 (via CV name "Lady Death") · 154954 "Lady Death" [fr] 2013-2013 French Eyes [] 1 (via CV name "Lady Death") · 54521 "Lady Death" 2010-2013 Avatar Press [] 27 (via CV name "Lady Death") · 160366 "Lady Death" [pt-br] 2000-2000 Mythos Editora [] 1 (via CV name "Lady Death")   (dump lookup)
+
+== S11948 Metabarons Genesis: Castaka  [tier B]   keys: Metabarons Genesis - Castaka  years 2015-2015  1 files / 0 collections
+   folders: [1] Misc\Moebius & Jodorowsky\Jodorowsky
+   files:   [106827] Metabarons Genesis - Castaka (2014) (Digital) (phillywilly-Empire).cbr (112pp)
+   CV linked:      vol 80623 "Metabarons Genesis: Castaka" 2015 Humanoids 1 issues issue 482236; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 85439 "Metabarons Genesis: Castaka" 2015 Humanoids 2 s83 · 114653 "Castaka" 2014 Splitter 1 issue 689653 s55 · 61678 "Castaka" 2007 Les Humanoïdes Associés 2 s48 · 80324 "The Metabarons" 2015 Humanoids 1 issue 480766 s35 · 120746 "Deconstructing the Metabarons" 2019 Humanoids 1 issue 716729 s33 · 11933 "The Metabarons" 2004 Humanoids 4 s23   (v1 search)
+   CV local rip:   (= linked) · 85439 "Metabarons Genesis: Castaka" 2015 Humanoids 2 · 114653 "Castaka" 2014 Splitter 1 issue 689653 (via CV candidate name "Castaka") · 61678 "Castaka" 2007 Les Humanoïdes Associés 2 (via CV candidate name "Castaka")   (rip lookup)
+   GCD dump:       126998 "Metabarons Genesis: Castaka" 2015-2015 Humanoids [] 1 · 83092 "Metabarons Genesis: Castaka" 2014-2014 Humanoids [] 1 · 126999 "Metabarons Genesis: Castaka" 2016-2016 Humanoids [] 1 · 85254 "Castaka" [de] 2014-2014 Splitter Verlag [] 1 (via CV candidate name "Castaka") · 72189 "Castaka" [fr] 2007-2013 Les Humanoïdes Associés [] 2 (via CV candidate name "Castaka")   (dump lookup)
+
+== S57278 Borgia  [tier C] · ratio 0.25  keys: Borgia  years 2005-2025  1 files / 0 collections
+   folders: [1] Misc\Moebius & Jodorowsky\Jodorowsky
+   files:   [106826] Borgia -  Books 1 and 2.cbz (104pp)
+   ours:    ladder 2
+   CV linked:      vol 24835 "Borgia" 2005 Heavy Metal 4 issues; cached #1-4 (4); yearΔ 0; ratio 1/4 = 0.25; no judged range
+   CV per-file (v1): vol 164706 "Borgia" 2025 Splitter 4 on 1/1 files
+   CV local rip:   (= linked) · 92440 "Borgia" 2006 Kult Editionen 4 · 103566 "Borgia" 2008 Éditions Glénat 4 · 136262 "Borgia" 2010 Unigena 4   (rip lookup)
+   GCD dump:       54231 "Borgia" [nl] 2005-2010 Sombrero Books [] 4 · 55437 "Borgia" 2005-2009 Heavy Metal [] 3 · 87020 "Borgia" [da-dk] 2005-2010 Faraos Cigarer [] 4 · 50404 "Borgia" [de] 2006-2010 Kult Editionen [] 4 · 62336 "Borgia" [fr] 2004-2006 Albin Michel [] 2 · 69086 "Borgia" [pl] 2006-2010 Taurus Media [] 4   (dump lookup)
+
+== S19111 The Metabarons  [tier C] · gap 8  keys: Metabarons | The Metabarons  years 1992-2011  26 files / 7 collections
+   folders: [17] Misc\Moebius & Jodorowsky\Jodorowsky\The Metabarons #1-17 · [8] Humanoids\The Metabarons (1992)\01 The Metabarons v1 (1992) · [1] Humanoids\The Metabarons (1992)\02 The Metabarons v2 (2000)
+   files:   [30013] The Metabarons Vol. 01 - Othon (2011) (Digital) (TLK-EMPIRE-HD).cbr (58pp) | [30014] COL The Metabarons Vol. 02 - Honorata (2011) (Digital) (TLK-EMPIRE-HD).cbr (67pp)
+            [30015] COL The Metabarons Vol. 03 - Aghnar (2011) (Digital) (TLK-EMPIRE-HD).cbr (65pp) | [30016] COL The Metabarons Vol. 04 - Oda (2011) (Digital) (TLK-EMPIRE-HD).cbr (67pp)
+            [30017] COL The Metabarons Vol. 05 - Steelhead (2011) (Digital) (TLK-EMPIRE-HD).cbr (64pp) | [30018] COL The Metabarons Vol. 06 - Dona Vicenta (2011) (Digital) (TLK-EMPIRE-HD).cbr (63pp)
+            [30019] COL The Metabarons Vol. 07 - Aghora (2011) (Digital) (TLK-EMPIRE-HD).cbr (64pp)
+            [30020] COL The Metabarons Vol. 08 - No Name, The Last Metabaron (2011) (Digital) (TLK-EMPIRE-HD).cbr (64pp) | [31720] Metabarons (2000) (DCP Archive Edition) (F) (Kritter-DCP).cbr (431pp)
+            [106828] The Metabarons 01 The Stonecutters.cbr (27pp) | [106829] The Metabarons 02 The Last Stand .cbz (28pp) | [106830] The Metabarons 03 The Knigthing Of Othon .cbz (32pp)
+            [106831] The Metabarons 04 Honorata The Sorceres .cbz (33pp) | [106832] The Metabarons 05 The Snare Of Okhan .cbz (30pp) | [106833] The Metabarons 06 The Trials Of Aghnar .cbz (25pp)
+            [106834] The Metabarons 07 The Lair Of The Shabda Oud .cbz (29pp) | [106835] The Metabarons 08 The Posession Of Oda.cbz (23pp)
+            [106836] The Metabarons 09 The Mentrek's Solution.cbz (22pp) | [106837] The Metabarons 10.cbr (27pp) | [106838] The Metabarons 11.cbr (31pp) | [106839] The Metabarons 12.cbr (26pp)
+            [106840] The Metabarons 13 The Torment Of Dona vicenta.cbz (25pp) | [106841] The Metabarons 14 Galactic Threat.cbz (22pp) | [106842] The Metabarons 15 Aghora, The Father Mother.cbz (24pp)
+            [106843] The Metabarons 16 The Mirror Effect.cbz (21pp) | [106844] The Metabarons 17 The Return Of Shabda Oud.cbz (21pp)
+   ours:    ladder 1-17; 1 number(s) name more than one file: 1
+   GCD says: [30016] gcd_reprint 774080: s52021 La Caste des Méta-Barons (1992) #8 [1 story]  |  ⚠ stored GCD row is another book: our subtitle 'Oda' vs GCD title 'Aghora & The Last Metabaron' — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+   CV linked:      vol 19153 "The Metabarons" 2000 Humanoids 17 issues; cached #1-17 (17); yearΔ 8; ratio 18/17 = 1.06; no judged range; v1 per-file: same volume on 18/26 files
+   CV candidates:  (= linked) · 80324 "The Metabarons" 2015 Humanoids 1 issue 480766 s49 · 120746 "Deconstructing the Metabarons" 2019 Humanoids 1 issue 716729 s48 · 11933 "The Metabarons" 2004 Humanoids 4 s37 · 53469 "The Metabarons" 2002 Humanoids 4 s37 · 79805 "The Metabarons" 2015 Humanoids 8 s34 · 45493 "Extra Verano 1992" 1992 Planeta DeAgostini 1 issue 313325 s30   (v1 search)
+   CV local rip:   (= linked) · 53469 "The Metabarons" 2002 Humanoids 4 · 11933 "The Metabarons" 2004 Humanoids 4 · 79805 "The Metabarons" 2015 Humanoids 8 · 80324 "The Metabarons" 2015 Humanoids 1 issue 480766 · 120746 "Deconstructing the Metabarons" 2019 Humanoids 1 issue 716729 (via CV candidate name "Deconstructing the Metabarons")   (rip lookup)
+   GCD per-file:   series 52089 "The Metabarons" 2010-2010 Humanoids [one-shot] 2 on 2/26 files; methods numx2
+   GCD dump:       (= per-file) · 52078 "The Metabarons" 2000-2002 Humanoids [] 17 · 52079 "The Metabarons" 2001-2004 Humanoids [] 5 · 12950 "The Metabarons" 2004-2005 DC [] 3 · 126128 "The Metabarons" 2015-2015 Humanoids [] 1 · 117881 "The Metabarons" 2017-2017 Humanoids [] 4   (dump lookup)
+   bridges:        gcd 52089 -> LOCG 113399 "The Metabarons" support 2
+
+== S12705 Nancy In Hell  [tier C] · gap 8  keys: Nancy in Hell  years 2010-2011  3 files / 1 collections
+   folders: [2] Misc\Nancy in Hell (2018) (Amigo) · [1] Image\Nancy in Hell (2011)
+   files:   [36142] COL Nancy in Hell (2011) (Digital) (XRA-Empire).cbz (114pp) | [106888] Nancy in Hell 001 (2018) (Digital) (DR & Quinch-Empire).cbr (27pp)
+            [106889] Nancy in Hell 002 (2018) (Digital) (DR & Quinch-Empire).cbr (27pp)
+   ours:    ladder 1-2
+   CV linked:      vol 112331 "Nancy In Hell" 2018 Amigo Comics 4 issues; cached #1-4 (4); yearΔ 8; ratio 2/4 = 0.50; no judged range
+   CV per-file (v1): vol 34727 "Nancy In Hell" 2010 Image 4 on 3/3 files
+   CV candidates:  (= linked) · 56915 "Nancy in Hell" 2011 Image 1 issue 385119 s108 · 45384 "Nancy In Hell On Earth" 2012 Image 4 s48 · 171748 "Nancy in Hell" 2019 Karras Comics 1 s38 · 54730 "Nancy In Hell (On Earth)" 2012 Image 1 issue 372610 s36 · 127980 "Nancy in Hell: The Hell Gates" 2020 Amigo Comics 1 issue 768553 s20 · 137632 "Nancy In Hell: The Long Road" 2021 Amigo Comics 1 issue 871809 s20   (v1 search)
+   CV local rip:   (= linked) · 56915 "Nancy in Hell" 2011 Image 1 issue 385119   (rip lookup)
+   GCD per-file:   series 128299 "Nancy in Hell" [en-es] 2018-? Amigo [Limited Series] 3 on 2/3 files; methods numx2
+   GCD dump:       (= per-file) · 51815 "Nancy in Hell" 2010-2010 Image [] 4 · 101599 "Nancy in Hell" [de] 2014-2014 Panini Deutschland [] 2 · 136583 "Nancy in Hell" [fr] 2015-2023 Éditions de l'éveil [] 2 · 179888 "Nancy in Hell" 2021-2021 Behemoth Comics [] 1   (dump lookup)
+   bridges:        gcd 128299 -> LOCG 105508 "Nancy In Hell" support 2
+
+== S12776 Neon Future  [tier B]   keys: Neon Future  years 2019-2020  6 files / 1 collections
+   flags: #352 label-ambiguous [Pending] item 106903 — Neon Future v2 001-005 are single issues, not collections
+   folders: [6] Misc\Neon Future (2019)
+   files:   [106902] COL Neon Future v01 (2019) (Digital) (mv-DCP).cbr (219pp) | [106903] Neon Future v2 001 (2020) (3 covers) (Digital-Empire).cbr (37pp)
+            [106904] Neon Future v2 002 (2020) (2 covers) (Digital-Empire).cbr (34pp) | [106905] Neon Future v2 003 (2020) (Digital-Empire).cbr (32pp)
+            [106906] Neon Future v2 004 (2020) (Digital-Empire).cbr (31pp) | [106907] Neon Future v2 005 (2020) (Digital-Empire).cbr (31pp)
+   ours:    ladder 1-5; judged item 106902 #1-6 conf 0.9; ComicInfo Series: "Neon Future Volume 2"x5, "Neon Future"x1; ComicInfo Publisher: "Impact Theory"x6
+   CV linked:      vol 126736 "Neon Future" 2020 Impact Theory 5 issues; cached #1-5 (5); yearΔ 1; ratio 5/5 = 1.00; 1 of 1 judged fit
+   CV per-file (v1): vol 117981 "Neon Future" 2019 Impact Theory 6 on 5/6 files
+   CV candidates:  (= linked) · 121768 "Neon Future" 2019 Impact Theory 1 issue 721268 s120 · 58569 "Neon City" 1991 Innovation 1 issue 391095 s47 · 97048 "Gun Theory" 2016 Dark Horse Comics 1 issue 569292 s26 · 46988 "Passionate Theory" 2008 Digital Manga Publishing 1 issue 323339 s24 · 63310 "Ehmm Theory" 2013 Action Lab 4 s13 · 9436 "Impact" 1999 Gemstone 5 s6   (v1 search)
+   CV local rip:   (= linked) · 121768 "Neon Future" 2019 Impact Theory 1 issue 721268   (rip lookup)
+   GCD dump:       143696 "Neon Future" 2019-? Impact Theory Comics [] 1 · 166676 "Neon Future" 2019-2019 Impact Theory Comics [] 1   (dump lookup)
+
+== S13002 Niobe: She Is Life  [tier B]   keys: Niobe  years 2015-2017  1 files / 1 collections
+   folders: [1] Misc\Niobe (2017)
+   files:   [106937] COL Niobe v01 - She is Life (2017) (digital-Empire).cbr (127pp)
+   ours:    ComicInfo Series: "Niobe"x1; ComicInfo Publisher: "Stranger Comics"x1
+   CV linked:      vol 85777 "Niobe: She Is Life" 2015 Stranger Comics 4 issues; cached #1-4 (4); yearΔ 0; ratio 0/4; no judged range
+   CV per-file (v1): vol 105343 "Niobe: She Is Life" 2017 Stranger Comics 1 issue 630656 on 1/1 files
+   CV candidates:  (= linked) · 126734 "Niobe: She Is Death" 2020 Stranger Comics 1 issue 759465 s47 · 122691 "Niobe: She Is Death" 2019 Stranger Comics 4 s35 · 152934 "Lucky Comics FCBD 2017" 2017 Lucky Comics 1 issue 1006797 s30 · 85377 "Omega Comics Presents: Stranger" 2015 Pop!  Goes The Icon 1 issue 503314 s27 · 72699 "Stranger Than... Fiction Comics" 2013 Bootleg Comix 1 issue 449330 s26 · 72305 "Stranger Than Life: Cartoons and Comics" 2014 Fantagraphics 1 issue 447610 s26   (v1 search)
+   CV local rip:   (= linked) · 122691 "Niobe: She Is Death" 2019 Stranger Comics 4 (via CV candidate name "Niobe: She Is Death") · 126734 "Niobe: She Is Death" 2020 Stranger Comics 1 issue 759465 (via CV candidate name "Niobe: She Is Death")   (rip lookup)
+   GCD dump:       93851 "Niobe: She Is Life" 2015-? Stranger Comics [] 4 · 117718 "Niobe: She Is Life" 2017-2017 Stranger Comics [] 1   (dump lookup)
+
+== S13033 Nobody Can Eat 50 Eggs  [tier C] · gap 2  keys: Nobody Can Eat  years 2013-2016  9 files / 1 collections
+   flags: #358 label-ambiguous [Pending] item 106938 — Nobody Can Eat 50 Eggs v1-v9 are single issues, not collections
+   folders: [9] Misc\Nobody Can Eat 50 Eggs
+   files:   [106938] Nobody Can Eat 50 Eggs v1 (2013) (Digital) (BlurPixel-Empire).cbr (38pp) | [106939] COL Nobody Can Eat 50 Eggs v2 (2013) (Digital) (BlurPixel-Empire).cbr (93pp)
+            [106940] Nobody Can Eat 50 Eggs v3 (2013) (Digital) (BlurPixel-Empire).cbr (45pp) | [106941] Nobody Can Eat 50 Eggs v4 (2014) (Digital) (BlurPixel-Empire).cbr (27pp)
+            [106942] Nobody Can Eat 50 Eggs v5 (2014) (Digital) (BlurPixel-Empire).cbr (27pp) | [106943] Nobody Can Eat 50 Eggs v6 (2014) (Digital) (BlurPixel-Empire).cbr (29pp)
+            [106944] Nobody Can Eat 50 Eggs v7 (2015) (Digital) (BlurPixel-Empire).cbr (20pp) | [106945] Nobody Can Eat 50 Eggs v8 (2015) (Digital) (BlurPixel-Empire).cbr (21pp)
+            [106946] Nobody Can Eat 50 Eggs v9 (2016) (Digital) (BlurPixel-Empire).cbr (22pp)
+   ours:    ladder 50; 1 number(s) name more than one file: 50
+   CV linked:      vol 85375 "Nobody Can Eat 50 Eggs" 2015 Mullet Turtle Comics 10 issues; cached #1-10 (10); yearΔ 2; ratio 8/10 = 0.80; no judged range
+   CV candidates:  (= linked) · 135700 "Can Can" 1958 Editorial Bruguera ? s55 · 135718 "Can Can" 1978 Editorial Bruguera ? s55 · 27355 "Nobody" 1998 Oni Press ? s40 · 48640 "Nobody" 2000 AiT/Planet Lar ? s40 · 163263 "Eat" 2025 Milky Way Ediciones ? s40 · 169823 "Eat" 2023 Seven Seas Entertainment ? s40   (v1 search)
+   CV local rip:   (= linked) · 135718 "Can Can" 1978 Editorial Bruguera 1 issue 845866 (via CV candidate name "Can Can") · 135717 "Can Can" 1963 Editorial Bruguera 105 (via CV candidate name "Can Can") · 135700 "Can Can" 1958 Editorial Bruguera 125 (via CV candidate name "Can Can")   (rip lookup)
+   GCD dump:       193699 "Can Can" [es-cl] 1965-1968 Zig-Zag [] 87 (via CV candidate name "Can Can") · 193700 "Can Can" [es] 1963-1968 Editorial Bruguera [] 230 (via CV candidate name "Can Can") · 193827 "Can Can" [es] 1958-1960 Editorial Bruguera [] 125 (via CV candidate name "Can Can")   (dump lookup)
+
+== S14176 PunchLine  [tier A]   keys: PunchLine | Punchline  years 2018-2023  11 files / 1 collections
+   folders: [11] Misc\Punchline (2017) (Antarctic Press)\Punchline (2017)
+   files:   [107094] PunchLine 006 (2018) (digital) (Son of Ultron-Empire).cbr (16pp) | [107095] PunchLine 007 (2018) (digital) (Son of Ultron-Empire).cbr (17pp)
+            [107096] PunchLine 008 (2019) (digital) (Son of Ultron-Empire).cbr (24pp) | [107097] PunchLine 009 (2020) (digital) (Son of Ultron-Empire).cbr (24pp)
+            [107098] PunchLine 010 (2020) (digita) (Son of Ultron-Empire).cbr (23pp) | [107099] PunchLine 011 (2020) (digital) (Son of Ultron-Empire).cbr (24pp)
+            [107100] PunchLine 012 (2021) (digital) (Son of Ultron-Empire).cbr (24pp) | [107101] PunchLine 013 (2022) (digital) (Son of Ultron-Empire).cbr (23pp)
+            [107102] PunchLine 014 (2023) (digital) (Son of Ultron-Empire).cbr (24pp) | [107103] PunchLine 015 (2023) (digital) (Son of Ultron-Empire).cbr (22pp)
+            [107104] COL Punchline v01 (2024) (Antarctic Press) (Digital-HD) (LeDuch).cbz (132pp)
+   ours:    ladder 6-15; judged item 107104 #1-5 conf 0.6; ComicInfo Series: "PunchLine"x5, "Punchline"x1; ComicInfo Volume: "2024"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Lone Star Press"x5, "Antarctic Press"x1
+   CV linked:      vol 115918 "PunchLine" 2018 Antarctic Press 14 issues; cached #1-14 (14); yearΔ 0; ratio 10/14 = 0.71; 1 of 1 judged fit
+   CV per-file (v1): vol 103555 "PunchLine" 2017 Lone Star Press 7 on 11/11 files
+   CV candidates:  (= linked) · 131822 "Punchline" 2020 DC Comics 1 issue 817452 s50 · 66660 "Antarctic Press Presents: Convention Tour Book" 2003 Antarctic Press 1 issue 422897 s38 · 60476 "Antarctic Press Jam" 1996 Antarctic Press 1 issue 399850 s35 · 148322 "Punchline: Der Prozess" 2023 Panini Verlag 1 issue 972454 s33 · 75171 "Shackleton: Antarctic Odyssey" 2014 First Second Books 1 issue 457748 s26 · 58117 "Felix Antarctic Expedition" 1945 Elmsdale 1 issue 389304 s17   (v1 search)
+   CV local rip:   (= linked) · 131822 "Punchline" 2020 DC Comics 1 issue 817452   (rip lookup)
+   GCD per-file:   series 143453 "Punchline" 2018-? Antarctic Press [Ongoing Series] 15 on 6/11 files; methods numx6
+   GCD dump:       (= per-file) · 183866 "Punchline" 2019-2019 Antarctic Press [] 2 · 166151 "Punchline" 2021-2021 DC [] 1 · 207436 "Punchline" [fr] 2021-2021 Alayone Comics [] 2 · 229480 "Punchline" 1997-2003 Nelson Communications Co. [] 12   (dump lookup)
+   bridges:        gcd 143453 -> LOCG 138108 "PunchLine" support 1
+
+== S66487 Super Detective Library  [tier C] · ratio 0.05  keys: Super Detective Library | Super-Detective Library  years 1953-?  10 files / 0 collections
+   folders: [10] Misc\Rip Kirby
+   files:   [107199] Super Detective Library 120 - Rip Kirby and the Man Who Stole a Million Dollars [1958] (Mr Tweedy).cbr (68pp)
+            [107200] Super-Detective Library 124 - Rip Kirby in Desert Fury (Bogof39).cbz (68pp) | [107201] Super-Detective Library 126 - Rip Kirby and the Runaway Lady.cbz (69pp)
+            [107202] Super-Detective Library 132 - Rip Kirby on Terror Island (Bogof39).cbz (68pp) | [107203] Super-Detective Library 136 - Rip Kirby's Dangerous Manhunt (Bogof39).cbz (68pp)
+            [107204] Super-Detective Library 138 - Rip Kirby and the Trail of Terror (Bogof39).cbz (66pp)
+            [107205] Super-Detective Library 142 - Rip Kirby and the Case of the Man from Nowhere (Bogof39).cbz (68pp)
+            [107206] Super-Detective Library 144 - Rip Kirby's Invitation to Danger (Bogof39).cbz (68pp) | [107207] Super-Detective Library 146 - Rip Kirby in Design for Murder (Bogof39).cbz (68pp)
+            [107208] Super-Detective Library 152 - Rip Kirby and the Playground of Fear (Bogof39).cbz (68pp)
+   ours:    ladder 120, 124, 126, 132, 136, 138, 142, 144, 146, 152
+   CV linked:      vol 26968 "Super Detective Library" 1953 Fleetway 189 issues; cached #1-188 (189); yearΔ 0; ratio 10/189 = 0.05; no judged range
+   CV per-file (v1): vol 143053 "Rip Kirby" 1956 Associated Newspapers 1 issue 925362 on 7/10 files
+   CV local rip:   (= linked) · 81127 "Rip Kirby" 1951 Atlas Publications Pty. Ltd. 19 (via CV name "Rip Kirby") · 142886 "Rip Kirby" 1950 Feature Productions 8 (via CV name "Rip Kirby") · 69795 "Rip Kirby" 1974 Semic Press AB 1 issue 435951 (via CV name "Rip Kirby") · 80550 "Rip Kirby" 1980 Pacific Comics Club 12 (via CV name "Rip Kirby")   (rip lookup)
+   GCD dump:       34863 "Super Detective Library" [en-gb] 1953-1959 Amalgamated Press [] 154 · 192778 "Rip Kirby" [hr-yu] 1952-1952 Vjesnik [] 1 (via CV name "Rip Kirby") · 66397 "Rip Kirby" [en-au] 1951-1956 Atlas [] 19 (via CV name "Rip Kirby") · 84841 "Rip Kirby" [en-nz] 1950-? Feature Productions [] 25 (via CV name "Rip Kirby") · 95295 "Rip Kirby" [en-au] 1956-1956 Associated Newspapers [] 1 (via CV name "Rip Kirby") · 84103 "Rip Kirby" [es-cl] 1960-? Editorial Lord Cochrane [] 14 (via CV name "Rip Kirby")   (dump lookup)
+
+== S14699 Rising Stars  [tier C] · by 8  keys: Rising Stars | Rising Stars #0.5 | Rising Stars - Compendium Book | Rising Stars - Wizard Edition  years 1999-2009  29 files / 2 collections
+   folders: [27] Misc\Rising Stars · [2] Image\Rising Stars (1999)
+   files:   [37085] COL Rising Stars - Compendium Book 01 (2009) (F) (digital-Empire).cbz (998pp) | [37086] COL Rising Stars - Compendium Book 02 (2008) (Digital) (Zone-Fawkes-Empire).cbr (432pp)
+            [107212] Rising Stars #0.5.cbr (22pp) | Rising Stars #00.cbr … Rising Stars #15.cbr  (16 files, pp 23-27) | [107230] Rising Stars #16.cbz (25pp) | [107231] Rising Stars #17.cbz (24pp)
+            [107232] Rising Stars #18.cbz (23pp) | Rising Stars #19.cbr … Rising Stars #24.cbr  (6 files, pp 24-34) | [107239] Rising Stars - Wizard Edition.cbr (18pp)
+   ours:    ladder 0-24; 1 number(s) name more than one file: 0; ComicInfo Series: "Rising Stars"x1; ComicInfo Publisher: "Image"x1
+   CV linked:      vol 6476 "Rising Stars" 1999 Image 27 issues; cached #0-24 (27); yearΔ 0; ratio 26/27 = 0.96; no judged range; v1 per-file: same volume on 25/29 files
+   CV candidates:  (= linked) · 127386 "Rising Stars" 2000 JuniorPress BV 4 s58 · 66975 "Rising Stars" 2000 Image 3 s58 · 133539 "Rising Stars" 2012 Delcourt 5 s55 · 66983 "Rising Stars: Visitations" 2002 Image 1 issue 424412 s54 · 61160 "Rising Stars Prelude" 2000 Image 1 issue 122111 s54 · 66980 "Rising Stars #0 and Initiations: A Lost Tale of the Specials" 2012 Image 1 issue 424408 s46   (v1 search)
+   CV local rip:   (= linked) · 66975 "Rising Stars" 2000 Image 3 · 127386 "Rising Stars" 2000 JuniorPress BV 4 · 133539 "Rising Stars" 2012 Delcourt 5   (rip lookup)
+   GCD per-file:   series 105273 "Rising Stars" [de] 2007-2008 Infinity Verlag [] 4 on 1/29 files; methods fulldump-rematchx1
+   GCD dump:       6256 "Rising Stars" 1999-1999 Top Cow; Wizard [] 1 · 6315 "Rising Stars" 1999-2005 Image [] 26 · 20507 "Rising Stars" [nl] 1999-2000 Juniorpress [] 4 · 39707 "Rising Stars" 2000-2000 Image; Wizard [] 1 · 51477 "Rising Stars" 2000-2006 Image [] 4 · 165717 "Rising Stars" [fr] 2000-2002 Semic S.A. [] 10   (dump lookup)
+   bridges:        gcd 105273 -> LOCG 111283 "Rising Stars" support 1
+
+== S99543 Rochelle  [tier C] · gap 2  keys: Rochelle v2 (2018)  years 2016-2018  2 files / 0 collections
+   folders: [2] Misc\Rochelle\Rochelle v2 (2018)
+   files:   [107244] Rochelle 001 2018 (Digital) (TLK-EMPIRE-HD).cbr (27pp) | [107245] Rochelle 002 (2018) (Digital) (TLK-EMPIRE-HD).cbr (27pp)
+   ours:    ladder 1-2
+   CV linked:      vol 110757 "Rochelle" 2018 Antarctic Press 3 issues; cached #1-3 (3); yearΔ 2; ratio 2/3 = 0.67; no judged range
+   CV per-file (v1): vol 92630 "Rochelle" 2016 Antarctic Press 3 on 2/2 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 124300 "Rochelle" 2018-? Antarctic Press [limited series] 3 on 1/2 files; methods numx1
+   GCD dump:       (= per-file) · 105215 "Rochelle" 2016-2016 Antarctic Press [] 3   (dump lookup)
+   bridges:        gcd 124300 -> LOCG 125056 "Rochelle" support 1
+
+== S14817 Rogues!  [tier B]   keys: Rogues! - The Cold Ship  years 2014-2016  5 files / 0 collections
+   flags: #388 label-ambiguous [Pending] item 107252 — Rogues! v2 01-05 are single issues, not collections
+   folders: [5] Misc\Rogues!\Rogues! v2 (2014)
+   files:   [107252] Rogues! v2 - The Cold Ship 01 (of 05) (2014) (Digital) (Monafekk-Empire).cbr (25pp) | [107253] Rogues! v2 - The Cold Ship 02 (of 05) (2014) (Digital) (Monafekk-Empire).cbr (26pp)
+            [107254] Rogues! v2 - The Cold Ship 03 (of 05) (2014-06) (Digital) (Monafekk-Empire).cbr (25pp)
+            [107255] Rogues! v2 - The Cold Ship 04 (of 05) (2014-07) (Digital) (Monafekk-Empire).cbr (27pp)
+            [107256] Rogues! v2 - The Cold Ship 05 (of 05) (2014) (Digital) (Monafekk-Empire).cbr (24pp)
+   ours:    ladder 1-5
+   CV linked:      vol 71398 "Rogues!" 2014 Amigo Comics 5 issues; cached #1-5 (5); yearΔ 0; ratio 5/5 = 1.00; no judged range
+   CV per-file (v1): vol 87960 "Rogues! The Cold Ship" 2016 Amigo Comics 1 issue 514545 on 5/5 files
+   CV candidates:  (= linked) · 60302 "Rogues!" 2013 Amigo Comics ? s48 · 80494 "Rogues!" 2004 Dark Planet Productions Inc. ? s40 · 53398 "Ship of Fools" 1996 Caliber Comics ? s13 · 112951 "Flash Rogues: Captain Cold" 2018 DC Comics ? s0 · 141994 "Rogues" 2022 DC Comics ? s0 · 156200 "Rogues" 2024 Scout Comics ? s0   (v1 search)
+   CV local rip:   (= linked) · 60302 "Rogues!" 2013 Amigo Comics 6 · 143532 "Rogues " 2018 Panini Verlag 2 · 141994 "Rogues" 2022 DC Comics 4 · 152665 "Rogues" 2022 DC Comics 1 issue 1004602 · 80494 "Rogues!" 2004 Dark Planet Productions Inc. 3   (rip lookup)
+   GCD dump:       80881 "Rogues!" [en-es] 2014-2014 Amigo [] 5 · 93451 "Rogues!" [en-es] 2014-? Amigo [] 5 · 79316 "Rogues!" [en-es] 2013-2013 Amigo [] 6 · 93028 "Rogues!" [en-es] 2015-2016 Amigo [] 5 · 120239 "Rogues!" [en-es] 2015-? Amigo [] 4 · 120240 "Rogues!" [en-es] 2018-2018 Amigo [] 6   (dump lookup)
+
+== S14816 Rogues!: The Burning Heart  [tier A]   keys: Rogues! - The Burning Heart | Rogues! v3 (2014)  years 2013-2015  5 files / 0 collections
+   flags: #387 label-ambiguous [Pending] item 107259 — the Rogues! v3 and v5 items are single issues, not collections · #390 label-ambiguous [Pending] item 107257 — Rogues! v3 01-02 are single issues, not collections
+   folders: [5] Misc\Rogues!\Rogues! v3 (2014)
+   files:   [107257] Rogues! v3 - The Burning Heart 01 (of 05) (2014) (Digital) (TheArchivist-Empire).cbr (23pp)
+            [107258] Rogues! v3 - The Burning Heart 02 (of 05) (2015) (Digital) (TheArchivist-Empire).cbr (27pp) | [107259] Rogues! v3 003 (2016) (Digital) (TheArchivist-Empire).cbr (23pp)
+            [107260] Rogues! v3 004 (2016) (Digital) (TheArchivist-Empire).cbr (26pp) | [107261] Rogues! v3 005 (2016) (Digital) (TheArchivist-Empire).cbr (24pp)
+   ours:    ladder 1-5
+   CV linked:      vol 77842 "Rogues!: The Burning Heart" 2014 Amigo Comics 5 issues; cached #1-5 (5); yearΔ 1; ratio 5/5 = 1.00; no judged range
+   CV per-file (v1): vol 60302 "Rogues!" 2013 Amigo Comics 6 on 3/5 files · vol 77842 "Rogues!: The Burning Heart" 2014 Amigo Comics 5 on 2/5 files
+   CV candidates:  (= linked) · 71398 "Rogues!" 2014 Amigo Comics 5 s58 · 80494 "Rogues!" 2004 Dark Planet Productions Inc. 3 s57 · 156200 "Rogues" 2024 Scout Comics 2 s15 · 143532 "Rogues " 2018 Panini Verlag 2 s15 · 58025 "Punk's Misc. Debris" 1994 Absolute Comics 1 issue 388771 s14 · 141994 "Rogues" 2022 DC Comics 4 s8   (v1 search)
+   CV local rip:   (= linked) · 71398 "Rogues!" 2014 Amigo Comics 5 (via the parsed key without the filing suffix "Rogues!") · 143532 "Rogues " 2018 Panini Verlag 2 (via the parsed key without the filing suffix "Rogues!") · 80494 "Rogues!" 2004 Dark Planet Productions Inc. 3 (via the parsed key without the filing suffix "Rogues!") · 141994 "Rogues" 2022 DC Comics 4 (via the parsed key without the filing suffix "Rogues!")   (rip lookup)
+   GCD per-file:   methods numx3 · round2-folderx2 ⚠  (⚠ copies a folder neighbour's series — verify); series 93028 "Rogues!" [en-es] 2015-2016 Amigo [limited series] 5 on 5/5 files
+   GCD dump:       (= per-file) · 79316 "Rogues!" [en-es] 2013-2013 Amigo [] 6 (via the parsed key without the filing suffix "Rogues!") · 80881 "Rogues!" [en-es] 2014-2014 Amigo [] 5 (via the parsed key without the filing suffix "Rogues!") · 93451 "Rogues!" [en-es] 2014-? Amigo [] 5 (via the parsed key without the filing suffix "Rogues!") · 120239 "Rogues!" [en-es] 2015-? Amigo [] 4 (via the parsed key without the filing suffix "Rogues!") · 120240 "Rogues!" [en-es] 2018-2018 Amigo [] 6 (via the parsed key without the filing suffix "Rogues!")   (dump lookup)
+   bridges:        gcd 93028 -> LOCG 120759 "Rogues! Odd Parenthood" support 5
+
+== S14815 Rogues!: Odd Parenthood  [tier B]   keys: Rogues! - Odd Parenthood  years 2015-2016  5 files / 0 collections
+   flags: #389 label-ambiguous [Pending] item 107262 — Rogues! v4 01-05 are single issues, not collections
+   folders: [5] Misc\Rogues!\Rogues! v4 (2016)
+   files:   [107262] Rogues! v4 - Odd Parenthood 01 (of 05) (2016) (Digital) (TheArchivist-Empire).cbr (23pp)
+            [107263] Rogues! v4 - Odd Parenthood 02 (of 05) (2016) (Digital) (TheArchivist-Empire).cbr (25pp)
+            [107264] Rogues! v4 - Odd Parenthood 03 (of 05) (2016) (Digital) (TheArchivist-Empire).cbr (25pp)
+            [107265] Rogues! v4 - Odd Parenthood 04 (of 05) (2016) (Digital) (TheArchivist-Empire).cbr (25pp)
+            [107266] Rogues! v4 - Odd Parenthood 05 (of 05) (2016) (Digital) (TheArchivist-Empire).cbr (25pp)
+   ours:    ladder 1-5
+   CV linked:      vol 85306 "Rogues!: Odd Parenthood" 2015 Amigo Comics 5 issues; cached #1-5 (5); yearΔ 0; ratio 5/5 = 1.00; no judged range; v1 per-file: same volume on 5/5 files
+   CV local rip:   (= linked) · 107957 "Rogues!: Odd Parenthood" 2018 Amigo Comics 1 issue 654119   (rip lookup)
+
+== S15199 Scud the Disposable Assassin  [tier B]   keys: Scud the Disposable Assassin  years 1994-2011  26 files / 0 collections
+   folders: [24] Misc\Scud The Disposable Assassin (2011)\Original Series · [1] Image\Scud The Disposable Assassin (1994) · [1] Misc\Scud The Disposable Assassin (2011)
+   files:   [37134] Scud The Disposable Assassin - The Whole Shebang (2011) (digital) (FatNerd).cbz (781pp)
+            Scud the Disposable Assassin #01.cbr … Scud the Disposable Assassin #24.cbr  (24 files, pp 26-36)
+            [107320] Scud The Disposable Assassin - The Whole Shebang (2011) (digital) (FatNerd).cbz (781pp)
+   ours:    ladder 1-24
+   CV linked:      vol 19315 "Scud the Disposable Assassin" 1994 Fireman Press LTD. 20 issues; cached #1-20 (20); yearΔ 0; ratio 24/20 = 1.20; no judged range; v1 per-file: same volume on 25/26 files
+   CV candidates:  (= linked) · 20445 "Scud The Disposable Assassin" 2008 Image 4 s86 · 56552 "The Assassin" 2011 Arcana Studio 1 issue 383820 s70 · 56851 "SCUD The Disposable Assassin: The Whole Shebang!" 2008 Image 1 issue 384796 s68 · 73820 "Heavy 3PO: The Coleman Chronicles of Scud, the Disposable Assassin" 1995 Fireman Press LTD. 1 issue 452621 s61 · 102061 "Assassin" 2011 Soleil 2 s55 · 49483 "Assassin" 2003 Archangel Studios 1 issue 338583 s50   (v1 search)
+   CV local rip:   (= linked) · 20445 "Scud The Disposable Assassin" 2008 Image 4 · 49483 "Assassin" 2003 Archangel Studios 1 issue 338583 (via CV candidate name "The Assassin") · 56552 "The Assassin" 2011 Arcana Studio 1 issue 383820 (via CV candidate name "The Assassin") · 102061 "Assassin" 2011 Soleil 2 (via CV candidate name "The Assassin")   (rip lookup)
+   GCD dump:       9920 "Scud: The Disposable Assassin" 1994-1998 Fireman Press [] 21 · 29311 "Scud the Disposable Assassin" 2008-2008 Image [] 4 · 13743 "Assassin" 2003-2003 Archangel Studios [] 1 (via CV candidate name "The Assassin") · 40807 "The Assassin" [en-ca] 2005-2005 Arcana [] 1 (via CV candidate name "The Assassin") · 117144 "Assassin" [fr] 2011-2011 Soleil [] 2 (via CV candidate name "The Assassin")   (dump lookup)
+
+== S17597 Tank Girl Full Colour Classics  [tier B]   keys: Tank Girl - Colour Classics Book  years 2018-2018  1 files / 1 collections
+   folders: [1] Misc\Tank Girl (1988)\00 Tank Girl - Full Color Classics (2018)
+   files:   [107632] COL Tank Girl - Colour Classics Book 01 - 1988-1990 (2018) (Digital) (Mephisto-Empire).cbr (143pp)
+   GCD says: [107632] gcd_reprint 1834207: s37956 Deadline (1988) #1 [1 story]
+   CV linked:      vol 110540 "Tank Girl Full Colour Classics" 2018 Titan Comics 4 issues; cached #1-4 (4); yearΔ 0; ratio 0/4; no judged range
+   CV candidates:  (= linked) · 48590 "Tank Girl" 1993 Dark Horse Comics 1 issue 334392 s30 · 37019 "Tank Girl" 1991 Dark Horse Comics 4 s18 · 42787 "Tank Girl" 2001 Ediciones La Cúpula S.L. 4 s18 · 124110 "Tank Girl Full Colour Classics" 2020 Titan Comics 2 s15 · 115912 "Tank Girl Full Colour Classics" 2018 Titan Comics 3 s10 · 114092 "Tank Girl Coloring Book" 2018 Titan Comics 1 issue 686965 s10   (v1 search)
+   CV local rip:   (= linked) · 115912 "Tank Girl Full Colour Classics" 2018 Titan Comics 3 · 124110 "Tank Girl Full Colour Classics" 2020 Titan Comics 2 · 42787 "Tank Girl" 2001 Ediciones La Cúpula S.L. 4 (via CV candidate name "Tank Girl") · 48590 "Tank Girl" 1993 Dark Horse Comics 1 issue 334392 (via CV candidate name "Tank Girl") · 37019 "Tank Girl" 1991 Dark Horse Comics 4 (via CV candidate name "Tank Girl")   (rip lookup)
+   GCD dump:       127367 "Tank Girl Full Colour Classics" [en-gb] 2018-? Titan [] 6 · 135702 "Tank Girl Full Colour Classics" [en-gb] 2018-? Titan [] 2 · 210771 "Tank Girl" [en-gb] 2019-? Titan [] 2 (via CV candidate name "Tank Girl") · 137458 "Tank Girl" [fr] 2010-2021 Ankama [] 13 (via CV candidate name "Tank Girl") · 116725 "Tank Girl" [en-gb] 2002-2002 Titan [] 3 (via CV candidate name "Tank Girl") · 176328 "Tank Girl" [fr] 1996-1996 Vents d'Ouest [] 1 (via CV candidate name "Tank Girl")   (dump lookup)
+
+== S17602 Tank Girl Full Colour Classics  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Tank Girl - Full Colour Classics  years 2018-2020  6 files / 0 collections
+   folders: [6] Misc\Tank Girl (1988)\00 Tank Girl - Full Color Classics (2018)
+   files:   [107633] Tank Girl - Full Colour Classics 001 (2018) (3 covers) (Digital) (Mephisto-Empire).cbr (68pp)
+            [107634] Tank Girl - Full Colour Classics 002 (2018) (3 covers) (Digital) (Mephisto-Empire).cbr (68pp)
+            [107635] Tank Girl - Full Colour Classics 002.1 (2019) (3 covers) (Digital) (Mephisto-Empire).cbr (65pp)
+            [107636] Tank Girl - Full Colour Classics 002.2 (2019) (3 covers) (Digital) (Mephisto-Empire).cbr (69pp)
+            [107637] Tank Girl - Full Colour Classics 003.1 (2020) (3 covers) (Digital) (Mephisto-Empire).cbr (66pp)
+            [107638] Tank Girl - Full Colour Classics 003.2 (2020) (3 covers) (Digital) (Mephisto-Empire).cbr (68pp)
+   ours:    ladder 1-3; 2 number(s) name more than one file: 2, 3
+   CV linked:      vol 115912 "Tank Girl Full Colour Classics" 2018 Titan Comics 3 issues; cached #1-3 (3); yearΔ 0; ratio 6/3 = 2.00; no judged range; v1 per-file: same volume on 6/6 files
+   CV candidates:  (= linked) · 110540 "Tank Girl Full Colour Classics" 2018 Titan Comics ? s30 · 124110 "Tank Girl Full Colour Classics" 2020 Titan Comics ? s30 · 134212 "Full Colour Picture Strip Adventure " 1985 Semic Press Oy/Egmont Kustannus ? s29 · 136095 "Full Colour" 2021 BHP Comics ? s15 · 48590 "Tank Girl" 1993 Dark Horse Comics ? s15 · 37019 "Tank Girl" 1991 Dark Horse Comics ? s15   (v1 search)
+   CV local rip:   (= linked) · 110540 "Tank Girl Full Colour Classics" 2018 Titan Comics 4 · 124110 "Tank Girl Full Colour Classics" 2020 Titan Comics 2   (rip lookup)
+   GCD per-file:   series 127367 "Tank Girl Full Colour Classics" [en-gb] 2018-? Titan [Limited Series] 6 on 2/6 files · series 135702 "Tank Girl Full Colour Classics" [en-gb] 2018-? Titan [Collected Series] 2 on 2/6 files; methods numx4; the dump names no other series
+
+== S17615 Tank Girl: Full Color Classics  [tier D]   keys: Tank Girl: Full Color Classics  years 2019-2020  2 files / 2 collections
+   folders: [2] Misc\Tank Girl (1988)\00 Tank Girl - Full Color Classics (2018)
+   files:   [107639] COL Tank Girl Colour Classics Book 02 - 1990-1993 (2019) (digital) (DrVink-DCP).cbz (143pp)
+            [107640] COL Tank Girl Colour Classics Book 03 - 1993-1995 (2020) (digital) (DrVink-DCP).cbz (144pp)
+   ours:    ComicInfo Series: "Tank Girl: Full Color Classics"x2; ComicInfo Publisher: "Titan"x2
+   CV candidates:  124110 "Tank Girl Full Colour Classics" 2020 Titan Comics 2 s37 · 110540 "Tank Girl Full Colour Classics" 2018 Titan Comics 4 s30 · 115912 "Tank Girl Full Colour Classics" 2018 Titan Comics 3 s30 · 48590 "Tank Girl" 1993 Dark Horse Comics 1 issue 334392 s23 · 37019 "Tank Girl" 1991 Dark Horse Comics 4 s23 · 42787 "Tank Girl" 2001 Ediciones La Cúpula S.L. 4 s23   (v1 search)
+   CV local rip:   110540 "Tank Girl Full Colour Classics" 2018 Titan Comics 4 (via CV candidate name "Tank Girl Full Colour Classics") · 115912 "Tank Girl Full Colour Classics" 2018 Titan Comics 3 (via CV candidate name "Tank Girl Full Colour Classics") · 124110 "Tank Girl Full Colour Classics" 2020 Titan Comics 2 (via CV candidate name "Tank Girl Full Colour Classics")   (rip lookup)
+   GCD dump:       127367 "Tank Girl Full Colour Classics" [en-gb] 2018-? Titan [] 6 (via CV candidate name "Tank Girl Full Colour Classics") · 135702 "Tank Girl Full Colour Classics" [en-gb] 2018-? Titan [] 2 (via CV candidate name "Tank Girl Full Colour Classics")   (dump lookup)
+
+== S65925 Black Hood  [tier C] · by 24  keys: The Black Hood (1991) | The Black Hood v3 (1991)  years 1991-1992  10 files / 0 collections
+   folders: [9] Misc\The Black Hood\The Black Hood v3 (1991) (Impact Comics) · [1] Misc\The Black Hood\The Black Hood v3 (1991) (Impact Comics)\Annuals
+   files:   [107990] The Black Hood - Annual 001 (1992) (Digital) (Asgard-Empire).cbr (54pp)
+            The Black Hood 001 (1991) (Digital) (Asgard-Empire).cbr … The Black Hood 012 (1992) (Digital) (Asgard-Empire).cbr  (9 files, pp 22-25)
+   ours:    ladder 1-2, 6-12; 1 number(s) name more than one file: 1
+   CV linked:      vol 4545 "Black Hood" 1991 DC Comics 12 issues; cached #1-12 (12); yearΔ 0; ratio 10/12 = 0.83; no judged range; v1 per-file: same volume on 10/10 files
+   CV local rip:   (= linked) · 3210 "The Black Hood" 1983 Archie Comics 3 · 80318 "The Black Hood" 2015 Archie Comics 11 · 94996 "The Black Hood" 2016 Archie Comics 5 · 63346 "Black Hood" 1946 F.E. Howard Publications Ltd 1 issue 410679   (rip lookup)
+   GCD per-file:   methods round2-seriesx6 ⚠  (⚠ copies a folder neighbour's series — verify); series 86903 "The Black Hood" 2015-2016 Archie [was ongoing series] 11 on 6/10 files
+   GCD dump:       (= per-file) · 4189 "Black Hood" 1991-1992 DC [] 12 · 2730 "The Black Hood" 1983-1983 Archie [] 3 · 108398 "The Black Hood" 2016-2017 Archie [] 5 · 117923 "The Black Hood" 2017-? Archie [] 3 · 76937 "Black Hood" [en-ca] 1944-1944 F.E. Howard Publications [] 1   (dump lookup)
+   bridges:        gcd 86903 -> LOCG 116248 "The Black Hood" support 12
+
+== S100357 The Black Hood  [tier C] · gap 23  keys: The Black Hood v4 (2015)  years 1992-2016  7 files / 1 collections
+   folders: [7] Misc\The Black Hood\The Black Hood v4 (2015) (Dark Circle Comics)
+   files:   The Black Hood 006 (2015) (digital) (Son of Ultron-Empire).cbr … The Black Hood 011 (2016) (digital) (Son of Ultron-Empire).cbr  (6 files, pp 30-35)
+            [107737] COL The Black Hood Vol. 01 - The Bullets Kiss TPB (2017) (digital) (Son of Ultron-Empire).cbr (148pp)
+   ours:    ladder 6-11
+   CV linked:      vol 80318 "The Black Hood" 2015 Archie Comics 11 issues; cached #1-11 (11); yearΔ 23; ratio 6/11 = 0.55; no judged range
+   CV per-file (v1): vol 4545 "Black Hood" 1991 DC Comics 12 on 6/7 files · vol 94996 "The Black Hood" 2016 Archie Comics 5 on 1/7 files
+   CV local rip:   (= linked) · 3210 "The Black Hood" 1983 Archie Comics 3 · 63346 "Black Hood" 1946 F.E. Howard Publications Ltd 1 issue 410679   (rip lookup)
+   GCD per-file:   series 86903 "The Black Hood" 2015-2016 Archie [was ongoing series] 11 on 6/7 files; methods numx6
+   GCD dump:       (= per-file) · 4189 "Black Hood" 1991-1992 DC [] 12 · 2730 "The Black Hood" 1983-1983 Archie [] 3 · 108398 "The Black Hood" 2016-2017 Archie [] 5 · 117923 "The Black Hood" 2017-? Archie [] 3 · 76937 "Black Hood" [en-ca] 1944-1944 F.E. Howard Publications [] 1   (dump lookup)
+   bridges:        gcd 86903 -> LOCG 116248 "The Black Hood" support 12
+
+== S103141 Jim Butcher's The Dresden Files - Storm Front v2 (2009)  [tier B]   keys: Jim Butcher's The Dresden Files - Storm Front v2 (2009)  years 2009-2010  4 files / 4 collections
+   folders: [4] Misc\The Dresden Files\03 Storm Front - Volume 2
+   files:   [107776] COL Jim Butcher's The Dresden Files - Storm Front - Volume 2 - 01 (2009).cbr (28pp) | [107777] COL Jim Butcher's The Dresden Files - Storm Front - Volume 2 - 02 (2010).cbr (26pp)
+            [107778] COL Jim Butcher's The Dresden Files - Storm Front - Volume 2 - 03 (2010).cbr (24pp) | [107779] COL Jim Butcher's The Dresden Files - Storm Front - Volume 2 - 04 (2010).cbr (25pp)
+   CV linked:      vol 27202 "Jim Butcher's The Dresden Files: Storm Front" 2009 Dynamite Entertainment 4 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); cached #2-2 (1); yearΔ ?; ratio 0/?; no judged range
+   CV local rip:   (= linked) · 23697 "Jim Butcher's The Dresden Files: Storm Front" 2008 Dabel Brothers Productions 4 (via our own name without the filing suffix "Jim Butcher's The Dresden Files - Storm Front") · 126689 "Jim Butcher's The Dresden Files: Storm Front" 2020 Dynamite Entertainment 1 issue 759278 (via our own name without the filing suffix "Jim Butcher's The Dresden Files - Storm Front")   (rip lookup)
+   GCD dump:       55645 "Jim Butcher's The Dresden Files: Storm Front" 2009-2009 Dabel Brothers Productions [] 1 (via our own name without the filing suffix "Jim Butcher's The Dresden Files - Storm Front") · 35902 "Jim Butcher's The Dresden Files: Storm Front" 2008-2009 Dabel Brothers Productions [] 4 (via our own name without the filing suffix "Jim Butcher's The Dresden Files - Storm Front") · 52657 "Jim Butcher's the Dresden Files: Storm Front" 2010-2010 Dynamite Entertainment [] 3 (via our own name without the filing suffix "Jim Butcher's The Dresden Files - Storm Front") · 56353 "Jim Butcher's The Dresden Files: Storm Front" 2011-2011 Dynamite Entertainment [] 1 (via our own name without the filing suffix "Jim Butcher's The Dresden Files - Storm Front")   (dump lookup)
+
+== S19399 The Puma Blues  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: The Puma Blues  years 1986-1989  23 files / 0 collections
+   folders: [23] Misc\The Puma Blues (1986)
+   files:   The Puma Blues 001 (1986) (ontology).cbr … The Puma Blues 019 (1988) (ontology).cbr  (19 files, pp 26-28) | [107907] The Puma Blues 020 (1988).cbr (65pp)
+            [107908] The Puma Blues 021 (1989) (anevilscan).cbr (28pp) | [107909] The Puma Blues 022 (1989) (anevilscan).cbr (35pp) | [107910] The Puma Blues 023 (1989) (anevilscan).cbr (35pp)
+   ours:    ladder 1-23
+   CV linked:      vol 35922 "The Puma Blues" 1986 Aardvark 24 issues; cached #1-24 (24); yearΔ 0; ratio 23/24 = 0.96; no judged range; v1 per-file: same volume on 23/23 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 3293 "The Puma Blues" [en-ca] 1986-1988 Aardvark One International [was ongoing series] 20 on 20/23 files · series 90885 "The Puma Blues" 1989-1989 Mirage [was ongoing series] 4 on 3/23 files; methods numx23
+   GCD dump:       (= per-file) · 32068 "The Puma Blues" 1988-1989 Mirage [] 2 · 97418 "The Puma Blues" 2015-? Dover Publications [] 1   (dump lookup)
+   bridges:        gcd 3293 -> LOCG 120351 "The Puma Blues" support 20 · gcd 90885 -> LOCG 120351 "The Puma Blues" support 3
+
+== S20244 Titan  [tier C] · gap 26  keys: Titan  years 1992-2020  3 files / 0 collections
+   folders: [2] Misc\Titan (2018) · [1] Lion Forge-Magnetic-Non-Catalyst Prime\Titan (2020)
+   files:   [37981] Titan (2020) (Lion Forge Comics) (Digital-Empire).cbr (209pp) | [108086] Titan 01 (of 04) (2018) (digital) (Minutemen-Excelsior).cbz (26pp)
+            [108087] Titan 02 (of 04) (2018) (digital) (Minutemen-Excelsior).cbz (26pp)
+   ours:    ladder 1-2
+   CV linked:      vol 111160 "Titan" 2018 Amigo Comics 4 issues; cached #1-4 (4); yearΔ 26; ratio 2/4 = 0.50; no judged range
+   CV per-file (v1): vol 73079 "Titan" 1992 Games Workshop 3 on 3/3 files
+   CV candidates:  (= linked) · 68008 "Catalyst Prime" 2013 Lion Forge Comics 3 s26 · 72038 "Catalyst Prime: Quincredible" 2014 Lion Forge Comics 6 s19 · 108925 "Optimus Prime Annual 2018" 2018 IDW Publishing 1 issue 661056 s18 · 115661 "ElectroMagnetic" 2018 Maximized Comics 1 issue 693741 s18 · 101258 "Catalyst Prime: The Event" 2017 Lion Forge Comics 1 issue 594532 s15 · 102401 "Non" 1997 Red Ink 5 s13   (v1 search)
+   CV local rip:   (= linked) · 82537 "Titan" 2015 Alternative Comics 5 · 145763 "Titan" 1968 Gemini 3 · 131844 "Titan" 2020 Oni Press 1 issue 817544 · 68008 "Catalyst Prime" 2013 Lion Forge Comics 3 (via CV candidate name "Catalyst Prime")   (rip lookup)
+   GCD per-file:   series 128267 "Titan" [en-es] 2018-2018 Amigo [Limited Series] 4 on 2/3 files; methods numx2
+   GCD dump:       4170 "Titan" 1990-1991 Music City Comics [] 4 · 131076 "Titan" [pt-br] 2000-2000 Editora Abril [] 3 · 234536 "Titan" [en-gb] 2001-2003 Games Workshop [] 3 · 116513 "Titan" [de] 2006-2006 Blitz-Verlag [] 1 · 89890 "Titan" 2015-2015 Study Group Comics [] 5 · 104275 "Titan" 2016-? Alternative Comics [] 5   (dump lookup)
+
+== S20512 Tuki  [tier B]   keys: Tuki  years 2021-2022  2 files / 2 collections
+   folders: [2] Misc\Tuki (2022) (Jeff Smith)
+   files:   [108104] COL Tuki Vol. 01 - Fight for Fire (2021) (digital) (Son of Ultron-Empire).cbr (159pp)
+            [108105] COL Tuki Vol. 02 - Fight for Family (2022) (digital) (Son of Ultron-Empire).cbr (159pp)
+   ours:    judged item 108104 #1-4 conf 0.7
+   GCD says: [108104] gcd_reprint 2279998: s83311 Tüki (2014) #1-2, #4 [3 stories]
+   CV linked:      vol 142777 "Tuki" 2021 Cartoon Books 2 issues; cached #1-2 (2); yearΔ 0; ratio 0/2; 1 of 1 judged fit
+   CV candidates:  (= linked) · 75906 "Tuki Save the Humans" 2014 Cartoon Books 4 s75 · 143255 "Batman 2022 Annual" 2022 DC Comics 1 issue 928351 s23 · 143432 "DC Pride 2022" 2022 DC Comics 1 issue 929552 s23 · 144765 "Sonic the Hedgehog Annual 2022" 2022 IDW Publishing 1 issue 944108 s23 · 144854 "The Flash 2022 Annual" 2022 DC Comics 1 issue 944717 s23 · 58025 "Punk's Misc. Debris" 1994 Absolute Comics 1 issue 388771 s11   (v1 search)
+   CV local rip:   (= linked) · 75906 "Tuki Save the Humans" 2014 Cartoon Books 4 (via CV candidate name "Tuki Save the Humans") · 143255 "Batman 2022 Annual" 2022 DC Comics 1 issue 928351 (via CV candidate name "Batman 2022 Annual")   (rip lookup)
+   GCD dump:       178398 "Tuki" 2021-? Cartoon Books [] 2 · 185580 "Batman 2022 Annual" 2022-2022 DC [] 1 (via CV candidate name "Batman 2022 Annual")   (dump lookup)
+
+== S3796 Cherry Poptart  [tier B]   keys: Cherry  years 1982-2018  22 files / 0 collections
+   folders: [22] Misc\Underground\Cherry Poptart
+   files:   1982 Cherry 01 Edition 1 (Sir Real).cbr … 2000 Cherry 22 Edition 1 (Sir Real).cbr  (22 files, pp 36-45)
+   ours:    ladder 1-2; 2 number(s) name more than one file: 1, 2
+   CV linked:      vol 6833 "Cherry Poptart" 1982 Cherry Comics 23 issues; cached #1-23 (23); yearΔ 0; ratio 22/23 = 0.96; no judged range
+   CV per-file (v1): vol 119067 "Cigarette & Cherry" 2018 Akita Shoten 11 on 22/22 files
+   CV candidates:  (= linked) · 148041 "Cherry" 2017 Milky Way Ediciones 4 s75 · 108320 "Cherry!" 2017 Beaglee Inc. 2 s75 · 162311 "Cigarette and Cherry" 2023 Flashbook 10 s61 · 166779 "Cherry Magic" 2024 JBC 5 s59 · 119901 "Cherry Teacher" 2017 Panini Verlag 3 s59 · 172293 "Cherry Love" 2006 Shogakukan 1 s59   (v1 search)
+   CV local rip:   (= linked) · 108320 "Cherry!" 2017 Beaglee Inc. 2 · 148041 "Cherry" 2017 Milky Way Ediciones 4   (rip lookup)
+   GCD dump:       7352 "Cherry Poptart" 1982-1985 Last Gasp [] 3 · 76125 "Cherry Poptart" [fr] 1996-1996 Disjoncteur [] 1 · 7353 "Cherry" 1986-1992 Last Gasp [] 11 · 8310 "Cherry" [sv-se] 1993-1993 Atlantic Förlags AB [] 1 · 16161 "Cherry" 1993-1996 Kitchen Sink Press [] 19 · 16173 "Cherry" 1999-? Cherry Comics [] 12   (dump lookup)
+
+== S66183 Valentine  [tier C] · 19 number(s) x2+, 2 parsed key(s), ratio 4.74  keys: Valentine | Valentine (2013)  years 2013-2017  90 files / 0 collections
+   folders: [71] Misc\Valentine (2013) · [19] Misc\Valentine (2013)\Valentine (print)
+   files:   [108172] Valentine 001 (2014) (digital) (Mr Norrell-Empire).cbr (49pp) | [108173] Valentine 002 (2014) (digital) (Mr Norrell-Empire).cbr (64pp)
+            [108174] Valentine 003 (2014) (digital) (Mr Norrell-Empire).cbr (72pp) | [108175] Valentine 004 (2014) (digital) (Mr Norrell-Empire).cbr (98pp)
+            [108176] Valentine 005 (2014) (digital) (Mr Norrell-Empire).cbr (90pp) | [108177] Valentine 006 (2014) (digital) (Mr Norrell-Empire).cbr (60pp)
+            [108178] Valentine 007 (2014) (digital) (Mr Norrell-Empire).cbr (85pp) | [108179] Valentine 008 (2014) (digital) (Mr Norrell-Empire).cbr (94pp)
+            [108180] Valentine 009 (2014) (digital) (Mr Norrell-Empire).cbr (107pp) | [108181] Valentine 010 (2014) (digital) (Mr Norrell-Empire).cbr (109pp)
+            [108182] Valentine 011 (2014) (digital) (Mr Norrell-Empire).cbr (108pp) | [108183] Valentine 012 (2014) (digital) (Mr Norrell-Empire).cbr (102pp)
+            [108184] Valentine 013 (2014) (digital) (Mr Norrell-Empire).cbr (83pp) | [108185] Valentine 014 (2015) (digital) (Mr Norrell-Empire).cbr (109pp)
+            [108186] Valentine 015 (2015) (digital) (Mr Norrell-Empire).cbr (118pp) | [108187] Valentine 016 (2015) (digital) (Mr Norrell-Empire).cbr (98pp)
+            [108188] Valentine 017 (2016) (digital) (Mr Norrell-Empire).cbr (138pp) | [108189] Valentine 018 (2016) (digital) (Mr Norrell-Empire).cbr (92pp)
+            [108190] Valentine 019 (2017) (digital) (Mr Norrell-Empire).cbr (113pp) | [108191] Valentine 001 (2013) (De Campi, Larsen - digital).cbr (28pp)
+            [108192] Valentine 002 (2013) (De Campi, Larsen - digital).cbr (14pp) | [108193] Valentine 003 (2013) (De Campi, Larsen - digital).cbr (11pp)
+            [108194] Valentine 004 (2013) (De Campi, Larsen - digital).cbr (14pp) | [108195] Valentine 005 (2013) (De Campi, Larsen - digital).cbr (16pp)
+            [108196] Valentine 006 (2014) (De Campi, Larsen - digital).cbr (12pp) | [108197] Valentine 007 (2014) (De Campi, Larsen - digital).cbr (12pp)
+            [108198] Valentine 008 (2014) (De Campi, Larsen - digital).cbr (10pp) | [108199] Valentine 009 (2014) (De Campi, Larsen - digital).cbr (15pp)
+            [108200] Valentine 010 (2014) (De Campi, Larsen - digital).cbr (15pp) | [108201] Valentine 011 (2014) (De Campi, Larsen - digital).cbr (16pp)
+            [108202] Valentine 012 (2014) (De Campi, Larsen - digital).cbr (13pp) | [108203] Valentine 013 (2014) (De Campi, Larsen - digital).cbr (15pp)
+            [108204] Valentine 014 (2014) (De Campi, Larsen - digital).cbr (23pp) | [108205] Valentine 015 (2014) (De Campi, Larsen - digital).cbr (22pp)
+            [108206] Valentine 016 (2014) (De Campi, Larsen - digital).cbr (19pp) | [108207] Valentine 017 (2014) (De Campi, Larsen - digital).cbr (22pp)
+            [108208] Valentine 018 (2014) (De Campi, Larsen - digital).cbr (13pp) | [108209] Valentine 019 (2014) (De Campi, Larsen - digital).cbr (12pp)
+            [108210] Valentine 020 (2014) (De Campi, Larsen - digital).cbr (16pp) | [108211] Valentine 021 (2014) (De Campi, Larsen - digital).cbr (22pp)
+            [108212] Valentine 022 (2014) (De Campi, Larsen - digital).cbr (25pp) | [108213] Valentine 023 (2014) (De Campi, Larsen - digital).cbr (19pp)
+            [108214] Valentine 024 (2014) (De Campi, Larsen - digital).cbr (21pp) | [108215] Valentine 025 (2014) (De Campi, Larsen - digital).cbr (22pp)
+            [108216] Valentine 026 (2014) (De Campi, Larsen - digital).cbr (18pp) | [108217] Valentine 027 (2014) (De Campi, Larsen - digital).cbr (20pp)
+            [108218] Valentine 028 (2014) (De Campi, Larsen - digital).cbr (22pp) | [108219] Valentine 029 (2014) (De Campi, Larsen - digital).cbr (23pp)
+            [108220] Valentine 030 (2014) (De Campi, Larsen - digital).cbr (23pp) | [108221] Valentine 031 (2014) (De Campi, Larsen - digital).cbr (27pp)
+            [108222] Valentine 032 (2014) (De Campi, Larsen - digital).cbr (25pp) | [108223] Valentine 033 (2014) (De Campi, Larsen - digital).cbr (21pp)
+            [108224] Valentine 034 (2014) (De Campi, Larsen - digital).cbr (25pp) | [108225] Valentine 035 (2014) (De Campi, Larsen - digital).cbr (24pp)
+            [108226] Valentine 036 (2014) (De Campi, Larsen - digital).cbr (20pp) | [108227] Valentine 037 (2014) (De Campi, Larsen - digital).cbr (15pp)
+            [108228] Valentine 038 (2014) (De Campi, Larsen - digital).cbr (23pp) | [108229] Valentine 039 (2014) (De Campi, Larsen - digital).cbr (24pp)
+            [108230] Valentine 040 (2014) (De Campi, Larsen - digital).cbr (17pp) | [108231] Valentine 041 (2014) (De Campi, Larsen - digital).cbr (19pp)
+            [108232] Valentine 042 (2014) (De Campi, Larsen - digital).cbr (20pp) | [108233] Valentine 043 (2014) (De Campi, Larsen - digital).cbr (26pp)
+            [108234] Valentine 044 (2014) (De Campi, Larsen - digital).cbr (26pp) | [108235] Valentine 045 (2014) (De Campi, Larsen - digital).cbr (26pp)
+            [108236] Valentine 046 (2015) (De Campi, Larsen - digital).cbr (25pp) | [108237] Valentine 047 (2015) (De Campi, Larsen - digital).cbr (27pp)
+            [108238] Valentine 048 (2015) (De Campi, Larsen - digital).cbr (28pp) | [108239] Valentine 049 (2015) (De Campi, Larsen - digital).cbr (22pp)
+            [108240] Valentine 050 (2015) (De Campi, Larsen - digital).cbr (21pp) | [108241] Valentine 051 (2015) (De Campi, Larsen - digital).cbr (23pp)
+            [108242] Valentine 052 (2015) (De Campi, Larsen - digital).cbr (17pp) | [108243] Valentine 053 (2015) (De Campi, Larsen - digital).cbr (15pp)
+            [108244] Valentine 054 (2015) (De Campi, Larsen - digital).cbr (25pp) | [108245] Valentine 055 (2015) (De Campi, Larsen - digital).cbr (18pp)
+            [108246] Valentine 056 (2015) (De Campi, Larsen - digital).cbr (24pp) | [108247] Valentine 057 (2015) (De Campi, Larsen - digital).cbr (19pp)
+            [108248] Valentine 058 (2015) (De Campi, Larsen - digital).cbr (33pp) | [108249] Valentine 059 (2015) (De Campi, Larsen - digital).cbr (27pp)
+            [108250] Valentine 060 (2015) (De Campi, Larsen - digital).cbr (13pp) | [108251] Valentine 061 (2015) (De Campi, Larsen - digital).cbr (21pp)
+            [108252] Valentine 062 (2015) (De Campi, Larsen - digital).cbr (14pp) | [108253] Valentine 063 (2015) (De Campi, Larsen - digital).cbr (30pp)
+            [108254] Valentine 064 (2015) (De Campi, Larsen - digital).cbr (29pp) | [108255] Valentine 065 (2015) (De Campi, Larsen - digital).cbr (19pp)
+            [108256] Valentine 066 (2015) (De Campi, Larsen - digital).cbr (16pp) | [108257] Valentine 067 (2015) (De Campi, Larsen - digital).cbr (23pp)
+            [108258] Valentine 068 (2015) (De Campi, Larsen - digital).cbr (22pp) | [108259] Valentine 069 (2015) (De Campi, Larsen - digital).cbr (22pp)
+            [108260] Valentine 070 (2015) (De Campi, Larsen - digital).cbr (33pp) | [108261] Valentine 071 (2015) (De Campi, Larsen - digital).cbr (20pp)
+   ours:    ladder 1-71; 19 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+   CV linked:      vol 69667 "Valentine" 2013 Thrillbent 19 issues; cached #1-19 (19); yearΔ 0; ratio 90/19 = 4.74; no judged range; v1 per-file: same volume on 90/90 files
+   CV candidates:  (= linked) · 48681 "Valentine" 2006 Egmont Ehapa Verlag 2 s85 · 64649 "Valentine" 1997 Red Eye Press 2 s82 · 64650 "Valentine Reloaded" 2010 Red Eye Press 1 issue 415046 s70 · 28578 "Vicki Valentine" 1985 Renegade Press 4 s62 · 96052 "Valentine" 2016 Europe Comics 6 s50 · 65767 "Titan Comics: 2013 Preview" 2013 Titan Comics 1 issue 419178 s15   (v1 search)
+   CV local rip:   (= linked) · 96052 "Valentine" 2016 Europe Comics 6 · 48681 "Valentine" 2006 Egmont Ehapa Verlag 2 · 64649 "Valentine" 1997 Red Eye Press 2   (rip lookup)
+   GCD per-file:   series 215933 "Valentine" 2012-2012 Image [collected edition] 1 on 1/90 files; methods numx1
+   GCD dump:       (= per-file) · 139059 "Valentine" [fr] 2007-2007 Editions Carabas [] 1 · 100429 "Valentine" [de] 2006-2007 Egmont Ehapa [] 3 · 128920 "Valentine" [fr] 2005-2008 Vents d'Ouest [] 4 · 205725 "Valentine" 2003-2004 Red Eye Press [] 3 · 11050 "Valentine" 1997-? Red Eye Press [] 8   (dump lookup)
+   bridges:        gcd 215933 -> LOCG 147264 "Valentine" support 2 · gcd 215933 -> OL /works/OL21248623W "None" isbnSupport 8
+
+== S22748 Zap Comix  [tier C] · 4 named, the minority on >= 2 files or >= 10%  keys: Zap Comix | Zap Comix T00 | Zap Comix T01 | Zap Comix T02 | Zap Comix T03 | Zap Comix T04 | Zap Comix T05 | Zap Comix T06 | Zap Comix T07 | Zap Comix T08 | Zap Comix T09 | Zap Comix T10 | Zap Comix T11 | Zap Comix T12 | Zap Comix T13 | Zap Comix T14 | Zap Comix T15  years 1967-2016  38 files / 5 collections
+   folders: [17] Misc\Zap Comix (1968) · [16] Misc\R. Crumb\Robert Crumb & Others - Zap Comics - v0-15 · [5] Fantagraphics\The Complete Zap Comix (2014)
+   files:   [24971] COL The Complete Zap Comix Vol. 01 (2014) (digital+) (Mr. Mxyzptlk).cbz (225pp) | [24972] COL The Complete Zap Comix Vol. 02 (2014) (digital+) (Mr. Mxyzptlk).cbz (221pp)
+            [24973] COL The Complete Zap Comix Vol. 03 (2014) (digital+) (Mr. Mxyzptlk).cbz (220pp) | [24974] COL The Complete Zap Comix Vol. 04 (2014) (digital+) (Mr. Mxyzptlk).cbz (254pp)
+            [24975] COL The Complete Zap Comix Vol. 05 (2014) (digital+) (Mr. Mxyzptlk).cbz (233pp) | Zap Comix T00.cbr … Zap Comix T15.cbr  (16 files, pp 28-53)
+            [108299] Zap Comix 00 (7th Edition) (Sir Real).cbr (29pp) | [108300] Zap Comix 01 (5th Edition) (Sir Real).cbr (28pp) | [108301] Zap Comix 02 (3rd Edition) (Sir Real).cbr (53pp)
+            [108302] Zap Comix 03 (4th Edition) (Sir Real).cbr (52pp) | [108303] Zap Comix 04 (3rd Edition) (Sir Real).cbr (52pp) | [108304] Zap Comix 05 (3rd Edition) (Sir Real).cbr (53pp)
+            [108305] Zap Comix 06 (2nd Edition) (1973) (Sir Real).cbr (53pp) | [108306] Zap Comix 07 (1974) (2nd Edition) (Sir Real).cbr (53pp)
+            [108307] Zap Comix 08 (1975) (2nd Edition) (Sir Real).cbr (52pp) | Zap Comix 09 (1975) (1st Edition) (Sir Real).cbr … Zap Comix 14 (1998) (1st Edition) (Sir Real).cbr  (6 files, pp 52-54)
+            [108314] Zap Comix 15 (2004) (1st Edition) (Sir Real).cbz (52pp) | [108315] Zap Comix 16 (2016) (digital-Empire).cbz (98pp)
+   ours:    ladder 0-16; judged item 24971 #0-4 conf 0.98; judged item 24972 #5-8 conf 0.95; judged item 24973 #9-12 conf 0.95; judged item 24974 #13-16 conf 0.95
+   GCD says: [24971] gcd_reprint 1287591: s85877 Zap Comix (1969) #1, #3-4 [50 stories] · s1892 Zap Comix (1967) #0-2 [50 stories]
+             [24972] gcd_reprint 1287592: s85877 Zap Comix (1969) #5-8 [60 stories]
+             [24973] gcd_reprint 1287593: s85876 Zap Comix (1982) #10-12 [42 stories] · s85877 Zap Comix (1969) #9 [17 stories]
+             [24974] gcd_reprint 1287594: s85876 Zap Comix (1982) #13-15 [67 stories] · s59569 McSweeney's Quarterly Concern (1998) #13 [1 story] · s96883 The New Yorker (1925) (unnumbered) [1 story] · s156407 ArtReview (1993) #58 [1 story]
+             [24975] gcd_reprint 1287595: s52795 Zam-Zap Jam (1974) (unnumbered) [8 stories] · s85876 Zap Comix (1982) #10, #12-14 [4 stories] · s153258 Zap (1972) #7 [2 stories] · s85877 Zap Comix (1969) #4 [1 story]
+   CV linked:      vol 30068 "Zap Comix" 1968 Fantagraphics 17 issues; cached #0-16 (17); yearΔ 1; ratio 17/17 = 1.00; 4 of 4 judged fit; v1 per-file: same volume on 17/38 files
+   CV candidates:  (= linked) · 70175 "Zap Comix" 1970 Hammer Press 1 issue 438264 s70 · 141185 "El Último Zap Comix" ? ? 1 issue 902721 s53 · 127743 "Comix" 1981 Semic International 2 s48 · 140234 "Comix" 2010 JNK Media 54 s40 · 46494 "Comix" 1983 Semic Press AB 7 s40 · 145874 "The Complete Zap Comix" ? Fantagraphics 5 s38   (v1 search)
+   CV local rip:   (= linked) · 70175 "Zap Comix" 1970 Hammer Press 1 issue 438264 · 141185 "El Último Zap Comix" ? ? 1 issue 902721 (via CV candidate name "El Último Zap Comix")   (rip lookup)
+   GCD per-file:   series 85876 "Zap Comix" 1982-2005 Last Gasp [was ongoing series] 16 on 6/38 files · series 85877 "Zap Comix" 1969-1978 The Print Mint Inc [was ongoing series] 10 on 5/38 files · series 1892 "Zap Comix" 1967-1969 Apex Novelties [was ongoing series] 3 on 3/38 files · series 97273 "Zap Comix" 2016-2016 Fantagraphics [was ongoing series] 1 on 1/38 files; methods numx15
+   GCD dump:       (= per-file) · 66077 "Zap Comix" [de] 1970-1970 Hammer Press [] 1 · 143849 "Zap Comix" [de] 1970-1970 Hammer Press [] 1 · 85872 "Zap Comix" 1979-1981 The Print Mint; Last Gasp [] 3   (dump lookup)
+   bridges:        gcd 85876 -> LOCG 160799 "Zap Comix" support 3 · gcd 85876 -> OL None "None" isbnSupport 5 · gcd 85877 -> LOCG 160799 "Zap Comix" support 3 · gcd 1892 -> LOCG 160549 "Zap Comix" support 3
+
+== S22836 Zombies vs Cheerleaders: Halloween Special  [tier B]   keys: Zombies Vs Cheerleaders Halloween Special  years 2014-2014  1 files / 0 collections
+   folders: [1] Misc\Zombies Vs Cheerleaders\Specials and One Shots
+   files:   [108323] Zombies Vs Cheerleaders Halloween Special (2014) (3 covers).cbr (35pp)
+   CV linked:      vol 77271 "Zombies vs Cheerleaders: Halloween Special" 2014 Zenescope Entertainment 1 issues issue 467108; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 85181 "Zombies vs Cheerleaders 2015 Halloween Special" 2015 Zenescope Entertainment 1 issue 502293 s74 · 80473 "Zombies vs Cheerleaders: St. Patty's Day Special" 2015 Zenescope Entertainment 1 issue 481670 s60 · 59390 "Zombies vs Cheerleaders" 2013 3 Finger Prints 3 s58 · 33359 "Zombies vs Cheerleaders" 2010 Moonstone 7 s55 · 34722 "Zombies vs Cheerleaders: Geektacular" 2010 Moonstone 1 issue 227793 s50 · 40457 "Hack/Slash Meets Zombies Vs Cheerleaders" 2011 Moonstone 1 issue 272630 s49   (v1 search)
+   CV local rip:   (= linked) · 80473 "Zombies vs Cheerleaders: St. Patty's Day Special" 2015 Zenescope Entertainment 1 issue 481670 (via CV candidate name "Zombies vs Cheerleaders: St. Patty's Day Special") · 85181 "Zombies vs Cheerleaders 2015 Halloween Special" 2015 Zenescope Entertainment 1 issue 502293 (via CV candidate name "Zombies vs Cheerleaders 2015 Halloween Special")   (rip lookup)
+   GCD dump:       83355 "Zombies vs Cheerleaders: Halloween Special" 2014-2015 Zenescope Entertainment [] 2 · 86930 "Zombies vs Cheerleaders: St. Patty's Day Special" 2015-2015 Zenescope Entertainment [] 1 (via CV candidate name "Zombies vs Cheerleaders: St. Patty's Day Special")   (dump lookup)
+
+== S101637 Zoot!  [tier C] · by 27  keys: Zoot! v2 (2017)  years 2019-2020  3 files / 0 collections
+   flags: #561 label-ambiguous [Pending] item 108340 — Zoot! v02 001-003 are single issues, not collections
+   folders: [3] Misc\Zoot!\Zoot! v2 (2017)
+   files:   [108340] Zoot! v02 001 (2019) (digital-Empire).cbz (44pp) | [108341] Zoot! v02 002 (2019) (digital-Empire).cbz (36pp) | [108342] Zoot! v02 003 (2020) (digital-Empire).cbz (35pp)
+   ours:    ladder 1-3
+   CV linked:      vol 121498 "Zoot!" 2019 Hotel Fred Press 3 issues; cached #1-3 (3); yearΔ 0; ratio 3/3 = 1.00; no judged range; v1 per-file: same volume on 3/3 files
+   CV local rip:   (= linked) · 24796 "Zoot!" 1992 Fantagraphics 6 · 89201 "Zoot" ? Bell Features 3   (rip lookup)
+   GCD per-file:   methods round2-seriesx2 ⚠  (⚠ copies a folder neighbour's series — verify); series 24676 "Zoot!" 1992-1993 Fantagraphics [Limited series] 6 on 2/3 files
+   GCD dump:       (= per-file) · 118135 "Zoot" [en-gb] 2017-? Hotel Fred Press [] 1 · 24858 "Zoot" [en-ca] 1950-1950 Bell Features [] 3   (dump lookup)
+   bridges:        gcd 24676 -> LOCG 137794 "Zoot!" support 6
+
+== S3764 Charismagic  [tier C] · gap 5  keys: Charismagic  years 2013-2018  8 files / 2 collections
+   flags: #199 label-ambiguous [Pending] item 108404 — six 25-30 pp Charismagic v3 single issues carry a collection format
+   folders: [6] Misc\_Aspen Comics\Charismagic\Charismagic v3 (2018) · [2] Misc\_Aspen Comics\Charismagic
+   files:   [108403] COL Charismagic Omnibus Vol. 01 (2014) (digital) (Minutemen-Slayer).cbr (397pp) | [108410] COL Charismagic Vol. 02 (2014) (digital) (Minutemen-Slayer).cbr (147pp)
+            Charismagic v3 001 (2018) (Digital) (Thornn-Empire).cbr … Charismagic v3 006 (2018) (Digital) (Thornn-Empire).cbr  (6 files, pp 25-30)
+   ours:    ladder 1-6
+   CV linked:      vol 108726 "Charismagic" 2018 Aspen MLT 6 issues; cached #1-6 (6); yearΔ 5; ratio 6/6 = 1.00; no judged range
+   CV per-file (v1): vol 60568 "Charismagic" 2013 Aspen MLT 6 on 6/8 files · vol 108726 "Charismagic" 2018 Aspen MLT 6 on 2/8 files
+   CV candidates:  (= linked) · 38984 "Charismagic" 2011 Aspen MLT 7 s100 · 71666 "Charismagic" 2012 Aspen MLT 3 s88 · 108728 "Charismagic Primer" 2018 Aspen MLT 1 issue 660096 s74 · 73969 "Charismagic Omnibus" 2014 Aspen MLT 1 issue 453067 s70 · 53542 "Charismagic: The Death Princess" 2012 Aspen MLT 3 s70 · 55051 "Charismagic Sparkles" 2012 Aspen MLT 1 issue 374657 s69   (v1 search)
+   CV local rip:   (= linked) · 71666 "Charismagic" 2012 Aspen MLT 3 · 38984 "Charismagic" 2011 Aspen MLT 7   (rip lookup)
+   GCD per-file:   series 121810 "Charismagic" 2018-? Aspen [limited series] 6 on 6/8 files; methods numx6
+   GCD dump:       (= per-file) · 74029 "Charismagic" 2013-2013 Aspen [] 6 · 56127 "Charismagic" 2011-2012 Aspen [] 7   (dump lookup)
+   bridges:        gcd 121810 -> LOCG 101619 "Charismagic" support 6
