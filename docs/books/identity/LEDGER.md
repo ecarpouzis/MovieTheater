@@ -2022,3 +2022,12 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   cv would collide with its canonical cv. The key normalizer keeps the year: a key differing only by year is new; respell
   only when the exact spelling is a ParsedKey, alias or SeriesKeyLink. A split seed can be a book's own count-1 record —
   re-check against L-124 when the book sits alone in a run's folder (The Other Side 2017 -> DC mini CV 19537 / GCD 21941).
+[L-388] pub:marvel sig:split kind:omnibus
+- R-134 (wave 128, lead ruling): RESIDUE vs co-equal — two or more whole trades of another run are a co-equal run (R +
+  split-needed) only when that run has NO shelf of its own; when its run or line already has a shelf, they are misfiled
+  books: S + `F split-needed | items -> join S<home>` (L-368; X-Factor 2024 S66336's two Peter David omnibuses -> S22172).
+  `#MARVEL CURRENT ONGOING TITLES`: Marika / MikeNY76 ComicInfo Web ids and "cvv<id>" Series strings name the stored CV
+  volume (1.0 evidence). From the Ashes "Variant Covers" folders hold the PREVIOUS run's finale covers (X-Men v6 #35 in
+  the v7 folder). "_X-Men Complete Chronology V2\NNNN <event>" annuals are event-chapter excerpts = partial rips. A
+  ripper's "Omnibus Book 01" in a run's folder can be that run's first omnibus, not the line's Vol. 1 (page count decides).
+  CV mints one count-1 volume per Venom by Ewing trade; GCD keeps two lines (183532 Vols 1-4, 208820 Vols 5-8).
