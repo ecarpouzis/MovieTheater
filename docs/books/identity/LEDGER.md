@@ -2205,3 +2205,10 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   X Epic anchors on S7350 (the split lane cannot empty a shelf into a NEW key); after landing its name falls to its key
   "Generation X Epic Collection: Back To School" (cv=- shelves take Name = ParsedKey) — owes a DisplayNameOverride;
   S7349 (Vol. 04) still owes its join.
+[L-410] pub:marvel sig:split kind:collected-line
+- Waves 172-173: the Epic per-book siblings owing L-409's join (Gen X Vol. 04 S7349 -> S7350; X-Men Epic S22355-S22362
+  -> S22349) are queued like any other join. A kept half whose split handed its run away can hold the NEXT run's
+  issues (S66376 X-Men Unlimited 1993 got four 2004-run 21-25pp rips back -> S101518 'X-Men Unlimited v2 (2004)'):
+  page counts separate the runs. A later edition's rip (240pp 2021 printing) against a stored earlier record (128pp
+  1990) = F wrong-cv-link and the edition's own GCD line (S22477 -> gcd 178998). A book whose page count fits NO
+  edition (AvX 347pp, Infinity HC 1046pp) stays an I line at 0.7.
