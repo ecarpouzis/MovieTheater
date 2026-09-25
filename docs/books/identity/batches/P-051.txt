@@ -1,0 +1,272 @@
+## Conventions for this batch (25 shown of 155 matched; 385 in LEDGER.md; 7 shelf/shelves: kind:manga ×5 · kind:trade-only ×4 · kind:collected-line ×4 · folder:sequel-subfolder ×2 · pub:image ×2 · folder:graphic-novels ×1 · pub:trade-house ×1 · pub:idw ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-289] (6 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-383] (4 shelf/shelves) kind:collected-line kind:manga pub:dark-horse pub:dc pub:fantagraphics pub:image
+- R-125/R-126 (waves 117-118): CV's own labels SWAP EC Artists' Library #7 and #8 (Sucker Bait "Vol. 8", Zero Hour
+  "Vol. 7") — match I lines by subtitle, not ordinal. Kodansha USA / Viz manga shelves stored on the JAPANESE CV line
+  (Blue Period 113349, Beast Children 121130): a same-title English-publisher CV volume dated with our files is the
+  edition — probe with `--contains` before accepting a stored link. DC 2018 "Powers" (CV 116809 / GCD 134252) and Dark
+  Horse 2022 "Powers" (146264 / 189386) are library lines spanning several runs (own identity); a single-run trade filed
+  there joins the run. Image Witchblade TPB sub-lines have CV per-line volumes but no GCD rows except Redemption (63620).
+[L-098] (5 shelf/shelves) kind:manga sig:probe
+- GCD hides English manga behind a LONGER title far more than a shorter one ("Oishinbo a la Carte", "Neon
+  Genesis Evangelion 3-in-1 Edition", "Fairy Tail S: Tales from Fairy Tail") and occasionally a typo ("Fairy Tale:
+  Fairy Girls"); the mirror exists too (no ComicVine Viz volume for JoJo Parts 1-3 while GCD has all six → `cv=-`).
+[L-100] (5 shelf/shelves) kind:manga
+- A publisher change mid-line (Vertical → Kodansha USA) splits the GCD leg while CV keeps one volume (Ajin, CITY,
+  Miss Nagatoro): one S line, the GCD row that holds the wider span, `N` naming the other.
+[L-274] (5 shelf/shelves) kind:foreign kind:manga pass:item sig:twin
+- ITEM PASS (X-019..X-021, manga): the per-file GCD pick reuses volume 1's title-only id across EVERY book of a
+  manga shelf whose header already lists N numbered rows (A Bride's Story 12/12, Ajin 17/17, Assassination Classroom
+  21/21) — match the header pool by ordinal, ignore the pick. Per-file CV lands on a foreign twin of the same
+  title even more often (Milky Way, Egmont Ehapa, Glénat, Panini España, Carlsen, Altraverse, the Shogakukan
+  original) — the shelf's identity is the ENGLISH edition; use the header's cv-issues pool.
+[L-276] (5 shelf/shelves) kind:manga
+- GCD splits one manga line into a second publisher-branded series for its LAST volumes (Ajin v17, APOSIMZ v07-09:
+  Vertical → Kodansha USA); `SELECT id, number, page_count, isbn, title FROM gcd_issue WHERE series_id=?` on the
+  dump recovers the rows the header pool lacks.
+[L-277] (5 shelf/shelves) kind:manga pass:item sig:stamp
+- ITEM PASS (X-022..X-024, manga): the reused per-file stamp is not always volume 1's id — it can jump to a new
+  wrong series partway through a shelf (Berserk: three wrong series across v02-v41; Bleach cycles four before
+  settling) — always re-derive from the header pool by `#N`, never from a plausible-looking pick.
+[L-278] (5 shelf/shelves) kind:manga
+- Two parallel rip sets of one manga (Berserk .cbz + .cbr) take IDENTICAL per-volume ids from the same ordinal pool.
+[L-280] (5 shelf/shelves) kind:manga pass:item sig:probe
+- ITEM PASS (X-025..X-027, manga): when GCD splits a line in two (an earlier series for v1-N, a later one
+  continuing: Blood on the Tracks 156521 / 171046, CITY 123267 / 172756, Nagatoro 152847 / 171408) the packet's
+  header pool shows only the shelf's STORED series — find the other with `lookup.py --contains` and pull its issues
+  with `gcd_issue WHERE series_id=?`.
+[L-283] (5 shelf/shelves) kind:digital kind:manga pass:item
+- A manga whose only catalog runs are indexed by tankōbon VOLUME cannot take a chapter-count `C` range (Dragon Ball
+  Full Color: judged #1-17 are chapters) — `N no-record`, never an invented mapping.
+[L-284] (5 shelf/shelves) kind:manga pass:item
+- ITEM PASS (X-028..X-030): a manga tankōbon line that GCD tags [Collected Editions] (Food Wars! GCD 95211) has no
+  chapter-indexed run in either catalog — the `C OWED` marker is satisfied by `N no chapter-run`, the Dragon Ball
+  Full Color ruling; the books ARE the run. Our single volumes against GCD's "two-in-one" record have no safe 1:1
+  mapping → `gcd=s<series>` (Erased 118174), never an invented pairing.
+[L-288] (5 shelf/shelves) kind:foreign kind:manga pass:item sig:stamp
+- ITEM PASS (X-034..X-036): the reused stamp can jump FOUR times over one shelf (My Hero Academia: 105138 → 204933
+  → 236032 → 228276 over 38 books, CV pinned on foreign 166768 throughout); a shelf can carry NO gcd pick at all
+  (Muhyo & Roji's ×18). The header ladder by ordinal is the only source on manga — no exceptions found in 400 books.
+[L-293] (5 shelf/shelves) kind:foreign kind:manga pass:item sig:stamp
+- ITEM PASS (X-043..X-045, ~30 manga shelves): not one case where the per-file pick was right and the header pool
+  wrong. A foreign GCD leg that undershoots by one (Twin Star Exorcists, 26 vs 27) → the last book takes gcd=-;
+  a Vertical → Kodansha USA imprint split duplicate-stamps the later imprint's id onto the earlier book
+  (Weathering with You) — reject the duplicate, keep it on its own volume.
+[L-304] (5 shelf/shelves) kind:manga pass:item
+- On a 60-volume manga run the `I` lines map the shelf's own file order onto the CV/GCD issue-list order (ordinal);
+  that is the accepted precision at this scale — the item pass verified it held on 400+ books.
+[L-344] (5 shelf/shelves) kind:manga
+- Manga (Yen Press / Seven Seas / Kodansha / Viz): the fixed CV index now reaches the count-1 ENGLISH volumes that
+  D-012/D-013 called provider-missing; an English CV record replaces a third-territory GCD licence (a German / French
+  row) as the identity (R-067).
+[L-029] (3 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
+- On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
+  collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
+[L-302] (3 shelf/shelves) kind:collected-line kind:foreign kind:trade-only pub:action-lab pub:idw pub:image sig:probe sig:trade-link
+- C-031..C-033 (Image / IDW trade shelves): the matches-our-holdings collected-edition trap dominates trade-only
+  Image shelves — the run wins; `lookup.py --contains` recovers the English "Outcast by Kirkman & Azaceta" (CV 75114 /
+  GCD 81445) when the packet's probes return only foreign editions; genuine different-comics conflations still
+  exist (Skyward: Action Lab 2013 vs Image 2018; Zero: Matsumoto vs Kot) — the years and publisher decide.
+[L-376] (3 shelf/shelves) kind:trade-only pub:dark-horse pub:idw pub:image sig:split
+- Refines L-375: books-series-split compares keys EXACTLY and always writes the re-key; the item lands wherever the
+  resolver maps the new key. A join onto a live shelf's EXACT key moves even when it normalizes like the old key; the vN
+  respell is needed only when NO exact target exists and the normalized form is aliased to the parent (P-045). IDW / Image
+  trade-only shelves often paired the run's CV with the collected line's GCD row — check that both legs name the same thing.
+  GCD keeps a limited-HC and a softcover row for deluxe Dark Horse lines (Usagi Saga 87487 HC / 92028 SC) — page counts and
+  edition rows decide. GCD hands the Usagi trade numbering to IDW's own row (160732) from Vol. 34. IDW Library of American
+  Comics / Winterworld reprints: GCD's roll-up names the ORIGINAL Eclipse / Warp run. CV counts an IDW FCBD issue as #0 of
+  the run (Unicron) while GCD files it as its own series — a merge that brings #0 under an unjudged trade halts
+  audit_containment: write a `u` line (containment/decisions/S20426.txt) and wave_fix (R-121, wave 112).
+[L-382] (3 shelf/shelves) kind:collected-line kind:trade-only pub:idw pub:image
+- R-123/R-124 (waves 115-116): Image deluxe / compendium / massive lines carry their OWN CV and GCD records (IHF Deluxe
+  106678 / 119101, Radiant Black Massive 216939) — probe the line name WITHOUT "Book NN". Benitez Lady Mechanika: GCD
+  splits the first mini by publisher (Aspen 54501 #0-3, Benitez 86916 #4-5) while CV keeps one volume 35855. IDW
+  Ghostbusters: every one-shot and trade has its own count-1 record on both legs, and v1 stamped CV 43066 on all of them.
+  Rat Queens trade line GCD 111005: roll-ups on rows #1-3 only. Spawn Origins Collection reprints only Spawn 1992 —
+  run-wins merge onto S15978 (reverses C-032); Prophet's run is GCD 63020, not the trade line 68348. The P-047 joins
+  emptied 15 one-file shelves onto their survivors (L-377 in practice).
+[L-135] (4 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-164] (4 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (4 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-244] (4 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (4 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (4 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+
++130 more matched entries not shown: L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-291, L-309, L-314, L-064, L-085, L-101, L-310, L-013, L-014, L-026, L-043, L-047, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-193, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-355, L-191, L-290, L-011, L-015, L-020, L-021, L-023, L-031, L-040, L-076, L-104, L-105, L-106, L-109, L-111, L-112, L-115, L-117, L-119, L-126, L-132, L-140, L-143, L-187, L-188, L-196, L-198, L-199, L-210, L-212, L-219, L-233, L-241, L-242, L-243, L-256, L-295, L-296, L-297, L-298, L-306, L-307, L-308, L-313, L-321, L-322, L-323, L-325, L-327, L-328, L-329, L-332, L-342, L-356, L-363, L-364, L-365, L-366, L-368, L-369, L-373, L-374, L-375, L-377, L-380, L-384, L-385, L-113, L-175, L-281, L-016, L-032, L-041, L-065, L-074, L-083, L-099, L-114, L-123, L-192, L-194, L-250, L-262, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S14275 Queen Bee  [split]  2 files / 1 collections  decided in R-130 (S)
+   decided: S 14275 cv=44732 gcd=50261 0.9 | CV 44732 "Queen Bee" (Scholastic 2005, one issue 307833) and GCD 50261 (Scholastic 2005, row 764976, 120pp) agree on publisher, year and one book, and our 115pp "Queen Bee (2005)" in Graphic Novels is Chynna Clugston-Major's book; 0.9 for the manga volume filed here under the same parsed key (split below)
+   F 14275 split-needed | item 45182 "COL Queen Bee! v01 (2019)" 165pp (Manga\Queen Bee! (2018)) -> new key "Queen Bee! (2019)": Kodansha Comics USA's manga, CV 121192 "Queen Bee!" (2019, 3, #1 issue 718471 2019-09-09); --who-stores cv=121192 finds no shelf; restates B-030's F misfiled as L-368
+   N 14275 triage c: item 45182's judged #0-3 is the manga's chapter range, which is why it does not fit the one-book Scholastic run — the split above
+   keys now: "Queen Bee" x1 · "Queen Bee!" x1
+   groups (title x folder): 2
+   G1 "Queen Bee" in Graphic Novels — 1 file(s), pp 115-115; cv per-file 44732x1; gcd per-file 50261x1; key 'Queen Bee'
+      [26150] Queen Bee (2005).cbr (115pp)
+   G2 "Queen Bee!" in Manga\Queen Bee! (2018) — 1 file(s), 1 COL, pp 165-165; cv per-file 121192x1; key 'Queen Bee!'
+      [45182] COL Queen Bee! v01 (2019) (Digital) (LuCaZ).cbz (165pp)
+
+== S14579 Rent-A-Girlfriend  [split]  25 files / 20 collections  decided in R-130 (S)
+   decided: S 14579 cv=127630 gcd=160398 0.9 | CV 127630 "Rent-A-Girlfriend" (Kodansha Comics USA 2020, 33+, #1 2020-06-02) and GCD 160398 (Kodansha USA 2020-?, 36) agree on publisher and start year, and our nineteen COL v01-v19 (2020-2023) plus the loose chapters 282-286 are that run; 0.9 for the spin-off volume split below
+   F 14579 split-needed | item 45186 "COL Rent-a-(Really Shy!)-Girlfriend v01 (2021)" 160pp (its own folder Manga\Rent-a-(Really Shy!)-Girlfriend (2020)) -> new key "Rent-A-(Really Shy!)-Girlfriend (2021)": the spin-off, CV 140500 (Kodansha Comics USA 2021, 3) = GCD 177851 (Kodansha USA 2021-?, 3); --who-stores cv=140500 finds no shelf; restates B-046 / R-024's F misfiled as L-368
+   N 14579 per-file CV 161226 (Editorial Ivrea's Spanish edition, 7) on the five loose chapters 282-286 is a foreign-twin stamp (triage b, L-274), not this run
+   N 14579 triage c: judged #1-5 … #158-166 are chapter numbers (L-284), no C lines
+   keys now: "Rent-a-Girlfriend" x22 · "Rent-A-Girlfriend" x3
+   groups (title x folder): 3
+   G1 "Rent-A-Girlfriend" in Manga\Rent-A-Girlfriend (2017) — 2 file(s), 2 COL, pp 203-204; cv per-file 127630x2; gcd per-file 160398x2; key 'Rent-A-Girlfriend'
+      [43797] COL Rent-A-Girlfriend v01 (2020) (Digital) (danke-Empire).cbz (203pp)
+         own record cv 127630 / gcd s160398 "Rent-A-Girlfriend" (issue 2121322) COLLECTS: gcd=160400 彼女、お借りします [Kanojo, Okarishimasu /  Rent-A-Girlfriend] (2017) #1
+      [43798] COL Rent-A-Girlfriend v02 (2020) (Digital) (danke-Empire).cbz (204pp)
+   G2 "Rent-a-Girlfriend" in Manga\Rent-A-Girlfriend (2017) — 22 file(s), 17 COL, numbers 282-286, pp 20-208; cv per-file 127630x17, 161226x5; gcd per-file 160398x17; key 'Rent-a-Girlfriend'
+      [43792] Rent-a-Girlfriend 282 (2023) (Digital) (danke-Empire).cbz (22pp)
+      [43793] Rent-a-Girlfriend 283 (2023) (Digital) (danke-Empire).cbz (20pp)
+      [43794] Rent-a-Girlfriend 284 (2023) (Digital) (danke-Empire).cbz (22pp)
+      [43795] Rent-a-Girlfriend 285 (2023) (Digital) (danke-Empire).cbz (21pp)
+      [43796] Rent-a-Girlfriend 286 (2023) (Digital) (danke-Empire).cbz (21pp)
+      [43799] COL Rent-a-Girlfriend v03 (2020) (Digital) (danke-Empire).cbz (203pp)
+      [43800] COL Rent-a-Girlfriend v04 (2020) (Digital) (danke-Empire).cbz (196pp)
+      [43801] COL Rent-a-Girlfriend v05 (2021) (Digital) (danke-Empire).cbz (208pp)
+      [43802] COL Rent-a-Girlfriend v06 (2021) (Digital) (danke-Empire).cbz (205pp)
+      [43803] COL Rent-a-Girlfriend v07 (2021) (Digital) (danke-Empire).cbz (203pp)
+      [43804] COL Rent-a-Girlfriend v08 (2021) (Digital) (danke-Empire).cbz (205pp)
+      [43805] COL Rent-a-Girlfriend v09 (2021) (Digital) (danke-Empire).cbz (201pp)
+         own record cv 127630 / gcd s160398 "Rent-A-Girlfriend" (issue 2267475) COLLECTS: gcd=160400 彼女、お借りします [Kanojo, Okarishimasu /  Rent-A-Girlfriend] (2017) #9
+      [43806] COL Rent-a-Girlfriend v10 (2021) (Digital) (danke-Empire).cbz (208pp)
+      [43807] COL Rent-a-Girlfriend v11 (2022) (Digital) (danke-Empire).cbz (204pp)
+      [43808] COL Rent-a-Girlfriend v12 (2022) (Digital) (danke-Empire).cbz (203pp)
+      [43809] COL Rent-a-Girlfriend v13 (2022) (Digital) (danke-Empire).cbz (204pp)
+      [43810] COL Rent-a-Girlfriend v14 (2022) (Digital) (danke-Empire).cbz (202pp)
+      [43811] COL Rent-a-Girlfriend v15 (2022) (Digital) (danke-Empire).cbz (201pp)
+      [43812] COL Rent-a-Girlfriend v16 (2022) (Digital) (danke-Empire).cbz (199pp)
+      [43813] COL Rent-a-Girlfriend v17 (2023) (Digital) (danke-Empire).cbz (197pp)
+      [43814] COL Rent-a-Girlfriend v18 (2023) (Digital) (danke-Empire).cbz (197pp)
+      [43815] COL Rent-a-Girlfriend v19 (2023) (Digital) (danke-Empire).cbz (201pp)
+   G3 "Rent-a-(Really Shy!)-Girlfriend" in Manga\Rent-a-(Really Shy!)-Girlfriend (2020) — 1 file(s), 1 COL, pp 160-160; cv per-file 140500x1; gcd per-file 177851x1; key 'Rent-A-Girlfriend'
+      [45186] COL Rent-a-(Really Shy!)-Girlfriend v01 (2021) (Digital) (danke-Empire).cbz (160pp)
+
+== S16571 Manga Star Wars: Return of the Jedi  [split]  5 files / 5 collections  decided in R-130 (S)
+   decided: S 16571 cv=28392 gcd=26013 0.9 | our four "(2015, Marvel Edition)" v1-v4 (75-88pp) are Dark Horse's 1999 four-volume manga adaptation: CV 28392 "Manga Star Wars: Return of the Jedi" (Dark Horse 1999, 4) and GCD 26013 "Star Wars: Return of the Jedi -- Manga" (Dark Horse 1999, 4) agree on publisher, year and count; 0.9 for the Dawn of the Jedi trade split below
+   F 16571 split-needed | item 105917 "COL Star Wars - Dawn of the Jedi Vol. 01 - Force Storm (2012, DH Edition)" 121pp (Marvel-IDW Star Wars\_Star Wars - Dark Horse Reprints\Star Wars - Dawn of the Jedi) -> new key "Star Wars: Dawn of the Jedi - Force Storm (2012)": the trade of Dark Horse's 2012 mini CV 45577 / GCD 63307 (5); --who-stores cv=45577 / gcd=63307 / cv=54656 / gcd=70364 finds no S line or stored Series row; restates R-024's F misfiled as L-368
+   N 16571 open flag #433 (label-ambiguous, item 105917): the flag is right — the Dawn of the Jedi book is filed under a Return of the Jedi shelf; the split above answers it (L-367)
+   nearby: S16536 "Star Wars: Return of the Jedi" 1f [title — S cv=3243 gcd=2765 (B-049 0.9)] keys: "Star Wars - Episode VI - Return of the Jedi"
+   nearby: S16572 "Star Wars: Return of The Jedi - The Rebellion" 1f [title+1 — S cv=152418 gcd=202161 (A-020 0.95)] keys: "Star Wars - Return of the Jedi - The Rebellion"
+   nearby: S16710 "Star Wars: Return of the Jedi - Ewoks" 1f [title+1 — S cv=149393 gcd=198793 (A-020 0.95)] keys: "Star Wars: Return Of The Jedi - Ewoks"
+   nearby: S16712 "Star Wars: Return of the Jedi - Lando" 1f [title+1 — S cv=150054 gcd=199760 (A-020 0.95)] keys: "Star Wars: Return Of The Jedi - Lando"
+   keys now: "Star Wars - Return of the Jedi" x5
+   groups (title x folder): 2
+   G1 "Star Wars - Return of the Jedi" in Manga\Star Wars\06 Star Wars - Return of the Jedi (2015) — 4 file(s), 4 COL, pp 75-88; cv per-file 28392x4; gcd per-file 26013x4; key 'Star Wars - Return of the Jedi'
+      [45375] COL Star Wars - Return of the Jedi v1 (2015, Marvel Edition) (digital) (Galactic-Empire-HD).cbr (83pp)
+         own record cv 28392 / gcd s26013 "Star Wars: Return of the Jedi -- Manga" (issue 369958) COLLECTS: gcd=229246 スター・ウォーズ [Star Wars] (1997) #5
+      [45376] COL Star Wars - Return of the Jedi v2 (2015, Marvel Edition) (digital) (Galactic-Empire-HD).cbr (88pp)
+      [45377] COL Star Wars - Return of the Jedi v3 (2015, Marvel Edition) (digital) (Galactic-Empire-HD).cbr (88pp)
+      [45378] COL Star Wars - Return of the Jedi v4 (2015, Marvel Edition) (digital) (Galactic-Empire-HD).cbr (75pp)
+         own record cv 28392 / gcd s26013 "Star Wars: Return of the Jedi -- Manga" (issue 369961) COLLECTS: gcd=229246 スター・ウォーズ [Star Wars] (1997) #6
+   G2 "Star Wars - Dawn of the Jedi" in Marvel-IDW Star Wars\_Star Wars - Dark Horse Reprints\Star Wars - Dawn of the Jedi — 1 file(s), 1 COL, pp 121-121; cv per-file 54656x1; gcd per-file 70364x1; key 'Star Wars - Return of the Jedi'
+      [105917] COL Star Wars - Dawn of the Jedi Vol. 01 - Force Storm (2012, DH Edition) (Digital-HD-Empire).cbr (121pp)
+         own record cv 54656 / gcd s70364 "Star Wars: Dawn of the Jedi" (issue 1038065) COLLECTS: gcd=63307 Star Wars: Dawn of the Jedi - Force Storm (2012) #1-5
+
+== S18676 The Girl From the Other Side: Siúil, a Rún  [split]  13 files / 12 collections  decided in R-130 (S)
+   decided: S 18676 cv=98314 gcd=117946 0.9 | CV 98314 "The Girl From the Other Side: Siúil, a Rún" (Seven Seas 2017, 12) and GCD 117946 (Seven Seas 2017-2022, 12) agree on publisher, start year and count, and our twelve v01-v12 (v12 = the "[dear.] Side Stories" book) are it; 0.9 for the Image book split below
+   F 18676 split-needed | item 35318 "The Other Side (Special Edition) (2017)" 148pp (Image\The Other Side (2006)) -> new key "The Other Side (2017)": Jason Aaron's Image special edition, GCD 226038 (Image 2017, 1, row 2756519, ISBN 978-1-5343-0222-8); no CV volume for 2017; --who-stores gcd=226038 / gcd=21941 finds no shelf; restates B-047's F misfiled as L-368
+   N 18676 triage c: judged #1-5 … #50-53 are chapter numbers (L-284), no C lines
+   keys now: "The Girl From the Other Side - Siúil, a Rún" x12 · "The Girl From the Other Side - Siúil, a Rún - Side Stories" x1
+   groups (title x folder): 2
+   G1 "The Other Side (Special Edition) (2017) (Digital) (Lo Pan)" in Image\The Other Side (2006) — 1 file(s), pp 148-148; cv per-file 98314x1; gcd per-file 226038x1; key 'The Girl From the Other Side - Siúil, a Rún'
+      [35318] The Other Side (Special Edition) (2017) (Digital) (Lo Pan).cbr (148pp)
+   G2 "The Girl From the Other Side - Siúil, a Rún" in Manga\The Girl From the Other Side - Siúil, a Rún (2015) — 12 file(s), 12 COL, pp 168-189; cv per-file 98314x12; gcd per-file 117946x12; key 'The Girl From the Other Side - Siúil, a Rún' | 'The Girl From the Other Side - Siúil, a Rún - Side Stories'
+      [44053] COL The Girl From the Other Side - Siúil, a Rún v01 (2017) (Digital) (danke-Empire).cbz (179pp)
+      [44054] COL The Girl From the Other Side - Siúil, a Rún v02 (2017) (Digital) (danke-Empire).cbz (178pp)
+      [44055] COL The Girl From the Other Side - Siúil, a Rún v03 (2017) (Digital) (danke-Empire).cbz (180pp)
+      [44056] COL The Girl From the Other Side - Siúil, a Rún v04 (2018) (Digital) (danke-Empire).cbz (181pp)
+      [44057] COL The Girl From the Other Side - Siúil, a Rún v05 (2018) (Digital) (danke-Empire).cbz (179pp)
+      [44058] COL The Girl From the Other Side - Siúil, a Rún v06 (2019) (Digital) (danke-Empire).cbz (183pp)
+      [44059] COL The Girl From the Other Side - Siúil, a Rún v07 (2019) (Digital) (danke-Empire).cbz (182pp)
+      [44060] COL The Girl From the Other Side - Siúil, a Rún v08 (2020) (Digital) (danke-Empire).cbz (183pp)
+      [44061] COL The Girl From the Other Side - Siúil, a Rún v09 (2020) (Digital) (danke-Empire).cbz (189pp)
+      [44062] COL The Girl From the Other Side - Siúil, a Rún v10 (2021) (Digital) (danke-Empire).cbz (171pp)
+      [44063] COL The Girl From the Other Side - Siúil, a Rún v11 (2021) (Digital) (danke-Empire).cbz (178pp)
+      [44064] COL The Girl From the Other Side - Siúil, a Rún v12 - [dear.] Side Stories (2022) (Digital) (danke-Empire).cbz (168pp)  key="The Girl From the Other Side - Siúil, a Rún - Side Stories"
+
+== S19114 The Mice Templar, Volume III: A Midwinter Night's Dream  [split]  1 files / 1 collections  decided in R-129 (R)
+   decided: R 19114 | the shelf's one book "04 The Mice Templar v3 - A Midwinter Night's Dream (2012)" 312pp is GCD 72973 "The Mice Templar" (Image 2009-2016, the collected LINE) #3 row 1106896 "A Midwinter Night's Dream" (340pp, ISBN 978-1-60706-651-4) — the line S19113 stores (S cv=- gcd=72973, R-124) with books #1, #2.1, #2.2 and #4.1 of it; no CV is shared (S19113 is cv=-; this book's CV 53536 is a count-1 volume of its own), so this is a join, not a merge, and the shelf keeps no identity of its own; R-124's S cv=37969 gcd=56842 is withdrawn — those are the floppy run the book COLLECTS (C line), not the book
+   F 19114 split-needed | item 32959 -> join S19113 — GCD 72973 #3 row 1106896 is this exact book (title "A Midwinter Night's Dream", ISBN 978-1-60706-651-4, 340pp vs our 312pp) and S19113's S line stores GCD 72973 as the line identity holding its siblings #1 The Prophecy, #2.1/#2.2 Destiny, #4.1 Legend Vol. 02
+   named: S19113 The Mice Templar  5 files  keys: "The Mice Templar"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S19115 "The Mice Templar, Volume IV: Legend" 1f [title+1 — S cv=59513 gcd=77409 (C-033 0.9)] keys: "The Mice Templar - Legend"
+   keys now: "The Mice Templar - A Midwinter Night's Dream" x1
+   groups (title x folder): 1
+   G1 "The Mice Templar" in Image\The Mice Templar — 1 file(s), 1 COL, pp 312-312; cv per-file 53536x1; gcd per-file 72973x1; key "The Mice Templar - A Midwinter Night's Dream"
+      [32959] COL 04 The Mice Templar v3 - A Midwinter Night's Dream (2012) (Digital) (BlurPixel-Empire).cbr (312pp)
+
+== S22790 Zero Hour: Crisis in Time  [split]  12 files / 2 collections  decided in R-129 (S)
+   decided: S 22790 cv=5271 gcd=4983 0.9 | CV 5271 (DC 1994, cached #0-4) and GCD 4983 (DC 1994 miniseries, 5) match our ladder 4-3-2-1-0 twice (two #DC Events read-order folders, duplicate rips) plus the run's own 155pp 1994 collection; 0.9 while item 24983, a Fantagraphics EC book filed here by title alone, still sits on the shelf (split below)
+   F 22790 split-needed | item 24983 -> join S68158 — "The EC Artists' Library v08 - Zero Hour and Other Stories (2014)" 169pp is GCD 69863 "The Fantagraphics EC Artists' Library" #8 row 1179284 "Zero Hour and Other Stories" (176pp; roll-up = Weird Fantasy / Weird Science EC stories, not DC's 1994 crossover); S68158 stores that line (S cv=- gcd=69863, R-127) and already holds another rip of the same v08
+   F 22790 needs-fetch cv=38677 | the 1994 trade's CV volume (dated 2003 on CV) has no CvVolume row (named from the rip)
+   named: S68158 The EC Artists' Library  49 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S21397 "Weird Fantasy" 22f [shares gcd=835 (collected by item 24983) — S cv=1444 gcd=835 (R-119 0.9)] keys: "Weird Fantasy"
+   nearby: S4222 "Convergence: Zero Hour" 2f [title+1 — S cv=85090 gcd=92868 (A-008 0.95)] keys: "Convergence - Zero Hour Book"
+   nearby: S2047 "Batman: Zero Hour" 1f [title+1 — S cv=101923 gcd=114700 (B-010 0.95)] keys: "Batman - Zero Hour"
+   nearby: S17338 "Superman: Zero Hour" 1f [title+1 — S cv=111701 gcd=126069 (B-014 0.95)] keys: "Superman: Zero Hour"
+   keys now: "Zero Hour: Crisis in Time" x6 · "Zero Hour" x6
+   groups (title x folder): 12
+   G1 "Zero Hour Crisis in Time 00  Zero Hour" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\064 Crisis in Time — 1 file(s), numbers 0, pp 32-32; cv per-file 5271x1; gcd per-file 4983x1; key 'Zero Hour: Crisis in Time'
+      [15711] 09 Zero Hour Crisis in Time 00  Zero Hour.cbz (32pp)
+   G2 "Zero Hour Crisis in Time 01  Zero Hour" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\064 Crisis in Time — 1 file(s), numbers 1, pp 25-25; cv per-file 5271x1; gcd per-file 4983x1; key 'Zero Hour: Crisis in Time'
+      [15710] 08 Zero Hour Crisis in Time 01  Zero Hour.cbz (25pp)
+   G3 "Zero Hour Crisis in Time 02  Zero Hour" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\064 Crisis in Time — 1 file(s), numbers 2, pp 24-24; cv per-file 5271x1; gcd per-file 4983x1; key 'Zero Hour: Crisis in Time'
+      [15708] 06 Zero Hour Crisis in Time 02  Zero Hour.cbz (24pp)
+   G4 "Zero Hour Crisis in Time 03  Zero Hour" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\064 Crisis in Time — 1 file(s), numbers 3, pp 24-24; cv per-file 5271x1; gcd per-file 4983x1; key 'Zero Hour: Crisis in Time'
+      [15707] 05 Zero Hour Crisis in Time 03  Zero Hour.cbz (24pp)
+   G5 "Zero Hour Crisis in Time 04  Zero Hour" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\064 Crisis in Time — 1 file(s), numbers 4, pp 25-25; cv per-file 5271x1; gcd per-file 4983x1; key 'Zero Hour: Crisis in Time'
+      [15705] 03 Zero Hour Crisis in Time 04  Zero Hour.cbz (25pp)
+   G6 "Zero_Hour_00" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\11 Zero Hour Crisis in Time — 1 file(s), numbers 33, pp 31-31; key 'Zero Hour'
+      [16838] 33_Zero_Hour_00.cbr (31pp)
+   G7 "Zero_Hour_01" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\11 Zero Hour Crisis in Time — 1 file(s), numbers 26, pp 27-27; key 'Zero Hour'
+      [16837] 26_Zero_Hour_01.cbr (27pp)
+   G8 "Zero_Hour_02" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\11 Zero Hour Crisis in Time — 1 file(s), numbers 17, pp 24-24; key 'Zero Hour'
+      [16836] 17_Zero_Hour_02.cbr (24pp)
+   G9 "Zero_Hour_03" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\11 Zero Hour Crisis in Time — 1 file(s), numbers 12, pp 23-23; key 'Zero Hour'
+      [16835] 12_Zero_Hour_03.cbr (23pp)
+   G10 "Zero_Hour_04" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\11 Zero Hour Crisis in Time — 1 file(s), numbers 4, pp 25-25; key 'Zero Hour'
+      [16834] 07_Zero_Hour_04.cbr (25pp)
+   G11 "Zero Hour - Crisis in Time (1994) (digital) (Minutemen-Thoth)" in DC\#DC Events\Zero Hour (1994) — 1 file(s), 1 COL, pp 155-155; cv per-file 38677x1; gcd per-file 22856x1; key 'Zero Hour: Crisis in Time'
+      [19362] COL Zero Hour - Crisis in Time (1994) (digital) (Minutemen-Thoth).cbr (155pp)
+         own record cv 38677 / gcd s22856 "Zero Hour: Crisis in Time" (issue 347326) COLLECTS: gcd=4983 Zero Hour: Crisis in Time (1994) #0-4
+   G12 "The EC Artists' Library" in Fantagraphics\The EC Artists' Library (2012) — 1 file(s), 1 COL, pp 169-169; cv per-file 71478x1; gcd per-file 69863x1; key 'Zero Hour'
+      [24983] COL The EC Artists' Library v08 - Zero Hour and Other Stories [Fantagraphics] (2014) (Digital) (Bean-Empire).cbz (169pp)
+         own record cv 71478 / gcd s69863 "The Fantagraphics EC Artists' Library" (issue 1179284) COLLECTS: gcd=835 Weird Fantasy (1951) #11-16, #18-22 · gcd=836 Weird Science (1951) #11-13, #15-18, #20-21 · gcd=1065 Weird Science-Fantasy (1954) #27-28
+
+== S5947 Dust  [split]  2 files / 1 collections  decided in R-130 (S)
+   decided: S 5947 cv=155059 gcd=201225 0.9 | CV 155059 "Dust" (Scout Comics 2023, 6) and GCD 201225 (Scout 2023, limited series, 6) agree on publisher, year and count; ComicInfo on our "Dust 001 (2023)" says Scout Comics; 0.9 for Tezuka's Dust 8 split below
+   F 5947 split-needed | item 43990 "COL Dust 8 Omnibus (2018)" 417pp (Manga\_Osamu Tezuka\Dust 8 (1972)) -> new key "Dust 8 Omnibus (2017)": Osamu Tezuka's Dust 8, CV 140097 "Dust 8 Omnibus" (Digital Manga Publishing 2017, 1, issue 894387), barcode EAN 9781569703700 on the file; --who-stores cv=140097 finds no shelf; restates R-028's F misfiled as L-368
+   F 5947 partial-rip | one issue (#1) of the six-issue 2023 mini is on disk
+   N 5947 triage c: item 43990's judged #1-8 is Dust 8's chapter range, which is why it does not fit Scout's run — the split above
+   nearby: S5949 "Dust to Dust" 2f [title+1 — S cv=161782 gcd=219149 (C-030 0.9)] keys: "Dust to Dust"
+   keys now: "Dust" x2
+   groups (title x folder): 2
+   G1 "Dust 8 Omnibus (2018) (Digital) (danke-Empire)" in Manga\_Osamu Tezuka\Dust 8 (1972) — 1 file(s), 1 COL, pp 417-417; cv per-file 140097x1; key 'Dust'
+      [43990] COL Dust 8 Omnibus (2018) (Digital) (danke-Empire).cbz (417pp)
+   G2 "Dust" in Scout Comics (and Black Caravan)\Dust (2023) — 1 file(s), numbers 1, pp 25-25; cv per-file 155059x1; gcd per-file 201225x1; key 'Dust'
+      [109899] Dust 001 (2023) (digital) (DrVink-DCP).cbz (25pp)
