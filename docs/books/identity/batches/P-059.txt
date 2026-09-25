@@ -1,0 +1,554 @@
+## Conventions for this batch (21 shown of 128 matched; 394 in LEDGER.md; 20 shelf/shelves: pub:marvel ×20 · kind:collected-line ×17 · kind:trade-only ×16 · folder:vn-year ×4 · folder:sequel-subfolder ×3 · kind:new ×3 · folder:bucket ×2 · kind:foreign ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-127] (20 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-136] (20 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-298] (18 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (18 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-389] (18 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-053 / R-135 (waves 129-130): a run's issues never JOIN a creator-trade-keyed shelf ("Venom by Al Ewing & Ram V",
+  S21029, four trades) — keep them and meet through the SHARED cv at the next revisit (S20988 cv=140084 + merge-with=21029).
+  Marvel's 2019-2020 "Star Wars #1 facsimile" is "Star Wars No 1 Facsimile Edition" (CV 123267 / GCD 153348): probe the
+  "No N" form. Star Wars Insider and Titan's "Best of" books have no CV / GCD record: R + provider-missing, never the 1977
+  comic's stamp. The Dark Horse Star Wars Omnibus umbrella number (Vol. 32 / 35) raises a false "stored GCD row is another
+  book" warning against the sub-line's #1 / #2 — page counts and ISBNs decide. An Epic Collection / omnibus line spanning
+  several minis keeps its own GCD-line key in a split.
+[L-031] (17 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (17 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (17 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (17 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (17 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-132] (17 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-196] (17 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (17 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (17 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-306] (17 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (17 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (17 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-327] (17 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (17 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+[L-329] (17 shelf/shelves) kind:collected-line pub:dc pub:marvel
+- DC/Marvel trade lines often store a GCD row that belongs to a FOREIGN or other edition (Urban Comics' French GL
+  2011, a German GL 2023 Vol. 1) — check the stored row's series before using its roll-up. GCD carries twin HC/SC
+  series for most 2006-2016 DC/Marvel trades (77116/77117, 77936/77937) → cap those I lines at 0.9. CV keeps count-1
+  "Title: Subtitle" volumes per trade before ~2016, numbered TPB-line volumes after (R-054).
+[L-332] (17 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection one-rule (lead, wave 44): each Epic book is its OWN shelf; its S line carries the book's own
+  count-1 CV volume and `gcd=-`; the line's GCD series (74602 ASM, 74592 Iron Man) goes on the book's I line with
+  its ISBN; C lines name the runs reprinted. `lookup.py "<Line> Epic Collection" --contains` lists every volume.
+
++107 more matched entries not shown: L-392, L-029, L-174, L-291, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-013, L-014, L-016, L-032, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-113, L-114, L-118, L-125, L-157, L-159, L-163, L-177, L-193, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-064, L-085, L-101, L-310, L-060, L-116, L-388, L-319, L-124, L-191, L-272, L-281, L-121, L-129, L-130, L-242, L-290, L-371, L-391, L-007, L-175, L-217, L-027, L-028, L-034, L-036, L-142, L-169, L-173, L-265, L-312, L-324, L-345, L-378, L-379, L-387, L-390, L-393, L-097, L-194, L-252, L-274, L-288, L-293, L-330, L-352, L-354, L-065, L-099, L-123, L-128, L-181, L-262, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S10467 Knights of Pendragon  [split]  16 files / 0 collections  decided in R-144 (S)
+   decided: S 10467 cv=4402 gcd=4030 0.9 | Knights of Pendragon (1990-1991): CV 4402 (Marvel UK 1990, 18) and GCD 4030 (Marvel UK 1990-1991, 18) agree on publisher, span and count; ComicInfo Volume 1990 and Web ids 93503-93506 (= CV 4402 #1-4 issue ids) on the Marika rips, ladder 1-6, 11, 13-18 inside; 0.9 for three v2 issues split below
+   F 10467 split-needed | items 98924-98926 ("095-097 - Knights Of Pendragon V2 013-015", folder Death's Head\2. Death's Head (Minion)) are Knights of Pendragon (1992) #13-15, CV 21071 / GCD 12253, which S98108 stores -> join S98108 on its ParsedKey "Knights of Pendragon v2 (1992)"
+   N 10467 flag #308 (label-ambiguous, item 98924) is right: the V2 013-015 files are single issues, not collections
+   named: S98108 Knights of Pendragon  8 files  keys: "Knights of Pendragon v2 (1992)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Knights of Pendragon v1 (1990)" x13 · "Knights of Pendragon" x3
+   groups (title x folder): 2
+   G1 "Knights Of Pendragon" in Marvel\Death's Head\2. Death's Head (Minion) — 3 file(s), numbers 13-15, pp 20-22; cv per-file 21071x3; gcd per-file 12253x3; key 'Knights of Pendragon'
+      [98924] 095 - Knights Of Pendragon V2 013.cbr (20pp)
+      [98925] 096 - Knights Of Pendragon V2 014.cbr (21pp)
+      [98926] 097 - Knights Of Pendragon V2 015.cbr (22pp)
+   G2 "Knights of Pendragon" in Marvel\_Captain Britain\Knights of Pendragon v1 (1990) — 13 file(s), numbers 1-6, 11, 13-18, pp 24-24; cv per-file 4402x13; key 'Knights of Pendragon v1 (1990)'
+      e.g. Knights of Pendragon 001 (1990) (digital) (Marika-Empire).cbz
+        77482 #1 1990 24pp · 77483 #2 1990 24pp · 77484 #3 1990 24pp · 77485 #4 1990 24pp · 77486 #5 1990 24pp · 77487 #6 1990 24pp · 77492 #11 1991 24pp · 77494 #13 1991 24pp · 77495 #14 1991 24pp
+        77496 #15 1991 24pp · 77497 #16 1991 24pp · 77498 #17 1991 24pp · 77499 #18 1991 24pp
+
+== S2741 Black Panther  [split]  6 files / 5 collections  decided in R-144 (S)
+   decided: S 2741 cv=111034 gcd=124623 0.9 | Coates' second run: "Vol. 06-08 - The Intergalactic Empire of Wakanda Part 1-3" (GCD 105777 rows 1908791 / 2000678 / 2132269, roll-ups s124623 #1-12 +) = the stored CV 111034 "Black Panther" (Marvel 2018, 25, "Book 1-4" arcs) with GCD 124623 (Marvel 2018-2021, 25); 0.9 for two misfiled books split below
+   F 2741 split-needed | item 76067 "Black Panther - Who Is The Black Panther (2009)" 197pp (GCD 180029 row 2295519, roll-up Black Panther (2005) #1-6) is a printing of the Hudlin run's first trade -> join S95617 on its ParsedKey "Black Panther v4 (2005)" (S95617 stores CV 11502, lookup --who-stores cv=11502)
+   F 2741 split-needed | item 118378 "06 Black Panther 170 (2018)" 28pp is the 2016 run's legacy #170 (CV 89350 #170 issue 661141 / GCD 99295 #170 row 1788615) -> join S103535 on its ParsedKey "Black Panther v6 (2016)" (S103535 S line cv=89350 gcd=99295, R-045)
+   F 2741 wrong-cv-link | per-file CV 11502 (Black Panther 2005) on 2 files is a title stamp; the two books' own records are on their I lines
+   named: S95617 Black Panther  29 files  keys: "Black Panther (2005)" | "Black Panther v4 (2005)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S103535 Black Panther v6 (2016)  5 files  keys: "Black Panther v6 (2016)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64669 "Fantastic Four" 547f [shares gcd=1482 (collected by item 76067) — S cv=2045 gcd=1482 (C-044 0.9)] keys: "Fantastic Four" | "Fantastic Four (1961)" | "Fantastic Four v1 (1961)"
+   nearby: S64322 "Black Panther" 39f [title — S cv=151263 gcd=201428 (C-037 0.95)] keys: "Black Panther (2023)"
+   nearby: S64321 "Black Panther" 18f [title — S cv=25638 gcd=33758 (C-042 0.95)] keys: "Black Panther (2009)" | "Black Panther v5 (2009)" | "Black Panther: Shuri - Deadliest of the Species"
+   nearby: S95620 "Black Panther v9 (2023)" 9f [title — S gcd=201428 (R-144 0.9)] keys: "Black Panther v9 (2023)"
+   nearby: S64318 "Black Panther" 8f [title — S cv=2896 gcd=2387 (A-035 0.95)] keys: "Black Panther (1977)" | "Black Panther v1 (1977)"
+   nearby: S95616 "Black Panther" 6f [title — S cv=6496 gcd=6989 (R-143 0.95)] keys: "Black Panther v3 (1998)"
+   nearby: S20597 "Black Panther" 4f [title — S cv=4045 gcd=3640 (R-035 0.95)] keys: "Black Panther (1988)" | "Ultimate Black Panther"
+   nearby: S95619 "Black Panther" 3f [title — S cv=140222 gcd=178418 (B-054 0.95)] keys: "Black Panther by John Ridley" | "Black Panther v8 (2022)"
+   nearby: S102868 "Ultimate Black Panther" 10f [title+1 — S cv=156647 gcd=208771 (R-045 0.95)] keys: "Ultimate Black Panther (2024)"
+   nearby: S2746 "Black Panther: Unconquered" 1f [title+1 — S cv=145972 gcd=192532 (A-023 0.95)] keys: "Black Panther - Unconquered"
+   nearby: S2749 "Black Panther Adventures" 1f [title+1 — S cv=107494 gcd=119848 (B-054 0.95)] keys: "Black Panther Adventures"
+   nearby: S2757 "Black Panther Legends" 1f [title+1 — S cv=139563 gcd=177025 (B-054 0.95)] keys: "Black Panther Legends" · S2759 "Black Panther Saga" 1f [title+1 — S cv=33836 (B-054 0.9)] keys: "Black Panther Saga"
+   nearby: (+2 more by title)
+   keys now: "Black Panther" x5 · "Black Panther Book 9: The Intergalactic Empire Of Wakanda Part Four" x1
+   groups (title x folder): 3
+   G1 "Black Panther" in Marvel\_Black Panther\09 Black Panther (by Ta-Nahisi Coates) v6-v1-v7 (2018) — 4 file(s), 4 COL, pp 137-175; cv per-file 116697x1, 120303x1, 124132x1; gcd per-file 105777x4; key 'Black Panther' | 'Black Panther Book 9: The Intergalactic Empire Of Wakanda Part Four'
+      [53620] COL Black Panther Vol. 06 - The Intergalactic Empire of Wakanda Part 1 (2019) (Digital) (Zone-Empire).cbr (145pp)
+         own record cv 116697 / gcd s105777 "Black Panther" (issue 1908791) COLLECTS: gcd=124623 Black Panther (2018) #1, #3-5
+      [53621] COL Black Panther Vol. 07 - The Intergalactic Empire of Wakanda Part 2 (2019) (digital) (Zone-Empire).cbr (137pp)
+         own record cv 120303 / gcd s105777 "Black Panther" (issue 2000678) COLLECTS: gcd=124623 Black Panther (2018) #7-8
+      [53622] COL Black Panther Vol. 08 - The Intergalactic Empire of Wakanda Part 3 (2020) (digital) (Zone-Empire).cbr (138pp)
+         own record cv 124132 / gcd s105777 "Black Panther" (issue 2132269) COLLECTS: gcd=124623 Black Panther (2018) (unnumbered)
+      [53623] COL Black Panther Vol. 09 - The Intergalactic Empire of Wakanda Part 4 (2021) (digital) (Zone-Empire).cbr (175pp)  key="Black Panther Book 9: The Intergalactic Empire Of Wakanda Part Four"
+         own record cv 137502 / gcd s105777 "Black Panther" (issue 2238344) COLLECTS: gcd=124623 Black Panther (2018) (unnumbered)
+   G2 "Black Panther - Who Is The Black Panther (2009) (Digital TPB) (F) (Kileko-Empire)" in Marvel\_Black Panther\_Trades, Minis & One-shots — 1 file(s), 1 COL, pp 197-197; cv per-file 11502x1; gcd per-file 180029x1; key 'Black Panther'
+      [76067] COL Black Panther - Who Is The Black Panther (2009) (Digital TPB) (F) (Kileko-Empire).cbz (197pp)
+         own record cv 11502 / gcd s180029 "Black Panther: Who Is the Black Panther" (issue 2295519) COLLECTS: gcd=12471 Black Panther (2005) #1-6 · gcd=1482 Fantastic Four (1961) #52-53
+   G3 "Black Panther" in _Marvel Major Event Chronology (digital)\2018.04 - The Return of Wolverine\00 End Credit Scenes — 1 file(s), numbers 170, pp 28-28; cv per-file 89350x1; gcd per-file 99295x1; key 'Black Panther'
+      [118378] 06 Black Panther 170 (2018) (Digital) (Zone-Empire).cbr (28pp)
+
+== S2756 Black Panther Epic Collection: Panther's Prey  [split]  1 files / 1 collections  decided in R-144 (S)
+   decided: S 2756 cv=- gcd=108630 0.9 | volume 03 "Panther's Prey" of the same LINE: GCD 108630 #3 row 2212390 (508pp, ISBN 978-1-302-92198-9) is our 499pp book; CV 134427 is only its count-1 book volume (issue 837518, on the I line)
+   F 2756 wrong-cv-link | the stored CV 134427 "Black Panther Epic Collection: Panther's Prey" is the Vol. 03 book's own count-1 volume, not the line
+   F 2756 split-needed | item 53643 -> join S2755 on its ParsedKey "Black Panther Epic Collection" (S2755's S line is the same GCD 108630 line; L-377 / L-392); the shelf empties by the join
+   named: S2755 Black Panther Epic Collection  2 files  keys: "Black Panther Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65131 "Marvel Comics Presents" 523f [shares gcd=3654 (collected by item 53643) — S cv=4058 gcd=3654 (C-046 0.95)] keys: "Marvel Comics Presents (1988)" | "Marvel Comics Presents v1 (1988)"
+   nearby: S11410 "Marvel Fanfare" 58f [shares gcd=2657 (collected by item 53643) — S cv=3143 gcd=2657 (R-140 0.95)] keys: "Marvel Fanfare"
+   nearby: S2770 "Black Panther: Panther's Prey" 4f [shares gcd=4230 (collected by item 53643) — S cv=28441 gcd=4230 (A-023 1.0)] keys: "Black Panther: Panther's Prey"
+   nearby: S2742 "Black Panther: Panther's Quest" 1f [shares gcd=119599 (collected by item 53643) — S cv=107355 gcd=119599 (B-054 0.95)] keys: "Black Panther - Panther's Quest"
+   keys now: "Black Panther Epic Collection: Panther's Prey" x1
+   groups (title x folder): 1
+   G1 "Black Panther Epic Collection" in Marvel\_Black Panther\Black Panther Epic Collections — 1 file(s), 1 COL, pp 499-499; cv per-file 134427x1; gcd per-file 108630x1; key "Black Panther Epic Collection: Panther's Prey"
+      [53643] COL Black Panther Epic Collection Vol. 03 - Panther's Prey (2021) (Digital-Empire).cbr (499pp)
+         own record cv 134427 / gcd s108630 "Black Panther Epic Collection" (issue 2212390) COLLECTS: gcd=4230 Black Panther: Panther's Prey (1991) #1-4 · gcd=3654 Marvel Comics Presents (1988) #13-37, #148 · gcd=2657 Marvel Fanfare (1982) #45, #60 · gcd=119599 Black Panther: Panther's Quest (2018) (unnumbered)
+
+== S3420 Captain America: Sentinel of Liberty  [split]  10 files / 2 collections  decided in R-144 (S)
+   decided: S 3420 cv=143632 gcd=185536 0.9 | CV 143632 (Marvel 2022, 13, cached #1-13) = GCD 185536 (Marvel 2022-2023, 13); our "Captain America - Sentinel of Liberty 001-006, 011 (2022-2023)" floppies sit inside, and the two trades Book 01 Revolution / Vol. 02 The Invader roll up s185536 #1-6 / #7-11 (GCD 196837 rows 2494898 / 2559513); 0.9 for the 343pp collection of the 1998 mini (77976), split below
+   F 3420 split-needed | item 77976 "Captain America - Sentinel of Liberty (2018)" 343pp, folder "_Trades, Minis and One-shots\Captain America - Sentinel of Libery v1 (1998)", is the 2011 HC (CV 39489 / GCD 73825) of the 1998 Waid/Garney mini, CV 19381 / GCD 13268 (12 issues), stored by no shelf -> new key "Captain America: Sentinel of Liberty v1 (1998)" seeded cv=19381 gcd=13268
+   F 3420 wrong-cv-link | per-file CV 19381 (the 1998 mini) on the 7 floppies is a title stamp; their own issues are on the I lines below (CV 19381 is right only for 77976's content)
+   nearby: S95957 "Captain America" 6f [shares gcd=184244 (collected by item 77348) — S cv=142485 gcd=184244 (C-042 0.95)] keys: "Captain America v10 (2022)"
+   nearby: S3487 "Captain America and the Winter Soldier Special" 1f [shares gcd=192945 (collected by item 77305) — S cv=146087 gcd=192945 (A-023 0.95)] keys: "Captain America and the Winter Soldier Special"
+   keys now: "Captain America - Sentinel of Liberty" x10
+   groups (title x folder): 4
+   G1 "Captain America - Sentinel of Liberty" in Marvel\_Captain America\20 Captain America - Sentinel of Liberty v2 (2022) — 7 file(s), numbers 1-6, 11, pp 21-32; cv per-file 143632x7; gcd per-file 185536x7; key 'Captain America - Sentinel of Liberty'
+      e.g. Captain America - Sentinel of Liberty 001 (2022) (Digital) (Zone-Empire).cbr
+        77298 #1 2022 32pp · 77299 #2 2022 23pp · 77300 #3 2022 21pp · 77301 #4 2022 22pp · 77302 #5 2022 26pp · 77303 #6 2023 23pp · 77304 #11 2023 21pp
+   G2 "Captain America - Sentinel of Liberty Vol" in Marvel\_Captain America\20 Captain America - Sentinel of Liberty v2 (2022) — 1 file(s), 1 COL, pp 129-129; cv per-file 148888x1; gcd per-file 196837x1; key 'Captain America - Sentinel of Liberty'
+      [77305] COL Captain America - Sentinel of Liberty Vol, 02 - The Invader (2023) (Digital-Empire).cbr (129pp)
+         own record cv 148888 / gcd s196837 "Captain America: Sentinel of Liberty" (issue 2559513) COLLECTS: gcd=185536 Captain America: Sentinel of Liberty (2022) #7-11 · gcd=192945 Captain America and the Winter Soldier Special (2023) #1
+   G3 "Captain America - Sentinel of Liberty" in Marvel\_Captain America\_Omnibus Editions — 1 file(s), 1 COL, pp 169-169; cv per-file 148888x1; gcd per-file 196837x1; key 'Captain America - Sentinel of Liberty'
+      [77348] COL Captain America - Sentinel of Liberty Book 01 - Revolution (2023) (Digital-Empire).cbr (169pp)
+         own record cv 148888 / gcd s196837 "Captain America: Sentinel of Liberty" (issue 2494898) COLLECTS: gcd=185536 Captain America: Sentinel of Liberty (2022) #1-6 · gcd=184244 Captain America (2022) #0
+   G4 "Captain America - Sentinel of Liberty (2018) (Digital-Empire)" in Marvel\_Captain America\_Trades, Minis and One-shots\Captain America - Sentinel of Libery v1 (1998) — 1 file(s), pp 343-343; cv per-file 39489x1; gcd per-file 73825x1; key 'Captain America - Sentinel of Liberty'
+      [77976] Captain America - Sentinel of Liberty (2018) (Digital-Empire).cbz (343pp)
+
+== S3454 Captain America Epic Collection: Arena Of Death  [split]  1 files / 1 collections  decided in R-144 (S)
+   decided: S 3454 cv=- gcd=79135 0.9 | volume 19 "Arena of Death" of the Captain America Epic Collection LINE: GCD 79135 #19 row 2372073 (502pp, ISBN 978-1-302-93445-3) is our 483pp book; CV 144786 is only its count-1 book volume (issue 944348, on the I line)
+   F 3454 wrong-cv-link | the stored CV 144786 "Captain America Epic Collection: Arena of Death" is the Vol. 19 book's own count-1 volume, not the line
+   F 3454 split-needed | item 77340 -> join S3453 on its ParsedKey "Captain America Epic Collection" (S3453's S line is the same GCD 79135 line; L-377); the shelf empties by the join
+   named: S3453 Captain America Epic Collection  9 files  keys: "Captain America Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S95955 "Captain America" 475f [shares gcd=1860 (collected by item 77340) — S cv=2400 gcd=1860 (C-042 0.95)] keys: "Captain America" | "Captain America v1 (1968)"
+   nearby: S11370 "Marvel Age" 39f [shares gcd=69795 (collected by item 77340) — S cv=19176 gcd=69795 (R-137 0.9)] keys: "Marvel Age" | "Marvel Age Annual"
+   nearby: S20554 "U.S.Agent" 4f [shares gcd=13759 (collected by item 77340) — S cv=19601 gcd=13759 (A-022 0.95)] keys: "U.S.Agent"
+   nearby: S3455 "Captain America Epic Collection: Blood And Glory" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Blood And Glory"
+   nearby: S3456 "Captain America Epic Collection: Bucky Reborn" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Bucky Reborn"
+   nearby: S3457 "Captain America Epic Collection: Dawn's Early Light" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Dawn's Early Light"
+   nearby: S3458 "Captain America Epic Collection: Fighting Chance" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Fighting Chance"
+   nearby: S3459 "Captain America Epic Collection: Monsters And Men" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Monsters And Men"
+   nearby: S3460 "Captain America Epic Collection: Society of Serpents" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Society of Serpents"
+   nearby: S3461 "Captain America Epic Collection: Streets of Poison" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Streets of Poison"
+   nearby: S3462 "Captain America Epic Collection: Sturm Und Drang" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Sturm Und Drang"
+   nearby: S3463 "Captain America Epic Collection: The Captain" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: The Captain"
+   keys now: "Captain America Epic Collection: Arena Of Death" x1
+   groups (title x folder): 1
+   G1 "Captain America Epic Collection" in Marvel\_Captain America\_Captain America Epic Collections — 1 file(s), 1 COL, pp 483-483; cv per-file 144786x1; gcd per-file 79135x1; key 'Captain America Epic Collection: Arena Of Death'
+      [77340] COL Captain America Epic Collection Vol. 19 - Arena of Death (2022) (Digital-Empire).cbr (483pp)
+         own record cv 144786 / gcd s79135 "Captain America Epic Collection" (issue 2372073) COLLECTS: gcd=1860 Captain America (1968) #411-419 · gcd=1986 Captain America Annual (1971) #11-12 · gcd=13759 U.S.Agent (1993) #1-4 · gcd=69795 Marvel Age (1983) #123-124, #126
+
+== S3455 Captain America Epic Collection: Blood And Glory  [split]  1 files / 1 collections  decided in R-144 (S)
+   decided: S 3455 cv=- gcd=79135 0.9 | volume 18 "Blood and Glory" of the same LINE: GCD 79135 #18 row 2099392 (500pp, ISBN 978-1-302-92279-5) is our 490pp book; CV 125815 is only its count-1 book volume (issue 742421)
+   F 3455 wrong-cv-link | the stored CV 125815 "Captain America Epic Collection: Blood and Glory" is the Vol. 18 book's own count-1 volume, not the line
+   F 3455 split-needed | item 77339 -> join S3453 on its ParsedKey "Captain America Epic Collection" (same GCD 79135 line; L-377); the shelf empties by the join
+   named: S3453 Captain America Epic Collection  9 files  keys: "Captain America Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S95955 "Captain America" 475f [shares gcd=1860 (collected by item 77339) — S cv=2400 gcd=1860 (C-042 0.95)] keys: "Captain America" | "Captain America v1 (1968)"
+   nearby: S3454 "Captain America Epic Collection: Arena Of Death" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Arena Of Death"
+   nearby: S3456 "Captain America Epic Collection: Bucky Reborn" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Bucky Reborn"
+   nearby: S3457 "Captain America Epic Collection: Dawn's Early Light" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Dawn's Early Light"
+   nearby: S3458 "Captain America Epic Collection: Fighting Chance" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Fighting Chance"
+   nearby: S3459 "Captain America Epic Collection: Monsters And Men" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Monsters And Men"
+   nearby: S3460 "Captain America Epic Collection: Society of Serpents" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Society of Serpents"
+   nearby: S3461 "Captain America Epic Collection: Streets of Poison" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Streets of Poison"
+   nearby: S3462 "Captain America Epic Collection: Sturm Und Drang" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Sturm Und Drang"
+   nearby: S3463 "Captain America Epic Collection: The Captain" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: The Captain"
+   keys now: "Captain America Epic Collection: Blood And Glory" x1
+   groups (title x folder): 1
+   G1 "Captain America Epic Collection" in Marvel\_Captain America\_Captain America Epic Collections — 1 file(s), 1 COL, pp 490-490; cv per-file 125815x1; gcd per-file 79135x1; key 'Captain America Epic Collection: Blood And Glory'
+      [77339] COL Captain America Epic Collection Vol. 18 - Blood and Glory (2020) (Digital) (Zone-Empire).cbr (490pp)
+         own record cv 125815 / gcd s79135 "Captain America Epic Collection" (issue 2099392) COLLECTS: gcd=1860 Captain America (1968) #398-410 · gcd=4437 Blood and Glory [Punisher / Captain America] (1992) #1-3
+
+== S3456 Captain America Epic Collection: Bucky Reborn  [split]  1 files / 1 collections  decided in R-144 (S)
+   decided: S 3456 cv=- gcd=79135 0.9 | volume 03 "Bucky Reborn" of the same LINE: GCD 79135 #3 row 1720098 (404pp, ISBN 978-1-302-90419-7) is our 401pp book; CV 102578 is only its count-1 book volume (issue 606620)
+   F 3456 wrong-cv-link | the stored CV 102578 "Captain America Epic Collection: Bucky Reborn" is the Vol. 03 book's own count-1 volume, not the line
+   F 3456 split-needed | item 77327 -> join S3453 on its ParsedKey "Captain America Epic Collection" (same GCD 79135 line; L-377); the shelf empties by the join
+   named: S3453 Captain America Epic Collection  9 files  keys: "Captain America Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S95955 "Captain America" 475f [shares gcd=1860 (collected by item 77327) — S cv=2400 gcd=1860 (C-042 0.95)] keys: "Captain America" | "Captain America v1 (1968)"
+   nearby: S3454 "Captain America Epic Collection: Arena Of Death" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Arena Of Death"
+   nearby: S3455 "Captain America Epic Collection: Blood And Glory" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Blood And Glory"
+   nearby: S3457 "Captain America Epic Collection: Dawn's Early Light" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Dawn's Early Light"
+   nearby: S3458 "Captain America Epic Collection: Fighting Chance" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Fighting Chance"
+   nearby: S3459 "Captain America Epic Collection: Monsters And Men" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Monsters And Men"
+   nearby: S3460 "Captain America Epic Collection: Society of Serpents" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Society of Serpents"
+   nearby: S3461 "Captain America Epic Collection: Streets of Poison" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Streets of Poison"
+   nearby: S3462 "Captain America Epic Collection: Sturm Und Drang" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Sturm Und Drang"
+   nearby: S3463 "Captain America Epic Collection: The Captain" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: The Captain"
+   keys now: "Captain America Epic Collection: Bucky Reborn" x1
+   groups (title x folder): 1
+   G1 "Captain America Epic Collection" in Marvel\_Captain America\_Captain America Epic Collections — 1 file(s), 1 COL, pp 401-401; cv per-file 102578x1; gcd per-file 79135x1; key 'Captain America Epic Collection: Bucky Reborn'
+      [77327] COL Captain America Epic Collection Vol. 03 - Bucky Reborn (2017) (Digital) (Kileko-Empire).cbz (401pp)
+         own record cv 102578 / gcd s79135 "Captain America Epic Collection" (issue 1720098) COLLECTS: gcd=1860 Captain America (1968) #120-138 · gcd=1986 Captain America Annual (1971) #1
+
+== S3457 Captain America Epic Collection: Dawn's Early Light  [split]  1 files / 1 collections  decided in R-144 (S)
+   decided: S 3457 cv=- gcd=79135 0.9 | volume 09 "Dawn's Early Light" of the same LINE: GCD 79135 #9 row 1180514 (500pp, ISBN 978-0-7851-8866-7) is our 488pp book; CV 71799 is only its count-1 book volume (issue 445811)
+   F 3457 wrong-cv-link | the stored CV 71799 "Captain America Epic Collection: Dawn's Early Light" is the Vol. 09 book's own count-1 volume, not the line
+   F 3457 split-needed | item 77330 -> join S3453 on its ParsedKey "Captain America Epic Collection" (same GCD 79135 line; L-377); the shelf empties by the join
+   named: S3453 Captain America Epic Collection  9 files  keys: "Captain America Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S95955 "Captain America" 475f [shares gcd=1860 (collected by item 77330) — S cv=2400 gcd=1860 (C-042 0.95)] keys: "Captain America" | "Captain America v1 (1968)"
+   nearby: S13066 "Not Brand Echh" 14f [shares gcd=1811 (collected by item 77330) — S cv=2354 gcd=1811 (A-022 0.9)] keys: "Not Brand Echh"
+   nearby: S3454 "Captain America Epic Collection: Arena Of Death" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Arena Of Death"
+   nearby: S3455 "Captain America Epic Collection: Blood And Glory" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Blood And Glory"
+   nearby: S3456 "Captain America Epic Collection: Bucky Reborn" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Bucky Reborn"
+   nearby: S3458 "Captain America Epic Collection: Fighting Chance" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Fighting Chance"
+   nearby: S3459 "Captain America Epic Collection: Monsters And Men" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Monsters And Men"
+   nearby: S3460 "Captain America Epic Collection: Society of Serpents" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Society of Serpents"
+   nearby: S3461 "Captain America Epic Collection: Streets of Poison" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Streets of Poison"
+   nearby: S3462 "Captain America Epic Collection: Sturm Und Drang" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Sturm Und Drang"
+   nearby: S3463 "Captain America Epic Collection: The Captain" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: The Captain"
+   keys now: "Captain America Epic Collection: Dawn's Early Light" x1
+   groups (title x folder): 1
+   G1 "Captain America Epic Collection" in Marvel\_Captain America\_Captain America Epic Collections — 1 file(s), 1 COL, pp 488-488; cv per-file 71799x1; gcd per-file 79135x1; key "Captain America Epic Collection: Dawn's Early Light"
+      [77330] COL Captain America Epic Collection Vol. 09 - Dawn's Early Light (2014) (Digital) (Zone-Empire).cbr (488pp)
+         own record cv 71799 / gcd s79135 "Captain America Epic Collection" (issue 1180514) COLLECTS: gcd=1860 Captain America (1968) #247-266 · gcd=1986 Captain America Annual (1971) #5 · gcd=31804 Captain America [War and Remembrance] (1990) (unnumbered) · gcd=1811 Not Brand Echh (1967) #11-12
+
+== S3458 Captain America Epic Collection: Fighting Chance  [split]  1 files / 1 collections  decided in R-144 (S)
+   decided: S 3458 cv=- gcd=79135 0.9 | volume 20 "Fighting Chance" of the same LINE: GCD 79135 #20 row 2527832 (500pp, ISBN 978-1-302-95156-6) is our 491pp book; CV 150186 is only its count-1 book volume (issue 988154)
+   F 3458 wrong-cv-link | the stored CV 150186 "Captain America Epic Collection: Fighting Chance" is the Vol. 20 book's own count-1 volume, not the line
+   F 3458 split-needed | item 77341 -> join S3453 on its ParsedKey "Captain America Epic Collection" (same GCD 79135 line; L-377); the shelf empties by the join
+   named: S3453 Captain America Epic Collection  9 files  keys: "Captain America Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S95955 "Captain America" 475f [shares gcd=1860 (collected by item 77341) — S cv=2400 gcd=1860 (C-042 0.95)] keys: "Captain America" | "Captain America v1 (1968)"
+   nearby: S98940 "Nomad" 10f [shares gcd=4466 (collected by item 77341) — S cv=4803 gcd=4466 (C-040 0.95)] keys: "Nomad v2 (1991)"
+   nearby: S3454 "Captain America Epic Collection: Arena Of Death" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Arena Of Death"
+   nearby: S3455 "Captain America Epic Collection: Blood And Glory" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Blood And Glory"
+   nearby: S3456 "Captain America Epic Collection: Bucky Reborn" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Bucky Reborn"
+   nearby: S3457 "Captain America Epic Collection: Dawn's Early Light" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Dawn's Early Light"
+   nearby: S3459 "Captain America Epic Collection: Monsters And Men" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Monsters And Men"
+   nearby: S3460 "Captain America Epic Collection: Society of Serpents" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Society of Serpents"
+   nearby: S3461 "Captain America Epic Collection: Streets of Poison" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Streets of Poison"
+   nearby: S3462 "Captain America Epic Collection: Sturm Und Drang" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Sturm Und Drang"
+   nearby: S3463 "Captain America Epic Collection: The Captain" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: The Captain"
+   nearby: S3492 "Captain America/Nick Fury: Blood Truce" 1f [shares gcd=12779 (collected by item 77341) — S cv=30602 gcd=12779 (A-023 0.95)] keys: "Captain America-Nick Fury - Blood Truce"
+   keys now: "Captain America Epic Collection: Fighting Chance" x1
+   groups (title x folder): 1
+   G1 "Captain America Epic Collection" in Marvel\_Captain America\_Captain America Epic Collections — 1 file(s), 1 COL, pp 491-491; cv per-file 150186x1; gcd per-file 79135x1; key 'Captain America Epic Collection: Fighting Chance'
+      [77341] COL Captain America Epic Collection Vol. 20 - Fighting Chance (2023) (Digital-Empire).cbr (491pp)
+         own record cv 150186 / gcd s79135 "Captain America Epic Collection" (issue 2527832) COLLECTS: gcd=1860 Captain America (1968) #420-430 · gcd=1986 Captain America Annual (1971) #13 · gcd=4466 Nomad (1992) #18-19 · gcd=12779 Captain America / Nick Fury: Blood Truce (1995) (unnumbered)
+
+== S3459 Captain America Epic Collection: Monsters And Men  [split]  1 files / 1 collections  decided in R-144 (S)
+   decided: S 3459 cv=- gcd=79135 0.9 | volume 10 "Monsters and Men" of the same LINE: GCD 79135 #10 row 2156477 (508pp, ISBN 978-1-302-92323-5) is our 506pp book; CV 131207 is only its count-1 book volume (issue 810758)
+   F 3459 wrong-cv-link | the stored CV 131207 "Captain America Epic Collection: Monsters and Men" is the Vol. 10 book's own count-1 volume, not the line
+   F 3459 split-needed | item 77331 -> join S3453 on its ParsedKey "Captain America Epic Collection" (same GCD 79135 line; L-377); the shelf empties by the join
+   named: S3453 Captain America Epic Collection  9 files  keys: "Captain America Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S95955 "Captain America" 475f [shares gcd=1860 (collected by item 77331) — S cv=2400 gcd=1860 (C-042 0.95)] keys: "Captain America" | "Captain America v1 (1968)"
+   nearby: S64562 "The Defenders" 100f [shares gcd=2048 (collected by item 77331) — S cv=2569 gcd=2048 (C-046 0.9)] keys: "Defenders (1972)" | "Defenders v1 (1972)" | "Defenders-v1-026" | "Defenders-v1-027" (+2 more: lookup.py --shelf 64562)
+   nearby: S3454 "Captain America Epic Collection: Arena Of Death" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Arena Of Death"
+   nearby: S3455 "Captain America Epic Collection: Blood And Glory" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Blood And Glory"
+   nearby: S3456 "Captain America Epic Collection: Bucky Reborn" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Bucky Reborn"
+   nearby: S3457 "Captain America Epic Collection: Dawn's Early Light" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Dawn's Early Light"
+   nearby: S3458 "Captain America Epic Collection: Fighting Chance" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Fighting Chance"
+   nearby: S3460 "Captain America Epic Collection: Society of Serpents" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Society of Serpents"
+   nearby: S3461 "Captain America Epic Collection: Streets of Poison" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Streets of Poison"
+   nearby: S3462 "Captain America Epic Collection: Sturm Und Drang" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Sturm Und Drang"
+   nearby: S3463 "Captain America Epic Collection: The Captain" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: The Captain"
+   keys now: "Captain America Epic Collection: Monsters And Men" x1
+   groups (title x folder): 1
+   G1 "Captain America Epic Collection" in Marvel\_Captain America\_Captain America Epic Collections — 1 file(s), 1 COL, pp 506-506; cv per-file 131207x1; gcd per-file 79135x1; key 'Captain America Epic Collection: Monsters And Men'
+      [77331] COL Captain America Epic Collection Vol. 10 - Monsters and Men (2020) (Digital) (Zone-Empire).cbr (506pp)
+         own record cv 131207 / gcd s79135 "Captain America Epic Collection" (issue 2156477) COLLECTS: gcd=1860 Captain America (1968) #267-285 · gcd=2048 The Defenders (1972) #106 · gcd=1986 Captain America Annual (1971) #6
+
+== S3460 Captain America Epic Collection: Society of Serpents  [split]  1 files / 1 collections  decided in R-144 (S)
+   decided: S 3460 cv=- gcd=79135 0.9 | volume 12 "Society of Serpents" of the same LINE: GCD 79135 #12 row 1201114 (436pp, ISBN 978-0-7851-8896-4) is our 413pp book; CV 76582 is only its count-1 book volume (issue 463084)
+   F 3460 wrong-cv-link | the stored CV 76582 "Captain America Epic Collection: Society of Serpents" is the Vol. 12 book's own count-1 volume, not the line
+   F 3460 split-needed | item 77333 -> join S3453 on its ParsedKey "Captain America Epic Collection" (same GCD 79135 line; L-377); the shelf empties by the join
+   named: S3453 Captain America Epic Collection  9 files  keys: "Captain America Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S95955 "Captain America" 475f [shares gcd=1860 (collected by item 77333) — S cv=2400 gcd=1860 (C-042 0.95)] keys: "Captain America" | "Captain America v1 (1968)"
+   nearby: S11410 "Marvel Fanfare" 58f [shares gcd=2657 (collected by item 77333) — S cv=3143 gcd=2657 (R-140 0.95)] keys: "Marvel Fanfare"
+   nearby: S3454 "Captain America Epic Collection: Arena Of Death" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Arena Of Death"
+   nearby: S3455 "Captain America Epic Collection: Blood And Glory" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Blood And Glory"
+   nearby: S3456 "Captain America Epic Collection: Bucky Reborn" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Bucky Reborn"
+   nearby: S3457 "Captain America Epic Collection: Dawn's Early Light" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Dawn's Early Light"
+   nearby: S3458 "Captain America Epic Collection: Fighting Chance" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Fighting Chance"
+   nearby: S3459 "Captain America Epic Collection: Monsters And Men" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Monsters And Men"
+   nearby: S3461 "Captain America Epic Collection: Streets of Poison" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Streets of Poison"
+   nearby: S3462 "Captain America Epic Collection: Sturm Und Drang" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Sturm Und Drang"
+   nearby: S3463 "Captain America Epic Collection: The Captain" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: The Captain"
+   keys now: "Captain America Epic Collection: Society of Serpents" x1
+   groups (title x folder): 1
+   G1 "Captain America Epic Collection" in Marvel\_Captain America\_Captain America Epic Collections — 1 file(s), 1 COL, pp 413-413; cv per-file 76582x1; gcd per-file 79135x1; key 'Captain America Epic Collection: Society of Serpents'
+      [77333] COL Captain America Epic Collection Vol. 12 - Society of Serpents (2014) (Digital) (Zone-Empire).cbr (413pp)
+         own record cv 76582 / gcd s79135 "Captain America Epic Collection" (issue 1201114) COLLECTS: gcd=1860 Captain America (1968) #302-317 · gcd=2657 Marvel Fanfare (1982) #18
+
+== S3461 Captain America Epic Collection: Streets of Poison  [split]  1 files / 1 collections  decided in R-144 (S)
+   decided: S 3461 cv=- gcd=79135 0.9 | volume 16 "Streets of Poison" of the same LINE: GCD 79135 #16 row 1309966 (516pp, ISBN 978-0-7851-9265-7) is our 493pp book; CV 82670 is only its count-1 book volume (issue 492213)
+   F 3461 wrong-cv-link | the stored CV 82670 "Captain America Epic Collection: Streets of Poison" is the Vol. 16 book's own count-1 volume, not the line
+   F 3461 split-needed | item 77337 -> join S3453 on its ParsedKey "Captain America Epic Collection" (same GCD 79135 line; L-377); the shelf empties by the join
+   named: S3453 Captain America Epic Collection  9 files  keys: "Captain America Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S95955 "Captain America" 475f [shares gcd=1860 (collected by item 77337) — S cv=2400 gcd=1860 (C-042 0.95)] keys: "Captain America" | "Captain America v1 (1968)"
+   nearby: S11370 "Marvel Age" 39f [shares gcd=69795 (collected by item 77337) — S cv=19176 gcd=69795 (R-137 0.9)] keys: "Marvel Age" | "Marvel Age Annual"
+   nearby: S3454 "Captain America Epic Collection: Arena Of Death" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Arena Of Death"
+   nearby: S3455 "Captain America Epic Collection: Blood And Glory" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Blood And Glory"
+   nearby: S3456 "Captain America Epic Collection: Bucky Reborn" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Bucky Reborn"
+   nearby: S3457 "Captain America Epic Collection: Dawn's Early Light" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Dawn's Early Light"
+   nearby: S3458 "Captain America Epic Collection: Fighting Chance" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Fighting Chance"
+   nearby: S3459 "Captain America Epic Collection: Monsters And Men" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Monsters And Men"
+   nearby: S3460 "Captain America Epic Collection: Society of Serpents" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Society of Serpents"
+   nearby: S3462 "Captain America Epic Collection: Sturm Und Drang" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Sturm Und Drang"
+   nearby: S3463 "Captain America Epic Collection: The Captain" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: The Captain"
+   keys now: "Captain America Epic Collection: Streets of Poison" x1
+   groups (title x folder): 1
+   G1 "Captain America Epic Collection" in Marvel\_Captain America\_Captain America Epic Collections — 1 file(s), 1 COL, pp 493-493; cv per-file 82670x1; gcd per-file 79135x1; key 'Captain America Epic Collection: Streets of Poison'
+      [77337] COL Captain America Epic Collection Vol. 16 - Streets of Poison (2015) (Digital) (Kileko-Empire).cbz (493pp)
+         own record cv 82670 / gcd s79135 "Captain America Epic Collection" (issue 1309966) COLLECTS: gcd=1860 Captain America (1968) #372-386 · gcd=1986 Captain America Annual (1971) #9-10 · gcd=69795 Marvel Age (1983) #95 · gcd=69130 Marvel: The Year in Review (1989) #2
+
+== S3462 Captain America Epic Collection: Sturm Und Drang  [split]  1 files / 1 collections  decided in R-144 (S)
+   decided: S 3462 cv=- gcd=79135 0.9 | volume 11 "Sturm und Drang" of the same LINE: GCD 79135 #11 row 2424268 (524pp, ISBN 978-1-302-94536-7) is our 514pp book; CV 144781 is only its count-1 book volume (issue 944332)
+   F 3462 wrong-cv-link | the stored CV 144781 "Captain America Epic Collection: Sturm Und Drang" is the Vol. 11 book's own count-1 volume, not the line
+   F 3462 split-needed | item 77332 -> join S3453 on its ParsedKey "Captain America Epic Collection" (same GCD 79135 line; L-377); the shelf empties by the join
+   named: S3453 Captain America Epic Collection  9 files  keys: "Captain America Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S95955 "Captain America" 475f [shares gcd=1860 (collected by item 77332) — S cv=2400 gcd=1860 (C-042 0.95)] keys: "Captain America" | "Captain America v1 (1968)"
+   nearby: S6422 "The Falcon" 4f [shares gcd=2743 (collected by item 77332) — S cv=3223 gcd=2743 (B-055 0.9)] keys: "Falcon"
+   nearby: S13169 "Official Handbook Of The Marvel Universe" 2f [shares gcd=2758 (collected by item 77332) — S cv=3237 gcd=2758 (R-139 0.9)] keys: "Official Handbook Of The Marvel Universe" | "Official Handbook of the Marvel Universe"
+   nearby: S3407 "Captain America: Death of the Red Skull" 1f [shares gcd=73788 (collected by item 77332) — S cv=47719 gcd=73788 (B-054 0.95)] keys: "Captain America - Death Of The Red Skull"
+   nearby: S3454 "Captain America Epic Collection: Arena Of Death" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Arena Of Death"
+   nearby: S3455 "Captain America Epic Collection: Blood And Glory" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Blood And Glory"
+   nearby: S3456 "Captain America Epic Collection: Bucky Reborn" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Bucky Reborn"
+   nearby: S3457 "Captain America Epic Collection: Dawn's Early Light" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Dawn's Early Light"
+   nearby: S3458 "Captain America Epic Collection: Fighting Chance" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Fighting Chance"
+   nearby: S3459 "Captain America Epic Collection: Monsters And Men" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Monsters And Men"
+   nearby: S3460 "Captain America Epic Collection: Society of Serpents" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Society of Serpents"
+   nearby: S3461 "Captain America Epic Collection: Streets of Poison" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Streets of Poison"
+   nearby: S3463 "Captain America Epic Collection: The Captain" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: The Captain"
+   keys now: "Captain America Epic Collection: Sturm Und Drang" x1
+   groups (title x folder): 1
+   G1 "Captain America Epic Collection" in Marvel\_Captain America\_Captain America Epic Collections — 1 file(s), 1 COL, pp 514-514; cv per-file 144781x1; gcd per-file 79135x1; key 'Captain America Epic Collection: Sturm Und Drang'
+      [77332] COL Captain America Epic Collection Vol. 11 - Sturm und Drang (2022) (Digital-Empire).cbr (514pp)
+         own record cv 144781 / gcd s79135 "Captain America Epic Collection" (issue 2424268) COLLECTS: gcd=1860 Captain America (1968) #286-301 · gcd=2743 Falcon (1983) #1-4 · gcd=2758 The Official Handbook of the Marvel Universe (1983) #2, #4, #9, #15 · gcd=73788 Captain America: Death of the Red Skull (2012) (unnumbered)
+
+== S3463 Captain America Epic Collection: The Captain  [split]  1 files / 1 collections  decided in R-144 (S)
+   decided: S 3463 cv=- gcd=79135 0.9 | volume 14 "The Captain" of the same LINE: GCD 79135 #14 row 2253646 (508pp, ISBN 978-1-302-93070-7) is our 499pp book; CV 138272 is only its count-1 book volume (issue 879513)
+   F 3463 wrong-cv-link | the stored CV 138272 "Captain America Epic Collection: The Captain" is the Vol. 14 book's own count-1 volume, not the line
+   F 3463 split-needed | item 77335 -> join S3453 on its ParsedKey "Captain America Epic Collection" (same GCD 79135 line; L-377); the shelf empties by the join
+   named: S3453 Captain America Epic Collection  9 files  keys: "Captain America Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S95955 "Captain America" 475f [shares gcd=1860 (collected by item 77335) — S cv=2400 gcd=1860 (C-042 0.95)] keys: "Captain America" | "Captain America v1 (1968)"
+   nearby: S97887 "Iron Man" 349f [shares gcd=1867 (collected by item 77335) — S cv=2407 gcd=1867 (R-048 0.95)] keys: "Iron Man v1 (1968)"
+   nearby: S11410 "Marvel Fanfare" 58f [shares gcd=2657 (collected by item 77335) — S cv=3143 gcd=2657 (R-140 0.95)] keys: "Marvel Fanfare"
+   nearby: S11370 "Marvel Age" 39f [shares gcd=69795 (collected by item 77335) — S cv=19176 gcd=69795 (R-137 0.9)] keys: "Marvel Age" | "Marvel Age Annual"
+   nearby: S3454 "Captain America Epic Collection: Arena Of Death" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Arena Of Death"
+   nearby: S3455 "Captain America Epic Collection: Blood And Glory" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Blood And Glory"
+   nearby: S3456 "Captain America Epic Collection: Bucky Reborn" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Bucky Reborn"
+   nearby: S3457 "Captain America Epic Collection: Dawn's Early Light" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Dawn's Early Light"
+   nearby: S3458 "Captain America Epic Collection: Fighting Chance" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Fighting Chance"
+   nearby: S3459 "Captain America Epic Collection: Monsters And Men" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Monsters And Men"
+   nearby: S3460 "Captain America Epic Collection: Society of Serpents" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Society of Serpents"
+   nearby: S3461 "Captain America Epic Collection: Streets of Poison" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Streets of Poison"
+   nearby: S3462 "Captain America Epic Collection: Sturm Und Drang" 1f [shares gcd=79135 — S gcd=79135 (R-144 0.9)] keys: "Captain America Epic Collection: Sturm Und Drang"
+   keys now: "Captain America Epic Collection: The Captain" x1
+   groups (title x folder): 1
+   G1 "Captain America Epic Collection" in Marvel\_Captain America\_Captain America Epic Collections — 1 file(s), 1 COL, pp 499-499; cv per-file 138272x1; gcd per-file 79135x1; key 'Captain America Epic Collection: The Captain'
+      [77335] COL Captain America Epic Collection Vol. 14 - The Captain (2021) (Digital-Empire).cbr (499pp)
+         own record cv 138272 / gcd s79135 "Captain America Epic Collection" (issue 2253646) COLLECTS: gcd=1860 Captain America (1968) #333-350 · gcd=1867 Iron Man (1968) #228 · gcd=69795 Marvel Age (1983) #57 · gcd=2657 Marvel Fanfare (1982) #41
+
+== S4093 Conan Chronicles Epic Collection: Horrors Beneath The Stones  [split]  1 files / 1 collections  decided in R-144 (S)
+   decided: S 4093 cv=- gcd=139728 0.9 | volume 05 "Horrors Beneath the Stones" of the same LINE: GCD 139728 #5 row 2164561 (460pp, ISBN 978-1-302-92327-3) is our 419pp book; CV 130784 is only its count-1 book volume (issue 805268)
+   F 4093 wrong-cv-link | the stored CV 130784 "Conan Chronicles Epic Collection: Horrors Beneath the Stones" is the Vol. 05 book's own count-1 volume, not the line
+   F 4093 split-needed | item 78204 -> join S4094 on its ParsedKey "Conan Chronicles Epic Collection: Out Of The Darksome Hills" (S4094's S line here is the same GCD 139728 line; L-377 / L-392); the shelf empties by the join
+   named: S4094 Conan Chronicles Epic Collection: Out Of The Darksome Hills  1 files  keys: "Conan Chronicles Epic Collection: Out Of The Darksome Hills"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S4092 "Conan Chronicles Epic Collection: Blood In His Wake" 1f [shares gcd=139728 — S cv=144409 gcd=139728 (C-042 0.95)] keys: "Conan Chronicles Epic Collection"
+   nearby: S4095 "Conan Chronicles Epic Collection: Return To Cimmeria" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: Return To Cimmeria"
+   nearby: S4096 "Conan Chronicles Epic Collection: Shadows Over Kush" 1f [shares gcd=139728 — S cv=144406 gcd=139728 (C-042 0.95)] keys: "Conan Chronicles Epic Collection: Shadows Over Kush"
+   nearby: S4097 "Conan Chronicles Epic Collection: The Battle Of Shamla Pass" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: The Battle Of Shamla Pass"
+   nearby: S4098 "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: The Heart of Yag-Kosha"
+   nearby: S4099 "Conan Chronicles Epic Collection: The Song Of Belit" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: The Song Of Belit"
+   nearby: S10376 "King Conan Chronicles Epic Collection: Phantoms and Phoenixes" 2f [title+1 — S cv=144977 gcd=188800 (B-018 0.95)] keys: "King Conan Chronicles Epic Collection"
+   keys now: "Conan Chronicles Epic Collection: Horrors Beneath The Stones" x1
+   groups (title x folder): 1
+   G1 "Conan Chronicles Epic Collection" in Marvel\_Conan the Barbarian\Conan the Barbarian (2004 Dark Horse Reprints)\Conan (Dark Horse) Epic Collections — 1 file(s), 1 COL, pp 419-419; cv per-file 130784x1; gcd per-file 139728x1; key 'Conan Chronicles Epic Collection: Horrors Beneath The Stones'
+      [78204] COL Conan Chronicles Epic Collection Vol. 05 - Horrors Beneath the Stones (2020) (Digital) (Bean-Empire).cbz (419pp)
+         own record cv 130784 / gcd s139728 "Conan Chronicles Epic Collection" (issue 2164561) COLLECTS: gcd=54155 Conan: Road of Kings (2010) (unnumbered) · gcd=63224 Conan the Barbarian (2012) (unnumbered)
+
+== S4095 Conan Chronicles Epic Collection: Return To Cimmeria  [split]  1 files / 1 collections  decided in R-144 (S)
+   decided: S 4095 cv=- gcd=139728 0.9 | volume 03 "Return to Cimmeria" of the same LINE: GCD 139728 #3 row 2019810 (500pp, ISBN 978-1-302-91602-2) is our 494pp book; CV 121733 is only its count-1 book volume (issue 721167)
+   F 4095 wrong-cv-link | the stored CV 121733 "Conan Chronicles Epic Collection: Return To Cimmeria" is the Vol. 03 book's own count-1 volume, not the line
+   F 4095 split-needed | item 78202 -> join S4094 on its ParsedKey "Conan Chronicles Epic Collection: Out Of The Darksome Hills" (S4094's S line here is the same GCD 139728 line; L-377 / L-392); the shelf empties by the join
+   named: S4094 Conan Chronicles Epic Collection: Out Of The Darksome Hills  1 files  keys: "Conan Chronicles Epic Collection: Out Of The Darksome Hills"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S4086 "Conan" 50f [shares gcd=11511 (collected by item 78202) — S cv=10612 gcd=11511 (R-048 0.95)] keys: "Conan"
+   nearby: S4114 "Conan the Cimmerian" 26f [shares gcd=31174 (collected by item 78202) — S cv=21896 gcd=31174 (A-023 0.95)] keys: "Conan The Cimmerian"
+   nearby: S4092 "Conan Chronicles Epic Collection: Blood In His Wake" 1f [shares gcd=139728 — S cv=144409 gcd=139728 (C-042 0.95)] keys: "Conan Chronicles Epic Collection"
+   nearby: S4093 "Conan Chronicles Epic Collection: Horrors Beneath The Stones" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: Horrors Beneath The Stones"
+   nearby: S4096 "Conan Chronicles Epic Collection: Shadows Over Kush" 1f [shares gcd=139728 — S cv=144406 gcd=139728 (C-042 0.95)] keys: "Conan Chronicles Epic Collection: Shadows Over Kush"
+   nearby: S4097 "Conan Chronicles Epic Collection: The Battle Of Shamla Pass" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: The Battle Of Shamla Pass"
+   nearby: S4098 "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: The Heart of Yag-Kosha"
+   nearby: S4099 "Conan Chronicles Epic Collection: The Song Of Belit" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: The Song Of Belit"
+   nearby: S10376 "King Conan Chronicles Epic Collection: Phantoms and Phoenixes" 2f [title+1 — S cv=144977 gcd=188800 (B-018 0.95)] keys: "King Conan Chronicles Epic Collection"
+   keys now: "Conan Chronicles Epic Collection: Return To Cimmeria" x1
+   groups (title x folder): 1
+   G1 "Conan Chronicles Epic Collection" in Marvel\_Conan the Barbarian\Conan the Barbarian (2004 Dark Horse Reprints)\Conan (Dark Horse) Epic Collections — 1 file(s), 1 COL, pp 494-494; cv per-file 121733x1; gcd per-file 139728x1; key 'Conan Chronicles Epic Collection: Return To Cimmeria'
+      [78202] COL Conan Chronicles Epic Collection Vol. 03 - Return to Cimmeria (2019) (Digital) (Bean-Empire).cbz (494pp)
+         own record cv 121733 / gcd s139728 "Conan Chronicles Epic Collection" (issue 2019810) COLLECTS: gcd=11511 Conan (2004) #40-50 · gcd=31174 Conan the Cimmerian (2008) #0
+
+== S4097 Conan Chronicles Epic Collection: The Battle Of Shamla Pass  [split]  1 files / 1 collections  decided in R-144 (S)
+   decided: S 4097 cv=- gcd=139728 0.9 | volume 04 "The Battle of Shamla Pass" of the same LINE: GCD 139728 #4 row 2059018 (568pp, ISBN 978-1-302-92191-0) is our 449pp book; CV 123866 is only its count-1 book volume (issue 731987)
+   F 4097 wrong-cv-link | the stored CV 123866 "Conan Chronicles Epic Collection: The Battle of Shamla Pass" is the Vol. 04 book's own count-1 volume, not the line
+   F 4097 split-needed | item 78203 -> join S4094 on its ParsedKey "Conan Chronicles Epic Collection: Out Of The Darksome Hills" (S4094's S line here is the same GCD 139728 line; L-377 / L-392); the shelf empties by the join
+   named: S4094 Conan Chronicles Epic Collection: Out Of The Darksome Hills  1 files  keys: "Conan Chronicles Epic Collection: Out Of The Darksome Hills"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S4114 "Conan the Cimmerian" 26f [shares gcd=31174 (collected by item 78203) — S cv=21896 gcd=31174 (A-023 0.95)] keys: "Conan The Cimmerian"
+   nearby: S4092 "Conan Chronicles Epic Collection: Blood In His Wake" 1f [shares gcd=139728 — S cv=144409 gcd=139728 (C-042 0.95)] keys: "Conan Chronicles Epic Collection"
+   nearby: S4093 "Conan Chronicles Epic Collection: Horrors Beneath The Stones" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: Horrors Beneath The Stones"
+   nearby: S4095 "Conan Chronicles Epic Collection: Return To Cimmeria" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: Return To Cimmeria"
+   nearby: S4096 "Conan Chronicles Epic Collection: Shadows Over Kush" 1f [shares gcd=139728 — S cv=144406 gcd=139728 (C-042 0.95)] keys: "Conan Chronicles Epic Collection: Shadows Over Kush"
+   nearby: S4098 "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: The Heart of Yag-Kosha"
+   nearby: S4099 "Conan Chronicles Epic Collection: The Song Of Belit" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: The Song Of Belit"
+   nearby: S10376 "King Conan Chronicles Epic Collection: Phantoms and Phoenixes" 2f [title+1 — S cv=144977 gcd=188800 (B-018 0.95)] keys: "King Conan Chronicles Epic Collection"
+   keys now: "Conan Chronicles Epic Collection: The Battle Of Shamla Pass" x1
+   groups (title x folder): 1
+   G1 "Conan Chronicles Epic Collection" in Marvel\_Conan the Barbarian\Conan the Barbarian (2004 Dark Horse Reprints)\Conan (Dark Horse) Epic Collections — 1 file(s), 1 COL, pp 449-449; cv per-file 123866x1; gcd per-file 139728x1; key 'Conan Chronicles Epic Collection: The Battle Of Shamla Pass'
+      [78203] COL Conan Chronicles Epic Collection Vol. 04 - The Battle of Shamla Pass (2020) (Digital) (Bean-Empire).cbz (449pp)
+         own record cv 123866 / gcd s139728 "Conan Chronicles Epic Collection" (issue 2059018) COLLECTS: gcd=31174 Conan the Cimmerian (2008) (unnumbered)
+
+== S4098 Conan Chronicles Epic Collection: The Heart of Yag-Kosha  [split]  1 files / 1 collections  decided in R-144 (S)
+   decided: S 4098 cv=- gcd=139728 0.9 | volume 02 "The Heart of Yag-Kosha" of the same LINE: GCD 139728 #2 row 1944114 (508pp, ISBN 978-1-302-91591-9) is our 495pp book; CV 118120 is only its count-1 book volume (issue 705469)
+   F 4098 wrong-cv-link | the stored CV 118120 "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" is the Vol. 02 book's own count-1 volume, not the line
+   F 4098 split-needed | item 78201 -> join S4094 on its ParsedKey "Conan Chronicles Epic Collection: Out Of The Darksome Hills" (S4094's S line here is the same GCD 139728 line; L-377 / L-392); the shelf empties by the join
+   named: S4094 Conan Chronicles Epic Collection: Out Of The Darksome Hills  1 files  keys: "Conan Chronicles Epic Collection: Out Of The Darksome Hills"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S4086 "Conan" 50f [shares gcd=11511 (collected by item 78201) — S cv=10612 gcd=11511 (R-048 0.95)] keys: "Conan"
+   nearby: S4092 "Conan Chronicles Epic Collection: Blood In His Wake" 1f [shares gcd=139728 — S cv=144409 gcd=139728 (C-042 0.95)] keys: "Conan Chronicles Epic Collection"
+   nearby: S4093 "Conan Chronicles Epic Collection: Horrors Beneath The Stones" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: Horrors Beneath The Stones"
+   nearby: S4095 "Conan Chronicles Epic Collection: Return To Cimmeria" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: Return To Cimmeria"
+   nearby: S4096 "Conan Chronicles Epic Collection: Shadows Over Kush" 1f [shares gcd=139728 — S cv=144406 gcd=139728 (C-042 0.95)] keys: "Conan Chronicles Epic Collection: Shadows Over Kush"
+   nearby: S4097 "Conan Chronicles Epic Collection: The Battle Of Shamla Pass" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: The Battle Of Shamla Pass"
+   nearby: S4099 "Conan Chronicles Epic Collection: The Song Of Belit" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: The Song Of Belit"
+   nearby: S10376 "King Conan Chronicles Epic Collection: Phantoms and Phoenixes" 2f [title+1 — S cv=144977 gcd=188800 (B-018 0.95)] keys: "King Conan Chronicles Epic Collection"
+   keys now: "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" x1
+   groups (title x folder): 1
+   G1 "Conan Chronicles Epic Collection" in Marvel\_Conan the Barbarian\Conan the Barbarian (2004 Dark Horse Reprints)\Conan (Dark Horse) Epic Collections — 1 file(s), 1 COL, pp 495-495; cv per-file 118120x1; gcd per-file 139728x1; key 'Conan Chronicles Epic Collection: The Heart of Yag-Kosha'
+      [78201] COL Conan Chronicles Epic Collection Vol. 02 - The Heart of Yag-Kosha (2019) (Digital) (Bean-Empire).cbz (495pp)
+         own record cv 118120 / gcd s139728 "Conan Chronicles Epic Collection" (issue 1944114) COLLECTS: gcd=11511 Conan (2004) #20-39
+
+== S4099 Conan Chronicles Epic Collection: The Song Of Belit  [split]  1 files / 1 collections  decided in R-144 (S)
+   decided: S 4099 cv=- gcd=139728 0.9 | volume 06 "The Song of Belit" of the same LINE: GCD 139728 #6 row 2195880 (476pp, ISBN 978-1-302-92328-0) is our 435pp book; CV 133357 is only its count-1 book volume (issue 825512)
+   F 4099 wrong-cv-link | the stored CV 133357 "Conan Chronicles Epic Collection: The Song of Bêlit" is the Vol. 06 book's own count-1 volume, not the line
+   F 4099 split-needed | item 78205 -> join S4094 on its ParsedKey "Conan Chronicles Epic Collection: Out Of The Darksome Hills" (S4094's S line here is the same GCD 139728 line; L-377 / L-392); the shelf empties by the join
+   named: S4094 Conan Chronicles Epic Collection: Out Of The Darksome Hills  1 files  keys: "Conan Chronicles Epic Collection: Out Of The Darksome Hills"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S4092 "Conan Chronicles Epic Collection: Blood In His Wake" 1f [shares gcd=139728 — S cv=144409 gcd=139728 (C-042 0.95)] keys: "Conan Chronicles Epic Collection"
+   nearby: S4093 "Conan Chronicles Epic Collection: Horrors Beneath The Stones" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: Horrors Beneath The Stones"
+   nearby: S4095 "Conan Chronicles Epic Collection: Return To Cimmeria" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: Return To Cimmeria"
+   nearby: S4096 "Conan Chronicles Epic Collection: Shadows Over Kush" 1f [shares gcd=139728 — S cv=144406 gcd=139728 (C-042 0.95)] keys: "Conan Chronicles Epic Collection: Shadows Over Kush"
+   nearby: S4097 "Conan Chronicles Epic Collection: The Battle Of Shamla Pass" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: The Battle Of Shamla Pass"
+   nearby: S4098 "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" 1f [shares gcd=139728 — S gcd=139728 (R-144 0.9)] keys: "Conan Chronicles Epic Collection: The Heart of Yag-Kosha"
+   nearby: S10376 "King Conan Chronicles Epic Collection: Phantoms and Phoenixes" 2f [title+1 — S cv=144977 gcd=188800 (B-018 0.95)] keys: "King Conan Chronicles Epic Collection"
+   keys now: "Conan Chronicles Epic Collection: The Song Of Belit" x1
+   groups (title x folder): 1
+   G1 "Conan Chronicles Epic Collection" in Marvel\_Conan the Barbarian\Conan the Barbarian (2004 Dark Horse Reprints)\Conan (Dark Horse) Epic Collections — 1 file(s), 1 COL, pp 435-435; cv per-file 133357x1; gcd per-file 139728x1; key 'Conan Chronicles Epic Collection: The Song Of Belit'
+      [78205] COL Conan Chronicles Epic Collection Vol. 06 - The Song of Belit (2021) (Digital) (Bean-Empire).cbz (435pp)
+         own record cv 133357 / gcd s139728 "Conan Chronicles Epic Collection" (issue 2195880) COLLECTS: gcd=63224 Conan the Barbarian (2012) (unnumbered)
+
+== S95620 Black Panther v9 (2023)  [split]  9 files / 2 collections  decided in R-144 (S)
+   decided: S 95620 cv=- gcd=201428 0.9 | the folder "12 Black Panther v9 (2023)" is Eve L. Ewing's run: CV 151263 "Black Panther" (Marvel 2023, 10, "Reign at Dusk" Parts 1-10) and GCD 201428 (Marvel 2023-2024, 10) agree; our two trades "Black Panther by Eve L. Ewing Vol. 01-02 - Reign at Dusk" (judged #1-5 / #6-10) are its editions; 0.9 because the seven 1pp "Black Panther 013-015 (2023)" covers are the PREVIOUS run's finale (split below); cv=151263 is WITHHELD from this line only because S64322 wrongly stores it (N below)
+   F 95620 split-needed | items 53634-53640 (1pp variant covers of "Black Panther 013-015 (2023)") are Ridley's Black Panther (2022) #13-15, CV 140222 / GCD 178418 (15 issues; Ewing's run has only 10) - the From-the-Ashes shape of L-388 -> join S95619 on its ParsedKey "Black Panther v8 (2022)" (S95619 S line cv=140222 gcd=178418, B-054)
+   F 95620 wrong-cv-link | per-file CV 11502 (Black Panther 2005) on the 7 covers is a title stamp; the covers' own issues are on their I lines
+   N 95620 the run's CV id is 151263, withheld here: S64322 also stores CV 151263 (C-037) but its 39 files are "Ultimate Black Panther" (2024), a different comic, so linking both would MERGE Ewing's trades onto the Ultimate shelf; once S64322 is re-read onto its own volume, this shelf takes cv=151263
+   named: S95619 Black Panther  3 files  keys: "Black Panther by John Ridley" | "Black Panther v8 (2022)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64322 "Black Panther" 39f [shares cv=151263 (R clause), shares gcd=201428 (R clause), named S64322 in the decision's R/N lines — S cv=151263 gcd=201428 (C-037 0.95)] keys: "Black Panther (2023)"
+   nearby: S95617 "Black Panther" 29f [shares cv=11502 — S cv=11502 gcd=12471 (R-144 0.95)] keys: "Black Panther (2005)" | "Black Panther v4 (2005)"
+   nearby: S64321 "Black Panther" 18f [title — S cv=25638 gcd=33758 (C-042 0.95)] keys: "Black Panther (2009)" | "Black Panther v5 (2009)" | "Black Panther: Shuri - Deadliest of the Species"
+   nearby: S64318 "Black Panther" 8f [title — S cv=2896 gcd=2387 (A-035 0.95)] keys: "Black Panther (1977)" | "Black Panther v1 (1977)"
+   nearby: S2741 "Black Panther" 6f [title — S cv=111034 gcd=124623 (R-144 0.9)] keys: "Black Panther" | "Black Panther Book 9: The Intergalactic Empire Of Wakanda Part Four"
+   nearby: S95616 "Black Panther" 6f [title — S cv=6496 gcd=6989 (R-143 0.95)] keys: "Black Panther v3 (1998)"
+   nearby: S103535 "Black Panther v6 (2016)" 5f [title — S cv=89350 gcd=99295 (R-045 0.95)] keys: "Black Panther v6 (2016)"
+   nearby: S20597 "Black Panther" 4f [title — S cv=4045 gcd=3640 (R-035 0.95)] keys: "Black Panther (1988)" | "Ultimate Black Panther"
+   nearby: S102868 "Ultimate Black Panther" 10f [title+1 — S cv=156647 gcd=208771 (R-045 0.95)] keys: "Ultimate Black Panther (2024)"
+   nearby: S2746 "Black Panther: Unconquered" 1f [title+1 — S cv=145972 gcd=192532 (A-023 0.95)] keys: "Black Panther - Unconquered"
+   nearby: S2749 "Black Panther Adventures" 1f [title+1 — S cv=107494 gcd=119848 (B-054 0.95)] keys: "Black Panther Adventures"
+   nearby: S2757 "Black Panther Legends" 1f [title+1 — S cv=139563 gcd=177025 (B-054 0.95)] keys: "Black Panther Legends" · S2759 "Black Panther Saga" 1f [title+1 — S cv=33836 (B-054 0.9)] keys: "Black Panther Saga"
+   nearby: S2767 "Black Panther: Doomwar" 1f [title+1 — S cv=98395 gcd=111681 (B-054 0.95)] keys: "Black Panther: Doomwar" · (+1 more by title)
+   keys now: "Black Panther v9 (2023)" x9
+   groups (title x folder): 2
+   G1 "Black Panther by Eve L. Ewing" in Marvel\_Black Panther\12 Black Panther v9 (2023) — 2 file(s), 2 COL, pp 111-120; cv per-file 155891x2; gcd per-file 207476x2; key 'Black Panther v9 (2023)'
+      [53632] COL Black Panther by Eve L. Ewing Vol. 01 - Reign At Dusk (2024) (Digital) (Shan-Empire).cbz (120pp)
+         own record cv 155891 / gcd s207476 "Black Panther by Eve L. Ewing: Reign at Dusk" (issue 2593720) COLLECTS: gcd=201428 Black Panther (2023) (unnumbered)
+      [53633] COL Black Panther by Eve L. Ewing Vol. 02 - Reign at Dusk (2024) (Digital) (Shan-Empire).cbz (111pp)
+         own record cv 155891 / gcd s207476 "Black Panther by Eve L. Ewing: Reign at Dusk" (issue 2635586) COLLECTS: gcd=201428 Black Panther (2023) (unnumbered)
+   G2 "Black Panther" in Marvel\_Black Panther\12 Black Panther v9 (2023)\Variant Covers — 7 file(s), numbers 13-15, pp 1-1; cv per-file 140222x7; gcd per-file 178418x7; key 'Black Panther v9 (2023)'
+      e.g. Black Panther 013 (2023) (1-in-25 Scalera Variant) (Digital) (MikeNY76-Empire).cbz
+        53634 #13 2023 1pp · 53635 #13 2023 1pp · 53636 #14 2023 1pp · 53637 #14 2023 1pp · 53638 #14 2023 1pp · 53639 #15 2023 1pp · 53640 #15 2023 1pp

@@ -2085,3 +2085,13 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   per-book shelves: when the natural line anchor (plain key) is outside the batch, anchor on a line shelf inside it and
   queue the rest (Conan Chronicles EC -> S4094; S4092 / S4096 owe the same join). Joining stray covers onto a shelf of
   unjudged trades arms them again (S20673 The Resistance) -> `u` line + wave_fix; read that range next.
+[L-395] pub:marvel sig:stamp sig:split
+- Waves 141-142: Marvel RELAUNCH shelves carry the legacy volume's CV issue ids BY NUMBER (Daredevil 1998 -> 2190,
+  Deadpool 2008 / 2012 -> 6000) — compare each file's linked issue number to its filename and correct with I lines.
+  Daredevil by Mark Waid Vol. 01 at 272pp is the HC line (CV 57482 / GCD 79153), not the TPB line (45530 / 64482). GCD
+  numbers Daredevil 1998's legacy issues "#22 (402)"; a file "115 (495)" is #115. GCD files Daredevil Annual #5 (1989) as
+  "#4 [5]". Creator lines reprinting ONE run give way to the run (Miller/Janson -> 1964 run, To Heaven Through Hell ->
+  2019 run) — the standing run-vs-line ruling supersedes L-115 / L-196's 0.9 practice. A dismissed conflated flag does not
+  stop the RESIDUE ruling: two whole books of another record with no shelf -> R + split-needed (Deadpool Classic
+  Companion). An R- file that restates a shelf a pending P- batch splits MUST repeat its F split-needed (L-370 halt,
+  S95620 in R-145).

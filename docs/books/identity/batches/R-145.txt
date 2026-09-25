@@ -1,0 +1,367 @@
+## Conventions for this batch (21 shown of 134 matched; 394 in LEDGER.md; 9 shelf/shelves: pub:marvel ×9 · folder:vn-year ×7 · folder:variant-covers ×4 · folder:events ×3 · folder:sequel-subfolder ×3 · kind:new ×3 · kind:collected-line ×3 · folder:skottie ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (9 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (9 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (9 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-060] (7 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (7 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-136] (7 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-319] (6 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-388] (6 shelf/shelves) pub:marvel sig:split
+- R-134 (wave 128, lead ruling): RESIDUE vs co-equal — two or more whole trades of another run are a co-equal run (R +
+  split-needed) only when that run has NO shelf of its own; when its run or line already has a shelf, they are misfiled
+  books: S + `F split-needed | items -> join S<home>` (L-368; X-Factor 2024 S66336's two Peter David omnibuses -> S22172).
+  `#MARVEL CURRENT ONGOING TITLES`: Marika / MikeNY76 ComicInfo Web ids and "cvv<id>" Series strings name the stored CV
+  volume (1.0 evidence). From the Ashes "Variant Covers" folders hold the PREVIOUS run's finale covers (X-Men v6 #35 in
+  the v7 folder). "_X-Men Complete Chronology V2\NNNN <event>" annuals are event-chapter excerpts = partial rips. A
+  ripper's "Omnibus Book 01" in a run's folder can be that run's first omnibus, not the line's Vol. 1 (page count decides).
+  CV mints one count-1 volume per Venom by Ewing trade; GCD keeps two lines (183532 Vols 1-4, 208820 Vols 5-8).
+[L-127] (5 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-306] (5 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-393] (5 shelf/shelves) pub:marvel sig:split
+- Lead rulings (waves 137-138): L-389 blocks joins onto a CREATOR-trade-keyed shelf only; a shelf keyed by its own trade's
+  SUBTITLE that stores the run ("Uncanny Avengers - The Resistance" S20673, CV 153018) takes stray issues/covers of that
+  run by join. An annual goes with its run when no annual-series shelf exists (Uncanny Avengers Annual 2016 -> S94729).
+  GCD indexes each Skottie Young "baby" cover as a variant row of #1 ("Young Cover") — that row decides which relaunch a
+  lone "001 (YYYY) Skottie Young" file belongs to. At a retitle, GCD and CV can split at different issues (GCD keeps WCA
+  #47 on 3061, CV starts AWC at #47). Marvel arc minis (Ultimate Avengers 1-3): both legs number one continuous series
+  (#1-18) while rips restart at 01 per arc — issue files need I lines or they resolve to the wrong issue.
+[L-124] (7 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-191] (7 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-272] (7 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-281] (7 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-028] (4 shelf/shelves) folder:variant-covers pub:marvel
+- Marvel `\Variant Covers` 1pp packs (always of #1) are the whole of every ratio 1.2–2.0 on modern Marvel shelves.
+[L-036] (4 shelf/shelves) folder:skottie folder:variant-covers pub:marvel
+- A shelf that is ONLY 1pp variant covers (Skottie Young) still identifies its comic → run ids + `F partial-rip`.
+[L-173] (4 shelf/shelves) folder:skottie folder:variant-covers pub:marvel sig:collision
+- `Marvel\__Skottie Young Covers` holds a 1pp variant shelf for nearly every 2015 Secret Wars mini, each already linked
+  to that mini's volume — the commonest stored-link collision on Secret Wars shelves (merge-with when it is the mini).
+[L-298] (4 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (4 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-389] (4 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-053 / R-135 (waves 129-130): a run's issues never JOIN a creator-trade-keyed shelf ("Venom by Al Ewing & Ram V",
+  S21029, four trades) — keep them and meet through the SHARED cv at the next revisit (S20988 cv=140084 + merge-with=21029).
+  Marvel's 2019-2020 "Star Wars #1 facsimile" is "Star Wars No 1 Facsimile Edition" (CV 123267 / GCD 153348): probe the
+  "No N" form. Star Wars Insider and Titan's "Best of" books have no CV / GCD record: R + provider-missing, never the 1977
+  comic's stamp. The Dark Horse Star Wars Omnibus umbrella number (Vol. 32 / 35) raises a false "stored GCD row is another
+  book" warning against the sub-line's #1 / #2 — page counts and ISBNs decide. An Epic Collection / omnibus line spanning
+  several minis keeps its own GCD-line key in a split.
+
++113 more matched entries not shown: L-390, L-391, L-030, L-031, L-034, L-076, L-109, L-115, L-117, L-132, L-133, L-151, L-160, L-169, L-196, L-295, L-296, L-307, L-308, L-327, L-328, L-329, L-332, L-392, L-064, L-085, L-101, L-291, L-310, L-193, L-014, L-130, L-135, L-164, L-174, L-175, L-186, L-242, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-290, L-297, L-309, L-314, L-343, L-345, L-387, L-013, L-016, L-032, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-113, L-114, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-027, L-029, L-187, L-265, L-315, L-324, L-357, L-371, L-379, L-065, L-097, L-099, L-123, L-194, L-252, L-262, L-274, L-288, L-293, L-330, L-352, L-354, L-128, L-150, L-181, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S94728 Uncanny Avengers  [tier B]   keys: Uncanny Avengers v2 (2015)  years 2015-2015  7 files / 1 collections
+   split run: "Uncanny Avengers v2 (2015)" run=- (new shelf from P-058) — seed the S line from these ids, then verify them
+   flags: #514 label-ambiguous [Pending] item 92919 — Uncanny Avengers v2 001-005 are single issues, not collections
+   folders: [5] Marvel\_X-Men\_X-Men Complete Chronology V2\1134 Counter Evolutionary · [1] Marvel\_Avengers\Uncanny Avengers (2012)\Uncanny Avengers v2 (2015) · [1] Marvel\__Skottie Young Covers
+   files:   [53958] COL Uncanny Avengers Vol. 01 - Counter-Evolutionary (2015) (digital) (Minutemen-Slayer).cbr (115pp) | [92919] 001 Uncanny Avengers v2 001 (2015) (Digital) (Zone-Empire).cbr (23pp)
+            [92920] 002 Uncanny Avengers v2 002 (2015) (Digital) (Minutemen-WTF).cbr (22pp) | [92921] 003 Uncanny Avengers v2 003 (2015) (3 Covers) (Digital) (Minutemen-WTF).cbr (24pp)
+            [92922] 004 Uncanny Avengers v2 004 (2015) (Digital) (Zone-Empire).cbr (23pp) | [92923] 005 Uncanny Avengers v2 005 (2015) (Digital) (Zone-Empire).cbr (23pp)
+            [52034] Uncanny Avengers 001 (2015) (digital) (Skottie Young Variant Only) (Minutemen-Mastodon).cbz (1pp)
+   ours:    ladder 1-5; 1 number(s) name more than one file: 1
+   GCD says: [53958] gcd_reprint 1453554: s86102 Uncanny Avengers (2015) #1-5 [19 stories]
+   CV linked:      vol 79736 "Uncanny Avengers" 2015 Marvel 5 issues; cached #1-5 (5); yearΔ 0; ratio 6/5 = 1.20; no judged range
+   CV local rip:   (= linked) · 85318 "Uncanny Avengers" 2015 Marvel 30 · 73264 "Uncanny Avengers" 2014 Panini France 3 · 119941 "Uncanny Avengers" 2016 Panini Verlag 6 · 62905 "Uncanny Avengers" 2013 Panini France 10 · 63315 "Uncanny Avengers" 2013 Panini Verlag 5   (rip lookup)
+   GCD dump:       86102 "Uncanny Avengers" 2015-2015 Marvel [] 5 · 92132 "Uncanny Avengers" 2015-2015 Marvel [] 1 · 92962 "Uncanny Avengers" [nl-be] 2015-2017 Standaard Uitgeverij [] 9 · 93076 "Uncanny Avengers" 2015-2018 Marvel [] 30 · 78168 "Uncanny Avengers" 2014-2015 Marvel [] 5 · 103926 "Uncanny Avengers" [de] 2016-2018 Panini Deutschland [] 6   (dump lookup)
+
+== S94729 Uncanny Avengers  [tier C] · gap 2  keys: Uncanny Avengers v3 (2015)  years 2013-2016  10 files / 7 collections
+   split run: "Uncanny Avengers v3 (2015)" run=- (new shelf from P-058) — seed the S line from these ids, then verify them
+   flags: #515 label-ambiguous [Pending] item 118882 — items 53142/118882 and 53143/118886 are duplicate copies of Unity vols 3-4
+   folders: [7] Marvel\_Avengers\Uncanny Avengers (2012)\Uncanny Avengers v3 (2015) · [1] Marvel\_Avengers\Uncanny Avengers (2012)\Uncanny Avengers v3 (2015)\Annuals and Specials · [1] _Marvel Major Event Chronology (digital)\2016.06 - Civil War II\02 Tie-Ins\Uncanny Avengers · [1] _Marvel Major Event Chronology (digital)\2017.04 - Secret Empire\00 Prelude\10 Uncanny Avengers - Red Skull
+   files:   [53959] Uncanny Avengers Annual 001 (2016) (Digital) (Zone-Empire).cbr (26pp) | [53140] COL Uncanny Avengers - Unity Vol. 01 - Lost Future (2016) (Digital) (F) (Zone-Empire).cbr (151pp)
+            [53141] COL Uncanny Avengers - Unity Vol. 02 - The Man Who Fell To Earth (2016) (Digital) (F) (Zone-Empire).cbr (134pp)
+            [53142] COL Uncanny Avengers - Unity Vol. 03 - Civil War II (2017) (Digital) (F) (Kileko-Empire).cbz (107pp)
+            [53143] COL Uncanny Avengers - Unity Vol. 04 - Red Skull (2017) (Digital) (F) (Kileko-Empire).cbz (137pp)
+            [53144] COL Uncanny Avengers - Unity Vol. 05 - Stars and Garters (2018) (Digital) (Kileko-Empire).cbr (110pp) | [53145] Uncanny Avengers 024 (2017) (Digital) (Zone-Empire).cbr (23pp)
+            [53146] Uncanny Avengers 025 (2017) (Digital) (Zone-Empire).cbr (32pp) | [118882] COL Uncanny Avengers - Unity Vol. 03 - Civil War II (2017) (Digital) (Kileko-Empire).cbr (117pp)
+            [118886] COL Uncanny Avengers - Unity Vol. 04 - Red Skull (2017) (Digital) (Kileko-Empire).cbr (148pp)
+   ours:    ladder 1, 24-25; ComicInfo Series: "Uncanny Avengers: Unity"x2; ComicInfo Publisher: "Marvel"x2
+   GCD says: [53140] gcd_reprint 1554864: s93076 Uncanny Avengers (2015) #1-6 [19 stories] · s92890 Avengers 0 (With Digital Code) (2015) #0 [1 story]
+             [53141] gcd_reprint 1622030: s93076 Uncanny Avengers (2015) #7-12 [13 stories]
+             [53142] gcd_reprint 1683093: s93076 Uncanny Avengers (2015) #13-17 [13 stories]
+             [53143] gcd_reprint 1723408: s93076 Uncanny Avengers (2015) #18-23 [14 stories]
+             [53144] gcd_reprint 1788634: s93076 Uncanny Avengers (2015) #26-30 [15 stories]
+             [118882] gcd_reprint 1683093: s93076 Uncanny Avengers (2015) #13-17 [13 stories]
+             [118886] gcd_reprint 1723408: s93076 Uncanny Avengers (2015) #18-23 [14 stories]
+   CV linked:      vol 85318 "Uncanny Avengers" 2015 Marvel 30 issues; cached #1-30 (30); yearΔ 2; ratio 3/30 = 0.10; no judged range
+   CV per-file (v1): vol 52880 "Uncanny Avengers" 2012 Marvel 26 on 8/10 files
+   CV local rip:   (= linked) · 62905 "Uncanny Avengers" 2013 Panini France 10 · 63315 "Uncanny Avengers" 2013 Panini Verlag 5 · 72503 "Uncanny Avengers" 2013 Editorial Televisa 18 · 73264 "Uncanny Avengers" 2014 Panini France 3 · 79736 "Uncanny Avengers" 2015 Marvel 5   (rip lookup)
+   GCD per-file:   series 93076 "Uncanny Avengers" 2015-2018 Marvel [Was Ongoing series] 30 on 2/10 files; methods numx2
+   GCD dump:       74469 "Uncanny Avengers" [es-mx] 2013-? Editorial Televisa [] 25 · 74810 "Uncanny Avengers" [fr] 2013-2014 Panini France [] 10 · 75380 "Uncanny Avengers" [de] 2013-2015 Panini Deutschland [] 5 · 78167 "Uncanny Avengers" 2013-2015 Marvel [] 5 · 69005 "Uncanny Avengers" 2012-2014 Marvel [] 26 · 78168 "Uncanny Avengers" 2014-2015 Marvel [] 5   (dump lookup)
+   bridges:        gcd 93076 -> LOCG 115629 "Uncanny Avengers" support 2
+
+== S20673 Uncanny Avengers  [tier C] · ratio 0.40  keys: Uncanny Avengers - The Resistance  years 2023-2024  3 files / 1 collections
+   split run: "Uncanny Avengers - The Resistance" run=- (new shelf from P-058) — seed the S line from these ids, then verify them
+   folders: [2] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2023.08.16 - Uncanny Avengers v1\Variant Covers · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2023.08.16 - Uncanny Avengers v1
+   files:   [49912] COL Uncanny Avengers - The Resistance (2024) (Digital) (Shan-Empire).cbz (163pp)
+            [49913] Uncanny Avengers 003 (2023) (1-in-50 Arthur Adams Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49914] Uncanny Avengers 003 (2023) (Nakayama Wraparound X-Men 60th Anniversary Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 3; 1 number(s) name more than one file: 3
+   CV linked:      vol 153018 "Uncanny Avengers" 2023 Marvel 5 issues; cached #1-5 (5); yearΔ 0; ratio 2/5 = 0.40; no judged range
+   CV candidates:  (= linked) · 85318 "Uncanny Avengers" 2015 Marvel 30 s81 · 79736 "Uncanny Avengers" 2015 Marvel 5 s81 · 52880 "Uncanny Avengers" 2012 Marvel 26 s80 · 119941 "Uncanny Avengers" 2016 Panini Verlag 6 s66 · 158234 "Uncanny Avengers: The Resistance" 2024 Marvel 1 issue 1056328 s65 · 72503 "Uncanny Avengers" 2013 Editorial Televisa 18 s65   (v1 search)
+   CV local rip:   (= linked) · 119941 "Uncanny Avengers" 2016 Panini Verlag 6 · 79736 "Uncanny Avengers" 2015 Marvel 5 · 85318 "Uncanny Avengers" 2015 Marvel 30 · 73264 "Uncanny Avengers" 2014 Panini France 3 · 62905 "Uncanny Avengers" 2013 Panini France 10   (rip lookup)
+   GCD dump:       203283 "Uncanny Avengers" 2023-2024 Marvel [] 5 · 213542 "Uncanny Avengers" [de] 2024-2024 Panini Deutschland [] 1 · 103926 "Uncanny Avengers" [de] 2016-2018 Panini Deutschland [] 6 · 86102 "Uncanny Avengers" 2015-2015 Marvel [] 5 · 92132 "Uncanny Avengers" 2015-2015 Marvel [] 1 · 92962 "Uncanny Avengers" [nl-be] 2015-2017 Standaard Uitgeverij [] 9   (dump lookup)
+
+== S20672 Uncanny Avengers  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: Uncanny Avengers | Uncanny Avengers 008AU | Uncanny Avengers Annual | Uncanny Avengers v1 (2012)  years 2012-2015  39 files / 5 collections
+   split: the KEPT half of the P-058 split — moved out -> S94728 "Uncanny Avengers v2 (2015)"; S94729 "Uncanny Avengers v3 (2015)"; S20673 "Uncanny Avengers - The Resistance"; re-identify what stayed
+   folders: [7] _Marvel Major Event Chronology (digital)\2014.10 - AXIS\00 Prelude - March to AXIS · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1044 The Apocalypse Twins · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1066 Ragnarok Now · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1088 Avenge the Earth · [5] Marvel\_Avengers\Uncanny Avengers (2012)\Uncanny Avengers v1 (2012) · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\1013 The Red Shadow · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\1106 March to AXIS · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\1031 Age of Ultron
+   files:   [53135] COL Uncanny Avengers Vol. 01 - The Red Shadow (2013) (Digital) (F) (Kileko-Empire).cbz (123pp)
+            [53136] COL Uncanny Avengers Vol. 02 - The Apocalypse Twins (2013) (Digital) (F) (Zone-Empire).cbr (142pp)
+            [53137] COL Uncanny Avengers Vol. 03 - Ragnarok Now (2014) (Digital) (F) (Zone-Empire).cbr (132pp)
+            [53138] COL Uncanny Avengers Vol. 04 - Avenge The Earth (2014) (Digital) (F) (BroadCast-Empire).cbz (116pp)
+            [53139] COL Uncanny Avengers Vol. 05 - AXIS Prelude (2015) (Digital) (F) (Zone-Empire).cbr (139pp) | [92251] 001 Uncanny Avengers 001 (2012) (digital) (Minutemen-PhD).cbr (24pp)
+            [92252] 002 Uncanny Avengers 002 (2013) (digital) (Minutemen-PhD).cbr (23pp) | [92253] 003 Uncanny Avengers 003 (2013) (digital) (Minutemen-PhD).cbr (24pp)
+            [92254] 004 Uncanny Avengers 004 (2013) (digital) (Minutemen-PhD).cbr (23pp) | [92255] 005 Uncanny Avengers 005 (2013) (digital) (Minutemen-PhD).cbr (23pp)
+            [92359] 015 Uncanny Avengers 008AU (2013) (digital) (Minutemen-PhD).cbr (21pp) | [92417] 001 Uncanny Avengers 006 (2013) (digital) (Minutemen-PhD).cbr (22pp)
+            [92418] 002 Uncanny Avengers 007 (2013) (digital) (Minutemen-PhD).cbr (21pp) | [92419] 003 Uncanny Avengers 008 (2013) (Digital) (Archangel+Zone-Empire).cbr (23pp)
+            004 Uncanny Avengers 009 (2013) (digital) (Minutemen-PhD).cbr … 006 Uncanny Avengers 017 (2014) (digital) (Minutemen-PhD).cbr  (9 files, pp 20-26)
+            [92655] 001 Uncanny Avengers Annual 01 (2014) (digital) (Minutemen-PhD).cbr (33pp) | [92656] 002 Uncanny Avengers 018.NOW (2014) (digital) (Minutemen-PhD).cbr (19pp)
+            003 Uncanny Avengers 019 (2014) (digital) (Minutemen-PhD).cbr … 005 Uncanny Avengers 025 (2014) (digital) (Minutemen-PhD).cbr  (7 files, pp 21-22)
+            [117807] 001 - Uncanny Avengers 001 (2013) (Digital) (Archangel+Zone-Empire).cbr (25pp) | [117808] 002 - Uncanny Avengers 002 (2013) (Digital) (Archangel+Zone-Empire).cbr (24pp)
+            [117809] 003 - Uncanny Avengers 003 (2013) (Digital) (Archangel Zone-Empire).cbr (25pp) | [117810] 004 - Uncanny Avengers 004 (2013) (Digital) (Archangel+Zone-Empire).cbr (24pp)
+            [117811] 005 - Uncanny Avengers 023 (2014) (Digital) (Zone-Empire).cbr (22pp) | [117816] 010 - Uncanny Avengers 024 (2014) (Digital) (Archangel+Zone-Empire).cbr (23pp)
+            [117817] 011 - Uncanny Avengers 025 (2014) (Digital) (Archangel+Zone-Empire).cbr (22pp)
+   ours:    ladder 1-25; 8 number(s) name more than one file: 1, 2, 3, 4, 15, 23, 24, 25; ComicInfo Series: "Uncanny Avengers"x5; ComicInfo Publisher: "Marvel"x5
+   GCD says: [53135] gcd_reprint 1171407: s69005 Uncanny Avengers (2012) #1-5 [10 stories] · s78167 Uncanny Avengers (2013) #1 [1 story]
+             [53136] gcd_reprint 1327356: s69005 Uncanny Avengers (2012) #6-11 [11 stories] · s78167 Uncanny Avengers (2013) #2 [1 story]
+             [53137] gcd_reprint 1327357: s69005 Uncanny Avengers (2012) #12-17 [6 stories] · s78167 Uncanny Avengers (2013) #3 [1 story]
+             [53138] gcd_reprint 1353476: s69005 Uncanny Avengers (2012) #19-22 [18 stories] · s78167 Uncanny Avengers (2013) #4 [1 story]
+             [53139] gcd_reprint 1443454: s69005 Uncanny Avengers (2012) #23-25 [3 stories] · s79393 Magneto (2014) #9-10 [2 stories] · s80406 Uncanny Avengers Annual (2014) #1 [1 story] · s78167 Uncanny Avengers (2013) #5 [1 story]
+   CV linked:      vol 52880 "Uncanny Avengers" 2012 Marvel 26 issues; cached #1-25 (26); yearΔ 0; ratio 34/26 = 1.31; no judged range; v1 per-file: same volume on 32/39 files
+   CV candidates:  (= linked) · 85318 "Uncanny Avengers" 2015 Marvel 30 s70 · 79736 "Uncanny Avengers" 2015 Marvel 5 s70 · 153018 "Uncanny Avengers" 2023 Marvel 5 s70 · 73264 "Uncanny Avengers" 2014 Panini France 3 s58 · 86135 "Uncanny Avengers Annual" 2015 Marvel 1 issue 506186 s58 · 73421 "Uncanny Avengers Annual" 2014 Marvel 1 issue 451773 s58   (v1 search)
+   CV local rip:   (= linked) · 62905 "Uncanny Avengers" 2013 Panini France 10 · 63315 "Uncanny Avengers" 2013 Panini Verlag 5 · 72503 "Uncanny Avengers" 2013 Editorial Televisa 18 · 73264 "Uncanny Avengers" 2014 Panini France 3 · 79736 "Uncanny Avengers" 2015 Marvel 5   (rip lookup)
+   GCD per-file:   series 69005 "Uncanny Avengers" 2012-2014 Marvel [was ongoing series] 26 on 12/39 files · series 74469 "Uncanny Avengers" [es-mx] 2013-? Editorial Televisa [Serie Regular] 25 on 12/39 files · series 74810 "Uncanny Avengers" [fr] 2013-2014 Panini France [série continue terminée [was ongoing series]] 10 on 8/39 files; methods numx32
+   GCD dump:       (= per-file) · 75380 "Uncanny Avengers" [de] 2013-2015 Panini Deutschland [] 5 · 78167 "Uncanny Avengers" 2013-2015 Marvel [] 5 · 78168 "Uncanny Avengers" 2014-2015 Marvel [] 5   (dump lookup)
+   bridges:        gcd 69005 -> LOCG 115629 "Uncanny Avengers" support 12 · gcd 74469 -> LOCG 115629 "Uncanny Avengers" support 12 · gcd 74810 -> LOCG 115629 "Uncanny Avengers" support 9
+
+== S4092 Conan Chronicles Epic Collection: Blood In His Wake  [tier C] · by 3  keys: Conan Chronicles Epic Collection  years 2021-2021  1 files / 0 collections
+   folders: [1] Marvel\_Conan the Barbarian\Conan the Barbarian (2004 Dark Horse Reprints)\Conan (Dark Horse) Epic Collections
+   files:   [78207] Conan Chronicles Epic Collection Vol. 08 - Blood in His Wake (2021) (Digital-Empire).cbr (?pp)
+   ours:    ladder 8
+   CV linked:      vol 144409 "Conan Chronicles Epic Collection: Blood In His Wake" 2022 Marvel 1 issues issue 944234; cached #1-1 (1); yearΔ 1; ratio 1/1 = 1.00; no judged range
+   CV candidates:  121733 "Conan Chronicles Epic Collection: Return To Cimmeria" 2019 Marvel 1 issue 721167 s87 · 144406 "Conan Chronicles Epic Collection: Shadows Over Kush" 2022 Marvel 1 issue 941968 s87 · 144977 "King Conan Chronicles Epic Collection: Phantoms and Phoenixes" 2022 Marvel 1 issue 946495 s86 · 130784 "Conan Chronicles Epic Collection: Horrors Beneath the Stones" 2020 Marvel 1 issue 805268 s86 · 133357 "Conan Chronicles Epic Collection: The Song of Bêlit" 2021 Marvel 1 issue 825512 s86 · 118120 "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" 2019 Marvel 1 issue 705469 s86   (v1 search)
+   CV local rip:   (= linked) · 144406 "Conan Chronicles Epic Collection: Shadows Over Kush" 2022 Marvel 1 issue 941968 (via CV candidate name "Conan Chronicles Epic Collection: Shadows Over Kush") · 144977 "King Conan Chronicles Epic Collection: Phantoms and Phoenixes" 2022 Marvel 1 issue 946495 (via CV candidate name "King Conan Chronicles Epic Collection: Phantoms and Phoenixes") · 121733 "Conan Chronicles Epic Collection: Return To Cimmeria" 2019 Marvel 1 issue 721167 (via CV candidate name "Conan Chronicles Epic Collection: Return To Cimmeria")   (rip lookup)
+   GCD per-file:   series 139728 "Conan Chronicles Epic Collection" 2019-2021 Marvel [collected edition] 8 on 1/1 files; methods numx1; the dump names no other series
+   bridges:        gcd 139728 -> LOCG 141389 "Conan Chronicles Epic Collection: Return to Cimmeria TP" support 8 · gcd 139728 -> OL /works/OL20152092W "None" isbnSupport 8
+
+== S4096 Conan Chronicles Epic Collection: Shadows Over Kush  [tier B]   keys: Conan Chronicles Epic Collection: Shadows Over Kush  years 2022-2022  1 files / 1 collections
+   folders: [1] Marvel\_Conan the Barbarian\Conan the Barbarian (2004 Dark Horse Reprints)\Conan (Dark Horse) Epic Collections
+   files:   [78206] COL Conan Chronicles Epic Collection Vol. 07 - Shadows Over Kush (2021) (Digital-Empire).cbr (423pp)
+   ours:    ComicInfo Series: "Conan Chronicles Epic Collection: Shadows Over Kush"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [78206] gcd_reprint 2296363: s80303 Conan the Avenger (2014) #4-19 [20 stories]
+   CV linked:      vol 144406 "Conan Chronicles Epic Collection: Shadows Over Kush" 2022 Marvel 1 issues issue 941968; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 80444 "Conan: Shadows Over Kush" 2015 Dark Horse Comics 1 issue 481583 s70 · 121733 "Conan Chronicles Epic Collection: Return To Cimmeria" 2019 Marvel 1 issue 721167 s61 · 144977 "King Conan Chronicles Epic Collection: Phantoms and Phoenixes" 2022 Marvel 1 issue 946495 s60 · 130784 "Conan Chronicles Epic Collection: Horrors Beneath the Stones" 2020 Marvel 1 issue 805268 s60 · 133357 "Conan Chronicles Epic Collection: The Song of Bêlit" 2021 Marvel 1 issue 825512 s60 · 118120 "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" 2019 Marvel 1 issue 705469 s60   (v1 search)
+   CV local rip:   (= linked) · 121733 "Conan Chronicles Epic Collection: Return To Cimmeria" 2019 Marvel 1 issue 721167 (via CV candidate name "Conan Chronicles Epic Collection: Return To Cimmeria") · 80444 "Conan: Shadows Over Kush" 2015 Dark Horse Comics 1 issue 481583 (via CV candidate name "Conan: Shadows Over Kush")   (rip lookup)
+
+== S64322 Black Panther  [tier C] · ratio 3.80  keys: Black Panther (2023)  years 2023-2024  39 files / 1 collections
+   folders: [36] Marvel\#MARVEL CURRENT ONGOING TITLES\Ultimate Comics (2023)\Ultimate Black Panther v1 (2024)\Variant Covers · [3] Marvel\#MARVEL CURRENT ONGOING TITLES\Ultimate Comics (2023)\Ultimate Black Panther v1 (2024)
+   files:   [48623] Ultimate Black Panther 007 (2024) (Digital) (Shan-Empire).cbz (29pp) | [48625] Ultimate Black Panther 009 (2024) (Digital) (Shan-Empire).cbz (27pp)
+            [48629] COL Ultimate Black Panther Vol. 01 - Peace And War (2024) (Digital) (Shan-Empire).cbz (155pp)
+            [48631] Ultimate Black Panther 001 (2024) (Stefano Caselli 4Th Printing Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48632] Ultimate Black Panther 001 (2024) (Travel Foreman Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48633] Ultimate Black Panther 001 (2024) Bosslogic Ultimate Special Variant (Digital) (MikeNY76).cbr (1pp)
+            [48634] Ultimate Black Panther 001 (2024) Ethan Young Variant (Digital) (MikeNY76).cbr (1pp)
+            [48635] Ultimate Black Panther 001 (2024) Ethan Young Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48636] Ultimate Black Panther 001 (2024) Karen Darboe Variant (Digital) (MikeNY76).cbr (1pp)
+            [48637] Ultimate Black Panther 001 (2024) Karen Darboe Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48638] Ultimate Black Panther 001 (2024) Peach Momoko 3rd Printing Variant (Digital) (MikeNY76).cbr (1pp)
+            [48639] Ultimate Black Panther 001 (2024) R.B. Silva 2nd Printing Variant (Digital) (MikeNY76).cbr (1pp)
+            [48641] Ultimate Black Panther 002 (2024) (Natacha Bustos Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48642] Ultimate Black Panther 003 (2024) (2nd Printing 1-in-25 BossLogic Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48643] Ultimate Black Panther 003 (2024) (2nd Printing Stefano Caselli Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48644] Ultimate Black Panther 003 (2024) (Bosslogic Ratio Virgin 2nd Printing Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48645] Ultimate Black Panther 003 (2024) (Joshua Cassara Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48646] Ultimate Black Panther 003 (2024) (Stefano Caselli 2nd Printing Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48647] Ultimate Black Panther 003 (2024) Skan Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48648] Ultimate Black Panther 004 (2024) (1-in-25 Doaly Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48649] Ultimate Black Panther 004 (2024) (Bosslogic Ultimate Special Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48650] Ultimate Black Panther 004 (2024) (Doaly Variant) (Digital) (MikeNY76).cbz (1pp) | [48651] Ultimate Black Panther 004 (2024) (Rahzzah Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48652] Ultimate Black Panther 005 (2024) (1-in-25 Taurin Clarke Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48653] Ultimate Black Panther 005 (2024) (BossLogic Ultimate Special Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48654] Ultimate Black Panther 005 (2024) (Clayton Crain Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48655] Ultimate Black Panther 006 (2024) (Bosslogic Ultimate Special Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48656] Ultimate Black Panther 006 (2024) (David Mack Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48657] Ultimate Black Panther 006 (2024) (Felipe Massafera Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48658] Ultimate Black Panther 007 (2024) (Juan Ferreyra Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48659] Ultimate Black Panther 007 (2024) (Mahmud Asrar Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48660] Ultimate Black Panther 008 (2024) (Giuseppe Camuncoli Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48661] Ultimate Black Panther 008 (2024) (Russell Dauterman Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48662] Ultimate Black Panther 008 (2024) (Wes Craig Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48663] Ultimate Black Panther 008 (2024) (Wes Craig Connecting Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48664] Ultimate Black Panther 009 (2024) (Mitsuhiro Arita Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48665] Ultimate Black Panther 009 (2024) (Rafael Albuquerque Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48666] Ultimate Black Panther 010 (2024) (Greg Land Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48667] Ultimate Black Panther 010 (2024) (Sean Izaakse Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 1-10; 9 number(s) name more than one file: 1, 3, 4, 5, 6, 7, 8, 9, 10; judged item 48629 #1-6 conf 0.97
+   GCD says: [48629] gcd_reprint 2660963: s208771 Ultimate Black Panther (2024) #1-4 [5 stories]
+   CV linked:      vol 151263 "Black Panther" 2023 Marvel 10 issues; cached #1-10 (10); yearΔ 0; ratio 38/10 = 3.80; 1 of 1 judged fit; v1 per-file: same volume on 38/39 files
+   CV local rip:   (= linked) · 140222 "Black Panther" 2022 Marvel 15 · 111034 "Black Panther" 2018 Marvel 25 · 119953 "Black Panther" 2017 Panini Verlag 5 · 89350 "Black Panther" 2016 Marvel 25 · 119952 "Black Panther" 2016 Panini Verlag 1 issue 712675   (rip lookup)
+   GCD dump:       201428 "Black Panther" 2023-2024 Marvel [] 10 · 190714 "Black Panther" [de] 2022-2023 Panini Deutschland [] 3 · 192263 "Black Panther" [fr] 2022-2023 Panini France [] 3 · 192310 "Black Panther" [fr] 2022-2022 Panini France [] 1 · 198784 "Black Panther" [de] 2022-2022 Panini Deutschland [] 1 · 198785 "Black Panther" [de] 2022-2022 Panini Deutschland [] 1   (dump lookup)
+
+== S95620 Black Panther v9 (2023)  [tier D]   keys: Black Panther v9 (2023)  years 2006-2023  9 files / 2 collections
+   folders: [7] Marvel\_Black Panther\12 Black Panther v9 (2023)\Variant Covers · [2] Marvel\_Black Panther\12 Black Panther v9 (2023)
+   files:   [53632] COL Black Panther by Eve L. Ewing Vol. 01 - Reign At Dusk (2024) (Digital) (Shan-Empire).cbz (120pp)
+            [53633] COL Black Panther by Eve L. Ewing Vol. 02 - Reign at Dusk (2024) (Digital) (Shan-Empire).cbz (111pp)
+            [53634] Black Panther 013 (2023) (1-in-25 Scalera Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [53635] Black Panther 013 (2023) (Medina Classic Homage Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [53636] Black Panther 014 (2023) (No Prize Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [53637] Black Panther 014 (2023) (Romero Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [53638] Black Panther 014 (2023) (Yu Planet Of The Apes Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [53639] Black Panther 015 (2023) (Lashley Infinity Saga Phase 3 Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [53640] Black Panther 015 (2023) (Peralta Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 13-15; 3 number(s) name more than one file: 13, 14, 15; judged item 53632 #1-5 conf 0.97; judged item 53633 #6-10 conf 0.97; ComicInfo Series: "Black Panther"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [53632] gcd_reprint 2593720: s201428 Black Panther (2023) (unnumbered) [6 stories]
+             [53633] gcd_reprint 2635586: s201428 Black Panther (2023) (unnumbered) [6 stories]
+   CV local rip:   11502 "Black Panther" 2005 Marvel 41 (via our own name without the filing suffix "Black Panther") · 25638 "Black Panther" 2009 Marvel 12 (via our own name without the filing suffix "Black Panther") · 53306 "Black Panther" 2000 Panini Verlag 2 (via our own name without the filing suffix "Black Panther") · 6496 "Black Panther" 1998 Marvel 62 (via our own name without the filing suffix "Black Panther") · 89350 "Black Panther" 2016 Marvel 25 (via our own name without the filing suffix "Black Panther") · 119952 "Black Panther" 2016 Panini Verlag 1 issue 712675 (via our own name without the filing suffix "Black Panther")   (rip lookup)
+   GCD dump:       12471 "Black Panther" 2005-2008 Marvel [] 41 (via our own name without the filing suffix "Black Panther") · 33758 "Black Panther" 2009-2010 Marvel [] 12 (via our own name without the filing suffix "Black Panther") · 102259 "Black Panther" [de] 2000-2000 Panini Deutschland [] 2 (via our own name without the filing suffix "Black Panther") · 6989 "Black Panther" 1998-2003 Marvel [] 62 (via our own name without the filing suffix "Black Panther") · 99295 "Black Panther" 2016-2018 Marvel [] 25 (via our own name without the filing suffix "Black Panther") · 102270 "Black Panther" [de] 2016-? Panini Deutschland [] 1 (via our own name without the filing suffix "Black Panther")   (dump lookup)
+
+== S96118 Conan the Barbarian  [tier C] · 219 files  keys: Conan the Barbarian v1 (1970)  years 1970-2023  219 files / 5 collections
+   flags: #701 provider-disagrees [Pending] item 78063 — the cv row on Epic Collection Vol. 05 is a Conan Omnibus book · #712 span-retracted [Pending] item 78063 — the audit withdrew the range the pass had written: the cv row that gave #116-149 is a Cona
+   folders: [213] Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) · [5] Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970)\Trades & Epic Collections · [1] Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970)\Annuals and Specials
+   files:   [77753] Conan The Barbarian - Facsimile Edition 001 (2022) (Digital) (Shadowcat-Empire).cbz (36pp)
+            Conan The Barbarian 001 [Marvel Edition] (1970) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz … Conan The Barbarian 013 [Marvel Edition] (1972) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz  (13 files, pp 21-37)
+            [77818] Conan The Barbarian 052 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77819] Conan The Barbarian 053 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77820] Conan The Barbarian 054 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77821] Conan The Barbarian 055 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77822] Conan The Barbarian 056 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77823] Conan The Barbarian 057 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77824] Conan The Barbarian 058 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77825] Conan The Barbarian 059 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77826] Conan The Barbarian 060 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77827] Conan The Barbarian 061 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77828] Conan The Barbarian 062 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77829] Conan The Barbarian 063 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77830] Conan The Barbarian 064 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77831] Conan The Barbarian 065 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77832] Conan The Barbarian 066 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77833] Conan The Barbarian 067 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77834] Conan The Barbarian 068 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77835] Conan The Barbarian 069 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77836] Conan The Barbarian 070 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77837] Conan The Barbarian 071 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77838] Conan The Barbarian 072 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77839] Conan The Barbarian 073 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77840] Conan The Barbarian 074 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77841] Conan The Barbarian 075 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77842] Conan The Barbarian 076 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77843] Conan The Barbarian 077 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77844] Conan The Barbarian 078 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77845] Conan The Barbarian 079 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77846] Conan The Barbarian 080 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77847] Conan The Barbarian 081 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77848] Conan The Barbarian 082 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77849] Conan The Barbarian 083 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77850] Conan The Barbarian 084 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77851] Conan The Barbarian 085 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77852] Conan The Barbarian 086 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77853] Conan The Barbarian 087 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77854] Conan The Barbarian 088 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77855] Conan The Barbarian 089 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77856] Conan The Barbarian 090 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77857] Conan The Barbarian 091 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77858] Conan The Barbarian 092 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77859] Conan The Barbarian 093 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77860] Conan The Barbarian 094 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77861] Conan The Barbarian 095 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77862] Conan The Barbarian 096 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77863] Conan The Barbarian 097 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77864] Conan The Barbarian 098 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77865] Conan The Barbarian 099 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77866] Conan The Barbarian 100 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (35pp)
+            [77867] Conan The Barbarian 101 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77868] Conan The Barbarian 102 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77869] Conan The Barbarian 103 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77870] Conan The Barbarian 104 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77871] Conan The Barbarian 105 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77872] Conan The Barbarian 106 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77873] Conan The Barbarian 107 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77874] Conan The Barbarian 108 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77875] Conan The Barbarian 109 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77876] Conan The Barbarian 110 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77877] Conan The Barbarian 111 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77878] Conan The Barbarian 112 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77879] Conan The Barbarian 113 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77880] Conan The Barbarian 114 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77881] Conan The Barbarian 115 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (37pp)
+            Conan The Barbarian 116 (1980) (Digital) (Shadowcat-Empire).cbz … Conan The Barbarian 170 (1986) (Digital) (Shadowcat-Empire).cbz  (41 files, pp 22-25)
+            [78017] Conan The Barbarian 171 1986) (Digital) (Shadowcat-Empire).cbz (24pp)
+            Conan The Barbarian 172 (1985) (Digital) (Shadowcat-Empire).cbz … Conan The Barbarian 213 (1989) (Digital) (Shadowcat-Empire).cbz  (42 files, pp 22-40)
+            Conan the Barbarian 014 (1972) (Digital) [Marvel Edition] (Shadowcat-Empire).cbz … Conan the Barbarian 021 (1972) (Digital) [Marvel Edition] (Shadowcat-Empire).cbz  (8 files, pp 14-23)
+            [77788] Conan the Barbarian 022 (1973) [Marvel Edition] (c2c) (Teach-Woodman).cbr (37pp)
+            Conan the Barbarian 023 (1973) (Digital) [Marvel Edition] (Shadowcat-Empire).cbz … Conan the Barbarian 051 (1975) (Digital) [Marvel Edition] (Shadowcat-Empire).cbz  (29 files, pp 11-22)
+            Conan the Barbarian 136 (1982) (Digital) (Shadowcat-Empire).cbz … Conan the Barbarian 149 (1983) (Digital) (Shadowcat-Empire).cbz  (14 files, pp 23-24)
+            [118017] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 01 - The Coming of Conan (2020) (Digital) (Bean-Empire).cbz (326pp)
+            [78061] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 02 - Hawks From The Sea (2021) (Digital) (Bean-Empire).cbz (267pp)
+            [118018] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 03 - The Curse of the Golden Skull (2021) (Digital) (Bean-Empire).cbz (324pp)
+            [78062] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 04 - Queen of the Black Coast (2021) (Digital-Empire).cbr (345pp)
+            [78063] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 05 - Of Once and Future Kings (2022) (Digital-Empire).cbr (348pp)
+   ours:    ladder 1-213; 1 number(s) name more than one file: 1; judged item 118017 #1-13 conf 0.95; judged item 78061 #14-26 conf 0.85; judged item 118018 #27-42 conf 0.85; judged item 78062 #43-59 conf 0.85; judged item 78063 #60-71 conf 0.95; ComicInfo Series: "Conan The Barbarian"x213, "Conan The Barbarian Epic Collection: The Original Marvel Years - Hawks From The Sea"x1, "Conan The Barbarian Epic Collection: The Original Marvel Years - Of Once And Future Kings"x1, "Conan The Barbarian Epic Collection: The Original Marvel Years - The Coming Of Conan"x1; ComicInfo Volume: "1970"x213; ComicInfo Publisher: "Marvel"x217
+   GCD says: [118017] gcd notes 2145960 (#1 of Conan the Barbarian: The Original Marvel Years Epic Collection): Conan the Barbarian (Marvel, 1970 series) #1-13; Chamber of Darkness (Marvel 1969 series) #4  |  gcd_reprint 2145960: s1939 Conan the Barbarian (1970) #1-13 [29 stories] · s4999 Conan Classic (1994) #1-11 [13 stories] · s25052 Conan (1978) (unnumbered) [6 stories] · s1907 Chamber of Darkness (1969) #4 [2 stories]
+             [78061] gcd notes 2212921 (#2 of Conan the Barbarian: The Original Marvel Years Epic Collection): Conan the Barbarian (Marvel, 1970 series) #14-26  |  gcd_reprint 2212921: s1939 Conan the Barbarian (1970) #14-26 [14 stories]
+             [118018] gcd_reprint 2248636: s1939 Conan the Barbarian (1970) #27-42 [17 stories] · s2114 Conan Annual (1973) #1 [1 story]
+             [78062] gcd_reprint 2282302: s1939 Conan the Barbarian (1970) #43-59 [35 stories] · s2180 Marvel Treasury Edition (1974) #4, #19 [4 stories] · s2187 The Savage Sword of Conan (1974) #1 [2 stories] · s2165 Giant-Size Conan (1974) #5 [1 story]
+             [78063] gcd notes 2383420 (#5 of Conan the Barbarian: The Original Marvel Years Epic Collection): Conan the Barbarian (Marvel, 1970 series) #60-71; Conan the Barbarian Annual (Marvel, 1973 series) #2-3; e Mists! (Peter Pan, 1976 series) #PR-31, and material from F.O.O.M. (Marvel, 1973 series) #14  |  gcd_reprint 2383420: s1939 Conan the Barbarian (1970) #60-71 [25 stories] · s2114 Conan Annual (1973) #2-3 [7 stories] · s16305 Conan the Barbarian: The Crawler in the Mists! [Book and Record Set] (1976) (unnumbered) [3 stories] · s2187 The Savage Sword of Conan (1974) #16, #40 [2 stories]
+   CV linked:      vol 2471 "Conan the Barbarian" 1970 Marvel 275 issues; cached #1-275 (275); yearΔ 0; ratio 214/275 = 0.78; 5 of 5 judged fit
+   CV per-file (v1): vol 2471 "Conan the Barbarian" 1970 Marvel 275 on 213/219 files · vol 152857 "Conan the Barbarian" 2023 Titan Comics 31 on 1/219 files
+   CV local rip:   (= linked) · 114988 "Conan the Barbarian" 1975 Newton Comics 11 · 115117 "Conan the Barbarian " 1977 Yaffa / Page 11 · 136319 "Conan the Barbarian" 1993 Moria 4 · 22947 "Conan the Barbarian" 1997 Marvel 3 · 115185 "Conan the Barbarian " 2003 Gotham Entertainment Group 1 issue 691727   (rip lookup)
+   GCD per-file:   methods numx149 · round2-seriesx64 ⚠  (⚠ copies a folder neighbour's series — verify); series 1939 "Conan the Barbarian" 1970-1994 Marvel [was ongoing series] 275 on 213/219 files
+   GCD dump:       (= per-file) · 71496 "Conan the Barbarian" [en-au] 1975-1976 Newton Comics [] 12 · 71544 "Conan the Barbarian" [en-au] 1977-1981 Yaffa / Page [] 11 · 181731 "寇能勇士傳 [Conan the Barbarian]" [zh-tw] 1977-1977 ROC Comics Group [] 2 · 154863 "Κόναν ο Βάρβαρος [Conan the Barbarian]" [el-gr] 1978-1978 Kabanas Hellas [] 4 · 71500 "Conan the Barbarian" [en-au] 1984-1986 Federal [] 11   (dump lookup)
+   bridges:        gcd 1939 -> LOCG 114733 "Conan the Barbarian" support 213

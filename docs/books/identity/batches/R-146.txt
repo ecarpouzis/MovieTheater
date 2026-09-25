@@ -1,0 +1,594 @@
+## Conventions for this batch (21 shown of 148 matched; 394 in LEDGER.md; 22 shelf/shelves: pub:marvel ×22 · kind:collected-line ×18 · kind:trade-only ×15 · folder:vn-year ×10 · folder:sequel-subfolder ×9 · folder:events ×6 · kind:foreign ×5 · kind:new ×4)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (22 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (22 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (22 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-298] (21 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (21 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-127] (19 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-136] (19 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-031] (18 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (18 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (18 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (18 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (18 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-132] (18 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-196] (18 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (18 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (18 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-306] (18 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (18 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (18 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-327] (18 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (18 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+
++127 more matched entries not shown: L-329, L-332, L-392, L-389, L-029, L-291, L-164, L-135, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-119, L-357, L-060, L-116, L-130, L-174, L-242, L-388, L-319, L-324, L-030, L-124, L-151, L-160, L-281, L-064, L-085, L-101, L-310, L-113, L-191, L-193, L-272, L-016, L-032, L-114, L-034, L-169, L-290, L-390, L-391, L-014, L-175, L-027, L-133, L-265, L-343, L-371, L-379, L-387, L-393, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-345, L-097, L-252, L-274, L-288, L-293, L-352, L-354, L-028, L-036, L-065, L-077, L-099, L-121, L-123, L-129, L-173, L-194, L-262, L-311, L-330, L-007, L-054, L-137, L-187, L-217, L-312, L-128, L-181, L-336, L-106, L-111, L-112, L-150, L-297, L-315, L-331 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S64501 Daredevil  [tier C] · 433 files  keys: Daredevil (1964) | Daredevil -1 | Daredevil v1 (1964)  years 1964-2023  433 files / 4 collections
+   flags: #211 label-ambiguous [Pending] item 47980 — items 46978 and 47980 are duplicate copies of Daredevil Omnibus Book 01 · #212 label-ambiguous [Pending] item 116397 — the Daredevil v1 items are single issues, not collections
+   folders: [380] Marvel\_Daredevil\01 Daredevil v1 (1964) · [9] Marvel\_Daredevil\01 Daredevil v1 (1964)\Annuals and Specials · [8] _Marvel Major Event Chronology (digital)\1971.07 - Mr. Kline War · [8] _Marvel Major Event Chronology (digital)\2010.07 - Shadowland\01 Lead In · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0025 Unnamed · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0087 Inferno After Effects · [3] Marvel\_Daredevil\_Omnibus Editions · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0069 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance · [2] _Marvel Major Event Chronology (digital)\1968.02 - Daredevil-Dr Doom Swap · [2] _Marvel Major Event Chronology (digital)\1989.12 - Acts of Vengeance\Acts of Vengeance - Marvel Universe · [2] _Marvel Major Event Chronology (digital)\2006.07 - Civil War\03 Civil War - Spider-Man Unmasked\Extra · [1] Marvel\_Daredevil\01 Daredevil v1 (1964)\_Omnibus Editions · [1] Marvel\_Marvel Facsimile Editions · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0056 The Mutant Massacre · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0347 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0991 Clandestine · [1] _Marvel Major Event Chronology (digital)\1986.02 - Daredevil - Born Again\Extra · [1] _Marvel Major Event Chronology (digital)\2020.11 - King in Black\02 Tie-ins\King in Black Singles
+   files:   [46859] Daredevil -1 (1997) (Digital) (AnHeroGold-Empire).cbz (24pp) | [46860] Daredevil Annual 001 (1967) (Digital) (AnHeroGold-Empire).cbz (56pp)
+            [46861] Daredevil Annual 004 (1976) (Digital) (Shadowcat-Empire).cbz (36pp) | [46862] Daredevil Annual 005 (1989) (Digital) (Shadowcat-Empire).cbz (56pp)
+            [46863] Daredevil Annual 006 (1990) (Digital) (Shadowcat-Empire).cbz (57pp) | [46864] Daredevil Annual 007 (1991) (Digital) (Shadowcat-Empire).cbz (57pp)
+            [46865] Daredevil Annual 008 (1992) (Digital) (Shadowcat-Empire).cbz (56pp) | [46866] Daredevil Annual 009 (1993) (digital) (Marika-Empire).cbz (49pp)
+            [46867] Daredevil Annual 010 (1994) (Digital) (Shadowcat-Empire).cbz (58pp) | [46479] Daredevil 001 (1964) (digital) (G85-Empire).cbr (25pp)
+            [46480] Daredevil 002 (1964) (Digital) (G85-Empire).cbr (24pp) | [46481] Daredevil 003 (1964) (digital) (G85-Empire).cbr (24pp)
+            [46482] Daredevil 004 (1964) (digital) (G85-Empire).cbr (24pp) | [46483] Daredevil 005 (1964) (Digital) (G85-Empire).cbr (23pp)
+            [46484] Daredevil 006 (1965) (Digital) (G85-Empire).cbr (22pp) | [46485] Daredevil 007 (1965) (digital) (G85-Empire).cbr (23pp)
+            [46486] Daredevil 008 (1965) (Digital) (G85-Empire).cbr (22pp)
+            Daredevil 009 (1965) (Digital) (AnHeroGold-Empire).cbz … Daredevil 104 (1973) (Digital) (AnHeroGold-Empire).cbz  (96 files, pp 20-23)
+            [46583] Daredevil 105 (1973) (Digital) (Zone-Empire).cbr (21pp) | [46584] Daredevil 106 (1973) (Digital) (Zone-Empire).cbr (21pp)
+            [46585] Daredevil 107 (1974) (Digital) (Zone-Empire).cbr (21pp)
+            Daredevil 108 (1974) (Digital) (Shadowcat-Empire).cbz … Daredevil 130 (1976) (Digital) (Shadowcat-Empire).cbz  (23 files, pp 18-20)
+            [46609] Daredevil 131 (1976) (Digital) (Zone-Empire).cbr (19pp) | [46610] Daredevil 132 (1976) (Digital) (Zone-Empire).cbr (19pp)
+            Daredevil 133 (1976) (Digital) (Shadowcat-Empire).cbz … Daredevil 143 (1977) (Digital) (Shadowcat-Empire).cbz  (11 files, pp 18-19)
+            [46622] Daredevil 144 (1977) (digital) (Shadowcat-Empire).cbz (18pp) | [46623] Daredevil 145 (1977) (digital) (Shadowcat-Empire).cbz (18pp)
+            [46624] Daredevil 146 (1977) (Digital) (Zone-Empire).cbr (19pp)
+            Daredevil 147 (1977) (digital) (Shadowcat-Empire).cbz … Daredevil 157 (1979) (digital) (Shadowcat-Empire).cbz  (11 files, pp 17-19)
+            [46636] Daredevil 158 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp) | [46637] Daredevil 159 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [46638] Daredevil 160 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp) | [46639] Daredevil 161 (1979) (Digital) (AnHeroGold-Empire).cbz (17pp)
+            [46640] Daredevil 162 (1980) (Digital) (Zone-Empire).cbr (20pp)
+            Daredevil 163 (1980) (Digital) (AnHeroGold-Empire).cbz … Daredevil 172 (1981) (Digital) (AnHeroGold-Empire).cbz  (10 files, pp 17-23)
+            Daredevil 173 (1981) (Digital) (Zone-Empire).cbr … Daredevil 191 (1983) (Digital) (Zone-Empire).cbr  (19 files, pp 22-40)
+            Daredevil 192 (1983) (digital).cbz … Daredevil 214 (1964) (digital).cbz  (23 files, pp 23-25) | [46693] Daredevil 215 (1985) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [46694] Daredevil 216 (1985) (Digital) (AnHeroGold-Empire).cbz (23pp) | [46695] Daredevil 217 (1985) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [46696] Daredevil 218 (1985) (digital).cbz (24pp) | [46697] Daredevil 219 (1985) (Digital) (Zone-Empire).cbr (24pp) | [46698] Daredevil 220 (1985) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [46699] Daredevil 221 (1985) (Digital) (AnHeroGold-Empire).cbz (23pp) | [46700] Daredevil 222 (1985) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [46701] Daredevil 223 (1985) (Digital) (AnHeroGold-Empire).cbz (23pp) | [46702] Daredevil 224 (1964) (digital).cbz (23pp)
+            [46703] Daredevil 225 (1985) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            Daredevil 226 (1986) (Digital) (Zone-Empire).cbr … Daredevil 233 (1986) (Digital) (Zone-Empire).cbr  (8 files, pp 24-32) | [46712] Daredevil 234 (1986) (Digital-Empire).cbz (23pp)
+            [46713] Daredevil 235 (1986) (Digital-Empire).cbz (24pp) | [46714] Daredevil 236 (1986) (Digital-Empire).cbz (24pp) | [46715] Daredevil 237 (1986) (Digital-Empire).cbz (22pp)
+            [46716] Daredevil 238 (1987) (Digital) (AnHeroGold-Empire).cbz (24pp) | Daredevil 239 (1987) (Digital-Empire).cbz … Daredevil 248 (1987) (Digital-Empire).cbz  (10 files, pp 23-24)
+            [46727] Daredevil 249 (1987) (Digital) (Shadowcat-Empire).cbz (24pp) | [46728] Daredevil 250 (1988) (Digital-Empire).cbz (23pp) | [46729] Daredevil 251 (1988) (Digital-Empire).cbz (24pp)
+            [46730] Daredevil 252 (1989) (digital).cbz (41pp) | Daredevil 253 (1988) (Digital) (AnHeroGold-Empire).cbz … Daredevil 273 (1989) (Digital) (AnHeroGold-Empire).cbz  (21 files, pp 22-36)
+            Daredevil 274 (1989) (Digital) (Shadowcat-Empire).cbz … Daredevil 311 (1992) (Digital) (Shadowcat-Empire).cbz  (38 files, pp 21-40)
+            Daredevil 312 (1993) (digital).cbz … Daredevil 318 (1993) (digital).cbz  (7 files, pp 22-24) | [46797] Daredevil 319 (+TPB pages) (1993) (2 covers) (digital) (Marika-Empire).cbz (29pp)
+            [46798] Daredevil 320 (+TPB pages) (1993) (digital) (Marika-Empire).cbz (27pp) | [46799] Daredevil 321 (1993) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [46800] Daredevil 322 (1993) (Digital) (Shadowcat-Empire).cbz (22pp) | [46801] Daredevil 323 (1993) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [46802] Daredevil 324 (+TPB pages) (1993) (digital) (Marika-Empire).cbz (27pp) | [46803] Daredevil 325 (+TPB pages) (1993) (digital) (Marika-Empire).cbz (42pp)
+            Daredevil 326 (1994) (Digital) (Shadowcat-Empire).cbz … Daredevil 332 (1994) (Digital) (Shadowcat-Empire).cbz  (7 files, pp 22-24)
+            Daredevil 333 (1964) (digital).cbz … Daredevil 344 (1964) (digital).cbz  (12 files, pp 21-24)
+            Daredevil 345 (1995) (Digital) (Shadowcat-Empire).cbz … Daredevil 353 (1996) (Digital) (Shadowcat-Empire).cbz  (9 files, pp 20-33)
+            [46832] Daredevil 354 (1996) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            Daredevil 355 (1996) (Digital) (Shadowcat-Empire).cbz … Daredevil 364 (1996) (Digital) (Shadowcat-Empire).cbz  (10 files, pp 23-23)
+            Daredevil 365 (1997) (Digital) (AnHeroGold-Empire).cbz … Daredevil 380 (1998) (Digital) (AnHeroGold-Empire).cbz  (16 files, pp 22-42)
+            [47980] COL Daredevil Omnibus Book 01 (2017) (Digital-Empire).cbr (1082pp) | [46967] COL 01 Daredevil by Mark Waid Omnibus Book 01 (2023, 2nd edition) (Digital-Empire).cbr (706pp)
+            [46968] COL 02 Daredevil by Waid & Samnee Omnibus Book 02 (2024. 2nd edition) (Digital-Empire).cbr (725pp) | [46978] COL Daredevil Omnibus Book 01 (2017) (Digital-Empire).cbr (1082pp)
+            [83039] Daredevil Facsimile Edition 183 (2023) (digital).cbz (35pp) | [86880] 016 Daredevil #196.cbz (23pp) | [86881] 017 Daredevil #197.cbz (23pp) | [86882] 018 Daredevil #198.cbz (23pp)
+            [86883] 019 Daredevil #199.cbr (23pp) | [87104] 011 Daredevil 238 (1987) (Digital) (AnPymGold-Empire).cbz (24pp) | [87175] 017 Daredevil v1 248.cbz (24pp)
+            [87176] 018 Daredevil v1 249.cbz (25pp) | [87310] Daredevil 262 (1988) (Digital) (AnPymGold-Empire).cbr (23pp) | [87311] Daredevil 263 (1989) (Digital) (AnPymGold-Empire).cbr (23pp)
+            [87312] Daredevil 264 (1989) (Digital) (AnHeroGold-Empire).cbz (23pp) | [87313] Daredevil 265 (1989) (Digital) (AnPymGold-Empire).cbz (23pp)
+            [87506] 041 Daredevil 275 (1989) (Digital) (Shadowcat-Empire).cbz (21pp) | [87507] 042 Daredevil 276 (1990) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [88746] 007 Daredevil 371 (1998) (Digital) (AnHeroGold-Empire).cbz (24pp) | [92157] 002 Daredevil Annual 01 (2012) (digital) (Minutemen-InnerDemons).cbr (39pp)
+            [116263] 01 Daredevil 037 (1968) (Digital) (AnPymGold-Empire).cbz (21pp) | [116264] 02 Daredevil 038 (1968) (Digital) (AnPymGold-Empire).cbz (21pp)
+            01 Daredevil 078 (1971) (Digital) (AnHeroGold-Empire).cbz … 16 Daredevil 085 (1972) (Digital) (AnHeroGold-Empire).cbz  (8 files, pp 20-22)
+            [116397] Daredevil v1 001 (1964) (digital) (G85-Empire).cbr (25pp) | [116420] Daredevil 275 (1989) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [116421] Daredevil 276 (1990) (Digital) (Shadowcat-Empire).cbz (22pp) | [116709] Daredevil 092 (2007) (Digital) (Zone-Empire).cbr (24pp)
+            [116710] Daredevil 093 (2007) (digital) (Zone-Empire).cbr (24pp) | [117370] Daredevil 111 (2008) (Digital) (Zone-Empire).cbr (25pp)
+            [117372] Daredevil 113 (2008) (Digital) (Zone-Empire).cbr (25pp) | [117373] Daredevil 114 (2009) (Digital) (Zone-Empire).cbr (25pp)
+            [117374] Daredevil 115 (2009) (Digital) (Zone-Empire).cbr (25pp) | [117375] Daredevil 116 (2009) (Digital) (TheHand-Empire).cbr (24pp)
+            [117376] Daredevil 117 (2009) (Digital) (TheHand-Empire).cbr (26pp) | [117377] Daredevil 118 (2009) (Digital) (TheHand-Empire).cbr (26pp)
+            [117378] Daredevil 119 (2009) (Digital) (TheHand-Empire).cbr (26pp) | [118489] Daredevil 026 (2021) (Digital) (Zone-Empire).cbr (25pp)
+   ours:    ladder 1-380; 44 number(s) name more than one file: 1, 4, 5, 6, 7, 8, 9, 10, 26, 37, 38, 78; ComicInfo Series: "Daredevil"x85, "Daredevil Annual"x6, "Daredevil Omnibus"x2, "Daredevil Annual cvv2351"x1; ComicInfo Volume: "1964"x90, "1967"x1, "2019"x1; ComicInfo Count: "380"x4, "10"x1; ComicInfo Publisher: "Marvel"x88, "Marvel Comics"x6; ComicInfo Web: "37654"x1, "37793"x1, "38498"x1, "38647"x1
+   GCD says: [47980] gcd_reprint 1678568: s1636 Daredevil (1964) #1-41 [122 stories] · s1808 Daredevil Annual (1967) #1 [14 stories] · s1810 Marvel Super-Heroes (1967) #22-31 [10 stories] · s2349 Marvel Adventure (1976) #3-6 [4 stories]
+             [46967] gcd_reprint 1677343: s60120 Daredevil (2011) #1-10, #10.1, #11-27 [29 stories] · s60377 The Punisher (2011) #10 [1 story] · s61993 Avenging Spider-Man (2012) #6 [1 story] · s11288 The Amazing Spider-Man (1999) #677 [1 story]
+             [46978] gcd_reprint 1678568: s1636 Daredevil (1964) #1-41 [122 stories] · s1808 Daredevil Annual (1967) #1 [14 stories] · s1810 Marvel Super-Heroes (1967) #22-31 [10 stories] · s2349 Marvel Adventure (1976) #3-6 [4 stories]
+   CV linked:      vol 2190 "Daredevil" 1964 Marvel 381 issues; cached #1-380 (381); yearΔ 0; ratio 429/381 = 1.13; no judged range
+   CV per-file (v1): vol 2190 "Daredevil" 1964 Marvel 381 on 425/433 files · vol 77205 "Daredevil" 1989 Semic S.A. 19 on 2/433 files · vol 144027 "Daredevil" 2022 Marvel 14 on 1/433 files
+   CV candidates:  33852 "Marvels Comics: Daredevil #1" 2000 Marvel 1 issue 268920 s48 · 162529 "Daredevil No. 1 Facsimile Edition" 2025 Marvel 1 issue 1096994 s47 · 77081 "Marvel Authentix: Daredevil" 1998 Marvel 1 issue 466265 s18 · 153551 "Daredevil Marvel Pocketbook" 2015 Marvel UK/Panini UK 1 issue 1014597 s18 · 149567 "Mighty Marvel Masterworks: Daredevil " 2022 Marvel 3 s5 · 34757 "Marvel Masterworks: Daredevil" 2003 Marvel 19 s3   (v1 search)
+   CV local rip:   (= linked) · 148896 "Daredevil" 1979 Editions Héritage 32 · 6209 "Daredevil" 1998 Marvel 134 · 142709 "Daredevil" 2000 Panini Verlag 2 · 42073 "Daredevil" 2001 Panini France 1 issue 286286   (rip lookup)
+   GCD per-file:   methods numx385 · round2-seriesx12 ⚠ · round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 1636 "Daredevil" 1964-1998 Marvel [was ongoing series] 381 on 382/433 files · series 6026 "Daredevil" 1998-2011 Marvel [was ongoing series] 132 on 10/433 files · series 50569 "Daredevil" [fr] 1989-1992 Semic S.A. [série continue terminée [was ongoing series]] 19 on 3/433 files · series 29788 "Daredevil" [es] 1989-1992 Planeta DeAgostini [Fue Serie Regular] 31 on 1/433 files
+   GCD dump:       (= per-file) · 65541 "Daredevil" [en-au] 1965-? Horwitz [] 1 · 31442 "Daredevil" 1967-1967 Lancer Books [] 1 · 149586 "Daredevil" [en-ph] 1972-1972 Goodwill Bookstore [] 1 · 23221 "Daredevil" [en-gb] 1953-1953 L. Miller & Son [] 7 · 71495 "Daredevil" [en-au] 1976-1976 Newton Comics [] 2   (dump lookup)
+   bridges:        gcd 1636 -> LOCG 111619 "Daredevil" support 413 · gcd 6026 -> LOCG 101267 "Black Panther: The Man Without Fear" support 48 · gcd 50569 -> LOCG 111619 "Daredevil" support 2
+
+== S96254 Daredevil  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: Daredevil - Shadowland | Daredevil v2 (1998)  years 1964-2011  44 files / 2 collections
+   folders: [40] Marvel\_Daredevil\02 Daredevil v2 (1998) · [2] Marvel\_Daredevil\02 Daredevil v2 (1998)\Trades · [1] Marvel\_Daredevil\02 Daredevil v2 (1998)\Annuals and Specials · [1] _Marvel Major Event Chronology (digital)\2010.07 - Shadowland\02 Shadowland
+   files:   [46868] Daredevil Annual 001 (2007) (Digital) (Zone-Empire).cbr (40pp)
+            Daredevil 020 (2001) (Digital) (Zone-Empire).cbr … Daredevil 114 (2009) (Digital) (Zone-Empire).cbr  (32 files, pp 20-40)
+            [46902] Daredevil 115 (495) (2009) (Digital) (Zone-Empire).cbr (25pp)
+            Daredevil 501 (2009) (Digital-HD) (Kleio-Empire).cbz … Daredevil 507 (2010) (Digital-HD) (Kleio-Empire).cbz  (7 files, pp 23-26)
+            [46911] COL Daredevil Vol. 02 - Parts of a Hole (2003) (Digital) (Asgard-Empire).cbr (161pp) | [46919] COL Daredevil Vol. 22 - Shadowland (2011) (Digital) (Zone-Empire).cbr (141pp)
+            [117388] 02 Daredevil - Shadowland (2011) (Digital) (F) (Zone-Empire).cbr (143pp)
+   ours:    ladder 1-2, 20-25, 51-55, 94-114, 495, 501-507; judged item 46911 #9-15 conf 0.95; judged item 46919 #508-512 conf 0.95; judged item 117388 #508-512 conf 0.95; ComicInfo Series: "Daredevil: Shadowland"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [46911] gcd_reprint 1883969: s6026 Daredevil (1998) #9-15 [8 stories]
+             [46919] gcd_reprint 2756366: s6026 Daredevil (1998) #508-512 [5 stories] · s225998 Shadowland: Daredevil (2011) (unnumbered) [1 story] · s53796 Shadowland: After the Fall (2011) #1 [1 story]
+   CV linked:      vol 6209 "Daredevil" 1998 Marvel 134 issues; cached #0-512 (134); yearΔ 34; ratio 42/134 = 0.31; 3 of 3 judged fit
+   CV per-file (v1): vol 2190 "Daredevil" 1964 Marvel 381 on 41/44 files
+   CV candidates:  39421 "Shadowland: Daredevil" 2011 Marvel 1 issue 266235 s98 · 108581 "Daredevil: Shadowland Omnibus" 2018 Marvel 1 issue 659057 s82 · 39422 "Shadowland" 2011 Marvel 1 issue 266236 s63 · 34243 "Shadowland" 2010 Marvel 5 s58 · 70862 "Shadowland" 1989 Fantagraphics 2 s55 · 35274 "Shadowland: Elektra" 2010 Marvel 1 issue 232574 s52   (v1 search)
+   CV local rip:   (= linked) · 148896 "Daredevil" 1979 Editions Héritage 32 · 77205 "Daredevil" 1989 Semic S.A. 19 · 142709 "Daredevil" 2000 Panini Verlag 2 · 42073 "Daredevil" 2001 Panini France 1 issue 286286   (rip lookup)
+   GCD per-file:   methods numx31 · round2-seriesx5 ⚠  (⚠ copies a folder neighbour's series — verify); series 6026 "Daredevil" 1998-2011 Marvel [was ongoing series] 132 on 30/44 files · series 1636 "Daredevil" 1964-1998 Marvel [was ongoing series] 381 on 5/44 files · series 36346 "Daredevil" [es] 2006-2010 Panini España [was ongoing series] 48 on 1/44 files
+   GCD dump:       (= per-file) · 65541 "Daredevil" [en-au] 1965-? Horwitz [] 1 · 31442 "Daredevil" 1967-1967 Lancer Books [] 1 · 149586 "Daredevil" [en-ph] 1972-1972 Goodwill Bookstore [] 1 · 23221 "Daredevil" [en-gb] 1953-1953 L. Miller & Son [] 7 · 71495 "Daredevil" [en-au] 1976-1976 Newton Comics [] 2   (dump lookup)
+   bridges:        gcd 6026 -> LOCG 101267 "Black Panther: The Man Without Fear" support 48 · gcd 1636 -> LOCG 111619 "Daredevil" support 413 · gcd 36346 -> LOCG 111619 "Daredevil" support 4
+
+== S4834 Daredevil by Mark Waid  [tier B]   keys: Daredevil by Mark Waid Vol. 1 Collection  years 2012-2012  1 files / 1 collections
+   folders: [1] Marvel\_Daredevil\04 Daredevil v3-v4 (2011)
+   files:   [46920] COL 01 Daredevil by Mark Waid Vol. 01 (2013) (Digital) (Zone-Empire).cbr (272pp)
+   ours:    ComicInfo Series: "Daredevil by Mark Waid Vol. 1 Collection"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [46920] gcd notes 932592 (#1 of Daredevil by Mark Waid): Daredevil (Marvel, 2011 series) #1-6  |  gcd_reprint 932592: s60120 Daredevil (2011) #1-6 [19 stories]
+   CV linked:      vol 45530 "Daredevil by Mark Waid" 2012 Marvel 7 issues; cached #1-7 (7); yearΔ 0; ratio 0/7; no judged range
+   CV candidates:  (= linked) · 38934 "Fantastic Four by Mark Waid" 2004 Marvel 3 s52 · 57482 "Daredevil by Mark Waid" 2013 Marvel 5 s30 · 104619 "Indestructible Hulk by Mark Waid: The Complete Collection" 2017 Marvel 1 issue 625311 s20 · 99293 "Daredevil by Mark Waid Omnibus" 2017 Marvel 2 s16 · 118658 "Doctor Strange by Mark Waid: Remittance" 2019 Marvel 1 issue 707511 s12 · 115727 "Doctor Strange by Mark Waid: Across The Universe" 2018 Marvel 1 issue 694124 s10   (v1 search)
+   CV local rip:   (= linked) · 57482 "Daredevil by Mark Waid" 2013 Marvel 5 · 38934 "Fantastic Four by Mark Waid" 2004 Marvel 3 (via CV candidate name "Fantastic Four by Mark Waid")   (rip lookup)
+   GCD dump:       64482 "Daredevil by Mark Waid" 2012-2014 Marvel [] 7 · 67442 "Daredevil by Mark Waid" 2012-2014 Marvel [] 7 · 79153 "Daredevil by Mark Waid" 2013-2014 Marvel [] 3   (dump lookup)
+
+== S64504 Daredevil  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Daredevil (2023) | Daredevil by Chip Zdarsky | Daredevil v6 (2019)  years 1964-2025  12 files / 11 collections
+   folders: [7] Marvel\_Daredevil\07 Daredevil v6 (2019) · [2] Marvel\_Daredevil\07 Daredevil v6 (2019)\Deluxe Editions · [2] Marvel\_Daredevil\_Omnibus Editions · [1] Marvel\_Daredevil\07 Daredevil v6 (2019)\Annuals and Specials
+   files:   [47983] Daredevil 001 - Director's Cut (2019) (Digital) (Zone-Empire).cbr (138pp) | [46934] COL Daredevil by Chip Zdarsky Vol. 01 - Know Fear (2019) (Digital) (Zone-Empire).cbr (121pp)
+            [46935] COL Daredevil by Chip Zdarsky Vol. 02 - No Devils, Only God (2019) (Digital) (Zone-Empire).cbr (114pp)
+            [46936] COL Daredevil by Chip Zdarsky Vol. 03 - Through Hell (2020) (Digital) (Zone-Empire).cbr (113pp)
+            [46937] COL Daredevil by Chip Zdarsky Vol. 04 - End of Hell (2020) (Digital) (Zone-Empire).cbr (112pp)
+            [46938] COL Daredevil by Chip Zdarsky Vol. 05 - Truth-Dare (2021) (Digital) (EJGriffin-Empire).cbz (142pp)
+            [46939] COL Daredevil by Chip Zdarsky Vol. 06 - Doing Time (2021) (Digital-Empire).cbr (118pp)
+            [46940] COL Daredevil by Chip Zdarsky Vol. 07 - Lockdown (2021) (Digital-Empire).cbr (143pp)
+            [46942] COL Daredevil by Chip Zdarsky Book 02 - To Heaven Through Hell Vol. 02 (2022) (Digital-Empire).cbr (223pp)
+            [46943] COL Daredevil by Chip Zdarsky Book 03 - To Heaven Through Hell Vol. 03 (2022) (Digital-Empire).cbr (260pp)
+            [46974] COL Daredevil by Chip Zdarsky Omnibus Book 01 (2024) (Digital-Empire).cbr (700pp)
+            [46975] COL Daredevil by Chip Zdarsky Omnibus Book 02 (2025) (Digital) (EricJGriffin-Empire).cbz (756pp)
+   ours:    ladder 1; ComicInfo Series: "Daredevil by Chip Zdarsky"x4, "Daredevil By Chip Zdarsky Omnibus "x1, "Daredevil"x1; ComicInfo Volume: "2019"x1; ComicInfo Publisher: "Marvel"x5
+   GCD says: [46934] gcd_reprint 2069742: s139716 Daredevil (2019) (unnumbered) [11 stories]
+             [46935] gcd_reprint 2069743: s139716 Daredevil (2019) (unnumbered) [11 stories]
+             [46936] gcd notes 2119751 (#3 of Daredevil by Chip Zdarsky): Daredevil (Marvel, 2019 series) #11-15  |  gcd_reprint 2119751: s139716 Daredevil (2019) (unnumbered) [11 stories]
+             [46937] gcd_reprint 2152678: s139716 Daredevil (2019) (unnumbered) [11 stories]
+             [46938] gcd_reprint 2415332: s139716 Daredevil (2019) (unnumbered) [6 stories] · s163310 Daredevil Annual (2020) #1 [1 story]  |  ⚠ stored GCD row is another book: our title 'Daredevil by Chip Zdarsky' has chip/zdarsky, GCD's series 'Daredevil' does not; our subtitle 'Truth-Dare' vs GCD title 'Action ou vérité' — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [46939] gcd_reprint 2415333: s139716 Daredevil (2019) (unnumbered) [1 story]  |  ⚠ stored GCD row is another book: our title 'Daredevil by Chip Zdarsky' has chip/zdarsky, GCD's series 'Daredevil' does not; our subtitle 'Doing Time' vs GCD title 'En taule' — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [46942] gcd_reprint 2381423: s139716 Daredevil (2019) (unnumbered) [11 stories]
+             [46943] gcd_reprint 2446270: s139716 Daredevil (2019) (unnumbered) [11 stories] · s163310 Daredevil Annual (2020) #1 [1 story]
+             [46974] gcd_reprint 2645315: s139716 Daredevil (2019) (unnumbered) [30 stories]
+             [46975] gcd_reprint 2691477: s187163 Daredevil (2022) (unnumbered) [14 stories] · s179125 Devil's Reign (2022) #1-6 [6 stories] · s139716 Daredevil (2019) (unnumbered) [6 stories] · s180373 Daredevil: Woman Without Fear (2022) #1-3 [3 stories]
+   CV linked:      vol 116964 "Daredevil" 2019 Marvel 36 issues; cached #1-36 (36); yearΔ 55; ratio 1/36 = 0.03; no judged range
+   CV per-file (v1): vol 2190 "Daredevil" 1964 Marvel 381 on 1/12 files
+   CV candidates:  120389 "Daredevil by Chip Zdarsky: Know Fear" 2019 Marvel 1 issue 714658 s91 · 123280 "Daredevil by Chip Zdarsky: No Devils, Only God" 2019 Marvel 1 issue 729696 s89 · 149239 "Daredevil & Elektra by Chip Zdarsky" 2023 Marvel 3 s48 · 134646 "Daredevil by Chip Zdarsky: To Heaven Through Hell" 2021 Marvel 4 s46 · 159037 "Daredevil by Chip Zdarsky Omnibus" 2024 Marvel 2 s42 · 145212 "Daredevil By Chip Zdarsky: Lockdown" 2022 Marvel 1 issue 948721 s37   (v1 search)
+   CV local rip:   (= linked) · 148896 "Daredevil" 1979 Editions Héritage 32 · 77205 "Daredevil" 1989 Semic S.A. 19 · 6209 "Daredevil" 1998 Marvel 134 · 142709 "Daredevil" 2000 Panini Verlag 2 · 42073 "Daredevil" 2001 Panini France 1 issue 286286   (rip lookup)
+   GCD per-file:   series 186522 "Daredevil" [fr] 2020-? Panini France [série continue [ongoing series]] 7 on 3/12 files · series 68578 "Daredevil" [de] 2012-2014 Panini Deutschland [was ongoing series] 6 on 1/12 files; methods numx3 · page-rematchx1
+   GCD dump:       1636 "Daredevil" 1964-1998 Marvel [] 381 · 65541 "Daredevil" [en-au] 1965-? Horwitz [] 1 · 31442 "Daredevil" 1967-1967 Lancer Books [] 1 · 149586 "Daredevil" [en-ph] 1972-1972 Goodwill Bookstore [] 1 · 23221 "Daredevil" [en-gb] 1953-1953 L. Miller & Son [] 7 · 71495 "Daredevil" [en-au] 1976-1976 Newton Comics [] 2   (dump lookup)
+   bridges:        gcd 186522 -> LOCG 111619 "Daredevil" support 8 · gcd 68578 -> LOCG 111619 "Daredevil" support 1
+
+== S4830 Daredevil by Chip Zdarsky: To Heaven Through Hell  [tier B]   keys: Daredevil by Chip Zdarsky: To Heaven Through Hell  years 2021-2023  2 files / 2 collections
+   folders: [2] Marvel\_Daredevil\07 Daredevil v6 (2019)\Deluxe Editions
+   files:   [46941] COL Daredevil by Chip Zdarsky Book 01 - To Heaven Through Hell Vol. 01 (2021) (Digital-Empire).cbr (229pp)
+            [46944] COL Daredevil by Chip Zdarsky Book 04 - To Heaven Through Hell Vol. 04 (2023) (Digital-Empire).cbr (233pp)
+   ours:    ComicInfo Series: "Daredevil by Chip Zdarsky: To Heaven Through Hell"x2; ComicInfo Publisher: "Marvel"x2
+   GCD says: [46941] gcd notes 2213189 (#1 of Daredevil by Chip Zdarsky: To Heaven Through Hell): Daredevil (Marvel, 2019 series) #1-10  |  gcd_reprint 2213189: s139716 Daredevil (2019) (unnumbered) [11 stories]
+             [46944] gcd_reprint 2555895: s139716 Daredevil (2019) (unnumbered) [7 stories] · s180373 Daredevil: Woman Without Fear (2022) #1-3 [3 stories]
+   CV linked:      vol 134646 "Daredevil by Chip Zdarsky: To Heaven Through Hell" 2021 Marvel 4 issues; cached #1-4 (4); yearΔ 0; ratio 0/4; no judged range; v1 per-file: same volume on 2/2 files
+   CV candidates:  (= linked) · 120389 "Daredevil by Chip Zdarsky: Know Fear" 2019 Marvel 1 issue 714658 s66 · 123280 "Daredevil by Chip Zdarsky: No Devils, Only God" 2019 Marvel 1 issue 729696 s64 · 126380 "Daredevil by Chip Zdarsky: Through Hell" 2020 Marvel 1 issue 748555 s38 · 159037 "Daredevil by Chip Zdarsky Omnibus" 2024 Marvel 2 s22 · 130785 "Daredevil by Chip Zdarsky: End of Hell" 2020 Marvel 1 issue 805269 s18 · 145212 "Daredevil By Chip Zdarsky: Lockdown" 2022 Marvel 1 issue 948721 s15   (v1 search)
+   CV local rip:   (= linked) · 120389 "Daredevil by Chip Zdarsky: Know Fear" 2019 Marvel 1 issue 714658 (via CV candidate name "Daredevil by Chip Zdarsky: Know Fear") · 123280 "Daredevil by Chip Zdarsky: No Devils, Only God" 2019 Marvel 1 issue 729696 (via CV candidate name "Daredevil by Chip Zdarsky: No Devils, Only God")   (rip lookup)
+   GCD dump:       171411 "Daredevil by Chip Zdarsky: To Heaven Through Hell" 2021-2023 Marvel [] 4   (dump lookup)
+
+== S4812 Daredevil Epic Collection  [tier D]   keys: Daredevil Epic Collection  years 2014-2024  13 files / 13 collections
+   folders: [13] Marvel\_Daredevil\_Daredevil Epic Collections
+   files:   [46948] COL Daredevil Epic Collection Vol. 01 - The Man Without Fear (2016) (Digital) (danke-Empire).cbz (467pp)
+            [46949] COL Daredevil Epic Collection Vol. 02 - Mike Murdock Must Die! (2018) (Digital) (Zone-Empire).cbr (522pp)
+            [46950] COL Daredevil Epic Collection Vol. 03 - Brother, Take My Hand (2017) (Digital) (danke-Empire).cbz (473pp)
+            [46951] COL Daredevil Epic Collection Vol. 04 - A Woman Called Widow (2019) (Digital) (Zone-Empire).cbr (511pp)
+            [46953] COL Daredevil Epic Collection Vol. 06 - Watch Out For Bullseye (2023) (Digital) (Shan-Empire).cbz (516pp)
+            [46954] COL Daredevil Epic Collection Vol. 07 - The Concrete Jungle (2024) (Digital) (Shan-Empire).cbz (528pp)
+            [46955] COL Daredevil Epic Collection Vol. 12 - It Comes with the Claws (2022) (Digital) (Shan-Empire).cbz (482pp)
+            [46956] COL Daredevil Epic Collection Vol. 13 - A Touch Of Typhoid (2016) (Digital) (F) (AnHeroGold-Empire).cbr (464pp)
+            [46957] COL Daredevil Epic Collection Vol. 14 - Heart of Darkness (2017) (Digital) (danke-Empire).cbz (482pp)
+            [46961] COL Daredevil Epic Collection Vol. 18 - Fall From Grace (2014) (Digital) (Zone-Empire).cbr (433pp)
+            [46962] COL Daredevil Epic Collection Vol. 19 - Root of Evil (2018) (Digital) (Zone-Empire).cbr (432pp)
+            [46963] COL Daredevil Epic Collection Vol. 20 - Purgatory & Paradise (2019) (Digital) (Zone-Empire).cbr (472pp)
+            [46964] COL Daredevil Epic Collection Vol. 21 - Widow's Kiss (2015) (Digital) (Zone-Empire).cbr (492pp)
+   ours:    judged item 46948 #1-21 conf 0.9; judged item 46949 #22-41 conf 0.9; judged item 46950 #42-63 conf 0.9; judged item 46951 #64-86 conf 0.9; judged item 46953 #108-132 conf 0.9; judged item 46954 #133-154 conf 0.9; judged item 46955 #234-252 conf 0.9; judged item 46956 #253-270 conf 0.9; judged item 46957 #271-282 conf 0.9; judged item 46961 #319-332 conf 0.9; judged item 46962 #333-344 conf 0.9; judged item 46963 #345-364 conf 0.9; judged item 46964 #365-380 conf 0.9; ComicInfo Series: "Daredevil Epic Collection"x3; ComicInfo Publisher: "Marvel"x3
+   GCD says: [46948] gcd_reprint 1602239: s1636 Daredevil (1964) #1-21 [45 stories] · s63132 Marvel Masterworks: Daredevil (2010) #1-2 [2 stories]
+             [46949] gcd notes 1785154 (#2 of Daredevil Epic Collection): Daredevil (Marvel, 1964 series) #22-41; Daredevil Annual (Marvel, 1967 series) #1; Fantastic Four (Marvel, 1961 series) #73; Not Brand Echh (Marvel, 1967 series) #4  |  gcd_reprint 1785154: s1636 Daredevil (1964) #22-41 [41 stories] · s1808 Daredevil Annual (1967) #1 [14 stories] · s1811 Not Brand Echh (1967) #4 [2 stories] · s1482 Fantastic Four (1961) #73 [2 stories]
+             [46950] gcd_reprint 1676275: s1636 Daredevil (1964) #42-63 [46 stories]
+             [46951] gcd notes 2035896 (#4 of Daredevil Epic Collection): Daredevil (Marvel, 1964 series) #64-86; Iron Man (Marvel, 1968 series) #35-36  |  gcd_reprint 2035896: s1636 Daredevil (1964) #64-86 [48 stories] · s1867 Iron Man (1968) #35-36 [4 stories] · s1808 Daredevil Annual (1967) #2-3 [2 stories]
+             [46953] gcd_reprint 2511440: s1636 Daredevil (1964) #108-132 [54 stories] · s158698 FOOM Magazine (1973) #13 [7 stories] · s2182 Marvel Two-in-One (1974) #3 [2 stories] · s2238 Giant-Size Daredevil (1975) #1 [1 story]
+             [46954] gcd notes 2620864 (#7 of Daredevil Epic Collection): Daredevil (Marvel, 1964 series) #133-154; Daredevil Annual (Marvel, 1967 series) #4; Ghost Rider (Marvel, 1973 series) #20; Marvel Premiere (Marvel, 1972 series) #39-40, #43; Ghost Rider (Marvel 1973 series) #19  |  gcd_reprint 2620864: s1636 Daredevil (1964) #133-154 [46 stories] · s2055 Marvel Premiere (1972) #39-40, #43 [6 stories] · s2120 Ghost Rider (1973) #19-20 [3 stories] · s1808 Daredevil Annual (1967) #4 [2 stories]
+             [46955] gcd_reprint 2426199: s1636 Daredevil (1964) #234-252 [42 stories] · s74368 Marvel Age Annual (1985) #2-3 [3 stories] · s5038 Sabretooth Classic (1994) #11 [1 story] · s69795 Marvel Age (1983) #53 [1 story]
+             [46956] gcd_reprint 1437149: s1636 Daredevil (1964) #253-270 [19 stories] · s3431 The Punisher (1987) #10 [1 story]
+             [46957] gcd_reprint 1735450: s1636 Daredevil (1964) #271-282 [26 stories] · s1808 Daredevil Annual (1967) #6 [14 stories] · s3665 Silver Surfer Annual (1988) #3 [2 stories] · s2348 The Incredible Hulk Annual (1976) #16 [2 stories]
+             [46961] gcd_reprint 1180516: s1636 Daredevil (1964) #319-332 [14 stories] · s1808 Daredevil Annual (1967) #10 [3 stories]
+             [46962] gcd notes 1827259 (#19 of Daredevil Epic Collection): Daredevil (Marvel, 1964 series) #333-344; Elektra: Root of Evil (Marvel, 1995 series) #1-4  |  gcd_reprint 1827259: s1636 Daredevil (1964) #333-344 [31 stories] · s10344 Elektra (1995) #1-4 [8 stories] · s204443 Marvel Swimsuit Special (1992) #3-4 [5 stories]
+             [46964] gcd_reprint 1331316: s1636 Daredevil (1964) #365-380 [18 stories] · s5789 Daredevil / Deadpool '97 (1997) #1 [1 story]
+   CV candidates:  132134 "Daredevil Epic Collection: Last Rites" 2020 Marvel 1 issue 819149 s73 · 83947 "Daredevil Epic Collection: Widow's Kiss" 2015 Marvel 1 issue 497939 s73 · 104463 "Daredevil Epic Collection: Heart of Darkness" 2017 Marvel 1 issue 622936 s72 · 119529 "Daredevil Epic Collection: Purgatory & Paradise" 2019 Marvel 1 issue 710677 s72 · 157502 "Daredevil Epic Collection: The Concrete Jungle" 2024 Marvel 1 issue 1050584 s72 · 112443 "Daredevil Epic Collection: Root of Evil" 2018 Marvel 1 issue 677963 s72   (v1 search)
+   CV local rip:   83947 "Daredevil Epic Collection: Widow's Kiss" 2015 Marvel 1 issue 497939 (via CV candidate name "Daredevil Epic Collection: Widow's Kiss") · 104463 "Daredevil Epic Collection: Heart of Darkness" 2017 Marvel 1 issue 622936 (via CV candidate name "Daredevil Epic Collection: Heart of Darkness") · 132134 "Daredevil Epic Collection: Last Rites" 2020 Marvel 1 issue 819149 (via CV candidate name "Daredevil Epic Collection: Last Rites")   (rip lookup)
+   GCD dump:       79137 "Daredevil Epic Collection" 2014-? Marvel [] 18   (dump lookup)
+
+== S4813 Daredevil Epic Collection: Dead Man's Hand  [tier B]   keys: Daredevil Epic Collection: Dead Man's Hand  years 2021-2021  1 files / 1 collections
+   folders: [1] Marvel\_Daredevil\_Daredevil Epic Collections
+   files:   [46959] COL Daredevil Epic Collection Vol. 16 - Dead Man's Hand (2021) (Digital-Empire).cbr (471pp)
+   ours:    ComicInfo Series: "Daredevil Epic Collection: Dead Man's Hand"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [46959] gcd_reprint 2294191: s1636 Daredevil (1964) #301-311 [25 stories] · s3662 The Punisher War Journal (1988) #45-47 [7 stories] · s4466 Nomad (1992) #4-6 [6 stories] · s1808 Daredevil Annual (1967) #8 [6 stories]
+   CV linked:      vol 144405 "Daredevil Epic Collection: Dead Man's Hand" 2022 Marvel 1 issues issue 941967; cached #1-1 (1); yearΔ 1; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 99028 "Daredevil Epic Collection: Brother, Take My Hand" 2017 Marvel 1 issue 582522 s67 · 32008 "Spider-Man: Dead Man's Hand" 1997 Marvel 1 issue 200815 s60 · 81237 "Deadlands: Dead Man's Hand" 2015 IDW Publishing 1 issue 485536 s45 · 70527 "Doctor Who: Dead Man's Hand" 2013 IDW Publishing 1 issue 440259 s43 · 103768 "The Dead Hand" 2017 Éditions Glénat 1 issue 617541 s41 · 118522 "No Rest For the Wicked: Dead Man's Hand" 2019 Source Point Press 1 issue 707002 s40   (v1 search)
+   CV local rip:   (= linked) · 99028 "Daredevil Epic Collection: Brother, Take My Hand" 2017 Marvel 1 issue 582522 (via CV candidate name "Daredevil Epic Collection: Brother, Take My Hand") · 32008 "Spider-Man: Dead Man's Hand" 1997 Marvel 1 issue 200815 (via CV candidate name "Spider-Man: Dead Man's Hand")   (rip lookup)
+   GCD dump:       9813 "Spider-Man: Dead Man's Hand" 1997-1997 Marvel [] 1 (via CV candidate name "Spider-Man: Dead Man's Hand")   (dump lookup)
+
+== S4814 Daredevil Epic Collection: Going Out West  [tier B]   keys: Daredevil Epic Collection: Going Out West  years 2021-2021  1 files / 1 collections
+   folders: [1] Marvel\_Daredevil\_Daredevil Epic Collections
+   files:   [46952] COL Daredevil Epic Collection Vol. 05 - Going Out West (2022) (Digital-Empire).cbr (468pp)
+   ours:    ComicInfo Series: "Daredevil Epic Collection: Going Out West"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [46952] gcd_reprint 2303457: s1636 Daredevil (1964) #87-107 [44 stories] · s1571 The Avengers (1963) #111 [2 stories]
+   CV linked:      vol 144408 "Daredevil Epic Collection: Going Out West" 2021 Marvel 1 issues issue 944235; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 160435 "Daredevil Modern Era Epic Collection: Out" 2024 Marvel 1 issue 1074067 s68 · 149279 "Daredevil Epic Collection: Watch Out for Bullseye" 2023 Marvel 1 issue 981216 s67 · 132134 "Daredevil Epic Collection: Last Rites" 2020 Marvel 1 issue 819149 s58 · 104463 "Daredevil Epic Collection: Heart of Darkness" 2017 Marvel 1 issue 622936 s57 · 119529 "Daredevil Epic Collection: Purgatory & Paradise" 2019 Marvel 1 issue 710677 s57 · 157502 "Daredevil Epic Collection: The Concrete Jungle" 2024 Marvel 1 issue 1050584 s57   (v1 search)
+   CV local rip:   (= linked) · 149279 "Daredevil Epic Collection: Watch Out for Bullseye" 2023 Marvel 1 issue 981216 (via CV candidate name "Daredevil Epic Collection: Watch Out for Bullseye") · 160435 "Daredevil Modern Era Epic Collection: Out" 2024 Marvel 1 issue 1074067 (via CV candidate name "Daredevil Modern Era Epic Collection: Out")   (rip lookup)
+
+== S4815 Daredevil Epic Collection: Into the Fire  [tier B]   keys: Daredevil Epic Collection: Into The Fire  years 2023-2023  1 files / 1 collections
+   folders: [1] Marvel\_Daredevil\_Daredevil Epic Collections
+   files:   [46960] COL Daredevil Epic Collection Vol. 17 - Into the Fire (2023) (Digital-Empire).cbr (504pp)
+   ours:    ComicInfo Series: "Daredevil Epic Collection: Into The Fire"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [46960] gcd notes 2561350 (#17 of Daredevil Epic Collection): Daredevil (Marvel, 1964 series) #312-318; Daredevil Annual (Marvel, 1967 series) #9; : Abattoir (Marvel, 1993 series) and Daredevil: the Man Without Fear (Marvel, 1993 series) #1-5  |  gcd_reprint 2561350: s4683 Daredevil The Man without Fear (1993) #1-5 [30 stories] · s1636 Daredevil (1964) #312-318 [16 stories] · s28505 Daredevil / Black Widow: Abattoir (1993) (unnumbered) [6 stories] · s1808 Daredevil Annual (1967) #9 [5 stories]
+   CV linked:      vol 152900 "Daredevil Epic Collection: Into the Fire" 2023 Marvel 1 issues issue 1006552; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 157502 "Daredevil Epic Collection: The Concrete Jungle" 2024 Marvel 1 issue 1050584 s68 · 166661 "Daredevil Epic Collection: To Dare the Devil" 2025 Marvel 1 issue 1130329 s67 · 132134 "Daredevil Epic Collection: Last Rites" 2020 Marvel 1 issue 819149 s58 · 83947 "Daredevil Epic Collection: Widow's Kiss" 2015 Marvel 1 issue 497939 s58 · 104463 "Daredevil Epic Collection: Heart of Darkness" 2017 Marvel 1 issue 622936 s57 · 119529 "Daredevil Epic Collection: Purgatory & Paradise" 2019 Marvel 1 issue 710677 s57   (v1 search)
+   CV local rip:   (= linked) · 157502 "Daredevil Epic Collection: The Concrete Jungle" 2024 Marvel 1 issue 1050584 (via CV candidate name "Daredevil Epic Collection: The Concrete Jungle") · 166661 "Daredevil Epic Collection: To Dare the Devil" 2025 Marvel 1 issue 1130329 (via CV candidate name "Daredevil Epic Collection: To Dare the Devil")   (rip lookup)
+
+== S4816 Daredevil Epic Collection: Last Rites  [tier B]   keys: Daredevil Epic Collection: Last Rites  years 2020-2020  1 files / 1 collections
+   folders: [1] Marvel\_Daredevil\_Daredevil Epic Collections
+   files:   [46958] COL Daredevil Epic Collection Vol. 15 - Last Rites (2020) (Digital-Empire).cbr (500pp)
+   ours:    ComicInfo Series: "Daredevil Epic Collection: Last Rites"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [46958] gcd notes 2177606 (#15 of Daredevil Epic Collection): Daredevil (Marvel, 1964 series) #283-300; Daredevil Annual (Marvel, 1967 series) #7  |  gcd_reprint 2177606: s1636 Daredevil (1964) #283-300 [37 stories] · s1808 Daredevil Annual (1967) #7 [7 stories] · s69795 Marvel Age (1983) #106 [3 stories] · s182428 Marvel Illustrated: Swimsuit Issue (1991) #1 [1 story]
+   CV linked:      vol 132134 "Daredevil Epic Collection: Last Rites" 2020 Marvel 1 issues issue 819149; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 52169 "Last Rites" 1994 Chick Publications 1 issue 357322 s70 · 83947 "Daredevil Epic Collection: Widow's Kiss" 2015 Marvel 1 issue 497939 s64 · 104463 "Daredevil Epic Collection: Heart of Darkness" 2017 Marvel 1 issue 622936 s63 · 119529 "Daredevil Epic Collection: Purgatory & Paradise" 2019 Marvel 1 issue 710677 s63 · 157502 "Daredevil Epic Collection: The Concrete Jungle" 2024 Marvel 1 issue 1050584 s63 · 112443 "Daredevil Epic Collection: Root of Evil" 2018 Marvel 1 issue 677963 s63   (v1 search)
+   CV local rip:   (= linked) · 52169 "Last Rites" 1994 Chick Publications 1 issue 357322 (via CV candidate name "Last Rites") · 83947 "Daredevil Epic Collection: Widow's Kiss" 2015 Marvel 1 issue 497939 (via CV candidate name "Daredevil Epic Collection: Widow's Kiss")   (rip lookup)
+   GCD dump:       63499 "Last Rites" 1994-1994 Chick Publications [] 1 (via CV candidate name "Last Rites")   (dump lookup)
+
+== S103879 Daredevil: Shadowland Omnibus (2018)  [tier B]   keys: Daredevil: Shadowland Omnibus (2018)  years 2011-2011  1 files / 1 collections
+   folders: [1] Marvel\_Daredevil\_Omnibus Editions
+   files:   [46969] COL Daredevil - Shadowland Omnibus (2024, 2nd edition) (Digital-Empire).cbr (1097pp)
+   CV linked:      vol 108581 "Daredevil: Shadowland Omnibus" 2018 Marvel 1 issues issue 659057  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV per-file (v1): vol 39421 "Shadowland: Daredevil" 2011 Marvel 1 issue 266235 on 1/1 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       120694 "Daredevil: Shadowland Omnibus" 2018-2018 Marvel [] 1 (via our own name without the filing suffix "Daredevil: Shadowland Omnibus") · 225997 "Shadowland: Daredevil" 2011-2011 Marvel [] 1 (via CV name "Shadowland: Daredevil") · 225998 "Shadowland: Daredevil" 2011-2011 Marvel [] 1 (via CV name "Shadowland: Daredevil")   (dump lookup)
+
+== S4832 Daredevil by Frank Miller and Klaus Janson  [tier A]   keys: Daredevil by Frank Miller and Klaus Janson  years 2007-2009  3 files / 3 collections
+   flags: #5 arithmetic-odd [Pending] item 46976 — locg #1-191 on an 824pp omnibus · #713 span-retracted [Pending] item 46976 — the audit withdrew the range the pass had written: locg #1-191 is an aggregate of the whol
+   folders: [2] Marvel\_Daredevil\_Trades, Minis and One-shots\Daredevil by Frank Miller and Klaus Janson (2008) · [1] Marvel\_Daredevil\_Omnibus Editions
+   files:   [46976] COL Daredevil by Frank Miller and Klaus Janson Omnibus 001 (2007) (digital) (Marika-Empire).cbz (824pp)
+            [47021] COL Daredevil by Frank Miller and Klaus Janson Vol. 02 (2008) (Digital) (F) (Zone-Empire).cbr (314pp)
+            [47022] COL Daredevil by Frank Miller and Klaus Janson Vol. 03 (2009) (Digital) (F2) (Zone-Empire).cbr (317pp)
+   ours:    judged item 47021 #173-184 conf 0.9; judged item 47022 #185-191 conf 0.9; ComicInfo Series: "Daredevil by Frank Miller and Klaus Janson"x2, "Daredevil by Frank Miller and Klaus Janson Omnibus"x1; ComicInfo Volume: "2007"x1; ComicInfo Publisher: "Marvel"x2, "Marvel Comics"x1; ComicInfo Web: "294024"x1
+   GCD says: [46976] gcd_reprint 1106834: s1636 Daredevil (1964) #158-161, #163-172 [31 stories] · s2359 The Spectacular Spider-Man (1976) #27-28 [4 stories] · s94743 Daredevil Visionaries: Frank Miller (2000) #1 [1 story]  |  ⚠ stored GCD row is another book: our title 'Daredevil by Frank Miller and Klaus Janson Omnibus' has omnibus, GCD's series 'Daredevil by Frank Miller and Klaus Janson' does not; 824pp vs GCD 340pp — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [47021] gcd_reprint 1106835: s1636 Daredevil (1964) #173-184 [24 stories] · s5026 Marvel Super-Heroes Megazine (1994) #2, #4, #6 [3 stories] · s76694 The Daredevil Chronicles (1982) (unnumbered) [3 stories] · s38840 Daredevil Gangwar (1992) (unnumbered) [2 stories]
+             [47022] gcd_reprint 1106836: s1636 Daredevil (1964) #185-191, #219 [17 stories] · s87031 Marvel Graphic Novel: Daredevil (1986) (unnumbered) [4 stories] · s10443 Daredevil Visionaries: Frank Miller (2000) #1-3 [3 stories] · s2410 What If? (1977) #28, #34 [3 stories]
+   CV linked:      vol 29926 "Daredevil by Frank Miller and Klaus Janson" 2008 Marvel 3 issues; cached #1-3 (3); yearΔ 1; ratio 0/3; 0 of 2 judged fit
+   CV candidates:  (= linked) · 43101 "Daredevil by Frank Miller and Klaus Janson Omnibus" 2007 Marvel 1 issue 294024 s94 · 21192 "Daredevil by Frank Miller Omnibus Companion" 2007 Marvel 1 issue 127432 s67 · 9624 "Daredevil Visionaries: Frank Miller" 2000 Marvel 3 s63 · 38978 "Elektra by Frank Miller Omnibus" 2008 Marvel 1 issue 261765 s62 · 41912 "Best of Marvel Essentials: Daredevil de Frank Miller" 2008 Panini España 6 s38 · 103297 "Colección Frank Miller. Daredevil de Frank Miller y Klaus Janson" 2016 Panini España 1 issue 612157 s5   (v1 search)
+   CV local rip:   (= linked) · 43101 "Daredevil by Frank Miller and Klaus Janson Omnibus" 2007 Marvel 1 issue 294024 (via CV candidate name "Daredevil by Frank Miller and Klaus Janson Omnibus") · 21192 "Daredevil by Frank Miller Omnibus Companion" 2007 Marvel 1 issue 127432 (via CV candidate name "Daredevil by Frank Miller Omnibus Companion")   (rip lookup)
+   GCD per-file:   series 73293 "Daredevil by Frank Miller and Klaus Janson" 2008-2009 Marvel [collected edition] 3 on 1/3 files; methods numx1
+   GCD dump:       (= per-file) · 68581 "Daredevil by Frank Miller and Klaus Janson Omnibus" 2007-2007 Marvel [] 1 (via CV candidate name "Daredevil by Frank Miller and Klaus Janson Omnibus") · 68583 "Daredevil by Frank Miller Omnibus Companion" 2007-2007 Marvel [] 1 (via CV candidate name "Daredevil by Frank Miller Omnibus Companion")   (dump lookup)
+   bridges:        gcd 73293 -> LOCG 111619 "Daredevil" support 3 · gcd 73293 -> OL /works/OL5616867W "None" isbnSupport 3
+
+== S64525 Dazzler  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Dazzler (1981) | Dazzler Masterworks (1981)  years 1981-2023  84 files / 4 collections
+   folders: [42] Marvel\_Dazzler\Dazzler v1 (1981) · [7] Marvel\_X-Men\_X-Men Complete Chronology V2\0017 Untitled · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0016 Dazzler · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0019 Untitled · [4] Marvel\_Marvel Masterworks\Dazzler v1 (1981) · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0022 Untitled · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0043 Untitled · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0048 Secret Wars II · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0028 Fame · [1] Marvel\_Dazzler · [1] Marvel\_Marvel Facsimile Editions · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0845 X-Necrosha · [1] _Marvel Major Event Chronology (digital)\2009.12 - X-Men - Necrosha
+   files:   [78353] Dazzler 001 (2010) (Digital) (Shadowcat-Empire).cbz (33pp) | [78354] Dazzler 001 (1981) (Digital) (Thornn-Empire).cbr (24pp)
+            Dazzler 002 (1981) (Digital) (Shadowcat-Empire).cbz … Dazzler 034 (1984) (Digital) (Shadowcat-Empire).cbz  (33 files, pp 22-40)
+            Dazzler 035 (1985) (Digital-Empire).cbz … Dazzler 042 (1986) (Digital-Empire).cbz  (8 files, pp 23-25)
+            [83040] Dazzler - Facsimile Edition 001 (2019) (Digital) (Shadowcat-Empire).cbz (35pp) | [83250] COL Marvel Masterworks - Dazzler Vol. 01 (2020) (Digital) (Kileko-Empire).cbz (366pp)
+            [83251] COL Marvel Masterworks - Dazzler Vol. 02 (2021) (Digital) (Kileko-Empire).cbz (323pp)
+            [83252] COL Marvel Masterworks - Dazzler Vol. 03 (2022) (Digital) (Kileko-Empire).cbz (302pp) | [83253] COL Marvel Masterworks - Dazzler Vol. 04 (2023) (Digital-Empire).cbr (344pp)
+            [86771] 001 Dazzler (1981) 001 (Digital) (2017) (Thornn-Empire).cbr (24pp) | 002 Dazzler #002.cbr … 038 Dazzler #012.cbr  (11 files, pp 22-24)
+            [86816] 040 Dazzler 014 (1982) (MrWoodman).cbr (36pp) | [86834] 001 Dazzler #017.cbz (24pp) | [86835] 002 Dazzler #018.cbz (23pp) | [86837] 004 Dazzler #020.cbz (24pp)
+            [86838] 005 Dazzler #021.cbr (39pp) | [86839] 006 Dazzler #022.cbz (24pp) | [86840] 007 Dazzler #023.cbz (24pp) | [86853] 001 Dazzler #025.cbr (23pp)
+            [86854] 002 Dazzler 026 (1983) (FB-DCP) (C2C).cbr (36pp) | [86855] 003 Dazzler #027.cbz (24pp) | [86856] 004 Dazzler #028.cbz (24pp) | [86898] 002 Dazzler #029.cbr (20pp)
+            [86901] 005 Dazzler #032.cbz (24pp) | [86902] 006 Dazzler #033.cbr (24pp) | [86982] 001 Dazzler #035.cbr (23pp) | [86983] 002 Dazzler #036.cbr (23pp) | [86984] 003 Dazzler #037.cbr (23pp)
+            [86985] 004 Dazzler #038.cbz (24pp) | [87021] 018 Dazzler #039.cbr (23pp) | [87024] 021 Dazzler 040 (1985) (digital) (Glorith-HD).cbz (24pp) | [87046] 043 Dazzler #041.cbr (23pp)
+            [87047] 044 Dazzler #042.cbz (25pp) | [91338] 015 Dazzler 001 (2010) (Digital) (Cypher-Empire).cbr (34pp) | [117304] 15 Dazzler 001 (2010) (Digital) (Cypher-Empire).cbr (34pp)
+   ours:    ladder 1-42; 34 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12; ComicInfo Series: "Dazzler"x36, "Dazzler Masterworks"x4; ComicInfo Volume: "1981"x35, "2010"x1; ComicInfo Count: "42"x1; ComicInfo Publisher: "Marvel"x39, "Marvel Comics"x1; ComicInfo Web: "26081"x1
+   GCD says: [83250] gcd notes 2103152 (#1 of Marvel Masterworks: Dazzler): The X-Men (Marvel, 1963 series) #130-131; The Amazing Spider-Man (Marvel, 1963 series) #203; Dazzler (Marvel, 1981 Series) #1-13  |  gcd_reprint 2103152: s2596 Dazzler (1981) #1-13 [29 stories] · s1576 The X-Men (1963) #130-131 [4 stories] · s1570 The Amazing Spider-Man (1963) #203 [2 stories]
+             [83251] gcd_reprint 2214002: s2596 Dazzler (1981) #14-25 [25 stories] · s2410 What If? (1977) #33 [2 stories] · s2758 The Official Handbook of the Marvel Universe (1983) #3 [1 story]
+             [83252] gcd_reprint 2401749: s2596 Dazzler (1981) #26-34 [21 stories] · s2658 Marvel Graphic Novel (1982) #12 [4 stories] · s204560 Dazzler The Movie (1990) (unnumbered) [3 stories] · s69795 Marvel Age (1983) #7 [2 stories]
+             [83253] gcd_reprint 2509761: s2596 Dazzler (1981) #35-42 [9 stories] · s2860 Beauty and the Beast (1984) #1-4 [4 stories] · s2657 Marvel Fanfare (1982) #38 [1 story] · s3045 Secret Wars II (1985) #4 [1 story]
+   CV linked:      vol 3083 "Dazzler" 1981 Marvel 42 issues; cached #1-42 (42); yearΔ 0; ratio 80/42 = 1.90; no judged range
+   CV per-file (v1): vol 3083 "Dazzler" 1981 Marvel 42 on 77/84 files · vol 33347 "Dazzler" 2010 Marvel 1 issue 216175 on 3/84 files
+   CV local rip:   (= linked) · 159808 "Dazzler" 2024 Marvel 4   (rip lookup)
+   GCD per-file:   methods numx28 · round2-seriesx21 ⚠  (⚠ copies a folder neighbour's series — verify); series 2596 "Dazzler" 1981-1986 Marvel [was ongoing] 42 on 46/84 files · series 49283 "Dazzler" 2010-2010 Marvel [One-Shot] 1 on 3/84 files
+   GCD dump:       (= per-file) · 214645 "Dazzler" 2024-2025 Marvel [] 4 · 67417 "Dazzler" [en-gb] 1933-1939 Target [] 294   (dump lookup)
+   bridges:        gcd 2596 -> LOCG 115418 "Dazzler" support 84 · gcd 49283 -> LOCG 115418 "Dazzler" support 3
+
+== S64540 Deadpool  [tier C] · 124 files  keys: Deadpool (1997) | Deadpool - Flashback | Deadpool v1 (1997)  years 1997-2002  124 files / 0 collections
+   folders: [49] Marvel\_Deadpool\02 Deadpool v1 (1997) · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0324 Head Trips · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0436 Warriors Four · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0513 Healing Factor · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0391 Head Full of Chese · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0406 Truth and Lies · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0423 Chapter X · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0460 Cruel Summer · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0491 Agent of Weapon X · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0505 Funeral for a Freak · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0315 Stumped · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0344 The Drowning Man · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0383 Dead Reckoning · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0484 End of the Road · [2] Marvel\_Marvel Facsimile Editions\Variant Covers · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0307 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0357 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0365 PayBack · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0374 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0450 Cat Trap · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0476 The Promise · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0478 Talk of the Town · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0313 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0325 Flashback · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0334 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0352 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0378 Nemesis Contract · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0428 Untitled · [1] _Marvel Major Event Chronology (digital)\1997.06 - X-Men - Operation Zero Tolerance\03 Aftermath · [1] _Marvel Major Event Chronology (digital)\2020.11 - King in Black\02 Tie-ins\King in Black Singles
+   files:   Deadpool 021 (1998) (digital-hd) (Kleio-Empire).cbz … Deadpool 069 (2002) (digital-hd) (Kleio-Empire).cbz  (49 files, pp 21-38)
+            [83106] Deadpool 001 (2024) (Facsimile Edition Ben Su Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [83107] Deadpool 001 (2024) (Facsimile Edition Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [88526] 002 Deadpool 000 (1998) (digital-hd) (Kleio-Empire).cbz (14pp)
+            003 Deadpool 001 (1997) (Digital-Empire).cbr … 007 Deadpool 010 (1997) (Digital-Empire).cbr  (10 files, pp 22-34)
+            [88611] 002 Deadpool - Flashback - 000 (1998) (Digital (AnHeroGold - Empire).cbr (27pp) | [88677] 004 Deadpool 011 (1997) (Digital-Empire).cbr (51pp)
+            [88726] 001 Deadpool 012 (1998) (Digital-Empire).cbr (26pp) | [88727] 002 Deadpool 013 (1998) (Digital-Empire).cbr (26pp) | [88728] 003 Deadpool 014 (1998) (Digital-Empire).cbr (23pp)
+            [88772] 007 Deadpool 015 (1998) (Digital-Empire).cbr (21pp) | [88794] 007 Deadpool 016 (1998) (Digital-Empire).cbr (21pp) | [88795] 008 Deadpool 017 (1998) (Digital-Empire).cbr (22pp)
+            001 Deadpool 018 (1998) (digital-hd) (Kleio-Empire).cbz … 002 Deadpool 055 (2001) (digital-hd) (Kleio-Empire).cbz  (38 files, pp 21-38)
+            [89370] 003 Deadpool 056 (2001) (Digital) (Shadowcat-Empire.cbz (24pp) | [89401] 001 Deadpool 057 (2001) (digital-hd) (Kleio-Empire).cbz (22pp)
+            [89402] 002 Deadpool 058 (2001) (Digital) (Shadowcat-Empire.cbz (23pp)
+            003 Deadpool 059 (2001) (digital-hd) (Kleio-Empire).cbz … 005 Deadpool 069 (2002) (digital-hd) (Kleio-Empire).cbz  (11 files, pp 22-24)
+            [116520] 03 Deadpool 012 (1998) (Digital-Empire).cbr (26pp) | [118490] Deadpool 010 (2021) (Digital) (Zone-Empire).cbr (34pp)
+   ours:    ladder 0-69; 53 number(s) name more than one file: 0, 1, 10, 12, 21, 22, 23, 24, 25, 26, 27, 28; ComicInfo Series: "Deadpool"x1; ComicInfo Volume: "2019"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 6000 "Deadpool" 1997 Marvel 71 issues; cached #0-69 (71); yearΔ 0; ratio 124/71 = 1.75; no judged range; v1 per-file: same volume on 123/124 files
+   CV candidates:  87808 "Marvel Universe Deadpool & Wolverine" 2016 Marvel 1 issue 513651 s56 · 76514 "Flashback: The Quest for Identity" 1993 Marvel 1 issue 462729 s56 · 64835 "Flashback" 1971 DynaPubs Enterprises 2 s48 · 50940 "Deadpool Kills the Marvel Universe" 2012 Marvel 4 s44 · 64539 "Flashback" 1973 DynaPubs Enterprises 4 s43 · 53281 "Flashback" 1974 DynaPubs Enterprises 28 s40   (v1 search)
+   CV local rip:   (= linked) · 59624 "Deadpool" 1994 Marvel 4 · 5003 "Deadpool" 1993 Marvel 4 · 42210 "Deadpool" 2003 Panini Brasil 3 · 22955 "Deadpool" 2008 Marvel 67 · 42212 "Deadpool" 2011 Panini Verlag 17   (rip lookup)
+   GCD per-file:   series 5791 "Deadpool" 1997-2002 Marvel [was ongoing series] 70 on 119/124 files · series 210709 "Deadpool" 2024-2025 Marvel [was ongoing series] 15 on 2/124 files · series 17413 "Deadpool" 1998-1998 Marvel; Wizard [one-shot] 1 on 1/124 files; methods numx122
+   GCD dump:       (= per-file) · 173126 "Deadpool" [fr] 1998-2000 Panini France [] 9 · 5003 "Deadpool" 1994-1994 Marvel [] 4 · 41763 "Deadpool" [pt-br] 2003-2003 Panini Brasil [] 3 · 160143 "Deadpool" [pt-br] 2004-2004 Panini Brasil [] 1   (dump lookup)
+   bridges:        gcd 5791 -> LOCG 110921 "Deadpool" support 121 · gcd 210709 -> LOCG 172919 "Deadpool by Cody Ziglar Vol. 1: Blood Bond TP" support 59 · gcd 17413 -> LOCG 110921 "Deadpool" support 1
+
+== S64541 Deadpool  [tier C] · 8 number(s) x2+, 3 parsed key(s), ratio 1.10  keys: Deadpool (2008) | Deadpool v2 (2008) | Deadpool v3 (2008)  years 1997-2013  87 files / 13 collections
+   folders: [15] Marvel\_Deadpool\04 Deadpool v2 (2008) · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0950 Evil Deadpool · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0910 Space Oddity · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0974 Dead · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0839 Nation X · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0867 Tricky · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0883 I'm Your Man · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0925 Operation Annihilation · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0788 One Of Us · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0821 Bullseye · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0859 Whatever a Spider Can · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0939 Institutionalsized · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0982 Deadpool Reborn · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0990 Blacklisted · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0998 The Salted Earth · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0795 Horror Business · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0805 How Low Can You Go · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0813 Magnum Opus · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0835 Wave Of Mutilation · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0900 I Rule, You Suck · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0946 You Complete Me · [2] _Marvel Major Event Chronology (digital)\2011.06 - X-Men - Curse of the Mutants · [1] Marvel\_Deadpool\04 Deadpool v2 (2008)\Annuals and Specials · [1] _Marvel Major Event Chronology (digital)\2008.06 - Secret Invasion\03 Tie-ins\Deadpool · [1] _Marvel Major Event Chronology (digital)\2008.06 - Secret Invasion\03 Tie-ins\_Variant Covers · [1] _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Deadpool · [1] _Marvel Major Event Chronology (digital)\2010.04 - The Heroic Age\The Heroic Age - One Shots and Singles
+   files:   [79942] Deadpool Annual 001 (2011) (Digital-Empire).cbr (34pp) | [78462] Deadpool 008 (2009) (Digital-Empire).cbr (25pp) | [78463] Deadpool 009 (2009) (Digital-Empire).cbr (25pp)
+            [78464] Deadpool 1000 (2010) (Digital-Empire).cbr (72pp) | [78465] Deadpool 900 (2009) (c2c) (Both Covers) (Minutemen).cbr (114pp)
+            [78466] COL Deadpool Vol. 01 - Secret Invasion (2009) (Digital) (F) (Asgard-Empire).cbz (130pp) | [78467] COL Deadpool Vol. 02 - Dark Reign (2009) (Digital) (Asgard-Empire).cbr (125pp)
+            [78468] COL Deadpool Vol. 03 - X Marks Spot (2010) (Digital) (Asgard-Empire).cbr (150pp) | [78469] COL Deadpool Vol. 04 - Monkey Business (2011) (Digital) (Asgard-Empire).cbr (127pp)
+            [78470] COL Deadpool Vol. 05 - What Happened In Vegas (2011) (Digital) (Asgard-Empire).cbr (113pp)
+            [78471] COL Deadpool Vol. 06 - I Rule You Suck (2011) (Digital) (F) (Kileko-Empire).cbz (119pp)
+            [78472] COL Deadpool Vol. 07 - Space Oddity (2011) (digital) (Minutemen-Slayer).cbr (123pp)
+            [78473] COL Deadpool Vol. 08 - Operation Annihilation (2012) (Digital) (F2) (Kileko-Empire).cbz (106pp)
+            [78474] COL Deadpool Vol. 09 - Institutionalized (2012) (digital) (Minutemen-Slayer).cbr (116pp)
+            [78475] COL Deadpool Vol. 10 - Evil Deadpool (2012) (digital) (Minutemen-Slayer).cbr (145pp) | [78476] COL Deadpool Vol. 11 - Dead (2013) (Digital) (F) (Kileko-Empire).cbz (302pp)
+            [91004] 001 Deadpool 001 (2008) (Digital) (JK-Empire).cbz (22pp) | [91005] 002 Deadpool 002 (2008) (digital-Empire).cbr (23pp) | [91006] 003 Deadpool 003 (2008) (digital-Empire).cbr (23pp)
+            [91029] 001 Deadpool 004 (2009) (digital-Empire).cbr (24pp) | [91030] 002 Deadpool 005 (2009) (digital-Empire).cbr (23pp)
+            001 Deadpool 006 (2009) (Digital-Empire).cbr … 002 Deadpool 033 (2011) (Digital-Empire).cbr  (28 files, pp 24-35) | [91713] 003 Deadpool 033.1 (2011) (Digital-Empire).cbr (24pp)
+            [91714] 004 Deadpool 034 (2011) (Digital-Empire).cbr (24pp) | [91715] 005 Deadpool 035 (2011) (Digital-Empire).cbr (22pp) | [91807] 001 Deadpool 036 (2011) (Digital) (JK-Empire).cbz (23pp)
+            [91808] 002 Deadpool 037 (2011) (Digital) (JK-Empire).cbz (22pp) | [91809] 003 Deadpool 038 (2011) (Digital) (JK-Empire).cbz (20pp)
+            [91810] 004 Deadpool 039 (2011) (Digital) (HD) (JK-Empire).cbz (23pp)
+            001 Deadpool 040 (2011) (Digital) (JK-Empire).cbz … 002 Deadpool 046 (2012) (Digital) (JK-Empire).cbz  (7 files, pp 22-24)
+            [91918] 003 Deadpool 047 (2012) (Digital) (HD) (JK-Empire).cbz (24pp) | [91919] 004 Deadpool 048 (2012) (Digital) (JK-Empire).cbz (23pp)
+            [91920] 005 Deadpool 049 (2012) (Digital) (JK-Empire).cbz (24pp) | [91921] 006 Deadpool 049.1 (2012) (Digital) (JK-Empire).cbz (23pp)
+            001 Deadpool 050 (2012) (Digital) (JK-Empire).cbz … 003 Deadpool 063 (2012) (Digital) (JK-Empire).cbz  (14 files, pp 21-32)
+            [117927] COL Deadpool Vol. 01 - Secret Invasion (2009) (Digital) (Asgard-Empire).cbr (118pp) | [116973] Deadpool 002 (2008) (2nd Printing Paco Medina Variant) (Minutemen-TheRain).cbr (2pp)
+            [117947] COL Deadpool Vol. 02 - Dark Reign (2009) (Digital) (Asgard-Empire).cbr (125pp) | [117351] Deadpool 023 (2010) (Digital) (GKing-Empire).cbr (26pp)
+            [117617] 19 Deadpool 030 (2011) (Digital) (JK-Empire).cbz (25pp) | [117618] 20 Deadpool 031 (2011) (Digital) (JK-Empire).cbz (25pp)
+   ours:    ladder 1-63, 900, 1000; 9 number(s) name more than one file: 1, 2, 8, 9, 23, 30, 31, 33, 49; ComicInfo Series: "Deadpool"x4; ComicInfo Publisher: "Marvel"x4
+   GCD says: [78466] gcd_reprint 1171219: s32043 Deadpool (2008) #1-5 [5 stories] · s78139 Deadpool (2009) #1 [1 story]
+             [78467] gcd_reprint 1171220: s32043 Deadpool (2008) #6-7, #10-12 [5 stories] · s78139 Deadpool (2009) #2 [1 story]
+             [78468] gcd_reprint 1171221: s32043 Deadpool (2008) #13-18 [14 stories] · s78139 Deadpool (2009) #3 [1 story]
+             [78469] gcd_reprint 1171222: s32043 Deadpool (2008) #19-22 [9 stories] · s43861 Hit-Monkey (MDCU) (2010) #1 [3 stories] · s78139 Deadpool (2009) #4 [1 story]
+             [78470] gcd_reprint 1171223: s32043 Deadpool (2008) #23-26 [4 stories] · s78139 Deadpool (2009) #5 [1 story]
+             [78471] gcd_reprint 1171224: s32043 Deadpool (2008) #27-31 [5 stories] · s78139 Deadpool (2009) #6 [1 story]
+             [78472] gcd_reprint 1171225: s32043 Deadpool (2008) #32-33, #33.1, #34-35 [5 stories] · s78139 Deadpool (2009) #7 [1 story]
+             [78473] gcd_reprint 1171226: s32043 Deadpool (2008) #36-39 [10 stories] · s5791 Deadpool (1997) #4 [2 stories] · s78139 Deadpool (2009) #8 [1 story]
+             [78474] gcd_reprint 1171227: s32043 Deadpool (2008) #40-44 [5 stories] · s78139 Deadpool (2009) #9 [1 story]
+             [78475] gcd_reprint 1171228: s32043 Deadpool (2008) #45-49, #49.1 [6 stories] · s78139 Deadpool (2009) #10 [1 story]
+             [78476] gcd_reprint 202164: s14931 Spooky (1955) #27 [1 story]  |  ⚠ stored GCD row is another book: our title 'Deadpool' has deadpool, GCD's series 'The Friendly Ghost, Casper' does not; our vol 11 vs GCD #6; 302pp vs GCD 36pp — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [117927] gcd_reprint 1171219: s32043 Deadpool (2008) #1-5 [5 stories] · s78139 Deadpool (2009) #1 [1 story]
+             [117947] gcd_reprint 1171220: s32043 Deadpool (2008) #6-7, #10-12 [5 stories] · s78139 Deadpool (2009) #2 [1 story]
+   CV linked:      vol 22955 "Deadpool" 2008 Marvel 67 issues; cached #1-1000 (67); yearΔ 11; ratio 74/67 = 1.10; no judged range
+   CV per-file (v1): vol 6000 "Deadpool" 1997 Marvel 71 on 54/87 files · vol 22955 "Deadpool" 2008 Marvel 67 on 19/87 files · vol 42212 "Deadpool" 2011 Panini Verlag 17 on 1/87 files
+   CV local rip:   (= linked) · 59624 "Deadpool" 1994 Marvel 4 · 5003 "Deadpool" 1993 Marvel 4 · 42210 "Deadpool" 2003 Panini Brasil 3   (rip lookup)
+   GCD per-file:   series 32043 "Deadpool" 2008-2012 Marvel [was ongoing series] 65 on 71/87 files · series 52109 "Deadpool" 2010-2010 Marvel [one-shot] 1 on 1/87 files · series 55359 "Deadpool" [de] 2011-2013 Panini Deutschland [Ongoing Series] 18 on 1/87 files; methods numx73
+   GCD dump:       5791 "Deadpool" 1997-2002 Marvel [] 70 · 17413 "Deadpool" 1998-1998 Marvel; Wizard [] 1 · 173126 "Deadpool" [fr] 1998-2000 Panini France [] 9 · 5003 "Deadpool" 1994-1994 Marvel [] 4 · 41763 "Deadpool" [pt-br] 2003-2003 Panini Brasil [] 3 · 160143 "Deadpool" [pt-br] 2004-2004 Panini Brasil [] 1   (dump lookup)
+   bridges:        gcd 32043 -> LOCG 110921 "Deadpool" support 70 · gcd 52109 -> LOCG 102282 "Deadpool by Daniel Way: The Complete Collection Vol. 1 TP" support 2 · gcd 55359 -> LOCG 110921 "Deadpool" support 2
+
+== S96324 Deadpool  [tier C] · 5 named, the minority on >= 2 files or >= 10%  keys: Deadpool v3 (2013) | Deadpool v4 (2012)  years 1997-2015  66 files / 8 collections
+   folders: [10] Marvel\_Deadpool\07 Deadpool v3 (2013) · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1018 Dead Presidents · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1032 Soul Hunter · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1073 Deadpool vs Shield · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1099 Deadpool Original Sin · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1118 Deadpool - Axis · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\1057 The Good The Bad and The Ugly · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\1131 All Good Things · [5] _Marvel Major Event Chronology (digital)\2014.04 - Original Sin\02 Tie-ins\Deadpool · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\1089 Wedding of Deadpool · [3] Marvel\__Skottie Young Covers · [3] _Marvel Major Event Chronology (digital)\2014.10 - AXIS\02 Tie-ins\Deadpool · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\1050 The White Man Cometh
+   files:   [78479] Deadpool - The Ones With Deadpool (2015) (digital) (Minutemen-Slayer).cbr (123pp) | [78480] Deadpool 045 (2015) (5 covers) (Digital-Empire).cbr (87pp)
+            [78481] COL Deadpool Vol. 01 - Dead Presidents (2013) (Digital) (F) (Kileko-Empire).cbz (134pp)
+            [78482] COL Deadpool Vol. 02 - Soul Hunter (2013) (Digital) (F) (Kileko-Empire).cbz (131pp)
+            [78483] COL Deadpool Vol. 03 - The Good, The Bad, and The Ugly (2014) (Digital) (F) (Kileko-Empire).cbz (155pp)
+            [78484] COL Deadpool Vol. 04 - Deadpool vs. S.H.I.E.L.D. (2014) (Digital) (F) (Kileko-Empire).cbz (127pp)
+            [78485] COL Deadpool Vol. 05 - Wedding of Deadpool (2014) (Digital) (F) (Kileko-Empire).cbz (154pp)
+            [78486] COL Deadpool Vol. 06 - Original Sin (2014) (digital) (Minutemen-Slayer).cbr (140pp) | [78487] COL Deadpool Vol. 07 - AXIS (2015) (Digital) (F) (Kileko-Empire).cbz (122pp)
+            [78488] COL Deadpool Vol. 08 - All Good Things (2015) (Digital) (Kileko-Empire).cbz (167pp)
+            001 Deadpool 001 (2012) (digital) (Minutemen-InnerDemons).cbr … 006 Deadpool 012 (2013) (digital) (Minutemen-InnerDemons).cbr  (12 files, pp 21-24)
+            001 Deadpool 013 (2013) (Digital) (G85-Empire).cbr … 002 Deadpool 021 (2013) (Digital) (G85-Empire).cbr  (9 files, pp 22-24)
+            [92571] 003 Deadpool 022 (2014) (digital-HD) (BlackManta-Empire).cbr (23pp) | [92572] 004 Deadpool 023 (2014) (Digital) (BlackManta-Empire).cbr (23pp)
+            [92573] 005 Deadpool 024 (2014) (Digital) (Nahga-Empire).cbr (22pp) | [92574] 006 Deadpool 025 (2014) (Digital) (Nahga-Empire).cbr (24pp)
+            [92661] 001 Deadpool 026 (2014) (Digital) (Nahga-Empire).cbr (22pp) | [92662] 002 Deadpool 027 (2014) (digital) (Minutemen-InnerDemons).cbr (86pp)
+            [92663] 003 Deadpool 028 (2014) (digital) (Minutemen-InnerDemons).cbr (21pp) | [92717] 001 Deadpool 029 (2014) (digital) (Minutemen-InnerDemons).cbr (21pp)
+            [92718] 002 Deadpool 030 (2014) (digital) (Minutemen-InnerDemons).cbr (21pp) | [92719] 003 Deadpool 031 (2014) (digital) (Minutemen-InnerDemons).cbr (22pp)
+            [92720] 004 Deadpool 032 (2014) (digital) (Minutemen-InnerDemons).cbr (21pp) | [92721] 005 Deadpool 033 (2014) (digital) (Minutemen-InnerDemons).cbr (22pp)
+            [92722] 006 Deadpool 034 (2014) (digital) (Minutemen-InnerDemons).cbr (30pp) | [92814] 001 Deadpool 035 (2014) (digital) (Minutemen-InnerDemons).cbr (22pp)
+            [92815] 002 Deadpool 036 (2014) (digital) (Minutemen-InnerDemons).cbr (21pp) | [92816] 003 Deadpool 037 (2015) (F) (Digital) (Nahga-Empire).cbr (24pp)
+            004 Deadpool 038 (2015) (digital) (Minutemen-InnerDemons).cbr … 004 Deadpool 044 (2015) (digital) (Minutemen-InnerDemons).cbr  (7 files, pp 17-23)
+            [92899] 005 Deadpool 045 (2015) (5 covers) (digital) (Minutemen-InnerDemons).cbr (87pp) | [51939] Deadpool 001 (2013) (Skottie Young 'Baby' Variant) (Cover ONLY) (ScanDog+ArtNet).cbz (1pp)
+            [51940] Deadpool 01 (2013) (Skottie Young Variant Cover) (theFragile-Minutemen-Novus).cbr (1pp)
+            [51941] Deadpool 045 (2015) (Skottie Young Run the Jewels Variant) (digital) (Minutemen-Fantomex).cbr (1pp) | [117777] 015 - Deadpool 029 (2014) (Digital) (Nahga-Empire).cbr (22pp)
+            [117778] 035 - Deadpool 030 (2014) (Digital) (Nahga-Empire).cbr (22pp) | [117779] 036 - Deadpool 031 (2014) (Digital) (Nahga-Empire).cbr (23pp)
+            [117780] 037 - Deadpool 032 (2014) (Digital) (Nahga-Empire).cbr (22pp) | [117781] 038 - Deadpool 033 (2014) (Digital) (Nahga-Empire).cbr (23pp)
+            [117827] Deadpool 037 (2015) (Digital) (F) (Nahga-Empire).cbr (24pp) | [117828] Deadpool 038 (2015) (Digital-Empire).cbr (17pp) | [117829] Deadpool 039 (2015) (Digital-Empire).cbr (20pp)
+   ours:    ladder 1-45; 10 number(s) name more than one file: 1, 29, 30, 31, 32, 33, 37, 38, 39, 45; judged item 78481 #1-6 conf 0.97; judged item 78482 #7-12 conf 0.97; judged item 78483 #13-19 conf 0.97; judged item 78484 #20-25 conf 0.97; judged item 78485 #26-28 conf 0.97; judged item 78486 #29-34 conf 0.95; judged item 78487 #35-40 conf 0.97; judged item 78488 #41-44 conf 0.97; ComicInfo Series: "Deadpool"x7; ComicInfo Publisher: "Marvel"x7
+   GCD says: [78481] gcd_reprint 1697863: s93585 Deadpool (2016) #1-5 [25 stories]  |  ⚠ stored GCD row is another book: our subtitle 'Dead Presidents' vs GCD title 'Wade Wilson Superstar'; GCD row 2017, our file (2013) — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+   CV linked:      vol 53726 "Deadpool" 2012 Marvel 45 issues; cached #1-45 (45); yearΔ 15; ratio 57/45 = 1.27; 8 of 8 judged fit
+   CV per-file (v1): vol 6000 "Deadpool" 1997 Marvel 71 on 59/66 files
+   CV local rip:   (= linked) · 59624 "Deadpool" 1994 Marvel 4 · 5003 "Deadpool" 1993 Marvel 4 · 42210 "Deadpool" 2003 Panini Brasil 3 · 22955 "Deadpool" 2008 Marvel 67 · 42212 "Deadpool" 2011 Panini Verlag 17   (rip lookup)
+   GCD per-file:   series 69743 "Deadpool" 2013-2015 Marvel [was ongoing series] 45 on 56/66 files · series 108722 "Deadpool" [de] 2014-2017 Panini Deutschland [] 9 on 4/66 files · series 113989 "Deadpool" [de] 2017-2019 ? [] 6 on 2/66 files · series 167691 "Deadpool" [pt-br] 2015-2016 Panini Brasil [série contínua (encerrada)] 13 on 2/66 files; methods numx63 · page-rematchx2
+   GCD dump:       5791 "Deadpool" 1997-2002 Marvel [] 70 · 17413 "Deadpool" 1998-1998 Marvel; Wizard [] 1 · 173126 "Deadpool" [fr] 1998-2000 Panini France [] 9 · 5003 "Deadpool" 1994-1994 Marvel [] 4 · 41763 "Deadpool" [pt-br] 2003-2003 Panini Brasil [] 3 · 160143 "Deadpool" [pt-br] 2004-2004 Panini Brasil [] 1   (dump lookup)
+   bridges:        gcd 69743 -> LOCG 100079 "Deadpool by Posehn & Duggan: The Complete Collection Vol. 2 TP" support 59 · gcd 108722 -> LOCG 110921 "Deadpool" support 4
+
+== S10377 Deadpool  [tier B]   keys: Deadpool by Kelly Thompson (2023) | Deadpool v8 (2020) | King Deadpool  years 2019-2023  4 files / 2 collections
+   folders: [2] Marvel\_Deadpool\12 Deadpool v8 (2020) · [1] Marvel\_Deadpool\12 Deadpool v8 (2020)\Deluxe Edition · [1] Marvel\_Deadpool\_Trades, minis and one-Shots
+   files:   [79945] Deadpool by Kelly Thompson (2023) (Digital) (Kileko-Empire).cbz (258pp) | [78509] COL King Deadpool Vol. 01 (2020) (Digital) (Kileko-Empire).cbz (139pp)
+            [78510] COL King Deadpool Vol. 02 (2021) (Digital) (Kileko-Empire).cbz (97pp) | [78613] Deadpool by Kelly Thompson (2023) (Digital-SD) (Kileko-Empire).cbz (241pp)
+   ours:    judged item 78613 #1-10 conf 0.95; judged item 79945 #1-10 conf 0.97; ComicInfo Series: "King Deadpool"x2; ComicInfo Publisher: "Marvel"x2
+   CV linked:      vol 122987 "Deadpool" 2019 Marvel 10 issues; cached #1-10 (10); yearΔ 0; ratio 0/10; 2 of 2 judged fit
+   CV per-file (v1): vol 130996 "King Deadpool: Hail To the King" 2020 Marvel 1 issue 807662 on 2/4 files
+   CV candidates:  (= linked) · 87808 "Marvel Universe Deadpool & Wolverine" 2016 Marvel 1 issue 513651 s60 · 50940 "Deadpool Kills the Marvel Universe" 2012 Marvel 4 s59 · 112172 "Despicable Deadpool: The Marvel Universe Kills Deadpool" 2018 Marvel 1 issue 676697 s59 · 135909 "King Deadpool" 2021 Marvel 1 issue 847598 s58 · 163125 "Marvel Select: Deadpool" 2013 Panini France 8 s41 · 125296 "Marvel Sampler February 2020" 2020 Marvel 1 issue 738594 s38   (v1 search)
+   CV local rip:   (= linked) · 120246 "Deadpool" 2019 Panini Verlag 7 · 127214 "Deadpool" 2019 Panini France 11 · 111414 "Deadpool" 2018 Marvel 15 · 147211 "Deadpool" 2020 Panini Verlag 5 · 102965 "Deadpool" 2017 Panini France 13   (rip lookup)
+   GCD dump:       138089 "Deadpool" [de] 2019-2021 Panini Deutschland [] 25 · 151977 "Deadpool" [de] 2019-2020 Panini Deutschland [] 3 · 151978 "Deadpool" [de] 2019-2020 Panini Deutschland [] 3 · 157598 "Deadpool" [pt-br] 2019-2020 Panini Brasil [] 15 · 198831 "Deadpool" [de] 2019-2020 Panini Deutschland [] 3 · 198832 "Deadpool" [de] 2019-2020 Panini Deutschland [] 3   (dump lookup)
+
+== S5111 Deadpool Classic  [tier B]   keys: Deadpool Classic | Deadpool Classic Companion  years 2008-2019  25 files / 25 collections
+   flags: #62 conflated-series [Dismissed] item 78513 — Deadpool Classic, Classic Companion and the named later volumes reprint runs with incompat
+   folders: [25] Marvel\_Deadpool\Deadpool Classic (2008)
+   files:   [78513] COL Deadpool Classic Companion Vol. 01 (2015) (Digital) (F) (Kileko-Empire).cbz (362pp)
+            [78514] COL Deadpool Classic Companion Vol. 02 (2018) (Digital) (Kileko-Empire).cbr (469pp) | [78515] COL Deadpool Classic Vol. 01 (2008) (Digital-HD) (Kileko-Empire).cbz (252pp)
+            [78516] COL Deadpool Classic Vol. 02 (2009) (Digital) (F) (Kileko-Empire).cbz (247pp) | [78517] COL Deadpool Classic Vol. 03 (2010) (Digital) (F) (Kileko-Empire).cbz (270pp)
+            [78518] COL Deadpool Classic Vol. 04 (2011) (Digital) (F) (Kileko-Empire).cbz (271pp) | [78519] COL Deadpool Classic Vol. 05 (2011) (Digital) (F) (Kileko-Empire).cbz (256pp)
+            [78520] COL Deadpool Classic Vol. 06 (2012) (Digital) (F) (Kileko-Empire).cbz (302pp) | [78521] COL Deadpool Classic Vol. 07 (2012) (Digital) (Kileko-Empire).cbr (254pp)
+            [78522] COL Deadpool Classic Vol. 08 (2014) (Digital) (F) (Kileko-Empire).cbz (196pp) | [78523] COL Deadpool Classic Vol. 09 (2014) (Digital) (Kileko-Empire).cbr (271pp)
+            [78524] COL Deadpool Classic Vol. 10 (2014) (Digital) (F2) (Kileko-Empire).cbz (272pp)
+            [78525] COL Deadpool Classic Vol. 11 - Merc With A Mouth (2015) (Digital) (F) (Kileko-Empire).cbz (367pp)
+            [78526] COL Deadpool Classic Vol. 12 - Deadpool Corps (2015) (Digital) (Kileko-Empire).cbr (481pp)
+            [78527] COL Deadpool Classic Vol. 13 - Deadpool Team-Up (2015) (Digital) (F) (Kileko-Empire).cbz (439pp)
+            [78528] COL Deadpool Classic Vol. 14 - Suicide Kings (2015) (Digital) (Kileko-Empire).cbr (424pp)
+            [78529] COL Deadpool Classic Vol. 15 - All The Rest (2016) (Digital) (Kileko-Empire).cbr (351pp)
+            [78530] COL Deadpool Classic Vol. 16 - Killogy (2016) (Digital) (F) (Kileko-Empire).cbz (265pp)
+            [78531] COL Deadpool Classic Vol. 17 - Headcanon (2017) (Digital) (F) (Kileko-Empire).cbz (369pp)
+            [78532] COL Deadpool Classic Vol. 18 - Deadpool Vol. s. Marvel (2017) (Digital) (Kileko-Empire).cbr (476pp)
+            [78533] COL Deadpool Classic Vol. 19 - Make War, Not Love (2017) (Digital) (Zone-Empire).cbr (296pp)
+            [78534] COL Deadpool Classic Vol. 20 - Ultimate Deadpool (2018) (Digital) (F) (Shadowcat-Empire).cbz (479pp)
+            [78535] COL Deadpool Classic Vol. 21 - DvX (2018) (Digital) (Zone-Empire).cbr (361pp) | [78536] COL Deadpool Classic Vol. 22 - Murder Most Fowl (2018) (Digital) (Kileko-Empire).cbr (337pp)
+            [78537] COL Deadpool Classic Vol. 23 - Mercs For Money (2019) (Digital) (Kileko-Empire).cbr (406pp)
+   ours:    ComicInfo Series: "Deadpool Classic"x14, "Deadpool Classic Companion"x1; ComicInfo Publisher: "Marvel"x15
+   GCD says: [78513] gcd_reprint 1802362: s3865 Wolverine (1988) #88, #154-155 [3 stories] · s4730 The Secret Defenders (1993) #15-17 [3 stories] · s9824 Wolverine 1999 (1999) (unnumbered) [2 stories] · s4474 Silver Sable and the Wild Pack (1992) #23, #30 [2 stories]
+             [78514] gcd_reprint 1802361: s12239 Identity Disc (2004) #1-5 [6 stories] · s28683 Hulk (2008) #14-17, #21 [5 stories] · s40016 Shang-Chi: Master of Kung Fu One-Shot (2009) #1 [2 stories] · s48652 World War Hulks: Hulked-Out Heroes (2010) #1-2 [2 stories]
+             [78515] gcd_reprint 863461: s4686 Deadpool: The Circle Chase (1993) #1-4 [9 stories] · s5003 Deadpool (1994) #1-4 [8 stories] · s5791 Deadpool (1997) #1 [3 stories] · s2755 The New Mutants (1983) #98 [2 stories]
+             [78516] gcd_reprint 863462: s5791 Deadpool (1997) #2-8 [32 stories] · s5789 Daredevil / Deadpool '97 (1997) #1 [3 stories]
+             [78517] gcd_reprint 863463: s5791 Deadpool (1997) #9-17 [23 stories] · s1570 The Amazing Spider-Man (1963) #47 [2 stories]
+             [78518] gcd_reprint 863464: s5791 Deadpool (1997) #18-25 [25 stories] · s6028 Deadpool / Death '98 (1998) #1 [4 stories] · s17413 Deadpool (1998) #0 [3 stories] · s14441 Encyclopaedia Deadpoolica (1998) #1 [1 story]
+             [78519] gcd_reprint 863465: s5791 Deadpool (1997) #26-33 [16 stories] · s16407 Baby's First Deadpool Book (1998) #1 [9 stories] · s6027 Deadpool Team-Up (1998) #1 [3 stories]
+             [78520] gcd_reprint 1098939: s5791 Deadpool (1997) #34-45 [13 stories] · s6989 Black Panther (1998) #23 [1 story]
+             [78521] gcd_reprint 1098940: s5791 Deadpool (1997) #46-56 [12 stories] · s4754 X-Men Unlimited (1993) #28 [1 story]
+             [78522] gcd_reprint 1098941: s5791 Deadpool (1997) #57-64 [9 stories]
+             [78523] gcd_reprint 1170918: s11848 Agent X (2002) #1-6 [16 stories] · s5791 Deadpool (1997) #65-69 [11 stories]
+             [78524] gcd_reprint 1340867: s11848 Agent X (2002) #7-15 [10 stories] · s4694 Fight Man (1993) #1 [1 story]
+             [78525] gcd_reprint 1370218: s37923 Deadpool: Merc with a Mouth (2009) #1-13 [14 stories] · s51585 Lady Deadpool (2010) #1 [1 story]
+             [78526] gcd_reprint 1422493: s46836 Deadpool Corps (2010) #1-12 [31 stories] · s44963 Prelude to Deadpool Corps (2010) #1-5 [20 stories] · s57074 Deadpool Family (2011) #1 [5 stories]
+             [78527] gcd_reprint 1422494: s40644 Deadpool Team-Up (2009) #883-899 [18 stories] · s6027 Deadpool Team-Up (1998) #1 [1 story]
+             [78528] gcd notes 1503738 (#14 of Deadpool Classic): Marvel Digital Holiday Special #2  |  gcd_reprint 1503738: s35539 Deadpool: Suicide Kings (2009) #1-4 [4 stories] · s35315 Deadpool: Games of Death (2009) #1 [2 stories] · s51807 X-Men Origins: Deadpool (2010) #1 [1 story] · s52109 Deadpool (2010) #1000 [1 story]
+             [78529] gcd_reprint 1540386: s59192 Fear Itself: Deadpool (2011) #1-3 [3 stories] · s57081 Deadpool Corps: Rank and Foul (2010) #1 [2 stories] · s60249 Wolverine / Deadpool: The Decoy (2011) #1 [1 story] · s59533 Incredible Hulks Annual (2011) #1 [1 story]
+             [78530] gcd_reprint 1578429: s75234 Deadpool Kills Deadpool (2013) #1-4 [5 stories] · s71449 Deadpool Killustrated (2013) #1-4 [4 stories] · s67718 Deadpool Kills the Marvel Universe (2012) #1-4 [4 stories]
+             [78531] gcd_reprint 1746281: s49766 Deadpool: Wade Wilson's War (2010) #1-4 [9 stories] · s86412 Return of the Living Deadpool (2015) #1-4 [9 stories] · s78613 Night of the Living Deadpool (2014) #1-4 [9 stories] · s52121 Deadpool Pulp (2010) #1-4 [8 stories]
+             [78532] gcd_reprint 1722627: s92211 Deadpool vs Thanos (2015) #1-4 [5 stories] · s83447 Hawkeye vs. Deadpool (2014) #0-4 [5 stories] · s79909 Deadpool vs. Carnage (2014) #1-4 [4 stories] · s81547 Deadpool vs. X-Force (2014) #1-4 [4 stories]
+             … 5 more book(s) with GCD notes (`python gcdnotes.py --issue <id>`)
+   CV linked:      vol 21748 "Deadpool Classic" 2008 Marvel 23 issues; cached #1-23 (23); yearΔ 0; ratio 0/23; no judged range
+   CV per-file (v1): vol 21748 "Deadpool Classic" 2008 Marvel 23 on 24/25 files · vol 81400 "Deadpool Classic Companion" 2015 Marvel 2 on 1/25 files
+   CV candidates:  (= linked) · 39790 "The Classic Marvel Figurine Special" 2005 Eaglemoss Publications 5 s30 · 39789 "The Classic Marvel Figurine Collection" 2005 Eaglemoss Publications 200 s27 · 87160 "Deadpool Classic Omnibus" 2016 Marvel 1 issue 510494 s22 · 109614 "Marvel Legacy Companion" 2018 Marvel 1 issue 664914 s1 · 98997 "Marvel Classic" 2015 Panini France 7 s0 · 120350 "Marvel Action Classic: Hulk" 2019 IDW Publishing 1 issue 714203 s0   (v1 search)
+   CV local rip:   (= linked) · 39790 "The Classic Marvel Figurine Special" 2005 Eaglemoss Publications 5 (via CV candidate name "The Classic Marvel Figurine Special")   (rip lookup)
+   GCD dump:       60236 "Deadpool Classic" 2008-2019 Marvel [] 23 · 123975 "Deadpool Classic Companion" 2015-2018 Marvel [] 2   (dump lookup)
+
+== S5115 Deadpool Epic Collection  [tier C] · gap 2  keys: Deadpool Epic Collection  years 2023-2023  2 files / 2 collections
+   folders: [2] Marvel\_Deadpool\Deadpool Epic Collections
+   files:   [78539] COL Deadpool Epic Collection Vol. 02 - Mission Improbable (2023) (Digital-HD) (Kileko-Empire).cbz (412pp)
+            [78541] COL Deadpool Epic Collection Vol. 04 - Dead Reckoning (2023) (Digital) (Kileko-Empire).cbz (420pp)
+   GCD says: [78539] gcd_reprint 2444810: s5791 Deadpool (1997) #1-9 [40 stories] · s4253 X-Force (1991) #46-47, #56, #71, #73, #76 [8 stories] · s5789 Daredevil / Deadpool '97 (1997) #1 [3 stories] · s11245 Wolverine '95 (1995) #1 [2 stories]
+             [78541] gcd_reprint 2551711: s5791 Deadpool (1997) #21-33 [39 stories] · s14441 Encyclopaedia Deadpoolica (1998) #1 [5 stories] · s17413 Deadpool (1998) #0 [4 stories] · s6027 Deadpool Team-Up (1998) #1 [3 stories]
+   CV candidates:  146072 "Deadpool Epic Collection: Mission Improbable" 2022 Marvel 1 issue 955128 s81 · 151978 "Deadpool Epic Collection: Dead Reckoning" 2023 Marvel 1 issue 999118 s81 · 159642 "Deadpool Epic Collection: Johnny Handsome" 2024 Marvel 1 issue 1068854 s81 · 156021 "Deadpool Epic Collection: Drowning Man" 2024 Marvel 1 issue 1040075 s81 · 165433 "Deadpool Epic Collection: Agent X" 2025 Marvel 1 issue 1119363 s81 · 140469 "Deadpool Epic Collection: The Circle Chase" 2021 Marvel 1 issue 898704 s80   (v1 search)
+   CV local rip:   151978 "Deadpool Epic Collection: Dead Reckoning" 2023 Marvel 1 issue 999118 (via CV candidate name "Deadpool Epic Collection: Dead Reckoning") · 146072 "Deadpool Epic Collection: Mission Improbable" 2022 Marvel 1 issue 955128 (via CV candidate name "Deadpool Epic Collection: Mission Improbable") · 159642 "Deadpool Epic Collection: Johnny Handsome" 2024 Marvel 1 issue 1068854 (via CV candidate name "Deadpool Epic Collection: Johnny Handsome")   (rip lookup)
+   GCD per-file:   series 179386 "Deadpool Epic Collection" 2021-? Marvel [collected edition] 6 on 2/2 files; methods numx2; the dump names no other series
+   bridges:        gcd 179386 -> LOCG 152287 "Deadpool Epic Collection: The Circle Chase TP" support 5 · gcd 179386 -> OL /works/OL25326818W "None" isbnSupport 5
+
+== S5116 Deadpool Epic Collection: Johnny Handsome  [tier B]   keys: Deadpool Epic Collection 05: Johnny Handsome  years 2024-2024  1 files / 1 collections
+   folders: [1] Marvel\_Deadpool\Deadpool Epic Collections
+   files:   [78542] COL Deadpool Epic Collection Vol. 05 - Johnny Handsome 001 (2024) (digital) (Marika-Empire).cbz (473pp)
+   ours:    ComicInfo Series: "Deadpool Epic Collection 05: Johnny Handsome"x1
+   GCD says: [78542] gcd_reprint 2654570: s5791 Deadpool (1997) #34-45 [12 stories] · s3865 Wolverine (1988) #154-155 [3 stories] · s9824 Wolverine 1999 (1999) (unnumbered) [2 stories] · s4694 Fight Man (1993) #1 [1 story]
+   CV linked:      vol 159642 "Deadpool Epic Collection: Johnny Handsome" 2024 Marvel 1 issues issue 1068854; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 146072 "Deadpool Epic Collection: Mission Improbable" 2022 Marvel 1 issue 955128 s58 · 151978 "Deadpool Epic Collection: Dead Reckoning" 2023 Marvel 1 issue 999118 s58 · 156021 "Deadpool Epic Collection: Drowning Man" 2024 Marvel 1 issue 1040075 s58 · 165433 "Deadpool Epic Collection: Agent X" 2025 Marvel 1 issue 1119363 s58 · 140469 "Deadpool Epic Collection: The Circle Chase" 2021 Marvel 1 issue 898704 s57 · 170133 "Deadpool Modern Era Epic Collection: Magnum Opus" 2026 Marvel 1 issue 1152988 s56   (v1 search)
+   CV local rip:   (= linked) · 151978 "Deadpool Epic Collection: Dead Reckoning" 2023 Marvel 1 issue 999118 (via CV candidate name "Deadpool Epic Collection: Dead Reckoning") · 146072 "Deadpool Epic Collection: Mission Improbable" 2022 Marvel 1 issue 955128 (via CV candidate name "Deadpool Epic Collection: Mission Improbable")   (rip lookup)
+
+== S5117 Deadpool Epic Collection: Drowning Man  [tier B]   keys: Deadpool Epic Collection: Drowning Man  years 2024-2024  1 files / 1 collections
+   folders: [1] Marvel\_Deadpool\Deadpool Epic Collections
+   files:   [78540] COL Deadpool Epic Collection Vol. 03 - Drowning Man (2024) (Digital) (Kileko-Empire).cbz (447pp)
+   ours:    ComicInfo Series: "Deadpool Epic Collection: Drowning Man"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [78540] gcd_reprint 2595213: s5791 Deadpool (1997) #10-20 [37 stories] · s16407 Baby's First Deadpool Book (1998) #1 [10 stories] · s5794 Heroes for Hire (1997) #10-11 [6 stories] · s6028 Deadpool / Death '98 (1998) #1 [3 stories]
+   CV linked:      vol 156021 "Deadpool Epic Collection: Drowning Man" 2024 Marvel 1 issues issue 1040075; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 146072 "Deadpool Epic Collection: Mission Improbable" 2022 Marvel 1 issue 955128 s64 · 151978 "Deadpool Epic Collection: Dead Reckoning" 2023 Marvel 1 issue 999118 s64 · 159642 "Deadpool Epic Collection: Johnny Handsome" 2024 Marvel 1 issue 1068854 s64 · 165433 "Deadpool Epic Collection: Agent X" 2025 Marvel 1 issue 1119363 s64 · 108102 "Iron Man Epic Collection: Doom" 2018 Marvel 1 issue 655504 s64 · 140469 "Deadpool Epic Collection: The Circle Chase" 2021 Marvel 1 issue 898704 s63   (v1 search)
+   CV local rip:   (= linked) · 151978 "Deadpool Epic Collection: Dead Reckoning" 2023 Marvel 1 issue 999118 (via CV candidate name "Deadpool Epic Collection: Dead Reckoning") · 146072 "Deadpool Epic Collection: Mission Improbable" 2022 Marvel 1 issue 955128 (via CV candidate name "Deadpool Epic Collection: Mission Improbable")   (rip lookup)
+
+== S5118 Deadpool Epic Collection: The Circle Chase  [tier B]   keys: Deadpool Epic Collection: The Circle Chase  years 2021-2021  1 files / 1 collections
+   folders: [1] Marvel\_Deadpool\Deadpool Epic Collections
+   files:   [78538] COL Deadpool Epic Collection Vol. 01 - The Circle Chase (2022) (Digital) (Kileko-Empire).cbz (452pp)
+   ours:    ComicInfo Series: "Deadpool Epic Collection: The Circle Chase"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [78538] gcd_reprint 2287541: s111682 Deadpool: Beginnings Omnibus (2017) (unnumbered) [16 stories] · s4253 X-Force (1991) #2, #4-5, #10-11, #14-15, #23 [11 stories] · s4686 Deadpool: The Circle Chase (1993) #1-4 [9 stories] · s5003 Deadpool (1994) #1-4 [8 stories]
+   CV linked:      vol 140469 "Deadpool Epic Collection: The Circle Chase" 2021 Marvel 1 issues issue 898704; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 115902 "The Punisher Epic Collection: Circle of Blood" 2018 Marvel 1 issue 694920 s67 · 37330 "The Chase" 2004 APComics 2 s63 · 146072 "Deadpool Epic Collection: Mission Improbable" 2022 Marvel 1 issue 955128 s58 · 151978 "Deadpool Epic Collection: Dead Reckoning" 2023 Marvel 1 issue 999118 s58 · 159642 "Deadpool Epic Collection: Johnny Handsome" 2024 Marvel 1 issue 1068854 s58 · 156021 "Deadpool Epic Collection: Drowning Man" 2024 Marvel 1 issue 1040075 s58   (v1 search)
+   CV local rip:   (= linked) · 45465 "Chase" 2011 DC Comics 1 issue 313241 (via CV candidate name "The Chase") · 37330 "The Chase" 2004 APComics 2 (via CV candidate name "The Chase") · 6152 "Chase" 1998 DC Comics 10 (via CV candidate name "The Chase") · 115902 "The Punisher Epic Collection: Circle of Blood" 2018 Marvel 1 issue 694920 (via CV candidate name "The Punisher Epic Collection: Circle of Blood")   (rip lookup)
+   GCD dump:       62743 "Chase" 2011-2011 DC [] 1 (via CV candidate name "The Chase") · 31678 "The Chase" 2004-2004 APComics [] 2 (via CV candidate name "The Chase") · 5961 "Chase" 1998-1998 DC [] 10 (via CV candidate name "The Chase")   (dump lookup)
