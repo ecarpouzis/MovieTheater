@@ -2247,3 +2247,10 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   the 22 per-book shelves join it and each drops its stored count-1 cv (F wrong-cv-link). The anchor is the shelf whose
   ParsedKey is the PLAIN line name (who-stores gcd=<line> lists the candidates). Epic C lines name the main run AND the
   annuals / crossovers each book reprints. Conan: The Original Marvel Years Epic Collection = S104264 (gcd 163625).
+[L-416] pub:dc sig:split kind:annual
+- Waves 183-185 (the Superman chain): Adventures of Superman #0, #424-649, #1,000,000 joined Superman (1939) S65813 (one
+  numbering, L-212 / L-372); the chain's odd-numbered specials get I lines naming their OWN issue records (#0 1994 = CV
+  39741 / GCD 55793; #1,000,000 = CV 116162 / GCD 256091) so they never read as Superman #0 / #1,000,000. A monthly's
+  ANNUALS never ride a chain join (their #1-5 collide with the run's #1-5): they stay as the kept half and the shelf
+  re-keys onto the annual's own records (S17909 -> Adventures of Superman Annual CV 3777 / GCD 3344). A join that moves a
+  book another file's C lines describe halts check_identity --all at the NEXT wave: comment those lines `# [lead …]`.
