@@ -1,0 +1,30 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S5305	Defenders Epic Collection	run=-	P-062.jsonl	new	pair=5306
+S5628	Doctor Strange Epic Collection	run=-	P-062.jsonl	new	pair=5629
+S104179	Ultimate FF (2014)	run={"cv": 73101, "gcd": 80199}	P-062.jsonl	new	pair=6365
+S104171	FF: 50 Fantastic Years (2011)	run={"cv": 43057}	P-062.jsonl	new	pair=6365
+S104168	Defenders v4 (2012)	run={"cv": 44363, "gcd": 62406}	P-062.jsonl	new	pair=64562
+S96494	Doctor Strange v4 (2015)	run=-	P-062.jsonl	new	pair=64590
+S64591	Doctor Strange v6 (2023)	run=-	P-062.jsonl	new	pair=64590
+S94595	Fantastic Four v1 (2003)	run=-	P-062.jsonl	new	pair=64669
+S103758	Fantastic Four Annual (1963)	run=-	P-062.jsonl	new	pair=64669
+S94596	Fantastic Four v5 (2014)	run=-	P-062.jsonl	new	pair=64669
+S103757	Fantastic Four (2018)	run=-	P-062.jsonl	new	pair=64669
+S6482	Fantastic Four v4 (2013)	run=-	P-062.jsonl	new	pair=64669
+S6517	Fantastic Four by Jonathan Hickman: The Complete Collection	run=-	P-062.jsonl	new	pair=64669
+S104180	Ultimate Fantastic Four (2004)	run={"cv": 10379, "gcd": 11256}	P-062.jsonl	new	pair=64669
+S104174	Fantastic Four by Jonathan Hickman Omnibus (2013)	run={"cv": 67987, "gcd": 78377}	P-062.jsonl	new	pair=6490
+S6495	Fantastic Four Epic Collection	run=-	P-062.jsonl	new	pair=6496
+S64501	Daredevil (1964)	run=-	P-062.jsonl	new	pair=96254
+S64501	Daredevil by Frank Miller and Klaus Janson	run=-	P-062.jsonl	new	pair=96254
+S64501	Daredevil v1 (1964)	run=-	P-062.jsonl	new	pair=96254
+S104165	Daredevil 2099 (2004)	run={"cv": 32250, "gcd": 11902}	P-062.jsonl	new	pair=96254
+S6365	moved out -> S104179 "Ultimate FF (2014)"; S104171 "FF: 50 Fantastic Years (2011)"	run=-	P-062.jsonl	kept	pair=6365	moved_cv=73101,43057
+S64562	moved out -> S104168 "Defenders v4 (2012)"	run=-	P-062.jsonl	kept	pair=64562	moved_cv=44363
+S64590	moved out -> S96494 "Doctor Strange v4 (2015)"; S64591 "Doctor Strange v6 (2023)"	run=-	P-062.jsonl	kept	pair=64590
+S64669	moved out -> S94595 "Fantastic Four v1 (2003)"; S103758 "Fantastic Four Annual (1963)"; S94596 "Fantastic Four v5 (2014)"; S103757 "Fantastic Four (2018)"; S6482 "Fantastic Four v4 (2013)"; S6517 "Fantastic Four by Jonathan Hickman: The Complete Collection"; S104180 "Ultimate Fantastic Four (2004)"	run=-	P-062.jsonl	kept	pair=64669	moved_cv=10379
+S6490	moved out -> S104174 "Fantastic Four by Jonathan Hickman Omnibus (2013)"	run=-	P-062.jsonl	kept	pair=6490	moved_cv=67987
+S96254	moved out -> S64501 "Daredevil (1964)"; S64501 "Daredevil by Frank Miller and Klaus Janson"; S64501 "Daredevil v1 (1964)"; S104165 "Daredevil 2099 (2004)"	run=-	P-062.jsonl	kept	pair=96254	moved_cv=32250

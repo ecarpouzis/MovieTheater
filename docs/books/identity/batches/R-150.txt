@@ -1,0 +1,186 @@
+## Conventions for this batch (20 shown of 100 matched; 397 in LEDGER.md; 7 shelf/shelves: pub:marvel ×7 · kind:collected-line ×6 · kind:trade-only ×6 · folder:vn-year ×3 · folder:sequel-subfolder ×2 · folder:events ×1 · kind:new ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (7 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (7 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (7 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-029] (6 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
+- On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
+  collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
+[L-031] (6 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (6 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (6 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (6 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (6 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-132] (6 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-196] (6 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (6 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (6 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-298] (6 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-306] (6 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (6 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (6 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-313] (6 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-327] (6 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (6 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+
++80 more matched entries not shown: L-329, L-332, L-392, L-397, L-127, L-136, L-389, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-060, L-116, L-013, L-014, L-030, L-043, L-050, L-064, L-072, L-085, L-088, L-089, L-095, L-096, L-101, L-118, L-125, L-151, L-157, L-159, L-160, L-163, L-177, L-193, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-310, L-341, L-346, L-347, L-124, L-191, L-272, L-281, L-324, L-388, L-016, L-032, L-113, L-114, L-290, L-034, L-169, L-319, L-391, L-395, L-396, L-175 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S64502 Daredevil  [tier C] · ratio 0.10  keys: Daredevil (2014) | Daredevil by Mark Waid and Chris Samnee  years 2014-2016  4 files / 2 collections
+   split: the KEPT half of the P-061 split — moved out -> S104160 "Daredevil v3 (2011)"; re-identify what stayed
+   folders: [2] Marvel\_Daredevil\04 Daredevil v3-v4 (2011) · [2] _Marvel Major Event Chronology (digital)\2014.04 - Original Sin\02 Tie-ins\Daredevil
+   files:   [46923] COL 04 Daredevil by Mark Waid & Chris Samnee Vol. 04 (2016) (Digital) (Zone-Empire).cbr (296pp)
+            [46924] COL 05 Daredevil by Mark Waid & Chris Samnee Vol. 05 (2016) (Digital) (Zone-Empire).cbr (201pp) | [117775] 032 - Daredevil 006 (2014) (Digital) (Zone-Empire).cbr (21pp)
+            [117776] 033 - Daredevil 007 (2014) (Digital) (Zone-Empire).cbr (23pp)
+   ours:    ladder 6-7; ComicInfo Series: "Daredevil by Mark Waid and Chris Samnee Vol. 4 Collection"x1, "Daredevil by Mark Waid and Chris Samnee Vol. 5 Collection"x1; ComicInfo Publisher: "Marvel"x2
+   GCD says: [46923] gcd_reprint 1531587: s79658 Daredevil (2014) #1-10 [11 stories] · s81546 Daredevil (2014) #0.1 [2 stories]
+             [46924] gcd_reprint 1566180: s79658 Daredevil (2014) #11-15, #15.1, #16-18 [10 stories]
+   CV linked:      vol 72417 "Daredevil" 2014 Marvel 21 issues; cached #0.1-18 (21); yearΔ 0; ratio 2/21 = 0.10; no judged range
+   CV candidates:  38934 "Fantastic Four by Mark Waid" 2004 Marvel 3 s57 · 57482 "Daredevil by Mark Waid" 2013 Marvel 5 s33 · 45530 "Daredevil by Mark Waid" 2012 Marvel 7 s33 · 99293 "Daredevil by Mark Waid Omnibus" 2017 Marvel 2 s23 · 155525 "Doctor Strange By Mark Waid" 2023 Marvel 2 s14 · 125480 "Black Widow by Waid & Samnee: The Complete Collection" 2020 Marvel 1 issue 739612 s12   (v1 search)
+   CV local rip:   (= linked) · 61233 "Daredevil" 2012 Panini Verlag 6 · 86343 "Daredevil" 2016 Marvel 46 · 110312 "Daredevil" 2016 Panini France 5 · 41410 "Daredevil" 2011 Marvel 37 · 116964 "Daredevil" 2019 Marvel 36   (rip lookup)
+   GCD dump:       79658 "Daredevil" 2014-2015 Marvel [] 20 · 81546 "Daredevil" 2014-2014 Marvel [] 1 · 90888 "Daredevil" 2014-2015 Marvel [] 4 · 202070 "Daredevil" [fr] 2015-2016 Panini France [] 4 · 68578 "Daredevil" [de] 2012-2014 Panini Deutschland [] 6 · 94624 "Daredevil" 2016-2019 Marvel [] 46   (dump lookup)
+
+== S6502 Fantastic Four Epic Collection: The Dream is Dead  [tier B]   keys: Fantastic Four Epic Collection: The Dream Is Dead  years 2023-2023  1 files / 1 collections
+   folders: [1] Marvel\_Fantastic Four\Fantastic Four Epic Collections
+   files:   [79807] COL Fantastic Four Epic Collection Vol. 19 - The Dream Is Dead (2023) (Digital) (Kileko-Empire).cbz (465pp)
+   ours:    ComicInfo Series: "Fantastic Four Epic Collection: The Dream Is Dead"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [79807] gcd_reprint 2509762: s1482 Fantastic Four (1961) #321-333 [14 stories] · s14535 Dr. Strange and Dr. Doom: Triumph and Torment [Marvel Graphic Novel] (1989) (unnumbered) [1 story] · s1572 Fantastic Four Annual (1963) #22 [1 story]
+   CV linked:      vol 149043 "Fantastic Four Epic Collection: The Dream is Dead" 2023 Marvel 1 issues issue 979317; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 126609 "Fantastic Four Epic Collection: The Name Is Doom" 2020 Marvel 1 issue 756654 s73 · 111826 "Fantastic Four Epic Collection: The New Fantastic Four" 2018 Marvel 1 issue 675139 s65 · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 s65 · 70951 "Fantastic Four Epic Collection: All In the Family" 2014 Marvel 1 issue 442431 s64 · 76010 "Fantastic Four Epic Collection: Into the Time Stream" 2014 Marvel 1 issue 460713 s64 · 112582 "Fantastic Four Epic Collection: The Coming of Galactus" 2018 Marvel 1 issue 678533 s64   (v1 search)
+   CV local rip:   (= linked) · 126609 "Fantastic Four Epic Collection: The Name Is Doom" 2020 Marvel 1 issue 756654 (via CV candidate name "Fantastic Four Epic Collection: The Name Is Doom") · 111826 "Fantastic Four Epic Collection: The New Fantastic Four" 2018 Marvel 1 issue 675139 (via CV candidate name "Fantastic Four Epic Collection: The New Fantastic Four")   (rip lookup)
+
+== S6503 Fantastic Four Epic Collection: The More Things Change...  [tier B]   keys: Fantastic Four Epic Collection: The More Things Change...  years 2019-2019  1 files / 1 collections
+   folders: [1] Marvel\_Fantastic Four\Fantastic Four Epic Collections
+   files:   [79806] COL Fantastic Four Epic Collection Vol. 18 - The More Things Change (2019) (F) (digital-Empire).cbz (467pp)
+   ours:    ComicInfo Series: "Fantastic Four Epic Collection: The More Things Change..."x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [79806] gcd notes 1978753 (#18 of Fantastic Four Epic Collection): Fantastic Four (Marvel, 1961 series) #308-320; Fantastic Four Annual (Marvel, 1963 series) #21; The Incredible Hulk (Marvel, 1968 series) #350  |  gcd_reprint 1978753: s1482 Fantastic Four (1961) #308-320 [16 stories] · s22322 Marvel Graphic Novel: The Big Change (1987) (unnumbered) [1 story] · s1866 The Incredible Hulk (1968) #350 [1 story] · s1572 Fantastic Four Annual (1963) #21 [1 story]
+   CV linked:      vol 119753 "Fantastic Four Epic Collection: The More Things Change..." 2019 Marvel 1 issues issue 711946; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 111826 "Fantastic Four Epic Collection: The New Fantastic Four" 2018 Marvel 1 issue 675139 s65 · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 s65 · 162643 "Fantastic Four Epic Collection Four No More Marvel " 2025 Marvel 1 issue 1097890 s64 · 70951 "Fantastic Four Epic Collection: All In the Family" 2014 Marvel 1 issue 442431 s64 · 76010 "Fantastic Four Epic Collection: Into the Time Stream" 2014 Marvel 1 issue 460713 s64 · 112582 "Fantastic Four Epic Collection: The Coming of Galactus" 2018 Marvel 1 issue 678533 s64   (v1 search)
+   CV local rip:   (= linked) · 111826 "Fantastic Four Epic Collection: The New Fantastic Four" 2018 Marvel 1 issue 675139 (via CV candidate name "Fantastic Four Epic Collection: The New Fantastic Four") · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 (via CV candidate name "Ultimate Fantastic Four Epic Collection: The Fantastic")   (rip lookup)
+
+== S6504 Fantastic Four Epic Collection: The Name Is Doom  [tier B]   keys: Fantastic Four Epic Collection: The Name Is Doom  years 2020-2020  1 files / 1 collections
+   folders: [1] Marvel\_Fantastic Four\Fantastic Four Epic Collections
+   files:   [79799] COL Fantastic Four Epic Collection Vol. 05 - The Name is Doom (2020) (Digital) (Zone-Empire).cbr (504pp)
+   ours:    ComicInfo Series: "Fantastic Four Epic Collection: The Name Is Doom"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [79799] gcd notes 2123267 (#5 of Fantastic Four Epic Collection): Fantastic Four (Marvel, 1961 series) #68-87; Fantastic Four Annual (Marvel, 1963 series) #6; Not Brand Echh (Marvel, 1967 series) #6-7  |  gcd_reprint 2123267: s1482 Fantastic Four (1961) #68-87 [41 stories] · s1811 Not Brand Echh (1967) #6-7 [4 stories] · s1572 Fantastic Four Annual (1963) #6 [2 stories] · s61146 Marvel Masterworks: The Fantastic Four (2009) #8-9 [2 stories]
+   CV linked:      vol 126609 "Fantastic Four Epic Collection: The Name Is Doom" 2020 Marvel 1 issues issue 756654; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 149043 "Fantastic Four Epic Collection: The Dream is Dead" 2023 Marvel 1 issue 979317 s73 · 111826 "Fantastic Four Epic Collection: The New Fantastic Four" 2018 Marvel 1 issue 675139 s65 · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 s65 · 40271 "Ultimate Fantastic Four: Doom" 2008 Marvel 1 issue 271002 s60 · 43015 "Fantastic Four: The Overthrow of Doom" 2011 Marvel 1 issue 293557 s58 · 30735 "Fantastic Four: The Master of Doom" 2009 Marvel 1 issue 189774 s58   (v1 search)
+   CV local rip:   (= linked) · 111826 "Fantastic Four Epic Collection: The New Fantastic Four" 2018 Marvel 1 issue 675139 (via CV candidate name "Fantastic Four Epic Collection: The New Fantastic Four") · 149043 "Fantastic Four Epic Collection: The Dream is Dead" 2023 Marvel 1 issue 979317 (via CV candidate name "Fantastic Four Epic Collection: The Dream is Dead")   (rip lookup)
+
+== S6505 Fantastic Four Epic Collection: The New Fantastic Four  [tier B]   keys: Fantastic Four Epic Collection: The New Fantastic Four  years 2018-2018  1 files / 1 collections
+   folders: [1] Marvel\_Fantastic Four\Fantastic Four Epic Collections
+   files:   [79809] COL Fantastic Four Epic Collection Vol. 21 - The New Fantastic Four (2018) (Digital) (Asgard-Empire).cbr (495pp)
+   ours:    ComicInfo Series: "Fantastic Four Epic Collection: The New Fantastic Four"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [79809] gcd_reprint 1820505: s1482 Fantastic Four (1961) #347-361 [51 stories] · s1572 Fantastic Four Annual (1963) #24 [6 stories] · s10581 Fantastic Four: Monsters Unleashed (1992) (unnumbered) [4 stories] · s20144 Marvel Holiday Special (1991) #1 [3 stories]
+   CV linked:      vol 111826 "Fantastic Four Epic Collection: The New Fantastic Four" 2018 Marvel 1 issues issue 675139; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 38728 "Fantastic Four: The New Fantastic Four" 2008 Marvel 1 issue 259714 s85 · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 s74 · 143757 "New Fantastic Four " 2022 Marvel 5 s70 · 76675 "Fantastic Four: The Fall of the Fantastic Four" 2014 Marvel 1 issue 463681 s64 · 38747 "Fantastic Four: The Life Fantastic" 2006 Marvel 1 issue 259819 s62 · 120396 "Fantastic Four: Fantastic Origins" 2019 Marvel 1 issue 714662 s60   (v1 search)
+   CV local rip:   (= linked) · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 (via CV candidate name "Ultimate Fantastic Four Epic Collection: The Fantastic") · 38728 "Fantastic Four: The New Fantastic Four" 2008 Marvel 1 issue 259714 (via CV candidate name "Fantastic Four: The New Fantastic Four")   (rip lookup)
+   GCD dump:       31013 "Fantastic Four: The New Fantastic Four" 2008-2008 Marvel [] 1 (via CV candidate name "Fantastic Four: The New Fantastic Four") · 47664 "Fantastic Four: The New Fantastic Four" 2007-2007 Marvel [] 1 (via CV candidate name "Fantastic Four: The New Fantastic Four")   (dump lookup)
+
+== S6515 Fantastic Four by John Byrne Omnibus  [tier B]   keys: Fantastic Four by John Byrne Omnibus  years 2011-2011  1 files / 1 collections
+   folders: [1] Marvel\_Fantastic Four\01 Fantastic Four v1 (1961)\Omnibus Editions
+   files:   [79605] COL Fantastic Four by John Byrne Omnibus Book 01 (2022, 3rd edition) (Digital-Empire).cbr (1083pp)
+   ours:    ComicInfo Series: "Fantastic Four by John Byrne Omnibus"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [79605] gcd notes 898611 (#1 of Fantastic Four by John Byrne Omnibus): Marvel Team-Up (Marvel, 1972 series) #61-62; Marvel Two-in-One (Marvel, 1974 series) #50; Fantastic Four (Marvel, 1961 series) #209-218, #220-221, #232-260; Fantastic Four Annual (Marvel, 1963 series) #17; The Avengers (Marvel, 1963 series)  |  gcd_reprint 898611: s1482 Fantastic Four (1961) #204, #209-221, #232-260 [92 stories] · s2758 The Official Handbook of the Marvel Universe (1983) #3-12, #14 [28 stories] · s16680 Fantastic Four Visionaries: John Byrne (2001) #0-4 [5 stories] · s2056 Marvel Team-Up (1972) #61-62 [4 stories]
+   CV linked:      vol 43976 "Fantastic Four by John Byrne Omnibus" 2011 Marvel 2 issues; cached #1-2 (2); yearΔ 0; ratio 0/2; no judged range
+   CV candidates:  (= linked) · 112359 "True Believers: Fantastic Four By John Byrne" 2018 Marvel 1 issue 677301 s38 · 92297 "Avengers by John Byrne Omnibus" 2016 Marvel 1 issue 539751 s29 · 121104 "Spider-Man By John Byrne Omnibus" 2019 Marvel 1 issue 718144 s29 · 98560 "Alpha Flight By John Byrne Omnibus" 2017 Marvel 1 issue 579432 s28 · 127668 "Sensational She-Hulk by John Byrne Omnibus" 2020 Marvel 1 issue 766408 s28 · 89373 "Marvel Universe by John Byrne Omnibus" 2016 Marvel 2 s21   (v1 search)
+   CV local rip:   (= linked) · 92297 "Avengers by John Byrne Omnibus" 2016 Marvel 1 issue 539751 (via CV candidate name "Avengers by John Byrne Omnibus") · 112359 "True Believers: Fantastic Four By John Byrne" 2018 Marvel 1 issue 677301 (via CV candidate name "True Believers: Fantastic Four By John Byrne")   (rip lookup)
+   GCD dump:       62174 "Fantastic Four by John Byrne Omnibus" 2011-2013 Marvel [] 2 · 103895 "Avengers by John Byrne Omnibus" 2016-2016 Marvel [] 1 (via CV candidate name "Avengers by John Byrne Omnibus") · 126991 "True Believers: Fantastic Four by John Byrne" 2018-2018 Marvel [] 1 (via CV candidate name "True Believers: Fantastic Four By John Byrne")   (dump lookup)
+
+== S5304 Defenders by Matt Fraction  [tier B]   keys: Defenders By Matt Fraction  years 2012-2013  2 files / 2 collections
+   folders: [2] Marvel\_Defenders\Defenders v4 (2012)
+   files:   [78751] COL Defenders By Matt Fraction v01 (2012) (Digital) (Kileko-Empire).cbr (141pp) | [78752] COL Defenders By Matt Fraction v02 (2014) (Digital) (Kileko-Empire).cbr (141pp)
+   GCD says: [78751] gcd_reprint 2023507: s62406 Defenders (2012) #1-6 [25 stories] · s62026 Point One (2012) #1 [2 stories] · s57075 Fear Itself (2011) #7 [1 story]
+             [78752] gcd notes 2023508 (#2 of Defenders by Matt Fraction): Defenders (Marvel, 2012 series) #7-12  |  gcd_reprint 2023508: s62406 Defenders (2012) #7 [3 stories]
+   CV linked:      vol 50398 "Defenders by Matt Fraction" 2012 Marvel 2 issues; cached #1-2 (2); yearΔ 0; ratio 0/2; no judged range
+   CV candidates:  (= linked) · 138235 "Fraction" 2012 Editions IMHO 1 issue 879221 s63 · 68864 "Fraction" 2011 DC Comics 1 issue 431847 s60 · 23524 "Fraction" 2004 DC Comics 6 s53 · 144794 "Thor by Matt Fraction Omnibus" 2022 Marvel 1 issue 944338 s26 · 59412 "The Mighty Thor By Matt Fraction" 2013 Marvel 1 issue 395420 s25 · 79894 "Fantastic Four By Matt Fraction Omnibus" 2015 Marvel 1 issue 478755 s25   (v1 search)
+   CV local rip:   (= linked) · 138235 "Fraction" 2012 Editions IMHO 1 issue 879221 (via CV candidate name "Fraction") · 68864 "Fraction" 2011 DC Comics 1 issue 431847 (via CV candidate name "Fraction") · 23524 "Fraction" 2004 DC Comics 6 (via CV candidate name "Fraction")   (rip lookup)
+   GCD dump:       150985 "Defenders by Matt Fraction" 2012-2013 Marvel [] 2 · 101271 "Fraction" [fr] 2012-? Éditions IMHO [] 1 (via CV candidate name "Fraction") · 109971 "Fraction" 2011-2011 DC [] 1 (via CV candidate name "Fraction") · 103844 "Fraction" [it] 2015-2015 Hikari Edizioni [] 1 (via CV candidate name "Fraction") · 14169 "Fraction" 2004-2004 DC [] 6 (via CV candidate name "Fraction")   (dump lookup)

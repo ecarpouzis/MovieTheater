@@ -2112,3 +2112,10 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   splits an omnibus line off a run shelf can arm the omnibus over the run's trades on an unjudged span (Hickman FF
   Omnibus Book 01, provider #570-574): write a containment decision file, and it must then decide EVERY edition on the
   shelf (pass2) — restate existing Curated ranges as S lines, `u` the rest (containment/decisions/S6490.txt).
+[L-398] pub:marvel sig:stamp kind:trade-only
+- Waves 147-148: Marvel 2008+ runs have a SEPARATE GCD trade-paperback-line series that earlier readers stored as the
+  shelf's S gcd (Totally Awesome Hulk 104142 -> run 94628; Rocket Raccoon & Groot 104355 -> run 95266) — the run's own GCD
+  series goes on the S. A Panini España CV VOLUME id can equal the right ISSUE id (S6478: 150718 = #1 of CV 25548).
+  Ghost Rider (2006) trades are GCD 55198; stored rows were Panini Deutschland (45859). Hulk (2008) trades have twin GCD
+  trade series (73891 / 73934) plus 2011-12 HCs — page counts pick 73891. Incredible Hulk (2000) and Ghost Rider (2006)
+  shelves carry legacy-number CV stamps (L-395) — per-file I lines. Byrne FF Omnibus merged onto the FF 1961 run (L-395).

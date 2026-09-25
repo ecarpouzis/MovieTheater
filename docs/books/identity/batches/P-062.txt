@@ -1,0 +1,794 @@
+## Conventions for this batch (21 shown of 134 matched; 397 in LEDGER.md; 18 shelf/shelves: pub:marvel ×18 · kind:collected-line ×15 · kind:trade-only ×13 · kind:new ×6 · folder:sequel-subfolder ×6 · folder:vn-year ×4 · folder:events ×4 · folder:variant-covers ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-389] (18 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-053 / R-135 (waves 129-130): a run's issues never JOIN a creator-trade-keyed shelf ("Venom by Al Ewing & Ram V",
+  S21029, four trades) — keep them and meet through the SHARED cv at the next revisit (S20988 cv=140084 + merge-with=21029).
+  Marvel's 2019-2020 "Star Wars #1 facsimile" is "Star Wars No 1 Facsimile Edition" (CV 123267 / GCD 153348): probe the
+  "No N" form. Star Wars Insider and Titan's "Best of" books have no CV / GCD record: R + provider-missing, never the 1977
+  comic's stamp. The Dark Horse Star Wars Omnibus umbrella number (Vol. 32 / 35) raises a false "stored GCD row is another
+  book" warning against the sub-line's #1 / #2 — page counts and ISBNs decide. An Epic Collection / omnibus line spanning
+  several minis keeps its own GCD-line key in a split.
+[L-127] (17 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-136] (17 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-031] (15 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (15 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (15 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (15 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (15 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-132] (15 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-196] (15 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (15 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (15 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-298] (15 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-306] (15 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (15 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (15 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-313] (15 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-327] (15 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (15 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+[L-329] (15 shelf/shelves) kind:collected-line pub:dc pub:marvel
+- DC/Marvel trade lines often store a GCD row that belongs to a FOREIGN or other edition (Urban Comics' French GL
+  2011, a German GL 2023 Vol. 1) — check the stored row's series before using its roll-up. GCD carries twin HC/SC
+  series for most 2006-2016 DC/Marvel trades (77116/77117, 77936/77937) → cap those I lines at 0.9. CV keeps count-1
+  "Title: Subtitle" volumes per trade before ~2016, numbered TPB-line volumes after (R-054).
+[L-332] (15 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection one-rule (lead, wave 44): each Epic book is its OWN shelf; its S line carries the book's own
+  count-1 CV volume and `gcd=-`; the line's GCD series (74602 ASM, 74592 Iron Man) goes on the book's I line with
+  its ISBN; C lines name the runs reprinted. `lookup.py "<Line> Epic Collection" --contains` lists every volume.
+
++113 more matched entries not shown: L-392, L-397, L-029, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-014, L-388, L-395, L-016, L-032, L-113, L-114, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-193, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-064, L-085, L-101, L-310, L-319, L-371, L-378, L-387, L-390, L-391, L-393, L-396, L-033, L-034, L-060, L-116, L-169, L-191, L-290, L-343, L-124, L-175, L-281, L-028, L-036, L-121, L-129, L-133, L-142, L-172, L-173, L-272, L-007, L-119, L-130, L-187, L-217, L-312, L-345, L-357, L-128, L-181, L-336, L-077, L-106, L-111, L-112, L-174, L-242, L-297, L-311, L-316, L-331, L-054, L-123, L-150, L-194, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S5306 Defenders Epic Collection 02: Enter: The Headmen  [split]  1 files / 1 collections  decided in R-149 (S)
+   decided: S 5306 cv=- gcd=106500 0.9 | volume 02 "Enter - The Headmen" of the same LINE: GCD 106500 #2 row 2638133 (468pp, ISBN 978-1-302-95531-1) is our 461pp book (ComicInfo Series "Defenders Epic Collection 02: Enter: The Headmen", Volume 2024); CV 158646 is only its count-1 book volume (issue 1061549)
+   F 5306 wrong-cv-link | the stored CV 158646 "Defenders Epic Collection: Enter - The Headmen" is the Vol. 02 book's own count-1 volume, not the line
+   F 5306 split-needed | item 78784 -> join S5305 on its ParsedKey "Defenders Epic Collection" (S5305's S line is the same GCD 106500 line, cv=-; L-377 / L-392); the shelf empties by the join; replaces C-043's merge-with=5307
+   named: S5305 Defenders Epic Collection  4 files  keys: "Defenders Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S64562 "The Defenders" 100f [shares gcd=2048 (collected by item 78784) — S cv=2569 gcd=2048 (R-149 0.9)] keys: "Defenders (1972)" | "Defenders v1 (1972)" | "Defenders-v1-026" | "Defenders-v1-027" (+2 more: lookup.py --shelf 64562)
+   nearby: S11631 "Marvel Two-in-One" 98f [shares gcd=2182 (collected by item 78784) — S cv=2696 gcd=2182 (R-137 0.9)] keys: "Marvel Masterworks - Marvel Two-In-One" | "Marvel Two-In-One" | "Marvel Two-In-One Annual" | "Marvel Two-in-One" (+1 more: lookup.py --shelf 11631)
+   nearby: S7521 "Giant-Size Defenders" 6f [shares gcd=2167 (collected by item 78784) — S cv=2681 gcd=2167 (B-055 0.95)] keys: "DefendersGiantSize-v1-05" | "Giant-Size Defenders"
+   nearby: S5307 "Defenders Epic Collection: The Day Of The Defenders" 1f [shares gcd=106500 — S gcd=106500 (R-149 0.9)] keys: "Defenders Epic Collection: The Day Of The Defenders"
+   keys now: "Defenders Epic Collection 02: Enter: The Headmen" x1
+   groups (title x folder): 1
+   G1 "Defenders Epic Collection" in Marvel\_Defenders\_Defenders Epic Collections — 1 file(s), 1 COL, pp 461-461; cv per-file 158646x1; gcd per-file 106500x1; key 'Defenders Epic Collection 02: Enter: The Headmen'
+      [78784] COL Defenders Epic Collection Vol. 02 - Enter - The Headmen (2024) (digital) (Marika-Empire).cbz (461pp)
+         own record cv 158646 / gcd s106500 "Defenders Epic Collection" (issue 2638133) COLLECTS: gcd=2048 The Defenders (1972) #12-25 · gcd=2167 Giant-Size Defenders (1974) #1-4 · gcd=2135 Weird Wonder Tales (1973) #7 · gcd=2182 Marvel Two-in-One (1974) #6-7
+
+== S5307 Defenders Epic Collection: The Day Of The Defenders  [split]  1 files / 1 collections  decided in R-149 (S)
+   decided: S 5307 cv=- gcd=106500 0.9 | volume 01 "The Day of the Defenders" of the same LINE: GCD 106500 #1 row 2468432 (492pp, ISBN 978-1-302-93356-2) is our 487pp book; CV 147058 is only its count-1 book volume (issue 962312); the CV candidate 27546 "Day of the Defenders" (2001) is a different one-shot
+   F 5307 wrong-cv-link | the stored CV 147058 "Defenders Epic Collection: The Day of the Defenders" is the Vol. 01 book's own count-1 volume, not the line
+   F 5307 split-needed | item 78783 -> join S5305 on its ParsedKey "Defenders Epic Collection" (same GCD 106500 line; L-377 / L-392); the shelf empties by the join; replaces C-043's merge-with=5306
+   named: S5305 Defenders Epic Collection  4 files  keys: "Defenders Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64185 "The Avengers" 426f [shares gcd=1571 (collected by item 78783) — S cv=2128 gcd=1571 (R-142 0.95)] keys: "Avengers" | "Avengers (1963)" | "The Avengers"
+   nearby: S64562 "The Defenders" 100f [shares gcd=2048 (collected by item 78783) — S cv=2569 gcd=2048 (R-149 0.9)] keys: "Defenders (1972)" | "Defenders v1 (1972)" | "Defenders-v1-026" | "Defenders-v1-027" (+2 more: lookup.py --shelf 64562)
+   nearby: S17004 "Sub-Mariner" 72f [shares gcd=1874 (collected by item 78783) — S cv=2413 gcd=1874 (A-035 0.95)] keys: "Sub-Mariner" | "Sub-Mariner v1 (1968)"
+   nearby: S11412 "Marvel Feature" 6f [shares gcd=1991 (collected by item 78783) — S cv=2515 gcd=1991 (A-021 0.95)] keys: "Marvel Feature"
+   nearby: S5306 "Defenders Epic Collection 02: Enter: The Headmen" 1f [shares gcd=106500 — S gcd=106500 (R-149 0.9)] keys: "Defenders Epic Collection 02: Enter: The Headmen"
+   keys now: "Defenders Epic Collection: The Day Of The Defenders" x1
+   groups (title x folder): 1
+   G1 "Defenders Epic Collection" in Marvel\_Defenders\_Defenders Epic Collections — 1 file(s), 1 COL, pp 487-487; cv per-file 147058x1; gcd per-file 106500x1; key 'Defenders Epic Collection: The Day Of The Defenders'
+      [78783] COL Defenders Epic Collection Vol. 01 - The Day Of The Defenders (2023) (Digital-Empire).cbz (487pp)
+         own record cv 147058 / gcd s106500 "Defenders Epic Collection" (issue 2468432) COLLECTS: gcd=2048 The Defenders (1972) #1-11 · gcd=1571 The Avengers (1963) #115-118 · gcd=1991 Marvel Feature (1971) #1-3 · gcd=1874 Sub-Mariner (1968) #22, #34-35
+
+== S5629 Doctor Strange Epic Collection: A Separate Reality  [split]  1 files / 1 collections  decided in R-149 (S)
+   decided: S 5629 cv=- gcd=108389 0.9 | volume 03 "A Separate Reality" of the same LINE: GCD 108389 #3 row 1639526 (476pp, ISBN 978-0-7851-9444-6) is our 461pp book; CV 95006 is only its count-1 book volume (issue 553957); CV 38669 "Doctor Strange: A Separate Reality" (2002) is an older, different trade
+   F 5629 wrong-cv-link | the stored CV 95006 "Doctor Strange Epic Collection: A Separate Reality" is the Vol. 03 book's own count-1 volume, not the line
+   F 5629 split-needed | item 79047 -> join S5628 on its ParsedKey "Doctor Strange Epic Collection" (S5628's S line is the same GCD 108389 line, cv=-; L-377 / L-392); the shelf empties by the join
+   named: S5628 Doctor Strange Epic Collection  6 files  keys: "Doctor Strange Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64590 "Doctor Strange" 93f [shares gcd=2162 (collected by item 79047) — S cv=2676 gcd=2162 (R-149 0.9)] keys: "Doctor Strange (1974)" | "Doctor Strange v2 (1974)"
+   nearby: S11547 "Marvel Premiere" 52f [shares gcd=2055 (collected by item 79047) — S cv=2575 gcd=2055 (A-021 0.95)] keys: "Marvel Premiere"
+   nearby: S5612 "Doctor Strange" 15f [shares gcd=1863 (collected by item 79047) — S cv=2403 gcd=1863 (B-055 0.95)] keys: "Doctor Strange"
+   nearby: S11628 "Marvel Treasury Edition" 3f [shares gcd=2180 (collected by item 79047) — S cv=2694 gcd=2180 (C-039 0.9)] keys: "Marvel Treasury Edition"
+   nearby: S5630 "Doctor Strange Epic Collection: Alone Against Eternity" 1f [shares gcd=108389 — S gcd=108389 (R-149 0.9)] keys: "Doctor Strange Epic Collection: Alone Against Eternity"
+   nearby: S5631 "Doctor Strange Epic Collection: Infinity War" 1f [shares gcd=108389 — S gcd=108389 (R-149 0.9)] keys: "Doctor Strange Epic Collection: Infinity War"
+   nearby: S5632 "Doctor Strange Epic Collection: The Vampiric Verses" 1f [shares gcd=108389 — S gcd=108389 (R-149 0.9)] keys: "Doctor Strange Epic Collection: The Vampiric Verses"
+   keys now: "Doctor Strange Epic Collection: A Separate Reality" x1
+   groups (title x folder): 1
+   G1 "Doctor Strange Epic Collection" in Marvel\_Doctor Strange\_Doctor Strange Epic Collections — 1 file(s), 1 COL, pp 461-461; cv per-file 95006x1; gcd per-file 108389x1; key 'Doctor Strange Epic Collection: A Separate Reality'
+      [79047] COL Doctor Strange Epic Collection Vol. 03 - A Separate Reality (2016) (Digital) (F) (Asgard-Empire).cbz (461pp)
+         own record cv 95006 / gcd s108389 "Doctor Strange Epic Collection" (issue 1639526) COLLECTS: gcd=2055 Marvel Premiere (1972) #3-14 · gcd=2162 Doctor Strange (1974) #1-5 · gcd=1863 Doctor Strange (1968) #180-183 · gcd=2180 Marvel Treasury Edition (1974) #6
+
+== S5630 Doctor Strange Epic Collection: Alone Against Eternity  [split]  1 files / 1 collections  decided in R-149 (S)
+   decided: S 5630 cv=- gcd=108389 0.9 | volume 04 "Alone Against Eternity" of the same LINE: GCD 108389 #4 row 2197311 (492pp, ISBN 978-1-302-92199-6) is our 483pp book; CV 133481 is only its count-1 book volume (issue 826677)
+   F 5630 wrong-cv-link | the stored CV 133481 "Doctor Strange Epic Collection: Alone Against Eternity" is the Vol. 04 book's own count-1 volume, not the line
+   F 5630 split-needed | item 79048 -> join S5628 on its ParsedKey "Doctor Strange Epic Collection" (same GCD 108389 line; L-377 / L-392); the shelf empties by the join; replaces C-043's merge-with=5631
+   named: S5628 Doctor Strange Epic Collection  6 files  keys: "Doctor Strange Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64590 "Doctor Strange" 93f [shares gcd=2162 (collected by item 79048) — S cv=2676 gcd=2162 (R-149 0.9)] keys: "Doctor Strange (1974)" | "Doctor Strange v2 (1974)"
+   nearby: S66130 "Tomb of Dracula" 26f [shares gcd=2063 (collected by item 79048) — S cv=2582 gcd=2063 (C-046 0.95)] keys: "Marvel Masterworks - The Tomb of Dracula" | "Marvel Masterworks - The Tomb of Dracula (1972)" | "Tomb Of Dracula Masterworks (1972)" | "Tomb Of Dracula: The Complete Collection (1972)" (+3 more: lookup.py --shelf 66130)
+   nearby: S104143 "Strange Tales v2 (1973)" 8f [shares gcd=2128 (collected by item 79048) — S cv=2643 gcd=2128 (R-142 0.95)] keys: "Strange Tales v2 (1973)"
+   nearby: S5629 "Doctor Strange Epic Collection: A Separate Reality" 1f [shares gcd=108389 — S gcd=108389 (R-149 0.9)] keys: "Doctor Strange Epic Collection: A Separate Reality"
+   nearby: S5631 "Doctor Strange Epic Collection: Infinity War" 1f [shares gcd=108389 — S gcd=108389 (R-149 0.9)] keys: "Doctor Strange Epic Collection: Infinity War"
+   nearby: S5632 "Doctor Strange Epic Collection: The Vampiric Verses" 1f [shares gcd=108389 — S gcd=108389 (R-149 0.9)] keys: "Doctor Strange Epic Collection: The Vampiric Verses"
+   keys now: "Doctor Strange Epic Collection: Alone Against Eternity" x1
+   groups (title x folder): 1
+   G1 "Doctor Strange Epic Collection" in Marvel\_Doctor Strange\_Doctor Strange Epic Collections — 1 file(s), 1 COL, pp 483-483; cv per-file 133481x1; gcd per-file 108389x1; key 'Doctor Strange Epic Collection: Alone Against Eternity'
+      [79048] COL Doctor Strange Epic Collection Vol. 04 - Alone Against Eternity (2021) (Digital) (Relic-Empire).cbz (483pp)
+         own record cv 133481 / gcd s108389 "Doctor Strange Epic Collection" (issue 2197311) COLLECTS: gcd=2162 Doctor Strange (1974) #6-28 · gcd=2128 Strange Tales (1973) #182-188 · gcd=2345 Dr. Strange Annual (1976) #1 · gcd=2063 Tomb of Dracula (1972) #44
+
+== S5631 Doctor Strange Epic Collection: Infinity War  [split]  1 files / 1 collections  decided in R-149 (S)
+   decided: S 5631 cv=- gcd=108389 0.9 | volume 10 "Infinity War" of the same LINE: GCD 108389 #10 row 2426198 (482pp, ISBN 978-1-302-94537-4) is our 470pp book; CV 144899 is only its count-1 book volume (issue 945891)
+   F 5631 wrong-cv-link | the stored CV 144899 "Doctor Strange Epic Collection: Infinity War" is the Vol. 10 book's own count-1 volume, not the line
+   F 5631 split-needed | item 79052 -> join S5628 on its ParsedKey "Doctor Strange Epic Collection" (same GCD 108389 line; L-377 / L-392); the shelf empties by the join; replaces C-043's merge-with=5632
+   named: S5628 Doctor Strange Epic Collection  6 files  keys: "Doctor Strange Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65644 "Silver Surfer" 155f [shares gcd=3433 (collected by item 79052) — S cv=3857 gcd=3433 (C-055 0.9)] keys: "Silver Surfer (1987)" | "Silver Surfer v3 (1987)"
+   nearby: S5634 "Doctor Strange, Sorcerer Supreme" 97f [shares gcd=3645 (collected by item 79052) — S cv=4049 gcd=3645 (A-023 0.95)] keys: "Doctor Strange Sorcerer Supreme" | "Dr. Strange - Sorcerer Supreme"
+   nearby: S5647 "Doctor Strange, Sorcerer Supreme Annual" 3f [shares gcd=4448 (collected by item 79052) — S cv=4786 gcd=4448 (C-043 0.9)] keys: "Doctor Strange: Sorcerer Supreme Annual"
+   nearby: S5629 "Doctor Strange Epic Collection: A Separate Reality" 1f [shares gcd=108389 — S gcd=108389 (R-149 0.9)] keys: "Doctor Strange Epic Collection: A Separate Reality"
+   nearby: S5630 "Doctor Strange Epic Collection: Alone Against Eternity" 1f [shares gcd=108389 — S gcd=108389 (R-149 0.9)] keys: "Doctor Strange Epic Collection: Alone Against Eternity"
+   nearby: S5632 "Doctor Strange Epic Collection: The Vampiric Verses" 1f [shares gcd=108389 — S gcd=108389 (R-149 0.9)] keys: "Doctor Strange Epic Collection: The Vampiric Verses"
+   nearby: S16196 "Spider-Man/Dr. Strange: "The Way to Dusty Death"" 1f [shares gcd=4478 (collected by item 79052) — S cv=31408 gcd=4478 (B-059 0.95)] keys: "Spider-Man/Doctor Strange: The Way To Dusty Death"
+   keys now: "Doctor Strange Epic Collection: Infinity War" x1
+   groups (title x folder): 1
+   G1 "Doctor Strange Epic Collection" in Marvel\_Doctor Strange\_Doctor Strange Epic Collections — 1 file(s), 1 COL, pp 470-470; cv per-file 144899x1; gcd per-file 108389x1; key 'Doctor Strange Epic Collection: Infinity War'
+      [79052] COL Doctor Strange Epic Collection Vol. 10 - Infinity War (2022) (Digital-Empire).cbr (470pp)
+         own record cv 144899 / gcd s108389 "Doctor Strange Epic Collection" (issue 2426198) COLLECTS: gcd=3645 Doctor Strange, Sorcerer Supreme (1988) #34-47 · gcd=4448 Doctor Strange, Sorcerer Supreme Annual (1992) #2 · gcd=4478 Spider-Man / Dr. Strange: The Way to Dusty Death (1992) (unnumbered) · gcd=3433 Silver Surfer (1987) #67
+
+== S5632 Doctor Strange Epic Collection: The Vampiric Verses  [split]  1 files / 1 collections  decided in R-149 (S)
+   decided: S 5632 cv=- gcd=108389 0.9 | volume 09 "The Vampiric Verses" of the same LINE: GCD 108389 #9 row 2258755 (508pp, ISBN 978-1-302-93074-5) is our 490pp book; CV 138724 is only its count-1 book volume (issue 883355)
+   F 5632 wrong-cv-link | the stored CV 138724 "Doctor Strange Epic Collection: The Vampiric Verses" is the Vol. 09 book's own count-1 volume, not the line
+   F 5632 split-needed | item 79051 -> join S5628 on its ParsedKey "Doctor Strange Epic Collection" (same GCD 108389 line; L-377 / L-392); the shelf empties by the join; replaces C-043's merge-with=5630
+   named: S5628 Doctor Strange Epic Collection  6 files  keys: "Doctor Strange Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S5634 "Doctor Strange, Sorcerer Supreme" 97f [shares gcd=3645 (collected by item 79051) — S cv=4049 gcd=3645 (A-023 0.95)] keys: "Doctor Strange Sorcerer Supreme" | "Dr. Strange - Sorcerer Supreme"
+   nearby: S64768 "Ghost Rider" 29f [shares gcd=4025 (collected by item 79051) — S cv=4397 gcd=4025 (C-046 0.95)] keys: "Ghost Rider (1990)" | "Ghost Rider v3 (1990)"
+   nearby: S5643 "Doctor Strange, Sorcerer Supreme Omnibus" 3f [shares gcd=115252 (collected by item 79051) — S cv=102586 gcd=115252 (D-014 0.9)] keys: "Doctor Strange, Sorcerer SupremeBook"
+   nearby: S5629 "Doctor Strange Epic Collection: A Separate Reality" 1f [shares gcd=108389 — S gcd=108389 (R-149 0.9)] keys: "Doctor Strange Epic Collection: A Separate Reality"
+   nearby: S5630 "Doctor Strange Epic Collection: Alone Against Eternity" 1f [shares gcd=108389 — S gcd=108389 (R-149 0.9)] keys: "Doctor Strange Epic Collection: Alone Against Eternity"
+   nearby: S5631 "Doctor Strange Epic Collection: Infinity War" 1f [shares gcd=108389 — S gcd=108389 (R-149 0.9)] keys: "Doctor Strange Epic Collection: Infinity War"
+   nearby: S5645 "Doctor Strange & Ghost Rider Special" 1f [shares gcd=9891 (collected by item 79051) — S cv=23209 gcd=9891 (B-055 1.0)] keys: "Doctor Strange: Ghost Rider Special"
+   keys now: "Doctor Strange Epic Collection: The Vampiric Verses" x1
+   groups (title x folder): 1
+   G1 "Doctor Strange Epic Collection" in Marvel\_Doctor Strange\_Doctor Strange Epic Collections — 1 file(s), 1 COL, pp 490-490; cv per-file 138724x1; gcd per-file 108389x1; key 'Doctor Strange Epic Collection: The Vampiric Verses'
+      [79051] COL Doctor Strange Epic Collection Vol. 09 - The Vampiric Verses (2021) (Digital-Empire).cbr (490pp)
+         own record cv 138724 / gcd s108389 "Doctor Strange Epic Collection" (issue 2258755) COLLECTS: gcd=3645 Doctor Strange, Sorcerer Supreme (1988) #13-33 · gcd=4025 Ghost Rider (1990) #12 · gcd=115252 Doctor Strange: Sorcerer Supreme Omnibus (2017) #1 · gcd=9891 Doctor Strange / Ghost Rider Special (1991) #1
+
+== S6365 FF  [split]  24 files / 0 collections  decided in R-149 (R)
+   decided: R 6365 | two runs share #1-6 here: Matt Fraction's FF (2013-2014) - CV 54295 (Marvel 2013, 16) = GCD 70167 (Marvel 2013-2014, 16), our 16 issues "FF 001-016 (2013-2014)" in the "07 Matt Fraction's Fantastic Four (2013)\FF (2013)" folder - and ALL SIX issues of Ultimate FF (2014) (CV 73101 = GCD 80199, Marvel 2014, 6; folder "Ultimate Fantastic Four (2004)\02 Ultimate FF (2014)"), a different comic with its own record and no shelf (lookup --who-stores cv=73101: 0 rows), which is why six numbers name two files; a whole co-equal run, so no identity is stored until it parts; the 2011 "FF: 50 Fantastic Years" one-shot is a third comic
+   F 6365 split-needed | FF (2013) (CV 54295 / GCD 70167, 16 issues + the 1pp Skottie Young cover of #1) stays; items 97078-97083 ("Ultimate FF 001-006 (2014)") -> new key "Ultimate FF (2014)" seeded cv=73101 gcd=80199; item 80021 ("FF 50 Fantastic Years 001 (2010)" 69pp = CV 43057 "FF: 50 Fantastic Years" issue 293849, Marvel 2011 one-shot, stored by no shelf) -> new key "FF: 50 Fantastic Years (2011)" seeded cv=43057
+   F 6365 wrong-cv-link | per-file CV 39453 (Hickman's FF 2011, 23 issues) on 23/24 files is a same-title stamp; each file's own CV 54295 / GCD 70167 (or Ultimate FF 73101 / 80199) issue is on its I line below
+   keys now: "FF" x24
+   groups (title x folder): 4
+   G1 "FF" in Marvel\_Fantastic Four\07 Matt Fraction's Fantastic Four (2013)\FF (2013) — 16 file(s), numbers 1-16, pp 24-34; cv per-file 54295x16; gcd per-file 70167x16; key 'FF'
+      e.g. FF 001 (2013) (Digital) (Zone-Empire).cbr
+        79761 #1 2013 25pp · 79762 #2 2013 24pp · 79763 #3 2013 24pp · 79764 #4 2013 24pp · 79765 #5 2013 24pp · 79766 #6 2013 24pp · 79767 #7 2013 25pp · 79768 #8 2013 25pp · 79769 #9 2013 25pp
+        79770 #10 2013 25pp · 79771 #11 2013 25pp · 79772 #12 2013 24pp · 79773 #13 2013 24pp · 79774 #14 2014 25pp · 79775 #15 2014 25pp · 79776 #16 2014 34pp
+   G2 "FF 50 Fantastic Years" in Marvel\_Fantastic Four\_Trades, Minis and One-shots — 1 file(s), numbers 1, pp 69-69; cv per-file 43057x1; gcd per-file 56740x1; key 'FF'
+      [80021] FF 50 Fantastic Years 001 (2010) (Digital) (Shadowcat-Empire).cbz (69pp)
+   G3 "Ultimate FF" in Marvel\_Ultimate Comics\Ultimate Fantastic Four (2004)\02 Ultimate FF (2014) — 6 file(s), numbers 1-6, pp 20-22; cv per-file 73101x6; gcd per-file 80199x6; key 'FF'
+      e.g. Ultimate FF 001 (2014) (digital-Empire).cbr
+        97078 #1 2014 22pp · 97079 #2 2014 21pp · 97080 #3 2014 21pp · 97081 #4 2014 20pp · 97082 #5 2014 20pp · 97083 #6 2014 20pp
+   G4 "FF" in Marvel\__Skottie Young Covers — 1 file(s), numbers 1, pp 1-1; cv per-file 54295x1; gcd per-file 70167x1; key 'FF'
+      [51949] FF 001 (2013) (Skottie Young 'Baby' Variant) (Cover ONLY) (ScanDog+ArtNet).cbz (1pp)
+
+== S64562 The Defenders  [split]  100 files / 0 collections  decided in R-149 (S)
+   decided: S 64562 cv=2569 gcd=2048 0.9 | The Defenders (1972-1986): CV 2569 (Marvel 1972, 152, cached #1-152) and GCD 2048 (Marvel 1972-1986, 152) agree on publisher, span and count; our ladder #1-5, #7-91 (folder "Defenders v1 (1972)", ComicInfo Volume 1972 x30) sits inside, the doubled #15-16 / #26-29 are X-Men Complete Chronology and Guardians "Misc" second rips (the "Defenders-v1-026..029" files), and 12 files carrying GCD 7145 (Defenders 2001) by number are restated on I lines; 0.9 for the 1976 Defenders Annual one-shot (no annual shelf, L-391) and the three 2012 issues split below
+   F 64562 split-needed | items 117593, 117594, 117595 ("Defenders 001-003 (2012)", 23pp, Fear Itself "Shattered Heroes" folder, per-file GCD 62406) are Defenders (2012) #1-3 (CV 44363 / GCD 62406, Marvel 2012-2013, 12), a later run stored by no shelf (lookup --who-stores cv=44363: 0 rows; S5304 stores only the Fraction trade line CV 50398) -> new key "Defenders v4 (2012)" seeded cv=44363 gcd=62406 (v1 1972, v2 2001 = S64563, v3 2005 = S94587, v5 2017 = S94588)
+   N 64562 S5304 "Defenders By Matt Fraction" (CV 50398 / GCD 150985) is a creator line reprinting ONE run, Defenders (2012) - under L-395 it gives way to that run once the new shelf exists; its revisit should restate it
+   named: S5304 Defenders by Matt Fraction  2 files  keys: "Defenders By Matt Fraction"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S64563 Defenders  12 files  keys: "Defenders (2001)" | "Defenders v2 (2001)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S94587 Defenders  1 files  keys: "Defenders v3 (2005)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S94588 The Defenders  2 files  keys: "Defenders v5 (2017)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S5302 "Defenders" 1f [title — S cv=138207 gcd=175108 (B-055 0.95)] keys: "Defenders - There Are No Rules"
+   nearby: S15234 "Secret Defenders" 16f [title+1 — S cv=5044 gcd=4730 (B-055 0.95)] keys: "Doctor Strange and the Secret Defenders" | "Secret Defenders"
+   nearby: S6597 "Fearless Defenders" 14f [title+1 — S cv=56878 gcd=71897 (A-023 0.95)] keys: "Fearless Defenders" | "Fearless Defenders 004AU"
+   nearby: S5314 "Defenders: Beyond" 1f [title+1 — S cv=144124 gcd=187554 (B-055 0.95)] keys: "Defenders: Beyond"
+   nearby: S18908 "The Last Defenders" 1f [title+1 — S cv=20902 gcd=29947 (B-055 0.95)] keys: "The Last Defenders"
+   nearby: S19202 "The New Defenders" 1f [title+1 — S cv=45308 gcd=172192 (A-023 0.9)] keys: "The New Defenders"
+   keys now: "Defenders v1 (1972)" x91 · "Defenders (1972)" x5 · "Defenders-v1-026" x1 · "Defenders-v1-027" x1 · "Defenders-v1-028" x1 · "Defenders-v1-029" x1
+   groups (title x folder): 8
+   G1 "Defenders" in Marvel\_Defenders\Defenders v1 (1972) — 90 file(s), numbers 1-5, 7-91, pp 17-23; cv per-file 2569x90; gcd per-file 2048x11; key 'Defenders v1 (1972)'
+      e.g. Defenders 001 (1972) (Digital) (AnHeroGold-Empire).cbz
+        78648 #1 1972 21pp · 78649 #2 1972 20pp · 78650 #3 1972 21pp · 78651 #4 1973 21pp · 78652 #5 1973 21pp · 78653 #7 1973 20pp · 78654 #8 1973 20pp · 78655 #9 1973 20pp · 78656 #10 1973 20pp
+        78657 #11 1973 20pp · 78658 #12 1974 20pp · 78659 #13 1974 19pp · 78660 #14 1974 21pp · 78661 #15 1974 19pp · 78662 #16 1974 19pp · 78663 #17 1974 18pp · 78664 #18 1974 18pp
+        78665 #19 1975 19pp · 78666 #20 1975 19pp · 78667 #21 1975 18pp · 78668 #22 1975 19pp · 78669 #23 1975 19pp · 78670 #24 1975 19pp · 78671 #25 1975 18pp · 78672 #26 1975 19pp
+        78673 #27 1975 18pp · 78674 #28 1975 19pp · 78675 #29 1975 19pp · 78676 #30 1975 19pp · 78677 #31 1976 19pp · 78678 #32 1976 19pp · 78679 #33 1976 18pp · 78680 #34 1976 18pp
+        78681 #35 1976 18pp · 78682 #36 1976 18pp · 78683 #37 1976 18pp · 78684 #38 1976 18pp · 78685 #39 1976 18pp · 78686 #40 1976 18pp · 78687 #41 1976 18pp · 78688 #42 1976 17pp
+        78689 #43 1977 18pp · 78690 #44 1977 18pp · 78691 #45 1977 18pp · 78692 #46 1977 18pp · 78693 #47 1977 18pp · 78694 #48 1977 17pp · 78695 #49 1977 18pp · 78696 #50 1977 18pp
+        78697 #51 1977 17pp · 78698 #52 1977 18pp · 78699 #53 1977 18pp · 78700 #54 1977 17pp · 78701 #55 1978 18pp · 78702 #56 1978 19pp · 78703 #57 1978 18pp · 78704 #58 1978 18pp
+        78705 #59 1978 19pp · 78706 #60 1978 19pp · 78707 #61 1978 19pp · 78708 #62 1978 18pp · 78709 #63 1978 18pp · 78710 #64 1978 18pp · 78711 #65 1978 18pp · 78712 #66 1978 17pp
+        78713 #67 1979 19pp · 78714 #68 1979 19pp · 78715 #69 1979 19pp · 78716 #70 1979 19pp · 78717 #71 1979 19pp · 78718 #72 1979 18pp · 78719 #73 1979 19pp · 78720 #74 1979 19pp
+        78721 #75 1979 18pp · 78722 #76 1979 18pp · 78723 #77 1979 19pp · 78724 #78 1979 18pp · 78725 #79 1980 17pp · 78726 #80 1980 18pp · 78727 #81 1980 18pp · 78728 #82 1980 18pp
+        78729 #83 1980 18pp · 78730 #84 1980 18pp · 78731 #85 1980 18pp · 78732 #86 1980 19pp · 78733 #87 1980 18pp · 78734 #88 1980 18pp · 78735 #89 1980 23pp · 78736 #90 1980 23pp
+        78737 #91 1981 22pp
+   G2 "Defenders Annual" in Marvel\_Defenders\Defenders v1 (1972)\Annuals and Specials — 1 file(s), numbers 1, pp 36-36; cv per-file 22555x1; gcd per-file 2344x1; key 'Defenders v1 (1972)'
+      [78642] Defenders Annual 001 (1972) (Digital) (Shadowcat-Empire).cbz (36pp)
+   G3 "Defenders-v1-026" in Marvel\_Marvel Cosmic\Guardians of the Galaxy\Misc — 1 file(s), numbers 26, pp 19-19; key 'Defenders-v1-026'
+      [82844] Defenders-v1-026.cbr (19pp)
+   G4 "Defenders-v1-027" in Marvel\_Marvel Cosmic\Guardians of the Galaxy\Misc — 1 file(s), numbers 27, pp 20-20; key 'Defenders-v1-027'
+      [82845] Defenders-v1-027.cbr (20pp)
+   G5 "Defenders-v1-028" in Marvel\_Marvel Cosmic\Guardians of the Galaxy\Misc — 1 file(s), numbers 28, pp 19-19; key 'Defenders-v1-028'
+      [82846] Defenders-v1-028.cbr (19pp)
+   G6 "Defenders-v1-029" in Marvel\_Marvel Cosmic\Guardians of the Galaxy\Misc — 1 file(s), numbers 29, pp 19-19; key 'Defenders-v1-029'
+      [82847] Defenders-v1-029.cbr (19pp)
+   G7 "Defenders" in Marvel\_X-Men\_X-Men Complete Chronology V2\0006 Various Cameos — 2 file(s), numbers 15-16, pp 19-19; cv per-file 2569x2; key 'Defenders (1972)'
+      [86637] 022 Defenders 015 (1974) (Digital) (AnPymGold-Empire).cbz (19pp)
+      [86638] 023 Defenders 016 (1974) (Digital) (AnPymGold-Empire).cbz (19pp)
+   G8 "Defenders" in _Marvel Major Event Chronology (digital)\2011.03 - Fear Itself\03 Shattered Heroes\The Defenders — 3 file(s), numbers 1-3, pp 23-23; cv per-file 44363x3; gcd per-file 62406x3; key 'Defenders (1972)'
+      [117593] Defenders 001 (2012) (digital-Empire).cbz (23pp)
+      [117594] Defenders 002 (2012) (digital-Empire).cbz (23pp)
+      [117595] Defenders 003 (2012) (digital-Empire).cbz (23pp)
+
+== S64590 Doctor Strange  [split]  93 files / 0 collections  decided in R-149 (S)
+   decided: S 64590 cv=2676 gcd=2162 0.9 | Doctor Strange (1974-1987): CV 2676 (Marvel 1974, 81, cached #1-81) and GCD 2162 (Marvel 1974-1987, 81) agree on publisher, span and count; our ladder #1-66, #68-81 (folder "02 Doctor Strange v2 (1974)", ComicInfo Volume 1974 x14) sits inside, and four files carrying GCD 75264 (Newton Comics' Australian reprint) by number are restated on I lines; 0.9 for the 1976 Dr. Strange Annual one-shot (GCD 2345) and the later-run strays split below
+   F 64590 split-needed | items 118308-118311 ("Doctor Strange 021-024 (2017)", Secret Empire tie-ins) and 101938 ("Doctor Strange 001.MU (2017)", Monsters Unleashed tie-in, 34pp) are Doctor Strange (2015) #21-24 and #1.MU (CV 85094 issues 598372 / 603121 / 609346 / 616189 / 581555 = GCD 92881 rows 1708606 ... 1675031), the run S96494 stores (stored cv=85094, its S line below) -> join S96494 on its key "Doctor Strange v4 (2015)" (anchored in this file)
+   F 64590 split-needed | items 118643, 118644, 118645 ("Doctor Strange 015-017 (2024)", Blood Hunt tie-ins) and the four 1pp covers 118730-118733 (#15-16, "Blood Hunt\Variant Covers") are Doctor Strange (2023) #15-17 (CV 148962 / GCD 197924), the run S64591 stores (lookup --who-stores cv=148962: Series.CvVolumeId on S64591, S line B-055 cv=148962 gcd=197924) -> join S64591 on its key "Doctor Strange v6 (2023)"
+   named: S96494 Doctor Strange  5 files  keys: "Doctor Strange v4 (2015)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S64591 Doctor Strange  33 files  keys: "Doctor Strange (2023)" | "Doctor Strange By Jed Mackay" | "Doctor Strange by Jed Mackay" | "Doctor Strange v5 (2018)" | "Doctor Strange v6 (2023)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S5612 "Doctor Strange" 15f [title — S cv=2403 gcd=1863 (B-055 0.95)] keys: "Doctor Strange" · S5642 "Doctor Strange" 4f [title — S cv=111415 gcd=125730 (R-149 0.95)] keys: "Doctor Strange by Mark Waid"
+   nearby: S96493 "Doctor Strange v3 (1999)" 4f [title — S gcd=13324 (C-043 0.9)] keys: "Doctor Strange v3 (1999)"
+   nearby: S5620 "Doctor Strange: Strange Origin" 1f [title+1 — S cv=93654 gcd=105774 (B-055 0.95)] keys: "Doctor Strange - Strange Origin"
+   nearby: S5621 "Doctor Strange: Strange Tales" 1f [title+1 — S cv=43251 gcd=73374 (B-055 0.95)] keys: "Doctor Strange - Strange Tales"
+   keys now: "Doctor Strange v2 (1974)" x81 · "Doctor Strange (1974)" x12
+   groups (title x folder): 6
+   G1 "Doctor Strange 001.MU (2017) (Digital) (Zone-Empire)" in Marvel\Monsters Unleashed\Monsters Unleashed v1 (2017)\Dot MU Tie-ins — 1 file(s), numbers 1, pp 34-34; cv per-file 85094x1; gcd per-file 92881x1; key 'Doctor Strange (1974)'
+      [101938] Doctor Strange 001.MU (2017) (Digital) (Zone-Empire).cbr (34pp)
+   G2 "Doctor Strange" in Marvel\_Doctor Strange\02 Doctor Strange v2 (1974) — 80 file(s), numbers 1-66, 68-81, pp 17-24; cv per-file 2676x80; gcd per-file 2162x80; key 'Doctor Strange v2 (1974)'
+      e.g. Doctor Strange 001 (1974) (Digital) (Shadowcat-Empire).cbz
+        78806 #1 1974 19pp · 78807 #2 1974 18pp · 78808 #3 1974 19pp · 78809 #4 1974 19pp · 78810 #5 1974 18pp · 78811 #6 1975 18pp · 78812 #7 1975 19pp · 78813 #8 1975 19pp · 78814 #9 1975 19pp
+        78815 #10 1975 19pp · 78816 #11 1975 19pp · 78817 #12 1976 18pp · 78818 #13 1976 18pp · 78819 #14 1976 18pp · 78820 #15 1976 18pp · 78821 #16 1976 18pp · 78822 #17 1976 18pp
+        78823 #18 1976 18pp · 78824 #19 1976 18pp · 78825 #20 1976 18pp · 78826 #21 1977 20pp · 78827 #22 1977 18pp · 78828 #23 1977 18pp · 78829 #24 1977 18pp · 78830 #25 1977 18pp
+        78831 #26 1977 18pp · 78832 #27 1978 17pp · 78833 #28 1978 17pp · 78834 #29 1978 18pp · 78835 #30 1978 18pp · 78836 #31 1978 18pp · 78837 #32 1978 18pp · 78838 #33 1979 18pp
+        78839 #34 1979 18pp · 78840 #35 1979 18pp · 78841 #36 1979 18pp · 78842 #37 1979 18pp · 78843 #38 1979 18pp · 78844 #39 1980 19pp · 78845 #40 1980 19pp · 78846 #41 1980 19pp
+        78847 #42 1980 19pp · 78848 #43 1980 19pp · 78849 #44 1980 23pp · 78850 #45 1981 24pp · 78851 #46 1981 23pp · 78852 #47 1981 24pp · 78853 #48 1981 24pp · 78854 #49 1981 23pp
+        78855 #50 1981 23pp · 78856 #51 1982 24pp · 78857 #52 1982 24pp · 78858 #53 1982 23pp · 78859 #54 1982 24pp · 78860 #55 1982 23pp · 78861 #56 1982 24pp · 78862 #57 1983 23pp
+        78863 #58 1983 23pp · 78864 #59 1983 23pp · 78865 #60 1983 24pp · 78866 #61 1983 23pp · 78867 #62 1983 22pp · 78868 #63 1984 23pp · 78869 #64 1984 23pp · 78870 #65 1984 24pp
+        78871 #66 1984 23pp · 78872 #68 1984 23pp · 78873 #69 1985 23pp · 78874 #70 1985 23pp · 78875 #71 1985 22pp · 78876 #72 1985 23pp · 78877 #73 1985 22pp · 78878 #74 1985 23pp
+        78879 #75 1986 23pp · 78880 #76 1986 23pp · 78881 #77 1986 23pp · 78882 #78 1986 23pp · 78883 #79 1986 22pp · 78884 #80 1986 23pp · 78885 #81 1987 23pp
+   G3 "Doctor Strange Annual" in Marvel\_Doctor Strange\02 Doctor Strange v2 (1974)\Annuals and Specials — 1 file(s), numbers 1, pp 36-36; cv per-file 2676x1; gcd per-file 2345x1; key 'Doctor Strange v2 (1974)'
+      [79973] Doctor Strange Annual 001 (1974) (Digital) (Shadowcat-Empire).cbz (36pp)
+   G4 "Doctor Strange" in _Marvel Major Event Chronology (digital)\2017.04 - Secret Empire\02 Tie-ins\Doctor Strange — 4 file(s), numbers 21-24, pp 22-25; cv per-file 85094x4; gcd per-file 92881x4; key 'Doctor Strange (1974)'
+      e.g. Doctor Strange 021 (2017) (Digital) (BlackManta-Empire).cbr
+        118308 #21 2017 22pp · 118309 #22 2017 25pp · 118310 #23 2017 22pp · 118311 #24 2017 23pp
+   G5 "Doctor Strange" in _Marvel Major Event Chronology (digital)\2024.05 - Blood Hunt\02 Tie-ins — 3 file(s), numbers 15-17, pp 23-24; cv per-file 148962x3; gcd per-file 197924x3; key 'Doctor Strange (1974)'
+      [118643] Doctor Strange 015 (2024) (Digital) (Shan-Empire).cbz (23pp)
+      [118644] Doctor Strange 016 (2024) (Digital) (Shan-Empire).cbz (24pp)
+      [118645] Doctor Strange 017 (2024) (Digital) (Shan-Empire).cbz (24pp)
+   G6 "Doctor Strange" in _Marvel Major Event Chronology (digital)\2024.05 - Blood Hunt\Variant Covers — 4 file(s), numbers 15-16, pp 1-1; cv per-file 148962x4; gcd per-file 197924x4; key 'Doctor Strange (1974)'
+      e.g. Doctor Strange 015 (2024) (Alex Ross Blood Soaked 2nd Printing Variant) (Digital) (MikeNY76).cbz
+        118730 #15 2024 1pp · 118731 #16 2024 1pp · 118732 #16 2024 1pp · 118733 #16 2024 1pp
+
+== S64669 Fantastic Four  [split]  547 files / 8 collections  decided in R-149 (S)
+   decided: S 64669 cv=2045 gcd=1482 0.9 | Fantastic Four (1961-1996): CV 2045 (Marvel 1961, 416, cached #1-416) and GCD 1482 (Marvel 1961-1996, 416) agree on publisher, span and count; our ladder #1-416 fills it (folder "01 Fantastic Four v1 (1961)", ComicInfo Count 416 x2, per-file CV 2045 on 536 files), the doubled numbers are X-Men Complete / Major Event Chronology second rips, and the run's own books cost nothing - Fantastic Four Omnibus Books 01-04 (CV 34278 / GCD 14052, #1-125) and John Byrne Omnibus Book 02 (#261-295; a creator line reprinting ONE run gives way to it, L-395); 0.9 for the No. 1 Facsimile Edition and the strays of later runs and the Annual series split below, each of which has a home
+   F 64669 split-needed | the 1998 run's issues filed by event - items 116588-116591 (#15, #21-23, 1999), 116592-116593 (#49, #54, 2002), 116574-116578 and 116580-116586 (#67-70, #500, #502-508, "Unthinkable" 2003-2004), 116614-116616 (#517-519), 90461 / 90462 / 90479 / 90515 / 90556 / 90575 / 90589 / 90595 (#536-543, Civil War), 116793-116799 (#544-550, Initiative), 117326-117329 (#579-582, Heroic Age) - plus the JMS trade twice (79604 / 80019, CV 38750 / GCD 23365 row 351576 reprints s11218 #527-532) and the run's four one-shot annuals 79175-79178 ("Annual 028-031", 1998-2001: Fantastic Four '98 / 1999 / 2000 / 2001) are Fantastic Four (1998), CV 6211 / GCD 11218, which S94595 stores (its S line below) -> join S94595 on its key "Fantastic Four v1 (2003)" (L-368 / L-388 / L-391; anchored in this file)
+   F 64669 split-needed | the Annual (1963) series - items 79152-79158, 116599, 79159-79173 (#1-7, 12-26; 116599 a second #6), 87239 / 87359 / 87592 (Complete Chronology copies of #21-23), 79179 (#32, 2010), 79180 / 92156 (#33, 2012) - are Fantastic Four Annual (CV 2129 = #1-27 + #32-33 / GCD 1572 = #1-27; ComicInfo Web 29064 / 30691 / 33705 / 50681 on the Marika rips ARE CV 2129's #21 / #22 / #24 / #26 issue ids), the series S103758 "Fantastic Four Annual" stores (stored cv=2129, S line R-049 with #27) -> join S103758 on its key "Fantastic Four Annual (1963)" (L-391)
+   F 64669 split-needed | items 117782-117784 ("025-027 - Fantastic Four 006-008 (2014)", Original Sin tie-ins) are Fantastic Four (2014) #6-8 (CV 71949 / GCD 79254), the run S94596 stores (stored cv=71949, S line B-055 cv=71949 gcd=79254) -> join S94596 on its key "Fantastic Four v5 (2014)"
+   F 64669 split-needed | items 118910 (#10, 2019), 118436-118438 (#21-23, 2020, Empyre "Fantastic Four v6" folder), 118576-118577 (#47-48, 2022, A.X.E.) are Fantastic Four (2018) (CV 112685 / GCD 127448, 48), the run S103757 stores (stored cv=112685, S line R-049) -> join S103757 on its key "Fantastic Four (2018)"
+   F 64669 split-needed | item 51947 "Fantastic Four 01 (2013) (Skottie Young Variant Cover)" 1pp is a cover of Fantastic Four (2013) #1 (CV 53921 / GCD 69567), the Fraction run S6482 stores (stored cv=53921, S line R-089) -> join S6482 on its key "Fantastic Four v4 (2013)"
+   F 64669 split-needed | item 79740 "Fantastic Four by Jonathan Hickman - The Complete Collection Book 02 (2019)" 416pp (CV 112949 issue 717539 "Volume 2") is Book 02 of the line S6517 stores (stored cv=112949, S line R-049 holding Books 01 / 03 / 04) -> join S6517 on its key "Fantastic Four by Jonathan Hickman: The Complete Collection"
+   F 64669 split-needed | items 117181 / 117183 / 117187 ("06 / 08 / 12 Ultimate Fantastic Four 058-060 (2009)", Ultimatum folder) are Ultimate Fantastic Four (2004) #58-60 (CV 10379 / GCD 11256, 60); the only shelf storing CV 10379 is S20617, keyed on the trade line "Ultimate Fantastic Four Collection" - issues of a run do not join a trade-keyed shelf (L-389) -> new key "Ultimate Fantastic Four (2004)" seeded cv=10379 gcd=11256, which meets S20617 through the shared cv
+   N 64669 flag #239 (label-ambiguous, item 98865) is right: "032 - Fantastic Four v1 338" (Death's Head folder) is a single issue, a second rip of #338. S6515 "Fantastic Four by John Byrne Omnibus" (Book 01, CV 43976) is a creator line reprinting this ONE run (#232-295) - under L-395 its revisit should give way to this shelf (merge-with on cv=2045)
+   N 79175 no-record | "Fantastic Four Annual 028 (1998)" 42pp is the 1998 annual "Fantastic Four/Fantastic 4 '98": probed "Fantastic Four 1998", "Fantastic Four '98", "Fantastic 4 '98" and "Fantastic Four Annual" 1997-1999 on both legs - no record; its per-file CV 2045 #1 / GCD 11218 row are stamps
+   named: S94595 Fantastic Four  98 files  keys: "Fantastic Four v1 (2003)" | "Fantastic Four v3 (1998)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S103758 Fantastic Four Annual  1 files  keys: "Fantastic Four Annual (1963)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S94596 Fantastic Four  4 files  keys: "Fantastic Four v1 (2015)" | "Fantastic Four v5 (2014)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S103757 Fantastic Four (2018)  16 files  keys: "Fantastic Four (2018)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S6482 Fantastic Four 005AU  17 files  keys: "Fantastic Four 005AU" | "Fantastic Four v4 (2013)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S6517 Fantastic Four by Jonathan Hickman: The Complete Collection  3 files  keys: "Fantastic Four by Jonathan Hickman: The Complete Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S20617 Ultimate Fantastic Four  5 files  keys: "Ultimate Fantastic Four Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S6199 "Epic Illustrated" 35f [shares gcd=2559 (collected by item 79606) — S cv=3049 gcd=2559 (A-021 0.95)] keys: "Epic Illustrated"
+   nearby: S13169 "Official Handbook Of The Marvel Universe" 2f [shares gcd=2758 (collected by item 79606) — S cv=3237 gcd=2758 (R-139 0.9)] keys: "Official Handbook Of The Marvel Universe" | "Official Handbook of the Marvel Universe"
+   nearby: S6507 "Fantastic Four The Lost Adventure" 1f [shares gcd=27869 (collected by item 79610) — S cv=20737 gcd=27869 (B-055 0.95)] keys: "Fantastic Four Lost Adventure"
+   nearby: S6515 "Fantastic Four by John Byrne Omnibus" 1f [shares cv=43976, shares gcd=62174, named S6515 in the decision's R/N lines — S cv=43976 gcd=62174 (C-044 0.95)] keys: "Fantastic Four by John Byrne Omnibus"
+   nearby: S102668 "Official Handbook of the Marvel Universe v2 (1985)" 1f [shares gcd=3036 (collected by item 79606) — S cv=3497 gcd=3036 (R-032 0.95)] keys: "Official Handbook of the Marvel Universe v2 (1985)"
+   nearby: S64672 "Fantastic Four" 89f [title — S cv=145912 gcd=192395 (R-132 0.9)] keys: "Fantastic Four (2022)" | "Fantastic Four by Ryan North" | "Fantastic Four v7 (2023)"
+   nearby: S64670 "Fantastic Four 2099" 8f [title — S cv=18413 gcd=7607 (A-022 0.95)] keys: "Fantastic Four (1996)"
+   nearby: S64673 "Fantastic Four" 3f [title — S cv=165358 gcd=225304 (A-024 0.9)] keys: "Fantastic Four (2025)"
+   nearby: S64671 "Fantastic Four Annual No. 6 Facsimile Edition" 1f [title — S cv=124632 gcd=155420 (A-024 0.95)] keys: "Fantastic Four (2019)"
+   nearby: S94597 "Fantastic Four v2 (1996)" 1f [title — S gcd=10251 (C-044 0.9)] keys: "Fantastic Four v2 (1996)"
+   nearby: S6526 "Fantastic Four: Foes" 6f [title+1 — S cv=11090 gcd=12023 (A-023 0.95)] keys: "Fantastic Four: Foes"
+   nearby: S12810 "New Fantastic Four " 5f [title+1 — S cv=143757 gcd=186333 (A-020 0.95)] keys: "New Fantastic Four"
+   nearby: S6466 "Fantastic Four/Inhumans" 2f [title+1 — S cv=38881 gcd=91535 (B-056 0.9)] keys: "Fantastic Four - Inhumans"
+   nearby: S6489 "Fantastic Four Ashcan" 1f [title+1 — S cv=50297 gcd=40640 (C-044 0.95)] keys: "Fantastic Four Ashcan Edition"
+   nearby: S6510 "Fantastic Four Roast" 1f [title+1 — S cv=19100 gcd=2651 (A-023 0.95)] keys: "Fantastic Four Roast"
+   nearby: S6523 "Fantastic Four: Antithesis" 1f [title+1 — S cv=129887 gcd=163311 (B-056 0.95)] keys: "Fantastic Four: Antithesis"
+   keys now: "Fantastic Four v1 (1961)" x422 · "Fantastic Four (1961)" x90 · "Fantastic Four" x35
+   groups (title x folder): 48
+   G1 "Fantastic Four" in Marvel\Death's Head\1. Death's Head (FPA) — 1 file(s), numbers 338, pp 23-23; cv per-file 2045x1; key 'Fantastic Four (1961)'
+      [98865] 032 - Fantastic Four v1 338.cbz (23pp)
+   G2 "Fantastic Four Annual" in Marvel\_Fantastic Four\00 Annuals and Specials — 28 file(s), numbers 1-7, 12-26, 32-33, pp 20-61; cv per-file 2129x24, 2045x1, 60494x1; gcd per-file 1572x22, 1482x2, 11218x1; key 'Fantastic Four (1961)' | 'Fantastic Four'
+      e.g. Fantastic Four Annual 001 (1963) (Digital) (Asgard-Empire).cbr
+        79152 #1 1963 58pp key="Fantastic Four (1961)" · 79153 #2 1964 49pp key="Fantastic Four (1961)" · 79154 #3 1965 24pp key="Fantastic Four (1961)"
+        79155 #4 1966 20pp key="Fantastic Four (1961)" · 79156 #5 1967 55pp key="Fantastic Four (1961)" · 79157 #6 1968 48pp key="Fantastic Four (1961)"
+        79158 #7 1969 54pp key="Fantastic Four (1961)" · 79159 #12 1977 36pp key="Fantastic Four (1961)" · 79160 #13 1978 35pp key="Fantastic Four" · 79161 #14 1979 35pp key="Fantastic Four"
+        79162 #15 1980 37pp key="Fantastic Four (1961)" · 79163 #16 1981 39pp key="Fantastic Four (1961)" · 79164 #17 1983 39pp key="Fantastic Four"
+        79165 #18 1984 40pp key="Fantastic Four (1961)" · 79166 #19 1985 42pp key="Fantastic Four (1961)" · 79167 #20 1987 41pp key="Fantastic Four (1961)"
+        79168 #21 1988 58pp key="Fantastic Four (1961)" · 79169 #22 1989 58pp key="Fantastic Four (1961)" · 79170 #23 1990 57pp key="Fantastic Four (1961)"
+        79171 #24 1991 61pp key="Fantastic Four (1961)" · 79172 #25 1992 56pp key="Fantastic Four (1961)" · 79173 #26 1993 55pp key="Fantastic Four (1961)"
+        79175 #1 1998 42pp key="Fantastic Four (1961)" · 79176 #1 1999 37pp key="Fantastic Four (1961)" · 79177 #1 2000 38pp key="Fantastic Four" · 79178 #1 2001 35pp key="Fantastic Four (1961)"
+        79179 #32 2010 45pp key="Fantastic Four (1961)" · 79180 #33 2012 39pp key="Fantastic Four (1961)"
+   G3 "Fantastic Four" in Marvel\_Fantastic Four\01 Fantastic Four v1 (1961) — 416 file(s), numbers 1-416, pp 17-69; cv per-file 2045x416; gcd per-file 1482x413, 118193x3; key 'Fantastic Four v1 (1961)'
+      e.g. Fantastic Four 001 (1961) (Digital) (Asgard-Empire).cbr
+        79188 #1 1961 26pp · 79189 #2 1962 26pp · 79190 #3 1962 25pp · 79191 #4 1962 25pp · 79192 #5 1962 24pp · 79193 #6 1962 25pp · 79194 #7 1962 25pp · 79195 #8 1962 25pp · 79196 #9 1962 25pp
+        79197 #10 1963 25pp · 79198 #11 1963 24pp · 79199 #12 1963 24pp · 79200 #13 1963 23pp · 79201 #14 1963 23pp · 79202 #15 1963 22pp · 79203 #16 1963 24pp · 79204 #17 1963 23pp
+        79205 #18 1963 22pp · 79206 #19 1963 23pp · 79207 #20 1963 23pp · 79208 #21 1963 23pp · 79209 #22 1964 23pp · 79210 #23 1964 24pp · 79211 #24 1964 24pp · 79212 #25 1964 23pp
+        79213 #26 1964 24pp · 79214 #27 1964 24pp · 79215 #28 1964 23pp · 79216 #29 1964 23pp · 79217 #30 1964 23pp · 79218 #31 1964 22pp · 79219 #32 1964 22pp · 79220 #33 1964 22pp
+        79221 #34 1965 22pp · 79222 #35 1965 21pp · 79223 #36 1965 22pp · 79224 #37 1965 21pp · 79225 #38 1965 21pp · 79226 #39 1965 21pp · 79227 #40 1965 21pp · 79228 #41 1965 21pp
+        79229 #42 1965 21pp · 79230 #43 1965 21pp · 79231 #44 1965 21pp · 79232 #45 1965 21pp · 79233 #46 1966 21pp · 79234 #47 1966 21pp · 79235 #48 1966 21pp · 79236 #49 1966 21pp
+        79237 #50 1966 21pp · 79238 #51 1966 23pp · 79239 #52 1966 24pp · 79240 #53 1966 24pp · 79241 #54 1966 24pp · 79242 #55 1966 24pp · 79243 #56 1966 24pp · 79244 #57 1966 23pp
+        79245 #58 1967 23pp · 79246 #59 1967 23pp · 79247 #60 1967 23pp · 79248 #61 1967 22pp · 79249 #62 1967 21pp · 79250 #63 1967 22pp · 79251 #64 1967 22pp · 79252 #65 1967 22pp
+        79253 #66 1967 22pp · 79254 #67 1967 22pp · 79255 #68 1967 22pp · 79256 #69 1967 22pp · 79257 #70 1968 22pp · 79258 #71 1968 22pp · 79259 #72 1968 22pp · 79260 #73 1968 22pp
+        79261 #74 1968 22pp · 79262 #75 1968 22pp · 79263 #76 1968 22pp · 79264 #77 1968 22pp · 79265 #78 1968 22pp · 79266 #79 1968 22pp · 79267 #80 1968 22pp · 79268 #81 1968 22pp
+        79269 #82 1969 22pp · 79270 #83 1969 22pp · 79271 #84 1969 22pp · 79272 #85 1969 22pp · 79273 #86 1969 22pp · 79274 #87 1969 22pp · 79275 #88 1969 22pp · 79276 #89 1969 22pp
+        79277 #90 1969 22pp · 79278 #91 1969 22pp · 79279 #92 1969 22pp · 79280 #93 1969 22pp · 79281 #94 1970 22pp · 79282 #95 1970 22pp · 79283 #96 1970 22pp · 79284 #97 1970 22pp
+        79285 #98 1970 22pp · 79286 #99 1970 22pp · 79287 #100 1970 21pp · 79288 #101 1970 21pp · 79289 #102 1970 21pp · 79290 #103 1970 21pp · 79291 #104 1970 21pp · 79292 #105 1970 21pp
+        79293 #106 1971 21pp · 79294 #107 1971 21pp · 79295 #108 1971 21pp · 79296 #109 1971 21pp · 79297 #110 1971 21pp · 79298 #111 1971 21pp · 79299 #112 1971 21pp · 79300 #113 1971 21pp
+        79301 #114 1971 21pp · 79302 #115 1971 21pp · 79303 #116 1971 36pp · 79304 #117 1971 22pp · 79305 #118 1972 23pp · 79306 #119 1972 23pp · 79307 #120 1972 23pp · 79308 #121 1972 23pp
+        79309 #122 1972 23pp · 79310 #123 1972 22pp · 79311 #124 1972 22pp · 79312 #125 1972 22pp · 79313 #126 1972 22pp · 79314 #127 1972 22pp · 79315 #128 1972 26pp · 79316 #129 1972 22pp
+        79317 #130 1973 22pp · 79318 #131 1973 22pp · 79319 #132 1973 22pp · 79320 #133 1973 23pp · 79321 #134 1973 22pp · 79322 #135 1973 22pp · 79323 #136 1973 21pp · 79324 #137 1973 21pp
+        79325 #138 1973 21pp · 79326 #139 1973 21pp · 79327 #140 1973 21pp · 79328 #141 1973 22pp · 79329 #142 1974 21pp · 79330 #143 1974 20pp · 79331 #144 1974 20pp · 79332 #145 1974 21pp
+        79333 #146 1974 19pp · 79334 #147 1974 21pp · 79335 #148 1974 20pp · 79336 #149 1974 19pp · 79337 #150 1974 19pp · 79338 #151 1974 19pp · 79339 #152 1974 18pp · 79340 #153 1974 19pp
+        79341 #154 1975 21pp · 79342 #155 1975 17pp · 79343 #156 1975 20pp · 79344 #157 1975 21pp · 79345 #158 1975 19pp · 79346 #159 1975 20pp · 79347 #160 1975 20pp · 79348 #161 1975 20pp
+        79349 #162 1975 19pp · 79350 #163 1975 20pp · 79351 #164 1975 20pp · 79352 #165 1975 20pp · 79353 #166 1976 19pp · 79354 #167 1976 19pp · 79355 #168 1976 20pp · 79356 #169 1976 19pp
+        79357 #170 1976 19pp · 79358 #171 1976 19pp · 79359 #172 1976 17pp · 79360 #173 1976 19pp · 79361 #174 1976 19pp · 79362 #175 1976 19pp · 79363 #176 1976 19pp · 79364 #177 1976 19pp
+        79365 #178 1977 19pp · 79366 #179 1977 19pp · 79367 #180 1977 19pp · 79368 #181 1977 19pp · 79369 #182 1977 19pp · 79370 #183 1977 19pp · 79371 #184 1977 19pp · 79372 #185 1977 19pp
+        79373 #186 1977 19pp · 79374 #187 1977 19pp · 79375 #188 1977 20pp · 79376 #189 1977 21pp · 79377 #190 1978 19pp · 79378 #191 1978 19pp · 79379 #192 1978 19pp · 79380 #193 1978 20pp
+        79381 #194 1978 19pp · 79382 #195 1978 20pp · 79383 #196 1978 20pp · 79384 #197 1978 19pp · 79385 #198 1978 19pp · 79386 #199 1978 20pp · 79387 #200 1978 36pp · 79388 #201 1978 19pp
+        79389 #202 1979 19pp · 79390 #203 1979 20pp · 79391 #204 1979 19pp · 79392 #205 1979 18pp · 79393 #206 1979 19pp · 79394 #207 1979 19pp · 79395 #208 1979 19pp · 79396 #209 1979 19pp
+        79397 #210 1979 19pp · 79398 #211 1979 19pp · 79399 #212 1979 17pp · 79400 #213 1979 19pp · 79401 #214 1980 19pp · 79402 #215 1980 19pp · 79403 #216 1980 19pp · 79404 #217 1980 19pp
+        79405 #218 1980 19pp · 79406 #219 1980 19pp · 79407 #220 1980 19pp · 79408 #221 1980 19pp · 79409 #222 1980 19pp · 79410 #223 1980 19pp · 79411 #224 1980 19pp · 79412 #225 1980 24pp
+        79413 #226 1981 24pp · 79414 #227 1981 24pp · 79415 #228 1981 24pp · 79416 #229 1981 24pp · 79417 #230 1981 24pp · 79418 #231 1981 24pp · 79419 #232 1981 24pp · 79420 #233 1981 24pp
+        79421 #234 1981 24pp · 79422 #235 1981 23pp · 79423 #236 1981 56pp · 79424 #237 1981 22pp · 79425 #238 1982 24pp · 79426 #239 1982 24pp · 79427 #240 1982 24pp · 79428 #241 1982 24pp
+        79429 #242 1982 23pp · 79430 #243 1982 24pp · 79431 #244 1982 24pp · 79432 #245 1982 24pp · 79433 #246 1982 24pp · 79434 #247 1982 23pp · 79435 #248 1982 24pp · 79436 #249 1982 24pp
+        79437 #250 1983 40pp · 79438 #251 1983 23pp · 79439 #252 1983 24pp · 79440 #253 1983 24pp · 79441 #254 1983 24pp · 79442 #255 1983 23pp · 79443 #256 1983 23pp · 79444 #257 1983 23pp
+        79445 #258 1983 23pp · 79446 #259 1983 23pp · 79447 #260 1983 24pp · 79448 #261 1983 23pp · 79449 #262 1984 23pp · 79450 #263 1984 24pp · 79451 #264 1984 23pp · 79452 #265 1984 24pp
+        79453 #266 1984 24pp · 79454 #267 1984 24pp · 79455 #268 1984 24pp · 79456 #269 1984 24pp · 79457 #270 1984 24pp · 79458 #271 1984 24pp · 79459 #272 1984 23pp · 79460 #273 1984 24pp
+        79461 #274 1985 24pp · 79462 #275 1985 24pp · 79463 #276 1985 24pp · 79464 #277 1985 24pp · 79465 #278 1985 24pp · 79466 #279 1985 23pp · 79467 #280 1985 24pp · 79468 #281 1985 23pp
+        79469 #282 1985 25pp · 79470 #283 1985 24pp · 79471 #284 1985 23pp · 79472 #285 1985 23pp · 79473 #286 1986 32pp · 79474 #287 1986 24pp · 79475 #288 1986 24pp · 79476 #289 1986 25pp
+        79477 #290 1986 24pp · 79478 #291 1986 24pp · 79479 #292 1986 24pp · 79480 #293 1986 24pp · 79481 #294 1986 23pp · 79482 #295 1986 24pp · 79483 #296 1986 68pp · 79484 #297 1986 25pp
+        79485 #298 1987 25pp · 79486 #299 1987 25pp · 79487 #300 1987 25pp · 79488 #301 1987 23pp · 79489 #302 1987 23pp · 79490 #303 1987 23pp · 79491 #304 1987 23pp · 79492 #305 1987 23pp
+        79493 #306 1987 23pp · 79494 #307 1987 23pp · 79495 #308 1987 23pp · 79496 #309 1987 23pp · 79497 #310 1988 24pp · 79498 #311 1988 23pp · 79499 #312 1988 23pp · 79500 #313 1988 23pp
+        79501 #314 1988 23pp · 79502 #315 1988 24pp · 79503 #316 1988 23pp · 79504 #317 1988 23pp · 79505 #318 1988 23pp · 79506 #319 1988 40pp · 79507 #320 1988 23pp · 79508 #321 1988 23pp
+        79509 #322 1989 23pp · 79510 #323 1989 23pp · 79511 #324 1989 24pp · 79512 #325 1989 23pp · 79513 #326 1989 24pp · 79514 #327 1989 23pp · 79515 #328 1989 23pp · 79516 #329 1989 23pp
+        79517 #330 1989 23pp · 79518 #331 1989 23pp · 79519 #332 1989 25pp · 79520 #333 1989 23pp · 79521 #334 1989 23pp · 79522 #335 1989 24pp · 79523 #336 1990 23pp · 79524 #337 1990 22pp
+        79525 #338 1990 22pp · 79526 #339 1990 23pp · 79527 #340 1990 25pp · 79528 #341 1990 22pp · 79529 #342 1990 24pp · 79530 #343 1990 24pp · 79531 #344 1990 23pp · 79532 #345 1990 23pp
+        79533 #346 1990 22pp · 79534 #347 1990 24pp · 79535 #348 1991 24pp · 79536 #349 1991 25pp · 79537 #350 1991 39pp · 79538 #351 1991 23pp · 79539 #352 1991 22pp · 79540 #353 1991 22pp
+        79541 #354 1991 23pp · 79542 #355 1991 23pp · 79543 #356 1991 23pp · 79544 #357 1991 23pp · 79545 #358 1991 69pp · 79546 #359 1991 23pp · 79547 #360 1992 23pp · 79548 #361 1992 23pp
+        79549 #362 1992 23pp · 79550 #363 1992 22pp · 79551 #364 1992 23pp · 79552 #365 1992 23pp · 79553 #366 1992 23pp · 79554 #367 1992 23pp · 79555 #368 1992 22pp · 79556 #369 1992 22pp
+        79557 #370 1992 23pp · 79558 #371 1992 23pp · 79559 #372 1993 23pp · 79560 #373 1993 23pp · 79561 #374 1993 23pp · 79562 #375 1993 39pp · 79563 #376 1993 23pp · 79564 #377 1993 22pp
+        79565 #378 1993 23pp · 79566 #379 1993 22pp · 79567 #380 1993 23pp · 79568 #381 1993 23pp · 79569 #382 1993 23pp · 79570 #383 1993 22pp · 79571 #384 1994 23pp · 79572 #385 1994 23pp
+        79573 #386 1994 23pp · 79574 #387 1994 23pp · 79575 #388 1994 24pp · 79576 #389 1994 23pp · 79577 #390 1994 23pp · 79578 #391 1994 22pp · 79579 #392 1994 22pp · 79580 #393 1994 23pp
+        79581 #394 1994 23pp · 79582 #395 1994 23pp · 79583 #396 1995 21pp · 79584 #397 1995 23pp · 79585 #398 1995 23pp · 79586 #399 1995 22pp · 79587 #400 1995 51pp · 79588 #401 1995 23pp
+        79589 #402 1995 22pp · 79590 #403 1995 22pp · 79591 #404 1995 23pp · 79592 #405 1995 23pp · 79593 #406 1995 23pp · 79594 #407 1995 22pp · 79595 #408 1996 22pp · 79596 #409 1996 24pp
+        79597 #410 1996 23pp · 79598 #411 1996 23pp · 79599 #412 1996 23pp · 79600 #413 1996 23pp · 79601 #414 1996 24pp · 79602 #415 1996 26pp · 79603 #416 1996 33pp
+   G4 "Fantastic Four Omnibus" in Marvel\_Fantastic Four\01 Fantastic Four v1 (1961)\Omnibus Editions — 4 file(s), 4 COL, pp 809-945; cv per-file 34278x4; gcd per-file 14052x4; key 'Fantastic Four v1 (1961)'
+      [79607] COL Fantastic Four Omnibus Book 01 (2018, 3rd edition) (Digital-Empire).cbr (839pp)
+      [79608] COL Fantastic Four Omnibus Book 02 (2021, 3rd edition) (Digital-Empire).cbr (825pp)
+      [79609] COL Fantastic Four Omnibus Book 03 (2021, 2nd edition) (Digital-Empire).cbr (945pp)
+      [79610] COL Fantastic Four Omnibus Book 04 (2021) (Digital-Empire).cbr (809pp)
+         own record cv 34278 / gcd s14052 "Fantastic Four Omnibus" (issue 2260762) COLLECTS: gcd=1482 Fantastic Four (1961) #94-125 · gcd=27869 Fantastic Four: The Lost Adventure (2008) #1
+   G5 "Fantastic Four by J. Michael Straczynski (2016) (Digital-HD) (Shan-Empire)" in Marvel\_Fantastic Four\01 Fantastic Four v1 (1961)\Omnibus Editions — 1 file(s), 1 COL, pp 145-145; cv per-file 38750x1; gcd per-file 23365x1; key 'Fantastic Four v1 (1961)'
+      [79604] COL Fantastic Four by J. Michael Straczynski (2016) (Digital-HD) (Shan-Empire).cbz (145pp)
+         own record cv 38750 / gcd s23365 "Fantastic Four by J. Michael Straczynski" (issue 351576) COLLECTS: gcd=11218 Fantastic Four (1998) #527-532
+   G6 "Fantastic Four by John Byrne Omnibus" in Marvel\_Fantastic Four\01 Fantastic Four v1 (1961)\Omnibus Editions — 1 file(s), 1 COL, pp 1208-1208; cv per-file 43976x1; gcd per-file 62174x1; key 'Fantastic Four v1 (1961)'
+      [79606] COL Fantastic Four by John Byrne Omnibus Book 02 (2023) (digital) (JTR).cbz (1208pp)
+         own record cv 43976 / gcd s62174 "Fantastic Four by John Byrne Omnibus" (issue 1166038) COLLECTS: gcd=1482 Fantastic Four (1961) #1, #261-295, #358 · gcd=2559 Epic Illustrated (1980) #25-34 · gcd=3036 The Official Handbook of the Marvel Universe (1985) #1-2, #4, #6, #8, #10-13 · gcd=2758 The Official Handbook of the Marvel Universe (1983) #1, #4, #7-10, #14
+   G7 "Fantastic Four by Jonathan Hickman - The Complete Collection" in Marvel\_Fantastic Four\06 Hickman's Fantastic Four (2009)\Complete Collection — 1 file(s), 1 COL, pp 416-416; cv per-file 112949x1; gcd per-file 175030x1; key 'Fantastic Four (1961)'
+      [79740] COL Fantastic Four by Jonathan Hickman - The Complete Collection Book 02 (2019) (Digital) (F) (EJGriffin-Empire).cbz (416pp)
+   G8 "Fantastic Four" in Marvel\_Fantastic Four\_Trades, Minis and One-shots — 1 file(s), numbers 416, pp 41-41; cv per-file 2045x1; gcd per-file 1482x1; key 'Fantastic Four (1961)'
+      [80018] Fantastic Four 416 (1996) (digital) (Marika-Empire).cbz (41pp)
+   G9 "Fantastic Four by J, Michael Straczynski (2006) (Digital)" in Marvel\_Fantastic Four\_Trades, Minis and One-shots — 1 file(s), 1 COL, pp 145-145; cv per-file 38750x1; gcd per-file 23365x1; key 'Fantastic Four'
+      [80019] COL Fantastic Four by J, Michael Straczynski (2006) (Digital).cbz (145pp)
+         own record cv 38750 / gcd s23365 "Fantastic Four by J. Michael Straczynski" (issue 351576) COLLECTS: gcd=11218 Fantastic Four (1998) #527-532
+   G10 "Fantastic Four" in Marvel\_Marvel Facsimile Editions — 1 file(s), numbers 1, pp 52-52; cv per-file 113068x1; gcd per-file 128416x1; key 'Fantastic Four (1961)'
+      [83045] Fantastic Four 001 - Facsimile Edition (1961) (Digital) (Shadowcat-Empire).cbz (52pp)
+   G11 "Fantastic Four" in Marvel\_X-Men\_X-Men Complete Chronology V2\0001 X-Men — 1 file(s), numbers 28, pp 23-23; cv per-file 2045x1; gcd per-file 1482x1; key 'Fantastic Four (1961)'
+      [86496] 029 Fantastic Four 028 (1964) (digital) (Minutemen-InnerDemons).cbr (23pp)
+   G12 "Fantastic Four" in Marvel\_X-Men\_X-Men Complete Chronology V2\0006 Various Cameos — 3 file(s), numbers 102-104, pp 21-21; cv per-file 2045x3; gcd per-file 1482x3; key 'Fantastic Four (1961)'
+      [86618] 003 Fantastic Four 102 (1970) (Digital) (AnPymGold-Empire).cbz (21pp)
+      [86619] 004 Fantastic Four 103 (1970) (Digital) (AnPymGold-Empire).cbz (21pp)
+      [86620] 005 Fantastic Four 104 (1970) (Digital) (AnPymGold-Empire).cbz (21pp)
+   G13 "Fantastic Four" in Marvel\_X-Men\_X-Men Complete Chronology V2\0026 Alpha Flight — 1 file(s), numbers 260, pp 24-24; cv per-file 2045x1; gcd per-file 1482x1; key 'Fantastic Four (1961)'
+      [86887] 004 Fantastic Four 260 (1983) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+   G14 "Fantastic Four" in Marvel\_X-Men\_X-Men Complete Chronology V2\0048 Secret Wars II — 1 file(s), numbers 286, pp 31-31; cv per-file 2045x1; gcd per-file 1482x1; key 'Fantastic Four (1961)'
+      [87044] 041 Fantastic Four 286 (1986) (Digital) (AnPymGold - Empire).cbz (31pp)
+   G15 "Fantastic Four" in Marvel\_X-Men\_X-Men Complete Chronology V2\0070 The Horsemen of Apocalypse — 1 file(s), numbers 312, pp 23-23; cv per-file 2045x1; gcd per-file 1482x1; key 'Fantastic Four (1961)'
+      [87186] 010 Fantastic Four 312 (1988) (Digital) (AnPymGold - Empire).cbz (23pp)
+   G16 "Fantastic Four Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0078 Evolutionary war — 1 file(s), numbers 21, pp 37-37; cv per-file 2129x1; gcd per-file 1572x1; key 'Fantastic Four (1961)'
+      [87239] 006 Fantastic Four Annual 021 (1988) (Digital) (Shadowcat-Empire).cbz (37pp)
+   G17 "Fantastic Four" in Marvel\_X-Men\_X-Men Complete Chronology V2\0087 Inferno After Effects — 2 file(s), numbers 322-323, pp 23-23; cv per-file 2045x2; gcd per-file 1482x2; key 'Fantastic Four (1961)'
+      [87314] Fantastic Four 322 (1989) (Digital) (AnPymGold-Empire).cbz (23pp)
+      [87315] Fantastic Four 323 (1989) (Digital) (AnPymGold-Empire).cbz (23pp)
+   G18 "Fantastic Four Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0093 Atlantis Attacks — 1 file(s), numbers 22, pp 31-31; cv per-file 2129x1; gcd per-file 1572x1; key 'Fantastic Four (1961)'
+      [87359] 014 Fantastic Four Annual 022 (1989) (Digital) (Shadowcat-Empire).cbz (31pp)
+   G19 "Fantastic Four" in Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance — 3 file(s), numbers 334-336, pp 23-24; cv per-file 2045x3; gcd per-file 1482x3; key 'Fantastic Four (1961)'
+      [87477] 012 Fantastic Four 334 (1989) (Digital) (AnPymGold - Empire).cbz (23pp)
+      [87501] 036 Fantastic Four 335 (1989) (Digital) (AnPymGold - Empire).cbz (24pp)
+      [87524] 059 Fantastic Four 336 (1990) (Digital) (AnPymGold - Empire).cbz (23pp)
+   G20 "Fantastic Four Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0122 The Days of Future Present — 1 file(s), numbers 23, pp 58-58; cv per-file 2129x1; gcd per-file 1572x1; key 'Fantastic Four (1961)'
+      [87592] 001 Fantastic Four Annual 23 (1990) (Minutemen-Bluntman).cbr (58pp)
+   G21 "Fantastic Four" in Marvel\_X-Men\_X-Men Complete Chronology V2\0244 Unnamed — 1 file(s), numbers 395, pp 23-23; cv per-file 2045x1; gcd per-file 1482x1; key 'Fantastic Four (1961)'
+      [88173] 001 Fantastic Four 395 (1994) (Digital) (AnPymGold - Empire).cbz (23pp)
+   G22 "Fantastic Four" in Marvel\_X-Men\_X-Men Complete Chronology V2\0288 Onslaught Preview — 1 file(s), numbers 414, pp 23-23; cv per-file 2045x1; gcd per-file 1482x1; key 'Fantastic Four (1961)'
+      [88406] 014 Fantastic Four 414 (1996) (Digital) (AnPymGold - Empire).cbz (23pp)
+   G23 "Fantastic Four" in Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught — 2 file(s), numbers 415-416, pp 26-34; cv per-file 2045x2; gcd per-file 1482x2; key 'Fantastic Four (1961)'
+      [88420] 010 Fantastic Four 415 (1996) (digital) (Minutemen-Bluntman).cbr (26pp)
+      [88434] 024 Fantastic Four 416 (1996) (digital) (Minutemen-Bluntman).cbr (34pp)
+   G24 "Fantastic Four" in Marvel\_X-Men\_X-Men Complete Chronology V2\0719 Civil War - Phase One — 3 file(s), numbers 536-538, pp 23-24; cv per-file 6211x3; gcd per-file 11218x3; key 'Fantastic Four'
+      [90461] 002 Fantastic Four 536 (2006) (digital-hd) (Kleio-Empire).cbz (23pp)
+      [90462] 003 Fantastic Four 537 (2006) (digital) (Minutemen-InnerDemons).cbr (23pp)
+      [90479] 020 Fantastic Four 538 (2006) (digital) (Minutemen-InnerDemons).cbr (24pp)
+   G25 "Fantastic Four" in Marvel\_X-Men\_X-Men Complete Chronology V2\0723 Civil War - X-Men — 1 file(s), numbers 539, pp 24-24; cv per-file 6211x1; gcd per-file 11218x1; key 'Fantastic Four'
+      [90515] 017 Fantastic Four 539 (2006) (digital) (Minutemen-InnerDemons).cbr (24pp)
+   G26 "Fantastic Four" in Marvel\_X-Men\_X-Men Complete Chronology V2\0728 Civil War - Phase Two — 4 file(s), numbers 540-543, pp 23-54; cv per-file 6211x4; gcd per-file 11218x4; key 'Fantastic Four'
+      e.g. 011 Fantastic Four 540 (2006) (Digital) (AnPymGold-Empire).cbz
+        90556 #540 2006 23pp · 90575 #541 2006 23pp · 90589 #542 2007 23pp · 90595 #543 2007 54pp
+   G27 "Fantastic Four Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0991 Clandestine — 1 file(s), numbers 33, pp 39-39; cv per-file 2129x1; gcd per-file 1482x1; key 'Fantastic Four (1961)'
+      [92156] 001 Fantastic Four Annual 033 (2012) (Digital) (AnHeroGold-Empire).cbz (39pp)
+   G28 "Fantastic Four" in Marvel\__Skottie Young Covers — 1 file(s), numbers 1, pp 1-1; cv per-file 53921x1; gcd per-file 69567x1; key 'Fantastic Four (1961)'
+      [51947] Fantastic Four 01 (2013) (Skottie Young Variant Cover) (Ghosts-Novus-HD).cbz (1pp)
+   G29 "Fantastic Four" in _Marvel Major Event Chronology (digital)\1966.03 - Fantastic Four - The Galactus Trilogy — 3 file(s), numbers 48-50, pp 22-22; cv per-file 2045x3; gcd per-file 1482x3; key 'Fantastic Four (1961)'
+      [116258] Fantastic Four 048 (1966) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+      [116259] Fantastic Four 049 (1966) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+      [116260] Fantastic Four 050 (1966) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+   G30 "Fantastic Four" in _Marvel Major Event Chronology (digital)\1966.03 - Fantastic Four - The Galactus Trilogy\Extra — 1 file(s), numbers 1, pp 27-27; cv per-file 2045x1; gcd per-file 1482x1; key 'Fantastic Four (1961)'
+      [117862] Fantastic Four 001 (1961) (Digital) (TLK-EMPIRE-HD).cbr (27pp)
+   G31 "Fantastic Four" in _Marvel Major Event Chronology (digital)\1968.02 - Daredevil-Dr Doom Swap — 1 file(s), numbers 73, pp 21-21; cv per-file 2045x1; gcd per-file 1482x1; key 'Fantastic Four (1961)'
+      [116265] 03 Fantastic Four 073 (1968) (Digital) (AnPymGold-Empire).cbz (21pp)
+   G32 "Fantastic Four" in _Marvel Major Event Chronology (digital)\1971.06 - Avengers - The Kree-Skrull War\Extra — 2 file(s), numbers 2, 65, pp 21-27; cv per-file 2045x2; gcd per-file 1482x2; key 'Fantastic Four (1961)'
+      [116267] Fantastic Four 002 (1962) (Digital) (TLK-EMPIRE-HD).cbr (27pp)
+      [116268] Fantastic Four 065 (1967) (Digital) (AnPymGold-Empire).cbz (21pp)
+   G33 "Fantastic Four" in _Marvel Major Event Chronology (digital)\1980.01 - X-Men - The Dark Phoenix Saga\Extras\Fantastic Four - Avengers - Like a Phoenix (1986) — 1 file(s), numbers 286, pp 32-32; cv per-file 2045x1; gcd per-file 1482x1; key 'Fantastic Four (1961)'
+      [116353] 02 Fantastic Four 286 (1986) (Digital) (TLK-EMPIRE-HD).cbr (32pp)
+   G34 "Fantastic Four" in _Marvel Major Event Chronology (digital)\1989.12 - Acts of Vengeance\Acts of Vengeance - Marvel Universe — 3 file(s), numbers 334-336, pp 23-24; cv per-file 2045x3; gcd per-file 1482x3; key 'Fantastic Four (1961)'
+      [116425] Fantastic Four 334 (1989) (Digital) (Shadowcat-Empire).cbz (23pp)
+      [116426] Fantastic Four 335 (1989) (Digital) (Shadowcat-Empire).cbz (24pp)
+      [116427] Fantastic Four 336 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+   G35 "Fantastic Four" in _Marvel Major Event Chronology (digital)\2003.05 - Fantastic Four - Unthinkable\01 Unthinkable — 5 file(s), numbers 67-70, 500, pp 22-38; cv per-file 6211x5; gcd per-file 11218x5; key 'Fantastic Four (1961)' | 'Fantastic Four'
+      e.g. Fantastic Four 067 (2003) (Digital) (AnHeroGold-Empire).cbz
+        116574 #67 2003 23pp key="Fantastic Four (1961)" · 116575 #68 2003 22pp key="Fantastic Four (1961)" · 116576 #69 2003 23pp key="Fantastic Four (1961)"
+        116577 #70 2003 22pp key="Fantastic Four (1961)" · 116578 #500 2003 38pp key="Fantastic Four"
+   G36 "Fantastic Four" in _Marvel Major Event Chronology (digital)\2003.05 - Fantastic Four - Unthinkable\02 Fifth Wheel — 1 file(s), numbers 502, pp 22-22; cv per-file 6211x1; gcd per-file 11218x1; key 'Fantastic Four'
+      [116580] Fantastic Four 502 (2003) (Digital) (AnHeroGold-Empire).cbz (22pp)
+   G37 "Fantastic Four" in _Marvel Major Event Chronology (digital)\2003.05 - Fantastic Four - Unthinkable\03 Authoritative Action — 6 file(s), numbers 503-508, pp 21-24; cv per-file 6211x6; gcd per-file 11218x6; key 'Fantastic Four'
+      e.g. Fantastic Four 503 (2003) (Digital) (AnHeroGold-Empire).cbz
+        116581 #503 2003 23pp · 116582 #504 2003 21pp · 116583 #505 2003 23pp · 116584 #506 2004 22pp · 116585 #507 2004 22pp · 116586 #508 2004 24pp
+   G38 "Fantastic Four" in _Marvel Major Event Chronology (digital)\2003.05 - Fantastic Four - Unthinkable\Extras — 12 file(s), numbers 5, 15, 21-23, 49, 54, 94, 244-245, 413-414, pp 21-25; cv per-file 2045x6, 6211x6; gcd per-file 1482x6, 11218x6; key 'Fantastic Four (1961)'
+      e.g. Fantastic Four 005 (1962) (Digital) (TLK-EMPIRE-HD).cbr
+        116587 #5 1962 25pp · 116588 #15 1999 22pp · 116589 #21 1999 23pp · 116590 #22 1999 24pp · 116591 #23 1999 22pp · 116592 #49 2002 21pp · 116593 #54 2002 24pp · 116594 #94 1970 21pp
+        116595 #244 1982 23pp · 116596 #245 1982 23pp · 116597 #413 1996 23pp · 116598 #414 1996 23pp
+   G39 "Fantastic Four Annual" in _Marvel Major Event Chronology (digital)\2003.05 - Fantastic Four - Unthinkable\Extras — 1 file(s), numbers 6, pp 49-49; cv per-file 2129x1; gcd per-file 1572x1; key 'Fantastic Four (1961)'
+      [116599] Fantastic Four Annual 006 (1968) (Digital) (AnPymGold - Empire).cbz (49pp)
+   G40 "Fantastic Four" in _Marvel Major Event Chronology (digital)\2004.09 - Avengers Disassembled\03 Tie-ins\Fantastic Four — 3 file(s), numbers 517-519, pp 20-22; cv per-file 6211x3; gcd per-file 11218x3; key 'Fantastic Four'
+      [116614] Fantastic Four 517 (2004) (Digital) (AnPymGold-Empire).cbz (20pp)
+      [116615] Fantastic Four 518 (2004) (Digital) (AnPymGold-Empire).cbz (22pp)
+      [116616] Fantastic Four 519 (2004) (Digital) (AnPymGold-Empire).cbz (22pp)
+   G41 "Fantastic Four" in _Marvel Major Event Chronology (digital)\2007.06 - The Initiative\Fantastic Four — 7 file(s), numbers 544-550, pp 24-25; cv per-file 6211x7; gcd per-file 11218x7; key 'Fantastic Four'
+      e.g. Fantastic Four 544 (2007) (Digital) (Shadowcat-Empire).cbz
+        116793 #544 2007 24pp · 116794 #545 2007 24pp · 116795 #546 2007 24pp · 116796 #547 2007 24pp · 116797 #548 2007 24pp · 116798 #549 2007 24pp · 116799 #550 2007 25pp
+   G42 "Ultimate Fantastic Four" in _Marvel Major Event Chronology (digital)\2009.02 - Ultimatum (Ultimate)\02 Ultimatum — 3 file(s), numbers 58-60, pp 23-25; cv per-file 10379x3; gcd per-file 11256x3; key 'Fantastic Four (1961)'
+      [117181] 06 Ultimate Fantastic Four 058 (2009) (digital) (Minutemen-PhD).cbr (24pp)
+      [117183] 08 Ultimate Fantastic Four 059 (2009) (digital) (Minutemen-PhD).cbr (23pp)
+      [117187] 12 Ultimate Fantastic Four 060 (2009) (digital) (Minutemen-PhD).cbr (25pp)
+   G43 "Fantastic Four" in _Marvel Major Event Chronology (digital)\2010.04 - The Heroic Age\The Heoric Age - Fanastic Four — 4 file(s), numbers 579-582, pp 25-28; cv per-file 6211x4; gcd per-file 11218x4; key 'Fantastic Four'
+      e.g. Fantastic Four 579 (2010) (Digital) (Monafekk-Empire) (Ok).cbz
+        117326 #579 2010 25pp · 117327 #580 2010 25pp · 117328 #581 2010 25pp · 117329 #582 2010 28pp
+   G44 "Fantastic Four" in _Marvel Major Event Chronology (digital)\2010.07 - Shadowland\Extras — 1 file(s), numbers 52, pp 24-24; cv per-file 2045x1; gcd per-file 1482x1; key 'Fantastic Four (1961)'
+      [117412] Fantastic Four 052 (1966) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+   G45 "Fantastic Four" in _Marvel Major Event Chronology (digital)\2014.04 - Original Sin\02 Tie-ins\Fantastic Four — 3 file(s), numbers 6-8, pp 19-22; cv per-file 71949x3; gcd per-file 79254x3; key 'Fantastic Four (1961)'
+      [117782] 025 - Fantastic Four 006 (2014) (Digital) (Zone-Empire).cbr (19pp)
+      [117783] 026 - Fantastic Four 007 (2014) (Digital) (Zone-Empire).cbr (21pp)
+      [117784] 027 - Fantastic Four 008 (2014) (Digital) (Zone-Empire).cbr (22pp)
+   G46 "Fantastic Four" in _Marvel Major Event Chronology (digital)\2019.03 - War of the Realms\02 Tie-ins\Fantastic Four — 1 file(s), numbers 10, pp 23-23; cv per-file 112685x1; gcd per-file 127448x1; key 'Fantastic Four (1961)'
+      [118910] Fantastic Four 010 (2019) (Digital) (Zone-Empire).cbr (23pp)
+   G47 "Fantastic Four" in _Marvel Major Event Chronology (digital)\2020.03 - Empyre\02 Tie-ins\Fantastic Four v6 — 3 file(s), numbers 21-23, pp 22-23; cv per-file 112685x3; gcd per-file 127448x3; key 'Fantastic Four (1961)'
+      [118436] Fantastic Four 021 (2020) (Digital) (Zone-Empire).cbr (23pp)
+      [118437] Fantastic Four 022 (2020) (Digital) (Zone-Empire).cbr (23pp)
+      [118438] Fantastic Four 023 (2020) (Digital) (Zone-Empire).cbr (22pp)
+   G48 "Fantastic Four" in _Marvel Major Event Chronology (digital)\2022.07 - A.X.E. - Judgement Day\02 Tie-ins — 2 file(s), numbers 47-48, pp 25-26; cv per-file 112685x2; gcd per-file 127448x2; key 'Fantastic Four (1961)'
+      [118576] Fantastic Four 047 (2022) (Digital) (Zone-Empire).cbr (25pp)
+      [118577] Fantastic Four 048 (2022) (Digital) (Zone-Empire).cbr (26pp)
+
+== S6490 Fantastic Four By Jonathan Hickman  [split]  9 files / 9 collections  decided in R-149 (R)
+   decided: R 6490 | two LINES share this shelf: the six-volume TPB line "Fantastic Four by Jonathan Hickman" (CV 32296 = GCD 62442, Marvel 2010-2013, 6; our Vol. 01-06 roll up FF 1998 #570-588 and FF 2012 #600-611 - two runs, so the line is its own identity, L-109) holds six books volume for volume, and the separate "Fantastic Four by Jonathan Hickman Omnibus" line (CV 67987 = GCD 78377, Marvel 2013-2014, 2 books; Book 01 twice, 79743 / 79882, and Book 02, 79883; they also collect FF (2011) #1-23 and Dark Reign: FF, which the TPB line does not) has its own record on both legs and no shelf - two whole books of another record are a co-equal run by the RESIDUE ruling (L-395's Deadpool Classic Companion), so no identity is stored until they part
+   F 6490 split-needed | the TPB line (CV 32296 / GCD 62442, items 79729-79732, 79735, 79737) stays; the omnibus books 79743 + 79882 (Book 01, 736pp, GCD 78377 #1 row 1172528) and 79883 (Book 02, 783pp, row 2275237) -> new key "Fantastic Four by Jonathan Hickman Omnibus (2013)" seeded cv=67987 gcd=78377 (lookup --who-stores cv=67987: no Series; a Matched SeriesKeyLink "Fantastic Four by Jonathan Hickman Omnibus" -> cv 67987 exists with no owner)
+   N 6490 flag #240 (label-ambiguous, item 79743) is right: 79743 and 79882 are two rips of Omnibus Book 01 (736pp each); its "79883/79744" pair names an item no longer on this shelf. Hickman's other lines already have shelves - The Complete Collection S6517 (CV 112949) and FF by Jonathan Hickman S102942 (CV 42957)
+   nearby: S94595 "Fantastic Four" 98f [shares gcd=11218 (collected by item 79729) — S cv=6211 gcd=11218 (R-149 0.95)] keys: "Fantastic Four v1 (2003)" | "Fantastic Four v3 (1998)"
+   nearby: S102942 "FF by Jonathan Hickman" 4f [shares cv=42957 (N line), named S102942 in the decision's R/N lines — S cv=42957 gcd=64712 (R-037 0.95)] keys: "FF by Jonathan Hickman (2011)"
+   nearby: S6517 "Fantastic Four by Jonathan Hickman: The Complete Collection" 3f [shares cv=112949 (N line), named S6517 in the decision's R/N lines — S cv=112949 gcd=127952 (R-049 0.95)] keys: "Fantastic Four by Jonathan Hickman: The Complete Collection"
+   nearby: S4920 "Dark Reign: The Cabal" 1f [shares gcd=36144 (collected by item 79743) — S cv=26305 gcd=36144 (A-032 0.95)] keys: "Dark Reign - The Cabal"
+   nearby: S4933 "Dark Reign: Fantastic Four" 1f [shares gcd=34456 (collected by item 79743) — S cv=25905 gcd=34456 (B-055 0.95)] keys: "Dark Reign: Fantastic Four"
+   keys now: "Fantastic Four By Jonathan Hickman" x9
+   groups (title x folder): 3
+   G1 "Fantastic Four By Jonathan Hickman" in Marvel\_Fantastic Four\06 Hickman's Fantastic Four (2009) — 6 file(s), 6 COL, pp 105-198; cv per-file 32296x6; gcd per-file 62442x6; key 'Fantastic Four By Jonathan Hickman'
+      [79729] COL 02 Fantastic Four By Jonathan Hickman Vol. 01 (2010) (Digital) (F) (Asgard-Empire).cbz (130pp)
+         own record cv 32296 / gcd s62442 "Fantastic Four by Jonathan Hickman" (issue 900724) COLLECTS: gcd=11218 Fantastic Four (1998) #570-574 · gcd=156184 Fantastic Four by Jonathan Hickman (2010) #1
+      [79730] COL 03 Fantastic Four By Jonathan Hickman Vol. 02 (2011) (Digital) (F2) (Asgard-Empire).cbz (105pp)
+         own record cv 32296 / gcd s62442 "Fantastic Four by Jonathan Hickman" (issue 900725) COLLECTS: gcd=11218 Fantastic Four (1998) #575-578 · gcd=156184 Fantastic Four by Jonathan Hickman (2010) #2
+      [79731] COL 04 Fantastic Four By Jonathan Hickman Vol. 03 (2011) (Digital) (F) (Asgard-Empire).cbr (106pp)
+         own record cv 32296 / gcd s62442 "Fantastic Four by Jonathan Hickman" (issue 900726) COLLECTS: gcd=11218 Fantastic Four (1998) #579-582 · gcd=156184 Fantastic Four by Jonathan Hickman (2010) #3
+      [79732] COL 05 Fantastic Four By Jonathan Hickman Vol. 04 (2011) (Digital) (F) (Asgard-Empire).cbr (168pp)
+         own record cv 32296 / gcd s62442 "Fantastic Four by Jonathan Hickman" (issue 900727) COLLECTS: gcd=11218 Fantastic Four (1998) #583-588 · gcd=156184 Fantastic Four by Jonathan Hickman (2010) #4
+      [79735] COL 08 Fantastic Four By Jonathan Hickman Vol. 05 (2013) (Digital) (F) (Asgard-Empire).cbz (198pp)
+         own record cv 32296 / gcd s62442 "Fantastic Four by Jonathan Hickman" (issue 1041888) COLLECTS: gcd=62349 Fantastic Four (2012) #600-604 · gcd=156184 Fantastic Four by Jonathan Hickman (2010) #5
+      [79737] COL 10 Fantastic Four By Jonathan Hickman Vol. 06 (2013) (Digital) (F) (Asgard-Empire).cbz (181pp)
+         own record cv 32296 / gcd s62442 "Fantastic Four by Jonathan Hickman" (issue 1095150) COLLECTS: gcd=62349 Fantastic Four (2012) #605, #605.1, #606-611 · gcd=156184 Fantastic Four by Jonathan Hickman (2010) #6
+   G2 "Fantastic Four By Jonathan Hickman Omnibus" in Marvel\_Fantastic Four\06 Hickman's Fantastic Four (2009)\Omnibus Editions — 1 file(s), 1 COL, pp 736-736; cv per-file 67987x1; gcd per-file 78377x1; key 'Fantastic Four By Jonathan Hickman'
+      [79743] COL Fantastic Four By Jonathan Hickman Omnibus Book 01 (2022) (digital).cbz (736pp)
+         own record cv 67987 / gcd s78377 "Fantastic Four by Jonathan Hickman Omnibus" (issue 1172528) COLLECTS: gcd=11218 Fantastic Four (1998) #570-588 · gcd=56740 FF (2011) #1-5 · gcd=34456 Dark Reign: Fantastic Four (2009) #1-5 · gcd=36144 Dark Reign: The Cabal (2009) #1
+   G3 "Fantastic Four by Jonathan Hickman Omnibus" in Marvel\_Fantastic Four\_Omnibus Editions — 2 file(s), 2 COL, pp 736-783; cv per-file 67987x2; gcd per-file 78377x2; key 'Fantastic Four By Jonathan Hickman'
+      [79882] COL Fantastic Four by Jonathan Hickman Omnibus Book 01 (2022) (Digital) (Kileko-Empire).cbz (736pp)
+         own record cv 67987 / gcd s78377 "Fantastic Four by Jonathan Hickman Omnibus" (issue 1172528) COLLECTS: gcd=11218 Fantastic Four (1998) #570-588 · gcd=56740 FF (2011) #1-5 · gcd=34456 Dark Reign: Fantastic Four (2009) #1-5 · gcd=36144 Dark Reign: The Cabal (2009) #1
+      [79883] COL Fantastic Four by Jonathan Hickman Omnibus Book 02 (2022) (Digital) (Kileko-Empire).cbz (783pp)
+         own record cv 67987 / gcd s78377 "Fantastic Four by Jonathan Hickman Omnibus" (issue 2275237) COLLECTS: gcd=56740 FF (2011) #6-23 · gcd=62349 Fantastic Four (2012) #600-605, #605.1, #606-611
+
+== S6496 Fantastic Four Epic Collection 10: Counter-Earth Must Die  [split]  1 files / 1 collections  decided in R-149 (S)
+   decided: S 6496 cv=- gcd=79136 0.9 | volume 10 "Counter-Earth Must Die" of the same LINE: ComicInfo Web 1071859 on the Marika rip IS CV 160126's issue 1071859 "Volume 10", and GCD 79136 #10 row 2658825 (516pp, ISBN 978-1-302-95544-1) is our 512pp book; CV 160126 is only the book's count-1 volume
+   F 6496 wrong-cv-link | the stored CV 160126 "Fantastic Four Epic Collection: Counter-Earth Must Die" is the Vol. 10 book's own count-1 volume, not the line
+   F 6496 split-needed | item 79804 -> join S6495 on its ParsedKey "Fantastic Four Epic Collection" (S6495's S line is the same GCD 79136 line, cv=-; L-377 / L-392); the shelf empties by the join; replaces C-044's merge-with=6497
+   named: S6495 Fantastic Four Epic Collection  9 files  keys: "Fantastic Four Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64669 "Fantastic Four" 547f [shares gcd=1482 (collected by item 79804) — S cv=2045 gcd=1482 (R-149 0.9)] keys: "Fantastic Four" | "Fantastic Four (1961)" | "Fantastic Four v1 (1961)"
+   nearby: S11631 "Marvel Two-in-One" 98f [shares gcd=2182 (collected by item 79804) — S cv=2696 gcd=2182 (R-137 0.9)] keys: "Marvel Masterworks - Marvel Two-In-One" | "Marvel Two-In-One" | "Marvel Two-In-One Annual" | "Marvel Two-in-One" (+1 more: lookup.py --shelf 11631)
+   nearby: S11628 "Marvel Treasury Edition" 3f [shares gcd=2180 (collected by item 79804) — S cv=2694 gcd=2180 (C-039 0.9)] keys: "Marvel Treasury Edition"
+   nearby: S6497 "Fantastic Four Epic Collection: Annihilus Revealed" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: Annihilus Revealed"
+   nearby: S6498 "Fantastic Four Epic Collection: At War With Atlantis" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: At War With Atlantis"
+   nearby: S6499 "Fantastic Four Epic Collection: Battle Of The Behemoths" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: Battle Of The Behemoths"
+   nearby: S6500 "Fantastic Four Epic Collection: Strange Days" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: Strange Days"
+   nearby: S6501 "Fantastic Four Epic Collection: The Crusader Syndrome" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: The Crusader Syndrome"
+   nearby: S6502 "Fantastic Four Epic Collection: The Dream is Dead" 1f [shares gcd=79136 — S cv=149043 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The Dream Is Dead"
+   nearby: S6503 "Fantastic Four Epic Collection: The More Things Change..." 1f [shares gcd=79136 — S cv=119753 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The More Things Change..."
+   nearby: S6504 "Fantastic Four Epic Collection: The Name Is Doom" 1f [shares gcd=79136 — S cv=126609 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The Name Is Doom"
+   nearby: S6505 "Fantastic Four Epic Collection: The New Fantastic Four" 1f [shares gcd=79136 — S cv=111826 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The New Fantastic Four"
+   keys now: "Fantastic Four Epic Collection 10: Counter-Earth Must Die" x1
+   groups (title x folder): 1
+   G1 "Fantastic Four Epic Collection" in Marvel\_Fantastic Four\Fantastic Four Epic Collections — 1 file(s), 1 COL, pp 512-512; cv per-file 160126x1; gcd per-file 79136x1; key 'Fantastic Four Epic Collection 10: Counter-Earth Must Die'
+      [79804] COL Fantastic Four Epic Collection Vol. 10 - Counter-Earth Must Die (2024) (digital) (Marika-Empire).cbz (512pp)
+         own record cv 160126 / gcd s79136 "Fantastic Four Epic Collection" (issue 2658825) COLLECTS: gcd=1482 Fantastic Four (1961) #168-191 · gcd=2180 Marvel Treasury Edition (1974) #11 · gcd=2353 Marvel Two-in-One Annual (1976) #1 · gcd=2182 Marvel Two-in-One (1974) #20
+
+== S6497 Fantastic Four Epic Collection: Annihilus Revealed  [split]  1 files / 1 collections  decided in R-149 (S)
+   decided: S 6497 cv=- gcd=79136 0.9 | volume 08 "Annihilus Revealed" of the same LINE: GCD 79136 #8 row 2428300 (508pp, ISBN 978-1-302-93359-3) is our 498pp book; CV 144900 is only its count-1 book volume (issue 945892)
+   F 6497 wrong-cv-link | the stored CV 144900 "Fantastic Four Epic Collection: Annihilus Revealed" is the Vol. 08 book's own count-1 volume, not the line
+   F 6497 split-needed | item 79802 -> join S6495 on its ParsedKey "Fantastic Four Epic Collection" (same GCD 79136 line; L-377 / L-392); the shelf empties by the join; replaces C-044's merge-with=6498
+   N 79802 the roll-up also names Fantastic Four #1 and #73 (reprint back-ups), outside the #126-146 stretch
+   named: S6495 Fantastic Four Epic Collection  9 files  keys: "Fantastic Four Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64669 "Fantastic Four" 547f [shares gcd=1482 (collected by item 79802) — S cv=2045 gcd=1482 (R-149 0.9)] keys: "Fantastic Four" | "Fantastic Four (1961)" | "Fantastic Four v1 (1961)"
+   nearby: S4311 "Creatures on the Loose" 9f [shares gcd=1988 (collected by item 79802) — S cv=2512 gcd=1988 (C-038 0.95)] keys: "Creatures on the Loose"
+   nearby: S6496 "Fantastic Four Epic Collection 10: Counter-Earth Must Die" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection 10: Counter-Earth Must Die"
+   nearby: S6498 "Fantastic Four Epic Collection: At War With Atlantis" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: At War With Atlantis"
+   nearby: S6499 "Fantastic Four Epic Collection: Battle Of The Behemoths" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: Battle Of The Behemoths"
+   nearby: S6500 "Fantastic Four Epic Collection: Strange Days" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: Strange Days"
+   nearby: S6501 "Fantastic Four Epic Collection: The Crusader Syndrome" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: The Crusader Syndrome"
+   nearby: S6502 "Fantastic Four Epic Collection: The Dream is Dead" 1f [shares gcd=79136 — S cv=149043 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The Dream Is Dead"
+   nearby: S6503 "Fantastic Four Epic Collection: The More Things Change..." 1f [shares gcd=79136 — S cv=119753 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The More Things Change..."
+   nearby: S6504 "Fantastic Four Epic Collection: The Name Is Doom" 1f [shares gcd=79136 — S cv=126609 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The Name Is Doom"
+   nearby: S6505 "Fantastic Four Epic Collection: The New Fantastic Four" 1f [shares gcd=79136 — S cv=111826 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The New Fantastic Four"
+   keys now: "Fantastic Four Epic Collection: Annihilus Revealed" x1
+   groups (title x folder): 1
+   G1 "Fantastic Four Epic Collection" in Marvel\_Fantastic Four\Fantastic Four Epic Collections — 1 file(s), 1 COL, pp 498-498; cv per-file 144900x1; gcd per-file 79136x1; key 'Fantastic Four Epic Collection: Annihilus Revealed'
+      [79802] COL Fantastic Four Epic Collection Vol. 08 - Annihilus Revealed (2022) (Digital-Empire).cbr (498pp)
+         own record cv 144900 / gcd s79136 "Fantastic Four Epic Collection" (issue 2428300) COLLECTS: gcd=1482 Fantastic Four (1961) #1, #73, #126-146 · gcd=158698 FOOM Magazine (1973) #1, #4-5 · gcd=2174 Giant-Size Super-Stars (1974) #1 · gcd=1988 Creatures on the Loose (1971) #29
+
+== S6498 Fantastic Four Epic Collection: At War With Atlantis  [split]  1 files / 1 collections  decided in R-149 (S)
+   decided: S 6498 cv=- gcd=79136 0.9 | volume 06 "At War With Atlantis" of the same LINE: GCD 79136 #6 row 2164079 (420pp, ISBN 978-1-302-92202-3) is our 408pp book; CV 131537 is only its count-1 book volume (issue 814968)
+   F 6498 wrong-cv-link | the stored CV 131537 "Fantastic Four Epic Collection: At War With Atlantis" is the Vol. 06 book's own count-1 volume, not the line
+   F 6498 split-needed | item 79800 -> join S6495 on its ParsedKey "Fantastic Four Epic Collection" (same GCD 79136 line; L-377 / L-392); the shelf empties by the join; replaces C-044's merge-with=6499
+   named: S6495 Fantastic Four Epic Collection  9 files  keys: "Fantastic Four Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64669 "Fantastic Four" 547f [shares gcd=1482 (collected by item 79800) — S cv=2045 gcd=1482 (R-149 0.9)] keys: "Fantastic Four" | "Fantastic Four (1961)" | "Fantastic Four v1 (1961)"
+   nearby: S6496 "Fantastic Four Epic Collection 10: Counter-Earth Must Die" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection 10: Counter-Earth Must Die"
+   nearby: S6497 "Fantastic Four Epic Collection: Annihilus Revealed" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: Annihilus Revealed"
+   nearby: S6499 "Fantastic Four Epic Collection: Battle Of The Behemoths" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: Battle Of The Behemoths"
+   nearby: S6500 "Fantastic Four Epic Collection: Strange Days" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: Strange Days"
+   nearby: S6501 "Fantastic Four Epic Collection: The Crusader Syndrome" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: The Crusader Syndrome"
+   nearby: S6502 "Fantastic Four Epic Collection: The Dream is Dead" 1f [shares gcd=79136 — S cv=149043 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The Dream Is Dead"
+   nearby: S6503 "Fantastic Four Epic Collection: The More Things Change..." 1f [shares gcd=79136 — S cv=119753 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The More Things Change..."
+   nearby: S6504 "Fantastic Four Epic Collection: The Name Is Doom" 1f [shares gcd=79136 — S cv=126609 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The Name Is Doom"
+   nearby: S6505 "Fantastic Four Epic Collection: The New Fantastic Four" 1f [shares gcd=79136 — S cv=111826 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The New Fantastic Four"
+   nearby: S6507 "Fantastic Four The Lost Adventure" 1f [shares gcd=27869 (collected by item 79800) — S cv=20737 gcd=27869 (B-055 0.95)] keys: "Fantastic Four Lost Adventure"
+   nearby: S103758 "Fantastic Four Annual" 1f [shares gcd=1572 (collected by item 79800) — S cv=2129 gcd=1572 (R-049 0.95)] keys: "Fantastic Four Annual (1963)"
+   keys now: "Fantastic Four Epic Collection: At War With Atlantis" x1
+   groups (title x folder): 1
+   G1 "Fantastic Four Epic Collection" in Marvel\_Fantastic Four\Fantastic Four Epic Collections — 1 file(s), 1 COL, pp 408-408; cv per-file 131537x1; gcd per-file 79136x1; key 'Fantastic Four Epic Collection: At War With Atlantis'
+      [79800] COL Fantastic Four Epic Collection Vol. 06 - At War With Atlantis (2020) (Digital) (Zone-Empire).cbr (408pp)
+         own record cv 131537 / gcd s79136 "Fantastic Four Epic Collection" (issue 2164079) COLLECTS: gcd=1482 Fantastic Four (1961) #88-104 · gcd=27869 Fantastic Four: The Lost Adventure (2008) #1 · gcd=1572 Fantastic Four Annual (1963) #7
+
+== S6499 Fantastic Four Epic Collection: Battle Of The Behemoths  [split]  1 files / 1 collections  decided in R-149 (S)
+   decided: S 6499 cv=- gcd=79136 0.9 | volume 07 "Battle of the Behemoths" of the same LINE: GCD 79136 #7 row 2257108 (476pp, ISBN 978-1-302-92913-8) is our 472pp book; CV 138613 is only its count-1 book volume (issue 882695)
+   F 6499 wrong-cv-link | the stored CV 138613 "Fantastic Four Epic Collection: Battle of the Behemoths" is the Vol. 07 book's own count-1 volume, not the line
+   F 6499 split-needed | item 79801 -> join S6495 on its ParsedKey "Fantastic Four Epic Collection" (same GCD 79136 line; L-377 / L-392); the shelf empties by the join; replaces C-044's merge-with=6501
+   named: S6495 Fantastic Four Epic Collection  9 files  keys: "Fantastic Four Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64669 "Fantastic Four" 547f [shares gcd=1482 (collected by item 79801) — S cv=2045 gcd=1482 (R-149 0.9)] keys: "Fantastic Four" | "Fantastic Four (1961)" | "Fantastic Four v1 (1961)"
+   nearby: S6496 "Fantastic Four Epic Collection 10: Counter-Earth Must Die" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection 10: Counter-Earth Must Die"
+   nearby: S6497 "Fantastic Four Epic Collection: Annihilus Revealed" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: Annihilus Revealed"
+   nearby: S6498 "Fantastic Four Epic Collection: At War With Atlantis" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: At War With Atlantis"
+   nearby: S6500 "Fantastic Four Epic Collection: Strange Days" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: Strange Days"
+   nearby: S6501 "Fantastic Four Epic Collection: The Crusader Syndrome" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: The Crusader Syndrome"
+   nearby: S6502 "Fantastic Four Epic Collection: The Dream is Dead" 1f [shares gcd=79136 — S cv=149043 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The Dream Is Dead"
+   nearby: S6503 "Fantastic Four Epic Collection: The More Things Change..." 1f [shares gcd=79136 — S cv=119753 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The More Things Change..."
+   nearby: S6504 "Fantastic Four Epic Collection: The Name Is Doom" 1f [shares gcd=79136 — S cv=126609 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The Name Is Doom"
+   nearby: S6505 "Fantastic Four Epic Collection: The New Fantastic Four" 1f [shares gcd=79136 — S cv=111826 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The New Fantastic Four"
+   keys now: "Fantastic Four Epic Collection: Battle Of The Behemoths" x1
+   groups (title x folder): 1
+   G1 "Fantastic Four Epic Collection" in Marvel\_Fantastic Four\Fantastic Four Epic Collections — 1 file(s), 1 COL, pp 472-472; cv per-file 138613x1; gcd per-file 79136x1; key 'Fantastic Four Epic Collection: Battle Of The Behemoths'
+      [79801] COL Fantastic Four Epic Collection Vol. 07 - Battle of the Behemoths (2021) (Digital-Empire).cbr (472pp)
+         own record cv 138613 / gcd s79136 "Fantastic Four Epic Collection" (issue 2257108) COLLECTS: gcd=1482 Fantastic Four (1961) #105-125
+
+== S6500 Fantastic Four Epic Collection: Strange Days  [split]  1 files / 1 collections  decided in R-149 (S)
+   decided: S 6500 cv=- gcd=79136 0.9 | volume 25 "Strange Days" of the same LINE: GCD 79136 #25 row 1309965 (476pp, ISBN 978-0-7851-9295-4) is our 450pp book; CV 82103 is only its count-1 book volume (issue 489318)
+   F 6500 wrong-cv-link | the stored CV 82103 "Fantastic Four Epic Collection: Strange Days" is the Vol. 25 book's own count-1 volume, not the line
+   F 6500 split-needed | item 79813 -> join S6495 on its ParsedKey "Fantastic Four Epic Collection" (same GCD 79136 line; L-377 / L-392); the shelf empties by the join
+   N 79813 the judged range #347-358 is wrong (0 of 1 fit): Strange Days is the line's LAST 1961-run volume and GCD row 1309965 rolls up Fantastic Four #403-416; the C line below restates it and supersedes the X- pass's #347-358
+   named: S6495 Fantastic Four Epic Collection  9 files  keys: "Fantastic Four Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64669 "Fantastic Four" 547f [shares gcd=1482 (collected by item 79813) — S cv=2045 gcd=1482 (R-149 0.9)] keys: "Fantastic Four" | "Fantastic Four (1961)" | "Fantastic Four v1 (1961)"
+   nearby: S6473 "Fantastic Four: The Legend" 1f [shares gcd=9784 (collected by item 79813) — S cv=30419 gcd=9784 (B-056 0.95)] keys: "Fantastic Four - The Legend"
+   nearby: S6496 "Fantastic Four Epic Collection 10: Counter-Earth Must Die" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection 10: Counter-Earth Must Die"
+   nearby: S6497 "Fantastic Four Epic Collection: Annihilus Revealed" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: Annihilus Revealed"
+   nearby: S6498 "Fantastic Four Epic Collection: At War With Atlantis" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: At War With Atlantis"
+   nearby: S6499 "Fantastic Four Epic Collection: Battle Of The Behemoths" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: Battle Of The Behemoths"
+   nearby: S6501 "Fantastic Four Epic Collection: The Crusader Syndrome" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: The Crusader Syndrome"
+   nearby: S6502 "Fantastic Four Epic Collection: The Dream is Dead" 1f [shares gcd=79136 — S cv=149043 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The Dream Is Dead"
+   nearby: S6503 "Fantastic Four Epic Collection: The More Things Change..." 1f [shares gcd=79136 — S cv=119753 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The More Things Change..."
+   nearby: S6504 "Fantastic Four Epic Collection: The Name Is Doom" 1f [shares gcd=79136 — S cv=126609 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The Name Is Doom"
+   nearby: S6505 "Fantastic Four Epic Collection: The New Fantastic Four" 1f [shares gcd=79136 — S cv=111826 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The New Fantastic Four"
+   keys now: "Fantastic Four Epic Collection: Strange Days" x1
+   groups (title x folder): 1
+   G1 "Fantastic Four Epic Collection" in Marvel\_Fantastic Four\Fantastic Four Epic Collections — 1 file(s), 1 COL, pp 450-450; cv per-file 82103x1; gcd per-file 79136x1; key 'Fantastic Four Epic Collection: Strange Days'
+      [79813] COL Fantastic Four Epic Collection Vol. 25 - Strange Days (2015) (F) (Digital-Empire).cbr (450pp)
+         own record cv 82103 / gcd s79136 "Fantastic Four Epic Collection" (issue 1309965) COLLECTS: gcd=1482 Fantastic Four (1961) #403-416 · gcd=9784 Fantastic Four: The Legend (1996) #1 · gcd=15183 Tales of the Marvel Universe (1997) #1 · gcd=10769 Onslaught: Marvel (1996) #1
+
+== S6501 Fantastic Four Epic Collection: The Crusader Syndrome  [split]  1 files / 1 collections  decided in R-149 (S)
+   decided: S 6501 cv=- gcd=79136 0.9 | volume 09 "The Crusader Syndrome" of the same LINE: GCD 79136 #9 row 2564754 (524pp, ISBN 978-1-302-94875-7) is our 512pp book; CV 153272 is only its count-1 book volume (issue 1011152)
+   F 6501 wrong-cv-link | the stored CV 153272 "Fantastic Four Epic Collection: The Crusader Syndrome" is the Vol. 09 book's own count-1 volume, not the line
+   F 6501 split-needed | item 79803 -> join S6495 on its ParsedKey "Fantastic Four Epic Collection" (same GCD 79136 line; L-377 / L-392); the shelf empties by the join; replaces C-044's merge-with=6502
+   named: S6495 Fantastic Four Epic Collection  9 files  keys: "Fantastic Four Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64669 "Fantastic Four" 547f [shares gcd=1482 (collected by item 79803) — S cv=2045 gcd=1482 (R-149 0.9)] keys: "Fantastic Four" | "Fantastic Four (1961)" | "Fantastic Four v1 (1961)"
+   nearby: S11628 "Marvel Treasury Edition" 3f [shares gcd=2180 (collected by item 79803) — S cv=2694 gcd=2180 (C-039 0.9)] keys: "Marvel Treasury Edition"
+   nearby: S102775 "Giant-Size Fantastic Four" 3f [shares gcd=2169 (collected by item 79803) — S cv=2683 gcd=2169 (R-035 0.95)] keys: "Giant-Size Fantastic Four (1974)"
+   nearby: S6496 "Fantastic Four Epic Collection 10: Counter-Earth Must Die" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection 10: Counter-Earth Must Die"
+   nearby: S6497 "Fantastic Four Epic Collection: Annihilus Revealed" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: Annihilus Revealed"
+   nearby: S6498 "Fantastic Four Epic Collection: At War With Atlantis" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: At War With Atlantis"
+   nearby: S6499 "Fantastic Four Epic Collection: Battle Of The Behemoths" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: Battle Of The Behemoths"
+   nearby: S6500 "Fantastic Four Epic Collection: Strange Days" 1f [shares gcd=79136 — S gcd=79136 (R-149 0.9)] keys: "Fantastic Four Epic Collection: Strange Days"
+   nearby: S6502 "Fantastic Four Epic Collection: The Dream is Dead" 1f [shares gcd=79136 — S cv=149043 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The Dream Is Dead"
+   nearby: S6503 "Fantastic Four Epic Collection: The More Things Change..." 1f [shares gcd=79136 — S cv=119753 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The More Things Change..."
+   nearby: S6504 "Fantastic Four Epic Collection: The Name Is Doom" 1f [shares gcd=79136 — S cv=126609 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The Name Is Doom"
+   nearby: S6505 "Fantastic Four Epic Collection: The New Fantastic Four" 1f [shares gcd=79136 — S cv=111826 gcd=79136 (C-044 0.9)] keys: "Fantastic Four Epic Collection: The New Fantastic Four"
+   keys now: "Fantastic Four Epic Collection: The Crusader Syndrome" x1
+   groups (title x folder): 1
+   G1 "Fantastic Four Epic Collection" in Marvel\_Fantastic Four\Fantastic Four Epic Collections — 1 file(s), 1 COL, pp 512-512; cv per-file 153272x1; gcd per-file 79136x1; key 'Fantastic Four Epic Collection: The Crusader Syndrome'
+      [79803] COL Fantastic Four Epic Collection Vol. 09 - The Crusader Syndrome (2023) (Digital-Empire).cbr (512pp)
+         own record cv 153272 / gcd s79136 "Fantastic Four Epic Collection" (issue 2564754) COLLECTS: gcd=1482 Fantastic Four (1961) #147-167 · gcd=2169 Giant-Size Fantastic Four (1974) #2-6 · gcd=2180 Marvel Treasury Edition (1974) #2 · gcd=158698 FOOM Magazine (1973) #8-10
+
+== S96254 Daredevil  [split]  68 files / 6 collections  decided in R-148 (S)
+   decided: S 96254 cv=6209 gcd=6026 0.9 | Daredevil (1998-2011): CV 6209 (Marvel 1998, 134, cached #0-512) and GCD 6026 (Marvel 1998-2011, 132, legacy #380-512 after #119) agree on publisher, span and count; our ladder #20-25, #51-55, #92-119 (with the Civil War / Shadowland chronology second rips of #92-93 and #111-119 that joined in P-060), #500-507 (Kleio and Minutemen rips, the latter merged from S4784 in wave 144) sits inside, per-file CV 6209 / GCD 6026 on 58 files, and the trades Vol. 02 Parts of a Hole (#9-15) and Vol. 22 Shadowland twice (#508-512) are the run's own; 0.9 for the 2007 Annual one-shot (CV 19415 / GCD 27140) and the five 1964-run books and the Daredevil 2099 one-shot split below
+   F 96254 split-needed | items 46979 (Daredevil Omnibus Book 02, 793pp, GCD row 2537472 reprints s1636 #42-74) and 46980 (Book 03, 1139pp, row 2620941 reprints s1636 #75-119) are books of the "Daredevil Omnibus" line (CV 98730 / GCD 112556), which reprints ONE run, Daredevil (1964), CV 2190 / GCD 1636, whose shelf S64501 already holds Omnibus Book 01 twice (46978 / 47980) -> join S64501 on its key "Daredevil (1964)" (L-388; R-147's S4784 plan restated per L-396)
+   F 96254 split-needed | items 47020 ("Daredevil by Frank Miller and Klaus Janson Vol. 01 (2008)" 327pp, CV 29926 #1 / GCD 73293 row 1106834, reprints s1636 #158-161, #163-172) and 46977 ("Daredevil by Frank Miller Omnibus Companion (2023, 3rd edition)" 596pp, CV 21192 / GCD 68583 row 1099439, reprints s1636 #219, #226-233 + Man Without Fear #1-5) are Daredevil (1964) creator books whose siblings - Miller & Janson Vol. 02-03 (47021 / 47022) and the 2007 Omnibus (46976) - sit on S64501 under the key "Daredevil by Frank Miller and Klaus Janson" -> join S64501 on that key (run-vs-line, L-395)
+   F 96254 split-needed | item 87352 ("007 Daredevil Annual 04b" 56pp, X-Men Complete Chronology "0093 Atlantis Attacks") is Daredevil Annual 1989 (CV 2351 #5 issue 30617 / GCD 1808 "#4 [5]" row 45572), a second rip of S64501's 46862; no annual-series shelf exists, so it stays with the 1964 run (L-391) -> join S64501 on its key "Daredevil v1 (1964)"
+   F 96254 split-needed | item 53928 "Daredevil 2099 (2004)" 24pp (folder Marvel\_2099 Marvel\Daredevil 2099 (2004)) is the one-shot Daredevil 2099 #1 (CV 32250 issue 202432 / GCD 11902 row 210000), a different comic stored by no shelf (lookup --who-stores cv=32250: 0 rows; no Series, alias or key link spells "Daredevil 2099 (2004)") -> new key "Daredevil 2099 (2004)" seeded cv=32250 gcd=11902
+   N 96254 S4784 merged here in wave 144 (L-396), so its split plan above is this shelf's own; flag #581 (overlap-in-series, item 46977) stays dismissed - the Companion's C lines state #226-233 with #219 on an N, and the book leaves for S64501. CV 32250 (Daredevil 2099) has no CvVolume row: the new shelf will want needs-fetch cv=32250
+   N 46977 also collects Daredevil (1964) #219, Spectacular Spider-Man #27-28 and Marvel Graphic Novel: Daredevil - Love and War (GCD 87031); C-064's #219-233 widened across the #220-225 gap
+   N 47020 also collects Daredevil (1964) #158-161 (the stretch before the #162 fill-in) and Spectacular Spider-Man #27-28; the judged #158-172 widened across the gap
+   named: S64501 Daredevil  422 files  keys: "Daredevil (1964)" | "Daredevil -1" | "Daredevil by Frank Miller and Klaus Janson" | "Daredevil v1 (1964)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S4784 (not a file-holding shelf today)
+   nearby: S64185 "The Avengers" 426f [shares gcd=1571 (collected by item 46980) — S cv=2128 gcd=1571 (R-142 0.95)] keys: "Avengers" | "Avengers (1963)" | "The Avengers"
+   nearby: S97887 "Iron Man" 349f [shares gcd=1867 (collected by item 46979) — S cv=2407 gcd=1867 (R-048 0.95)] keys: "Iron Man v1 (1968)"
+   nearby: S19654 "The Spectacular Spider-Man" 272f [shares gcd=2359 (collected by item 46977) — S cv=2870 gcd=2359 (R-050 0.9)] keys: "Peter Parker, The Spectacular Spider-Man" | "Peter Parker, the Spectacular Spider-Man" | "The Spectacular Spider-Man" | "The Spectacular Spider-Man cvv2870"
+   nearby: S95044 "Amazing Adventures" 45f [shares gcd=1937 (collected by item 46980) — S cv=2469 gcd=1937 (R-041 0.95)] keys: "Amazing Adventures v2 (1970)"
+   nearby: S4850 "Daredevil: The Man Without Fear" 1f [shares gcd=4683 (collected by item 46977) — S cv=5000 gcd=4683 (B-055 0.95)] keys: "Daredevil: The Man Without Fear"
+   nearby: S96257 "Daredevil" 44f [title — S cv=153465 gcd=204057 (R-135 0.95)] keys: "Daredevil v8 (2023)"
+   nearby: S64503 "Daredevil" 19f [title — S cv=144027 gcd=187163 (R-135 0.95)] keys: "Daredevil (2022)" | "Daredevil v7 (2022)"
+   nearby: S64504 "Daredevil" 15f [title — S cv=116964 gcd=139716 (R-148 0.9)] keys: "Daredevil (2023)" | "Daredevil by Chip Zdarsky" | "Daredevil by Chip Zdarsky: To Heaven Through Hell" | "Daredevil v6 (2019)"
+   nearby: S4843 "Daredevil" 8f [title — S cv=86343 gcd=94624 (A-023 0.95)] keys: "Daredevil: Back In Black" | "Daredevil: Back in Black"
+   nearby: S4834 "Daredevil by Mark Waid Vol. 1 Collection" 6f [title — S cv=41410 gcd=60120 (R-146 0.9)] keys: "Daredevil by Mark Waid Vol. 1 Collection" | "Daredevil v3 (2011)"
+   nearby: S64502 "Daredevil" 4f [title — S cv=72417 gcd=79658 (R-147 0.9)] keys: "Daredevil (2014)" | "Daredevil by Mark Waid and Chris Samnee"
+   nearby: S4821 "Daredevil Noir" 4f [title+1 — S cv=26164 gcd=35697 (A-023 0.95)] keys: "Daredevil Noir" · S4846 "Daredevil: Ninja" 3f [title+1 — S cv=9540 gcd=10343 (A-023 0.95)] keys: "Daredevil: Ninja"
+   nearby: S4787 "Daredevil & Echo" 1f [title+1 — S cv=150603 gcd=200813 (B-055 0.95)] keys: "Daredevil & Echo" · S4793 "Daredevil: Father" 1f [title+1 — S cv=21096 gcd=11904 (B-055 0.95)] keys: "Daredevil - Father"
+   nearby: S4799 "Daredevil: Redemption" 1f [title+1 — S cv=12001 gcd=13026 (B-055 0.95)] keys: "Daredevil - Redemption"
+   nearby: S4805 "Daredevil: Yellow" 1f [title+1 — S cv=7513 gcd=8113 (B-055 0.95)] keys: "Daredevil - Yellow" · (+3 more by title)
+   keys now: "Daredevil v2 (1998)" x53 · "Daredevil" x14 · "Daredevil - Shadowland" x1
+   groups (title x folder): 11
+   G1 "Daredevil" in Marvel\_2099 Marvel\Daredevil 2099 (2004) — 1 file(s), numbers 2099, pp 24-24; cv per-file 32250x1; gcd per-file 11902x1; key 'Daredevil'
+      [53928] Daredevil 2099 (2004) (Digital) (Shadowcat-Empire).cbz (24pp)
+   G2 "Daredevil" in Marvel\_Daredevil\02 Daredevil v2 (1998) — 40 file(s), numbers 20-25, 51-55, 94-114, 495, 501-507, pp 20-40; cv per-file 6209x40; gcd per-file 6026x40; key 'Daredevil v2 (1998)'
+      e.g. Daredevil 020 (2001) (Digital) (Zone-Empire).cbr
+        46870 #20 2001 30pp · 46871 #21 2001 24pp · 46872 #22 2001 24pp · 46873 #23 2001 24pp · 46874 #24 2001 22pp · 46875 #25 2001 23pp · 46876 #51 2003 23pp · 46877 #52 2003 26pp
+        46878 #53 2003 25pp · 46879 #54 2004 20pp · 46880 #55 2004 23pp · 46881 #94 2007 24pp · 46882 #95 2007 25pp · 46883 #96 2007 25pp · 46884 #97 2007 26pp · 46885 #98 2007 26pp
+        46886 #99 2007 25pp · 46887 #100 2007 40pp · 46888 #101 2007 25pp · 46889 #102 2008 25pp · 46890 #103 2008 25pp · 46891 #104 2008 25pp · 46892 #105 2008 25pp · 46893 #106 2008 25pp
+        46894 #107 2008 30pp · 46895 #108 2008 26pp · 46896 #109 2008 26pp · 46897 #110 2008 26pp · 46898 #111 2008 25pp · 46899 #112 2008 24pp · 46900 #113 2008 25pp · 46901 #114 2009 25pp
+        46902 #495 2009 25pp · 46903 #501 2009 25pp · 46904 #502 2010 25pp · 46905 #503 2010 26pp · 46906 #504 2010 23pp · 46907 #505 2010 25pp · 46908 #506 2010 25pp · 46909 #507 2010 24pp
+   G3 "Daredevil Annual" in Marvel\_Daredevil\02 Daredevil v2 (1998)\Annuals and Specials — 1 file(s), numbers 1, pp 40-40; cv per-file 19415x1; gcd per-file 27140x1; key 'Daredevil v2 (1998)'
+      [46868] Daredevil Annual 001 (2007) (Digital) (Zone-Empire).cbr (40pp)
+   G4 "Daredevil" in Marvel\_Daredevil\02 Daredevil v2 (1998)\Trades — 2 file(s), 2 COL, pp 141-161; cv per-file 116071x1, 39421x1; gcd per-file 135968x1, 225997x1; key 'Daredevil v2 (1998)'
+      [46911] COL Daredevil Vol. 02 - Parts of a Hole (2003) (Digital) (Asgard-Empire).cbr (161pp)
+         own record cv 116071 / gcd s135968 "Marvel Knights Daredevil by Mack & Quesada: Parts of a Hole" (issue 1883969) COLLECTS: gcd=6026 Daredevil (1998) #9-15
+      [46919] COL Daredevil Vol. 22 - Shadowland (2011) (Digital) (Zone-Empire).cbr (141pp)
+         own record cv 39421 / gcd s225997 "Shadowland: Daredevil" (issue 2756366) COLLECTS: gcd=6026 Daredevil (1998) #508-512 · gcd=225998 Shadowland: Daredevil (2011) (unnumbered) · gcd=53796 Shadowland: After the Fall (2011) #1
+   G5 "Daredevil Omnibus" in Marvel\_Daredevil\_Omnibus Editions — 2 file(s), 2 COL, pp 793-1139; cv per-file 98730x2; gcd per-file 112556x2; key 'Daredevil'
+      [46979] COL Daredevil Omnibus Book 02 (2023) (Digital-Empire).cbr (793pp)
+         own record cv 98730 / gcd s112556 "Daredevil Omnibus" (issue 2537472) COLLECTS: gcd=1636 Daredevil (1964) #42-74 · gcd=1867 Iron Man (1968) #35-36
+      [46980] COL Daredevil Omnibus Book 03 (2024) (Digital-Empire).cbr (1139pp)
+         own record cv 98730 / gcd s112556 "Daredevil Omnibus" (issue 2620941) COLLECTS: gcd=1636 Daredevil (1964) #75-119 · gcd=1937 Amazing Adventures (1970) #1-8 · gcd=1571 The Avengers (1963) #111
+   G6 "Daredevil by Frank Miller Omnibus Companion (2023, 3rd edition) (Digital-Empire)" in Marvel\_Daredevil\_Omnibus Editions — 1 file(s), 1 COL, pp 596-596; cv per-file 21192x1; gcd per-file 68583x1; key 'Daredevil'
+      [46977] COL Daredevil by Frank Miller Omnibus Companion (2023, 3rd edition) (Digital-Empire).cbr (596pp)
+         own record cv 21192 / gcd s68583 "Daredevil by Frank Miller Omnibus Companion" (issue 1099439) COLLECTS: gcd=1636 Daredevil (1964) #219, #226-233 · gcd=4683 Daredevil The Man without Fear (1993) #1-5 · gcd=2359 The Spectacular Spider-Man (1976) #27-28 · gcd=87031 Marvel Graphic Novel: Daredevil (1986) (unnumbered)
+   G7 "Daredevil by Frank Miller and Klaus Janson" in Marvel\_Daredevil\_Trades, Minis and One-shots\Daredevil by Frank Miller and Klaus Janson (2008) — 1 file(s), 1 COL, pp 327-327; cv per-file 29926x1; gcd per-file 73293x1; key 'Daredevil'
+      [47020] COL Daredevil by Frank Miller and Klaus Janson Vol. 01 (2008) (Digital) (F) (Zone-Empire).cbr (327pp)
+         own record cv 29926 / gcd s73293 "Daredevil by Frank Miller and Klaus Janson" (issue 1106834) COLLECTS: gcd=1636 Daredevil (1964) #158-161, #163-172 · gcd=2359 The Spectacular Spider-Man (1976) #27-28 · gcd=94743 Daredevil Visionaries: Frank Miller (2000) #1
+   G8 "Daredevil Annual 04b" in Marvel\_X-Men\_X-Men Complete Chronology V2\0093 Atlantis Attacks — 1 file(s), pp 56-56; cv per-file 2351x1; gcd per-file 1808x1; key 'Daredevil'
+      [87352] 007 Daredevil Annual 04b.cbr (56pp)
+   G9 "Daredevil" in _Marvel Major Event Chronology (digital)\2006.07 - Civil War\03 Civil War - Spider-Man Unmasked\Extra — 2 file(s), numbers 92-93, pp 24-24; cv per-file 6209x2; gcd per-file 6026x2; key 'Daredevil v2 (1998)'
+      [116709] Daredevil 092 (2007) (Digital) (Zone-Empire).cbr (24pp)
+      [116710] Daredevil 093 (2007) (digital) (Zone-Empire).cbr (24pp)
+   G10 "Daredevil" in _Marvel Major Event Chronology (digital)\2010.07 - Shadowland\01 Lead In — 16 file(s), numbers 111, 113-119, 500-507, pp 23-89; cv per-file 6209x16; gcd per-file 6026x16; key 'Daredevil v2 (1998)' | 'Daredevil'
+      e.g. Daredevil 111 (2008) (Digital) (Zone-Empire).cbr
+        117370 #111 2008 25pp · 117372 #113 2008 25pp · 117373 #114 2009 25pp · 117374 #115 2009 25pp · 117375 #116 2009 24pp · 117376 #117 2009 26pp · 117377 #118 2009 26pp · 117378 #119 2009 26pp
+        117379 #500 2009 89pp key="Daredevil" · 117380 #501 2009 25pp key="Daredevil" · 117381 #502 2010 25pp key="Daredevil" · 117382 #503 2010 26pp key="Daredevil"
+        117383 #504 2010 23pp key="Daredevil" · 117384 #505 2010 25pp key="Daredevil" · 117385 #506 2010 25pp key="Daredevil" · 117386 #507 2010 24pp key="Daredevil"
+   G11 "Daredevil - Shadowland (2011) (Digital) (F) (Zone-Empire)" in _Marvel Major Event Chronology (digital)\2010.07 - Shadowland\02 Shadowland — 1 file(s), numbers 2, pp 143-143; cv per-file 39421x1; gcd per-file 225997x1; key 'Daredevil - Shadowland'
+      [117388] 02 Daredevil - Shadowland (2011) (Digital) (F) (Zone-Empire).cbr (143pp)
