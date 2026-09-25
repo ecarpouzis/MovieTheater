@@ -2219,3 +2219,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Shebang, 781pp, S15199): iscollection-read-wave174.csv + apply_read_iscollection.py, then wave_fix. A reprint line
   merged onto its floppy run (Tank Girl Full Colour Classics -> the run, shared cv 110540) may survive under the
   LINE's shelf id (S17597, not S17602) — merge_count_check counts the drop, not which id survives.
+[L-412] pub:valiant kind:collected-line sig:split sig:probe
+- Waves 176-177: Valiant 'chronological ladder' shelves (Harbinger 0-41, Rai 0-33) are the 1992 runs even when the
+  shelf stores the 2012 / 2014 relaunch — the relaunch's trades on the same shelf make it co-equal (R + split-needed).
+  X-O Manowar Classic Omnibus reprints only the 1992 run and gives way to it (merge-with on CV 4831). A cover gallery
+  of one issue whose stored cv is the TRADE line (Barbaric 2021, CV 148007) merges onto the run shelf (CV 137217).
+  Robotech: the Macross -> Robotech: The Macross Saga retitle stores GCD 21439 (Macross #1), the chain's first record
+  (L-212); GCD's 35-issue 11694 is the alternative, noted on an N line. A trade line cv stored on a run shelf (Good
+  Boy v3 CV 142228, Conan Battle of the Black Stone GCD 208813) = F wrong-cv-link.
