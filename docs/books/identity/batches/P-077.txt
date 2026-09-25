@@ -1,0 +1,378 @@
+## Conventions for this batch (30 shown of 95 matched; 412 in LEDGER.md; 10 shelf/shelves: folder:vn-year ×6 · folder:events ×6 · pub:valiant ×6 · pub:small-press ×2 · pub:titan ×2 · kind:trade-only ×2 · pub:dynamite ×1 · pub:papercutz-nbm ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-359] (8 shelf/shelves) kind:strip pub:titan pub:valiant sig:probe
+- Titan: licensed runs can be filed under a SHORTENED name on both legs ("Templars" = Assassin's Creed: Templars,
+  "Tekken: Blood Feud") — probe the title's last word with --contains. Acclaim / Valiant: GCD spells "&" ("Captain
+  Johner & the Aliens") and drops the franchise word ("X-O Database"). Strips: Penny Arcade, Wallace the Brave and
+  Prince Valiant pair with their own BOOK lines at 0.9, like Rip Kirby (L-355) — the year-file shelf merges into the
+  book-line shelf. ASM Omnibus Book 01 (2022) is GCD 58631's "#1 [Fifth Edition]" row. A split key must differ
+  from the files' current key AFTER normalisation (L-336) (R-089/R-090).
+[L-298] (7 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-040] (6 shelf/shelves) folder:bucket folder:events pub:dc pub:papercutz-nbm pub:scout pub:titan pub:valiant sig:twin
+- NBM / Papercutz album lines and Scout one-shots carry TWIN adjacent GCD rows for one book (120209/120210) —
+  cap at 0.9 and name both. Titan's Doctor Who "Year N" volumes number continuously across a Doctor (a ladder
+  starting at #6 is complete). A publisher's read-order crossover folder (Titan `Lost Dimension`, Valiant
+  `_Chronological Valiant`) = DC's `#DC Events` shape.
+[L-153] (6 shelf/shelves) pub:valiant
+- Valiant's GCD rows count DOUBLE because GCD indexes every issue's "Pre-Order Edition" as its own row (Doctor Tomorrow
+  10 for 5, Fallen World 10 for 5, X-O Manowar 16 for 8) — exactly twice ComicVine's count is that artefact; caps at 0.9.
+[L-156] (6 shelf/shelves) pub:archie pub:valiant
+- Acclaim's Eternal Warriors is the Archie-holiday split with ComicVine on the spanning side: CV 26146 count 6 vs six
+  separate GCD one-shot series (15146, 21569-21572, 21589).
+[L-166] (6 shelf/shelves) pub:valiant
+- Valiant's GCD pre-order doubling confirmed again: GCD 153708 "The Visitor" count 12 = six issues each indexed twice.
+[L-318] (6 shelf/shelves) kind:archive kind:digital kind:fan kind:strip pass:item pub:dc pub:tko pub:valiant sig:collision sig:probe sig:stale-flag
+- C-061..C-063 (Valiant, Vertigo, strips): newspaper-strip yearly webrip compilations (Garfield, Nancy, Prince
+  Valiant, Mark Trail …) are systematically provider-missing — CV/GCD index the comic-book series, not a strip
+  archive. An ongoing anthology split across per-story shelves by design (TKO Shorts, the World of Warcraft
+  webcomic) is chained by merge-with, not two comics. Fables is one 161-issue run (CV 9723 / GCD 10549) across seven
+  sibling shelves → all merge into one. A coincidental CV volume-id / issue-id collision can slip past the
+  checker's existence test — an `I` line's `cv=` must come from `--issues`, never from the volume list. And the
+  hard S-gate on an open flag is NEVER a reason to write R: S + stale-flag when the shelf is one run or a
+  coextensive line (a reader refused ten such shelves and was sent back).
+[L-412] (6 shelf/shelves) kind:collected-line pub:valiant sig:probe sig:split
+- Waves 176-177: Valiant 'chronological ladder' shelves (Harbinger 0-41, Rai 0-33) are the 1992 runs even when the
+  shelf stores the 2012 / 2014 relaunch — the relaunch's trades on the same shelf make it co-equal (R + split-needed).
+  X-O Manowar Classic Omnibus reprints only the 1992 run and gives way to it (merge-with on CV 4831). A cover gallery
+  of one issue whose stored cv is the TRADE line (Barbaric 2021, CV 148007) merges onto the run shelf (CV 137217).
+  Robotech: the Macross -> Robotech: The Macross Saga retitle stores GCD 21439 (Macross #1), the chain's first record
+  (L-212); GCD's 35-issue 11694 is the alternative, noted on an N line. A trade line cv stored on a run shelf (Good
+  Boy v3 CV 142228, Conan Battle of the Black Stone GCD 208813) = F wrong-cv-link.
+[L-281] (7 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-124] (6 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-175] (6 shelf/shelves) folder:bucket folder:events pass:item
+- In the chronology folders the RUN rule stands over the bucket rule: `S` = the numbered run, the tie-in's collected
+  record goes on the `I` line (B-072/073, ~90 shelves); the book's own record is the S only where no numbered run exists.
+[L-191] (6 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-272] (6 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-064] (8 shelf/shelves) pass:item sig:twin
+- GCD indexes PRINTINGS: the S line takes the first edition both legs agree on; the `I` line takes the printing
+  we hold (page counts match the edition's row). GCD issue ids for books come from `gcd_issue` — prefer the
+  issue id to the `s<series>` form; use `s<series>` only for twin/variant rows.
+[L-085] (8 shelf/shelves) sig:barcode sig:trade-link sig:twin
+- `gcd_issue` carries the trade's page count AND ISBN: it matched our rips within ±10pp on 100+ books and told
+  two same-title count-1 rows apart (an 8pp ashcan is not a twin of the trade).
+[L-101] (8 shelf/shelves) sig:twin
+- Page count tells GCD twins apart (a 32pp sampler vs the 256pp anthology); a count-0 GCD row (236534 "Cells at
+  Work! Lady") is an empty stub, not a leg.
+[L-193] (8 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-310] (8 shelf/shelves) pass:revisit sig:gcd-notes sig:stale-flag
+- R-025 (Opus): the GCD dump's `gcd_reprint` + `gcd_story` tables answer "what does this trade collect" outright —
+  join story → reprint → origin issue → series and the `C` range falls out (Elektra #7-22, Casanova Luxuria #1-7,
+  all six Criminal ranges); `gcd_series.notes` states ranges in prose. A GCD line row with `year_ended` NULL and a
+  count BELOW our holdings is NOT coextensive when the provider files the missing books under their own row
+  (Casanova 148774 = 3 vols + Acedia 236165) — two lines, not staleness. Before `F wrong-cv-link` on a revisit read
+  Series.CvVolumeId: the shelf may already carry the right id and re-flagging would clear it. A stored id can belong
+  to a series holding NO comic files (outside the checker's population) — note it, never merge.
+[L-113] (7 shelf/shelves) sig:comicinfo sig:stamp
+- ComicInfo `Volume` holding a 4-digit ComicVine volume id (not a year) is a 1.0 assertion like the 6-digit
+  case (Ka-Zar v2 1974: `Volume 2692` + `Count 20` = CV 2692) and disproves the per-file matcher's pick.
+[L-013] (6 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (6 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-016] (6 shelf/shelves) sig:comicinfo
+- Glorith rips' ComicInfo `Web` ids are NOT GCD issue ids in our dump (29 checked: missing or unrelated). Never
+  claim 1.0 from one. A ComicInfo `Volume` holding a 6-digit number IS a ComicVine volume id (Lex and the City =
+  162184) — a genuine 1.0 assertion.
+[L-032] (6 shelf/shelves) sig:comicinfo
+- A Marika-Empire rip's ComicInfo `Web` id IS a ComicVine ISSUE id (21/21 resolve to the stored volume) — the
+  1.0 shape. The ripper decides: Glorith's Web ids are not GCD issue ids. Check one against the rip before
+  claiming 1.0 on a new ripper.
+[L-043] (6 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-046] (2 shelf/shelves) pub:action-lab pub:aftershock pub:small-press sig:probe
+- Small-press American floppies (Action Lab, Aftershock minis, Behemoth) are thin in GCD → `provider-missing` on
+  the GCD side is common and honest.
+[L-050] (6 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-051] (2 shelf/shelves) pub:bongo pub:dc pub:small-press sig:probe
+- GCD spellings that hide a hit: Bongo's annual is plainly "Treehouse of Horror" (5435); Miller's 1983 series is
+  "Rōnin" (2721); Comico's Primer is "Primer" (14288). DC's Blackest Night revival issues sit in the ORIGINAL
+  series (Power of SHAZAM! 5246 runs 1995-2010).
+[L-055] (2 shelf/shelves) pub:dc pub:small-press sig:probe
+- ComicVine splits ONE line across two spellings of its own ("Batman Arkham: X" vs "Batman: Arkham: X"). GCD
+  prefixes titles the packet probes without ("Batman: Catwoman Defiant", "The Blue Beetle" for the 2006 series).
+[L-072] (6 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (6 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+
++65 more matched entries not shown: L-089, L-095, L-096, L-114, L-118, L-125, L-139, L-140, L-148, L-152, L-157, L-158, L-159, L-163, L-168, L-177, L-204, L-253, L-264, L-267, L-271, L-273, L-292, L-294, L-341, L-346, L-347, L-269, L-068, L-128, L-144, L-181, L-194, L-228, L-231, L-241, L-325, L-330, L-336, L-065, L-099, L-123, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-262, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-074, L-083, L-250 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S10712 Lenore  [split]  25 files / 0 collections  decided in R-177 (R)
+   decided: R 10712 | three runs share this shelf: Lenore (SLG 1998-2007, 13; CV 22998 / GCD 19028) = the 13 "Lenore v1 01-13" files, the largest; Lenore (Titan 2009-2014, 11; CV 41875 #1-11 2011-02 ... 2014-12 / GCD 53104 #1 2009 ... #11 2014-10) = the 11 "Lenore 001-011 (2009-2014)" files; and Lenore (Titan 2019, 1; CV 120560 / GCD 178490) = "Lenore 001 (2019)"; a whole 11-issue second volume is a co-equal run with no shelf (lookup --who-stores cv=41875: 0 rows)
+   F 10712 split-needed | Lenore (1998, CV 22998 / GCD 19028) stays with items 109571-109583; items 109584-109594 "Lenore 001-011 (2009-2014)" 26-30pp -> new key "Lenore v2 (2009)" (CV 41875 / GCD 53104); item 111880 "Lenore 001 (2019) (2 covers)" 30pp -> new key "Lenore v3 (2019)" (CV 120560 / GCD 178490)
+   N 10712 kept run: cv=22998 gcd=19028 (SLG 1998-2007, 13 = our v1 01-13); flag #315 label-ambiguous (item 109571) is answered - the v1 files are 21-33pp single issues (L-367)
+   keys now: "Lenore" x25
+   groups (title x folder): 3
+   G1 "Lenore" in SLG\Lenore (1998)\Lenore (1998) — 13 file(s), numbers 1-13, pp 21-33; cv per-file 22998x13; gcd per-file 19028x9; key 'Lenore'
+      e.g. Lenore v1 01 (1998) (digital) (Minutemen-Bean).cbz
+        109571 #1 1998 26pp · 109572 #2 1998 30pp · 109573 #3 1998 25pp · 109574 #4 1999 33pp · 109575 #5 1999 23pp · 109576 #6 1999 23pp · 109577 #7 2000 23pp · 109578 #8 2000 25pp
+        109579 #9 2002 23pp · 109580 #10 2003 23pp · 109581 #11 2004 23pp · 109582 #12 2005 24pp · 109583 #13 2007 21pp
+   G2 "Lenore" in SLG\Lenore (1998)\Lenore (2009) — 11 file(s), numbers 1-11, pp 26-30; cv per-file 22998x10, 39319x1; gcd per-file 53104x1, 137704x1; key 'Lenore'
+      e.g. Lenore 001 (2009) (Digital) (TLK-EMPIRE-HD).cbr
+        109584 #1 2009 27pp · 109585 #2 2011 28pp · 109586 #3 2011 29pp · 109587 #4 2012 27pp · 109588 #5 2012 26pp · 109589 #6 2012 26pp · 109590 #7 2012 29pp · 109591 #8 2013 29pp
+        109592 #9 2014 29pp · 109593 #10 2014 29pp · 109594 #11 2014 30pp
+   G3 "Lenore" in Titan Comics\Lenore v2 (2019) — 1 file(s), numbers 1, pp 30-30; cv per-file 120560x1; gcd per-file 178490x1; key 'Lenore'
+      [111880] Lenore 001 (2019) (2 covers) (digital) (The Seeker-Empire).cbr (30pp)
+
+== S1312 Armorines  [split]  17 files / 0 collections  decided in R-177 (R)
+   decided: R 1312 | two runs share this shelf: Armorines (Acclaim 1994-1995, 13 = #0-12; CV 5340 / GCD 5057) = the 13 "_Chronological Valiant" files "270.01 Armorines 00" ... "536. Armorines 12", the largest; and Armorines (Acclaim 1999-2000, 4; CV 26141 #1 1999-10 ... #4 2000-01 / GCD 13865) = the four "Armorines 01-04 (of 04) (1999-2000)" files - a whole mini, a co-equal run no shelf stores (who-stores cv=26141: 0 rows)
+   F 1312 split-needed | Armorines (1994, CV 5340 / GCD 5057) stays with the chronological #0-12; items 111001 / 111002 / 111003 / 111004 "Armorines 01-04 (of 04) (1999-2000)" 24-39pp -> new key "Armorines v2 (1999)" (CV 26141 / GCD 13865; their folder is Valiant\_Acclaim\Armorines v2)
+   N 1312 kept run: cv=5340 gcd=5057 (Acclaim 1994-1995, 13 = #0-12); the per-file CV 26141 stamps all 17 files
+   keys now: "Armorines" x17
+   groups (title x folder): 3
+   G1 "Armorines" in Valiant\_Acclaim\Armorines v2 — 4 file(s), numbers 1-4, pp 24-39; cv per-file 26141x4; gcd per-file 13865x4; key 'Armorines'
+      e.g. Armorines 01 (of 04) (1999) (digital) (d'argh-Empire).cbr
+        111001 #1 1999 39pp · 111002 #2 1999 24pp · 111003 #3 1999 25pp · 111004 #4 2000 30pp
+   G2 "01 Armorines" in Valiant\_Chronological Valiant — 1 file(s), numbers 0, pp 16-16; cv per-file 26141x1; key 'Armorines'
+      [111793] 270.01 Armorines 00.cbz (16pp)
+   G3 "Armorines" in Valiant\_Chronological Valiant — 12 file(s), numbers 1-12, pp 21-24; cv per-file 26141x12; key 'Armorines'
+      e.g. 335. Armorines 01.cbr
+        111733 #1 24pp · 111380 #2 21pp · 111829 #3 21pp · 111744 #4 22pp · 111795 #5 21pp · 111748 #6 22pp · 112035 #7 22pp · 111412 #8 22pp · 111816 #9 22pp · 111813 #10 22pp · 111674 #11 21pp
+        112072 #12 22pp
+
+== S14355 Rai  [split]  39 files / 4 collections  decided in R-177 (R)
+   decided: R 14355 | three runs share this shelf and the stored link names a minor one: the 34 "_Chronological Valiant" files "041. Rai 01" ... "544. Rai 33" with "149. Rai 00" between #8 and #9 are Rai (Valiant 1992-1995, 34 = #0-33; CV 4828 / GCD 4493, the chain's first record - L-212); items 110907 / 110909 / 110910 are the 2014 Rai (CV 73417 / GCD 80415: Deluxe Edition, #16, Vol. 4); items 110911 / 110912 are the 2019 Rai's two Books (CV 122982 / GCD 152850) - each two-plus books of its own run
+   F 14355 split-needed | Rai (1992, CV 4828 / GCD 4493) stays with the 34 chronological issues; items 110907 "Rai - Deluxe Edition - Book 01 (2016)", 110909 "Rai 016 (2016)", 110910 "Rai v04 - 4001 A.D. (2016)" -> new key "Rai v3 (2014)" (CV 73417 / GCD 80415 - the key those three already carry); items 110911 / 110912 "Rai Book 01 / 02 (2020)" -> new key "Rai v4 (2019)" (CV 122982 / GCD 152850)
+   F 14355 wrong-cv-link | the stored CV 73417 (Rai 2014, 16) is stamped per-file on all 39 files; 34 of them are the 1992 run
+   F 14355 needs-fetch cv=4828 | "Rai" (Valiant/Acclaim 1992, 34) is named from the rip and has no CvVolume row
+   N 14355 kept run: cv=4828 gcd=4493 (CV counts #0-33 as one volume; GCD 4493 holds #0-8 and files the retitled "Rai and the Future Force" stretch separately); C-062's "ladder 0-33 runs past both counts - staleness" was the 1992 run all along
+   nearby: S14359 "RAI Companion" 1f [title+1 — S cv=25837 gcd=4757 (B-068 0.95)] keys: "Rai Companion"
+   keys now: "Rai" x36 · "Rai v3 (2014)" x3
+   groups (title x folder): 4
+   G1 "Rai" in Valiant\Rai\Rai v3 (2014) — 2 file(s), 1 COL, numbers 16, pp 36-132; cv per-file 73417x1, 95029x1; gcd per-file 80415x1, 114649x1; key 'Rai v3 (2014)'
+      [110909] Rai 016 (2016) (digital) (Son of Ultron-Empire).cbr (36pp)
+      [110910] COL Rai v04 - 4001 A.D. (2016) (digital) (Son of Ultron-Empire).cbr (132pp)
+         own record cv 95029 / gcd s114649 "Rai" (issue 1712320) COLLECTS: gcd=80415 Rai (2014) #13-16
+   G2 "Rai - Deluxe Edition" in Valiant\Rai\Rai v3 (2014) — 1 file(s), 1 COL, pp 347-347; cv per-file 90119x1; gcd per-file 114648x1; key 'Rai v3 (2014)'
+      [110907] COL Rai - Deluxe Edition - Book 01 (2016) (Digital) (Zone-Empire).cbr (347pp)
+         own record cv 90119 / gcd s114648 "Rai Deluxe Edition" (issue 1712321) COLLECTS: gcd=80415 Rai (2014) #1-12
+   G3 "Rai" in Valiant\Rai\Rai v4 (2019) — 2 file(s), 2 COL, pp 124-126; cv per-file 130388x2; gcd per-file 164011x2; key 'Rai'
+      [110911] COL Rai Book 01 (2020) (digital) (Son of Ultron-Empire).cbr (126pp)
+         own record cv 130388 / gcd s164011 "Rai" (issue 2148376) COLLECTS: gcd=152850 Rai (2019) #1-5
+      [110912] COL Rai Book 02 (2020) (digital) (Son of Ultron-Empire).cbr (124pp)
+         own record cv 130388 / gcd s164011 "Rai" (issue 2195999) COLLECTS: gcd=152850 Rai (2019) #1, #6-10
+   G4 "Rai" in Valiant\_Chronological Valiant — 34 file(s), numbers 0-33, pp 21-30; cv per-file 73417x34; key 'Rai'
+      e.g. 041. Rai 01.cbz
+        111784 #1 27pp · 112009 #2 25pp · 111558 #3 25pp · 111697 #4 23pp · 111612 #5 23pp · 112083 #6 23pp · 112001 #7 23pp · 111584 #8 23pp · 111464 #0 24pp · 111547 #9 22pp · 111714 #10 21pp
+        111616 #11 22pp · 111765 #12 22pp · 111828 #13 22pp · 111570 #14 22pp · 111592 #15 21pp · 112030 #16 22pp · 111432 #17 22pp · 111769 #18 22pp · 111274 #19 22pp · 111394 #20 30pp
+        111743 #21 22pp · 111332 #22 21pp · 111437 #23 21pp · 111331 #24 22pp · 111244 #25 22pp · 112079 #26 22pp · 112041 #27 22pp · 111542 #28 22pp · 111696 #29 22pp · 112031 #30 22pp
+        111499 #31 22pp · 111336 #32 22pp · 111827 #33 22pp
+
+== S15854 Solar Man of the Atom  [split]  68 files / 3 collections  decided in R-177 (R)
+   decided: R 15854 | two runs and residue share this shelf: Solar, Man of the Atom (Valiant 1991-1996, 60; CV 4607 / GCD 4256) = the 60 "_Chronological Valiant" "Solar Man of the Atom v2 01-60" files, the largest; Solar: Man of the Atom (Dynamite 2014-2015, 12; CV 73103 / GCD 80249) = four issues #9-12 and its Vol. 01-02 trades - six books of a run no Series stores; plus two 1997 Acclaim one-shots
+   F 15854 split-needed | Solar (1991, CV 4607 / GCD 4256) stays with the 60 chronological issues and the two 1997 one-shots; items 21664-21667 "Solar - Man of the Atom 009-012 (2015)" and 21668 / 21669 "COL ... Vol. 01 - Nuclear Family / Vol. 02 - Woman of the Atom" -> new key "Solar: Man of the Atom (2014)" (CV 73103 / GCD 80249)
+   F 15854 wrong-cv-link | the per-file CV 73103 (Dynamite 2014) is stamped on all 68 files
+   N 15854 kept run: cv=4607 gcd=4256 (Valiant 1991-1996, 60); flag #416 label-ambiguous (item 111306) is answered - the v2 files are 21-43pp single issues (L-367)
+   nearby: S5607 "Doctor Solar - Man of the Atom" 9f [title+1 — S cv=34401 gcd=51414 (R-066 0.9)] keys: "Doctor Solar - Man of the Atom"
+   nearby: S103858 "Doctor Solar, Man of the Atom" 4f [title+1 — S cv=2091 gcd=1529 (R-066 0.95)] keys: "Doctor Solar, Man of the Atom (1962)"
+   keys now: "Solar Man of the Atom" x68
+   groups (title x folder): 4
+   G1 "Solar - Man of the Atom" in Dynamite\Solar - Man of the Atom — 6 file(s), 2 COL, numbers 9-12, pp 24-148; cv per-file 73103x4, 78358x1, 83341x1; gcd per-file 80249x4, 93498x2; key 'Solar Man of the Atom'
+      e.g. Solar - Man of the Atom 009 (2015) (digital) (Son of Ultron-Empire).cbr
+        21664 #9 2015 25pp · 21665 #10 2015 24pp · 21666 #11 2015 24pp · 21667 #12 2015 25pp
+      [21668] COL Solar - Man of the Atom Vol. 01 - Nuclear Family (2014) (Digital) (F) (Zone-Empire).cbr (148pp)
+         own record cv 78358 / gcd s93498 "Solar: Man of the Atom" (issue 1490086) COLLECTS: gcd=80249 Solar: Man of the Atom (2014) #1-4
+      [21669] COL Solar - Man of the Atom Vol. 02 - Woman of the Atom (2015) (Digital) (F) (Zone-Empire).cbr (105pp)
+         own record cv 83341 / gcd s93498 "Solar: Man of the Atom" (issue 1490976) COLLECTS: gcd=80249 Solar: Man of the Atom (2014) #6  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+   G2 "Solar - Man Of The Atom" in Valiant\_Acclaim — 1 file(s), 1 COL, pp 42-42; cv per-file 26075x1; gcd per-file 5828x1; key 'Solar Man of the Atom'
+      [111098] COL Solar - Man Of The Atom v2 (1997) (Potifar).cbr (42pp)
+   G3 "Solar Man of the Atom - Revelations (1997) (Acclaim) (oneshot) (Potifar)" in Valiant\_Acclaim — 1 file(s), pp 43-43; cv per-file 73103x1; gcd per-file 26609x1; key 'Solar Man of the Atom'
+      [111099] Solar Man of the Atom - Revelations (1997) (Acclaim) (oneshot) (Potifar).cbr (43pp)
+   G4 "Solar Man of the Atom" in Valiant\_Chronological Valiant — 60 file(s), numbers 1-60, pp 21-43; cv per-file 73103x60; key 'Solar Man of the Atom'
+      e.g. 019. Solar Man of the Atom v2 01 [Alpha & Omega part #01].cbz
+        111621 #1 35pp · 112080 #2 37pp · 111354 #3 37pp · 112012 #4 37pp · 111840 #5 36pp · 111831 #6 36pp · 111410 #7 42pp · 111339 #8 43pp · 111785 #9 43pp · 111330 #10 40pp · 111306 #11 23pp
+        111736 #12 23pp · 111304 #13 26pp · 111624 #14 23pp · 111752 #15 22pp · 111305 #16 22pp · 111501 #17 35pp · 111463 #18 22pp · 111699 #19 22pp · 111659 #20 22pp · 111302 #21 23pp
+        111361 #22 22pp · 111808 #23 22pp · 111791 #24 22pp · 111352 #25 25pp · 111358 #26 23pp · 111679 #27 22pp · 111656 #28 22pp · 112071 #29 24pp · 111729 #30 22pp · 111608 #31 22pp
+        111526 #32 22pp · 111289 #33 21pp · 111723 #34 21pp · 111798 #35 21pp · 111428 #36 22pp · 111734 #37 21pp · 111703 #38 21pp · 111647 #39 22pp · 111349 #40 21pp · 111371 #41 22pp
+        112082 #42 23pp · 111513 #43 22pp · 111740 #44 25pp · 111536 #45 27pp · 111794 #46 24pp · 112024 #47 23pp · 111783 #48 22pp · 111762 #49 23pp · 111403 #50 23pp · 111342 #51 22pp
+        111436 #52 22pp · 111391 #53 22pp · 111311 #54 22pp · 111770 #55 22pp · 111435 #56 23pp · 111474 #57 24pp · 111694 #58 24pp · 111556 #59 22pp · 111681 #60 22pp
+
+== S19635 Smurfs  [split]  29 files / 10 collections  decided in R-177 (S)
+   decided: S 19635 cv=50583 gcd=60513 0.9 | Smurfs (Papercutz/NBM 2010-, 26): CV 50583 ("The Purple Smurfs" ... "Smurf Salad") and GCD 60513 "Smurfs Graphic Novel" (26, softcover rows 60-68pp) agree title by title with our "Vol. 01-26" (49-66pp); 0.9 for residue - the #0 Smurfnapper and the 2013 FCBD one-shot; the 2014 FCBD joins its shelf
+   F 19635 split-needed | item 109339 "The Smurfs (2014, FCBD)" 32pp is CV 73592 issue 452078 / GCD 74272 row 1204062, the book S19639 stores (its own file is a second rip of it) -> join S19639 on its key "The Smurfs Silver Book" (L-368)
+   named: S19639 The Smurfs Free Comic Book Day  1 files  keys: "The Smurfs Silver Book"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S19640 "The Smurfs Tales" 5f [title+1 — S cv=137961 gcd=174741 (D-017 0.9)] keys: "The Smurfs Tales" | "The Smurfs Tales - Smurf And Turf and other Tales" | "The Smurfs Tales - The Golden Tree and other Tales"
+   nearby: S19637 "The Smurfs Anthology" 4f [title+1 — S cv=62890 gcd=211610 (B-066 0.95)] keys: "The Smurfs Anthology"
+   nearby: S19643 "The Smurfs & Friends" 2f [title+1 — S cv=86578 gcd=99689 (B-066 0.95)] keys: "The Smurfs and Friends"
+   nearby: S15802 "Smurfs Monsters" 1f [title+1 — S cv=84782 gcd=94997 (B-066 0.9)] keys: "Smurfs Monsters"
+   nearby: S19638 "The Smurfs Christmas" 1f [title+1 — S cv=68027 gcd=109145 (B-066 0.95)] keys: "The Smurfs Christmas"
+   keys now: "The Smurfs" x29
+   groups (title x folder): 3
+   G1 "The Smurfs" in Papercutz\The Smurfs (1958) — 27 file(s), 10 COL, numbers 0-1, 6-20, pp 24-66; cv per-file 50583x26, 34259x1; gcd per-file 60513x26, 51201x1; key 'The Smurfs'
+      [109349] The Smurfs Vol. 00 - Smurfnapper (2010) (Digital-HD) (Bean-Empire).cbz (24pp)
+      [109350] The Smurfs Vol. 01 - The Purple Smurfs (2010) (Digital-HD) (Bean-Empire).cbz (58pp)
+      [109351] COL The Smurfs Vol. 02 - The Smurfs and the Magic Flute (2010) (Digital-HD) (Bean-Empire).cbz (66pp)
+         own record cv 50583 / gcd s60513 "Smurfs Graphic Novel" (issue 868858) COLLECTS: gcd=28209 Johan et Pirlouit (1954) #9
+      [109352] COL The Smurfs Vol. 03 - The Smurf King (2010) (Digital-HD) (Bean-Empire).cbz (65pp)
+         own record cv 50583 / gcd s60513 "Smurfs Graphic Novel" (issue 868859) COLLECTS: gcd=28372 Les Schtroumpfs (1963) #2
+      [109353] COL The Smurfs Vol. 04 - The Smurfette (2011) (Digital-HD) (Bean-Empire).cbz (65pp)
+         own record cv 50583 / gcd s60513 "Smurfs Graphic Novel" (issue 868860) COLLECTS: gcd=28372 Les Schtroumpfs (1963) #3
+      [109354] COL The Smurfs Vol. 05 - The Smurfs and the Egg (2011) (Digital-HD) (Bean-Empire).cbz (65pp)
+         own record cv 50583 / gcd s60513 "Smurfs Graphic Novel" (issue 868861) COLLECTS: gcd=28372 Les Schtroumpfs (1963) #4
+      [109355] The Smurfs Vol. 06 - The Smurfs and the Howlibird (2011) (Digital-HD) (Bean-Empire).cbz (56pp)
+      [109356] The Smurfs Vol. 07 - The Astro Smurf (2011) (Digital-HD) (Bean-Empire).cbz (58pp)
+      [109357] The Smurfs Vol. 08 - The Smurf Apprentice (2011) (Digital-HD) (Bean-Empire).cbz (56pp)
+      [109358] The Smurfs Vol. 09 - Gargamel and the Smurfs (2011) (digital) (Minutemen-Bean).cbz (56pp)
+      [109359] The Smurfs Vol. 10 - The Return of the Smurfette (2012) (digital) (Minutemen-Bean).cbz (58pp)
+      [109360] The Smurfs Vol. 11 - The Smurf Olympics (2012) (digital) (Minutemen-Bean).cbz (57pp)
+      [109361] The Smurfs Vol. 12 - Smurf vs. Smurf (2012) (digital) (Minutemen-Bean).cbz (57pp)
+      [109362] The Smurfs Vol. 13 - Smurf Soup (2012) (digital) (Salem-Empire).cbr (57pp)
+      [109363] The Smurfs Vol. 14 - The Baby Smurf (2013) (digital) (Bean-Empire).cbz (54pp)
+      [109364] The Smurfs Vol. 15 - Smurflings (2013) (digital) (Bean-Empire).cbz (58pp)
+      [109365] The Smurfs Vol. 16 - Aerosmurf (2013) (digital) (Bean-Empire).cbz (58pp)
+      [109366] The Smurfs Vol. 17 - The Strange Awakening of Lazy Smurf (2014) (Digital) (Bean-Empire).cbz (56pp)
+      [109367] The Smurfs Vol. 18 - The Finance Smurf (2014) (Digital) (Bean-Empire).cbz (49pp)
+      [109368] The Smurfs Vol. 19 - The Jewel Smurfer (2015) (digital) (Salem-Empire).cbr (49pp)
+      [109369] The Smurfs Vol. 20 - Doctor Smurf (2016) (digital) (Salem-Empire).cbr (49pp)
+      [109370] COL The Smurfs Vol. 21 - The Wild Smurf (2016) (digital) (Salem-Empire).cbr (65pp)
+      [109371] COL The Smurfs Vol. 22 - The Smurf Menace (2017) (digital) (Salem-Empire).cbr (66pp)
+      [109372] COL The Smurfs Vol. 23 - Can't Smurf Progress (2017) (Digital) (Bean-Empire).cbz (65pp)
+      [109373] COL The Smurfs Vol. 24 - The Smurf Reporter (2019) (digital) (Salem-Empire).cbr (65pp)
+      [109374] COL The Smurfs Vol. 25 - The Gambling Smurfs (2019) (digital) (Salem-Empire).cbr (66pp)
+      [109375] COL The Smurfs Vol. 26 - Smurfs Salad (2019) (digital) (Salem-Empire).cbr (66pp)
+   G2 "The Smurfs (2014, FCBD) (digital) (Salem-Empire)" in Papercutz\The Smurfs (1958) — 1 file(s), pp 32-32; cv per-file 73592x1; gcd per-file 74272x1; key 'The Smurfs'
+      [109339] The Smurfs (2014, FCBD) (digital) (Salem-Empire).cbr (32pp)
+   G3 "The Smurfs - FCBD" in Papercutz\The Smurfs (1958)\Extras — 1 file(s), numbers 2013, pp 32-32; cv per-file 60812x1; gcd per-file 74272x1; key 'The Smurfs'
+      [109330] The Smurfs - FCBD 2013 (Digital) (Bean-Empire).cbz (32pp)
+
+== S2862 Blade Runner 2019  [split]  6 files / 5 collections  decided in R-177 (S)
+   decided: S 2862 cv=120232 gcd=148828 0.9 | Blade Runner 2019 (Titan 2019-2020, 12): CV 120232 and GCD 148828 agree, and GCD's roll-ups say our Vol. 01-03 collect #1-4 / #5-8 / #9-12; 0.9 for the FCBD 2020 one-shot; the 2039 Vol. 01 joins its shelf
+   F 2862 split-needed | item 110060 "COL Blade Runner 2039 Vol. 01 - Luv (2023)" 105pp collects Blade Runner 2039 #1-4 (GCD 2654808's notes; CV 146794 / GCD 193782), the run S2865 stores -> join S2865 on its key "Blade Runner 2039" (L-368)
+   N 2862 flag #186 label-ambiguous (item 111858): answered - items 110050 and 111858 are two rips of Vol. 01 and 110060 is the misfiled 2039 volume (L-367)
+   named: S2865 Blade Runner 2039  5 files  keys: "Blade Runner 2039"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S2864 "Blade Runner 2029" 3f [title — S cv=132618 gcd=168062 (C-061 0.9)] keys: "Blade Runner 2029"
+   nearby: S2867 "Blade Runner Origins" 3f [title+1 — S cv=134353 gcd=170536 (A-030 0.95)] keys: "Blade Runner Origins"
+   nearby: S2866 "Blade Runner Free Comic Book Day Issue, 2021" 1f [title+1 — S cv=138394 gcd=174904 (D-017 0.95)] keys: "Blade Runner FCBD 2021"
+   keys now: "Blade Runner 2019" x3 · "Blade Runner" x2 · "Blade Runner 2019 FCBD" x1
+   groups (title x folder): 4
+   G1 "Blade Runner 2019" in Titan Comics\Blade Runner\Blade Runner 2019 (2019) — 3 file(s), 3 COL, pp 104-125; cv per-file 122978x1, 130387x1, 134026x1; gcd per-file 152805x3; key 'Blade Runner 2019'
+      [110050] COL Blade Runner 2019 Vol. 01 - Los Angeles (2019) (digital) (Son of Ultron-Empire).cbr (105pp)
+         own record cv 122978 / gcd s152805 "Blade Runner 2019" (issue 2039431) COLLECTS: gcd=148828 Blade Runner 2019 (2019) #1-4
+      [110051] COL Blade Runner 2019 Vol. 02 - Off World (2020) (digital) (DrVink-HD-DCP).cbz (104pp)
+         own record cv 130387 / gcd s152805 "Blade Runner 2019" (issue 2174306) COLLECTS: gcd=148828 Blade Runner 2019 (2019) #5-8
+      [110052] COL Blade Runner 2019 Vol. 03 - Home Again, Home Again (2021) (digital) (DrVink-HD-DCP).cbz (125pp)
+         own record cv 134026 / gcd s152805 "Blade Runner 2019" (issue 2254837) COLLECTS: gcd=148828 Blade Runner 2019 (2019) #9-12
+   G2 "Blade Runner" in Titan Comics\Blade Runner\Blade Runner 2019 (2019)\Annuals and Specials — 1 file(s), numbers 2019, pp 23-23; cv per-file 129517x1; gcd per-file 162806x1; key 'Blade Runner 2019 FCBD'
+      [111857] Blade Runner 2019 - Free Comic Book Day (2020) (digital) (Son of Ultron-Empire).cbr (23pp)
+   G3 "Blade Runner 2019" in Titan Comics\Blade Runner\Blade Runner 2019 (2019)\UHD TPBs — 1 file(s), 1 COL, pp 110-110; cv per-file 122978x1; gcd per-file 152805x1; key 'Blade Runner'
+      [111858] COL Blade Runner 2019 Vol. 01 - Los Angeles (2019) (digital) (Son of Ultron II-Empire).cbr (110pp)
+         own record cv 122978 / gcd s152805 "Blade Runner 2019" (issue 2039431) COLLECTS: gcd=148828 Blade Runner 2019 (2019) #1-4
+   G4 "Blade Runner 2039" in Titan Comics\Blade Runner\Blade Runner 2039 (2023) — 1 file(s), 1 COL, pp 105-105; cv per-file 153750x1; gcd per-file 214913x1; key 'Blade Runner'
+      [110060] COL Blade Runner 2039 Vol. 01 - Luv (2023) (digital) (Son of Ultron-Empire).cbr (105pp)
+
+== S64338 Bloodshot  [split]  54 files / 2 collections  decided in R-177 (S)
+   decided: S 64338 cv=5067 gcd=4755 0.9 | Bloodshot (Valiant 1993-1996, 52 = #0-51): CV 5067 (52 cached) and GCD 4755 (52) agree with the 42 chronological files "121. Bloodshot 00" ... "705. Bloodshot 51" and the two 2021 Valiant Classics trades (judged #0-7, #8-14); 0.9 while ten 1997-series issues sit here - they join below
+   F 64338 split-needed | items 111011-111020 "Bloodshot 07-16 (1998) (d'argh-Empire)" 20-23pp are #7-16 of Bloodshot (Acclaim 1997-1998, 16; CV 11899 / GCD 12912, per-file GCD on all ten), the run S64339 stores with #1-6 from the same ripper -> join S64339 on its key "Bloodshot (1997)" (L-368)
+   named: S64339 Bloodshot  6 files  keys: "Bloodshot (1997)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S95772 "Bloodshot" 9f [title — S cv=50367 gcd=66766 (R-177 0.9)] keys: "Bloodshot v3 (2012)" · S95773 "Bloodshot" 4f [title — S cv=121568 gcd=153588 (C-061 0.9)] keys: "Bloodshot v4 (2019)"
+   nearby: S2970 "Bloodshot Reborn" 8f [title+1 — S cv=81357 gcd=88490 (R-177 0.9)] keys: "Bloodshot Reborn" | "Bloodshot Reborn - The Analog Man - Director's Cut" | "Bloodshot Reborn v1 (2015)" | "Bloodshot Reborn v2 (2017)"
+   nearby: S2979 "Bloodshot Salvation" 4f [title+1 — S cv=104355 gcd=116836 (A-030 0.9)] keys: "Bloodshot Salvation"
+   nearby: S2981 "Bloodshot Unleashed" 4f [title+1 — S cv=145293 gcd=203054 (A-030 0.95)] keys: "Bloodshot Unleashed" · S2983 "Bloodshot World" 1f [title+1] keys: "Bloodshot World"
+   nearby: S2984 "Bloodshot Yearbook" 1f [title+1 — S cv=23637 gcd=5058 (B-068 0.95)] keys: "Bloodshot Yearbook"
+   nearby: S14598 "Bloodshot: Resurgence" 1f [title+1 — S cv=162019 gcd=221000 (B-068 0.95)] keys: "Resurgence - Bloodshot"
+   keys now: "Bloodshot (1993)" x54
+   groups (title x folder): 3
+   G1 "Bloodshot" in Valiant\Bloodshot\Bloodshot - Valiant Classics — 2 file(s), 2 COL, pp 274-309; cv per-file 134187x1, 138084x1; gcd per-file 4755x2; key 'Bloodshot (1993)'
+      [110796] COL Bloodshot Vol. 01 - The Blood of Heroes (2021) (digital) (Son of Ultron-Empire).cbr (274pp)
+      [110797] COL Bloodshot Vol. 02 - Empirical Dynasty (2021) (digital) (Son of Ultron-Empire).cbr (309pp)
+   G2 "Bloodshot" in Valiant\_Acclaim\Bloodshot v2 — 10 file(s), numbers 7-16, pp 20-23; cv per-file 5067x10; gcd per-file 12912x10; key 'Bloodshot (1993)'
+      e.g. Bloodshot 07 (1998) (digital) (d'argh-Empire).cbr
+        111011 #7 1998 22pp · 111012 #8 1998 23pp · 111013 #9 1998 21pp · 111014 #10 1998 20pp · 111015 #11 1998 22pp · 111016 #12 1998 20pp · 111017 #13 1998 22pp · 111018 #14 1998 22pp
+        111019 #15 1998 23pp · 111020 #16 1998 23pp
+   G3 "Bloodshot" in Valiant\_Chronological Valiant — 42 file(s), numbers 0-6, 17-51, pp 19-24; cv per-file 5067x42; key 'Bloodshot (1993)'
+      e.g. 121. Bloodshot 00.cbz
+        111393 #0 23pp · 111520 #1 21pp · 111709 #2 22pp · 111429 #3 22pp · 111251 #4 23pp · 111517 #5 22pp · 111625 #6 22pp · 111657 #17 22pp · 111408 #18 22pp · 111293 #19 22pp · 111642 #20 22pp
+        111518 #21 22pp · 111362 #22 22pp · 111610 #23 22pp · 111641 #24 22pp · 111594 #25 22pp · 111359 #26 22pp · 111720 #27 21pp · 111810 #28 21pp · 112006 #29 21pp · 111488 #30 21pp
+        112093 #31 21pp · 111781 #32 22pp · 112077 #33 24pp · 111716 #34 20pp · 111655 #35 22pp · 111623 #36 19pp · 111564 #37 21pp · 111494 #38 22pp · 111819 #39 20pp · 111329 #40 21pp
+        111818 #41 22pp · 111701 #42 22pp · 111800 #43 22pp · 111422 #44 21pp · 111568 #45 22pp · 111595 #46 23pp · 111821 #47 22pp · 111792 #48 22pp · 112094 #49 22pp · 111543 #50 21pp
+        112037 #51 21pp
+
+== S65364 Ninjak  [split]  28 files / 1 collections  decided in R-177 (S)
+   decided: S 65364 cv=5348 gcd=5065 0.9 | Ninjak (Valiant 1994-1995, 28 = #0, #00, #1-26): CV 5348 and GCD 5065 agree with the chronological "252. Ninjak 00b" and "276. Ninjak 01" ... "623. Ninjak 26"; 0.9 for the 2021 run's Book 01 and while six 1997-series issues sit here - they join below
+   F 65364 split-needed | items 111056-111061 "Ninjak 007-012 (1997-1998) (Vee-Empire)" 24pp are #7-12 of Ninjak (Acclaim 1997-1998, 12; CV 6030 / GCD 5825, per-file GCD on all six), the run S65365 stores with #1-6 from the same ripper -> join S65365 on its key "Ninjak (1997)" (L-368)
+   named: S65365 Ninjak  6 files  keys: "Ninjak (1997)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S98889 "Ninjak" 7f [title — S cv=80599 gcd=87401 (R-177 0.9)] keys: "Ninjak v3 (2015)" · S98890 "Ninjak v4 (2017)" 1f [title — S gcd=116633 (C-062 0.9)] keys: "Ninjak v4 (2017)"
+   nearby: S12992 "Ninjak: Superkillers" 4f [title+1 — S cv=160438 gcd=208489 (A-030 0.9)] keys: "Ninjak - Superkillers"
+   nearby: S12996 "Ninjak Yearbook" 1f [title+1 — S cv=23655 gcd=16120 (B-068 0.95)] keys: "Ninjak Yearbook"
+   keys now: "Ninjak (1994)" x27 · "Ninjak 00b" x1
+   groups (title x folder): 4
+   G1 "Ninjak" in Valiant\Ninjak\Ninjak v5 (2021) — 1 file(s), 1 COL, pp 93-93; cv per-file 143832x1; gcd per-file 174086x1; key 'Ninjak (1994)'
+      [111980] COL Ninjak Book 01 (2021) (digital) (Son of Ultron-Empire).cbr (93pp)
+   G2 "Ninjak" in Valiant\_Acclaim\Ninjak v2 — 6 file(s), numbers 7-12, pp 24-24; cv per-file 5348x6; gcd per-file 5825x6; key 'Ninjak (1994)'
+      e.g. Ninjak 007 (1997) (Digital) (Vee-Empire).cbr
+        111056 #7 1997 24pp · 111057 #8 1997 24pp · 111058 #9 1997 24pp · 111059 #10 1997 24pp · 111060 #11 1998 24pp · 111061 #12 1998 24pp
+   G3 "Ninjak" in Valiant\_Chronological Valiant — 20 file(s), numbers 1-6, 13-26, pp 21-28; cv per-file 5348x20; key 'Ninjak (1994)'
+      e.g. 276. Ninjak 01.cbr
+        111644 #1 25pp · 111666 #2 21pp · 111601 #3 21pp · 111414 #4 21pp · 111341 #5 22pp · 111236 #6 22pp · 111651 #13 25pp · 111678 #14 22pp · 111252 #15 22pp · 112049 #16 22pp · 111298 #17 22pp
+        111742 #18 23pp · 112089 #19 22pp · 111618 #20 26pp · 111750 #21 22pp · 111722 #22 28pp · 111708 #23 25pp · 111433 #24 23pp · 111563 #25 21pp · 111370 #26 21pp
+   G4 "Ninjak 00b (origin part 2)" in Valiant\_Chronological Valiant — 1 file(s), pp 25-25; cv per-file 5348x1; gcd per-file 5065x1; key 'Ninjak 00b'
+      [111539] 252. Ninjak 00b (origin part 2).cbr (25pp)
+
+== S6599 Fearscape  [split]  2 files / 2 collections  decided in R-177 (S)
+   decided: S 6599 cv=113871 gcd=143795 0.9 | Fearscape (Vault 2018-2019, 5): CV 113871 (5) and GCD 143795 (#1 2018-09-28 ... #5 2019-04-24) agree, and "Fearscape Vol. 01" 152pp is its trade; 0.9 while Vol. 02, the trade of the sequel A Dark Interlude, sits here - it joins below
+   F 6599 split-needed | item 112167 "COL Fearscape Vol. 02 - A Dark Interlude (2023)" 146pp = CV 119851 #2 "Vol. 2: A Dark Interlude", the trade of A Dark Interlude (Vault 2020-2022, 5; CV 132091 / GCD 168041), the run S184 stores -> join S184 on its key "A Dark Interlude" (L-368)
+   named: S184 A Dark Interlude  5 files  keys: "A Dark Interlude"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Fearscape" x2
+   groups (title x folder): 1
+   G1 "Fearscape" in Vault\Fearscape (2018) — 2 file(s), 2 COL, pp 146-152; cv per-file 119851x2; gcd per-file 148468x1, 143795x1; key 'Fearscape'
+      [112166] COL Fearscape Vol. 01 (2019) (digital) (Son of Ultron-Empire).cbr (152pp)
+      [112167] COL Fearscape Vol. 02 - A Dark Interlude (2023) (digital) (Son of Ultron-Empire).cbr (146pp)
+
+== S8317 Harbinger  [split]  44 files / 2 collections  decided in R-177 (R)
+   decided: R 8317 | two runs share this shelf and the stored link names the minor one: the 42 "_Chronological Valiant" files "027. Harbinger 00" ... "535. Harbinger 41" (16-31pp, read-order 027-535, among the 1992-1995 books) are Harbinger (Valiant 1992-1995, 42 = #0-41; CV 4827 / GCD 4492) - a ladder 0-41 cannot fit the stored 26-issue 2012 volume; and the two Deluxe Editions (2013 / 2015) are whole books of Harbinger (Valiant 2012-2014, 26; CV 49539 / GCD 66244) - two whole trades of a different run, a co-equal run
+   F 8317 split-needed | Harbinger (1992, CV 4827 / GCD 4492) stays with the 42 chronological issues; items 110862 / 110863 "COL Harbinger - Deluxe Edition - Book 01 / 02" 405 / 414pp -> new key "Harbinger v2 (2012)" (CV 49539 / GCD 66244; their folder is Valiant\Harbinger\Harbinger v2)
+   F 8317 wrong-cv-link | the stored CV 49539 (Harbinger 2012) is stamped per-file on all 44 files; 42 of them are the 1992 run
+   F 8317 needs-fetch cv=4827 | "Harbinger" (Valiant/Acclaim 1992, 42) is named from the rip and has no CvVolume row
+   N 8317 kept run: cv=4827 gcd=4492 (Valiant 1992-1995, 42 = #0-41, CV #0 "The Beginning" ... #41 "Postcards")
+   nearby: S95772 "Bloodshot" 9f [shares gcd=66766 (collected by item 110862) — S cv=50367 gcd=66766 (R-177 0.9)] keys: "Bloodshot v3 (2012)"
+   nearby: S9321 "Imperium" 6f [shares gcd=86552 (collected by item 110863) — S cv=79862 gcd=86552 (B-068 0.95)] keys: "Imperium" | "Imperium - Broken Angels" | "Imperium - Prelude" | "Imperium - Stormbreak" (+1 more: lookup.py --shelf 9321)
+   nearby: S62844 "Harbinger Wars" 2f [shares gcd=73398 (collected by item 110862) — S cv=59509 gcd=73398 (B-068 0.9)] keys: "Harbinger Wars" | "Harbinger Wars Deluxe Edition"
+   nearby: S8325 "Harbinger Renegade" 3f [title+1 — S cv=95734 gcd=109408 (C-062 0.9)] keys: "Harbinger Renegade" | "Harbinger Renegade - Massacre" | "Harbinger Renegade - The Judgment of Solomon"
+   nearby: S8322 "Harbinger Files" 2f [title+1 — S cv=24888 gcd=5063 (B-068 0.95)] keys: "Harbinger Files" · S8320 "Harbinger Faith" 1f [title+1 — S cv=78880 gcd=85672 (A-030 0.95)] keys: "Harbinger - Faith"
+   nearby: S8326 "Harbinger Wars 2" 1f [title+1 — S cv=111141 gcd=125575 (B-068 0.9)] keys: "Harbinger Wars 2 Deluxe Edition"
+   keys now: "Harbinger" x44
+   groups (title x folder): 2
+   G1 "Harbinger - Deluxe Edition" in Valiant\Harbinger\Harbinger v2 — 2 file(s), 2 COL, pp 405-414; cv per-file 69120x2; gcd per-file 114629x2; key 'Harbinger'
+      [110862] COL Harbinger - Deluxe Edition - Book 01 (2013) (Digital) (F) (Zone-Empire).cbr (405pp)
+         own record cv 69120 / gcd s114629 "Harbinger Deluxe Edition" (issue 1712274) COLLECTS: gcd=66244 Harbinger (2012) #0-14 · gcd=73398 Harbinger Wars (2013) #1 · gcd=66766 Bloodshot (2012) #10
+      [110863] COL Harbinger - Deluxe Edition - Book 02 (2015) (Digital) (Zone-Empire).cbr (414pp)
+         own record cv 69120 / gcd s114629 "Harbinger Deluxe Edition" (issue 1712275) COLLECTS: gcd=66244 Harbinger (2012) #15-25 · gcd=82310 Harbinger: Omegas (2014) #1-3 · gcd=82311 Harbinger Bleeding Monk (2014) #0 · gcd=86552 Imperium (2015) #1
+   G2 "Harbinger" in Valiant\_Chronological Valiant — 42 file(s), numbers 0-41, pp 16-31; cv per-file 49539x42; key 'Harbinger'
+      e.g. 027. Harbinger 00.cbr
+        111502 #0 16pp · 111751 #1 31pp · 111527 #2 25pp · 111519 #3 25pp · 111552 #4 23pp · 111593 #5 24pp · 111533 #6 24pp · 111653 #7 23pp · 111532 #8 24pp · 112052 #9 25pp · 111338 #10 23pp
+        111735 #11 23pp · 112036 #12 22pp · 112046 #13 ?pp · 111250 #14 22pp · 111456 #15 21pp · 111356 #16 22pp · 111406 #17 22pp · 111565 #18 23pp · 111772 #19 22pp · 111515 #20 22pp
+        111292 #21 22pp · 111366 #22 20pp · 111423 #23 22pp · 111451 #24 22pp · 111363 #25 20pp · 111467 #26 18pp · 111420 #27 22pp · 111348 #28 22pp · 111295 #29 22pp · 112025 #30 22pp
+        111521 #31 22pp · 111670 #32 22pp · 111826 #33 22pp · 111548 #34 22pp · 111673 #35 24pp · 112061 #36 22pp · 111439 #37 20pp · 111771 #38 22pp · 111787 #39 22pp · 111396 #40 22pp
+        111667 #41 21pp

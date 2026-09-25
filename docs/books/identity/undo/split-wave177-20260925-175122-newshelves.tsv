@@ -1,0 +1,26 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S104254	Lenore v2 (2009)	run={"cv": 41875, "gcd": 53104}	P-077.jsonl	new	pair=10712
+S104255	Lenore v3 (2019)	run={"cv": 120560, "gcd": 178490}	P-077.jsonl	new	pair=10712
+S104250	Armorines v2 (1999)	run={"cv": 26141, "gcd": 13865}	P-077.jsonl	new	pair=1312
+S104257	Rai (2014)	run={"cv": 73417, "gcd": 80415}	P-077.jsonl	new	pair=14355
+S99414	Rai v4 (2019)	run={"cv": 122982, "gcd": 152850}	P-077.jsonl	new	pair=14355
+S104258	Solar: Man of the Atom (2014)	run={"cv": 73103, "gcd": 80249}	P-077.jsonl	new	pair=15854
+S19639	The Smurfs Silver Book	run=-	P-077.jsonl	new	pair=19635
+S2865	Blade Runner 2039	run=-	P-077.jsonl	new	pair=2862
+S64339	Bloodshot (1997)	run=-	P-077.jsonl	new	pair=64338
+S65365	Ninjak (1997)	run=-	P-077.jsonl	new	pair=65364
+S184	A Dark Interlude	run=-	P-077.jsonl	new	pair=6599
+S104253	Harbinger v2 (2012)	run={"cv": 49539, "gcd": 66244}	P-077.jsonl	new	pair=8317
+S10712	moved out -> S104254 "Lenore v2 (2009)"; S104255 "Lenore v3 (2019)"	run=-	P-077.jsonl	kept	pair=10712	moved_cv=41875,120560
+S1312	moved out -> S104250 "Armorines v2 (1999)"	run=-	P-077.jsonl	kept	pair=1312	moved_cv=26141
+S14355	moved out -> S104257 "Rai (2014)"; S99414 "Rai v4 (2019)"	run=-	P-077.jsonl	kept	pair=14355	moved_cv=73417,122982
+S15854	moved out -> S104258 "Solar: Man of the Atom (2014)"	run=-	P-077.jsonl	kept	pair=15854	moved_cv=73103
+S19635	moved out -> S19639 "The Smurfs Silver Book"	run=-	P-077.jsonl	kept	pair=19635
+S2862	moved out -> S2865 "Blade Runner 2039"	run=-	P-077.jsonl	kept	pair=2862
+S64338	moved out -> S64339 "Bloodshot (1997)"	run=-	P-077.jsonl	kept	pair=64338
+S65364	moved out -> S65365 "Ninjak (1997)"	run=-	P-077.jsonl	kept	pair=65364
+S6599	moved out -> S184 "A Dark Interlude"	run=-	P-077.jsonl	kept	pair=6599
+S8317	moved out -> S104253 "Harbinger v2 (2012)"	run=-	P-077.jsonl	kept	pair=8317	moved_cv=49539
