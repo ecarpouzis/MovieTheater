@@ -1,0 +1,874 @@
+## Conventions for this batch (21 shown of 132 matched; 395 in LEDGER.md; 15 shelf/shelves: pub:marvel ×15 · kind:collected-line ×13 · kind:trade-only ×10 · kind:new ×5 · folder:vn-year ×5 · folder:events ×4 · folder:sequel-subfolder ×4 · folder:facsimile ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-031] (13 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (13 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (13 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (13 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (13 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-127] (13 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-132] (13 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-136] (13 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-196] (13 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (13 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (13 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-298] (13 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-306] (13 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (13 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (13 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-313] (13 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-327] (13 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (13 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+[L-329] (13 shelf/shelves) kind:collected-line pub:dc pub:marvel
+- DC/Marvel trade lines often store a GCD row that belongs to a FOREIGN or other edition (Urban Comics' French GL
+  2011, a German GL 2023 Vol. 1) — check the stored row's series before using its roll-up. GCD carries twin HC/SC
+  series for most 2006-2016 DC/Marvel trades (77116/77117, 77936/77937) → cap those I lines at 0.9. CV keeps count-1
+  "Title: Subtitle" volumes per trade before ~2016, numbered TPB-line volumes after (R-054).
+[L-332] (13 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection one-rule (lead, wave 44): each Epic book is its OWN shelf; its S line carries the book's own
+  count-1 CV volume and `gcd=-`; the line's GCD series (74602 ASM, 74592 Iron Man) goes on the book's I line with
+  its ISBN; C lines name the runs reprinted. `lookup.py "<Line> Epic Collection" --contains` lists every volume.
+[L-389] (13 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-053 / R-135 (waves 129-130): a run's issues never JOIN a creator-trade-keyed shelf ("Venom by Al Ewing & Ram V",
+  S21029, four trades) — keep them and meet through the SHARED cv at the next revisit (S20988 cv=140084 + merge-with=21029).
+  Marvel's 2019-2020 "Star Wars #1 facsimile" is "Star Wars No 1 Facsimile Edition" (CV 123267 / GCD 153348): probe the
+  "No N" form. Star Wars Insider and Titan's "Best of" books have no CV / GCD record: R + provider-missing, never the 1977
+  comic's stamp. The Dark Horse Star Wars Omnibus umbrella number (Vol. 32 / 35) raises a false "stored GCD row is another
+  book" warning against the sub-line's #1 / #2 — page counts and ISBNs decide. An Epic Collection / omnibus line spanning
+  several minis keeps its own GCD-line key in a split.
+
++111 more matched entries not shown: L-392, L-395, L-029, L-164, L-135, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-119, L-357, L-060, L-116, L-390, L-014, L-016, L-032, L-064, L-085, L-101, L-113, L-114, L-310, L-033, L-034, L-133, L-142, L-169, L-193, L-319, L-343, L-371, L-378, L-387, L-388, L-391, L-393, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-124, L-191, L-272, L-281, L-077, L-311, L-345, L-175, L-290, L-028, L-036, L-054, L-121, L-129, L-130, L-173, L-187, L-007, L-128, L-181, L-217, L-336, L-106, L-111, L-112, L-174, L-242, L-297, L-312, L-315, L-324, L-331, L-123, L-150, L-194, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S4092 Conan Chronicles Epic Collection  [split]  1 files / 0 collections  decided in R-145 (S)
+   decided: S 4092 cv=- gcd=139728 0.9 | volume 08 "Blood in His Wake" of the Conan Chronicles Epic Collection LINE: GCD 139728 (Marvel 2019-2021, 8 rows) #8 row 2305095 (436pp, ISBN 978-1-302-93370-8, subtitle matches) is our "Vol. 08 - Blood in His Wake (2021)"; CV 144409 is only this book's count-1 volume (issue 944234 "Volume 8"), so the line's GCD series is the leg and the CV book volume goes on the I line (L-392)
+   F 4092 wrong-cv-link | the stored CV 144409 "Conan Chronicles Epic Collection: Blood In His Wake" is the Vol. 08 book's own count-1 volume, not the line; it moves to the I line
+   F 4092 split-needed | item 78207 -> join S4096 as the in-batch anchor (check_identity counts joins only inside this file); S4096 itself joins S4094 below, so 78207's landing key is S4094's ParsedKey "Conan Chronicles Epic Collection: Out Of The Darksome Hills" (S4094 = the same GCD 139728 line, cv=-; L-377 / L-392); the shelf empties by the join; replaces C-042's merge-with=4096 chain
+   N 4092 item 78207 carries no page count ("?pp") and is not flagged as a collection although it is a 436pp-class Epic book; its shelf key is the bare line name "Conan Chronicles Epic Collection"
+   named: S4096 Conan Chronicles Epic Collection: Shadows Over Kush  1 files  keys: "Conan Chronicles Epic Collection: Shadows Over Kush"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S4094 Conan Chronicles Epic Collection: Out Of The Darksome Hills  6 files  keys: "Conan Chronicles Epic Collection: Out Of The Darksome Hills"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S10376 "King Conan Chronicles Epic Collection: Phantoms and Phoenixes" 2f [title+1 — S cv=144977 gcd=188800 (B-018 0.95)] keys: "King Conan Chronicles Epic Collection"
+   keys now: "Conan Chronicles Epic Collection" x1
+   groups (title x folder): 1
+   G1 "Conan Chronicles Epic Collection" in Marvel\_Conan the Barbarian\Conan the Barbarian (2004 Dark Horse Reprints)\Conan (Dark Horse) Epic Collections — 1 file(s), numbers 8; cv per-file 144409x1; gcd per-file 139728x1; key 'Conan Chronicles Epic Collection'
+      [78207] Conan Chronicles Epic Collection Vol. 08 - Blood in His Wake (2021) (Digital-Empire).cbr (?pp)
+
+== S4096 Conan Chronicles Epic Collection: Shadows Over Kush  [split]  1 files / 1 collections  decided in R-145 (S)
+   decided: S 4096 cv=- gcd=139728 0.9 | volume 07 "Shadows over Kush" of the same LINE: GCD 139728 #7 row 2296363 (452pp, ISBN 978-1-302-93072-1, subtitle matches) is our 423pp "Vol. 07 - Shadows Over Kush (2021)" (ComicInfo Series names the Epic book); CV 144406 is only this book's count-1 volume (issue 941968 "Volume 7"); the CV candidate 80444 "Conan: Shadows Over Kush" (Dark Horse 2015) is the Dark Horse trade of the same arc, not this book
+   F 4096 wrong-cv-link | the stored CV 144406 "Conan Chronicles Epic Collection: Shadows Over Kush" is the Vol. 07 book's own count-1 volume, not the line; it moves to the I line
+   F 4096 split-needed | item 78206 -> join S4094 on its ParsedKey "Conan Chronicles Epic Collection: Out Of The Darksome Hills" (same GCD 139728 line, cv=-; L-377 / L-392); the shelf empties by the join; replaces C-042's merge-with=4092
+   named: S4094 Conan Chronicles Epic Collection: Out Of The Darksome Hills  6 files  keys: "Conan Chronicles Epic Collection: Out Of The Darksome Hills"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S4103 "Conan the Avenger" 25f [shares gcd=80303 (collected by item 78206) — S cv=73235 gcd=80303 (B-055 0.95)] keys: "Conan The Avenger"
+   nearby: S4092 "Conan Chronicles Epic Collection" 1f [shares gcd=139728 — S gcd=139728 (R-145 0.9)] keys: "Conan Chronicles Epic Collection"
+   nearby: S10376 "King Conan Chronicles Epic Collection: Phantoms and Phoenixes" 2f [title+1 — S cv=144977 gcd=188800 (B-018 0.95)] keys: "King Conan Chronicles Epic Collection"
+   keys now: "Conan Chronicles Epic Collection: Shadows Over Kush" x1
+   groups (title x folder): 1
+   G1 "Conan Chronicles Epic Collection" in Marvel\_Conan the Barbarian\Conan the Barbarian (2004 Dark Horse Reprints)\Conan (Dark Horse) Epic Collections — 1 file(s), 1 COL, pp 423-423; cv per-file 144406x1; gcd per-file 139728x1; key 'Conan Chronicles Epic Collection: Shadows Over Kush'
+      [78206] COL Conan Chronicles Epic Collection Vol. 07 - Shadows Over Kush (2021) (Digital-Empire).cbr (423pp)
+         own record cv 144406 / gcd s139728 "Conan Chronicles Epic Collection" (issue 2296363) COLLECTS: gcd=80303 Conan the Avenger (2014) #4-19
+
+== S4813 Daredevil Epic Collection: Dead Man's Hand  [split]  1 files / 1 collections  decided in R-146 (S)
+   decided: S 4813 cv=- gcd=79137 0.9 | volume 16 "Dead Man's Hand" of the same LINE: GCD 79137 #16 row 2294191 (476pp, ISBN 978-1-302-93238-1) is our 471pp book; CV 144405 is only its count-1 book volume (issue 941967, on the I line)
+   F 4813 wrong-cv-link | the stored CV 144405 "Daredevil Epic Collection: Dead Man's Hand" is the Vol. 16 book's own count-1 volume, not the line
+   F 4813 split-needed | item 46959 -> join S4812 on its ParsedKey "Daredevil Epic Collection" (S4812's S line is the same GCD 79137 line, cv=-; L-377 / L-392); the shelf empties by the join; replaces C-043's merge-with chain
+   named: S4812 Daredevil Epic Collection  13 files  keys: "Daredevil Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S64501 "Daredevil" 436f [shares gcd=1636 (collected by item 46959) — S cv=2190 gcd=1636 (R-146 0.9)] keys: "Daredevil (1964)" | "Daredevil -1" | "Daredevil by Frank Miller and Klaus Janson" | "Daredevil v1 (1964)"
+   nearby: S14213 "The Punisher War Journal" 67f [shares gcd=3662 (collected by item 46959) — S cv=4066 gcd=3662 (C-061 0.95)] keys: "Punisher War Journal" | "Punisher War Journal (1988)" | "Punisher War Journal by Matt Fraction: The Complete Collection" | "Punisher War Journal v1 (1988)" (+1 more: lookup.py --shelf 14213)
+   nearby: S98940 "Nomad" 10f [shares gcd=4466 (collected by item 46959) — S cv=4803 gcd=4466 (C-040 0.95)] keys: "Nomad v2 (1991)"
+   nearby: S4814 "Daredevil Epic Collection: Going Out West" 1f [shares gcd=79137 — S gcd=79137 (R-146 0.9)] keys: "Daredevil Epic Collection: Going Out West"
+   nearby: S4815 "Daredevil Epic Collection: Into The Fire" 1f [shares gcd=79137 — S gcd=79137 (R-146 0.9)] keys: "Daredevil Epic Collection: Into The Fire"
+   nearby: S4816 "Daredevil Epic Collection: Last Rites" 1f [shares gcd=79137 — S gcd=79137 (R-146 0.9)] keys: "Daredevil Epic Collection: Last Rites"
+   keys now: "Daredevil Epic Collection: Dead Man's Hand" x1
+   groups (title x folder): 1
+   G1 "Daredevil Epic Collection" in Marvel\_Daredevil\_Daredevil Epic Collections — 1 file(s), 1 COL, pp 471-471; cv per-file 144405x1; gcd per-file 79137x1; key "Daredevil Epic Collection: Dead Man's Hand"
+      [46959] COL Daredevil Epic Collection Vol. 16 - Dead Man's Hand (2021) (Digital-Empire).cbr (471pp)
+         own record cv 144405 / gcd s79137 "Daredevil Epic Collection" (issue 2294191) COLLECTS: gcd=1636 Daredevil (1964) #301-311 · gcd=3662 The Punisher War Journal (1988) #45-47 · gcd=4466 Nomad (1992) #4-6 · gcd=1808 Daredevil Annual (1967) #8
+
+== S4814 Daredevil Epic Collection: Going Out West  [split]  1 files / 1 collections  decided in R-146 (S)
+   decided: S 4814 cv=- gcd=79137 0.9 | volume 05 "Going Out West" of the same LINE: GCD 79137 #5 row 2303457 (476pp, ISBN 978-1-302-93355-5) is our 468pp book; CV 144408 is only its count-1 book volume (issue 944235)
+   F 4814 wrong-cv-link | the stored CV 144408 "Daredevil Epic Collection: Going Out West" is the Vol. 05 book's own count-1 volume, not the line
+   F 4814 split-needed | item 46952 -> join S4812 on its ParsedKey "Daredevil Epic Collection" (same GCD 79137 line; L-377 / L-392); the shelf empties by the join
+   named: S4812 Daredevil Epic Collection  13 files  keys: "Daredevil Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S64501 "Daredevil" 436f [shares gcd=1636 (collected by item 46952) — S cv=2190 gcd=1636 (R-146 0.9)] keys: "Daredevil (1964)" | "Daredevil -1" | "Daredevil by Frank Miller and Klaus Janson" | "Daredevil v1 (1964)"
+   nearby: S64185 "The Avengers" 426f [shares gcd=1571 (collected by item 46952) — S cv=2128 gcd=1571 (R-142 0.95)] keys: "Avengers" | "Avengers (1963)" | "The Avengers"
+   nearby: S4813 "Daredevil Epic Collection: Dead Man's Hand" 1f [shares gcd=79137 — S gcd=79137 (R-146 0.9)] keys: "Daredevil Epic Collection: Dead Man's Hand"
+   nearby: S4815 "Daredevil Epic Collection: Into The Fire" 1f [shares gcd=79137 — S gcd=79137 (R-146 0.9)] keys: "Daredevil Epic Collection: Into The Fire"
+   nearby: S4816 "Daredevil Epic Collection: Last Rites" 1f [shares gcd=79137 — S gcd=79137 (R-146 0.9)] keys: "Daredevil Epic Collection: Last Rites"
+   keys now: "Daredevil Epic Collection: Going Out West" x1
+   groups (title x folder): 1
+   G1 "Daredevil Epic Collection" in Marvel\_Daredevil\_Daredevil Epic Collections — 1 file(s), 1 COL, pp 468-468; cv per-file 144408x1; gcd per-file 79137x1; key 'Daredevil Epic Collection: Going Out West'
+      [46952] COL Daredevil Epic Collection Vol. 05 - Going Out West (2022) (Digital-Empire).cbr (468pp)
+         own record cv 144408 / gcd s79137 "Daredevil Epic Collection" (issue 2303457) COLLECTS: gcd=1636 Daredevil (1964) #87-107 · gcd=1571 The Avengers (1963) #111
+
+== S4815 Daredevil Epic Collection: Into The Fire  [split]  1 files / 1 collections  decided in R-146 (S)
+   decided: S 4815 cv=- gcd=79137 0.9 | volume 17 "Into the Fire" of the same LINE: GCD 79137 #17 row 2561350 (532pp, ISBN 978-1-302-95372-0) is our 504pp book; CV 152900 is only its count-1 book volume (issue 1006552)
+   F 4815 wrong-cv-link | the stored CV 152900 "Daredevil Epic Collection: Into the Fire" is the Vol. 17 book's own count-1 volume, not the line
+   F 4815 split-needed | item 46960 -> join S4812 on its ParsedKey "Daredevil Epic Collection" (same GCD 79137 line; L-377 / L-392); the shelf empties by the join
+   named: S4812 Daredevil Epic Collection  13 files  keys: "Daredevil Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S64501 "Daredevil" 436f [shares gcd=1636 (collected by item 46960) — S cv=2190 gcd=1636 (R-146 0.9)] keys: "Daredevil (1964)" | "Daredevil -1" | "Daredevil by Frank Miller and Klaus Janson" | "Daredevil v1 (1964)"
+   nearby: S4813 "Daredevil Epic Collection: Dead Man's Hand" 1f [shares gcd=79137 — S gcd=79137 (R-146 0.9)] keys: "Daredevil Epic Collection: Dead Man's Hand"
+   nearby: S4814 "Daredevil Epic Collection: Going Out West" 1f [shares gcd=79137 — S gcd=79137 (R-146 0.9)] keys: "Daredevil Epic Collection: Going Out West"
+   nearby: S4816 "Daredevil Epic Collection: Last Rites" 1f [shares gcd=79137 — S gcd=79137 (R-146 0.9)] keys: "Daredevil Epic Collection: Last Rites"
+   nearby: S4839 "Daredevil/Black Widow: Abattoir" 1f [shares gcd=28505 (collected by item 46960) — S cv=31673 gcd=28505 (B-055 0.95)] keys: "Daredevil-Black Widow - Abattoir Graphic Novel"
+   nearby: S4850 "Daredevil: The Man Without Fear" 1f [shares gcd=4683 (collected by item 46960) — S cv=5000 gcd=4683 (B-055 0.95)] keys: "Daredevil: The Man Without Fear"
+   keys now: "Daredevil Epic Collection: Into The Fire" x1
+   groups (title x folder): 1
+   G1 "Daredevil Epic Collection" in Marvel\_Daredevil\_Daredevil Epic Collections — 1 file(s), 1 COL, pp 504-504; cv per-file 152900x1; gcd per-file 79137x1; key 'Daredevil Epic Collection: Into The Fire'
+      [46960] COL Daredevil Epic Collection Vol. 17 - Into the Fire (2023) (Digital-Empire).cbr (504pp)
+         own record cv 152900 / gcd s79137 "Daredevil Epic Collection" (issue 2561350) COLLECTS: gcd=4683 Daredevil The Man without Fear (1993) #1-5 · gcd=1636 Daredevil (1964) #312-318 · gcd=28505 Daredevil / Black Widow: Abattoir (1993) (unnumbered) · gcd=1808 Daredevil Annual (1967) #9
+
+== S4816 Daredevil Epic Collection: Last Rites  [split]  1 files / 1 collections  decided in R-146 (S)
+   decided: S 4816 cv=- gcd=79137 0.9 | volume 15 "Last Rites" of the same LINE: GCD 79137 #15 row 2177606 (508pp, ISBN 978-1-302-92563-5) is our 500pp book; CV 132134 is only its count-1 book volume (issue 819149)
+   F 4816 wrong-cv-link | the stored CV 132134 "Daredevil Epic Collection: Last Rites" is the Vol. 15 book's own count-1 volume, not the line
+   F 4816 split-needed | item 46958 -> join S4812 on its ParsedKey "Daredevil Epic Collection" (same GCD 79137 line; L-377 / L-392); the shelf empties by the join
+   named: S4812 Daredevil Epic Collection  13 files  keys: "Daredevil Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S64501 "Daredevil" 436f [shares gcd=1636 (collected by item 46958) — S cv=2190 gcd=1636 (R-146 0.9)] keys: "Daredevil (1964)" | "Daredevil -1" | "Daredevil by Frank Miller and Klaus Janson" | "Daredevil v1 (1964)"
+   nearby: S11370 "Marvel Age" 39f [shares gcd=69795 (collected by item 46958) — S cv=19176 gcd=69795 (R-137 0.9)] keys: "Marvel Age" | "Marvel Age Annual"
+   nearby: S4813 "Daredevil Epic Collection: Dead Man's Hand" 1f [shares gcd=79137 — S gcd=79137 (R-146 0.9)] keys: "Daredevil Epic Collection: Dead Man's Hand"
+   nearby: S4814 "Daredevil Epic Collection: Going Out West" 1f [shares gcd=79137 — S gcd=79137 (R-146 0.9)] keys: "Daredevil Epic Collection: Going Out West"
+   nearby: S4815 "Daredevil Epic Collection: Into The Fire" 1f [shares gcd=79137 — S gcd=79137 (R-146 0.9)] keys: "Daredevil Epic Collection: Into The Fire"
+   keys now: "Daredevil Epic Collection: Last Rites" x1
+   groups (title x folder): 1
+   G1 "Daredevil Epic Collection" in Marvel\_Daredevil\_Daredevil Epic Collections — 1 file(s), 1 COL, pp 500-500; cv per-file 132134x1; gcd per-file 79137x1; key 'Daredevil Epic Collection: Last Rites'
+      [46958] COL Daredevil Epic Collection Vol. 15 - Last Rites (2020) (Digital-Empire).cbr (500pp)
+         own record cv 132134 / gcd s79137 "Daredevil Epic Collection" (issue 2177606) COLLECTS: gcd=1636 Daredevil (1964) #283-300 · gcd=1808 Daredevil Annual (1967) #7 · gcd=69795 Marvel Age (1983) #106 · gcd=182428 Marvel Illustrated: Swimsuit Issue (1991) #1
+
+== S5111 Deadpool Classic  [split]  25 files / 25 collections  decided in R-146 (R)
+   decided: R 5111 | two LINES share this shelf: Deadpool Classic (CV 21748 = GCD 60236, Marvel 2008-2019, 23 books, a reprint line spanning Circle Chase, Deadpool 1994/1997, Agent X, Merc with a Mouth, Corps, Team-Up and a dozen minis - its own identity, L-109) holds 23 of our 25 books volume-for-volume, and Deadpool Classic Companion (CV 81400 = GCD 123975, Marvel 2015-2018, 2 books) is a separate line with its own record on both legs and no shelf of its own; two whole books of a different record are a co-equal run by the RESIDUE ruling (Secret Six), so the shelf is not stored until they part - the dismissed conflated flag #62 was right that they do not conflict, not that they are one identity
+   F 5111 split-needed | Deadpool Classic (CV 21748 / GCD 60236, items 78515-78537) stays; the two Companion books 78513 (Vol. 01, 362pp, GCD row 1802362) and 78514 (Vol. 02, 469pp, GCD row 1802361) -> new key "Deadpool Classic Companion (2015)" seeded cv=81400 gcd=123975 (no live shelf stores CV 81400: lookup --who-stores)
+   N 78513 Companion Vol. 01 collects scattered guest appearances (Wolverine #88, #154-155, Secret Defenders #15-17, Silver Sable #23, #30 ...) - no contiguous stretch worth a C line beyond Secret Defenders' three issues
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 814f [shares gcd=1570 (collected by item 78517) — S cv=2127 gcd=1570 (R-058 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+2 more: lookup.py --shelf 4752)
+   nearby: S101454 "Wolverine" 339f [shares gcd=3865 (collected by item 78513) — S cv=4250 gcd=3865 (C-052 0.95)] keys: "Flashback - Wolverine -01" | "Wolverine" | "Wolverine (1989)" | "Wolverine (1992)" (+1 more: lookup.py --shelf 101454)
+   nearby: S6312 "Exiles" 220f [shares gcd=7516 (collected by item 78534) — S cv=6983 gcd=7516 (R-137 0.9)] keys: "Exiles" | "Exiles (2001)" | "Exiles Annual" | "Exiles Annual (2001)" (+2 more: lookup.py --shelf 6312)
+   nearby: S36127 "The New Mutants" 142f [shares gcd=2755 (collected by item 78515) — S cv=3234 gcd=2755 (C-055 0.95)] keys: "New Mutants (1983)" | "New Mutants v1 (1983)" | "The New Mutants"
+   nearby: S64540 "Deadpool" 124f [shares gcd=5791 (collected by item 78515) — S cv=6000 gcd=5791 (R-146 0.9)] keys: "Deadpool (1997)" | "Deadpool - Flashback" | "Deadpool v1 (1997)"
+   nearby: S66376 "X-Men Unlimited" 92f [shares gcd=4754 (collected by item 78521) — S cv=5066 gcd=4754 (C-054 0.95)] keys: "X-Men Unlimited (1993)" | "X-Men Unlimited v1 (1993)"
+   nearby: S20622 "Ultimate Spider-Man" 53f [shares gcd=7825 (collected by item 78534) — S cv=7257 gcd=7825 (R-050 0.9)] keys: "Ultimate Spider-Man"
+   nearby: S64928 "Hulk" 52f [shares gcd=28683 (collected by item 78514) — S cv=20291 gcd=28683 (C-046 0.9)] keys: "Hulk (2008)" | "Hulk v2 (2008)"
+   nearby: S15630 "Silver Sable and the Wild Pack" 38f [shares gcd=4474 (collected by item 78513) — S cv=4810 gcd=4474 (R-139 0.9)] keys: "Silver Sable and the Wild Pack"
+   nearby: S533 "Agent X" 30f [shares gcd=11848 (collected by item 78523) — S cv=10925 gcd=11848 (C-043 0.95)] keys: "Agent X"
+   nearby: S5134 "Deadpool Team-Up" 21f [shares gcd=40644 (collected by item 78527) — S cv=29329 gcd=40644 (R-093 0.95)] keys: "Deadpool Team-Up"
+   nearby: S15234 "Secret Defenders" 16f [shares gcd=4730 (collected by item 78513) — S cv=5044 gcd=4730 (B-055 0.95)] keys: "Doctor Strange and the Secret Defenders" | "Secret Defenders"
+   nearby: S5113 "Deadpool Corps" 15f [shares gcd=46836 (collected by item 78526) — S cv=32441 gcd=46836 (A-027 0.9)] keys: "Deadpool Corps"
+   nearby: S5098 "Deadpool: Merc With a Mouth" 14f [shares gcd=37923 (collected by item 78525) — S cv=26958 gcd=37923 (A-027 0.95)] keys: "Deadpool - Merc With a Mouth" | "Deadpool - Merc With a Mouth - Head Trip" | "Deadpool - Merc with a Mouth"
+   nearby: S5101 "Deadpool - The Circle Chase" 8f [shares gcd=4686 (collected by item 78515) — S gcd=4686 (C-043 0.9)] keys: "Deadpool - The Circle Chase"
+   nearby: S5122 "Deadpool Kills Deadpool" 8f [shares gcd=75234 (collected by item 78530) — S cv=64684 gcd=75234 (C-043 0.9)] keys: "Deadpool Kills Deadpool"
+   nearby: S102372 "Deadpool" 8f [shares gcd=5003 (collected by item 78515) — S cv=59624 gcd=5003 (C-043 0.95)] keys: "Deadpool v1 (1994)"
+   nearby: S5100 "Deadpool: Suicide Kings" 6f [shares gcd=35539 (collected by item 78528) — S cv=2709 gcd=35539 (A-027 0.95)] keys: "Deadpool - Suicide Kings"
+   nearby: S5132 "Deadpool Pulp" 6f [shares gcd=52121 (collected by item 78531) — S cv=35275 gcd=52121 (A-027 0.95)] keys: "Deadpool Pulp"
+   nearby: S8458 "Hawkeye vs. Deadpool" 6f [shares gcd=83447 (collected by item 78532) — S cv=76735 gcd=83447 (A-028 0.95)] keys: "Hawkeye vs. Deadpool"
+   nearby: S9275 "Identity Disc" 6f [shares gcd=12239 (collected by item 78514) — S cv=11293 gcd=12239 (A-026 0.95)] keys: "Identity Disc"
+   nearby: S95616 "Black Panther" 6f [shares gcd=6989 (collected by item 78520) — S cv=6496 gcd=6989 (R-143 0.95)] keys: "Black Panther v3 (1998)"
+   nearby: S5106 "Deadpool: Wade Wilson's War" 5f [shares gcd=49766 (collected by item 78531) — S cv=33659 gcd=49766 (A-027 0.95)] keys: "Deadpool - Wade Wilson's War"
+   nearby: S5124 "Deadpool Kills the Marvel Universe" 5f [shares gcd=67718 (collected by item 78530) — S cv=50940 gcd=67718 (A-028 0.95)] keys: "Deadpool Kills the Marvel Universe"
+   nearby: S5127 "Deadpool Killustrated" 5f [shares gcd=71449 (collected by item 78530) — S cv=56120 gcd=71449 (A-028 0.95)] keys: "Deadpool Killustrated"
+   nearby: S5152 "Deadpool vs. Carnage" 5f [shares gcd=79909 (collected by item 78532) — S cv=72790 gcd=79909 (A-028 0.95)] keys: "Deadpool vs. Carnage"
+   nearby: S5159 "Deadpool vs. X-Force" 5f [shares gcd=81547 (collected by item 78532) — S cv=75359 gcd=81547 (A-028 0.95)] keys: "Deadpool vs. X-Force"
+   nearby: S5160 "Deadpool's Art of War" 5f [shares gcd=83644 (collected by item 78533) — S cv=77575 gcd=83644 (A-028 0.95)] keys: "Deadpool's Art of War"
+   nearby: S12934 "Night of the Living Deadpool" 5f [shares gcd=78613 (collected by item 78531) — S cv=70900 gcd=78613 (A-028 0.95)] keys: "Night of the Living Deadpool"
+   nearby: S14069 "Prelude to Deadpool Corps" 5f [shares gcd=44963 (collected by item 78526) — S cv=31738 gcd=44963 (A-027 0.95)] keys: "Prelude To Deadpool Corps"
+   nearby: S14621 "Return of the Living Deadpool" 5f [shares gcd=86412 (collected by item 78531) — S cv=79871 gcd=86412 (A-028 0.95)] keys: "Return of the Living Deadpool"
+   nearby: S5143 "Deadpool & The Mercs For Money" 4f [shares gcd=105147 (collected by item 78537) — S cv=92360 gcd=105147 (C-043 0.9)] keys: "Deadpool & The Mercs For Money" | "Deadpool and the Mercs For Money" | "Deadpool and the Mercs for Money"
+   nearby: S5161 "Deadpool's Secret Secret Wars" 3f [shares gcd=89419 (collected by item 78533) — S cv=82102 gcd=89419 (C-064 0.9)] keys: "Deadpool's Secret Secret Wars" | "Secret Wars"
+   nearby: S6569 "Fear Itself: Deadpool" 3f [shares gcd=59192 (collected by item 78529) — S cv=40543 gcd=59192 (A-027 0.95)] keys: "Fear Itself - Deadpool"
+   nearby: S1756 "Baby's First Deadpool Book" 2f [shares gcd=16407 (collected by item 78519) — S cv=18600 gcd=16407 (A-023 0.95)] keys: "Baby's First Deadpool Book"
+   nearby: S5094 "Deadpool: Games of Death" 2f [shares gcd=35315 (collected by item 78528) — S cv=25999 gcd=35315 (A-023 0.95)] keys: "Deadpool - Games of Death"
+   nearby: S5104 "Deadpool: Too Soon" 2f [shares gcd=108367 (collected by item 78535) — S cv=95002 gcd=108367 (B-055 0.95)] keys: "Deadpool - Too Soon"
+   nearby: S5114 "Deadpool Corps: Rank and Foul" 2f [shares gcd=57081 (collected by item 78529) — S cv=32182 gcd=57081 (A-023 0.95)] keys: "Deadpool Corps - Rank and Foul"
+   nearby: S5119 "Deadpool Family" 2f [shares gcd=57074 (collected by item 78526) — S cv=39633 gcd=57074 (A-023 0.95)] keys: "Deadpool Family"
+   nearby: S10548 "Lady Deadpool" 2f [shares gcd=51585 (collected by item 78525) — S cv=34593 gcd=51585 (A-023 0.95)] keys: "Lady Deadpool"
+   nearby: S15302 "Secret Wars, Too" 2f [shares gcd=94126 (collected by item 78534) — S cv=86122 gcd=94126 (B-072 0.9)] keys: "Secret Wars, Too"
+   nearby: S4840 "Daredevil / Deadpool '97" 1f [shares gcd=5789 (collected by item 78516) — S cv=26448 gcd=5789 (C-055 0.95)] keys: "Daredevil-Deadpool Annual '97"
+   nearby: S5109 "Deadpool Bi-Annual" 1f [shares gcd=83743 (collected by item 78533) — S cv=76981 gcd=83743 (A-028 0.95)] keys: "Deadpool Bi-Annual"
+   nearby: S5123 "Deadpool Kills The Marvel Universe Again" 1f [shares gcd=115242 (collected by item 78536) — S cv=102583 gcd=115242 (B-055 0.95)] keys: "Deadpool Kills The Marvel Universe Again"
+   nearby: S5139 "Deadpool & Cable: Split Second" 1f [shares gcd=115232 (collected by item 78535) — S cv=86965 gcd=115232 (B-055 0.95)] keys: "Deadpool and Cable - Split Second"
+   nearby: S5141 "Deadpool / Death '98" 1f [shares gcd=6028 (collected by item 78518) — S cv=18606 gcd=6028 (C-055 0.95)] keys: "Deadpool and Death Annual"
+   nearby: S5150 "Deadpool the Duck" 1f [shares gcd=111082 (collected by item 78536) — S cv=97745 gcd=111082 (B-055 0.95)] keys: "Deadpool the Duck"
+   nearby: S5151 "Deadpool v Gambit" 1f [shares gcd=103461 (collected by item 78535) — S cv=91746 gcd=103461 (B-055 0.95)] keys: "Deadpool v Gambit - The “V” is for “Vs.”"
+   nearby: S5154 "Deadpool vs. Thanos" 1f [shares gcd=92211 (collected by item 78532) — S cv=84268 gcd=92211 (B-055 0.95)] keys: "Deadpool vs. Thanos"
+   nearby: S5156 "Deadpool vs. The Punisher" 1f [shares gcd=113422 (collected by item 78536) — S cv=100691 gcd=113422 (B-055 0.95)] keys: "Deadpool vs. The Punisher"
+   nearby: S5167 "Deadpool: Back In Black" 1f [shares gcd=107879 (collected by item 78537) — S cv=94618 gcd=107879 (B-055 0.95)] keys: "Deadpool: Back In Black"
+   nearby: S8220 "Gwenpool Special" 1f [shares gcd=94722 (collected by item 78535) — S cv=86533 gcd=94722 (A-024 0.95)] keys: "Gwenpool Special"
+   nearby: S12428 "Mrs. Deadpool and the Howling Commandos" 1f [shares gcd=89986 (collected by item 78533) — S cv=82511 gcd=89986 (B-072 0.95)] keys: "Mrs. Deadpool and the Howling Commandos"
+   nearby: S21896 "Wolverine/Deadpool: The Decoy" 1f [shares gcd=60249 (collected by item 78529) — S cv=41579 gcd=60249 (A-027 0.95)] keys: "Wolverine-Deadpool - The Decoy"
+   nearby: S22394 "X-Men Origins: Deadpool" 1f [shares gcd=51807 (collected by item 78528) — S cv=34424 gcd=51807 (A-027 0.95)] keys: "X-Men Origins - Deadpool"
+   nearby: S102418 "5 Ronin" 1f [shares gcd=56292 (collected by item 78534) — S cv=39223 gcd=56292 (C-052 0.9)] keys: "Wolverine - 5 Ronin (2011)"
+   nearby: S102757 "Deadpool #1000 (2010)" 1f [shares gcd=52109 (collected by item 78528) — S gcd=52109 (R-035 0.9)] keys: "Deadpool #1000 (2010)"
+   nearby: S103044 "Wolverine 1999 (1999)" 1f [shares gcd=9824 (collected by item 78513) — S cv=27150 gcd=9824 (R-037 0.95)] keys: "Wolverine 1999 (1999)"
+   nearby: S103938 "Deadpool Team-Up (1998)" 1f [shares gcd=6027 (collected by item 78519) — S cv=18602 gcd=6027 (R-093 0.95)] keys: "Deadpool Team-Up (1998)"
+   keys now: "Deadpool Classic" x23 · "Deadpool Classic Companion" x2
+   groups (title x folder): 2
+   G1 "Deadpool Classic" in Marvel\_Deadpool\Deadpool Classic (2008) — 23 file(s), 23 COL, pp 196-481; cv per-file 21748x23; gcd per-file 60236x23; key 'Deadpool Classic'
+      [78515] COL Deadpool Classic Vol. 01 (2008) (Digital-HD) (Kileko-Empire).cbz (252pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 863461) COLLECTS: gcd=4686 Deadpool: The Circle Chase (1993) #1-4 · gcd=5003 Deadpool (1994) #1-4 · gcd=5791 Deadpool (1997) #1 · gcd=2755 The New Mutants (1983) #98
+      [78516] COL Deadpool Classic Vol. 02 (2009) (Digital) (F) (Kileko-Empire).cbz (247pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 863462) COLLECTS: gcd=5791 Deadpool (1997) #2-8 · gcd=5789 Daredevil / Deadpool '97 (1997) #1
+      [78517] COL Deadpool Classic Vol. 03 (2010) (Digital) (F) (Kileko-Empire).cbz (270pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 863463) COLLECTS: gcd=5791 Deadpool (1997) #9-17 · gcd=1570 The Amazing Spider-Man (1963) #47
+      [78518] COL Deadpool Classic Vol. 04 (2011) (Digital) (F) (Kileko-Empire).cbz (271pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 863464) COLLECTS: gcd=5791 Deadpool (1997) #18-25 · gcd=6028 Deadpool / Death '98 (1998) #1 · gcd=17413 Deadpool (1998) #0 · gcd=14441 Encyclopaedia Deadpoolica (1998) #1
+      [78519] COL Deadpool Classic Vol. 05 (2011) (Digital) (F) (Kileko-Empire).cbz (256pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 863465) COLLECTS: gcd=5791 Deadpool (1997) #26-33 · gcd=16407 Baby's First Deadpool Book (1998) #1 · gcd=6027 Deadpool Team-Up (1998) #1
+      [78520] COL Deadpool Classic Vol. 06 (2012) (Digital) (F) (Kileko-Empire).cbz (302pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1098939) COLLECTS: gcd=5791 Deadpool (1997) #34-45 · gcd=6989 Black Panther (1998) #23
+      [78521] COL Deadpool Classic Vol. 07 (2012) (Digital) (Kileko-Empire).cbr (254pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1098940) COLLECTS: gcd=5791 Deadpool (1997) #46-56 · gcd=4754 X-Men Unlimited (1993) #28
+      [78522] COL Deadpool Classic Vol. 08 (2014) (Digital) (F) (Kileko-Empire).cbz (196pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1098941) COLLECTS: gcd=5791 Deadpool (1997) #57-64
+      [78523] COL Deadpool Classic Vol. 09 (2014) (Digital) (Kileko-Empire).cbr (271pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1170918) COLLECTS: gcd=11848 Agent X (2002) #1-6 · gcd=5791 Deadpool (1997) #65-69
+      [78524] COL Deadpool Classic Vol. 10 (2014) (Digital) (F2) (Kileko-Empire).cbz (272pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1340867) COLLECTS: gcd=11848 Agent X (2002) #7-15 · gcd=4694 Fight Man (1993) #1
+      [78525] COL Deadpool Classic Vol. 11 - Merc With A Mouth (2015) (Digital) (F) (Kileko-Empire).cbz (367pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1370218) COLLECTS: gcd=37923 Deadpool: Merc with a Mouth (2009) #1-13 · gcd=51585 Lady Deadpool (2010) #1
+      [78526] COL Deadpool Classic Vol. 12 - Deadpool Corps (2015) (Digital) (Kileko-Empire).cbr (481pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1422493) COLLECTS: gcd=46836 Deadpool Corps (2010) #1-12 · gcd=44963 Prelude to Deadpool Corps (2010) #1-5 · gcd=57074 Deadpool Family (2011) #1
+      [78527] COL Deadpool Classic Vol. 13 - Deadpool Team-Up (2015) (Digital) (F) (Kileko-Empire).cbz (439pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1422494) COLLECTS: gcd=40644 Deadpool Team-Up (2009) #883-899 · gcd=6027 Deadpool Team-Up (1998) #1
+      [78528] COL Deadpool Classic Vol. 14 - Suicide Kings (2015) (Digital) (Kileko-Empire).cbr (424pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1503738) COLLECTS: gcd=35539 Deadpool: Suicide Kings (2009) #1-4 · gcd=35315 Deadpool: Games of Death (2009) #1 · gcd=51807 X-Men Origins: Deadpool (2010) #1 · gcd=52109 Deadpool (2010) #1000
+      [78529] COL Deadpool Classic Vol. 15 - All The Rest (2016) (Digital) (Kileko-Empire).cbr (351pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1540386) COLLECTS: gcd=59192 Fear Itself: Deadpool (2011) #1-3 · gcd=57081 Deadpool Corps: Rank and Foul (2010) #1 · gcd=60249 Wolverine / Deadpool: The Decoy (2011) #1 · gcd=59533 Incredible Hulks Annual (2011) #1
+      [78530] COL Deadpool Classic Vol. 16 - Killogy (2016) (Digital) (F) (Kileko-Empire).cbz (265pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1578429) COLLECTS: gcd=75234 Deadpool Kills Deadpool (2013) #1-4 · gcd=71449 Deadpool Killustrated (2013) #1-4 · gcd=67718 Deadpool Kills the Marvel Universe (2012) #1-4
+      [78531] COL Deadpool Classic Vol. 17 - Headcanon (2017) (Digital) (F) (Kileko-Empire).cbz (369pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1746281) COLLECTS: gcd=49766 Deadpool: Wade Wilson's War (2010) #1-4 · gcd=86412 Return of the Living Deadpool (2015) #1-4 · gcd=78613 Night of the Living Deadpool (2014) #1-4 · gcd=52121 Deadpool Pulp (2010) #1-4
+      [78532] COL Deadpool Classic Vol. 18 - Deadpool Vol. s. Marvel (2017) (Digital) (Kileko-Empire).cbr (476pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1722627) COLLECTS: gcd=92211 Deadpool vs Thanos (2015) #1-4 · gcd=83447 Hawkeye vs. Deadpool (2014) #0-4 · gcd=79909 Deadpool vs. Carnage (2014) #1-4 · gcd=81547 Deadpool vs. X-Force (2014) #1-4
+      [78533] COL Deadpool Classic Vol. 19 - Make War, Not Love (2017) (Digital) (Zone-Empire).cbr (296pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1737126) COLLECTS: gcd=89419 Deadpool's Secret Secret Wars (2015) #1-4 · gcd=89986 Mrs. Deadpool and the Howling Commandos (2015) #1-4 · gcd=83644 Deadpool's Art of War (2014) #1-4 · gcd=83743 Deadpool Bi-Annual (2014) #1
+      [78534] COL Deadpool Classic Vol. 20 - Ultimate Deadpool (2018) (Digital) (F) (Shadowcat-Empire).cbz (479pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1769736) COLLECTS: gcd=7516 Exiles (2001) #5-6, #12-13, #66-68 · gcd=7825 Ultimate Spider-Man (2000) #91-94 · gcd=56292 5 Ronin (2011) #1-5 · gcd=94126 Secret Wars Too (2015) #1
+      [78535] COL Deadpool Classic Vol. 21 - DvX (2018) (Digital) (Zone-Empire).cbr (361pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1776105) COLLECTS: gcd=103461 Deadpool v Gambit (2016) #1-5 · gcd=115232 Deadpool & Cable: Split Second (2016) #1-3 · gcd=108367 Deadpool: Too Soon (2016) #1-4 · gcd=94722 Gwenpool Special (2016) #1
+      [78536] COL Deadpool Classic Vol. 22 - Murder Most Fowl (2018) (Digital) (Kileko-Empire).cbr (337pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1808318) COLLECTS: gcd=115242 Deadpool Kills the Marvel Universe Again (2017) #1-5 · gcd=113422 Deadpool vs. The Punisher (2017) #1-5 · gcd=111082 Deadpool the Duck (2017) #1-5
+      [78537] COL Deadpool Classic Vol. 23 - Mercs For Money (2019) (Digital) (Kileko-Empire).cbr (406pp)
+         own record cv 21748 / gcd s60236 "Deadpool Classic" (issue 1928489) COLLECTS: gcd=105147 Deadpool & the Mercs for Money (2016) #1-8 · gcd=107879 Deadpool: Back in Black (2016) #1-5 · gcd=96687 Deadpool and the Mercs for Money (2016) #1-5
+   G2 "Deadpool Classic Companion" in Marvel\_Deadpool\Deadpool Classic (2008) — 2 file(s), 2 COL, pp 362-469; cv per-file 81400x2; gcd per-file 123975x2; key 'Deadpool Classic Companion'
+      [78513] COL Deadpool Classic Companion Vol. 01 (2015) (Digital) (F) (Kileko-Empire).cbz (362pp)
+         own record cv 81400 / gcd s123975 "Deadpool Classic Companion" (issue 1802362) COLLECTS: gcd=3865 Wolverine (1988) #88, #154-155 · gcd=4730 The Secret Defenders (1993) #15-17 · gcd=9824 Wolverine 1999 (1999) (unnumbered) · gcd=4474 Silver Sable and the Wild Pack (1992) #23, #30
+      [78514] COL Deadpool Classic Companion Vol. 02 (2018) (Digital) (Kileko-Empire).cbr (469pp)
+         own record cv 81400 / gcd s123975 "Deadpool Classic Companion" (issue 1802361) COLLECTS: gcd=12239 Identity Disc (2004) #1-5 · gcd=28683 Hulk (2008) #14-17, #21 · gcd=40016 Shang-Chi: Master of Kung Fu One-Shot (2009) #1 · gcd=48652 World War Hulks: Hulked-Out Heroes (2010) #1-2
+
+== S5116 Deadpool Epic Collection 05: Johnny Handsome  [split]  1 files / 1 collections  decided in R-146 (S)
+   decided: S 5116 cv=- gcd=179386 0.9 | volume 05 "Johnny Handsome" of the same LINE: GCD 179386 #5 row 2654570 (492pp, ISBN 978-1-302-95957-9) is our 473pp book (ComicInfo Series "Deadpool Epic Collection 05: Johnny Handsome"); CV 159642 is only its count-1 book volume (issue 1068854)
+   F 5116 wrong-cv-link | the stored CV 159642 "Deadpool Epic Collection: Johnny Handsome" is the Vol. 05 book's own count-1 volume, not the line
+   F 5116 split-needed | item 78542 -> join S5115 on its ParsedKey "Deadpool Epic Collection" (S5115's S line is the same GCD 179386 line, cv=-; L-377 / L-392); the shelf empties by the join; replaces C-043's merge-with chain
+   named: S5115 Deadpool Epic Collection  2 files  keys: "Deadpool Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S101454 "Wolverine" 339f [shares gcd=3865 (collected by item 78542) — S cv=4250 gcd=3865 (C-052 0.95)] keys: "Flashback - Wolverine -01" | "Wolverine" | "Wolverine (1989)" | "Wolverine (1992)" (+1 more: lookup.py --shelf 101454)
+   nearby: S64540 "Deadpool" 124f [shares gcd=5791 (collected by item 78542) — S cv=6000 gcd=5791 (R-146 0.9)] keys: "Deadpool (1997)" | "Deadpool - Flashback" | "Deadpool v1 (1997)"
+   nearby: S5117 "Deadpool Epic Collection: Drowning Man" 1f [shares gcd=179386 — S gcd=179386 (R-146 0.9)] keys: "Deadpool Epic Collection: Drowning Man"
+   nearby: S5118 "Deadpool Epic Collection: The Circle Chase" 1f [shares gcd=179386 — S gcd=179386 (R-146 0.9)] keys: "Deadpool Epic Collection: The Circle Chase"
+   nearby: S103044 "Wolverine 1999 (1999)" 1f [shares gcd=9824 (collected by item 78542) — S cv=27150 gcd=9824 (R-037 0.95)] keys: "Wolverine 1999 (1999)"
+   keys now: "Deadpool Epic Collection 05: Johnny Handsome" x1
+   groups (title x folder): 1
+   G1 "Deadpool Epic Collection" in Marvel\_Deadpool\Deadpool Epic Collections — 1 file(s), 1 COL, pp 473-473; cv per-file 159642x1; gcd per-file 179386x1; key 'Deadpool Epic Collection 05: Johnny Handsome'
+      [78542] COL Deadpool Epic Collection Vol. 05 - Johnny Handsome 001 (2024) (digital) (Marika-Empire).cbz (473pp)
+         own record cv 159642 / gcd s179386 "Deadpool Epic Collection" (issue 2654570) COLLECTS: gcd=5791 Deadpool (1997) #34-45 · gcd=3865 Wolverine (1988) #154-155 · gcd=9824 Wolverine 1999 (1999) (unnumbered) · gcd=4694 Fight Man (1993) #1
+
+== S5117 Deadpool Epic Collection: Drowning Man  [split]  1 files / 1 collections  decided in R-146 (S)
+   decided: S 5117 cv=- gcd=179386 0.9 | volume 03 "Drowning Man" of the same LINE: GCD 179386 #3 row 2595213 (468pp, ISBN 978-1-302-95332-4) is our 447pp book; CV 156021 is only its count-1 book volume (issue 1040075)
+   F 5117 wrong-cv-link | the stored CV 156021 "Deadpool Epic Collection: Drowning Man" is the Vol. 03 book's own count-1 volume, not the line
+   F 5117 split-needed | item 78540 -> join S5115 on its ParsedKey "Deadpool Epic Collection" (same GCD 179386 line; L-377 / L-392); the shelf empties by the join
+   named: S5115 Deadpool Epic Collection  2 files  keys: "Deadpool Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64540 "Deadpool" 124f [shares gcd=5791 (collected by item 78540) — S cv=6000 gcd=5791 (R-146 0.9)] keys: "Deadpool (1997)" | "Deadpool - Flashback" | "Deadpool v1 (1997)"
+   nearby: S8861 "Heroes for Hire" 23f [shares gcd=5794 (collected by item 78540) — S cv=6003 gcd=5794 (R-043 0.95)] keys: "Heroes For Hire (1997)" | "Heroes for Hire" | "Heroes for Hire v1 (1997)" | "Luke Cage, Iron Fist, and the Heroes for Hire (1997)"
+   nearby: S1756 "Baby's First Deadpool Book" 2f [shares gcd=16407 (collected by item 78540) — S cv=18600 gcd=16407 (A-023 0.95)] keys: "Baby's First Deadpool Book"
+   nearby: S5116 "Deadpool Epic Collection 05: Johnny Handsome" 1f [shares gcd=179386 — S gcd=179386 (R-146 0.9)] keys: "Deadpool Epic Collection 05: Johnny Handsome"
+   nearby: S5118 "Deadpool Epic Collection: The Circle Chase" 1f [shares gcd=179386 — S gcd=179386 (R-146 0.9)] keys: "Deadpool Epic Collection: The Circle Chase"
+   nearby: S5141 "Deadpool / Death '98" 1f [shares gcd=6028 (collected by item 78540) — S cv=18606 gcd=6028 (C-055 0.95)] keys: "Deadpool and Death Annual"
+   keys now: "Deadpool Epic Collection: Drowning Man" x1
+   groups (title x folder): 1
+   G1 "Deadpool Epic Collection" in Marvel\_Deadpool\Deadpool Epic Collections — 1 file(s), 1 COL, pp 447-447; cv per-file 156021x1; gcd per-file 179386x1; key 'Deadpool Epic Collection: Drowning Man'
+      [78540] COL Deadpool Epic Collection Vol. 03 - Drowning Man (2024) (Digital) (Kileko-Empire).cbz (447pp)
+         own record cv 156021 / gcd s179386 "Deadpool Epic Collection" (issue 2595213) COLLECTS: gcd=5791 Deadpool (1997) #10-20 · gcd=16407 Baby's First Deadpool Book (1998) #1 · gcd=5794 Heroes for Hire (1997) #10-11 · gcd=6028 Deadpool / Death '98 (1998) #1
+
+== S5118 Deadpool Epic Collection: The Circle Chase  [split]  1 files / 1 collections  decided in R-146 (S)
+   decided: S 5118 cv=- gcd=179386 0.9 | volume 01 "The Circle Chase" of the same LINE: GCD 179386 #1 row 2287541 (476pp, ISBN 978-1-302-93205-3) is our 452pp book; CV 140469 is only its count-1 book volume (issue 898704)
+   F 5118 wrong-cv-link | the stored CV 140469 "Deadpool Epic Collection: The Circle Chase" is the Vol. 01 book's own count-1 volume, not the line
+   F 5118 split-needed | item 78538 -> join S5115 on its ParsedKey "Deadpool Epic Collection" (same GCD 179386 line; L-377 / L-392); the shelf empties by the join
+   named: S5115 Deadpool Epic Collection  2 files  keys: "Deadpool Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S22176 "X-Force" 191f [shares gcd=4253 (collected by item 78538) — S cv=4604 gcd=4253 (C-056 0.95)] keys: "Counter X: X-Force - Rage War (1991)" | "X-Force" | "X-Force (1991)" | "X-Force - Flashback -1" (+2 more: lookup.py --shelf 22176)
+   nearby: S5101 "Deadpool - The Circle Chase" 8f [shares gcd=4686 (collected by item 78538) — S gcd=4686 (C-043 0.9)] keys: "Deadpool - The Circle Chase"
+   nearby: S102372 "Deadpool" 8f [shares gcd=5003 (collected by item 78538) — S cv=59624 gcd=5003 (C-043 0.95)] keys: "Deadpool v1 (1994)"
+   nearby: S5116 "Deadpool Epic Collection 05: Johnny Handsome" 1f [shares gcd=179386 — S gcd=179386 (R-146 0.9)] keys: "Deadpool Epic Collection 05: Johnny Handsome"
+   nearby: S5117 "Deadpool Epic Collection: Drowning Man" 1f [shares gcd=179386 — S gcd=179386 (R-146 0.9)] keys: "Deadpool Epic Collection: Drowning Man"
+   keys now: "Deadpool Epic Collection: The Circle Chase" x1
+   groups (title x folder): 1
+   G1 "Deadpool Epic Collection" in Marvel\_Deadpool\Deadpool Epic Collections — 1 file(s), 1 COL, pp 452-452; cv per-file 140469x1; gcd per-file 179386x1; key 'Deadpool Epic Collection: The Circle Chase'
+      [78538] COL Deadpool Epic Collection Vol. 01 - The Circle Chase (2022) (Digital) (Kileko-Empire).cbz (452pp)
+         own record cv 140469 / gcd s179386 "Deadpool Epic Collection" (issue 2287541) COLLECTS: gcd=111682 Deadpool: Beginnings Omnibus (2017) (unnumbered) · gcd=4253 X-Force (1991) #2, #4-5, #10-11, #14-15, #23 · gcd=4686 Deadpool: The Circle Chase (1993) #1-4 · gcd=5003 Deadpool (1994) #1-4
+
+== S64501 Daredevil  [split]  436 files / 7 collections  decided in R-146 (S)
+   decided: S 64501 cv=2190 gcd=1636 0.9 | Daredevil (1964-1998): CV 2190 (Marvel 1964, 381 = #-1, #1-380, cached) and GCD 1636 (Marvel 1964-1998, 381) agree on publisher, span and count; our ladder #1-380 plus #-1 (ComicInfo Volume 1964 on 90 files, Count 380 x4) matches every linked issue number (a filename-vs-issue check found no other mismatch across the 400+ files), and the two Daredevil Omnibus Book 01 rips (judged #1-41, GCD row 1678568 reprints s1636 #1-41) are the run's own book; 0.9 for the Daredevil Annual 1967-1994 files (#1, 4-10; CV 2351 / GCD 1808 - no annual-series shelf exists, L-391) and the 2023 No. 183 Facsimile Edition, plus the other runs split below
+   F 64501 split-needed | items 116709, 116710, 117370, 117372-117378 ("Daredevil 092-093 (2007)", "111, 113-119 (2008-2009)", 24-26pp, per-file GCD 6026 x10) are Daredevil (1998) #92-93, #111-119, CV 6209 / GCD 6026, which S96254 stores (S line cv=6209 gcd=6026, lookup --who-stores cv=6209) -> join S96254 on its ParsedKey "Daredevil v2 (1998)"
+   F 64501 split-needed | item 118489 "Daredevil 026 (2021)" 25pp is Daredevil (2019) #26 "The Black Kitchen Part 1" (CV 116964 issue 826554 / GCD 139716 row 2189174), the run S64504 stores (stored cv=116964, S line R-024) -> join S64504 on its key "Daredevil v6 (2019)"
+   F 64501 split-needed | items 46967 (Daredevil by Mark Waid Omnibus Book 01, 706pp, GCD 1677343 reprints s60120 #1-10.1, #11-27), 46968 (Waid & Samnee Omnibus Book 02, 725pp, starts at Daredevil 2011 #28, L-331) and 92157 ("Daredevil Annual 01 (2012)" = CV 51109 / GCD 67758, that run's annual, no annual shelf) are Daredevil (2011), CV 41410 / GCD 60120 (37), which NO shelf stores (lookup --who-stores cv=41410: 0 rows) -> new key "Daredevil v3 (2011)" seeded cv=41410 gcd=60120; it meets S4834 (re-read below onto cv=41410) through the shared cv, not by a join onto a creator-trade key (L-389)
+   F 64501 wrong-cv-link | per-file stamps: CV 2190 regular-issue ids (#1, #4, #7, #9, #10) on the Annuals, CV 77205 (Semic) on Annual 005-006 and CV 144027 (Daredevil 2022) on Annual 008, GCD 65541 / 71969 / 29788 / 50569 / 173535 / 29842 foreign rows on the Annuals and #-1; each file's own issue is on its I line
+   F 64501 needs-fetch cv=2190 | "Daredevil" 1964 Marvel (381), named from the rip; still no CvVolume row
+   N 64501 flag #211 (label-ambiguous, item 47980) is right: 46978 and 47980 are two copies of Daredevil Omnibus Book 01 (1082pp each). Flag #212 (label-ambiguous, item 116397) is right: "Daredevil v1 001" is a single issue
+   N 64501 the 44 numbers naming two files are the Complete / Major Event Chronology second rips ("01 Daredevil 037 (1968)", "041 Daredevil 275", "016 Daredevil #196") and re-rips by a second ripper (AnPymGold / AnHeroGold) - every one carries its own filename number's issue
+   N 46967 the omnibus also collects Daredevil (2011) #1-10 + #10.1 (the same stretch Waid Vol. 01 holds on S4834); one C states one contiguous range, and #10.1 breaks the numeric run
+   N 46968 Book 02 runs from Daredevil (2011) #28-36 into Daredevil (2014) (CV 72417 / GCD 79658, S64502); no provider states its range, so no C line
+   N 46976 the Omnibus also collects Daredevil (1964) #158-161; #162 (a fill-in) is absent, so the range is stated as #163-191 with #158-161 here
+   named: S96254 Daredevil  44 files  keys: "Daredevil - Shadowland" | "Daredevil v2 (1998)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S64504 Daredevil  14 files  keys: "Daredevil (2023)" | "Daredevil by Chip Zdarsky" | "Daredevil by Chip Zdarsky: To Heaven Through Hell" | "Daredevil v6 (2019)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S4834 Daredevil by Mark Waid Vol. 1 Collection  1 files  keys: "Daredevil by Mark Waid Vol. 1 Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S103846 "The Amazing Spider-Man v2 (1999)" 46f [shares gcd=11288 (collected by item 46967) — S cv=78701 gcd=11288 (R-079 0.95)] keys: "The Amazing Spider-Man v2 (1999)"
+   nearby: S64503 "Daredevil" 19f [shares cv=144027 — S cv=144027 gcd=187163 (R-135 0.95)] keys: "Daredevil (2022)" | "Daredevil v7 (2022)"
+   nearby: S4784 "Daredevil" 14f [shares gcd=6026 — S gcd=6026 (C-064 0.9)] keys: "Daredevil"
+   nearby: S11597 "Marvel Super-Heroes" 9f [shares gcd=1810 (collected by item 47980) — S cv=2353 gcd=1810 (R-046 0.95)] keys: "Marvel Super-Heroes" | "Marvel Super-Heroes v1 (1967)"
+   nearby: S64502 "Daredevil" 6f [shares cv=72417 (N line), shares gcd=79658 (N line), named S64502 in the decision's R/N lines — S cv=72417 gcd=79658 (C-043 0.9)] keys: "Daredevil (2014)" | "Daredevil by Mark Waid and Chris Samnee"
+   nearby: S1692 "Avenging Spider-Man" 4f [shares gcd=61993 (collected by item 46967) — S cv=43884 gcd=61993 (C-042 0.9)] keys: "Avenging Spider-Man" | "Avenging Spider-Man: The Complete Collection"
+   nearby: S4823 "Daredevil Visionaries: Frank Miller" 3f [shares gcd=10443 (collected by item 46976) — S cv=9624 gcd=10443 (A-023 0.9)] keys: "Daredevil Visionaries: Frank Miller"
+   nearby: S13169 "Official Handbook Of The Marvel Universe" 2f [shares gcd=2758 (collected by item 46976) — S cv=3237 gcd=2758 (R-139 0.9)] keys: "Official Handbook Of The Marvel Universe" | "Official Handbook of the Marvel Universe"
+   nearby: S14200 "The Punisher" 2f [shares gcd=60377 (collected by item 46967) — S cv=41758 gcd=60377 (A-024 0.9)] keys: "Punisher By Greg Rucka"
+   nearby: S4786 "Daredevil No. 183 Facsimile Edition" 1f [shares cv=154153, shares gcd=204955 — S cv=154153 gcd=204955 (A-024 1.0)] keys: "Daredevil #183: Facsimile Edition"
+   nearby: S96257 "Daredevil" 44f [title — S cv=153465 gcd=204057 (R-135 0.95)] keys: "Daredevil v8 (2023)"
+   nearby: S4843 "Daredevil" 8f [title — S cv=86343 gcd=94624 (A-023 0.95)] keys: "Daredevil: Back In Black" | "Daredevil: Back in Black"
+   nearby: S4785 "Daredevil No. 181 Facsimile Edition" 1f [title — S cv=121416 gcd=150591 (C-047 0.95)] keys: "Daredevil #181: Facsimile Edition"
+   nearby: S4821 "Daredevil Noir" 4f [title+1 — S cv=26164 gcd=35697 (A-023 0.95)] keys: "Daredevil Noir" · S4846 "Daredevil: Ninja" 3f [title+1 — S cv=9540 gcd=10343 (A-023 0.95)] keys: "Daredevil: Ninja"
+   nearby: S4787 "Daredevil & Echo" 1f [title+1 — S cv=150603 gcd=200813 (B-055 0.95)] keys: "Daredevil & Echo" · S4793 "Daredevil: Father" 1f [title+1 — S cv=21096 gcd=11904 (B-055 0.95)] keys: "Daredevil - Father"
+   nearby: S4799 "Daredevil: Redemption" 1f [title+1 — S cv=12001 gcd=13026 (B-055 0.95)] keys: "Daredevil - Redemption"
+   nearby: S4805 "Daredevil: Yellow" 1f [title+1 — S cv=7513 gcd=8113 (B-055 0.95)] keys: "Daredevil - Yellow"
+   nearby: S4817 "Daredevil Legends" 1f [title+1 — S cv=21190 gcd=31870 (A-023 0.9)] keys: "Daredevil Legends: Typhoid Mary"
+   nearby: S4840 "Daredevil / Deadpool '97" 1f [title+1 — S cv=26448 gcd=5789 (C-055 0.95)] keys: "Daredevil-Deadpool Annual '97"
+   nearby: S103879 "Daredevil: Shadowland Omnibus (2018)" 1f [title+1 — S cv=108581 gcd=120694 (R-146 0.9)] keys: "Daredevil: Shadowland Omnibus (2018)"
+   keys now: "Daredevil v1 (1964)" x389 · "Daredevil (1964)" x43 · "Daredevil by Frank Miller and Klaus Janson" x3 · "Daredevil -1" x1
+   groups (title x folder): 24
+   G1 "Daredevil" in Marvel\_Daredevil\01 Daredevil v1 (1964) — 380 file(s), numbers 1-380, pp 17-42; cv per-file 2190x380; gcd per-file 1636x358; key 'Daredevil v1 (1964)'
+      e.g. Daredevil 001 (1964) (digital) (G85-Empire).cbr
+        46479 #1 1964 25pp · 46480 #2 1964 24pp · 46481 #3 1964 24pp · 46482 #4 1964 24pp · 46483 #5 1964 23pp · 46484 #6 1965 22pp · 46485 #7 1965 23pp · 46486 #8 1965 22pp · 46487 #9 1965 21pp
+        46488 #10 1965 21pp · 46489 #11 1965 21pp · 46490 #12 1966 21pp · 46491 #13 1966 21pp · 46492 #14 1966 21pp · 46493 #15 1966 21pp · 46494 #16 1966 21pp · 46495 #17 1966 21pp
+        46496 #18 1966 21pp · 46497 #19 1966 21pp · 46498 #20 1966 21pp · 46499 #21 1966 21pp · 46500 #22 1966 23pp · 46501 #23 1966 23pp · 46502 #24 1967 23pp · 46503 #25 1967 23pp
+        46504 #26 1967 23pp · 46505 #27 1967 23pp · 46506 #28 1967 23pp · 46507 #29 1967 23pp · 46508 #30 1967 23pp · 46509 #31 1967 23pp · 46510 #32 1967 23pp · 46511 #33 1967 21pp
+        46512 #34 1967 21pp · 46513 #35 1967 21pp · 46514 #36 1968 21pp · 46515 #37 1968 21pp · 46516 #38 1968 21pp · 46517 #39 1968 21pp · 46518 #40 1968 21pp · 46519 #41 1968 21pp
+        46520 #42 1968 21pp · 46521 #43 1968 21pp · 46522 #44 1968 21pp · 46523 #45 1968 21pp · 46524 #46 1968 21pp · 46525 #47 1968 21pp · 46526 #48 1969 21pp · 46527 #49 1969 21pp
+        46528 #50 1969 21pp · 46529 #51 1969 21pp · 46530 #52 1969 20pp · 46531 #53 1969 22pp · 46532 #54 1969 21pp · 46533 #55 1969 20pp · 46534 #56 1969 21pp · 46535 #57 1969 21pp
+        46536 #58 1969 21pp · 46537 #59 1969 21pp · 46538 #60 1970 21pp · 46539 #61 1970 21pp · 46540 #62 1970 21pp · 46541 #63 1970 20pp · 46542 #64 1970 20pp · 46543 #65 1970 20pp
+        46544 #66 1970 20pp · 46545 #67 1970 20pp · 46546 #68 1970 20pp · 46547 #69 1970 20pp · 46548 #70 1970 20pp · 46549 #71 1970 20pp · 46550 #72 1971 20pp · 46551 #73 1971 20pp
+        46552 #74 1971 20pp · 46553 #75 1971 20pp · 46554 #76 1971 20pp · 46555 #77 1971 20pp · 46556 #78 1971 20pp · 46557 #79 1971 20pp · 46558 #80 1971 20pp · 46559 #81 1971 21pp
+        46560 #82 1971 22pp · 46561 #83 1972 22pp · 46562 #84 1972 22pp · 46563 #85 1972 22pp · 46564 #86 1972 22pp · 46565 #87 1972 22pp · 46566 #88 1972 22pp · 46567 #89 1972 21pp
+        46568 #90 1972 21pp · 46569 #91 1972 21pp · 46570 #92 1972 21pp · 46571 #93 1972 20pp · 46572 #94 1972 21pp · 46573 #95 1973 21pp · 46574 #96 1973 22pp · 46575 #97 1973 21pp
+        46576 #98 1973 20pp · 46577 #99 1973 21pp · 46578 #100 1973 21pp · 46579 #101 1973 21pp · 46580 #102 1973 21pp · 46581 #103 1973 20pp · 46582 #104 1973 20pp · 46583 #105 1973 21pp
+        46584 #106 1973 21pp · 46585 #107 1974 21pp · 46586 #108 1974 20pp · 46587 #109 1974 19pp · 46588 #110 1974 19pp · 46589 #111 1974 18pp · 46590 #112 1974 18pp · 46591 #113 1974 20pp
+        46592 #114 1974 20pp · 46593 #115 1974 18pp · 46594 #116 1974 18pp · 46595 #117 1975 18pp · 46596 #118 1975 20pp · 46597 #119 1975 18pp · 46598 #120 1975 19pp · 46599 #121 1975 19pp
+        46600 #122 1975 19pp · 46601 #123 1975 19pp · 46602 #124 1975 19pp · 46603 #125 1975 19pp · 46604 #126 1975 19pp · 46605 #127 1975 19pp · 46606 #128 1975 19pp · 46607 #129 1976 19pp
+        46608 #130 1976 19pp · 46609 #131 1976 19pp · 46610 #132 1976 19pp · 46611 #133 1976 18pp · 46612 #134 1976 18pp · 46613 #135 1976 18pp · 46614 #136 1976 18pp · 46615 #137 1976 18pp
+        46616 #138 1976 18pp · 46617 #139 1976 19pp · 46618 #140 1976 18pp · 46619 #141 1977 18pp · 46620 #142 1977 18pp · 46621 #143 1977 18pp · 46622 #144 1977 18pp · 46623 #145 1977 18pp
+        46624 #146 1977 19pp · 46625 #147 1977 18pp · 46626 #148 1977 18pp · 46627 #149 1977 18pp · 46628 #150 1978 18pp · 46629 #151 1978 19pp · 46630 #152 1978 18pp · 46631 #153 1978 18pp
+        46632 #154 1978 17pp · 46633 #155 1978 18pp · 46634 #156 1979 18pp · 46635 #157 1979 18pp · 46636 #158 1979 18pp · 46637 #159 1979 18pp · 46638 #160 1979 18pp · 46639 #161 1979 17pp
+        46640 #162 1980 20pp · 46641 #163 1980 19pp · 46642 #164 1980 19pp · 46643 #165 1980 17pp · 46644 #166 1980 18pp · 46645 #167 1980 22pp · 46646 #168 1981 23pp · 46647 #169 1981 22pp
+        46648 #170 1981 23pp · 46649 #171 1981 23pp · 46650 #172 1981 23pp · 46651 #173 1981 24pp · 46652 #174 1981 22pp · 46653 #175 1981 23pp · 46654 #176 1981 23pp · 46655 #177 1981 23pp
+        46656 #178 1982 22pp · 46657 #179 1982 24pp · 46658 #180 1982 23pp · 46659 #181 1982 40pp · 46660 #182 1982 24pp · 46661 #183 1982 24pp · 46662 #184 1982 23pp · 46663 #185 1982 24pp
+        46664 #186 1982 24pp · 46665 #187 1982 23pp · 46666 #188 1982 24pp · 46667 #189 1982 25pp · 46668 #190 1983 40pp · 46669 #191 1983 24pp · 46670 #192 1983 24pp · 46671 #193 1983 25pp
+        46672 #194 1983 23pp · 46673 #195 1983 24pp · 46674 #196 1983 24pp · 46675 #197 1983 24pp · 46676 #198 1983 25pp · 46677 #199 1983 24pp · 46678 #200 1983 24pp · 46679 #201 1983 24pp
+        46680 #202 1964 24pp · 46681 #203 1964 24pp · 46682 #204 1964 24pp · 46683 #205 1964 23pp · 46684 #206 1964 24pp · 46685 #207 1984 24pp · 46686 #208 1984 24pp · 46687 #209 1964 24pp
+        46688 #210 1984 24pp · 46689 #211 1984 24pp · 46690 #212 1964 24pp · 46691 #213 1964 24pp · 46692 #214 1964 23pp · 46693 #215 1985 23pp · 46694 #216 1985 23pp · 46695 #217 1985 23pp
+        46696 #218 1985 24pp · 46697 #219 1985 24pp · 46698 #220 1985 23pp · 46699 #221 1985 23pp · 46700 #222 1985 23pp · 46701 #223 1985 23pp · 46702 #224 1964 23pp · 46703 #225 1985 23pp
+        46704 #226 1986 26pp · 46705 #227 1986 26pp · 46706 #228 1986 24pp · 46707 #229 1986 24pp · 46708 #230 1986 24pp · 46709 #231 1986 25pp · 46710 #232 1986 24pp · 46711 #233 1986 32pp
+        46712 #234 1986 23pp · 46713 #235 1986 24pp · 46714 #236 1986 24pp · 46715 #237 1986 22pp · 46716 #238 1987 24pp · 46717 #239 1987 24pp · 46718 #240 1987 24pp · 46719 #241 1987 24pp
+        46720 #242 1987 23pp · 46721 #243 1987 23pp · 46722 #244 1987 24pp · 46723 #245 1987 24pp · 46724 #246 1987 24pp · 46725 #247 1987 24pp · 46726 #248 1987 23pp · 46727 #249 1987 24pp
+        46728 #250 1988 23pp · 46729 #251 1988 24pp · 46730 #252 1989 41pp · 46731 #253 1988 23pp · 46732 #254 1988 23pp · 46733 #255 1988 24pp · 46734 #256 1988 23pp · 46735 #257 1988 22pp
+        46736 #258 1988 23pp · 46737 #259 1988 23pp · 46738 #260 1988 36pp · 46739 #261 1988 23pp · 46740 #262 1989 23pp · 46741 #263 1989 23pp · 46742 #264 1989 23pp · 46743 #265 1989 23pp
+        46744 #266 1989 23pp · 46745 #267 1989 23pp · 46746 #268 1989 23pp · 46747 #269 1989 25pp · 46748 #270 1989 24pp · 46749 #271 1989 23pp · 46750 #272 1989 23pp · 46751 #273 1989 22pp
+        46752 #274 1989 23pp · 46753 #275 1989 21pp · 46754 #276 1990 22pp · 46755 #277 1990 23pp · 46756 #278 1990 22pp · 46757 #279 1990 23pp · 46758 #280 1990 23pp · 46759 #281 1990 23pp
+        46760 #282 1990 21pp · 46761 #283 1990 23pp · 46762 #284 1990 23pp · 46763 #285 1990 23pp · 46764 #286 1990 23pp · 46765 #287 1990 23pp · 46766 #288 1991 23pp · 46767 #289 1991 23pp
+        46768 #290 1991 23pp · 46769 #291 1991 23pp · 46770 #292 1991 23pp · 46771 #293 1991 24pp · 46772 #294 1991 22pp · 46773 #295 1991 23pp · 46774 #296 1991 23pp · 46775 #297 1991 24pp
+        46776 #298 1991 25pp · 46777 #299 1991 24pp · 46778 #300 1992 40pp · 46779 #301 1992 22pp · 46780 #302 1992 23pp · 46781 #303 1992 23pp · 46782 #304 1992 23pp · 46783 #305 1992 23pp
+        46784 #306 1992 25pp · 46785 #307 1992 25pp · 46786 #308 1992 24pp · 46787 #309 1992 24pp · 46788 #310 1992 24pp · 46789 #311 1992 23pp · 46790 #312 1993 24pp · 46791 #313 1993 24pp
+        46792 #314 1993 23pp · 46793 #315 1993 22pp · 46794 #316 1993 24pp · 46795 #317 1993 22pp · 46796 #318 1993 23pp · 46797 #319 1993 29pp · 46798 #320 1993 27pp · 46799 #321 1993 25pp
+        46800 #322 1993 22pp · 46801 #323 1993 24pp · 46802 #324 1993 27pp · 46803 #325 1993 42pp · 46804 #326 1994 23pp · 46805 #327 1994 23pp · 46806 #328 1994 23pp · 46807 #329 1994 22pp
+        46808 #330 1994 24pp · 46809 #331 1994 24pp · 46810 #332 1994 24pp · 46811 #333 1964 23pp · 46812 #334 1964 24pp · 46813 #335 1964 23pp · 46814 #336 1964 23pp · 46815 #337 1964 23pp
+        46816 #338 1964 23pp · 46817 #339 1964 23pp · 46818 #340 1964 21pp · 46819 #341 1964 22pp · 46820 #342 1964 22pp · 46821 #343 1964 23pp · 46822 #344 1964 23pp · 46823 #345 1995 22pp
+        46824 #346 1995 21pp · 46825 #347 1995 20pp · 46826 #348 1996 22pp · 46827 #349 1996 23pp · 46828 #350 1996 33pp · 46829 #351 1996 22pp · 46830 #352 1996 20pp · 46831 #353 1996 23pp
+        46832 #354 1996 23pp · 46833 #355 1996 23pp · 46834 #356 1996 23pp · 46835 #357 1996 23pp · 46836 #358 1996 23pp · 46837 #359 1996 23pp · 46838 #360 1996 23pp · 46839 #361 1996 23pp
+        46840 #362 1996 23pp · 46841 #363 1996 23pp · 46842 #364 1996 23pp · 46843 #365 1997 24pp · 46844 #366 1997 24pp · 46845 #367 1997 24pp · 46846 #368 1997 23pp · 46847 #369 1997 23pp
+        46848 #370 1997 24pp · 46849 #371 1998 24pp · 46850 #372 1998 24pp · 46851 #373 1998 24pp · 46852 #374 1998 23pp · 46853 #375 1998 42pp · 46854 #376 1998 25pp · 46855 #377 1998 22pp
+        46856 #378 1998 22pp · 46857 #379 1998 22pp · 46858 #380 1998 38pp
+   G2 "Daredevil -1 (1997) (Digital) (AnHeroGold-Empire)" in Marvel\_Daredevil\01 Daredevil v1 (1964)\Annuals and Specials — 1 file(s), numbers 1, pp 24-24; cv per-file 2190x1; gcd per-file 1636x1; key 'Daredevil -1'
+      [46859] Daredevil -1 (1997) (Digital) (AnHeroGold-Empire).cbz (24pp)
+   G3 "Daredevil Annual" in Marvel\_Daredevil\01 Daredevil v1 (1964)\Annuals and Specials — 8 file(s), numbers 1, 4-10, pp 36-58; cv per-file 2351x8; gcd per-file 1808x8; key 'Daredevil v1 (1964)'
+      e.g. Daredevil Annual 001 (1967) (Digital) (AnHeroGold-Empire).cbz
+        46860 #1 1967 56pp · 46861 #4 1976 36pp · 46862 #5 1989 56pp · 46863 #6 1990 57pp · 46864 #7 1991 57pp · 46865 #8 1992 56pp · 46866 #9 1993 49pp · 46867 #10 1994 58pp
+   G4 "Daredevil Omnibus" in Marvel\_Daredevil\01 Daredevil v1 (1964)\_Omnibus Editions — 1 file(s), 1 COL, pp 1082-1082; cv per-file 98730x1; gcd per-file 112556x1; key 'Daredevil v1 (1964)'
+      [47980] COL Daredevil Omnibus Book 01 (2017) (Digital-Empire).cbr (1082pp)
+         own record cv 98730 / gcd s112556 "Daredevil Omnibus" (issue 1678568) COLLECTS: gcd=1636 Daredevil (1964) #1-41 · gcd=1808 Daredevil Annual (1967) #1 · gcd=1810 Marvel Super-Heroes (1967) #22-31 · gcd=2349 Marvel Adventure (1976) #3-6
+   G5 "Daredevil Omnibus" in Marvel\_Daredevil\_Omnibus Editions — 1 file(s), 1 COL, pp 1082-1082; cv per-file 98730x1; gcd per-file 112556x1; key 'Daredevil (1964)'
+      [46978] COL Daredevil Omnibus Book 01 (2017) (Digital-Empire).cbr (1082pp)
+         own record cv 98730 / gcd s112556 "Daredevil Omnibus" (issue 1678568) COLLECTS: gcd=1636 Daredevil (1964) #1-41 · gcd=1808 Daredevil Annual (1967) #1 · gcd=1810 Marvel Super-Heroes (1967) #22-31 · gcd=2349 Marvel Adventure (1976) #3-6
+   G6 "Daredevil by Frank Miller and Klaus Janson Omnibus" in Marvel\_Daredevil\_Omnibus Editions — 1 file(s), 1 COL, pp 824-824; cv per-file 43101x1; gcd per-file 68581x1; key 'Daredevil by Frank Miller and Klaus Janson'
+      [46976] COL Daredevil by Frank Miller and Klaus Janson Omnibus 001 (2007) (digital) (Marika-Empire).cbz (824pp)
+         own record cv 43101 / gcd s68581 "Daredevil by Frank Miller and Klaus Janson Omnibus" (issue 1099438) COLLECTS: gcd=1636 Daredevil (1964) #158-161, #163-191 · gcd=2758 The Official Handbook of the Marvel Universe (1983) #2-4, #6, #8 · gcd=10443 Daredevil Visionaries: Frank Miller (2000) #1-3 · gcd=5026 Marvel Super-Heroes Megazine (1994) #2, #4, #6
+   G7 "Daredevil by Mark Waid Omnibus" in Marvel\_Daredevil\_Omnibus Editions — 1 file(s), 1 COL, pp 706-706; cv per-file 99293x1; gcd per-file 112449x1; key 'Daredevil (1964)'
+      [46967] COL 01 Daredevil by Mark Waid Omnibus Book 01 (2023, 2nd edition) (Digital-Empire).cbr (706pp)
+         own record cv 99293 / gcd s112449 "Daredevil by Mark Waid Omnibus" (issue 1677343) COLLECTS: gcd=60120 Daredevil (2011) #1-10, #10.1, #11-27 · gcd=60377 The Punisher (2011) #10 · gcd=61993 Avenging Spider-Man (2012) #6 · gcd=11288 The Amazing Spider-Man (1999) #677
+   G8 "Daredevil by Waid & Samnee Omnibus" in Marvel\_Daredevil\_Omnibus Editions — 1 file(s), 1 COL, pp 725-725; cv per-file 99293x1; key 'Daredevil (1964)'
+      [46968] COL 02 Daredevil by Waid & Samnee Omnibus Book 02 (2024. 2nd edition) (Digital-Empire).cbr (725pp)
+   G9 "Daredevil by Frank Miller and Klaus Janson" in Marvel\_Daredevil\_Trades, Minis and One-shots\Daredevil by Frank Miller and Klaus Janson (2008) — 2 file(s), 2 COL, pp 314-317; cv per-file 29926x2; gcd per-file 73293x2; key 'Daredevil by Frank Miller and Klaus Janson'
+      [47021] COL Daredevil by Frank Miller and Klaus Janson Vol. 02 (2008) (Digital) (F) (Zone-Empire).cbr (314pp)
+         own record cv 29926 / gcd s73293 "Daredevil by Frank Miller and Klaus Janson" (issue 1106835) COLLECTS: gcd=1636 Daredevil (1964) #173-184 · gcd=5026 Marvel Super-Heroes Megazine (1994) #2, #4, #6 · gcd=76694 The Daredevil Chronicles (1982) (unnumbered) · gcd=38840 Daredevil Gangwar (1992) (unnumbered)
+      [47022] COL Daredevil by Frank Miller and Klaus Janson Vol. 03 (2009) (Digital) (F2) (Zone-Empire).cbr (317pp)
+         own record cv 29926 / gcd s73293 "Daredevil by Frank Miller and Klaus Janson" (issue 1106836) COLLECTS: gcd=1636 Daredevil (1964) #185-191, #219 · gcd=87031 Marvel Graphic Novel: Daredevil (1986) (unnumbered) · gcd=10443 Daredevil Visionaries: Frank Miller (2000) #1-3 · gcd=2410 What If? (1977) #28, #34
+   G10 "Daredevil Facsimile Edition" in Marvel\_Marvel Facsimile Editions — 1 file(s), numbers 183, pp 35-35; cv per-file 154153x1; gcd per-file 204955x1; key 'Daredevil (1964)'
+      [83039] Daredevil Facsimile Edition 183 (2023) (digital).cbz (35pp)
+   G11 "Daredevil" in Marvel\_X-Men\_X-Men Complete Chronology V2\0025 Unnamed — 4 file(s), numbers 196-199, pp 23-23; cv per-file 2190x4; key 'Daredevil (1964)'
+      e.g. 016 Daredevil #196.cbz
+        86880 #196 23pp · 86881 #197 23pp · 86882 #198 23pp · 86883 #199 23pp
+   G12 "Daredevil" in Marvel\_X-Men\_X-Men Complete Chronology V2\0056 The Mutant Massacre — 1 file(s), numbers 238, pp 24-24; cv per-file 2190x1; gcd per-file 1636x1; key 'Daredevil (1964)'
+      [87104] 011 Daredevil 238 (1987) (Digital) (AnPymGold-Empire).cbz (24pp)
+   G13 "Daredevil" in Marvel\_X-Men\_X-Men Complete Chronology V2\0069 Untitled — 2 file(s), numbers 248-249, pp 24-25; cv per-file 2190x2; gcd per-file 1636x2; key 'Daredevil (1964)'
+      [87175] 017 Daredevil v1 248.cbz (24pp)
+      [87176] 018 Daredevil v1 249.cbz (25pp)
+   G14 "Daredevil" in Marvel\_X-Men\_X-Men Complete Chronology V2\0087 Inferno After Effects — 4 file(s), numbers 262-265, pp 23-23; cv per-file 2190x4; gcd per-file 1636x4; key 'Daredevil (1964)'
+      e.g. Daredevil 262 (1988) (Digital) (AnPymGold-Empire).cbr
+        87310 #262 1988 23pp · 87311 #263 1989 23pp · 87312 #264 1989 23pp · 87313 #265 1989 23pp
+   G15 "Daredevil" in Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance — 2 file(s), numbers 275-276, pp 21-22; cv per-file 2190x2; gcd per-file 1636x2; key 'Daredevil (1964)'
+      [87506] 041 Daredevil 275 (1989) (Digital) (Shadowcat-Empire).cbz (21pp)
+      [87507] 042 Daredevil 276 (1990) (Digital) (Shadowcat-Empire).cbz (22pp)
+   G16 "Daredevil" in Marvel\_X-Men\_X-Men Complete Chronology V2\0347 Untitled — 1 file(s), numbers 371, pp 24-24; cv per-file 2190x1; gcd per-file 1636x1; key 'Daredevil (1964)'
+      [88746] 007 Daredevil 371 (1998) (Digital) (AnHeroGold-Empire).cbz (24pp)
+   G17 "Daredevil Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0991 Clandestine — 1 file(s), numbers 1, pp 39-39; cv per-file 51109x1; gcd per-file 67758x1; key 'Daredevil (1964)'
+      [92157] 002 Daredevil Annual 01 (2012) (digital) (Minutemen-InnerDemons).cbr (39pp)
+   G18 "Daredevil" in _Marvel Major Event Chronology (digital)\1968.02 - Daredevil-Dr Doom Swap — 2 file(s), numbers 37-38, pp 21-21; cv per-file 2190x2; gcd per-file 1636x2; key 'Daredevil (1964)'
+      [116263] 01 Daredevil 037 (1968) (Digital) (AnPymGold-Empire).cbz (21pp)
+      [116264] 02 Daredevil 038 (1968) (Digital) (AnPymGold-Empire).cbz (21pp)
+   G19 "Daredevil" in _Marvel Major Event Chronology (digital)\1971.07 - Mr. Kline War — 8 file(s), numbers 78-85, pp 20-22; cv per-file 2190x8; gcd per-file 1636x8; key 'Daredevil (1964)'
+      e.g. 01 Daredevil 078 (1971) (Digital) (AnHeroGold-Empire).cbz
+        116269 #78 1971 20pp · 116270 #79 1971 20pp · 116271 #80 1971 20pp · 116272 #81 1971 21pp · 116273 #82 1971 22pp · 116274 #83 1972 22pp · 116282 #84 1972 22pp · 116283 #85 1972 22pp
+   G20 "Daredevil" in _Marvel Major Event Chronology (digital)\1986.02 - Daredevil - Born Again\Extra — 1 file(s), numbers 1, pp 25-25; cv per-file 2190x1; gcd per-file 1636x1; key 'Daredevil (1964)'
+      [116397] Daredevil v1 001 (1964) (digital) (G85-Empire).cbr (25pp)
+   G21 "Daredevil" in _Marvel Major Event Chronology (digital)\1989.12 - Acts of Vengeance\Acts of Vengeance - Marvel Universe — 2 file(s), numbers 275-276, pp 21-22; cv per-file 2190x2; gcd per-file 1636x2; key 'Daredevil (1964)'
+      [116420] Daredevil 275 (1989) (Digital) (Shadowcat-Empire).cbz (21pp)
+      [116421] Daredevil 276 (1990) (Digital) (Shadowcat-Empire).cbz (22pp)
+   G22 "Daredevil" in _Marvel Major Event Chronology (digital)\2006.07 - Civil War\03 Civil War - Spider-Man Unmasked\Extra — 2 file(s), numbers 92-93, pp 24-24; cv per-file 6209x2; gcd per-file 6026x2; key 'Daredevil (1964)'
+      [116709] Daredevil 092 (2007) (Digital) (Zone-Empire).cbr (24pp)
+      [116710] Daredevil 093 (2007) (digital) (Zone-Empire).cbr (24pp)
+   G23 "Daredevil" in _Marvel Major Event Chronology (digital)\2010.07 - Shadowland\01 Lead In — 8 file(s), numbers 111, 113-119, pp 24-26; cv per-file 6209x8; gcd per-file 6026x8; key 'Daredevil (1964)'
+      e.g. Daredevil 111 (2008) (Digital) (Zone-Empire).cbr
+        117370 #111 2008 25pp · 117372 #113 2008 25pp · 117373 #114 2009 25pp · 117374 #115 2009 25pp · 117375 #116 2009 24pp · 117376 #117 2009 26pp · 117377 #118 2009 26pp · 117378 #119 2009 26pp
+   G24 "Daredevil" in _Marvel Major Event Chronology (digital)\2020.11 - King in Black\02 Tie-ins\King in Black Singles — 1 file(s), numbers 26, pp 25-25; cv per-file 116964x1; gcd per-file 139716x1; key 'Daredevil (1964)'
+      [118489] Daredevil 026 (2021) (Digital) (Zone-Empire).cbr (25pp)
+
+== S64525 Dazzler  [split]  84 files / 4 collections  decided in R-146 (S)
+   decided: S 64525 cv=3083 gcd=2596 0.9 | Dazzler (1981-1986): CV 3083 (Marvel 1981, 42, cached #1-42) and GCD 2596 (Marvel 1981-1986, 42) agree on publisher, span and count; our ladder 1-42 fills it (ComicInfo Volume 1981 x35, Count 42) and every linked issue matches its filename number; the doubled numbers are the X-Men Complete Chronology second rips; the four Marvel Masterworks: Dazzler books (GCD 159017 #1-4, roll-ups s2596 #1-13, #14-25, #26-34, #35-42) reprint only this run and cost nothing; 0.9 for the 2019 No.1 Facsimile Edition and the 2010 one-shot split below
+   F 64525 split-needed | items 78353, 91338, 117304 ("Dazzler 001 (2010)", 33-34pp, per-file CV 33347 / GCD 49283 x3) are the 2010 one-shot Dazzler #1 (CV 33347 issue 216175 / GCD 49283 row 759186), a different comic three times over, stored by no shelf -> new key "Dazzler (2010)" seeded cv=33347 gcd=49283 (the key "Dazzler (2010)" already has a Matched SeriesKeyLink to CV 33347 and no Series owns it)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 814f [shares gcd=1570 (collected by item 83250) — S cv=2127 gcd=1570 (R-058 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+2 more: lookup.py --shelf 4752)
+   nearby: S103744 "X-Men by Lee & Kirby Omnibus (2009)" 198f [shares gcd=1576 (collected by item 83250) — S cv=2133 gcd=1576 (R-054 0.95)] keys: "X-Men by Lee & Kirby Omnibus (2009)"
+   nearby: S11410 "Marvel Fanfare" 58f [shares gcd=2657 (collected by item 83253) — S cv=3143 gcd=2657 (R-140 0.95)] keys: "Marvel Fanfare"
+   nearby: S11370 "Marvel Age" 39f [shares gcd=69795 (collected by item 83252) — S cv=19176 gcd=69795 (R-137 0.9)] keys: "Marvel Age" | "Marvel Age Annual"
+   nearby: S11417 "Marvel Graphic Novel" 26f [shares gcd=2658 (collected by item 83252) — S cv=3144 gcd=2658 (R-137 0.9)] keys: "Marvel Graphic Novel" | "Marvel Graphic Novel - Daredevil - Love and War" | "Marvel Graphic Novel - The New Mutants" | "Starstruck - Marvel Graphic Novel"
+   nearby: S15299 "Secret Wars II" 17f [shares gcd=3045 (collected by item 83253) — S cv=3506 gcd=3045 (C-055 0.95)] keys: "Secret Wars II"
+   nearby: S2392 "Beauty and the Beast" 4f [shares gcd=2860 (collected by item 83253) — S cv=3333 gcd=2860 (A-026 0.95)] keys: "Beauty and the Beast"
+   nearby: S13169 "Official Handbook Of The Marvel Universe" 2f [shares gcd=2758 (collected by item 83251) — S cv=3237 gcd=2758 (R-139 0.9)] keys: "Official Handbook Of The Marvel Universe" | "Official Handbook of the Marvel Universe"
+   nearby: S7992 "Greenberg The Vampire" 1f [shares gcd=2658 (collected by item 83252) — S gcd=2658 (C-039 0.9)] keys: "Greenberg The Vampire"
+   nearby: S102370 "Dazzler" 23f [title — S cv=159808 gcd=214645 (C-038 0.95)] keys: "Dazzler (2024)" | "Dazzler v3 (2024)"
+   keys now: "Dazzler (1981)" x77 · "Dazzler Masterworks (1981)" x4 · "Dazzler (2010)" x3
+   groups (title x folder): 13
+   G1 "Dazzler" in Marvel\_Dazzler — 1 file(s), numbers 1, pp 33-33; cv per-file 33347x1; gcd per-file 49283x1; key 'Dazzler (2010)'
+      [78353] Dazzler 001 (2010) (Digital) (Shadowcat-Empire).cbz (33pp)
+   G2 "Dazzler" in Marvel\_Dazzler\Dazzler v1 (1981) — 42 file(s), numbers 1-42, pp 22-40; cv per-file 3083x42; gcd per-file 2596x42; key 'Dazzler (1981)'
+      e.g. Dazzler 001 (1981) (Digital) (Thornn-Empire).cbr
+        78354 #1 1981 24pp · 78355 #2 1981 24pp · 78356 #3 1981 24pp · 78357 #4 1981 24pp · 78358 #5 1981 23pp · 78359 #6 1981 23pp · 78360 #7 1981 23pp · 78361 #8 1981 23pp · 78362 #9 1981 22pp
+        78363 #10 1981 22pp · 78364 #11 1982 23pp · 78365 #12 1982 24pp · 78366 #13 1982 25pp · 78367 #14 1982 23pp · 78368 #15 1982 24pp · 78369 #16 1982 24pp · 78370 #17 1982 24pp
+        78371 #18 1982 24pp · 78372 #19 1982 24pp · 78373 #20 1982 24pp · 78374 #21 1982 40pp · 78375 #22 1982 24pp · 78376 #23 1983 24pp · 78377 #24 1983 24pp · 78378 #25 1983 24pp
+        78379 #26 1983 24pp · 78380 #27 1983 24pp · 78381 #28 1983 24pp · 78382 #29 1983 24pp · 78383 #30 1984 24pp · 78384 #31 1984 24pp · 78385 #32 1984 24pp · 78386 #33 1984 24pp
+        78387 #34 1984 24pp · 78388 #35 1985 23pp · 78389 #36 1985 23pp · 78390 #37 1985 23pp · 78391 #38 1985 23pp · 78392 #39 1985 23pp · 78393 #40 1985 23pp · 78394 #41 1986 23pp
+        78395 #42 1986 25pp
+   G3 "Dazzler - Facsimile Edition" in Marvel\_Marvel Facsimile Editions — 1 file(s), numbers 1, pp 35-35; cv per-file 117206x1; gcd per-file 140627x1; key 'Dazzler (1981)'
+      [83040] Dazzler - Facsimile Edition 001 (2019) (Digital) (Shadowcat-Empire).cbz (35pp)
+   G4 "Marvel Masterworks - Dazzler" in Marvel\_Marvel Masterworks\Dazzler v1 (1981) — 4 file(s), 4 COL, pp 302-366; cv per-file 125819x4; gcd per-file 159017x4; key 'Dazzler Masterworks (1981)'
+      [83250] COL Marvel Masterworks - Dazzler Vol. 01 (2020) (Digital) (Kileko-Empire).cbz (366pp)
+         own record cv 125819 / gcd s159017 "Marvel Masterworks: Dazzler" (issue 2103152) COLLECTS: gcd=2596 Dazzler (1981) #1-13 · gcd=1576 The X-Men (1963) #130-131 · gcd=1570 The Amazing Spider-Man (1963) #203
+      [83251] COL Marvel Masterworks - Dazzler Vol. 02 (2021) (Digital) (Kileko-Empire).cbz (323pp)
+         own record cv 125819 / gcd s159017 "Marvel Masterworks: Dazzler" (issue 2214002) COLLECTS: gcd=2596 Dazzler (1981) #14-25 · gcd=2410 What If? (1977) #33 · gcd=2758 The Official Handbook of the Marvel Universe (1983) #3
+      [83252] COL Marvel Masterworks - Dazzler Vol. 03 (2022) (Digital) (Kileko-Empire).cbz (302pp)
+         own record cv 125819 / gcd s159017 "Marvel Masterworks: Dazzler" (issue 2401749) COLLECTS: gcd=2596 Dazzler (1981) #26-34 · gcd=2658 Marvel Graphic Novel (1982) #12 · gcd=204560 Dazzler The Movie (1990) (unnumbered) · gcd=69795 Marvel Age (1983) #7
+      [83253] COL Marvel Masterworks - Dazzler Vol. 04 (2023) (Digital-Empire).cbr (344pp)
+         own record cv 125819 / gcd s159017 "Marvel Masterworks: Dazzler" (issue 2509761) COLLECTS: gcd=2596 Dazzler (1981) #35-42 · gcd=2860 Beauty and the Beast (1984) #1-4 · gcd=2657 Marvel Fanfare (1982) #38 · gcd=3045 Secret Wars II (1985) #4
+   G5 "Dazzler" in Marvel\_X-Men\_X-Men Complete Chronology V2\0016 Dazzler — 6 file(s), numbers 1-6, pp 23-24; cv per-file 3083x6; gcd per-file 2596x1; key 'Dazzler (1981)'
+      e.g. 002 Dazzler #002.cbr
+        86772 #2 24pp · 86773 #3 23pp · 86774 #4 23pp · 86775 #5 23pp · 86776 #6 24pp
+      [86771] 001 Dazzler (1981) 001 (Digital) (2017) (Thornn-Empire).cbr (24pp)
+   G6 "Dazzler" in Marvel\_X-Men\_X-Men Complete Chronology V2\0017 Untitled — 7 file(s), numbers 7-12, 14, pp 22-36; cv per-file 3083x7; gcd per-file 2596x1; key 'Dazzler (1981)'
+      e.g. 014 Dazzler #007.cbr
+        86790 #7 23pp · 86798 #8 23pp · 86799 #9 22pp · 86800 #10 22pp · 86801 #11 22pp · 86814 #12 23pp
+      [86816] 040 Dazzler 014 (1982) (MrWoodman).cbr (36pp)
+   G7 "Dazzler" in Marvel\_X-Men\_X-Men Complete Chronology V2\0019 Untitled — 6 file(s), numbers 17-18, 20-23, pp 23-39; cv per-file 3083x6; key 'Dazzler (1981)'
+      e.g. 001 Dazzler #017.cbz
+        86834 #17 24pp · 86835 #18 23pp · 86837 #20 24pp · 86838 #21 39pp · 86839 #22 24pp · 86840 #23 24pp
+   G8 "Dazzler" in Marvel\_X-Men\_X-Men Complete Chronology V2\0022 Untitled — 4 file(s), numbers 25-28, pp 23-36; cv per-file 3083x4; gcd per-file 2596x1; key 'Dazzler (1981)'
+      [86853] 001 Dazzler #025.cbr (23pp)
+      [86854] 002 Dazzler 026 (1983) (FB-DCP) (C2C).cbr (36pp)
+      [86855] 003 Dazzler #027.cbz (24pp)
+      [86856] 004 Dazzler #028.cbz (24pp)
+   G9 "Dazzler" in Marvel\_X-Men\_X-Men Complete Chronology V2\0028 Fame — 3 file(s), numbers 29, 32-33, pp 20-24; cv per-file 3083x3; key 'Dazzler (1981)'
+      [86898] 002 Dazzler #029.cbr (20pp)
+      [86901] 005 Dazzler #032.cbz (24pp)
+      [86902] 006 Dazzler #033.cbr (24pp)
+   G10 "Dazzler" in Marvel\_X-Men\_X-Men Complete Chronology V2\0043 Untitled — 4 file(s), numbers 35-38, pp 23-24; cv per-file 3083x4; key 'Dazzler (1981)'
+      e.g. 001 Dazzler #035.cbr
+        86982 #35 23pp · 86983 #36 23pp · 86984 #37 23pp · 86985 #38 24pp
+   G11 "Dazzler" in Marvel\_X-Men\_X-Men Complete Chronology V2\0048 Secret Wars II — 4 file(s), numbers 39-42, pp 23-25; cv per-file 3083x4; gcd per-file 2596x1; key 'Dazzler (1981)'
+      [87021] 018 Dazzler #039.cbr (23pp)
+      [87024] 021 Dazzler 040 (1985) (digital) (Glorith-HD).cbz (24pp)
+      [87046] 043 Dazzler #041.cbr (23pp)
+      [87047] 044 Dazzler #042.cbz (25pp)
+   G12 "Dazzler" in Marvel\_X-Men\_X-Men Complete Chronology V2\0845 X-Necrosha — 1 file(s), numbers 1, pp 34-34; cv per-file 33347x1; gcd per-file 49283x1; key 'Dazzler (2010)'
+      [91338] 015 Dazzler 001 (2010) (Digital) (Cypher-Empire).cbr (34pp)
+   G13 "Dazzler" in _Marvel Major Event Chronology (digital)\2009.12 - X-Men - Necrosha — 1 file(s), numbers 1, pp 34-34; cv per-file 33347x1; gcd per-file 49283x1; key 'Dazzler (2010)'
+      [117304] 15 Dazzler 001 (2010) (Digital) (Cypher-Empire).cbr (34pp)
+
+== S64540 Deadpool  [split]  124 files / 0 collections  decided in R-146 (S)
+   decided: S 64540 cv=6000 gcd=5791 0.9 | Deadpool (1997-2002): CV 6000 (Marvel 1997, 71 = #-1, #0, #1-69, cached) and GCD 5791 (Marvel 1997-2002, 70) agree on publisher, span and count; our ladder 0-69 plus the #-1 Flashback fills it (folder "02 Deadpool v1 (1997)" + X-Men Complete Chronology second rips) and every linked issue matches its filename number; 0.9 for the 1998 Wizard #0 (GCD keeps it as its own one-shot 17413) and the two 1pp covers of the 2024 No. 1 Facsimile Edition
+   F 64540 split-needed | item 118490 "Deadpool 010 (2021)" 34pp is Deadpool (2019) #10 (CV 122987 issue 826555 / GCD 152889 #10 (325) row 2189190), the Kelly Thompson run S10377 stores (stored cv=122987, S line below) -> join S10377 on its key "Deadpool v8 (2020)"
+   F 64540 needs-fetch cv=6000 | "Deadpool" 1997 Marvel (71), named from the local rip, no CvVolume row
+   named: S10377 Deadpool  4 files  keys: "Deadpool by Kelly Thompson (2023)" | "Deadpool v8 (2020)" | "King Deadpool"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64542 "Deadpool" 58f [shares gcd=210709 — S cv=157504 gcd=210709 (C-046 0.95)] keys: "Deadpool (2024)" | "Deadpool v10 (2024)"
+   nearby: S5081 "Deadpool No. 1 Facsimile Edition" 1f [shares cv=158900 — S cv=158900 gcd=213590 (C-047 0.95)] keys: "Deadpool #1 Facsimile Edition"
+   nearby: S64541 "Deadpool" 87f [title — S cv=22955 gcd=32043 (R-146 0.9)] keys: "Deadpool (2008)" | "Deadpool v2 (2008)" | "Deadpool v3 (2008)"
+   nearby: S96324 "Deadpool" 66f [title — S cv=53726 gcd=69743 (R-146 0.9)] keys: "Deadpool v3 (2013)" | "Deadpool v4 (2012)"
+   nearby: S102375 "Deadpool" 9f [title — S cv=85750 gcd=93585 (C-064 0.95)] keys: "Deadpool v5 (2015)" · S102372 "Deadpool" 8f [title — S cv=59624 gcd=5003 (C-043 0.95)] keys: "Deadpool v1 (1994)"
+   nearby: S5145 "Deadpool" 2f [title — S cv=145766 gcd=192494 (B-055 0.95)] keys: "Deadpool by Alyssa Wong" · S5080 "Deadpool" 1f [title — S cv=79775 gcd=207018 (R-035 0.95)] keys: "Deadpool"
+   nearby: S102757 "Deadpool #1000 (2010)" 1f [title — S gcd=52109 (R-035 0.9)] keys: "Deadpool #1000 (2010)"
+   nearby: S3322 "Cable & Deadpool" 67f [title+1 — S cv=18070 gcd=17566 (C-056 0.95)] keys: "Cable & Deadpool" | "Cable and Deadpool" | "Deadpool & Cable Ultimate Collection Book 1" | "Deadpool & Cable Ultimate Collection Book 2" (+3 more: lookup.py --shelf 3322)
+   nearby: S5111 "Deadpool Classic" 25f [title+1] keys: "Deadpool Classic" | "Deadpool Classic Companion" · S5113 "Deadpool Corps" 15f [title+1 — S cv=32441 gcd=46836 (A-027 0.9)] keys: "Deadpool Corps"
+   nearby: S24543 "Deadpool/Wolverine" 10f [title+1 — S cv=161844 gcd=219430 (C-046 0.95)] keys: "Deadpool-Wolverine v1 (2025)" | "Deadpool/Wolverine"
+   nearby: S5122 "Deadpool Kills Deadpool" 8f [title+1 — S cv=64684 gcd=75234 (C-043 0.9)] keys: "Deadpool Kills Deadpool" · (+15 more by title)
+   keys now: "Deadpool (1997)" x74 · "Deadpool v1 (1997)" x49 · "Deadpool - Flashback" x1
+   groups (title x folder): 30
+   G1 "Deadpool" in Marvel\_Deadpool\02 Deadpool v1 (1997) — 49 file(s), numbers 21-69, pp 21-38; cv per-file 6000x49; gcd per-file 5791x49; key 'Deadpool v1 (1997)'
+      e.g. Deadpool 021 (1998) (digital-hd) (Kleio-Empire).cbz
+        78400 #21 1998 21pp · 78401 #22 1998 23pp · 78402 #23 1998 36pp · 78403 #24 1999 21pp · 78404 #25 1999 38pp · 78405 #26 1999 23pp · 78406 #27 1999 22pp · 78407 #28 1999 24pp
+        78408 #29 1999 24pp · 78409 #30 1999 22pp · 78410 #31 1999 23pp · 78411 #32 1999 22pp · 78412 #33 1999 23pp · 78413 #34 1999 23pp · 78414 #35 1999 23pp · 78415 #36 2000 23pp
+        78416 #37 2000 24pp · 78417 #38 2000 21pp · 78418 #39 2000 22pp · 78419 #40 2000 23pp · 78420 #41 2000 22pp · 78421 #42 2000 25pp · 78422 #43 2000 24pp · 78423 #44 2000 23pp
+        78424 #45 2000 23pp · 78425 #46 2000 23pp · 78426 #47 2000 23pp · 78427 #48 2001 23pp · 78428 #49 2001 23pp · 78429 #50 2001 23pp · 78430 #51 2001 23pp · 78431 #52 2001 22pp
+        78432 #53 2001 23pp · 78433 #54 2001 23pp · 78434 #55 2001 22pp · 78435 #56 2001 23pp · 78436 #57 2001 22pp · 78437 #58 2001 22pp · 78438 #59 2001 23pp · 78439 #60 2002 22pp
+        78440 #61 2002 22pp · 78441 #62 2002 23pp · 78442 #63 2002 23pp · 78443 #64 2002 22pp · 78444 #65 2002 23pp · 78445 #66 2002 23pp · 78446 #67 2002 23pp · 78447 #68 2002 23pp
+        78448 #69 2002 24pp
+   G2 "Deadpool" in Marvel\_Marvel Facsimile Editions\Variant Covers — 2 file(s), numbers 1, pp 1-1; cv per-file 158900x2; gcd per-file 210709x2; key 'Deadpool (1997)'
+      [83106] Deadpool 001 (2024) (Facsimile Edition Ben Su Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+      [83107] Deadpool 001 (2024) (Facsimile Edition Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   G3 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0307 Untitled — 2 file(s), numbers 0-1, pp 14-34; cv per-file 6000x2; gcd per-file 17413x1, 5791x1; key 'Deadpool (1997)'
+      [88526] 002 Deadpool 000 (1998) (digital-hd) (Kleio-Empire).cbz (14pp)
+      [88527] 003 Deadpool 001 (1997) (Digital-Empire).cbr (34pp)
+   G4 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0313 Untitled — 1 file(s), numbers 2, pp 22-22; cv per-file 6000x1; gcd per-file 5791x1; key 'Deadpool (1997)'
+      [88566] 004 Deadpool 002 (1997) (Digital-Empire).cbr (22pp)
+   G5 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0315 Stumped — 3 file(s), numbers 3-5, pp 22-25; cv per-file 6000x3; gcd per-file 5791x3; key 'Deadpool (1997)'
+      [88570] 001 Deadpool 003 (1997) (Digital-Empire).cbr (22pp)
+      [88571] 002 Deadpool 004 (1997) (Digital-Empire).cbr (22pp)
+      [88572] 003 Deadpool 005 (1997) (Digital-Empire).cbr (25pp)
+   G6 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0324 Head Trips — 5 file(s), numbers 6-10, pp 23-26; cv per-file 6000x5; gcd per-file 5791x5; key 'Deadpool (1997)'
+      e.g. 002 Deadpool 006 (1997) (Digital-Empire).cbr
+        88604 #6 1997 25pp · 88605 #7 1997 24pp · 88607 #8 1997 23pp · 88608 #9 1997 25pp · 88609 #10 1997 26pp
+   G7 "Deadpool - Flashback" in Marvel\_X-Men\_X-Men Complete Chronology V2\0325 Flashback — 1 file(s), numbers 0, pp 27-27; cv per-file 6000x1; gcd per-file 5791x1; key 'Deadpool - Flashback'
+      [88611] 002 Deadpool - Flashback - 000 (1998) (Digital (AnHeroGold - Empire).cbr (27pp)
+   G8 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0334 Untitled — 1 file(s), numbers 11, pp 51-51; cv per-file 6000x1; gcd per-file 5791x1; key 'Deadpool (1997)'
+      [88677] 004 Deadpool 011 (1997) (Digital-Empire).cbr (51pp)
+   G9 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0344 The Drowning Man — 3 file(s), numbers 12-14, pp 23-26; cv per-file 6000x3; gcd per-file 5791x3; key 'Deadpool (1997)'
+      [88726] 001 Deadpool 012 (1998) (Digital-Empire).cbr (26pp)
+      [88727] 002 Deadpool 013 (1998) (Digital-Empire).cbr (26pp)
+      [88728] 003 Deadpool 014 (1998) (Digital-Empire).cbr (23pp)
+   G10 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0352 Untitled — 1 file(s), numbers 15, pp 21-21; cv per-file 6000x1; gcd per-file 5791x1; key 'Deadpool (1997)'
+      [88772] 007 Deadpool 015 (1998) (Digital-Empire).cbr (21pp)
+   G11 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0357 Untitled — 2 file(s), numbers 16-17, pp 21-22; cv per-file 6000x2; gcd per-file 5791x2; key 'Deadpool (1997)'
+      [88794] 007 Deadpool 016 (1998) (Digital-Empire).cbr (21pp)
+      [88795] 008 Deadpool 017 (1998) (Digital-Empire).cbr (22pp)
+   G12 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0365 PayBack — 2 file(s), numbers 18-19, pp 21-23; cv per-file 6000x2; gcd per-file 5791x2; key 'Deadpool (1997)'
+      [88824] 001 Deadpool 018 (1998) (digital-hd) (Kleio-Empire).cbz (23pp)
+      [88825] 002 Deadpool 019 (1998) (digital-hd) (Kleio-Empire).cbz (21pp)
+   G13 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0374 Untitled — 2 file(s), numbers 20-21, pp 21-23; cv per-file 6000x2; gcd per-file 5791x2; key 'Deadpool (1997)'
+      [88861] 001 Deadpool 020 (1998) (digital-hd) (Kleio-Empire).cbz (23pp)
+      [88862] 002 Deadpool 021 (1998) (digital-hd) (Kleio-Empire).cbz (21pp)
+   G14 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0378 Nemesis Contract — 1 file(s), numbers 22, pp 23-23; cv per-file 6000x1; gcd per-file 5791x1; key 'Deadpool (1997)'
+      [88876] 001 Deadpool 022 (1998) (digital-hd) (Kleio-Empire).cbz (23pp)
+   G15 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0383 Dead Reckoning — 3 file(s), numbers 23-25, pp 21-38; cv per-file 6000x3; gcd per-file 5791x3; key 'Deadpool (1997)'
+      [88895] 001 Deadpool 023 (1998) (digital-hd) (Kleio-Empire).cbz (36pp)
+      [88896] 002 Deadpool 024 (1999) (digital-hd) (Kleio-Empire).cbz (21pp)
+      [88897] 003 Deadpool 025 (1999) (digital-hd) (Kleio-Empire).cbz (38pp)
+   G16 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0391 Head Full of Chese — 4 file(s), numbers 26-29, pp 22-24; cv per-file 6000x4; gcd per-file 5791x4; key 'Deadpool (1997)'
+      e.g. 002 Deadpool 026 (1999) (digital-hd) (Kleio-Empire).cbz
+        88941 #26 1999 23pp · 88942 #27 1999 22pp · 88943 #28 1999 24pp · 88944 #29 1999 24pp
+   G17 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0406 Truth and Lies — 4 file(s), numbers 30-33, pp 22-23; cv per-file 6000x4; gcd per-file 5791x4; key 'Deadpool (1997)'
+      e.g. 001 Deadpool 030 (1999) (digital-hd) (Kleio-Empire).cbz
+        89000 #30 1999 22pp · 89001 #31 1999 23pp · 89002 #32 1999 22pp · 89003 #33 1999 23pp
+   G18 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0423 Chapter X — 4 file(s), numbers 34-37, pp 23-24; cv per-file 6000x4; gcd per-file 5791x4; key 'Deadpool (1997)'
+      e.g. 001 Deadpool 034 (1999) (digital-hd) (Kleio-Empire).cbz
+        89066 #34 1999 23pp · 89067 #35 1999 23pp · 89068 #36 2000 23pp · 89069 #37 2000 24pp
+   G19 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0428 Untitled — 1 file(s), numbers 38, pp 21-21; cv per-file 6000x1; gcd per-file 5791x1; key 'Deadpool (1997)'
+      [89094] 003 Deadpool 038 (2000) (digital-hd) (Kleio-Empire).cbz (21pp)
+   G20 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0436 Warriors Four — 5 file(s), numbers 39-43, pp 22-25; cv per-file 6000x5; gcd per-file 5791x5; key 'Deadpool (1997)'
+      e.g. 001 Deadpool 039 (2000) (digital-hd) (Kleio-Empire).cbz
+        89134 #39 2000 22pp · 89135 #40 2000 23pp · 89136 #41 2000 22pp · 89137 #42 2000 25pp · 89138 #43 2000 24pp
+   G21 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0450 Cat Trap — 2 file(s), numbers 44-45, pp 23-23; cv per-file 6000x2; gcd per-file 5791x2; key 'Deadpool (1997)'
+      [89202] 001 Deadpool 044 (2000) (digital-hd) (Kleio-Empire).cbz (23pp)
+      [89204] 003 Deadpool 045 (2000) (digital-hd) (Kleio-Empire).cbz (23pp)
+   G22 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0460 Cruel Summer — 4 file(s), numbers 46-49, pp 23-23; cv per-file 6000x4; gcd per-file 5791x4; key 'Deadpool (1997)'
+      e.g. 001 Deadpool 046 (2000) (digital-hd) (Kleio-Empire).cbz
+        89237 #46 2000 23pp · 89238 #47 2000 23pp · 89239 #48 2001 23pp · 89240 #49 2001 23pp
+   G23 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0476 The Promise — 2 file(s), numbers 50-51, pp 23-23; cv per-file 6000x2; gcd per-file 5791x2; key 'Deadpool (1997)'
+      [89332] 001 Deadpool 050 (2001) (digital-hd) (Kleio-Empire).cbz (23pp)
+      [89333] 002 Deadpool 051 (2001) (digital-hd) (Kleio-Empire).cbz (23pp)
+   G24 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0478 Talk of the Town — 2 file(s), numbers 52-53, pp 22-23; cv per-file 6000x2; gcd per-file 5791x2; key 'Deadpool (1997)'
+      [89339] 001 Deadpool 052 (2001) (digital-hd) (Kleio-Empire).cbz (22pp)
+      [89340] 002 Deadpool 053 (2001) (digital-hd) (Kleio-Empire).cbz (23pp)
+   G25 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0484 End of the Road — 3 file(s), numbers 54-56, pp 22-24; cv per-file 6000x3; gcd per-file 5791x3; key 'Deadpool (1997)'
+      [89368] 001 Deadpool 054 (2001) (digital-hd) (Kleio-Empire).cbz (23pp)
+      [89369] 002 Deadpool 055 (2001) (digital-hd) (Kleio-Empire).cbz (22pp)
+      [89370] 003 Deadpool 056 (2001) (Digital) (Shadowcat-Empire.cbz (24pp)
+   G26 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0491 Agent of Weapon X — 4 file(s), numbers 57-60, pp 22-23; cv per-file 6000x4; gcd per-file 5791x4; key 'Deadpool (1997)'
+      [89401] 001 Deadpool 057 (2001) (digital-hd) (Kleio-Empire).cbz (22pp)
+      [89402] 002 Deadpool 058 (2001) (Digital) (Shadowcat-Empire.cbz (23pp)
+      [89403] 003 Deadpool 059 (2001) (digital-hd) (Kleio-Empire).cbz (23pp)
+      [89404] 004 Deadpool 060 (2002) (digital-hd) (Kleio-Empire).cbz (22pp)
+   G27 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0505 Funeral for a Freak — 4 file(s), numbers 61-64, pp 22-23; cv per-file 6000x4; gcd per-file 5791x4; key 'Deadpool (1997)'
+      e.g. 001 Deadpool 061 (2002) (digital-hd) (Kleio-Empire).cbz
+        89469 #61 2002 22pp · 89470 #62 2002 23pp · 89471 #63 2002 23pp · 89472 #64 2002 22pp
+   G28 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0513 Healing Factor — 5 file(s), numbers 65-69, pp 23-24; cv per-file 6000x5; gcd per-file 5791x5; key 'Deadpool (1997)'
+      e.g. 001 Deadpool 065 (2002) (digital-hd) (Kleio-Empire).cbz
+        89513 #65 2002 23pp · 89514 #66 2002 23pp · 89515 #67 2002 23pp · 89516 #68 2002 23pp · 89517 #69 2002 24pp
+   G29 "Deadpool" in _Marvel Major Event Chronology (digital)\1997.06 - X-Men - Operation Zero Tolerance\03 Aftermath — 1 file(s), numbers 12, pp 26-26; cv per-file 6000x1; gcd per-file 5791x1; key 'Deadpool (1997)'
+      [116520] 03 Deadpool 012 (1998) (Digital-Empire).cbr (26pp)
+   G30 "Deadpool" in _Marvel Major Event Chronology (digital)\2020.11 - King in Black\02 Tie-ins\King in Black Singles — 1 file(s), numbers 10, pp 34-34; cv per-file 122987x1; gcd per-file 152889x1; key 'Deadpool (1997)'
+      [118490] Deadpool 010 (2021) (Digital) (Zone-Empire).cbr (34pp)
+
+== S64541 Deadpool  [split]  87 files / 13 collections  decided in R-146 (S)
+   decided: S 64541 cv=22955 gcd=32043 0.9 | Deadpool (2008-2012): CV 22955 (Marvel 2008, 67 = #1-63, 33.1, 49.1, 900, 1000) and GCD 32043 (Marvel 2008-2012, 65) agree on publisher, span and count; our ladder 1-63 with #33.1 / #49.1 fills it, and the Vol. 01-10 trades (GCD 78140 rows reprinting s32043 #1-5 .. #45-49.1, Vol. 01-02 twice) and Vol. 11 "Dead" are the run's own; 0.9 for the 2011 Annual (CV 39973 / GCD 58010) and the #900 / #1000 specials
+   F 64541 wrong-cv-link | per-file CV 6000 (the 1997 volume) on the run's issue files (52 restated below) is the legacy-number stamp; each file's own CV 22955 issue is on its I line below
+   F 64541 split-needed | item 78464 "Deadpool 1000 (2010)" 72pp is a second copy of the one-shot on S102757 (GCD 52109 row 806336, key "Deadpool #1000 (2010)") -> join S102757; this replaces R-035's F misfiled for it
+   N 64541 item 78465 "Deadpool 900 (2009) (c2c)" 114pp stays: CV files it as #900 inside this run's volume 22955 (issue 176023) while GCD files it as Deadpool Team-Up #900 (row 690862) - the lead decision R-086 asked for (S102758 -> S5134) is still open
+   N 78476 no-record | "COL Deadpool Vol. 11 - Dead (2013)" 302pp: the only "Dead" records are the 2012 hardcover CV 54677 issue 372454 / GCD row 1171243 at 128pp, a much smaller edition; the stored GCD row 202164 is a Casper story (a stamp)
+   named: S102757 Deadpool #1000 (2010)  1 files  keys: "Deadpool #1000 (2010)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64540 "Deadpool" 124f [shares cv=6000, shares gcd=5791 (collected by item 78473) — S cv=6000 gcd=5791 (R-146 0.9)] keys: "Deadpool (1997)" | "Deadpool - Flashback" | "Deadpool v1 (1997)"
+   nearby: S5134 "Deadpool Team-Up" 21f [shares gcd=40644, named S5134 in the decision's R/N lines — S cv=29329 gcd=40644 (R-093 0.95)] keys: "Deadpool Team-Up"
+   nearby: S96324 "Deadpool" 66f [title — S cv=53726 gcd=69743 (R-146 0.9)] keys: "Deadpool v3 (2013)" | "Deadpool v4 (2012)"
+   nearby: S64542 "Deadpool" 58f [title — S cv=157504 gcd=210709 (C-046 0.95)] keys: "Deadpool (2024)" | "Deadpool v10 (2024)"
+   nearby: S102375 "Deadpool" 9f [title — S cv=85750 gcd=93585 (C-064 0.95)] keys: "Deadpool v5 (2015)" · S102372 "Deadpool" 8f [title — S cv=59624 gcd=5003 (C-043 0.95)] keys: "Deadpool v1 (1994)"
+   nearby: S10377 "Deadpool" 4f [title — S cv=122987 gcd=152889 (R-146 0.95)] keys: "Deadpool by Kelly Thompson (2023)" | "Deadpool v8 (2020)" | "King Deadpool"
+   nearby: S102371 "Deadpool Annual" 3f [title — S cv=69572 gcd=77848 (C-057 0.9)] keys: "Deadpool Annual" · S5145 "Deadpool" 2f [title — S cv=145766 gcd=192494 (B-055 0.95)] keys: "Deadpool by Alyssa Wong"
+   nearby: S5080 "Deadpool" 1f [title — S cv=79775 gcd=207018 (R-035 0.95)] keys: "Deadpool"
+   nearby: S3322 "Cable & Deadpool" 67f [title+1 — S cv=18070 gcd=17566 (C-056 0.95)] keys: "Cable & Deadpool" | "Cable and Deadpool" | "Deadpool & Cable Ultimate Collection Book 1" | "Deadpool & Cable Ultimate Collection Book 2" (+3 more: lookup.py --shelf 3322)
+   nearby: S5111 "Deadpool Classic" 25f [title+1] keys: "Deadpool Classic" | "Deadpool Classic Companion" · S5113 "Deadpool Corps" 15f [title+1 — S cv=32441 gcd=46836 (A-027 0.9)] keys: "Deadpool Corps"
+   nearby: S24543 "Deadpool/Wolverine" 10f [title+1 — S cv=161844 gcd=219430 (C-046 0.95)] keys: "Deadpool-Wolverine v1 (2025)" | "Deadpool/Wolverine" · (+17 more by title)
+   keys now: "Deadpool v3 (2008)" x51 · "Deadpool (2008)" x20 · "Deadpool v2 (2008)" x16
+   groups (title x folder): 27
+   G1 "Deadpool" in Marvel\_Deadpool\04 Deadpool v2 (2008) — 15 file(s), 11 COL, numbers 8-9, 900, 1000, pp 25-302; cv per-file 22955x4, 32322x1, 30768x1; gcd per-file 78140x10, 32043x2, 52109x1; key 'Deadpool v2 (2008)'
+      e.g. Deadpool 008 (2009) (Digital-Empire).cbr
+        78462 #8 2009 25pp · 78463 #9 2009 25pp · 78464 #1000 2010 72pp · 78465 #900 2009 114pp
+      [78466] COL Deadpool Vol. 01 - Secret Invasion (2009) (Digital) (F) (Asgard-Empire).cbz (130pp)
+         own record cv 32322 / gcd s78140 "Deadpool" (issue 1171219) COLLECTS: gcd=32043 Deadpool (2008) #1-5 · gcd=78139 Deadpool (2009) #1
+      [78467] COL Deadpool Vol. 02 - Dark Reign (2009) (Digital) (Asgard-Empire).cbr (125pp)
+         own record cv 30768 / gcd s78140 "Deadpool" (issue 1171220) COLLECTS: gcd=32043 Deadpool (2008) #6-7, #10-12 · gcd=78139 Deadpool (2009) #2
+      [78468] COL Deadpool Vol. 03 - X Marks Spot (2010) (Digital) (Asgard-Empire).cbr (150pp)
+         own record cv 31475 / gcd s78140 "Deadpool" (issue 1171221) COLLECTS: gcd=32043 Deadpool (2008) #13-18 · gcd=78139 Deadpool (2009) #3
+      [78469] COL Deadpool Vol. 04 - Monkey Business (2011) (Digital) (Asgard-Empire).cbr (127pp)
+         own record cv 34093 / gcd s78140 "Deadpool" (issue 1171222) COLLECTS: gcd=32043 Deadpool (2008) #19-22 · gcd=43861 Hit-Monkey (MDCU) (2010) #1 · gcd=78139 Deadpool (2009) #4
+      [78470] COL Deadpool Vol. 05 - What Happened In Vegas (2011) (Digital) (Asgard-Empire).cbr (113pp)
+         own record cv 36173 / gcd s78140 "Deadpool" (issue 1171223) COLLECTS: gcd=32043 Deadpool (2008) #23-26 · gcd=78139 Deadpool (2009) #5
+      [78471] COL Deadpool Vol. 06 - I Rule You Suck (2011) (Digital) (F) (Kileko-Empire).cbz (119pp)
+         own record cv 39619 / gcd s78140 "Deadpool" (issue 1171224) COLLECTS: gcd=32043 Deadpool (2008) #27-31 · gcd=78139 Deadpool (2009) #6
+      [78472] COL Deadpool Vol. 07 - Space Oddity (2011) (digital) (Minutemen-Slayer).cbr (123pp)
+         own record cv 41262 / gcd s78140 "Deadpool" (issue 1171225) COLLECTS: gcd=32043 Deadpool (2008) #32-33, #33.1, #34-35 · gcd=78139 Deadpool (2009) #7
+      [78473] COL Deadpool Vol. 08 - Operation Annihilation (2012) (Digital) (F2) (Kileko-Empire).cbz (106pp)
+         own record cv 43058 / gcd s78140 "Deadpool" (issue 1171226) COLLECTS: gcd=32043 Deadpool (2008) #36-39 · gcd=5791 Deadpool (1997) #4 · gcd=78139 Deadpool (2009) #8
+      [78474] COL Deadpool Vol. 09 - Institutionalized (2012) (digital) (Minutemen-Slayer).cbr (116pp)
+         own record cv 44690 / gcd s78140 "Deadpool" (issue 1171227) COLLECTS: gcd=32043 Deadpool (2008) #40-44 · gcd=78139 Deadpool (2009) #9
+      [78475] COL Deadpool Vol. 10 - Evil Deadpool (2012) (digital) (Minutemen-Slayer).cbr (145pp)
+         own record cv 47720 / gcd s78140 "Deadpool" (issue 1171228) COLLECTS: gcd=32043 Deadpool (2008) #45-49, #49.1 · gcd=78139 Deadpool (2009) #10
+      [78476] COL Deadpool Vol. 11 - Dead (2013) (Digital) (F) (Kileko-Empire).cbz (302pp)
+         own record cv 54677 / gcd s11642 "The Friendly Ghost, Casper" (issue 202164) COLLECTS: gcd=14931 Spooky (1955) #27  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+   G2 "Deadpool Annual" in Marvel\_Deadpool\04 Deadpool v2 (2008)\Annuals and Specials — 1 file(s), numbers 1, pp 34-34; cv per-file 39973x1; gcd per-file 58010x1; key 'Deadpool v2 (2008)'
+      [79942] Deadpool Annual 001 (2011) (Digital-Empire).cbr (34pp)
+   G3 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0788 One Of Us — 3 file(s), numbers 1-3, pp 22-23; cv per-file 22955x3; gcd per-file 32043x3; key 'Deadpool (2008)'
+      [91004] 001 Deadpool 001 (2008) (Digital) (JK-Empire).cbz (22pp)
+      [91005] 002 Deadpool 002 (2008) (digital-Empire).cbr (23pp)
+      [91006] 003 Deadpool 003 (2008) (digital-Empire).cbr (23pp)
+   G4 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0795 Horror Business — 2 file(s), numbers 4-5, pp 23-24; cv per-file 22955x2; gcd per-file 32043x2; key 'Deadpool (2008)'
+      [91029] 001 Deadpool 004 (2009) (digital-Empire).cbr (24pp)
+      [91030] 002 Deadpool 005 (2009) (digital-Empire).cbr (23pp)
+   G5 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0805 How Low Can You Go — 2 file(s), numbers 6-7, pp 24-24; cv per-file 22955x2; gcd per-file 32043x2; key 'Deadpool (2008)'
+      [91111] 001 Deadpool 006 (2009) (Digital-Empire).cbr (24pp)
+      [91112] 002 Deadpool 007 (2009) (Digital-Empire).cbr (24pp)
+   G6 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0813 Magnum Opus — 2 file(s), numbers 8-9, pp 25-25; cv per-file 22955x2; gcd per-file 32043x2; key 'Deadpool (2008)'
+      [91150] 001 Deadpool 008 (2009) (Digital-Empire).cbr (25pp)
+      [91152] 003 Deadpool 009 (2009) (Digital-Empire).cbr (25pp)
+   G7 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0821 Bullseye — 3 file(s), numbers 10-12, pp 24-25; cv per-file 22955x3; gcd per-file 32043x3; key 'Deadpool (2008)'
+      [91191] 001 Deadpool 010 (2009) (Digital-Empire).cbr (25pp)
+      [91192] 002 Deadpool 011 (2009) (Digital-Empire).cbr (25pp)
+      [91193] 003 Deadpool 012 (2009) (Digital-Empire).cbr (24pp)
+   G8 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0835 Wave Of Mutilation — 2 file(s), numbers 13-14, pp 24-25; cv per-file 22955x2; gcd per-file 32043x2; key 'Deadpool (2008)'
+      [91272] 001 Deadpool 013 (2009) (Digital-Empire).cbr (24pp)
+      [91273] 002 Deadpool 014 (2009) (Digital-Empire).cbr (25pp)
+   G9 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0839 Nation X — 4 file(s), numbers 15-18, pp 24-25; cv per-file 22955x4; gcd per-file 32043x4; key 'Deadpool (2008)' | 'Deadpool v3 (2008)'
+      e.g. 014 Deadpool 015 (2009) (Digital-Empire).cbr
+        91300 #15 2009 24pp key="Deadpool (2008)" · 91301 #16 2009 25pp key="Deadpool (2008)" · 91302 #17 2010 25pp key="Deadpool (2008)" · 91303 #18 2010 24pp
+   G10 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0859 Whatever a Spider Can — 3 file(s), numbers 19-21, pp 25-25; cv per-file 22955x3; gcd per-file 32043x3; key 'Deadpool v3 (2008)'
+      [91407] 001 Deadpool 019 (2010) (Digital-Empire).cbr (25pp)
+      [91408] 002 Deadpool 020 (2010) (Digital-Empire).cbr (25pp)
+      [91409] 003 Deadpool 021 (2010) (Digital-Empire).cbr (25pp)
+   G11 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0867 Tricky — 4 file(s), numbers 22-25, pp 25-35; cv per-file 22955x4; gcd per-file 32043x4; key 'Deadpool v3 (2008)'
+      e.g. 001 Deadpool 022 (2010) (Digital-Empire).cbr
+        91467 #22 2010 25pp · 91468 #23 2010 25pp · 91469 #24 2010 25pp · 91470 #25 2010 35pp
+   G12 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0883 I'm Your Man — 4 file(s), numbers 26-29, pp 24-25; cv per-file 22955x4; gcd per-file 32043x4; key 'Deadpool v3 (2008)'
+      e.g. 001 Deadpool 026 (2010) (Digital-Empire).cbr
+        91568 #26 2010 24pp · 91569 #27 2010 24pp · 91570 #28 2010 24pp · 91571 #29 2011 25pp
+   G13 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0900 I Rule, You Suck — 2 file(s), numbers 30-31, pp 25-25; cv per-file 22955x2; gcd per-file 32043x2; key 'Deadpool v3 (2008)'
+      [91665] 001 Deadpool 030 (2011) (Digital-Empire).cbr (25pp)
+      [91666] 002 Deadpool 031 (2011) (Digital-Empire).cbr (25pp)
+   G14 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0910 Space Oddity — 5 file(s), numbers 32-35, pp 22-25; cv per-file 22955x5; gcd per-file 32043x5; key 'Deadpool v3 (2008)'
+      e.g. 001 Deadpool 032 (2011) (Digital-Empire).cbr
+        91711 #32 2011 25pp · 91712 #33 2011 25pp · 91714 #34 2011 24pp · 91715 #35 2011 22pp
+      [91713] 003 Deadpool 033.1 (2011) (Digital-Empire).cbr (24pp)
+   G15 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0925 Operation Annihilation — 4 file(s), numbers 36-39, pp 20-23; cv per-file 22955x4; gcd per-file 32043x4; key 'Deadpool v3 (2008)'
+      e.g. 001 Deadpool 036 (2011) (Digital) (JK-Empire).cbz
+        91807 #36 2011 23pp · 91808 #37 2011 22pp · 91809 #38 2011 20pp · 91810 #39 2011 23pp
+   G16 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0939 Institutionalsized — 3 file(s), numbers 40-42, pp 22-23; cv per-file 22955x3; gcd per-file 32043x3; key 'Deadpool v3 (2008)'
+      [91870] 001 Deadpool 040 (2011) (Digital) (JK-Empire).cbz (23pp)
+      [91871] 002 Deadpool 041 (2011) (Digital) (JK-Empire).cbz (22pp)
+      [91872] 003 Deadpool 042 (2011) (Digital) (JK-Empire).cbz (23pp)
+   G17 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0946 You Complete Me — 2 file(s), numbers 43-44, pp 22-23; cv per-file 22955x2; gcd per-file 32043x2; key 'Deadpool v3 (2008)'
+      [91904] 001 Deadpool 043 (2011) (Digital) (JK-Empire).cbz (22pp)
+      [91905] 002 Deadpool 044 (2011) (Digital) (JK-Empire).cbz (23pp)
+   G18 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0950 Evil Deadpool — 6 file(s), numbers 45-49, pp 23-24; cv per-file 22955x6; gcd per-file 32043x6; key 'Deadpool v3 (2008)'
+      e.g. 001 Deadpool 045 (2011) (Digital) (JK-Empire).cbz
+        91916 #45 2011 24pp · 91917 #46 2012 24pp · 91918 #47 2012 24pp · 91919 #48 2012 23pp · 91920 #49 2012 24pp
+      [91921] 006 Deadpool 049.1 (2012) (Digital) (JK-Empire).cbz (23pp)
+   G19 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0974 Dead — 5 file(s), numbers 50-54, pp 21-32; cv per-file 22955x5; gcd per-file 32043x5; key 'Deadpool v3 (2008)'
+      e.g. 001 Deadpool 050 (2012) (Digital) (JK-Empire).cbz
+        92021 #50 2012 32pp · 92022 #51 2012 24pp · 92023 #52 2012 23pp · 92024 #53 2012 21pp · 92025 #54 2012 22pp
+   G20 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0982 Deadpool Reborn — 3 file(s), numbers 55-57, pp 22-23; cv per-file 22955x3; gcd per-file 32043x3; key 'Deadpool v3 (2008)'
+      [92055] 001 Deadpool 055 (2012) (Digital) (JK-Empire).cbz (22pp)
+      [92056] 002 Deadpool 056 (2012) (Digital) (JK-Empire).cbz (23pp)
+      [92057] 003 Deadpool 057 (2012) (Digital) (JK-Empire).cbz (22pp)
+   G21 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0990 Blacklisted — 3 file(s), numbers 58-60, pp 21-22; cv per-file 22955x3; gcd per-file 32043x3; key 'Deadpool v3 (2008)'
+      [92153] 001 Deadpool 058 (2012) (Digital) (JK-Empire).cbz (22pp)
+      [92154] 002 Deadpool 059 (2012) (Digital) (JK-Empire).cbz (21pp)
+      [92155] 003 Deadpool 060 (2012) (Digital) (JK-Empire).cbz (21pp)
+   G22 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0998 The Salted Earth — 3 file(s), numbers 61-63, pp 22-22; cv per-file 22955x3; gcd per-file 32043x3; key 'Deadpool v3 (2008)'
+      [92179] 001 Deadpool 061 (2012) (Digital) (JK-Empire).cbz (22pp)
+      [92180] 002 Deadpool 062 (2012) (Digital) (JK-Empire).cbz (22pp)
+      [92181] 003 Deadpool 063 (2012) (Digital) (JK-Empire).cbz (22pp)
+   G23 "Deadpool" in _Marvel Major Event Chronology (digital)\2008.06 - Secret Invasion\03 Tie-ins\Deadpool — 1 file(s), 1 COL, pp 118-118; cv per-file 32322x1; gcd per-file 78140x1; key 'Deadpool (2008)'
+      [117927] COL Deadpool Vol. 01 - Secret Invasion (2009) (Digital) (Asgard-Empire).cbr (118pp)
+         own record cv 32322 / gcd s78140 "Deadpool" (issue 1171219) COLLECTS: gcd=32043 Deadpool (2008) #1-5 · gcd=78139 Deadpool (2009) #1
+   G24 "Deadpool" in _Marvel Major Event Chronology (digital)\2008.06 - Secret Invasion\03 Tie-ins\_Variant Covers — 1 file(s), numbers 2, pp 2-2; cv per-file 22955x1; gcd per-file 32043x1; key 'Deadpool (2008)'
+      [116973] Deadpool 002 (2008) (2nd Printing Paco Medina Variant) (Minutemen-TheRain).cbr (2pp)
+   G25 "Deadpool" in _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Deadpool — 1 file(s), 1 COL, pp 125-125; cv per-file 30768x1; gcd per-file 78140x1; key 'Deadpool (2008)'
+      [117947] COL Deadpool Vol. 02 - Dark Reign (2009) (Digital) (Asgard-Empire).cbr (125pp)
+         own record cv 30768 / gcd s78140 "Deadpool" (issue 1171220) COLLECTS: gcd=32043 Deadpool (2008) #6-7, #10-12 · gcd=78139 Deadpool (2009) #2
+   G26 "Deadpool" in _Marvel Major Event Chronology (digital)\2010.04 - The Heroic Age\The Heroic Age - One Shots and Singles — 1 file(s), numbers 23, pp 26-26; cv per-file 22955x1; gcd per-file 32043x1; key 'Deadpool v3 (2008)'
+      [117351] Deadpool 023 (2010) (Digital) (GKing-Empire).cbr (26pp)
+   G27 "Deadpool" in _Marvel Major Event Chronology (digital)\2011.06 - X-Men - Curse of the Mutants — 2 file(s), numbers 30-31, pp 25-25; cv per-file 22955x2; gcd per-file 32043x2; key 'Deadpool v3 (2008)'
+      [117617] 19 Deadpool 030 (2011) (Digital) (JK-Empire).cbz (25pp)
+      [117618] 20 Deadpool 031 (2011) (Digital) (JK-Empire).cbz (25pp)
+
+== S95620 Black Panther  [split]  2 files / 2 collections  decided in R-145 (S)
+   decided: S 95620 cv=151263 gcd=201428 0.9 | the folder "12 Black Panther v9 (2023)" is Eve L. Ewing's run: CV 151263 "Black Panther" (Marvel 2023, 10, cached #1-10 "Reign at Dusk Part 1-10 / Finale") and GCD 201428 (Marvel 2023-2024, 10, legacy #213-222) agree on publisher, span and count; our two "Black Panther by Eve L. Ewing Vol. 01-02 - Reign at Dusk" trades (judged #1-5 / #6-10, GCD 207476 rows 2593720 / 2635586 reprinting s201428) are its editions; CV 151263 is free now that S64322 is re-read as Ultimate Black Panther (above); 0.9 while the seven 1pp covers of Ridley's Black Panther (2022) #13-15 still sit here (P-059 moves them to S95619)
+   F 95620 split-needed | items 53634-53640 (1pp variant covers of "Black Panther 013-015 (2023)") are Ridley's Black Panther (2022) #13-15, CV 140222 / GCD 178418 (15 issues; Ewing's run has only 10) - the From-the-Ashes shape of L-388 -> join S95619 on its ParsedKey "Black Panther v8 (2022)" (S95619 S line cv=140222 gcd=178418, B-054) [lead: carried from R-144 — P-059 lands it (L-370)]
+   N 95620 items 53634-53640 are covers of Black Panther (2022) #13-15 (CV 140222 / GCD 178418, legacy #210-212), the previous run's finale in this folder's Variant Covers subfolder (L-388); their split-lane join to S95619 is in P-059, from R-144's F line
+   named: S95619 Black Panther  10 files  keys: "Black Panther by John Ridley" | "Black Panther v8 (2022)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S102868 "Ultimate Black Panther" 49f [named S64322 in the decision's R/N lines (now S102868) — S cv=156647 gcd=208771 (R-045 0.95)] keys: "Black Panther (2023)" | "Ultimate Black Panther (2024)"
+   nearby: S95617 "Black Panther" 30f [title — S cv=11502 gcd=12471 (R-144 0.95)] keys: "Black Panther (2005)" | "Black Panther v4 (2005)"
+   nearby: S64321 "Black Panther" 18f [title — S cv=25638 gcd=33758 (C-042 0.95)] keys: "Black Panther (2009)" | "Black Panther v5 (2009)" | "Black Panther: Shuri - Deadliest of the Species"
+   nearby: S64318 "Black Panther" 8f [title — S cv=2896 gcd=2387 (A-035 0.95)] keys: "Black Panther (1977)" | "Black Panther v1 (1977)"
+   nearby: S95616 "Black Panther" 6f [title — S cv=6496 gcd=6989 (R-143 0.95)] keys: "Black Panther v3 (1998)"
+   nearby: S103535 "Black Panther v6 (2016)" 6f [title — S cv=89350 gcd=99295 (R-045 0.95)] keys: "Black Panther v6 (2016)"
+   nearby: S2741 "Black Panther" 4f [title — S cv=111034 gcd=124623 (R-144 0.9)] keys: "Black Panther" | "Black Panther Book 9: The Intergalactic Empire Of Wakanda Part Four"
+   nearby: S20597 "Black Panther" 4f [title — S cv=4045 gcd=3640 (R-035 0.95)] keys: "Black Panther (1988)" | "Ultimate Black Panther"
+   nearby: S2746 "Black Panther: Unconquered" 1f [title+1 — S cv=145972 gcd=192532 (A-023 0.95)] keys: "Black Panther - Unconquered"
+   nearby: S2749 "Black Panther Adventures" 1f [title+1 — S cv=107494 gcd=119848 (B-054 0.95)] keys: "Black Panther Adventures"
+   nearby: S2757 "Black Panther Legends" 1f [title+1 — S cv=139563 gcd=177025 (B-054 0.95)] keys: "Black Panther Legends" · S2759 "Black Panther Saga" 1f [title+1 — S cv=33836 (B-054 0.9)] keys: "Black Panther Saga"
+   nearby: S2767 "Black Panther: Doomwar" 1f [title+1 — S cv=98395 gcd=111681 (B-054 0.95)] keys: "Black Panther: Doomwar" · (+1 more by title)
+   keys now: "Black Panther v9 (2023)" x2
+   groups (title x folder): 1
+   G1 "Black Panther by Eve L. Ewing" in Marvel\_Black Panther\12 Black Panther v9 (2023) — 2 file(s), 2 COL, pp 111-120; cv per-file 155891x2; gcd per-file 207476x2; key 'Black Panther v9 (2023)'
+      [53632] COL Black Panther by Eve L. Ewing Vol. 01 - Reign At Dusk (2024) (Digital) (Shan-Empire).cbz (120pp)
+         own record cv 155891 / gcd s207476 "Black Panther by Eve L. Ewing: Reign at Dusk" (issue 2593720) COLLECTS: gcd=201428 Black Panther (2023) (unnumbered)
+      [53633] COL Black Panther by Eve L. Ewing Vol. 02 - Reign at Dusk (2024) (Digital) (Shan-Empire).cbz (111pp)
+         own record cv 155891 / gcd s207476 "Black Panther by Eve L. Ewing: Reign at Dusk" (issue 2635586) COLLECTS: gcd=201428 Black Panther (2023) (unnumbered)

@@ -1,0 +1,19 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S4094	Conan Chronicles Epic Collection: Out Of The Darksome Hills	run=-	P-060.jsonl	new	pair=4092
+S4812	Daredevil Epic Collection	run=-	P-060.jsonl	new	pair=4813
+S104163	Deadpool Classic Companion (2015)	run={"cv": 81400, "gcd": 123975}	P-060.jsonl	new	pair=5111
+S5115	Deadpool Epic Collection	run=-	P-060.jsonl	new	pair=5116
+S96254	Daredevil v2 (1998)	run=-	P-060.jsonl	new	pair=64501
+S64504	Daredevil v6 (2019)	run=-	P-060.jsonl	new	pair=64501
+S104160	Daredevil v3 (2011)	run={"cv": 41410, "gcd": 60120}	P-060.jsonl	new	pair=64501
+S104162	Dazzler v2 (2010)	run={"cv": 33347, "gcd": 49283}	P-060.jsonl	new	pair=64525
+S10377	Deadpool v8 (2020)	run=-	P-060.jsonl	new	pair=64540
+S102757	Deadpool #1000 (2010)	run=-	P-060.jsonl	new	pair=64541
+S5111	moved out -> S104163 "Deadpool Classic Companion (2015)"	run=-	P-060.jsonl	kept	pair=5111	moved_cv=81400
+S64501	moved out -> S96254 "Daredevil v2 (1998)"; S64504 "Daredevil v6 (2019)"; S104160 "Daredevil v3 (2011)"	run=-	P-060.jsonl	kept	pair=64501	moved_cv=41410
+S64525	moved out -> S104162 "Dazzler v2 (2010)"	run=-	P-060.jsonl	kept	pair=64525	moved_cv=33347
+S64540	moved out -> S10377 "Deadpool v8 (2020)"	run=-	P-060.jsonl	kept	pair=64540
+S64541	moved out -> S102757 "Deadpool #1000 (2010)"	run=-	P-060.jsonl	kept	pair=64541

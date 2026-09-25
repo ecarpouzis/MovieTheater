@@ -2095,3 +2095,12 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   stop the RESIDUE ruling: two whole books of another record with no shelf -> R + split-needed (Deadpool Classic
   Companion). An R- file that restates a shelf a pending P- batch splits MUST repeat its F split-needed (L-370 halt,
   S95620 in R-145).
+[L-396] pub:marvel sig:split
+- Waves 143-144: a lead-proposed new split key can EQUAL the items' current key when a Matched SeriesKeyLink aliases it
+  onto the parent ("Dazzler (2010)") — check `keys now:` first; respell with vN ("Dazzler v2 (2010)", extends L-375).
+  Daredevil #500-512 sit inside the 1998 CV / GCD volumes (6209 / 6026); per-file CV 2190 on them is a legacy-number
+  stamp (L-395). GCD writes the 1989 Daredevil Annual as "#4 [5]" (row 45572); rippers label it "Annual 04b". Collected
+  ranges copied from judged ranges often cross a fill-in gap (Miller & Janson Vol. 01 skips #162; the Companion collects
+  #219 then #226-233) — state the larger stretch, the rest on an N. ORDERING: when an R- file both MERGES shelf A into B
+  (shared cv) and splits books off A, the merge lands first and the split's F lines die with A — the next revisit of B
+  must restate them as B's own split-needed (S4784 -> S96254, wave 144).
