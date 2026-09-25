@@ -1,0 +1,34 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S104222	New Mutants: Lethal Legion (2023)	run={"cv": 148780, "gcd": 197232}	P-071.jsonl	new	pair=12823
+S104217	Ultimate Spider-Man v2 (2009)	run={"cv": 27381, "gcd": 38918}	P-071.jsonl	new	pair=20604
+S104224	Weapon X v1 (1995)	run={"cv": 5564, "gcd": 5304}	P-071.jsonl	new	pair=21357
+S94734	Weapon X v3 (2017)	run={"cv": 100709, "gcd": 113426}	P-071.jsonl	new	pair=21357
+S104228	What If? Civil War (2008)	run={"cv": 20155, "gcd": 28104}	P-071.jsonl	new	pair=21522
+S104231	What If? Planet Hulk (2007)	run={"cv": 19301, "gcd": 72361}	P-071.jsonl	new	pair=21522
+S104229	What If? Fallen Son (2009)	run={"cv": 24584, "gcd": 33096}	P-071.jsonl	new	pair=21522
+S104230	What If? House of M (2009)	run={"cv": 24272, "gcd": 32968}	P-071.jsonl	new	pair=21522
+S104232	What If? Secret Wars (2009)	run={"cv": 25308, "gcd": 33369}	P-071.jsonl	new	pair=21522
+S104233	What If? Special (1988)	run={"cv": 30376, "gcd": 3674}	P-071.jsonl	new	pair=21522
+S21504	What If Spider-Man - Back In Black	run={"cv": 25194, "gcd": 33341}	P-071.jsonl	new	pair=21522
+S21484	What If Annihilation	run={"cv": 20151, "gcd": 72363}	P-071.jsonl	new	pair=21522
+S101454	Wolverine v2 (1988)	run={"cv": 4250, "gcd": 3865}	P-071.jsonl	new	pair=21852
+S21852	Wolverine Epic Collection	run={"gcd": 80971}	P-071.jsonl	new	pair=21853
+S13205	Old Man Logan	run={"cv": 87624, "gcd": 96095}	P-071.jsonl	new	pair=21922
+S103429	Wolverine #900 (2010)	run={"gcd": 49459}	P-071.jsonl	new	pair=21932
+S103428	Wolverine #1000 (2011)	run={"gcd": 55594}	P-071.jsonl	new	pair=21932
+S94821	Astonishing X-Men v1 (1995)	run={"cv": 5536, "gcd": 5274}	P-071.jsonl	new	pair=64179
+S95935	Cable v2 (2008)	run={"cv": 20805, "gcd": 29892}	P-071.jsonl	new	pair=64363
+S3327	Cable (2020-)	run={"cv": 125678, "gcd": 157274}	P-071.jsonl	new	pair=64363
+S95934	Cable v1 (2017)	run={"cv": 101767, "gcd": 114411}	P-071.jsonl	new	pair=64363
+S12823	moved out -> S104222 "New Mutants: Lethal Legion (2023)"	run=-	P-071.jsonl	kept	pair=12823	moved_cv=148780
+S20604	moved out -> S104217 "Ultimate Spider-Man v2 (2009)"	run=-	P-071.jsonl	kept	pair=20604	moved_cv=27381
+S21357	moved out -> S104224 "Weapon X v1 (1995)"; S94734 "Weapon X v3 (2017)"	run=-	P-071.jsonl	kept	pair=21357	moved_cv=5564,100709
+S21522	moved out -> S104228 "What If? Civil War (2008)"; S104231 "What If? Planet Hulk (2007)"; S104229 "What If? Fallen Son (2009)"; S104230 "What If? House of M (2009)"; S104232 "What If? Secret Wars (2009)"; S104233 "What If? Special (1988)"; S21504 "What If Spider-Man - Back In Black"; S21484 "What If Annihilation"	run=-	P-071.jsonl	kept	pair=21522	moved_cv=20155,19301,24584,24272,25308,30376,25194,20151
+S21852	moved out -> S101454 "Wolverine v2 (1988)"	run=-	P-071.jsonl	kept	pair=21852	moved_cv=4250
+S21922	moved out -> S13205 "Old Man Logan"	run=-	P-071.jsonl	kept	pair=21922	moved_cv=87624
+S21932	moved out -> S103429 "Wolverine #900 (2010)"; S103428 "Wolverine #1000 (2011)"	run=-	P-071.jsonl	kept	pair=21932
+S64179	moved out -> S94821 "Astonishing X-Men v1 (1995)"	run=-	P-071.jsonl	kept	pair=64179	moved_cv=5536
+S64363	moved out -> S95935 "Cable v2 (2008)"; S3327 "Cable (2020-)"; S95934 "Cable v1 (2017)"	run=-	P-071.jsonl	kept	pair=64363	moved_cv=20805,125678,101767

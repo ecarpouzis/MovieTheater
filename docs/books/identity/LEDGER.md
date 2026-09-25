@@ -2181,3 +2181,10 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   is missing from the GCD line is a misnamed arc trade, not an Epic book. Rippers file the What If? 2007-09 one-shots
   under Manual key links to the 1989 run's cv — each one-shot has its own count-1 CV / GCD record. Marvel creator-line
   trade ranges (Marauders by Duggan) skip event-crossover issues — GCD's roll-up beats a judged range there.
+[L-407] pub:marvel kind:collected-line sig:probe
+- Waves 165-166: Epic Collection books run ~425-510pp — a single "Epic Collection Vol. NN" file near 110pp is a
+  mislabelled arc TPB (Wolverine "Not Dead Yet" = Wolverine 1988 #119-122, GCD 65582), not an Epic book. Wolverine Epic
+  Vol. 08 "The Dying Game" is GCD 80971 #8 row 1339630 (the per-book CV 86412 goes on the I line only). For a book's
+  own record, `lookup.py --gcd-issues <series> --variants` lists rows with their "collects" notes even when the plain
+  listing shows none (X-23 Complete Collection 104522). check_splits' "probable MISSED JOIN" WARN fires for every pair of
+  sibling per-book Epic shelves sharing the GCD line — answer once per `why` (all empty into the line shelf).
