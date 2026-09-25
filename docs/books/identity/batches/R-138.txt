@@ -1,0 +1,226 @@
+## Conventions for this batch (27 shown of 92 matched; 390 in LEDGER.md; 4 shelf/shelves: pub:marvel ×4 · folder:vn-year ×4 · pub:star-wars ×2 · pub:idw ×2 · folder:sequel-subfolder ×2 · folder:events ×2 · folder:skottie ×1 · folder:variant-covers ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (4 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-060] (4 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (4 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-127] (4 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-136] (4 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-142] (4 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (4 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-387] (4 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-052 / R-133 (waves 126-127, lead-approved): "the largest run STAYS" yields to the STORED cv — when the run that holds
+  the shelf's stored cv is the smaller one, keep it and move the larger RECORD-LESS run out (Star Wars S16641: the 1977 run
+  on CV 2914 stays, 208 Star Wars Insider files leave to "Star Wars Insider (1987)"); a new shelf seeded with the parent's
+  cv would collide with its canonical cv. The key normalizer keeps the year: a key differing only by year is new; respell
+  only when the exact spelling is a ParsedKey, alias or SeriesKeyLink. A split seed can be a book's own count-1 record —
+  re-check against L-124 when the book sits alone in a run's folder (The Other Side 2017 -> DC mini CV 19537 / GCD 21941).
+[L-389] (4 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-053 / R-135 (waves 129-130): a run's issues never JOIN a creator-trade-keyed shelf ("Venom by Al Ewing & Ram V",
+  S21029, four trades) — keep them and meet through the SHARED cv at the next revisit (S20988 cv=140084 + merge-with=21029).
+  Marvel's 2019-2020 "Star Wars #1 facsimile" is "Star Wars No 1 Facsimile Edition" (CV 123267 / GCD 153348): probe the
+  "No N" form. Star Wars Insider and Titan's "Best of" books have no CV / GCD record: R + provider-missing, never the 1977
+  comic's stamp. The Dark Horse Star Wars Omnibus umbrella number (Vol. 32 / 35) raises a false "stored GCD row is another
+  book" warning against the sub-line's #1 / #2 — page counts and ISBNs decide. An Epic Collection / omnibus line spanning
+  several minis keeps its own GCD-line key in a split.
+[L-319] (3 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-388] (3 shelf/shelves) pub:marvel sig:split
+- R-134 (wave 128, lead ruling): RESIDUE vs co-equal — two or more whole trades of another run are a co-equal run (R +
+  split-needed) only when that run has NO shelf of its own; when its run or line already has a shelf, they are misfiled
+  books: S + `F split-needed | items -> join S<home>` (L-368; X-Factor 2024 S66336's two Peter David omnibuses -> S22172).
+  `#MARVEL CURRENT ONGOING TITLES`: Marika / MikeNY76 ComicInfo Web ids and "cvv<id>" Series strings name the stored CV
+  volume (1.0 evidence). From the Ashes "Variant Covers" folders hold the PREVIOUS run's finale covers (X-Men v6 #35 in
+  the v7 folder). "_X-Men Complete Chronology V2\NNNN <event>" annuals are event-chapter excerpts = partial rips. A
+  ripper's "Omnibus Book 01" in a run's folder can be that run's first omnibus, not the line's Vol. 1 (page count decides).
+  CV mints one count-1 volume per Venom by Ewing trade; GCD keeps two lines (183532 Vols 1-4, 208820 Vols 5-8).
+[L-124] (4 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-191] (4 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-272] (4 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-281] (4 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-034] (2 shelf/shelves) folder:events pub:marvel sig:round2
+- `_X-Men Complete Chronology` / `_Marvel Major Event Chronology` folders re-file the same books a second and
+  third time — every ratio 2.00 there, never a second run. Crossover blocks get handed one member's series by
+  `round2-folder` (four Age of Apocalypse shelves → "X-Man", a 76-issue hull).
+[L-087] (2 shelf/shelves) pub:cinebook pub:idw pub:image sig:collision
+- The Cinebook shape (one GCD series, a CV volume per book) recurs inside IDW/Image (Godzilla Rivals, Obscure
+  Cities, MLP Annual, Cyberforce Origins, Hinges, Image+, Bloodstrike, X-Files specials): siblings take
+  `merge-with`; where CV has no series-level volume the S line is `cv=-`.
+[L-104] (2 shelf/shelves) kind:manga pub:dark-horse pub:marvel pub:star-wars sig:probe
+- Star Wars manga needs BOTH spellings: ComicVine files Dark Horse's 1999 adaptations as "Manga Star Wars:
+  <Film>", GCD as "Star Wars: … — Manga"; neither probe finds the other.
+[L-106] (2 shelf/shelves) pub:marvel pub:star-wars sig:trade-link
+- The count-1-trade-as-stored-link artefact runs at Marvel too (14 Star Wars shelves in one batch); a collected
+  series whose count equals exactly our two books is the matches-our-holdings trap.
+[L-109] (2 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-111] (2 shelf/shelves) pub:marvel pub:star-wars sig:trade-link
+- Star Wars "Marvel Edition" digital trades (Kileko/Zone/Shan-Empire): both providers mint a same-title count-1
+  record the year the trade shipped beside the 4-6 issue run; the stored link is the trade on 36 of 150 shelves.
+[L-112] (2 shelf/shelves) pub:dark-horse pub:marvel pub:star-wars sig:trade-link
+- Episodes IV/V film adaptations have no series record of their own (they sit INSIDE Star Wars 1977); the 2015
+  collected record carries them with an `N`. Episodes I/II/III/VI take the Dark Horse / 1983 Marvel original.
+[L-119] (2 shelf/shelves) pub:marvel
+- GCD filing quirks that recovered legs: drop "Comics" from a title, "and" for "&", "Digest" appended, reversed
+  or reordered name lists ("Deadpool / Amazing Spider-Man / Hulk: Identity Wars").
+[L-133] (2 shelf/shelves) pub:marvel sig:probe
+- GCD splits a compound word ComicVine joins: "X-Men: Clan Destine" (5570) is invisible to a "ClanDestine" probe,
+  and 32535 "ClanDestine vs. The X-Men" is the collected edition, not the mini.
+[L-169] (2 shelf/shelves) folder:events pub:marvel sig:trade-link
+- `_Marvel Major Event Chronology (digital)` is one folder per tie-in holding that tie-in's collected edition: the
+  count-1-trade-as-stored-link artefact runs at 86 of 202 shelves there, the highest rate in any single folder.
+[L-187] (2 shelf/shelves) pub:marvel sig:trade-link
+- A plain "<Title>" 2015 count-4/5 CV/GCD record IS the Secret Wars Warzones mini; the "<Title>: Warzones!" /
+  "Battleworld" count-1 records are the 2016+ collected repackagings — the mini's record wins, the trade goes on `I`.
+[L-242] (2 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+
++65 more matched entries not shown: L-327, L-343, L-371, L-390, L-016, L-030, L-032, L-113, L-114, L-151, L-160, L-175, L-290, L-028, L-036, L-077, L-080, L-130, L-172, L-173, L-174, L-297, L-311, L-325, L-054, L-128, L-164, L-181, L-336, L-013, L-014, L-043, L-050, L-064, L-065, L-072, L-085, L-088, L-089, L-095, L-096, L-099, L-101, L-118, L-123, L-125, L-157, L-159, L-163, L-177, L-193, L-194, L-204, L-253, L-262, L-264, L-267, L-273, L-292, L-294, L-310, L-330, L-341, L-346, L-347 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S100013 Star Wars v2 (2015)  [tier C] · gap 38  keys: Star Wars v2 (2015)  years 1977-2021  14 files / 13 collections
+   split run: "Star Wars v2 (2015)" run=- (new shelf from P-054) — seed the S line from these ids, then verify them
+   flags: #645 overlap-in-series [Dismissed] item 104183 — several Star Wars ladders each contribute a Vol. 01 numbered from #1
+   folders: [13] Marvel-IDW Star Wars\_Completed Series and Minis\Star Wars v2 (2015) · [1] Marvel\__Skottie Young Covers
+   files:   [104183] COL Star Wars Vol. 01 - Skywalker Strikes (2015) (Digital) (Kileko-Empire).cbr (168pp)
+            [104184] COL Star Wars Vol. 02 - Showdown on the Smuggler's Moon (2015) (Digital) (Kileko-Empire).cbr (139pp)
+            [104185] COL Star Wars Vol. 03 - Rebel Jail  (2016) (Digital) (Kileko-Empire).cbr (144pp)
+            [104186] COL Star Wars Vol. 04 - Last Flight of the Harbinger (2017) (Digital) (Kileko-Empire).cbr (147pp)
+            [104187] COL Star Wars Vol. 05 - Yoda's Secret War (2017) (Digital) (Kileko-Empire).cbr (145pp)
+            [104188] COL Star Wars Vol. 06 - Out Among The Stars (2018) (Digital) (Kileko-Empire).cbr (161pp)
+            [104189] COL Star Wars Vol. 07 - The Ashes of Jedha (2018) (Digital) (Kileko-Empire).cbr (135pp)
+            [104190] COL Star Wars Vol. 08 - Mutiny At Mon Cala (2018) (Digital) (Kileko-Empire).cbr (131pp) | [104191] COL Star Wars Vol. 09 - Hope Dies (2019) (Digital) (Kileko-Empire).cbr (185pp)
+            [104192] COL Star Wars Vol. 10 - The Escape (2019) (Digital) (Kileko-Empire).cbz (130pp)
+            [104193] COL Star Wars Vol. 11 - The Scourging of Shu-Torun (2019) (Digital) (Kileko-Empire).cbz (139pp)
+            [104194] COL Star Wars Vol. 12 - Rebels And Rogues (2020) (Digital) (Kileko-Empire).cbz (113pp)
+            [104195] COL Star Wars Vol. 13 - Rogues And Rebels (2020) (Digital) (Kileko-Empire).cbz (126pp)
+            [52020] Star Wars 001 (2015) (digital) (Skottie Young variant) (Minutemen-Mastodon).cbz (1pp)
+   ours:    ladder 1; judged item 104183 #1-6 conf 0.97; judged item 104184 #7-12 conf 0.97; judged item 104185 #15-19 conf 0.97; judged item 104186 #20-25 conf 0.97; judged item 104187 #26-30 conf 0.97; judged item 104188 #33-37 conf 0.97; judged item 104189 #38-43 conf 0.97; judged item 104190 #44-49 conf 0.97; judged item 104191 #50-55 conf 0.97; judged item 104192 #56-61 conf 0.97; judged item 104193 #62-67 conf 0.97; judged item 104194 #68-72 conf 0.97; judged item 104195 #73-75 conf 0.97; ComicInfo Series: "Star Wars"x6; ComicInfo Publisher: "Marvel"x6
+   GCD says: [104183] gcd_reprint 1466414: s85861 Star Wars (2015) #1-6 [13 stories]
+             [104184] gcd_reprint 1524764: s85861 Star Wars (2015) #7-12 [15 stories]
+             [104185] gcd_reprint 1616021: s85861 Star Wars (2015) #15-19 [13 stories] · s94725 Star Wars Annual (2016) #1 [3 stories]
+             [104186] gcd_reprint 1667256: s85861 Star Wars (2015) #20-25 [16 stories]
+             [104187] gcd_reprint 1720121: s85861 Star Wars (2015) #26-30 [12 stories] · s94725 Star Wars Annual (2016) #2 [3 stories]
+             [104188] gcd_reprint 1762597: s85861 Star Wars (2015) #33-37 [18 stories] · s94725 Star Wars Annual (2016) #3 [3 stories]
+             [104189] gcd_reprint 1798077: s85861 Star Wars (2015) #38-43 [23 stories]
+             [104190] gcd_reprint 1833453: s85861 Star Wars (2015) #44-49 [20 stories]
+             [104191] gcd_reprint 1880691: s85861 Star Wars (2015) #50-55 [26 stories] · s94725 Star Wars Annual (2016) #4 [4 stories]
+             [104192] gcd notes 1947823 (#10 of Star Wars): Star Wars (Marvel, 2015 Series) #56-61  |  gcd_reprint 1947823: s85861 Star Wars (2015) #56-61 [20 stories]
+             [104193] gcd notes 2011057 (#11 of Star Wars): Star Wars (Marvel, 2015 series) #62-67  |  gcd_reprint 2011057: s85861 Star Wars (2015) #62-67 [22 stories]
+             [104194] gcd notes 2039704 (#12 of Star Wars): Star Wars (Marvel, 2015 series) #68-72  |  gcd_reprint 2039704: s85861 Star Wars (2015) #68-72 [20 stories]
+             [104195] gcd_reprint 2267157: s85861 Star Wars (2015) #73-75 [4 stories] · s153715 Star Wars: Empire Ascendant (2020) #1 [1 story]
+   CV per-file (v1): vol 2914 "Star Wars" 1977 Marvel 108 on 13/14 files · vol 123860 "Star Wars" 2020 Marvel 50 on 1/14 files
+   CV local rip:   (= per-file) · 47796 "Star Wars" 1982 Marvel UK/Panini UK 13 (via our own name without the filing suffix "Star Wars") · 127456 "Star Wars" 1982 JuniorPress BV 24 (via our own name without the filing suffix "Star Wars") · 156954 "Star Wars" 1984 Egmont Ehapa Verlag 13 (via our own name without the filing suffix "Star Wars") · 153006 "Star Wars" 1992 Dark Horse International 10 (via our own name without the filing suffix "Star Wars") · 156924 "Star Wars" 1994 Carlsen Verlag 17 (via our own name without the filing suffix "Star Wars")   (rip lookup)
+   GCD per-file:   series 85861 "Star Wars" 2015-2020 Marvel [was ongoing series] 75 on 1/14 files; methods numx1
+   GCD dump:       2406 "Star Wars" 1977-1986 Marvel [] 107 (via our own name without the filing suffix "Star Wars") · 96653 "Star Wars" [da-dk] 1977-1981 Interpresse [] 5 (via our own name without the filing suffix "Star Wars") · 158615 "Ο Πόλεμος των Άστρων [Star Wars]" [el-gr] 1977-? Kabanas Hellas [] 9 (via our own name without the filing suffix "Star Wars") · 182260 "Star Wars" [en-za] 1977-1977 Republican Press [] 1 (via our own name without the filing suffix "Star Wars") · 71738 "Star Wars" [en-gb] 1978-1978 Sphere [] 1 (via our own name without the filing suffix "Star Wars") · 150159 "Star Wars" [en-ph] 1979-1980 Alemar's Bookstore [] 4 (via our own name without the filing suffix "Star Wars")   (dump lookup)
+   bridges:        gcd 85861 -> LOCG 107096 "Star Wars" support 3
+
+== S16641 Star Wars  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Star Wars (1977) | Star Wars Insider | Star Wars v1 (1977)  years 1977-2020  5 files / 0 collections
+   split: the KEPT half of the P-054 split — moved out -> S100013 "Star Wars v2 (2015)"; re-identify what stayed
+   folders: [3] Marvel-IDW Star Wars\_Completed Series and Minis\Star Wars v1 (1977)\Annuals and Specials · [1] Marvel-IDW Star Wars\_Completed Series and Minis\Star Wars v1 (1977) · [1] Marvel\_Marvel Facsimile Editions
+   files:   [104172] Star Wars - Facsimile Edition 001 (2020) (Digital) (Kileko-Empire).cbz (36pp) | [104173] Star Wars 038 (1980) b&w (Bchry-DCP).cbz (18pp)
+            [104174] Star Wars Annual 003 (1983) (Digital) (Zone-Empire).cbr (41pp) | [104175] Star Wars 108 (2019) (Digital) (F) (Kileko-Empire).cbz (48pp)
+            [83086] Star Wars 001 - Facsimile Edition (1977) (Digital) (Shadowcat-Empire).cbz (36pp)
+   ours:    ladder 1, 3, 38, 108; 1 number(s) name more than one file: 1; ComicInfo Series: "Star Wars"x3; ComicInfo Volume: "1977"x2, "2019"x1; ComicInfo Publisher: "Marvel"x3
+   CV linked:      vol 2914 "Star Wars" 1977 Marvel 108 issues; cached #1-108 (108); yearΔ 0; ratio 5/108 = 0.05; no judged range; v1 per-file: same volume on 2/5 files
+   CV local rip:   (= linked) · 47796 "Star Wars" 1982 Marvel UK/Panini UK 13 · 127456 "Star Wars" 1982 JuniorPress BV 24 · 156954 "Star Wars" 1984 Egmont Ehapa Verlag 13 · 153006 "Star Wars" 1992 Dark Horse International 10 · 156924 "Star Wars" 1994 Carlsen Verlag 17   (rip lookup)
+   GCD per-file:   series 2406 "Star Wars" 1977-1986 Marvel [was ongoing series] 107 on 1/5 files · series 146179 "Star Wars" 2019-2019 Marvel [one-shot] 1 on 1/5 files; methods numx2
+   GCD dump:       (= per-file) · 96653 "Star Wars" [da-dk] 1977-1981 Interpresse [] 5 · 158615 "Ο Πόλεμος των Άστρων [Star Wars]" [el-gr] 1977-? Kabanas Hellas [] 9 · 182260 "Star Wars" [en-za] 1977-1977 Republican Press [] 1 · 71738 "Star Wars" [en-gb] 1978-1978 Sphere [] 1 · 150159 "Star Wars" [en-ph] 1979-1980 Alemar's Bookstore [] 4   (dump lookup)
+   bridges:        gcd 2406 -> LOCG 113314 "Star Wars" support 2 · gcd 146179 -> LOCG 113314 "Star Wars" support 1
+
+== S1629 Avengers West Coast  [tier A]   keys: Avengers West Coast  years 1988-2022  79 files / 0 collections
+   folders: [56] Marvel\_Avengers\West Coast Avengers (1984)\03 Avengers West Coast v1 (1989) · [18] Marvel\_Avengers\West Coast Avengers (1984)\03 Avengers West Coast v1 (1989)\Annuals and Specials · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0204 Blood Ties · [1] _Marvel Major Event Chronology (digital)\1993.11 - Blood Ties
+   files:   Avengers West Coast 047 (1989) (b&w) (Bchry-DCP).cbz … Avengers West Coast 057 (1990) (b&w) (Bchry-DCP).cbz  (11 files, pp 21-23)
+            [53212] Avengers West Coast Annual 003 (1988) (digital) (Oroboros-DCP).cbr (48pp) | [53214] Avengers West Coast Annual 004 (1989) (Digital) (AnPymGold-Empire).cbz (42pp)
+            [53213] Avengers West Coast Annual 004 (1989) (b&w) (Bchry-DCP).cbz (29pp) | [53215] Avengers West Coast Annual 005 (1990) (Digital) (Shadowcat-Empire).cbz (57pp)
+            [53216] Avengers West Coast Annual 007 (1992) (digital) (Marika-Empire).cbz (57pp) | [53217] Avengers West Coast Annual 008 (1993) (Digital) (Shadowcat-Empire).cbz (52pp)
+            [53218] Avengers West Coast Annual 008 (1993) (Digital) (Zone-Empire).cbr (53pp)
+            Avengers West Coast 047 (1989) (Digital) (TLK-EMPIRE-HD).cbr … Avengers West Coast 057 (1990) (Digital) (TLK-EMPIRE-HD).cbr  (11 files, pp 22-24)
+            [53230] Avengers West Coast 058 (1990) (Digital) (Shadowcat-Empire).cbz (24pp) | [53231] Avengers West Coast 059 (1990) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [53232] Avengers West Coast 060 (1990) (Digital) (Zone-Empire).cbr (24pp) | [53233] Avengers West Coast 061 (1990) (Digital) (Zone-Empire).cbr (24pp)
+            [53234] Avengers West Coast 062 (1990) (Digital) (Zone-Empire).cbr (24pp)
+            Avengers West Coast 063 (1990) (Digital) (Shadowcat-Empire).cbz … Avengers West Coast 075 (1991) (Digital) (Shadowcat-Empire).cbz  (13 files, pp 23-40)
+            [53248] Avengers West Coast 076 (1989) (digital).cbz (23pp) | [53249] Avengers West Coast 077 (1989) (digital).cbz (23pp) | [53250] Avengers West Coast 078 (1989) (digital).cbz (23pp)
+            [53251] Avengers West Coast 079 (1989) (digital).cbz (23pp) | [53252] Avengers West Coast 080 (1992) (Digital) (Zone-Empire).cbr (24pp)
+            [53253] Avengers West Coast 081 (1992) (Digital) (Zone-Empire).cbr (23pp) | [53254] Avengers West Coast 082 (1992) (Digital) (Zone-Empire).cbr (22pp)
+            Avengers West Coast 083 (1992).cbr … Avengers West Coast 088 (1992).cbr  (6 files, pp 23-24) | [53261] Avengers West Coast 089 (1992) (Digital) (Zone-Empire).cbr (24pp)
+            [53262] Avengers West Coast 090 (1993) (Digital) (Zone-Empire).cbr (24pp) | [53263] Avengers West Coast 091 (1993) (Digital) (Zone-Empire).cbr (23pp)
+            [53264] Avengers West Coast 092 (1993) (Digital) (AnHeroGold-Empire).cbz (22pp) | [53265] Avengers West Coast 093 (1993) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [53266] Avengers West Coast 094 (1993) (Digital) (AnHeroGold-Empire).cbz (23pp) | [53267] Avengers West Coast 095 (1993) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [53268] Avengers West Coast 096 (1993) (Digital) (AnHeroGold-Empire).cbz (23pp) | [53269] Avengers West Coast 097 (1993) (Digital) (AnHeroGold-Empire).cbz (24pp)
+            [53270] Avengers West Coast 098 (1993) (Digital) (AnHeroGold-Empire).cbz (23pp) | [53271] Avengers West Coast 099 (1993) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [53272] Avengers West Coast 100 (1993) (Digital) (AnHeroGold-Empire).cbz (55pp) | [53273] Avengers West Coast 101 (1993) (Digital) (Zone-Empire).cbr (22pp)
+            [53274] Avengers West Coast 102 (1994) (Digital) (AnHeroGold-Empire).cbz (23pp) | [87485] 020 Avengers West Coast 053 (1989) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [87515] 050 Avengers West Coast 054 (1990) (Digital) (TLK-EMPIRE-HD).cbr (23pp) | [87525] 060 Avengers West Coast 055 (1990) (Digital) (AnPymGold-Empire).cbz (23pp)
+            [88018] 003 Avengers West Coast 101 (1993) (Digital) (Zone-Empire).cbr (22pp) | [116472] 03 Avengers West Coast 101 (1993) (Digital) (UberSoldier-DCP).cbr (22pp)
+   ours:    ladder 3-5, 7-8, 47-102; 14 number(s) name more than one file: 4, 8, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56; ComicInfo Series: "Avengers West Coast Annual"x1, "West Coast Avengers Annual"x1; ComicInfo Volume: "1985"x1, "1989"x1; ComicInfo Count: "7"x1; ComicInfo Publisher: "Marvel"x1, "Marvel Comics"x1; ComicInfo Web: "35151"x1
+   CV linked:      vol 18494 "Avengers West Coast" 1989 Marvel 56 issues; cached #47-102 (56); yearΔ 1; ratio 79/56 = 1.41; no judged range; v1 per-file: same volume on 72/79 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 3830 "Avengers West Coast" 1989-1994 Marvel [was ongoing series] 55 on 70/79 files; methods numx70
+   GCD dump:       (= per-file) · 69113 "Avengers West Coast" [fr] 2012-? Panini France [] 1   (dump lookup)
+   bridges:        gcd 3830 -> LOCG 100825 "Avengers West Coast" support 9
+
+== S101396 West Coast Avengers  [tier A]   keys: West Coast Avengers v2 (1985)  years 1985-1989  56 files / 0 collections
+   folders: [46] Marvel\_Avengers\West Coast Avengers (1984)\02 West Coast Avengers v2 (1985) · [8] Marvel\_Avengers\West Coast Avengers (1984)\02 West Coast Avengers v2 (1985)\Annuals and Specials · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0078 Evolutionary war · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0093 Atlantis Attacks
+   files:   [53147] West Coast Avengers 042 (1989) (b&w) (Bchry-DCP).cbz (23pp) | [53148] West Coast Avengers 043 (1989) (b&w) (Bchry-DCP).cbz (21pp)
+            [53149] West Coast Avengers 044 (1989) (b&w) (Bchry-DCP).cbz (23pp) | [53150] West Coast Avengers 045 (1989) (b&w) (Bchry-DCP).cbz (23pp)
+            [53151] West Coast Avengers 046 (1989) (b&w) (Bchry-DCP).cbz (23pp) | [53152] West Coast Avengers Annual 002 (1987) (digital) (Glorith-HD).cbz (43pp)
+            [53153] West Coast Avengers Annual 004 (1989) (digital) (Marika-Empire).cbz (56pp) | [53154] West Coast Avengers Annual 006 (1986) (2023) (digital-Empire).cbz (57pp)
+            West Coast Avengers 001 (1985) (Digital) (Zone-Empire).cbr … West Coast Avengers 009 (1986) (Digital) (Zone-Empire).cbr  (9 files, pp 24-41)
+            West Coast Avengers 010 (1986) (Digital) (Shadowcat-Empire).cbz … West Coast Avengers 016 (1987) (Digital) (Shadowcat-Empire).cbz  (7 files, pp 23-24)
+            West Coast Avengers 017 (1987) (Digital) (Zone-Empire).cbr … West Coast Avengers 024 (1987) (Digital) (Zone-Empire).cbr  (8 files, pp 23-24)
+            West Coast Avengers 025 (1987) (Digital) (Shadowcat-Empire).cbz … West Coast Avengers 041 (1989) (Digital) (Shadowcat-Empire).cbz  (17 files, pp 22-24)
+            [53196] West Coast Avengers 042 (1989) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [53197] West Coast Avengers 043 (1989) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [53198] West Coast Avengers 044 (1989) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [53199] West Coast Avengers 045 (1989) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [53200] West Coast Avengers 046 (1989) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [87242] 009 West Coast Avengers Annual 003 (1988) (Digital) (Shadowcat-Empire).cbz (47pp)
+            [87357] 012 West Coast Avengers Annual 004 (1989) (Digital) (Shadowcat-Empire).cbz (31pp)
+   ours:    ladder 1-46; 9 number(s) name more than one file: 2, 3, 4, 6, 42, 43, 44, 45, 46; ComicInfo Series: "West Coast Avengers Annual"x2; ComicInfo Volume: "1986"x1, "1989"x1; ComicInfo Count: "3"x1, "7"x1; ComicInfo Publisher: "Marvel Comics"x2; ComicInfo Web: "28581"x1, "31863"x1
+   CV linked:      vol 3521 "West Coast Avengers" 1985 Marvel 46 issues; cached #1-46 (46); yearΔ 0; ratio 56/46 = 1.22; no judged range; v1 per-file: same volume on 51/56 files
+   CV local rip:   (= linked) · 3372 "West Coast Avengers" 1984 Marvel 4 · 112977 "West Coast Avengers" 2018 Marvel 10 · 161322 "West Coast Avengers" 2025 Marvel 10 · 165818 "West Coast Avengers" 2025 Marvel 1 issue 1122569   (rip lookup)
+   GCD per-file:   series 3061 "West Coast Avengers" 1985-1989 Marvel [was ongoing series] 47 on 51/56 files; methods numx51
+   GCD dump:       (= per-file) · 2900 "West Coast Avengers" 1984-1984 Marvel [] 4 · 127975 "West Coast Avengers" 2018-2019 Marvel [] 10 · 140641 "West Coast Avengers" 2019-2019 Marvel [] 2 · 218108 "West Coast Avengers" 2025-2025 Marvel [] 10 · 226086 "West Coast Avengers" 2025-? Marvel [] 2   (dump lookup)
+   bridges:        gcd 3061 -> LOCG 100825 "Avengers West Coast" support 31
