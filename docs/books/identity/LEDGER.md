@@ -2068,3 +2068,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   JOIN of an issue onto a shelf of UNJUDGED trades arms them (New Avengers #13.INH -> S94666): armed_unjudged LIVE
   EXPOSURE -> `u` lines in containment/decisions/S94666.txt + wave_fix. Minutemen digital Secret Avengers "(2014)" is the
   digital release year (#13-15 = 2010 run Fear Itself tie-ins). A single-issue facsimile is its own book (L-077).
+[L-393] pub:marvel sig:split
+- Lead rulings (waves 137-138): L-389 blocks joins onto a CREATOR-trade-keyed shelf only; a shelf keyed by its own trade's
+  SUBTITLE that stores the run ("Uncanny Avengers - The Resistance" S20673, CV 153018) takes stray issues/covers of that
+  run by join. An annual goes with its run when no annual-series shelf exists (Uncanny Avengers Annual 2016 -> S94729).
+  GCD indexes each Skottie Young "baby" cover as a variant row of #1 ("Young Cover") — that row decides which relaunch a
+  lone "001 (YYYY) Skottie Young" file belongs to. At a retitle, GCD and CV can split at different issues (GCD keeps WCA
+  #47 on 3061, CV starts AWC at #47). Marvel arc minis (Ultimate Avengers 1-3): both legs number one continuous series
+  (#1-18) while rips restart at 01 per arc — issue files need I lines or they resolve to the wrong issue.

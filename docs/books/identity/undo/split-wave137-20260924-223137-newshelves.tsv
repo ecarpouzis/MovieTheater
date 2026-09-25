@@ -1,0 +1,16 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S11538	Marvel Mystery Comics	run=-	P-057.jsonl	new	pair=11600
+S94691	Secret Avengers v2 (2013)	run=-	P-057.jsonl	new	pair=15232
+S1589	Avengers Epic Collection	run=-	P-057.jsonl	new	pair=1591
+S1632	Avengers West Coast Epic Collection	run=-	P-057.jsonl	new	pair=1633
+S104154	Young Avengers by Heinberg & Cheung Omnibus (2022)	run={"cv": 148259, "gcd": 190685}	P-057.jsonl	new	pair=22687
+S104153	Young Avengers Presents (2008)	run={"cv": 20380, "gcd": 28934}	P-057.jsonl	new	pair=22687
+S104150	Champions v3 (2019)	run={"cv": 116243, "gcd": 136749}	P-057.jsonl	new	pair=3742
+S2762	Black Panther by Christopher Priest Omnibus	run=-	P-057.jsonl	new	pair=95616
+S15232	moved out -> S94691 "Secret Avengers v2 (2013)"	run=-	P-057.jsonl	kept	pair=15232
+S22687	moved out -> S104154 "Young Avengers by Heinberg & Cheung Omnibus (2022)"; S104153 "Young Avengers Presents (2008)"	run=-	P-057.jsonl	kept	pair=22687	moved_cv=148259,20380
+S3742	moved out -> S104150 "Champions v3 (2019)"	run=-	P-057.jsonl	kept	pair=3742	moved_cv=116243
+S95616	moved out -> S2762 "Black Panther by Christopher Priest Omnibus"	run=-	P-057.jsonl	kept	pair=95616
