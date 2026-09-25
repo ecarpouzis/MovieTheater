@@ -2166,3 +2166,10 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   `lookup.py "Amazing Spider-Man '96" --contains`, never "Annual --year"; only #29 (1995) has no record. MikeNY76
   "Variant Covers" folders mix in covers from the NEXT run: GCD's named variant rows (Timm, XCI, Anka) decide the relaunch
   (same method as L-393's Skottie Young rows). `lookup.py --help` prints nothing useful — the flags are in the source.
+[L-405] pub:marvel sig:split kind:collected-line
+- Waves 161-162 (lead ruling): the ASM Epic Collection keeps R-060's per-book shelves only until its line shelf exists —
+  L-392 governs every Epic Collection: ONE line shelf (cv=-, GCD line) + split-lane joins of the per-book shelves; the
+  ASM Epic per-book shelves owe that rework (revisit.txt). GCD numbers New Thunderbolts "#1 (82)"-"#18 (99)" in the
+  legacy count but it stays a separate run (L-370). Story-titled rips ("Punisher 053 - The Final Days 01") parse by PART
+  number — I lines pin them. A merge that brings covers under an unjudged trade (Thunderbolts 2024 -> Worldstrike) halts
+  audit_containment: `u` line (containment/decisions/S20180.txt) + wave_fix, as L-376 / L-394.

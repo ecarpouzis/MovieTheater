@@ -1,0 +1,144 @@
+## Conventions for this batch (20 shown of 59 matched; 404 in LEDGER.md; 1 shelf/shelves: folder:vn-year ×1 · folder:sequel-subfolder ×1 · pub:marvel ×1 · folder:variant-covers ×1 · folder:events ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-028] (1 shelf/shelves) folder:variant-covers pub:marvel
+- Marvel `\Variant Covers` 1pp packs (always of #1) are the whole of every ratio 1.2–2.0 on modern Marvel shelves.
+[L-034] (1 shelf/shelves) folder:events pub:marvel sig:round2
+- `_X-Men Complete Chronology` / `_Marvel Major Event Chronology` folders re-file the same books a second and
+  third time — every ratio 2.00 there, never a second run. Crossover blocks get handed one member's series by
+  `round2-folder` (four Age of Apocalypse shelves → "X-Man", a 76-issue hull).
+[L-036] (1 shelf/shelves) folder:skottie folder:variant-covers pub:marvel
+- A shelf that is ONLY 1pp variant covers (Skottie Young) still identifies its comic → run ids + `F partial-rip`.
+[L-060] (1 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (1 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-127] (1 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-136] (1 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-142] (1 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-169] (1 shelf/shelves) folder:events pub:marvel sig:trade-link
+- `_Marvel Major Event Chronology (digital)` is one folder per tie-in holding that tie-in's collected edition: the
+  count-1-trade-as-stored-link artefact runs at 86 of 202 shelves there, the highest rate in any single folder.
+[L-173] (1 shelf/shelves) folder:skottie folder:variant-covers pub:marvel sig:collision
+- `Marvel\__Skottie Young Covers` holds a 1pp variant shelf for nearly every 2015 Secret Wars mini, each already linked
+  to that mini's volume — the commonest stored-link collision on Secret Wars shelves (merge-with when it is the mini).
+[L-297] (1 shelf/shelves) pass:item pub:marvel
+- ComicVine's issue-number field follows LEGACY print numbering (Amazing Spider-Man 2015 v4 #792-801 under CV
+  85076 / GCD 92892) — a `C` range in the 790s is still that volume.
+[L-319] (1 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-388] (1 shelf/shelves) pub:marvel sig:split
+- R-134 (wave 128, lead ruling): RESIDUE vs co-equal — two or more whole trades of another run are a co-equal run (R +
+  split-needed) only when that run has NO shelf of its own; when its run or line already has a shelf, they are misfiled
+  books: S + `F split-needed | items -> join S<home>` (L-368; X-Factor 2024 S66336's two Peter David omnibuses -> S22172).
+  `#MARVEL CURRENT ONGOING TITLES`: Marika / MikeNY76 ComicInfo Web ids and "cvv<id>" Series strings name the stored CV
+  volume (1.0 evidence). From the Ashes "Variant Covers" folders hold the PREVIOUS run's finale covers (X-Men v6 #35 in
+  the v7 folder). "_X-Men Complete Chronology V2\NNNN <event>" annuals are event-chapter excerpts = partial rips. A
+  ripper's "Omnibus Book 01" in a run's folder can be that run's first omnibus, not the line's Vol. 1 (page count decides).
+  CV mints one count-1 volume per Venom by Ewing trade; GCD keeps two lines (183532 Vols 1-4, 208820 Vols 5-8).
+[L-390] (1 shelf/shelves) pub:marvel sig:split
+- Lead ruling (waves 131-132): West Coast Avengers #1-46 -> Avengers West Coast #47-102 is an L-212 RETITLE (same
+  publisher, numbering continues) although CV (3521 / 18494) and GCD (3061 / 3830) keep two records — L-378's widest-era
+  rule is for PUBLISHER changes only. One run: split-lane join S1629 -> S101396, the survivor storing the chain's FIRST
+  record (CV 3521 / GCD 3061, L-369; Firestorm precedent), AWC's records on N lines, each book's era record on its I line.
+  Marvel Tales: GCD 1747 keeps ONE record for #3-291 while CV splits it (2293 / 138122 / 137722) — the shelves meet on
+  cv=2293 (L-369); they merged into S11602 in wave 132. GCD's "Collects" notes on New Exiles trades run one issue high
+  (the run ends at #18). Marvel Graphic Novel: CV #32 / #33 = Thor / Iron Man: Crash but GCD #[32] / #[33] = Groo / Thor
+  (Crash is GCD 15018); CV's volume stops at #38 — match by title. Marvel Tales Annual #1-2 is its own series on both legs
+  (CV 131835 / GCD 1637) even when named "Marvel Tales 001 / 002". Marika "B Story" files = backup-story extracts (partial
+  rips). A lead instruction to write wrong-cv-link on a shelf with NO stored cv was wrong — N line (L-374).
+[L-391] (1 shelf/shelves) pub:marvel sig:split
+- Lead rulings (waves 133-134): annuals on a monthly's shelf are residue ONLY while they have no home — when an annual
+  series has its own shelf (Avengers Annual S1612, CV 2350 / GCD 1807), they JOIN it (refines L-369). L-369's first-record
+  rule needs the chain's OPENING issues on the shelf: Rawhide Kid S14413 holds only the 1960+ era, so it stores the 1960
+  records. A TPB line spanning two runs keeps its own identity (Spider-Man 2099 GCD 86779 Vols 1-7 over the 2014 and 2015
+  runs; L-109/L-318). Star Brand: CV splits the retitle (3652 #1-10 / 51406 #11-19), GCD 3204 keeps #1-19 — store 3652
+  (L-369). Humorama Zip: CV numbers by cover month (#196403); "v14 07" = January 1968. Time Runs Out: GCD 89288 = the
+  2015 HC rows, 92245 = the TPB rows; CV 79464 follows the HC dates. Chronology `NNN Avengers` refiles of v1 issues are
+  second rips; later-volume files were folded onto the v1 shelf by bare title — split by year.
+[L-393] (1 shelf/shelves) pub:marvel sig:split
+- Lead rulings (waves 137-138): L-389 blocks joins onto a CREATOR-trade-keyed shelf only; a shelf keyed by its own trade's
+  SUBTITLE that stores the run ("Uncanny Avengers - The Resistance" S20673, CV 153018) takes stray issues/covers of that
+  run by join. An annual goes with its run when no annual-series shelf exists (Uncanny Avengers Annual 2016 -> S94729).
+  GCD indexes each Skottie Young "baby" cover as a variant row of #1 ("Young Cover") — that row decides which relaunch a
+  lone "001 (YYYY) Skottie Young" file belongs to. At a retitle, GCD and CV can split at different issues (GCD keeps WCA
+  #47 on 3061, CV starts AWC at #47). Marvel arc minis (Ultimate Avengers 1-3): both legs number one continuous series
+  (#1-18) while rips restart at 01 per arc — issue files need I lines or they resolve to the wrong issue.
+[L-399] (1 shelf/shelves) folder:events pub:marvel sig:split
+- Waves 149-150: Marvel chronology folders — "Ghost Rider v2 NNN" / "(1992)" follows CV's VOLUME ordinal (1990 = Vol. 2),
+  not our folder vN (1973 = v2); check the file's year against the shelf's run. An FF annual that looks recordless can
+  sit under its exact slash title ("Fantastic Four / Fantastic 4 '98", CV 138969 / GCD 7723). GCD splits FF Annual #32-33
+  into a separate 2010-2012 series (67080) while CV keeps them on 2129. A Marvel TPB volume continuing a run's trade
+  numbering after a relaunch that keeps legacy numbering ("Ghost Rider Vol. 05: Final Vengeance", GCD 191541 #5) joins the
+  run's shelf. L-389 blocks only a run's ISSUES from a creator-trade shelf: that creator line's own books join it
+  (Doctor Strange by Mark Waid Books 01-02 -> S5642). C lines on a containment-refused book stand (identity-level).
+[L-402] (1 shelf/shelves) pub:marvel sig:split
+- Waves 155-156 (lead rulings): an annual shelf created AFTER a run's revisit strands the annuals on the run shelf —
+  grep `--who-stores` for the annual's cv at every revisit (ASM Annuals #1-39 -> S42165; #40 -> the 1999 run, #41-42 ->
+  the 2014 run). ASM Annuals #29-34 (1995-2001) go with the annual line although neither catalogue indexes them in CV
+  2189 / GCD 1635: Marvel resumed the legacy count at #35 (L-390). Ripper-split annuals ("Annual 1.1/1.2/1.3") are ONE book
+  cut in parts — each part gets the same issue I line. Run issues joining a shelf that holds the run's trades (Invincible
+  Iron Man 2015 #6-14 -> S94637) make that shelf the RUN: restate it on the run's records, trades on I lines. Halts this
+  round: a C line on an item a landed split moved (C-045 item 81993) -> comment it out; a second trade rip merged in
+  unflagged (One Moment in Time 94006) -> iscollection csv + `u` beside its sibling on S4752.
+[L-404] (1 shelf/shelves) folder:variant-covers pub:marvel sig:probe
+- Waves 159-160: ASM legacy annuals #30 and #32-34 are the year-titled one-shots — "The Amazing Spider-Man '96" (CV 60436
+  / GCD 20855) and "Amazing Spider-Man 1999 / 2000 / 2001" (CV 60440-60442; GCD 14151 / 20852 / 7330): probe
+  `lookup.py "Amazing Spider-Man '96" --contains`, never "Annual --year"; only #29 (1995) has no record. MikeNY76
+  "Variant Covers" folders mix in covers from the NEXT run: GCD's named variant rows (Timm, XCI, Anka) decide the relaunch
+  (same method as L-393's Skottie Young rows). `lookup.py --help` prints nothing useful — the flags are in the source.
+[L-124] (1 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+
++39 more matched entries not shown: L-175, L-191, L-272, L-281, L-290, L-013, L-014, L-016, L-032, L-043, L-050, L-064, L-072, L-085, L-088, L-089, L-095, L-096, L-101, L-113, L-114, L-118, L-125, L-157, L-159, L-163, L-177, L-193, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-310, L-341, L-346, L-347 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S94637 Invincible Iron Man v2 (2015)  [split]  15 files / 3 collections  decided in R-161 (S)
+   decided: S 94637 cv=85110 gcd=92883 0.9 | Invincible Iron Man (Marvel 2015-2016, Bendis): CV 85110 (2015, 14 issues, cached #1-14) and GCD 92883 (Marvel 2015-2017, 14) agree on publisher, span and count; the three trades are this run's own editions - Reboot / The War Machines / Civil War II = GCD 99297 rows 1554109 / 1618899 / 1673761, judged #1-5 / #6-11 / #12-14 - and the joined #6-14 (Civil War II chronology, 2016) fill it; the 1pp #1 "Timm Variant" is GCD's Incentive Bruce Timm Classic Variant of #1 (row 1472391); 0.9 for the two 1pp covers of the 2016 run split below
+   F 94637 split-needed | items 82013 ("Invincible Iron Man 002 (2016) (XCI Variant)", 1pp) and 82014 ("Invincible Iron Man 003 (2017) (Anka Variant)", 1pp), both in "09 Invincible Iron Man v2 (2015)\Variant Covers", are covers of Invincible Iron Man (2016) #2 / #3 - GCD 109017 variant rows 1661734 "Campion XCI Variant" (2016-12-21) and 1668967 "Incentive Kris Anka Variant" (2017-01-18), CV 95596 issues 569333 / 576625 - not this run's #2-3 (GCD 92883 rows dated 2015-10 / 2015-11, no XCI or Anka variant) -> join S104207 on its key "Invincible Iron Man v3 (2016)" (the 2016 run's shelf, seeded cv=95596 gcd=109017 by P-067) (L-368)
+   F 94637 needs-fetch cv=85110 | the run's CV volume is in the rip only (no CvVolume row)
+   N 94637 flag #606 (overlap-in-series, Dismissed) needs nothing; per-file CV 21487 (x12, the 2008 volume) is a number stamp and 113146 Editorial Televisa a foreign stamp; R-159's N on 82014 is now this F line
+   named: S104207 Invincible Iron Man v3 (2016)  1 files  keys: "Invincible Iron Man v3 (2016)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S9539 "Invincible Iron Man" 49f [shares cv=21487 (N line) — S cv=21487 gcd=30723 (R-161 0.9)] keys: "Invincible Iron Man" | "Invincible Iron Man v1 (2008)"
+   nearby: S12038 "The Mighty Avengers" 26f [shares gcd=22524 (collected by item 82011) — S cv=18239 gcd=22524 (R-047 0.95)] keys: "Mighty Avengers" | "The Mighty Avengers"
+   nearby: S18845 "The Invincible Iron Man" 44f [title — S cv=146873 gcd=194084 (R-157 0.95)] keys: "Invincible Iron Man v5 (2023)" | "The Invincible Iron Man" | "The Invincible Iron Man (2022)" | "The Invincible Iron Man 002i (2022)"
+   nearby: S65979 "Invincible Iron Man Omnibus" 3f [title — S cv=27514 gcd=66422 (B-057 0.95)] keys: "The Invincible Iron Man (2008)"
+   keys now: "Invincible Iron Man v2 (2015)" x15
+   groups (title x folder): 4
+   G1 "Invincible Iron Man" in Marvel\_Iron Man\09 Invincible Iron Man v2 (2015) — 3 file(s), 3 COL, pp 120-128; cv per-file 89368x1, 93667x1, 98747x1; gcd per-file 99297x3; key 'Invincible Iron Man v2 (2015)'
+      [82009] COL Invincible Iron Man Vol. 01 - Reboot (2016) (Digital) (BroadCast-Empire).cbz (120pp)
+         own record cv 89368 / gcd s99297 "Invincible Iron Man" (issue 1554109) COLLECTS: gcd=92883 Invincible Iron Man (2015) #1, #4-5
+      [82010] COL Invincible Iron Man Vol. 02 - The War Machines (2016) (Digital) (F) (BroadCast-Empire).cbz (121pp)
+         own record cv 93667 / gcd s99297 "Invincible Iron Man" (issue 1618899) COLLECTS: gcd=92883 Invincible Iron Man (2015) #6-11
+      [82011] COL Invincible Iron Man Vol. 03 - Civil War II (2017) (Digital) (F) (BroadCast-Empire).cbr (128pp)
+         own record cv 98747 / gcd s99297 "Invincible Iron Man" (issue 1673761) COLLECTS: gcd=92883 Invincible Iron Man (2015) #12-14 · gcd=22524 The Mighty Avengers (2007) #9-11
+   G2 "Invincible Iron Man" in Marvel\_Iron Man\09 Invincible Iron Man v2 (2015)\Variant Covers — 3 file(s), numbers 1-3, pp 1-1; cv per-file 95596x2, 85110x1; gcd per-file 109017x2, 92883x1; key 'Invincible Iron Man v2 (2015)'
+      [82012] Invincible Iron Man 001 (2015) (Timm Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+      [82013] Invincible Iron Man 002 (2016) (XCI Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+      [82014] Invincible Iron Man 003 (2017) (Anka Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   G3 "Invincible Iron Man" in _Marvel Major Event Chronology (digital)\2016.06 - Civil War II\00 Road to Civil War II — 6 file(s), numbers 6-11, pp 22-22; cv per-file 85110x6; gcd per-file 92883x6; key 'Invincible Iron Man v2 (2015)'
+      e.g. Invincible Iron Man 006 (2016) (Digital) (Zone-Empire).cbr
+        118160 #6 2016 22pp · 118161 #7 2016 22pp · 118162 #8 2016 22pp · 118163 #9 2016 22pp · 118164 #10 2016 22pp · 118165 #11 2016 22pp
+   G4 "Invincible Iron Man" in _Marvel Major Event Chronology (digital)\2016.06 - Civil War II\02 Tie-Ins\Invincible Iron Man — 3 file(s), numbers 12-14, pp 22-25; cv per-file 85110x3; gcd per-file 92883x3; key 'Invincible Iron Man v2 (2015)'
+      [118199] Invincible Iron Man 012 (2016) (Digital) (Zone-Empire).cbr (22pp)
+      [118200] Invincible Iron Man 013 (2016) (Digital) (Zone-Empire).cbr (25pp)
+      [118201] Invincible Iron Man 014 (2016) (Digital) (Zone-Empire).cbr (24pp)

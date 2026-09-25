@@ -1,0 +1,396 @@
+## Conventions for this batch (21 shown of 151 matched; 404 in LEDGER.md; 13 shelf/shelves: pub:marvel ×13 · folder:sequel-subfolder ×9 · kind:collected-line ×7 · kind:trade-only ×5 · folder:events ×5 · folder:vn-year ×3 · folder:variant-covers ×2 · kind:new ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (13 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (13 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (13 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-136] (8 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-393] (8 shelf/shelves) pub:marvel sig:split
+- Lead rulings (waves 137-138): L-389 blocks joins onto a CREATOR-trade-keyed shelf only; a shelf keyed by its own trade's
+  SUBTITLE that stores the run ("Uncanny Avengers - The Resistance" S20673, CV 153018) takes stray issues/covers of that
+  run by join. An annual goes with its run when no annual-series shelf exists (Uncanny Avengers Annual 2016 -> S94729).
+  GCD indexes each Skottie Young "baby" cover as a variant row of #1 ("Young Cover") — that row decides which relaunch a
+  lone "001 (YYYY) Skottie Young" file belongs to. At a retitle, GCD and CV can split at different issues (GCD keeps WCA
+  #47 on 3061, CV starts AWC at #47). Marvel arc minis (Ultimate Avengers 1-3): both legs number one continuous series
+  (#1-18) while rips restart at 01 per arc — issue files need I lines or they resolve to the wrong issue.
+[L-031] (7 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (7 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (7 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (7 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (7 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-130] (7 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-132] (7 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-196] (7 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (7 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (7 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-298] (7 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-306] (7 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (7 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (7 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-313] (7 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-319] (7 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+
++130 more matched entries not shown: L-327, L-328, L-329, L-332, L-388, L-391, L-392, L-395, L-397, L-400, L-401, L-191, L-127, L-174, L-242, L-290, L-389, L-281, L-029, L-034, L-169, L-345, L-357, L-398, L-399, L-403, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-030, L-151, L-160, L-175, L-193, L-064, L-085, L-101, L-310, L-014, L-060, L-113, L-116, L-133, L-387, L-390, L-402, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-124, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-123, L-016, L-027, L-028, L-032, L-036, L-065, L-099, L-114, L-119, L-173, L-194, L-262, L-265, L-272, L-297, L-330, L-331, L-343, L-371, L-379, L-396, L-404, L-097, L-252, L-274, L-288, L-293, L-352, L-354, L-112, L-121, L-129, L-137, L-312, L-316, L-007, L-128, L-181, L-217, L-336, L-150 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S94814 Thunderbolts v1 (2006)  [tier C] · gap 9  keys: Thunderbolts v1 (2006)  years 1997-2012  63 files / 4 collections
+   folders: [59] Marvel\_Thunderbolts\04 Thunderbolts v1 (2006) · [4] Marvel\_Thunderbolts\04 Thunderbolts v1 (2006)\Trades
+   files:   [96948] Thunderbolts 100 (2006) (Digital) (AnPymGold-Empire).cbz (37pp) | [96949] Thunderbolts 101 (2006) (digital-hd) (Kleio-Empire).cbz (23pp)
+            [96950] Thunderbolts 102 (2006) (digital-hd) (Kleio-Empire).cbz (24pp)
+            Thunderbolts 110 (2007) (digital) (Minutemen-PhD).cbr … Thunderbolts 121 (2008) (digital) (Minutemen-PhD).cbr  (12 files, pp 21-29)
+            [96968] Thunderbolts 122 (2008) (Digital) (Shadowcat-Empire).cbz (23pp) | [96967] Thunderbolts 122 (2008) (digital) (Minutemen-Faessla).cbz (23pp)
+            [96970] Thunderbolts 123 (2008) (Digital) (Shadowcat-Empire).cbz (23pp) | [96969] Thunderbolts 123 (2008) (digital) (Minutemen-Faessla).cbz (23pp)
+            [96972] Thunderbolts 124 (2008) (Digital) (Shadowcat-Empire).cbz (24pp) | [96971] Thunderbolts 124 (2008) (digital) (Minutemen-Faessla).cbz (24pp)
+            [96974] Thunderbolts 125 (2008) (Digital) (Shadowcat-Empire).cbz (21pp)
+            Thunderbolts 125 (2008) (digital) (Minutemen-Faessla).cbz … Thunderbolts 136 (2009) (digital) (Minutemen-Faessla).cbz  (8 files, pp 21-25)
+            [96982] Thunderbolts 137 (2009) (Minutemen-DTs).cbz (40pp) | [96983] Thunderbolts 138 (2010) (digital-hd-Empire).cbr (24pp) | [96984] Thunderbolts 139 (2010) (digital-hd-Empire).cbr (24pp)
+            [96985] Thunderbolts 140 (2010) (digital-hd-Empire).cbr (24pp) | [96986] Thunderbolts 141 (2010) (digital-hd-Empire).cbr (23pp)
+            [96987] Thunderbolts 142 (2010) (digital-hd-Empire).cbr (24pp) | [96988] Thunderbolts 143 (2010) (digital-hd-Empire).cbr (23pp)
+            [96989] Thunderbolts 148 (2010) (digital-hd-Empire).cbr (25pp) | [96990] Thunderbolts 149 (2010) (digital-hd-Empire).cbr (25pp)
+            [96991] Thunderbolts 150 (2011) (digital-hd-Empire).cbr (89pp) | [96992] Thunderbolts 151 (2011) (digital-hd-Empire).cbr (24pp)
+            [96993] Thunderbolts 152 (2011) (digital) (Minutemen-Faessla).cbz (22pp) | [96994] Thunderbolts 153 (2011) (digital) (Minutemen-Faessla).cbz (25pp)
+            [96995] Thunderbolts 154 (2011) (digital) (Minutemen-Faessla).cbz (24pp) | [96996] Thunderbolts 155 (2011) (digital) (Minutemen-Faessla).cbz (23pp)
+            [96997] Thunderbolts 156 (2011) (digital) (Minutemen-Faessla).cbz (19pp) | [96998] Thunderbolts 157 (2011) (digital) (Minutemen-Faessla).cbz (22pp)
+            [96999] Thunderbolts 158 (2011) (digital) (Minutemen-Faessla).cbz (22pp) | [97000] Thunderbolts 159 (2011) (digital) (Minutemen-Faessla).cbz (40pp)
+            [97001] Thunderbolts 160 (2011) (digital) (Minutemen-Faessla).cbz (21pp) | [97002] Thunderbolts 161 (2011) (digital) (Minutemen-Faessla).cbz (21pp)
+            [97003] Thunderbolts 162 (2011) (digital) (Minutemen-Faessla).cbz (21pp) | [97004] Thunderbolts 163 (2011) (digital) (Minutemen-Faessla).cbz (21pp)
+            [97005] Thunderbolts 163.1 (2011) (digital) (Minutemen-Faessla).cbz (21pp) | [97006] Thunderbolts 164 (2011) (digital) (Minutemen-Faessla).cbz (20pp)
+            [97007] Thunderbolts 165 (2012) (Digital) (Shadowcat-Empire).cbz (22pp) | [97008] Thunderbolts 166 (2012) (2 covers) (Minutemen-ThosTew).cbz (23pp)
+            [97009] Thunderbolts 167 (2012) (digital) (Minutemen-Faessla).cbz (23pp) | [97010] Thunderbolts 168 (2012) (Minutemen-ThosTew).cbz (20pp)
+            [97014] COL Thunderbolts Vol. 01 - Burning Down The House (2009) (digital-SD) (Dakota Scanning).cbz (120pp)
+            [97015] COL Thunderbolts Vol. 01 - Cage (2011) (digital-SD) (Dakota Scanning).cbz (108pp)
+            [97016] COL Thunderbolts Vol. 05 - Guardian Protocols (2007) (digital-SD) (Dakota Scanning).cbz (90pp)
+            [97017] COL Thunderbolts Vol. 06 - Like Lightning (2012) (digital-SD) (Dakota Scanning).cbz (130pp)
+   ours:    ladder 1, 100-102, 110-125, 130-143, 148-168; 4 number(s) name more than one file: 122, 123, 124, 125; judged item 97014 #126-132 conf 0.96; judged item 97017 #169-174 conf 0.94; ComicInfo Series: "Thunderbolts"x4; ComicInfo Volume: "2006"x4; ComicInfo Publisher: "Marvel"x4
+   GCD says: [97014] gcd_reprint 853853: s17522 Thunderbolts (2006) #126-129 [12 stories]
+             [97015] gcd_reprint 1052010: s17522 Thunderbolts (2006) #144-147 [6 stories] · s49007 Enter the Heroic Age (HA) (2010) #1 [2 stories]
+             [97016] gcd notes 1087085 (#[nn] of Thunderbolts: Guardian Protocols): Thunderbolts (Marvel, 2006 series) #106-109  |  gcd_reprint 1087085: s17522 Thunderbolts (2006) #104, #106-109 [10 stories]
+             [97017] gcd notes 1026644 (#[nn] of Thunderbolts: Like Lightning): Thunderbolts (Marvel, 2006 series) #169-174  |  gcd_reprint 1026644: s17522 Thunderbolts (2006) #169-174 [8 stories]
+   CV per-file (v1): vol 6020 "Thunderbolts" 1997 Marvel 83 on 59/63 files · vol 97147 "Thunderbolts" 2010 Panini España 7 on 1/63 files
+   CV local rip:   (= per-file) · 18128 "Thunderbolts" 2006 Marvel 76 (via our own name without the filing suffix "Thunderbolts") · 43404 "Thunderbolts" 2007 Panini Verlag 9 (via our own name without the filing suffix "Thunderbolts") · 43406 "Thunderbolts" 2008 Panini España 24 (via our own name without the filing suffix "Thunderbolts") · 54429 "Thunderbolts" 2013 Marvel 32 (via our own name without the filing suffix "Thunderbolts")   (rip lookup)
+   GCD per-file:   series 17522 "Thunderbolts" 2006-2012 Marvel [was ongoing series] 76 on 58/63 files; methods numx58
+   GCD dump:       (= per-file) · 5812 "Thunderbolts" 1997-2003 Marvel [] 81 (via our own name without the filing suffix "Thunderbolts") · 14078 "Thunderbolts" 1998-1998 Marvel; Wizard [] 1 (via our own name without the filing suffix "Thunderbolts") · 33692 "Thunderbolts" [es] 1998-2001 Planeta DeAgostini [] 40 (via our own name without the filing suffix "Thunderbolts") · 34114 "Thunderbolts" [es] 2002-2004 Planeta DeAgostini [] 11 (via our own name without the filing suffix "Thunderbolts") · 45870 "Thunderbolts" [de] 2007-2011 Panini Deutschland [] 9 (via our own name without the filing suffix "Thunderbolts")   (dump lookup)
+   bridges:        gcd 17522 -> LOCG 114694 "New Thunderbolts" support 77
+
+== S94864 Thunderbolts v5 (2024)  [tier C] · gap 25  keys: Thunderbolts v5 (2024)  years 1997-1997  2 files / 0 collections
+   folders: [2] Marvel\_Thunderbolts\09 Thunderbolts v5 (2024)\Variant Covers
+   files:   [97028] Thunderbolts 001 (2023) (1-in-25 Mahmud Asrar Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [97029] Thunderbolts 001 (2023) (George Pérez Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 1; 1 number(s) name more than one file: 1
+   CV per-file (v1): vol 6020 "Thunderbolts" 1997 Marvel 83 on 2/2 files
+   CV local rip:   (= per-file) · 18128 "Thunderbolts" 2006 Marvel 76 (via our own name without the filing suffix "Thunderbolts") · 43404 "Thunderbolts" 2007 Panini Verlag 9 (via our own name without the filing suffix "Thunderbolts") · 43406 "Thunderbolts" 2008 Panini España 24 (via our own name without the filing suffix "Thunderbolts") · 97147 "Thunderbolts" 2010 Panini España 7 (via our own name without the filing suffix "Thunderbolts") · 54429 "Thunderbolts" 2013 Marvel 32 (via our own name without the filing suffix "Thunderbolts")   (rip lookup)
+   GCD per-file:   series 188709 "Thunderbolts" 2022-2023 Marvel [limited series] 5 on 2/2 files; methods numx2
+   GCD dump:       5812 "Thunderbolts" 1997-2003 Marvel [] 81 (via our own name without the filing suffix "Thunderbolts") · 14078 "Thunderbolts" 1998-1998 Marvel; Wizard [] 1 (via our own name without the filing suffix "Thunderbolts") · 33692 "Thunderbolts" [es] 1998-2001 Planeta DeAgostini [] 40 (via our own name without the filing suffix "Thunderbolts") · 34114 "Thunderbolts" [es] 2002-2004 Planeta DeAgostini [] 11 (via our own name without the filing suffix "Thunderbolts") · 17522 "Thunderbolts" 2006-2012 Marvel [] 76 (via our own name without the filing suffix "Thunderbolts") · 45870 "Thunderbolts" [de] 2007-2011 Panini Deutschland [] 9 (via our own name without the filing suffix "Thunderbolts")   (dump lookup)
+   bridges:        gcd 188709 -> LOCG 108457 "Thunderbolts" support 6
+
+== S20189 Thunderbolts Epic Collection  [tier D]   keys: Thunderbolts Epic Collection  years 2024-2024  1 files / 1 collections
+   folders: [1] Marvel\_Thunderbolts\Thunderbolts Epic Collections
+   files:   [97036] COL Thunderbolts Epic Collection Vol. 02 - Wanted Dead or Alive (2024) (Digital) (Shan-Empire).cbz (428pp)
+   CV candidates:  171560 "Thunderbolts Epic Collection: Redemption" 2026 Marvel 1 s89 · 164678 "Thunderbolts Epic Collection: Targeted for Death" 2025 Marvel 1 issue 1113483 s87 · 152562 "Thunderbolts Epic Collection: Justice, Like Lightning" 2023 Marvel 1 issue 1003981 s87 · 157983 "Thunderbolts Epic Collection: Wanted Dead or Alive" 2024 Marvel 1 issue 1053910 s86 · 54429 "Thunderbolts" 2013 Marvel 32 s55 · 144863 "Thunderbolts" 2022 Marvel 5 s55   (v1 search)
+   CV local rip:   152562 "Thunderbolts Epic Collection: Justice, Like Lightning" 2023 Marvel 1 issue 1003981 (via CV candidate name "Thunderbolts Epic Collection: Justice, Like Lightning") · 164678 "Thunderbolts Epic Collection: Targeted for Death" 2025 Marvel 1 issue 1113483 (via CV candidate name "Thunderbolts Epic Collection: Targeted for Death")   (rip lookup)
+   GCD dump:       202496 "Thunderbolts Epic Collection" 2023-? Marvel [] 4   (dump lookup)
+
+== S20190 Thunderbolts Epic Collection: Justice, Like Lightning  [tier B]   keys: Thunderbolts Epic Collection: Justice, Like Lightning  years 2023-2023  1 files / 1 collections
+   folders: [1] Marvel\_Thunderbolts\Thunderbolts Epic Collections
+   files:   [97035] COL Thunderbolts Epic Collection Vol. 01 - Justice, Like Lightning (2023) (Digital-Empire).cbr (507pp)
+   ours:    ComicInfo Series: "Thunderbolts Epic Collection: Justice, Like Lightning"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [97035] gcd_reprint 2557652: s5812 Thunderbolts (1997) #1-12 [13 stories] · s15183 Tales of the Marvel Universe (1997) #1 [2 stories] · s5794 Heroes for Hire (1997) #7 [1 story] · s5301 Spider-Man Team-Up (1995) #7 [1 story]
+   CV linked:      vol 152562 "Thunderbolts Epic Collection: Justice, Like Lightning" 2023 Marvel 1 issues issue 1003981; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 34066 "Thunderbolts: Justice Like Lightning" 2001 Marvel 1 issue 222109 s85 · 63586 "Thunderbolts: Like Lightning" 2012 Marvel 1 issue 411526 s85 · 171560 "Thunderbolts Epic Collection: Redemption" 2026 Marvel 1 s60 · 164678 "Thunderbolts Epic Collection: Targeted for Death" 2025 Marvel 1 issue 1113483 s57 · 157983 "Thunderbolts Epic Collection: Wanted Dead or Alive" 2024 Marvel 1 issue 1053910 s56 · 100563 "Captain America Epic Collection: Justice Is Served" 2017 Marvel 1 issue 590789 s56   (v1 search)
+   CV local rip:   (= linked) · 63586 "Thunderbolts: Like Lightning" 2012 Marvel 1 issue 411526 (via CV candidate name "Thunderbolts: Like Lightning") · 34066 "Thunderbolts: Justice Like Lightning" 2001 Marvel 1 issue 222109 (via CV candidate name "Thunderbolts: Justice Like Lightning")   (rip lookup)
+   GCD dump:       69462 "Thunderbolts: Like Lightning" 2012-2012 Marvel [] 1 (via CV candidate name "Thunderbolts: Like Lightning") · 53554 "Thunderbolts: Justice Like Lightning" 2001-2001 Marvel [] 1 (via CV candidate name "Thunderbolts: Justice Like Lightning")   (dump lookup)
+
+== S20195 Thunderbolts: Burning Down The House  [tier B]   keys: Thunderbolts: Burning Down The House  years 2009-2009  1 files / 1 collections
+   folders: [1] Marvel\_Thunderbolts\_Trades
+   files:   [97042] COL Thunderbolts - Burning Down The House (2009) (Digital) (Shan-Empire).cbz (132pp)
+   ours:    ComicInfo Series: "Thunderbolts: Burning Down The House"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 39097 "Thunderbolts: Burning Down The House" 2009 Marvel 1 issues issue 263377; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 122642 "Barbarella: Burning Down the House" 2019 Dynamite Entertainment 1 issue 726132 s62 · 54429 "Thunderbolts" 2013 Marvel 32 s55 · 144863 "Thunderbolts" 2022 Marvel 5 s55 · 151271 "Thunderbolts: Marvel Tales " 2022 Marvel 1 issue 994547 s43 · 84815 "And Blow Your House Down" 2015 Harlequin Comics 1 issue 501271 s36 · 143900 "Burn the House Down" 2022 Kodansha Comics USA 8 s35   (v1 search)
+   CV local rip:   (= linked) · 43406 "Thunderbolts" 2008 Panini España 24 (via CV candidate name "Thunderbolts") · 97147 "Thunderbolts" 2010 Panini España 7 (via CV candidate name "Thunderbolts") · 43404 "Thunderbolts" 2007 Panini Verlag 9 (via CV candidate name "Thunderbolts") · 18128 "Thunderbolts" 2006 Marvel 76 (via CV candidate name "Thunderbolts") · 54429 "Thunderbolts" 2013 Marvel 32 (via CV candidate name "Thunderbolts")   (rip lookup)
+   GCD dump:       59720 "Thunderbolts: Burning Down the House" 2009-2009 Marvel [] 1 · 72598 "Thunderbolts: Burning Down the House" 2009-2009 Marvel [] 1 · 34066 "Thunderbolts" [es] 2008-2010 Panini España [] 24 (via CV candidate name "Thunderbolts") · 45870 "Thunderbolts" [de] 2007-2011 Panini Deutschland [] 9 (via CV candidate name "Thunderbolts") · 17522 "Thunderbolts" 2006-2012 Marvel [] 76 (via CV candidate name "Thunderbolts") · 70262 "Thunderbolts" 2013-2014 Marvel [] 32 (via CV candidate name "Thunderbolts")   (dump lookup)
+
+== S6071 Ultimate Elektra  [tier C] · gap 3  keys: Elektra | Elektra (2001)  years 2001-2014  7 files / 1 collections
+   folders: [5] Marvel\_Ultimate Comics\Ultimate Elektra (2003)\02 Ultimate Elektra (2004) · [1] Marvel\_Elektra · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0350 Unnamed
+   files:   [79097] COL Elektra by Greg Rucka Ultimate Collection (2012) (Digital) (Zone-Empire).cbr (365pp)
+            [97068] Ultimate Elektra 01 (of 05) (2004) (NOT HD) (Digital) (AnHeroGold-Empire).cbr (23pp) | [97069] Ultimate Elektra 02 (of 05) (2004) (NOT HD) (Digital) (AnHeroGold-Empire).cbr (24pp)
+            [97070] Ultimate Elektra 03 (of 05) (2004) (NOT HD) (Digital) (AnHeroGold-Empire).cbr (25pp) | [97071] Ultimate Elektra 04 (of 05) (2004) (NOT HD) (Digital) (AnHeroGold-Empire).cbr (24pp)
+            [97072] Ultimate Elektra 05 (of 05) (2004) (NOT HD) (Digital) (F) (AnHeroGold-Empire).cbr (26pp) | [88759] 001 Elektra v1 015.cbz (23pp)
+   ours:    ladder 1-5, 15
+   GCD says: [79097] gcd_reprint 2035688: s10194 Elektra (2001) #7-22 [33 stories] · s12132 Marvel Knights Double Shot (2002) #3 [2 stories]
+   CV linked:      vol 20985 "Ultimate Elektra" 2004 Marvel 5 issues; cached #1-5 (5); yearΔ 3; ratio 6/5 = 1.20; no judged range
+   CV per-file (v1): vol 9408 "Elektra" 2001 Marvel ? on 5/7 files
+   CV local rip:   (= linked) · 43420 "Ultimate Elektra" 2005 Panini España 1 issue 298056 · 75111 "Elektra" 2002 Panini Verlag 15 · 5779 "Elektra" 1996 Marvel 20 · 9541 "Elektra" 1995 Marvel 4   (rip lookup)
+   GCD per-file:   series 62868 "Elektra" 2002-2004 Marvel [collected edition] 4 on 3/7 files; methods numx3
+   GCD dump:       (= per-file) · 17714 "Ultimate Elektra" 2004-2005 Marvel [] 5 · 35820 "Ultimate Elektra" [es] 2005-2005 Panini España [] 1 · 10194 "Elektra" 2001-2004 Marvel [] 35 · 102104 "Elektra" [de] 2002-2003 Panini Deutschland [] 15 · 158228 "Ηλέκτρα [Elektra]" [el-gr] 1999-? Modern Times [Μόντερν Τάιμς] [] 3   (dump lookup)
+   bridges:        gcd 62868 -> LOCG 114241 "Elektra" support 4
+
+== S20603 Ultimate Iron Man  [tier B]   keys: Ultimate Comics Iron Man Ultimate Collection  years 2005-2010  2 files / 2 collections
+   folders: [1] Marvel\_Ultimate Comics\Ultimate Iron Man (2005)\00 Deluxe Edition · [1] Marvel\_Ultimate Comics\Ultimate Iron Man (2005)\01 Ultimate Iron Man (2005)
+   files:   [97963] COL Ultimate Comics Iron Man - Ultimate Collection (2010) (Digital) (EricJGriffin-Empire).cbz (256pp) | [97964] COL Ultimate Iron Man (2006) (Digital) (Kileko-Empire).cbr (119pp)
+   ours:    ComicInfo Series: "Ultimate Comics Iron Man Ultimate Collection"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [97963] gcd_reprint 2810457: s15645 Ultimate Iron Man (2005) #1-5 [6 stories] · s27947 Ultimate Iron Man II (2008) #1-5 [5 stories]
+             [97964] gcd notes 2066416 (#[nn] of Ultimate Iron Man): Ultimate Iron Man #1-5
+   CV linked:      vol 19644 "Ultimate Iron Man" 2005 Marvel 5 issues; cached #1-5 (5); yearΔ 0; ratio 0/5; no judged range
+   CV candidates:  (= linked) · 34325 "Ultimate Iron Man Ultimate Collection" 2010 Marvel 1 issue 224087 s45 · 58602 "Ultimate Comics Iron Man" 2013 Marvel 1 issue 391253 s45 · 34327 "Ultimate Iron Man" 2006 Marvel 1 issue 224089 s45 · 53117 "Ultimate Comics Iron Man" 2012 Marvel 4 s33 · 61284 "Ultimate Comics: Iron Man" 2013 Panini Verlag 1 issue 402204 s30 · 43427 "Ultimate Iron Man" 2006 Panini España 2 s23   (v1 search)
+   CV local rip:   (= linked) · 34327 "Ultimate Iron Man" 2006 Marvel 1 issue 224089 · 43427 "Ultimate Iron Man" 2006 Panini España 2 · 34325 "Ultimate Iron Man Ultimate Collection" 2010 Marvel 1 issue 224087 (via CV candidate name "Ultimate Iron Man Ultimate Collection") · 53117 "Ultimate Comics Iron Man" 2012 Marvel 4 (via CV candidate name "Ultimate Comics Iron Man") · 58602 "Ultimate Comics Iron Man" 2013 Marvel 1 issue 391253 (via CV candidate name "Ultimate Comics Iron Man")   (rip lookup)
+   GCD dump:       15645 "Ultimate Iron Man" 2005-? Marvel [] 5 · 29107 "Ultimate Iron Man" [es] 2006-2006 Panini España [] 2 · 155786 "Ultimate Iron Man" 2006-2006 Marvel [] 1 · 101069 "Ultimate Iron Man" [de] 2010-2010 Panini Deutschland [] 1 · 232620 "Ultimate Comics Iron Man: Ultimate Collection" 2010-2010 Marvel [] 1 · 69361 "Ultimate Comics Iron Man" 2012-2013 Marvel [] 4 (via CV candidate name "Ultimate Comics Iron Man")   (dump lookup)
+
+== S20622 Ultimate Spider-Man  [tier C] · 5 named, the minority on >= 2 files or >= 10%  keys: Ultimate Spider-Man  years 2000-2023  53 files / 25 collections
+   flags: #510 label-ambiguous [Pending] item 97101 — the cv rows match Coleccionable and Ultimate Collection editions, not the numbered volumes
+   folders: [22] Marvel\_Ultimate Comics\Ultimate Spider-Man (2000)\01 Ultimate Spider-Man (2000) · [8] _Marvel Major Event Chronology (digital)\2011.02 - Death of Spider-man (Ultimate) · [7] _Marvel Major Event Chronology (digital)\2011.02 - Death of Spider-man (Ultimate)\Extras\Ultimate Spider-Man Vol. 01 - Power and Responsibility · [5] _Marvel Major Event Chronology (digital)\2009.02 - Ultimatum (Ultimate)\02 Ultimatum · [5] _Marvel Major Event Chronology (digital)\2011.02 - Death of Spider-man (Ultimate)\Variant Covers · [3] Marvel\_Ultimate Comics\Ultimate Spider-Man (2000)\_Omnibus Editions · [1] Marvel\_Ultimate Comics\Ultimate Spider-Man (2000)\01 Ultimate Spider-Man (2000)\Annuals and Specials · [1] Marvel\_Ultimate Comics\Ultimate Spider-Man (2000)\05 Ultimate Spider-Man 200 (2014) (Digital) · [1] Marvel\_Ultimate Comics\_Ultimate Annuals
+   files:   [97968] Ultimate Spider-Man 00.5 (2002) (digital-Empire).cbr (15pp) | [97095] COL Ultimate Spider-Man Vol. 01 - Power & Responsibility (2009) (Digital) (Kileko-Empire).cbr (181pp)
+            [97096] COL Ultimate Spider-Man Vol. 02 - Learning Curve (2006) (Digital) (Asgard-Empire).cbr (135pp)
+            [97097] COL Ultimate Spider-Man Vol. 03 - Double Trouble (2006) (Digital) (Asgard-Empire).cbr (170pp)
+            [97098] COL Ultimate Spider-Man Vol. 04 - Legacy (2007) (Digital) (F) (Kileko-Empire).cbz (146pp)
+            [97099] COL Ultimate Spider-Man Vol. 05 - Public Scrutiny (2003) (Digital) (Kileko-Empire).cbr (115pp)
+            [97100] COL Ultimate Spider-Man Vol. 06 - Venom (2007) (Digital) (Asgard-Empire).cbr (165pp)
+            [97101] COL Ultimate Spider-Man Vol. 07 - Irresponsible (2003) (Digital) (F) (Kileko-Empire).cbz (134pp)
+            [97102] COL Ultimate Spider-Man Vol. 08 - Cats and Kings (2004) (Digital) (F) (Kileko-Empire).cbz (168pp)
+            [97103] COL Ultimate Spider-Man Vol. 09 - Ultimate Six (2004) (Digital) (F) (Kileko-Empire).cbz (174pp)
+            [97104] COL Ultimate Spider-Man Vol. 10 - Hollywood (2004) (Digital) (F) (Kileko-Empire).cbz (123pp)
+            [97105] COL Ultimate Spider-Man Vol. 11 - Carnage (2007) (Digital) (F) (Kileko-Empire).cbz (122pp)
+            [97106] COL Ultimate Spider-Man Vol. 12 - Superstars (2005) (Digital) (F) (Kileko-Empire).cbz (135pp)
+            [97107] COL Ultimate Spider-Man Vol. 13 - Hobgoblin (2005) (Digital) (F) (Kileko-Empire).cbz (143pp)
+            [97108] COL Ultimate Spider-Man Vol. 14 - Warriors (2006) (Digital) (F) (Kileko-Empire).cbz (141pp)
+            [97109] COL Ultimate Spider-Man Vol. 15 - Silver Sable (2006) (Digital) (F) (Kileko-Empire).cbz (139pp)
+            [97110] COL Ultimate Spider-Man Vol. 16 - Deadpool (2006) (Digital) (F) (Kileko-Empire).cbz (162pp)
+            [97111] COL Ultimate Spider-Man Vol. 17 - Clone Saga (2007) (Digital) (F) (Kileko-Empire).cbz (205pp)
+            [97112] COL Ultimate Spider-Man Vol. 18 - Ultimate Knights (2007) (Digital) (F) (Kileko-Empire).cbz (128pp)
+            [97113] COL Ultimate Spider-Man Vol. 19 - Death of a Goblin (2013) (Digital) (F) (Kileko-Empire).cbz (125pp)
+            [97114] COL Ultimate Spider-Man Vol. 20 - And His Amazing Friends (2014) (Digital) (F) (Kileko-Empire).cbz (106pp)
+            [97115] COL Ultimate Spider-Man Vol. 21 - War of the Symbiotes (2009) (Digital) (F) (Kileko-Empire).cbz (127pp)
+            [97116] COL Ultimate Spider-Man Vol. 22 - Ultimatum (2014) (Digital) (F) (Kileko-Empire).cbz (134pp) | [97969] Ultimate Spider-Man 200 (2014) (Digital) (Zone-Empire).cbr (27pp)
+            [97129] COL Ultimate Spider-Man Omnibus Book 01 (2022) (digital).cbz (899pp) | [97130] COL Ultimate Spider-Man Omnibus Book 02 (2023) (hd-webrip) (JTR).cbz (848pp)
+            [97131] COL Ultimate Spider-Man Omnibus Book 03 (2023) (hd-webrip) (JTR).cbz (918pp) | [97268] Ultimate Spider-Man Annual 03 (2008) (digital) (Minutemen-InnerDemons).cbr (31pp)
+            [117176] 01 Ultimate Spider-Man 129 (2009) (digital) (Son of Ultron-Empire).cbr (22pp) | [117178] 03 Ultimate Spider-Man 130 (2009) (digital) (Son of Ultron-Empire).cbr (22pp)
+            [117182] 07 Ultimate Spider-Man 131 (2009) (digital) (Son of Ultron-Empire).cbr (20pp) | [117186] 11 Ultimate Spider-Man 132 (2009) (digital) (Son of Ultron-Empire).cbr (18pp)
+            [117190] 15 Ultimate Spider-Man 133 (2009) (digital) (Son of Ultron-Empire).cbr (21pp)
+            02 Ultimate Spider-Man 153 (2011) (Digital) (Zone-Empire).cbr … 20 Ultimate Spider-Man 160 (2011) (Digital) (Zone-Empire).cbr  (8 files, pp 20-27)
+            [117465] Ultimate Spider-Man 001 (2000) (digital) (Son of Ultron-Empire).cbr (47pp) | [117466] Ultimate Spider-Man 002 (2000) (digital) (Son of Ultron-Empire).cbr (24pp)
+            [117467] Ultimate Spider-Man 003 (2001) (digital) (Son of Ultron-Empire).cbr (23pp) | [117468] Ultimate Spider-Man 004 (2001) (digital) (Son of Ultron-Empire).cbr (23pp)
+            [117469] Ultimate Spider-Man 005 (2001) (digital) (Son of Ultron-Empire).cbr (22pp) | [117470] Ultimate Spider-Man 006 (2001) (digital) (Son of Ultron-Empire).cbr (25pp)
+            [117471] Ultimate Spider-Man 007 (2001) (digital) (Son of Ultron-Empire).cbr (21pp)
+            [117473] Ultimate Spider-Man 153 (2011) (2nd Printing Variant) (Cover ONLY) (ScanDog & ArtNet-DCP).cbz (1pp)
+            [117474] Ultimate Spider-Man 153-155 (2011) (2nd Printing Variants Cover Poster Join) (Covers ONLY) (ScanDog & ArtNet-DCP).cbz (1pp)
+            [117475] Ultimate Spider-Man 154 (2011) (2nd Printing Variant) (Cover ONLY) (ScanDog & ArtNet-DCP).cbz (1pp)
+            [117476] Ultimate Spider-Man 155 (2011) (2nd Printing Variant) (Cover ONLY) (ScanDog & ArtNet-DCP).cbz (1pp)
+            [117477] Ultimate Spider-Man 155 (2011) (C2E2 Olivier Coipel Variant) (Cover ONLY) (ScanDog).cbr (1pp)
+   ours:    ladder 0-7, 129-133, 153-160, 200; 4 number(s) name more than one file: 3, 153, 154, 155; judged item 97103 #1-7 conf 0.9; judged item 97098 #22-27 conf 0.97; judged item 97101 #40-45 conf 0.97; judged item 97102 #47-53 conf 0.97; judged item 97104 #54-59 conf 0.97; judged item 97105 #60-65 conf 0.97; judged item 97106 #66-71 conf 0.97; judged item 97107 #72-78 conf 0.97; judged item 97108 #79-85 conf 0.97; judged item 97109 #86-90 conf 0.95; judged item 97110 #91-96 conf 0.95; judged item 97111 #97-105 conf 0.97; judged item 97112 #106-111 conf 0.97; judged item 97113 #112-117 conf 0.97; judged item 97114 #118-122 conf 0.97; judged item 97115 #123-128 conf 0.97; judged item 97116 #129-133 conf 0.95; ComicInfo Series: "Ultimate Spider-Man"x17; ComicInfo Publisher: "Marvel"x17
+   GCD says: [97095] gcd_reprint 2101339: s7825 Ultimate Spider-Man (2000) #1-7 [14 stories]
+             [97100] gcd_reprint 2101340: s7825 Ultimate Spider-Man (2000) #33-39 [14 stories]
+             [97129] gcd_reprint 1139852: s7825 Ultimate Spider-Man (2000) #1-39 [40 stories]
+             [97130] gcd_reprint 2481451: s7825 Ultimate Spider-Man (2000) #40-71 [33 stories] · s18989 Ultimate Six (2003) #1-7 [7 stories]
+             [97131] gcd_reprint 2585409: s7825 Ultimate Spider-Man (2000) #72-111 [41 stories] · s18910 Ultimate Spider-Man Annual (2005) #1-2 [2 stories]
+   CV linked:      vol 7257 "Ultimate Spider-Man" 2000 Marvel 134 issues; cached #1-133 (134); yearΔ 0; ratio 28/134 = 0.21; 17 of 17 judged fit
+   CV per-file (v1): vol 7257 "Ultimate Spider-Man" 2000 Marvel 134 on 27/53 files · vol 43261 "Spider-Man" 2000 Panini France 149 on 19/53 files
+   CV candidates:  79515 "Ultimate Spider-Man Magazine" ? Marvel UK/Panini UK ? s69 · 60441 "The Amazing Spider-Man 2000" 2000 Marvel ? s57 · 27381 "Ultimate Spider-Man" 2009 Marvel ? s45 · 155969 "Ultimate Spider-Man" 2024 Marvel ? s45 · 26105 "Ultimate Spider-Man Hardcover" 2002 Marvel ? s34 · 35935 "Ultimate Spider-Man: Ultimate Six" 2007 Marvel ? s33   (v1 search)
+   CV local rip:   (= linked) · 43437 "Ultimate Spider-Man" 2002 Marvel UK/Panini UK 40 · 27381 "Ultimate Spider-Man" 2009 Marvel 26 · 43441 "Ultimate Spider-Man" 2010 Marvel UK/Panini UK 1 issue 298262 · 61429 "Ultimate Spider-Man" 2010 Panini Verlag 5 · 48343 "Ultimate Spider-Man" 2012 Marvel 31   (rip lookup)
+   GCD per-file:   series 38918 "Ultimate Spider-Man" 2009-2011 Marvel [was ongoing series] 26 on 8/53 files · series 43298 "Spider-Man" [fr] 2000-2012 Panini France [série terminée [was ongoing series]] 149 on 4/53 files · series 175050 "Spider-Man" [fr-ca] 2001-2003 Presses Aventure [série terminée [was ongoing series]] 6 on 3/53 files · series 7825 "Ultimate Spider-Man" 2000-2009 Marvel [was ongoing] 133 on 2/53 files; methods numx18
+   GCD dump:       (= per-file) · 32858 "Ultimate Spider-Man" 2001-2009 Marvel [] 22 · 163113 "Ultimate Spider-Man" [fr] 2001-2009 Panini France [] 70 · 175049 "Ultimate Spider-Man" [fr-ca] 2001-2003 Presses Aventure [] 7 · 184088 "Ultimate Spider-Man" [en-in] 2001-2001 Gotham Entertainment Group [] 2 · 32859 "Ultimate Spider-Man" 2002-2012 Marvel [] 12   (dump lookup)
+   bridges:        gcd 175050 -> OL /works/OL35386415W "None" isbnSupport 3
+
+== S20606 Ultimate Comics Spider-Man by Brian Michael Bendis  [tier B]   keys: Ultimate Comics Spider-Man by Brian Michael Bendis  years 2012-2014  4 files / 4 collections
+   folders: [4] Marvel\_Ultimate Comics\Ultimate Spider-Man (2000)\04 Ultimate Comics All-New Spider-Man (2011)
+   files:   [97122] COL Ultimate Comics Spider-Man by Brian Michael Bendis Vol. 01 (2012) (Digital) (F) (Asgard-Empire).cbz (127pp)
+            [97123] COL Ultimate Comics Spider-Man by Brian Michael Bendis Vol. 02 (2013) (Digital) (F) (Kileko-Empire).cbz (104pp)
+            [97125] COL Ultimate Comics Spider-Man by Brian Michael Bendis Vol. 04 (2013) (Digital) (F) (Asgard-Empire).cbz (96pp)
+            [97126] COL Ultimate Comics Spider-Man by Brian Michael Bendis Vol. 05 (2014) (Digital) (F) (Asgard-Empire).cbz (112pp)
+   ours:    ComicInfo Series: "Ultimate Comics Spider-Man by Brian Michael Bendis"x4; ComicInfo Publisher: "Marvel"x4
+   CV linked:      vol 45916 "Ultimate Comics Spider-Man by Brian Michael Bendis" 2012 Marvel 5 issues; cached #1-5 (5); yearΔ 0; ratio 0/5; no judged range
+   CV candidates:  (= linked) · 38936 "Avengers by Brian Michael Bendis" 2011 Marvel 5 s23 · 39277 "New Avengers by Brian Michael Bendis" 2011 Marvel 5 s22 · 104267 "Avengers by Brian Michael Bendis: The Complete Collection" 2017 Marvel 3 s20 · 108586 "Invincible Iron Man by Brian Michael Bendis" 2018 Marvel 1 issue 659069 s9 · 163193 "Secret War by Brian Michael Bendis Omnibus" 2025 Marvel 1 issue 1101826 s9 · 112465 "Secret Invasion by Brian Michael Bendis Omnibus" 2018 Marvel 1 issue 677975 s9   (v1 search)
+   CV local rip:   (= linked) · 38936 "Avengers by Brian Michael Bendis" 2011 Marvel 5 (via CV candidate name "Avengers by Brian Michael Bendis") · 39277 "New Avengers by Brian Michael Bendis" 2011 Marvel 5 (via CV candidate name "New Avengers by Brian Michael Bendis")   (rip lookup)
+   GCD dump:       76316 "Ultimate Comics Spider-Man by Brian Michael Bendis" 2012-2014 Marvel [] 5 · 76317 "Ultimate Comics Spider-Man by Brian Michael Bendis" 2012-2014 Marvel [] 5 · 60564 "Avengers by Brian Michael Bendis" 2011-2013 Marvel [] 5 (via CV candidate name "Avengers by Brian Michael Bendis") · 61326 "New Avengers by Brian Michael Bendis" 2011-2013 Marvel [] 5 (via CV candidate name "New Avengers by Brian Michael Bendis") · 70374 "New Avengers by Brian Michael Bendis" 2011-2013 Marvel [] 5 (via CV candidate name "New Avengers by Brian Michael Bendis") · 76501 "Avengers by Brian Michael Bendis" 2011-2013 Marvel [] 5 (via CV candidate name "Avengers by Brian Michael Bendis")   (dump lookup)
+
+== S66149 Ultimate X-Men  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Ultimate X-Men (2006) | Ultimate X-Men (2024) | Ultimate X-Men v1 (2001)  years 1961-2024  56 files / 35 collections
+   flags: #511 label-ambiguous [Pending] item 97151 — the gcd row on Vol. 05 numbers the Ultimate War mini, not Ultimate X-Men
+   folders: [24] Marvel\_Ultimate Comics\Ultimate X-Men (2001)\01 Ultimate X-Men (2001) · [9] Marvel\_Ultimate Comics\Ultimate X-Men (2001)\01 Ultimate X-Men (2001)\Deluxe Editions · [7] _Marvel Major Event Chronology (digital)\2003.02 - Ultimate War\01 Return to Weapon X · [7] _Marvel Major Event Chronology (digital)\2003.02 - Ultimate War\03 Return of The King · [4] _Marvel Major Event Chronology (digital)\2009.02 - Ultimatum (Ultimate)\01 March on Ultimatum\03 Ultimate X-Men - Absolute Power (2008) · [3] _Marvel Major Event Chronology (digital)\2009.02 - Ultimatum (Ultimate)\02 Ultimatum · [2] Marvel\_Ultimate Comics\Ultimate X-Men (2001)\_Omnibus Editions
+   files:   [97138] COL Ultimate X-Men Collection Book 01 (2002) (Digital) (Kileko-Empire).cbz (332pp) | [97139] COL Ultimate X-Men Collection Book 02 (2003) (Digital) (Kileko-Empire).cbz (317pp)
+            [97140] COL Ultimate X-Men Collection Book 03 (2003) (Digital) (Kileko-Empire).cbz (276pp) | [97141] COL Ultimate X-Men Collection Book 04 (2005) (Digital) (Kileko-Empire).cbz (245pp)
+            [97142] COL Ultimate X-Men Collection Book 05 (2005) (Digital) (Kileko-Empire).cbz (308pp) | [97143] COL Ultimate X-Men Collection Book 06 (2006) (Digital) (Kileko-Empire).cbz (244pp)
+            [97144] COL Ultimate X-Men Collection Book 07 (2007) (Digital) (Kileko-Empire).cbz (242pp) | [97145] COL Ultimate X-Men Collection Book 08 (2008) (Digital) (Kileko-Empire).cbz (332pp)
+            [97146] COL Ultimate X-Men Collection Book 09 (2009) (Digital) (Kileko-Empire).cbz (212pp)
+            [97147] COL Ultimate X-Men Vol. 01 - The Tomorrow People (2008) (Digital) (F) (Kileko-Empire).cbz (148pp)
+            [97148] COL Ultimate X-Men Vol. 02 - Return To Weapon X (2007) (Digital) (F) (Kileko-Empire).cbz (135pp)
+            [97149] COL Ultimate X-Men Vol. 03 - World Tour (2005) (Digital) (F) (Kileko-Empire).cbz (184pp)
+            [97150] COL Ultimate X-Men Vol. 04 - Hellfire & Brimstone (2006) (Digital) (F3) (Kileko-Empire).cbz (120pp)
+            [97151] COL Ultimate X-Men Vol. 05 - Ultimate War (2007) (Digital) (F) (Kileko-Empire).cbz (104pp)
+            [97152] COL Ultimate X-Men Vol. 06 - Return of the King (2007) (Digital) (F) (Kileko-Empire).cbz (174pp)
+            [97153] COL Ultimate X-Men Vol. 07 - Blockbuster (2004) (Digital) (F) (Kileko-Empire).cbz (95pp)
+            [97154] COL Ultimate X-Men Vol. 08 - New Mutants (2004) (Digital) (F) (Kileko-Empire).cbz (123pp)
+            [97155] COL Ultimate X-Men Vol. 09 - The Tempest (2012) (Digital) (F) (Kileko-Empire).cbz (110pp)
+            [97156] COL Ultimate X-Men Vol. 10 - Cry Wolf (2005) (Digital) (F) (Kileko-Empire).cbz (97pp)
+            [97157] COL Ultimate X-Men Vol. 11 - The Most Dangerous Game (2005) (Digital) (F) (Kileko-Empire).cbz (104pp)
+            [97158] COL Ultimate X-Men Vol. 11 - The Most Dangerous Game (2005) (Digital) (Kileko-Empire).cbr (101pp)
+            [97159] COL Ultimate X-Men Vol. 12 - Hard Lessons (2006) (Digital) (F) (Kileko-Empire).cbz (109pp)
+            [97160] COL Ultimate X-Men Vol. 13 - Magnetic North (2006) (Digital) (Kileko-Empire).cbr (125pp)
+            [97161] COL Ultimate X-Men Vol. 13 - Magnetic North (2013) (Digital) (F) (Kileko-Empire).cbz (126pp)
+            [97162] COL Ultimate X-Men Vol. 14 - Phoenix (2006) (Digital) (Kileko-Empire).cbr (136pp) | [97163] COL Ultimate X-Men Vol. 14 - Phoenix (2013) (Digital) (F) (Kileko-Empire).cbz (138pp)
+            [97164] COL Ultimate X-Men Vol. 15 - Magical (2007) (Digital) (Kileko-Empire).cbr (115pp) | [97165] COL Ultimate X-Men Vol. 15 - Magical (2014) (Digital) (F) (Kileko-Empire).cbz (107pp)
+            [97166] COL Ultimate X-Men Vol. 16 - Cable (2007) (Digital) (F) (Kileko-Empire).cbz (142pp) | [97167] COL Ultimate X-Men Vol. 17 - Sentinels (2008) (Digital) (Kileko-Empire).cbr (179pp)
+            [97168] COL Ultimate X-Men Vol. 17 - Sentinels (2014) (Digital) (F) (Kileko-Empire).cbz (181pp)
+            [97169] COL Ultimate X-Men Vol. 18 - Apocalypse (2008) (Digital) (Kileko-Empire).cbr (107pp)
+            [97170] COL Ultimate X-Men Vol. 19 - Absolute Power (2008) (Digital) (Kileko-Empire).cbr (99pp) | [97189] COL Ultimate X-Men Omnibus Book 01 (2022) (Digital-Empire).cbz (?pp)
+            [97190] COL Ultimate X-Men Omnibus Book 02 (2024) (Digital) (Kileko-Empire).cbz (1043pp)
+            Ultimate X-Men 007 (2001) (digital) (Minutemen-PhD).cbr … Ultimate X-Men 097 (2008) (digital) (Minutemen-PhD).cbr  (18 files, pp 16-26)
+            [117179] 04 Ultimate X-Men 098 (2009) (digital) (Minutemen-PhD).cbr (22pp) | [117184] 09 Ultimate X-Men 099 (2009) (digital) (Minutemen-PhD).cbr (21pp)
+            [117188] 13 Ultimate X-Men 100 (2009) (digital) (Minutemen-PhD).cbr (26pp)
+   ours:    ladder 7-10, 12-14, 26-31, 33, 94-100; ComicInfo Series: "Ultimate X-Men"x17, "Ultimate X-Men Vol. 1 Collection"x1, "Ultimate X-Men Vol. 2 Collection"x1, "Ultimate X-Men Vol. 3 Collection"x1; ComicInfo Publisher: "Marvel"x27
+   GCD says: [97147] gcd_reprint 945185: s7826 Ultimate X-Men (2001) #1-6 [12 stories]
+             [97148] gcd_reprint 945186: s7826 Ultimate X-Men (2001) #7-12 [13 stories]
+             [97149] gcd_reprint 945187: s7826 Ultimate X-Men (2001) #13-20 [17 stories]
+             [97150] gcd_reprint 945188: s7826 Ultimate X-Men (2001) #21-25 [11 stories]
+             [97151] gcd_reprint 945189: s11056 Ultimate War (2003) #1-4 [9 stories]
+             [97152] gcd_reprint 945190: s7826 Ultimate X-Men (2001) #26-33 [17 stories]
+             [97153] gcd_reprint 945191: s7826 Ultimate X-Men (2001) #34-39 [12 stories]
+             [97154] gcd_reprint 945192: s7826 Ultimate X-Men (2001) #40-45 [13 stories]
+             [97155] gcd_reprint 945193: s7826 Ultimate X-Men (2001) #46-49 [9 stories]
+             [97156] gcd_reprint 945194: s7826 Ultimate X-Men (2001) #50-53 [8 stories]
+             [97157] gcd_reprint 945195: s7826 Ultimate X-Men (2001) #54-57 [10 stories]
+             [97158] gcd_reprint 945195: s7826 Ultimate X-Men (2001) #54-57 [10 stories]
+             [97159] gcd_reprint 945196: s7826 Ultimate X-Men (2001) #58-60 [7 stories] · s18994 Ultimate X-Men Annual (2005) #1 [2 stories]
+             [97160] gcd_reprint 945197: s7826 Ultimate X-Men (2001) #61-65 [11 stories]
+             [97161] gcd_reprint 945197: s7826 Ultimate X-Men (2001) #61-65 [11 stories]
+             [97162] gcd_reprint 945198: s7826 Ultimate X-Men (2001) #66-71 [13 stories]
+             [97163] gcd_reprint 945198: s7826 Ultimate X-Men (2001) #66-71 [13 stories]
+             [97164] gcd_reprint 945199: s7826 Ultimate X-Men (2001) #72-74 [7 stories] · s18994 Ultimate X-Men Annual (2005) #2 [3 stories]
+             [97165] gcd_reprint 945199: s7826 Ultimate X-Men (2001) #72-74 [7 stories] · s18994 Ultimate X-Men Annual (2005) #2 [3 stories]
+             [97166] gcd_reprint 945200: s7826 Ultimate X-Men (2001) #75-80 [15 stories]
+             … 6 more book(s) with GCD notes (`python gcdnotes.py --issue <id>`)
+   CV linked:      vol 7258 "Ultimate X-Men" 2001 Marvel 101 issues; cached #1-100 (101); yearΔ 40; ratio 21/101 = 0.21; no judged range
+   CV per-file (v1): vol 43640 "X-Men" 1997 Panini France 169 on 21/56 files
+   CV local rip:   (= linked) · 125813 "Ultimate X-Men" 2001 Panini Comics 53 · 125803 "Ultimate X-Men" 2002 Planeta DeAgostini 25 · 43447 "Ultimate X-Men" 2003 Marvel UK/Panini UK 27 · 43445 "Ultimate X-Men" 2005 Panini España 7 · 43446 "Ultimate X-Men" 2006 Panini España 21   (rip lookup)
+   GCD per-file:   series 41766 "X-Men" [pt-br] 2002-2013 Panini Brasil [série contínua (encerrada)] 143 on 9/56 files · series 35124 "X-Men" [de] 2001-2013 Panini Deutschland [was ongoing series] 150 on 5/56 files; methods numx14
+   GCD dump:       7826 "Ultimate X-Men" 2001-2009 Marvel [] 100 · 73261 "Ultimate X-Men" 2001-2001 Marvel [] 1 · 163114 "Ultimate X-Men" [fr] 2001-2009 Panini France [] 53 · 175052 "Ultimate X-Men" [fr-ca] 2001-2002 Presses Aventure [] 6 · 34074 "Ultimate X-Men" [es] 2002-2004 Planeta DeAgostini [] 25 · 65610 "Ultimate X-Men" 2002-2008 Marvel [] 19   (dump lookup)
+
+== S103737 Ultimates 2 (2005)  [tier B]   keys: Ultimates 2 (2005)  years 2005-2007  3 files / 2 collections
+   folders: [3] Marvel\_Ultimate Comics\Ultimates (2002)\02 Ultimates 2 (2005)
+   files:   [97195] Ultimates 2 014 (2007) (Digital) (Zone-Empire).cbr (23pp) | [97197] COL Ultimates 2 Vol. 01 - Gods And Monsters (2006) (Digital) (Shanhara).cbz (153pp)
+            [97198] COL Ultimates 2 Vol. 02 - Grand Theft America (2007) (Digital) (Shanhara).cbz (210pp)
+   ours:    ladder 14
+   CV linked:      vol 18326 "The Ultimates 2" 2005 Marvel 13 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 1/?; none cached
+   CV per-file (v1): vol 140076 "Ultimates" 2002 Panini France 43 on 1/3 files
+   CV local rip:   (= linked) · 26943 "Ultimates 2" 2005 Marvel 2 (via our own name without the filing suffix "Ultimates 2") · 43449 "Ultimates 2" 2006 Panini España 9 (via our own name without the filing suffix "Ultimates 2") · 18327 "The Ultimates" 2002 Marvel 13 (via CV name "Ultimates") · 26942 "The Ultimates" 2002 Marvel 2 (via CV name "Ultimates")   (rip lookup)
+   GCD dump:       16676 "Ultimates 2" 2005-2007 Marvel [] 13 (via our own name without the filing suffix "Ultimates 2") · 33033 "Ultimates 2" 2005-2007 Marvel [] 2 (via our own name without the filing suffix "Ultimates 2") · 29105 "Ultimates 2" [es] 2006-2007 Panini España [] 9 (via our own name without the filing suffix "Ultimates 2") · 35027 "The Ultimates" [es] 2004-2004 Planeta DeAgostini [] 4 (via CV name "Ultimates") · 56768 "The Ultimates" [es-mx] 2004-2004 Grupo Editorial Vid [] 6 (via CV name "Ultimates") · 156561 "The Ultimates" 2004-2004 Marvel [] 1 (via CV name "Ultimates")   (dump lookup)
+
+== S20610 Ultimate Comics Ultimates  [tier C] · 6 number(s) x2+, 2 parsed key(s), ratio 1.09  keys: Comics Ultimates | Ultimate Comics Ultimates  years 2011-2013  37 files / 0 collections
+   folders: [31] Marvel\_Ultimate Comics\Ultimates (2002)\08 Ultimate Comics Ultimates (2011) · [6] _Marvel Major Event Chronology (digital)\2012.09 - Ultimate Comics Divided We Fall, United We Stand
+   files:   Ultimate Comics Ultimates 001 (2011) (Digital) (Zone-Empire).cbr … Ultimate Comics Ultimates 018 (2012) (Digital) (Zone-Empire).cbr  (18 files, pp 22-28)
+            [97245] Ultimate Comics Ultimates 018.1 (2013) (digital-HD) (Zone-Empire).cbr (24pp) | [97246] Ultimate Comics Ultimates 019 (2013) (digital) (Megan-Empire).cbr (24pp)
+            [97247] Ultimate Comics Ultimates 020 (2012) (Digital) (Zone-Empire).cbr (24pp)
+            Ultimate Comics Ultimates 021 (2013) (Digital) (Darkness-Empire).cbr … Ultimate Comics Ultimates 028 (2013) (Digital) (Darkness-Empire).cbr  (8 files, pp 22-24)
+            [97256] Ultimate Comics Ultimates 029 (2013) (digital-Empire).cbr (22pp) | [97257] Ultimate Comics Ultimates 030 (2013) (digital-Empire).cbr (22pp)
+            03 Ultimate Comics Ultimates 013 (2012) (Digital) (Zone-Empire).cbr … 16 Ultimate Comics Ultimates 018 (2012) (Digital) (Zone-Empire).cbr  (6 files, pp 25-28)
+   ours:    ladder 1-30; 6 number(s) name more than one file: 13, 14, 15, 16, 17, 18
+   CV linked:      vol 42322 "Ultimate Comics Ultimates" 2011 Marvel ? issues; cached #1-30 (31); yearΔ 0; ratio 37/? = 1.09; no judged range; v1 per-file: same volume on 6/37 files
+   CV candidates:  (= linked) · 39694 "Ultimate Comics New Ultimates: Thor Reborn" 2011 Marvel ? s72 · 18327 "The Ultimates" 2002 Marvel ? s59 · 56664 "Marvel Comics: 2002" 2002 Marvel ? s58 · 140076 "Ultimates" 2002 Panini France ? s55 · 31727 "Ultimate New Ultimates" 2010 Marvel ? s54 · 34299 "The Ultimates Ultimate Collection" 2010 Marvel ? s53   (v1 search)
+   CV local rip:   (= linked) · 61425 "Ultimates" 2012 Panini Verlag 3 (via CV candidate name "The Ultimates") · 85972 "Ultimates" 2015 Marvel 12 (via CV candidate name "The Ultimates") · 18327 "The Ultimates" 2002 Marvel 13 (via CV candidate name "The Ultimates") · 26942 "The Ultimates" 2002 Marvel 2 (via CV candidate name "The Ultimates") · 140076 "Ultimates" 2002 Panini France 43 (via CV candidate name "The Ultimates")   (rip lookup)
+   GCD per-file:   methods round2-folderx6 ⚠  (⚠ copies a folder neighbour's series — verify); series 61242 "Ultimate Comics X-Men" 2011-2013 Marvel [was ongoing series] 34 on 6/37 files
+   GCD dump:       101078 "Ultimate Comics: Ultimates" [de] 2012-2014 Panini Deutschland [] 5 · 60917 "Ultimates" 2011-2013 Marvel [] 31 (via CV candidate name "The Ultimates") · 93790 "Ultimates" 2016-2016 Marvel [] 12 (via CV candidate name "The Ultimates") · 35027 "The Ultimates" [es] 2004-2004 Planeta DeAgostini [] 4 (via CV candidate name "The Ultimates") · 56768 "The Ultimates" [es-mx] 2004-2004 Grupo Editorial Vid [] 6 (via CV candidate name "The Ultimates") · 156561 "The Ultimates" 2004-2004 Marvel [] 1 (via CV candidate name "The Ultimates")   (dump lookup)
+   bridges:        gcd 61242 -> LOCG 100051 "Ultimate Comics X-Men by Nick Spencer Vol. 1 Premiere HC" support 12
+
+== S36271 What If? Classic  [tier C] · gap 16  keys: What If - Newer Fantastic Four | What If Classic | What If v1 (1977)  years 1989-2011  13 files / 7 collections
+   folders: [8] Marvel\_What If..._\What If v1 (1977) · [1] Marvel\_What If..._\What If 2008 · [1] Marvel\_What If..._\What If v3 (1997) · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0007 Enter The Wolverine · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0013 The Dark Phoenix Saga · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0017 Untitled
+   files:   [97440] What If Newer Fantastic Four (2009) (Digital) (Shadowcat-Empire).cbz (42pp) | [97457] What If 200 (2011) (Digital) (Shadowcat-Empire).cbz (56pp)
+            [97458] COL What If Classic Vol. 01 (2005) (Digital) (Kileko-Empire).cbr (215pp) | [97459] COL What If Classic Vol. 02 (2006) (Digital) (Kileko-Empire).cbr (213pp)
+            [97460] COL What If Classic Vol. 03 (2007) (Digital) (Kileko-Empire).cbr (218pp) | [97461] COL What If Classic Vol. 04 (2008) (Digital) (Kileko-Empire).cbr (236pp)
+            [97462] COL What If Classic Vol. 05 (2009) (Digital) (Kileko-Empire).cbr (245pp) | [97463] COL What If Classic Vol. 06 (2010) (Digital) (Kileko-Empire).cbr (237pp)
+            [97464] COL What If Classic Vol. 07 (2011) (Digital) (Kileko-Empire).cbr (298pp) | [97509] What If - Newer Fantastic Four 01 (2009) (Minutemen-D.T. Rocafella).cbr (41pp)
+            [86643] 004 What If v1 031 - Wolverine Had Killed The Hulk.cbz (39pp) | [86759] 017 What If - v1 - 027 - Phoenix had not died.cbz (41pp)
+            [86802] 026 What If - v1 - 033 - Dazzler and Iron Man.cbz (39pp)
+   ours:    ladder 1, 27, 31, 33, 200
+   GCD says: [97458] gcd notes 394379 (#1 of What If? Classic): What If? (Marvel, 1977 series) #1-6  |  gcd_reprint 394379: s2410 What If? (1977) #1-6 [7 stories]
+             [97459] gcd_reprint 394380: s2410 What If? (1977) #7-12 [6 stories]
+             [97460] gcd_reprint 394381: s2410 What If? (1977) #14-15, #17-20 [19 stories]
+             [97461] gcd_reprint 394382: s2410 What If? (1977) #21-26 [20 stories]
+             [97462] gcd_reprint 799567: s2410 What If? (1977) #27-32 [19 stories]
+             [97463] gcd_reprint 799568: s2410 What If? (1977) #33-38 [84 stories]
+             [97464] gcd_reprint 799569: s2410 What If? (1977) #40-47 [16 stories]
+   CV linked:      vol 28489 "What If? Classic" 2005 Marvel 7 issues; cached #1-7 (7); yearΔ 16; ratio 5/7 = 0.71; no judged range
+   CV per-file (v1): vol 4249 "What If...?" 1989 Marvel 115 on 4/13 files · vol 24926 "What If? Newer Fantastic Four" 2009 Marvel 1 issue 147292 on 1/13 files
+   CV candidates:  (= linked) · 2918 "What If?" 1977 Marvel 47 s76 · 78481 "What If Spider-Man Joined the Fantastic Four?" 1977 Yaffa / Page 1 issue 471629 s59 · 19279 "What If? Fantastic Four" 2006 Marvel 1 issue 115704 s38 · 88650 "What If?" 2016 Delcourt 2 s30 · 112483 "True Believers: Fantastic Four: What If?" 2018 Marvel 1 issue 677981 s29 · 161960 "What if...? Mickey and Friends Became the Fantastic Four?" 2025 Marvel 1 issue 1089485 s26   (v1 search)
+   CV local rip:   (= linked) · 2918 "What If?" 1977 Marvel 47 (via the parsed key without the filing suffix "What If") · 85149 "What If?" 2015 Delcourt 4 (via the parsed key without the filing suffix "What If") · 87863 "What If?" 2016 Delcourt 1 issue 513819 (via the parsed key without the filing suffix "What If")   (rip lookup)
+   GCD per-file:   series 33154 "What If? Newer Fantastic Four" 2009-2009 Marvel [one-shot] 1 on 1/13 files; methods numx1
+   GCD dump:       (= per-file) · 27819 "What If? Classic" 2004-2011 Marvel [] 7 · 175217 "What if ? classic" [fr] 2021-? Panini France [] 1 · 3864 "What If...?" 1989-1998 Marvel [] 115 (via the parsed key without the filing suffix "What If") · 204261 "What If" [es] 1989-1994 Planeta DeAgostini [] 70 (via the parsed key without the filing suffix "What If") · 71978 "What If?" [en-au] 1980-1980 Yaffa / Page [] 1 (via the parsed key without the filing suffix "What If")   (dump lookup)
