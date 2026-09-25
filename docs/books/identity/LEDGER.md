@@ -2188,3 +2188,9 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   own record, `lookup.py --gcd-issues <series> --variants` lists rows with their "collects" notes even when the plain
   listing shows none (X-23 Complete Collection 104522). check_splits' "probable MISSED JOIN" WARN fires for every pair of
   sibling per-book Epic shelves sharing the GCD line — answer once per `why` (all empty into the line shelf).
+[L-408] pub:marvel kind:trade-only sig:stamp
+- Waves 167-168: Marvel Cable (2008) has TWO 4-book GCD trade lines for the same books (63098 / 181841, HC / TPB twins
+  with different dates) — CV's per-book dates split between them, so trade I lines stay at 0.9. Wolverine (1988) #102.5
+  sits inside CV 4250 (issue 158752) while GCD files it as its own series 40645 "Wolverine Special" — it stays on the
+  run shelf. A 0-file key Manual-linked to another cv (S12823's "New Mutants - Lethal Legion" -> cv 18351) or a Manual
+  gcd link to a trade line (S21922 -> 104143) is a trap for future rips: note it on an N line.

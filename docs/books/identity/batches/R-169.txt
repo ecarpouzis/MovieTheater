@@ -1,0 +1,684 @@
+## Conventions for this batch (21 shown of 160 matched; 407 in LEDGER.md; 30 shelf/shelves: pub:marvel ×30 · kind:collected-line ×23 · kind:trade-only ×23 · kind:new ×10 · folder:events ×8 · folder:vn-year ×8 · folder:sequel-subfolder ×6 · folder:variant-covers ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (30 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-133] (30 shelf/shelves) pub:marvel sig:probe
+- GCD splits a compound word ComicVine joins: "X-Men: Clan Destine" (5570) is invisible to a "ClanDestine" probe,
+  and 32535 "ClanDestine vs. The X-Men" is the collected edition, not the mini.
+[L-136] (30 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-142] (30 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (30 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-388] (30 shelf/shelves) pub:marvel sig:split
+- R-134 (wave 128, lead ruling): RESIDUE vs co-equal — two or more whole trades of another run are a co-equal run (R +
+  split-needed) only when that run has NO shelf of its own; when its run or line already has a shelf, they are misfiled
+  books: S + `F split-needed | items -> join S<home>` (L-368; X-Factor 2024 S66336's two Peter David omnibuses -> S22172).
+  `#MARVEL CURRENT ONGOING TITLES`: Marika / MikeNY76 ComicInfo Web ids and "cvv<id>" Series strings name the stored CV
+  volume (1.0 evidence). From the Ashes "Variant Covers" folders hold the PREVIOUS run's finale covers (X-Men v6 #35 in
+  the v7 folder). "_X-Men Complete Chronology V2\NNNN <event>" annuals are event-chapter excerpts = partial rips. A
+  ripper's "Omnibus Book 01" in a run's folder can be that run's first omnibus, not the line's Vol. 1 (page count decides).
+  CV mints one count-1 volume per Venom by Ewing trade; GCD keeps two lines (183532 Vols 1-4, 208820 Vols 5-8).
+[L-389] (26 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-053 / R-135 (waves 129-130): a run's issues never JOIN a creator-trade-keyed shelf ("Venom by Al Ewing & Ram V",
+  S21029, four trades) — keep them and meet through the SHARED cv at the next revisit (S20988 cv=140084 + merge-with=21029).
+  Marvel's 2019-2020 "Star Wars #1 facsimile" is "Star Wars No 1 Facsimile Edition" (CV 123267 / GCD 153348): probe the
+  "No N" form. Star Wars Insider and Titan's "Best of" books have no CV / GCD record: R + provider-missing, never the 1977
+  comic's stamp. The Dark Horse Star Wars Omnibus umbrella number (Vol. 32 / 35) raises a false "stored GCD row is another
+  book" warning against the sub-line's #1 / #2 — page counts and ISBNs decide. An Epic Collection / omnibus line spanning
+  several minis keeps its own GCD-line key in a split.
+[L-031] (24 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-298] (24 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (24 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-327] (24 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (24 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+[L-029] (23 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
+- On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
+  collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
+[L-076] (23 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (23 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (23 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (23 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-127] (23 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-132] (23 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-196] (23 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (23 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+
++139 more matched entries not shown: L-296, L-306, L-307, L-308, L-329, L-332, L-392, L-397, L-398, L-400, L-401, L-405, L-406, L-407, L-269, L-291, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-030, L-151, L-160, L-064, L-085, L-101, L-310, L-113, L-014, L-034, L-060, L-116, L-169, L-187, L-319, L-343, L-391, L-395, L-399, L-016, L-032, L-114, L-281, L-111, L-123, L-130, L-174, L-242, L-387, L-402, L-191, L-106, L-112, L-393, L-124, L-175, L-193, L-272, L-150, L-315, L-371, L-390, L-396, L-403, L-290, L-324, L-013, L-028, L-036, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-119, L-125, L-138, L-157, L-159, L-163, L-173, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-297, L-341, L-345, L-346, L-347, L-404, L-065, L-099, L-194, L-262, L-330, L-357, L-128, L-181, L-336, L-027, L-041, L-121, L-129, L-137, L-192, L-265, L-316, L-379, L-007, L-097, L-217, L-252, L-274, L-288, L-293, L-352, L-354 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S66333 X-Factor  [tier C] · 323 files  keys: X-Factor (1986) | X-Factor - Flashbback - -001  years 1986-2021  323 files / 22 collections
+   flags: #543 label-ambiguous [Pending] item 85668 — the cv rows on vols 1-4 are X-Factor Visionaries books
+   folders: [149] Marvel\_X-Men\X-Factor\01 X-Factor v1 (1986) · [19] Marvel\_X-Men\X-Factor\04 X-Factor v3-v1 (2006) · [8] Marvel\_X-Men\_X-Men Complete Chronology V2\0103 The Judgement War · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0048 Secret Wars II · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0069 Untitled · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0205 The New Humanity · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0059 Untitled · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0080 Untitled · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0086 Inferno · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0137 Endgame · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0146 Ricochet · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0175 The X-Cutioner's Song · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0180 Utitled · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0056 The Mutant Massacre · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0070 The Horsemen of Apocalypse · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0076 Infectia & Anti-bodies · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0114 Untitled · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0120 Four-and-Twenty Blackbirds · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0129 The X-Tinction Agenda · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0165 Hell's Belles · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0196 The Longest Day · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0224 Malice · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0302 It Begins · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0359 Untitled · [2] Marvel\_X-Men\X-Factor\X-Factor by Peter David - The Complete Collection (2014) · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0055 X-Factor Vs. Freedom Force · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0065 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0099 Alchemy · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0116 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0133 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0141 The Muir Island Saga · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0160 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0218 Afterlives · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0244 Unnamed · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0246 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0250 Wreaking Havok · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0268 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0278 Spirit Journey · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0284 Gathering the Hounds · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0312 Operation X-Factor Underground · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0330 Nothing Lasts Forever · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0353 The Fall of the Brotherhood · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0372 Untitled · [2] _Marvel Major Event Chronology (digital)\1991.07 - X-Men - Muir Island Saga · [1] Marvel\_Marvel Cosmic\05b War of Kings Prologue (Inhumans, Vulcan backstory)\002 X-Men - Deadly Genesis · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0067 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0071 The Bird-Boy Saga · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0075 The Sword is Drawn · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0092 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0126 Riding the Thunderbolt · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0155 War and Pieces · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0171 The X-Patriots · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0192 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0234 The Phalanx Covenant - Life Signs · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0242 The Mountjoy Crisis · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0254 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0262 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0263 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0277 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0287 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0295 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0311 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0313 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0321 Blood Brothers · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0325 Flashback · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0334 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0336 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0339 Xavier's Underground Enforcers · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0347 Untitled · [1] Marvel\_X-Men\_X-Men Non-event Omnibusses · [1] _Marvel Major Event Chronology (digital)\2008.06 - Secret Invasion\03 Tie-ins\_Variant Covers
+   files:   [82706] 08 X-Factor v2 07.cbr (24pp) | [85515] X-Factor 001 (1986) (Digital) (AnHeroGold-Empire).cbz (43pp) | [85516] X-Factor 002 (1986) (Digital-Empire).cbz (24pp)
+            [85517] X-Factor 003 (1986) (Digital) (Shadowcat-Empire).cbz (24pp) | [85518] X-Factor 004 (1986) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [85519] X-Factor 005 (1986) (digital) (Marika-Empire).cbz (26pp) | [85520] X-Factor 006 (1986) (digital) (Marika-Empire).cbz (26pp)
+            [85521] X-Factor 007 (1986) (digital) (Marika-Empire).cbz (25pp) | [85522] X-Factor 008 (1986) (digital) (Marika-Empire).cbz (25pp)
+            [85523] X-Factor 009 (1986) (Digital) (Kileko-Empire).cbr (24pp) | [85524] X-Factor 010 (1987) (Digital) (Kileko-Empire).cbr (24pp)
+            [85525] X-Factor 011 (1987) (Digital) (Kileko-Empire).cbr (24pp) | [85526] X-Factor 012 (1987) (digital) (Marika-Empire).cbz (25pp)
+            [85527] X-Factor 013 (1987) (Digital) (Shadowcat-Empire).cbz (24pp) | [85528] X-Factor 014 (1987) (digital) (Marika-Empire).cbz (24pp)
+            [85529] X-Factor 015 (1987) (digital) (Marika-Empire).cbz (24pp) | [85530] X-Factor 016 (1987) (digital) (Marika-Empire).cbz (25pp)
+            [85531] X-Factor 017 (1987) (digital) (Marika-Empire).cbz (24pp)
+            X-Factor 018 (1987) (Digital) (AnHeroGold-Empire).cbz … X-Factor 026 (1988) (Digital) (AnHeroGold-Empire).cbz  (9 files, pp 23-40)
+            X-Factor 027 (1988) (Digital) (Shadowcat-Empire).cbz … X-Factor 040 (1989) (Digital) (Shadowcat-Empire).cbz  (14 files, pp 22-41)
+            X-Factor 041 (1989) (digital) (Glorith-HD).cbz … X-Factor 050 (1989) (digital) (Glorith-HD).cbz  (10 files, pp 23-42) | [85565] X-Factor 051 (1990) (c2c) (Minutemen-Bluntman).cbz (37pp)
+            [85566] X-Factor 052 (1990) (c2c) (Minutemen-Bluntman).cbz (37pp) | [85567] X-Factor 053 (1990) (c2c) (Minutemen-Bluntman).cbz (37pp)
+            [85568] X-Factor 054 (1990) (c2c) (Minutemen-Bluntman).cbz (37pp) | [85569] X-Factor 055 (1990) (Digital-Empire).cbz (23pp)
+            [85570] X-Factor 056 (1990) (c2c) (Minutemen-Bluntman).cbz (37pp) | [85571] X-Factor 057 (1990) (c2c) (Minutemen-Bluntman).cbz (35pp)
+            [85572] X-Factor 058 (1990) (c2c) (Minutemen-Bluntman).cbz (35pp) | [85573] X-Factor 059 (1990) (c2c) (Minutemen-Bluntman).cbz (35pp)
+            X-Factor 060 (1990) (Digital) (AnHeroGold-Empire).cbz … X-Factor 083 (1992) (Digital) (AnHeroGold-Empire).cbz  (24 files, pp 22-38)
+            X-Factor 084 (1992) (Digital) (Meganubis-Empire).cbz … X-Factor 092 (1993) (Digital) (Meganubis-Empire).cbz  (9 files, pp 22-35)
+            X-Factor 093 (1993) (Digital) (Shadowcat-Empire).cbz … X-Factor 107 (1994) (Digital) (Shadowcat-Empire).cbz  (15 files, pp 20-38)
+            [85622] X-Factor 108 (1994) (Digital) (AnHeroGold-Empire).cbz (23pp) | [85623] X-Factor 109 (1994) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            [85624] X-Factor 110 (1995) (Digital-Empire).cbz (22pp) | [85625] X-Factor 111 (1995) (Digital) (Shadowcat-Empire).cbz (23pp)
+            X-Factor 112 (1995) (digital) (Marika-Empire).cbz … X-Factor 124 (1996) (digital) (Marika-Empire).cbz  (13 files, pp 19-25)
+            [85639] X-Factor 125 (1996) (Digital) (Shadowcat-Empire).cbz (37pp) | [85640] X-Factor 126 (1996) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [85641] X-Factor 127 (1996) (Minutemen-Bluntman).cbr (25pp) | [85642] X-Factor 128 (1996) (Minutemen-Bluntman).cbr (24pp) | [85643] X-Factor 129 (1996) (Minutemen-Bluntman).cbr (26pp)
+            [85644] X-Factor 130 (1997) (Digital) (Shadowcat-Empire).cbz (22pp) | X-Factor 131 (1997) (Minutemen-Bluntman).cbr … X-Factor 149 (1998) (Minutemen-Bluntman).cbr  (19 files, pp 25-31)
+            [85668] COL X-Factor Vol. 01 - The Longest Night (2007) (Digital) (Asgard-Empire).cbr (152pp)
+            [85669] COL X-Factor Vol. 02 - Life and Death Matters (2007) (Digital) (F) (Asgard-Empire).cbz (138pp)
+            [85670] COL X-Factor Vol. 03 - Many Lives of Madrox (2007) (Digital) (Asgard-Empire).cbr (124pp) | [85671] COL X-Factor Vol. 04 - Heart of Ice (2008) (Digital) (Asgard-Empire).cbr (203pp)
+            [85672] COL X-Factor Vol. 05 - The Only Game In Town (2009) (Digital) (Asgard-Empire).cbr (145pp)
+            [85673] COL X-Factor Vol. 06 - Secret Invasion (2009) (Digital) (Asgard-Empire).cbr (170pp)
+            [85676] COL X-Factor Vol. 09 - Invisible Woman Has Vanished (2013) (Digital) (F) (Kileko-Empire).cbz (125pp)
+            [85677] COL X-Factor Vol. 10 - Second Coming (2013) (Digital) (F) (Asgard-Empire).cbz (108pp)
+            [85678] COL X-Factor Vol. 11 - Happenings in Vegas (2011) (Digital) (F) (Asgard-Empire).cbz (141pp)
+            [85679] COL X-Factor Vol. 12 - Scar Tissue (2011) (Digital) (Asgard-Empire).cbr (172pp) | [85680] COL X-Factor Vol. 13 - Hard Labor (2011) (Digital) (Asgard-Empire).cbr (117pp)
+            [85681] COL X-Factor Vol. 14 - Super Unnatural (2012) (Digital) (F) (Asgard-Empire).cbz (108pp)
+            [85682] COL X-Factor Vol. 15 - They Keep Killing Madrox (2012) (Digital) (Asgard-Empire).cbr (98pp)
+            [85683] COL X-Factor Vol. 16 - Together Again For The First Time (2012) (Digital) (F) (Asgard-Empire).cbz (107pp)
+            [85684] COL X-Factor Vol. 17 - The Road To Redemption (2014) (Digital) (F) (Asgard-Empire).cbz (93pp)
+            [85685] COL X-Factor Vol. 18 - Breaking Points (2013) (Digital) (F) (Asgard-Empire).cbz (112pp) | [85686] COL X-Factor Vol. 19 - Short Stories (2013) (Digital) (Asgard-Empire).cbr (96pp)
+            [85687] COL X-Factor Vol. 20 - Hell On Earth War (2015) (Digital) (F) (Asgard-Empire).cbz (155pp)
+            [85688] COL X-Factor Vol. 21 - The End Of X-Factor (2015) (Digital) (F) (Asgard-Empire).cbz (134pp)
+            [85694] COL X-Factor by Peter David - The Complete Collection Book 01 (2014) (Digital-Empire).cbr (388pp)
+            [85695] COL X-Factor by Peter David - The Complete Collection Book 02 (2014) (Digital-Empire).cbr (448pp) | [87045] 042 X-Factor 001 (1986) (Digital) (AnHeroGold-Empire).cbz (43pp)
+            045 X-Factor 002 (1986) (digital) (Glorith-HD).cbz … 002 X-Factor 008 (1986) (digital) (Glorith-HD).cbz  (7 files, pp 24-25)
+            [87094] 001 X-Factor 009 (1986) (Digital) (AnPymGold-Empire).cbz (24pp) | [87098] 005 X-Factor 010 (1986) (digital) (Glorith-Novus).cbz (25pp)
+            [87103] 010 X-Factor 011 (1986) (digital) (Glorith-Novus).cbz (25pp)
+            002 X-Factor 012 (1987) (noads) (Minutemen-Syl3ntBob).cbz … 004 X-Factor 017 (1987) (noads) (Minutemen-Syl3ntBob).cbz  (6 files, pp 25-27)
+            003 X-Factor 018 (1987) (Digital) (AnHeroGold-Empire).cbz … 007 X-Factor 026 (1988) (Digital) (AnHeroGold-Empire).cbz  (9 files, pp 23-40)
+            005 X-Factor 027 (1988) (Minutemen-Syl3ntBob).cbz … 001 X-Factor 032 (1988) (Minutemen-Syl3ntBob).cbz  (6 files, pp 24-26)
+            002 X-Factor 033 (1988) (Digital) (AnPymGold-Empire).cbz … 005 X-Factor 040 (1989) (Digital) (AnPymGold-Empire).cbz  (8 files, pp 22-41)
+            001 X-Factor 041 (1989) (Minutemen-Bluntman).cbz … 004 X-Factor 059 (1990) (Minutemen-Bluntman).cbz  (20 files, pp 24-43)
+            [87623] 003 X-Factor 060 (1990) (digital) (Minutemen-Phantasm).cbr (24pp) | [87626] 006 X-Factor 061 (1990) (digital) (Minutemen-Phantasm).cbr (24pp)
+            [87629] 009 X-Factor 062 (1991) (digital) (Minutemen-Phantasm).cbr (24pp) | [87655] 006 X-Factor 063 (1991) (digital+) (Minutemen-Bluntman).cbz (24pp)
+            [87656] 007 X-Factor 064 (1991) (digital+) (Minutemen-Bluntman).cbz (25pp) | [87671] 001 X-Factor 065 (1991) (digital+) (Minutemen-Bluntman).cbz (25pp)
+            [87672] 002 X-Factor 066 (1991) (digital+) (Minutemen-Bluntman).cbz (25pp) | [87673] 003 X-Factor 067 (1991) (digital+) (Minutemen-Bluntman).cbz (25pp)
+            [87674] 004 X-Factor 068 (1991) (digital+) (Minutemen-PhantasmBlunt).cbz (23pp) | [87696] 003 X-Factor 069 (1991) (digital+) (Minutemen-PhantasmBlunt).cbz (24pp)
+            [87698] 005 X-Factor 070 (1991) (digital+) (Minutemen-PhantasmBlunt).cbz (25pp)
+            001 X-Factor 071 (1991) (Digital) (AnHeroGold-Empire).cbz … 002 X-Factor 083 (1992) (Digital) (AnHeroGold-Empire).cbz  (11 files, pp 23-23)
+            [87862] 002 X-Factor 084 (1992) (digital+) (Minutemen-Bluntman).cbr (26pp) | [87866] 006 X-Factor 085 (1992) (digital+) (Minutemen-Bluntman).cbr (25pp)
+            [87870] 010 X-Factor 086 (1993) (digital+) (Minutemen-Bluntman).cbr (25pp)
+            015 X-Factor 087 (1993) (digital) (Minutemen-Phantasm).cbr … 001 X-Factor 092 (1993) (digital) (Minutemen-Phantasm).cbr  (6 files, pp 21-34)
+            [87966] 001 X-Factor 093 (1993) Minutemen-Bluntman).cbr (26pp) | 002 X-Factor 094 (1993) (Minutemen-Bluntman).cbr … 003 X-Factor 105 (1994) (Minutemen-Bluntman).cbr  (12 files, pp 22-41)
+            [88134] 001 X-Factor 106 (1994) (digital) (Glorith-Novus-HD).cbz (38pp) | [88167] 005 X-Factor 107 (1994) (digital) (Glorith-HD).cbz (22pp)
+            [88180] 008 X-Factor 108 (1994) (Digital) (AnHeroGold-Empire).cbz (23pp) | [88181] 009 X-Factor 109 (1994) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            001 X-Factor 110 (1995) (Minutemen-Bluntman).cbr … 003 X-Factor 124 (1996) (Minutemen-Bluntman).cbr  (15 files, pp 22-27)
+            [88419] 009 X-Factor 125 (1996) (digital) (Minutemen-Bluntman).cbr (38pp) | [88425] 015 X-Factor 126 (1996) (digital) (Minutemen-Bluntman).cbr (25pp)
+            002 X-Factor 127 (1996) (Minutemen-Bluntman).cbr … 004 X-Factor 135 (1997) (Minutemen-Bluntman).cbr  (9 files, pp 24-31)
+            [88613] 004 X-Factor - Flashbback - -001 (1997) (Minutemen-Bluntman).cbr (28pp)
+            002 X-Factor 136 (1997) (Minutemen-Bluntman).cbr … 003 X-Factor 149 (1998) (Minutemen-Bluntman).cbr  (13 files, pp 25-28)
+            [92972] COL X-Factor by Peter David Omnibus v01 (2021) (hd-webrip) (JTR).cbz (824pp) | [116442] 03 X-Factor 069 (1991) (digital+) (Minutemen-PhantasmBlunt).cbz (24pp)
+            [116444] 05 X-Factor 070 (1991) (digital+) (Minutemen-PhantasmBlunt).cbz (25pp) | [116994] X-Factor 033 (2008) (2nd Printing Larry Stroman Variant) (Minutemen-RainsDesire).cbr (2pp)
+   ours:    ladder 1-149; 146 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12; ComicInfo Series: "X-Factor"x83; ComicInfo Volume: "1986"x73; ComicInfo Count: "149"x30; ComicInfo Publisher: "Marvel"x53, "Marvel Comics"x30; ComicInfo Web: "26906"x2, "27001"x2, "27097"x2, "27193"x2
+   GCD says: [85668] gcd notes 601539 (#1 of X-Factor): X-Factor (Marvel, 2006 series) #1-6  |  gcd_reprint 601539: s16465 X-Factor (2006) #1-6 [13 stories]
+             [85669] gcd notes 911800 (#2 of X-Factor): X-Factor (Marvel, 2006 series) #7-12  |  gcd_reprint 911800: s16465 X-Factor (2006) #7-12 [10 stories]
+             [85670] gcd_reprint 601538: s16465 X-Factor (2006) #13-17 [5 stories]
+             [85672] gcd_reprint 1108388: s16465 X-Factor (2006) #28-32 [11 stories] · s30701 X-Factor: The Quick and the Dead (2008) #1 [2 stories]
+             [85673] gcd_reprint 1108389: s16465 X-Factor (2006) #33 [1 story]
+             [85676] gcd_reprint 1108392: s16465 X-Factor (2006) #200-203 [5 stories]
+             [85677] gcd_reprint 1108393: s16465 X-Factor (2006) #204-206 [4 stories] · s41478 Nation X: X-Factor (2010) #1 [1 story]
+             [85678] gcd_reprint 1108394: s16465 X-Factor (2006) #207-212 [7 stories]
+             [85679] gcd_reprint 1108395: s16465 X-Factor (2006) #213-219 [8 stories]
+             [85680] gcd_reprint 1108396: s16465 X-Factor (2006) #220-224 [6 stories]
+             [85681] gcd_reprint 1108397: s16465 X-Factor (2006) #224.1, #225-228 [6 stories]
+             [85682] gcd_reprint 1108398: s16465 X-Factor (2006) #229-232 [10 stories] · s52634 Uncanny X-Force (2010) #19 [1 story] · s29823 X-Men: Legacy (2008) #259 [1 story] · s61815 Wolverine & the X-Men (2011) #1 [1 story]
+             [85685] gcd_reprint 1041885: s16465 X-Factor (2006) #241-245 [6 stories]
+             [85686] gcd_reprint 1041891: s16465 X-Factor (2006) #246-249 [5 stories]
+             [85694] gcd_reprint 1180426: s16465 X-Factor (2006) #1-12 [26 stories] · s12116 Madrox (2004) #1-5 [11 stories]
+             [85695] gcd_reprint 1180427: s16465 X-Factor (2006) #13-24, #28-32 [18 stories] · s31631 X-Factor Special: Layla Miller (2008) #1 [1 story] · s30701 X-Factor: The Quick and the Dead (2008) #1 [1 story]
+             [92972] gcd_reprint 2253647: s3209 X-Factor (1986) #55, #70-92 [62 stories] · s3210 X-Factor Annual (1986) #5-8 [20 stories] · s1866 The Incredible Hulk (1968) #390-392 [6 stories] · s69665 X-Factor Visionaries: Peter David (2005) #1-4 [5 stories]
+   CV linked:      vol 3657 "X-Factor" 1986 Marvel 150 issues; cached #1-149 (150); yearΔ 0; ratio 301/150 = 2.01; no judged range; v1 per-file: same volume on 300/323 files
+   CV candidates:  24239 "X-Factor" 2002 Marvel 4 s58 · 18109 "X-Factor" 2006 Marvel 114 s55 · 129097 "X-Factor" 2020 Marvel 10 s55 · 159244 "X-Factor" 2024 Marvel 10 s55 · 70144 "X-Factor: The End of X-Factor" 2013 Marvel 1 issue 438116 s46 · 144620 "X-Factor" 1997 Panini France 11 s40   (v1 search)
+   CV local rip:   (= linked) · 45207 "X-Factor" 1996 Planeta DeAgostini 39 · 144620 "X-Factor" 1997 Panini France 11 · 24239 "X-Factor" 2002 Marvel 4 · 18109 "X-Factor" 2006 Marvel 114 · 43532 "X-Factor" 2006 Panini España 53   (rip lookup)
+   GCD per-file:   methods numx297 · round2-seriesx6 ⚠ · round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 3209 "X-Factor" 1986-1998 Marvel [was ongoing series] 150 on 292/323 files · series 182103 "X-Factor" [tl-ph] 1994-1995 Mahal Kong Pilipinas, Inc. (M.K.P.I.) [] 5 on 6/323 files · series 35456 "X-Factor" 2007-2013 Marvel [collected edition] 21 on 4/323 files · series 4675 "Cable" 1993-2002 Marvel [was ongoing series] 108 on 1/323 files
+   GCD dump:       (= per-file) · 166039 "X-Factor" [fr] 1997-1998 Panini France [] 11 · 16578 "X-Factor" 2002-2002 Marvel [] 4 · 34065 "X-Factor" [es] 2006-2011 Panini España [] 53   (dump lookup)
+   bridges:        gcd 3209 -> LOCG 100149 "X-Factor" support 314 · gcd 182103 -> LOCG 100149 "X-Factor" support 6 · gcd 35456 -> LOCG 100149 "X-Factor" support 22 · gcd 35456 -> OL /works/OL8126315W "None" isbnSupport 22
+
+== S22222 X-Men '92  [tier C] · ratio 0.10  keys: X-Men '92  years 2015-2017  4 files / 3 collections
+   flags: #546 label-ambiguous [Pending] item 118148 — items 86044 and 118148 are duplicate copies of Vol. 01 - The World Is A Vampire
+   folders: [2] Marvel\_X-Men\X-Men '92 · [1] Marvel\__Skottie Young Covers · [1] _Marvel Major Event Chronology (digital)\2015.05 - Secret Wars\04 Warzones!
+   files:   [86044] COL X-Men '92 Vol. 01 - The World Is A Vampire (2016) (Digital) (Kileko-Empire).cbr (121pp)
+            [86045] COL X-Men '92 Vol. 02 - Lilapalooza (2017) (Digital) (Kileko-Empire).cbr (119pp) | [52039] X-Men '92 001 (2015) (digital) (Skottie Young variant) (Minutemen-Mastodon).cbz (1pp)
+            [118148] COL X-Men '92 Vol. 01 - The World Is A Vampire (2016) (Digital) (F) (Kileko-Empire).cbz (109pp)
+   ours:    ladder 1; ComicInfo Series: "X-Men '92"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86044] gcd_reprint 1641178: s98748 X-Men '92 (2016) #1-5 [17 stories]
+             [118148] gcd_reprint 1641178: s98748 X-Men '92 (2016) #1-5 [17 stories]
+   CV linked:      vol 89284 "X-Men '92" 2016 Marvel 10 issues; cached #1-10 (10); yearΔ 1; ratio 1/10 = 0.10; no judged range
+   CV per-file (v1): vol 82858 "X-Men '92" 2015 Marvel 4 on 1/4 files
+   CV candidates:  (= linked) · 85464 "X-Men '92" 2015 Panini España 4 s90 · 142304 "X-Men '92: House of XCII " 2022 Marvel 5 s87 · 82272 "X-Men '92 Infinite Comic" 2015 Marvel 8 s81 · 88816 "X-Men '92: Warzones!" 2016 Marvel 1 issue 519169 s77 · 100851 "X-Men '92: Lilapalooza" 2017 Marvel 1 issue 592618 s77 · 153394 "X-Men '92: Omnibus" 2023 Marvel UK/Panini UK 1 issue 1012607 s77   (v1 search)
+   CV local rip:   (= linked) · 85464 "X-Men '92" 2015 Panini España 4   (rip lookup)
+   GCD per-file:   series 90351 "X-Men '92" 2015-2015 Marvel [Was ongoing] 4 on 1/4 files; methods numx1
+   GCD dump:       (= per-file) · 98748 "X-Men '92" 2016-2017 Marvel [] 10 · 108550 "X-Men '92" 2016-2017 Marvel [] 3 · 195187 "X-Men '92" [pt-br] 2017-2017 Panini Brasil [] 3 · 208035 "X-Men '92" [fr] 2023-2023 Panini France [] 2   (dump lookup)
+   bridges:        gcd 90351 -> LOCG 117797 "X-Men '92" support 1
+
+== S101515 X-Men Adventures  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: X-Men Adventures v2 (1994)  years 1992-1996  13 files / 0 collections
+   folders: [13] Marvel\_X-Men\X-Men Adventures\X-Men Adventures v2 (1994)
+   files:   X-Men Adventures 001 (1994) (Digital-Empire).cbz … X-Men Adventures 013 (1995) (Digital-Empire).cbz  (13 files, pp 22-24)
+   ours:    ladder 1-13
+   CV linked:      vol 6684 "X-Men Adventures" 1994 Marvel 13 issues; cached #1-13 (13); yearΔ 2; ratio 13/13 = 1.00; no judged range
+   CV per-file (v1): vol 4823 "X-Men Adventures" 1992 Marvel 15 on 12/13 files · vol 5337 "X-Men Adventures" 1995 Marvel 13 on 1/13 files
+   CV local rip:   (= linked) · 112834 "X-Men Adventures" 2018 Marvel 1 issue 680010   (rip lookup)
+   GCD per-file:   series 52142 "X-Men Adventures" [es-mx] 1995-1998 Marvel [was ongoing series] 61 on 9/13 files · series 49756 "X-Men Adventures" 1993-1993 Marvel [collected editions] 4 on 4/13 files; methods numx13
+   GCD dump:       (= per-file) · 4488 "X-Men Adventures" 1992-1994 Marvel [] 15 · 50353 "X-Men Adventures" [pt-br] 1995-1995 Editora Abril [] 4 · 151171 "X-Men Adventures [Χ-Μεν Αντβέντσουρς]" [el-gr] 1996-? Modern Times [Μόντερν Τάιμς] [] 12 · 150324 "X-Men Adventures" [en-ph] 1997-1999 Universal Records Publishing [] 1   (dump lookup)
+   bridges:        gcd 52142 -> LOCG 115224 "X-Men Adventures" support 22 · gcd 49756 -> LOCG 115224 "X-Men Adventures" support 4
+
+== S101516 X-Men Adventures  [tier C] · gap 3  keys: X-Men Adventures v3 (1995)  years 1992-1996  13 files / 0 collections
+   folders: [13] Marvel\_X-Men\X-Men Adventures\X-Men Adventures v3 (1995)
+   files:   X-Men Adventures 001 (1995) (Digital-Empire).cbz … X-Men Adventures 013 (1996) (Digital-Empire).cbz  (13 files, pp 22-25)
+   ours:    ladder 1-13
+   CV linked:      vol 5337 "X-Men Adventures" 1995 Marvel 13 issues; cached #1-13 (13); yearΔ 3; ratio 13/13 = 1.00; no judged range
+   CV per-file (v1): vol 4823 "X-Men Adventures" 1992 Marvel 15 on 10/13 files · vol 5337 "X-Men Adventures" 1995 Marvel 13 on 3/13 files
+   CV local rip:   (= linked) · 6684 "X-Men Adventures" 1994 Marvel 13 · 112834 "X-Men Adventures" 2018 Marvel 1 issue 680010   (rip lookup)
+   GCD per-file:   series 52142 "X-Men Adventures" [es-mx] 1995-1998 Marvel [was ongoing series] 61 on 13/13 files; methods numx13
+   GCD dump:       (= per-file) · 4488 "X-Men Adventures" 1992-1994 Marvel [] 15 · 49756 "X-Men Adventures" 1993-1993 Marvel [] 4 · 50353 "X-Men Adventures" [pt-br] 1995-1995 Editora Abril [] 4 · 151171 "X-Men Adventures [Χ-Μεν Αντβέντσουρς]" [el-gr] 1996-? Modern Times [Μόντερν Τάιμς] [] 12 · 150324 "X-Men Adventures" [en-ph] 1997-1999 Universal Records Publishing [] 1   (dump lookup)
+   bridges:        gcd 52142 -> LOCG 115224 "X-Men Adventures" support 22
+
+== S22374 X-Men: Legacy  [tier C] · 106 files  keys: Avengers vs. X-Men: X-Men Legacy | X-Men Legacy | X-Men: Legacy - Back to School | X-Men: Legacy - Five Miles South Of The Universe | X-Men: Legacy — Necrosha | X-men Legacy  years 2008-2020  106 files / 10 collections
+   folders: [19] Marvel\_X-Men\X-Men Legacy · [11] Marvel\_X-Men\X-Men Legacy\Trades · [7] Marvel\_X-Men\_X-Men Complete Chronology V2\0772 Divided We Stand · [7] Marvel\_X-Men\_X-Men Complete Chronology V2\0803 Salvage · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0972 Lost Tribes · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0942 Five Miles South of the Universe · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0988 AvX · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0836 Devil At The Crossroads · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0845 X-Necrosha · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0878 Collision · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0932 Lost Legions · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0865 Second Coming · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0894 Fables of the Reconstruction · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0906 Age of X · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0994 Untitled · [3] _Marvel Major Event Chronology (digital)\2009.12 - X-Men - Necrosha · [2] Marvel\_X-Men\X-Men Legacy\X-men Annuals & Specials\X-Men - Original Sin · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0783 Manifest Destiny · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0786 Original Sin · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0831 Dark X-Men - The Beginning · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0926 Age Of X Aftermath · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0960 Half A Step · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0999 Untitled · [1] _Marvel Major Event Chronology (digital)\2008.06 - Secret Invasion\03 Tie-ins\_Variant Covers
+   files:   [86219] X-Men - Legacy - Back to School (2015) (Digital) (F) (Kileko-Empire).cbz (134pp) | [86222] COL X-Men Legacy Vol. 04 - Salvage (2010) (Digital) (Kileko-Empire).cbr (170pp)
+            [86223] COL X-Men Legacy Vol. 05 - Necrosha (2020) (Digital) (Kileko-Empire).cbz (111pp) | [86224] COL X-Men Legacy Vol. 06 - Emplate (2010) (Digital) (Kileko-Empire).cbr (115pp)
+            [86225] COL X-Men Legacy Vol. 08 - Second Coming (2010) (Digital) (Zone-Empire).cbr (354pp) | [86226] COL X-Men Legacy Vol. 09 - Collision (2011) (Digital) (Kileko-Empire).cbr (102pp)
+            [86227] COL X-Men Legacy Vol. 10 - Aftermath (2013).cbr (118pp) | [86228] COL X-Men Legacy Vol. 12 - Lost Legions (2015) (Digital) (Kileko-Empire).cbr (115pp)
+            [86229] COL X-Men Legacy Vol. 13 - Five Miles South of The Universe (2015) (Digital) (F) (Kileko-Empire).cbz (151pp) | [86230] COL X-Men Legacy Vol. 14 - Back to School (2015).cbr (143pp)
+            [86231] COL X-Men Legacy Vol. 16 Avengers vs. X-Men (2013) (Digital) (F) (Kileko-Empire).cbz (213pp) | [86283] X-Men #208 (Legacy).cbr (31pp) | [86284] X-Men #209 (Legacy).cbr (32pp)
+            [86285] X-Men #210 (Legacy).cbr (29pp) | [86286] X-Men #211 (Legacy).cbr (30pp) | [86287] X-Men #212 (Legacy).cbz (24pp)
+            X-Men #213 (Legacy).cbr … X-Men #223 (Legacy).cbr  (11 files, pp 24-30) | [86299] X-Men #224 (Legacy).cbz (25pp) | [86300] X-Men #225 (Legacy).cbr (26pp)
+            [86301] X-Men #226 (Legacy).cbr (29pp) | [86304] 2 X-Men #217 (Legacy).cbr (26pp) | [86306] 4 X-Men #218 (Legacy).cbr (25pp)
+            005 X-men Legacy 208 (2008) (Digital) (AnPymGold - Empire).cbr … 005 X-men Legacy 227 (2009) (Digital) (AnPymGold - Empire).cbr  (20 files, pp 23-25)
+            [91274] 001 X-Men Legacy Annual 001 (2009) (Digital) (Cypher-Empire).cbr (39pp) | [91275] 002 X-men Legacy 228 (2009) (Digital) (AnPymGold - Empire).cbr (24pp)
+            [91276] 003 X-men Legacy 229 (2010) (Digital) (AnPymGold - Empire).cbr (24pp) | [91277] 004 X-men Legacy 230 (2010) (Digital) (AnPymGold - Empire).cbr (31pp)
+            [91331] 008 X-men Legacy 231 (2010) (Digital) (AnPymGold - Empire).cbr (24pp) | [91333] 010 X-Men - Legacy 232 (2010) (digital) (Minutemen-Faessla).cbz (24pp)
+            [91334] 011 X-men Legacy 233 (2010) (Digital) (AnPymGold - Empire).cbr (25pp) | [91340] 017 X-men Legacy 234 (2010) (Digital) (AnPymGold - Empire).cbr (26pp)
+            [91448] 005 X-men Legacy 235 (2010) (Digital) (AnPymGold - Empire).cbr (25pp) | [91452] 009 X-men Legacy 236 (2010) (Digital) (AnPymGold - Empire).cbr (24pp)
+            [91456] 013 X-men Legacy 237 (2010) (Digital) (AnPymGold - Empire).cbr (24pp) | [91538] 001 X-men Legacy 238 (2010) (Digital) (AnPymGold - Empire).cbr (25pp)
+            [91539] 002 X-men Legacy 239 (2010) (Digital) (AnPymGold - Empire).cbr (25pp) | [91540] 003 X-men Legacy 240 (2010) (Digital) (AnPymGold - Empire).cbr (24pp)
+            [91541] 004 X-men Legacy 241 (2010) (Digital) (AnPymGold - Empire).cbr (25pp) | [91638] 001 X-men Legacy 242 (2011) (Digital) (AnPymGold - Empire).cbr (24pp)
+            [91639] 002 X-men Legacy 243 (2011) (Digital) (AnPymGold - Empire).cbr (25pp) | [91640] 003 X-men Legacy 244 (2011) (Digital) (AnPymGold - Empire).cbr (30pp)
+            [91685] 002 X-men Legacy 245 (2011) (Digital) (AnPymGold - Empire).cbr (25pp) | [91687] 004 X-men Legacy 246 (2011) (Digital) (AnPymGold - Empire).cbr (25pp)
+            [91690] 007 X-men Legacy 247 (2011) (Digital) (AnPymGold - Empire).cbr (25pp) | [91811] 001 X-men Legacy 248 (2011) (Digital) (AnPymGold - Empire).cbr (23pp)
+            [91812] 002 X-men Legacy 249 (2011) (Digital) (AnPymGold - Empire).cbr (22pp) | [91834] 001 X-men Legacy 250 (2011) (Digital) (AnPymGold - Empire).cbr (55pp)
+            [91835] 002 X-men Legacy 251 (2011) (Digital) (AnPymGold - Empire).cbr (23pp) | [91836] 003 X-men Legacy 252 (2011) (Digital) (AnPymGold - Empire).cbr (23pp)
+            [91837] 004 X-men Legacy 253 (2011) (Digital) (AnPymGold - Empire).cbr (23pp) | [91887] 001 X-men Legacy 254 (2011) (Digital) (AnPymGold - Empire).cbr (22pp)
+            [91888] 002 X-men Legacy 255 (2011) (Digital) (AnPymGold - Empire).cbr (22pp) | [91889] 003 X-Men Legacy 256 (2011) (digital-hd) (Kleio-Empire).cbz (23pp)
+            [91890] 004 X-men Legacy 257 (2011) (Digital) (AnPymGold - Empire).cbr (23pp) | [91891] 005 X-Men Legacy 258 (2012) (digital-hd) (Kleio-Empire).cbz (22pp)
+            [91960] 001 X-Men Legacy 259 (2012) (digital) (Minutemen-Faessla).cbz (24pp) | [91961] 002 X-Men Legacy 260 (2012) (digital) (Minutemen-Faessla).cbz (24pp)
+            [92010] 001 X-Men Legacy 260.1 (2012) (digital) (Minutemen-Faessla).cbz (23pp) | [92011] 002 X-Men Legacy 261 (2012) (digital-hd) (Kleio-Empire).cbz (23pp)
+            [92012] 003 X-Men Legacy 262 (2012) (digital-hd) (Kleio-Empire).cbz (23pp) | [92013] 004 X-Men Legacy 263 (2012) (digital-hd) (Kleio-Empire).cbz (23pp)
+            [92014] 005 X-Men Legacy 264 (2012) (digital-hd) (Kleio-Empire).cbz (23pp) | [92015] 006 X-Men Legacy 265 (2012) (Digital) (Zone-Empire).cbr (23pp)
+            [92097] 015 X-Men Legacy 266 (2012) (digital) (Minutemen-Faessla).cbz (23pp) | [92098] 016 X-Men Legacy 267 (2012) (digital) (Minutemen-Faessla).cbz (22pp)
+            [92112] 030 X-Men Legacy 268 (2012) (digital) (Minutemen-Faessla).cbz (23pp) | [92132] 050 X-Men Legacy 269 (2012) (digital) (Minutemen-Faessla).cbz (23pp)
+            [92133] 051 X-Men Legacy 270 (2012) (digital) (Minutemen-Faessla).cbz (23pp) | [92165] 001 X-Men Legacy 271 (2012) (Digital) (Zone-Empire).cbr (23pp)
+            [92166] 002 X-Men Legacy 272 (2012) (Digital) (Zone-Empire).cbr (23pp) | [92167] 003 X-Men Legacy 273 (2012) (Digital) (Zone-Empire).cbr (24pp)
+            [92182] 001 X-Men Legacy 274 (2012) (Digital) (Zone-Empire).cbr (24pp) | [92183] 002 X-Men Legacy 275 (2012) (Digital) (Zone-Empire).cbr (24pp)
+            [116995] X-Men - Legacy 211 (2008) (Skrully Incentive Variant) (Minutemen-RainsDesire).cbr (2pp) | [117299] 10 X-Men Legacy 231 (2010) (digital-hd) (Kleio-Empire).cbz (24pp)
+            [117300] 11 X-Men Legacy 232 (2010) (digital-hd) (Kleio-Empire).cbz (24pp) | [117302] 13 X-Men Legacy 233 (2010) (digital-hd) (Kleio-Empire).cbz (25pp)
+   ours:    ladder 1, 208-275; 23 number(s) name more than one file: 1, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218; ComicInfo Series: "X-Men: Legacy - Back to School"x1, "X-Men: Legacy — Necrosha"x1, "X-Men: Legacy - Five Miles South Of The Universe"x1, "Avengers vs. X-Men: X-Men Legacy"x1; ComicInfo Publisher: "Marvel"x4
+   GCD says: [86222] gcd_reprint 2813359: s29823 X-Men: Legacy (2008) #219-225 [7 stories] · s233690 X-Men: Legacy - Salvage (2009) (unnumbered) [1 story]
+             [86223] gcd_reprint 2724344: s29823 X-Men: Legacy (2008) #231-234 [5 stories] · s39992 X Necrosha (2009) #1 [2 stories]
+             [86224] gcd_reprint 2795830: s29823 X-Men: Legacy (2008) #228-230 [3 stories] · s231027 X-Men Legacy: Emplate (2010) (unnumbered) [1 story] · s39631 X-Men Legacy Annual (2009) #1 [1 story]
+             [86225] gcd_reprint 2766236: s46027 X-Men: Second Coming (2010) #1-2 [3 stories] · s29506 X-Force (2008) #26-28 [3 stories] · s29823 X-Men: Legacy (2008) #235-237 [3 stories] · s36520 New Mutants (2009) #12-14 [3 stories]
+             [86226] gcd_reprint 2756403: s29823 X-Men: Legacy (2008) #238-241 [4 stories] · s226008 X-Men: Legacy - Collision (2011) (unnumbered) [1 story]
+             [86227] gcd_reprint 2729340: s29823 X-Men: Legacy (2008) #242-244, #248-249 [6 stories]
+             [86228] gcd_reprint 2719353: s29823 X-Men: Legacy (2008) #250-253 [4 stories] · s222541 X-Men Legacy: Lost Legions (2011) (unnumbered) [1 story]
+             [86229] gcd_reprint 1933161: s29823 X-Men: Legacy (2008) #254-260 [16 stories] · s52634 Uncanny X-Force (2010) #19 [1 story] · s61815 Wolverine & the X-Men (2011) #1 [1 story] · s16465 X-Factor (2006) #230 [1 story]
+             [86230] gcd_reprint 2685474: s29823 X-Men: Legacy (2008) #260.1, #261-265 [6 stories] · s218632 X-Men: Legacy - Back to School (2012) (unnumbered) [1 story]
+             [86231] gcd_reprint 2237745: s29823 X-Men: Legacy (2008) #266-275 [21 stories]
+   CV linked:      vol 20691 "X-Men: Legacy" 2008 Marvel ? issues; cached #208-275 (68); yearΔ 0; ratio 95/? = 1.38; no judged range
+   CV per-file (v1): vol 20691 "X-Men: Legacy" 2008 Marvel ? on 74/106 files · vol 43640 "X-Men" 1997 Panini France 169 on 21/106 files
+   CV candidates:  (= linked) · 60067 "Avengers Vs X-Men: X-Men Legacy" 2013 Marvel 1 issue 397747 s105 · 50403 "X-Men Legacy: Back to School" 2012 Marvel 1 issue 345527 s105 · 46565 "X-Men: Legacy - Five Miles South Of The Universe" 2012 Marvel 1 issue 321186 s105 · 53922 "X-Men: Legacy" 2013 Marvel 25 s93 · 30966 "X-Men vs. Avengers" 2010 Marvel 1 issue 191724 s85 · 53793 "Avengers Vs. X-Men" 2012 Marvel 1 issue 366376 s85   (v1 search)
+   CV local rip:   (= linked) · 53922 "X-Men: Legacy" 2013 Marvel 25 · 125511 "X-Men Legacy" 2014 Panini France 4 · 46565 "X-Men: Legacy - Five Miles South Of The Universe" 2012 Marvel 1 issue 321186 · 46566 "X-Men Legacy: Necrosha" 2012 Marvel 1 issue 321193 · 50403 "X-Men Legacy: Back to School" 2012 Marvel 1 issue 345527   (rip lookup)
+   GCD per-file:   series 29823 "X-Men: Legacy" 2008-2012 Marvel [was ongoing series] 69 on 72/106 files · series 69872 "X-Men Legacy" 2013-2014 Marvel [was ongoing series] 25 on 1/106 files; methods numx73
+   GCD dump:       (= per-file) · 76283 "X-Men: Legacy" 2013-2014 Marvel [] 4 · 142006 "X-Men Legacy: Five Miles South of the Universe" 2012-2012 Marvel [] 1 · 218420 "X-Men: Legacy - Back to School" 2012-2012 Marvel [] 1 · 218632 "X-Men: Legacy - Back to School" 2012-2012 Marvel [] 1   (dump lookup)
+   bridges:        gcd 29823 -> LOCG 109487 "X-Men: Legacy" support 72 · gcd 69872 -> LOCG 100013 "X-Men: Legacy" support 40
+
+== S103816 X-Men (2004)  [tier C] · 107 files  keys: X-Men (2004) | X-Men: Day of the Atom (2005)  years 2005-2014  107 files / 4 collections
+   folders: [50] Marvel\_X-Men\X-Men Legacy · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0710 Blood of Apocalypse · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0724 Supernovas · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0634 Heroes and Villains · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0652 Golgotha · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0756 Endangered Species · [4] Marvel\_X-Men\X-Men\04 New X-Men v1 (2001) (Post Morrison) · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0609 Day Of The Atom · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0675 The Foxx in the Attic · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0689 Decimation - House Arrest · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0741 Primary Infection · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0751 Condition Critical · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0768 Messiah Complex · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0683 Wild Kingdom · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0698 What Lorna Saw · [1] Marvel\_X-Men\X-Men Legacy\X-men Annuals & Specials · [1] Marvel\_X-Men\_X-Men TPBs
+   files:   [86232] X-Men #157.cbr (24pp) | [86233] X-Men #158.cbr (26pp) | [86235] X-Men #160.cbr (26pp) | [86236] X-Men #161.cbr (23pp) | [86237] X-Men #162.cbr (25pp)
+            [86238] X-Men #163.cbr (25pp) | [86239] X-Men #164.cbr (26pp) | [86240] X-Men #165.cbr (24pp) | [86241] X-Men #166.cbr (23pp) | [86242] X-Men #167.cbr (24pp)
+            [86243] X-Men #168.cbr (24pp) | [86244] X-Men #169.cbr (24pp) | [86245] X-Men #170.cbr (25pp) | [86246] X-Men #171.cbr (26pp) | [86247] X-Men #172.cbr (25pp)
+            [86248] X-Men #173.cbr (26pp) | [86249] X-Men #174.cbr (28pp) | [86250] X-Men #175.cbr (24pp) | [86251] X-Men #176.cbr (26pp) | [86252] X-Men #177.cbr (24pp)
+            [86253] X-Men #178.cbr (26pp) | [86254] X-Men #179.cbr (25pp) | [86255] X-Men #180.cbr (25pp) | [86256] X-Men #181.cbr (31pp) | [86257] X-Men #182.cbr (29pp)
+            [86258] X-Men #183.cbr (29pp) | [86259] X-Men #184.cbr (29pp) | [86260] X-Men #185.cbr (31pp) | [86261] X-Men #186.cbr (30pp) | [86262] X-Men #187.cbr (34pp)
+            [86263] X-Men #188.cbr (23pp) | [86264] X-Men #189.cbr (31pp) | [86265] X-Men #190.cbr (24pp) | [86266] X-Men #191.cbr (26pp) | [86267] X-Men #192.cbr (25pp)
+            [86268] X-Men #193.cbr (24pp) | [86269] X-Men #194.cbr (25pp) | [86270] X-Men #195.cbr (26pp) | [86271] X-Men #196.cbr (25pp) | [86272] X-Men #197.cbr (24pp)
+            [86273] X-Men #198.cbr (25pp) | [86274] X-Men #199.cbr (26pp) | [86275] X-Men #200.cbr (66pp) | [86276] X-Men #201.cbr (33pp) | [86277] X-Men #202.cbr (33pp)
+            [86278] X-Men #203.cbr (43pp) | [86279] X-Men #204.cbr (42pp) | [86280] X-Men #205.cbr (31pp) | [86281] X-Men #206.cbr (31pp) | [86282] X-Men #207.cbr (29pp)
+            [86308] X-Men Annual 2007.cbr (40pp) | [86010] X-Men 187 (2006) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [86011] COL X-Men Vol. 01 - Day of the Atom (2014) (Digital) (Kileko-Empire).cbr (215pp) | [86012] COL X-Men Vol. 02 - Golgotha (2014) (Digital) (Kileko-Empire).cbr (115pp)
+            [86013] COL X-Men Vol. 03 - Bizarre Love Triangle (2015) (Digital) (Kileko-Empire).cbr (97pp)
+            001 X-Men 157 (2004) (digital-hd-Empire).cbr … 002 X-Men 181 (2006) (digital-hd-Empire).cbr  (25 files, pp 22-25)
+            001 X-Men 182 (2006) (digital-Empire).cbz … 006 X-Men 187 (2006) (digital-Empire).cbz  (6 files, pp 24-28)
+            001 X-Men 188 (2006) (Digital) (Zone-Empire).cbr … 004 X-Men 200 (2007) (Digital) (Zone-Empire).cbr  (13 files, pp 23-45)
+            [90735] 008 X-Men 201 (2007) (digital) (Minutemen-Bluntman).cbr (31pp) | [90739] 012 X-Men 202 (2007) (digital-Empire).cbz (30pp) | [90743] 016 X-Men 203 (2007) (digital-Empire).cbz (32pp)
+            [90746] 019 X-Men 204 (2007) (digital-Empire).cbz (38pp) | [90818] 005 X-Men 205 (2008) (Digital -) (TheHand-Empire).cbr (30pp)
+            [90822] 009 X-Men 206 (2008) (Digital -) (TheHand-Empire).cbr (30pp) | [90826] 013 X-Men 207 (2008) (Digital -) (TheHand-Empire).cbr (30pp)
+            [93039] COL X-Men - Day of the Atom (2014) (Digital) (F) (Kileko-Empire).cbz (211pp)
+   ours:    ladder 157-207, 2007; 50 number(s) name more than one file: 157, 158, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169; ComicInfo Series: "X-Men: Day of the Atom"x2, "X-Men"x1; ComicInfo Volume: "2004"x1; ComicInfo Publisher: "Marvel"x3
+   GCD says: [86011] gcd_reprint 580402: s11638 X-Men (2004) #157-165 [9 stories]
+             [86012] gcd_reprint 1072836: s11638 X-Men (2004) #166-170 [6 stories]
+             [86013] gcd notes 1102481 (#[nn] of X-Men: Bizarre Love Triangle): X-Men (Marvel, 2004 series) #171-174  |  gcd_reprint 1102481: s11638 X-Men (2004) #171-174 [8 stories]
+             [93039] gcd_reprint 580402: s11638 X-Men (2004) #157-165 [9 stories]
+   CV linked:      vol 10731 "X-Men" 2004 Marvel 51 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ 1; ratio 103/? = 2.02; none cached
+   CV per-file (v1): vol 43640 "X-Men" 1997 Panini France 169 on 102/107 files
+   CV local rip:   (= linked) · 71921 "X-Men" 2005 Editorial Televisa 46 (via our own name without the filing suffix "X-Men") · 43574 "X-Men" 2004 Panini Verlag 2 (via our own name without the filing suffix "X-Men") · 43634 "X-Men" 2002 Panini Brasil 143 (via our own name without the filing suffix "X-Men") · 43672 "X-Men" 2001 Panini Verlag 150 (via our own name without the filing suffix "X-Men") · 34221 "X-Men" 2010 Marvel 42 (via our own name without the filing suffix "X-Men")   (rip lookup)
+   GCD per-file:   series 11638 "X-Men" 2004-2008 Marvel [was ongoing series] 51 on 52/107 files; methods numx52
+   GCD dump:       (= per-file) · 29086 "X-Men" [es] 2005-2005 Panini España [] 12 (via our own name without the filing suffix "X-Men") · 29087 "X-Men" [es] 2006-2013 Panini España [] 85 (via our own name without the filing suffix "X-Men") · 36105 "X-Men" [de] 2004-2006 Panini Deutschland [] 2 (via our own name without the filing suffix "X-Men") · 23441 "X-Men" [nl] 2007-2009 Z-Press Junior Media [] 25 (via our own name without the filing suffix "X-Men") · 49225 "X-Men" [no] 2003-2006 Hjemmet / Egmont [] 23 (via our own name without the filing suffix "X-Men")   (dump lookup)
+   bridges:        gcd 11638 -> LOCG 109487 "X-Men: Legacy" support 103
+
+== S101518 X-Men Unlimited  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: X-Men Unlimited (2004) | X-Men Unlimited v2 (2004)  years 1993-2005  20 files / 0 collections
+   folders: [13] Marvel\_X-Men\X-Men Unlimited\X-Men Unlimited v2 (2004) · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0660 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0263 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0268 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0279 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0623 Untitled
+   files:   [86363] X-Men Unlimited 001 (2004) (Digital) (Shadowcat-Empire).cbz (25pp) | [86364] X-Men Unlimited 002 (2004) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [86365] X-Men Unlimited 003 (2004) (Digital) (AnPymGold-Empire).cbz (25pp)
+            X-Men Unlimited 004 (2004) (Digital) (Shadowcat-Empire).cbz … X-Men Unlimited 028 (2000) (Digital) (Shadowcat-Empire).cbz  (10 files, pp 21-39)
+            [88305] 003 X-Men Unlimited 008 (2005) (Digital) (AnHeroGold-Empire).cbz (52pp) | [88325] 006 X-Men Unlimited 009 (2005) (Digital) (AnHeroGold-Empire).cbz (50pp)
+            [88366] 002 X-Men Unlimited 010 (2005) (Digital) (AnHeroGold-Empire).cbz (55pp) | [89995] 001 X-Men Unlimited 004 (2004) (digital) (Glorith-HD).cbz (27pp)
+            [90157] 002 X-Men Unlimited 008 (2005) (Digital) (AnPymGold-Empire).cbz (23pp) | [90158] 003 X-Men Unlimited 009 (2005) (Digital) (AnPymGold-Empire).cbz (23pp)
+            [90159] 004 X-Men Unlimited 010 (2005) (Digital) (AnPymGold-Empire).cbz (23pp)
+   ours:    ladder 1-14, 27-28; 4 number(s) name more than one file: 4, 8, 9, 10; ComicInfo Series: "X-Men Unlimited"x13; ComicInfo Volume: "2004"x11, "1993"x2; ComicInfo Count: "14"x1; ComicInfo Publisher: "Marvel"x12, "Marvel Comics"x1; ComicInfo Web: "101010"x1
+   CV linked:      vol 10745 "X-Men Unlimited" 2004 Marvel 14 issues; cached #1-14 (14); yearΔ 11; ratio 20/14 = 1.43; no judged range
+   CV per-file (v1): vol 10745 "X-Men Unlimited" 2004 Marvel 14 on 14/20 files · vol 5066 "X-Men Unlimited" 1993 Marvel 50 on 6/20 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 11652 "X-Men Unlimited" 2004-2006 Marvel [was ongoing series] 14 on 18/20 files · series 4754 "X-Men Unlimited" 1993-2003 Marvel [was ongoing series] 50 on 2/20 files; methods numx20
+   GCD dump:       (= per-file) · 34009 "X-Men Unlimited" [es] 1997-2000 Planeta DeAgostini [] 13   (dump lookup)
+   bridges:        gcd 11652 -> LOCG 115024 "X-Men Unlimited" support 29 · gcd 4754 -> LOCG 115024 "X-Men Unlimited" support 91
+
+== S66349 X-Men  [tier C] · 244 files  keys: Flashback - X-Men -1 | X-Men | X-Men (1996) | X-Men (1997) | X-Men (2001) | X-Men v2 (1991)  years 1991-2011  244 files / 0 collections
+   folders: [113] Marvel\_X-Men\X-Men\02 X-Men v2 (1991) · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0447 Untitled · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0329 Zero Tolerance · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0153 Omega Red · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0187 Revanche · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0147 Claremont's Finale · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0162 Shattershot - The Fall of Mojo · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0175 The X-Cutioner's Song · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0179 A Skinning of Souls · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0248 The Fall of Avalon · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0314 Games of Death and Deceit · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0355 Rituals · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0384 The Hunt for Xavier · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0396 Untitled · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0477 Eve of Destruction · [3] _Marvel Major Event Chronology (digital)\1999.02 - The Magneto War · [3] _Marvel Major Event Chronology (digital)\2001.01 - X-Men - Dream's End · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0161 Blood Feud · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0172 Hazard · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0210 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0219 Soul Posessions · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0233 The Phalanx Covenant - Generation Next · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0245 Legionquest · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0265 The Return of the X-Babies · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0283 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0288 Onslaught Preview · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0307 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0347 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0364 Psi-War · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0392 The Magneto War · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0420 Hidden Lives · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0429 Apocalypse - The Twelve · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0441 Untitled · [1] Marvel\_X-Men\X-Men\02 X-Men v2 (1991)\Annuals · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0193 The Return of Magneto · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0202 Fatal Attractions · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0203 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0204 Blood Ties · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0214 The Ties that Bind · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0225 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0227 The Douglock Chronicles · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0229 The Adventures of Cyclops and Phoenix · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0240 The Dark Ride · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0243 Rogue · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0255 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0260 Evolution · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0270 The Red Zone · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0277 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0279 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0296 The Rise of Apocolypse · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0299 Unnamed · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0305 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0309 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0323 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0325 Flashback · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0357 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0362 Reunion · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0374 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0376 Children of the Atom · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0381 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0390 Unnamed · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0391 Head Full of Chese · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0407 Rage Against the Machine · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0413 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0425 Unnamed · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0433 Ages of Apocalypse · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0435 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0463 Maximum Security · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0464 Dream's End · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0471 The Sword of Power · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0472 Unnamed · [1] _Marvel Major Event Chronology (digital)\1993.11 - Blood Ties · [1] _Marvel Major Event Chronology (digital)\1997.06 - X-Men - Operation Zero Tolerance\01 Prelude · [1] _Marvel Major Event Chronology (digital)\1997.06 - X-Men - Operation Zero Tolerance\03 Aftermath
+   files:   [86000] X-Men Annual 001 (1992) (Digital) (Shadowcat-Empire).cbz (53pp) | [85821] X-Men 0.5 (1998) (Digital) (AnHeroGold-Empire).cbz (17pp)
+            X-Men 001 (1991) (Digital) (Zone-Empire).cbr … X-Men 013 (1992) (Digital) (Zone-Empire).cbr  (13 files, pp 20-38) | [85835] X-Men 014 (1992) (Digital) (Meganubis-Empire).cbz (24pp)
+            [85836] X-Men 015 (1992) (Digital) (Meganubis-Empire).cbz (24pp) | [85837] X-Men 016 (1992) (Digital) (Meganubis-Empire).cbz (24pp)
+            [85838] X-Men 017 (1993) (Digital) (Zone-Empire).cbr (24pp) | [85839] X-Men 018 (1993) (Digital) (Zone-Empire).cbr (23pp) | [85840] X-Men 019 (1993) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [85841] X-Men 020 (1993) (Digital) (Zone-Empire).cbr (25pp) | [85842] X-Men 021 (1993) (Digital) (Zone-Empire).cbr (23pp) | [85843] X-Men 022 (1993) (Digital) (Zone-Empire).cbr (23pp)
+            [85844] X-Men 023 (1993) (Digital) (Zone-Empire).cbr (22pp) | [85845] X-Men 024 (1993) (Digital) (Zone-Empire).cbr (23pp) | [85846] X-Men 025 (1993) (digital) (Marika-Empire).cbz (39pp)
+            [85847] X-Men 026 (1993) (Digital) (Zone-Empire).cbr (23pp) | [85848] X-Men 027 (1993) (Digital) (Zone-Empire).cbr (24pp) | [85849] X-Men 028 (1994) (Digital) (Zone-Empire).cbr (23pp)
+            [85850] X-Men 029 (1994) (Digital) (Zone-Empire).cbr (21pp) | [85851] X-Men 030 (1994) (Digital) (Zone-Empire).cbr (23pp) | [85852] X-Men 031 (1994) (Digital) (Relic-Empire).cbz (23pp)
+            [85853] X-Men 032 (1994) (Digital) (Relic-Empire).cbz (20pp) | [85854] X-Men 033 (1994) (Digital) (Zone-Empire).cbr (20pp) | [85855] X-Men 034 (1994) (Digital) (Relic-Empire).cbz (20pp)
+            [85856] X-Men 035 (1994) (Digital) (Relic-Empire).cbz (21pp) | [85857] X-Men 036 (1994) (Digital) (Zone-Empire).cbr (21pp) | [85858] X-Men 037 (1994) (Digital) (Zone-Empire).cbr (23pp)
+            [85859] X-Men 038 (1994) (Digital) (Zone-Empire).cbr (23pp) | [85861] X-Men 040 (1995) (Digital) (Zone-Empire).cbr (22pp) | [85862] X-Men 041 (1995) (Digital) (Zone-Empire).cbr (23pp)
+            [85863] X-Men 042 (1995) (Digital) (AnHeroGold-Empire).cbz (22pp) | [85864] X-Men 043 (1995) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            [85865] X-Men 044 (1995) (Digital) (AnHeroGold-Empire).cbz (20pp) | [85866] X-Men 045 (1995) (Digital) (AnHeroGold-Empire).cbz (35pp)
+            [85867] X-Men 046 (1995) (Digital) (Zone-Empire).cbr (23pp) | [85868] X-Men 047 (1995) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            [85869] X-Men 048 (1996) (Digital) (AnHeroGold-Empire).cbz (23pp) | [85870] X-Men 049 (1996) (Digital) (Zone-Empire).cbr (22pp)
+            [85871] X-Men 050 (1996) (Digital) (Zone-Empire).cbr (35pp) | [85872] X-Men 051 (1996) (Digital) (AnHeroGold-Empire).cbz (19pp)
+            [85873] X-Men 052 (1996) (Digital) (AnHeroGold-Empire).cbz (18pp) | [85874] X-Men 053 (1996) (Digital) (Zone-Empire).cbr (23pp)
+            [85875] X-Men 054 (1996) (Digital) (Zone-Empire).cbr (22pp) | [85876] X-Men 055 (1996) (Digital) (Zone-Empire).cbr (22pp) | [85877] X-Men 056 (1996) (Digital) (Zone-Empire).cbr (24pp)
+            [85878] X-Men 057 (1996) (Digital) (Zone-Empire).cbr (24pp) | [85879] X-Men 058 (1996) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [85880] X-Men 059 (1996) (Digital) (Shadowcat-Empire).cbz (22pp) | [85881] X-Men 060 (1997) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [85882] X-Men 061 (1997) (Digital) (Shadowcat-Empire).cbz (22pp)
+            X-Men 062 (1997) (Digital) (AnHeroGold-Empire).cbz … X-Men 070 (1997) (Digital) (AnHeroGold-Empire).cbz  (9 files, pp 21-40)
+            X-Men 071 (1998) (Digital) (Shadowcat-Empire).cbz … X-Men 079 (1998) (Digital) (Shadowcat-Empire).cbz  (9 files, pp 22-41)
+            [85901] X-Men 080 (1998) (Digital) (AnHeroGold-Empire).cbz (37pp) | [85902] X-Men 081 (1998) (Digital) (AnHeroGold-Empire).cbz (21pp)
+            [85903] X-Men 082 (1998) (Digital) (AnHeroGold-Empire).cbz (21pp) | [85904] X-Men 083 (1999) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            [85905] X-Men 084 (1999) (Digital) (AnHeroGold-Empire).cbz (22pp) | [85906] X-Men 085 (1999) (Digital) (Zone-Empire).cbr (25pp)
+            [85907] X-Men 086 (1999) (Digital) (Zone-Empire).cbr (24pp) | [85908] X-Men 087 (1999) (Digital) (Zone-Empire).cbr (23pp) | [85909] X-Men 088 (1999) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [85910] X-Men 089 (1999) (Digital) (Shadowcat-Empire).cbz (23pp) | [85911] X-Men 090 (1999) (Digital) (Shadowcat-Empire).cbz (22pp)
+            X-Men 091 (1999) (Digital) (Zone-Empire).cbr … X-Men 098 (2000) (Digital) (Zone-Empire).cbr  (8 files, pp 22-34) | [85920] X-Men 099 (2000) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            X-Men 100 (2000-03) (digital) (Glorith-HD).cbz … X-Men 106 (2000-09) (digital) (Glorith-HD).cbz  (7 files, pp 24-40) | [85928] X-Men 107 (2000) (Digital) (AnHeroGold-Empire).cbz (24pp)
+            [85929] X-Men 108 (2001) (Digital) (Kileko-Empire).cbr (23pp) | [85930] X-Men 109 (2001) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [85931] X-Men 110 (2001) (Digital) (Zone-Empire).cbr (16pp) | [85932] X-Men 111 (2001) (Digital) (Zone-Empire).cbr (18pp) | [85933] X-Men 112 (2001) (Digital) (Zone-Empire).cbr (21pp)
+            [85934] X-Men 113 (2001) (Digital) (Zone-Empire).cbr (23pp)
+            001 X-Men 001 (1991) (digital) (Minutemen-Bluntman).cbz … 003 X-Men 009 (1992) (digital) (Minutemen-Bluntman).cbz  (9 files, pp 20-38) | [87803] 001 X-Men Annual #01.cbr (64pp)
+            [87807] 005 X-Men 010 (1992) (digital) (Minutemen-Bluntman).cbz (25pp) | [87808] 006 X-Men 011 (1992) (digital) (Minutemen-Bluntman).cbz (24pp)
+            [87850] 001 X-Men 012 (1992) (digital) (Minutemen-Bluntman).cbz (22pp) | [87851] 002 X-Men 013 (1992) (digital) (Minutemen-Bluntman).cbz (23pp)
+            [87863] 003 X-Men 014 (1992) (digital+) (Minutemen-Bluntman).cbr (25pp) | [87867] 007 X-Men 015 (1992) (digital+) (Minutemen-Bluntman).cbr (26pp)
+            [87871] 011 X-Men 016 (1992) (Digital) (Meganubis-Empire).cbz (24pp)
+            001 X-Men 017 (1993) (digital) (Minutemen-Bluntman).cbr … 003 X-Men 024 (1993) (digital) (Minutemen-Bluntman).cbr  (8 files, pp 22-25)
+            [88005] 001 X-Men 025 (1993) (Digital) (Meganubis-Empire).cbz (39pp) | [88012] 003 X-Men 027 (1993) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [88017] 002 X-Men 026 (1993) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (23pp) | [88041] 002 X-Men 028 (1994) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [88046] 007 X-Men 029 (1994) (digital) (Minutemen-Bluntman).cbr (21pp) | [88059] 002 X-Men 030 (1994) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [88079] 001 X-Men 031 (1994) (Beast's Library).cbr (24pp) | [88080] 002 X-Men 032 (1994) (Beast's Library).cbr (22pp) | [88103] 002 X-Men 033 (1994) (Digital) (Zone-Empire).cbr (20pp)
+            [88110] 004 X-Men v1 034.cbr (34pp) | [88118] 005 X-Men v1 035.cbr (36pp) | [88131] 002 X-Men 036 (1994) (digital) (Minutemen-Phantasm).cbr (21pp)
+            [88133] 004 X-Men 037 (1994) (digital) (Minutemen-Phantasm).cbr (23pp) | [88159] 005 X-Men 038 (1994) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [88168] 001 X-Men 039 (1994) (digital) (Minutemen-Bluntman).cbr (25pp) | [88184] 002 X-Men 040 (1995) (digital) (Minutemen-Phantasm).cbr (21pp)
+            [88187] 005 X-Men 041 (1995) (digital) (Minutemen-Phantasm).cbr (22pp) | [88248] 001 X-Men 042 (1995) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [88249] 002 X-Men 043 (1995) (digital) (Minutemen-Bluntman).cbr (23pp) | [88250] 003 X-Men 044 (1995) (digital) (Minutemen-Bluntman).cbr (21pp)
+            [88273] 002 X-Men Annual 1995 (1995) (digital) (Minutemen-Bluntman).cbr (59pp) | [88293] 002 X-Men 045 (1995) (digital) (Minutemen-Bluntman).cbr (36pp)
+            [88309] 001 X-Men 046 (1995) (digital) (Minutemen-Bluntman).cbr (23pp) | [88310] 002 X-Men 047 (1995) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            003 X-Men 048 (1996) (digital) (Minutemen-Bluntman).cbr … 035 X-Men 057 (1996) (digital) (Minutemen-Bluntman).cbr  (10 files, pp 19-36) | [88464] 001 X-Men Annual 1996.cbr (61pp)
+            [88479] 001 X-Men 058 (1996) (Beast's Library).cbr (25pp) | [88511] 005 X-Men #059.cbr (26pp) | [88528] 004 X-Men v1 060.cbr (24pp)
+            [88529] 005 X-Men 061 (1997) (Beast's Library).cbr (24pp) | [88536] 003 X-Men Annual 1997.cbr (39pp) | [88567] 001 X-Men 062 (1997) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            [88568] 002 X-Men 063 (1997) (Digital) (AnHeroGold-Empire).cbz (21pp) | [88569] 003 X-Men 064 (1997) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            [88601] 005 X-Men 065 (1997) (digital) (Minutemen-Bluntman).cbr (24pp) | [88617] 008 Flashback - X-Men -1 (1997) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [88634] 003 X-Men 066 (1997) (digital) (Minutemen-Bluntman).cbr (23pp) | [88637] 006 X-Men 067 (1997) (digital) (Minutemen-Bluntman).cbr (25pp)
+            [88643] 012 X-Men 068 (1997) (digital) (Minutemen-Bluntman).cbr (22pp) | [88652] 021 X-Men 069 (1997) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [88656] 025 X-Men 070 (1997) (Digital) (AnHeroGold-Empire).cbz (40pp)
+            002 X-Men 071 (1997) (digital) (Glorith-HD).cbz … 001 X-Men 073 (1998) (digital) (Glorith-HD).cbz  (6 files, pp 25-41)
+            [88817] 003 X-Men 0.5 (1998) (digital) (Minutemen-Bluntman).cbr (18pp) | [88821] 001 X-Men 077 (1998) (digital) (Glorith-HD).cbz (25pp)
+            [88822] 002 X-Men 078 (1998) (digital) (Glorith-HD).cbz (22pp) | [88864] 004 X-Men 079 (1998) (digital) (Glorith-HD).cbz (25pp)
+            [88869] 002 X-Men 080 (1998) (digital) (Minutemen-Bluntman).cbr (38pp) | [88888] 002 X-Men 081 (1998) (digital) (Minutemen-Bluntman).cbr (22pp)
+            [88899] 002 X-Men 082 (1998) (digital) (Minutemen-Bluntman).cbr (22pp) | [88901] 004 X-Men 083 (1999) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [88903] 006 X-Men 084 (1999) (digital) (Minutemen-Bluntman).cbr (23pp) | [88939] 011 X-Men 085 (1999) (Digital) (Zone-Empire).cbr (25pp)
+            [88940] 001 X-Men Annual 1998 (1998) (digital) (Glorith-HD).cbz (38pp) | [88948] 003 X-Men 086 (1999) (Digital) (Zone-Empire).cbr (24pp)
+            [88950] 005 X-Men 087 (1999) (Digital) (Zone-Empire).cbr (23pp) | [88969] 002 X-Men #088.cbr (24pp) | [88971] 004 X-Men #089.cbr (24pp) | [88973] 006 X-Men #090.cbr (23pp)
+            002 X-Men 091 (1999) (digital) (Minutemen-Bluntman).cbr … 005 X-Men 098 (2000) (digital) (Minutemen-Bluntman).cbr  (8 files, pp 22-34)
+            [89129] 006 X-Men 099 (2000) (Digital) (AnHeroGold-Empire).cbz (23pp) | [89161] 001 X-Men 100 (2000) (Beast's Library).cbr (36pp) | [89162] 002 X-Men 101 (2000) (Heintje) (ABPC).cbr (25pp)
+            [89183] 001 X-Men 102 (2000) (Beast's Library).cbr (24pp) | [89185] 003 X-Men Annual 2000.cbr (40pp) | [89186] 004 X-Men 103 (2000) (Beast's Library).cbr (24pp)
+            [89188] 006 X-Men 104 (2000) (Beast's Library).cbr (23pp) | [89190] 008 X-Men 105 (2000) (Beast's Library).cbr (24pp) | [89191] 009 X-Men #106.cbz (39pp)
+            [89271] 018 X-Men 107 (2000) (Digital) (AnHeroGold-Empire).cbz (24pp) | [89278] 004 X-Men 108 (2001) (Digital) (AnPymGold-Empire).cbz (23pp)
+            [89311] 005 X-Men 109 (2001) (Digital) (Shadowcat-Empire).cbz (23pp) | [89315] 003 X-Men 110 (2001) (Digital) (Zone-Empire).cbr (16pp)
+            [89334] 001 X-Men 111 (2001) (Digital) (Zone-Empire).cbr (18pp) | [89336] 003 X-Men 112 (2001) (Digital) (Zone-Empire).cbr (21pp)
+            [89338] 005 X-Men 113 (2001) (Digital) (Zone-Empire).cbr (23pp) | [116471] 02 X-Men 026 (1993-11) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (23pp)
+            [116516] 06 X-Men 064 (1997) (Digital) (AnHeroGold-Empire).cbz (22pp) | [116518] 01 X-Men 070 (1997) (Digital) (AnHeroGold-Empire).cbz (40pp)
+            [116521] 01 X-Men 085 (1999) (Digital) (Zone-Empire).cbr (25pp) | [116524] 04 X-Men 086 (1999) (Digital) (Zone-Empire).cbr (24pp)
+            [116526] 06 X-Men 087 (1999) (Digital) (Zone-Empire).cbr (23pp) | [116534] 04 X-Men 108 (2001) (Digital) (AnPymGold-Empire).cbz (23pp)
+            [116536] 06 X-Men 109 (2001) (Digital) (AnPymGold-Empire).cbz (23pp) | [116538] 08 X-Men 110 (2001) (Digital) (AnPymGold-Empire).cbz (21pp)
+   ours:    ladder 0.5, 1-113, 1996-1998, 2000; 112 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12; ComicInfo Series: "X-Men"x22, "X-Men Annual"x2; ComicInfo Volume: "1991"x23, "1998"x1; ComicInfo Count: "113"x8, "3"x1; ComicInfo Publisher: "Marvel Comics"x18, "Marvel"x6; ComicInfo Web: "65726"x1, "65799"x1, "65800"x1, "65801"x1
+   CV linked:      vol 4605 "X-Men" 1991 Marvel 115 issues; cached #1-113 (115); yearΔ 0; ratio 244/115 = 2.12; no judged range
+   CV per-file (v1): vol 43640 "X-Men" 1997 Panini France 169 on 219/244 files · vol 43672 "X-Men" 2001 Panini Verlag 150 on 19/244 files · vol 45796 "X-Men" 1996 Planeta DeAgostini 105 on 5/244 files · vol 125784 "X-Men .1" 2011 Panini Comics 1 issue 741776 on 1/244 files
+   CV candidates:  (= linked) · 77082 "Marvel Milestone Edition: The X-Men #1" 1991 Marvel 1 issue 466462 s66 · 19974 "Marvel Mangaverse: X-Men" 2002 Marvel 1 issue 119415 s48 · 64539 "Flashback" 1973 DynaPubs Enterprises 4 s43 · 53281 "Flashback" 1974 DynaPubs Enterprises 28 s40 · 69123 "Marvel Knights: X-Men" 2014 Marvel 5 s33 · 69316 "Enciclopedia Marvel: X-Men" 2006 Panini España 1 issue 433741 s33   (v1 search)
+   CV local rip:   (= linked) · 46130 "X-Men" 1992 Planeta DeAgostini 40 · 56350 "X-Men" 1992 Semic S.A. 25 · 134724 "X-Men" 1992 TM-Semic 53 · 57741 "X-Men" 1989 Abril 141   (rip lookup)
+   GCD per-file:   methods numx229 · round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 4254 "X-Men" 1991-2001 Marvel [was ongoing series] 118 on 122/244 files · series 59620 "X-Men" [es] 1992-1996 Planeta DeAgostini [was ongoing series] 40 on 26/244 files · series 30303 "X-Men" [es] 1996-2002 Planeta DeAgostini [] 72 on 23/244 files · series 98823 "X-Men" [da-dk] 1999-2010 Egmont [Was Ongoing Series] 74 on 16/244 files
+   GCD dump:       (= per-file) · 10642 "X-Men" [sv-se] 1990-1993 SatellitFörlaget [] 36 · 38822 "X-Men" [pl] 1992-1997 TM-Semic [] 53 · 149803 "The X-Men" [en-ng] 1990-? Princessa Comics [] 1   (dump lookup)
+   bridges:        gcd 4254 -> LOCG 109487 "X-Men: Legacy" support 153
+
+== S22445 X-Men: Age of X  [tier B]   keys: X-Men: Age of X  years 2011-2011  2 files / 2 collections
+   folders: [1] Marvel\_X-Men\X-Men\04 New X-Men v1 (2001) (Post Morrison) · [1] _Marvel Major Event Chronology (digital)\2011.01 - Age of X
+   files:   [86018] COL X-Men Vol. 20 - Age of X (2011) (Digital) (HD) (Zone-Empire).cbr (246pp) | [117962] COL X-Men - Age of X (2011) (Digital) (F) (Zone-Empire).cbr (248pp)
+   ours:    ComicInfo Series: "X-Men: Age of X"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86018] gcd_reprint 1097592: s29823 X-Men: Legacy (2008) #245-247 [8 stories] · s36520 New Mutants (2009) #22-24 [7 stories] · s56848 Age of X: Universe (2011) #1-2 [6 stories] · s55242 Age of X Alpha (2011) #1 [3 stories]
+             [117962] gcd_reprint 1097592: s29823 X-Men: Legacy (2008) #245-247 [8 stories] · s36520 New Mutants (2009) #22-24 [7 stories] · s56848 Age of X: Universe (2011) #1-2 [6 stories] · s55242 Age of X Alpha (2011) #1 [3 stories]
+   CV linked:      vol 40911 "X-Men: Age of X" 2011 Marvel 1 issues issue 275854; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 131212 "X-Men Milestones: Age of X" 2020 Marvel 1 issue 810764 s89 · 165548 "X-Men: Age of Revelation" 2025 Marvel 1 issue 1120505 s74 · 46377 "X-Men Sonderband: Age of X" 2011 Panini Verlag 2 s67 · 11501 "X-Men: Age of Apocalypse" 2005 Marvel 6 s59 · 37973 "Heroic Age: X-Men" 2011 Marvel 1 issue 253004 s59 · 19974 "Marvel Mangaverse: X-Men" 2002 Marvel 1 issue 119415 s43   (v1 search)
+   CV local rip:   (= linked) · 131212 "X-Men Milestones: Age of X" 2020 Marvel 1 issue 810764 (via CV candidate name "X-Men Milestones: Age of X") · 165548 "X-Men: Age of Revelation" 2025 Marvel 1 issue 1120505 (via CV candidate name "X-Men: Age of Revelation")   (rip lookup)
+   GCD dump:       73174 "X-Men: Age of X" 2011-2011 Marvel [] 1 · 223517 "X-Men: Age of X" 2011-2011 Marvel [] 1 · 165147 "X-Men Milestones: Age of X" 2020-2020 Marvel [] 1 (via CV candidate name "X-Men Milestones: Age of X") · 225976 "X-Men: Age of Revelation" 2025-2025 Marvel [] 1 (via CV candidate name "X-Men: Age of Revelation")   (dump lookup)
+
+== S36348 X-Statix: The Complete Collection  [tier B]   keys: X-Statix: The Complete Collection  years 2020-2020  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\X-Statix\X-Statix v1 (2003)\Deluxe Editions
+   files:   [86380] COL X-Statix - The Complete Collection Vol. 01 (2020) (Digital) (Kileko-Empire).cbz (495pp)
+   ours:    ComicInfo Series: "X-Statix: The Complete Collection"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86380] gcd_reprint 2270229: s4253 X-Force (1991) #116-129 [14 stories] · s10270 X-Statix (2002) #1-5 [6 stories] · s9911 The Brotherhood (2001) #9 [1 story]
+   CV linked:      vol 124413 "X-Statix: The Complete Collection" 2020 Marvel 2 issues; cached #1-2 (2); yearΔ 0; ratio 0/2; no judged range
+   CV candidates:  (= linked) · 35058 "X-Statix" 2003 Marvel 4 s73 · 9478 "X-Statix" 2002 Marvel 26 s67 · 142811 "X-Statix Collection" 2012 Panini Comics 7 s15 · 151368 "X-Statix" 2022 Mucha Comics 1 issue 995346 s15 · 151340 "X-Statix" 2023 Panini France 1 issue 995027 s15 · 42654 "Marvel 2003" 2003 Panini Brasil 12 s15   (v1 search)
+   CV local rip:   (= linked) · 151368 "X-Statix" 2022 Mucha Comics 1 issue 995346 (via CV candidate name "X-Statix") · 151340 "X-Statix" 2023 Panini France 1 issue 995027 (via CV candidate name "X-Statix") · 43582 "X-Statix" 2004 Panini España 5 (via CV candidate name "X-Statix") · 35058 "X-Statix" 2003 Marvel 4 (via CV candidate name "X-Statix") · 9478 "X-Statix" 2002 Marvel 26 (via CV candidate name "X-Statix")   (rip lookup)
+   GCD dump:       177103 "X-Statix: The Complete Collection" 2019-? Marvel [] 2 · 36230 "X-Statix" [es] 2005-2005 Panini España [] 1 (via CV candidate name "X-Statix") · 62167 "X-Statix" 2003-2004 Marvel [] 4 (via CV candidate name "X-Statix") · 10270 "X-Statix" 2002-2004 Marvel [] 26 (via CV candidate name "X-Statix")   (dump lookup)
+
+== S6295 Excalibur Epic Collection: The Cross-Time Caper  [tier B]   keys: Excalibur Epic Collection  years 2018-2018  2 files / 2 collections
+   flags: #236 label-ambiguous [Pending] item 117869 — items 86402 and 117869 are duplicate copies of Epic Collection Vol. 02
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\Excalibur Epic Collection · [1] _Marvel Major Event Chronology (digital)\1989.09 - Excalibur - Cross-Time Caper
+   files:   [86402] COL Excalibur Epic Collection Vol. 02 - The Cross-Time Caper (2018) (Digital) (Zone-Empire).cbr (459pp)
+            [117869] COL Excalibur Epic Collection Vol. 02 - The Cross-Time Caper (2018) (Digital) (Zone-Empire).cbr (459pp)
+   CV linked:      vol 108812 "Excalibur Epic Collection: The Cross-Time Caper" 2018 Marvel 1 issues issue 660661; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 125355 "Excalibur Epic Collection: Curiouser and Curiouser" 2020 Marvel 1 issue 739023 s80 · 142005 "Excalibur Epic Collection: The Battle For Britain" 2022 Marvel 1 issue 912772 s79 · 155070 "Excalibur Epic Collection: You Are Cordially Invited" 2023 Marvel 1 issue 1032856 s79 · 99861 "Excalibur Epic Collection: The Sword Is Drawn" 2017 Marvel 1 issue 587406 s79 · 117057 "Excalibur Epic Collection: Girls' School From Heck" 2019 Marvel 1 issue 700666 s79 · 161444 "Excalibur Epic Collection: Days of Futures Yet to Come " 2024 Marvel 1 issue 1080324 s77   (v1 search)
+   CV local rip:   (= linked) · 125355 "Excalibur Epic Collection: Curiouser and Curiouser" 2020 Marvel 1 issue 739023 (via CV candidate name "Excalibur Epic Collection: Curiouser and Curiouser") · 142005 "Excalibur Epic Collection: The Battle For Britain" 2022 Marvel 1 issue 912772 (via CV candidate name "Excalibur Epic Collection: The Battle For Britain")   (rip lookup)
+   GCD dump:       112667 "Excalibur Epic Collection" 2017-? Marvel [] 7   (dump lookup)
+
+== S6296 Excalibur Epic Collection: Curiouser and Curiouser  [tier C] · by 3  keys: Excalibur Epic Collection: Curiouser And Curiouser  years 2020-2020  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\Excalibur Epic Collection
+   files:   [86404] COL Excalibur Epic Collection Vol. 04 - Curiouser And Curiouser (2020) (Digital) (Kileko-Empire).cbz (473pp)
+   ours:    ComicInfo Series: "Excalibur Epic Collection: Curiouser And Curiouser"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86404] gcd notes 2108214 (#4 of Excalibur Epic Collection): Excalibur (Marvel, 1988 series) #42-58; sing (Marvel, 1992 series), and material from Marvel Comics Presents (Marvel, 1988 series) #110  |  gcd_reprint 2108214: s3648 Excalibur (1988) #42-58 [18 stories] · s3654 Marvel Comics Presents (1988) #110 [1 story] · s10612 Excalibur: XX Crossing (1992) (unnumbered) [1 story]
+   CV linked:      vol 125355 "Excalibur Epic Collection: Curiouser and Curiouser" 2020 Marvel 1 issues issue 739023; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 108812 "Excalibur Epic Collection: The Cross-Time Caper" 2018 Marvel 1 issue 660661 s57 · 142005 "Excalibur Epic Collection: The Battle For Britain" 2022 Marvel 1 issue 912772 s56 · 155070 "Excalibur Epic Collection: You Are Cordially Invited" 2023 Marvel 1 issue 1032856 s56 · 99861 "Excalibur Epic Collection: The Sword Is Drawn" 2017 Marvel 1 issue 587406 s56 · 117057 "Excalibur Epic Collection: Girls' School From Heck" 2019 Marvel 1 issue 700666 s56 · 161444 "Excalibur Epic Collection: Days of Futures Yet to Come " 2024 Marvel 1 issue 1080324 s54   (v1 search)
+   CV local rip:   (= linked) · 108812 "Excalibur Epic Collection: The Cross-Time Caper" 2018 Marvel 1 issue 660661 (via CV candidate name "Excalibur Epic Collection: The Cross-Time Caper") · 142005 "Excalibur Epic Collection: The Battle For Britain" 2022 Marvel 1 issue 912772 (via CV candidate name "Excalibur Epic Collection: The Battle For Britain")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112667 "Excalibur Epic Collection" 2017-? Marvel [collected edition] 7 on 1/1 files; the dump names no other series
+   bridges:        gcd 112667 -> LOCG 135209 "Excalibur Epic Collection: Curiouser and Curiouser TP" support 8 · gcd 112667 -> OL /works/OL19742025W "Epic collection" isbnSupport 8
+
+== S6297 Excalibur Epic Collection: Days of Futures Yet to Come   [tier C] · by 7  keys: Excalibur Epic Collection: Days Of Futures Yet To Come  years 2024-2024  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\Excalibur Epic Collection
+   files:   [86405] COL Excalibur Epic Collection Vol. 05 - Days of Futures Yet to Come (2024) (Digital) (Kileko-Empire).cbz (492pp)
+   ours:    ComicInfo Series: "Excalibur Epic Collection: Days Of Futures Yet To Come"x1
+   GCD says: [86405] gcd_reprint 2683722: s3648 Excalibur (1988) #59-75 [18 stories] · s9832 Excalibur Annual (1993) #1 [1 story]
+   CV linked:      vol 161444 "Excalibur Epic Collection: Days of Futures Yet to Come " 2024 Marvel 1 issues issue 1080324; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 125355 "Excalibur Epic Collection: Curiouser and Curiouser" 2020 Marvel 1 issue 739023 s50 · 108812 "Excalibur Epic Collection: The Cross-Time Caper" 2018 Marvel 1 issue 660661 s50 · 32068 "New Excalibur: Last Days of Camelot" 2007 Marvel 1 issue 201180 s50 · 82103 "Fantastic Four Epic Collection: Strange Days" 2015 Marvel 1 issue 489318 s50 · 142005 "Excalibur Epic Collection: The Battle For Britain" 2022 Marvel 1 issue 912772 s47 · 155070 "Excalibur Epic Collection: You Are Cordially Invited" 2023 Marvel 1 issue 1032856 s47   (v1 search)
+   CV local rip:   (= linked) · 125355 "Excalibur Epic Collection: Curiouser and Curiouser" 2020 Marvel 1 issue 739023 (via CV candidate name "Excalibur Epic Collection: Curiouser and Curiouser") · 108812 "Excalibur Epic Collection: The Cross-Time Caper" 2018 Marvel 1 issue 660661 (via CV candidate name "Excalibur Epic Collection: The Cross-Time Caper")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112667 "Excalibur Epic Collection" 2017-? Marvel [collected edition] 7 on 1/1 files; the dump names no other series
+   bridges:        gcd 112667 -> LOCG 135209 "Excalibur Epic Collection: Curiouser and Curiouser TP" support 8 · gcd 112667 -> OL /works/OL19742025W "Epic collection" isbnSupport 8
+
+== S6298 Excalibur Epic Collection: Girls' School From Heck  [tier C] · by 2  keys: Excalibur Epic Collection: Girls' School From Heck  years 2019-2019  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\Excalibur Epic Collection
+   files:   [86403] COL Excalibur Epic Collection Vol. 03 - Girls' School From Heck (2019) (Digital) (Kileko-Empire).cbz (458pp)
+   ours:    ComicInfo Series: "Excalibur Epic Collection: Girls' School From Heck"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86403] gcd notes 1924015 (#3 of Excalibur Epic Collection): Excalibur (Marvel, 1988 series) #31-41; (Marvel, 1991 series), Excalibur: Air Apparent (Marvel, 1991 series), Sensational She-Hulk #26; (Marvel, 1989 series), and material from Marvel Comics Presents (Marvel, 1988 series) #75  |  gcd_reprint 1924015: s3648 Excalibur (1988) #31-41 [11 stories] · s13733 Excalibur: Air Apparent (1991) (unnumbered) [2 stories] · s3654 Marvel Comics Presents (1988) #75 [1 story] · s3858 The Sensational She-Hulk (1989) #26 [1 story]
+   CV linked:      vol 117057 "Excalibur Epic Collection: Girls' School From Heck" 2019 Marvel 1 issues issue 700666; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 63385 "Heck" 2013 Top Shelf 1 issue 410861 s55 · 125355 "Excalibur Epic Collection: Curiouser and Curiouser" 2020 Marvel 1 issue 739023 s52 · 108812 "Excalibur Epic Collection: The Cross-Time Caper" 2018 Marvel 1 issue 660661 s52 · 142005 "Excalibur Epic Collection: The Battle For Britain" 2022 Marvel 1 issue 912772 s51 · 155070 "Excalibur Epic Collection: You Are Cordially Invited" 2023 Marvel 1 issue 1032856 s51 · 99861 "Excalibur Epic Collection: The Sword Is Drawn" 2017 Marvel 1 issue 587406 s51   (v1 search)
+   CV local rip:   (= linked) · 63385 "Heck" 2013 Top Shelf 1 issue 410861 (via CV candidate name "Heck") · 125355 "Excalibur Epic Collection: Curiouser and Curiouser" 2020 Marvel 1 issue 739023 (via CV candidate name "Excalibur Epic Collection: Curiouser and Curiouser")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112667 "Excalibur Epic Collection" 2017-? Marvel [collected edition] 7 on 1/1 files
+   GCD dump:       78182 "Heck" 2013-2013 Top Shelf [] 1 (via CV candidate name "Heck")   (dump lookup)
+   bridges:        gcd 112667 -> LOCG 135209 "Excalibur Epic Collection: Curiouser and Curiouser TP" support 8 · gcd 112667 -> OL /works/OL19742025W "Epic collection" isbnSupport 8
+
+== S6299 Excalibur Epic Collection: The Battle For Britain  [tier C] · by 5  keys: Excalibur Epic Collection: The Battle For Britain  years 2022-2022  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\Excalibur Epic Collection
+   files:   [86406] COL Excalibur Epic Collection Vol. 08 - The Battle For Britain (2022) (Digital) (Kileko-Empire).cbz (493pp)
+   ours:    ComicInfo Series: "Excalibur Epic Collection: The Battle For Britain"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86406] gcd_reprint 2381427: s3648 Excalibur (1988) #104-115 [14 stories] · s5803 New Mutants: Truth or Death (1997) #1-3 [3 stories] · s5800 Kitty Pryde, Agent of SHIELD (1997) #1-3 [3 stories] · s5788 Colossus (1997) #1 [1 story]
+   CV linked:      vol 142005 "Excalibur Epic Collection: The Battle For Britain" 2022 Marvel 1 issues issue 912772; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 108812 "Excalibur Epic Collection: The Cross-Time Caper" 2018 Marvel 1 issue 660661 s62 · 99861 "Excalibur Epic Collection: The Sword Is Drawn" 2017 Marvel 1 issue 587406 s61 · 30821 "New Excalibur: Battle For Eternity" 2008 Marvel 1 issue 190498 s54 · 125355 "Excalibur Epic Collection: Curiouser and Curiouser" 2020 Marvel 1 issue 739023 s52 · 155070 "Excalibur Epic Collection: You Are Cordially Invited" 2023 Marvel 1 issue 1032856 s51 · 117057 "Excalibur Epic Collection: Girls' School From Heck" 2019 Marvel 1 issue 700666 s51   (v1 search)
+   CV local rip:   (= linked) · 108812 "Excalibur Epic Collection: The Cross-Time Caper" 2018 Marvel 1 issue 660661 (via CV candidate name "Excalibur Epic Collection: The Cross-Time Caper") · 99861 "Excalibur Epic Collection: The Sword Is Drawn" 2017 Marvel 1 issue 587406 (via CV candidate name "Excalibur Epic Collection: The Sword Is Drawn")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112667 "Excalibur Epic Collection" 2017-? Marvel [collected edition] 7 on 1/1 files; the dump names no other series
+   bridges:        gcd 112667 -> LOCG 135209 "Excalibur Epic Collection: Curiouser and Curiouser TP" support 8 · gcd 112667 -> OL /works/OL19742025W "Epic collection" isbnSupport 8
+
+== S6301 Excalibur Epic Collection: You Are Cordially Invited  [tier C] · by 6  keys: Excalibur Epic Collection: You Are Cordially Invited  years 2023-2023  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\Excalibur Epic Collection
+   files:   [86407] COL Excalibur Epic Collection Vol. 09 - You Are Cordially Invited (2023) (Digital-Empire).cbz (493pp)
+   ours:    ComicInfo Series: "Excalibur Epic Collection: You Are Cordially Invited"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86407] gcd_reprint 2584822: s3648 Excalibur (1988) #116-125 [11 stories] · s20462 Excalibur (2001) #1-4 [4 stories] · s6190 X-Men True Friends (1999) #1-3 [3 stories] · s4754 X-Men Unlimited (1993) #19 [1 story]
+   CV linked:      vol 155070 "Excalibur Epic Collection: You Are Cordially Invited" 2023 Marvel 1 issues issue 1032856; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 125355 "Excalibur Epic Collection: Curiouser and Curiouser" 2020 Marvel 1 issue 739023 s52 · 108812 "Excalibur Epic Collection: The Cross-Time Caper" 2018 Marvel 1 issue 660661 s52 · 142005 "Excalibur Epic Collection: The Battle For Britain" 2022 Marvel 1 issue 912772 s51 · 99861 "Excalibur Epic Collection: The Sword Is Drawn" 2017 Marvel 1 issue 587406 s51 · 117057 "Excalibur Epic Collection: Girls' School From Heck" 2019 Marvel 1 issue 700666 s51 · 96317 "X-Men Epic Collection: Lonely Are The Hunted" 2016 Marvel 1 issue 563730 s51   (v1 search)
+   CV local rip:   (= linked) · 125355 "Excalibur Epic Collection: Curiouser and Curiouser" 2020 Marvel 1 issue 739023 (via CV candidate name "Excalibur Epic Collection: Curiouser and Curiouser") · 108812 "Excalibur Epic Collection: The Cross-Time Caper" 2018 Marvel 1 issue 660661 (via CV candidate name "Excalibur Epic Collection: The Cross-Time Caper")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112667 "Excalibur Epic Collection" 2017-? Marvel [collected edition] 7 on 1/1 files; the dump names no other series
+   bridges:        gcd 112667 -> LOCG 135209 "Excalibur Epic Collection: Curiouser and Curiouser TP" support 8 · gcd 112667 -> OL /works/OL19742025W "Epic collection" isbnSupport 8
+
+== S35238 Excalibur Epic Collection: The Sword Is Drawn  [tier B]   keys: Excalibur Epic Collection: The Sword Is Drawn  years 2017-2017  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\Excalibur Epic Collection
+   files:   [86401] COL Excalibur Epic Collection Vol. 01 - The Sword Is Drawn (2017) (Digital) (Kileko-Empire).cbz (473pp)
+   ours:    ComicInfo Series: "Excalibur Epic Collection: The Sword Is Drawn"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86401] gcd_reprint 1680414: s3648 Excalibur (1988) #1-11 [33 stories] · s3654 Marvel Comics Presents (1988) #31-38 [8 stories] · s3838 Excalibur: Mojo Mayhem (1989) (unnumbered) [5 stories] · s3413 Excalibur Special Edition (1987) (unnumbered) [4 stories]
+   CV linked:      vol 99861 "Excalibur Epic Collection: The Sword Is Drawn" 2017 Marvel 1 issues issue 587406; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 108812 "Excalibur Epic Collection: The Cross-Time Caper" 2018 Marvel 1 issue 660661 s62 · 142005 "Excalibur Epic Collection: The Battle For Britain" 2022 Marvel 1 issue 912772 s61 · 38072 "Excalibur: Forging the Sword" 2004 Marvel 1 issue 254508 s60 · 125355 "Excalibur Epic Collection: Curiouser and Curiouser" 2020 Marvel 1 issue 739023 s52 · 155070 "Excalibur Epic Collection: You Are Cordially Invited" 2023 Marvel 1 issue 1032856 s51 · 117057 "Excalibur Epic Collection: Girls' School From Heck" 2019 Marvel 1 issue 700666 s51   (v1 search)
+   CV local rip:   (= linked) · 108812 "Excalibur Epic Collection: The Cross-Time Caper" 2018 Marvel 1 issue 660661 (via CV candidate name "Excalibur Epic Collection: The Cross-Time Caper") · 142005 "Excalibur Epic Collection: The Battle For Britain" 2022 Marvel 1 issue 912772 (via CV candidate name "Excalibur Epic Collection: The Battle For Britain")   (rip lookup)
+
+== S7350 Generation X Epic Collection: Back to School  [tier B]   keys: Generation X Epic Collection: Back To School  years 2021-2021  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\Generation X Epic Collection
+   files:   [86408] COL Generation X Epic Collection Vol. 01 - Back to School (2021) (Digital-Empire).cbr (425pp)
+   ours:    ComicInfo Series: "Generation X Epic Collection: Back To School"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 137802 "Generation X Epic Collection: Back to School" 2021 Marvel 1 issues issue 873643; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 5300 "Generation X" 1994 Marvel 77 s70 · 146071 "Generation X Epic Collection: Emplate's Revenge" 2022 Marvel 1 issue 955127 s62 · 167107 "Generation X Epic Collection: Family Business" 2025 Marvel 1 issue 1133954 s62 · 117478 "Wolverine Epic Collection: Back to Basics" 2019 Marvel 1 issue 702478 s62 · 160113 "Generation X Epic Collection: Pride and Penance" 2024 Marvel 1 issue 1071814 s61 · 151027 "Generation X Epic Collection: The Secret of M" 2023 Marvel 1 issue 993385 s60   (v1 search)
+   CV local rip:   (= linked) · 101478 "Generation X" 2017 Marvel 12 (via CV candidate name "Generation X") · 47374 "Generation X" 1997 Panini France 13 (via CV candidate name "Generation X") · 5300 "Generation X" 1994 Marvel 77 (via CV candidate name "Generation X") · 146071 "Generation X Epic Collection: Emplate's Revenge" 2022 Marvel 1 issue 955127 (via CV candidate name "Generation X Epic Collection: Emplate's Revenge")   (rip lookup)
+   GCD dump:       118040 "Generation X" 2018-2018 Marvel [] 2 (via CV candidate name "Generation X") · 114163 "Generation X" 2017-2018 Marvel [] 12 (via CV candidate name "Generation X") · 173149 "Generation X" [fr] 1999-1999 Panini France [] 1 (via CV candidate name "Generation X") · 16993 "Generation X" 1998-1998 Marvel; Wizard [] 1 (via CV candidate name "Generation X") · 173104 "Generation X" [fr] 1998-1999 Panini France [] 12 (via CV candidate name "Generation X") · 5012 "Generation X" 1994-2001 Marvel [] 76 (via CV candidate name "Generation X")   (dump lookup)
+
+== S7351 Generation X Epic Collection: Emplate's Revenge  [tier B]   keys: Generation X Epic Collection: Emplate's Revenge  years 2022-2022  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\Generation X Epic Collection
+   files:   [86409] COL Generation X Epic Collection Vol. 02 - Emplate's Revenge (2022) (Digital) (Kileko-Empire).cbz (458pp)
+   ours:    ComicInfo Series: "Generation X Epic Collection: Emplate's Revenge"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 146071 "Generation X Epic Collection: Emplate's Revenge" 2022 Marvel 1 issues issue 955127; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 5300 "Generation X" 1994 Marvel 77 s70 · 101478 "Generation X" 2017 Marvel 12 s70 · 167107 "Generation X Epic Collection: Family Business" 2025 Marvel 1 issue 1133954 s68 · 137802 "Generation X Epic Collection: Back to School" 2021 Marvel 1 issue 873643 s67 · 160113 "Generation X Epic Collection: Pride and Penance" 2024 Marvel 1 issue 1071814 s67 · 151027 "Generation X Epic Collection: The Secret of M" 2023 Marvel 1 issue 993385 s66   (v1 search)
+   CV local rip:   (= linked) · 101478 "Generation X" 2017 Marvel 12 (via CV candidate name "Generation X") · 47374 "Generation X" 1997 Panini France 13 (via CV candidate name "Generation X") · 5300 "Generation X" 1994 Marvel 77 (via CV candidate name "Generation X")   (rip lookup)
+   GCD dump:       118040 "Generation X" 2018-2018 Marvel [] 2 (via CV candidate name "Generation X") · 114163 "Generation X" 2017-2018 Marvel [] 12 (via CV candidate name "Generation X") · 173149 "Generation X" [fr] 1999-1999 Panini France [] 1 (via CV candidate name "Generation X") · 16993 "Generation X" 1998-1998 Marvel; Wizard [] 1 (via CV candidate name "Generation X") · 173104 "Generation X" [fr] 1998-1999 Panini France [] 12 (via CV candidate name "Generation X") · 5012 "Generation X" 1994-2001 Marvel [] 76 (via CV candidate name "Generation X")   (dump lookup)
+
+== S7352 Generation X Epic Collection: The Secret of M  [tier B]   keys: Generation X Epic Collection: The Secret Of M  years 2023-2023  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\Generation X Epic Collection
+   files:   [86410] COL Generation X Epic Collection Vol. 03 - The Secret Of M (2023) (Digital) (Kileko-Empire).cbz (461pp)
+   ours:    ComicInfo Series: "Generation X Epic Collection: The Secret Of M"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 151027 "Generation X Epic Collection: The Secret of M" 2023 Marvel 1 issues issue 993385; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 18145 "Generation M" 2006 Marvel 5 s70 · 5300 "Generation X" 1994 Marvel 77 s70 · 101478 "Generation X" 2017 Marvel 12 s70 · 146071 "Generation X Epic Collection: Emplate's Revenge" 2022 Marvel 1 issue 955127 s58 · 167107 "Generation X Epic Collection: Family Business" 2025 Marvel 1 issue 1133954 s58 · 137802 "Generation X Epic Collection: Back to School" 2021 Marvel 1 issue 873643 s57   (v1 search)
+   CV local rip:   (= linked) · 101478 "Generation X" 2017 Marvel 12 (via CV candidate name "Generation X") · 47374 "Generation X" 1997 Panini France 13 (via CV candidate name "Generation X") · 5300 "Generation X" 1994 Marvel 77 (via CV candidate name "Generation X") · 18145 "Generation M" 2006 Marvel 5 (via CV candidate name "Generation M")   (rip lookup)
+   GCD dump:       118040 "Generation X" 2018-2018 Marvel [] 2 (via CV candidate name "Generation X") · 114163 "Generation X" 2017-2018 Marvel [] 12 (via CV candidate name "Generation X") · 173149 "Generation X" [fr] 1999-1999 Panini France [] 1 (via CV candidate name "Generation X") · 16993 "Generation X" 1998-1998 Marvel; Wizard [] 1 (via CV candidate name "Generation X") · 173104 "Generation X" [fr] 1998-1999 Panini France [] 12 (via CV candidate name "Generation X") · 5012 "Generation X" 1994-2001 Marvel [] 76 (via CV candidate name "Generation X")   (dump lookup)
+
+== S12829 New Mutants Epic Collection: Curse of the Valkyries  [tier B]   keys: New Mutants Epic Collection  years 2018-2018  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\New Mutants Epic Collection
+   files:   [86416] COL New Mutants Epic Collection Vol. 06 - Curse Of The Valkyries (2018) (Digital) (Kileko-Empire).cbr (488pp)
+   CV linked:      vol 108957 "New Mutants Epic Collection: Curse of the Valkyries" 2018 Marvel 1 issues issue 661157; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 130998 "New Mutants Epic Collection: Cable" 2020 Marvel 1 issue 807666 s89 · 99448 "New Mutants Epic Collection: Renewal" 2017 Marvel 1 issue 585087 s89 · 138158 "New Mutants Epic Collection: Sudden Death" 2021 Marvel 1 issue 878329 s88 · 162601 "New Mutants Epic Collection: Fallen Angels" 2025 Marvel 1 issue 1097699 s88 · 151710 "New Mutants Epic Collection: Asgardian Wars " 2023 Marvel 1 issue 997425 s88 · 120134 "New Mutants Epic Collection: The Demon Bear Saga" 2019 Marvel 1 issue 713512 s86   (v1 search)
+   CV local rip:   (= linked) · 99448 "New Mutants Epic Collection: Renewal" 2017 Marvel 1 issue 585087 (via CV candidate name "New Mutants Epic Collection: Renewal") · 130998 "New Mutants Epic Collection: Cable" 2020 Marvel 1 issue 807666 (via CV candidate name "New Mutants Epic Collection: Cable") · 138158 "New Mutants Epic Collection: Sudden Death" 2021 Marvel 1 issue 878329 (via CV candidate name "New Mutants Epic Collection: Sudden Death")   (rip lookup)
+   GCD dump:       112586 "New Mutants Epic Collection" 2017-? Marvel [] 8   (dump lookup)
+
+== S12830 New Mutants Epic Collection: Asgardian Wars   [tier C] · by 6  keys: New Mutants Epic Collection: Asgardian Wars  years 2023-2023  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\New Mutants Epic Collection
+   files:   [86414] COL New Mutants Epic Collection Vol. 03 - Asgardian Wars (2023) (Digital-Empire).cbz (513pp)
+   ours:    ComicInfo Series: "New Mutants Epic Collection: Asgardian Wars"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86414] gcd notes 2549677 (#3 of New Mutants Epic Collection): New Mutants #32-44; New Mutants Annual #2; New Mutants Special Edition #1; X-Men Annual #9  |  gcd_reprint 2549677: s2755 The New Mutants (1983) #32-44 [26 stories] · s74368 Marvel Age Annual (1985) #1-2 [2 stories] · s69795 Marvel Age (1983) #36, #41 [2 stories] · s2884 The New Mutants Annual (1984) #2 [2 stories]
+   CV linked:      vol 151710 "New Mutants Epic Collection: Asgardian Wars " 2023 Marvel 1 issues issue 997425; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 130998 "New Mutants Epic Collection: Cable" 2020 Marvel 1 issue 807666 s69 · 99448 "New Mutants Epic Collection: Renewal" 2017 Marvel 1 issue 585087 s69 · 138158 "New Mutants Epic Collection: Sudden Death" 2021 Marvel 1 issue 878329 s68 · 162601 "New Mutants Epic Collection: Fallen Angels" 2025 Marvel 1 issue 1097699 s68 · 108957 "New Mutants Epic Collection: Curse of the Valkyries" 2018 Marvel 1 issue 661157 s66 · 120134 "New Mutants Epic Collection: The Demon Bear Saga" 2019 Marvel 1 issue 713512 s66   (v1 search)
+   CV local rip:   (= linked) · 130998 "New Mutants Epic Collection: Cable" 2020 Marvel 1 issue 807666 (via CV candidate name "New Mutants Epic Collection: Cable") · 99448 "New Mutants Epic Collection: Renewal" 2017 Marvel 1 issue 585087 (via CV candidate name "New Mutants Epic Collection: Renewal")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112586 "New Mutants Epic Collection" 2017-? Marvel [collected edition] 8 on 1/1 files; the dump names no other series
+   bridges:        gcd 112586 -> LOCG 130235 "The New Mutants Epic Collection: Sudden Death TP" support 6 · gcd 112586 -> OL /works/OL21671609W "Epic collection" isbnSupport 6
+
+== S12831 New Mutants Epic Collection: Cable  [tier C] · by 3  keys: New Mutants Epic Collection: Cable  years 2020-2020  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\New Mutants Epic Collection
+   files:   [86417] COL New Mutants Epic Collection Vol. 07 - Cable (2020) (Digital-Empire).cbr (483pp)
+   ours:    ComicInfo Series: "New Mutants Epic Collection: Cable"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86417] gcd notes 2159656 (#7 of New Mutants Epic Collection): New Mutants (Marvel, 1983 series) #86-94; New Mutants Annual (Marvel, 1984 series) #5-6; New Mutants Summer Special (Marvel, 1990 series) #1; X-Factor Annual (Marvel, 1986) #5; Uncanny X-Men Annual (Marvel, 1963 series) #14  |  gcd_reprint 2159656: s2755 The New Mutants (1983) #86-94 [21 stories] · s2884 The New Mutants Annual (1984) #5-6 [16 stories] · s32005 Cable and the New Mutants (1992) (unnumbered) [3 stories] · s11849 The New Mutants Summer Special (1990) #1 [3 stories]
+   CV linked:      vol 130998 "New Mutants Epic Collection: Cable" 2020 Marvel 1 issues issue 807666; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 99448 "New Mutants Epic Collection: Renewal" 2017 Marvel 1 issue 585087 s77 · 138158 "New Mutants Epic Collection: Sudden Death" 2021 Marvel 1 issue 878329 s76 · 162601 "New Mutants Epic Collection: Fallen Angels" 2025 Marvel 1 issue 1097699 s76 · 108957 "New Mutants Epic Collection: Curse of the Valkyries" 2018 Marvel 1 issue 661157 s74 · 120134 "New Mutants Epic Collection: The Demon Bear Saga" 2019 Marvel 1 issue 713512 s74 · 144799 "New Mutants Epic Collection: The End of the Beginning" 2022 Marvel 1 issue 944334 s73   (v1 search)
+   CV local rip:   (= linked) · 138158 "New Mutants Epic Collection: Sudden Death" 2021 Marvel 1 issue 878329 (via CV candidate name "New Mutants Epic Collection: Sudden Death") · 99448 "New Mutants Epic Collection: Renewal" 2017 Marvel 1 issue 585087 (via CV candidate name "New Mutants Epic Collection: Renewal")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112586 "New Mutants Epic Collection" 2017-? Marvel [collected edition] 8 on 1/1 files; the dump names no other series
+   bridges:        gcd 112586 -> LOCG 130235 "The New Mutants Epic Collection: Sudden Death TP" support 6 · gcd 112586 -> OL /works/OL21671609W "Epic collection" isbnSupport 6
+
+== S12832 New Mutants Epic Collection: Sudden Death  [tier C] · by 4  keys: New Mutants Epic Collection: Sudden Death  years 2021-2021  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\New Mutants Epic Collection
+   files:   [86415] COL New Mutants Epic Collection Vol. 05 - Sudden Death (2021) (Digital-Empire).cbr (471pp)
+   ours:    ComicInfo Series: "New Mutants Epic Collection: Sudden Death"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86415] gcd_reprint 2252646: s2755 The New Mutants (1983) #55-70 [17 stories] · s2884 The New Mutants Annual (1984) #4 [1 story]
+   CV linked:      vol 138158 "New Mutants Epic Collection: Sudden Death" 2021 Marvel 1 issues issue 878329; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 156059 "Sudden Death" 2023 Scout Comics 1 issue 1040482 s70 · 130998 "New Mutants Epic Collection: Cable" 2020 Marvel 1 issue 807666 s69 · 99448 "New Mutants Epic Collection: Renewal" 2017 Marvel 1 issue 585087 s69 · 162601 "New Mutants Epic Collection: Fallen Angels" 2025 Marvel 1 issue 1097699 s68 · 151710 "New Mutants Epic Collection: Asgardian Wars " 2023 Marvel 1 issue 997425 s68 · 108957 "New Mutants Epic Collection: Curse of the Valkyries" 2018 Marvel 1 issue 661157 s66   (v1 search)
+   CV local rip:   (= linked) · 156059 "Sudden Death" 2023 Scout Comics 1 issue 1040482 (via CV candidate name "Sudden Death") · 130998 "New Mutants Epic Collection: Cable" 2020 Marvel 1 issue 807666 (via CV candidate name "New Mutants Epic Collection: Cable")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112586 "New Mutants Epic Collection" 2017-? Marvel [collected edition] 8 on 1/1 files
+   GCD dump:       201219 "Sudden Death" 2023-2023 Scout Comics [] 1 (via CV candidate name "Sudden Death")   (dump lookup)
+   bridges:        gcd 112586 -> LOCG 130235 "The New Mutants Epic Collection: Sudden Death TP" support 6 · gcd 112586 -> OL /works/OL21671609W "Epic collection" isbnSupport 6
+
+== S12833 New Mutants Epic Collection: The Demon Bear Saga  [tier C] · by 2  keys: New Mutants Epic Collection: The Demon Bear Saga  years 2019-2019  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\New Mutants Epic Collection
+   files:   [86413] COL New Mutants Epic Collection Vol. 02 - The Demon Bear Saga (2019) (Digital) (Kileko-Empire).cbz (504pp)
+   ours:    ComicInfo Series: "New Mutants Epic Collection: The Demon Bear Saga"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86413] gcd notes 1987909 (#2 of New Mutants Epic Collection): The New Mutants (Marvel, 1983 Series) #13-31; The New Mutants Annual (Marvel, 1984 Series) #1  |  gcd_reprint 1987909: s2755 The New Mutants (1983) #13-31 [62 stories] · s17076 X-Men Archives (1995) #1-3 [3 stories] · s32009 The New Mutants: The Demon Bear Saga (1990) (unnumbered) [3 stories] · s2884 The New Mutants Annual (1984) #1 [2 stories]
+   CV linked:      vol 120134 "New Mutants Epic Collection: The Demon Bear Saga" 2019 Marvel 1 issues issue 713512; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 30553 "New Mutants: The Demon Bear Saga" 1990 Marvel 1 issue 188067 s85 · 109455 "The New Mutants: Demon Bear" 2018 Marvel 1 issue 664305 s85 · 26083 "The New Mutants Saga" 2009 Marvel 1 issue 154527 s85 · 144799 "New Mutants Epic Collection: The End of the Beginning" 2022 Marvel 1 issue 944334 s63 · 130998 "New Mutants Epic Collection: Cable" 2020 Marvel 1 issue 807666 s62 · 99448 "New Mutants Epic Collection: Renewal" 2017 Marvel 1 issue 585087 s62   (v1 search)
+   CV local rip:   (= linked) · 109455 "The New Mutants: Demon Bear" 2018 Marvel 1 issue 664305 (via CV candidate name "The New Mutants: Demon Bear") · 30553 "New Mutants: The Demon Bear Saga" 1990 Marvel 1 issue 188067 (via CV candidate name "New Mutants: The Demon Bear Saga")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112586 "New Mutants Epic Collection" 2017-? Marvel [collected edition] 8 on 1/1 files
+   GCD dump:       123205 "New Mutants: Demon Bear" 2018-2018 Marvel [] 1 (via CV candidate name "The New Mutants: Demon Bear") · 32009 "The New Mutants: The Demon Bear Saga" 1990-1990 Marvel [] 1 (via CV candidate name "New Mutants: The Demon Bear Saga")   (dump lookup)
+   bridges:        gcd 112586 -> LOCG 130235 "The New Mutants Epic Collection: Sudden Death TP" support 6 · gcd 112586 -> OL /works/OL21671609W "Epic collection" isbnSupport 6
+
+== S12834 New Mutants Epic Collection: The End of the Beginning  [tier C] · by 5  keys: New Mutants Epic Collection: The End Of The Beginning  years 2022-2022  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\New Mutants Epic Collection
+   files:   [86418] COL New Mutants Epic Collection Vol. 08 - The End Of The Beginning (2022) (Digital) (Kileko-Empire).cbz (478pp)
+   ours:    ComicInfo Series: "New Mutants Epic Collection: The End Of The Beginning"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86418] gcd_reprint 2418487: s2755 The New Mutants (1983) #95-100 [7 stories] · s3210 X-Factor Annual (1986) #6 [3 stories] · s1951 X-Men Annual (1970) #15 [3 stories] · s2605 The Uncanny X-Men (1981) #270-272 [3 stories]
+   CV linked:      vol 144799 "New Mutants Epic Collection: The End of the Beginning" 2022 Marvel 1 issues issue 944334; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 108957 "New Mutants Epic Collection: Curse of the Valkyries" 2018 Marvel 1 issue 661157 s68 · 130998 "New Mutants Epic Collection: Cable" 2020 Marvel 1 issue 807666 s62 · 99448 "New Mutants Epic Collection: Renewal" 2017 Marvel 1 issue 585087 s62 · 120134 "New Mutants Epic Collection: The Demon Bear Saga" 2019 Marvel 1 issue 713512 s60 · 138158 "New Mutants Epic Collection: Sudden Death" 2021 Marvel 1 issue 878329 s56 · 162601 "New Mutants Epic Collection: Fallen Angels" 2025 Marvel 1 issue 1097699 s56   (v1 search)
+   CV local rip:   (= linked) · 130998 "New Mutants Epic Collection: Cable" 2020 Marvel 1 issue 807666 (via CV candidate name "New Mutants Epic Collection: Cable") · 108957 "New Mutants Epic Collection: Curse of the Valkyries" 2018 Marvel 1 issue 661157 (via CV candidate name "New Mutants Epic Collection: Curse of the Valkyries")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112586 "New Mutants Epic Collection" 2017-? Marvel [collected edition] 8 on 1/1 files; the dump names no other series
+   bridges:        gcd 112586 -> LOCG 130235 "The New Mutants Epic Collection: Sudden Death TP" support 6 · gcd 112586 -> OL /works/OL21671609W "Epic collection" isbnSupport 6
+
+== S22358 X-Men Epic Collection: The Brood Saga  [tier C] · by 9  keys: X-Men Epic Collection: The Brood Saga  years 2023-2023  2 files / 2 collections
+   flags: #549 label-ambiguous [Pending] item 86419 — items 86419 and 86440 are the same Brood Saga volume under two names
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\New Mutants Epic Collection · [1] Marvel\_X-Men\_X-Book Epic Collections\X-Men Epic Collection
+   files:   [86419] COL New Mutants Epic Collection Vol. 09 - The Brood Saga (2023) (Digital-Empire).cbz (416pp)
+            [86440] COL X-Men Epic Collection Vol. 09 - The Brood Saga (2023) (Digital-Empire).cbz (416pp)
+   ours:    ComicInfo Series: "X-Men Epic Collection: The Brood Saga"x2; ComicInfo Publisher: "Marvel"x2
+   GCD says: [86440] gcd_reprint 2591758: s2605 The Uncanny X-Men (1981) #154-167 [15 stories] · s2762 Special Edition X-Men (1983) #1 [1 story] · s1951 X-Men Annual (1970) #6 [1 story]
+   CV linked:      vol 155752 "X-Men Epic Collection: The Brood Saga" 2023 Marvel 1 issues issue 1038539; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 87522 "X-Men Epic Collection: The Gift" 2015 Marvel 1 issue 511937 s62 · 146947 "X-Men Epic Collection: The X-Cutioner's Song" 2022 Marvel 1 issue 961463 s61 · 18316 "X-Men vs. The Brood" 1996 Marvel 2 s60 · 29958 "The Marvel X-Men Collection" 1993 Marvel 3 s53 · 170243 "X-Men Epic Collection: Lifedeath" 2026 Marvel 1 issue 1153323 s53 · 129905 "X-Men Epic Collection: Proteus" 2020 Marvel 1 issue 796464 s53   (v1 search)
+   CV local rip:   (= linked) · 146947 "X-Men Epic Collection: The X-Cutioner's Song" 2022 Marvel 1 issue 961463 (via CV candidate name "X-Men Epic Collection: The X-Cutioner's Song") · 87522 "X-Men Epic Collection: The Gift" 2015 Marvel 1 issue 511937 (via CV candidate name "X-Men Epic Collection: The Gift")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 82692 "X-Men Epic Collection" 2014-? Marvel [collected edition] 19 on 1/2 files; the dump names no other series
+   bridges:        gcd 82692 -> LOCG 121291 "X-Men Epic Collection: Legacies TP" support 17 · gcd 82692 -> OL /works/OL21156473W "None" isbnSupport 17
+
+== S22162 X-Factor Epic Collection: Genesis & Apocalypse  [tier B]   keys: X-Factor Epic Collection  years 2017-2017  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\X-Factor Epic Collection
+   files:   [86420] COL X-Factor Epic Collection Vol. 01 - Genesis & Apocalypse (2017) (Digital) (Kileko-Empire).cbr (457pp)
+   GCD says: [86420] gcd_reprint 1677428: s3209 X-Factor (1986) #1-9 [19 stories] · s69795 Marvel Age (1983) #33, #39, #64 [6 stories] · s3210 X-Factor Annual (1986) #1, #3 [3 stories] · s36519 Essential X-Factor (2005) #1 [2 stories]
+   CV linked:      vol 99273 "X-Factor Epic Collection: Genesis & Apocalypse" 2017 Marvel 1 issues issue 583734; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 144797 "X-Factor Epic Collection: Afterlives" 2022 Marvel 1 issue 944336 s89 · 122824 "X-Factor Epic Collection: X-aminations" 2019 Marvel 1 issue 727279 s89 · 153031 "X-Factor Epic Collection: Judgement War" 2023 Marvel 1 issue 1009041 s88 · 162509 "X-Factor Epic Collection: Wreaking Havok" 2025 Marvel 1 issue 1096665 s88 · 115597 "X-Factor Epic Collection: All-New, All-Different X-Factor" 2018 Marvel 1 issue 693476 s87 · 135614 "X-Factor Epic Collection: Angel of Death" 2021 Marvel 1 issue 845179 s87   (v1 search)
+   CV local rip:   (= linked) · 122824 "X-Factor Epic Collection: X-aminations" 2019 Marvel 1 issue 727279 (via CV candidate name "X-Factor Epic Collection: X-aminations") · 144797 "X-Factor Epic Collection: Afterlives" 2022 Marvel 1 issue 944336 (via CV candidate name "X-Factor Epic Collection: Afterlives") · 153031 "X-Factor Epic Collection: Judgement War" 2023 Marvel 1 issue 1009041 (via CV candidate name "X-Factor Epic Collection: Judgement War")   (rip lookup)
+   GCD dump:       112457 "X-Factor Epic Collection" 2017-? Marvel [] 7   (dump lookup)
+
+== S22163 X-Factor Epic Collection: Wreaking Havok  [tier C] · by 8  keys: X-Factor Epic Collection 10: Wreaking Havok  years 2025-2025  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\X-Factor Epic Collection
+   files:   [86426] COL X-Factor Epic Collection Vol. 10 - Wreaking Havok 001 (2025) (digital) (Marika-Empire).cbz (473pp)
+   ours:    ComicInfo Series: "X-Factor Epic Collection 10: Wreaking Havok"x1; ComicInfo Volume: "2025"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86426] gcd_reprint 1677428: s3209 X-Factor (1986) #1-9 [19 stories] · s69795 Marvel Age (1983) #33, #39, #64 [6 stories] · s3210 X-Factor Annual (1986) #1, #3 [3 stories] · s36519 Essential X-Factor (2005) #1 [2 stories]  |  ⚠ stored GCD row is another book: our vol 10 vs GCD #1; our subtitle 'Wreaking Havok 001' vs GCD title 'Genesis & Apocalypse' — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+   CV linked:      vol 162509 "X-Factor Epic Collection: Wreaking Havok" 2025 Marvel 1 issues issue 1096665; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 144797 "X-Factor Epic Collection: Afterlives" 2022 Marvel 1 issue 944336 s60 · 122824 "X-Factor Epic Collection: X-aminations" 2019 Marvel 1 issue 727279 s60 · 153031 "X-Factor Epic Collection: Judgement War" 2023 Marvel 1 issue 1009041 s58 · 115597 "X-Factor Epic Collection: All-New, All-Different X-Factor" 2018 Marvel 1 issue 693476 s57 · 99273 "X-Factor Epic Collection: Genesis & Apocalypse" 2017 Marvel 1 issue 583734 s57 · 135614 "X-Factor Epic Collection: Angel of Death" 2021 Marvel 1 issue 845179 s57   (v1 search)
+   CV local rip:   (= linked) · 144797 "X-Factor Epic Collection: Afterlives" 2022 Marvel 1 issue 944336 (via CV candidate name "X-Factor Epic Collection: Afterlives") · 122824 "X-Factor Epic Collection: X-aminations" 2019 Marvel 1 issue 727279 (via CV candidate name "X-Factor Epic Collection: X-aminations")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112457 "X-Factor Epic Collection" 2017-? Marvel [collected edition] 7 on 1/1 files; the dump names no other series
+   bridges:        gcd 112457 -> LOCG 130094 "X-Factor Epic Collection: All-New, All-Different X-Factor TP" support 5 · gcd 112457 -> OL /works/OL21123316W "None" isbnSupport 7
+
+== S22164 X-Factor Epic Collection: Afterlives  [tier C] · by 5  keys: X-Factor Epic Collection: Afterlives  years 2022-2022  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\X-Factor Epic Collection
+   files:   [86425] COL X-Factor Epic Collection Vol. 09 - Afterlives (2022) (Digital) (Kileko-Empire).cbz (457pp)
+   ours:    ComicInfo Series: "X-Factor Epic Collection: Afterlives"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86425] gcd notes 2413725 (#9 of X-Factor Epic Collection): X-Factor #101-111; X-Factor Annual #9; Spider-Man and X-Factor: Shadowgames #1-3; X-Force #38; Excalibur #82  |  gcd_reprint 2413725: s3209 X-Factor (1986) #101-111 [25 stories] · s3210 X-Factor Annual (1986) #9 [8 stories] · s5047 Spider-Man and X-Factor: Shadowgames (1994) #1-3 [6 stories] · s3648 Excalibur (1988) #82 [3 stories]
+   CV linked:      vol 144797 "X-Factor Epic Collection: Afterlives" 2022 Marvel 1 issues issue 944336; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 122824 "X-Factor Epic Collection: X-aminations" 2019 Marvel 1 issue 727279 s74 · 153031 "X-Factor Epic Collection: Judgement War" 2023 Marvel 1 issue 1009041 s73 · 162509 "X-Factor Epic Collection: Wreaking Havok" 2025 Marvel 1 issue 1096665 s73 · 115597 "X-Factor Epic Collection: All-New, All-Different X-Factor" 2018 Marvel 1 issue 693476 s72 · 99273 "X-Factor Epic Collection: Genesis & Apocalypse" 2017 Marvel 1 issue 583734 s72 · 135614 "X-Factor Epic Collection: Angel of Death" 2021 Marvel 1 issue 845179 s72   (v1 search)
+   CV local rip:   (= linked) · 153031 "X-Factor Epic Collection: Judgement War" 2023 Marvel 1 issue 1009041 (via CV candidate name "X-Factor Epic Collection: Judgement War") · 122824 "X-Factor Epic Collection: X-aminations" 2019 Marvel 1 issue 727279 (via CV candidate name "X-Factor Epic Collection: X-aminations")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112457 "X-Factor Epic Collection" 2017-? Marvel [collected edition] 7 on 1/1 files; the dump names no other series
+   bridges:        gcd 112457 -> LOCG 130094 "X-Factor Epic Collection: All-New, All-Different X-Factor TP" support 5 · gcd 112457 -> OL /works/OL21123316W "None" isbnSupport 7
