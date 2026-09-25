@@ -2059,3 +2059,12 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   (L-369). Humorama Zip: CV numbers by cover month (#196403); "v14 07" = January 1968. Time Runs Out: GCD 89288 = the
   2015 HC rows, 92245 = the TPB rows; CV 79464 follows the HC dates. Chronology `NNN Avengers` refiles of v1 issues are
   second rips; later-volume files were folded onto the v1 shelf by bare title — split by year.
+[L-392] pub:marvel sig:split kind:collected-line
+- Waves 135-136: Timely/Atlas Marvel Comics #1 -> Marvel Mystery Comics #2-92 -> Marvel Tales #93-159 is ONE numbering
+  (L-390): S11600's Atlas Marvel Tales join S11538. The Epic Collection per-book-shelf shape (Avengers S1589 / GCD 74603,
+  AWC S1632 / GCD 130433, MTIO S11633 / GCD 127449) is fixed by cv=- on the line + split-lane joins of the per-book
+  shelves, never merge-with chains (each per-book shelf stored a different count-1 cv). OPEN for Eric: an Epic line
+  reprinting ONE run — keep the line (L-109/L-350, current practice) or give way to the run (run-vs-line)? A split-lane
+  JOIN of an issue onto a shelf of UNJUDGED trades arms them (New Avengers #13.INH -> S94666): armed_unjudged LIVE
+  EXPOSURE -> `u` lines in containment/decisions/S94666.txt + wave_fix. Minutemen digital Secret Avengers "(2014)" is the
+  digital release year (#13-15 = 2010 run Fear Itself tie-ins). A single-issue facsimile is its own book (L-077).

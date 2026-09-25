@@ -1,0 +1,30 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S104140	New Avengers (2010)	run={"cv": 33777, "gcd": 50320}	P-056.jsonl	new	pair=12792
+S104141	New Avengers - Transformers (2007)	run={"cv": 18832, "gcd": 26005}	P-056.jsonl	new	pair=12792
+S94666	New Avengers v2 (2013)	run=-	P-056.jsonl	new	pair=12792
+S103767	Spider-Man 2099 (2015)	run=-	P-056.jsonl	new	pair=16131
+S101396	West Coast Avengers v2 (1985)	run=-	P-056.jsonl	new	pair=1629
+S104143	Strange Tales v2 (1973)	run={"cv": 2643, "gcd": 2128}	P-056.jsonl	new	pair=16916
+S104144	Symbiote Spider-Man (2019)	run={"cv": 118275, "gcd": 143846}	P-056.jsonl	new	pair=17431
+S21409	Weirdworld - Warzones!	run=-	P-056.jsonl	new	pair=21407
+S104148	Witches - Daisuke Igarashi (2004)	run={"cv": 4145, "gcd": 184798}	P-056.jsonl	new	pair=21750
+S95223	Avengers v3 (1998)	run=-	P-056.jsonl	new	pair=64185
+S104135	Avengers v4 (2010)	run={"cv": 33227, "gcd": 48969}	P-056.jsonl	new	pair=64185
+S64187	Avengers v5 (2013)	run=-	P-056.jsonl	new	pair=64185
+S95221	Avengers v6 (2016)	run=-	P-056.jsonl	new	pair=64185
+S1649	Avengers v8 (2018)	run=-	P-056.jsonl	new	pair=64185
+S95229	Avengers v9 (2023)	run=-	P-056.jsonl	new	pair=64185
+S68336	Ultimate Avengers	run=-	P-056.jsonl	new	pair=64185
+S1612	Avengers King Size Annual	run=-	P-056.jsonl	new	pair=64185
+S104131	Avengers 1959 (2011)	run={"cv": 43143, "gcd": 61425}	P-056.jsonl	new	pair=64185
+S104132	Avengers Annual No. 10 Facsimile Edition (2024)	run={"cv": 158416, "gcd": 212555}	P-056.jsonl	new	pair=64185
+S12792	moved out -> S104140 "New Avengers (2010)"; S104141 "New Avengers - Transformers (2007)"; S94666 "New Avengers v2 (2013)"	run=-	P-056.jsonl	kept	pair=12792	moved_cv=33777,18832
+S16131	moved out -> S103767 "Spider-Man 2099 (2015)"	run=-	P-056.jsonl	kept	pair=16131
+S16916	moved out -> S104143 "Strange Tales v2 (1973)"	run=-	P-056.jsonl	kept	pair=16916	moved_cv=2643
+S17431	moved out -> S104144 "Symbiote Spider-Man (2019)"	run=-	P-056.jsonl	kept	pair=17431	moved_cv=118275
+S21407	moved out -> S21409 "Weirdworld - Warzones!"	run=-	P-056.jsonl	kept	pair=21407
+S21750	moved out -> S104148 "Witches - Daisuke Igarashi (2004)"	run=-	P-056.jsonl	kept	pair=21750	moved_cv=4145
+S64185	moved out -> S95223 "Avengers v3 (1998)"; S104135 "Avengers v4 (2010)"; S64187 "Avengers v5 (2013)"; S95221 "Avengers v6 (2016)"; S1649 "Avengers v8 (2018)"; S95229 "Avengers v9 (2023)"; S68336 "Ultimate Avengers"; S1612 "Avengers King Size Annual"; S104131 "Avengers 1959 (2011)"; S104132 "Avengers Annual No. 10 Facsimile Edition (2024)"	run=-	P-056.jsonl	kept	pair=64185	moved_cv=33227,43143,158416
