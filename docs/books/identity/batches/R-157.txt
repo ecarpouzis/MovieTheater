@@ -1,0 +1,520 @@
+## Conventions for this batch (23 shown of 163 matched; 401 in LEDGER.md; 18 shelf/shelves: pub:marvel ×17 · folder:vn-year ×10 · kind:collected-line ×9 · folder:sequel-subfolder ×8 · kind:trade-only ×8 · folder:events ×5 · folder:variant-covers ×3 · kind:new ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (17 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (17 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (17 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-127] (14 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-136] (14 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-298] (11 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (11 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-060] (10 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (10 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-130] (10 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-389] (10 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-053 / R-135 (waves 129-130): a run's issues never JOIN a creator-trade-keyed shelf ("Venom by Al Ewing & Ram V",
+  S21029, four trades) — keep them and meet through the SHARED cv at the next revisit (S20988 cv=140084 + merge-with=21029).
+  Marvel's 2019-2020 "Star Wars #1 facsimile" is "Star Wars No 1 Facsimile Edition" (CV 123267 / GCD 153348): probe the
+  "No N" form. Star Wars Insider and Titan's "Best of" books have no CV / GCD record: R + provider-missing, never the 1977
+  comic's stamp. The Dark Horse Star Wars Omnibus umbrella number (Vol. 32 / 35) raises a false "stored GCD row is another
+  book" warning against the sub-line's #1 / #2 — page counts and ISBNs decide. An Epic Collection / omnibus line spanning
+  several minis keeps its own GCD-line key in a split.
+[L-031] (9 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (9 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (9 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (9 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (9 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-132] (9 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-196] (9 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (9 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (9 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-306] (9 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (9 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (9 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+
++140 more matched entries not shown: L-327, L-328, L-329, L-332, L-392, L-397, L-400, L-401, L-029, L-395, L-398, L-191, L-281, L-291, L-174, L-242, L-388, L-390, L-124, L-164, L-272, L-030, L-135, L-151, L-160, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-319, L-387, L-391, L-064, L-085, L-101, L-113, L-193, L-290, L-310, L-034, L-169, L-371, L-393, L-399, L-016, L-032, L-114, L-014, L-324, L-345, L-396, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-175, L-028, L-036, L-133, L-173, L-265, L-343, L-357, L-065, L-099, L-123, L-194, L-262, L-330, L-027, L-297, L-379, L-097, L-128, L-181, L-252, L-274, L-288, L-293, L-336, L-352, L-354, L-009, L-020, L-023, L-024, L-068, L-077, L-102, L-119, L-187, L-188, L-219, L-223, L-233, L-243, L-311, L-339, L-373, L-374, L-376, L-377, L-380, L-381, L-383, L-054, L-150 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S9539 Invincible Iron Man  [tier C] · 4 named, the minority on >= 2 files or >= 10%  keys: Invincible Iron Man | Invincible Iron Man v1 (2008)  years 2008-2018  59 files / 11 collections
+   split run: "Invincible Iron Man" run={"cv": 21487, "gcd": 30723} (new shelf from P-065) — seed the S line from these ids, then verify them
+   folders: [12] _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Invincible Iron Man · [11] Marvel\_Iron Man\06 Invincible Iron Man v1 (2008) · [7] _Marvel Major Event Chronology (digital)\2011.03 - Fear Itself\02 Tie-ins\Iron Man\Invincible Iron Man · [6] Marvel\_Iron Man\06 Invincible Iron Man v1 (2008)\Variant Covers · [6] _Marvel Major Event Chronology (digital)\2011.03 - Fear Itself\03 Shattered Heroes\Invincible Iron Man · [6] _Marvel Major Event Chronology (digital)\2016.06 - Civil War II\00 Road to Civil War II · [3] Marvel\_Iron Man\00 Annuals · [3] _Marvel Major Event Chronology (digital)\2010.04 - The Heroic Age\The Heroic Age - Iron Man · [3] _Marvel Major Event Chronology (digital)\2016.06 - Civil War II\02 Tie-Ins\Invincible Iron Man · [1] Marvel\_Iron Man\17 Invincible Iron Man v5 (2023)\Variant Covers · [1] _Marvel Major Event Chronology (digital)\2018.04 - The Return of Wolverine\00 End Credit Scenes
+   files:   [81485] Invincible Iron Man Annual 1.1 (2010) (Digital) (Shadowcat-Empire).cbz (24pp) | [81486] Invincible Iron Man Annual 1.2 (2010) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [81487] Invincible Iron Man Annual 1.3 (2010) (Digital) (Shadowcat-Empire).cbz (27pp)
+            [81910] COL Invincible Iron Man Vol. 01 - The Five Nightmares (2008) (digital) (Minutemen-Slayer).cbr (171pp)
+            [81911] COL Invincible Iron Man Vol. 02 - World's Most Wanted Book 1 (2009) (F2) (Digital) (Asgard-Empire).cbz (148pp)
+            [81912] COL Invincible Iron Man Vol. 03 - World's Most Wanted Book 2 (2010) (Digital) (F) (Asgard-Empire).cbz (159pp)
+            [81913] COL Invincible Iron Man Vol. 04 - Stark Disassembled (2011) (Digital-HD) (Asgard-Empire).cbz (125pp)
+            [81914] COL Invincible Iron Man Vol. 05 - Stark Resilient Book 1 (2011) (Digital) (Asgard-Empire).cbr (124pp)
+            [81915] COL Invincible Iron Man Vol. 06 - Stark Resilient Book 2 (2011) (Digital) (Asgard-Empire).cbr (144pp)
+            [81916] COL Invincible Iron Man Vol. 07 - My Monsters (2011) (Digital) (Asgard-Empire).cbr (164pp)
+            [81917] COL Invincible Iron Man Vol. 08 - Unfixable (2012) (Digital) (Asgard-Empire).cbr (106pp)
+            [81919] COL Invincible Iron Man Vol. 09 - Demon (2013) (Digital) (F) (Asgard-Empire).cbz (131pp)
+            [81920] COL Invincible Iron Man Vol. 10 - Long Way Down (2013) (Digital) (Asgard-Empire).cbr (117pp)
+            [81921] COL Invincible Iron Man Vol. 11 - The Future (2013) (Digital) (Asgard-Empire).cbr (165pp)
+            [81922] Invincible Iron Man 001 (Variant) [1] (2008) (Digital) (MikeNY76-Empire).cbz (1pp) | [81923] Invincible Iron Man 001 (Variant) [2] (2008) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [81924] Invincible Iron Man 001 (Variant) [3] (2008) (Digital) (MikeNY76-Empire).cbz (1pp) | [81925] Invincible Iron Man 001 (Variant) [4] (2008) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [81926] Invincible Iron Man 030 (Shs Variant) (2010) (Digital) (MikeNY76-Empire).cbz (1pp) | [82001] Invincible Iron Man 500 (Jrjr Variant) (2011) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82061] Invincible Iron Man 019 (Shs Variant) (2009) (Digital) (MikeNY76-Empire).cbz (1pp)
+            Invincible Iron Man 008 (2009) (Digital-HD) (Monafekk-Empire).cbr … Invincible Iron Man 019 (2009) (Digital-HD) (Monafekk-Empire).cbr  (12 files, pp 23-35)
+            [117342] Invincible Iron Man 025 (2010) (Digital) (Zone-Empire).cbr (47pp) | [117343] Invincible Iron Man 026 (2010) (Digital) (Zone-Empire).cbr (26pp)
+            [117344] Invincible Iron Man 027 (2010) (Digital) (Zone-Empire).cbr (26pp)
+            Invincible Iron Man 503 (2011) (digital) (Megan-Empire).cbr … Invincible Iron Man 509 (2011) (digital) (Megan-Empire).cbr  (7 files, pp 24-33)
+            [117572] Invincible Iron Man 510 (2012) (digital) (Megan-Empire) (Ok).cbr (24pp) | [117573] Invincible Iron Man 511 (2012) (digital) (Megan-Empire).cbr (24pp)
+            [117574] Invincible Iron Man 512 (2012) (digital) (Megan-Empire) (Ok).cbr (23pp) | [117575] Invincible Iron Man 513 (2012) (digital) (Megan-Empire) (Ok).cbr (23pp)
+            [117576] Invincible Iron Man 514 (2012) (digital) (Megan-Empire) (Ok).cbr (23pp) | [117577] Invincible Iron Man 515 (2012) (digital) (Megan-Empire) (Ok).cbr (23pp)
+            Invincible Iron Man 006 (2016) (Digital) (Zone-Empire).cbr … Invincible Iron Man 014 (2016) (Digital) (Zone-Empire).cbr  (9 files, pp 22-25)
+            [118382] 10 Invincible Iron Man 598 (2018) (Digital) (Zone-Empire).cbr (22pp)
+   ours:    ladder 1, 1.1, 1.2, 1.3, 6-19, 25-27, 30, 500, 503-515, 598; 9 number(s) name more than one file: 1, 8, 9, 10, 11, 12, 13, 14, 19; ComicInfo Series: "Invincible Iron Man"x4, "Invincible Iron Man Annual"x3; ComicInfo Volume: "2008"x3; ComicInfo Publisher: "Marvel"x7
+   CV linked:      vol 21487 "Invincible Iron Man" 2008 Marvel 62 issues; cached #1-527 (62); yearΔ 0; ratio 48/62 = 0.77; no judged range; v1 per-file: same volume on 59/59 files
+   CV candidates:  (= linked) · 153448 "The Invincible Iron Man Marvel Pocketbook" 2008 Marvel UK/Panini UK 4 s87 · 35196 "Marvel Masterworks: The Invincible Iron Man" 2003 Marvel 18 s83 · 95596 "Invincible Iron Man" 2016 Marvel 19 s50 · 118416 "Invincible Iron Man" 2016 Editorial Televisa 7 s35 · 34038 "Invincible Iron Man Annual" 2010 Marvel 1 issue 222077 s34 · 89368 "Invincible Iron Man: Reboot" 2016 Marvel 1 issue 523257 s34   (v1 search)
+   CV local rip:   (= linked) · 85110 "Invincible Iron Man" 2015 Marvel 14 · 95596 "Invincible Iron Man" 2016 Marvel 19 · 118416 "Invincible Iron Man" 2016 Editorial Televisa 7 · 146873 "The Invincible Iron Man" 2022 Marvel 20 · 153448 "The Invincible Iron Man Marvel Pocketbook" 2008 Marvel UK/Panini UK 4 (via CV candidate name "The Invincible Iron Man Marvel Pocketbook")   (rip lookup)
+   GCD per-file:   series 30723 "Invincible Iron Man" 2008-2012 Marvel [was ongoing series] 62 on 35/59 files · series 113146 "Invincible Iron Man" [es-mx] 2016-? Editorial Televisa [Serie Regular] 13 on 5/59 files · series 92883 "Invincible Iron Man" 2015-2017 Marvel [was ongoing series] 14 on 4/59 files · series 109017 "Invincible Iron Man" 2017-2018 Marvel [was ongoing series] 19 on 1/59 files; methods numx45
+   GCD dump:       (= per-file) · 41852 "Invincible Iron Man" 2008-2012 Marvel [] 11 · 30826 "The Invincible Iron Man" 2007-2008 Marvel [] 12 · 150986 "Invincible Iron Man" 2009-2013 Marvel [] 11 · 142949 "Invincible Iron Man" 2010-2011 Marvel [] 2 · 73981 "Invincible Iron Man" [fr] 2012-? Panini France [] 2   (dump lookup)
+   bridges:        gcd 30723 -> LOCG 100082 "The Invincible Iron Man" support 56 · gcd 113146 -> LOCG 100082 "The Invincible Iron Man" support 8 · gcd 92883 -> LOCG 100082 "The Invincible Iron Man" support 6
+
+== S18845 The Invincible Iron Man  [tier C] · gap 14  keys: Invincible Iron Man v5 (2023) | The Invincible Iron Man | The Invincible Iron Man (2022) | The Invincible Iron Man 002i (2022)  years 2008-2024  44 files / 3 collections
+   split: the KEPT half of the P-065 split — moved out -> S9539 "Invincible Iron Man"; re-identify what stayed
+   folders: [41] Marvel\_Iron Man\17 Invincible Iron Man v5 (2023)\Variant Covers · [3] Marvel\_Iron Man\17 Invincible Iron Man v5 (2023)
+   files:   [82027] COL Invincible Iron Man by Gerry Duggan Vol. 01 - Demon in the Armor (2023) (Digital-Empire).cbr (151pp)
+            [82028] COL Invincible Iron Man by Gerry Duggan Vol. 02 - The Wedding of Tony Stark and Emma Frost (2024) (Digital) (Shan-Empire).cbz (154pp)
+            [82029] COL Invincible Iron Man by Gerry Duggan Vol. 03 - Iron & Diamonds (2024) (Digital) (Shan-Empire).cbz (194pp)
+            [82030] Invincible Iron Man 001 (2022) (1-in-100 Tao Ironheart Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82031] Invincible Iron Man 001 (2022) (1-in-25 Larraz Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82032] Invincible Iron Man 001 (2022) (1-in-50 Romita Jr. Hidden Gem Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82033] Invincible Iron Man 001 (2022) (Checchetto Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82034] Invincible Iron Man 001 (2022) (Layton Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82035] Invincible Iron Man 001 (2022) (Shalvey X-Treme Marvel Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82036] Invincible Iron Man 001 (2022) (Tao Ironheart Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82037] Invincible Iron Man 001 (2022) (Vecchio Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82038] Invincible Iron Man 003 (2023) Layton Connecting Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82039] Invincible Iron Man 005 (2023) Phil Noto Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82040] Invincible Iron Man 006 (2023) Stephen Segovia Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82041] Invincible Iron Man 008 (2023) Junggeun Yoon Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82042] Invincible Iron Man 009 (2023) Bjorn Barends Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82043] Invincible Iron Man 010 (2023) George Perez Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82044] Invincible Iron Man 011 (2023) Adi Granov Homage Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82045] Invincible Iron Man 012 (2023) Ken Lashley Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82046] Invincible Iron Man 013 (2023) Emilio Laiso Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82047] Invincible Iron Man 013 (2023) Ron Lim Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82048] Invincible Iron Man 014 (2024) Mike Mayhew Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82049] Invincible Iron Man 014 (2024) Skan Rom Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82050] Invincible Iron Man 015 (2024) Dike Ruan Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82051] Invincible Iron Man 016 (2024) John Giang Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82052] Invincible Iron Man 017 (2024) Rafael Grassetti Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82053] Invincible Iron Man 018 (2024) Pepe Larraz Design Variant (Digital) (MikeNY76).cbz (1pp)
+            [82054] Invincible Iron Man 018 (2024) Pete Woods Black Costume Variant (Digital) (MikeNY76).cbz (1pp)
+            [82055] Invincible Iron Man 019 (2024) (Rod Reis Iron Patriot Variant) (Digital) (MikeNY76).cbz (1pp)
+            [82056] Invincible Iron Man 019 (2024) (Rod Reis Iron Patriot Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82057] Invincible Iron Man 019 (2024) (Skottie Young's Big Marvel Variant) (Digital) (MikeNY76).cbz (1pp)
+            [82058] Invincible Iron Man 019 (2024) (Skottie Young's Big Marvel Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82059] Invincible Iron Man 019 (2024) (Skottie Young's Big Marvel Virgin Black And White Variant) (Digital) (MikeNY76).cbz (1pp)
+            [82060] Invincible Iron Man 019 (2024) (Skottie Young's Big Marvel Virgin Black And White Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82062] Invincible Iron Man 020 (2024) (David Wachter Deadpool Kills The Marvel Universe Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82063] Invincible Iron Man 020 (2024) (Juan Frigeri Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82065] The Invincible Iron Man 001 (2022) (1-in-25 Larraz Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82066] The Invincible Iron Man 001 (2022) (1-in-50 Romita Jr. Hidden Gem Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82067] The Invincible Iron Man 001 (2022) (Checchetto Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82068] The Invincible Iron Man 001 (2022) (Layton Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82069] The Invincible Iron Man 001 (2022) (Shalvey X-Treme Marvel Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82070] The Invincible Iron Man 001 (2022) (Tao Ironheart Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82071] The Invincible Iron Man 001 (2022) (Vecchio Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [82072] The Invincible Iron Man 002i [Marvel] (2023) (Peach Momoko Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 1, 3, 5-6, 8-20; 6 number(s) name more than one file: 1, 13, 14, 18, 19, 20
+   GCD says: [82027] gcd_reprint 2561360: s194084 Invincible Iron Man (2023) (unnumbered) [7 stories]
+             [82028] gcd_reprint 2611325: s194084 Invincible Iron Man (2023) (unnumbered) [7 stories]
+             [82029] gcd_reprint 2660934: s194084 Invincible Iron Man (2023) (unnumbered) [9 stories]
+   CV linked:      vol 146873 "The Invincible Iron Man" 2022 Marvel 20 issues; cached #1-20 (20); yearΔ 14; ratio 40/20 = 2.00; no judged range
+   CV per-file (v1): vol 21487 "Invincible Iron Man" 2008 Marvel 62 on 33/44 files · vol 146873 "The Invincible Iron Man" 2022 Marvel 20 on 8/44 files
+   CV candidates:  (= linked) · 153448 "The Invincible Iron Man Marvel Pocketbook" 2008 Marvel UK/Panini UK 4 s88 · 95596 "Invincible Iron Man" 2016 Marvel 19 s83 · 35196 "Marvel Masterworks: The Invincible Iron Man" 2003 Marvel 18 s82 · 33846 "The Invincible Iron Man Saga" 2009 Marvel 1 issue 224872 s82 · 118416 "Invincible Iron Man" 2016 Editorial Televisa 7 s80 · 89368 "Invincible Iron Man: Reboot" 2016 Marvel 1 issue 523257 s69   (v1 search)
+   CV local rip:   (= linked) · 85110 "Invincible Iron Man" 2015 Marvel 14 · 95596 "Invincible Iron Man" 2016 Marvel 19 · 118416 "Invincible Iron Man" 2016 Editorial Televisa 7 · 153448 "The Invincible Iron Man Marvel Pocketbook" 2008 Marvel UK/Panini UK 4 (via CV candidate name "The Invincible Iron Man Marvel Pocketbook")   (rip lookup)
+   GCD per-file:   methods round2-seriesx13 ⚠ · round2-folderx7 ⚠  (⚠ copies a folder neighbour's series — verify); series 30723 "Invincible Iron Man" 2008-2012 Marvel [was ongoing series] 62 on 20/44 files
+   GCD dump:       (= per-file) · 41852 "Invincible Iron Man" 2008-2012 Marvel [] 11 · 30826 "The Invincible Iron Man" 2007-2008 Marvel [] 12 · 150986 "Invincible Iron Man" 2009-2013 Marvel [] 11 · 142949 "Invincible Iron Man" 2010-2011 Marvel [] 2 · 73981 "Invincible Iron Man" [fr] 2012-? Panini France [] 2   (dump lookup)
+   bridges:        gcd 30723 -> LOCG 100082 "The Invincible Iron Man" support 56
+
+== S64851 Guardians of the Galaxy  [tier C] · 25 number(s) x2+, 2 parsed key(s), ratio 3.04  keys: Guardians of the Galaxy (2008) | Guardians of the Galaxy v2 (2008)  years 1990-2016  83 files / 6 collections
+   split run: "Guardians of the Galaxy v2 (2008)" run={"cv": 21550, "gcd": 30802} (new shelf from P-065) — seed the S line from these ids, then verify them
+   flags: #269 label-ambiguous [Pending] item 80293 — items 80292 and 80293 are duplicate copies of Vol. 02 - War of Kings Book 1 · #270 label-ambiguous [Pending] item 80296 — items 80295 and 80296 are duplicate copies of Vol. 04 - Realm of Kings
+   folders: [25] Marvel\_Marvel Cosmic\Guardians of the Galaxy\Vol 2 · [9] Marvel\_X-Men\_X-Men Complete Chronology V2\0799 War of Kings · [8] Marvel\_Marvel Cosmic\06 War of Kings · [7] _Marvel Major Event Chronology (digital)\2009.03 - War of Kings\04 Realm of Kings\Guardians of the Galaxy · [6] Marvel\_Marvel Cosmic\05a Interlude (Nova, Guardians of the Galaxy) · [6] _Marvel Major Event Chronology (digital)\2009.03 - War of Kings\01 Prelude\Guardians of the Galaxy · [5] Marvel\_Guardians of the Galaxy\02 Guardians of the Galaxy v2 (2008) · [5] _Marvel Major Event Chronology (digital)\2009.03 - War of Kings\03 War of Kings · [4] Marvel\_Marvel Cosmic\08 Realm of Kings · [3] Marvel\_Marvel Cosmic\07 Interlude · [3] _Marvel Major Event Chronology (digital)\2008.06 - Secret Invasion\03 Tie-ins\Guardians of the Galaxy · [1] Marvel\_Guardians of the Galaxy\_Omnibus Editions · [1] _Marvel Major Event Chronology (digital)\2007.06 - Annihilation Conquest
+   files:   [80291] COL Guardians of the Galaxy Vol. 01 - Legacy (2009) (Digital-HD) (Kileko-Empire).cbr (148pp)
+            [80292] COL Guardians of the Galaxy Vol. 02 - War of Kings Book 1 (2009) (Digital-HD) (F) (Kileko-Empire).cbz (137pp)
+            [80294] COL Guardians of the Galaxy Vol. 03 - War of Kings Book 2 (2010) (Digital) (Kileko-Empire).cbr (172pp)
+            [80295] COL Guardians of the Galaxy Vol. 04 - Realm of Kings (2010) (Digital) (F) (Kileko-Empire).cbz (141pp)
+            [80296] COL Guardians of the Galaxy Vol. 04 - Realm of Kings (2010) (Digital) (Kileko-Empire).cbr (149pp)
+            [81943] COL Guardians of the Galaxy by Abnett & Lanning Omnibus (2016) (Digital-Empire).cbr (892pp) | Guardians of the Galaxy 001.cbr … Guardians of the Galaxy 007.cbr  (6 files, pp 23-32)
+            [82735] 05 Guardians of the Galaxy 008.cbr (25pp) | [82737] 07 Guardians of The Galaxy 009.cbr (24pp) | [82744] 14 Guardians of the Galaxy 010.cbz (24pp)
+            [82747] 17 Guardians of the Galaxy 012.cbz (23pp) | [82755] 25 Guardians of the Galaxy 013.cbr (28pp) | [82759] 29 Guardians of the Galaxy 014.cbr (23pp)
+            [82764] 34 Guardians of the Galaxy 015.cbr (25pp) | [82772] 42 Guardians of the Galaxy 017.cbr (25pp) | [82773] Guardians of the Galaxy 018.cbz (24pp)
+            [82774] Guardians of the Galaxy 019.cbz (24pp) | [82775] Guardians of the Galaxy 020.cbr (25pp) | [82780] Guardians of the Galaxy 021.cbz (25pp)
+            [82782] Guardians of the Galaxy 023.cbz (26pp) | [82783] Guardians of the Galaxy 024.cbz (24pp) | [82784] Guardians of the Galaxy 025.cbr (26pp)
+            [82953] Guardians of the Galaxy 001 2008___World_sFinest-DCP_.cbr (32pp) | [82954] Guardians of the Galaxy 002 - 2008 (Minutemen-Zone).cbr (24pp)
+            [82955] Guardians of the Galaxy 003 (2008) (Minutemen-ReZone).cbr (25pp) | [82956] Guardians of the Galaxy 004 (2008) (Minutemen-ZonesDiva).cbr (25pp)
+            [82957] Guardians of the Galaxy 005.cbr (26pp) | [82958] Guardians of the Galaxy 006.cbr (25pp) | [82959] Guardians of the Galaxy 007.cbr (23pp)
+            [82960] Guardians of the Galaxy 008 (2009) (Empire-Zone).cbr (25pp) | [82961] Guardians of the Galaxy 009 (2009) (Kryptonia-DCP).cbr (24pp)
+            [82962] Guardians of the Galaxy 010 (2009) (Minutemen-DTs).cbz (24pp) | [82963] Guardians of the Galaxy 011 (2009) (Minutemen-DTs).cbz (23pp)
+            [82964] Guardians of the Galaxy 012 (2009) (Blastaar-DCP).cbr (26pp) | [82965] Guardians of the Galaxy 013.cbr (28pp) | [82966] Guardians of the Galaxy 014.cbr (23pp)
+            [82967] Guardians of the Galaxy 015.cbr (25pp) | [82968] Guardians of the Galaxy 016 - Dan Abnett, Andy Lanning - Wesley Craig (War of Kings) (2009) (Minutemen-DTs).cbz (24pp)
+            [82969] Guardians of the Galaxy 017 (2009) (Kryptonia-DCP).cbr (25pp) | [82970] Guardians of the Galaxy 018.cbz (24pp)
+            [82971] Guardians of the Galaxy 019 (2009)_(Minutemen-DTs).cbz (24pp) | [82972] Guardians of the Galaxy 020 (2010) (Kryptonia-DCP).cbr (25pp)
+            [82973] Guardians of the Galaxy 021.cbz (25pp) | [82974] Guardians of the Galaxy 022 (2010) (Minutemen-DTs).cbz (24pp) | [82975] Guardians of the Galaxy 023.cbz (26pp)
+            [82976] Guardians of the Galaxy 024 (2010) (Minutemen-DTs).cbz (24pp) | [82977] Guardians of the Galaxy 025 (2010) (Kryptonia-DCP).cbr (26pp)
+            001 Guardians of the Galaxy 007 (2009) (Digital) (Zone-Empire).cbr … 037 Guardians of the Galaxy 017 (2009) (Digital) (Zone-Empire).cbr  (9 files, pp 23-26)
+            [116776] 033 - Guardians of the Galaxy 001 (2008) (Digital) (Zone-Empire).cbr (28pp) | [116951] Guardians of the Galaxy 004 (2008) (Digital) (Zone-Empire).cbr (25pp)
+            [116952] Guardians of the Galaxy 005 (2008) (Digital) (Zone-Empire).cbr (25pp) | [116953] Guardians of the Galaxy 006 (2008) (Digital) (Zone-Empire).cbr (25pp)
+            Guardians of the Galaxy 007 (2009) (Digital) (ZoneKing-Empire).cbr … Guardians of the Galaxy 012 (2009) (Digital) (ZoneKing-Empire).cbr  (6 files, pp 23-25)
+            [117227] 08 Guardians of the Galaxy 013 (2009) (Digital) (ZoneKing-Empire).cbr (26pp) | [117231] 12 Guardians of the Galaxy 014 (2009) (Digital) (ZoneKing-Empire).cbr (25pp)
+            [117235] 16 Guardians of the Galaxy 015 (2009) (Digital) (ZoneKing-Empire).cbr (25pp) | [117239] 20 Guardians of the Galaxy 016 (2009) (Digital) (ZoneKing-Empire).cbr (25pp)
+            [117241] 22 Guardians of the Galaxy 017 (2009) (Digital) (ZoneKing-Empire).cbr (25pp) | [117247] Guardians of the Galaxy 018 (2009) (Digital) (ZoneKing-Empire).cbr (25pp)
+            Guardians of the Galaxy 019 (2009) (digital-HD) (BlackManta-Empire).cbr … Guardians of the Galaxy 024 (2009) (digital-HD) (BlackManta-Empire).cbr  (6 files, pp 25-26)
+   ours:    ladder 1-25; 25 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12; ComicInfo Series: "Guardians of the Galaxy"x2; ComicInfo Publisher: "Marvel"x2
+   GCD says: [81943] gcd_reprint 1565330: s30802 Guardians of the Galaxy (2008) #1-25 [26 stories] · s49426 The Thanos Imperative (2010) #1-6 [6 stories] · s61189 Annihilators: Earthfall (2011) #1-4 [4 stories] · s56227 Annihilators (2011) #1-4 [4 stories]
+   CV linked:      vol 21550 "Guardians of the Galaxy" 2008 Marvel 25 issues; cached #1-25 (25); yearΔ 18; ratio 76/25 = 3.04; no judged range
+   CV per-file (v1): vol 4398 "Guardians of the Galaxy" 1990 Marvel 62 on 48/83 files · vol 21550 "Guardians of the Galaxy" 2008 Marvel 25 on 32/83 files
+   CV local rip:   (= linked) · 57960 "Guardians of the Galaxy" 2013 Marvel 28 · 84159 "Guardians of the Galaxy" 2014 Panini Verlag 7 · 81904 "Guardians of the Galaxy" 2015 Marvel 5 · 85290 "Guardians of the Galaxy" 2015 Marvel 20   (rip lookup)
+   GCD per-file:   series 30802 "Guardians of the Galaxy" 2008-2010 Marvel [was ongoing series] 25 on 45/83 files; methods numx45
+   GCD dump:       (= per-file) · 4026 "Guardians of the Galaxy" 1990-1995 Marvel [] 62 · 55202 "Guardians of the Galaxy" 2008-2010 Marvel [] 4 · 229280 "Guardians of the Galaxy" 2009-2010 Marvel [] 4 · 72411 "Guardians of the Galaxy" 2013-2015 Marvel [] 28 · 74471 "Guardians of the Galaxy" [es-mx] 2013-2015 Editorial Televisa [] 26   (dump lookup)
+   bridges:        gcd 30802 -> LOCG 111032 "Guardians of the Galaxy" support 43
+
+== S64850 Guardians of the Galaxy  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Guardians of the Galaxy (1990) | Guardians of the Galaxy Classic - In The Year (1990) | Guardians of the Galaxy: Marvel Presents (1990)  years 1990-2015  72 files / 5 collections
+   split run: "Guardians of the Galaxy (1990)" run={"cv": 4398, "gcd": 4026} (new shelf from P-065) — seed the S line from these ids, then verify them
+   folders: [65] Marvel\_Marvel Cosmic\Guardians of the Galaxy\Vol 1 · [5] Marvel\_Guardians of the Galaxy\01 Guardians of the Galaxy v1 (1990) · [1] Marvel\Monsters Unleashed\Monsters Unleashed v1 (2017)\Dot MU Tie-ins · [1] Marvel\_Marvel Facsimile Editions
+   files:   [101939] Guardians of the Galaxy 001.MU (2017) (Digital) (Zone-Empire).cbr (33pp)
+            [80286] COL 01 Guardians of the Galaxy By Jim Valentino Vol. 01 (2014) (digital) (Minutemen-Slayer).cbr (297pp)
+            [80287] COL 02 Guardians of the Galaxy By Jim Valentino Vol. 02 (2014) (Digital) (AnHeroGold-Empire).cbz (301pp)
+            [80288] COL 03 Guardians of the Galaxy By Jim Valentino Vol. 03 (2015) (Digital) (AnHeroGold-Empire).cbz (297pp)
+            [80289] COL 04 Guardians of the Galaxy Classic - In The Year 3000 Vol. 01 (2016) (digital) (Minutemen-Slayer).cbr (320pp)
+            [80290] COL 05 Guardians of the Galaxy Classic - In The Year 3000 Vol. 02 (2016) (digital) (Minutemen-Slayer).cbr (368pp) | [82887] Guardians of the Galaxy #001.cbr (25pp)
+            [82888] Guardians of the Galaxy #002.cbr (25pp) | [82889] Guardians of the Galaxy #003.cbr (25pp) | [82890] Guardians of the Galaxy #004.cbr (25pp)
+            [82891] Guardians of the Galaxy #005.cbr (24pp) | [82892] Guardians of the Galaxy #006.cbr (24pp) | [82893] Guardians of the Galaxy #007.cbr (24pp)
+            [82894] Guardians of the Galaxy #008.cbr (25pp) | [82895] Guardians of the Galaxy #009.cbr (15pp) | [82897] Guardians of the Galaxy #011.cbr (27pp)
+            [82898] Guardians of the Galaxy #012.cbr (25pp) | [82899] Guardians of the Galaxy #013.cbr (25pp) | [82900] Guardians of the Galaxy #014.cbr (24pp)
+            [82901] Guardians of the Galaxy #015.cbr (24pp) | [82902] Guardians of the Galaxy #016.cbr (42pp) | [82903] Guardians of the Galaxy #017.cbr (23pp)
+            [82904] Guardians of the Galaxy #018.cbr (21pp) | [82905] Guardians of the Galaxy #019.cbr (23pp) | [82906] Guardians of the Galaxy #020.cbr (23pp)
+            [82907] Guardians of the Galaxy #021.cbr (23pp) | [82908] Guardians of the Galaxy #022.cbr (23pp) | [82909] Guardians of the Galaxy #023.cbr (23pp)
+            [82910] Guardians of the Galaxy #024.cbr (23pp) | [82911] Guardians of the Galaxy #025.cbr (41pp) | [82912] Guardians of the Galaxy #026.cbr (23pp)
+            [82913] Guardians of the Galaxy #027.cbr (23pp) | [82914] Guardians of the Galaxy #028.cbr (25pp) | [82915] Guardians of the Galaxy #029.cbr (23pp)
+            [82916] Guardians of the Galaxy #030.cbr (23pp) | [82917] Guardians of the Galaxy #031.cbr (23pp) | [82918] Guardians of the Galaxy #032.cbr (23pp)
+            [82919] Guardians of the Galaxy #033.cbr (23pp) | [82920] Guardians of the Galaxy #034.cbr (23pp) | [82921] Guardians of the Galaxy #035.cbr (23pp)
+            [82922] Guardians of the Galaxy #036.cbr (23pp) | [82923] Guardians of the Galaxy #037.cbr (23pp) | [82924] Guardians of the Galaxy #038.cbr (23pp)
+            [82925] Guardians of the Galaxy #039.cbr (39pp) | [82926] Guardians of the Galaxy #040.cbr (23pp) | [82927] Guardians of the Galaxy #041.cbr (23pp)
+            [82928] Guardians of the Galaxy #042.cbr (23pp) | [82929] Guardians of the Galaxy #043.cbr (23pp) | [82930] Guardians of the Galaxy #044.cbr (23pp)
+            [82931] Guardians of the Galaxy #045.cbr (23pp) | [82932] Guardians of the Galaxy #046.cbr (23pp) | [82933] Guardians of the Galaxy #047.cbr (23pp)
+            [82934] Guardians of the Galaxy #048.cbr (23pp) | [82935] Guardians of the Galaxy #049.cbr (23pp) | [82936] Guardians of the Galaxy #050.cbr (39pp)
+            [82937] Guardians of the Galaxy #051.cbr (23pp) | [82938] Guardians of the Galaxy #052.cbr (23pp) | [82939] Guardians of the Galaxy #053.cbr (23pp)
+            [82940] Guardians of the Galaxy #054.cbr (23pp) | [82941] Guardians of the Galaxy #055.cbr (23pp) | [82942] Guardians of the Galaxy #056.cbr (23pp)
+            [82943] Guardians of the Galaxy #057.cbr (23pp) | [82944] Guardians of the Galaxy #058.cbr (23pp) | [82945] Guardians of the Galaxy #059.cbr (23pp)
+            [82946] Guardians of the Galaxy #060.cbr (23pp) | [82947] Guardians of the Galaxy #061.cbr (23pp) | [82948] Guardians of the Galaxy #062.cbr (41pp)
+            [82949] Guardians of the Galaxy Annual #001.cbz (54pp) | [82950] Guardians of the Galaxy Annual #002.cbz (53pp) | [82951] Guardians of the Galaxy Annual #003.cbr (55pp)
+            [82952] Guardians of the Galaxy Annual #004.cbz (56pp) | [83051] Guardians of the Galaxy - Marvel Presents 003 - Facsimile Edition (2019) (Digital) (Shadowcat-Empire).cbz (35pp)
+   ours:    ladder 1-9, 11-62; 4 number(s) name more than one file: 1, 2, 3, 4; ComicInfo Series: "Guardians of the Galaxy: Marvel Presents"x1; ComicInfo Volume: "1975"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [80289] gcd_reprint 1607064: s4026 Guardians of the Galaxy (1990) #30-39 [24 stories] · s4244 Guardians of the Galaxy Annual (1991) #3 [14 stories] · s3654 Marvel Comics Presents (1988) #134 [2 stories]
+             [80290] gcd_reprint 1618897: s4026 Guardians of the Galaxy (1990) #40-50 [12 stories] · s5011 Galactic Guardians (1994) #1-4 [4 stories] · s4244 Guardians of the Galaxy Annual (1991) #4 [1 story]
+   CV linked:      vol 4398 "Guardians of the Galaxy" 1990 Marvel 62 issues; cached #1-62 (62); yearΔ 0; ratio 67/62 = 1.08; no judged range
+   CV per-file (v1): vol 4398 "Guardians of the Galaxy" 1990 Marvel 62 on 65/72 files · vol 70825 "Guardians of the Galaxy By Jim Valentino" 2014 Marvel 3 on 3/72 files
+   CV local rip:   (= linked) · 21550 "Guardians of the Galaxy" 2008 Marvel 25 · 57960 "Guardians of the Galaxy" 2013 Marvel 28 · 84159 "Guardians of the Galaxy" 2014 Panini Verlag 7 · 81904 "Guardians of the Galaxy" 2015 Marvel 5 · 85290 "Guardians of the Galaxy" 2015 Marvel 20   (rip lookup)
+   GCD per-file:   methods round2-seriesx1 ⚠ · numx1  (⚠ copies a folder neighbour's series — verify); series 79146 "Guardians of the Galaxy by Jim Valentino" 2014-2015 Marvel [collected edition] 3 on 1/72 files · series 104334 "Guardians of the Galaxy" [de] 2016-2018 Panini Deutschland [] 8 on 1/72 files
+   GCD dump:       4026 "Guardians of the Galaxy" 1990-1995 Marvel [] 62 · 30802 "Guardians of the Galaxy" 2008-2010 Marvel [] 25 · 55202 "Guardians of the Galaxy" 2008-2010 Marvel [] 4 · 229280 "Guardians of the Galaxy" 2009-2010 Marvel [] 4 · 72411 "Guardians of the Galaxy" 2013-2015 Marvel [] 28 · 74471 "Guardians of the Galaxy" [es-mx] 2013-2015 Editorial Televisa [] 26   (dump lookup)
+   bridges:        gcd 79146 -> OL /works/OL21065887W "None" isbnSupport 6 · gcd 104334 -> LOCG 111032 "Guardians of the Galaxy" support 1
+
+== S8138 Guardians of the Galaxy  [tier C] · 5 number(s) x2+, 3 parsed key(s), ratio 1.04  keys: Guardians Of The Galaxy | Guardians of the Galaxy | Guardians of the Galaxy v3 (2013)  years 1990-2015  34 files / 5 collections
+   split: the KEPT half of the P-065 split — moved out -> S64851 "Guardians of the Galaxy v2 (2008)"; S64850 "Guardians of the Galaxy (1990)"; re-identify what stayed
+   folders: [17] Marvel\_Marvel Cosmic\Guardians of the Galaxy · [5] Marvel\_Guardians of the Galaxy\03 Guardians of the Galaxy v3 (2013) · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\1081 The Trial of Jean Grey · [3] _Marvel Major Event Chronology (digital)\2014.04 - Original Sin\02 Tie-ins\Guardians of the Galaxy · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\1132 The Black Vortex · [2] Marvel\__Skottie Young Covers · [2] _Marvel Major Event Chronology (digital)\2015.02 - The Black Vortex\Variant Covers
+   files:   [80297] COL Guardians of the Galaxy Vol. 01 - Cosmic Avengers (2013) (Digital) (F) (Zone-Empire).cbr (135pp)
+            [80298] COL Guardians of the Galaxy Vol. 02 - Angela (2014) (Digital) (Zone-Empire).cbr (140pp)
+            [80300] COL Guardians of the Galaxy Vol. 03 - Guardians Disassembled (2014) (Digital) (F) (BroadCast-Empire).cbz (139pp)
+            [80301] COL Guardians of the Galaxy Vol. 04 - Original Sin (2015) (Digital) (F) (Zone-Empire).cbr (121pp)
+            [80302] COL Guardians of the Galaxy Vol. 05 - Through the Looking Glass (2015) (Digital) (F) (BroadCast-Empire).cbr (116pp)
+            [82827] Guardians of the Galaxy 0.1 (2013) (Digital) (Zone-Empire).cbr (33pp)
+            Guardians of the Galaxy 001 (2013) (Digital) (Zone-Empire).cbr … Guardians of the Galaxy 007 (2013) (Digital) (Zone-Empire).cbr  (6 files, pp 19-23)
+            [82834] Guardians of the Galaxy 008 (2013) (Zone-Empire).cbr (22pp) | [82835] Guardians of the Galaxy 018 (2014) (Zone-Empire).cbr (18pp)
+            [82836] Guardians of the Galaxy 019 (2014) (Digital) (Zone-Empire).cbr (21pp) | [82837] Guardians of the Galaxy 020 (2014) (Digital) (Zone-EMpire).cbr (22pp)
+            [82838] Guardians of the Galaxy 021 (2014) (Digital) (Zone-Empire).cbr (21pp) | [82839] Guardians of the Galaxy 022 (2015) (Digital) (Zone-Empire).cbr (21pp)
+            [82840] Guardians of the Galaxy 023 (2015) (Digital) (Zone-Empire).cbr (22pp) | [82841] Guardians of the Galaxy 024 (2015) (Digital) (Zone-Empire).cbr (18pp)
+            [82842] Guardians of the Galaxy 027 (2015) (2 covers) (digital) (Minutemen-Spaztastic).cbr (20pp) | [82843] Guardians of the Galaxy Annual 001 (2015) (Digital) (Zone-Empire).cbr (33pp)
+            [92617] 002 Guardians of the Galaxy 011.NOW (2014) (digital) (Minutemen-PhD).cbr (18pp) | [92619] 004 Guardians of the Galaxy 012 (2014) (digital) (Minutemen-PhD).cbr (19pp)
+            [92621] 006 Guardians of the Galaxy 013 (2014) (digital) (Minutemen-PhD).cbr (15pp) | [92901] 002 Guardians of the Galaxy 024 (2015) (digital) (Minutemen-Spaztastic).cbr (17pp)
+            [92906] 007 Guardians of the Galaxy 025 (2015) (4 Covers) (digital) (Minutemen-Spaztastic).cbr (29pp)
+            [51954] Guardians Of The Galaxy 007 (2013) (Skottie Young Variant) (Cover ONLY) (NN).cbr (1pp)
+            [51955] Guardians of the Galaxy 05 (2013) (Skottie Young Variant Cover) (Ghosts-Novus-HD).cbz (1pp) | [117785] 055 - Guardians of the Galaxy 018 (2014) (Zone-Empire).cbr (18pp)
+            [117786] 056 - Guardians of the Galaxy 019 (2014) (Digital) (Zone-Empire).cbr (21pp) | [117787] 057 - Guardians of the Galaxy 020 (2014) (Digital) (Zone-EMpire).cbr (22pp)
+            [118071] Guardians of the Galaxy 024 (2015) (Andrea Sorrentino Cosmically Enhanced Variant) (digital) (Minutemen-Fantomex).cbr (1pp)
+            [118072] Guardians of the Galaxy 024 (2015) (Phil Noto Variant) (digital) (Minutemen-Fantomex).cbr (1pp)
+   ours:    ladder 1, 3-8, 11-13, 18-25, 27; 7 number(s) name more than one file: 1, 5, 7, 18, 19, 20, 24; ComicInfo Series: "Guardians of the Galaxy"x4; ComicInfo Publisher: "Marvel"x4
+   GCD says: [80297] gcd_reprint 1171408: s72411 Guardians of the Galaxy (2013) #0.1, #1-3 [13 stories] · s75809 Guardians of the Galaxy: Tomorrow's Avengers (2013) #1 [5 stories] · s76287 Guardians of the Galaxy (2013) #1 [1 story]
+             [80298] gcd_reprint 1313824: s72411 Guardians of the Galaxy (2013) #4-10 [25 stories] · s76287 Guardians of the Galaxy (2013) #2 [1 story]
+             [80300] gcd_reprint 1438495: s72411 Guardians of the Galaxy (2013) #14-17 [11 stories] · s67081 Captain Marvel (2012) #1 [3 stories] · s80545 Free Comic Book Day 2014 (Guardians of the Galaxy) (2014) #1 [2 stories] · s11288 The Amazing Spider-Man (1999) #654 [1 story]
+             [80301] gcd_reprint 1499613: s72411 Guardians of the Galaxy (2013) #18-23 [16 stories] · s76287 Guardians of the Galaxy (2013) #4 [1 story]
+             [80302] gcd_reprint 1547677: s72411 Guardians of the Galaxy (2013) #24-27 [15 stories] · s85114 Guardians of the Galaxy Annual (2015) #1 [3 stories] · s76287 Guardians of the Galaxy (2013) #5 [1 story]
+   CV linked:      vol 57960 "Guardians of the Galaxy" 2013 Marvel 28 issues; cached #0.1-27 (28); yearΔ 23; ratio 29/28 = 1.04; no judged range
+   CV per-file (v1): vol 4398 "Guardians of the Galaxy" 1990 Marvel 62 on 27/34 files · vol 57960 "Guardians of the Galaxy" 2013 Marvel 28 on 1/34 files
+   CV candidates:  (= linked) · 116702 "Guardians of the Galaxy" 2019 Marvel 12 s108 · 85290 "Guardians of the Galaxy" 2015 Marvel 20 s101 · 80115 "Marvel Universe Guardians of the Galaxy" 2015 Marvel 4 s99 · 89302 "Marvel Universe Guardians of the Galaxy" 2016 Marvel 6 s92 · 78275 "Guardians of the Galaxy: Guardians Disassembled" 2014 Marvel 1 issue 470975 s87 · 85120 "Marvel Universe Guardians of the Galaxy" 2015 Marvel 23 s84   (v1 search)
+   CV local rip:   (= linked) · 21550 "Guardians of the Galaxy" 2008 Marvel 25 · 84159 "Guardians of the Galaxy" 2014 Panini Verlag 7 · 81904 "Guardians of the Galaxy" 2015 Marvel 5 · 85290 "Guardians of the Galaxy" 2015 Marvel 20   (rip lookup)
+   GCD per-file:   series 72411 "Guardians of the Galaxy" 2013-2015 Marvel [was ongoing series] 28 on 27/34 files · series 74471 "Guardians of the Galaxy" [es-mx] 2013-2015 Editorial Televisa [fue una serie continua] 26 on 1/34 files; methods numx28
+   GCD dump:       (= per-file) · 4026 "Guardians of the Galaxy" 1990-1995 Marvel [] 62 · 30802 "Guardians of the Galaxy" 2008-2010 Marvel [] 25 · 55202 "Guardians of the Galaxy" 2008-2010 Marvel [] 4 · 229280 "Guardians of the Galaxy" 2009-2010 Marvel [] 4   (dump lookup)
+   bridges:        gcd 72411 -> LOCG 111031 "Guardians of the Galaxy" support 31 · gcd 74471 -> LOCG 111032 "Guardians of the Galaxy" support 1
+
+== S9385 Incredible Hulk Epic Collection  [tier D]   keys: Incredible Hulk Epic Collection  years 2015-2024  17 files / 17 collections
+   split run: "Incredible Hulk Epic Collection" run={"gcd": 87446} (new shelf from P-065) — seed the S line from these ids, then verify them
+   folders: [17] Marvel\_Hulk\_Incredible Hulk Epic Collection
+   files:   [81149] COL Incredible Hulk Epic Collection Vol. 01 - Man Or Monster (Digital) (F) (Asgard-Empire).cbr (386pp)
+            [81150] COL Incredible Hulk Epic Collection Vol. 02 - The Hulk Must Die (2017) (Digital) (Zone-Empire).cbr (434pp)
+            [81151] COL Incredible Hulk Epic Collection Vol. 03 - The Leader Lives (2018) (Digital) (Zone-Empire).cbr (490pp)
+            [81152] COL Incredible Hulk Epic Collection Vol. 04 - In the Hands of Hydra (2019) (Digital) (Zone-Empire).cbr (442pp)
+            [81153] COL Incredible Hulk Epic Collection Vol. 05 - Who Will Judge The Hulk (2021) (Digital) (Zone-Empire).cbr (448pp)
+            [81154] COL Incredible Hulk Epic Collection Vol. 06 - Crisis on Counter-Earth (2021) (Digital-Empire).cbr (469pp)
+            [81155] COL Incredible Hulk Epic Collection Vol. 07 - And Now... The Wolverine (2022) (Digital) (Kileko-Empire).cbz (471pp)
+            [81156] COL Incredible Hulk Epic Collection Vol. 08 - The Curing of Dr. Banner (2023) (Digital) (Kileko-Empire).cbz (526pp)
+            [81157] COL Incredible Hulk Epic Collection Vol. 09 - Kill or Be Killed (2024) (digital) (Marika-Empire).cbz (519pp)
+            [81158] COL Incredible Hulk Epic Collection Vol. 13 - Crossroads (2022) (Digital-Empire).cbr (479pp)
+            [81159] COL Incredible Hulk Epic Collection Vol. 14 - Going Gray (2020) (Digital) (Zone-Empire).cbr (506pp)
+            [81160] COL Incredible Hulk Epic Collection Vol. 15 - Ground Zero 001 (2024) (digital) (Marika-Empire).cbz (459pp)
+            [81161] COL Incredible Hulk Epic Collection Vol. 19 - Ghosts of the Past (2015) (Digital) (Kileko-Empire).cbr (461pp)
+            [81162] COL Incredible Hulk Epic Collection Vol. 20 - Future Imperfect (2017) (Digital) (Kileko-Empire).cbr (480pp)
+            [81163] COL Incredible Hulk Epic Collection Vol. 21 - Fall of the Pantheon (2018) (Digital) (Shadowcat-Empire).cbz (492pp)
+            [81164] COL Incredible Hulk Epic Collection Vol. 22 - Ghosts of the Future (2019) (Digital) (Zone-Empire).cbr (471pp)
+            [81165] COL Incredible Hulk Epic Collection Vol. 24 - The Lone and Level Sands (2023) (Digital-Empire).cbr (437pp)
+   ours:    ComicInfo Series: "Incredible Hulk Epic Collection"x3, "Incredible Hulk Epic Collection: Who Will Judge The Hulk?"x1, "Incredible Hulk Epic Collection: And Now... The Wolverine"x1, "Incredible Hulk Epic Collection: The Curing Of Dr. Banner"x1; ComicInfo Volume: "2024"x2; ComicInfo Publisher: "Marvel"x9, "Marvel Comics"x2; ComicInfo Web: "1067472"x1
+   GCD says: [81149] gcd notes 1578432 (#1 of Incredible Hulk Epic Collection): The Incredible Hulk (Marvel, 1962 series) #1-6; Fantastic Four (Marvel, 1961 series) #12, #25-26; The Avengers (Marvel, 1963 series) #1-3, #5; The Amazing Spider-Man (Marvel, 1963 series) #14; Tales to Astonish (Marvel, 1959 series) #59; Jo  |  gcd_reprint 1578432: s1515 The Incredible Hulk (1962) #1-6 [25 stories] · s1482 Fantastic Four (1961) #5, #12, #25-26 [10 stories] · s1571 The Avengers (1963) #1-3, #5 [9 stories] · s1443 Tales to Astonish (1959) #59 [3 stories]
+             [81150] gcd notes 1745201 (#2 of Incredible Hulk Epic Collection): Tales to Astonish (Marvel, 1959 series) #60-96; Not Brand Echh (Marvel, 1967 series) #3  |  gcd_reprint 1745201: s1443 Tales to Astonish (1959) #60-96 [76 stories] · s75475 Marvel Masterworks: The Incredible Hulk (2009) #2 [3 stories] · s1811 Not Brand Echh (1967) #3 [2 stories] · s79894 The Incredible Hulk Omnibus (2008) #1 [1 story]
+             [81151] gcd_reprint 1863737: s1866 The Incredible Hulk (1968) #102-117 [33 stories] · s1443 Tales to Astonish (1959) #97-101 [10 stories] · s1865 Incredible Hulk [King Size Special] (1968) #1 [3 stories] · s1811 Not Brand Echh (1967) #9 [2 stories]
+             [81152] gcd notes 2023695 (#4 of Incredible Hulk Epic Collection): Incredible Hulk (Marvel, 1968 series) #118-137; Marvel Super-Heroes (Marvel, 1967 series) #16  |  gcd_reprint 2023695: s1866 The Incredible Hulk (1968) #118-137 [42 stories] · s1810 Marvel Super-Heroes (1967) #16 [2 stories] · s1865 Incredible Hulk [King Size Special] (1968) #2 [1 story]
+             [81153] gcd notes 2195882 (#5 of Incredible Hulk Epic Collection): The Incredible Hulk (Marvel, 1968 series) #138-156; Avengers (Marvel, 1963 series) #88  |  gcd_reprint 2195882: s1866 The Incredible Hulk (1968) #138-156 [40 stories] · s1865 Incredible Hulk [King Size Special] (1968) #3-4 [2 stories] · s1571 The Avengers (1963) #88 [2 stories]
+             [81154] gcd_reprint 2264304: s1866 The Incredible Hulk (1968) #157-178 [45 stories] · s158698 FOOM Magazine (1973) #2 [5 stories]
+             [81155] gcd_reprint 2440585: s1866 The Incredible Hulk (1968) #179-200 [45 stories] · s2180 Marvel Treasury Edition (1974) #5 [5 stories] · s9823 Wolverine Battles the Incredible Hulk (1989) #1 [2 stories] · s158698 FOOM Magazine (1973) #8, #11 [2 stories]
+             [81156] gcd notes 2574451 (#8 of Incredible Hulk Epic Collection): The Incredible Hulk Annual (Marvel, 1976 series) #6  |  gcd_reprint 2574451: s1866 The Incredible Hulk (1968) #201-226 [53 stories] · s140330 The Marvel Comics Index (1976) (unnumbered) [2 stories] · s2180 Marvel Treasury Edition (1974) #17 [2 stories] · s2348 The Incredible Hulk Annual (1976) #6 [2 stories]
+             [81157] gcd notes 2648970 (#9 of Incredible Hulk Epic Collection): Incredible Hulk (Marvel, 1968 series) #227-244; Incredible Hulk Annual (Marvel, 1976 series) #7-9; Captain America (Marvel, 1968 series) #230  |  gcd_reprint 2648970: s1866 The Incredible Hulk (1968) #227-244 [37 stories] · s2348 The Incredible Hulk Annual (1976) #7-9 [6 stories] · s2180 Marvel Treasury Edition (1974) #20, #24 [5 stories] · s1860 Captain America (1968) #230 [2 stories]
+             [81158] gcd_reprint 2399184: s1866 The Incredible Hulk (1968) #297-313 [35 stories] · s2657 Marvel Fanfare (1982) #20, #22 [2 stories] · s2737 Alpha Flight (1983) #29 [2 stories] · s2348 The Incredible Hulk Annual (1976) #13 [2 stories]
+             [81159] gcd notes 2180201 (#14 of Incredible Hulk Epic Collection): Incredible Hulk (Marvel, 1968 series) #314-330; Incredible Hulk Annual (Marvel, 1976 series) #14-15; Marvel Fanfare (Marvel, 1982 series) #29  |  gcd_reprint 2180201: s1866 The Incredible Hulk (1968) #314-330 [35 stories] · s2348 The Incredible Hulk Annual (1976) #14-15 [3 stories] · s2657 Marvel Fanfare (1982) #29 [3 stories]
+             [81160] gcd notes 2648885 (#15 of Incredible Hulk Epic Collection): The Incredible Hulk (Marvel, 1968 series) #331-346  |  gcd_reprint 2648885: s1866 The Incredible Hulk (1968) #331-346 [33 stories] · s22322 Marvel Graphic Novel: The Big Change (1987) (unnumbered) [4 stories] · s74368 Marvel Age Annual (1985) #3 [2 stories] · s69795 Marvel Age (1983) #51 [1 story]
+             [81161] gcd_reprint 1331405: s1866 The Incredible Hulk (1968) #397-406 [29 stories] · s2348 The Incredible Hulk Annual (1976) #18-19 [15 stories] · s4710 Marvel Holiday Special (1992) (unnumbered) [3 stories] · s69795 Marvel Age (1983) #113, #118 [3 stories]
+             [81162] gcd_reprint 1663407: s1866 The Incredible Hulk (1968) #407-419 [36 stories] · s28132 The Incredible Hulk Ashcan Edition (1994) (unnumbered) [6 stories] · s2348 The Incredible Hulk Annual (1976) #20 [6 stories] · s4456 Hulk: Future Imperfect (1992) #1-2 [4 stories]
+             [81163] gcd notes 1775185 (#21 of Incredible Hulk Epic Collection): Tales to Astonish (Marvel, 1994 series) #1; Incredible Hulk vs. Venom (Marvel, 1994 series) #1; Incredible Hulk (Marvel, 1968 series) #420-435  |  gcd_reprint 1775185: s1866 The Incredible Hulk (1968) #420-435 [39 stories] · s69795 Marvel Age (1983) #135, #139 [3 stories] · s12129 Tales to Astonish (1994) #1 [3 stories] · s20474 Incredible Hulk vs. Venom (1994) #1 [2 stories]
+             [81164] gcd_reprint 1905245: s1866 The Incredible Hulk (1968) #436-448 [28 stories] · s10731 The Savage Hulk (1996) (unnumbered) [11 stories] · s10769 Onslaught: Marvel (1996) #1 [4 stories] · s4675 Cable (1993) #34 [2 stories]
+             [81165] gcd_reprint 2518545: s1866 The Incredible Hulk (1968) #460-474 [48 stories] · s89958 Hulk: Beauty and the Behemoth (1998) (unnumbered) [3 stories] · s6048 X-Man / Hulk '98 (1998) (unnumbered) [3 stories] · s7452 Hulk / Sub-Mariner '98 (1998) (unnumbered) [3 stories]
+   CV candidates:  144791 "Incredible Hulk Epic Collection: Crossroads" 2022 Marvel 1 issue 944342 s74 · 91103 "Incredible Hulk Epic Collection: Man or Monster?" 2016 Marvel 1 issue 534292 s72 · 97755 "The Incredible Hulk Epic Collection: Future Imperfect" 2017 Marvel 1 issue 574866 s72 · 105534 "Incredible Hulk Epic Collection: The Hulk Must Die" 2017 Marvel 1 issue 632497 s71 · 146073 "Incredible Hulk Epic Collection: And Now… The Wolverine" 2022 Marvel 1 issue 955129 s71 · 84592 "Incredible Hulk Epic Collection: Ghosts of the Past" 2015 Marvel 1 issue 500303 s71   (v1 search)
+   CV local rip:   91103 "Incredible Hulk Epic Collection: Man or Monster?" 2016 Marvel 1 issue 534292 (via CV candidate name "Incredible Hulk Epic Collection: Man or Monster?") · 97755 "The Incredible Hulk Epic Collection: Future Imperfect" 2017 Marvel 1 issue 574866 (via CV candidate name "The Incredible Hulk Epic Collection: Future Imperfect") · 144791 "Incredible Hulk Epic Collection: Crossroads" 2022 Marvel 1 issue 944342 (via CV candidate name "Incredible Hulk Epic Collection: Crossroads")   (rip lookup)
+   GCD dump:       87446 "Incredible Hulk Epic Collection" 2015-? Marvel [] 19   (dump lookup)
+
+== S104194 Inhuman (2021)  [tier D]   keys: Inhuman (2021)  years 2021-2021  1 files / 0 collections
+   split run: "Inhuman (2021)" run={"cv": 133307} (new shelf from P-065) — seed the S line from these ids, then verify them
+   folders: [1] Europe Comics\Inhuman (2021)
+   files:   [23884] Inhuman (2021) (digital) (Mr Norrell-Empire).cbr (98pp)
+   CV local rip:   133307 "Inhuman" 2021 Europe Comics 1 issue 825200 (via our own name without the filing suffix "Inhuman") · 136284 "Inhuman " 2021 Splitter 1 issue 853429 (via our own name without the filing suffix "Inhuman") · 88565 "Inhuman" 2016 Marvel 1 issue 517829 (via our own name without the filing suffix "Inhuman") · 72791 "Inhuman" 2014 Marvel 14 (via our own name without the filing suffix "Inhuman")   (rip lookup)
+   GCD dump:       169571 "Inhuman" [de] 2021-2021 Splitter Verlag [] 1 (via our own name without the filing suffix "Inhuman") · 97995 "Inhuman" 2016-2016 Marvel [] 1 (via our own name without the filing suffix "Inhuman") · 79908 "Inhuman" 2014-2015 Marvel [] 14 (via our own name without the filing suffix "Inhuman") · 87743 "Inhuman" 2014-2015 Marvel [] 3 (via our own name without the filing suffix "Inhuman") · 166208 "Inhuman" [es-mx] 2014-2015 Editorial Televisa [] 15 (via our own name without the filing suffix "Inhuman")   (dump lookup)
+
+== S9460 Inhuman  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Inhuman  years 2014-2015  7 files / 3 collections
+   split: the KEPT half of the P-065 split — moved out -> S104194 "Inhuman (2021)"; re-identify what stayed
+   flags: #290 label-ambiguous [Pending] item 117830 — Inhuman v1 009-010 are single issues, not collections
+   folders: [3] Marvel\_Inhumans\04 Inhuman (2014) · [2] _Marvel Major Event Chronology (digital)\2014.10 - AXIS\02 Tie-ins\Inhuman · [1] Marvel\_Inhumans\06 Inhuman Error (2015) · [1] _Marvel Major Event Chronology (digital)\2013.11 - Inhumanity
+   files:   [81371] COL Inhuman Vol. 01 - Genesis (2015) (Digital) (F) (Kileko-Empire).cbr (132pp) | [81372] COL Inhuman Vol. 02 - AXIS (2015) (Digital) (F) (Kileko-Empire).cbz (106pp)
+            [81373] COL Inhuman Vol. 03 - Lineage (2015) (Digital) (F) (Kileko-Empire).cbz (97pp) | [81381] Inhuman Special 01 (2015) (digital) (Minutemen-Faessla).cbz (32pp)
+            [117764] 22 Inhuman 001 (2014) (digital) (Son of Ultron-Empire).cbr (26pp) | [117830] 046 - Inhuman v1 009 (2014) (Digital) (HD) (Thornn-Empire).cbr (21pp)
+            [117831] 057 - Inhuman v1 010 (2014) (Digital) (HD) (Thornn-Empire).cbr (22pp)
+   ours:    ladder 1, 9-10; 1 number(s) name more than one file: 1; judged item 81371 #1-6 conf 0.85; judged item 81372 #7-11 conf 0.85; judged item 81373 #12-14 conf 0.85; ComicInfo Series: "Inhuman"x2; ComicInfo Publisher: "Marvel"x2
+   GCD says: [81371] gcd_reprint 1335457: s79908 Inhuman (2014) #1-6 [15 stories]
+             [81372] gcd_reprint 1335440: s79908 Inhuman (2014) #7-11 [14 stories]
+             [81373] gcd_reprint 1443447: s79908 Inhuman (2014) #12-14 [10 stories] · s88996 Inhuman Annual (2015) #1 [3 stories]
+   CV linked:      vol 72791 "Inhuman" 2014 Marvel ? issues; cached #1-14 (14); yearΔ 0; ratio 4/?; 3 of 3 judged fit; v1 per-file: same volume on 3/7 files
+   CV candidates:  (= linked) · 78455 "Inhuman: Genesis" 2014 Marvel ? s74 · 133307 "Inhuman" 2021 Europe Comics ? s50 · 88565 "Inhuman" 2016 Marvel ? s35 · 136284 "Inhuman " 2021 Splitter ? s35 · 81832 "Inhuman Annual" 2015 Marvel ? s19 · 80970 "Inhuman: AXIS" 2015 Marvel ? s19   (v1 search)
+   CV local rip:   (= linked) · 88565 "Inhuman" 2016 Marvel 1 issue 517829 · 133307 "Inhuman" 2021 Europe Comics 1 issue 825200 · 136284 "Inhuman " 2021 Splitter 1 issue 853429 · 78455 "Inhuman: Genesis" 2014 Marvel 1 issue 471602 (via CV candidate name "Inhuman: Genesis") · 156896 "Inhuman: Genesis" 2014 Marvel UK/Panini UK 1 issue 1045371 (via CV candidate name "Inhuman: Genesis")   (rip lookup)
+   GCD per-file:   series 166208 "Inhuman" [es-mx] 2014-2015 Editorial Televisa [fue una serie mensual continua] 15 on 2/7 files · series 79908 "Inhuman" 2014-2015 Marvel [Was ongoing Series] 14 on 1/7 files; methods numx3
+   GCD dump:       (= per-file) · 87743 "Inhuman" 2014-2015 Marvel [] 3 · 97995 "Inhuman" 2016-2016 Marvel [] 1 · 169571 "Inhuman" [de] 2021-2021 Splitter Verlag [] 1   (dump lookup)
+   bridges:        gcd 166208 -> LOCG 111840 "Inhuman" support 2 · gcd 79908 -> LOCG 111840 "Inhuman" support 3
+
+== S104196 Iron Fist: Phantom Limb (2018)  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Iron Fist: Phantom Limb (2018)  years 2018-2018  3 files / 0 collections
+   split run: "Iron Fist: Phantom Limb (2018)" run={"cv": 114112} (new shelf from P-065) — seed the S line from these ids, then verify them
+   folders: [3] Marvel\_Iron Fist\07 Iron Fist v6 (2018)
+   files:   [81464] Iron Fist 001 (2018) (Digital Original) (Zone-Empire).cbr (45pp) | [81465] Iron Fist 002 (2018) (Digital Original) (Zone-Empire).cbr (43pp)
+            [81466] Iron Fist 003 (2018) (Digital Original) (Zone-Empire).cbr (42pp)
+   ours:    ladder 1-3; ComicInfo Series: "Iron Fist"x1; ComicInfo Volume: "2018"x1; ComicInfo Publisher: "Marvel"x1
+   CV local rip:   114112 "Iron Fist" 2018 Marvel 3 (via GCD name "Iron Fist") · 100082 "Iron Fist" 2017 Marvel 15 (via GCD name "Iron Fist") · 116254 "Iron Fist: Phantom Limb" 2019 Marvel 1 issue 696356 (via our own name without the filing suffix "Iron Fist: Phantom Limb") · 141631 "Iron Fist" 2022 Marvel 5 (via GCD name "Iron Fist") · 23561 "Iron Fist" 2004 Marvel 6 (via GCD name "Iron Fist") · 6214 "Iron Fist" 1998 Marvel 3 (via GCD name "Iron Fist")   (rip lookup)
+   GCD per-file:   series 186728 "Iron Fist" [fr] 2018-2018 Panini France [série continue terminée [was ongoing series]] 2 on 2/3 files · series 112909 "Iron Fist" 2017-2018 Marvel [was ongoing series] 15 on 1/3 files; methods numx3
+   GCD dump:       136768 "Iron Fist: Phantom Limb" 2018-2018 Marvel [] 1 (via our own name without the filing suffix "Iron Fist: Phantom Limb")   (dump lookup)
+   bridges:        gcd 186728 -> LOCG 112485 "Iron Fist" support 3 · gcd 112909 -> LOCG 129733 "Iron Fist" support 3
+
+== S97886 Iron Fist  [tier C] · ratio 0.20  keys: Iron Fist | Iron Fist v6 (2018)  years 2017-2018  5 files / 2 collections
+   split: the KEPT half of the P-065 split — moved out -> S104196 "Iron Fist: Phantom Limb (2018)"; re-identify what stayed
+   flags: #607 overlap-in-series [Dismissed] item 81462 — the 2017 Vol. 01 gcd 1-5 collides with the 1975 run the Series holds
+   folders: [5] Marvel\_Iron Fist\06 Iron Fist v5-v1 (2017)
+   files:   [81459] Iron Fist 078 (2018) (Digital) (Zone-Empire).cbr (24pp) | [81460] Iron Fist 079 (2018) (Digital) (Zone-Empire).cbr (24pp)
+            [81461] Iron Fist 080 (2018) (Digital) (Zone-Empire).cbr (25pp) | [81462] COL Iron Fist Vol. 01 - The Trial of the Seven Masters (2017) (Digital) (Zone-Empire).cbr (114pp)
+            [81463] COL Iron Fist Vol. 02 - Sabretooth - Round Two (2018) (Digital) (Kileko-Empire).cbr (154pp)
+   ours:    ladder 78-80
+   GCD says: [81462] gcd_reprint 1732377: s112909 Iron Fist (2017) #1-5 [6 stories]
+             [81463] gcd_reprint 1793043: s112909 Iron Fist (2017) #6-7, #73-77 [8 stories]
+   CV linked:      vol 100082 "Iron Fist" 2017 Marvel 15 issues; cached #1-80 (15); yearΔ 0; ratio 3/15 = 0.20; no judged range
+   CV per-file (v1): vol 2766 "Iron Fist" 1975 Marvel 15 on 3/5 files
+   CV candidates:  (= linked) · 23561 "Iron Fist" 2004 Marvel 6 s106 · 6214 "Iron Fist" 1998 Marvel 3 s99 · 22401 "Iron Fist" 1996 Marvel 2 s95 · 59099 "Marvel Masterworks: Iron Fist" 2011 Marvel 2 s83 · 83138 "Iron Fist Epic Collection: The Fury of Iron Fist" 2015 Marvel 1 issue 494320 s80 · 56675 "Marvel Milestone Edition: Iron Fist" 1992 Marvel 1 issue 384398 s76   (v1 search)
+   CV local rip:   (= linked) · 114112 "Iron Fist" 2018 Marvel 3 · 141631 "Iron Fist" 2022 Marvel 5 · 23561 "Iron Fist" 2004 Marvel 6 · 6214 "Iron Fist" 1998 Marvel 3 · 22401 "Iron Fist" 1996 Marvel 2   (rip lookup)
+   GCD per-file:   series 112909 "Iron Fist" 2017-2018 Marvel [was ongoing series] 15 on 3/5 files; methods numx3
+   GCD dump:       (= per-file) · 116562 "Iron Fist" 2017-2018 Marvel [] 2 · 186728 "Iron Fist" [fr] 2018-2018 Panini France [] 2 · 203373 "Iron Fist" [fr] 2016-2018 Panini France [] 3 · 182399 "Iron Fist" 2022-2022 Marvel [] 5 · 15729 "Iron Fist" 2004-2004 Marvel [] 6   (dump lookup)
+   bridges:        gcd 112909 -> LOCG 129733 "Iron Fist" support 3
+
+== S14876 Runaways  [tier C] · gap 8  keys: Runaways by Rainbow Rowell | Runaways by Rainbow Rowell & Kris Anka  years 2009-2020  7 files / 6 collections
+   flags: #391 label-ambiguous [Pending] item 90979 — Runaways v03 010 is a single issue, not a collection
+   folders: [6] Marvel\_Runaways\Runaways v5 (2017) · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0783 Manifest Destiny
+   files:   [93126] COL Runaways by Rainbow Rowell Vol. 01 - Find Your Way Home (2018) (Digital) (Kileko-Empire).cbz (128pp)
+            [93127] COL Runaways by Rainbow Rowell Vol. 02 - Best Friends Forever (2018) (Digital) (Kileko-Empire).cbz (129pp)
+            [93128] COL Runaways by Rainbow Rowell Vol. 03 - That Was Yesterday (2019) (Digital) (Kileko-Empire).cbz (122pp)
+            [93129] COL Runaways by Rainbow Rowell Vol. 04 - But You Can't Hide (2019) (Digital) (Kileko-Empire).cbz (130pp)
+            [93130] COL Runaways by Rainbow Rowell Vol. 05 - Cannon Fodder (2020) (Digital) (Kileko-Empire).cbz (148pp)
+            [93131] COL Runaways by Rainbow Rowell Vol. 06 - Come Away With Me (2021) (digital) (DrVink-HD-DCP).cbz (161pp) | [90979] 039 Runaways v03 010 (2009) (digital-Empire).cbz (34pp)
+   ours:    ladder 10; ComicInfo Series: "Runaways by Rainbow Rowell"x4, "Runaways by Rainbow Rowell & Kris Anka"x2; ComicInfo Publisher: "Marvel"x5, "Marvel Entertainment, Inc."x1
+   GCD says: [93127] gcd_reprint 1858737: s116704 Runaways (2017) #7-12 [7 stories]
+             [93128] gcd notes 1947813 (#3 of Runaways by Rainbow Rowell & Kris Anka): Runaways (Marvel, 2017 series) #13-18  |  gcd_reprint 1947813: s116704 Runaways (2017) #13-18 [16 stories]
+             [93129] gcd_reprint 2216597: s116704 Runaways (2017) #19-24 [7 stories]
+             [93130] gcd_reprint 2216598: s116704 Runaways (2017) #25-31 [15 stories]
+             [93131] gcd_reprint 2266121: s116704 Runaways (2017) #32-38 [8 stories]
+   CV linked:      vol 104320 "Runaways" 2017 Marvel 38 issues; cached #1-38 (38); yearΔ 8; ratio 1/38 = 0.03; no judged range
+   CV per-file (v1): vol 18055 "Runaways" 2005 Marvel 2 on 1/7 files
+   CV candidates:  (= linked) · 105833 "Runaways Halloween Comic Fest 2017" 2017 Marvel 1 issue 634646 s44 · 126610 "Runaways by Rainbow Rowell: Cannon Fodder" 2020 Marvel 1 issue 756655 s36 · 149719 "She-Hulk by Rainbow Rowell" 2022 Marvel 5 s34 · 139435 "Runaways by Rainbow Rowell: Come Away With Me" 2021 Marvel 1 issue 888651 s34 · 109969 "Runaways by Rainbow Rowell: Find Your Way Home" 2018 Marvel 1 issue 666813 s34 · 122073 "Runaways by Rainbow Rowell: But You Can't Hide" 2019 Marvel 1 issue 723128 s34   (v1 search)
+   CV local rip:   (= linked) · 22775 "Runaways" 2008 Marvel 14 · 42887 "Runaways" 2007 Panini España 16 · 11872 "Runaways" 2005 Marvel 30 · 42886 "Runaways" 2005 Panini España 12 · 18060 "Runaways" 2004 Marvel 1 issue 105748   (rip lookup)
+   GCD dump:       208240 "Runaways" 2009-2010 Marvel [] 11 · 31812 "Runaways" 2008-2009 Marvel [] 14 · 29053 "Runaways" [es] 2007-2008 Panini España [] 16 · 12882 "Runaways" 2005-2008 Marvel [] 30 · 29052 "Runaways" [es] 2005-2006 Panini España [] 12 · 35143 "Runaways" 2005-2007 Marvel [] 3   (dump lookup)
+
+== S99802 Silver Surfer v7 (2016)  [tier C] · 2 volumes  keys: Silver Surfer v7 (2016)  years 2014-2016  3 files / 3 collections
+   flags: #640 overlap-in-series [Dismissed] item 93651 — two Silver Surfer ladders each contribute a Vol. 01 gcd 1-5/1-6
+   folders: [3] Marvel\_Silver Surfer\Silver Surfer v7-8 (2016)
+   files:   [93648] COL Silver Surfer Vol. 01 - New Dawn (2014) (Digital) (Zone-Empire).cbr (115pp)
+            [93651] COL Silver Surfer Vol. 04 - Citizen of Earth (2016) (Digital) (F) (Zone-Empire).cbr (130pp)
+            [93652] COL Silver Surfer Vol. 05 - A Power Greater Than Cosmic (2017) (Digital) (F) (Zone-Empire).cbr (159pp)
+   ours:    ComicInfo Series: "Silver Surfer"x2; ComicInfo Publisher: "Marvel"x2
+   CV per-file (v1): vol 87449 "Silver Surfer" 2016 Marvel 14 on 2/3 files · vol 72582 "Silver Surfer" 2014 Marvel 15 on 1/3 files
+   CV local rip:   (= per-file) · 39031 "Silver Surfer" 2011 Marvel 5 (via our own name without the filing suffix "Silver Surfer") · 23576 "Silver Surfer" 2003 Marvel 14 (via our own name without the filing suffix "Silver Surfer") · 144607 "Silver Surfer" 1997 Panini France 13 (via our own name without the filing suffix "Silver Surfer") · 142348 "Silver Surfer" 1995 Marvel Italia 1 issue 917461 (via our own name without the filing suffix "Silver Surfer")   (rip lookup)
+   GCD dump:       79775 "Silver Surfer" 2014-2016 Marvel [] 15 (via our own name without the filing suffix "Silver Surfer") · 84480 "Silver Surfer" 2014-2017 Marvel [] 5 (via our own name without the filing suffix "Silver Surfer") · 101434 "Silver Surfer" [de] 2015-? Panini Deutschland [] 3 (via our own name without the filing suffix "Silver Surfer") · 186316 "Silver Surfer" [fr] 2015-2016 Panini France [] 3 (via our own name without the filing suffix "Silver Surfer") · 95741 "Silver Surfer" 2016-2017 Marvel [] 14 (via our own name without the filing suffix "Silver Surfer") · 55825 "Silver Surfer" 2011-2011 Marvel [] 5 (via our own name without the filing suffix "Silver Surfer")   (dump lookup)
+
+== S15643 Silver Surfer Epic Collection: Parable  [tier B]   keys: Silver Surfer Epic Collection: Parable  years 2022-2022  1 files / 1 collections
+   folders: [1] Marvel\_Silver Surfer\_Silver Surfer Epic Collections
+   files:   [93655] COL Silver Surfer Epic Collection Vol. 04 - Parable (2022) (Digital-Empire).cbr (500pp)
+   ours:    ComicInfo Series: "Silver Surfer Epic Collection: Parable"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 144795 "Silver Surfer Epic Collection: Parable" 2022 Marvel 1 issues issue 944337; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 27377 "Silver Surfer: Parable" 1998 Marvel 1 issue 166770 s85 · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 s77 · 130195 "Silver Surfer Epic Collection: Resurrection" 2020 Marvel 1 issue 798006 s77 · 119305 "Silver Surfer Epic Collection: Inner Demons" 2019 Marvel 1 issue 709724 s76 · 111152 "Silver Surfer Epic Collection: Thanos Quest" 2018 Marvel 1 issue 671338 s76 · 78292 "Silver Surfer Epic Collection: When Calls Galactus" 2014 Marvel 1 issue 470992 s75   (v1 search)
+   CV local rip:   (= linked) · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 (via CV candidate name "Silver Surfer Epic Collection: Freedom") · 27377 "Silver Surfer: Parable" 1998 Marvel 1 issue 166770 (via CV candidate name "Silver Surfer: Parable")   (rip lookup)
+   GCD dump:       176276 "Silver Surfer: Parable" 2020-2020 Marvel [] 1 (via CV candidate name "Silver Surfer: Parable") · 73303 "Silver Surfer: Parable" 2012-2012 Marvel [] 1 (via CV candidate name "Silver Surfer: Parable") · 7185 "Silver Surfer: Parable" 1998-1998 Marvel [] 1 (via CV candidate name "Silver Surfer: Parable") · 32792 "Silver Surfer - Parable" 1988-1988 Marvel [] 1 (via CV candidate name "Silver Surfer: Parable")   (dump lookup)
+
+== S15644 Silver Surfer Epic Collection: Resurrection  [tier B]   keys: Silver Surfer Epic Collection: Resurrection  years 2020-2020  1 files / 1 collections
+   folders: [1] Marvel\_Silver Surfer\_Silver Surfer Epic Collections
+   files:   [93660] COL Silver Surfer Epic Collection Vol. 09 - Resurrection (2020) (Digital) (Zone-Empire).cbr (419pp)
+   ours:    ComicInfo Series: "Silver Surfer Epic Collection: Resurrection"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 130195 "Silver Surfer Epic Collection: Resurrection" 2020 Marvel 1 issues issue 798006; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 s77 · 144795 "Silver Surfer Epic Collection: Parable" 2022 Marvel 1 issue 944337 s77 · 119305 "Silver Surfer Epic Collection: Inner Demons" 2019 Marvel 1 issue 709724 s76 · 111152 "Silver Surfer Epic Collection: Thanos Quest" 2018 Marvel 1 issue 671338 s76 · 78292 "Silver Surfer Epic Collection: When Calls Galactus" 2014 Marvel 1 issue 470992 s75 · 101636 "Silver Surfer Epic Collection: The Infinity Gauntlet" 2017 Marvel 1 issue 597201 s75   (v1 search)
+   CV local rip:   (= linked) · 144795 "Silver Surfer Epic Collection: Parable" 2022 Marvel 1 issue 944337 (via CV candidate name "Silver Surfer Epic Collection: Parable") · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 (via CV candidate name "Silver Surfer Epic Collection: Freedom")   (rip lookup)
+
+== S15645 Silver Surfer Epic Collection: Sun Rise and Shadow Fall  [tier B]   keys: Silver Surfer Epic Collection: Sun Rise And Shadow Fall  years 2023-2023  1 files / 1 collections
+   folders: [1] Marvel\_Silver Surfer\_Silver Surfer Epic Collections
+   files:   [93662] COL Silver Surfer Epic Collection Vol. 14 - Sun Rise and Shadow Fall (2024) (Digital) (Shan-Empire).cbz (474pp)
+   ours:    ComicInfo Series: "Silver Surfer Epic Collection: Sun Rise And Shadow Fall"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [93662] gcd_reprint 2591750: s3433 Silver Surfer (1987) #139-146 [8 stories] · s9843 Galactus the Devourer (1999) #1-6 [6 stories] · s78323 Silver Surfer: Loftier Than Mortals (1999) #1-2 [3 stories] · s63706 Silver Surfer / Thor '98 (1998) (unnumbered) [1 story]
+   CV linked:      vol 155751 "Silver Surfer Epic Collection: Sun Rise and Shadow Fall" 2023 Marvel 1 issues issue 1038538; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 s62 · 144795 "Silver Surfer Epic Collection: Parable" 2022 Marvel 1 issue 944337 s62 · 130195 "Silver Surfer Epic Collection: Resurrection" 2020 Marvel 1 issue 798006 s62 · 119305 "Silver Surfer Epic Collection: Inner Demons" 2019 Marvel 1 issue 709724 s56 · 111152 "Silver Surfer Epic Collection: Thanos Quest" 2018 Marvel 1 issue 671338 s56 · 120663 "Silver Surfer: The Prodigal Sun" 2019 Marvel 1 issue 716374 s54   (v1 search)
+   CV local rip:   (= linked) · 144795 "Silver Surfer Epic Collection: Parable" 2022 Marvel 1 issue 944337 (via CV candidate name "Silver Surfer Epic Collection: Parable") · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 (via CV candidate name "Silver Surfer Epic Collection: Freedom")   (rip lookup)
+
+== S15646 Silver Surfer Epic Collection: Thanos Quest  [tier B]   keys: Silver Surfer Epic Collection: Thanos Quest  years 2018-2018  1 files / 1 collections
+   folders: [1] Marvel\_Silver Surfer\_Silver Surfer Epic Collections
+   files:   [93657] COL Silver Surfer Epic Collection Vol. 06 - Thanos Quest (2018) (digital-Empire).cbr (473pp)
+   ours:    ComicInfo Series: "Silver Surfer Epic Collection: Thanos Quest"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 111152 "Silver Surfer Epic Collection: Thanos Quest" 2018 Marvel 1 issues issue 671338; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 148038 "Silver Surfer Epic Collection: The Return of Thanos" 2023 Marvel 1 issue 968773 s77 · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 s69 · 144795 "Silver Surfer Epic Collection: Parable" 2022 Marvel 1 issue 944337 s69 · 130195 "Silver Surfer Epic Collection: Resurrection" 2020 Marvel 1 issue 798006 s69 · 119305 "Silver Surfer Epic Collection: Inner Demons" 2019 Marvel 1 issue 709724 s68 · 78292 "Silver Surfer Epic Collection: When Calls Galactus" 2014 Marvel 1 issue 470992 s67   (v1 search)
+   CV local rip:   (= linked) · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 (via CV candidate name "Silver Surfer Epic Collection: Freedom") · 148038 "Silver Surfer Epic Collection: The Return of Thanos" 2023 Marvel 1 issue 968773 (via CV candidate name "Silver Surfer Epic Collection: The Return of Thanos")   (rip lookup)
+
+== S15647 Silver Surfer Epic Collection: The Herald Ordeal   [tier B]   keys: Silver Surfer Epic Collection: The Herald Ordeal  years 2024-2024  1 files / 1 collections
+   folders: [1] Marvel\_Silver Surfer\_Silver Surfer Epic Collections
+   files:   [93659] COL Silver Surfer Epic Collection Vol. 08 - The Herald Ordeal (2024) (digital) (Marika-Empire).cbz (437pp)
+   ours:    ComicInfo Series: "Silver Surfer Epic Collection: The Herald Ordeal"x1; ComicInfo Volume: "2024"x1; ComicInfo Publisher: "Marvel"x1; ComicInfo Web: "1080325"x1
+   CV linked:      vol 161445 "Silver Surfer Epic Collection: The Herald Ordeal " 2024 Marvel 1 issues issue 1080325; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 101636 "Silver Surfer Epic Collection: The Infinity Gauntlet" 2017 Marvel 1 issue 597201 s70 · 148038 "Silver Surfer Epic Collection: The Return of Thanos" 2023 Marvel 1 issue 968773 s69 · 165196 "Silver Surfer Epic Collection: Into the Outer Void" 2025 Marvel 1 issue 1117046 s69 · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 s63 · 144795 "Silver Surfer Epic Collection: Parable" 2022 Marvel 1 issue 944337 s63 · 130195 "Silver Surfer Epic Collection: Resurrection" 2020 Marvel 1 issue 798006 s63   (v1 search)
+   CV local rip:   (= linked) · 148038 "Silver Surfer Epic Collection: The Return of Thanos" 2023 Marvel 1 issue 968773 (via CV candidate name "Silver Surfer Epic Collection: The Return of Thanos") · 101636 "Silver Surfer Epic Collection: The Infinity Gauntlet" 2017 Marvel 1 issue 597201 (via CV candidate name "Silver Surfer Epic Collection: The Infinity Gauntlet")   (rip lookup)
+
+== S14052 Dark Horse Classics: Aliens Versus Predator  [tier B]   keys: Predator  years 1997-2023  5 files / 5 collections
+   folders: [4] Dark Horse\Predator · [1] Marvel\_Predator\Predator v1 (2022)
+   files:   [13371] COL Predator Omnibus v01 (2007) (digital) (The Magicians-Empire).cbr (425pp) | [13372] COL Predator Omnibus v02 (2008) (digital) (The Magicians-Empire).cbr (354pp)
+            [13373] COL Predator Omnibus v03 (2008) (digital) (The Magicians-Empire).cbr (345pp) | [13374] COL Predator Omnibus v04 (2008) (digital) (The Magicians-Empire).cbr (346pp)
+            [85951] COL Predator by Ed Brisson Vol. 01 - Day of the Hunter (2023) (Digital-Empire).cbr (145pp)
+   GCD says: [85951] gcd notes 2518564 (#1 of Predator by Ed Brisson): ? [s188074] #1-6  |  gcd_reprint 2518564: s188074 Predator (2022) #1-6 [7 stories]
+   CV linked:      vol 22515 "Dark Horse Classics: Aliens Versus Predator" 1997 Dark Horse Comics 6 issues; cached #1-6 (6); yearΔ 0; ratio 0/6; no judged range
+   CV local rip:   (= linked) · 30400 "Predator" 1989 Dark Horse Comics 4 · 26894 "Predator" 2009 Dark Horse Comics 4 · 144439 "Predator" 2022 Marvel 6 · 148782 "Predator" 2023 Marvel 5 · 153643 "Predator " 2023 Panini Verlag 3   (rip lookup)
+   GCD dump:       41899 "Dark Horse Classics: Aliens versus Predator" 1997-1997 Dark Horse [] 6 · 226811 "Predator" [hu] 1998-1999 Szukits [] 8 · 145995 "Predator" [fr] 1991-1991 Zenda [] 2 · 41868 "Predator" 1990-1990 Dark Horse [] 1 · 52373 "Predator" [de] 1990-1992 Norbert Hethke Verlag [] 9 · 16193 "Predator" 1989-1990 Dark Horse [] 4   (dump lookup)

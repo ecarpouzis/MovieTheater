@@ -2142,3 +2142,12 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   a line identity with cv=-. The Moon Knight Omnibus (CV 133100 / GCD 173035) has no contents note in our data — no C
   line. A second rip parked in another run's folder can carry that folder's key ("Ghost Rider v7 (2011)" on S64771's
   2019 Vol. 01) — a trap for later files parsed from the folder.
+[L-402] pub:marvel sig:split
+- Waves 155-156 (lead rulings): an annual shelf created AFTER a run's revisit strands the annuals on the run shelf —
+  grep `--who-stores` for the annual's cv at every revisit (ASM Annuals #1-39 -> S42165; #40 -> the 1999 run, #41-42 ->
+  the 2014 run). ASM Annuals #29-34 (1995-2001) go with the annual line although neither catalogue indexes them in CV
+  2189 / GCD 1635: Marvel resumed the legacy count at #35 (L-390). Ripper-split annuals ("Annual 1.1/1.2/1.3") are ONE book
+  cut in parts — each part gets the same issue I line. Run issues joining a shelf that holds the run's trades (Invincible
+  Iron Man 2015 #6-14 -> S94637) make that shelf the RUN: restate it on the run's records, trades on I lines. Halts this
+  round: a C line on an item a landed split moved (C-045 item 81993) -> comment it out; a second trade rip merged in
+  unflagged (One Moment in Time 94006) -> iscollection csv + `u` beside its sibling on S4752.

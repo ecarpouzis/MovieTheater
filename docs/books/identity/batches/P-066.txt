@@ -1,0 +1,498 @@
+## Conventions for this batch (21 shown of 137 matched; 401 in LEDGER.md; 12 shelf/shelves: pub:marvel ×12 · kind:collected-line ×7 · kind:trade-only ×6 · folder:events ×5 · folder:vn-year ×5 · folder:sequel-subfolder ×4 · kind:new ×3 · folder:facsimile ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-136] (11 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-127] (10 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-389] (9 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-053 / R-135 (waves 129-130): a run's issues never JOIN a creator-trade-keyed shelf ("Venom by Al Ewing & Ram V",
+  S21029, four trades) — keep them and meet through the SHARED cv at the next revisit (S20988 cv=140084 + merge-with=21029).
+  Marvel's 2019-2020 "Star Wars #1 facsimile" is "Star Wars No 1 Facsimile Edition" (CV 123267 / GCD 153348): probe the
+  "No N" form. Star Wars Insider and Titan's "Best of" books have no CV / GCD record: R + provider-missing, never the 1977
+  comic's stamp. The Dark Horse Star Wars Omnibus umbrella number (Vol. 32 / 35) raises a false "stored GCD row is another
+  book" warning against the sub-line's #1 / #2 — page counts and ISBNs decide. An Epic Collection / omnibus line spanning
+  several minis keeps its own GCD-line key in a split.
+[L-298] (8 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (8 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-031] (7 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (7 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (7 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (7 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (7 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-132] (7 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-196] (7 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (7 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (7 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-306] (7 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (7 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (7 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-327] (7 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (7 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+[L-329] (7 shelf/shelves) kind:collected-line pub:dc pub:marvel
+- DC/Marvel trade lines often store a GCD row that belongs to a FOREIGN or other edition (Urban Comics' French GL
+  2011, a German GL 2023 Vol. 1) — check the stored row's series before using its roll-up. GCD carries twin HC/SC
+  series for most 2006-2016 DC/Marvel trades (77116/77117, 77936/77937) → cap those I lines at 0.9. CV keeps count-1
+  "Title: Subtitle" volumes per trade before ~2016, numbered TPB-line volumes after (R-054).
+[L-332] (7 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection one-rule (lead, wave 44): each Epic book is its OWN shelf; its S line carries the book's own
+  count-1 CV volume and `gcd=-`; the line's GCD series (74602 ASM, 74592 Iron Man) goes on the book's I line with
+  its ISBN; C lines name the runs reprinted. `lookup.py "<Line> Epic Collection" --contains` lists every volume.
+
++116 more matched entries not shown: L-392, L-397, L-400, L-401, L-029, L-398, L-164, L-291, L-033, L-034, L-060, L-116, L-133, L-142, L-169, L-319, L-343, L-345, L-388, L-390, L-391, L-399, L-135, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-172, L-191, L-281, L-393, L-064, L-085, L-101, L-310, L-016, L-032, L-113, L-114, L-124, L-175, L-193, L-272, L-014, L-130, L-174, L-242, L-371, L-378, L-387, L-395, L-396, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-290, L-292, L-294, L-341, L-346, L-347, L-077, L-311, L-357, L-054, L-027, L-128, L-181, L-194, L-265, L-315, L-324, L-330, L-336, L-379, L-065, L-097, L-099, L-123, L-252, L-262, L-274, L-288, L-293, L-352, L-354, L-150 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S102965 Iron Fist  [split]  3 files / 1 collections  decided in R-155 (S)
+   decided: S 102965 cv=2766 gcd=2252 0.9 | Iron Fist (1975-1977): CV 2766 (Marvel 1975, 15) and GCD 2252 (Marvel 1975-1977, 15) agree on publisher, span and count, and our two X-Men-chronology rips "Iron Fist 014 / 015 (1977)" (the Sabretooth / Phoenix issues, 19pp) are its #14-15, per-file on both legs; 0.9 for the second rip of Iron Fist Epic Collection Vol. 01, a book of the Epic LINE that spans several runs, split below
+   F 102965 split-needed | item 81993 ("Iron Fist Epic Collection Vol. 01 - The Fury of Iron Fist (2015)" 527pp, folder "01 Iron Fist v1 (1975)") is the second rip of the book S9565 already holds (81997, 527pp, the same GCD 86055 #1 row 1310227 / CV 83138 issue 494320); S9565 is the Iron Fist Epic Collection LINE shelf (S line R-154 cv=- gcd=86055) -> join S9565 on its key "Iron Fist Epic Collection: The Fury Of Iron Fist" (L-392); checker anchor only: S9565 is outside this batch
+   named: S9565 Iron Fist Epic Collection: The Fury Of Iron Fist  1 files  keys: "Iron Fist Epic Collection: The Fury Of Iron Fist"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S47159 "Marvel Team-Up" 196f [shares gcd=2056 (collected by item 81993) — S cv=2576 gcd=2056 (C-046 0.95)] keys: "Marvel Masterworks - Marvel Team-Up" | "Marvel Masterworks - Marvel Team-Up (1972)" | "Marvel Team-Up" | "Marvel Team-Up (1972)" (+8 more: lookup.py --shelf 47159)
+   nearby: S11547 "Marvel Premiere" 52f [shares gcd=2055 (collected by item 81993) — S cv=2575 gcd=2055 (A-021 0.95)] keys: "Marvel Premiere" · S97886 "Iron Fist" 5f [title] keys: "Iron Fist" | "Iron Fist v6 (2018)"
+   nearby: S9572 "Iron Fist" 1f [title — S cv=141631 gcd=182399 (B-057 0.95)] keys: "Iron Fist: The Shattered Sword"
+   nearby: S9566 "Iron Fist: Wolverine" 8f [title+1 — S cv=9115 gcd=9848 (B-062 0.95)] keys: "Iron Fist and Wolverine" | "Iron Fist-Wolverine"
+   keys now: "Iron Fist (1975)" x3
+   groups (title x folder): 3
+   G1 "Iron Fist Epic Collection" in Marvel\_Iron Fist\01 Iron Fist v1 (1975) — 1 file(s), 1 COL, pp 527-527; cv per-file 83138x1; gcd per-file 86055x1; key 'Iron Fist (1975)'
+      [81993] COL Iron Fist Epic Collection Vol. 01 - The Fury of Iron Fist (2015) (digital) (Minutemen-Slayer).cbr (527pp)
+         own record cv 83138 / gcd s86055 "Iron Fist Epic Collection" (issue 1310227) COLLECTS: gcd=2252 Iron Fist (1975) #1-15 · gcd=2055 Marvel Premiere (1972) #15-25 · gcd=2056 Marvel Team-Up (1972) #63-64
+   G2 "Iron Fist" in Marvel\_X-Men\_X-Men Complete Chronology V2\0009 Phoenix Rising — 1 file(s), numbers 14, pp 19-19; cv per-file 2766x1; gcd per-file 2252x1; key 'Iron Fist (1975)'
+      [86677] 015 Iron Fist 014 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+   G3 "Iron Fist" in Marvel\_X-Men\_X-Men Complete Chronology V2\0010 The Phoenix Saga — 1 file(s), numbers 15, pp 19-19; cv per-file 2766x1; gcd per-file 2252x1; key 'Iron Fist (1975)'
+      [86688] 011 Iron Fist 015 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+
+== S12339 Moon Knight Epic Collection 05: The Trial Of Marc Spector  [split]  1 files / 1 collections  decided in R-156 (S)
+   decided: S 12339 cv=- gcd=80655 0.9 | volume 05 "The Trial of Marc Spector" of the Moon Knight Epic Collection LINE: GCD 80655 #5 row 2665766 (476pp, 2024-10-08, ISBN 978-1-302-95959-3) is our 471pp book (ComicInfo Series "Moon Knight Epic Collection 05: The Trial Of Marc Spector"); CV 160345 is only its count-1 book volume (issue 1073451), so the line has no CV id (L-392)
+   F 12339 wrong-cv-link | the stored CV 160345 "Moon Knight Epic Collection: The Trial of Marc Spector" is the Vol. 05 book's own count-1 volume, not the line; it moves to the I line
+   F 12339 split-needed | item 83734 -> join S12338 on its ParsedKey "Moon Knight Epic Collection" (S12338's S line in this file is the same GCD 80655 line with cv=-; L-377 / L-392); the shelf empties by the join; replaces C-048's merge-with=12340
+   N 12339 the packet's stored GCD row (1205410, Vol. 01 "Bad Moon Rising") is another book; its roll-up is void here - the book's own row is 2665766
+   named: S12338 Moon Knight Epic Collection  4 files  keys: "Moon Knight Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S11285 "Marc Spector: Moon Knight" 68f [shares gcd=3845 (collected by item 83734) — S cv=4230 gcd=3845 (C-055 0.95)] keys: "Marc Spector - Moon Knight" | "Marc Spector - Moon Knight v1 (1989)" | "Marc Spector: Moon Knight Ominibus"
+   nearby: S98483 "Marvel Super-Heroes v2 (1990)" 30f [shares gcd=4032 (collected by item 83734) — S cv=4404 gcd=4032 (R-046 1.0)] keys: "Marvel Super-Heroes v2 (1990)"
+   nearby: S34434 "The Punisher Annual" 4f [shares gcd=3660 (collected by item 83734) — S cv=4064 gcd=3660 (B-058 1.0)] keys: "The Punisher Annual"
+   nearby: S12340 "Moon Knight Epic Collection: Butcher's Moon" 1f [shares gcd=80655 — S gcd=80655 (R-156 0.9)] keys: "Moon Knight Epic Collection: Butcher's Moon"
+   nearby: S12341 "Moon Knight Epic Collection: Death Watch" 1f [shares gcd=80655 — S gcd=80655 (R-156 0.9)] keys: "Moon Knight Epic Collection: Death Watch"
+   nearby: S12342 "Moon Knight Epic Collection: Shadows of the Moon" 1f [shares gcd=80655 — S gcd=80655 (R-156 0.9)] keys: "Moon Knight Epic Collection: Shadows of the Moon"
+   keys now: "Moon Knight Epic Collection 05: The Trial Of Marc Spector" x1
+   groups (title x folder): 1
+   G1 "Moon Knight Epic Collection" in Marvel\_Moon Knight\Moon Knight Epic Collections — 1 file(s), 1 COL, pp 471-471; cv per-file 160345x1; gcd per-file 80655x1; key 'Moon Knight Epic Collection 05: The Trial Of Marc Spector'
+      [83734] COL Moon Knight Epic Collection Vol. 05 - The Trial of Marc Spector 001 (2024) (digital) (Marika-Empire).cbz (471pp)
+         own record cv 160345 / gcd s80655 "Moon Knight Epic Collection" (issue 2665766) COLLECTS: gcd=3845 Marc Spector: Moon Knight (1989) #8-25 · gcd=3660 The Punisher Annual (1988) #2 · gcd=4032 Marvel Super-Heroes (1990) #4
+
+== S12340 Moon Knight Epic Collection: Butcher's Moon  [split]  1 files / 1 collections  decided in R-156 (S)
+   decided: S 12340 cv=- gcd=80655 0.9 | volume 04 "Butcher's Moon" of the Moon Knight Epic Collection LINE: GCD 80655 #4 row 2431453 (454pp, 2022-09-21, ISBN 978-1-302-94816-0) is our 460pp book; CV 145175 is only its count-1 book volume (issue 948622), so the line has no CV id (L-392)
+   F 12340 wrong-cv-link | the stored CV 145175 "Moon Knight Epic Collection: Butcher's Moon" is the Vol. 04 book's own count-1 volume, not the line; it moves to the I line
+   F 12340 split-needed | item 83733 -> join S12338 on its ParsedKey "Moon Knight Epic Collection" (S12338's S line in this file is the same GCD 80655 line with cv=-; L-377 / L-392); the shelf empties by the join; replaces C-048's merge-with=12339
+   N 83733 also collects Marvel Fanfare #10, #25, #30, #38-39, #43 and Marvel Super-Heroes (1990) #1 per the same roll-up
+   named: S12338 Moon Knight Epic Collection  4 files  keys: "Moon Knight Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S11285 "Marc Spector: Moon Knight" 68f [shares gcd=3845 (collected by item 83733) — S cv=4230 gcd=3845 (C-055 0.95)] keys: "Marc Spector - Moon Knight" | "Marc Spector - Moon Knight v1 (1989)" | "Marc Spector: Moon Knight Ominibus"
+   nearby: S11410 "Marvel Fanfare" 58f [shares gcd=2657 (collected by item 83733) — S cv=3143 gcd=2657 (R-140 0.95)] keys: "Marvel Fanfare"
+   nearby: S98483 "Marvel Super-Heroes v2 (1990)" 30f [shares gcd=4032 (collected by item 83733) — S cv=4404 gcd=4032 (R-046 1.0)] keys: "Marvel Super-Heroes v2 (1990)"
+   nearby: S12336 "Moon Knight: Fist of Khonshu" 6f [shares gcd=3031 (collected by item 83733) — S cv=3492 gcd=3031 (B-058 0.95)] keys: "Moon Knight - Fist Of Khonshu" | "Moon Knight - Fist of Khonshu"
+   nearby: S12339 "Moon Knight Epic Collection 05: The Trial Of Marc Spector" 1f [shares gcd=80655 — S gcd=80655 (R-156 0.9)] keys: "Moon Knight Epic Collection 05: The Trial Of Marc Spector"
+   nearby: S12341 "Moon Knight Epic Collection: Death Watch" 1f [shares gcd=80655 — S gcd=80655 (R-156 0.9)] keys: "Moon Knight Epic Collection: Death Watch"
+   nearby: S12342 "Moon Knight Epic Collection: Shadows of the Moon" 1f [shares gcd=80655 — S gcd=80655 (R-156 0.9)] keys: "Moon Knight Epic Collection: Shadows of the Moon"
+   keys now: "Moon Knight Epic Collection: Butcher's Moon" x1
+   groups (title x folder): 1
+   G1 "Moon Knight Epic Collection" in Marvel\_Moon Knight\Moon Knight Epic Collections — 1 file(s), 1 COL, pp 460-460; cv per-file 145175x1; gcd per-file 80655x1; key "Moon Knight Epic Collection: Butcher's Moon"
+      [83733] COL Moon Knight Epic Collection Vol. 04 - Butcher's Moon (2022) (Digital-Empire).cbz (460pp)
+         own record cv 145175 / gcd s80655 "Moon Knight Epic Collection" (issue 2431453) COLLECTS: gcd=3845 Marc Spector: Moon Knight (1989) #1-7 · gcd=3031 Moon Knight (1985) #1-6 · gcd=2657 Marvel Fanfare (1982) #10, #25, #30, #38-39, #43 · gcd=4032 Marvel Super-Heroes (1990) #1
+
+== S12341 Moon Knight Epic Collection: Death Watch  [split]  1 files / 1 collections  decided in R-156 (S)
+   decided: S 12341 cv=- gcd=80655 0.9 | volume 07 "Death Watch" of the Moon Knight Epic Collection LINE: GCD 80655 #7 row 2574453 (500pp, 2023-10-25, ISBN 978-1-302-95380-5) is our 475pp book; CV 154301 is only its count-1 book volume (issue 1026649), so the line has no CV id (L-392)
+   F 12341 wrong-cv-link | the stored CV 154301 "Moon Knight Epic Collection: Death Watch" is the Vol. 07 book's own count-1 volume, not the line; it moves to the I line
+   F 12341 split-needed | item 83735 -> join S12338 on its ParsedKey "Moon Knight Epic Collection" (S12338's S line in this file is the same GCD 80655 line with cv=-; L-377 / L-392); the shelf empties by the join; replaces C-048's merge-with=12339
+   N 83735 also collects Moon Knight Special (1992) #1, Web of Spider-Man #93-94 and Marvel Comics Presents #152-154 per the same roll-up
+   named: S12338 Moon Knight Epic Collection  4 files  keys: "Moon Knight Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65131 "Marvel Comics Presents" 523f [shares gcd=3654 (collected by item 83735) — S cv=4058 gcd=3654 (C-046 0.95)] keys: "Marvel Comics Presents (1988)" | "Marvel Comics Presents v1 (1988)"
+   nearby: S66237 "Web of Spider-Man" 155f [shares gcd=3059 (collected by item 83735) — S cv=3519 gcd=3059 (R-028 0.9)] keys: "The Amazing Spider-Man Epic Collection 28: Web of Life, Web of Death (1985)" | "Web Of Spider-Man" | "Web of Spider-Man (1985)" | "Web of Spider-Man Super Special" (+2 more: lookup.py --shelf 66237)
+   nearby: S11285 "Marc Spector: Moon Knight" 68f [shares gcd=3845 (collected by item 83735) — S cv=4230 gcd=3845 (C-055 0.95)] keys: "Marc Spector - Moon Knight" | "Marc Spector - Moon Knight v1 (1989)" | "Marc Spector: Moon Knight Ominibus"
+   nearby: S12339 "Moon Knight Epic Collection 05: The Trial Of Marc Spector" 1f [shares gcd=80655 — S gcd=80655 (R-156 0.9)] keys: "Moon Knight Epic Collection 05: The Trial Of Marc Spector"
+   nearby: S12340 "Moon Knight Epic Collection: Butcher's Moon" 1f [shares gcd=80655 — S gcd=80655 (R-156 0.9)] keys: "Moon Knight Epic Collection: Butcher's Moon"
+   nearby: S12342 "Moon Knight Epic Collection: Shadows of the Moon" 1f [shares gcd=80655 — S gcd=80655 (R-156 0.9)] keys: "Moon Knight Epic Collection: Shadows of the Moon"
+   keys now: "Moon Knight Epic Collection: Death Watch" x1
+   groups (title x folder): 1
+   G1 "Moon Knight Epic Collection" in Marvel\_Moon Knight\Moon Knight Epic Collections — 1 file(s), 1 COL, pp 475-475; cv per-file 154301x1; gcd per-file 80655x1; key 'Moon Knight Epic Collection: Death Watch'
+      [83735] COL Moon Knight Epic Collection Vol. 07 - Death Watch (2023) (Digital-Empire).cbr (475pp)
+         own record cv 154301 / gcd s80655 "Moon Knight Epic Collection" (issue 2574453) COLLECTS: gcd=3845 Marc Spector: Moon Knight (1989) #39-51 · gcd=4460 Moon Knight Special (1992) #1 · gcd=3654 Marvel Comics Presents (1988) #152-154 · gcd=3059 Web of Spider-Man (1985) #93-94
+
+== S12342 Moon Knight Epic Collection: Shadows of the Moon  [split]  1 files / 1 collections  decided in R-156 (S)
+   decided: S 12342 cv=- gcd=80655 0.9 | volume 02 "Shadows of the Moon" of the Moon Knight Epic Collection LINE: GCD 80655 #2 row 1339628 (516pp, ISBN 978-0-7851-9810-9) is our 505pp book - the second rip of the Vol. 02 that S12338 already holds (83625, 507pp); CV 85440 is only its count-1 book volume (issue 503563), so the line has no CV id (L-392)
+   F 12342 wrong-cv-link | the stored CV 85440 "Moon Knight Epic Collection: Shadows of the Moon" is the Vol. 02 book's own count-1 volume, not the line; it moves to the I line
+   F 12342 split-needed | item 83731 -> join S12338 on its ParsedKey "Moon Knight Epic Collection" (S12338's S line in this file is the same GCD 80655 line with cv=-, and it already holds another rip of this book, 83625; L-377 / L-392); the shelf empties by the join
+   named: S12338 Moon Knight Epic Collection  4 files  keys: "Moon Knight Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S94845 "Moon Knight" 15f [shares gcd=2562 (collected by item 83731) — S cv=3052 gcd=2562 (C-048 0.95)] keys: "Moon Knight v1 (1980)"
+   nearby: S12339 "Moon Knight Epic Collection 05: The Trial Of Marc Spector" 1f [shares gcd=80655 — S gcd=80655 (R-156 0.9)] keys: "Moon Knight Epic Collection 05: The Trial Of Marc Spector"
+   nearby: S12340 "Moon Knight Epic Collection: Butcher's Moon" 1f [shares gcd=80655 — S gcd=80655 (R-156 0.9)] keys: "Moon Knight Epic Collection: Butcher's Moon"
+   nearby: S12341 "Moon Knight Epic Collection: Death Watch" 1f [shares gcd=80655 — S gcd=80655 (R-156 0.9)] keys: "Moon Knight Epic Collection: Death Watch"
+   keys now: "Moon Knight Epic Collection: Shadows of the Moon" x1
+   groups (title x folder): 1
+   G1 "Moon Knight Epic Collection" in Marvel\_Moon Knight\Moon Knight Epic Collections — 1 file(s), 1 COL, pp 505-505; cv per-file 85440x1; gcd per-file 80655x1; key 'Moon Knight Epic Collection: Shadows of the Moon'
+      [83731] COL Moon Knight Epic Collection Vol. 02 - Shadows of the Moon (2015) (Digital) (F) (AnHeroGold-Empire).cbz (505pp)
+         own record cv 85440 / gcd s80655 "Moon Knight Epic Collection" (issue 1339628) COLLECTS: gcd=2562 Moon Knight (1980) #5-23
+
+== S14203 Punisher Epic Collection: Jigsaw Puzzle  [split]  1 files / 1 collections  decided in R-156 (S)
+   decided: S 14203 cv=- gcd=119032 0.9 | volume 05 "Jigsaw Puzzle" of the Punisher Epic Collection LINE: GCD 119032 #5 row 2072936 (500pp, 2020-02-18, ISBN 978-1-302-92275-7) is our 494pp book (ComicInfo Series "Punisher Epic Collection: Jigsaw Puzzle"); CV 124884 is only its count-1 book volume (issue 736690 "Volume 5"), so the line has no CV id (L-392)
+   F 14203 wrong-cv-link | the stored CV 124884 "The Punisher Epic Collection: Jigsaw Puzzle" is the Vol. 05 book's own count-1 volume, not the line; it moves to the I line
+   F 14203 split-needed | item 82518 -> join S14202 on its ParsedKey "Punisher Epic Collection" (S14202's S line in this file is the same GCD 119032 line with cv=-; L-377 / L-392); the shelf empties by the join
+   named: S14202 Punisher Epic Collection  3 files  keys: "Punisher Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65458 "The Punisher" 124f [shares gcd=3431 (collected by item 82518) — S cv=3855 gcd=3431 (R-156 0.9)] keys: "Punisher (1987)" | "Punisher v02 (1987)" | "The Punisher (1987)"
+   nearby: S34434 "The Punisher Annual" 4f [shares gcd=3660 (collected by item 82518) — S cv=4064 gcd=3660 (B-058 1.0)] keys: "The Punisher Annual"
+   nearby: S14204 "Punisher Epic Collection: Return To Big Nothing" 1f [shares gcd=119032 — S gcd=119032 (R-156 0.9)] keys: "Punisher Epic Collection: Return To Big Nothing"
+   nearby: S14223 "Punisher: No Escape" 1f [shares gcd=4042 (collected by item 82518) — S cv=30711 gcd=4042 (C-049 1.0)] keys: "Punisher: No Escape"
+   nearby: S14226 "Punisher: The Prize" 1f [shares gcd=4044 (collected by item 82518) — S cv=30710 gcd=4044 (C-049 1.0)] keys: "Punisher: The Prize"
+   keys now: "Punisher Epic Collection: Jigsaw Puzzle" x1
+   groups (title x folder): 1
+   G1 "Punisher Epic Collection" in Marvel\_Punisher\_Punisher Epic Collections — 1 file(s), 1 COL, pp 494-494; cv per-file 124884x1; gcd per-file 119032x1; key 'Punisher Epic Collection: Jigsaw Puzzle'
+      [82518] COL Punisher Epic Collection Vol. 05 - Jigsaw Puzzle (2020) (Digital-Empire).cbr (494pp)
+         own record cv 124884 / gcd s119032 "Punisher Epic Collection" (issue 2072936) COLLECTS: gcd=3431 The Punisher (1987) #35-48 · gcd=3660 The Punisher Annual (1988) #4 · gcd=4042 The Punisher: No Escape (1990) (unnumbered) · gcd=4044 The Punisher: The Prize (1990) (unnumbered)
+
+== S14204 Punisher Epic Collection: Return To Big Nothing  [split]  1 files / 1 collections  decided in R-156 (S)
+   decided: S 14204 cv=- gcd=119032 0.9 | volume 04 "Return to Big Nothing" of the Punisher Epic Collection LINE: GCD 119032 #4 row 2240842 (484pp, 2021-07-21, ISBN 978-1-302-93085-1) is our 468pp book; CV 137807 is only its count-1 book volume (issue 873680 "Volume 4"), so the line has no CV id (L-392)
+   F 14204 wrong-cv-link | the stored CV 137807 "Punisher Epic Collection: Return To Big Nothing" is the Vol. 04 book's own count-1 volume, not the line; it moves to the I line
+   F 14204 split-needed | item 82517 -> join S14202 on its ParsedKey "Punisher Epic Collection" (S14202's S line in this file is the same GCD 119032 line with cv=-; L-377 / L-392); the shelf empties by the join; replaces C-049's merge-with=14203
+   named: S14202 Punisher Epic Collection  3 files  keys: "Punisher Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65458 "The Punisher" 124f [shares gcd=3431 (collected by item 82517) — S cv=3855 gcd=3431 (R-156 0.9)] keys: "Punisher (1987)" | "Punisher v02 (1987)" | "The Punisher (1987)"
+   nearby: S34434 "The Punisher Annual" 4f [shares gcd=3660 (collected by item 82517) — S cv=4064 gcd=3660 (B-058 1.0)] keys: "The Punisher Annual"
+   nearby: S14203 "Punisher Epic Collection: Jigsaw Puzzle" 1f [shares gcd=119032 — S gcd=119032 (R-156 0.9)] keys: "Punisher Epic Collection: Jigsaw Puzzle"
+   keys now: "Punisher Epic Collection: Return To Big Nothing" x1
+   groups (title x folder): 1
+   G1 "Punisher Epic Collection" in Marvel\_Punisher\_Punisher Epic Collections — 1 file(s), 1 COL, pp 468-468; cv per-file 137807x1; gcd per-file 119032x1; key 'Punisher Epic Collection: Return To Big Nothing'
+      [82517] COL Punisher Epic Collection Vol. 04 - Return to Big Nothing (2021) (Digital-Empire).cbr (468pp)
+         own record cv 137807 / gcd s119032 "Punisher Epic Collection" (issue 2240842) COLLECTS: gcd=3431 The Punisher (1987) #26-34 · gcd=79890 Marvel Graphic Novel: The Punisher: Intruder (1989) (unnumbered) · gcd=3660 The Punisher Annual (1988) #3 · gcd=4040 The Punisher: Kingdom Gone (1990) (unnumbered)
+
+== S20338 Tony Stark: Iron Man  [split]  5 files / 4 collections  decided in R-155 (S)
+   decided: S 20338 cv=111704 gcd=126073 0.9 | Tony Stark: Iron Man (2018-2020, Slott): CV 111704 (Marvel 2018, 19, cached #1-19) and GCD 126073 (Marvel 2018-2020, 19) agree on publisher, span and count; the four trades are this run's own editions - Vol. 01 Self-Made Man, Vol. 02 Stark Realities, Vol. 03 War of the Realms (GCD 136756 rows #1-3; row 1980738 collects #6-11) and The Ultron Agenda (CV 126521 "Volume 4", GCD 176779 row rolls up s126073) absorbed from S9634 (L-396); 0.9 for the Age of Ultron one-shot split below
+   F 20338 split-needed | item 92353 ("009 Ultron 01AU (2013)" 24pp, X-Men Complete Chronology "1031 Age of Ultron") is the one-shot Ultron #1AU (CV 49505 issue 396434 / GCD 73567 row 1100178, Marvel 2013, 1 issue each), stored by no shelf (who-stores cv=49505: 0 rows; no file, Series or alias carries "Ultron (2013)") -> new key "Ultron (2013)" seeded cv=49505 gcd=73567 (restated from S9634's F line, which died with the merge, L-396)
+   N 20338 the per-file GCD 136756 on the three trades is their own TPB line (item-level); the Panini Deutschland 139246 and España 174274 rows are foreign editions
+   named: S9634 (not a file-holding shelf today)
+   nearby: S97889 "Iron Man" 63f [shares gcd=6998 (collected by item 118912) — S cv=6504 gcd=6998 (R-154 0.9)] keys: "Iron Man By Mike Grell" | "Iron Man v3 (1998)"
+   keys now: "Tony Stark: Iron Man" x3 · "Iron Man: The Ultron Agenda" x1 · "Ultron 01AU" x1
+   groups (title x folder): 3
+   G1 "Tony Stark Iron Man" in Marvel\_Iron Man\14 Tony Stark - Iron Man (2018) — 3 file(s), 3 COL, pp 107-132; cv per-file 116267x1, 119884x1, 126521x1; gcd per-file 136756x2, 176779x1; key 'Tony Stark: Iron Man' | 'Iron Man: The Ultron Agenda'
+      [82020] COL Tony Stark Iron Man Vol. 01 - Self-Made Man (2019) (Digital) (DrDoom-Empire).cbz (132pp)
+         own record cv 116267 / gcd s136756 "Tony Stark: Iron Man" (issue 1889383) COLLECTS: gcd=126073 Tony Stark: Iron Man (2018) #1-3, #5
+      [82021] COL Tony Stark Iron Man Vol. 02 - Stark Realities (2019) (Digital) (Zone-Empire).cbr (126pp)
+         own record cv 119884 / gcd s136756 "Tony Stark: Iron Man" (issue 1980738) COLLECTS: gcd=126073 Tony Stark: Iron Man (2018) #6-8
+      [82022] COL Tony Stark Iron Man Vol. 03 - The Ultron Agenda (2020) (Digital) (Zone-Empire).cbr (107pp)  key="Iron Man: The Ultron Agenda"
+         own record cv 126521 / gcd s176779 "Iron Man: The Ultron Agenda" (issue 2267782) COLLECTS: gcd=126073 Tony Stark: Iron Man (2018) (unnumbered)
+   G2 "Ultron 01AU (2013) (Digital) (Zone-Empire)" in Marvel\_X-Men\_X-Men Complete Chronology V2\1031 Age of Ultron — 1 file(s), numbers 9, pp 24-24; cv per-file 49505x1; gcd per-file 73567x1; key 'Ultron 01AU'
+      [92353] 009 Ultron 01AU (2013) (Digital) (Zone-Empire).cbr (24pp)
+   G3 "Tony Stark - Iron Man" in _Marvel Major Event Chronology (digital)\2019.03 - War of the Realms\02 Tie-ins\Tony Stark - Iron Man — 1 file(s), 1 COL, pp 113-113; cv per-file 122497x1; gcd per-file 136756x1; key 'Tony Stark: Iron Man'
+      [118912] COL Tony Stark - Iron Man v03 - War of the Realms (2019) (Digital) (Zone-Empire).cbr (113pp)
+         own record cv 122497 / gcd s136756 "Tony Stark: Iron Man" (issue 2211029) COLLECTS: gcd=126073 Tony Stark: Iron Man (2018) (unnumbered) · gcd=6998 Iron Man (1998) #25
+
+== S65458 The Punisher  [split]  124 files / 2 collections  decided in R-156 (S)
+   decided: S 65458 cv=3855 gcd=3431 0.9 | The Punisher (1987-1995): CV 3855 (Marvel 1987, 104, cached #1-104) and GCD 3431 (Marvel 1987-1995, 104) agree on publisher, span and count; ComicInfo Web 31927 is CV 3855 #26 (L-136), Volume 1987 x34, Count 104 x7; our ladder 1-52, 60-76, 80-81, 85-88, 93, 96-104 (the named-title rips "Punisher 049 - Death below Zero" etc. included) fills it; 0.9 for the 1988 annuals (residue, no annual shelf) and for fifteen books of other runs split below
+   F 65458 split-needed | items 88470, 88471, 88472, 88473, 88474 ("001-005 Punisher v3 #012-016", X-Men Complete Chronology "0297 Total Xtinction", 22-24pp) are Punisher (1995) #12-16 (CV 18328, 18 issues), the run S99393 stores (stored cv=18328, S line C-049 cv=18328 gcd=13738) -> join S99393 on its key "Punisher v03 (1995)"; checker anchor only: S99393 is outside this batch
+   F 65458 split-needed | items 117104, 117105, 117106, 117107, 117108, 117109 ("Punisher 001-006 (2009) (Zone-Empire)", Dark Reign chronology, 24-38pp; per-file GCD 33759) are Punisher (2009-2010) #1-6 (GCD 33759, 16 issues), the run S94790 stores (S line C-049 cv=- gcd=33759, its #11-16 in "Punisher v08 (2009)") -> join S94790 on its key "Punisher v08 (2009)"; checker anchor only: S94790 is outside this batch
+   F 65458 split-needed | items 82507, 82508 ("The Punisher Vol. 02 - Border Crossing (2015)" 160pp, "Vol. 03 - Last Days (2015)" 183pp, folder "16 Punisher v10 (2014)") are the 2014 run's TPB Vol. 02-03 (GCD 82475 rows 1460546 / 1460545 = #7-12 / #13-20), the run S94683 stores (stored cv=71435, S line in this file cv=71435 gcd=78896, holding Vol. 01) -> join S94683 on its key "Punisher v10 (2014)"
+   N 65458 residue: Punisher Annual #1, #2, #5, #6, #7 (1988-1994; CV 4064 / GCD 3660, 7 issues) - no shelf stores the 1988 annual series (S94805 is the 2019 annual), so they stay with the run (L-391). Per-file GCD 204244 (Cano y Llaquet, Spanish) and 69843 (Marvel UK) are foreign reprint stamps; C-049's merge-with=94789 is obsolete (S94789 merged in)
+   named: S99393 Punisher  18 files  keys: "Punisher v03 (1995)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S94790 Punisher v08 (2009)  8 files  keys: "Punisher v08 (2009)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S94683 The Punisher  1 files  keys: "Punisher v10 (2014)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S34434 "The Punisher Annual" 4f [shares cv=4064, shares gcd=3660 — S cv=4064 gcd=3660 (B-058 1.0)] keys: "The Punisher Annual"
+   nearby: S95633 "Black Widow" 4f [shares gcd=78390 (collected by item 82507) — S cv=70705 gcd=78390 (R-032 0.95)] keys: "Black Widow v5 (2014)"
+   nearby: S94805 "The Punisher Annual" 1f [named S94805 in the decision's R/N lines — S cv=120239 gcd=148835 (C-040 0.95)] keys: "The Punisher v12 (2018)"
+   nearby: S65459 "Punisher: Year One" 6f [title — S cv=25891 gcd=17969 (R-086 0.9)] keys: "Punisher (1995)" · S34431 "The Punisher" 5f [title — S cv=9133 gcd=9867 (C-058 0.9)] keys: "Punisher" | "The Punisher"
+   nearby: S94684 "The Punisher" 4f [title — S cv=90118 gcd=100917 (R-057 0.95)] keys: "Punisher v11 (2016)" · S66039 "The Punisher" 3f [title — S cv=112965 gcd=127969 (R-035 0.95)] keys: "The Punisher (2018)"
+   nearby: S14194 "Punisher" 2f [title — S cv=141843 gcd=182714 (B-058 0.95)] keys: "Punisher - The King of Killers"
+   nearby: S14200 "The Punisher" 2f [title — S cv=41758 gcd=60377 (R-156 0.95)] keys: "Punisher By Greg Rucka" · S19402 "The Punisher" 1f [title — S cv=3649 gcd=3201 (D-014 0.9)] keys: "The Punisher - Circle of Blood"
+   nearby: S14210 "Punisher MAX: The Complete Collection" 7f [title+1 — S cv=87448 gcd=95740 (R-156 0.9)] keys: "Punisher Max" | "Punisher Max: The Complete Collection"
+   nearby: S29480 "Wolverine/Punisher" 6f [title+1 — S cv=10810 gcd=11724 (R-039 0.95)] keys: "Wolverine/Punisher"
+   nearby: S19401 "Punisher Presents: Barracuda" 5f [title+1 — S cv=18314 gcd=33421 (D-014 0.95)] keys: "The Punisher - Barracuda"
+   nearby: S14187 "Punisher: Nightmare" 1f [title+1 — S cv=55372 gcd=70970 (B-058 0.95)] keys: "Punisher - Nightmare"
+   nearby: S14190 "Punisher: Soviet" 1f [title+1 — S cv=122818 gcd=152548 (B-058 0.95)] keys: "Punisher - Soviet" · (+3 more by title)
+   keys now: "Punisher v02 (1987)" x73 · "The Punisher (1987)" x36 · "Punisher (1987)" x15
+   groups (title x folder): 9
+   G1 "Punisher" in Marvel\_Punisher\02 Punisher v02 (1987) — 104 file(s), numbers 1-52, 60-76, 80-81, 85-88, 93, 96-102, pp 20-57; cv per-file 3855x104; gcd per-file 3431x37, 204244x23, 69843x11; key 'Punisher v02 (1987)' | 'The Punisher (1987)'
+      e.g. Punisher 001 (1987) (Digital) (Shadowcat-Empire).cbz
+        82259 #1 1987 24pp · 82260 #2 1987 24pp · 82261 #3 1987 23pp · 82262 #4 1987 23pp · 82263 #5 1988 23pp · 82264 #6 1988 23pp · 82265 #7 1988 24pp · 82266 #8 1988 23pp · 82267 #9 1988 22pp
+        82268 #10 1988 23pp · 82269 #11 1988 23pp key="The Punisher (1987)" · 82270 #12 1988 22pp key="The Punisher (1987)" · 82271 #13 1988 23pp key="The Punisher (1987)"
+        82272 #14 1988 22pp key="The Punisher (1987)" · 82273 #15 1989 23pp key="The Punisher (1987)" · 82274 #16 1989 23pp key="The Punisher (1987)" · 82275 #17 1989 22pp key="The Punisher (1987)"
+        82276 #18 1989 24pp key="The Punisher (1987)" · 82277 #19 1989 23pp key="The Punisher (1987)" · 82278 #20 1989 22pp key="The Punisher (1987)" · 82279 #21 1989 23pp key="The Punisher (1987)"
+        82280 #22 1989 22pp key="The Punisher (1987)" · 82281 #23 1989 22pp key="The Punisher (1987)" · 82282 #24 1989 22pp · 82283 #25 1989 39pp · 82284 #26 1989 24pp key="The Punisher (1987)"
+        82285 #27 1989 23pp key="The Punisher (1987)" · 82286 #28 1989 23pp · 82287 #29 1990 22pp · 82288 #30 1990 24pp key="The Punisher (1987)" · 82289 #31 1990 24pp key="The Punisher (1987)"
+        82290 #32 1990 24pp key="The Punisher (1987)" · 82291 #33 1990 24pp key="The Punisher (1987)" · 82292 #34 1990 24pp key="The Punisher (1987)" · 82293 #35 1990 23pp key="The Punisher (1987)"
+        82294 #36 1990 22pp key="The Punisher (1987)" · 82295 #37 1990 23pp key="The Punisher (1987)" · 82296 #38 1990 23pp key="The Punisher (1987)" · 82297 #39 1990 23pp key="The Punisher (1987)"
+        82298 #40 1990 23pp key="The Punisher (1987)" · 82299 #41 1990 23pp key="The Punisher (1987)" · 82300 #42 1990 23pp key="The Punisher (1987)" · 82301 #43 1990 23pp key="The Punisher (1987)"
+        82302 #44 1991 23pp key="The Punisher (1987)" · 82303 #45 1991 23pp key="The Punisher (1987)" · 82304 #46 1991 22pp key="The Punisher (1987)" · 82305 #47 1991 23pp key="The Punisher (1987)"
+        82306 #48 1991 22pp key="The Punisher (1987)" · 82321 #63 1992 22pp · 82322 #64 1992 22pp · 82323 #65 1992 22pp · 82324 #66 1992 24pp · 82325 #67 1992 23pp · 82326 #68 1992 24pp
+        82327 #69 1992 24pp · 82328 #70 1992 25pp · 82329 #71 1992 23pp · 82330 #72 1992 24pp · 82331 #73 1992 24pp · 82332 #74 1993 23pp · 82333 #75 1993 38pp · 82343 #85 1993 23pp
+        82344 #86 1994 37pp · 82345 #87 1994 23pp · 82346 #88 1994 24pp
+      [82307] Punisher 049 - Death below Zero.cbr (23pp)
+      [82308] Punisher 050 - Yo Yo.cbr (39pp)
+      [82309] Punisher 051 - Golden Buddha.cbr (22pp)
+      [82310] Punisher 052 - Lupe.cbr (25pp)
+      [82311] Punisher 053 - The Final Days 01.cbr (24pp)
+      [82312] Punisher 054 - The Final Days 02.cbr (24pp)
+      [82313] Punisher 055 - The Final Days 03.cbr (25pp)
+      [82314] Punisher 056 - The Final Days 04.cbr (24pp)
+      [82315] Punisher 057 - The Final Days 05.cbr (25pp)
+      [82316] Punisher 058 - The Final Days 06.cbr (22pp)
+      [82317] Punisher 059 - The Final Days 07.cbr (21pp)
+      [82318] Punisher 060 - Escape from New York.cbr (20pp)
+      [82319] Punisher 061 - Crackdown.cbr (23pp)
+      [82320] Punisher 062 - Fade... to white.cbr (22pp)
+      [82334] Punisher 076 - Lava.cbr (22pp)
+      [82335] Punisher 077 - Survival 01.cbr (25pp)
+      [82336] Punisher 078 - Survival 02.cbr (24pp)
+      [82337] Punisher 079 - Survival 03.cbr (21pp)
+      [82338] Punisher 080 - Last Confession.cbr (24pp)
+      [82339] Punisher 081 - Bodies of Evidence.cbr (24pp)
+      [82340] Punisher 082 - Firefight 01.cbr (23pp)
+      [82341] Punisher 083 - Firefight 02.cbr (24pp)
+      [82342] Punisher 084 - Firefight 03.cbr (23pp)
+      [82347] Punisher 089 - Fortress Miami 01.cbr (24pp)
+      [82348] Punisher 090 - Fortress Miami 02.cbr (23pp)
+      [82349] Punisher 091 - Fortress Miami 03.cbr (24pp)
+      [82350] Punisher 092 - Fortress Miami 04.cbr (24pp)
+      [82351] Punisher 093 - Killing Streets.cbr (22pp)
+      [82352] Punisher 094 - No Rules 01.cbr (24pp)
+      [82353] Punisher 095 - No Rules 02.cbr (24pp)
+      [82354] Punisher 096 - Raving Beauty.cbr (24pp)
+      [82355] Punisher 097 - The Devil's Secret Name.cbr (23pp)
+      [82356] Punisher 098 - Armies of the Night.cbr (24pp)
+      [82357] Punisher 099 - Bury me Deep.cbr (24pp)
+      [82358] Punisher 100 - The Cage.cbr (57pp)
+      [82359] Punisher 101 - Dead Tomorrows.cbr (23pp)
+      [82360] Punisher 102 - Under the Gun.cbr (23pp)
+      [82361] Punisher 103 - Countdown 04.cbr (23pp)
+      [82362] Punisher 104 - Countdown 01.cbr (23pp)
+   G2 "Punisher Annual" in Marvel\_Punisher\02 Punisher v02 (1987)\Annuals and Specials — 3 file(s), numbers 5-7, pp 56-57; cv per-file 4064x3; gcd per-file 3660x3; key 'Punisher v02 (1987)'
+      [82256] Punisher Annual 005 (1992) (noads) (BeasiL-OCD).cbr (56pp)
+      [82257] Punisher Annual 006 (1993).cbr (57pp)
+      [82258] Punisher Annual 007 (1994).cbr (57pp)
+   G3 "The Punisher" in Marvel\_Punisher\16 Punisher v10 (2014) — 2 file(s), 2 COL, pp 160-183; cv per-file 79334x1, 84778x1; gcd per-file 82475x2; key 'The Punisher (1987)'
+      [82507] COL The Punisher Vol. 02 - Border Crossing (2015) (Digital) (F) (Asgard-Empire).cbz (160pp)
+         own record cv 79334 / gcd s82475 "The Punisher" (issue 1460546) COLLECTS: gcd=78896 The Punisher (2014) #7-12 · gcd=78390 Black Widow (2014) #9
+      [82508] COL The Punisher Vol. 03 - Last Days (2015) (digital) (Minutemen-Slayer).cbr (183pp)
+         own record cv 84778 / gcd s82475 "The Punisher" (issue 1460545) COLLECTS: gcd=78896 The Punisher (2014) #13-20
+   G4 "Punisher Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0078 Evolutionary war — 1 file(s), numbers 1, pp 37-37; cv per-file 4064x1; gcd per-file 3660x1; key 'Punisher (1987)'
+      [87235] 002 Punisher Annual 001 (1988) (Digital) (Shadowcat-Empire).cbz (37pp)
+   G5 "Punisher Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0093 Atlantis Attacks — 1 file(s), numbers 2, pp 26-26; cv per-file 4064x1; gcd per-file 3660x1; key 'Punisher (1987)'
+      [87350] 005 Punisher Annual 002 (1989) (Digital) (Shadowcat-Empire).cbz (26pp)
+   G6 "Punisher" in Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance — 1 file(s), numbers 29, pp 22-22; cv per-file 3855x1; key 'Punisher (1987)'
+      [87497] 032 Punisher 029 (1990) (Digital) (Shadowcat-Empire).cbz (22pp)
+   G7 "Punisher" in Marvel\_X-Men\_X-Men Complete Chronology V2\0297 Total Xtinction — 5 file(s), numbers 12-16, pp 22-24; cv per-file 3855x5; key 'Punisher (1987)'
+      e.g. 001 Punisher v3 #012.cbr
+        88470 #12 24pp · 88471 #13 23pp · 88472 #14 22pp · 88473 #15 23pp · 88474 #16 24pp
+   G8 "Punisher" in _Marvel Major Event Chronology (digital)\1989.12 - Acts of Vengeance\Acts of Vengeance - Marvel Universe — 1 file(s), numbers 29, pp 22-22; cv per-file 3855x1; key 'Punisher (1987)'
+      [116434] Punisher 029 (1990) (Digital) (Shadowcat-Empire).cbz (22pp)
+   G9 "Punisher" in _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Punisher — 6 file(s), numbers 1-6, pp 24-38; cv per-file 3855x6; gcd per-file 33759x6; key 'Punisher (1987)'
+      e.g. Punisher 001 (2009) (Digital) (Zone-Empire).cbr
+        117104 #1 2009 24pp · 117105 #2 2009 24pp · 117106 #3 2009 24pp · 117107 #4 2009 24pp · 117108 #5 2009 24pp · 117109 #6 2009 38pp
+
+== S65644 Silver Surfer  [split]  155 files / 0 collections  decided in R-156 (S)
+   decided: S 65644 cv=3857 gcd=3433 0.9 | Silver Surfer (1987-1998): CV 3857 (Marvel 1987, 148 incl. #-1 / #½, cached #1-146) and GCD 3433 (Marvel 1987-1998, 148) agree on publisher, span and count; ComicInfo Web 35957 is CV 3857 #68 (L-136), Volume 1987 x46, Count 146 x8; our ladder 1-146 plus #0.5 (1998) fills it, the second rips (#1-6, #14, #123) cost nothing; 0.9 for seven books of other series split below
+   F 65644 split-needed | items 93483, 93484, 93485, 93486, 93487, 87236 ("Silver Surfer Annual 001-004, 006 (1988-1993)" and the chronology rip "003 Silver Surfer Annual 001 (1988)"; ComicInfo Web 29009 = CV 4069 Annual #1) are Silver Surfer Annual (1988-1994; CV 4069 / GCD 3665, 7 issues), the annual series S65645 stores (stored cv=4069, S line C-055 cv=4069 gcd=3665, holding Annual #2) -> join S65645 on its key "Silver Surfer (1989)" (L-391); checker anchor only: S65645 is outside this batch
+   F 65644 split-needed | item 83080 ("Silver Surfer 014 - Facsimile Edition (1970)" 36pp, folder "_Marvel Facsimile Editions") is #14 of The Silver Surfer (1968-1970; CV 2411 / GCD 1872, 18 issues), the run S94791 stores (stored cv=2411, S line R-086, ladder 1-18) - no facsimile record exists in either catalogue (probed) -> join S94791 on its key "Silver Surfer v1 (1968)"; checker anchor only: S94791 is outside this batch
+   N 65644 flag #413 (label-ambiguous, item 88514) is right: "008 Silver Surfer v3 123 (1996)" is a single issue, the chronology second rip of #123. Per-file CV 4343 / GCD 3966 (Play Press, Italian) and 171687 (Turkish) are foreign stamps
+   named: S65645 Silver Surfer Annual  1 files  keys: "Silver Surfer (1989)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S94791 The Silver Surfer  18 files  keys: "Silver Surfer v1 (1968)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65646 "Silver Surfer" 14f [title — S cv=23576 gcd=13459 (A-025 0.95)] keys: "Silver Surfer (2003)"
+   nearby: S94793 "Silver Surfer v7-8 (2016)" 3f [title — S gcd=84480 (R-156 0.9)] keys: "Silver Surfer v7-8 (2016)"
+   nearby: S99802 "Silver Surfer v7 (2016)" 3f [title — S gcd=84480 (C-049 0.9)] keys: "Silver Surfer v7 (2016)"
+   nearby: S12271 "The Silver Surfer" 2f [title — S cv=4070 gcd=3666 (B-064 0.95)] keys: "Moebius - Silver Surfer - Parable"
+   nearby: S15633 "Silver Surfer" 1f [title — S cv=39031 gcd=55825 (B-058 0.95)] keys: "Silver Surfer - Devolution"
+   nearby: S99801 "Silver Surfer" 1f [title — S cv=22808 gcd=2663 (B-058 0.95)] keys: "Silver Surfer v2 (1982)"
+   nearby: S15636 "Silver Surfer Rebirth" 15f [title+1 — S cv=141331 gcd=180904 (C-050 0.9)] keys: "Silver Surfer - Rebirth"
+   nearby: S1085 "Annihilation: Silver Surfer" 4f [title+1 — S cv=20185 gcd=17487 (B-057 0.95)] keys: "Annihilation - Silver Surfer"
+   nearby: S15635 "Silver Surfer: Parable" 1f [title+1 — S cv=27377 gcd=7185 (D-014 0.9)] keys: "Silver Surfer - Parable"
+   nearby: S15638 "Silver Surfer: Requiem" 1f [title+1 — S cv=18654 gcd=25046 (B-058 0.95)] keys: "Silver Surfer - Requiem"
+   nearby: S15639 "Silver Surfer / Thor '98" 1f [title+1 — S cv=39906 gcd=63706 (B-058 1.0)] keys: "Silver Surfer / Thor '98"
+   nearby: S15650 "Silver Surfer: Black" 1f [title+1 — S cv=119662 gcd=147338 (B-058 0.95)] keys: "Silver Surfer: Black" · (+1 more by title)
+   keys now: "Silver Surfer v3 (1987)" x152 · "Silver Surfer (1987)" x3
+   groups (title x folder): 6
+   G1 "Silver Surfer" in Marvel\_Marvel Facsimile Editions — 1 file(s), numbers 14, pp 36-36; cv per-file 3857x1; gcd per-file 3433x1; key 'Silver Surfer (1987)'
+      [83080] Silver Surfer 014 - Facsimile Edition (1970) (Digital) (Shadowcat-Empire).cbz (36pp)
+   G2 "Silver Surfer" in Marvel\_Silver Surfer\Silver Surfer v3 (1987) — 146 file(s), numbers 1-146, pp 20-82; cv per-file 3857x146; gcd per-file 3433x140, 171687x4, 3966x1; key 'Silver Surfer v3 (1987)'
+      e.g. Silver Surfer 001 (1987) (Digital) (Shadowcat-Empire).cbz
+        93488 #1 1987 36pp · 93489 #2 1987 23pp · 93490 #3 1987 23pp · 93491 #4 1987 21pp · 93492 #5 1987 23pp · 93493 #6 1987 23pp · 93494 #7 1988 23pp · 93495 #8 1988 23pp · 93496 #9 1988 21pp
+        93497 #10 1988 22pp · 93498 #11 1988 23pp · 93499 #12 1988 22pp · 93500 #13 1988 23pp · 93501 #14 1988 23pp · 93502 #15 1988 23pp · 93503 #16 1988 23pp · 93504 #17 1988 23pp
+        93505 #18 1988 22pp · 93506 #19 1989 23pp · 93507 #20 1989 23pp · 93508 #21 1989 23pp · 93509 #22 1989 22pp · 93510 #23 1989 23pp · 93511 #24 1989 23pp · 93512 #25 1989 82pp
+        93513 #26 1989 23pp · 93514 #27 1989 23pp · 93515 #28 1989 23pp · 93516 #29 1989 23pp · 93517 #30 1989 23pp · 93518 #31 1990 40pp · 93519 #32 1990 22pp · 93520 #33 1990 22pp
+        93521 #34 1990 24pp · 93522 #35 1990 24pp · 93523 #36 1990 24pp · 93524 #37 1990 24pp · 93525 #38 1990 24pp · 93526 #39 1990 23pp · 93527 #40 1990 22pp · 93528 #41 1990 22pp
+        93529 #42 1990 23pp · 93530 #43 1990 23pp · 93531 #44 1990 23pp · 93532 #45 1991 23pp · 93533 #46 1991 22pp · 93534 #47 1991 23pp · 93535 #48 1991 22pp · 93536 #49 1991 23pp
+        93537 #50 1991 40pp · 93538 #51 1991 23pp · 93539 #52 1991 23pp · 93540 #53 1991 23pp · 93541 #54 1991 23pp · 93542 #55 1991 22pp · 93543 #56 1991 23pp · 93544 #57 1991 23pp
+        93545 #58 1991 23pp · 93546 #59 1991 22pp · 93547 #60 1991 24pp · 93548 #61 1992 24pp · 93549 #62 1992 23pp · 93550 #63 1992 23pp · 93551 #64 1992 24pp · 93552 #65 1992 24pp
+        93553 #66 1992 22pp · 93554 #67 1992 22pp · 93555 #68 1992 23pp · 93556 #69 1992 24pp · 93557 #70 1992 23pp · 93558 #71 1992 23pp · 93559 #72 1992 24pp · 93560 #73 1992 24pp
+        93561 #74 1992 23pp · 93562 #75 1992 39pp · 93563 #76 1993 22pp · 93564 #77 1993 22pp · 93565 #78 1993 21pp · 93566 #79 1993 20pp · 93567 #80 1993 22pp · 93568 #81 1993 21pp
+        93569 #82 1993 38pp · 93570 #83 1993 21pp · 93571 #84 1993 21pp · 93572 #85 1993 21pp · 93573 #86 1993 21pp · 93574 #87 1993 22pp · 93575 #88 1994 22pp · 93576 #89 1994 35pp
+        93577 #90 1994 20pp · 93578 #91 1994 21pp · 93579 #92 1994 24pp · 93580 #93 1994 22pp · 93581 #94 1994 22pp · 93582 #95 1994 24pp · 93583 #96 1994 22pp · 93584 #97 1994 22pp
+        93585 #98 1994 22pp · 93586 #99 1994 23pp · 93587 #100 1995 36pp · 93588 #101 1995 23pp · 93589 #102 1995 23pp · 93590 #103 1995 24pp · 93591 #104 1995 23pp · 93592 #105 1995 20pp
+        93593 #106 1995 24pp · 93594 #107 1995 23pp · 93595 #108 1995 24pp · 93596 #109 1995 23pp · 93597 #110 1995 23pp · 93598 #111 1995 25pp · 93599 #112 1996 25pp · 93600 #113 1996 24pp
+        93601 #114 1996 25pp · 93602 #115 1996 25pp · 93603 #116 1996 23pp · 93604 #117 1996 25pp · 93605 #118 1996 25pp · 93606 #119 1996 24pp · 93607 #120 1996 24pp · 93608 #121 1996 25pp
+        93609 #122 1996 24pp · 93610 #123 1996 23pp · 93611 #124 1997 23pp · 93612 #125 1997 36pp · 93613 #126 1997 23pp · 93614 #127 1997 23pp · 93615 #128 1997 22pp · 93616 #129 1997 23pp
+        93617 #130 1997 22pp · 93618 #131 1997 22pp · 93619 #132 1997 23pp · 93620 #133 1997 23pp · 93621 #134 1997 23pp · 93622 #135 1998 23pp · 93623 #136 1998 23pp · 93624 #137 1998 23pp
+        93625 #138 1998 23pp · 93626 #139 1998 22pp · 93627 #140 1998 23pp · 93628 #141 1998 23pp · 93629 #142 1998 24pp · 93630 #143 1998 23pp · 93631 #144 1998 23pp · 93632 #145 1998 22pp
+        93633 #146 1998 23pp
+   G3 "Silver Surfer" in Marvel\_Silver Surfer\Silver Surfer v3 (1987)\Annuals and Specials — 1 file(s), numbers 5, pp 17-17; cv per-file 144607x1; gcd per-file 172265x1; key 'Silver Surfer v3 (1987)'
+      [93482] Silver Surfer 0.5 (1998) (Digital-Empire).cbz (17pp)
+   G4 "Silver Surfer Annual" in Marvel\_Silver Surfer\Silver Surfer v3 (1987)\Annuals and Specials — 5 file(s), numbers 1-4, 6, pp 53-58; cv per-file 3857x3, 4343x2; gcd per-file 3966x3, 171687x1; key 'Silver Surfer v3 (1987)'
+      e.g. Silver Surfer Annual 001 (1988) (digital) (Marika-Empire).cbz
+        93483 #1 1988 57pp · 93484 #2 1989 58pp · 93485 #3 1990 57pp · 93486 #4 1991 58pp · 93487 #6 1993 53pp
+   G5 "Silver Surfer Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0078 Evolutionary war — 1 file(s), numbers 1, pp 37-37; cv per-file 3857x1; gcd per-file 171687x1; key 'Silver Surfer (1987)'
+      [87236] 003 Silver Surfer Annual 001 (1988) (Digital) (Shadowcat-Empire).cbz (37pp)
+   G6 "Silver Surfer" in Marvel\_X-Men\_X-Men Complete Chronology V2\0305 Untitled — 1 file(s), numbers 123, pp 24-24; cv per-file 3857x1; gcd per-file 3433x1; key 'Silver Surfer (1987)'
+      [88514] 008 Silver Surfer v3 123 (1996) (Beast's Library).cbr (24pp)
+
+== S94793 Silver Surfer v7-8 (2016)  [split]  3 files / 2 collections  decided in R-156 (S)
+   decided: S 94793 cv=- gcd=84480 0.9 | the Silver Surfer (Slott / Allred) TPB LINE: GCD 84480 "Silver Surfer" (Marvel 2014-2017, 5 rows New Dawn / Worlds Apart / Last Days / Citizen of Earth / Power Greater than Cosmic) spans two runs - Silver Surfer (2014) CV 72582 / GCD 79775 (15) and Silver Surfer (2016) CV 87449 / GCD 95741 (14) - so the line keeps its own identity (L-391, the Spider-Man 2099 precedent), and CV mints only per-book volumes; our Vol. 02 Worlds Apart (103pp vs row 1388531 124pp) and Vol. 03 Last Days (134pp vs row 1523498 124pp) are its #2-3; 0.9 for the Silver Surfer Annual (2018) one-shot
+   F 94793 wrong-cv-link | the stored CV 87449 "Silver Surfer" (2016, 14) is the second of the line's two runs, while our two books collect the first (2014); the line has no CV id
+   F 94793 split-needed | items 93649, 93650 -> join S99802 on its key "Silver Surfer v7 (2016)" (S99802's S line C-049 is the same GCD 84480 line with cv=-, holding Vol. 01, 04, 05; L-377 - two cv=- shelves sharing only a GCD line meet by a split-lane join, never a merge-with); checker anchor only: S99802 is outside this batch; the Annual 93985 stays
+   N 94793 after the join this shelf holds only "Silver Surfer Annual 001 (2018)" (CV 113258 issue 683834 / GCD 128743 row 1843253), which must be re-identified at the next revisit; per-file CV 3857 (1987) on all three files is a same-title stamp and GCD 186315 is Panini France
+   N 93649 by arithmetic Vol. 02 collects Silver Surfer (2014) #6-10 (CV 72582 / GCD 79775); neither leg states it, so no C line
+   N 93650 by arithmetic Vol. 03 collects Silver Surfer (2014) #11-15 (CV 72582 / GCD 79775); neither leg states it, so no C line
+   named: S99802 Silver Surfer v7 (2016)  3 files  keys: "Silver Surfer v7 (2016)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65644 "Silver Surfer" 155f [shares cv=3857 (N line) — S cv=3857 gcd=3433 (R-156 0.9)] keys: "Silver Surfer (1987)" | "Silver Surfer v3 (1987)"
+   nearby: S94791 "The Silver Surfer" 18f [title — S cv=2411 gcd=1872 (R-086 0.95)] keys: "Silver Surfer v1 (1968)" · S65646 "Silver Surfer" 14f [title — S cv=23576 gcd=13459 (A-025 0.95)] keys: "Silver Surfer (2003)"
+   nearby: S12271 "The Silver Surfer" 2f [title — S cv=4070 gcd=3666 (B-064 0.95)] keys: "Moebius - Silver Surfer - Parable"
+   nearby: S15633 "Silver Surfer" 1f [title — S cv=39031 gcd=55825 (B-058 0.95)] keys: "Silver Surfer - Devolution"
+   nearby: S65645 "Silver Surfer Annual" 1f [title — S cv=4069 gcd=3665 (C-055 0.95)] keys: "Silver Surfer (1989)" · S99801 "Silver Surfer" 1f [title — S cv=22808 gcd=2663 (B-058 0.95)] keys: "Silver Surfer v2 (1982)"
+   nearby: S15636 "Silver Surfer Rebirth" 15f [title+1 — S cv=141331 gcd=180904 (C-050 0.9)] keys: "Silver Surfer - Rebirth"
+   nearby: S1085 "Annihilation: Silver Surfer" 4f [title+1 — S cv=20185 gcd=17487 (B-057 0.95)] keys: "Annihilation - Silver Surfer"
+   nearby: S15635 "Silver Surfer: Parable" 1f [title+1 — S cv=27377 gcd=7185 (D-014 0.9)] keys: "Silver Surfer - Parable"
+   nearby: S15638 "Silver Surfer: Requiem" 1f [title+1 — S cv=18654 gcd=25046 (B-058 0.95)] keys: "Silver Surfer - Requiem"
+   nearby: S15639 "Silver Surfer / Thor '98" 1f [title+1 — S cv=39906 gcd=63706 (B-058 1.0)] keys: "Silver Surfer / Thor '98"
+   nearby: S15650 "Silver Surfer: Black" 1f [title+1 — S cv=119662 gcd=147338 (B-058 0.95)] keys: "Silver Surfer: Black" · (+1 more by title)
+   keys now: "Silver Surfer v7-8 (2016)" x3
+   groups (title x folder): 2
+   G1 "Silver Surfer" in Marvel\_Silver Surfer\Silver Surfer v7-8 (2016) — 2 file(s), 2 COL, pp 103-134; cv per-file 82516x1, 87179x1; gcd per-file 84480x2; key 'Silver Surfer v7-8 (2016)'
+      [93649] COL Silver Surfer Vol. 02 - Worlds Apart (2015) (Digital) (F) (Kileko-Empire).cbz (103pp)
+         own record cv 82516 / gcd s84480 "Silver Surfer" (issue 1388531) COLLECTS: gcd=79775 Silver Surfer (2014) #6-10
+      [93650] COL Silver Surfer Vol. 03 - Last Days (2015) (Digital) (Kileko-Empire).cbr (134pp)
+         own record cv 87179 / gcd s84480 "Silver Surfer" (issue 1523498) COLLECTS: gcd=79775 Silver Surfer (2014) #11-15
+   G2 "Silver Surfer Annual" in Marvel\_Silver Surfer\Silver Surfer v7-8 (2016)\Annuals and Specials — 1 file(s), numbers 1, pp 31-31; cv per-file 113258x1; gcd per-file 128743x1; key 'Silver Surfer v7-8 (2016)'
+      [93985] Silver Surfer Annual 001 (2018) (Digital) (Zone-Empire).cbr (31pp)
+
+== S94846 Moon Knight  [split]  18 files / 7 collections  decided in R-156 (R)
+   decided: R 94846 | two publications share this shelf: (a) Moon Knight (2006-2009), CV 18105 / GCD 17435 (30 each): the five "Moon Knight Vol. 01-05" trades (GCD 178916 rows The Bottom / Midnight Sun / God and Country / The Death of Marc Spector / Down South, CV 28023 / 28026 / 29825 / 29826 / 29827) and #7-13 (2007, chronology rips, three second rips); (b) the two "Moon Knight Omnibus Book 01 / 02 (2022)" 1006pp / 946pp = CV 133100 "Moon Knight Omnibus" (2021, 2 issues) / GCD 173035 (2020-?, 2 rows 1024pp / 968pp), a line reprinting the 1970s-80s Moon Knight material, stored by no shelf - two whole books of another publication with its own record are co-equal (RESIDUE ruling, L-388); plus two rips of "Moon Knight No. 1 Facsimile Edition" (2022, CV 150834 / GCD 185854), a one-shot with its own record; the stored CV 18105 is right for (a)
+   F 94846 split-needed | items 83605, 83606 ("01 / 02 Moon Knight Omnibus Book 01 / 02 (2022)", folder "00 Omnibus Editions") are Moon Knight Omnibus Vol. 1-2 (CV 133100 issues 824088 / 941422, GCD 173035 rows 2228901 / 2400581), stored by no shelf (who-stores cv=133100: 0 rows) -> new key "Moon Knight Omnibus (2021)" seeded cv=133100 gcd=173035
+   F 94846 split-needed | items 83074, 83075 ("Moon Knight - Facsimile Edition 001 (2022)" / "Moon Knight 001 - Facsimile Edition (2022)", 35pp each, folder "_Marvel Facsimile Editions") are two rips of Moon Knight No. 1 Facsimile Edition (CV 150834 issue 992613 / GCD 185854 row 2409436, 36pp), stored by no shelf -> new key "Moon Knight No. 1 Facsimile Edition (2022)" seeded cv=150834 gcd=185854; the 2006 run (14 files) stays
+   N 94846 per-file CV 3052 (Moon Knight 1980) on 13 files is a same-title number stamp; GCD 185205 is Panini France. The key "Moon Knight (1980)" on this shelf comes from the facsimiles' ComicInfo Volume 1980
+   N 83605 our data holds no note of which Moon Knight issues Omnibus Vol. 1 reprints, so no C line
+   N 83606 our data holds no note of which Moon Knight issues Omnibus Vol. 2 reprints, so no C line
+   nearby:
+   nearby: S64562 "The Defenders" 97f [shares gcd=2048 (collected by item 83605) — S cv=2569 gcd=2048 (R-152 0.9)] keys: "Defenders (1972)" | "Defenders v1 (1972)" | "Defenders-v1-026" | "Defenders-v1-027" (+2 more: lookup.py --shelf 64562)
+   nearby: S11410 "Marvel Fanfare" 58f [shares gcd=2657 (collected by item 83606) — S cv=3143 gcd=2657 (R-140 0.95)] keys: "Marvel Fanfare"
+   nearby: S98483 "Marvel Super-Heroes v2 (1990)" 30f [shares gcd=4032 (collected by item 83606) — S cv=4404 gcd=4032 (R-046 1.0)] keys: "Marvel Super-Heroes v2 (1990)"
+   nearby: S94845 "Moon Knight" 15f [shares cv=3052, shares gcd=2562 (collected by item 83605) — S cv=3052 gcd=2562 (C-048 0.95)] keys: "Moon Knight v1 (1980)"
+   nearby: S12336 "Moon Knight: Fist of Khonshu" 6f [shares gcd=3031 (collected by item 83606) — S cv=3492 gcd=3031 (B-058 0.95)] keys: "Moon Knight - Fist Of Khonshu" | "Moon Knight - Fist of Khonshu"
+   nearby: S94849 "Moon Knight" 9f [title — S cv=137698 gcd=174252 (R-156 0.95)] keys: "Moon Knight (2021-)" | "Moon Knight v9 (2021)"
+   nearby: S98591 "Moon Knight" 8f [title — S cv=28617 gcd=15218 (B-058 1.0)] keys: "Moon Knight (1998)" | "Moon Knight v3 (1998)"
+   nearby: S12348 "Moon Knight" 6f [title — S cv=89613 gcd=99638 (R-156 0.95)] keys: "Moon Knight v8 (2016)" | "Moon Knight: Legacy"
+   nearby: S98592 "Moon Knight v4 (1999)" 4f [title — S gcd=13695 (B-058 0.9)] keys: "Moon Knight v4 (1999)" · S94847 "Moon Knight" 3f [title — S cv=72112 gcd=79394 (R-156 0.95)] keys: "Moon Knight v7 (2014)"
+   nearby: S15442 "Shadowland: Moon Knight" 3f [title+1 — S cv=35109 gcd=51982 (A-032 0.95)] keys: "Shadowland - Moon Knight"
+   nearby: S12343 "Moon Knight Saga" 1f [title+1 — S cv=29828 gcd=39252 (B-058 0.95)] keys: "Moon Knight Saga"
+   nearby: S102368 "Moon Knight Annual" 1f [title+1 — S cv=121245 gcd=150276 (R-089 0.95)] keys: "Moon Knight Annual"
+   nearby: S103895 "Moon Knight Annual (2023)" 1f [title+1 — S cv=153237 gcd=203619 (R-089 0.95)] keys: "Moon Knight Annual (2023)"
+   keys now: "Moon Knight (1980)" x9 · "Moon Knight v5 (2006)" x5 · "Moon Knight" x2 · "Moon Knight (2006)" x2
+   groups (title x folder): 7
+   G1 "Moon Knight" in Marvel\_Marvel Facsimile Editions — 1 file(s), numbers 1, pp 35-35; cv per-file 150834x1; gcd per-file 185854x1; key 'Moon Knight (1980)'
+      [83075] Moon Knight 001 - Facsimile Edition (2022) (Digital) (Shadowcat-Empire).cbz (35pp)
+   G2 "Moon Knight - Facsimile Edition" in Marvel\_Marvel Facsimile Editions — 1 file(s), numbers 1, pp 35-35; cv per-file 150834x1; gcd per-file 185854x1; key 'Moon Knight (1980)'
+      [83074] Moon Knight - Facsimile Edition 001 (2022) (Digital) (Shadowcat-Empire).cbz (35pp)
+   G3 "Moon Knight Omnibus" in Marvel\_Moon Knight\00 Omnibus Editions — 2 file(s), 2 COL, pp 946-1006; cv per-file 133100x2; gcd per-file 173035x2; key 'Moon Knight'
+      [83605] COL 01 Moon Knight Omnibus Book 01 (2022) (Digital) (danke-Empire).cbz (1006pp)
+         own record cv 133100 / gcd s173035 "Moon Knight Omnibus" (issue 2228901) COLLECTS: gcd=2562 Moon Knight (1980) #1-21, #23 · gcd=2455 Hulk (1978) #10-15, #17-18, #20 · gcd=2754 Moon Knight Special Edition (1983) #1-3 · gcd=2048 The Defenders (1972) #47-51
+      [83606] COL 02 Moon Knight Omnibus Book 02 (2022) (Digital) (danke-Empire).cbz (946pp)
+         own record cv 133100 / gcd s173035 "Moon Knight Omnibus" (issue 2400581) COLLECTS: gcd=2562 Moon Knight (1980) #21-38 · gcd=3031 Moon Knight (1985) #1-6 · gcd=2657 Marvel Fanfare (1982) #30, #38-39 · gcd=4032 Marvel Super-Heroes (1990) #1
+   G4 "Moon Knight" in Marvel\_Moon Knight\07 Moon Knight v5 (2006) — 5 file(s), 5 COL, pp 121-221; cv per-file 28023x1, 28026x1, 29825x1; gcd per-file 178916x5; key 'Moon Knight v5 (2006)'
+      [83705] COL Moon Knight Vol. 01 - The Bottom (2007) (Digital-HD) (Asgard-Empire).cbz (147pp)
+         own record cv 28023 / gcd s178916 "Moon Knight" (issue 2283789) COLLECTS: gcd=17435 Moon Knight (2006) #1
+      [83706] COL Moon Knight Vol. 02 - Midnight Sun (2008) (Digital) (F) (Asgard-Empire).cbz (221pp)
+         own record cv 28026 / gcd s178916 "Moon Knight" (issue 2283790) COLLECTS: gcd=17435 Moon Knight (2006) #8
+      [83707] COL Moon Knight Vol. 03 - God & Country (2008) (Digital) (F) (Zone-Empire).cbr (182pp)
+         own record cv 29825 / gcd s178916 "Moon Knight" (issue 2283791) COLLECTS: gcd=17435 Moon Knight (2006) #14
+      [83708] COL Moon Knight Vol. 04 - The Death of Marc Spector (2009) (Digital) (Zone-Empire).cbr (155pp)
+         own record cv 29826 / gcd s178916 "Moon Knight" (issue 2283792) COLLECTS: gcd=17435 Moon Knight (2006) #21-25 · gcd=234099 Moon Knight (2006) #4 · gcd=33063 Moon Knight: Silent Knight (2008) #1
+      [83709] COL Moon Knight Vol. 05 - Down South (2009) (Digital) (Zone-Empire).cbr (121pp)
+         own record cv 29827 / gcd s178916 "Moon Knight" (issue 2283793) COLLECTS: gcd=17435 Moon Knight (2006) #26-30 · gcd=234099 Moon Knight (2006) #5
+   G5 "Moon Knight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0728 Civil War - Phase Two — 4 file(s), numbers 7-10, pp 23-25; cv per-file 3052x3, 18105x1; gcd per-file 17435x4; key 'Moon Knight (1980)' | 'Moon Knight (2006)'
+      e.g. 032 Moon Knight 007 (2007) (Digital) (AnPymGold - Empire).cbz
+        90577 #7 2007 24pp · 90578 #8 2007 23pp key="Moon Knight (2006)" · 90579 #9 2007 25pp · 90580 #10 2007 25pp
+   G6 "Moon Knight" in _Marvel Major Event Chronology (digital)\2006.07 - Civil War\07 Tie-ins\Civil War - Moon Knight — 2 file(s), numbers 8, 10, pp 23-25; cv per-file 18105x1, 3052x1; gcd per-file 17435x2; key 'Moon Knight (2006)' | 'Moon Knight (1980)'
+      [116718] Moon Knight 008 (2007) (Digital) (AnPymGold - Empire).cbz (23pp)  key="Moon Knight (2006)"
+      [116720] Moon Knight 010 (2007) (Digital) (AnPymGold - Empire).cbz (25pp)
+   G7 "Moon Knight" in _Marvel Major Event Chronology (digital)\2007.06 - The Initiative\Moon Knight — 3 file(s), numbers 11-13, pp 24-43; cv per-file 3052x3; gcd per-file 17435x3; key 'Moon Knight (1980)'
+      [116803] Moon Knight 011 (2007) (Digital) (AnPymGold - Empire).cbz (24pp)
+      [116804] Moon Knight 012 (2007) (Digital) (AnPymGold - Empire).cbz (26pp)
+      [116805] Moon Knight 013 (2007) (Digital) (AnPymGold - Empire).cbz (43pp)

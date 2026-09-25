@@ -1,0 +1,510 @@
+## Conventions for this batch (21 shown of 154 matched; 401 in LEDGER.md; 12 shelf/shelves: pub:marvel ×12 · kind:trade-only ×10 · kind:collected-line ×7 · folder:vn-year ×5 · folder:sequel-subfolder ×5 · folder:events ×4 · kind:new ×3 · kind:archive ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (12 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (12 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (12 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-127] (11 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-136] (11 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-029] (10 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
+- On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
+  collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
+[L-031] (10 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-327] (10 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (10 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+[L-398] (10 shelf/shelves) kind:trade-only pub:marvel sig:stamp
+- Waves 147-148: Marvel 2008+ runs have a SEPARATE GCD trade-paperback-line series that earlier readers stored as the
+  shelf's S gcd (Totally Awesome Hulk 104142 -> run 94628; Rocket Raccoon & Groot 104355 -> run 95266) — the run's own GCD
+  series goes on the S. A Panini España CV VOLUME id can equal the right ISSUE id (S6478: 150718 = #1 of CV 25548).
+  Ghost Rider (2006) trades are GCD 55198; stored rows were Panini Deutschland (45859). Hulk (2008) trades have twin GCD
+  trade series (73891 / 73934) plus 2011-12 HCs — page counts pick 73891. Incredible Hulk (2000) and Ghost Rider (2006)
+  shelves carry legacy-number CV stamps (L-395) — per-file I lines. Byrne FF Omnibus merged onto the FF 1961 run (L-395).
+[L-389] (9 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-053 / R-135 (waves 129-130): a run's issues never JOIN a creator-trade-keyed shelf ("Venom by Al Ewing & Ram V",
+  S21029, four trades) — keep them and meet through the SHARED cv at the next revisit (S20988 cv=140084 + merge-with=21029).
+  Marvel's 2019-2020 "Star Wars #1 facsimile" is "Star Wars No 1 Facsimile Edition" (CV 123267 / GCD 153348): probe the
+  "No N" form. Star Wars Insider and Titan's "Best of" books have no CV / GCD record: R + provider-missing, never the 1977
+  comic's stamp. The Dark Horse Star Wars Omnibus umbrella number (Vol. 32 / 35) raises a false "stored GCD row is another
+  book" warning against the sub-line's #1 / #2 — page counts and ISBNs decide. An Epic Collection / omnibus line spanning
+  several minis keeps its own GCD-line key in a split.
+[L-298] (8 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (8 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-076] (7 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (7 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (7 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (7 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-132] (7 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-196] (7 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (7 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (7 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+
++133 more matched entries not shown: L-306, L-307, L-308, L-329, L-332, L-345, L-392, L-397, L-400, L-401, L-269, L-130, L-164, L-391, L-291, L-060, L-116, L-119, L-297, L-331, L-357, L-135, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-030, L-034, L-151, L-160, L-169, L-191, L-319, L-388, L-399, L-014, L-016, L-032, L-113, L-114, L-193, L-064, L-085, L-101, L-124, L-272, L-281, L-290, L-310, L-174, L-242, L-324, L-395, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-175, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-077, L-311, L-371, L-054, L-027, L-028, L-036, L-065, L-099, L-106, L-111, L-112, L-121, L-123, L-129, L-133, L-137, L-150, L-172, L-173, L-187, L-194, L-262, L-265, L-330, L-343, L-379, L-387, L-390, L-393, L-396, L-007, L-097, L-217, L-252, L-274, L-288, L-293, L-352, L-354, L-128, L-181, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S15642 Silver Surfer Epic Collection: Freedom  [tier B]   keys: Silver Surfer Epic Collection: Freedom  years 2015-2015  1 files / 1 collections
+   folders: [1] Marvel\_Silver Surfer\_Silver Surfer Epic Collections
+   files:   [93654] COL Silver Surfer Epic Collection Vol. 03 - Freedom (2015) (Digital) (F) (AnHeroGold-Empire).cbz (465pp)
+   ours:    ComicInfo Series: "Silver Surfer Epic Collection: Freedom"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [93654] gcd_reprint 1339629: s3433 Silver Surfer (1987) #1-14 [32 stories] · s2657 Marvel Fanfare (1982) #1, #12, #33, #51 [7 stories] · s2766 Super-Villain Classics (1983) #1 [2 stories] · s2663 Silver Surfer (1982) #1 [2 stories]
+   CV linked:      vol 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issues issue 506181; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 144795 "Silver Surfer Epic Collection: Parable" 2022 Marvel 1 issue 944337 s77 · 130195 "Silver Surfer Epic Collection: Resurrection" 2020 Marvel 1 issue 798006 s77 · 119305 "Silver Surfer Epic Collection: Inner Demons" 2019 Marvel 1 issue 709724 s76 · 111152 "Silver Surfer Epic Collection: Thanos Quest" 2018 Marvel 1 issue 671338 s76 · 78292 "Silver Surfer Epic Collection: When Calls Galactus" 2014 Marvel 1 issue 470992 s75 · 101636 "Silver Surfer Epic Collection: The Infinity Gauntlet" 2017 Marvel 1 issue 597201 s75   (v1 search)
+   CV local rip:   (= linked) · 130195 "Silver Surfer Epic Collection: Resurrection" 2020 Marvel 1 issue 798006 (via CV candidate name "Silver Surfer Epic Collection: Resurrection") · 144795 "Silver Surfer Epic Collection: Parable" 2022 Marvel 1 issue 944337 (via CV candidate name "Silver Surfer Epic Collection: Parable")   (rip lookup)
+
+== S15643 Silver Surfer Epic Collection: Parable  [tier B]   keys: Silver Surfer Epic Collection: Parable  years 2022-2022  1 files / 1 collections
+   folders: [1] Marvel\_Silver Surfer\_Silver Surfer Epic Collections
+   files:   [93655] COL Silver Surfer Epic Collection Vol. 04 - Parable (2022) (Digital-Empire).cbr (500pp)
+   ours:    ComicInfo Series: "Silver Surfer Epic Collection: Parable"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 144795 "Silver Surfer Epic Collection: Parable" 2022 Marvel 1 issues issue 944337; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 27377 "Silver Surfer: Parable" 1998 Marvel 1 issue 166770 s85 · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 s77 · 130195 "Silver Surfer Epic Collection: Resurrection" 2020 Marvel 1 issue 798006 s77 · 119305 "Silver Surfer Epic Collection: Inner Demons" 2019 Marvel 1 issue 709724 s76 · 111152 "Silver Surfer Epic Collection: Thanos Quest" 2018 Marvel 1 issue 671338 s76 · 78292 "Silver Surfer Epic Collection: When Calls Galactus" 2014 Marvel 1 issue 470992 s75   (v1 search)
+   CV local rip:   (= linked) · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 (via CV candidate name "Silver Surfer Epic Collection: Freedom") · 27377 "Silver Surfer: Parable" 1998 Marvel 1 issue 166770 (via CV candidate name "Silver Surfer: Parable")   (rip lookup)
+   GCD dump:       176276 "Silver Surfer: Parable" 2020-2020 Marvel [] 1 (via CV candidate name "Silver Surfer: Parable") · 73303 "Silver Surfer: Parable" 2012-2012 Marvel [] 1 (via CV candidate name "Silver Surfer: Parable") · 7185 "Silver Surfer: Parable" 1998-1998 Marvel [] 1 (via CV candidate name "Silver Surfer: Parable") · 32792 "Silver Surfer - Parable" 1988-1988 Marvel [] 1 (via CV candidate name "Silver Surfer: Parable")   (dump lookup)
+
+== S15644 Silver Surfer Epic Collection: Resurrection  [tier B]   keys: Silver Surfer Epic Collection: Resurrection  years 2020-2020  1 files / 1 collections
+   folders: [1] Marvel\_Silver Surfer\_Silver Surfer Epic Collections
+   files:   [93660] COL Silver Surfer Epic Collection Vol. 09 - Resurrection (2020) (Digital) (Zone-Empire).cbr (419pp)
+   ours:    ComicInfo Series: "Silver Surfer Epic Collection: Resurrection"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 130195 "Silver Surfer Epic Collection: Resurrection" 2020 Marvel 1 issues issue 798006; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 s77 · 144795 "Silver Surfer Epic Collection: Parable" 2022 Marvel 1 issue 944337 s77 · 119305 "Silver Surfer Epic Collection: Inner Demons" 2019 Marvel 1 issue 709724 s76 · 111152 "Silver Surfer Epic Collection: Thanos Quest" 2018 Marvel 1 issue 671338 s76 · 78292 "Silver Surfer Epic Collection: When Calls Galactus" 2014 Marvel 1 issue 470992 s75 · 101636 "Silver Surfer Epic Collection: The Infinity Gauntlet" 2017 Marvel 1 issue 597201 s75   (v1 search)
+   CV local rip:   (= linked) · 144795 "Silver Surfer Epic Collection: Parable" 2022 Marvel 1 issue 944337 (via CV candidate name "Silver Surfer Epic Collection: Parable") · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 (via CV candidate name "Silver Surfer Epic Collection: Freedom")   (rip lookup)
+
+== S15645 Silver Surfer Epic Collection: Sun Rise and Shadow Fall  [tier B]   keys: Silver Surfer Epic Collection: Sun Rise And Shadow Fall  years 2023-2023  1 files / 1 collections
+   folders: [1] Marvel\_Silver Surfer\_Silver Surfer Epic Collections
+   files:   [93662] COL Silver Surfer Epic Collection Vol. 14 - Sun Rise and Shadow Fall (2024) (Digital) (Shan-Empire).cbz (474pp)
+   ours:    ComicInfo Series: "Silver Surfer Epic Collection: Sun Rise And Shadow Fall"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [93662] gcd_reprint 2591750: s3433 Silver Surfer (1987) #139-146 [8 stories] · s9843 Galactus the Devourer (1999) #1-6 [6 stories] · s78323 Silver Surfer: Loftier Than Mortals (1999) #1-2 [3 stories] · s63706 Silver Surfer / Thor '98 (1998) (unnumbered) [1 story]
+   CV linked:      vol 155751 "Silver Surfer Epic Collection: Sun Rise and Shadow Fall" 2023 Marvel 1 issues issue 1038538; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 s62 · 144795 "Silver Surfer Epic Collection: Parable" 2022 Marvel 1 issue 944337 s62 · 130195 "Silver Surfer Epic Collection: Resurrection" 2020 Marvel 1 issue 798006 s62 · 119305 "Silver Surfer Epic Collection: Inner Demons" 2019 Marvel 1 issue 709724 s56 · 111152 "Silver Surfer Epic Collection: Thanos Quest" 2018 Marvel 1 issue 671338 s56 · 120663 "Silver Surfer: The Prodigal Sun" 2019 Marvel 1 issue 716374 s54   (v1 search)
+   CV local rip:   (= linked) · 144795 "Silver Surfer Epic Collection: Parable" 2022 Marvel 1 issue 944337 (via CV candidate name "Silver Surfer Epic Collection: Parable") · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 (via CV candidate name "Silver Surfer Epic Collection: Freedom")   (rip lookup)
+
+== S15646 Silver Surfer Epic Collection: Thanos Quest  [tier B]   keys: Silver Surfer Epic Collection: Thanos Quest  years 2018-2018  1 files / 1 collections
+   folders: [1] Marvel\_Silver Surfer\_Silver Surfer Epic Collections
+   files:   [93657] COL Silver Surfer Epic Collection Vol. 06 - Thanos Quest (2018) (digital-Empire).cbr (473pp)
+   ours:    ComicInfo Series: "Silver Surfer Epic Collection: Thanos Quest"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 111152 "Silver Surfer Epic Collection: Thanos Quest" 2018 Marvel 1 issues issue 671338; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 148038 "Silver Surfer Epic Collection: The Return of Thanos" 2023 Marvel 1 issue 968773 s77 · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 s69 · 144795 "Silver Surfer Epic Collection: Parable" 2022 Marvel 1 issue 944337 s69 · 130195 "Silver Surfer Epic Collection: Resurrection" 2020 Marvel 1 issue 798006 s69 · 119305 "Silver Surfer Epic Collection: Inner Demons" 2019 Marvel 1 issue 709724 s68 · 78292 "Silver Surfer Epic Collection: When Calls Galactus" 2014 Marvel 1 issue 470992 s67   (v1 search)
+   CV local rip:   (= linked) · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 (via CV candidate name "Silver Surfer Epic Collection: Freedom") · 148038 "Silver Surfer Epic Collection: The Return of Thanos" 2023 Marvel 1 issue 968773 (via CV candidate name "Silver Surfer Epic Collection: The Return of Thanos")   (rip lookup)
+
+== S15647 Silver Surfer Epic Collection: The Herald Ordeal   [tier B]   keys: Silver Surfer Epic Collection: The Herald Ordeal  years 2024-2024  1 files / 1 collections
+   folders: [1] Marvel\_Silver Surfer\_Silver Surfer Epic Collections
+   files:   [93659] COL Silver Surfer Epic Collection Vol. 08 - The Herald Ordeal (2024) (digital) (Marika-Empire).cbz (437pp)
+   ours:    ComicInfo Series: "Silver Surfer Epic Collection: The Herald Ordeal"x1; ComicInfo Volume: "2024"x1; ComicInfo Publisher: "Marvel"x1; ComicInfo Web: "1080325"x1
+   CV linked:      vol 161445 "Silver Surfer Epic Collection: The Herald Ordeal " 2024 Marvel 1 issues issue 1080325; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 101636 "Silver Surfer Epic Collection: The Infinity Gauntlet" 2017 Marvel 1 issue 597201 s70 · 148038 "Silver Surfer Epic Collection: The Return of Thanos" 2023 Marvel 1 issue 968773 s69 · 165196 "Silver Surfer Epic Collection: Into the Outer Void" 2025 Marvel 1 issue 1117046 s69 · 86124 "Silver Surfer Epic Collection: Freedom" 2015 Marvel 1 issue 506181 s63 · 144795 "Silver Surfer Epic Collection: Parable" 2022 Marvel 1 issue 944337 s63 · 130195 "Silver Surfer Epic Collection: Resurrection" 2020 Marvel 1 issue 798006 s63   (v1 search)
+   CV local rip:   (= linked) · 148038 "Silver Surfer Epic Collection: The Return of Thanos" 2023 Marvel 1 issue 968773 (via CV candidate name "Silver Surfer Epic Collection: The Return of Thanos") · 101636 "Silver Surfer Epic Collection: The Infinity Gauntlet" 2017 Marvel 1 issue 597201 (via CV candidate name "Silver Surfer Epic Collection: The Infinity Gauntlet")   (rip lookup)
+
+== S16053 Spider-Gwen: Ghost-Spider  [tier B]   keys: Spider-Gwen: Ghost-Spider  years 2018-2019  4 files / 4 collections
+   flags: #420 label-ambiguous [Pending] item 118905 — items 93694 and 118905 are duplicate copies of Spider-Geddon
+   folders: [2] Marvel\_Spider-Gwen - Ghost Spider\02 Spider-Gwen - Ghost-Spider v1 (2018) · [1] Marvel\_Spider-Gwen - Ghost Spider\_Omnibus Editions · [1] _Marvel Major Event Chronology (digital)\2018.09 - Spider-Geddon\02 Tie-ins\Spider-Gwen - Ghost-Spider
+   files:   [93694] COL Spider-Gwen - Ghost-Spider Vol. 01 - Spider-Geddon (2019) (Digital) (Zone-Empire).cbr (112pp)
+            [93695] COL Spider-Gwen - Ghost-Spider Vol. 02 - Impossible Year (2019) (Digital) (Kileko-Empire).cbz (134pp)
+            [93995] COL Spider-Gwen - Ghost-Spider Omnibus (2023) (Digital) (Kileko-Empire).cbz (812pp)
+            [118905] COL Spider-Gwen - Ghost-Spider Vol. 01 - Spider-Geddon (2019) (Digital) (Zone-Empire).cbr (112pp)
+   ours:    judged item 93995 #1-10 conf 0.7; judged item 93695 #5-10 conf 0.85; ComicInfo Series: "Spider-Gwen: Ghost-Spider"x3; ComicInfo Publisher: "Marvel"x3
+   GCD says: [93694] gcd notes 2013667 (#1 of Spider-Gwen: Ghost-Spider): Spider-Gwen: Ghost-Spider (Marvel, 2018 series) #1-4; Spider-Geddon: Ghost-Spider Video Comic #1  |  gcd_reprint 2013667: s131933 Spider-Gwen: Ghost Spider (2018) #1-4 [16 stories]
+             [93695] gcd notes 2013666 (#2 of Spider-Gwen: Ghost-Spider): Spider-Gwen: Ghost-Spider (Marvel, 2018 series) #5-10  |  gcd_reprint 2013666: s131933 Spider-Gwen: Ghost Spider (2018) (unnumbered) [16 stories]
+             [118905] gcd notes 2013667 (#1 of Spider-Gwen: Ghost-Spider): Spider-Gwen: Ghost-Spider (Marvel, 2018 series) #1-4; Spider-Geddon: Ghost-Spider Video Comic #1  |  gcd_reprint 2013667: s131933 Spider-Gwen: Ghost Spider (2018) #1-4 [16 stories]
+   CV linked:      vol 114734 "Spider-Gwen: Ghost-Spider" 2018 Marvel 10 issues; cached #1-9 (4); yearΔ 0; ratio 0/10; 2 of 2 judged fit
+   CV candidates:  (= linked) · 153030 "Spider-Gwen: Ghost-Spider" 2023 Marvel 1 issue 1009038 s50 · 93150 "100% Marvel. Spider-Gwen" 2016 Panini España 4 s48 · 162080 "Spider-Gwen: The Ghost-Spider" 2024 Marvel 3 s42 · 166312 "All-New Spider-Gwen: The Ghost-Spider" 2025 Marvel 10 s41 · 158228 "Spider-Gwen: The Ghost-Spider" 2024 Marvel 15 s37 · 152774 "Spider-Gwen: Ghost-Spider Omnibus" 2023 Marvel 1 issue 1005274 s34   (v1 search)
+   CV local rip:   (= linked) · 153030 "Spider-Gwen: Ghost-Spider" 2023 Marvel 1 issue 1009038 · 93150 "100% Marvel. Spider-Gwen" 2016 Panini España 4 (via CV candidate name "100% Marvel. Spider-Gwen")   (rip lookup)
+   GCD dump:       131933 "Spider-Gwen: Ghost Spider" 2018-2019 Marvel [] 10 · 144337 "Spider Gwen: Ghost Spider" [es-mx] 2019-? Editorial Televisa [] 5 · 145093 "Spider-Gwen: Ghost-Spider" 2019-2019 Marvel [] 2 · 173561 "Spider-Gwen: Ghost Spider" [es] 2019-2021 Panini España [] ? · 203122 "Spider-Gwen: Ghost Spider" 2023-2023 Marvel [] 1 · 237461 "Spider-Gwen - Ghost Spider" [de] 2026-? Panini Deutschland [] 1   (dump lookup)
+
+== S16039 Spider-Girl  [tier C] · ratio 0.34  keys: Spider-Girl | Spider-Girl '99 Annual (1998) | Spider-Girl v1 (1998) | Spider-Girl: The Complete Collection  years 1998-2022  39 files / 4 collections
+   folders: [33] Marvel\_Spider-Man\_Spider-Girl\Spider-Girl v1 (1998) · [4] Marvel\_Spider-Man\_Spider-Girl\Spider-Girl v1 (1998)\Trades · [2] Marvel\_Spider-Man\_Spider-Girl\Spider-Girl v1 (1998)\Annuals and Specials
+   files:   [93788] Spider-Girl '99 Annual 001 (1999) (digital) (Marika-Empire).cbz (46pp) | [93789] Spider-Girl 0.5 (1999) (digital) (Marika-Empire).cbz (18pp)
+            [93790] Spider-Girl 068 (2004) (Digital) (Shadowcat-Empire).cbz (24pp) | [93791] Spider-Girl 069 (2004) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [93792] Spider-Girl 070 (2004) (Digital) (Shadowcat-Empire).cbz (23pp) | [93793] Spider-Girl 071 (2004) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [93794] Spider-Girl 072 (2004) (Digital) (Shadowcat-Empire).cbz (24pp) | [93795] Spider-Girl 073 (2004) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [93796] Spider-Girl 074 (2004) (Digital) (Shadowcat-Empire).cbz (23pp) | [93797] Spider-Girl 075 (2004) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [93798] Spider-Girl 076 (2004) (Digital) (Shadowcat-Empire).cbz (24pp) | [93799] Spider-Girl 077 (2004) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [93800] Spider-Girl 078 (2004) (Digital) (Shadowcat-Empire).cbz (23pp) | [93801] Spider-Girl 079 (2004) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [93802] Spider-Girl 080 (2005) (Digital) (Shadowcat-Empire).cbz (24pp) | [93803] Spider-Girl 081 (2005) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [93804] Spider-Girl 082 (2005) (Digital) (Shadowcat-Empire).cbz (23pp) | [93805] Spider-Girl 083 (2005) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [93806] Spider-Girl 084 (2005) (Digital) (Shadowcat-Empire).cbz (23pp) | [93807] Spider-Girl 085 (2005) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [93808] Spider-Girl 086 (2005) (Digital) (Shadowcat-Empire).cbz (23pp) | [93809] Spider-Girl 087 (2005) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [93810] Spider-Girl 088 (2005) (Digital) (Shadowcat-Empire).cbz (22pp) | [93811] Spider-Girl 089 (2005) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [93812] Spider-Girl 090 (2005) (Digital) (Shadowcat-Empire).cbz (24pp) | [93813] Spider-Girl 091 (2005) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [93814] Spider-Girl 092 (2006) (Digital) (Shadowcat-Empire).cbz (24pp) | [93815] Spider-Girl 093 (2006) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [93816] Spider-Girl 094 (2006) (Digital) (Shadowcat-Empire).cbz (24pp) | [93817] Spider-Girl 095 (2006) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [93818] Spider-Girl 096 (2006) (Digital) (Shadowcat-Empire).cbz (23pp) | [93819] Spider-Girl 097 (2006) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [93820] Spider-Girl 098 (2006) (Digital) (Shadowcat-Empire).cbz (22pp) | [93821] Spider-Girl 099 (2006) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [93822] Spider-Girl 100 (2006) (Digital) (Shadowcat-Empire).cbz (93pp) | [93823] COL Spider-Girl - The Complete Collection Vol. 01 (2018) (Digital) (Zone-Empire).cbr (457pp)
+            [93824] COL Spider-Girl - The Complete Collection Vol. 02 (2019) (digital) (JTR).cbz (433pp) | [93825] COL Spider-Girl - The Complete Collection Vol. 03 (2021) (digital) (JTR).cbz (433pp)
+            [93826] COL Spider-Girl - The Complete Collection Vol. 04 (2022) (digital) (JTR).cbz (385pp)
+   ours:    ladder 0.5, 1, 68-100; ComicInfo Series: "Spider-Girl"x29, "Spider-Girl '99 Annual"x1, "Spider-Girl: The Complete Collection"x1; ComicInfo Volume: "1998"x29, "1999"x1; ComicInfo Publisher: "Marvel"x29, "Marvel Comics"x1; ComicInfo Web: "139640"x1, "140972"x1
+   GCD says: [93824] gcd notes 2212295 (#2 of Spider-Girl: The Complete Collection): Spider-Girl (Marvel, 1998 series) #16-32  |  gcd_reprint 2212295: s6037 Spider-Girl (1998) #16-32 [18 stories]
+             [93825] gcd notes 2212296 (#3 of Spider-Girl: The Complete Collection): Spider-Girl (Marvel, 1998 series) #33-50  |  gcd_reprint 2212296: s6037 Spider-Girl (1998) #33-50 [37 stories]
+             [93826] gcd_reprint 2387471: s6037 Spider-Girl (1998) #51-67 [18 stories]
+   CV linked:      vol 6218 "Spider-Girl" 1998 Marvel 102 issues; cached #0-100 (102); yearΔ 0; ratio 35/102 = 0.34; no judged range
+   CV per-file (v1): vol 6218 "Spider-Girl" 1998 Marvel 102 on 35/39 files · vol 114154 "Spider-Girl: The Complete Collection" 2018 Marvel 4 on 1/39 files
+   CV candidates:  (= linked) · 107364 "Marvel Mangaverse: The Complete Collection" 2017 Marvel 1 issue 649734 s33 · 110964 "Spider-Girl" 2001 Marvel 1 issue 670285 s30 · 68371 "Marvel Zombies: The Complete Collection" 2013 Marvel 3 s21 · 36750 "Spider-Girl" 2011 Marvel 8 s15 · 165026 "Spider-Girl" 2025 Marvel 7 s15 · 160977 "Handsome Girl and Sheltered Girl: The Complete Manga Collection" 2024 Seven Seas Entertainment 1 issue 1077102 s14   (v1 search)
+   CV local rip:   (= linked) · 43258 "Spider-Girl" 2000 Panini Verlag 12 · 110964 "Spider-Girl" 2001 Marvel 1 issue 670285 · 36750 "Spider-Girl" 2011 Marvel 8 · 165026 "Spider-Girl" 2025 Marvel 6   (rip lookup)
+   GCD per-file:   methods numx33 · round2-seriesx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 6037 "Spider-Girl" 1998-2006 Marvel [was ongoing series] 101 on 34/39 files
+   GCD dump:       (= per-file) · 25532 "Spider-Girl" 1999-1999 Marvel; Wizard [] 1 · 53311 "Spider-Girl" [de] 2000-2002 Panini Deutschland [] 12 · 173293 "Spider-Girl" [fr] 2000-2000 Panini France [] 6 · 184200 "Spider-Girl" [en-in] 2002-2003 Gotham Entertainment Group [] 27 · 60859 "Spider-Girl" 2004-2010 Marvel [] 12   (dump lookup)
+   bridges:        gcd 6037 -> LOCG 106855 "Spider-Girl" support 34
+
+== S824 Amazing Fantasy  [tier C] · ratio 6.00  keys: Amasing Fantasy | Amazing Fantasy  years 1961-2022  6 files / 0 collections
+   folders: [2] Marvel\_Spider-Man\__Amazing Spider-Man\00 Annuals and Specials · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\Amazing Spider-man v6 (2022)\Annuals and Specials · [1] Marvel\_Marvel Facsimile Editions · [1] Marvel\_Spider-Man\__Amazing Spider-Man\01 Amazing Spider-Man v1 (1963) · [1] _Marvel Major Event Chronology (digital)\2014.11 - Spider-Verse\Extras
+   files:   [47150] Amazing Fantasy 1000 (2022) (Digital) (Zone-Empire).cbr (73pp) | [83009] Amazing Fantasy 015 - Facsimile Edition (1962) (Digital) (Shadowcat-Empire).cbz (36pp)
+            [93846] Amasing Fantasy 015 (Alternate Ditko Cover Only) (Nodge).cbr (1pp) | [93847] Amazing Fantasy 015 (1962) paper from orig copy.cbz (36pp)
+            [94028] Amazing Fantasy 015 (1962) (Digital) (TLK-EMPIRE-HD).cbr (12pp) | [118860] Amazing Fantasy 015 (1962) (Digital) (TLK-EMPIRE-HD).cbr (12pp)
+   ours:    ladder 15, 1000; 1 number(s) name more than one file: 15; ComicInfo Series: "Amazing Fantasy"x1; ComicInfo Volume: "1962"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 5533 "Amazing Fantasy" 1962 Marvel ? issues; cached #15-18 (4); yearΔ 1; ratio 6/? = 6.00; no judged range; v1 per-file: same volume on 5/6 files
+   CV candidates:  49801 "Marvel Universe Spider-Man: Amazing Fantasy" 2012 Marvel 1 issue 341553 s56 · 111284 "Fantasy" 2018 Harlequin Comics 1 issue 671646 s55 · 167846 "Fantasy" 1978 Publistrip 1 issue 1139479 s55 · 2290 "Fantasy Masterpieces" 1966 Marvel 11 s44 · 149918 "Marvel Limited Edition: Amazing Fantasy" 2016 Panini España 1 issue 986190 s41 · 159316 "Fantasy" 1982 Editoriale Corno 14 s40   (v1 search)
+   CV local rip:   (= linked) · 18663 "Amazing Fantasy" 2004 Marvel 20 · 137880 "Amazing Fantasy" 2021 Marvel 5 · 142971 "Amazing Fantasy" 2022 Marvel 1 issue 924048 · 144893 "Amazing Fantasy" 2022 Marvel 1 issue 945215 · 145468 "Amazing Fantasy " 2022 Panini Verlag 1 issue 950452   (rip lookup)
+   GCD per-file:   series 1514 "Amazing Fantasy" 1962-1962 Marvel [was ongoing series] 1 on 4/6 files; methods numx4
+   GCD dump:       (= per-file) · 97500 "Amazing Fantasy" [da-dk] 1979-1979 Superprima press [] 1 · 5271 "Amazing Fantasy" 1995-1996 Marvel [] 3 · 102397 "Amazing Fantasy" [de] 1999-2001 Panini Deutschland [] 2 · 116992 "Amazing Fantasy" 2002-2002 Marvel [] 1 · 16206 "Amazing Fantasy" 2004-2006 Marvel [] 20   (dump lookup)
+   bridges:        gcd 1514 -> LOCG 100458 "Amazing Fantasy" support 4
+
+== S16107 Amazing Spider-Man: One Moment in Time  [tier B]   keys: Spider-Man - One Moment In Time  years 2010-2010  1 files / 0 collections
+   folders: [1] Marvel\_Spider-Man\__Amazing Spider-Man\00 TPBs
+   files:   [94006] Spider-Man - One Moment In Time (2012) (digital) (Minutemen-Slayer).cbr (155pp)
+   CV linked:      vol 36727 "Amazing Spider-Man: One Moment in Time" 2010 Marvel 1 issues issue 244845; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 48072 "Spider-Man: Season One" 2012 Marvel 1 issue 331977 s56 · 44770 "Spider-Man: Chapter One" 2011 Marvel 1 issue 308170 s56 · 115327 "A Moment in Time" 2018 self published 1 issue 692281 s50 · 41489 "Spider-Man: Big Time" 2010 Marvel Digital Comics Unlimited 12 s41 · 6219 "Spider-Man: Chapter One" 1998 Marvel 13 s41 · 63316 "Spider-Man: Season One" 2012 Panini Verlag 1 issue 410599 s41   (v1 search)
+   CV local rip:   (= linked) · 44770 "Spider-Man: Chapter One" 2011 Marvel 1 issue 308170 (via CV candidate name "Spider-Man: Chapter One") · 48072 "Spider-Man: Season One" 2012 Marvel 1 issue 331977 (via CV candidate name "Spider-Man: Season One") · 63316 "Spider-Man: Season One" 2012 Panini Verlag 1 issue 410599 (via CV candidate name "Spider-Man: Season One") · 6219 "Spider-Man: Chapter One" 1998 Marvel 13 (via CV candidate name "Spider-Man: Chapter One")   (rip lookup)
+   GCD dump:       67151 "Spider-Man: One Moment in Time" 2010-2010 Marvel [] 1 · 75393 "Spider-Man: One Moment in Time" 2011-2011 Marvel [] 1 · 120498 "Spider-Man: Chapter One" 2011-2011 Marvel [] 1 (via CV candidate name "Spider-Man: Chapter One") · 66136 "Spider-Man: Season One" 2012-2012 Marvel [] 1 (via CV candidate name "Spider-Man: Season One") · 101362 "Spider-Man - Season One" [de] 2012-? Panini Deutschland [] 1 (via CV candidate name "Spider-Man: Season One") · 6038 "Spider-Man: Chapter One" 1998-1999 Marvel [] 13 (via CV candidate name "Spider-Man: Chapter One")   (dump lookup)
+
+== S95052 The Amazing Spider-Man  [tier C] · gap 51  keys: Amazing Spider-Man.1 - Learning to Crawl | Amazing Spider-man v3 (2014)  years 1963-2018  14 files / 9 collections
+   folders: [5] Marvel\_Spider-Man\__Amazing Spider-Man\00 TPBs\Dan Slott Era · [4] Marvel\_Spider-Man\__Amazing Spider-Man\05 Amazing Spider-man v3 (2014) · [2] Marvel\_Spider-Man\__Amazing Spider-Man\05 Amazing Spider-man v3 (2014)\Annuals and Specials · [2] _Marvel Major Event Chronology (digital)\2014.04 - Original Sin\02 Tie-ins\Amazing Spider-Man · [1] _Marvel Major Event Chronology (digital)\2018.04 - The Return of Wolverine\00 End Credit Scenes
+   files:   [93938] COL Dan Slott Spider-Man Vol. 39 - Amazing Spider-Man Vol. 01 - The Parker Luck (2014) (Digital) (Zone-Empire).cbr (170pp)
+            [93939] COL Dan Slott Spider-Man Vol. 40 - Amazing Spider-Man Vol. 02 - Spider-Verse Prelude (2015) (Digital) (Zone-Empire).cbr (111pp)
+            [93940] COL Dan Slott Spider-Man Vol. 41 - Amazing Spider-Man Vol. 03 - Spider-Verse (2015) (Digital) (Zone-Empire).cbr (143pp)
+            [93941] COL Dan Slott Spider-Man Vol. 42 - Amazing Spider-Man Vol. 04 - Graveyard Shift (2015) (Digital) (F) (Zone-Empire).cbr (100pp)
+            [93942] COL Dan Slott Spider-Man Vol. 43 - Amazing Spider-Man Vol. 05 - Spiral (2015) (Digital) (Zone-Empire).cbr (103pp)
+            [94734] COL Amazing Spider-Man Vol. 01.1 - Learning to Crawl (2014) (Digital) (Zone-Empire).cbr (115pp)
+            [94736] COL Amazing Spider-Man Vol. 03 - Spider-Verse (2015) (Digital) (Zone-Empire).cbr (143pp)
+            [94737] COL Amazing Spider-Man Vol. 04 - Graveyard Shift (2015) (Digital) (F) (Zone-Empire).cbr (100pp)
+            [94738] COL Amazing Spider-Man Vol. 05 - Spiral (2015) (Digital) (F) (Zone-Empire).cbr (107pp)
+            [94739] Amazing Spider-Man 015 (2015) (Comicxposure B&W Connecting Variant Only) (digital) (Minutemen-Mastodon).cbz (1pp)
+            [94740] Amazing Spider-Man Special 001 (2015) (Digital) (Zone-Empire).cbr (33pp) | [117767] 013 - Amazing Spider-Man 004 (2014) (Digital) (Darkness-Empire).cbr (22pp)
+            [117768] 014 - Amazing Spider-Man 005 (2014) (Digital) (Darkness-Empire).cbr (23pp) | [118375] 03 Amazing Spider-Man 794 (2018) (Digital) (Zone-Empire).cbr (24pp)
+   ours:    ladder 1, 4-5, 15, 794; ComicInfo Series: "Amazing Spider-Man"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [93938] gcd_reprint 1325205: s80405 The Amazing Spider-Man (2014) #1-6 [26 stories] · s81678 Spider-Man 2099 (2014) #1 [1 story] · s71030 Superior Spider-Man (2013) #31 [1 story]  |  ⚠ stored GCD row is another book: our title 'Dan Slott Spider-Man' has dan/slott, GCD's series 'The Amazing Spider-Man' does not; our vol 39 vs GCD #1 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [93939] gcd_reprint 1325206: s80405 The Amazing Spider-Man (2014) #7-8 [16 stories] · s71030 Superior Spider-Man (2013) #32-33 [10 stories] · s80545 Free Comic Book Day 2014 (Guardians of the Galaxy) (2014) #1 [1 story]  |  ⚠ stored GCD row is another book: our title 'Dan Slott Spider-Man' has dan/slott, GCD's series 'The Amazing Spider-Man' does not; our vol 40 vs GCD #2 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [93940] gcd_reprint 1325207: s80405 The Amazing Spider-Man (2014) #9-15 [27 stories] · s71030 Superior Spider-Man (2013) #32 [1 story]  |  ⚠ stored GCD row is another book: our title 'Dan Slott Spider-Man' has dan/slott, GCD's series 'The Amazing Spider-Man' does not; our vol 41 vs GCD #3 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [93941] gcd_reprint 1450278: s80405 The Amazing Spider-Man (2014) #16-18 [14 stories] · s85112 Amazing Spider-Man Annual (2015) #1 [5 stories]  |  ⚠ stored GCD row is another book: our title 'Dan Slott Spider-Man' has dan/slott, GCD's series 'The Amazing Spider-Man' does not; our vol 42 vs GCD #4 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [93942] gcd_reprint 1460652: s80405 The Amazing Spider-Man (2014) #16.1-20.1 [16 stories]  |  ⚠ stored GCD row is another book: our title 'Dan Slott Spider-Man' has dan/slott, GCD's series 'The Amazing Spider-Man' does not; our vol 43 vs GCD #5 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [94734] gcd_reprint 1466451: s92892 Amazing Spider-Man (2015) #1-2 [2 stories]
+             [94736] gcd_reprint 1325207: s80405 The Amazing Spider-Man (2014) #9-15 [27 stories] · s71030 Superior Spider-Man (2013) #32 [1 story]
+             [94737] gcd_reprint 1450278: s80405 The Amazing Spider-Man (2014) #16-18 [14 stories] · s85112 Amazing Spider-Man Annual (2015) #1 [5 stories]
+             [94738] gcd_reprint 1460652: s80405 The Amazing Spider-Man (2014) #16.1-20.1 [16 stories]
+   CV linked:      vol 73420 "The Amazing Spider-Man" 2014 Marvel 28 issues; cached #3-3 (1); yearΔ 51; ratio 5/28 = 0.18; no judged range
+   CV per-file (v1): vol 2127 "The Amazing Spider-Man" 1963 Marvel 651 on 4/14 files
+   CV candidates:  78432 "Amazing Spider-Man: Learning To Crawl" 2014 Marvel 1 issue 471579 s92 · 38931 "Marvel Adventures Spider-Man: Amazing" 2010 Marvel 1 issue 261470 s51 · 35470 "Marvel Spotlight: The Amazing Spider-Man" 2008 Marvel 1 issue 234306 s48 · 35782 "Ultimate Spider-Man: Learning Curve" 2001 Marvel 1 issue 236772 s48 · 153393 "The Amazing Spider-Man Marvel Pocketbook" 2004 Marvel UK/Panini UK 17 s32 · 23402 "Marvel Masterworks: The Amazing Spider-Man" 2003 Marvel 27 s32   (v1 search)
+   CV local rip:   (= linked) · 34326 "The Amazing Spider-Man" 1979 Marvel 1 issue 224088 · 56505 "The Amazing Spider-Man" 1979 Simon and Schuster 1 issue 383545 · 151406 "The Amazing Spider-Man" 1980 Pocket Books 1 issue 995531 · 22719 "The Amazing Spider-Man" 1982 Marvel 1 issue 136279 · 78701 "The Amazing Spider-Man" 1999 Marvel 58   (rip lookup)
+   GCD per-file:   methods numx2 · round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 92892 "Amazing Spider-Man" 2015-2018 Marvel [was ongoing series] 51 on 3/14 files
+   GCD dump:       1570 "The Amazing Spider-Man" 1963-1998 Marvel [] 443 · 24842 "The Amazing Spider-Man" 1969-1969 Marvel [] 1 · 149585 "The Amazing Spider-Man" [en-ph] 1974-1974 Goodwill Bookstore [] 2 · 18606 "The Amazing Spider-Man" [en-au] 1975-1976 Newton Comics [] 17 · 72382 "The Amazing Spider-Man" [en-au] 1975-1975 Newton Comics [] 1 · 182246 "The Amazing Spider-Man" [en-za] 1976-1976 Republican Press [] 3   (dump lookup)
+   bridges:        gcd 92892 -> LOCG 100043 "The Amazing Spider-Man" support 16
+
+== S4752 The Amazing Spider-Man  [tier C] · 814 files  keys: Amazing Spider-Man (1963) | Amazing Spider-man (1963) | Dan Slott Spider-Man | Spider-Man - Death of the Stacys | Spider-Man: One Moment in Time (2011) | The Amazing Spider-Man (1963)  years 1963-2022  814 files / 22 collections
+   folders: [441] Marvel\_Spider-Man\__Amazing Spider-Man\01 Amazing Spider-Man v1 (1963) · [203] Marvel\_Spider-Man\__Amazing Spider-Man\03 Amazing Spider-Man v1 (2003) · [39] Marvel\_Spider-Man\__Amazing Spider-Man\00 Annuals and Specials · [19] Marvel\_Spider-Man\__Amazing Spider-Man\00 TPBs\Dan Slott Era · [15] _Marvel Major Event Chronology (digital)\2007.11 - Spider-man - One More Day\Extra\Spider-man - Brand New Day · [13] _Marvel Major Event Chronology (digital)\1975.02 - Spider-man - The Clone Saga I · [9] Marvel\_Spider-Man\__Amazing Spider-Man\03 Amazing Spider-Man v1 (2003)\Variant Covers · [6] _Marvel Major Event Chronology (digital)\2007.11 - Spider-man - One More Day\Extra · [5] Marvel\_Marvel Facsimile Editions\Variant Covers · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0719 Civil War - Phase One · [5] _Marvel Major Event Chronology (digital)\1973.06 - Spider-man - The Death of Gwen Stacy\Extras · [5] _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Amazing Spider-man · [4] Marvel\_Marvel Facsimile Editions · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0728 Civil War - Phase Two · [4] _Marvel Major Event Chronology (digital)\2012.11 - Spider-man - Dying Wish · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0087 Inferno After Effects · [3] _Marvel Major Event Chronology (digital)\1975.02 - Spider-man - The Clone Saga I\Extra · [3] _Marvel Major Event Chronology (digital)\1986.02 - Daredevil - Born Again\Extra\Amazing Spider-Man 050-52 (1967) · [3] _Marvel Major Event Chronology (digital)\1993.05 - Spider-man - Maximum Carnage\Extra\03 Amazing Spider-man - Carnage (1992) (Digital) (AnPymGold-Empire) · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0008 Second Genesis · [2] _Marvel Major Event Chronology (digital)\1987.10 - Spider-man - Kraven's Last Hunt\Extra · [2] _Marvel Major Event Chronology (digital)\1993.05 - Spider-man - Maximum Carnage\Extra\01 Amazing Spider-man - Venom (1988) (Digital) (AnPymGold-Empire) · [1] Marvel\_Spider-Man\_Misc Trades · [1] Marvel\_Spider-Man\__Amazing Spider-Man\00 TPBs · [1] Marvel\_Spider-Man\__OGNs, Minis & One-shots\Spider-Man - Maximum Clonage (1995) · [1] Marvel\_Venom\11 Venom - Sinner Takes All (1995)\Bride of Venom (First She-Venom Appearance) · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0006 Various Cameos · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0012 Proteus · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0059 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0078 Evolutionary war · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0093 Atlantis Attacks · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0311 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0723 Civil War - X-Men · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0915 Identity Wars · [1] _Marvel Major Event Chronology (digital)\1973.06 - Spider-man - The Death of Gwen Stacy · [1] _Marvel Major Event Chronology (digital)\2006.07 - Civil War\03 Civil War - Spider-Man Unmasked
+   files:   [83015] Amazing Spider-Man 238 - Facsimile Edition (2022) (Digital) (Shadowcat-Empire).cbz (36pp)
+            [83016] Amazing Spider-Man 252 - Facsimile Edition (2019) (Digital) (Shadowcat-Empire).cbz (36pp)
+            [83018] Amazing Spider-Man 254 - Facsimile Edition (2024) (digital) (Marika-Empire).cbz (37pp)
+            [83027] Amazing Spider-Man 347 - Facsimile Edition (2020) (Digital) (Shadowcat-Empire).cbz (36pp)
+            [83101] Amazing Spider-Man 257 (2024) (Facsimile Edition Tony Daniel Variant) (Digital) (MikeNY76).cbz (1pp)
+            [83102] Amazing Spider-Man 260 (2024) (Facsimile Edition Skan Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [83103] Amazing Spider-Man 261 (2024) (Facsimile Edition Alan Quah Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [83104] Amazing Spider-Man 262 (2024) (Facsimile Edition Ben Harvey Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [83105] Amazing Spider-Man 263 (2024) (Facsimile Edition Inhyuk Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [93755] COL Spider-Man - One Moment In Time (2011) (Digital) (Kileko-Empire).cbz (155pp) | [93849] Amazing Spider-Man Annual 001 (1964) (Digital) (TLK-EMPIRE-HD).cbr (74pp)
+            [93850] Amazing Spider-Man Annual 002 (1965) (Digital) (Shadowcat-Empire).cbz (27pp) | [93851] Amazing Spider-Man Annual 003 (1966) (Digital) (TLK-EMPIRE-HD).cbr (23pp)
+            [93852] Amazing Spider-Man Annual 004 (1967) (Digital) (TLK-EMPIRE-HD).cbr (52pp) | [93853] Amazing Spider-Man Annual 005 (1968) (Digital) (TLK-EMPIRE-HD).cbr (49pp)
+            [93854] Amazing Spider-Man Annual 006 (1969) (Digital) (Shadowcat-Empire).cbz (54pp) | [93855] Amazing Spider-Man Annual 007 (1970).cbr (67pp)
+            [93856] Amazing Spider-Man Annual 008 (1971).cbr (66pp) | [93857] Amazing Spider-Man Annual 009 (1973) (c2c) (edits) (Delboy2k7-DCP).cbz (52pp)
+            [93858] Amazing Spider-Man Annual 010 (1976) (Digital) (TLK-EMPIRE-HD).cbr (37pp) | [93859] Amazing Spider-Man Annual 011 (1977) (Digital) (Zone-Empire).cbr (36pp)
+            [93860] Amazing Spider-Man Annual 012 (1978) (Digital-Empire).cbz (44pp) | [93861] Amazing Spider-Man Annual 013 (1979) (Digital) (Shadowcat-Empire).cbz (36pp)
+            [93862] Amazing Spider-Man Annual 014 (1980) (Digital) (Shadowcat-Empire).cbz (36pp) | [93863] Amazing Spider-Man Annual 015 (1981).cbz (31pp)
+            [93864] Amazing Spider-Man Annual 016 (1982) (Digital) (Shadowcat-Empire).cbz (39pp) | [93865] Amazing Spider-Man Annual 017 (1983) (Digital) (Shadowcat-Empire).cbz (40pp)
+            [93866] Amazing Spider-Man Annual 018 (1984) (Digital-Empire).cbz (40pp) | [93867] Amazing Spider-Man Annual 019 (1985) (Digital) (Shadowcat-Empire).cbz (41pp)
+            [93868] Amazing Spider-Man Annual 020 (1986) (Digital) (Shadowcat-Empire).cbz (40pp) | [93869] Amazing Spider-Man Annual 021 (1987) (Digital) (AnHeroGold-Empire).cbz (44pp)
+            [93870] Amazing Spider-Man Annual 022 (1988) (Digital) (Shadowcat-Empire).cbz (52pp) | [93872] Amazing Spider-Man Annual 024 (1990) (Digital) (Shadowcat-Empire).cbz (56pp)
+            [93873] Amazing Spider-Man Annual 025 (1991) (Digital) (AnHeroGold-Empire).cbz (55pp) | [93874] Amazing Spider-Man Annual 026 (1992) (Digital) (AnHeroGold-Empire).cbz (55pp)
+            [93877] Amazing Spider-Man Annual 029 (1995).cbr (56pp) | [93878] Amazing Spider-Man Annual 030 (1996).cbr (56pp)
+            [93881] Amazing Spider-Man Annual 032 (1999) (Digital) (Shadowcat-Empire).cbz (37pp) | [93882] Amazing Spider-Man Annual 033 (2000) (Digital) (Shadowcat-Empire).cbz (40pp)
+            [93883] Amazing Spider-Man Annual 034 (2001) (Digital) (Shadowcat-Empire).cbz (39pp) | [93884] Amazing Spider-Man Annual 035 (2008) (greengiant-DCP).cbr (39pp)
+            [93885] Amazing Spider-Man Annual 036 (2009) (Digital) (Zone-Empire).cbr (39pp) | [93886] Amazing Spider-Man Annual 037 (2010) (Digital) (AnPymGold-Empire).cbz (40pp)
+            [93887] Amazing Spider-Man Annual 038 (2011) (digital) (Minutemen-Faessla).cbz (34pp) | [93888] Amazing Spider-Man Annual 039 (2012) (digital) (Minutemen-Faessla).cbz (44pp)
+            [93889] Amazing Spider-Man Annual 040 (2015) (digital) (Minutemen-InnerDemons).cbr (29pp) | [93890] Amazing Spider-Man Annual 041 (2017) (digital) (Minutemen-Faessla).cbz (36pp)
+            [93891] Amazing Spider-Man Annual 042 (2018) (Digital) (Zone-Empire).cbr (41pp) | [93848] Amazing Spider-man 010 (Alternate Ditko Cover Only) (Nodge).cbr (1pp)
+            [93907] COL Dan Slott Spider-Man Vol. 01 - Brand New Day Vol. 01 - Brand New Day (2008) (Digital) (F2) (Kileko-Empire).cbz (196pp)
+            [93908] COL Dan Slott Spider-Man Vol. 02 - Brand New Day Vol. 02 (2009) (Digital) (F2) (Kileko-Empire).cbz (167pp)
+            [93909] COL Dan Slott Spider-Man Vol. 03 - Brand New Day Vol. 03 (2009) (Digital-SD) (Kileko-Empire).cbr (127pp)
+            [93910] COL Dan Slott Spider-Man Vol. 04 - Kraven's First Hunt (2009) (Digital) (Zone-Empire).cbr (102pp)
+            [93911] COL Dan Slott Spider-Man Vol. 05 - New Ways To Die (2009) (Digital) (F) (Kileko-Empire).cbz (175pp)
+            [93912] COL Dan Slott Spider-Man Vol. 07 - Death and Dating (2009) (Digital) (Kileko-Empire).cbr (171pp)
+            [93913] COL Dan Slott Spider-Man Vol. 09 - 24-7 (2010) (Digital) (Kileko-Empire).cbr (153pp)
+            [93914] COL Dan Slott Spider-Man Vol. 11 - Died In Your Arms Tonight (2012) (Digital) (Zone-Empire).cbr (174pp)
+            [93916] COL Dan Slott Spider-Man Vol. 14 - The Gauntlet Vol. 01 - Electro and Sandman (2010) (Digital) (Kileko-Empire).cbr (177pp)
+            [93917] COL Dan Slott Spider-Man Vol. 15 - The Gauntlet Vol. 02 - Rhino and Mysterio (2010) (Digital) (Kileko-Empire).cbr (136pp)
+            [93921] COL Dan Slott Spider-Man Vol. 22 - Big Time (2011) (Digital) (Zone-Empire).cbr (147pp)
+            [93923] COL Dan Slott Spider-Man Vol. 24 - The Fantastic Spider-Man (2012) (Digital) (Kileko-Empire).cbr (165pp)
+            [93924] COL Dan Slott Spider-Man Vol. 25 - The Return of Anti-Venom (2012) (Digital) (Kileko-Empire).cbr (102pp)
+            [93925] COL Dan Slott Spider-Man Vol. 26 - Spider-Island (2011) (Digital) (TheHand-Empire).cbr (390pp)
+            [93926] COL Dan Slott Spider-Man Vol. 27 - Flying Blind (2012) (Digital) (Kileko-Empire).cbr (122pp)
+            [93928] COL Dan Slott Spider-Man Vol. 28 - Trouble On The Horizon (2012) (Digital) (Kileko-Empire).cbr (113pp)
+            [93929] COL Dan Slott Spider-Man Vol. 30 - Lizard - No Turning Back (2012) (Digital) (Kileko-Empire).cbr (117pp)
+            [93930] COL Dan Slott Spider-Man Vol. 31 - Danger Zone (2012) (Digital) (Kileko-Empire).cbr (202pp)
+            [93931] COL Dan Slott Spider-Man Vol. 32 - Dying Wish (2013) (Digital) (F) (Kileko-Empire).cbz (130pp)
+            [94003] COL Spider-Man - Death of the Stacys (2007) (Digital) (F) (Kileko-Empire).cbz (157pp)
+            Amazing Spider-Man 001 (1963) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 007 (1963) (Digital) (Shadowcat-Empire).cbz  (7 files, pp 25-27)
+            [94036] Amazing Spider-Man 008 (1964) (Digital) (TLK-EMPIRE-HD).cbr (27pp)
+            Amazing Spider-Man 009 (1964) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 050 (1967) (Digital) (Shadowcat-Empire).cbz  (42 files, pp 22-26)
+            Amazing Spider-Man 051 (1967) (Digital) (TLK-EMPIRE-HD).cbr … Amazing Spider-Man 070 (1969) (Digital) (TLK-EMPIRE-HD).cbr  (20 files, pp 22-22)
+            [94099] Amazing Spider-Man 071 (1969) (Digital) (Waverider-Empire).cbz (21pp)
+            Amazing Spider-Man 072 (1969) (Digital) (AnHeroGold-Empire).cbr … Amazing Spider-Man 077 (1969) (Digital) (AnHeroGold-Empire).cbr  (6 files, pp 21-21)
+            [94106] Amazing Spider-Man 078 (1969) (Digital) (Zone-Empire).cbr (22pp) | [94107] Amazing Spider-Man 079 (1969) (Digital) (Zone-Empire).cbr (22pp)
+            [94108] Amazing Spider-Man 080 (1970) (Digital) (Zone-Empire).cbr (22pp) | [94109] Amazing Spider-Man 081 (1970) (Digital) (Zone-Empire).cbr (22pp)
+            Amazing Spider-Man 082 (1970) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 097 (1971) (Digital) (AnHeroGold-Empire).cbz  (16 files, pp 20-21)
+            Amazing Spider-Man 098 (1971) (Digital) (Zone-Empire).cbr … Amazing Spider-Man 109 (1972) (Digital) (Zone-Empire).cbr  (12 files, pp 21-37)
+            Amazing Spider-Man 110 (1972) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 120 (1973) (Digital) (AnHeroGold-Empire).cbz  (11 files, pp 21-21)
+            [94149] Amazing Spider-Man 121 (1973) (Digital) (Zone-Empire).cbr (22pp) | [94150] Amazing Spider-Man 122 (1973) (Digital) (Zone-Empire).cbr (22pp)
+            Amazing Spider-Man 123 (1973) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 131 (1974) (Digital) (AnHeroGold-Empire).cbz  (9 files, pp 20-20)
+            Amazing Spider-Man 132 (1974) (Digital) (Zone-Empire).cbr … Amazing Spider-Man 155 (1976) (Digital) (Zone-Empire).cbr  (24 files, pp 19-21)
+            [94184] Amazing Spider-Man 156 (1976) (Digital) (AnHeroGold-Empire).cbz (19pp) | [94185] Amazing Spider-Man 157 (1976) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94186] Amazing Spider-Man 158 (1976) (Digital) (AnHeroGold-Empire).cbz (18pp) | [94187] Amazing Spider-Man 159 (1976) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94188] Amazing Spider-Man 160 (1976) (Digital) (AnHeroGold-Empire).cbz (18pp) | [94189] Amazing Spider-Man 161 (1976) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [94190] Amazing Spider-Man 162 (1976) (Digital) (TLK-EMPIRE-HD).cbr (20pp)
+            Amazing Spider-Man 163 (1977) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 171 (1977) (Digital) (AnHeroGold-Empire).cbz  (9 files, pp 18-19)
+            Amazing Spider-Man 172 (1977) (Digital) (Zone-Empire).cbr … Amazing Spider-Man 180 (1978) (Digital) (Zone-Empire).cbr  (9 files, pp 19-20)
+            Amazing Spider-Man 181 (1978) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 188 (1978) (Digital) (AnHeroGold-Empire).cbz  (8 files, pp 18-19)
+            [94217] Amazing Spider-Man 189 (1979) (Digital) (TLK-EMPIRE-HD).cbr (20pp) | [94218] Amazing Spider-Man 190 (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [94219] Amazing Spider-Man 191 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp) | [94220] Amazing Spider-Man 192 (1979) (Digital) (AnHeroGold-Empire).cbz (19pp)
+            [94221] Amazing Spider-Man 193 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp) | [94222] Amazing Spider-Man 194 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94223] Amazing Spider-Man 195 (1979) (Digital) (AnHeroGold-Empire).cbz (19pp) | [94224] Amazing Spider-Man 196 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94225] Amazing Spider-Man 197 (1979) (Digital) (AnHeroGold-Empire).cbz (19pp) | [94226] Amazing Spider-Man 198 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94227] Amazing Spider-Man 199 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp) | [94228] Amazing Spider-Man 200 (1980) (Digital) (AnHeroGold-Empire).cbz (37pp)
+            [94229] Amazing Spider-Man 201 (1980) (Digital) (AnHeroGold-Empire).cbz (17pp) | [94230] Amazing Spider-Man 202 (1980) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94231] Amazing Spider-Man 203 (1980) (Digital) (AnHeroGold-Empire).cbz (19pp) | [94232] Amazing Spider-Man 204 (1980) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94233] Amazing Spider-Man 205 (1980) (Digital) (AnHeroGold-Empire).cbz (19pp) | [94234] Amazing Spider-Man 206 (1980) (Digital) (AnHeroGold-Empire).cbz (19pp)
+            Amazing Spider-Man 207 (1980) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 223 (1981) (Digital) (Shadowcat-Empire).cbz  (17 files, pp 18-24)
+            [94252] Amazing Spider-Man 224 (1982) (Digital) (AnHeroGold-Empire).cbz (23pp) | [94253] Amazing Spider-Man 225 (1982) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            [94254] Amazing Spider-Man 226 (1982) (Digital) (AnHeroGold-Empire).cbz (23pp) | [94255] Amazing Spider-Man 227 (1982) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [94256] Amazing Spider-Man 228 (1982) (Digital) (AnHeroGold-Empire).cbz (23pp) | [94257] Amazing Spider-Man 229 (1982) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94258] Amazing Spider-Man 230 (1982) (Digital) (Shadowcat-Empire).cbz (24pp)
+            Amazing Spider-Man 231 (1982) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 252 (1984) (Digital) (AnHeroGold-Empire).cbz  (22 files, pp 22-24)
+            Amazing Spider-Man 253 (1984) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 283 (1986) (Digital) (Shadowcat-Empire).cbz  (31 files, pp 23-39)
+            [94312] Amazing Spider-Man 284 (1987) (Digital-Empire).cbr (23pp)
+            Amazing Spider-Man 285 (1987) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 329 (1990) (Digital) (Shadowcat-Empire).cbz  (45 files, pp 23-42)
+            [94358] Amazing Spider-Man 330 (1990) (Digital) (AnHeroGold-Empire).cbz (23pp) | [94359] Amazing Spider-Man 331 (1990) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [94360] Amazing Spider-Man 332 (1990) (Digital) (AnHeroGold-Empire).cbz (24pp) | [94361] Amazing Spider-Man 333 (1990) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            Amazing Spider-Man 334 (1990) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 349 (1991) (Digital) (Shadowcat-Empire).cbz  (16 files, pp 23-25)
+            [94378] Amazing Spider-Man 350 (1991) (digital-Empire).cbr (39pp) | [94379] Amazing Spider-Man 351 (1991) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94380] Amazing Spider-Man 352 (1991) (Digital) (Shadowcat-Empire).cbz (24pp) | [94381] Amazing Spider-Man 353 (1991) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94382] Amazing Spider-Man 354 (1991) (Digital) (Shadowcat-Empire).cbz (25pp) | [94383] Amazing Spider-Man 355 (1991) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94384] Amazing Spider-Man 356 (1991) (Digital) (Shadowcat-Empire).cbz (24pp) | [94385] Amazing Spider-Man 357 (1992) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [94386] Amazing Spider-Man 358 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94387] Amazing Spider-Man 359 (1992) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94388] Amazing Spider-Man 360 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94389] Amazing Spider-Man 361 (1992) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94390] Amazing Spider-Man 362 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94391] Amazing Spider-Man 363 (1992) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94392] Amazing Spider-Man 364 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94393] Amazing Spider-Man 365 (1992) (Digital) (Shadowcat-Empire).cbz (69pp)
+            [94394] Amazing Spider-Man 366 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94395] Amazing Spider-Man 367 (1992) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94396] Amazing Spider-Man 368 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94397] Amazing Spider-Man 369 (1992) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94398] Amazing Spider-Man 370 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94399] Amazing Spider-Man 371 (1992) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94400] Amazing Spider-Man 372 (1993) (Digital) (Shadowcat-Empire).cbz (25pp) | [94401] Amazing Spider-Man 373 (1993) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94402] Amazing Spider-Man 374 (1993) (Digital) (Shadowcat-Empire).cbz (24pp) | [94403] Amazing Spider-Man 375 (1993) (digital) (Marika-Empire).cbz (54pp)
+            [94404] Amazing Spider-Man 376 (1993) (Digital) (Shadowcat-Empire).cbz (24pp) | [94405] Amazing Spider-Man 377 (1993) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94406] Amazing Spider-Man 378 (1993) (Digital) (Shadowcat-Empire).cbz (25pp) | [94407] Amazing Spider-Man 379 (1993) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94408] Amazing Spider-Man 380 (1993) (Digital) (Shadowcat-Empire).cbz (24pp) | [94409] Amazing Spider-Man 381 (1993) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94410] Amazing Spider-Man 382 (1993) (Digital) (Shadowcat-Empire).cbz (24pp) | [94411] Amazing Spider-Man 383 (1993) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94412] Amazing Spider-Man 384 (1993) (Digital) (Shadowcat-Empire).cbz (24pp) | [94413] Amazing Spider-Man 385 (1994) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94414] Amazing Spider-Man 386 (1994) (Digital) (Shadowcat-Empire).cbz (24pp) | [94415] Amazing Spider-Man 387 (1994) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94416] Amazing Spider-Man 388 (1994) (Digital) (Shadowcat-Empire).cbz (56pp) | [94417] Amazing Spider-Man 389 (1994) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94418] Amazing Spider-Man 390 (1994) (Digital) (Shadowcat-Empire).cbz (24pp) | [94419] Amazing Spider-Man 391 (1994) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94420] Amazing Spider-Man 392 (1994) (Digital) (Shadowcat-Empire).cbz (25pp) | [94421] Amazing Spider-Man 393 (1994) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94422] Amazing Spider-Man 394 (1994) (digital) (Marika-Empire).cbz (36pp) | [94423] Amazing Spider-Man 395 (1994) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94424] Amazing Spider-Man 396 (1994) (Digital) (Shadowcat-Empire).cbz (25pp) | [94425] Amazing Spider-Man 397 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94426] Amazing Spider-Man 398 (1995) (Digital) (Shadowcat-Empire).cbz (25pp) | [94427] Amazing Spider-Man 399 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94428] Amazing Spider-Man 400 (1995) (Digital) (Shadowcat-Empire).cbz (53pp) | [94429] Amazing Spider-Man 401 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94430] Amazing Spider-Man 402 (1995) (Digital) (Shadowcat-Empire).cbz (23pp) | [94431] Amazing Spider-Man 403 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94432] Amazing Spider-Man 404 (1995) (Digital) (Shadowcat-Empire).cbz (24pp) | [94433] Amazing Spider-Man 405 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94434] Amazing Spider-Man 406 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            Amazing Spider-Man 407 (1996) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 414 (1996) (Digital) (AnHeroGold-Empire).cbz  (8 files, pp 22-24)
+            [94443] Amazing Spider-Man 415 (1996) (Digital) (Shadowcat-Empire).cbz (23pp) | [94444] Amazing Spider-Man 416 (1996) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [94445] Amazing Spider-Man 417 (1996) (Digital) (AnHeroGold-Empire).cbz (23pp) | [94446] Amazing Spider-Man 418 (1996) (Digital) (AnHeroGold-Empire).cbz (21pp)
+            Amazing Spider-Man 419 (1997) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 438 (1998) (Digital) (Shadowcat-Empire).cbz  (20 files, pp 22-41)
+            [94467] Amazing Spider-Man 439 (1998) (Digital) (Shadowcat-Empire.cbz (24pp) | [94468] Amazing Spider-Man 440 (1998) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94469] Amazing Spider-Man 441 (1998) (Digital) (Shadowcat-Empire).cbz (24pp)
+            Amazing Spider-Man 500 (2003) (digital) (Minutemen-Faessla).cbz … Amazing Spider-Man 518 (2005) (digital) (Minutemen-Faessla).cbz  (19 files, pp 21-38)
+            Amazing Spider-Man 519 (2005) (digital) (Minutemen-Endriago).cbz … Amazing Spider-Man 524 (2005) (digital) (Minutemen-Endriago).cbz  (6 files, pp 21-24)
+            Amazing Spider-Man 525 (2005) (Digital-HD) (Kleio-Empire).cbz … Amazing Spider-Man 545 (2006) (Digital-HD) (Kleio-Empire).cbz  (20 files, pp 21-40)
+            Amazing Spider-Man 546 (2008) (Digital-HD) (Monafekk-Empire).cbr … Amazing Spider-Man 589 (2009) (Digital-HD) (Monafekk-Empire).cbr  (44 files, pp 24-42)
+            [94602] Amazing Spider-Man 590 (2009) (Digital) (F) (Monafekk-Empire).cbr (25pp) | [94603] Amazing Spider-Man 591 (2009) (Digital) (F) (Monafekk-Empire).cbr (27pp)
+            Amazing Spider-Man 592 (2009) (Digital-HD) (Monafekk-Empire).cbr … Amazing Spider-Man 599 (2009) (Digital-HD) (Monafekk-Empire).cbr  (8 files, pp 24-28)
+            [94612] Amazing Spider-Man 600 (2009) (Digital) (G85-Empire).cbr (104pp) | [94613] Amazing Spider-Man 601 (2009) (Digital) (G85-Empire).cbr (30pp)
+            [94614] Amazing Spider-Man 602 (2009) (Digital) (G85-Empire).cbr (26pp) | [94615] Amazing Spider-Man 603 (2009) (Digital) (G85-Empire).cbr (26pp)
+            [94616] Amazing Spider-Man 604 (2009) (Digital) (G85-Empire).cbr (27pp) | [94617] Amazing Spider-Man 605 (2009) (Digital) (G85-Empire).cbr (51pp)
+            [94618] Amazing Spider-Man 606 (2009) (Digital) (G85-Empire).cbr (25pp) | [94619] Amazing Spider-Man 607 (2009) (Digital) (G85-Empire).cbr (26pp)
+            [94620] Amazing Spider-Man 608 (2009) (Digital) (G85-Empire).cbr (26pp) | [94621] Amazing Spider-Man 609 (2009) (Digital) (G85-Empire).cbr (26pp)
+            [94622] Amazing Spider-Man 610 (2010) (Digital) (G85-Empire).cbr (26pp) | [94623] Amazing Spider-Man 611 (2010) (Digital) (G85-Empire).cbr (24pp)
+            [94624] Amazing Spider-Man 612 (2010) (Digital) (G85-Empire).cbr (34pp) | [94625] Amazing Spider-Man 613 (2010) (Digital) (G85-Empire).cbr (26pp)
+            [94626] Amazing Spider-Man 614 (2010) (Digital) (G85-Empire).cbr (27pp) | [94627] Amazing Spider-Man 615 (2010) (Digital) (G85-Empire).cbr (26pp)
+            [94628] Amazing Spider-Man 616 (2010) (Digital) (G85-Empire).cbr (24pp) | [94629] Amazing Spider-Man 617 (2010) (Digital) (G85-Empire).cbr (37pp)
+            [94630] Amazing Spider-Man 618 (2010) (Digital) (G85-Empire).cbr (24pp) | [94631] Amazing Spider-Man 619 (2010) (Digital) (G85-Empire).cbr (26pp)
+            [94632] Amazing Spider-Man 620 (2010) (Digital) (G85-Empire).cbr (25pp) | [94633] Amazing Spider-Man 621 (2010) (Digital) (G85-Empire).cbr (26pp)
+            [94634] Amazing Spider-Man 622 (2010) (Digital) (G85-Empire).cbr (36pp) | [94635] Amazing Spider-Man 623 (2010) (Digital) (G85-Empire).cbr (26pp)
+            [94636] Amazing Spider-Man 624 (2010) (Digital) (G85-Empire).cbr (26pp) | [94637] Amazing Spider-Man 625 (2010) (Digital) (G85-Empire).cbr (27pp)
+            [94638] Amazing Spider-Man 626 (2010) (Digital) (G85-Empire).cbr (25pp) | [94639] Amazing Spider-Man 627 (2010) (Digital) (G85-Empire).cbr (25pp)
+            [94640] Amazing Spider-Man 628 (2010) (Digital) (G85-Empire).cbr (33pp) | [94641] Amazing Spider-Man 629 (2010) (Digital) (G85-Empire).cbr (29pp)
+            [94642] Amazing Spider-Man 630 (2010) (Digital) (G85-Empire).cbr (24pp) | [94643] Amazing Spider-Man 631 (2010) (Digital) (G85-Empire).cbr (24pp)
+            [94644] Amazing Spider-Man 632 (2010) (Digital) (G85-Empire).cbr (25pp) | [94645] Amazing Spider-Man 633 (2010) (Digital) (G85-Empire).cbr (27pp)
+            [94646] Amazing Spider-Man 634 (2010) (Digital) (G85-Empire).cbr (38pp) | [94647] Amazing Spider-Man 635 (2010) (Digital) (G85-Empire).cbr (37pp)
+            [94648] Amazing Spider-Man 636 (2010) (Digital) (G85-Empire).cbr (38pp) | [94649] Amazing Spider-Man 637 (2010) (Digital) (G85-Empire).cbr (49pp)
+            [94650] Amazing Spider-Man 638 (2010) (Digital) (G85-Empire).cbr (46pp) | [94651] Amazing Spider-Man 639 (2010) (Digital) (G85-Empire).cbr (35pp)
+            [94652] Amazing Spider-Man 640 (2010) (digital) (Minutemen-InnerDemons).cbr (29pp) | [94653] Amazing Spider-Man 641 (2010) (Digital) (G85-Empire).cbr (45pp)
+            [94654] Amazing Spider-Man 642 (2010) (Digital) (G85-Empire).cbr (27pp) | [94655] Amazing Spider-Man 643 (2010) (Digital) (G85-Empire).cbr (27pp)
+            [94656] Amazing Spider-Man 644 (2010) (Digital) (G85-Empire).cbr (27pp) | [94657] Amazing Spider-Man 645 (2010) (Digital) (G85-Empire).cbr (27pp)
+            [94658] Amazing Spider-Man 646 (2010) (Digital) (G85-Empire).cbr (25pp) | [94659] Amazing Spider-Man 647 (2010) (Digital) (G85-Empire).cbr (61pp)
+            [94660] Amazing Spider-Man 648 (2011) (Digital) (G85-Empire).cbr (50pp) | [94661] Amazing Spider-Man 649 (2011) (Digital) (G85-Empire).cbr (34pp)
+            [94662] Amazing Spider-Man 650 (2011) (Digital) (G85-Empire).cbr (34pp) | [94663] Amazing Spider-Man 651 (2011) (Digital) (G85-Empire).cbr (32pp)
+            [94664] Amazing Spider-Man 652 (2011) (Digital) (G85-Empire).cbr (33pp) | [94665] Amazing Spider-Man 653 (2011) (Digital) (G85-Empire).cbr (34pp)
+            [94666] Amazing Spider-Man 654 (2011) (Digital) (G85-Empire).cbr (34pp) | [94667] Amazing Spider-Man 654.1 (2011) (Digital) (G85-Empire).cbr (24pp)
+            Amazing Spider-Man 655 (2011) (Digital) (G85-Empire).cbr … Amazing Spider-Man 665 (2011) (Digital) (G85-Empire).cbr  (11 files, pp 29-38)
+            Amazing Spider-Man 666 (2011) (digital) (Minutemen-Faessla).cbz … Amazing Spider-Man 679 (2012) (digital) (Minutemen-Faessla).cbz  (14 files, pp 20-33)
+            [94693] Amazing Spider-Man 679.1 (2012) (digital) (Minutemen-Faessla).cbz (24pp)
+            Amazing Spider-Man 680 (2012) (digital) (Minutemen-Faessla).cbz … Amazing Spider-Man 687 (2012) (digital) (Minutemen-Faessla).cbz  (8 files, pp 20-24)
+            [94702] Amazing Spider-Man 688 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp) | [94703] Amazing Spider-Man 689 (2012) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            [94704] Amazing Spider-Man 690 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp) | [94705] Amazing Spider-Man 691 (2012) (digital) (Minutemen-InnerDemons).cbr (22pp)
+            [94706] Amazing Spider-Man 692 (2012) (digital) (Minutemen-InnerDemons).cbr (56pp) | [94707] Amazing Spider-Man 693 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp)
+            [94708] Amazing Spider-Man 694 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp) | [94709] Amazing Spider-Man 695 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp)
+            [94710] Amazing Spider-Man 696 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp) | [94711] Amazing Spider-Man 697 (2013) (digital) (Minutemen-InnerDemons).cbr (24pp)
+            [94712] Amazing Spider-Man 698 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp) | [94713] Amazing Spider-Man 699 (2013) (digital) (Minutemen-InnerDemons).cbr (22pp)
+            [94714] Amazing Spider-Man 699.1 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp) | [94715] Amazing Spider-Man 700 (2013) (digital) (Minutemen-InnerDemons).cbr (97pp)
+            [94716] Amazing Spider-Man 555 (Variant) (2008) (Digital) (MikeNY76-Empire).cbz (1pp) | [94717] Amazing Spider-Man 568 (Variant) (2008) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [94718] Amazing Spider-Man 600 (Ross Cover) (2009) (Digital) (MikeNY76-Empire).cbz (1pp) | [94719] Amazing Spider-Man 612 (Variant) (2009) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [94720] Amazing Spider-Man 613 (Variant) (2009) (Digital) (MikeNY76-Empire).cbz (1pp) | [94721] Amazing Spider-Man 638 (Variant) (2010) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [94722] Amazing Spider-Man 639 (Variant) (2010) (Digital) (MikeNY76-Empire).cbz (1pp) | [94723] Amazing Spider-Man 700.2 (Variant) (2013) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [94724] Amazing Spider-Man 700.3 (Variant) (2013) (Digital) (MikeNY76-Empire).cbz (1pp) | [95693] 03 Amazing Spider-Man 404 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [97980] Amazing Spider-Man 375 (1993) (Digital) (AnPymGold-Empire).cbz (29pp) | [86622] 007 Amazing Spider-Man 092 (1971) (Digital) (AnPymGold - Empire).cbz (20pp)
+            [86659] 014 Amazing Spider-Man 161 (1976) (Digital) (AnPymGold - Empire).cbz (18pp) | [86660] 015 Amazing Spider-Man 162 (1976) (Digital) (AnPymGold - Empire).cbz (19pp)
+            [86742] 017 Amazing Spider-Man 203 (1980) (Digital) (AnHeroGold-Empire).cbz (19pp) | [87120] 001 Amazing Spider-Man 282 (1986) (Digital) (AnPymGold - Empire).cbz (24pp)
+            [87238] 005 Amazing Spider-Man Annual 022 (1988) (Digital) (Shadowcat-Empire).cbz (52pp) | [87304] Amazing Spider-Man 311 (1989) (Digital) (AnPymGold - Empire).cbz (24pp)
+            [87305] Amazing Spider-Man 312 (1989) (Digital) (AnPymGold - Empire).cbz (23pp) | [87306] Amazing Spider-Man 313 (1989) (Digital) (AnPymGold - Empire).cbz (23pp)
+            [87349] 004 Amazing Spider-Man Annual 023 (1989) (Digital) (Shadowcat-Empire).cbz (57pp) | [87479] 014 Amazing Spider-Man 326 (1989) (Digital) (AnPymGold - Empire).cbz (24pp)
+            [87514] 049 Amazing Spider-Man 327 (1989) (Digital) (AnPymGold - Empire).cbz (23pp) | [87518] 053 Amazing Spider-Man 328 (1990) (Digital) (AnPymGold - Empire).cbz (24pp)
+            [87530] 065 Amazing Spider-Man 329 (1990) (Digital) (AnPymGold - Empire).cbz (24pp) | [88436] 026 Amazing Spider-Man 415 (1996) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [88550] 006 Amazing Spider-Man 420 (1997) (Digital) (AnPymGold-Empire).cbz (22pp) | [90463] 004 Amazing Spider-Man 529 (2006) (digital-hd) (Kleio-Empire).cbz (23pp)
+            [90464] 005 Amazing Spider-Man 530 (2006) (digital-hd) (Kleio-Empire).cbz (23pp) | [90465] 006 Amazing Spider-Man 531 (2006) (digital-hd) (Kleio-Empire).cbz (23pp)
+            [90471] 012 Amazing Spider-Man 532 (2006) (digital) (Minutemen-Faessla).cbz (23pp) | [90477] 018 Amazing Spider-Man 533 (2006) (digital) (Minutemen-Faessla).cbz (24pp)
+            [90514] 016 Amazing Spider-Man 534 (2006) (digital) (Minutemen-Faessla).cbz (23pp) | [90546] 001 Amazing Spider-Man 535 (2006) (digital) (Minutemen-Faessla).cbz (21pp)
+            [90565] 020 Amazing Spider-Man 536 (2006) (digital) (Minutemen-Faessla).cbz (24pp) | [90583] 038 Amazing Spider-Man 537 (2007) (digital) (Minutemen-Endriago).cbz (23pp)
+            [90591] 046 Amazing Spider-Man 538 (2007) (digital-hd) (Kleio-Empire).cbz (23pp) | [91734] 001 Amazing Spider-Man Annual 038 (2011) (Digital) (Zone-Empire).cbr (34pp)
+            [116295] Amazing Spider-Man 014 (1964) (Digital) (TLK-EMPIRE-HD).cbr (26pp) | [116296] Amazing Spider-Man 031 (1965) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [116297] Amazing Spider-Man 039 (1966) (Digital) (TLK-EMPIRE-HD).cbr (22pp) | [116298] Amazing Spider-Man 053 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [116299] Amazing Spider-Man 059 (1968) (Digital) (TLK-EMPIRE-HD).cbr (22pp) | [116306] COL Spider-Man - Death of the Stacys (2007) (Digital) (Kileko-Empire).cbr (145pp)
+            [116321] Amazing Spider-Man 139 (1974) (Digital) (F) (AnPymGold - Empire).cbz (18pp)
+            Amazing Spider-Man 140 (1975) (Digital) (AnPymGold - Empire).cbz … Amazing Spider-Man 151 (1975) (Digital) (AnPymGold - Empire).cbz  (12 files, pp 18-19)
+            [116334] Amazing Spider-Man 129 (1974) (Digital) (AnHeroGold-Empire).cbz (20pp) | [116335] Amazing Spider-Man 136 (1974) (Digital) (AnPymGold - Empire).cbz (18pp)
+            [116336] Amazing Spider-Man 137 (1974) (Digital) (AnPymGold - Empire).cbz (18pp) | [116394] Amazing Spider-Man 050 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [116395] Amazing Spider-Man 051 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp) | [116396] Amazing Spider-Man 052 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [116400] Amazing Spider-Man 015 (1964) (Digital) (TLK-EMPIRE-HD).cbr (26pp) | [116401] Amazing Spider-Man 018 (1964) (Digital) (TLK-EMPIRE-HD).cbr (26pp)
+            [116453] Amazing Spider-Man 299 (1988) (Digital) (AnPymGold - Empire).cbz (23pp) | [116454] Amazing Spider-Man 300 (1988) (Digital) (AnPymGold - Empire).cbz (41pp)
+            [116455] Amazing Spider-Man 361 (1992) (Digital) (AnPymGold-Empire).cbz (24pp) | [116456] Amazing Spider-Man 362 (1992) (Digital) (AnPymGold-Empire).cbz (23pp)
+            [116457] Amazing Spider-Man 363 (1992) (Digital) (AnPymGold-Empire).cbz (24pp) | [116708] 05 Amazing Spider-Man 538 (2007) (digital-hd) (Kleio-Empire).cbz (23pp)
+            [116916] Amazing Spider-Man 025 (1965) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [116917] Amazing Spider-Man 042 (1966) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [116918] Amazing Spider-Man 043 (1966) (Digital) (TLK-EMPIRE-HD).cbr (22pp) | [116919] Amazing Spider-Man 257 (1984) (Digital) (AnPymGold - Empire).cbz (23pp)
+            [116920] Amazing Spider-Man 258 (1984) (Digital) (AnPymGold - Empire).cbz (24pp) | [116921] Amazing Spider-Man 259 (1984) (Digital) (AnPymGold - Empire).cbz (23pp)
+            Amazing Spider-Man 547 (2008) (Digital-HD) (Monafekk-Empire).cbr … Amazing Spider-Man 599 (2009) (Digital-HD) (Monafekk-Empire).cbr  (20 files, pp 24-28)
+            [117718] 01 The Amazing Spider-Man 698 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp) | [117719] 02 The Amazing Spider-Man 699 (2013) (digital) (Minutemen-InnerDemons).cbr (22pp)
+            [117720] 03 The Amazing Spider-Man 699.1 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp) | [117721] 04 The Amazing Spider-Man 700 (2013) (digital) (Minutemen-InnerDemons).cbr (97pp)
+   ours:    ladder 1-441, 500-700; 132 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12; ComicInfo Series: "Spider-Man"x6, "Amazing Spider-Man"x4, "Amazing Spider-Man Annual"x1, "The Amazing Spider-Man"x1; ComicInfo Volume: "1963"x7; ComicInfo Count: "681"x2; ComicInfo Publisher: "Marvel"x12, "Marvel Comics"x1; ComicInfo Web: "64599"x1, "64433"x1
+   GCD says: [93755] gcd_reprint 1128064: s11288 The Amazing Spider-Man (1999) #638-641 [4 stories] · s67151 Spider-Man: One Moment in Time (2010) (unnumbered) [1 story]
+             [93907] gcd_reprint 858684: s11288 The Amazing Spider-Man (1999) #546-551 [21 stories] · s24030 Free Comic Book Day 2007 (Spider-Man) (2007) #1 [3 stories] · s5303 Venom Super Special (1995) #1 [2 stories] · s33240 Spider-Man: Swing Shift Director's Cut (2008) #1 [1 story]
+             [93908] gcd_reprint 858685: s11288 The Amazing Spider-Man (1999) #552-558 [15 stories]
+             [93909] gcd_reprint 1070757: s11288 The Amazing Spider-Man (1999) #559-563 [12 stories]
+             [93910] gcd_reprint 2267354: s11288 The Amazing Spider-Man (1999) #564-567 [10 stories] · s37037 Spider-Man: Brand New Day - Extra (2008) #1 [2 stories]
+             [93911] gcd notes 2384608 (#[nn] of Spider-Man: New Ways to Die): The Amazing Spider-Man (Marvel, 1999 series) #568-573  |  gcd_reprint 2384608: s11288 The Amazing Spider-Man (1999) #568-573 [25 stories] · s69156 Marvel Spotlight: Spider-Man - Brand New Day (2008) (unnumbered) [3 stories]
+             [93912] gcd_reprint 2729480: s11288 The Amazing Spider-Man (1999) #578-583 [16 stories] · s36686 Amazing Spider-Man Annual (2008) (unnumbered) [3 stories] · s59906 Spider-Man: Death and Dating (2009) (unnumbered) [1 story]
+             [93913] gcd_reprint 2656521: s11288 The Amazing Spider-Man (1999) #589-594 [12 stories] · s40934 Amazing Spider-Man: Extra! (2008) #2-3 [2 stories]
+             [93914] gcd_reprint 2127405: s11288 The Amazing Spider-Man (1999) #600-601 [3 stories] · s31600 Amazing Spider-Man Family (2008) #7 [2 stories] · s36686 Amazing Spider-Man Annual (2008) #36 [1 story]
+             [93916] gcd_reprint 2775144: s11288 The Amazing Spider-Man (1999) #612-616 [17 stories] · s42178 Dark Reign: The List - Amazing Spider-Man (2010) #1 [5 stories] · s40659 Web of Spider-Man (2009) #2 [2 stories] · s228574 Spider-Man: The Gauntlet (2010) #1 [1 story]  |  ⚠ stored GCD row is another book: our title 'Dan Slott Spider-Man' has dan/slott, GCD's series 'Spider-Man: The Gauntlet' does not; our vol 14 vs GCD #1 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [93917] gcd_reprint 2775610: s11288 The Amazing Spider-Man (1999) #619 [1 story]  |  ⚠ stored GCD row is another book: our title 'Dan Slott Spider-Man' has dan/slott, GCD's series 'Spider-Man: The Gauntlet' does not; our vol 15 vs GCD #2 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [93921] gcd notes 1108253 (#[nn] of Spider-Man: Big Time): *Amazing Spider-Man* #648-651  |  gcd_reprint 1108253: s11288 The Amazing Spider-Man (1999) #648-651 [6 stories]
+             [93923] gcd_reprint 2724338: s11288 The Amazing Spider-Man (1999) #658-662 [6 stories]
+             [93924] gcd_reprint 2722680: s11288 The Amazing Spider-Man (1999) #663-665 [4 stories] · s58366 Free Comic Book Day 2011 (Spider-Man) (2011) #1 [1 story]
+             [93925] gcd_reprint 2281283: s11288 The Amazing Spider-Man (1999) #666-673 [10 stories] · s56418 Venom (2011) #6-9 [8 stories] · s69142 Spider-Island Spotlight (2011) (unnumbered) [6 stories] · s60768 Amazing Spider-Man: Infested (2011) #1 [1 story]
+             [93926] gcd notes 2350381 (#[nn] of Spider-Man: Flying Blind): The Amazing Spider-Man (Marvel, 1999 series) #674-677; Daredevil (Marvel, 2011 series) #8  |  gcd_reprint 2350381: s11288 The Amazing Spider-Man (1999) #674-677 [5 stories] · s60120 Daredevil (2011) #8 [1 story]
+             [93928] gcd notes 2355985 (#[nn] of Spider-Man: Trouble on the Horizon): The Amazing Spider-Man (Marvel, 1999 series) #678-681  |  gcd_reprint 2355985: s11288 The Amazing Spider-Man (1999) #678-679, #679.1, #680-681 [5 stories] · s181587 Spider-Man: Trouble on the Horizon (2012) (unnumbered) [1 story]
+             [93929] gcd notes 2360649 (#[nn] of Spider-Man: Lizard - No Turning Back): The Amazing Spider-Man (Marvel, 1999 series) #688-691; Untold Tales of Spider-Man (Marvel, 1995 series) #9  |  gcd_reprint 2360649: s11288 The Amazing Spider-Man (1999) #688-691 [5 stories] · s5302 Untold Tales of Spider-Man (1995) #9 [1 story]
+             [93930] gcd_reprint 2016543: s11288 The Amazing Spider-Man (1999) #692-697 [21 stories] · s61993 Avenging Spider-Man (2012) #11 [2 stories]
+             [93931] gcd notes 2379381 (#[nn] of Spider-Man: Dying Wish): The Amazing Spider-Man (Marvel, 1999 series) #698-700  |  gcd_reprint 2379381: s11288 The Amazing Spider-Man (1999) #698-700 [19 stories]
+             … 2 more book(s) with GCD notes (`python gcdnotes.py --issue <id>`)
+   CV linked:      vol 2127 "The Amazing Spider-Man" 1963 Marvel 651 issues; cached #1-700.5 (651); yearΔ 0; ratio 792/651 = 1.22; no judged range
+   CV per-file (v1): vol 2127 "The Amazing Spider-Man" 1963 Marvel 651 on 752/814 files · vol 73420 "The Amazing Spider-Man" 2014 Marvel 28 on 1/814 files
+   CV candidates:  33398 "Spider-Man: Death of the Stacys" 2007 Marvel 1 issue 216545 s105 · 43375 "Ultimate Comics Spider-Man: Death of Spider-Man" 2011 Marvel 1 issue 297574 s63 · 134429 "Fantastic Four by Dan Slott" 2021 Marvel ? s52 · 31700 "Spider-Man: Death and Dating" 2009 Marvel 1 issue 198661 s52 · 31431 "Spider-Man: Death and Destiny" 2000 Marvel 3 s40 · 147012 "Marvel-Verse: Spider-Man" 2021 Marvel ? s35   (v1 search)
+   CV local rip:   (= linked) · 34326 "The Amazing Spider-Man" 1979 Marvel 1 issue 224088 · 56505 "The Amazing Spider-Man" 1979 Simon and Schuster 1 issue 383545 · 151406 "The Amazing Spider-Man" 1980 Pocket Books 1 issue 995531 · 22719 "The Amazing Spider-Man" 1982 Marvel 1 issue 136279 · 78701 "The Amazing Spider-Man" 1999 Marvel 58   (rip lookup)
+   GCD per-file:   methods fulldump-rematchx615 · round2-seriesx89 ⚠ · numx6  (⚠ copies a folder neighbour's series — verify); series 1570 "The Amazing Spider-Man" 1963-1998 Marvel [was ongoing series] 443 on 379/814 files · series 11288 "The Amazing Spider-Man" 1999-2014 Marvel [was ongoing series] 267 on 241/814 files · series 172683 "Amazing Spider-Man" [en-gb] 2021-? Panini UK [ongoing] 68 on 89/814 files · series 80405 "The Amazing Spider-Man" 2014-2015 Marvel [was ongoing] 28 on 1/814 files
+   GCD dump:       (= per-file) · 24842 "The Amazing Spider-Man" 1969-1969 Marvel [] 1 · 149585 "The Amazing Spider-Man" [en-ph] 1974-1974 Goodwill Bookstore [] 2 · 18606 "The Amazing Spider-Man" [en-au] 1975-1976 Newton Comics [] 17 · 72382 "The Amazing Spider-Man" [en-au] 1975-1975 Newton Comics [] 1 · 182246 "The Amazing Spider-Man" [en-za] 1976-1976 Republican Press [] 3   (dump lookup)
+   bridges:        gcd 1570 -> LOCG 100043 "The Amazing Spider-Man" support 2 · gcd 11288 -> LOCG 126492 "The Amazing Spider-Man" support 3 · gcd 172683 -> LOCG 100043 "The Amazing Spider-Man" support 320
