@@ -1,0 +1,499 @@
+## Conventions for this batch (24 shown of 133 matched; 389 in LEDGER.md; 14 shelf/shelves: pub:marvel ×14 · folder:vn-year ×12 · folder:sequel-subfolder ×8 · folder:variant-covers ×7 · folder:events ×7 · kind:collected-line ×5 · kind:foreign ×4 · kind:trade-only ×4)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (14 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (14 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (14 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-388] (14 shelf/shelves) pub:marvel sig:split
+- R-134 (wave 128, lead ruling): RESIDUE vs co-equal — two or more whole trades of another run are a co-equal run (R +
+  split-needed) only when that run has NO shelf of its own; when its run or line already has a shelf, they are misfiled
+  books: S + `F split-needed | items -> join S<home>` (L-368; X-Factor 2024 S66336's two Peter David omnibuses -> S22172).
+  `#MARVEL CURRENT ONGOING TITLES`: Marika / MikeNY76 ComicInfo Web ids and "cvv<id>" Series strings name the stored CV
+  volume (1.0 evidence). From the Ashes "Variant Covers" folders hold the PREVIOUS run's finale covers (X-Men v6 #35 in
+  the v7 folder). "_X-Men Complete Chronology V2\NNNN <event>" annuals are event-chapter excerpts = partial rips. A
+  ripper's "Omnibus Book 01" in a run's folder can be that run's first omnibus, not the line's Vol. 1 (page count decides).
+  CV mints one count-1 volume per Venom by Ewing trade; GCD keeps two lines (183532 Vols 1-4, 208820 Vols 5-8).
+[L-127] (13 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-136] (13 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-060] (12 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (12 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-389] (11 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-053 / R-135 (waves 129-130): a run's issues never JOIN a creator-trade-keyed shelf ("Venom by Al Ewing & Ram V",
+  S21029, four trades) — keep them and meet through the SHARED cv at the next revisit (S20988 cv=140084 + merge-with=21029).
+  Marvel's 2019-2020 "Star Wars #1 facsimile" is "Star Wars No 1 Facsimile Edition" (CV 123267 / GCD 153348): probe the
+  "No N" form. Star Wars Insider and Titan's "Best of" books have no CV / GCD record: R + provider-missing, never the 1977
+  comic's stamp. The Dark Horse Star Wars Omnibus umbrella number (Vol. 32 / 35) raises a false "stored GCD row is another
+  book" warning against the sub-line's #1 / #2 — page counts and ISBNs decide. An Epic Collection / omnibus line spanning
+  several minis keeps its own GCD-line key in a split.
+[L-319] (10 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-357] (9 shelf/shelves) pub:image pub:marvel sig:probe
+- Marvel (R-086): CV mints one volume per creator "Book" line (Ms. Marvel Book 1-5 = CV 83966 / GCD 91839); "Trial of
+  Venom" = Spider-Man Special Edition #1; Deadpool #900 is Deadpool Team-Up #900 on GCD (40644) though CV puts it in
+  Deadpool 2008; Osborn Journal is filed under a bracketed alternate title. Image / Millarworld: CV 65439 "American
+  Jesus" and 85113 "Jupiter's Circle" are the trade LINES (issues named "Book One/Two"), not the minis — their conflated
+  flags are stale (L-318); Dark Horse's 2024 Millarworld reissues are a NEW GCD line beside the Image originals (Magic
+  Order 213614) — match by the file's year. A packet's "years a-b" can come from per-file stamps (read filenames). In a
+  `lookup.py --batch` file a multi-word name must be QUOTED or only its first word is probed.
+[L-124] (12 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-191] (12 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-272] (12 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-281] (12 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-298] (8 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (8 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-371] (8 shelf/shelves) pub:marvel sig:split
+- A split F line's "new key" can already be a LIVE shelf's key (a trade-only shelf of the same run, e.g. Superboy v6
+  (2011) = S100132's key) — check `nearby:` / `lookup.py --shelf` and write it as an explicit join. Stored GCD rows on
+  Marvel 2022+ trades can be the PANINI FRANCE edition — `--collects` on the English row confirms the right one.
+  Digital rips of Marvel trades run ~88-92% of GCD's printed page count — a usable per-book fit when the filename year is
+  the digital release date (R-111).
+[L-028] (7 shelf/shelves) folder:variant-covers pub:marvel
+- Marvel `\Variant Covers` 1pp packs (always of #1) are the whole of every ratio 1.2–2.0 on modern Marvel shelves.
+[L-034] (7 shelf/shelves) folder:events pub:marvel sig:round2
+- `_X-Men Complete Chronology` / `_Marvel Major Event Chronology` folders re-file the same books a second and
+  third time — every ratio 2.00 there, never a second run. Crossover blocks get handed one member's series by
+  `round2-folder` (four Age of Apocalypse shelves → "X-Man", a 76-issue hull).
+[L-036] (7 shelf/shelves) folder:skottie folder:variant-covers pub:marvel
+- A shelf that is ONLY 1pp variant covers (Skottie Young) still identifies its comic → run ids + `F partial-rip`.
+[L-133] (7 shelf/shelves) pub:marvel sig:probe
+- GCD splits a compound word ComicVine joins: "X-Men: Clan Destine" (5570) is invisible to a "ClanDestine" probe,
+  and 32535 "ClanDestine vs. The X-Men" is the collected edition, not the mini.
+[L-169] (7 shelf/shelves) folder:events pub:marvel sig:trade-link
+- `_Marvel Major Event Chronology (digital)` is one folder per tie-in holding that tie-in's collected edition: the
+  count-1-trade-as-stored-link artefact runs at 86 of 202 shelves there, the highest rate in any single folder.
+[L-173] (7 shelf/shelves) folder:skottie folder:variant-covers pub:marvel sig:collision
+- `Marvel\__Skottie Young Covers` holds a 1pp variant shelf for nearly every 2015 Secret Wars mini, each already linked
+  to that mini's volume — the commonest stored-link collision on Secret Wars shelves (merge-with when it is the mini).
+
++109 more matched entries not shown: L-130, L-306, L-324, L-290, L-291, L-031, L-076, L-109, L-115, L-117, L-132, L-174, L-196, L-242, L-295, L-296, L-307, L-308, L-327, L-328, L-329, L-332, L-387, L-030, L-113, L-151, L-160, L-175, L-016, L-032, L-114, L-027, L-029, L-193, L-265, L-379, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-064, L-085, L-101, L-310, L-345, L-014, L-097, L-252, L-274, L-288, L-293, L-352, L-354, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-343, L-065, L-099, L-123, L-128, L-181, L-194, L-262, L-330, L-336, L-119, L-170, L-172, L-297, L-315, L-331, L-150 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S66353 X-Men  [tier C] · 4 number(s) x2+, 5 parsed key(s), ratio 2.03  keys: X-Men (2021) | X-Men (2021-) | X-Men (2024) | X-Men by Gerry Duggan | X-Men v6 (2021)  years 1997-2026  77 files / 6 collections
+   split run: "X-Men (2021)" run=- (new shelf from P-053) — seed the S line from these ids, then verify them
+   split: the KEPT half of the P-053 split — moved out -> S102430 "X-Men v5 (2019)"; re-identify what stayed
+   folders: [35] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2021.07.07 - X-Men v6 · [21] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2021.07.07 - X-Men v6\Variant Covers · [11] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men - From the Ashes (2024)\002 X-Men v7 (2024)\Variant Covers · [6] Marvel\_X-Men\X-Men\08 X-Men v6 (2021) (Krakoa) · [2] _Marvel Major Event Chronology (digital)\2022.07 - A.X.E. - Judgement Day\02 Tie-ins · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2019.10.16 - X-Men v5 · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2021.07.07 - X-Men v6\Annuals and Specials
+   files:   [49195] X-Men 002 (2021) (digital) (Glorith-HD).cbz (27pp) | [49613] X-Men Annual 001 (2023B) (Digital) (Zone-Empire).cbr (28pp)
+            [49614] X-Men 001 (2021) (MegaCon Clayton Crain Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49615] X-Men 001 (2021) (Mike Mayhew Studio Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49616] X-Men 002 (2021) (JeeHyung Lee Webstore Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49617] X-Men 013 (2022) (Arthur Adams Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49618] X-Men 016 (2022) (NetEase Games Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49619] X-Men 022 (2023) Ario Anindito Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49620] X-Men 026 (2023) (Ariel Diaz Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49621] X-Men 027 (2023) George Perez Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49622] X-Men 029 (2023) (Jacob Edgar X-Men 60th Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49623] X-Men 034 (2024) Greg And Tim Hildebrandt Shadowcat Marvel Masterpieces III Variant (Digital) (MikeNY76).cbz (1pp)
+            [49624] X-Men 034 (2024) Phil Noto Black Costume Variant (Digital) (MikeNY76).cbz (1pp) | [49625] X-Men 034 (2024) Russell Dauterman Trading Card Variant (Digital) (MikeNY76).cbz (1pp)
+            [49626] X-Men 035 (2024) (Ben Harvey Variant) (Digital) (MikeNY76).cbz (1pp) | [49627] X-Men 035 (2024) (Betsy Cola Pride Allies Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49628] X-Men 035 (2024) (David Marquez Variant) (Digital) (MikeNY76).cbz (1pp) | [49629] X-Men 035 (2024) (David Marquez Virgin Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49630] X-Men 035 (2024) (Insignia Variant) (Digital) (MikeNY76).cbz (1pp) | [49631] X-Men 035 (2024) (Insignia Virgin Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49632] X-Men 035 (2024) (Russell Dauterman Trading Card Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49633] X-Men 035 (2024) (Scott Koblish Wraparound Connecting Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49634] X-Men 035 (2024) (Skottie Young's Big Marvel Variant) (Digital) (MikeNY76).cbz (1pp)
+            X-Men 001 (2021) (Digital) (Zone-Empire).cbr … X-Men 026 (2023) (Digital) (Zone-Empire).cbr  (26 files, pp 24-45) | [49662] X-Men 027 (2023) (Digital-HD) (Marika-Empire).cbz (25pp)
+            [49663] X-Men 028 (2024) (Digital-HD) (Marika-Empire).cbz (25pp) | [49664] X-Men 029 (2024) (digital) (Marika-Empire).cbz (26pp)
+            [49665] X-Men 030 (2024) (digital) (Marika-Empire).cbz (24pp) | [49666] X-Men 031 (2024) (digital) (Marika-Empire).cbz (24pp)
+            [49667] X-Men 032 (2024) (digital) (Marika-Empire).cbz (24pp) | [49668] X-Men 033 (2024) (digital) (Marika-Empire).cbz (23pp)
+            [49669] X-Men 034 (2024) (digital) (Marika-Empire).cbz (25pp) | [49670] X-Men 035 (2024) (digital) (Marika-Empire).cbz (89pp)
+            [50109] X-Men 035 (2024) (1-in-100 Insignia Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50110] X-Men 035 (2024) (1-in-200 David Marquez Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50111] X-Men 035 (2024) (1-in-25 Ben Harvey Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50112] X-Men 035 (2024) (1-in-50 Skottie Young's Big Marvels Black & White Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50113] X-Men 035 (2024) (Betsy Cola Pride Allies Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50114] X-Men 035 (2024) (David Marquez Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50115] X-Men 035 (2024) (Insignia Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50118] X-Men 035 (2024) (Skottie Young's Big Marvel Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50119] X-Men 035 (2024) (Skottie Young's Big Marvels Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50120] X-Men 035 (2024) (Unknown Comics Kaare Andrews Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50121] X-Men 035 (2024) (Unknown Comics Kaare Andrews Connecting Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [86036] COL X-Men by Gerry Duggan Vol. 01 (2022) (Digital) (Kileko-Empire).cbz (180pp) | [86037] COL X-Men by Gerry Duggan Vol. 02 (2022) (Digital) (Kileko-Empire).cbz (172pp)
+            [86038] COL X-Men by Gerry Duggan Vol. 03 (2023) (Digital) (EJGriffin-Empire).cbz (206pp) | [86039] COL X-Men by Gerry Duggan Vol. 04 (2023) (Digital) (EJGriffin-Empire).cbz (170pp)
+            [86040] COL X-Men by Gerry Duggan Vol. 05 (2024) (Digital) (F) (EJGriffin-Empire).cbz (164pp) | [86041] COL X-Men by Gerry Duggan Vol. 06 (2024) (Digital) (EJGriffin-Empire).cbz (136pp)
+            [118591] X-Men 013 (2022) (Digital) (Zone-Empire).cbr (26pp) | [118592] X-Men 014 (2022) (Digital) (Zone-Empire).cbr (26pp)
+   ours:    ladder 1-35; 11 number(s) name more than one file: 1, 2, 13, 14, 16, 22, 26, 27, 29, 34, 35; ComicInfo Series: "X-Men"x21, "X-Men (2021-)"x7, "X-Men by Gerry Duggan"x2, "X-Men Annual"x1; ComicInfo Volume: "2021"x12, "2023"x1; ComicInfo Publisher: "Marvel"x22, "Marvel Comics"x8; ComicInfo Web: "1020544"x1, "1027605"x1, "1033214"x1, "1040949"x1
+   GCD says: [86036] gcd_reprint 2365081: s173727 X-Men (2021) #1-6 [53 stories]
+             [86037] gcd_reprint 2434717: s173727 X-Men (2021) #7-12 [44 stories]
+             [86038] gcd_reprint 2497407: s173727 X-Men (2021) #13-18 [7 stories]
+             [86039] gcd_reprint 2570953: s173727 X-Men (2021) #19-24 [6 stories]
+             [86040] gcd_reprint 2613079: s173727 X-Men (2021) #25-29 [6 stories]
+             [86041] gcd_reprint 2654641: s173727 X-Men (2021) #30-34 [29 stories]
+   CV linked:      vol 137402 "X-Men" 2021 Marvel 35 issues; cached #1-35 (35); yearΔ 24; ratio 71/35 = 2.03; no judged range
+   CV per-file (v1): vol 43640 "X-Men" 1997 Panini France 169 on 42/77 files · vol 137402 "X-Men" 2021 Marvel 35 on 12/77 files · vol 158814 "X-Men" 2024 Marvel 22 on 9/77 files
+   CV candidates:  126382 "Marauders by Gerry Duggan" 2020 Marvel 4 s86 · 138729 "Marauders By Gerry Duggan" 2021 Marvel 2 s82 · 132133 "Cable by Gerry Duggan" 2020 Marvel 2 s79 · 121419 "Infinity Wars by Gerry Duggan: The Complete Collection" 2019 Marvel 1 issue 719456 s70 · 113878 "Guardians of the Galaxy by Gerry Duggan Omnibus" 2018 Marvel 1 issue 686381 s69 · 141818 "X-Men By Gerry Duggan" 2022 Marvel 6 s58   (v1 search)
+   CV local rip:   (= linked) · 43669 "X-Men" 1997 Panini Verlag 48 · 45796 "X-Men" 1996 Planeta DeAgostini 105 · 43672 "X-Men" 2001 Panini Verlag 150 · 43634 "X-Men" 2002 Panini Brasil 143 · 46130 "X-Men" 1992 Planeta DeAgostini 40   (rip lookup)
+   GCD per-file:   methods numx42 · round2-folderx7 ⚠  (⚠ copies a folder neighbour's series — verify); series 173727 "X-Men" 2021-2024 Marvel [was ongoing series] 35 on 49/77 files
+   GCD dump:       33290 "X-Men" [de] 1997-2000 Panini Deutschland [] 48 · 38909 "X-Men" [fr] 1997-2011 Panini France [] 169 · 178806 "X-Men" [hr] 1997-1998 Slobodna Dalmacija [] 6 · 182418 "אקס-מן: X-Men" [iw-il] 1997-1999 Contact Point [] 23 · 10643 "X-Men" [sv-se] 1998-2006 Egmont [] 66 · 28279 "X-Men" 1998-1998 Marvel; Wizard [] 1   (dump lookup)
+
+== S102430 X-Men  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: X-Men v5 (2019)  years 1997-2022  28 files / 2 collections
+   split run: "X-Men v5 (2019)" run=- (new shelf from P-053) — seed the S line from these ids, then verify them
+   folders: [21] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2019.10.16 - X-Men v5 · [2] _Marvel Major Event Chronology (digital)\2020.03 - Empyre\02 Tie-ins\X-Men · [2] _Marvel Major Event Chronology (digital)\2020.09 - X of Swords · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2021.04.28 - Hellfire Gala · [1] Marvel\_X-Men\X-Men\07 X-Men v5 (2019) (Krakoa)\Omnibus Edition · [1] Marvel\_X-Men\_X-Men Non-event Omnibusses
+   files:   X-Men 001 (2019) (Digital) (Zone-Empire).cbr … X-Men 006 (2020) (Digital) (Zone-Empire).cbr  (6 files, pp 27-40) | [49200] X-Men 007 (2020) (Digital) (F) (Zone-Empire).cbr (35pp)
+            X-Men 008 (2020) (Digital) (Zone-Empire).cbr … X-Men 021 (2021) (Digital) (Zone-Empire).cbr  (14 files, pp 25-27) | [49597] 05 X-Men 021 (2021) (Digital) (Zone-Empire).cbr (27pp)
+            [87990] COL X-Men by Jonathan Hickman Omnibus (2022) (Digital) (EJGriffin-Empire).cbz (680pp) | [92979] COL X-Men by Jonathan Hickman Omnibus (2022) (Digital) (Kileko-Empire).cbz (679pp)
+            [118439] X-Men 010 (2020) (Digital) (Zone-Empire).cbr (27pp) | [118440] X-Men 011 (2020) (Digital) (Zone-Empire).cbr (27pp)
+            [118465] 12 X-Men 014 (2021) (Digital) (Zone-Empire).cbr (27pp) | [118473] 20 X-Men 015 (2021) (Digital) (Zone-Empire).cbr (27pp)
+   ours:    ladder 1-21; 5 number(s) name more than one file: 10, 11, 14, 15, 21; ComicInfo Series: "X-Men"x26; ComicInfo Volume: "2019"x24; ComicInfo Publisher: "Marvel"x26
+   GCD says: [87990] gcd_reprint 2383445: s151123 X-Men (2019) #1-11, #16-21 [18 stories] · s154075 Incoming (2020) #1 [1 story] · s164004 Giant-Size X-Men: Storm (2020) #1 [1 story] · s162665 Giant-Size X-Men: Fantomex (2020) #1 [1 story]
+             [92979] gcd_reprint 2383445: s151123 X-Men (2019) #1-11, #16-21 [18 stories] · s154075 Incoming (2020) #1 [1 story] · s164004 Giant-Size X-Men: Storm (2020) #1 [1 story] · s162665 Giant-Size X-Men: Fantomex (2020) #1 [1 story]
+   CV linked:      vol 122077 "X-Men" 2019 Marvel 21 issues; cached #1-21 (21); yearΔ 22; ratio 26/21 = 1.24; no judged range
+   CV per-file (v1): vol 43640 "X-Men" 1997 Panini France 169 on 26/28 files
+   CV local rip:   (= linked) · 43669 "X-Men" 1997 Panini Verlag 48 · 45796 "X-Men" 1996 Planeta DeAgostini 105 · 43672 "X-Men" 2001 Panini Verlag 150 · 43634 "X-Men" 2002 Panini Brasil 143 · 46130 "X-Men" 1992 Planeta DeAgostini 40   (rip lookup)
+   GCD per-file:   series 151123 "X-Men" 2019-2021 Marvel [was ongoing series] 21 on 12/28 files · series 159789 "X-Men" [de] 2020-2022 Panini Deutschland [] 29 on 12/28 files · series 170654 "X-Men" [it] 2020-? Panini Comics [ongoing series] 13 on 2/28 files; methods numx26
+   GCD dump:       33290 "X-Men" [de] 1997-2000 Panini Deutschland [] 48 · 38909 "X-Men" [fr] 1997-2011 Panini France [] 169 · 178806 "X-Men" [hr] 1997-1998 Slobodna Dalmacija [] 6 · 182418 "אקס-מן: X-Men" [iw-il] 1997-1999 Contact Point [] 23 · 10643 "X-Men" [sv-se] 1998-2006 Egmont [] 66 · 28279 "X-Men" 1998-1998 Marvel; Wizard [] 1   (dump lookup)
+
+== S104128 Venom v3 (2016)  [tier C] · ratio 0.36  keys: Venom v3 (2016)  years 2017-2018  12 files / 4 collections
+   split run: "Venom v3 (2016)" run={"cv": 95845, "gcd": 109553} (new shelf from P-053) — seed the S line from these ids, then verify them
+   flags: #673 overlap-in-series [Dismissed] item 97321 — several Venom ladders each contribute a Vol. 01 numbered from #1
+   folders: [8] Marvel\_Venom\28 Venom v3-v1 (2017) · [2] _Marvel Major Event Chronology (digital)\2017.06 - Venomverse-Venomized\03 Poison-X · [1] Marvel\_Venom\28 Venom v3-v1 (2017)\Variant Covers · [1] Marvel\__Skottie Young Covers
+   files:   [97986] Venom 151 (2017) (Mary Jane Variant Cover) (Ghosts-Novus-HD).cbz (1pp) | [97317] Venom 159 (2018) (Digital) (Zone-Empire).cbr (24pp)
+            [97318] Venom 160 (2018) (Digital) (Zone-Empire).cbr (24pp) | [97319] Venom 162 (2018) (Digital) (Zone-Empire).cbr (23pp) | [97320] Venom 163 (2018) (Digital) (Zone-Empire).cbr (23pp)
+            [97321] COL Venom Vol. 01 - Homecoming (2017) (Digital) (Kileko-Empire).cbr (144pp) | [97322] COL Venom Vol. 02 - Land Before Crime (2017) (Digital) (F) (Kileko-Empire).cbz (117pp)
+            [97323] COL Venom Vol. 03 - Lethal Protector - Blood In The Water (2018) (Digital) (Kileko-Empire).cbr (126pp)
+            [97324] COL Venom Vol. 04 - The Nativity (2018) (Digital) (Kileko-Empire).cbr (137pp) | [52036] Venom 150 (2017) (Skottie Young Variant Cover) (Ghosts-Novus-HD).cbz (1pp)
+            [118332] 03 Venom 162 (2018) (Digital) (Zone-Empire).cbr (23pp) | [118334] 05 Venom 163 (2018) (Digital) (Zone-Empire).cbr (23pp)
+   ours:    ladder 150-151, 159-160, 162-163; 2 number(s) name more than one file: 162, 163; ComicInfo Series: "Venom"x2; ComicInfo Publisher: "Marvel"x2
+   GCD says: [97321] gcd_reprint 1713929: s109553 Venom (2017) #1-6 [23 stories]
+             [97322] gcd notes 1745210 (#2 of Venom): Venom (Marvel, 2016 series) #150-153  |  gcd_reprint 1745210: s109553 Venom (2017) #150-153 [5 stories]
+             [97323] gcd_reprint 1778778: s109553 Venom (2017) #154-158 [6 stories]
+             [97324] gcd_reprint 1849207: s109553 Venom (2017) #161, #164-165 [4 stories] · s1570 The Amazing Spider-Man (1963) #362-363 [2 stories]
+   CV per-file (v1): vol 126627 "Venom" 2018 Panini Comics 71 on 8/12 files
+   CV local rip:   (= per-file) · 95845 "Venom" 2016 Marvel 22 (via our own name without the filing suffix "Venom") · 110770 "Venom" 2018 Marvel 35 (via our own name without the filing suffix "Venom") · 112780 "Venom" 2018 Panini Verlag 2 (via our own name without the filing suffix "Venom") · 141957 "Venom" 2018 Panini Verlag 4 (via our own name without the filing suffix "Venom") · 159983 "Venom" 2018 Panini Brasil 4 (via our own name without the filing suffix "Venom")   (rip lookup)
+   GCD per-file:   series 109553 "Venom" 2017-2018 Marvel [was ongoing series] 22 on 8/12 files; methods numx8
+   GCD dump:       (= per-file) · 114848 "Venom" 2017-2018 Marvel [] 4 (via our own name without the filing suffix "Venom") · 172378 "Venom" [es-mx] 2017-2019 Editorial Televisa [] 19 (via our own name without the filing suffix "Venom") · 122045 "Venom" [de] 2018-2018 Panini Deutschland [] 4 (via our own name without the filing suffix "Venom") · 124196 "Venom" 2018-2021 Marvel [] 35 (via our own name without the filing suffix "Venom") · 164921 "Venom" [pt-br] 2018-2019 Panini Brasil [] 4 (via our own name without the filing suffix "Venom")   (dump lookup)
+   bridges:        gcd 109553 -> LOCG 136980 "Venomnibus by Cates & Stegman HC" support 2
+
+== S101296 Venom  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Venom v4 (2018)  years 2018-2021  10 files / 1 collections
+   split run: "Venom v4 (2018)" run=- (new shelf from P-053) — seed the S line from these ids, then verify them
+   folders: [4] _Marvel Major Event Chronology (digital)\2020.11 - King in Black\02 Tie-ins\Venom · [2] Marvel\#MARVEL CURRENT ONGOING TITLES\Venom v5 (2022)\Variant Covers · [2] Marvel\_Venom\29 Venom v4 (2018)\Annuals and Specials · [2] Marvel\_Venom\29 Venom v4 (2018)
+   files:   [48898] Venom 032 (2021) (Stegman Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48900] Venom 033 (2021) (Mike Mayhew Studio Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [97326] Venom Annual 001 (2018) (Digital) (Zone-Empire).cbr (34pp) | [97327] Venom Annual 002 (2019) (Digital) (Zone-Empire).cbr (33pp)
+            [97330] Venom 200 (2021) (Digital) (Zone-Empire).cbr (81pp) | [97331] COL Venom by Donny Cates Vol. 01 - Rex (2019) (Digital) (Asgard-Empire).cbr (139pp)
+            [118507] Venom 031 (2021) (Digital) (Zone-Empire).cbr (21pp) | [118508] Venom 032 (2021) (Digital) (Zone-Empire).cbr (25pp) | [118509] Venom 033 (2021) (Digital) (Zone-Empire).cbr (22pp)
+            [118510] Venom 034 (2021) (Digital) (Zone-Empire).cbr (21pp)
+   ours:    ladder 1, 31-34, 200; 3 number(s) name more than one file: 1, 32, 33; ComicInfo Series: "Venom"x5, "Venom Annual"x1; ComicInfo Volume: "2018"x5, "2019"x1; ComicInfo Publisher: "Marvel"x6
+   CV linked:      vol 110770 "Venom" 2018 Marvel 35 issues; cached #1-35 (35); yearΔ 0; ratio 9/35 = 0.26; no judged range
+   CV per-file (v1): vol 126627 "Venom" 2018 Panini Comics 71 on 9/10 files
+   CV local rip:   (= linked) · 112780 "Venom" 2018 Panini Verlag 2 · 141957 "Venom" 2018 Panini Verlag 4 · 159983 "Venom" 2018 Panini Brasil 4 · 141958 "Venom" 2019 Panini Verlag 8   (rip lookup)
+   GCD per-file:   series 143395 "Venom" [de] 2019-2021 Panini Deutschland [] 8 on 2/10 files · series 122045 "Venom" [de] 2018-2018 Panini Deutschland [] 4 on 1/10 files; methods numx3
+   GCD dump:       (= per-file) · 124196 "Venom" 2018-2021 Marvel [] 35 · 164921 "Venom" [pt-br] 2018-2019 Panini Brasil [] 4 · 109553 "Venom" 2017-2018 Marvel [] 22 · 114848 "Venom" 2017-2018 Marvel [] 4 · 141576 "Venom" [es-mx] 2019-? Editorial Televisa [] 6   (dump lookup)
+   bridges:        gcd 122045 -> LOCG 136980 "Venomnibus by Cates & Stegman HC" support 2
+
+== S104126 Venom Epic Collection (2020)  [tier D]   keys: Venom Epic Collection (2020)  years 2021-2023  4 files / 4 collections
+   split run: "Venom Epic Collection (2020)" run={"gcd": 166812} (new shelf from P-053) — seed the S line from these ids, then verify them
+   folders: [4] Marvel\_Venom\_Venom Epic Collections
+   files:   [97405] COL Venom Epic Collection Vol. 01 - Symbiosis (2021) (Digital) (Asgard-Empire).cbz (461pp)
+            [97406] COL Venom Epic Collection Vol. 02 - Lethal Protector (2022) (Digital) (Kileko-Empire).cbz (466pp)
+            [97407] COL Venom Epic Collection Vol. 04 - The Madness (2023) (Digital-Empire).cbz (473pp)
+            [97408] COL Venom Epic Collection Vol. 05 - Carnage Unleashed (2022) (Digital) (Shan-Empire).cbz (472pp)
+   ours:    ComicInfo Series: "Venom Epic Collection: Symbiosis"x1, "Venom Epic Collection: Lethal Protector"x1, "Venom Epic Collection: The Madness"x1; ComicInfo Publisher: "Marvel"x3
+   GCD says: [97405] gcd notes 2167669 (#1 of Venom Epic Collection): Amazing Spider-Man (Marvel, 1963 series) #258, #300, #315-317, #332-333, #346-348, #388; (B story), Web of Spider-Man (Marvel, 1985 series) #1; Avengers: Deathtrap - The Vault (Marvel, 1991 series), Darkhawk (Marvel, 1991 series) #13-14; Am  |  gcd_reprint 2167669: s1570 The Amazing Spider-Man (1963) #258, #300, #315-317, #332-333, #346-347, #388 [12 stories] · s4236 Darkhawk (1991) #13-14 [2 stories] · s3060 Web of Spider-Man Annual (1985) #7-8 [2 stories] · s1635 The Amazing Spider-Man Annual (1964) #25-26 [2 stories]
+             [97406] gcd_reprint 2288289: s1570 The Amazing Spider-Man (1963) #359-363, #365, #373-375 [17 stories] · s4745 Venom: Lethal Protector (1993) #1-6 [13 stories] · s3654 Marvel Comics Presents (1988) #117-122 [12 stories] · s3059 Web of Spider-Man (1985) #95-96 [5 stories]
+             [97407] gcd notes 2567074 (#4 of Venom Epic Collection): Iron Man (Marvel, 1968 series) #302; Darkhawk (Marvel, 1991 series) #35-37; Venom: The Madness (Marvel, 1993 series) #1-3; Venom: The Enemy Within (Marvel, 1994 series) #1-3; Incredible Hulk vs. Venom (Marvel, 1994 series) #1; Venom: The Ma  |  gcd_reprint 2567074: s5049 Venom: Nights of Vengeance (1994) #1-4 [8 stories] · s5050 Venom: The Enemy Within (1994) #1-3 [7 stories] · s5051 Venom: The Mace (1994) #1-3 [6 stories] · s4746 Venom: The Madness (1993) #1-3 [6 stories]
+             [97408] gcd_reprint 2438545: s10323 Venom: Sinner Takes All (1995) #1-5 [11 stories] · s10321 Venom: Carnage Unleashed (1995) #1-4 [9 stories] · s5044 Spider-Man: The Arachnis Project (1994) #1-6 [8 stories] · s10322 Venom: Separation Anxiety (1994) #1-4 [8 stories]
+   GCD dump:       166812 "Venom Epic Collection" 2020-? Marvel [] 6 (via our own name without the filing suffix "Venom Epic Collection")   (dump lookup)
+
+== S104127 Venom Modern Era Epic Collection (2023)  [tier D]   keys: Venom Modern Era Epic Collection (2023)  years 2023-2024  3 files / 3 collections
+   split run: "Venom Modern Era Epic Collection (2023)" run={"gcd": 203413} (new shelf from P-053) — seed the S line from these ids, then verify them
+   folders: [3] Marvel\_Venom\_Venom Epic Collections
+   files:   [97409] COL Venom Modern Era Epic Collection Vol. 04 - Agent Venom (2023) (Digital-Empire).cbr (487pp)
+            [97410] COL Venom Modern Era Epic Collection Vol. 05 - The Savage Six (2024) (Digital) (dekabro-Empire).cbz (507pp)
+            [97411] COL Venom Modern Era Epic Collection Vol. 06 - Space Knight (2024) (Digital) (dekabro-Empire).cbz (429pp)
+   ours:    ComicInfo Series: "Venom Modern Era Epic Collection: Agent Venom"x1, "Venom Modern Era Epic Collection: The Savage Six"x1, "Venom Modern Era Epic Collection: Space Knight"x1; ComicInfo Publisher: "Marvel"x2, "Marvel Entertainment, Inc."x1
+   GCD says: [97409] gcd_reprint 2564758: s56418 Venom (2011) #1-13, #13.1, #13.2, #13.3, #13.4, #14-16 [21 stories] · s11288 The Amazing Spider-Man (1999) #654, #654.1 [4 stories]
+             [97410] gcd_reprint 2589691: s56418 Venom (2011) #17-27, #27.1, #28-35 [21 stories] · s62834 Scarlet Spider (2012) #10-11 [2 stories] · s70215 Minimum Carnage: Omega (2013) #1 [1 story] · s68974 Minimum Carnage: Alpha (2012) #1 [1 story]
+             [97411] gcd_reprint 2650885: s94496 Venom: Space Knight (2016) #1-13 [14 stories] · s56418 Venom (2011) #36-42 [7 stories]
+   GCD dump:       203413 "Venom Modern Era Epic Collection" 2023-? Marvel [] 4 (via our own name without the filing suffix "Venom Modern Era Epic Collection")   (dump lookup)
+
+== S20988 Venom  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: Venom  years 2018-2024  67 files / 3 collections
+   split: the KEPT half of the P-053 split — moved out -> S104128 "Venom v3 (2016)"; S101296 "Venom v4 (2018)"; S104126 "Venom Epic Collection (2020)"; S104127 "Venom Modern Era Epic Collection (2023)"; re-identify what stayed
+   folders: [53] Marvel\#MARVEL CURRENT ONGOING TITLES\Venom v5 (2022)\Variant Covers · [8] Marvel\#MARVEL CURRENT ONGOING TITLES\Venom v5 (2022) · [2] _Marvel Major Event Chronology (digital)\2024.05 - Blood Hunt\02 Tie-ins · [2] _Marvel Major Event Chronology (digital)\2024.05 - Blood Hunt\Variant Covers · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\Venom v5 (2022)\Annuals and Specials · [1] _Marvel Major Event Chronology (digital)\2022.12 - Spider-Man Dark Web\Spinning Into Dark Web
+   files:   [49970] Venom Annual 001 (2023) (Digital) (Zone-Empire).cbr (29pp) | [48867] Venom 001 (2021) (Black Blank Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48868] Venom 001 (2021) (Chris Bachalo Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48869] Venom 001 (2021) (InHyuk Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48870] Venom 001 (2021) (John Romita Jr. Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48871] Venom 001 (2021) (Peach Momoko Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48872] Venom 002 (2021) (1-in-25 Yu Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48873] Venom 002 (2021) (McGuinness Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48874] Venom 003 (2021) (1-in-25 Meyers Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48875] Venom 005 (2022) (Walmart Hitch Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48876] Venom 006 (2022) (Bagley Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48877] Venom 006 (2022) (Simmonds Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48878] Venom 007 (2022) (Magno Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48879] Venom 008 (2022) (1-in-25 Segovia Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48880] Venom 009 (2022) (Hotz Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48881] Venom 010 (2022) (Siqueira Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48882] Venom 011 (2022) (Dave Rapoza Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48883] Venom 012 (2022) (Stegman Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48884] Venom 013 (2022) (Hitch Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48885] Venom 015 (2023) (Klein Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48886] Venom 017 (2023) (Panosian Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48887] Venom 017 (2023) Panosian Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48888] Venom 018 (2023) (Medina Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48889] Venom 019 (2023) Philip Tan Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48890] Venom 022 (2023) (Vosburg Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48891] Venom 023 (2023) (Insignia Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48892] Venom 023 (2023) Jim Cheung Variant (Digital) (MikeNY76-Empire).cbz (1pp) | [48893] Venom 023 (2023) Ryan Brown Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48894] Venom 027 (2023) (Lobos Variant B) (Digital) (MikeNY76-Empire).cbz (1pp) | [48895] Venom 027 (2024) (2nd Printing CAFU Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48896] Venom 030 (2024) (Philip Tan Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48897] Venom 031 (2024) Skan Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48899] Venom 032 (2024) (Rose Besch Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48901] Venom 033 (2024) (Joshua Swaby Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48903] Venom 033 (2024) (Juan Ferreyra Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48904] Venom 034 (2024) (1-in-25 Mahmud Asrar Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48905] Venom 034 (2024) (1-in-50 Skottie Young's Big Marvels Black & White Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48906] Venom 034 (2024) (Mahmud Asrar Variant) (Digital) (MikeNY76).cbz (1pp) | [48907] Venom 034 (2024) (Skottie Young's Big Marvel Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48908] Venom 034 (2024) (Skottie Young's Big Marvel Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48910] Venom 034 (2024) (Skottie Young's Big Marvels Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48911] Venom 035 (2024) (Iban Coello Deadpool Kills The Marvel Universe Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48912] Venom 035 (2024) (Mico Suayan Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48913] Venom 036 (2024) (David Yardin Marvel 85Th Anniversary Homage Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48914] Venom 036 (2024) (John Giang Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48915] Venom 036 (2024) (Rickie Yagawa Disco Dazzler Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48916] Venom 037 (2024) (Dave Wachter Godzilla Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48917] Venom 037 (2024) (Lucas Werneck Stormbreakers Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48918] Venom 038 (2024) (Carlos Magno Doom Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48919] Venom 038 (2024) (Gabriele Dell'otto Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48920] Venom 038 (2024) (Gabriele Dell'otto Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48921] Venom 039 (2024) (Carlos Gomez Foreshadow Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48922] Venom 039 (2024) (Derrick Chew Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48923] Venom 039 (2024) (Justin Mason Marvel Two-In-One Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48924] Venom 035 (2024) (Digital) (Shan-Empire).cbz (24pp)
+            [48925] Venom 036 (2024) (Digital) (Shan-Empire).cbz (23pp) | [48926] Venom 037 (2024) (Digital) (Kileko-Empire).cbz (23pp) | [48927] Venom 038 (2024) (Digital) (Shan-Empire).cbz (24pp)
+            [48928] Venom 039 (2025) (Digital) (Shan-Empire).cbz (25pp) | [48933] COL Venom by Al Ewing Vol. 05 - Predestination (2024) (Digital) (Shan-Empire).cbz (131pp)
+            [48934] COL Venom by Al Ewing Vol. 06 - Infiltration (2024) (Digital) (Shan-Empire).cbz (109pp)
+            [48935] COL Venom by Al Ewing Vol. 07 - Exsanguination (2024) (Digital) (Shan-Empire).cbz (130pp) | [118595] Venom 013 (2023) (Digital) (Zone-Empire).cbr (23pp)
+            [118650] Venom 033 (2024) (Digital) (Shan-Empire).cbz (22pp) | [118651] Venom 034 (2024) (Digital) (Shan-Empire).cbz (23pp)
+            [118765] Venom 034 (2024) (Mahmud Asrar Variant) (Digital) (MikeNY76).cbz (1pp) | [118766] Venom 034 (2024) (Skottie Young's Big Marvel Variant) (Digital) (MikeNY76).cbz (1pp)
+   ours:    ladder 1-3, 5-13, 15, 17-19, 22-23, 27, 30-39; 14 number(s) name more than one file: 1, 2, 6, 13, 17, 23, 27, 33, 34, 35, 36, 37; judged item 48933 #22-25 conf 0.9; judged item 48934 #26-30 conf 0.95; ComicInfo Series: "Venom "x1, "Venom Annual"x1; ComicInfo Volume: "2023"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [48933] gcd_reprint 2606381: s177713 Venom (2021) (unnumbered) [32 stories] · s199506 Free Comic Book Day 2023: Spider-Man / Venom (2023) (unnumbered) [2 stories] · s173612 King in Black (2021) (unnumbered) [1 story]
+             [48934] gcd_reprint 2638135: s177713 Venom (2021) (unnumbered) [6 stories]
+             [48935] gcd_reprint 2657156: s177713 Venom (2021) (unnumbered) [5 stories] · s206093 Carnage (2024) (unnumbered) [2 stories]
+   CV per-file (v1): vol 126627 "Venom" 2018 Panini Comics 71 on 63/67 files
+   CV candidates:  153578 "Venom Marvel Pocketbook " 2007 Marvel UK/Panini UK 1 issue 1014634 s84 · 79842 "Marvel MegaMorphs - Venom" 2005 Marvel 1 issue 478524 s83 · 56679 "Marvel Milestones: Venom & Hercules" 2005 Marvel 1 issue 384402 s81 · 131210 "Marvel-Verse: Venom" 2020 Marvel 1 issue 810763 s34 · 116506 "Marvel Tales: Venom" 2019 Marvel 1 issue 697641 s33 · 130790 "Venom: Rex Marvel Select" 2020 Marvel 1 issue 805299 s32   (v1 search)
+   CV local rip:   (= per-file) · 110770 "Venom" 2018 Marvel 35 · 112780 "Venom" 2018 Panini Verlag 2 · 141957 "Venom" 2018 Panini Verlag 4 · 159983 "Venom" 2018 Panini Brasil 4 · 141958 "Venom" 2019 Panini Verlag 8   (rip lookup)
+   GCD per-file:   series 196382 "Venom" [pt-br] 2022-? Panini Brasil [série contínua] 6 on 6/67 files · series 194330 "Venom" [fr] 2022-2024 Panini France [série continue terminée [was ongoing series]] 6 on 5/67 files · series 221536 "Venom" [hu] 2023-? Kingpin [jelenleg is futó sorozat] 7 on 1/67 files; methods numx12
+   GCD dump:       122045 "Venom" [de] 2018-2018 Panini Deutschland [] 4 · 124196 "Venom" 2018-2021 Marvel [] 35 · 164921 "Venom" [pt-br] 2018-2019 Panini Brasil [] 4 · 109553 "Venom" 2017-2018 Marvel [] 22 · 114848 "Venom" 2017-2018 Marvel [] 4 · 141576 "Venom" [es-mx] 2019-? Editorial Televisa [] 6   (dump lookup)
+   bridges:        gcd 196382 -> LOCG 136980 "Venomnibus by Cates & Stegman HC" support 8 · gcd 221536 -> LOCG 136980 "Venomnibus by Cates & Stegman HC" support 8
+
+== S101396 West Coast Avengers  [tier A]   keys: West Coast Avengers v2 (1985)  years 1985-1989  56 files / 0 collections
+   split run: "West Coast Avengers v2 (1985)" run=- (new shelf from P-053) — seed the S line from these ids, then verify them
+   folders: [46] Marvel\_Avengers\West Coast Avengers (1984)\02 West Coast Avengers v2 (1985) · [8] Marvel\_Avengers\West Coast Avengers (1984)\02 West Coast Avengers v2 (1985)\Annuals and Specials · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0078 Evolutionary war · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0093 Atlantis Attacks
+   files:   [53147] West Coast Avengers 042 (1989) (b&w) (Bchry-DCP).cbz (23pp) | [53148] West Coast Avengers 043 (1989) (b&w) (Bchry-DCP).cbz (21pp)
+            [53149] West Coast Avengers 044 (1989) (b&w) (Bchry-DCP).cbz (23pp) | [53150] West Coast Avengers 045 (1989) (b&w) (Bchry-DCP).cbz (23pp)
+            [53151] West Coast Avengers 046 (1989) (b&w) (Bchry-DCP).cbz (23pp) | [53152] West Coast Avengers Annual 002 (1987) (digital) (Glorith-HD).cbz (43pp)
+            [53153] West Coast Avengers Annual 004 (1989) (digital) (Marika-Empire).cbz (56pp) | [53154] West Coast Avengers Annual 006 (1986) (2023) (digital-Empire).cbz (57pp)
+            West Coast Avengers 001 (1985) (Digital) (Zone-Empire).cbr … West Coast Avengers 009 (1986) (Digital) (Zone-Empire).cbr  (9 files, pp 24-41)
+            West Coast Avengers 010 (1986) (Digital) (Shadowcat-Empire).cbz … West Coast Avengers 016 (1987) (Digital) (Shadowcat-Empire).cbz  (7 files, pp 23-24)
+            West Coast Avengers 017 (1987) (Digital) (Zone-Empire).cbr … West Coast Avengers 024 (1987) (Digital) (Zone-Empire).cbr  (8 files, pp 23-24)
+            West Coast Avengers 025 (1987) (Digital) (Shadowcat-Empire).cbz … West Coast Avengers 041 (1989) (Digital) (Shadowcat-Empire).cbz  (17 files, pp 22-24)
+            [53196] West Coast Avengers 042 (1989) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [53197] West Coast Avengers 043 (1989) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [53198] West Coast Avengers 044 (1989) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [53199] West Coast Avengers 045 (1989) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [53200] West Coast Avengers 046 (1989) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [87242] 009 West Coast Avengers Annual 003 (1988) (Digital) (Shadowcat-Empire).cbz (47pp)
+            [87357] 012 West Coast Avengers Annual 004 (1989) (Digital) (Shadowcat-Empire).cbz (31pp)
+   ours:    ladder 1-46; 9 number(s) name more than one file: 2, 3, 4, 6, 42, 43, 44, 45, 46; ComicInfo Series: "West Coast Avengers Annual"x2; ComicInfo Volume: "1986"x1, "1989"x1; ComicInfo Count: "3"x1, "7"x1; ComicInfo Publisher: "Marvel Comics"x2; ComicInfo Web: "28581"x1, "31863"x1
+   CV linked:      vol 3521 "West Coast Avengers" 1985 Marvel 46 issues; cached #1-46 (46); yearΔ 0; ratio 56/46 = 1.22; no judged range; v1 per-file: same volume on 54/56 files
+   CV local rip:   (= linked) · 3372 "West Coast Avengers" 1984 Marvel 4 · 112977 "West Coast Avengers" 2018 Marvel 10 · 161322 "West Coast Avengers" 2025 Marvel 10 · 165818 "West Coast Avengers" 2025 Marvel 1 issue 1122569   (rip lookup)
+   GCD per-file:   series 3061 "West Coast Avengers" 1985-1989 Marvel [was ongoing series] 47 on 52/56 files; methods numx52
+   GCD dump:       (= per-file) · 2900 "West Coast Avengers" 1984-1984 Marvel [] 4 · 127975 "West Coast Avengers" 2018-2019 Marvel [] 10 · 140641 "West Coast Avengers" 2019-2019 Marvel [] 2 · 218108 "West Coast Avengers" 2025-2025 Marvel [] 10 · 226086 "West Coast Avengers" 2025-? Marvel [] 2   (dump lookup)
+   bridges:        gcd 3061 -> LOCG 100825 "Avengers West Coast" support 31
+
+== S1629 Avengers West Coast  [tier A]   keys: Avengers West Coast  years 1988-2022  79 files / 0 collections
+   split run: "Avengers West Coast" run=- (new shelf from P-053) — seed the S line from these ids, then verify them
+   folders: [56] Marvel\_Avengers\West Coast Avengers (1984)\03 Avengers West Coast v1 (1989) · [18] Marvel\_Avengers\West Coast Avengers (1984)\03 Avengers West Coast v1 (1989)\Annuals and Specials · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0204 Blood Ties · [1] _Marvel Major Event Chronology (digital)\1993.11 - Blood Ties
+   files:   Avengers West Coast 047 (1989) (b&w) (Bchry-DCP).cbz … Avengers West Coast 057 (1990) (b&w) (Bchry-DCP).cbz  (11 files, pp 21-23)
+            [53212] Avengers West Coast Annual 003 (1988) (digital) (Oroboros-DCP).cbr (48pp) | [53214] Avengers West Coast Annual 004 (1989) (Digital) (AnPymGold-Empire).cbz (42pp)
+            [53213] Avengers West Coast Annual 004 (1989) (b&w) (Bchry-DCP).cbz (29pp) | [53215] Avengers West Coast Annual 005 (1990) (Digital) (Shadowcat-Empire).cbz (57pp)
+            [53216] Avengers West Coast Annual 007 (1992) (digital) (Marika-Empire).cbz (57pp) | [53217] Avengers West Coast Annual 008 (1993) (Digital) (Shadowcat-Empire).cbz (52pp)
+            [53218] Avengers West Coast Annual 008 (1993) (Digital) (Zone-Empire).cbr (53pp)
+            Avengers West Coast 047 (1989) (Digital) (TLK-EMPIRE-HD).cbr … Avengers West Coast 057 (1990) (Digital) (TLK-EMPIRE-HD).cbr  (11 files, pp 22-24)
+            [53230] Avengers West Coast 058 (1990) (Digital) (Shadowcat-Empire).cbz (24pp) | [53231] Avengers West Coast 059 (1990) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [53232] Avengers West Coast 060 (1990) (Digital) (Zone-Empire).cbr (24pp) | [53233] Avengers West Coast 061 (1990) (Digital) (Zone-Empire).cbr (24pp)
+            [53234] Avengers West Coast 062 (1990) (Digital) (Zone-Empire).cbr (24pp)
+            Avengers West Coast 063 (1990) (Digital) (Shadowcat-Empire).cbz … Avengers West Coast 075 (1991) (Digital) (Shadowcat-Empire).cbz  (13 files, pp 23-40)
+            [53248] Avengers West Coast 076 (1989) (digital).cbz (23pp) | [53249] Avengers West Coast 077 (1989) (digital).cbz (23pp) | [53250] Avengers West Coast 078 (1989) (digital).cbz (23pp)
+            [53251] Avengers West Coast 079 (1989) (digital).cbz (23pp) | [53252] Avengers West Coast 080 (1992) (Digital) (Zone-Empire).cbr (24pp)
+            [53253] Avengers West Coast 081 (1992) (Digital) (Zone-Empire).cbr (23pp) | [53254] Avengers West Coast 082 (1992) (Digital) (Zone-Empire).cbr (22pp)
+            Avengers West Coast 083 (1992).cbr … Avengers West Coast 088 (1992).cbr  (6 files, pp 23-24) | [53261] Avengers West Coast 089 (1992) (Digital) (Zone-Empire).cbr (24pp)
+            [53262] Avengers West Coast 090 (1993) (Digital) (Zone-Empire).cbr (24pp) | [53263] Avengers West Coast 091 (1993) (Digital) (Zone-Empire).cbr (23pp)
+            [53264] Avengers West Coast 092 (1993) (Digital) (AnHeroGold-Empire).cbz (22pp) | [53265] Avengers West Coast 093 (1993) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [53266] Avengers West Coast 094 (1993) (Digital) (AnHeroGold-Empire).cbz (23pp) | [53267] Avengers West Coast 095 (1993) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [53268] Avengers West Coast 096 (1993) (Digital) (AnHeroGold-Empire).cbz (23pp) | [53269] Avengers West Coast 097 (1993) (Digital) (AnHeroGold-Empire).cbz (24pp)
+            [53270] Avengers West Coast 098 (1993) (Digital) (AnHeroGold-Empire).cbz (23pp) | [53271] Avengers West Coast 099 (1993) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [53272] Avengers West Coast 100 (1993) (Digital) (AnHeroGold-Empire).cbz (55pp) | [53273] Avengers West Coast 101 (1993) (Digital) (Zone-Empire).cbr (22pp)
+            [53274] Avengers West Coast 102 (1994) (Digital) (AnHeroGold-Empire).cbz (23pp) | [87485] 020 Avengers West Coast 053 (1989) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [87515] 050 Avengers West Coast 054 (1990) (Digital) (TLK-EMPIRE-HD).cbr (23pp) | [87525] 060 Avengers West Coast 055 (1990) (Digital) (AnPymGold-Empire).cbz (23pp)
+            [88018] 003 Avengers West Coast 101 (1993) (Digital) (Zone-Empire).cbr (22pp) | [116472] 03 Avengers West Coast 101 (1993) (Digital) (UberSoldier-DCP).cbr (22pp)
+   ours:    ladder 3-5, 7-8, 47-102; 14 number(s) name more than one file: 4, 8, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56; ComicInfo Series: "Avengers West Coast Annual"x1, "West Coast Avengers Annual"x1; ComicInfo Volume: "1985"x1, "1989"x1; ComicInfo Count: "7"x1; ComicInfo Publisher: "Marvel"x1, "Marvel Comics"x1; ComicInfo Web: "35151"x1
+   CV linked:      vol 18494 "Avengers West Coast" 1989 Marvel 56 issues; cached #47-102 (56); yearΔ 1; ratio 79/56 = 1.41; no judged range; v1 per-file: same volume on 78/79 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 3830 "Avengers West Coast" 1989-1994 Marvel [was ongoing series] 55 on 70/79 files; methods numx70
+   GCD dump:       (= per-file) · 69113 "Avengers West Coast" [fr] 2012-? Panini France [] 1   (dump lookup)
+   bridges:        gcd 3830 -> LOCG 100825 "Avengers West Coast" support 9
+
+== S21439 West Coast Avengers  [tier C] · gap 40  keys: West Coast Avengers  years 1985-1985  18 files / 0 collections
+   split: the KEPT half of the P-053 split — moved out -> S101396 "West Coast Avengers v2 (1985)"; S1629 "Avengers West Coast"; re-identify what stayed
+   folders: [15] Marvel\#MARVEL CURRENT ONGOING TITLES\West Coast Avengers v5 (2025)\Variant Covers · [3] Marvel\#MARVEL CURRENT ONGOING TITLES\West Coast Avengers v5 (2025)
+   files:   [49045] West Coast Avengers 001 (2024) (Adam Hughes Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49046] West Coast Avengers 001 (2024) (Artgerm Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49047] West Coast Avengers 001 (2024) (Artgerm Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49048] West Coast Avengers 001 (2024) (Danny Kim Design Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49049] West Coast Avengers 001 (2024) (Danny Kim Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49050] West Coast Avengers 001 (2024) (Gerardo Sandoval Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49051] West Coast Avengers 001 (2024) (Jeehyung Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49052] West Coast Avengers 001 (2024) (Jeehyung Lee Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49053] West Coast Avengers 001 (2024) (Joshua Cassara Gallery Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49054] West Coast Avengers 001 (2024) (Ron Lim Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49055] West Coast Avengers 001 (2024) (Sean Galloway Saturday Morning Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49056] West Coast Avengers 001 (2025) (Adam Hughes 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49057] West Coast Avengers 002 (2024) (Annie Wu Windowshades Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49058] West Coast Avengers 002 (2024) (Federico Vicentini Stormbreakers Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49059] West Coast Avengers 002 (2024) (Ron Lim Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49060] West Coast Avengers 001 (2025) (Digital) (Shan-Empire).cbz (31pp)
+            [49061] West Coast Avengers 002 (2025) (Digital) (Shan-Empire).cbz (23pp) | [49062] West Coast Avengers 003 (2025) (Digital) (Shan-Empire).cbz (24pp)
+   ours:    ladder 1-3; 2 number(s) name more than one file: 1, 2
+   CV linked:      vol 161322 "West Coast Avengers" 2025 Marvel 10 issues; cached #1-10 (10); yearΔ 40; ratio 18/10 = 1.80; no judged range
+   CV per-file (v1): vol 3521 "West Coast Avengers" 1985 Marvel 46 on 18/18 files
+   CV local rip:   (= linked) · 3372 "West Coast Avengers" 1984 Marvel 4 · 112977 "West Coast Avengers" 2018 Marvel 10 · 165818 "West Coast Avengers" 2025 Marvel 1 issue 1122569   (rip lookup)
+   GCD per-file:   series 218108 "West Coast Avengers" 2025-2025 Marvel [was ongoing series] 10 on 18/18 files; methods numx18
+   GCD dump:       (= per-file) · 3061 "West Coast Avengers" 1985-1989 Marvel [] 47 · 2900 "West Coast Avengers" 1984-1984 Marvel [] 4 · 127975 "West Coast Avengers" 2018-2019 Marvel [] 10 · 140641 "West Coast Avengers" 2019-2019 Marvel [] 2 · 226086 "West Coast Avengers" 2025-? Marvel [] 2   (dump lookup)
+   bridges:        gcd 218108 -> LOCG 178319 "West Coast Avengers" support 18
+
+== S22172 X-Factor By Peter David Omnibus  [tier B]   keys: X-Factor by Peter David Omnibus  years 2021-2024  3 files / 3 collections
+   split run: "X-Factor by Peter David Omnibus" run=- (new shelf from P-053) — seed the S line from these ids, then verify them
+   folders: [2] Marvel\_X-Men\_X-Men Non-event Omnibusses · [1] Marvel\_X-Men\X-Factor\04 X-Factor v3-v1 (2006)\Omnibus Editions
+   files:   [85996] COL X-Factor by Peter David Omnibus Book 01 (2023) (Digital) (EJGriffin-Empire).cbz (1093pp)
+            [92973] COL X-Factor by Peter David Omnibus v02 (2023) (Digital) (Kileko-Empire).cbz (1092pp)
+            [92974] COL X-Factor by Peter David Omnibus v03 (2024) (Digital) (Kileko-Empire).cbz (1118pp)
+   ours:    ComicInfo Series: "X-Factor by Peter David Omnibus"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [85996] gcd_reprint 2457553: s16465 X-Factor (2006) #1-39 [44 stories] · s12116 Madrox (2004) #1-5 [5 stories] · s15104 She-Hulk (2005) #31 [1 story] · s31631 X-Factor Special: Layla Miller (2008) #1 [1 story]  |  ⚠ stored GCD row is another book: our vol 1 vs GCD #2 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [92973] gcd_reprint 2457553: s16465 X-Factor (2006) #1-39 [44 stories] · s12116 Madrox (2004) #1-5 [5 stories] · s15104 She-Hulk (2005) #31 [1 story] · s31631 X-Factor Special: Layla Miller (2008) #1 [1 story]
+             [92974] gcd_reprint 2613083: s16465 X-Factor (2006) #40-50, #200-224, #224.1, #225-232 [46 stories] · s41478 Nation X: X-Factor (2010) #1 [1 story]
+   CV linked:      vol 138276 "X-Factor By Peter David Omnibus" 2021 Marvel 4 issues; cached #1-4 (4); yearΔ 0; ratio 0/4; no judged range
+   CV candidates:  (= linked) · 143111 "She-Hulk by Peter David Omnibus" 2022 Marvel 1 issue 926635 s77 · 153617 "Hulk: Maestro by Peter David Omnibus" 2023 Marvel 1 issue 1014923 s76 · 166239 "Symbiote Spider-Man by Peter David Omnibus" 2025 Marvel 1 issue 1126433 s76 · 71227 "X-Factor By Peter David: The Complete Collection" 2014 Marvel 2 s68 · 124290 "Incredible Hulk By Peter David Omnibus" 2020 Marvel 5 s61 · 34115 "X-Factor Visionaries: Peter David" 2005 Marvel 4 s53   (v1 search)
+   CV local rip:   (= linked) · 143111 "She-Hulk by Peter David Omnibus" 2022 Marvel 1 issue 926635 (via CV candidate name "She-Hulk by Peter David Omnibus") · 153617 "Hulk: Maestro by Peter David Omnibus" 2023 Marvel 1 issue 1014923 (via CV candidate name "Hulk: Maestro by Peter David Omnibus")   (rip lookup)
+   GCD dump:       174889 "X-Factor by Peter David Omnibus" 2021-2025 Marvel [] 4 · 185153 "She-Hulk by Peter David Omnibus" 2021-2021 Marvel [] 1 (via CV candidate name "She-Hulk by Peter David Omnibus") · 204000 "Hulk: Maestro by Peter David Omnibus" 2023-2023 Marvel [] 1 (via CV candidate name "Hulk: Maestro by Peter David Omnibus")   (dump lookup)
+
+== S66336 X-Factor  [tier C] · ratio 3.30  keys: X-Factor (2024)  years 2024-2025  33 files / 0 collections
+   split: the KEPT half of the P-053 split — moved out -> S22172 "X-Factor by Peter David Omnibus"; re-identify what stayed
+   folders: [27] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men - From the Ashes (2024)\007 X-Factor v5 (2024)\Variant Covers · [6] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men - From the Ashes (2024)\007 X-Factor v5 (2024)
+   files:   [50304] X-Factor 001 (2024) (David Lopez Disco Dazzler Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50305] X-Factor 001 (2024) (Emanuela Lupacchino Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50306] X-Factor 001 (2024) (Greg Land Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50307] X-Factor 001 (2024) (Logo Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50308] X-Factor 001 (2024) (Luciano Vecchio Windowshades Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50309] X-Factor 001 (2024) (Mahmud Asrar Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50310] X-Factor 001 (2024) (Marcus To Havok Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50311] X-Factor 001 (2024) (Marcus To Havok Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50312] X-Factor 001 (2024) (Skottie Young Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50313] X-Factor 002 (2024) (Joshua Swaby Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50314] X-Factor 002 (2024) (Justin Mason Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50315] X-Factor 002 (2024) (Marcus To Frenzy Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50316] X-Factor 002 (2024) (Marcus To Frenzy Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50317] X-Factor 003 (2024) (Marcus To Pyro Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50318] X-Factor 003 (2024) (Marcus To Pyro Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50319] X-Factor 003 (2024) (Pete Woods Doom Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50320] X-Factor 003 (2024) (Russell Dauterman Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50321] X-Factor 004 (2024) (Anand Ramcheron Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50322] X-Factor 004 (2024) (Marcus To Cecilia Reyes Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50323] X-Factor 004 (2024) (Marcus To Cecilia Reyes Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50324] X-Factor 005 (2024) (C.F. Villa Stormbreakers Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50325] X-Factor 005 (2024) (Jenny Frison Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50326] X-Factor 005 (2024) (Jenny Frison Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50327] X-Factor 005 (2024) (Marcus To Xyber Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50328] X-Factor 005 (2024) (Marcus To Xyber Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50329] X-Factor 006 (2025) (Rafael Albuquerque Fantastic Four Homage Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50330] X-Factor 006 (2025) (Rickie Yagawa Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            X-Factor 001 (2024) (digital) (Marika-Empire).cbz … X-Factor 006 (2025) (digital) (Marika-Empire).cbz  (6 files, pp 26-40)
+   ours:    ladder 1-6; 6 number(s) name more than one file: 1, 2, 3, 4, 5, 6; ComicInfo Series: "X-Factor"x5, "X-Factor cvv159244"x1; ComicInfo Volume: "2024"x6; ComicInfo Publisher: "Marvel"x5, "Marvel Comics"x1; ComicInfo Web: "1066712"x1, "1070143"x1, "1074686"x1, "1076641"x1
+   CV linked:      vol 159244 "X-Factor" 2024 Marvel 10 issues; cached #1-10 (10); yearΔ 0; ratio 33/10 = 3.30; no judged range; v1 per-file: same volume on 33/33 files
+   CV local rip:   (= linked) · 129097 "X-Factor" 2020 Marvel 10 · 150559 "X-Factor" 2020 Panini Comics 3 · 46699 "X-Factor" 2011 Panini España 10 · 18109 "X-Factor" 2006 Marvel 114 · 43532 "X-Factor" 2006 Panini España 53   (rip lookup)
+   GCD dump:       214301 "X-Factor" 2024-2025 Marvel [] 10 · 162354 "X-Factor" 2020-2021 Marvel [] 10 · 170656 "X-Factor" [it] 2020-? Panini Comics [] 2 · 35456 "X-Factor" 2007-2013 Marvel [] 21 · 16465 "X-Factor" 2006-2013 Marvel [] 114 · 34065 "X-Factor" [es] 2006-2011 Panini España [] 53   (dump lookup)
+
+== S102431 X-Men  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: X-Men v7 (2024)  years 1997-1997  64 files / 0 collections
+   split: the KEPT half of the P-053 split — moved out -> S66353 "X-Men (2021)"; re-identify what stayed
+   folders: [54] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men - From the Ashes (2024)\002 X-Men v7 (2024)\Variant Covers · [10] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men - From the Ashes (2024)\002 X-Men v7 (2024)
+   files:   [50055] X-Men 001 (2024) (Blank Cover Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50056] X-Men 001 (2024) (George Perez Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50057] X-Men 001 (2024) (J. Scott Campbell Psylocke Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50058] X-Men 001 (2024) (J. Scott Campbell Psylocke Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50059] X-Men 001 (2024) (John Tyler Christopher Ratio Virgin 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50060] X-Men 001 (2024) (John Tyler Christopher Virgin Negative Space Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50061] X-Men 001 (2024) (Logo Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50062] X-Men 001 (2024) (Peach Momoko Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50063] X-Men 001 (2024) (Ryan Stegman 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50064] X-Men 001 (2024) (Ryan Stegman 3rd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50065] X-Men 001 (2024) (Ryan Stegman Ratio Virgin 3rd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50066] X-Men 001 (2024) (Scott Koblish Wraparound Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50067] X-Men 001 (2024) (Skottie Young Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50068] X-Men 001 (2024) (Tony Daniel Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50069] X-Men 002 (2024) (David Nakayama Weapon X-Traction Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50070] X-Men 002 (2024) (J. Scott Campbell Magik Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50071] X-Men 002 (2024) (J. Scott Campbell Magik Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50072] X-Men 002 (2024) (J. Scott Campbell Ratio Virgin 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50073] X-Men 002 (2024) (Olivier Vatine Disco Dazzler Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50074] X-Men 002 (2024) (Ruairi Coleman Marvel Multiverse Rpg Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50075] X-Men 002 (2024) (Ryan Stegman 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50076] X-Men 002 (2024) (Taurin Clarke Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50077] X-Men 003 (2024) (Greg Land Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50078] X-Men 003 (2024) (J. Scott Campbell Rogue Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50079] X-Men 003 (2024) (J. Scott Campbell Rogue Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50080] X-Men 003 (2024) (Joelle Jones Marvel 85th Anniversary Homage Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50081] X-Men 003 (2024) (Mahmud Asrar Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50082] X-Men 004 (2024) (Chris Samnee Godzilla Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50083] X-Men 004 (2024) (Elena Casagrande Stormbreakers Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50084] X-Men 004 (2024) (J. Scott Campbell Emma Frost Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50085] X-Men 004 (2024) (J. Scott Campbell Emma Frost Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50086] X-Men 004 (2024) (Marc Aspinall Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50087] X-Men 005 (2024) (Alessandro Cappuccio Doom Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50088] X-Men 005 (2024) (Elizabeth Torque Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50089] X-Men 005 (2024) (J. Scott Campbell Jean Grey Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50090] X-Men 005 (2024) (J. Scott Campbell Jean Grey Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50091] X-Men 006 (2024) (Derrick Chew Magneto Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50092] X-Men 006 (2024) (Derrick Chew Magneto Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50093] X-Men 006 (2024) (Julian Totino Tedesco Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50094] X-Men 006 (2024) (Roge Antonio Doom Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50095] X-Men 007 (2024) (Afu Chan Marvel Fortnite Meowtooth Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50096] X-Men 007 (2024) (Cory Smith Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50097] X-Men 007 (2024) (Gleb Melnikov Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50098] X-Men 007 (2024) (Joelle Jones Psylocke Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50099] X-Men 007 (2024) (Joelle Jones Psylocke Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50100] X-Men 007 (2024) (Roge Antonio Marvel Two-In-One Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50101] X-Men 008 (2024) (Aka Temper Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50102] X-Men 008 (2024) (Aka Temper Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50103] X-Men 008 (2024) (Chris Giarrusso Crossover Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50104] X-Men 008 (2024) (Mayes C. Rubeo & Jonay Bacallado Marvel Studios Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50105] X-Men 009 (2024) (Bengus Marvel Vs Capcom Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50106] X-Men 009 (2024) (Chris Giarrusso Crossover Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50107] X-Men 009 (2024) (Miguel Mercado Cyclops Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50108] X-Men 009 (2024) (Miguel Mercado Cyclops Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50122] X-Men 001 (2024) (digital) (F) (Marika-Empire).cbz (37pp)
+            X-Men 002 (2024) (digital) (Marika-Empire).cbz … X-Men 010 (2025) (digital) (Marika-Empire).cbz  (9 files, pp 25-32)
+   ours:    ladder 1-10; 9 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9; ComicInfo Series: "X-Men"x10; ComicInfo Volume: "2024"x9, "158814"x1; ComicInfo Publisher: "Marvel"x7, "Marvel Comics"x3; ComicInfo Web: "1062857"x1, "1066713"x1, "1067992"x1, "1070144"x1
+   CV linked:      vol 158814 "X-Men" 2024 Marvel 22 issues; cached #1-24 (11); yearΔ 27; ratio 64/22 = 2.91; no judged range
+   CV per-file (v1): vol 43640 "X-Men" 1997 Panini France 169 on 64/64 files
+   CV local rip:   (= linked) · 43669 "X-Men" 1997 Panini Verlag 48 · 45796 "X-Men" 1996 Planeta DeAgostini 105 · 43672 "X-Men" 2001 Panini Verlag 150 · 43634 "X-Men" 2002 Panini Brasil 143 · 46130 "X-Men" 1992 Planeta DeAgostini 40   (rip lookup)
+   GCD per-file:   series 223643 "X-Men" [fr] 2025-2026 Panini France [série continue terminée [was ongoing series]] 30 on 49/64 files · series 221940 "X-Men" [de] 2025-? Panini Deutschland [ongoing series] 4 on 15/64 files; methods numx64
+   GCD dump:       33290 "X-Men" [de] 1997-2000 Panini Deutschland [] 48 · 38909 "X-Men" [fr] 1997-2011 Panini France [] 169 · 178806 "X-Men" [hr] 1997-1998 Slobodna Dalmacija [] 6 · 182418 "אקס-מן: X-Men" [iw-il] 1997-1999 Contact Point [] 23 · 10643 "X-Men" [sv-se] 1998-2006 Egmont [] 66 · 28279 "X-Men" 1998-1998 Marvel; Wizard [] 1   (dump lookup)
+
+== S21029 Venom  [tier B]   keys: Venom by Al Ewing & Ram V  years 2021-2023  4 files / 4 collections
+   folders: [4] Marvel\#MARVEL CURRENT ONGOING TITLES\Venom v5 (2022)
+   files:   [48929] COL Venom by Al Ewing & Ram V Vol. 01 - Recursion (2022) (Digital) (Kileko-Empire).cbz (134pp)
+            [48930] COL Venom by Al Ewing & Ram V Vol. 02 - Deviation (2022) (Digital) (Kileko-Empire).cbz (109pp)
+            [48931] COL Venom by Al Ewing Vol. 03 - Dark Web (2023) (Digital) (Shan-Empire).cbz (138pp) | [48932] COL Venom by Al Ewing Vol. 04 - Illumination (2023) (Digital-Empire).cbr (102pp)
+   ours:    judged item 48929 #1-5 conf 0.8; judged item 48930 #6-10 conf 0.85; judged item 48931 #11-15 conf 0.7; judged item 48932 #16-20 conf 0.8; ComicInfo Series: "Venom by Al Ewing & Ram V"x4; ComicInfo Publisher: "Marvel"x4
+   GCD says: [48929] gcd_reprint 2384970: s177713 Venom (2021) (unnumbered) [28 stories]
+             [48930] gcd_reprint 2446271: s177713 Venom (2021) (unnumbered) [6 stories]
+             [48931] gcd_reprint 2525349: s177713 Venom (2021) (unnumbered) [7 stories] · s184712 Free Comic Book Day 2022: Spider-Man / Venom (2022) #1 [1 story]
+             [48932] gcd_reprint 2566028: s177713 Venom (2021) (unnumbered) [6 stories]
+   CV linked:      vol 140084 "Venom" 2021 Marvel 39 issues; cached #1-39 (39); yearΔ 0; ratio 0/39; 4 of 4 judged fit
+   CV candidates:  147779 "Venom by Al Ewing & Ram V" 2022 Marvel 4 s120 · 147358 "X-Men Red by Al Ewing" 2022 Marvel 4 s69 · 139162 "S.W.O.R.D. By Al Ewing" 2021 Marvel 2 s65 · 137624 "Ultimates By Al Ewing: The Complete Collection" 2021 Marvel 1 issue 871799 s51 · 131208 "Guardians of the Galaxy by Al Ewing: Then It's Us" 2020 Marvel 1 issue 810761 s48 · 143982 "Guardians of the Galaxy by Al Ewing: We're Super Heroes" 2021 Marvel 1 issue 935174 s48   (v1 search)
+   CV local rip:   (= linked) · 159985 "Venom" 2022 Panini Brasil 3 · 141958 "Venom" 2019 Panini Verlag 8 · 159984 "Venom" 2019 Panini Brasil 20 · 110770 "Venom" 2018 Marvel 35 · 112780 "Venom" 2018 Panini Verlag 2   (rip lookup)
+   GCD dump:       177713 "Venom" 2021-2025 Marvel [] 39 · 219827 "Venom" [fr] 2021-2021 Panini France [] 1 · 194330 "Venom" [fr] 2022-2024 Panini France [] 6 · 196382 "Venom" [pt-br] 2022-? Panini Brasil [] 6 · 220893 "Venom" [en-gb] 2022-? Panini UK [] 2 · 225778 "Venom" [es-mx] 2020-2020 Editorial Televisa [] 1   (dump lookup)

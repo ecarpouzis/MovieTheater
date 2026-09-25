@@ -1,0 +1,768 @@
+## Conventions for this batch (24 shown of 143 matched; 389 in LEDGER.md; 30 shelf/shelves: pub:marvel ×30 · folder:vn-year ×19 · folder:events ×7 · kind:collected-line ×6 · folder:sequel-subfolder ×6 · kind:golden-age ×5 · folder:bucket ×3 · kind:trade-only ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (30 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (30 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (30 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-136] (21 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-127] (20 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-060] (19 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (19 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-130] (16 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-242] (16 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-174] (15 shelf/shelves) pub:marvel sig:legacy-stamp sig:stamp
+- A legacy-renumbered run is its own volume in both legs (Captain Marvel #125-129 = CV 105506 / GCD 117972; GotG
+  #146-150 = GCD 118041); the per-file matcher reaches the 1960s/1990s namesake by issue number every time.
+[L-191] (22 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-281] (22 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-124] (20 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-389] (13 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-053 / R-135 (waves 129-130): a run's issues never JOIN a creator-trade-keyed shelf ("Venom by Al Ewing & Ram V",
+  S21029, four trades) — keep them and meet through the SHARED cv at the next revisit (S20988 cv=140084 + merge-with=21029).
+  Marvel's 2019-2020 "Star Wars #1 facsimile" is "Star Wars No 1 Facsimile Edition" (CV 123267 / GCD 153348): probe the
+  "No N" form. Star Wars Insider and Titan's "Best of" books have no CV / GCD record: R + provider-missing, never the 1977
+  comic's stamp. The Dark Horse Star Wars Omnibus umbrella number (Vol. 32 / 35) raises a false "stored GCD row is another
+  book" warning against the sub-line's #1 / #2 — page counts and ISBNs decide. An Epic Collection / omnibus line spanning
+  several minis keeps its own GCD-line key in a split.
+[L-272] (19 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-388] (12 shelf/shelves) pub:marvel sig:split
+- R-134 (wave 128, lead ruling): RESIDUE vs co-equal — two or more whole trades of another run are a co-equal run (R +
+  split-needed) only when that run has NO shelf of its own; when its run or line already has a shelf, they are misfiled
+  books: S + `F split-needed | items -> join S<home>` (L-368; X-Factor 2024 S66336's two Peter David omnibuses -> S22172).
+  `#MARVEL CURRENT ONGOING TITLES`: Marika / MikeNY76 ComicInfo Web ids and "cvv<id>" Series strings name the stored CV
+  volume (1.0 evidence). From the Ashes "Variant Covers" folders hold the PREVIOUS run's finale covers (X-Men v6 #35 in
+  the v7 folder). "_X-Men Complete Chronology V2\NNNN <event>" annuals are event-chapter excerpts = partial rips. A
+  ripper's "Omnibus Book 01" in a run's folder can be that run's first omnibus, not the line's Vol. 1 (page count decides).
+  CV mints one count-1 volume per Venom by Ewing trade; GCD keeps two lines (183532 Vols 1-4, 208820 Vols 5-8).
+[L-371] (11 shelf/shelves) pub:marvel sig:split
+- A split F line's "new key" can already be a LIVE shelf's key (a trade-only shelf of the same run, e.g. Superboy v6
+  (2011) = S100132's key) — check `nearby:` / `lookup.py --shelf` and write it as an explicit join. Stored GCD rows on
+  Marvel 2022+ trades can be the PANINI FRANCE edition — `--collects` on the English row confirms the right one.
+  Digital rips of Marvel trades run ~88-92% of GCD's printed page count — a usable per-book fit when the filename year is
+  the digital release date (R-111).
+[L-387] (11 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-052 / R-133 (waves 126-127, lead-approved): "the largest run STAYS" yields to the STORED cv — when the run that holds
+  the shelf's stored cv is the smaller one, keep it and move the larger RECORD-LESS run out (Star Wars S16641: the 1977 run
+  on CV 2914 stays, 208 Star Wars Insider files leave to "Star Wars Insider (1987)"); a new shelf seeded with the parent's
+  cv would collide with its canonical cv. The key normalizer keeps the year: a key differing only by year is new; respell
+  only when the exact spelling is a ParsedKey, alias or SeriesKeyLink. A split seed can be a book's own count-1 record —
+  re-check against L-124 when the book sits alone in a run's folder (The Other Side 2017 -> DC mini CV 19537 / GCD 21941).
+[L-030] (30 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-151] (30 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (30 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-319] (9 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-113] (26 shelf/shelves) sig:comicinfo sig:stamp
+- ComicInfo `Volume` holding a 4-digit ComicVine volume id (not a year) is a 1.0 assertion like the 6-digit
+  case (Ka-Zar v2 1974: `Volume 2692` + `Count 20` = CV 2692) and disproves the per-file matcher's pick.
+[L-343] (8 shelf/shelves) pub:dark-horse pub:idw pub:marvel sig:probe
+- More GCD name shapes (R-067): Dark Horse High Republic Adventures inserts "(Phase III)" and uses a comma form
+  ("…Adventures, The Nameless Terror"); IDW / Disney / Marvel Illustrated drop a leading "The" or "A Graphic Novel";
+  Marvel's Dark Tower strips punctuation ("Drawing of Three"). GCD indexes NO Marvel Infinity Comics (gcd=- stands).
+  An Image-style deluxe / "Complete" edition of ONE run merges into the run shelf (Department of Truth).
+
++119 more matched entries not shown: L-345, L-357, L-034, L-169, L-298, L-313, L-016, L-032, L-114, L-031, L-076, L-109, L-115, L-117, L-119, L-123, L-132, L-175, L-193, L-196, L-295, L-296, L-306, L-307, L-308, L-327, L-328, L-329, L-332, L-133, L-194, L-330, L-065, L-099, L-262, L-291, L-064, L-085, L-101, L-310, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-290, L-297, L-309, L-314, L-014, L-128, L-181, L-336, L-029, L-121, L-129, L-331, L-007, L-106, L-111, L-112, L-150, L-187, L-217, L-312, L-324, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-027, L-028, L-036, L-087, L-134, L-172, L-173, L-265, L-305, L-379, L-097, L-252, L-274, L-288, L-293, L-352, L-354 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S6312 Exiles  [tier C] · 220 files  keys: Exiles | Exiles (2001) | Exiles Annual | Exiles Annual (2001) | Exiles v1 (2001) | Exiles: The Complete Collection  years 2001-2018  220 files / 19 collections
+   folders: [100] Marvel\Exiles\01 Exiles v1 (2001) · [17] Marvel\_X-Men\Exiles\01 Exiles v1 (2001) · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0516 Another Rooster In The Henhouse · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0758 Home Again · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0487 Exiles · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0503 A World Apart · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0746 Enemy of the Stars · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0641 Bump in the Night · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0668 Timebreakers · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0538 Legacy · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0560 Unnatural Instincts · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0564 With an Iron Fist · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0583 Fantastic Voyage · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0590 King Hyperion · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0597 A Blink In Time · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0608 Earn Your Wings · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0618 The Big M · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0679 House of M · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0680 Destroy All Monsters · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0721 The New Exiles · [3] _Marvel Major Event Chronology (digital)\2005.08 - House of M\03 House of M Tie-ins\Exiles · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0533 So Lame - The Exiles in Mojoverse · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0555 Hard Choices · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0572 Exiles - Avengers Forever · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0576 A Second Farwell · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0592 Nocturne's Tale · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0628 Living Planet · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0650 Taking on Tanaraq · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0662 Son of Apocalypse · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0690 World Tour New Universe · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0701 World Tour 2099 · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0705 World Tour Squadron Supreme · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0715 World Tour Future Imperfect · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0717 World Tour Heroes Reborn · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0739 Rules of The Game · [1] Marvel\Exiles\01 Exiles v1 (2001)\Annuals · [1] Marvel\_X-Men\Exiles\01 Exiles v1 (2001)\Deluxe Editions · [1] Marvel\_X-Men\Exiles\Exiles Ultimate Collection (2008) · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0736 Superguardians
+   files:   [99985] Exiles Annual (2007) (Digital) (AnPymGold - Empire).cbr (40pp)
+            Exiles 001 (2001) (Digital) (AnPymGold - Empire).cbr … Exiles 100 (2008) (Digital) (AnPymGold - Empire).cbr  (100 files, pp 20-39)
+            [85967] COL Exiles - The Complete Collection Book 01 (2019) (Digital) (Kileko-Empire).cbz (465pp) | [84478] COL Exiles Vol. 01 - Down the Rabbit Hole (2007) (Digital-HD-Empire).cbz (109pp)
+            [84479] COL Exiles Vol. 02 - A World Apart (2014) (digital-HD-Empire).cbz (159pp) | [84480] COL Exiles Vol. 03 - Out of Time (2014) (F) (Digital-Empire).cbz (188pp)
+            [84481] COL Exiles Vol. 04 - Legacy (2014) (digital-Empire).cbr (149pp) | [84482] COL Exiles Vol. 05 - Unnatural Instinct (2016) (F) (Digital-Empire).cbz (133pp)
+            [84483] COL Exiles Vol. 06 - Fantastic Voyage (2016) (digital-Empire).cbr (177pp) | [84484] COL Exiles Vol. 07 - A Blink In Time (2016) (digital-Empire).cbr (208pp)
+            [84485] COL Exiles Vol. 08 - Earn Your Wings (2016) (F) (digital-Empire).cbz (140pp) | [84486] COL Exiles Vol. 09 - Bump In The Night (2016) (F) (Digital-Empire).cbz (159pp)
+            [84487] COL Exiles Vol. 10 - Age of Apocalypse (2016) (digital-Empire).cbr (125pp) | [84488] COL Exiles Vol. 11 - Timebreakers (2016) (digital-Empire).cbr (170pp)
+            [84489] COL Exiles Vol. 12 - World Tour Book One (2016) (digital-sd-Empire).cbr (145pp) | [84490] COL Exiles Vol. 13 - World Tour Book Two (2016) (Digital-HD-Empire).cbz (207pp)
+            [84491] COL Exiles Vol. 13 - World Tour Book Two (2016) (digital-sd-Empire).cbr (220pp) | [84492] COL Exiles Vol. 14 - The New Exiles (2016) (F) (digital-Empire).cbz (176pp)
+            [84493] COL Exiles Vol. 15 - Enemy of the Stars (2016) (digital-Empire).cbr (123pp) | [84494] COL Exiles Vol. 16 - Starting Over (2016) (F) (Digital-Empire).cbz (182pp)
+            [84503] COL Exiles - Ultimate Collection v01 (2019) (Digital) (Kileko-Empire).cbz (465pp)
+            001 Exiles 001 (2001) (Digital) (AnPymGold - Empire).cbr … 003 Exiles 030 (2003) (Digital) (AnPymGold - Empire).cbr  (26 files, pp 20-39)
+            [89728] 001 Exiles 023 (2003) (Digital) (F) (AnPymGold-Empire).cbz (24pp) | [89729] 002 Exiles 024 (2003) (Digital) (AnPymGold - Empire).cbr (24pp)
+            [89730] 003 Exiles 025 (2003) (Digital) (AnPymGold - Empire).cbr (24pp) | [89766] 001 Exiles 031 (2003) (Digital) (F) (AnPymGold-Empire).cbz (24pp)
+            002 Exiles 032 (2003) (Digital) (AnPymGold - Empire).cbr … 001 Exiles 089 (2007) (Digital) (AnPymGold - Empire).cbr  (55 files, pp 21-25)
+            [90646] 002 Exiles Annual (2007) (Digital) (AnPymGold - Empire).cbr (40pp)
+            001 Exiles 090 (2007) (Digital) (AnPymGold - Empire).cbr … 006 Exiles 100 (2008) (Digital) (AnPymGold - Empire).cbr  (11 files, pp 23-25)
+            [116646] Exiles 069 (2005) (Digital) (AnPymGold-Empire).cbr (22pp) | [116647] Exiles 070 (2005) (Digital) (AnPymGold-Empire).cbr (22pp)
+            [116648] Exiles 071 (2005) (Digital) (AnPymGold-Empire).cbr (23pp)
+   ours:    ladder 1-100; 96 number(s) name more than one file: 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13; ComicInfo Series: "Exiles"x17, "Exiles: The Complete Collection"x2; ComicInfo Publisher: "Marvel"x19
+   GCD says: [85967] gcd_reprint 1877379: s7516 Exiles (2001) #1-19 [41 stories] · s141337 Exiles: Ultimate Collection (2009) #1 [1 story]
+             [84478] gcd notes 787873 (#1 of Exiles): Exiles (Marvel, 2001 series) #1-4  |  gcd_reprint 787873: s7516 Exiles (2001) #1-4 [5 stories]
+             [84479] gcd notes 787874 (#2 of Exiles): Exiles (Marvel, 2001 series) #5-11
+             [84480] gcd notes 787875 (#3 of Exiles): Exiles (Marvel, 2001 series) #12-19  |  gcd_reprint 787875: s7516 Exiles (2001) #2, #12-19 [18 stories]
+             [84481] gcd notes 787876 (#4 of Exiles): Exiles (Marvel, 2001 series) #20-25  |  gcd_reprint 787876: s7516 Exiles (2001) #2, #20-25 [13 stories]
+             [84482] gcd notes 787877 (#5 of Exiles): Exiles (Marvel, 2001 series) #26-30
+             [84483] gcd notes 787878 (#6 of Exiles): Exiles (Marvel, 2001 series) #31-37  |  gcd_reprint 787878: s7516 Exiles (2001) #31-37 [15 stories]
+             [84484] gcd notes 787879 (#7 of Exiles): Exiles (Marvel, 2001 series) #38-45  |  gcd_reprint 787879: s7516 Exiles (2001) #43-45 [6 stories]
+             [84485] gcd notes 787880 (#8 of Exiles): Exiles (Marvel, 2001 series) #46-51  |  gcd_reprint 787880: s7516 Exiles (2001) #46-51 [12 stories]
+             [84486] gcd notes 787881 (#9 of Exiles): Exiles (Marvel, 2001 series) #52-58  |  gcd_reprint 787881: s7516 Exiles (2001) #52-53 [4 stories]
+             [84487] gcd notes 787882 (#10 of Exiles): Exiles (Marvel, 2001 series) #59-61
+             [84488] gcd notes 787883 (#11 of Exiles): Exiles (Marvel, 2001 series) #62-68  |  gcd_reprint 787883: s7516 Exiles (2001) #62-68 [15 stories]
+             [84490] gcd notes 787885 (#13 of Exiles): Exiles (Marvel, 2001 series) #75-83
+             [84491] gcd notes 787885 (#13 of Exiles): Exiles (Marvel, 2001 series) #75-83
+             [84492] gcd notes 787886 (#14 of Exiles): Exiles (Marvel, 2001 series) #84-89; Exiles Annual (Marvel, 2007 series) #1  |  gcd_reprint 787886: s7516 Exiles (2001) #84-89 [14 stories] · s30872 Exiles Annual (2007) #1 [2 stories] · s44873 Official Handbook of the Marvel Universe A to Z (2008) #11 [1 story]
+             [84493] gcd notes 787887 (#15 of Exiles): Exiles (Marvel, 2001 series) #90-94
+             [84494] gcd notes 787888 (#16 of Exiles): Exiles (Marvel, 2001 series) #95-100; Exiles (Marvel, 2008 series) #1  |  gcd_reprint 787888: s7516 Exiles (2001) #95-100 [14 stories] · s28995 Exiles (2008) #1 [10 stories]
+             [84503] gcd_reprint 1877379: s7516 Exiles (2001) #1-19 [41 stories] · s141337 Exiles: Ultimate Collection (2009) #1 [1 story]
+   CV linked:      vol 6983 "Exiles" 2001 Marvel 100 issues; cached #1-100 (100); yearΔ 0; ratio 200/100 = 2.00; no judged range
+   CV per-file (v1): vol 6983 "Exiles" 2001 Marvel 100 on 200/220 files · vol 18008 "Exiles Annual" 2007 Marvel 1 issue 105422 on 1/220 files
+   CV candidates:  (= linked) · 5137 "Exiles" 1993 Malibu 4 s85 · 71313 "Exiles" 1990 Alpha Productions 3 s84 · 113867 "Exiles: The Complete Collection" 2018 Marvel 1 issue 686378 s58 · 34087 "Powers Annual 2001" 2001 Image 1 issue 222198 s51 · 109764 "Exiles" 2018 Marvel 12 s50 · 26159 "Exiles" 2009 Marvel 6 s50   (v1 search)
+   CV local rip:   (= linked) · 5137 "Exiles" 1993 Malibu 4 · 26159 "Exiles" 2009 Marvel 6 · 71313 "Exiles" 1990 Alpha Productions 3 · 109764 "Exiles" 2018 Marvel 12   (rip lookup)
+   GCD per-file:   methods numx199 · round2-seriesx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 7516 "Exiles" 2001-2008 Marvel [was ongoing series] 100 on 200/220 files
+   GCD dump:       (= per-file) · 53302 "Exiles" 2002-2008 Marvel [] 16 · 28995 "Exiles" 2008-2008 Marvel [] 1 · 4841 "Exiles" 1993-1993 Malibu [] 4 · 35700 "Exiles" 2009-2009 Marvel [] 6 · 46156 "Exiles" 1990-1991 Alpha Productions [] 3   (dump lookup)
+   bridges:        gcd 7516 -> LOCG 115413 "Exiles" support 206
+
+== S12808 New Exiles  [tier C] · 17 number(s) x2+, 1 parsed key(s), ratio 1.95  keys: New Exiles  years 2008-2009  42 files / 4 collections
+   folders: [18] Marvel\Exiles\03 New Exiles (2008) · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0771 New Life, New Gambit · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0777 Soul Awakening · [4] Marvel\_X-Men\Exiles\02 New Exiles v1 (2008) · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0791 The Enemy Within · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0802 Away We Go · [1] Marvel\Exiles\03 New Exiles (2008)\Annuals and Specials
+   files:   [99142] New Exiles Annual (2009) (F) (Digital) (AnPymGold-Empire).cbr (30pp) | [99143] New Exiles 00.cbr (69pp)
+            New Exiles 001 (2008) (Digital) (AnPymGold-Empire).cbr … New Exiles 016 (2009) (Digital) (AnPymGold-Empire).cbr  (16 files, pp 22-25) | [99161] New Exiles 18.cbr (24pp)
+            [84495] COL New Exiles Vol. 01 - New Life - New Gambit (2008) (Digital) (Kileko-Empire).cbr (156pp)
+            [84496] COL New Exiles Vol. 02 - Soul Awakening (2008) (Digital) (Kileko-Empire).cbr (153pp)
+            [84497] COL New Exiles Vol. 03 - The Enemy Within (2009) (Digital) (Kileko-Empire).cbr (110pp) | [84498] COL New Exiles Vol. 04 - Away We Go (2009) (Digital) (Kileko-Empire).cbr (121pp)
+            001 New Exiles 001 (2008) (Digital) (AnPymGold - Empire).cbr … 003 New Exiles 015 (2009) (Digital) (AnPymGold - Empire).cbr  (15 files, pp 22-25)
+            [91019] 004 New Exiles Annual (2009) (F) (Digital) (AnPymGold - Empire).cbr (30pp) | [91096] 001 New Exiles 016 (2009) (Digital) (AnPymGold - Empire).cbr (24pp)
+            [91097] 002 New Exiles 017 (2009) (Minutemen-DizzyMeganubis).cbr (25pp) | [91098] 003 New Exiles 018 (2009) (Minutemen-DizzyMeganubis).cbr (29pp)
+   ours:    ladder 0-18; 17 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12; judged item 84495 #1-6 conf 0.9; judged item 84496 #7-12 conf 0.9; judged item 84497 #13-15 conf 0.9; judged item 84498 #16-18 conf 0.9; ComicInfo Series: "New Exiles"x4; ComicInfo Publisher: "Marvel"x4
+   GCD says: [84497] gcd notes 911938 (#3 of New Exiles): *New Exiles* (Marvel, 2008 series) #13-16; *New Exiles Annual* (Marvel, 2009 series) #1  |  gcd_reprint 911938: s28827 New Exiles (2008) #13-15 [4 stories] · s33988 New Exiles Annual (2009) #1 [1 story]  |  ⚠ RANGE CONTRADICTED by GCD notes (multi): judged #13-15, GCD says *New Exiles* (Marvel, 2008 series) #13-16; *New Exiles Annual* (Marvel, 2009 series) #1
+   CV linked:      vol 20347 "New Exiles" 2008 Marvel ? issues; cached #0-18 (19); yearΔ 0; ratio 37/? = 1.95; 4 of 4 judged fit; v1 per-file: same volume on 38/42 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 28827 "New Exiles" 2008-2009 Marvel [was ongoing series] 19 on 36/42 files · series 63103 "New Exiles" 2008-2009 Marvel [collected edition] 4 on 1/42 files; methods numx37; the dump names no other series
+   bridges:        gcd 28827 -> LOCG 105584 "New Exiles" support 40 · gcd 63103 -> LOCG 105584 "New Exiles" support 1 · gcd 63103 -> OL /works/OL21017938W "None" isbnSupport 3
+
+== S6861 Force Works  [tier C] · ratio 0.36  keys: Avengers / Iron Man: Force Works | Force Works  years 1994-2016  9 files / 1 collections
+   folders: [8] Marvel\Force Works\Force Works v1 (1994) · [1] Marvel\Force Works\Force Works v1 (1994)\Annuals and Specials
+   files:   [99236] Force Works 001 (with pop-up cover) (1994) (c2c) (Lusiphur-DCP).cbr (55pp) | [99238] COL Avengers - Iron Man - Force Works Vol. 01 (2016) (Digital-Empire).cbr (450pp)
+            Force Works 016 (1995) (Digital) (Shadowcat-Empire).cbz … Force Works 022 (1996) (Digital) (Shadowcat-Empire).cbz  (7 files, pp 21-24)
+   ours:    ladder 1, 16-22; ComicInfo Series: "Avengers / Iron Man: Force Works"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [99238] gcd_reprint 1565328: s5009 Force Works (1994) #1-15 [38 stories] · s66287 Force Works Ashcan Edition (1993) (unnumbered) [5 stories] · s69795 Marvel Age (1983) #132 [2 stories] · s175760 Avengers Anniversary Magazine (1993) #1 [2 stories]
+   CV linked:      vol 5297 "Force Works" 1994 Marvel 22 issues; cached #1-22 (22); yearΔ 0; ratio 8/22 = 0.36; no judged range; v1 per-file: same volume on 8/9 files
+   CV candidates:  (= linked) · 63086 "Iron Man & Force Works Collectors' Preview" 1994 Marvel 1 issue 409559 s90 · 38742 "Force Works Ashcan Edition" 1994 Marvel 1 issue 259758 s88 · 125299 "2020 Force Works" 2020 Marvel 3 s37 · 131538 "Iron Man 2020: Robot Revolution - Force Works" 2020 Marvel 1 issue 814969 s35 · 56671 "1994 Marvel Comics Publishing Plan" 1993 Marvel 2 s30 · 90095 "Avengers/Iron Man: Force Works" 2016 Marvel 1 issue 528501 s25   (v1 search)
+   CV local rip:   (= linked) · 90095 "Avengers/Iron Man: Force Works" 2016 Marvel 1 issue 528501 · 38742 "Force Works Ashcan Edition" 1994 Marvel 1 issue 259758 (via CV candidate name "Force Works Ashcan Edition") · 63086 "Iron Man & Force Works Collectors' Preview" 1994 Marvel 1 issue 409559 (via CV candidate name "Iron Man & Force Works Collectors' Preview")   (rip lookup)
+   GCD per-file:   series 5009 "Force Works" 1994-1996 Marvel [was ongoing series] 22 on 8/9 files; methods numx8
+   GCD dump:       (= per-file) · 100914 "Avengers / Iron Man: Force Works" 2016-2016 Marvel [] 1 · 66287 "Force Works Ashcan Edition" 1993-1993 Marvel [] 1 (via CV candidate name "Force Works Ashcan Edition")   (dump lookup)
+   bridges:        gcd 5009 -> LOCG 112490 "Force Works" support 10
+
+== S7651 Godzilla  [tier A]   keys: Godzilla  years 1977-2022  26 files / 2 collections
+   flags: #716 span-retracted [Pending] item 30672 — the audit withdrew the range the pass had written: the locg #1-1 block is a shell artefact
+   folders: [23] Marvel\Godzilla v1 (1978) · [2] IDW\Godzilla\_Trades, minis and one-shots\Godzilla - Best of ... (2022) · [1] IDW\Godzilla\_Trades, minis and one-shots
+   files:   [30643] COL Godzilla - Best of Godzilla (2022) (Knight Ripper-Empire).cbr (92pp) | [30644] Godzilla - Best of Godzilla 001 (2022) (digital) (DrVink).cbz (92pp)
+            [30672] COL Godzilla Vol. 01 (2012) (digital) (Minutemen-Slayer).cbr (112pp)
+            Godzilla 002 (1977) (digital) (Marika-Empire).cbz … Godzilla 024 (1979) (digital) (Marika-Empire).cbz  (23 files, pp 18-19)
+   ours:    ladder 1-24; ComicInfo Series: "Godzilla"x23, "Godzilla: Best of Godzilla"x1; ComicInfo Volume: "1977"x23; ComicInfo Count: "24"x17; ComicInfo Publisher: "Marvel Comics"x19, "Marvel"x4, "IDW"x2; ComicInfo Web: "17778"x1, "17871"x1, "17963"x1, "18042"x1
+   CV linked:      vol 2901 "Godzilla" 1977 Marvel 24 issues; cached #1-24 (24); yearΔ 0; ratio 24/24 = 1.00; no judged range; v1 per-file: same volume on 26/26 files
+   CV local rip:   (= linked) · 4136 "Godzilla" 1988 Dark Horse Comics 6 · 19770 "Godzilla" 1995 Dark Horse Comics 17 · 55609 "Godzilla" 1995 Dark Horse Comics 1 issue 379161 · 49198 "Godzilla" 2012 IDW Publishing 13 · 53940 "Godzilla" 2012 IDW Publishing 3   (rip lookup)
+   GCD per-file:   series 2392 "Godzilla" 1977-1979 Marvel [was ongoing series] 24 on 23/26 files; methods numx23
+   GCD dump:       (= per-file) · 3741 "Godzilla" 1988-1989 Dark Horse [] 6 · 7449 "Godzilla" 1990-1990 Dark Horse [] 2 · 16216 "Godzilla" 1995-1996 Dark Horse [] 17 · 38057 "Godzilla" [sv-se] 1996-1996 Andreas Ericsson; Daniel Karlsson; Johan Sonestedt [] 1 · 56376 "Godzilla" [de] 1998-1999 Carlsen Comics [DE] [] 7   (dump lookup)
+   bridges:        gcd 2392 -> LOCG 117039 "Godzilla: King of the Monsters" support 22
+
+== S9370 Incredible Hercules  [tier A]   keys: Incredible Hercules | Incredible Hercules: The Complete Collection  years 2008-2010  18 files / 2 collections
+   flags: #287 label-ambiguous [Pending] item 116974 — the two v3 117-118 items are 2 pp variant covers carrying a collection format
+   folders: [6] Marvel\Hercules\04 Incredible Hercules (2009) · [4] _Marvel Major Event Chronology (digital)\2007.08 - World War Hulk\03 World War Hulk Aftersmash\Incredible Hercules · [4] _Marvel Major Event Chronology (digital)\2008.06 - Secret Invasion\03 Tie-ins\Incredible Hercules · [2] _Marvel Major Event Chronology (digital)\2008.06 - Secret Invasion\03 Tie-ins\_Variant Covers · [2] _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\The Incredible Hercules
+   files:   [99338] COL Incredible Hercules - The Complete Collection Book 01 (2019) (Digital) (Zone-Empire).cbr (447pp)
+            [99339] COL Incredible Hercules - The Complete Collection Book 02 (2021) (Digital).cbz (424pp) | [99340] Incredible Hercules 138 (2010) (digital) (Minutemen-InnerDemons).cbr (33pp)
+            [99341] Incredible Hercules 139 (2010) (digital) (Minutemen-InnerDemons).cbr (32pp) | [99342] Incredible Hercules 140 (2010) (digital) (Minutemen-InnerDemons).cbr (32pp)
+            [99343] Incredible Hercules 141 (2010) (digital) (Minutemen-InnerDemons).cbr (33pp) | [116904] Incredible Hercules 112 (2008) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            Incredible Hercules 113 (2008) (Digital) (Zone-Empire).cbr … Incredible Hercules 120 (2008) (Digital) (Zone-Empire).cbr  (7 files, pp 24-28)
+            [116974] Incredible Hercules v3 117 (2008) (2nd Printing Rafa Sandoval Variant) (Minutemen-RainsDesire).cbr (2pp)
+            [116975] Incredible Hercules v3 118 (2008) (2nd Printing Rafa Sandoval Variant) (Minutemen-RainsDesire).cbr (2pp)
+            [117119] Incredible Hercules 127 (2009) (Digital) (AnHeroGold-Empire).cbz (24pp) | [117120] Incredible Hercules 128 (2009) (Digital) (AnHeroGold-Empire).cbz (24pp)
+   ours:    ladder 112-115, 117-120, 127-128, 138-141; 2 number(s) name more than one file: 117, 118; judged item 99338 #113-120 conf 0.85; judged item 99339 #121-137 conf 0.85; ComicInfo Series: "Incredible Hercules: The Complete Collection"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 20588 "Incredible Hercules" 2008 Marvel ? issues; cached #113-141 (29); yearΔ 0; ratio 16/? = 0.55; 2 of 2 judged fit; v1 per-file: same volume on 18/18 files
+   CV candidates:  (= linked) · 125744 "Incredible Hercules: Smash of the Titans" 2009 Marvel 1 issue 741226 s78 · 32619 "Incredible Hercules: Against the World" 2008 Marvel 1 issue 207612 s76 · 32620 "Incredible Hercules: Dark Reign" 2009 Marvel 1 issue 207615 s67 · 32621 "Incredible Hercules: Mighty Thorcules" 2009 Marvel 1 issue 207630 s67 · 30725 "Incredible Hercules: Love And War" 2009 Marvel 1 issue 189759 s66 · 25911 "Incredible Hulk: Hercules Unleashed" 1996 Marvel 1 issue 153108 s60   (v1 search)
+   CV local rip:   (= linked) · 120399 "Incredible Hercules: The Complete Collection" 2019 Marvel 2 · 32619 "Incredible Hercules: Against the World" 2008 Marvel 1 issue 207612 (via CV candidate name "Incredible Hercules: Against the World") · 125744 "Incredible Hercules: Smash of the Titans" 2009 Marvel 1 issue 741226 (via CV candidate name "Incredible Hercules: Smash of the Titans")   (rip lookup)
+   GCD per-file:   series 28772 "Incredible Hercules" 2008-2010 Marvel [was ongoing series] 29 on 15/18 files; methods numx15
+   GCD dump:       (= per-file) · 155956 "Incredible Hercules" 2008-2010 Marvel [] 6 · 173996 "Incredible Hercules: The Complete Collection" 2019-? Marvel [] 2 · 179914 "Incredible Hercules: Against the World" 2008-2008 Marvel [] 1 (via CV candidate name "Incredible Hercules: Against the World") · 179933 "Incredible Hercules: Against the World" 2008-2008 Marvel [] 1 (via CV candidate name "Incredible Hercules: Against the World") · 235015 "Incredible Hercules: Smash of the Titans" 2009-2009 Marvel [] 1 (via CV candidate name "Incredible Hercules: Smash of the Titans")   (dump lookup)
+   bridges:        gcd 28772 -> LOCG 104138 "The Incredible Hercules" support 9
+
+== S35500 Heroes Reborn: America's Mightiest Heroes Companion  [tier B]   keys: Heroes Reborn - America's Mightiest Heroes Companion | Heroes Reborn - Iron Man  years 2020-2021  3 files / 2 collections
+   folders: [2] Marvel\Heroes Reborn (1997) · [1] Marvel\_Iron Man\03 Iron Man v2 (1996)
+   files:   [99377] COL Heroes Reborn - America's Mightiest Heroes Companion v01 (2021) (Digital-Empire).cbr (166pp)
+            [99378] COL Heroes Reborn - America's Mightiest Heroes Companion v02 (2021) (Digital-Empire).cbr (167pp) | [81834] Heroes Reborn - Iron Man (2020) (hd-webrip) (JTR).cbz (469pp)
+   GCD says: [99377] gcd_reprint 2258786: s172728 Heroes Reborn: Magneto & the Mutant Force (2021) #1 [2 stories] · s172730 Heroes Reborn: Siege Society (2021) #1 [1 story] · s172729 Heroes Reborn: Young Squadron (2021) #1 [1 story] · s172486 Heroes Reborn: Peter Parker, the Amazing Shutterbug (2021) #1 [1 story]
+             [99378] gcd_reprint 2258787: s173082 Heroes Reborn: Squadron Savage (2021) #1 [2 stories] · s173269 Heroes Reborn: Weapon X & Final Flight (2021) #1 [1 story] · s173081 Heroes Reborn: Night-Gwen (2021) #1 [1 story] · s172908 Heroes Reborn: American Knights (2021) #1 [1 story]
+   CV linked:      vol 138726 "Heroes Reborn: America's Mightiest Heroes Companion" 2021 Marvel 2 issues; cached #1-2 (2); yearΔ 1; ratio 0/2; no judged range
+   CV per-file (v1): vol 21749 "Heroes Reborn" 1996 Marvel 1 issue 131190 on 1/3 files
+   CV candidates:  (= linked) · 131741 "Heroes Reborn: Iron Man" 2020 Marvel 1 issue 816738 s65 · 28089 "Heroes Reborn: Iron Man" 2006 Marvel 1 issue 172444 s65 · 37984 "Marvel Heroes Reborn" 1997 Marvel UK/Panini UK 42 s56 · 138454 "Heroes Reborn: America's Mightiest Heroes" 2021 Marvel 1 issue 881490 s38 · 146161 "Heroes Reborn: America’s Mightiest Heroes" 2022 Marvel 1 issue 956150 s38 · 135903 "Heroes Reborn" 2021 Marvel 7 s33   (v1 search)
+   CV local rip:   (= linked) · 131741 "Heroes Reborn: Iron Man" 2020 Marvel 1 issue 816738 · 28089 "Heroes Reborn: Iron Man" 2006 Marvel 1 issue 172444 · 135903 "Heroes Reborn" 2021 Marvel 7 (via CV name "Heroes Reborn") · 150888 "Heroes Reborn" 2021 Panini España 5 (via CV name "Heroes Reborn")   (rip lookup)
+   GCD dump:       175611 "Heroes Reborn: America's Mightiest Heroes Companion" 2021-2021 Marvel [] 2 · 175502 "Heroes Reborn: Iron Man" 2020-2020 Marvel [] 1 · 73308 "Heroes Reborn: Iron Man" 2006-2006 Marvel [] 1 · 34710 "Heroes Reborn: Iron Man" [es] 1997-1998 Planeta DeAgostini [] 12 · 172342 "Heroes Reborn" 2021-2021 Marvel [] 7 (via CV name "Heroes Reborn") · 175863 "Heroes Reborn" [es] 2021-2021 Panini España [] 5 (via CV name "Heroes Reborn")   (dump lookup)
+
+== S98333 Machine Man  [tier C] · gap 6  keys: Machine Man v2 (1984)  years 1978-1984  4 files / 0 collections
+   folders: [4] Marvel\Machine Man\Machine Man v2 (1984)
+   files:   [99612] Machine Man 01 (of 04) (1984) (digital) (Bchry-DCP).cbz (26pp) | [99613] Machine Man 02 (of 04) (1984) (digital) (Bchry-DCP).cbz (23pp)
+            [99614] Machine Man 03 (of 04) (1984) (digital) (Bchry-DCP).cbz (24pp) | [99615] Machine Man 04 (of 04) (1985) (digital) (Bchry-DCP).cbz (24pp)
+   ours:    ladder 1-4
+   CV linked:      vol 3350 "Machine Man" 1984 Marvel 4 issues; cached #1-4 (4); yearΔ 6; ratio 4/4 = 1.00; no judged range
+   CV per-file (v1): vol 2956 "Machine Man" 1978 Marvel 19 on 3/4 files · vol 3350 "Machine Man" 1984 Marvel 4 on 1/4 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 2878 "Machine Man" 1984-1985 Marvel [Limited Series] 4 on 4/4 files; methods numx4
+   GCD dump:       (= per-file) · 2457 "Machine Man" 1978-1981 Marvel [] 19 · 10452 "Machine Man" 1988-1988 Marvel [] 1   (dump lookup)
+   bridges:        gcd 2878 -> LOCG 114002 "Machine Man" support 4
+
+== S4303 Crazy  [tier C] · gap 66  keys: Crazy  years 1953-1953  1 files / 0 collections
+   folders: [1] Marvel\Marvel 80th Anniversary (2018)
+   files:   [99667] Crazy 001 (2019) (Digital) (Zone-Empire).cbr (33pp)
+   ours:    ladder 1; ComicInfo Series: "Crazy"x1; ComicInfo Volume: "2019"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 122066 "Crazy" 2019 Marvel 1 issues issue 723112; cached #1-1 (1); yearΔ 66; ratio 1/1 = 1.00; no judged range
+   CV per-file (v1): vol 1574 "Crazy" 1953 Marvel 7 on 1/1 files
+   CV candidates:  (= linked) · 2631 "Crazy" 1973 Marvel 3 s95 · 30850 "Captain Marvel: Crazy Like A Fox" 2004 Marvel 1 issue 190612 s93 · 119826 "Crazy Crazy" 1974 Insel Verlag 1 issue 712171 s76 · 23630 "Crazy Magazine" 1973 Marvel 94 s76 · 51462 "Crazy, Man, Crazy" 1955 Charlton 2 s68 · 42240 "Crazy for You" 2004 Shueisha 6 s66   (v1 search)
+   CV local rip:   (= linked) · 2631 "Crazy" 1973 Marvel 3 · 124289 "Crazy" 2020 Marvel 1 issue 733876 · 30850 "Captain Marvel: Crazy Like A Fox" 2004 Marvel 1 issue 190612 (via CV candidate name "Captain Marvel: Crazy Like A Fox")   (rip lookup)
+   GCD per-file:   series 151142 "Crazy" 2019-2019 Marvel [one-shot] 1 on 1/1 files; methods numx1
+   GCD dump:       (= per-file) · 978 "Crazy" 1953-1954 Marvel [] 7 · 2115 "Crazy" 1973-1973 Marvel [] 3 · 20512 "Crazy" [nl] 1982-1983 Juniorpress [] 4 · 176946 "Crazy" 2019-2019 Marvel [] 1   (dump lookup)
+   bridges:        gcd 151142 -> LOCG 161441 "Crazy" support 1
+
+== S11003 Love Romances  [tier A]   keys: Love Romances  years 2019-2019  1 files / 0 collections
+   folders: [1] Marvel\Marvel 80th Anniversary (2018)
+   files:   [99670] Love Romances 001 (2019) (Digital Original) (Zone-Empire).cbr (25pp)
+   ours:    ladder 1; ComicInfo Series: "Love Romances"x1; ComicInfo Volume: "2019"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 117219 "Love Romances" 2019 Marvel 1 issues issue 701315; cached #1-1 (1); yearΔ 0; ratio 1/1 = 1.00; no judged range
+   CV per-file (v1): vol 1276 "Love Romances" 1949 Marvel 101 on 1/1 files
+   CV candidates:  (= linked) · 66530 "Youthful Love Romances" 1949 Pix-Parade 4 s64 · 1254 "Actual Romances" 1949 Marvel 2 s54 · 112374 "Marvel Spotlight July 2018" 2018 Marvel 1 issue 677285 s45 · 18974 "Saddle Romances" 1949 EC 3 s34 · 61640 "Realistic Romances" 1958 I.W. Publishing 3 s34 · 58877 "Brides Romances" 1953 Quality Comics 23 s31   (v1 search)
+   CV local rip:   (= linked) · 66530 "Youthful Love Romances" 1949 Pix-Parade 4 (via CV candidate name "Youthful Love Romances")   (rip lookup)
+   GCD per-file:   series 140633 "Love Romances" 2019-2019 Marvel [one-shot] 1 on 1/1 files; methods numx1
+   GCD dump:       (= per-file) · 68629 "Love Romances" [en-gb] 1956-1956 L. Miller & Son [] 10 · 648 "Love Romances" 1949-1963 Marvel [] 101 · 12622 "Love Romances" [en-ca] 1949-1949 Bell Features [] 5 · 31917 "Youthful Love Romances" [en-ca] 1950-1950 Export Publishing [] 2 (via CV candidate name "Youthful Love Romances") · 16970 "Youthful Love Romances" 1949-1950 Pix-Parade [] 4 (via CV candidate name "Youthful Love Romances")   (dump lookup)
+   bridges:        gcd 140633 -> LOCG 140535 "Love Romances" support 1
+
+== S11401 Marvel Comics #1: 80th Anniversary Edition  [tier C] · gap 10  keys: Marvel Comics #1: 80th Anniversary Edition  years 2009-2009  1 files / 0 collections
+   folders: [1] Marvel\Marvel 80th Anniversary (2018)
+   files:   [99671] Marvel Comics 001 - 80th Anniversary Edition (2019) (Digital) (Zone-Empire).cbr (231pp)
+   ours:    ladder 1; ComicInfo Series: "Marvel Comics #1: 80th Anniversary Edition"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 120564 "Marvel Comics #1: 80th Anniversary Edition" 2019 Marvel 1 issues issue 715312; cached #1-1 (1); yearΔ 10; ratio 1/1 = 1.00; no judged range
+   CV per-file (v1): vol 27681 "Marvel Comics #1: 70th Anniversary Edition" 2009 Marvel 1 issue 169323 on 1/1 files
+   CV candidates:  (= linked) · 112374 "Marvel Spotlight July 2018" 2018 Marvel 1 issue 677285 s55 · 90270 "The Phantom: 80th Anniversary Special" 2016 Hermes Press 1 issue 529186 s44 · 120959 "Marvel Comics" 2019 Marvel 2 s38 · 150960 "Marvel Comics" 2020 Panini España 1 issue 992996 s30 · 120652 "Marvel 80th Anniversary Poster Book" 2019 Marvel 1 issue 716366 s18 · 121576 "Marvel 80th Anniversary Postcard Book" 2019 Marvel 1 issue 720185 s18   (v1 search)
+   CV local rip:   (= linked) · 112374 "Marvel Spotlight July 2018" 2018 Marvel 1 issue 677285 (via CV candidate name "Marvel Spotlight July 2018")   (rip lookup)
+   GCD per-file:   series 149478 "Marvel Comics #1: 80th Anniversary Edition" 2019-2019 ? [] 1 on 1/1 files; methods page-rematchx1
+   GCD dump:       (= per-file) · 39553 "Marvel Comics #1: 70th Anniversary Edition" 2009-2009 Marvel [] 1 (via CV name "Marvel Comics #1: 70th Anniversary Edition") · 157270 "Marvel Spotlight July 2018" 2018-2018 Marvel [] 1 (via CV candidate name "Marvel Spotlight July 2018")   (dump lookup)
+
+== S11363 Marvel Adventures: Fantastic Four  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Fantastic Four Giant-Size Adventures | Marvel Adventures Fantastic Four  years 2005-2009  51 files / 0 collections
+   folders: [50] Marvel\Marvel Adventures\Marvel Adventures - Fantastic Four (2005) · [1] Marvel\_Fantastic Four\00 Annuals and Specials\Giant Sized
+   files:   [99771] Fantastic Four Giant-Size Adventures 01 (2009) (digital) (Minutemen-Slayer).cbr (46pp)
+            Marvel Adventures Fantastic Four 000 (2005) (Digital) (Shadowcat-Empire).cbz … Marvel Adventures Fantastic Four 048 (2009) (Digital) (Shadowcat-Empire).cbz  (49 files, pp 20-24)
+            [79184] Fantastic Four Giant-Size Adventures 001 (2009) (Digital) (Shadowcat-Empire).cbz (46pp)
+   ours:    ladder 0-48; 1 number(s) name more than one file: 1; ComicInfo Series: "Fantastic Four Giant-Size Adventures"x1; ComicInfo Volume: "2009"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 18095 "Marvel Adventures: Fantastic Four" 2005 Marvel ? issues; cached #0-48 (49); yearΔ 0; ratio 51/?; no judged range
+   CV per-file (v1): vol 18095 "Marvel Adventures: Fantastic Four" 2005 Marvel ? on 49/51 files · vol 28498 "Fantastic Four Giant-Size Adventures" 2009 Marvel 1 issue 175569 on 2/51 files
+   CV candidates:  (= linked) · 2683 "Giant-Size Fantastic Four" 1974 Marvel 5 s75 · 65737 "Official Handbook of the Marvel Universe: Fantastic Four 2005" 2005 Marvel 1 issue 106605 s61 · 30674 "Giant-Size Marvel" 2005 Marvel 1 issue 189479 s58 · 157035 "Giant-Size Fantastic Four" 2024 Marvel 1 issue 1046266 s38 · 32536 "Giant-Size Captain Marvel" 1975 Marvel 1 issue 216311 s38 · 18922 "Giant-Size Marvel Adventures The Avengers" 2007 Marvel 1 issue 111891 s10   (v1 search)
+   CV local rip:   (= linked) · 65737 "Official Handbook of the Marvel Universe: Fantastic Four 2005" 2005 Marvel 1 issue 106605 (via CV candidate name "Official Handbook of the Marvel Universe: Fantastic Four 2005") · 157035 "Giant-Size Fantastic Four" 2024 Marvel 1 issue 1046266 (via CV candidate name "Giant-Size Fantastic Four") · 2683 "Giant-Size Fantastic Four" 1974 Marvel 5 (via CV candidate name "Giant-Size Fantastic Four")   (rip lookup)
+   GCD per-file:   series 13997 "Marvel Adventures Fantastic Four" 2005-2009 Marvel [was ongoing series] 49 on 49/51 files · series 57023 "Fantastic Four Giant-Size Adventures" 2009-2009 Marvel [one-shot] 1 on 2/51 files; methods numx51
+   GCD dump:       (= per-file) · 91533 "Marvel Adventures Fantastic Four" 2005-2009 Marvel [] 12 · 19341 "Official Handbook of the Marvel Universe: Fantastic Four 2005" 2005-2005 Marvel [] 1 (via CV candidate name "Official Handbook of the Marvel Universe: Fantastic Four 2005") · 209412 "Giant-Size Fantastic Four" 2024-2024 Marvel [] 1 (via CV candidate name "Giant-Size Fantastic Four") · 2169 "Giant-Size Fantastic Four" 1974-1975 Marvel [] 5 (via CV candidate name "Giant-Size Fantastic Four")   (dump lookup)
+   bridges:        gcd 13997 -> LOCG 105018 "Marvel Adventures: Fantastic Four" support 48
+
+== S98472 Marvel Adventures Spider-Man  [tier C] · gap 4  keys: Marvel Adventures Spider-Man v2 (2010)  years 2006-2011  24 files / 0 collections
+   folders: [24] Marvel\Marvel Adventures\Marvel Adventures - Spider-Man\Marvel Adventures Spider-Man v2 (2010)
+   files:   Marvel Adventures Spider-Man 001 (2010) (Digital) (Shadowcat-Empire).cbz … Marvel Adventures Spider-Man 024 (2012) (Digital) (Shadowcat-Empire).cbz  (24 files, pp 22-25)
+   ours:    ladder 1-24
+   CV linked:      vol 32888 "Marvel Adventures Spider-Man" 2010 Marvel 24 issues; cached #1-24 (24); yearΔ 4; ratio 24/24 = 1.00; no judged range
+   CV per-file (v1): vol 32888 "Marvel Adventures Spider-Man" 2010 Marvel 24 on 19/24 files · vol 18094 "Marvel Adventures: Spider-Man" 2005 Marvel 61 on 5/24 files
+   CV local rip:   (= linked) · 71523 "Marvel Adventures Spider-Man" 2007 Marvel 1 issue 444776   (rip lookup)
+   GCD per-file:   series 47938 "Marvel Adventures Spider-Man" 2010-2012 Marvel [was ongoing series] 24 on 24/24 files; methods numx24
+   GCD dump:       (= per-file) · 93616 "Marvel Adventures Spider-Man" 2006-2006 Marvel [] 1 · 23629 "Marvel Adventures Spider-Man" 2005-2010 Marvel [] 61 · 52424 "Marvel Adventures Spider-Man" 2005-2010 Marvel [] 15 · 231849 "Marvel Adventures Spider-Man" 2007-2007 Marvel [] 1   (dump lookup)
+   bridges:        gcd 47938 -> LOCG 122261 "Marvel Adventures: Spider-Man" support 24
+
+== S98474 Marvel Adventures Super Heroes  [tier C] · gap 2  keys: Marvel Adventures Super Heroes v2 (2010)  years 2008-2012  24 files / 0 collections
+   folders: [24] Marvel\Marvel Adventures\Marvel Adventures - Super Heroes\Marvel Adventures Super Heroes v2 (2010)
+   files:   Marvel Adventures Super Heroes 001 (2010) (Digital) (Shadowcat-Empire).cbz … Marvel Adventures Super Heroes 024 (2012) (Digital) (Shadowcat-Empire).cbz  (24 files, pp 24-26)
+   ours:    ladder 1-24
+   CV linked:      vol 32628 "Marvel Adventures Super Heroes" 2010 Marvel 24 issues; cached #1-24 (24); yearΔ 2; ratio 24/24 = 1.00; no judged range
+   CV per-file (v1): vol 22319 "Marvel Adventures Super Heroes" 2008 Marvel 21 on 24/24 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 48510 "Marvel Adventures Super Heroes" 2010-2012 Marvel [was ongoing series] 24 on 24/24 files; methods numx24
+   GCD dump:       (= per-file) · 31452 "Marvel Adventures Super Heroes" 2008-2010 Marvel [] 21   (dump lookup)
+   bridges:        gcd 48510 -> LOCG 123991 "Marvel Adventures: Super Heroes" support 21
+
+== S11370 Marvel Age  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: Marvel Age | Marvel Age Annual  years 1983-2023  39 files / 1 collections
+   folders: [35] Marvel\Marvel Age\Marvel Age v1 (1983) · [1] Marvel\Marvel Age · [1] Marvel\Marvel Age\Marvel Age v1 (1983)\Annuals and Specials · [1] Marvel\Marvel Age\Marvel Age v1 (1983)\_Omnibus Edition · [1] Marvel\_Marvel Cosmic\Guardians of the Galaxy\Rocket Raccoon
+   files:   [100107] Marvel Age 1000 (2023) (Digital) (Zone-Empire).cbr (81pp) | [101987] Marvel Age Annual 001 (1985) (Digital-Empire).cbz (51pp)
+            [100108] Marvel Age 001 (1983) (Digital-Empire).cbz (20pp) | [100109] Marvel Age 002 (1983) (Digital-Empire).cbz (19pp) | [100110] Marvel Age 003 (1983) (Digital-Empire).cbz (17pp)
+            [100111] Marvel Age 004 (1983) (Digital-Empire).cbz (17pp) | [100112] Marvel Age 005 (1983) (Digital-Empire).cbz (18pp) | [100113] Marvel Age 006 (1983) (Digital-Empire).cbz (20pp)
+            [100114] Marvel Age 007 (1983) (Digital-Empire).cbz (35pp) | [100115] Marvel Age 008 (1983) (Digital-Empire).cbz (36pp) | [100116] Marvel Age 009 (1983) (Digital-Empire).cbz (36pp)
+            [100117] Marvel Age 010 (1984) (Digital-Empire).cbz (36pp) | [100118] Marvel Age 011 (1984) (Digital-Empire).cbz (36pp) | [100119] Marvel Age 012 (1984) (Digital-Empire).cbz (36pp)
+            [100120] Marvel Age 013 (1984) (Digital-Empire).cbz (36pp) | [100121] Marvel Age 014 (1984) (Digital-Empire).cbz (35pp) | [100122] Marvel Age 015 (1984) (Digital-Empire).cbz (35pp)
+            [100123] Marvel Age 016 (1984) (Digital-Empire).cbz (35pp) | [100124] Marvel Age 017 (1984) (Digital-Empire).cbz (35pp) | [100125] Marvel Age 018 (1984) (Digital-Empire).cbz (35pp)
+            [100126] Marvel Age 019 (1984) (Digital-Empire).cbz (35pp) | [100127] Marvel Age 020 (1984) (Digital-Empire).cbz (35pp) | [100128] Marvel Age 021 (1984) (Digital-Empire).cbz (35pp)
+            [100129] Marvel Age 022 (1985) (Digital-Empire).cbz (36pp) | [100130] Marvel Age 023 (1985) (Digital-Empire).cbz (35pp) | [100131] Marvel Age 024 (1985) (Digital-Empire).cbz (35pp)
+            [100132] Marvel Age 025 (1985) (Digital-Empire).cbz (35pp) | [100133] Marvel Age 026 (1985) (Digital-Empire).cbz (35pp) | [100134] Marvel Age 027 (1985) (Digital-Empire).cbz (35pp)
+            [100135] Marvel Age 028 (1985) (Digital-Empire).cbz (35pp) | [100136] Marvel Age 029 (1985) (Digital-Empire).cbz (35pp) | [100137] Marvel Age 030 (1985) (Digital-Empire).cbz (35pp)
+            [100138] Marvel Age 031 (1985) (Digital-Empire).cbz (35pp) | [100139] Marvel Age 032 (1985) (Digital-Empire).cbz (35pp) | [100140] Marvel Age 033 (1985) (Digital-Empire).cbz (35pp)
+            [100141] Marvel Age 034 (1986) (Digital-Empire).cbz (35pp) | [100142] Marvel Age 1000 (2023) (digital) (Glorith-HD).cbz (82pp)
+            [101988] COL Marvel Age Omnibus Book 01 (2023) (Digital-Empire).cbz (1163pp) | [82862] 003 Marvel Age 025.cbr (35pp)
+   ours:    ladder 1-34, 1000; 3 number(s) name more than one file: 1, 25, 1000; ComicInfo Series: "Marvel Age"x2, "Marvel Age Omnibus "x1; ComicInfo Volume: "2023"x2; ComicInfo Publisher: "Marvel"x1, "Marvel Comics"x1, "Marvel Entertainment, Inc."x1; ComicInfo Web: "1011100"x1
+   GCD says: [101988] gcd_reprint 2571772: s69795 Marvel Age (1983) #1-34 [34 stories] · s74368 Marvel Age Annual (1985) #1 [2 stories]
+   CV linked:      vol 19176 "Marvel Age" 1983 Marvel 140 issues; cached #1-140 (140); yearΔ 0; ratio 38/140 = 0.27; no judged range
+   CV per-file (v1): vol 19176 "Marvel Age" 1983 Marvel 140 on 37/39 files · vol 19177 "Marvel Age Annual" 1985 Marvel 4 on 1/39 files
+   CV candidates:  (= linked) · 53496 "Marvel Annual" 1967 Fleetway 10 s62 · 153267 "Marvel Age" 2023 Marvel 1 issue 1011100 s45 · 154116 "Marvel Age Omnibus" 2023 Marvel 1 issue 1024755 s29 · 162652 "Marvel Age Treasury Edition" 2025 Marvel 1 issue 1097982 s28 · 33907 "Marvel Age Preview" 1990 Marvel 2 s22 · 20328 "The Golden Age of Marvel Comics" 1997 Marvel 2 s19   (v1 search)
+   CV local rip:   (= linked) · 153267 "Marvel Age" 2023 Marvel 1 issue 1011100 · 53496 "Marvel Annual" 1967 Fleetway 10 (via CV candidate name "Marvel Annual")   (rip lookup)
+   GCD per-file:   series 69795 "Marvel Age" 1983-1994 Marvel [was ongoing series] 140 on 34/39 files · series 203548 "Marvel Age" 2023-2023 Marvel [one-shot] 1 on 2/39 files · series 74368 "Marvel Age Annual" 1985-1988 Marvel [was ongoing series] 4 on 1/39 files; methods numx37
+   GCD dump:       (= per-file) · 74687 "Marvel Annual" [en-gb] 1974-1975 World Distributors [] 2 (via CV candidate name "Marvel Annual") · 57201 "Marvel Annual" [en-gb] 1972-1975 IPC [] 2 (via CV candidate name "Marvel Annual")   (dump lookup)
+   bridges:        gcd 69795 -> LOCG 112872 "Marvel Age" support 35 · gcd 203548 -> LOCG 166721 "Marvel Age" support 2
+
+== S11410 Marvel Fanfare  [tier A]   keys: Marvel Fanfare  years 1982-1992  63 files / 0 collections
+   flags: #325 label-ambiguous [Pending] item 88515 — Marvel Fanfare v2 02 and v1 038 are single issues, not collections
+   folders: [46] Marvel\Marvel Fanfare v1 (1982) · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0017 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0036 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0075 The Sword is Drawn · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0304 Sabretooth & Mystique · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0305 Untitled · [1] Marvel\Marvel Fanfare v1 (1982)\Annuals and Specials · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0048 Secret Wars II · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0060 Old Soldiers · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0069 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0114 Untitled
+   files:   [101991] Marvel Fanfare 029 (1986) b&w (Bchry-DCP).cbz (25pp) | [100647] Marvel Fanfare 001 (1982) (Digital) (Shadowcat-Empire).cbz (32pp)
+            [100648] Marvel Fanfare 002 (1982) (Digital) (Shadowcat-Empire).cbz (36pp) | [100649] Marvel Fanfare 003 (1982) (Digital) (Shadowcat-Empire).cbz (35pp)
+            [100650] Marvel Fanfare 004 (1982) (Digital) (Shadowcat-Empire).cbz (35pp) | [100651] Marvel Fanfare 005 (1982) (Digital) (Shadowcat-Empire).cbz (34pp)
+            [100652] Marvel Fanfare 006 (1997) (digital) (Marika-Empire).cbz (24pp) | [100653] Marvel Fanfare 007 (1983) (Digital) (Shadowcat-Empire).cbz (36pp)
+            [100654] Marvel Fanfare 008 (1983) (digital) (Marika-Empire).cbz (29pp) | [100655] Marvel Fanfare 010 (1983) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [100656] Marvel Fanfare 011 (1983) (digital) (Marika-Empire).cbz (27pp) | [100657] Marvel Fanfare 012 (1984) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [100658] Marvel Fanfare 013 (1984) (digital) (Marika-Empire).cbz (34pp) | [100659] Marvel Fanfare 014 B Story (1984) (digital) (Marika-Empire).cbz (12pp)
+            [100660] Marvel Fanfare 015 (1984) (Digital) (Shadowcat-Empire).cbz (21pp) | [100661] Marvel Fanfare 016 B Story (1984) (digital) (Marika-Empire).cbz (12pp)
+            [100662] Marvel Fanfare 018 (1985) (digital) (Marika-Empire).cbz (23pp) | [100663] Marvel Fanfare 019 (1985) (Digital) (Shadowcat-Empire).cbz (31pp)
+            [100664] Marvel Fanfare 022 (1985) (Digital) (Shadowcat-Empire).cbz (26pp) | [100665] Marvel Fanfare 023 (1985) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [100666] Marvel Fanfare 024 (1986) (digital) (Marika-Empire).cbz (33pp) | [100667] Marvel Fanfare 024 B Story (1986) (digital) (Marika-Empire).cbz (15pp)
+            [100668] Marvel Fanfare 025 Story A (1986) (digital) (Marika-Empire).cbz (19pp) | [100669] Marvel Fanfare 026 (1986) (digital) (Marika-Empire).cbz (35pp)
+            [100670] Marvel Fanfare 027 B Story (1986) (digital) (Marika-Empire).cbz (9pp) | [100672] Marvel Fanfare 029 (1986) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [100671] Marvel Fanfare 029 (1986) (digital) (Marika-Empire).cbz (35pp) | [100673] Marvel Fanfare 030 (1987) (Digital) (Shadowcat-Empire).cbz (34pp)
+            [100674] Marvel Fanfare 033 (1987) (digital) (Marika-Empire).cbz (26pp) | [100675] Marvel Fanfare 034 (1987) (Digital) (Shadowcat-Empire).cbz (28pp)
+            [100676] Marvel Fanfare 035 (1987) (Digital) (Shadowcat-Empire).cbz (24pp) | [100677] Marvel Fanfare 036 (1988) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [100678] Marvel Fanfare 037 (1988) (Digital) (Shadowcat-Empire).cbz (23pp) | [100679] Marvel Fanfare 038 (1988) (digital) (Marika-Empire).cbz (32pp)
+            [100680] Marvel Fanfare 038 B Story (1988) (digital) (Marika-Empire).cbz (9pp) | [100681] Marvel Fanfare 039 (1988) (digital) (Marika-Empire).cbz (31pp)
+            [100682] Marvel Fanfare 040 (1988) (digital) (Marika-Empire).cbz (32pp) | [100683] Marvel Fanfare 043 A Story (1989) (digital) (Marika-Empire).cbz (14pp)
+            [100684] Marvel Fanfare 044 (1989) (Digital) (Shadowcat-Empire).cbz (34pp) | [100685] Marvel Fanfare 047 (1989) (digital) (Marika-Empire).cbz (29pp)
+            [100686] Marvel Fanfare 048 A Story (1989) (digital) (Marika-Empire).cbz (14pp) | [100687] Marvel Fanfare 048 B Story (1989) (digital) (Marika-Empire).cbz (13pp)
+            [100688] Marvel Fanfare 051 (1990) (Digital) (Shadowcat-Empire).cbz (42pp) | [100689] Marvel Fanfare 054 B Story (1990) (digital) (Marika-Empire).cbz (10pp)
+            [100690] Marvel Fanfare 055 (1991) (digital) (F) (Marika-Empire).cbz (35pp) | [100691] Marvel Fanfare 059 B Story (1991) (digital) (Marika-Empire).cbz (13pp)
+            [100692] Marvel Fanfare 060 A Story (1992) (digital) (Marika-Empire).cbz (11pp) | [86803] 027 Marvel Fanfare 001 (1982) (Digital) (Shadowcat-Empire).cbz (32pp)
+            [86804] 028 Marvel Fanfare 002 (1982) (Digital) (Shadowcat-Empire).cbz (36pp) | [86805] 029 Marvel Fanfare 003 (1982) (Digital) (Shadowcat-Empire).cbz (35pp)
+            [86806] 030 Marvel Fanfare 004 (1982) (Digital) (Shadowcat-Empire).cbz (35pp) | [86939] 002 Marvel Fanfare #040.cbz (36pp) | [86944] 007 Marvel Fanfare #024.cbr (36pp)
+            [87059] 056 Marvel Fanfare v1 038 (1988) (c2c) (YoungStar).cbr (36pp) | [87128] 004 Marvel Fanfare #33.cbz (38pp) | [87160] 002 Marvel Fanfare #055.cbz (36pp)
+            [87215] 001 Marvel Fanfare #54.cbz (36pp) | [87216] 002 Marvel Fanfare #55.cbz (36pp) | [87554] 009 Marvel Fanfare #50.cbz (36pp) | [88505] 005 Marvel Fanfare v2 #004.cbr (23pp)
+            [88506] 006 Marvel Fanfare v2 #005.cbz (22pp) | [88507] 001 Marvel Fanfare v2 #006.cbr (24pp) | [88515] 009 Marvel Fanfare v2 02.cbr (23pp)
+   ours:    ladder 1-8, 10-16, 18-19, 22-27, 29-30, 33-40, 43-44, 47-48, 50-51, 54-55, 59-60; 14 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 24, 29, 33, 38, 40, 48; ComicInfo Series: "Marvel Fanfare"x32; ComicInfo Volume: "1982"x31, "25660"x1; ComicInfo Count: "60"x21, "6"x1; ComicInfo Publisher: "Marvel"x31, "Marvel Comics"x1; ComicInfo Web: "26401"x2, "29710"x2, "32003"x2, "151420"x1
+   CV linked:      vol 3143 "Marvel Fanfare" 1982 Marvel 60 issues; cached #1-60 (60); yearΔ 0; ratio 63/60 = 1.05; no judged range; v1 per-file: same volume on 63/63 files
+   CV local rip:   (= linked) · 25660 "Marvel Fanfare" 1996 Marvel 6   (rip lookup)
+   GCD per-file:   methods numx39 · fulldump-rematchx12 · round2-seriesx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 2657 "Marvel Fanfare" 1982-1992 Marvel [was ongoing series] 60 on 51/63 files · series 13701 "Marvel Fanfare" 1996-1997 Marvel [was ongoing series] 6 on 1/63 files
+   GCD dump:       (= per-file) · 63740 "Marvel Fanfare" [fr] 1984-1985 Arédit-Artima [] 3 · 178677 "Marvel Fanfare" [es] 1995-1995 Planeta DeAgostini [] 4   (dump lookup)
+   bridges:        gcd 2657 -> LOCG 112983 "Marvel Fanfare" support 50 · gcd 13701 -> LOCG 112983 "Marvel Fanfare" support 1
+
+== S11417 Marvel Graphic Novel  [tier C] · 6 number(s) x2+, 4 parsed key(s), ratio 0.63  keys: Marvel Graphic Novel | Marvel Graphic Novel - Daredevil - Love and War | Marvel Graphic Novel - The New Mutants | Starstruck - Marvel Graphic Novel  years 1982-1990  26 files / 1 collections
+   flags: #326 label-ambiguous [Pending] item 100734 — Marvel Graphic Novel 061 and 065 are single books, not collections
+   folders: [19] Marvel\Marvel Graphic Novel (1982) · [1] Marvel\_Daredevil\_Trades, Minis and One-shots · [1] Marvel\_Hulk\_Minis, OGNs and Trades · [1] Marvel\_Iron Man\_One Shots and Minis · [1] Marvel\_She-Hulk\02 The Sensational She-Hulk OGN (1985) · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0020 The New Mutants · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0040 Untitled · [1] Misc\Starstruck\Compliations
+   files:   [100713] Marvel Graphic Novel 001 - The Death of Captain Marvel (1982) (Digital) (Shadowcat-Empire).cbz (65pp)
+            [100714] Marvel Graphic Novel 003 - Dreadstar (1982) (digital) (Marika-Empire).cbz (50pp)
+            [100715] Marvel Graphic Novel 004 - The New Mutants (1982) (Digital) (Shadowcat-Empire).cbz (49pp)
+            [100716] Marvel Graphic Novel 005 - X-Men - God Loves, Man Kills (1982) (Digital) (Shadowcat-Empire).cbz (84pp)
+            [100717] Marvel Graphic Novel 007 - Killraven - Warrior of the Worlds (1983) (Digital) (Shadowcat-Empire).cbz (65pp)
+            [100718] Marvel Graphic Novel 012 - Dazzler the Movie (1982) (Digital) (Shadowcat-Empire).cbz (72pp)
+            [100719] Marvel Graphic Novel 016 - The Aladdin Effect (1985) (Digital) (Shadowcat-Empire).cbz (65pp)
+            [100720] Marvel Graphic Novel 018 - The Sensational She-Hulk (1985) (Digital) (Shadowcat-Empire).cbz (71pp)
+            [100722] Marvel Graphic Novel 027 - Emperor Doom (1987) (Digital) (Shadowcat-Empire).cbz (64pp)
+            [100723] Marvel Graphic Novel 029 - Hulk-Thing - The Big Change (1987) (Digital) (Shadowcat-Empire).cbz (56pp)
+            [100724] Marvel Graphic Novel 031 - Wolfpack! (1987) (digital) (Marika-Empire).cbz (79pp)
+            [100725] Marvel Graphic Novel 033 - Thor - I, Whom the God Would Destroy (1988) (digital-SD).cbz (66pp)
+            [100726] Marvel Graphic Novel 034 - Cloak And Dagger - Predator And Prey (1988) (Digital) (Shadowcat-Empire).cbz (65pp)
+            [100727] Marvel Graphic Novel 037 - Hercules Full Circle (1988) (digital) (Marika-Empire).cbz (80pp)
+            [100728] Marvel Graphic Novel 038 - Silver Surfer Judgement Day (1988) (two covers) (digital) (Marika-Empire).cbz (67pp)
+            [100729] Marvel Graphic Novel 040 - The Punisher - Assassin's Guild (1988) (Digital) (Shadowcat-Empire).cbz (64pp)
+            [100731] Marvel Graphic Novel 051 - Intruder (1989) (Digital) (Shadowcat-Empire).cbz (66pp)
+            [100734] COL Marvel Graphic Novel 061 - Black Widow The Coldest War (1990) (digital) (Marika-Empire).cbz (67pp)
+            [100735] Marvel Graphic Novel 065 - Wolverine Bloodlust (1990) (digital) (Marika-Empire).cbz (50pp)
+            [47053] Marvel Graphic Novel - Daredevil - Love and War (1986) (Digital) (Zone-Empire).cbr (66pp)
+            [81229] Marvel Graphic Novel 029 - Hulk-Thing - The Big Change (1987) (Digital) (Shadowcat-Empire).cbz (56pp) | [82177] Iron Man - Crash 001 (1988) (Digital) (Shadowcat-Empire).cbz (72pp)
+            [93971] Marvel Graphic Novel 018 The Sensational She-Hulk (1985) (Bchry-DCP).cbz (72pp)
+            [86842] 015 Marvel Graphic Novel - The New Mutants 004 (1982) (digital) (Minutemen-FactorX).cbr (49pp)
+            [86966] 006 Marvel Graphic Novel 012 - Dazzler the Movie (1982) (Digital) (Shadowcat-Empire).cbz (72pp) | [107499] Starstruck - Marvel Graphic Novel (1984) 01.cbz (82pp)
+   ours:    ladder 1, 3-5, 7, 12, 16, 18, 27, 29, 31, 33-34, 37-38, 40, 51, 65; 6 number(s) name more than one file: 1, 4, 12, 18, 29, 33; ComicInfo Series: "Marvel Graphic Novel"x16; ComicInfo Volume: "1982"x4, "1990"x2; ComicInfo Count: "75"x6; ComicInfo Publisher: "Marvel"x14, "Marvel Comics"x2; ComicInfo Web: "21791"x1, "134235"x1, "134240"x1, "135287"x1
+   CV linked:      vol 3144 "Marvel Graphic Novel" 1982 Marvel 38 issues; cached #1-38 (38); yearΔ 0; ratio 24/38 = 0.63; no judged range; v1 per-file: same volume on 25/26 files
+   CV candidates:  (= linked) · 33731 "Marvel Graphic Novel: Ax" 1988 Marvel 1 issue 219396 s60 · 31819 "Marvel Spotlight: New Mutants" 2009 Marvel 1 issue 199543 s60 · 109400 "Graphic Marvel" 1990 Abril 17 s55 · 24209 "Starstruck" 2012 IDW Publishing 1 issue 352535 s55 · 26314 "Marvel Graphic Novel: The Pitt" 1987 Marvel 1 issue 156440 s54 · 38530 "Marvel Graphic Novel: The Shadow" 1988 Marvel 1 issue 258539 s54   (v1 search)
+   CV local rip:   (= linked) · 33731 "Marvel Graphic Novel: Ax" 1988 Marvel 1 issue 219396 (via CV candidate name "Marvel Graphic Novel: Ax") · 31819 "Marvel Spotlight: New Mutants" 2009 Marvel 1 issue 199543 (via CV candidate name "Marvel Spotlight: New Mutants")   (rip lookup)
+   GCD per-file:   methods fulldump-rematchx12 · numx9 · round2-seriesx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 2658 "Marvel Graphic Novel" 1982-1990 Marvel [was ongoing series] 75 on 22/26 files
+   GCD dump:       (= per-file) · 3655 "Marvel Graphic Novel: Ax" 1988-1988 Marvel [] 1 (via CV candidate name "Marvel Graphic Novel: Ax") · 235484 "Marvel Spotlight: New Mutants" 2009-2009 Marvel [] 1 (via CV candidate name "Marvel Spotlight: New Mutants")   (dump lookup)
+   bridges:        gcd 2658 -> OL /works/OL32431718W "Marvel graphic novel ;" isbnSupport 11
+
+== S11538 Marvel Mystery Comics  [tier C] · ratio 0.36  keys: Marvel Mystery Comics  years 1939-1949  34 files / 0 collections
+   folders: [30] Marvel\Marvel Mystery Comics (1940) · [3] _Marvel Major Event Chronology (digital)\1940.06 - Namor vs Human Torch · [1] Marvel\Marvel Mystery Comics (1940)\Annuals and Specials
+   files:   [100853] Marvel Mystery Comics 128 Pages (Timely.1943) (Hybrid) (Reprints.vers.2).cbz (132pp) | [100854] Marvel Mystery Comics 003 (1940) (Digital) (AnPymGold-Empire).cbz (65pp)
+            [100855] Marvel Mystery Comics 004 (1940) (Digital) (AnPymGold-Empire).cbz (66pp)
+            Marvel Mystery Comics 005 (1940) (Digital) (Shadowcat-Empire).cbz … Marvel Mystery Comics 027 (1942) (Digital) (Shadowcat-Empire).cbz  (18 files, pp 66-69)
+            [100874] Marvel Mystery Comics 063 (Timely.1945) (c2c) (all.paper) (chums).cbr (52pp) | [100875] Marvel Mystery Comics 073 (Timely, 1946) (c2c) (Betty Dobson, Mark Bowen fills).cbz (52pp)
+            [100876] Marvel Mystery Comics 081 (Timely, 1947) (c2c) (chums scans, Mark Bowen fills).cbz (52pp) | [100877] Marvel Mystery Comics 081 (Timely.1947) (ifc.ibc.added) (chums).cbz (52pp)
+            [100878] Marvel Mystery Comics 082 (Timely, 1947) (c2c digicam) (Mark Bowen).cbz (54pp) | [100879] Marvel Mystery Comics 084 (1947) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [100880] Marvel Mystery Comics 085 (1948) (Digital) (Shadowcat-Empire).cbz (13pp) | [100881] Marvel Mystery Comics 086 (1948) (Digital) (Shadowcat-Empire).cbz (13pp)
+            [100882] Marvel Mystery Comics 090 (1949) (Digital) (Shadowcat-Empire).cbz (9pp) | [100883] Marvel Mystery Comics 091 (1949) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [116255] Marvel Mystery Comics 008 (1940) (Digital) (AnPymGold-Empire).cbz (66pp) | [116256] Marvel Mystery Comics 009 (1940) (Digital) (AnPymGold-Empire).cbz (65pp)
+            [116257] Marvel Mystery Comics 010 (1940) (Digital) (AnPymGold-Empire).cbz (65pp)
+   ours:    ladder 3-10, 14-27, 63, 73, 81-82, 84-86, 90-91; 2 number(s) name more than one file: 8, 81; ComicInfo Series: "Marvel Mystery Comics"x5; ComicInfo Volume: "1939"x5; ComicInfo Publisher: "Marvel"x5
+   CV linked:      vol 19137 "Marvel Mystery Comics" 1939 Marvel ? issues; cached #2-92 (91); yearΔ 0; ratio 33/? = 0.36; no judged range; v1 per-file: same volume on 34/34 files
+   CV local rip:   (= linked) · 50914 "Marvel Mystery Comics" 1943 Marvel 1 issue 347972 · 27243 "Marvel Mystery Comics" 1999 Marvel 1 issue 166028   (rip lookup)
+   GCD per-file:   series 137 "Marvel Mystery Comics" 1939-1949 Marvel [was ongoing series] 91 on 27/34 files · series 13958 "Marvel Mystery Comics" [en-ca] 1948-1949 Bell Features [was ongoing series] 5 on 1/34 files; methods numx28
+   GCD dump:       (= per-file) · 209776 "Marvel Mystery Comics" 1943-1943 Marvel [] 1 · 15999 "Marvel Mystery Comics" 1999-1999 Marvel [] 1   (dump lookup)
+   bridges:        gcd 137 -> LOCG 119998 "Marvel Mystery Comics" support 32 · gcd 13958 -> LOCG 119998 "Marvel Mystery Comics" support 1
+
+== S11548 Marvel Presents  [tier C] · 10 number(s) x2+, 1 parsed key(s), ratio 1.83  keys: Marvel Presents  years 1975-1977  22 files / 0 collections
+   flags: #336 label-ambiguous [Pending] item 82848 — Marvel Presents v1 03-12 are single issues, not collections
+   folders: [12] Marvel\Marvel Presents (1975) · [10] Marvel\_Marvel Cosmic\Guardians of the Galaxy\Misc
+   files:   [100943] Marvel Presents 001 (1975) (Digital) (Shadowcat-Empire).cbz (21pp) | [100944] Marvel Presents 002 (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+            Marvel Presents 003 (1976) (Digital) (AnHeroGold-Empire).cbz … Marvel Presents 012 (1977) (Digital) (AnHeroGold-Empire).cbz  (10 files, pp 17-19)
+            Marvel Presents v1 03.cbr … Marvel Presents v1 12.cbr  (10 files, pp 18-36)
+   ours:    ladder 1-12; 10 number(s) name more than one file: 3, 4, 5, 6, 7, 8, 9, 10, 11, 12; ComicInfo Series: "Marvel Presents"x1; ComicInfo Volume: "1975"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 2773 "Marvel Presents" 1975 Marvel 12 issues; cached #1-12 (12); yearΔ 0; ratio 22/12 = 1.83; no judged range; v1 per-file: same volume on 22/22 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 2259 "Marvel Presents" 1975-1977 Marvel [was ongoing series] 12 on 12/22 files; methods numx12
+   GCD dump:       (= per-file) · 156099 "Marvel Presents" [en-ph] 1977-1978 National Book Store [] 3   (dump lookup)
+   bridges:        gcd 2259 -> LOCG 116492 "Marvel Presents" support 22
+
+== S65153 Marvel Spotlight  [tier C] · 13 number(s) x2+, 2 parsed key(s), ratio 1.36  keys: Marvel Spotlight (1971) | Marvel Spotlight v1 (1971)  years 1971-1977  45 files / 0 collections
+   folders: [30] Marvel\Marvel Spotlight\Marvel Spotlight v1 (1971) · [12] Marvel\Marvel Spotlight\Marvel Spotlight v2 (1979) · [2] Marvel\_Marvel Cosmic\Guardians of the Galaxy\Star-Lord · [1] Marvel\Deathlok
+   files:   [98832] Marvel Spotlight 033 (1977) (Digital) (AnHeroGold-Empire).cbz (18pp) | [100974] Marvel Spotlight 001 (1971) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [100975] Marvel Spotlight 002 (1972) (Digital) (Shadowcat-Empire).cbz (29pp) | [100976] Marvel Spotlight 003 (1972) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [100977] Marvel Spotlight 004 (1972) (Digital) (Shadowcat-Empire).cbz (22pp) | [100978] Marvel Spotlight 005 (1972) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [100979] Marvel Spotlight 006 (1972) (digital) (Marika-Empire).cbz (22pp) | [100980] Marvel Spotlight 007 (1972) (digital) (Marika-Empire).cbz (22pp)
+            [100981] Marvel Spotlight 008 (1971) (digital).cbz (21pp) | [100982] Marvel Spotlight 009 (1971) (digital).cbz (21pp) | [100983] Marvel Spotlight 010 (1971) (digital).cbz (21pp)
+            Marvel Spotlight 011 (1973) (Digital) (Shadowcat-Empire).cbz … Marvel Spotlight 027 (1976) (Digital) (Shadowcat-Empire).cbz  (14 files, pp 17-21)
+            [100998] Marvel Spotlight 028 (1976) (Digital) (TLK-EMPIRE-HD).cbr (20pp) | [100999] Marvel Spotlight 029 (1976) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [101000] Marvel Spotlight 030 (1976) (Digital) (AnHeroGold-Empire).cbz (18pp) | [101001] Marvel Spotlight 031 (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [101002] Marvel Spotlight 032 (1977) (Digital) (AnHeroGold-Empire).cbz (18pp) | [101003] Marvel Spotlight 033 (1977) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            Marvel Spotlight 013 (1974) (Digital) (Shadowcat-Empire).cbz … Marvel Spotlight 024 (1975) (Digital) (Shadowcat-Empire).cbz  (12 files, pp 17-21)
+            [82875] 06 Marvel Spotlight v2 #06.cbr (19pp) | [82876] 07 Marvel Spotlight v2 #07.cbr (19pp)
+   ours:    ladder 1-24, 26-33; 13 number(s) name more than one file: 6, 7, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24; ComicInfo Series: "Marvel Spotlight"x3; ComicInfo Volume: "1971"x3; ComicInfo Count: "33"x2; ComicInfo Publisher: "Marvel Comics"x2, "Marvel"x1; ComicInfo Web: "12581"x1, "12746"x1
+   CV linked:      vol 2516 "Marvel Spotlight" 1971 Marvel 33 issues; cached #1-33 (33); yearΔ 0; ratio 45/33 = 1.36; no judged range; v1 per-file: same volume on 45/45 files
+   CV local rip:   (= linked) · 3007 "Marvel Spotlight" 1979 Marvel 11 · 56733 "Marvel Spotlight" 1993 Marvel 3   (rip lookup)
+   GCD per-file:   series 1992 "Marvel Spotlight" 1971-1977 Marvel [was ongoing series] 33 on 43/45 files; methods numx43
+   GCD dump:       (= per-file) · 118189 "Marvel Spotlight" [en-ph] 1978-1978 National Book Store [] 6 · 2512 "Marvel Spotlight" 1979-1981 Marvel [] 11   (dump lookup)
+   bridges:        gcd 1992 -> LOCG 119694 "Marvel Spotlight" support 45
+
+== S11600 Marvel Tales  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Marvel Tales | Marvel Tales v1 (1949)  years 1949-1971  11 files / 0 collections
+   flags: #339 label-ambiguous [Pending] item 86687 — Marvel Tales v2 262 is a single issue, not a collection
+   folders: [9] Marvel\Marvel Tales\Marvel Tales v1 (1949) · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0006 Various Cameos · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0010 The Phoenix Saga
+   files:   [101095] Marvel Tales 098 (Atlas.1950) (c2c) (Pmack).cbz (37pp) | [101096] Marvel Tales 100 (Atlas.1951) (c2c) (Pmack).cbz (38pp)
+            [101097] Marvel Tales 106 (Atlas) (Apr 1952) (c2c) (SuperMack).cbz (37pp) | [101098] Marvel Tales 107 (Atlas.1952) (c2c.rescan) (Pmack).cbz (37pp)
+            [101099] Marvel Tales 108 (Atlas.1952) (c2c) (Pmack).cbz (37pp) | [101100] Marvel Tales 110 (Atlas.1952) (c2c) (Pmack).cbz (37pp)
+            [101101] Marvel Tales 116 (Atlas.1953) (c2c.rescan) (Pmack).cbz (37pp) | [101102] Marvel Tales 128 (Atlas.1954) (c2c.rescan) (Pmack).cbz (37pp)
+            [101103] Marvel Tales 154 (Atlas) (Jan 1957) (c2c) (SuperMack).cbz (37pp) | [86628] 013 Marvel Tales 030 (1971) (digital) (Angel only) (Minutemen-FactorX).cbr (12pp)
+            [86687] 010 Marvel Tales v2 262.cbr (37pp)
+   ours:    ladder 30, 98, 100, 106-108, 110, 116, 128, 154, 262
+   CV linked:      vol 1283 "Marvel Tales" 1949 Marvel 67 issues; cached #93-159 (67); yearΔ 0; ratio 11/67 = 0.16; no judged range; v1 per-file: same volume on 11/11 files
+   CV local rip:   (= linked) · 2293 "Marvel Tales" 1966 Marvel 120   (rip lookup)
+   GCD per-file:   series 655 "Marvel Tales" 1949-1957 Marvel [was ongoing series] 67 on 6/11 files · series 1747 "Marvel Tales" 1966-1994 Marvel [was ongoing series] 289 on 1/11 files; methods numx7
+   GCD dump:       (= per-file) · 16490 "Marvel Tales" [en-ca] 1950-1951 Bell Features [] 8 · 26658 "Marvel Tales" [en-gb] 1959-1959 L. Miller & Son [] 7 · 191621 "Marvel Tales" [en-ph] 1975-1976 National Book Store [] ? · 71181 "Marvel Tales" [en-au] 1977-1979 Yaffa / Page [] 3   (dump lookup)
+   bridges:        gcd 655 -> LOCG 148363 "Marvel Tales" support 5 · gcd 1747 -> LOCG 114644 "Marvel Tales" support 11
+
+== S11601 Marvel Tales Featuring Spider-Man  [tier C] · gap 3  keys: Marvel Tales Featuring Spider-Man  years 1987-1992  15 files / 0 collections
+   folders: [15] Marvel\Marvel Tales\Marvel Tales v2 (1964)
+   files:   [101125] Marvel Tales Featuring Spider-Man 196 (1987) (c2c) (MrWoodman).cbr (36pp) | [101126] Marvel Tales Featuring Spider-Man 197 (1987) (c2c) (MrWoodman).cbr (36pp)
+            [101127] Marvel Tales Featuring Spider-Man 198 (1987) (c2c) (Icarus-Woodman).cbr (36pp) | [101128] Marvel Tales Featuring Spider-Man 199 (1987) (c2c) (MrWoodman).cbr (36pp)
+            [101129] Marvel Tales Featuring Spider-Man 200 (1987) (c2c) (Gambit-tomander).cbr (47pp)
+            [101131] Marvel Tales Featuring Spider-Man 202 (1987) (c2c) (Aquila.e.mal32-Italia-DCP).cbr (37pp) | [101132] Marvel Tales Featuring Spider-Man 203 (1987) (c2c).cbr (36pp)
+            [101133] Marvel Tales Featuring Spider-Man 239 B Story (1990) (digital) (Marika-Empire).cbz (5pp)
+            [101134] Marvel Tales Featuring Spider-Man 240 B Story (1990) (digital) (Marika-Empire).cbz (5pp)
+            [101135] Marvel Tales Featuring Spider-Man 247 B Story (1991) (digital) (Marika-Empire).cbz (6pp)
+            [101136] Marvel Tales Featuring Spider-Man 248 B Story (1991) (digital) (Marika-Empire).cbz (4pp)
+            [101137] Marvel Tales Featuring Spider-Man 251 B Story (1991) (digital) (Marika-Empire).cbz (3pp)
+            [101138] Marvel Tales Featuring Spider-Man 252 B Story (1991) (digital) (Marika-Empire).cbz (2pp)
+            [101139] Marvel Tales Featuring Spider-Man 255 (1991) (digital) (Marika-Empire).cbz (24pp) | [101140] Marvel Tales Featuring Spider-Man 262 (1992) (digital) (Marika-Empire).cbz (23pp)
+   ours:    ladder 196-200, 202-203, 239-240, 247-248, 251-252, 255, 262; ComicInfo Series: "Marvel Tales Featuring Spider-Man"x8; ComicInfo Volume: "1990"x8; ComicInfo Publisher: "Marvel"x8; ComicInfo Web: "65038"x1, "65040"x1, "65054"x1, "65056"x1
+   CV linked:      vol 137722 "Marvel Tales Featuring Spider-Man" 1990 Marvel 53 issues; cached #239-291 (53); yearΔ 3; ratio 15/53 = 0.28; no judged range; v1 per-file: same volume on 15/15 files
+   CV candidates:  (= linked) · 119655 "Marvel Tales: Spider-Man" 2019 Marvel ? s30 · 138122 "Marvel Tales Starring Spider-Man" 1981 Marvel ? s19 · 133082 "Symbiote Spider-Man: Marvel Tales" 2021 Marvel ? s19 · 39272 "Marvel Special Edition Featuring The Spectacular Spider-Man" 1975 Marvel ? s16 · 115545 "Marvel Action: Spider-Man" 2018 Marvel ? s4 · 67919 "Marvel Knights: Spider-Man" 2013 Marvel ? s4   (v1 search)
+   CV local rip:   (= linked) · 2293 "Marvel Tales" 1966 Marvel 120 (via GCD name "Marvel Tales") · 1283 "Marvel Tales" 1949 Marvel 67 (via GCD name "Marvel Tales") · 138122 "Marvel Tales Starring Spider-Man" 1981 Marvel 116 (via CV candidate name "Marvel Tales Starring Spider-Man") · 119655 "Marvel Tales: Spider-Man" 2019 Marvel 1 issue 711326 (via CV candidate name "Marvel Tales: Spider-Man")   (rip lookup)
+   GCD per-file:   methods round2-folderx9 ⚠  (⚠ copies a folder neighbour's series — verify); series 1747 "Marvel Tales" 1966-1994 Marvel [was ongoing series] 289 on 9/15 files
+   GCD dump:       182403 "סיפורי מארוול בכיכובםשל ספיידרמן [Marvel Tales Starring Spider-Man]" [iw-il] 1986-1986 קווין קומיקס [Kevin Comics] [] 8 (via CV candidate name "Marvel Tales Starring Spider-Man") · 147337 "Marvel Tales: Spider-Man" 2019-2019 Marvel [] 1 (via CV candidate name "Marvel Tales: Spider-Man")   (dump lookup)
+   bridges:        gcd 1747 -> LOCG 114644 "Marvel Tales" support 11
+
+== S11602 Marvel Tales Starring Spider-Man  [tier C] · ratio 0.30  keys: Marvel Tales Starring Spider-Man  years 1981-1990  35 files / 0 collections
+   folders: [35] Marvel\Marvel Tales\Marvel Tales v2 (1964)
+   files:   [101142] Marvel Tales Starring Spider-Man 131 (1981) (digital) (Marika-Empire).cbz (25pp) | [101143] Marvel Tales Starring Spider-Man 132 (1981) (digital) (Marika-Empire).cbz (25pp)
+            [101144] Marvel Tales Starring Spider-Man 133 (1981) (digital) (Marika-Empire).cbz (26pp) | [101145] Marvel Tales Starring Spider-Man 197 B Story (1987) (digital) (Marika-Empire).cbz (7pp)
+            [101146] Marvel Tales Starring Spider-Man 202 B Story (1987) (digital) (Marika-Empire).cbz (6pp)
+            [101147] Marvel Tales Starring Spider-Man 203 B Story (1987) (digital) (Marika-Empire).cbz (6pp)
+            [101148] Marvel Tales Starring Spider-Man 204 B Story (1987) (digital) (Marika-Empire).cbz (6pp)
+            [101149] Marvel Tales Starring Spider-Man 205 B Story (1987) (digital) (Marika-Empire).cbz (6pp)
+            [101150] Marvel Tales Starring Spider-Man 206 B Story (1987) (digital) (Marika-Empire).cbz (6pp)
+            [101151] Marvel Tales Starring Spider-Man 207 B Story (1988) (digital) (Marika-Empire).cbz (6pp)
+            [101152] Marvel Tales Starring Spider-Man 208 B Story (1988) (digital) (Marika-Empire).cbz (6pp)
+            [101153] Marvel Tales Starring Spider-Man 209 B Story (1988) (digital) (Marika-Empire).cbz (5pp)
+            [101154] Marvel Tales Starring Spider-Man 210 B Story (1988) (digital) (Marika-Empire).cbz (5pp)
+            [101155] Marvel Tales Starring Spider-Man 211 B Story (1988) (digital) (Marika-Empire).cbz (5pp)
+            [101156] Marvel Tales Starring Spider-Man 212 B Story (1988) (digital) (Marika-Empire).cbz (6pp)
+            [101157] Marvel Tales Starring Spider-Man 214 B Story (1988) (digital) (Marika-Empire).cbz (6pp)
+            [101158] Marvel Tales Starring Spider-Man 215 B Story (1988) (digital) (Marika-Empire).cbz (6pp)
+            [101159] Marvel Tales Starring Spider-Man 216 B Story (1988) (digital) (Marika-Empire).cbz (5pp)
+            [101160] Marvel Tales Starring Spider-Man 217 B Story (1988) (digital) (Marika-Empire).cbz (5pp)
+            [101161] Marvel Tales Starring Spider-Man 218 B Story (1988) (digital) (Marika-Empire).cbz (5pp)
+            [101162] Marvel Tales Starring Spider-Man 219 B Story (1989) (digital) (Marika-Empire).cbz (10pp)
+            [101163] Marvel Tales Starring Spider-Man 223 B Story (1989) (digital) (Marika-Empire).cbz (6pp)
+            [101164] Marvel Tales Starring Spider-Man 224 B Story (1989) (digital) (Marika-Empire).cbz (5pp)
+            [101165] Marvel Tales Starring Spider-Man 225 B Story (1989) (digital) (Marika-Empire).cbz (5pp)
+            [101166] Marvel Tales Starring Spider-Man 226 B Story (1989) (digital) (Marika-Empire).cbz (4pp)
+            [101167] Marvel Tales Starring Spider-Man 227 B Story (1989) (digital) (Marika-Empire).cbz (5pp)
+            [101168] Marvel Tales Starring Spider-Man 228 B Story (1989) (digital) (Marika-Empire).cbz (5pp)
+            [101169] Marvel Tales Starring Spider-Man 229 B Story (1989) (digital) (Marika-Empire).cbz (5pp)
+            [101170] Marvel Tales Starring Spider-Man 230 B Story (1989) (digital) (Marika-Empire).cbz (5pp) | [101171] Marvel Tales Starring Spider-Man 233 (1990) (digital) (Marika-Empire).cbz (26pp)
+            [101172] Marvel Tales Starring Spider-Man 233 B Story (1990) (digital) (Marika-Empire).cbz (5pp)
+            [101173] Marvel Tales Starring Spider-Man 235 B Story (1990) (digital) (Marika-Empire).cbz (3pp)
+            [101174] Marvel Tales Starring Spider-Man 235 C Story (1990) (digital) (Marika-Empire).cbz (3pp)
+            [101175] Marvel Tales Starring Spider-Man 236 B Story (1990) (digital) (Marika-Empire).cbz (6pp)
+            [101176] Marvel Tales Starring Spider-Man 237 B Story (1990) (digital) (Marika-Empire).cbz (6pp)
+   ours:    ladder 131-133, 197, 202-212, 214-219, 223-230, 233, 235-237; 2 number(s) name more than one file: 233, 235; ComicInfo Series: "Marvel Tales Starring Spider-Man"x35; ComicInfo Volume: "1981"x32, "138122"x3; ComicInfo Publisher: "Marvel"x35; ComicInfo Web: "65026"x2, "65031"x2, "64901"x1, "64903"x1
+   CV linked:      vol 138122 "Marvel Tales Starring Spider-Man" 1981 Marvel 116 issues; cached #123-238 (116); yearΔ 0; ratio 35/116 = 0.30; no judged range; v1 per-file: same volume on 35/35 files
+   CV candidates:  (= linked) · 119655 "Marvel Tales: Spider-Man" 2019 Marvel ? s30 · 137722 "Marvel Tales Featuring Spider-Man" 1990 Marvel ? s19 · 133082 "Symbiote Spider-Man: Marvel Tales" 2021 Marvel ? s19 · 115545 "Marvel Action: Spider-Man" 2018 Marvel ? s4 · 67919 "Marvel Knights: Spider-Man" 2013 Marvel ? s4 · 26559 "Marvel Mangaverse: Spider-Man" 2002 Marvel ? s4   (v1 search)
+   CV local rip:   (= linked) · 2293 "Marvel Tales" 1966 Marvel 120 (via GCD name "Marvel Tales") · 1283 "Marvel Tales" 1949 Marvel 67 (via GCD name "Marvel Tales") · 137722 "Marvel Tales Featuring Spider-Man" 1990 Marvel 53 (via CV candidate name "Marvel Tales Featuring Spider-Man") · 119655 "Marvel Tales: Spider-Man" 2019 Marvel 1 issue 711326 (via CV candidate name "Marvel Tales: Spider-Man")   (rip lookup)
+   GCD per-file:   methods round2-folderx4 ⚠  (⚠ copies a folder neighbour's series — verify); series 1747 "Marvel Tales" 1966-1994 Marvel [was ongoing series] 289 on 4/35 files
+   GCD dump:       182403 "סיפורי מארוול בכיכובםשל ספיידרמן [Marvel Tales Starring Spider-Man]" [iw-il] 1986-1986 קווין קומיקס [Kevin Comics] [] 8 · 147337 "Marvel Tales: Spider-Man" 2019-2019 Marvel [] 1 (via CV candidate name "Marvel Tales: Spider-Man")   (dump lookup)
+   bridges:        gcd 1747 -> LOCG 114644 "Marvel Tales" support 11
+
+== S98485 Marvel Tales v2 (1964)  [tier C] · gap 15  keys: Marvel Tales v2 (1964)  years 1951-1987  23 files / 0 collections
+   folders: [23] Marvel\Marvel Tales\Marvel Tales v2 (1964)
+   files:   [101104] Marvel Tales 001 (1964) (c2c) (bluejeff1954).cbr (78pp) | [101105] Marvel Tales 002 (1965) (c2c).cbr (77pp) | [101106] Marvel Tales 003 (1966) (c2c).cbr (69pp)
+            [101107] Marvel Tales 004 (1969) (c2c) (bluejeff1954).cbr (69pp) | [101108] Marvel Tales 005 (1969) (c2c) (bluejeff1954-lindalee).cbr (67pp)
+            [101109] Marvel Tales 006 (1967) (c2c).cbr (68pp) | [101110] Marvel Tales 007 (1967) (c2c).cbr (68pp) | [101111] Marvel Tales 008 (1967) (c2c) (HD).cbr (68pp)
+            [101112] Marvel Tales 009 (1967) (c2c).cbr (68pp) | [101113] Marvel Tales 010 (1967) (c2c).cbz (68pp) | [101114] Marvel Tales 011 (1967) (c2c).cbz (67pp)
+            [101115] Marvel Tales 012 (1968) (c2c) (bluejeff1954).cbr (68pp) | [101116] Marvel Tales 013 (1968) (c2c).cbr (68pp) | [101117] Marvel Tales 014 (1968) (c2c).cbr (68pp)
+            [101118] Marvel Tales 015 (1968) (c2c).cbr (68pp) | [101119] Marvel Tales 016 (1968) (c2c).cbz (68pp) | [101120] Marvel Tales 017 (1968) (c2c).cbr (68pp)
+            [101121] Marvel Tales 018 (1969) (c2c).cbz (68pp) | [101122] Marvel Tales 019 (1969) (c2c).cbz (68pp) | [101123] Marvel Tales 020 (1969) (c2c) (F) (unk).cbr (69pp)
+            [101124] Marvel Tales 030 (1971) (Digital) (Shadowcat-Empire).cbz (12pp) | [101130] Marvel Tales Featuring Spider-Man 201 (1987) (digital) (Marika-Empire).cbz (24pp)
+            [101141] Marvel Tales Starring Spider-Man 100 (1979) (digital) (Marika-Empire).cbz (36pp)
+   ours:    ladder 1-20, 30, 100, 201; ComicInfo Series: "Marvel Tales"x2; ComicInfo Volume: "1966"x2; ComicInfo Count: "681"x1; ComicInfo Publisher: "Marvel"x2; ComicInfo Web: "64966"x1, "19301"x1
+   CV per-file (v1): vol 1283 "Marvel Tales" 1949 Marvel 67 on 23/23 files
+   CV local rip:   (= per-file) · 2293 "Marvel Tales" 1966 Marvel 120 (via our own name without the filing suffix "Marvel Tales")   (rip lookup)
+   GCD per-file:   series 1747 "Marvel Tales" 1966-1994 Marvel [was ongoing series] 289 on 19/23 files; methods numx19
+   GCD dump:       (= per-file) · 16490 "Marvel Tales" [en-ca] 1950-1951 Bell Features [] 8 (via our own name without the filing suffix "Marvel Tales") · 655 "Marvel Tales" 1949-1957 Marvel [] 67 (via our own name without the filing suffix "Marvel Tales") · 26658 "Marvel Tales" [en-gb] 1959-1959 L. Miller & Son [] 7 (via our own name without the filing suffix "Marvel Tales") · 191621 "Marvel Tales" [en-ph] 1975-1976 National Book Store [] ? (via our own name without the filing suffix "Marvel Tales") · 71181 "Marvel Tales" [en-au] 1977-1979 Yaffa / Page [] 3 (via our own name without the filing suffix "Marvel Tales")   (dump lookup)
+   bridges:        gcd 1747 -> LOCG 114644 "Marvel Tales" support 11
+
+== S94841 Marvel Team-Up v3 (2005)  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Marvel Team-Up v3 (2005)  years 1972-2007  25 files / 0 collections
+   folders: [25] Marvel\Marvel Team-Up\Marvel Team-Up v3 (2005)
+   files:   Marvel Team-Up 001 (2005) (Digital) (Shadowcat-Empire).cbz … Marvel Team-Up 025 (2006) (Digital) (Shadowcat-Empire).cbz  (25 files, pp 21-25)
+   ours:    ladder 1-25; ComicInfo Series: "Marvel Team-Up"x25; ComicInfo Volume: "2004"x25; ComicInfo Publisher: "Marvel"x25
+   CV per-file (v1): vol 2576 "Marvel Team-Up" 1972 Marvel 150 on 20/25 files · vol 42752 "Marvel Team-Up" 2006 Panini España 18 on 5/25 files
+   CV local rip:   (= per-file) · 47644 "Marvel Team-Up" 1980 Marvel UK/Panini UK 25 (via our own name without the filing suffix "Marvel Team-Up") · 6011 "Marvel Team-Up" 1997 Marvel 11 (via our own name without the filing suffix "Marvel Team-Up") · 18024 "Marvel Team-Up" 2004 Marvel 25 (via our own name without the filing suffix "Marvel Team-Up") · 118139 "Marvel Team-Up" 2019 Marvel 6 (via our own name without the filing suffix "Marvel Team-Up")   (rip lookup)
+   GCD per-file:   series 15313 "Marvel Team-Up" 2005-2006 Marvel [was ongoing series] 25 on 21/25 files · series 29020 "Marvel Team-up" [es] 2006-2007 Panini España [was ongoing series] 18 on 4/25 files; methods numx25
+   GCD dump:       2056 "Marvel Team-Up" 1972-1985 Marvel [] 150 (via our own name without the filing suffix "Marvel Team-Up") · 71979 "Marvel Team-Up" [en-au] 1973-1975 Yaffa / Page [] 9 (via our own name without the filing suffix "Marvel Team-Up") · 118196 "Marvel Team-Up" [en-ph] 1978-1978 National Book Store [] 4 (via our own name without the filing suffix "Marvel Team-Up") · 36214 "Marvel Team-Up" [en-gb] 1980-1981 Marvel UK [] 25 (via our own name without the filing suffix "Marvel Team-Up") · 5802 "Marvel Team-Up" 1997-1998 Marvel [] 11 (via our own name without the filing suffix "Marvel Team-Up") · 34596 "Marvel Team-Up" [es] 1998-1999 Planeta DeAgostini [] 11 (via our own name without the filing suffix "Marvel Team-Up")   (dump lookup)
+   bridges:        gcd 15313 -> LOCG 114205 "Marvel Team-Up" support 28 · gcd 29020 -> LOCG 114205 "Marvel Team-Up" support 4
+
+== S11633 Marvel Two-in-One Epic Collection: Two Against Hydra  [tier B]   keys: Marvel Two-In-One Epic Collection  years 2024-2024  1 files / 1 collections
+   folders: [1] Marvel\Marvel Two-in-One\Marvel Two-In-One Epic Collection
+   files:   [101473] COL Marvel Two-In-One Epic Collection Vol. 02 - Two Against Hydra (2024) (Digital).cbz (374pp)
+   GCD says: [101473] gcd notes 2601207 (#2 of Marvel Two-in-One Epic Collection): Marvel Two-In-One (Marvel, 1974 series) #20, #22-36; Marvel Two-In-One Annual (Marvel, 1976 series) #1; Fantastic Four Annual (Marvel, 1963 series) #11  |  gcd_reprint 2601207: s2182 Marvel Two-in-One (1974) #20, #22-36 [33 stories] · s2353 Marvel Two-in-One Annual (1976) #1 [2 stories] · s1572 Fantastic Four Annual (1963) #11 [2 stories]
+   CV linked:      vol 156396 "Marvel Two-in-One Epic Collection: Two Against Hydra" 2024 Marvel 1 issues issue 1042427; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 112694 "Marvel Two-In-One Epic Collection: Cry Monster" 2018 Marvel 1 issue 679414 s88 · 2696 "Marvel Two-in-One" 1974 Marvel 100 s70 · 107157 "Marvel Two-In-One" 2017 Marvel 12 s70 · 111584 "Marvel Two-In-One Annual" 2018 Marvel 1 issue 673023 s59 · 165188 "Marvel Two-In-One Omnibus" 2025 Marvel 1 issue 1117039 s59 · 23949 "Essential Marvel Two-In-One" 2006 Marvel 4 s47   (v1 search)
+   CV local rip:   (= linked) · 107157 "Marvel Two-In-One" 2017 Marvel 12 (via CV candidate name "Marvel Two-in-One") · 2696 "Marvel Two-in-One" 1974 Marvel 100 (via CV candidate name "Marvel Two-in-One") · 112694 "Marvel Two-In-One Epic Collection: Cry Monster" 2018 Marvel 1 issue 679414 (via CV candidate name "Marvel Two-In-One Epic Collection: Cry Monster")   (rip lookup)
+   GCD dump:       127449 "Marvel Two-in-One Epic Collection" 2018-? Marvel [] 3 · 25946 "Marvel Two-in-One" 2007-2009 Marvel [] 17 (via CV candidate name "Marvel Two-in-One") · 181103 "Marvel Two-in-One" [en-ph] 1978-1978 National Book Store [] 2 (via CV candidate name "Marvel Two-in-One") · 2182 "Marvel Two-in-One" 1974-1983 Marvel [] 100 (via CV candidate name "Marvel Two-in-One")   (dump lookup)
+
+== S11634 Marvel Two-In-One Epic Collection: Cry Monster  [tier B]   keys: Marvel Two-In-One Epic Collection: Cry Monster  years 2018-2018  1 files / 1 collections
+   folders: [1] Marvel\Marvel Two-in-One\Marvel Two-In-One Epic Collection
+   files:   [101472] COL Marvel Two-In-One Epic Collection Vol. 01 - Cry Monster (2018) (Digital) (Asgard-Empire).cbr (427pp)
+   ours:    ComicInfo Series: "Marvel Two-In-One Epic Collection: Cry Monster"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [101472] gcd notes 1833409 (#1 of Marvel Two-in-One Epic Collection): Marvel Feature (Marvel, 1971 series) #11-12; Marvel Two-in-One (Marvel, 1974 series) #1-19; Marvel Team-Up (Marvel, 1972 series) #47  |  gcd_reprint 1833409: s2182 Marvel Two-in-One (1974) #1-19 [38 stories] · s1991 Marvel Feature (1971) #10-12 [6 stories] · s2056 Marvel Team-Up (1972) #47 [2 stories]
+   CV linked:      vol 112694 "Marvel Two-In-One Epic Collection: Cry Monster" 2018 Marvel 1 issues issue 679414; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 2696 "Marvel Two-in-One" 1974 Marvel 100 s70 · 107157 "Marvel Two-In-One" 2017 Marvel 12 s70 · 156396 "Marvel Two-in-One Epic Collection: Two Against Hydra" 2024 Marvel 1 issue 1042427 s67 · 111584 "Marvel Two-In-One Annual" 2018 Marvel 1 issue 673023 s56 · 165188 "Marvel Two-In-One Omnibus" 2025 Marvel 1 issue 1117039 s56 · 69218 "Marvel Masterworks: Marvel Two-In-One" 2013 Marvel 8 s45   (v1 search)
+   CV local rip:   (= linked) · 107157 "Marvel Two-In-One" 2017 Marvel 12 (via CV candidate name "Marvel Two-in-One") · 2696 "Marvel Two-in-One" 1974 Marvel 100 (via CV candidate name "Marvel Two-in-One")   (rip lookup)
+   GCD dump:       25946 "Marvel Two-in-One" 2007-2009 Marvel [] 17 (via CV candidate name "Marvel Two-in-One") · 181103 "Marvel Two-in-One" [en-ph] 1978-1978 National Book Store [] 2 (via CV candidate name "Marvel Two-in-One") · 2182 "Marvel Two-in-One" 1974-1983 Marvel [] 100 (via CV candidate name "Marvel Two-in-One")   (dump lookup)
+
+== S11631 Marvel Two-in-One  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Marvel Masterworks - Marvel Two-In-One | Marvel Two-In-One | Marvel Two-In-One Annual | Marvel Two-in-One | Marvel Two-in-One Annual  years 1974-2024  98 files / 7 collections
+   folders: [82] Marvel\Marvel Two-in-One\Marvel Two-in-One v1 (1974) · [7] Marvel\Marvel Two-in-One\Marvel Two-in-One v1 (1974)\Annuals · [7] Marvel\_Marvel Masterworks\Marvel Two-In-One v1 (1974) · [1] Marvel\_Avengers\_One Shots and Minis · [1] Marvel\_Marvel Cosmic\Guardians of the Galaxy\Misc
+   files:   [101474] Marvel Two-In-One Annual 001 - Liberty Legion (1976) (Digital) (Shadowcat-Empire).cbz (36pp)
+            [101475] Marvel Two-In-One Annual 002 - Spider-Man (1977) (Digital) (Zone-Empire).cbr (36pp) | [101476] Marvel Two-In-One Annual 003 - Nova (1978) (Digital) (Zone-Empire).cbr (36pp)
+            [101477] Marvel Two-In-One Annual 004 (1979) (c2c) (BWT-DCP).cbr (53pp) | [101479] Marvel Two-In-One Annual 006 (1981) (c2c) (BWT-DCP).cbr (53pp)
+            [101480] Marvel Two-In-One Annual 007 (1982) (c2c) (Blasty-DCP).cbr (52pp) | [101478] Marvel Two-in-One Annual 005 (1980) (Digital-Empire).cbz (35pp)
+            [101481] Marvel Two-In-One 001 - Man-Thing (1974) (Digital) (Shadowcat-Empire).cbz (20pp) | [101482] Marvel Two-In-One 002 - Sub-Mariner (1974) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [101483] Marvel Two-In-One 003 - Daredevil (1974) (Digital) (Kileko-Empire).cbr (20pp) | [101484] Marvel Two-In-One 004 - Captain America (1974) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [101485] Marvel Two-In-One 005 - Guardians of the Galaxy (1974) (Digital) (AnHeroGold-Empire).cbz (19pp)
+            [101486] Marvel Two-In-One 006 - Dr. Strange (1974) (Digital) (AnHeroGold-Empire).cbz (19pp) | [101487] Marvel Two-In-One 007 - Valkyrie (1975) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [101488] Marvel Two-In-One 008 - Ghost Ride (1975) (Digital) (Shadowcat-Empire).cbz (20pp) | [101489] Marvel Two-In-One 009 - Thor (1975) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [101490] Marvel Two-In-One 011 - Golem (1975) (Digital) (Shadowcat-Empire).cbz (19pp) | [101491] Marvel Two-In-One 012 - Iron Man (1975) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [101492] Marvel Two-In-One 013 - Power Man (1976) (Digital) (Shadowcat-Empire).cbz (18pp) | [101493] Marvel Two-In-One 014 - Son of Satan (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [101494] Marvel Two-In-One 015 - Morbius (1976) (Digital) (Shadowcat-Empire).cbz (19pp) | [101495] Marvel Two-In-One 016 - Ka-Zar (1976) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [101496] Marvel Two-In-One 017 - Spider-Man (1976) (Digital) (Shadowcat-Empire).cbz (18pp) | [101497] Marvel Two-In-One 018 - Scarecrow (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [101498] Marvel Two-In-One 019 - Tigra (1976) (Digital) (Shadowcat-Empire).cbz (18pp) | [101499] Marvel Two-In-One 020 - Liberty Legion (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [101500] Marvel Two-In-One 021 - Doc Savage (1976) (Digital) (Shadowcat-Empire).cbz (20pp) | [101501] Marvel Two-In-One 022 - Thor (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [101502] Marvel Two-In-One 023 - Thor (1977) (Digital) (Shadowcat-Empire).cbz (19pp) | [101503] Marvel Two-In-One 024 - Black Goliath (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [101504] Marvel Two-In-One 025 - Iron Fist (1977) (Digital) (Shadowcat-Empire).cbz (18pp) | [101505] Marvel Two-In-One 026 - Nick Fury (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [101506] Marvel Two-In-One 027 - Deathlok (1977) (Digital) (AnHeroGold-Empire).cbz (18pp) | [101507] Marvel Two-In-One 028 - Sub-Mariner (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [101508] Marvel Two-In-One 029 - Shang Chi (1977) (Digital) (Shadowcat-Empire).cbz (18pp) | [101509] Marvel Two-In-One 030 - Spider-Woman (1977) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [101510] Marvel Two-In-One 031 - Mystery Menace (1977) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [101511] Marvel Two-In-One 032 - Invisible Girl (1977) (Digital) (Shadowcat-Empire).cbz (17pp)
+            [101512] Marvel Two-In-One 033 - Mordred the Mystic (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [101513] Marvel Two-In-One 034 - Nighthawk (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [101514] Marvel Two-In-One 035 - Skull the Slayer (1978) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [101515] Marvel Two-In-One 036 - Mr. Fantastic (1978) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [101516] Marvel Two-In-One 037 - Matt Murdock (1978) (Digital) (Shadowcat-Empire).cbz (18pp) | [101517] Marvel Two-In-One 038 - Daredevil (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [101518] Marvel Two-In-One 039 - The Vision (1978) (Digital) (Shadowcat-Empire).cbz (19pp) | [101519] Marvel Two-In-One 040 - Black Panther (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [101520] Marvel Two-In-One 041 - Brother Voodoo (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [101521] Marvel Two-In-One 042 - Captain America (1978) (Digital) (Shadowcat-Empire).cbz (17pp) | [101522] Marvel Two-In-One 043 - Man-Thing (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [101523] Marvel Two-In-One 044 - Hercules (1978) (Digital) (Shadowcat-Empire).cbz (18pp) | [101524] Marvel Two-In-One 045 - Captain Marvel (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [101525] Marvel Two-In-One 046 - Hulk (1978) (Digital) (Shadowcat-Empire).cbz (18pp) | [101526] Marvel Two-In-One 047 - Yancy Street Gang (1979) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [101527] Marvel Two-In-One 048 - Jack of Hearts (1979) (Digital) (Shadowcat-Empire).cbz (19pp) | [101528] Marvel Two-In-One 049 - Dr. Strange (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [101529] Marvel Two-In-One 050 - The Thing vs. The Thing (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [101530] Marvel Two-In-One 051 - Beast, Mr. Marvel, Fury, Wonder Man (1979) (Digital) (Shadowcat-Empire).cbz (17pp)
+            [101531] Marvel Two-In-One 052 - Moon Knight (1979) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [101532] Marvel Two-In-One 053 - Quasar (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [101533] Marvel Two-In-One 054 - Deathlok (1979) (Digital) (AnHeroGold-Empire).cbz (18pp) | [101534] Marvel Two-In-One 055 - Giant Man (1979) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [101535] Marvel Two-In-One 055 - Giant-man (1979) (Digital) (AnPymGold-Empire).cbz (18pp) | [101536] Marvel Two-In-One 056 - Thundra (1979) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [101537] Marvel Two-In-One 057 - Wundarr (1979) (Digital) (Shadowcat-Empire).cbz (18pp) | [101538] Marvel Two-In-One 058 - Aquarian (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [101539] Marvel Two-In-One 059 - Human Torch (1980) (Digital) (Shadowcat-Empire).cbz (19pp) | [101540] Marvel Two-In-One 060 - Impossible Man (1980) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [101541] Marvel Two-In-One 061 - Starhawk (1980) (Digital) (AnHeroGold-Empire).cbz (18pp) | [101542] Marvel Two-In-One 062 - Moon Dragon (1980) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [101543] Marvel Two-In-One 063 - Warlock (1980) (Digital) (AnHeroGold-Empire).cbz (17pp) | [101544] Marvel Two-In-One 064 - Stingray (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [101545] Marvel Two-In-One 065 - Triton (1980) (Digital) (Shadowcat-Empire).cbz (19pp) | [101546] Marvel Two-In-One 066 - Scarlet Witch (1980) (Digital) (Shadowcat-Empire).cbz (17pp)
+            [101547] Marvel Two-In-One 067 - Hyperion (1980) (Digital) (Shadowcat-Empire).cbz (19pp) | [101548] Marvel Two-In-One 068 - Angel (1980) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [101549] Marvel Two-In-One 069 - Guardians of the Glaxy (1980) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            [101550] Marvel Two-In-One 070 - (Secret Guest) (1980) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [101551] Marvel Two-In-One 071 - Mister Fantastic (1981) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [101552] Marvel Two-In-One 072 - The Inhumans (1981) (Digital) (Shadowcat-Empire).cbz (23pp) | [101553] Marvel Two-In-One 073 - Quasar (1981) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [101554] Marvel Two-In-One 074 - The Puppet Master (1981) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [101556] Marvel Two-In-One 080 - Ghost Rider (1981) (Digital) (Shadowcat-Empire).cbz (24pp) | [101557] Marvel Two-In-One 083 - Sasquatch (1982) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [101558] Marvel Two-In-One 086 - Sandman (1982) (Digital) (Shadowcat-Empire).cbz (24pp) | [101559] Marvel Two-In-One 087 - Ant-Man (1982) (Digital) (Zone-Empire).cbr (24pp)
+            [101560] Marvel Two-In-One 088 - She Hulk (1982) (Digital) (Shadowcat-Empire).cbz (23pp) | [101562] Marvel Two-In-One 099 - ROM (1983) (digital) (Marika-Empire).cbz (25pp)
+            [101555] Marvel Two-in-One 078 - Wonder Man (1981) (Digital-Empire).cbz (23pp) | [101561] Marvel Two-in-One 091 - (Just Thing) (1982) (Digital-Empire).cbz (23pp)
+            [53473] Marvel Two-in-One 075 (Avengers).cbr (39pp) | [82859] marvel_two-in-one_005.cbr (20pp)
+            [83324] COL Marvel Masterworks - Marvel Two-In-One Vol. 01 (2013) (Digital-Empire).cbr (244pp)
+            [83325] COL Marvel Masterworks - Marvel Two-In-One Vol. 02 (2017) (Digital) (Zone-Empire).cbr (292pp)
+            [83326] COL Marvel Masterworks - Marvel Two-In-One Vol. 03 (2018) (Digital) (Kileko-Empire).cbr (300pp)
+            [83327] COL Marvel Masterworks - Marvel Two-In-One Vol. 04 (2019) (Digital) (Zone-Empire).cbr (301pp)
+            [83328] COL Marvel Masterworks - Marvel Two-In-One Vol. 05 (2020) (Digital-Empire).cbr (303pp)
+            [83329] COL Marvel Masterworks - Marvel Two-In-One Vol. 06 (2021) (Digital-Empire).cbr (299pp)
+            [83330] COL Marvel Masterworks - Marvel Two-In-One Vol. 07 (2024) (Digital-Empire).cbr (290pp)
+   ours:    ladder 1-9, 11-75, 78, 80, 83, 86-88, 91, 99; 8 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 55; judged item 83326 #21-36 conf 0.9; judged item 83327 #37-46 conf 0.9; judged item 83328 #47-60 conf 0.9; ComicInfo Series: "Marvel Two-In-One"x32, "Marvel Two-In-One Masterworks"x3, "Marvel Masterworks: Marvel Two-In-One"x1; ComicInfo Volume: "1974"x32; ComicInfo Count: "100"x1; ComicInfo Publisher: "Marvel"x35, "Marvel Comics"x1; ComicInfo Web: "23127"x1
+   GCD says: [83324] gcd_reprint 1158700: s2182 Marvel Two-in-One (1974) #1-10 [20 stories] · s1991 Marvel Feature (1971) #11-12 [5 stories]
+             [83325] gcd_reprint 1734630: s2182 Marvel Two-in-One (1974) #11-20 [20 stories] · s2353 Marvel Two-in-One Annual (1976) #1 [3 stories] · s1572 Fantastic Four Annual (1963) #11 [2 stories] · s2056 Marvel Team-Up (1972) #47 [2 stories]
+             [83326] gcd_reprint 1793046: s2182 Marvel Two-in-One (1974) #21-36 [33 stories]
+             [83327] gcd_reprint 2177741: s2182 Marvel Two-in-One (1974) #37-46 [21 stories] · s2353 Marvel Two-in-One Annual (1976) #2-3 [4 stories] · s1807 The Avengers Annual (1967) #7 [2 stories]
+             [83328] gcd_reprint 2177785: s2182 Marvel Two-in-One (1974) #47-60 [29 stories] · s161534 The Project Pegasus Saga Starring The Thing (1988) (unnumbered) [5 stories] · s4433 The Adventures of the Thing (1992) #1, #3 [2 stories] · s2353 Marvel Two-in-One Annual (1976) #4 [2 stories]
+             [83329] gcd_reprint 2350519: s2182 Marvel Two-in-One (1974) #61-74 [15 stories]
+             [83330] gcd_reprint 2611327: s2182 Marvel Two-in-One (1974) #75-82 [9 stories] · s2353 Marvel Two-in-One Annual (1976) #5-6 [2 stories]
+   CV linked:      vol 2696 "Marvel Two-in-One" 1974 Marvel 100 issues; cached #1-99 (82); yearΔ 0; ratio 90/100 = 0.90; 3 of 3 judged fit
+   CV per-file (v1): vol 2696 "Marvel Two-in-One" 1974 Marvel 100 on 89/98 files · vol 2865 "Marvel Two-in-One Annual" 1976 Marvel 7 on 1/98 files
+   CV candidates:  (= linked) · 69218 "Marvel Masterworks: Marvel Two-In-One" 2013 Marvel 8 s58 · 116703 "Marvel Two-In-One: Next of Kin" 2019 Marvel 1 issue 698608 s35 · 112329 "Marvel Two-In-One: Fate of the Four" 2018 Marvel 1 issue 677287 s34 · 107157 "Marvel Two-In-One" 2017 Marvel 12 s33 · 34783 "Marvel Masterworks: Captain Marvel" 2005 Marvel 6 s27 · 77643 "Marvel Masterworks: Ms. Marvel" 2014 Marvel 2 s27   (v1 search)
+   CV local rip:   (= linked) · 107157 "Marvel Two-In-One" 2017 Marvel 12 · 69218 "Marvel Masterworks: Marvel Two-In-One" 2013 Marvel 8 · 111584 "Marvel Two-In-One Annual" 2018 Marvel 1 issue 673023 · 116703 "Marvel Two-In-One: Next of Kin" 2019 Marvel 1 issue 698608 (via CV candidate name "Marvel Two-In-One: Next of Kin")   (rip lookup)
+   GCD per-file:   methods numx82 · round2-seriesx6 ⚠  (⚠ copies a folder neighbour's series — verify); series 2182 "Marvel Two-in-One" 1974-1983 Marvel [was ongoing series] 100 on 82/98 files · series 2353 "Marvel Two-in-One Annual" 1976-1982 Marvel [was ongoing series] 7 on 6/98 files
+   GCD dump:       (= per-file) · 181103 "Marvel Two-in-One" [en-ph] 1978-1978 National Book Store [] 2 · 25946 "Marvel Two-in-One" 2007-2009 Marvel [] 17 · 77624 "Marvel Masterworks: Marvel Two-in-One" 2013-? Marvel [] 8 · 125893 "Marvel Two-in-One Annual" 2018-2018 Marvel [] 1   (dump lookup)
+   bridges:        gcd 2182 -> LOCG 105190 "Marvel Two-in-One Annual" support 86 · gcd 2353 -> LOCG 105190 "Marvel Two-in-One Annual" support 3
+
+== S11675 Marvel Zombies 3  [tier C] · gap 2  keys: Marvel Zombies  years 2006-2008  5 files / 1 collections
+   folders: [4] Marvel\Marvel Zombies\Marvel Zombies 3 (2008) · [1] Marvel\Marvel Zombies
+   files:   [101577] COL Marvel Zombies (2008) (digital) (Minutemen-Slayer).cbr (108pp) | [101581] Marvel Zombies 3 01 (of 04) (2008) (digital) (Minutemen-Faessla).cbz (24pp)
+            [101582] Marvel Zombies 3 02 (of 04) (2009) (digital) (Minutemen-Faessla).cbz (23pp) | [101583] Marvel Zombies 3 03 (of 04) (2009) (digital) (Minutemen-Faessla).cbz (23pp)
+            [101584] Marvel Zombies 3 04 (of 04) (2009) (digital) (Minutemen-Faessla).cbz (24pp)
+   ours:    ladder 1-4
+   CV linked:      vol 23335 "Marvel Zombies 3" 2008 Marvel 4 issues; cached #1-4 (4); yearΔ 2; ratio 4/4 = 1.00; no judged range
+   CV per-file (v1): vol 19252 "Marvel Zombies" 2005 Marvel 5 on 4/5 files
+   CV candidates:  (= linked) · 57825 "Marvel Zombies" 2008 Marvel 1 issue 388141 s105 · 32096 "Marvel Spotlight Marvel Zombies" 2007 Marvel 1 issue 201437 s85 · 42756 "100% Marvel: Marvel Zombies" 2007 Panini España 1 issue 292326 s70 · 82505 "Marvel Zombies" 2015 Marvel 4 s65 · 85416 "Marvel Zombies" 2015 Panini España 4 s50 · 122663 "Marvel Zombies" 2010 Nona Arte 1 issue 726196 s35   (v1 search)
+   CV local rip:   (= linked) · 32872 "Marvel Zombies 3" 2009 Marvel 1 issue 211530 · 57825 "Marvel Zombies" 2008 Marvel 1 issue 388141 · 122663 "Marvel Zombies" 2010 Nona Arte 1 issue 726196 · 82505 "Marvel Zombies" 2015 Marvel 4   (rip lookup)
+   GCD per-file:   series 69168 "Marvel Zombies" [es-mx] 2007-2007 Editorial Televisa [Serie Limitada] 5 on 1/5 files; methods numx1
+   GCD dump:       32085 "Marvel Zombies 3" 2008-2009 Marvel [] 4 · 146427 "Marvel Zombies 3" 2009-2009 Marvel [] 1 · 233698 "Marvel Zombies 3" 2009-2009 Marvel [] 1 · 18728 "Marvel Zombies" 2006-2006 Marvel [] 5 · 21323 "Marvel Zombies" 2006-2006 Marvel [] 1 · 29117 "Marvel Zombies" [es] 2007-2007 Panini España [] 1   (dump lookup)
+   bridges:        gcd 69168 -> LOCG 117708 "Marvel Zombies" support 4
+
+== S12107 Millie the Model  [tier C] · 114 files  keys: Millie the Model | Millie the Model 001i | Millie the Model 008i | Millie the Model 027i | Millie the Model 030i | Millie the Model 034i | Millie the Model 036i | Millie the Model 037i | Millie the Model 043i | Millie the Model 044i | Millie the Model 045i | Millie the Model 046i | Millie the Model 062i | Millie the Model 118i  years 1945-1968  114 files / 0 collections
+   folders: [114] Marvel\Millie the Model\Millie the Model v1 (1945)
+   files:   [101810] Millie the Model 001i [Timely] (1945) (Covers Only) (Nodge).cbr (3pp) | [101811] Millie the Model 002 (Timely.1946) (c2c) (Pmack).cbz (53pp)
+            [101812] Millie the Model 002 [Timely] (Oct 1946) (rangerhouse-Yoc) c2c.cbz (52pp) | [101813] Millie the Model 003 (BC) (Nodge).cbr (1pp)
+            [101814] Millie the Model 004 (Timely.1947) (c2c) (Pmack).cbz (52pp) | [101815] Millie the Model 005 (1947) (c2c.FIXED) (Pmack).cbz (52pp) | [101816] Millie the Model 007 (1947).cbz (52pp)
+            [101817] Millie the Model 008 [Timely] (1947) (Filled) c2c.cbz (52pp) | [101818] Millie the Model 008i [Timely] (1947) (Missing 3 Pages) (Pmack).cbz (52pp)
+            [101819] Millie the Model 009 (Timely 1947) (c2c) (Soothsayr-Novus-Gambit).cbz (52pp) | [101820] Millie the Model 010 (Timely 1948) (c2c) (Soothsayr-Novus-Gambit).cbz (52pp)
+            [101821] Millie the Model 011 [Timely] (1948) (Mal32-Gambit) c2c.cbz (52pp) | [101822] Millie the Model 012 [Timely] (Jun 1948) c2c.cbz (52pp)
+            [101823] Millie the Model 014 [Timely] (1948) (Pmack) c2c.cbz (52pp) | [101824] Millie the Model 020 [Timely] (1949) (Mal32-Gambit).cbz (52pp)
+            [101825] Millie the Model 021 [Timely] (1950) (goomar of chums) c2c.cbz (?pp) | [101826] Millie the Model 022 (Marvel) (Apr 1950) (c2c) (Pmack+Superscan).cbz (53pp)
+            [101827] Millie the Model 023 [Atlas] (1950) (Gambit) c2c.cbz (52pp) | [101828] Millie the Model 024 [Atlas] (1950) (Mal32-Gambit) c2c.cbz (52pp)
+            [101829] Millie the Model 027i [Atlas] (X-Rated Cover Only).cbr (2pp) | [101830] Millie the Model 028 [Atlas] (1951).cbr (52pp)
+            [101831] Millie the Model 029 [Marvel (1951) (scanner).cbz (52pp) | [101832] Millie the Model 030i [Atlas] (Cover Only) (Nodge).cbr (2pp)
+            [101833] Millie the Model 032 [Atlas] (1952) (Mal32-Gambit) c2c.cbz (36pp) | [101834] Millie the Model 034i [Atlas] (Cover Only) (Nodge).cbr (2pp)
+            [101835] Millie the Model 035 [Atlas] (1952) (Pmack) c2c.cbz (36pp) | [101836] Millie the Model 036i [Atlas] (Cover Only) (Nodge).cbr (2pp)
+            [101837] Millie the Model 037i [Atlas] (Cover Only) (Nodge).cbr (2pp) | [101838] Millie the Model 038 (Atlas.1953) (c2c) (Pmack).cbz (36pp)
+            [101839] Millie the Model 039 [Atlas] (1953) (AquagirlTX).cbz (37pp) | [101840] Millie the Model 041 [Atlas] c2c.cbr (36pp)
+            [101841] Millie the Model 043i [Atlas] (1953) (Missing 2 Pages) (Pmack).cbz (34pp) | [101842] Millie the Model 044i [Atlas] (1953) (Missing 4 Pages) (Pmack).cbz (32pp)
+            [101843] Millie the Model 045i [Atlas] (Cover Only) (Nodge).cbr (2pp) | [101844] Millie the Model 046i [Atlas] (Cover Only) (Nodge).cbr (2pp)
+            [101845] Millie the Model 047 [Atlas] c2c.cbr (36pp) | [101846] Millie the Model 050 [Atlas] (Woodman-Mal32).cbr (36pp)
+            [101847] Millie the Model 056 [Atlas] (Oct 1954) (ChetEdson).cbr (36pp) | [101848] Millie the Model 059 [Atlas] (1955) (Gambit) c2c.cbz (36pp)
+            [101849] Millie the Model 060 [Atlas] (1955) (Gambit) c2c.cbz (36pp) | [101850] Millie the Model 061 [Atlas] (1955) (p18 Torn) (chums) c2c.cbr (36pp)
+            [101851] Millie the Model 062 [Atlas] (1955) (Damaged Pages) (Gambit) c2c.cbz (36pp) | [101852] Millie the Model 062i [Atlas] (1955) (Missing cf).cbz (32pp)
+            [101853] Millie the Model 063 [Atlas] (1955) c2c.cbz (36pp) | [101854] Millie the Model 065 [Atlas] (1955) (Gambit) c2c.cbz (36pp)
+            [101855] Millie the Model 066 [Atlas] (1956) (AquagirlTX).cbz (37pp) | [101856] Millie the Model 069 (1956) (Atlas) (c2c) (Pmack).cbz (36pp)
+            [101857] Millie the Model 070 [Atlas] (1956) (AquagirlTX).cbz (37pp) | [101858] Millie the Model 082 [Atlas] (Gambit-Woodman).cbr (33pp)
+            [101859] Millie the Model 086 [Atlas] (1958) (Missing cf) (Pmack).cbz (32pp) | [101860] Millie the Model 087 [Atlas] (1958) c2c.cbz (36pp)
+            [101861] Millie the Model 089 [Atlas] (1959) (New Cover) c2c.cbz (36pp) | [101862] Millie the Model 089 [Atlas] (1959) c2c.cbz (36pp)
+            [101863] Millie the Model 091 [Atlas] (1959) (Gambit) c2c.cbz (36pp) | [101864] Millie the Model 092 [Atlas] (1959) (Gambit) c2c.cbz (36pp)
+            [101865] Millie the Model 093 [Atlas] (1959) (Gambit) c2c.cbz (36pp) | [101866] Millie the Model 093 [Marvel] (1959) (2 Damaged Pages) (Gambit) c2c.cbz (36pp)
+            [101867] Millie the Model 094 [Marvel] (1960) (Gambit) c2c.cbz (36pp) | [101868] Millie the Model 095 [Marvel] (1960) (Gambit) c2c.cbz (36pp)
+            [101869] Millie the Model 096 [Marvel] (1960) (Gambit) c2c.cbz (36pp) | [101870] Millie the Model 097 [Marvel] (1960) (Gambit) c2c.cbz (36pp)
+            [101871] Millie the Model 098 [Marvel] (1960) (Gambit) c2c.cbz (36pp) | [101872] Millie the Model 099 [Marvel] (Nov 1960) (Gambit-Mouse5150-DCP) c2c.cbr (36pp)
+            [101873] Millie the Model 100 [Marvel] (1961) (Mal32-Gambit) c2c.cbz (36pp) | [101874] Millie the Model 101 [Marvel] (1961) (Mal32-Gambit) c2c.cbz (36pp)
+            [101875] Millie the Model 102 [Marvel] (1961) (Gambit) c2c.cbz (36pp) | [101876] Millie the Model 103 [Marvel] (1961) (Gambit) c2c.cbz (36pp)
+            [101877] Millie the Model 105 [Marvel] (Nov 1961) (Gambit-Mouse5150-DCP) c2c.cbr (36pp) | [101878] Millie the Model 106 [Marvel] c2c.cbz (36pp)
+            [101879] Millie the Model 107 [Marvel] (1962) (Gambit) c2c.cbz (36pp) | [101880] Millie the Model 108 [Marvel] (1962) (Gambit) c2c.cbz (36pp)
+            [101881] Millie the Model 109 [Marvel] (1962) (Gambit) c2c.cbz (36pp) | [101882] Millie the Model 110 [Marvel] (1962) (Mal32-Gambit) c2c.cbz (36pp)
+            [101883] Millie the Model 111 [Marvel] (1962) (Gambit) c2c.cbz (36pp) | [101884] Millie the Model 112 [Marvel] c2c.cbr (36pp)
+            [101885] Millie the Model 113 [Marvel] (1963) (Mal32-Gambit) c2c.cbz (36pp) | [101886] Millie the Model 114 [Marvel] c2c.cbr (36pp)
+            [101887] Millie the Model 115 [Marvel] (1963) (brigus) c2c.cbr (36pp) | [101888] Millie the Model 116 [Marvel] (1963) (brigus) c2c.cbr (36pp)
+            [101889] Millie the Model 117 (1963) (Digital-Empire).cbz (26pp) | [101890] Millie the Model 117 [Marvel] (Gambit) c2c.cbz (36pp)
+            [101891] Millie the Model 118  [Marvel](1964) (Rescan) (Gambit) c2c.cbz (36pp) | [101892] Millie the Model 118i [Marvel] (Missing One ad and One Pinup) (Twobyfour-Gambit).cbz (36pp)
+            [101893] Millie the Model 119 [Marvel] (1964) (Mal32-Gambit) c2c.cbz (36pp) | [101894] Millie the Model 120 (1964) (Digital-Empire).cbz (26pp)
+            [101895] Millie the Model 121 [Marvel] c2c.cbr (36pp) | [101896] Millie the Model 122 [Marvel] (1964) (Mal32-Gambit) c2c.cbz (36pp)
+            [101897] Millie the Model 123 [Marvel] (Gambit) c2c.cbz (36pp) | [101898] Millie the Model 124 [Marvel] c2c.cbz (36pp) | [101899] Millie the Model 125 [Marvel] c2c.cbr (36pp)
+            [101900] Millie the Model 126 [Marvel] (1965) (Mal32-Gambit) c2c.cbz (36pp) | [101901] Millie the Model 127 [Marvel] (Mar 1965) (Team Mal).cbr (37pp)
+            [101902] Millie the Model 128 [Marvel] (1965) (Mal32-Gambit) c2c.cbz (36pp) | [101903] Millie the Model 129 [Marvel] (1965) (Mal32-Gambit) c2c.cbz (36pp)
+            [101904] Millie the Model 130 [Marvel] (1965) (Mal32-Gambit) c2c.cbz (36pp) | [101905] Millie the Model 131 [Marvel] c2c.cbz (36pp) | [101906] Millie the Model 133 [Marvel] c2c.cbz (36pp)
+            [101907] Millie the Model 134 [Marvel] (1966) (Mal32-Gambit) c2c.cbz (36pp) | [101908] Millie the Model 136 [Marvel] (1966) (elf-Gambit) c2c.cbz (36pp)
+            [101909] Millie the Model 137 [Marvel] (1966) (Mal32-Gambit) c2c.cbz (36pp) | [101910] Millie the Model 138 [Marvel] (1966) (Mal32-Gambit) c2c.cbz (36pp)
+            [101911] Millie the Model 139 [Marvel] c2c.cbz (36pp) | [101912] Millie the Model 140 [Marvel] (1966) (Mal32-Gambit) c2c.cbz (36pp)
+            [101913] Millie the Model 141 [Marvel] (Gambit) c2c.cbz (36pp) | [101914] Millie the Model 142 [Marvel] c2c.cbz (36pp) | [101915] Millie the Model 143 [Marvel] (Gambit).cbz (35pp)
+            [101916] Millie the Model 144 [Marvel] (Twobyfour-Gambit) c2c.cbz (35pp) | [101917] Millie the Model 145 [Marvel] (Gambit).cbz (36pp)
+            [101918] Millie the Model 146 [Marvel] (Gambit) c2c.cbz (36pp) | [101919] Millie the Model 147 [Marvel] (Sep 1967) (Elf-Mouse5150-DCP) c2c.cbr (36pp)
+            [101920] Millie the Model 148 [Marvel] c2c.cbr (36pp) | [101921] Millie the Model 149 [Marvel] (Gambit).cbz (36pp) | [101922] Millie the Model 150 [Marvel] (Gambit).cbz (36pp)
+            [101923] Millie the Model 159 (c2c) (1968) (elf-Gambit).cbz (36pp)
+   ours:    ladder 1-5, 7-12, 14, 20-24, 27-30, 32, 34-39, 41, 43-47, 50, 56, 59-63, 65-66, 69-70, 82, 86-87, 89, 91-103, 105-131, 133-134, 136-150, 159; 7 number(s) name more than one file: 2, 8, 62, 89, 93, 117, 118
+   CV linked:      vol 19441 "Millie the Model" 1945 Marvel 207 issues; cached #1-207 (207); yearΔ 0; ratio 114/207 = 0.55; no judged range; v1 per-file: same volume on 114/114 files
+   CV candidates:  (= linked) · 56694 "Marvel Milestones: Millie the Model & Patsy Walker" 2006 Marvel 1 issue 384417 s30 · 8510 "Millie the Model Annual" 1962 Marvel 12 s19 · 36596 "Model" 2000 Daewon C.I. 1 issue 1101166 s15 · 22490 "1945" 2005 Dargaud 1 issue 135032 s0 · 166778 "1945" 2018 Kappalab 1 issue 1131445 s0 · 163106 "Model" 2005 Ediciones La Cúpula S.L. 7 s0   (v1 search)
+   CV local rip:   (= linked) · 8510 "Millie the Model Annual" 1962 Marvel 12 (via CV candidate name "Millie the Model Annual") · 56694 "Marvel Milestones: Millie the Model & Patsy Walker" 2006 Marvel 1 issue 384417 (via CV candidate name "Marvel Milestones: Millie the Model & Patsy Walker")   (rip lookup)
+   GCD per-file:   series 74380 "Millie the Model" [en-au] 1950-? Horwitz [Was Ongoing Series] 63 on 9/114 files · series 79395 "Millie the Model" 1966-1973 Marvel [was ongoing series] 64 on 1/114 files; methods numx7 · fulldump-rematchx3
+   GCD dump:       (= per-file) · 15258 "Millie the Model" [en-ca] 1949-1949 Bell Features [] 2 · 182250 "Millie the Model" [en-za] 1980-1980 Republican Press [] 1 · 1516 "Millie the Model Annual" 1962-1975 Marvel [] 12 (via CV candidate name "Millie the Model Annual") · 19565 "Marvel Milestones: Millie the Model & Patsy Walker" 2006-2006 Marvel [] 1 (via CV candidate name "Marvel Milestones: Millie the Model & Patsy Walker")   (dump lookup)
+
+== S12313 Monsters Unleashed  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: Monsters Unleashed | Monsters Unleashed v1 (2017) | Monsters Unleashed v2 (2017)  years 2016-2018  14 files / 1 collections
+   flags: #345 label-ambiguous [Pending] item 101944 — Monsters Unleashed v2 001-012 are single issues, not collections
+   folders: [12] Marvel\Monsters Unleashed\Monsters Unleashed v2 (2017) · [1] Marvel\Monsters Unleashed\Monsters Unleashed v1 (2017)\Dot MU Tie-ins · [1] Marvel\Monsters Unleashed\Monsters Unleashed v1 (2017)
+   files:   [101937] Champions 001.MU (2017) (Digital) (Zone-Empire).cbr (34pp) | [101943] COL Monsters Unleashed Vol. 01 - Monster Mash (2017) (Digital) (Zone-Empire).cbr (105pp)
+            Monsters Unleashed v2 001 (2017) (Digital) (Zone-Empire).cbr … Monsters Unleashed v2 012 (2018) (Digital) (Zone-Empire).cbr  (12 files, pp 21-26)
+   ours:    ladder 1-12; 1 number(s) name more than one file: 1
+   CV linked:      vol 100829 "Monsters Unleashed" 2017 Marvel 12 issues; cached #1-12 (12); yearΔ 1; ratio 13/12 = 1.08; no judged range
+   CV per-file (v1): vol 100829 "Monsters Unleashed" 2017 Marvel 12 on 12/14 files · vol 94612 "Champions" 2016 Marvel 28 on 1/14 files
+   CV candidates:  (= linked) · 98067 "Monsters Unleashed!" 2017 Marvel 5 s108 · 2641 "Monsters Unleashed!" 1973 Marvel 11 s107 · 102607 "Monsters Unleashed!" 2017 Marvel 1 issue 606633 s105 · 104110 "Monsters Unleashed!" 2017 Panini España 6 s93 · 97761 "Monsters Unleashed! Prelude" 2017 Marvel 1 issue 574870 s89 · 96376 "Marvel Free Previews Monsters Unleashed" 2017 Marvel 1 issue 564007 s87   (v1 search)
+   CV local rip:   (= linked) · 98067 "Monsters Unleashed!" 2017 Marvel 5 · 102607 "Monsters Unleashed!" 2017 Marvel 1 issue 606633 · 104110 "Monsters Unleashed!" 2017 Panini España 6 · 2641 "Monsters Unleashed!" 1973 Marvel 11 · 115837 "Monsters Unleashed" ? Newton Comics 1 issue 694670   (rip lookup)
+   GCD per-file:   series 113547 "Monsters Unleashed" 2017-2018 Marvel [was ongoing series] 12 on 7/14 files · series 111402 "Monsters Unleashed" 2017-2017 Marvel [limited series] 5 on 6/14 files · series 113813 "Champions" 2017-2018 Marvel [collected edition] 5 on 1/14 files; methods numx14
+   GCD dump:       (= per-file) · 117690 "Monsters unleashed" [de] 2017-2017 Panini Deutschland [] 3 · 119013 "Monsters Unleashed" 2017-2018 Marvel [] 2 · 119412 "Monsters Unleashed" 2017-2017 Marvel [] 1 · 115989 "Monsters Unleashed" [en-au] 1980-? Yaffa / Page [] 1   (dump lookup)
+   bridges:        gcd 111402 -> LOCG 128469 "Monsters Unleashed" support 6 · gcd 113813 -> LOCG 126077 "Champions" support 7 · gcd 113813 -> OL /works/OL20056116W "None" isbnSupport 7

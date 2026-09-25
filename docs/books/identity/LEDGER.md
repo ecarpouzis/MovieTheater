@@ -2039,3 +2039,14 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   comic's stamp. The Dark Horse Star Wars Omnibus umbrella number (Vol. 32 / 35) raises a false "stored GCD row is another
   book" warning against the sub-line's #1 / #2 — page counts and ISBNs decide. An Epic Collection / omnibus line spanning
   several minis keeps its own GCD-line key in a split.
+[L-390] pub:marvel sig:split
+- Lead ruling (waves 131-132): West Coast Avengers #1-46 -> Avengers West Coast #47-102 is an L-212 RETITLE (same
+  publisher, numbering continues) although CV (3521 / 18494) and GCD (3061 / 3830) keep two records — L-378's widest-era
+  rule is for PUBLISHER changes only. One run: split-lane join S1629 -> S101396, the survivor storing the chain's FIRST
+  record (CV 3521 / GCD 3061, L-369; Firestorm precedent), AWC's records on N lines, each book's era record on its I line.
+  Marvel Tales: GCD 1747 keeps ONE record for #3-291 while CV splits it (2293 / 138122 / 137722) — the shelves meet on
+  cv=2293 (L-369); they merged into S11602 in wave 132. GCD's "Collects" notes on New Exiles trades run one issue high
+  (the run ends at #18). Marvel Graphic Novel: CV #32 / #33 = Thor / Iron Man: Crash but GCD #[32] / #[33] = Groo / Thor
+  (Crash is GCD 15018); CV's volume stops at #38 — match by title. Marvel Tales Annual #1-2 is its own series on both legs
+  (CV 131835 / GCD 1637) even when named "Marvel Tales 001 / 002". Marika "B Story" files = backup-story extracts (partial
+  rips). A lead instruction to write wrong-cv-link on a shelf with NO stored cv was wrong — N line (L-374).
