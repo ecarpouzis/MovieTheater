@@ -1,0 +1,1077 @@
+## Conventions for this batch (24 shown of 228 matched; 413 in LEDGER.md; 45 shelf/shelves: pub:marvel ×29 · folder:events ×21 · folder:vn-year ×21 · folder:sequel-subfolder ×20 · kind:collected-line ×13 · kind:trade-only ×12 · kind:strip ×4 · folder:variant-covers ×4)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-378] (32 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-033] (29 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (29 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-281] (32 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-136] (21 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-391] (21 shelf/shelves) pub:marvel sig:split
+- Lead rulings (waves 133-134): annuals on a monthly's shelf are residue ONLY while they have no home — when an annual
+  series has its own shelf (Avengers Annual S1612, CV 2350 / GCD 1807), they JOIN it (refines L-369). L-369's first-record
+  rule needs the chain's OPENING issues on the shelf: Rawhide Kid S14413 holds only the 1960+ era, so it stores the 1960
+  records. A TPB line spanning two runs keeps its own identity (Spider-Man 2099 GCD 86779 Vols 1-7 over the 2014 and 2015
+  runs; L-109/L-318). Star Brand: CV splits the retitle (3652 #1-10 / 51406 #11-19), GCD 3204 keeps #1-19 — store 3652
+  (L-369). Humorama Zip: CV numbers by cover month (#196403); "v14 07" = January 1968. Time Runs Out: GCD 89288 = the
+  2015 HC rows, 92245 = the TPB rows; CV 79464 follows the HC dates. Chronology `NNN Avengers` refiles of v1 issues are
+  second rips; later-volume files were folded onto the v1 shelf by bare title — split by year.
+[L-191] (30 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-319] (20 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-388] (20 shelf/shelves) pub:marvel sig:split
+- R-134 (wave 128, lead ruling): RESIDUE vs co-equal — two or more whole trades of another run are a co-equal run (R +
+  split-needed) only when that run has NO shelf of its own; when its run or line already has a shelf, they are misfiled
+  books: S + `F split-needed | items -> join S<home>` (L-368; X-Factor 2024 S66336's two Peter David omnibuses -> S22172).
+  `#MARVEL CURRENT ONGOING TITLES`: Marika / MikeNY76 ComicInfo Web ids and "cvv<id>" Series strings name the stored CV
+  volume (1.0 evidence). From the Ashes "Variant Covers" folders hold the PREVIOUS run's finale covers (X-Men v6 #35 in
+  the v7 folder). "_X-Men Complete Chronology V2\NNNN <event>" annuals are event-chapter excerpts = partial rips. A
+  ripper's "Omnibus Book 01" in a run's folder can be that run's first omnibus, not the line's Vol. 1 (page count decides).
+  CV mints one count-1 volume per Venom by Ewing trade; GCD keeps two lines (183532 Vols 1-4, 208820 Vols 5-8).
+[L-034] (19 shelf/shelves) folder:events pub:marvel sig:round2
+- `_X-Men Complete Chronology` / `_Marvel Major Event Chronology` folders re-file the same books a second and
+  third time — every ratio 2.00 there, never a second run. Crossover blocks get handed one member's series by
+  `round2-folder` (four Age of Apocalypse shelves → "X-Man", a 76-issue hull).
+[L-127] (19 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-169] (19 shelf/shelves) folder:events pub:marvel sig:trade-link
+- `_Marvel Major Event Chronology (digital)` is one folder per tie-in holding that tie-in's collected edition: the
+  count-1-trade-as-stored-link artefact runs at 86 of 202 shelves there, the highest rate in any single folder.
+[L-399] (19 shelf/shelves) folder:events pub:marvel sig:split
+- Waves 149-150: Marvel chronology folders — "Ghost Rider v2 NNN" / "(1992)" follows CV's VOLUME ordinal (1990 = Vol. 2),
+  not our folder vN (1973 = v2); check the file's year against the shelf's run. An FF annual that looks recordless can
+  sit under its exact slash title ("Fantastic Four / Fantastic 4 '98", CV 138969 / GCD 7723). GCD splits FF Annual #32-33
+  into a separate 2010-2012 series (67080) while CV keeps them on 2129. A Marvel TPB volume continuing a run's trade
+  numbering after a relaunch that keeps legacy numbering ("Ghost Rider Vol. 05: Final Vengeance", GCD 191541 #5) joins the
+  run's shelf. L-389 blocks only a run's ISSUES from a creator-trade shelf: that creator line's own books join it
+  (Doctor Strange by Mark Waid Books 01-02 -> S5642). C lines on a containment-refused book stand (identity-level).
+[L-060] (18 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (18 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-030] (45 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-151] (45 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (45 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-393] (15 shelf/shelves) pub:marvel sig:split
+- Lead rulings (waves 137-138): L-389 blocks joins onto a CREATOR-trade-keyed shelf only; a shelf keyed by its own trade's
+  SUBTITLE that stores the run ("Uncanny Avengers - The Resistance" S20673, CV 153018) takes stray issues/covers of that
+  run by join. An annual goes with its run when no annual-series shelf exists (Uncanny Avengers Annual 2016 -> S94729).
+  GCD indexes each Skottie Young "baby" cover as a variant row of #1 ("Young Cover") — that row decides which relaunch a
+  lone "001 (YYYY) Skottie Young" file belongs to. At a retitle, GCD and CV can split at different issues (GCD keeps WCA
+  #47 on 3061, CV starts AWC at #47). Marvel arc minis (Ultimate Avengers 1-3): both legs number one continuous series
+  (#1-18) while rips restart at 01 per arc — issue files need I lines or they resolve to the wrong issue.
+[L-124] (21 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-175] (21 shelf/shelves) folder:bucket folder:events pass:item
+- In the chronology folders the RUN rule stands over the bucket rule: `S` = the numbered run, the tie-in's collected
+  record goes on the `I` line (B-072/073, ~90 shelves); the book's own record is the S only where no numbered run exists.
+[L-272] (21 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-290] (20 shelf/shelves) folder:sequel-subfolder pass:item sig:stamp
+- A spin-off filed in its own subfolder on the parent's shelf gets the PARENT's v01 ids stamped by the per-file
+  matcher (Rent-a-(Really Shy!)-Girlfriend on Rent-A-Girlfriend) — `N no-record` (or the shelf note), never the
+  parent's record; it is a misfiling for the lead.
+[L-164] (18 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+
++204 more matched entries not shown: L-403, L-193, L-390, L-395, L-014, L-389, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-291, L-029, L-064, L-085, L-101, L-109, L-113, L-130, L-298, L-310, L-313, L-327, L-402, L-135, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-031, L-076, L-115, L-117, L-132, L-196, L-295, L-296, L-306, L-307, L-308, L-328, L-329, L-332, L-387, L-392, L-397, L-400, L-401, L-405, L-406, L-407, L-409, L-410, L-016, L-032, L-114, L-119, L-242, L-343, L-345, L-398, L-408, L-133, L-297, L-357, L-174, L-187, L-324, L-396, L-028, L-036, L-087, L-173, L-371, L-404, L-123, L-106, L-111, L-112, L-121, L-129, L-172, L-194, L-212, L-222, L-228, L-237, L-245, L-330, L-331, L-364, L-383, L-065, L-099, L-165, L-262, L-007, L-020, L-047, L-052, L-167, L-188, L-211, L-217, L-265, L-376, L-379, L-381, L-128, L-150, L-181, L-336, L-008, L-011, L-015, L-021, L-023, L-026, L-027, L-040, L-063, L-069, L-070, L-075, L-093, L-094, L-104, L-137, L-139, L-158, L-171, L-185, L-198, L-199, L-210, L-219, L-233, L-234, L-238, L-243, L-249, L-270, L-302, L-312, L-315, L-321, L-325, L-342, L-350, L-363, L-365, L-366, L-368, L-369, L-373, L-374, L-375, L-377, L-380, L-382, L-411, L-054, L-097, L-252, L-274, L-288, L-293, L-352, L-354, L-074, L-083, L-250 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S104262 Nancy and Sluggo (1949)  [tier B]   keys: Nancy and Sluggo (1949)  years 1938-1938  5 files / 0 collections
+   split run: "Nancy and Sluggo (1949)" run={"cv": 31814, "gcd": 19423} (new shelf from P-078) — seed the S line from these ids, then verify them
+   folders: [5] Webcomics and Strips\Nancy & Fritzi Ritz by Ernie Bushmiller
+   files:   [114186] Nancy and Sluggo 017 (United Feature 1950) (c2c) (Titansfan Scans-DMiles Edits).cbz (37pp)
+            [114187] Nancy and Sluggo 018 (United Feature 1951) (c2c) (Titansfan Scans-DMiles Edits).cbz (37pp)
+            [114188] Nancy and Sluggo 019 (United Feature 1952) (c2c) (Titansfan Scans-DMiles Edits).cbz (37pp)
+            [114189] Nancy and Sluggo 021 (United Feature 1953) (c2c) (Titansfan Scans-DMiles Edits).cbz (37pp)
+            [114190] Nancy and Sluggo 022 (United Feature 1953) (c2c) (Titansfan Scans-DMiles Edits).cbz (37pp)
+   ours:    ladder 17-19, 21-22
+   CV per-file (v1): vol 30941 "Nancy and Sluggo" 1955 St. John Publishing Co. 25 on 5/5 files
+   CV local rip:   (= per-file) · 31814 "Nancy and Sluggo" 1949 United Feature Syndicate 8 (via our own name without the filing suffix "Nancy and Sluggo") · 56777 "Nancy and Sluggo" 1953 New Century Press 38 (via our own name without the filing suffix "Nancy and Sluggo") · 2019 "Nancy and Sluggo" 1960 Dell 19 (via our own name without the filing suffix "Nancy and Sluggo") · 145522 "Nancy & Sluggo" 1976 Unknown Publisher 1 issue 950806 (via our own name without the filing suffix "Nancy & Sluggo")   (rip lookup)
+   GCD dump:       76846 "Nancy and Sluggo" [en-au] 1953-1954 New Century Press [] 56 (via our own name without the filing suffix "Nancy and Sluggo") · 13207 "Nancy and Sluggo" 1955-1957 St. John [] 25 (via our own name without the filing suffix "Nancy and Sluggo") · 1454 "Nancy and Sluggo" 1960-1962 Dell [] 14 (via our own name without the filing suffix "Nancy and Sluggo") · 1532 "Nancy and Sluggo" 1962-1963 Western [] 5 (via our own name without the filing suffix "Nancy and Sluggo") · 19423 "Nancy-Sluggo" 1949-1955 United Feature Syndicate [] 8 (via our own name without the filing suffix "Nancy & Sluggo") · 97971 "Nancy & Sluggo" 1976-1976 Tempo Books [] 1 (via our own name without the filing suffix "Nancy & Sluggo")   (dump lookup)
+
+== S12702 Nancy and Sluggo  [tier C] · gap 17  keys: Nancy and Sluggo  years 1938-1960  19 files / 0 collections
+   split: the KEPT half of the P-078 split — moved out -> S104262 "Nancy and Sluggo (1949)"; re-identify what stayed
+   folders: [19] Webcomics and Strips\Nancy & Fritzi Ritz by Ernie Bushmiller
+   files:   [114191] Nancy and Sluggo 122 (1955) (St. John) (c2c) (titansfan+editor).cbz (37pp) | [114192] Nancy and Sluggo 124 (St. John) (1955).cbz (36pp)
+            [114193] Nancy and Sluggo 125 (1955) (St. John) (c2c) (titansfan+editor).cbz (37pp) | [114194] Nancy and Sluggo 126 (1955) (St. John) (c2c).cbz (36pp)
+            [114195] Nancy and Sluggo 127 (1955) (St. John) (c2c).cbr (36pp) | [114196] Nancy and Sluggo 128 (St. John) (1955).cbz (72pp)
+            [114197] Nancy and Sluggo 130 (1956) (St. John) (c2c).cbr (36pp) | [114198] Nancy and Sluggo 131 (St. John 1956) (c2c) (titansfan+editor).cbz (37pp)
+            [114199] Nancy and Sluggo 133 1956 jodyanimator.cbz (37pp) | [114200] Nancy and Sluggo 134 (St. John) (1955).cbz (36pp)
+            [114201] Nancy and Sluggo 136 (St. John 1956) (c2c) (titansfan+editor).cbz (37pp) | [114202] Nancy and Sluggo 137 (St. John 1956) (c2c) (titansfan+editor).cbz (37pp)
+            [114203] Nancy and Sluggo 138 (St. John 1956) (c2c) (titansfan+editor).cbz (37pp) | [114204] Nancy and Sluggo 139 (St. John) (1955).cbz (36pp)
+            [114205] Nancy and Sluggo 143 (St. John) (Apr 1957) (c2c) (titansfan+editor).cbz (37pp) | [114206] Nancy and Sluggo 144 (1957) (St. John) (c2c).cbr (36pp)
+            [114207] Nancy and Sluggo 174 [Dell] (1960) (c2c).cbr (36pp) | [114208] Nancy and Sluggo 188 (c2c) [Gold Key 1962] (Sooth-Uup) fixed-300dpi.cbr (36pp)
+            [114210] Nancy and Sluggo 191 (c2c) [Gold Key 1963] (Sooth-Uup).cbr (36pp)
+   ours:    ladder 122, 124-128, 130-131, 134, 136-139, 143-144, 174, 188, 191
+   CV linked:      vol 30941 "Nancy and Sluggo" 1955 St. John Publishing Co. 25 issues; cached #121-145 (25); yearΔ 17; ratio 18/25 = 0.72; no judged range; v1 per-file: same volume on 19/19 files
+   CV candidates:  (= linked) · 2019 "Nancy and Sluggo" 1960 Dell 19 s90 · 56777 "Nancy and Sluggo" 1953 New Century Press 38 s83 · 31814 "Nancy and Sluggo" 1949 United Feature Syndicate 8 s78 · 145522 "Nancy & Sluggo" 1976 Unknown Publisher 1 issue 950806 s75 · 31507 "Nancy and Sluggo Traveltime" 1958 Dell 1 issue 196688 s59 · 145440 "Nancy" 2013 Actes Sud 1 issue 950255 s40   (v1 search)
+   CV local rip:   (= linked) · 31814 "Nancy and Sluggo" 1949 United Feature Syndicate 8 · 56777 "Nancy and Sluggo" 1953 New Century Press 38 · 2019 "Nancy and Sluggo" 1960 Dell 19 · 145522 "Nancy & Sluggo" 1976 Unknown Publisher 1 issue 950806 (via our own name without the filing suffix "Nancy & Sluggo")   (rip lookup)
+   GCD per-file:   series 13207 "Nancy and Sluggo" 1955-1957 St. John [was ongoing series] 25 on 10/19 files · series 1454 "Nancy and Sluggo" 1960-1962 Dell [Was Ongoing Series] 14 on 1/19 files; methods numx11
+   GCD dump:       (= per-file) · 76846 "Nancy and Sluggo" [en-au] 1953-1954 New Century Press [] 56 · 1532 "Nancy and Sluggo" 1962-1963 Western [] 5 · 19423 "Nancy-Sluggo" 1949-1955 United Feature Syndicate [] 8 (via our own name without the filing suffix "Nancy & Sluggo") · 97971 "Nancy & Sluggo" 1976-1976 Tempo Books [] 1 (via our own name without the filing suffix "Nancy & Sluggo")   (dump lookup)
+   bridges:        gcd 13207 -> LOCG 149397 "Nancy and Sluggo" support 5
+
+== S1310 Armor Wars  [tier C] · ratio 0.17  keys: Armor Wars - Warzones!  years 2015-2016  2 files / 0 collections
+   split run: "Armor Wars - Warzones!" run=- (new shelf from P-078) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\__Skottie Young Covers · [1] _Marvel Major Event Chronology (digital)\2015.05 - Secret Wars\04 Warzones!
+   files:   [51930] Armor Wars 001 (2015) (digital) (Skottie Young variant) (Minutemen-Mastodon) (1).cbz (1pp) | [118113] Armor Wars - Warzones! (2016) (Digital) (Asgard-Empire).cbr (134pp)
+   ours:    ladder 1
+   CV linked:      vol 82340 "Armor Wars" 2015 Marvel ? issues; cached #1-5 (5); yearΔ 0; ratio 1/? = 0.17; no judged range; v1 per-file: same volume on 1/2 files
+   CV candidates:  (= linked) · 87596 "Armor Wars: Warzones!" 2016 Marvel 1 issue 512418 s105 · 81779 "Secret Wars: Armor Wars" 2015 Marvel 1 issue 487582 s68 · 86121 "Secret Wars 2099: Warzones!" 2015 Marvel 1 issue 506179 s68 · 81484 "True Believers: Armor Wars" 2015 Marvel 1 issue 486728 s68 · 31476 "Iron Man & The Armor Wars" 2010 Marvel 1 issue 196457 s66 · 28008 "Ultimate Comics Armor Wars" 2009 Marvel 4 s56   (v1 search)
+   CV local rip:   (= linked) · 87596 "Armor Wars: Warzones!" 2016 Marvel 1 issue 512418 · 81779 "Secret Wars: Armor Wars" 2015 Marvel 1 issue 487582 (via CV candidate name "Secret Wars: Armor Wars")   (rip lookup)
+   GCD per-file:   series 89858 "Armor Wars" 2015-2015 Marvel [5 issue limited series] 6 on 1/2 files; methods numx1
+   GCD dump:       (= per-file) · 96093 "Armor Wars: Warzones!" 2016-2016 Marvel [] 1   (dump lookup)
+   bridges:        gcd 89858 -> LOCG 117582 "Armor Wars" support 5
+
+== S1309 Ultimate Comics Armor Wars  [tier B]   keys: Armor Wars  years 2009-2015  4 files / 0 collections
+   split: the KEPT half of the P-078 split — moved out -> S1310 "Armor Wars - Warzones!"; re-identify what stayed
+   folders: [4] _Marvel Major Event Chronology (digital)\2009.09 - Ultimate Armor Wars
+   files:   [117262] Ultimate Armor Wars 01 (of 04) (2009) (Digital-HD) (Zone-Empire).cbr (26pp) | [117263] Ultimate Armor Wars 02 (of 04) (2009) (Digital-HD) (Zone-Empire).cbr (26pp)
+            [117264] Ultimate Armor Wars 03 (of 04) (2010) (Digital-HD) (Zone-Empire).cbr (25pp) | [117265] Ultimate Armor Wars 04 (of 04) (2010) (Digital-HD) (Zone-Empire).cbr (25pp)
+   ours:    ladder 1-4
+   CV linked:      vol 28008 "Ultimate Comics Armor Wars" 2009 Marvel 4 issues; cached #1-4 (4); yearΔ 0; ratio 4/4 = 1.00; no judged range
+   CV per-file (v1): vol 82340 "Armor Wars" 2015 Marvel ? on 4/4 files
+   CV candidates:  (= linked) · 87596 "Armor Wars: Warzones!" 2016 Marvel ? s74 · 81779 "Secret Wars: Armor Wars" 2015 Marvel ? s73 · 81484 "True Believers: Armor Wars" 2015 Marvel ? s73 · 27515 "Iron Man: Armor Wars" 2007 Marvel ? s73 · 111228 "Iron Man: The Armor Wars" 1990 Marvel ? s72 · 31476 "Iron Man & The Armor Wars" 2010 Marvel ? s71   (v1 search)
+   CV local rip:   (= linked) · 81779 "Secret Wars: Armor Wars" 2015 Marvel 1 issue 487582 (via CV candidate name "Secret Wars: Armor Wars") · 87596 "Armor Wars: Warzones!" 2016 Marvel 1 issue 512418 (via CV candidate name "Armor Wars: Warzones!")   (rip lookup)
+   GCD dump:       89858 "Armor Wars" 2015-2015 Marvel [] 6 · 96093 "Armor Wars: Warzones!" 2016-2016 Marvel [] 1 (via CV candidate name "Armor Wars: Warzones!")   (dump lookup)
+
+== S20965 Van Helsing vs. Robyn Hood  [tier B]   keys: Van Helsing vs Robyn Hood  years 2018-2018  2 files / 0 collections
+   split run: "Van Helsing vs Robyn Hood" run=- (new shelf from P-078) — seed the S line from these ids, then verify them
+   folders: [1] Zenescope\Grimm Fairy Tales - Van Helsing (2014)\06 Van Helsing Vs. Robyn Hood (2018) · [1] Zenescope\Van Helsing
+   files:   [116000] Van Helsing vs. Robyn Hood (2018) (Digital) (DR & Quinch-Empire).cbr (117pp) | [116250] Van Helsing vs Robyn Hood.cbz (120pp)
+   ours:    judged item 116000 #1-4 conf 0.9
+   CV linked:      vol 107519 "Van Helsing vs. Robyn Hood" 2018 Zenescope Entertainment 4 issues; cached #1-4 (4); yearΔ 0; ratio 0/4; 1 of 1 judged fit
+   CV candidates:  (= linked) · 113093 "Van Helsing vs. Robyn Hood" 2018 Zenescope Entertainment 1 issue 682591 s105 · 149224 "Van Helsing vs. Robyn Hood" 2021 Éditions Réflexions 1 issue 980873 s90 · 133354 "Van Helsing" 2021 Zenescope Entertainment 1 issue 825500 s85 · 76553 "Robyn Hood" 2014 Zenescope Entertainment 20 s70 · 109636 "Van Helsing vs. the Werewolf" 2018 Zenescope Entertainment 1 issue 664987 s64 · 92977 "Van Helsing vs Frankenstein" 2016 Zenescope Entertainment 5 s50   (v1 search)
+   CV local rip:   (= linked) · 113093 "Van Helsing vs. Robyn Hood" 2018 Zenescope Entertainment 1 issue 682591 · 149224 "Van Helsing vs. Robyn Hood" 2021 Éditions Réflexions 1 issue 980873   (rip lookup)
+   GCD dump:       120229 "Van Helsing vs. Robyn Hood" 2018-2018 Zenescope Entertainment [] 4 · 192234 "Van Helsing vs Robyn Hood" [fr] 2021-2021 Reflexions [] 1   (dump lookup)
+
+== S14768 Robyn Hood  [tier B]   keys: Robyn Hood  years 2014-2016  8 files / 8 collections
+   split: the KEPT half of the P-078 split — moved out -> S20965 "Van Helsing vs Robyn Hood"; re-identify what stayed
+   folders: [4] Zenescope\Grimm Fairy Tales - Robyn Hood (2012)\04 Robyn Hood (2015) · [4] Zenescope\Robyn Hood
+   files:   [115929] COL Grimm Fairy Tales Presents - Robyn Hood Vol. 01 - Riot Girls (2015) (digital) (Minutemen-Slayer).cbr (179pp)
+            [115930] COL Grimm Fairy Tales Presents - Robyn Hood Vol. 02 - Monsters in the Dark(2015) (Digital) (DR & Quinch-Empire).cbr (176pp)
+            [115931] COL Grimm Fairy Tales Presents - Robyn Hood Vol. 03 - Attitude Adjustment (2015) (Digital) (DR & Quinch-Empire).cbr (162pp)
+            [115932] COL Grimm Fairy Tales Presents - Robyn Hood Vol. 04 - Uprising (2016) (Digital) (DR Quinch-Empire).cbr (183pp) | [116175] COL Robyn Hood vol1 - Riot Girls.cbz (171pp)
+            [116176] COL Robyn Hood vol2 - Monsters in the Dark.cbz (174pp) | [116177] COL Robyn Hood vol3 - Attitude Adjustment.cbz (160pp) | [116178] COL Robyn Hood vol4 - Uprising.cbz (188pp)
+   CV linked:      vol 76553 "Robyn Hood" 2014 Zenescope Entertainment 20 issues; cached #1-20 (20); yearΔ 0; ratio 0/20; no judged range
+   CV candidates:  (= linked) · 122811 "Robyn Hood: Vigilante" 2019 Zenescope Entertainment 6 s82 · 129087 "Robyn Hood: Justice" 2020 Zenescope Entertainment 6 s82 · 103261 "Robyn Hood: The Hunt" 2017 Zenescope Entertainment 6 s81 · 107729 "Robyn Hood: The Curse" 2018 Zenescope Entertainment 6 s81 · 133187 "Robyn Hood: Iron Maiden" 2021 Zenescope Entertainment 2 s81 · 125310 "Robyn Hood: Outlaw" 2020 Zenescope Entertainment 1 issue 738763 s77   (v1 search)
+   CV local rip:   (= linked) · 122811 "Robyn Hood: Vigilante" 2019 Zenescope Entertainment 6 (via CV candidate name "Robyn Hood: Vigilante") · 129087 "Robyn Hood: Justice" 2020 Zenescope Entertainment 6 (via CV candidate name "Robyn Hood: Justice") · 135427 "Robyn Hood: Vigilante" 2021 Zenescope Entertainment 1 issue 843203 (via CV candidate name "Robyn Hood: Vigilante")   (rip lookup)
+   GCD dump:       217654 "Robyn Hood" 2023-2023 Zenescope Entertainment [] 1 · 158102 "Robyn Hood: Vigilante" 2019-2020 Zenescope Entertainment [] 6 (via CV candidate name "Robyn Hood: Vigilante") · 176370 "Robyn Hood: Justice" 2020-2020 Zenescope Entertainment [] 6 (via CV candidate name "Robyn Hood: Justice")   (dump lookup)
+
+== S104263 Rugrats (2017)  [tier D]   keys: Rugrats (2017)  years 2018-2018  2 files / 2 collections
+   split run: "Rugrats (2017)" run={"cv": 105351, "gcd": 117635} (new shelf from P-078) — seed the S line from these ids, then verify them
+   folders: [2] Boom Studios\Rugrats (2017)
+   files:   [10657] COL Rugrats Vol. 01 (2018) (digital) (Salem-Empire).cbr (113pp) | [10658] COL Rugrats Vol. 02 (2018) (digital) (Salem-Empire).cbr (109pp)
+   ours:    ComicInfo Series: "Rugrats"x2; ComicInfo Publisher: "BOOM! Studios"x2
+   CV local rip:   110934 "Rugrats" 2018 Boom! Studios 2 (via our own name without the filing suffix "Rugrats") · 105351 "Rugrats" 2017 Boom! Studios 8 (via our own name without the filing suffix "Rugrats") · 149286 "Rugrats" 1999 Carlsen Verlag 5 (via our own name without the filing suffix "Rugrats") · 42884 "Rugrats" 1996 Marvel UK/Panini UK 12 (via our own name without the filing suffix "Rugrats")   (rip lookup)
+   GCD dump:       124593 "Rugrats" 2018-2018 Boom! Studios [] 2 (via our own name without the filing suffix "Rugrats") · 117635 "Rugrats" 2017-2018 Boom! Studios [] 8 (via our own name without the filing suffix "Rugrats") · 86563 "Rugrats" [de] 1999-1999 Carlsen Comics [DE] [] 5 (via our own name without the filing suffix "Rugrats") · 49432 "Rugrats" [en-gb] 1996-1998 Panini UK [] 29 (via our own name without the filing suffix "Rugrats")   (dump lookup)
+
+== S14855 Rugrats  [tier B]   keys: Rugrats  years 2012-2024  8 files / 0 collections
+   split: the KEPT half of the P-078 split — moved out -> S104263 "Rugrats (2017)"; re-identify what stayed
+   folders: [8] Webcomics and Strips\Rugrats (2012)
+   files:   [114323] Rugrats (2012) (DCP Digital).cbr (366pp) | Rugrats (2013) (DCP Webrips).cbr … Rugrats (2024) (DCP Webrips).cbr  (7 files, pp 282-366)
+   CV per-file (v1): vol 42884 "Rugrats" 1996 Marvel UK/Panini UK 12 on 8/8 files
+   CV candidates:  (= per-file) · 149286 "Rugrats" 1999 Carlsen Verlag 5 s91 · 105351 "Rugrats" 2017 Boom! Studios 8 s65 · 110934 "Rugrats" 2018 Boom! Studios 2 s50 · 57366 "The Art of Boom! Studios" 2010 Boom! Studios 1 issue 386748 s27 · 51169 "Boom Boom" 1994 Mu Press 4 s9 · 90245 "BOOM! Studios 2016 Summer Blast" 2016 Boom! Studios 1 issue 529160 s0   (v1 search)
+   CV local rip:   (= per-file) · 105351 "Rugrats" 2017 Boom! Studios 8 · 110934 "Rugrats" 2018 Boom! Studios 2 · 149286 "Rugrats" 1999 Carlsen Verlag 5   (rip lookup)
+   GCD dump:       117635 "Rugrats" 2017-2018 Boom! Studios [] 8 · 124593 "Rugrats" 2018-2018 Boom! Studios [] 2 · 86563 "Rugrats" [de] 1999-1999 Carlsen Comics [DE] [] 5 · 49432 "Rugrats" [en-gb] 1996-1998 Panini UK [] 29   (dump lookup)
+
+== S4861 Dark Avengers  [tier A]   keys: Dark Avengers  years 2009-2011  13 files / 3 collections
+   split run: "Dark Avengers" run=- (new shelf from P-078) — seed the S line from these ids, then verify them
+   folders: [6] _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Dark Avengers · [3] Marvel\_Avengers\Dark Avengers (2009)\Dark Avengers v1 (2009) · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0823 Utopia · [1] _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Secret Warriors (2009) · [1] _Marvel Major Event Chronology (digital)\2009.12 - Siege\02 Tie-ins
+   files:   [53034] COL Dark Avengers Vol. 01 - Assemble (2009) (Digital) (F) (Zone-Empire).cbr (130pp) | [53035] COL Dark Avengers Vol. 02 - Molecule Man (2010) (Digital) (F) (Zone-Empire).cbr (93pp)
+            [53036] COL Dark Avengers Vol. 03 - Siege (2011) (digital) (Minutemen-Slayer).cbr (111pp) | [91201] 003 Dark Avengers 007 (2009) (digital-hd) (Kleio-Empire).cbz (25pp)
+            [91203] 005 Dark Avengers 008 (2009) (digital-hd) (Kleio-Empire).cbz (24pp)
+            Dark Avengers 001 (2009) (digital-hd) (Kleio-Empire).cbz … Dark Avengers 006 (2009) (digital-hd) (Kleio-Empire).cbz  (6 files, pp 17-29)
+            [117114] 05 Dark Avengers 009 (2009) (digital-hd) (Kleio-Empire).cbz (21pp) | [117277] Siege - Dark Avengers (2011) (Digital) (F) (Asgard-Empire).cbz (111pp)
+   ours:    ladder 1-9; judged item 53034 #1-6 conf 0.85; judged item 53035 #9-12 conf 0.85; judged item 53036 #13-16 conf 0.65; judged item 117277 #13-16 conf 0.9; ComicInfo Series: "Dark Avengers"x1, "Siege"x1; ComicInfo Publisher: "Marvel"x2
+   GCD says: [53034] gcd notes 1174225 (#1 of Dark Avengers): *Dark Avengers* #1-6  |  gcd_reprint 1174225: s33502 Dark Avengers (2009) #1-6 [7 stories]
+             [53035] gcd_reprint 2796559: s33502 Dark Avengers (2009) #9-12 [5 stories]
+             [53036] gcd_reprint 853844: s33502 Dark Avengers (2009) #13-16 [8 stories] · s40309 Dark Avengers Annual (2010) #1 [2 stories] · s78750 Siege: Dark Avengers (2010) (unnumbered) [1 story]
+   CV linked:      vol 25512 "Dark Avengers" 2009 Marvel ? issues; cached #1-9 (9); yearΔ 0; ratio 9/? = 0.56; 2 of 4 judged fit; v1 per-file: same volume on 9/13 files
+   CV candidates:  (= linked) · 42198 "Dark Avengers" 2009 Panini Verlag ? s90 · 30292 "Dark Avengers: Dark Avengers Assemble" 2009 Marvel ? s87 · 27803 "Dark Reign: The List - Avengers" 2009 Marvel ? s87 · 50701 "Dark Avengers" 2012 Marvel ? s50 · 42932 "Dark Avengers" 2011 Marvel ? s50 · 32027 "Dark Avengers: Molecule Man" 2010 Marvel ? s33   (v1 search)
+   CV local rip:   (= linked) · 42198 "Dark Avengers" 2009 Panini Verlag 4 · 42932 "Dark Avengers" 2011 Marvel 1 issue 293167 · 50701 "Dark Avengers" 2012 Marvel 16 · 30292 "Dark Avengers: Dark Avengers Assemble" 2009 Marvel 1 issue 186619 (via CV candidate name "Dark Avengers: Dark Avengers Assemble")   (rip lookup)
+   GCD per-file:   series 33502 "Dark Avengers" 2009-2010 Marvel [was ongoing series] 16 on 9/13 files; methods numx9
+   GCD dump:       (= per-file) · 45842 "Dark Avengers" [de] 2009-2010 Panini Deutschland [] 4 · 59717 "Dark Avengers" 2009-2010 Marvel [] 2 · 78645 "Dark Avengers" 2009-2009 Marvel [] 2 · 171453 "Dark Avengers" 2011-2011 Marvel [] 1 · 66269 "Dark Avengers" 2012-2013 Marvel [] 16   (dump lookup)
+   bridges:        gcd 33502 -> LOCG 102028 "Dark Avengers" support 11
+
+== S94807 Thor v1 (2009)  [tier B]   keys: Thor By J. Michael Straczynski | Thor by J. Michael Straczynski | Thor by Straczynski & Gillen Omnibus (2024) | Thor v1 (2009) | Thor v3 (2007)  years 2006-2024  14 files / 12 collections
+   split run: "Thor v1 (2009)" run=- (new shelf from P-078) — seed the S line from these ids, then verify them
+   flags: #496 label-ambiguous [Pending] item 96839 — items 96651 and 96839 are duplicate copies of Thor by J. Michael Straczynski Vol. 03 · #497 label-ambiguous [Pending] item 117957 — items 96654 and 117957 are duplicate copies of Thor Vol. 03 - Siege Aftermath
+   folders: [4] Marvel\_Thor\06 Thor v1 (2009) · [3] Marvel\_Thor\05 Thor v3 (2007) · [3] Marvel\_Thor\_Trades, One-shots and Minis\Thor by J. Michael Straczynski (2008) · [1] Marvel\_Thor\_Omnibus Editions · [1] Marvel\_Thor\_Trades, One-shots and Minis · [1] _Marvel Major Event Chronology (digital)\2009.12 - Siege\02 Tie-ins · [1] _Marvel Major Event Chronology (digital)\2009.12 - Siege\03 Seige - Aftermath\Thor
+   files:   [96649] COL Thor by J. Michael Straczynski Vol. 01 (2008) (Digital) (Asgard-Empire).cbr (145pp)
+            [96650] COL Thor by J. Michael Straczynski Vol. 02 (2009) (Digital) (Asgard-Empire).cbr (143pp)
+            [96651] COL Thor by J. Michael Straczynski Vol. 03 (2010) (Digital) (Asgard-Empire).cbr (192pp)
+            [96652] COL Thor Vol. 01 - Latverian Prometheus (2010) (Digital) (F) (Kileko-Empire).cbz (113pp) | [96653] COL Thor Vol. 02 - Siege (2010) (digital) (Minutemen-Slayer).cbr (151pp)
+            [96654] COL Thor Vol. 03 - Siege Aftermath (2011) (Digital) (F) (Kileko-Empire).cbz (160pp) | [96655] COL Thor Vol. 04 - The World Eaters (2011) (digital) (Minutemen-Slayer).cbr (149pp)
+            [96764] COL Thor by Straczynski & Gillen Omnibus (2024) (Digital) (Shan-Empire).cbz (1086pp) | [96812] Thor - Latverian Prometheus (2010) (Digital) (F) (Kileko-Empire).cbz (113pp)
+            [96837] COL Thor by J. Michael Straczynski Vol. 01 (2008) (Digital) (F) (Asgard-Empire).cbz (152pp)
+            [96838] COL Thor by J. Michael Straczynski Vol. 02 (2009) (Digital) (F) (Asgard-Empire).cbz (185pp)
+            [96839] COL Thor by J. Michael Straczynski Vol. 03 (2010) (Digital) (Asgard-Empire).cbr (192pp) | [117282] Siege - Thor (2010) (Digital) (Kileko-Empire).cbr (151pp)
+            [117957] COL Thor Vol. 03 - Siege Aftermath (2010) (digital) (Minutemen-Slayer).cbr (163pp)
+   ours:    ComicInfo Series: "Thor"x3, "Thor by J. Michael Straczynski"x1, "Thor By J. Michael Straczynski"x1, "Siege"x1; ComicInfo Publisher: "Marvel"x6
+   GCD says: [96649] gcd_reprint 728883: s33987 Thor (2007) #1-6 [26 stories]
+             [96650] gcd_reprint 1094301: s33987 Thor (2007) #7-12, #600 [19 stories] · s44164 Thor by J. Michael Straczynski (2008) #2 [1 story]
+             [96651] gcd_reprint 728885: s33987 Thor (2007) #601-603 [7 stories] · s40006 Thor Giant-Size Finale (2010) #1 [2 stories]
+             [96652] gcd notes 1049611 (#[nn] of Thor: Latverian Prometheus): ? [s33987] #604-606; [gcd_link_issue_with_date](748929), and material from [s33987] #600  |  gcd_reprint 1049611: s33987 Thor (2007) #600, #604-606 [9 stories] · s47703 Sif (2010) #1 [2 stories]
+             [96653] gcd_reprint 1098299: s33987 Thor (2007) #607-610 [12 stories] · s36520 New Mutants (2009) #11 [2 stories] · s47891 Siege: Loki (2010) #1 [2 stories]
+             [96654] gcd_reprint 1098298: s33987 Thor (2007) #611-614 [10 stories] · s1749 Thor (1966) #179-181 [6 stories]
+             [96655] gcd notes 1098296 (#[nn] of Thor: The World Eaters): *Thor* #615-621; including #620.1  |  gcd_reprint 1098296: s33987 Thor (2007) #615-620, #620.1, #621 [21 stories]
+             [96764] gcd_reprint 2599690: s33987 Thor (2007) #1-12, #600-614 [28 stories] · s41474 Siege (2010) #1-4 [4 stories] · s38586 Beta Ray Bill: Godhunter (2009) #1-3 [3 stories] · s36144 Dark Reign: The Cabal (2009) #1 [2 stories]
+             [96837] gcd_reprint 728883: s33987 Thor (2007) #1-6 [26 stories]
+             [96838] gcd_reprint 728884: s33987 Thor (2007) #7-12, #600 [8 stories]
+             [96839] gcd_reprint 728885: s33987 Thor (2007) #601-603 [7 stories] · s40006 Thor Giant-Size Finale (2010) #1 [2 stories]
+             [117957] gcd_reprint 1098298: s33987 Thor (2007) #611-614 [10 stories] · s1749 Thor (1966) #179-181 [6 stories]
+   CV linked:      vol 18831 "Thor" 2007 Marvel 35 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV per-file (v1): vol 38750 "Fantastic Four by J. Michael Straczynski" 2006 Marvel 1 issue 259825 on 2/14 files
+   CV candidates:  (= linked) · 39328 "Thor by J. Michael Straczynski Omnibus" 2010 Marvel 1 issue 265662 s49 · 55176 "J. Michael Straczynski's Midnight Nation" 2003 Image 1 issue 375906 s47 · 168110 "Marvel Tales by J. Michael Straczynski" 2025 Marvel 1 issue 1141465 s36 · 118839 "The Amazing Spider-Man by J. Michael Straczynski" 2019 Marvel 2 s28 · 158102 "Captain America by J. Michael Straczynski" 2024 Marvel 3 s24 · 156399 "Thor by Straczynski & Gillen Omnibus" 2024 Marvel 1 issue 1042425 s23   (v1 search)
+   CV local rip:   (= linked) · 43386 "Thor" 2005 Panini España 4 (via our own name without the filing suffix "Thor") · 31184 "Thor" 2008 Marvel 3 (via our own name without the filing suffix "Thor") · 43401 "Thor" 2008 Panini España 37 (via our own name without the filing suffix "Thor") · 61421 "Thor" 2008 Panini Verlag 17 (via our own name without the filing suffix "Thor") · 63495 "Thor" 2009 Panini Verlag 3 (via our own name without the filing suffix "Thor")   (rip lookup)
+   GCD dump:       44164 "Thor by J. Michael Straczynski" 2008-2010 Marvel [] 3 · 68307 "Thor by J. Michael Straczynski" 2008-2010 Marvel [] 3 · 33987 "Thor" 2007-2011 Marvel [] 35 (via our own name without the filing suffix "Thor") · 34157 "Thor" [es] 2005-2005 Panini España [] 4 (via our own name without the filing suffix "Thor") · 69180 "Thor" [fr] 2005-2005 Panini France [] 1 (via our own name without the filing suffix "Thor") · 35502 "Thor" [es] 2008-2011 Panini España [] 37 (via our own name without the filing suffix "Thor")   (dump lookup)
+
+== S15597 Siege  [tier C] · ratio 0.25  keys: Siege  years 2010-2011  2 files / 0 collections
+   split: the KEPT half of the P-078 split — moved out -> S4861 "Dark Avengers"; S94807 "Thor v1 (2009)"; re-identify what stayed
+   folders: [1] _Marvel Major Event Chronology (digital)\2009.12 - Siege\01 Seige · [1] _Marvel Major Event Chronology (digital)\2009.12 - Siege\02 Tie-ins
+   files:   [117272] 01 Siege (2011) (Digital-HD) (Asgard-Empire).cbr (165pp) | [117276] Siege - Battlefield (2010) (Digital) (Kileko-Empire).cbr (122pp)
+   ours:    ladder 1; ComicInfo Series: "Siege"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 30904 "Siege" 2010 Marvel 4 issues; cached #1-4 (4); yearΔ 0; ratio 1/4 = 0.25; no judged range
+   CV candidates:  83322 "Siege" 2015 Marvel 4 s105 · 64028 "Siege" 1997 Image 4 s90 · 34519 "Siege Digital Prologue" 2009 Marvel Digital Comics Unlimited 1 issue 225155 s61 · 56744 "Marvel Backlist Reading Chronology" 2011 Marvel 1 issue 384472 s18 · 30032 "Son of Marvel Reading Chronology" 2009 Marvel 1 issue 184984 s18 · 28618 "Marvel Reading Chronology" 2009 Marvel 1 issue 176332 s18   (v1 search)
+   CV local rip:   (= linked) · 35041 "Siege" 2010 Marvel 1 issue 231116 · 42907 "The Siege" 2010 Panini Verlag 4 · 83322 "Siege" 2015 Marvel 4 · 64028 "Siege" 1997 Image 4 · 34519 "Siege Digital Prologue" 2009 Marvel Digital Comics Unlimited 1 issue 225155 (via CV candidate name "Siege Digital Prologue")   (rip lookup)
+   GCD dump:       41474 "Siege" 2010-2010 Marvel [] 4 · 54171 "The Siege" [de] 2010-2011 Panini Deutschland [] 4 · 61985 "Siege" [fr] 2010-2011 Panini France [] 4 · 78828 "Siege" 2010-2010 Marvel [] 1 · 95573 "Siege" [en-gb] 2010-2010 Panini UK [] 1 · 208283 "Siege" 2010-2010 Marvel [] 1   (dump lookup)
+
+== S1589 Avengers Epic Collection  [tier B]   keys: Avengers Epic Collection  years 2013-2024  23 files / 23 collections
+   split run: "Avengers Epic Collection" run=- (new shelf from P-078) — seed the S line from these ids, then verify them
+   flags: #695 provider-disagrees [Pending] item 53308 — gcd gives Operation Galactic Storm #398-401, which falls after vols 23-26 in the same ladd
+   folders: [22] Marvel\_Avengers\_Avengers Epic Collections · [1] _Marvel Major Event Chronology (digital)\1973.09 - The Avengers-Defenders War
+   files:   [53291] COL Avengers Epic Collection Vol. 01 - Earth's Mightiest Heroes (2014) (Digital) (Zone-Empire).cbr (458pp)
+            [53292] COL Avengers Epic Collection Vol. 02 - Once An Avenger (2014) (Digital) (Shadowcat-Empire).cbz (435pp)
+            [53293] COL Avengers Epic Collection Vol. 03 - Masters of Evil (2014) (Digital) (Shadowcat-Empire).cbz (495pp)
+            [53294] COL Avengers Epic Collection Vol. 04 - Behold ... the Vision (2015) (Digital) (F) (Shadowcat-Empire).cbz (454pp)
+            [53295] COL Avengers Epic Collection Vol. 05 - This Beachhead Earth (2020) (Digital-Empire).cbr (481pp)
+            [53296] COL Avengers Epic Collection Vol. 06 - A Traitor Stalks Among Us (2021) (Digital-Empire).cbr (391pp)
+            [53297] COL Avengers Epic Collection Vol. 07 - The Avengers-Defenders War (2018) (digital) (Minutemen-Thoth).cbz (446pp)
+            [53298] COL Avengers Epic Collection Vol. 08 - Kang War (2022) (Digital-Empire).cbr (499pp)
+            [53299] COL Avengers Epic Collection Vol. 09 - The Final Threat (2013) (Digital) (Zone-Empire).cbr (438pp)
+            [53300] COL Avengers Epic Collection Vol. 10 - The Yesterday Quest (2023) (Digital-Empire).cbz (497pp)
+            [53301] COL Avengers Epic Collection Vol. 11 - The Evil Reborn (2024) (Digital) (Shan-Empire).cbz (527pp)
+            [53302] COL Avengers Epic Collection Vol. 16 - Under Siege (2016) (Digital) (F) (Kileko-Empire).cbz (457pp)
+            [53303] COL Avengers Epic Collection Vol. 17 - Judgment Day (2014) (Digital) (Zone-Empire).cbr (465pp)
+            [53304] COL Avengers Epic Collection Vol. 18 - Heavy Metal (2020) (Digital-Empire).cbr (510pp)
+            [53305] COL Avengers Epic Collection Vol. 19 - Acts of Vengeance (2023) (Digital) (Shan-Empire).cbz (486pp)
+            [53306] COL Avengers Epic Collection Vol. 20 - The Crossing Line (2022) (Digital-Empire).cbr (514pp)
+            [53307] COL Avengers Epic Collection Vol. 21 - The Collection Obsession (2018) (Digital) (Kileko-Empire).cbr (494pp)
+            [53308] COL Avengers Epic Collection Vol. 22 - Operation Galactic Storm (2014) (Digital) (Shadowcat-Empire).cbz (469pp)
+            [53309] COL Avengers Epic Collection Vol. 23 - Fear the Reaper (2019) (Digital) (Zone-Empire).cbr (455pp)
+            [53310] COL Avengers Epic Collection Vol. 24 - The Gatherers Strike! (2019) (Digital) (Zone-Empire).cbr (452pp)
+            [53311] COL Avengers Epic Collection Vol. 25 - The Gathering (2023) (Digital-Empire).cbr (465pp)
+            [53312] COL Avengers Epic Collection Vol. 26 - Taking A.I.M. (2021) (Digital-Empire).cbr (481pp)
+            [116307] COL Avengers Epic Collection - The Avengers-Defenders War (2018) (digital) (Minutemen-Thoth).cbz (446pp)
+   ours:    ComicInfo Series: "Avengers Epic Collection"x4, "Avengers Epic Collection: Earth's Mightiest Heroes"x1, "Avengers Epic Collection: This Beachhead Earth"x1, "Avengers Epic Collection: A Traitor Stalks Among Us"x1; ComicInfo Publisher: "Marvel"x14
+   GCD says: [53291] gcd_reprint 1207883: s1571 The Avengers (1963) #1-20 [44 stories]
+             [53292] gcd_reprint 1649510: s1571 The Avengers (1963) #21-40 [21 stories]
+             [53293] gcd_reprint 1693496: s1571 The Avengers (1963) #41-56 [17 stories] · s1811 Not Brand Echh (1967) #5, #8 [2 stories] · s1807 The Avengers Annual (1967) #1-2 [2 stories] · s1576 The X-Men (1963) #45 [1 story]
+             [53294] gcd_reprint 1309964: s1571 The Avengers (1963) #57-76 [41 stories] · s1810 Marvel Super-Heroes (1967) #17 [2 stories] · s1807 The Avengers Annual (1967) #3 [1 story]
+             [53295] gcd notes 2138207 (#5 of Avengers Epic Collection): The Avengers (Marvel, 1963 series) #77-97; The Incredible Hulk (Marvel, 1968 series) #140  |  gcd_reprint 2138207: s1571 The Avengers (1963) #77-97 [47 stories] · s2747 The Kree-Skrull War Starring the Avengers (1983) #1-2 [3 stories] · s1807 The Avengers Annual (1967) #4-5 [2 stories] · s1866 The Incredible Hulk (1968) #140 [2 stories]
+             [53296] gcd notes 2230606 (#6 of Avengers Epic Collection): Avengers (Marvel, 1963 series) #98-114; Daredevil (Marvel, 1964 series) #99  |  gcd_reprint 2230606: s1571 The Avengers (1963) #98-114 [35 stories] · s11225 Essential Avengers (1999) #1-3 [5 stories] · s1636 Daredevil (1964) #99 [2 stories]
+             [53297] gcd notes 1799099 (#7 of Avengers Epic Collection): The Avengers (Marvel, 1963 series) #115-128; Giant-Size Avengers (Marvel, 1974 series) #1; The Defenders (Marvel, 1972 series) #9-11; Captain Marvel (Marvel, 1968 series) #33; Fantastic Four (Marvel, 1961 series) #150; The Defenders (Marvel  |  gcd_reprint 1799099: s1571 The Avengers (1963) #115-128 [34 stories] · s2048 The Defenders (1972) #8-11 [10 stories] · s158698 FOOM Magazine (1973) #3, #5-7 [8 stories] · s1482 Fantastic Four (1961) #150 [3 stories]
+             [53298] gcd_reprint 2422603: s1571 The Avengers (1963) #129-149 [43 stories] · s2163 Giant-Size Avengers (1974) #2-5 [8 stories] · s158698 FOOM Magazine (1973) #12 [8 stories] · s140330 The Marvel Comics Index (1976) #3 [3 stories]
+             [53299] gcd_reprint 1115973: s1571 The Avengers (1963) #150-166 [35 stories] · s1807 The Avengers Annual (1967) #6-7 [7 stories] · s2353 Marvel Two-in-One Annual (1976) #2 [2 stories] · s2269 Super-Villain Team-Up (1975) #9 [2 stories]
+             [53300] gcd notes 2569722 (#10 of Avengers Epic Collection): The Avengers (Marvel, 1963 series) #167-188; The Avengers Annual (Marvel, 1967 series) #8-9; Marvel Tales (Marvel, 1966 series) #100  |  gcd_reprint 2569722: s1571 The Avengers (1963) #167-188, #192 [46 stories] · s1807 The Avengers Annual (1967) #8-9 [4 stories] · s16360 The Avengers: The Korvac Saga (1991) (unnumbered) [3 stories] · s31642 Avengers: The Yesterday Quest (1994) (unnumbered) [1 story]
+             [53301] gcd notes 2632499 (#11 of Avengers Epic Collection): The Avengers (Marvel, 1963 series) #189-209; The Avengers Annual (Marvel, 1967 series) #10; Marvel Premiere (Marvel, 1972 series) #55; Tales to Astonish (Marvel, 1979 series) #12  |  gcd_reprint 2632499: s1571 The Avengers (1963) #189-209 [44 stories] · s12407 Marvel Super Action (1977) #35-37 [3 stories] · s2055 Marvel Premiere (1972) #55 [2 stories] · s1807 The Avengers Annual (1967) #10 [2 stories]
+             [53302] gcd_reprint 1566784: s1571 The Avengers (1963) #264-277 [28 stories] · s3208 The West Coast Avengers Annual (1986) #1 [2 stories] · s1807 The Avengers Annual (1967) #15 [2 stories] · s2737 Alpha Flight (1983) #39 [2 stories]
+             [53303] gcd_reprint 1181281: s3208 The West Coast Avengers Annual (1986) #2 [11 stories] · s1571 The Avengers (1963) #278-285 [8 stories] · s1807 The Avengers Annual (1967) #16 [7 stories] · s3443 The X-Men vs. the Avengers (1987) #1-4 [4 stories]
+             [53304] gcd notes 2170562 (#18 of Avengers Epic Collection): Avengers (Marvel, 1963 series) #286-303; Avengers Annual (Marvel, 1967 series) #17  |  gcd_reprint 2170562: s1571 The Avengers (1963) #286-303 [19 stories] · s1807 The Avengers Annual (1967) #17 [1 story]
+             [53305] gcd_reprint 2511434: s1571 The Avengers (1963) #304-318 [31 stories] · s3830 Avengers West Coast (1989) #53-56 [7 stories] · s1807 The Avengers Annual (1967) #18 [6 stories] · s69795 Marvel Age (1983) #74, #81 [3 stories]
+             [53306] gcd notes 2364835 (#20 of Avengers Epic Collection): The Avengers (Marvel, 1963 series) #319-333; Captain America Annual (Marvel, 1971 series) #9; Iron Man Annual (Marvel, 1976 series) #11; Thor Annual (Marvel, 1966 series) #15; Avengers West Coast Annual (Marvel, 1990 series) #5  |  gcd_reprint 2364835: s1571 The Avengers (1963) #319-333 [38 stories] · s1807 The Avengers Annual (1967) #19 [7 stories] · s3831 Avengers West Coast Annual (1990) #5 [2 stories] · s1750 Thor Annual (1966) #15 [2 stories]
+             [53307] gcd notes 1790981 (#21 of Avengers Epic Collection): The Avengers (Marvel, 1963 series) #334-344; The Avengers Annual (Marvel, 1967 series) #20; t (Marvel, 1991 series) and material from The Incredible Hulk Annual (Marvel, 1976 series) #17; Namor, the Sub-Mariner Annual (Marvel, 1991 series)   |  gcd_reprint 1790981: s1571 The Avengers (1963) #334-344 [24 stories] · s1807 The Avengers Annual (1967) #20 [8 stories] · s4225 Avengers: Death Trap, The Vault (1991) (unnumbered) [4 stories] · s69795 Marvel Age (1983) #101 [2 stories]
+             [53308] gcd_reprint 1723387: s1571 The Avengers (1963) #345-347 [8 stories] · s1860 Captain America (1968) #398-401 [8 stories] · s4252 Wonder Man (1991) #7-9 [6 stories] · s3857 Quasar (1989) #32-34 [6 stories]
+             [53309] gcd notes 1947768 (#23 of Avengers Epic Collection): The Avengers (Marvel, 1963 series) #348-359; The Avengers Annual (Marvel, 1967 series) #21; Captain America Annual (Marvel, 1971 series) #11; Thor Annual (Marvel, 1966 series) #17; Fantastic Four Annual (Marvel, 1963 series) #25  |  gcd_reprint 1947768: s1571 The Avengers (1963) #348-359 [47 stories] · s1807 The Avengers Annual (1967) #21 [9 stories] · s204443 Marvel Swimsuit Special (1992) #1 [3 stories] · s1572 Fantastic Four Annual (1963) #25 [3 stories]
+             [53310] gcd notes 2086294 (#24 of Avengers Epic Collection): Avengers (Marvel 1963 series) #360-366; Avengers: The Terminatrix (Marvel, 1993 series) #1-4; Avengers Strike File (Marvel, 1994 series) #1  |  gcd_reprint 2086294: s1571 The Avengers (1963) #360-366 [8 stories] · s4668 Avengers: The Terminatrix Objective (1993) #1-4 [4 stories] · s175760 Avengers Anniversary Magazine (1993) #1 [1 story] · s9806 Avengers Strike File (1994) #1 [1 story]
+             … 3 more book(s) with GCD notes (`python gcdnotes.py --issue <id>`)
+   CV per-file (v1): vol 109182 "Avengers Epic Collection: The Collection Obsession" 2018 Marvel 1 issue 662738 on 1/23 files
+   CV candidates:  (= per-file) · 169434 "Avengers Epic Collection: Timeslide" 2025 Marvel 1 issue 1149233 s74 · 153155 "Avengers Epic Collection: The Gathering" 2023 Marvel 1 issue 1010295 s73 · 144780 "Avengers Epic Collection: Kang War" 2022 Marvel 1 issue 944331 s73 · 95762 "Avengers Epic Collection: Once An Avenger" 2016 Marvel 1 issue 558592 s72 · 118237 "Avengers Epic Collection: Fear The Reaper" 2019 Marvel 1 issue 705913 s72 · 123277 "Avengers Epic Collection: The Gatherers Strike!" 2019 Marvel 1 issue 729693 s72   (v1 search)
+   CV local rip:   (= per-file) · 144780 "Avengers Epic Collection: Kang War" 2022 Marvel 1 issue 944331 (via CV candidate name "Avengers Epic Collection: Kang War") · 153155 "Avengers Epic Collection: The Gathering" 2023 Marvel 1 issue 1010295 (via CV candidate name "Avengers Epic Collection: The Gathering") · 169434 "Avengers Epic Collection: Timeslide" 2025 Marvel 1 issue 1149233 (via CV candidate name "Avengers Epic Collection: Timeslide")   (rip lookup)
+   GCD dump:       74603 "Avengers Epic Collection" 2013-? Marvel [] 26   (dump lookup)
+
+== S64317 Black Orchid Annual  [tier B]   keys: Black Orchid (1993)  years 1993-1993  1 files / 0 collections
+   split run: "Black Orchid (1993)" run=- (new shelf from P-078) — seed the S line from these ids, then verify them
+   folders: [1] Vertigo\Black Orchid\Black Orchid v2 (1993)
+   files:   [112362] Black Orchid Annual 01 (1993) (digital-Empire).cbz (58pp)
+   ours:    ladder 1
+   CV linked:      vol 21254 "Black Orchid Annual" 1993 DC Comics 1 issues issue 128089; cached #1-1 (1); yearΔ 0; ratio 1/1 = 1.00; no judged range
+   CV local rip:   (= linked) · 4952 "Black Orchid" 1993 DC Comics 22 (via the parsed key without the filing suffix "Black Orchid") · 25567 "Black Orchid" 1991 DC Comics 1 issue 150804 (via the parsed key without the filing suffix "Black Orchid") · 3982 "Black Orchid" 1988 DC Comics 3 (via the parsed key without the filing suffix "Black Orchid") · 43336 "Black Orchid" 2006 Seriehuset 1 issue 297078 (via the parsed key without the filing suffix "Black Orchid") · 40867 "Black Orchid" 2009 Panini Verlag 1 issue 275505 (via the parsed key without the filing suffix "Black Orchid")   (rip lookup)
+   GCD dump:       4632 "Black Orchid Annual" 1993-1993 DC [] 1 · 4631 "Black Orchid" 1993-1995 DC [] 22 (via the parsed key without the filing suffix "Black Orchid") · 21582 "Black Orchid" 1991-1997 DC [] 1 (via the parsed key without the filing suffix "Black Orchid") · 18165 "Black Orchid" [nl] 1989-1990 Juniorpress [] 3 (via the parsed key without the filing suffix "Black Orchid") · 3573 "Black Orchid" 1988-1989 DC [] 3 (via the parsed key without the filing suffix "Black Orchid") · 197369 "Black Orchid" [fr] 2002-2002 Reporter [] 1 (via the parsed key without the filing suffix "Black Orchid")   (dump lookup)
+
+== S95614 Black Orchid  [tier A]   keys: Black Orchid v2 (1993)  years 1993-1995  22 files / 0 collections
+   split: the KEPT half of the P-078 split — moved out -> S64317 "Black Orchid (1993)"; re-identify what stayed
+   folders: [22] Vertigo\Black Orchid\Black Orchid v2 (1993)
+   files:   Black Orchid 001 (1993) (digital-Empire).cbz … Black Orchid 022 (1995) (digital-Empire).cbz  (22 files, pp 24-27)
+   ours:    ladder 1-22
+   CV linked:      vol 4952 "Black Orchid" 1993 DC Comics 22 issues; cached #1-22 (22); yearΔ 0; ratio 22/22 = 1.00; no judged range; v1 per-file: same volume on 22/22 files
+   CV local rip:   (= linked) · 25567 "Black Orchid" 1991 DC Comics 1 issue 150804 · 3982 "Black Orchid" 1988 DC Comics 3 · 43336 "Black Orchid" 2006 Seriehuset 1 issue 297078 · 40867 "Black Orchid" 2009 Panini Verlag 1 issue 275505   (rip lookup)
+   GCD per-file:   series 4631 "Black Orchid" 1993-1995 DC [was ongoing series] 22 on 22/22 files; methods numx22
+   GCD dump:       (= per-file) · 21582 "Black Orchid" 1991-1997 DC [] 1 · 18165 "Black Orchid" [nl] 1989-1990 Juniorpress [] 3 · 3573 "Black Orchid" 1988-1989 DC [] 3 · 197369 "Black Orchid" [fr] 2002-2002 Reporter [] 1 · 51827 "Black Orchid" [no] 2006-2006 Seriehuset AS [] 1   (dump lookup)
+   bridges:        gcd 4631 -> LOCG 101255 "Black Orchid" support 23
+
+== S17705 Teenage Mutant Ninja Turtles Color Classics  [tier C] · gap 3  keys: Teenage Mutant Ninja Turtles - Color Classics | Teenage Mutant Ninja Turtles - Color Classics (2015)  years 2012-2016  15 files / 0 collections
+   flags: #457 label-ambiguous [Pending] item 32283 — TMNT Color Classics v3 001-015 are single issues, not collections
+   folders: [15] IDW Hasbro\Teenage Mutant Ninja Turtles\Teenage Mutant Ninja Turtles - Color Classics (2012)\Teenage Mutant Ninja Turtles - Color Classics v3 (2015)
+   files:   [32283] Teenage Mutant Ninja Turtles - Color Classics v3 001 (2015) (b0bafett-Empire).cbr (29pp)
+            [32284] Teenage Mutant Ninja Turtles - Color Classics v3 002 (2015) (digital-Empire).cbr (26pp)
+            [32285] Teenage Mutant Ninja Turtles - Color Classics v3 003 (2015) (F) (digital-Empire).cbr (36pp)
+            [32286] Teenage Mutant Ninja Turtles - Color Classics v3 004 (2015) (digital-Empire).cbr (26pp)
+            [32287] Teenage Mutant Ninja Turtles - Color Classics v3 005 (2015) (digital-Empire).cbr (27pp)
+            [32288] Teenage Mutant Ninja Turtles - Color Classics v3 006 (2015) (digital-Empire).cbr (25pp)
+            [32289] Teenage Mutant Ninja Turtles - Color Classics v3 007 (2015) (digital-Empire).cbr (28pp)
+            [32290] Teenage Mutant Ninja Turtles - Color Classics v3 008 (2015) (b0bafett-Empire).cbr (25pp)
+            Teenage Mutant Ninja Turtles - Color Classics v3 009 (2015) (digital-Empire).cbr … Teenage Mutant Ninja Turtles - Color Classics v3 015 (2016) (digital-Empire).cbr  (7 files, pp 22-28)
+   ours:    ladder 1-15
+   CV linked:      vol 79498 "Teenage Mutant Ninja Turtles Color Classics" 2015 IDW Publishing 15 issues; cached #1-3 (3); yearΔ 3; ratio 15/15 = 1.00; no judged range
+   CV per-file (v1): vol 48762 "Teenage Mutant Ninja Turtles Color Classics" 2012 IDW Publishing ? on 12/15 files · vol 79498 "Teenage Mutant Ninja Turtles Color Classics" 2015 IDW Publishing 15 on 3/15 files
+   CV candidates:  (= linked) · 51627 "Teenage Mutant Ninja Turtles Classics" 2012 IDW Publishing ? s70 · 42285 "Teenage Mutant Ninja Turtles" 2011 IDW Publishing ? s67 · 35309 "Teenage Mutant Ninja Turtles" 2003 Dreamwave Productions ? s64 · 109577 "Teenage Mutant Ninja Turtles Color Classics" 2018 IDW Publishing ? s35 · 69133 "Teenage Mutant Ninja Turtles Color Classics" 2013 IDW Publishing ? s35 · 159035 "Teenage Mutant Ninja Turtles" 2024 IDW Publishing ? s15   (v1 search)
+   CV local rip:   (= linked) · 69133 "Teenage Mutant Ninja Turtles Color Classics" 2013 IDW Publishing 7 · 109577 "Teenage Mutant Ninja Turtles Color Classics" 2018 IDW Publishing 3 · 42285 "Teenage Mutant Ninja Turtles" 2011 IDW Publishing 150 (via CV candidate name "Teenage Mutant Ninja Turtles") · 72209 "Teenage Mutant Ninja Turtles" 2013 Marvel UK/Panini UK 1 issue 447271 (via CV candidate name "Teenage Mutant Ninja Turtles")   (rip lookup)
+   GCD dump:       66318 "Teenage Mutant Ninja Turtles Color Classics" 2012-2013 IDW [] 10 · 145512 "Teenage Mutant Ninja Turtles Color Classics" 2018-? IDW [] 3 · 74123 "Teenage Mutant Ninja Turtles" 2012-2020 IDW [] 23 (via CV candidate name "Teenage Mutant Ninja Turtles") · 60636 "Teenage Mutant Ninja Turtles" 2011-2024 IDW [] 150 (via CV candidate name "Teenage Mutant Ninja Turtles") · 76486 "Teenage Mutant Ninja Turtles" [no] 2013-2015 Hjemmet / Egmont [] 14 (via CV candidate name "Teenage Mutant Ninja Turtles") · 77862 "Teenage Mutant Ninja Turtles" [nl] 2013-? Dark Dragon Books [] 6 (via CV candidate name "Teenage Mutant Ninja Turtles")   (dump lookup)
+
+== S24306 Spin Angels  [tier B]   keys: Spin Angels  years 2016-2017  7 files / 7 collections
+   folders: [7] Delcourt\Spin Angels
+   files:   [19806] COL Spin Angels v01 - Operation Judas (2016) (digital) (The Magicians-Empire).cbr (48pp)
+            [19807] COL Spin Angels v02 - On His Holiness' Secret Service (2016) (digital) (The Magicians-Empire).cbr (48pp)
+            [19808] COL Spin Angels v03 - Die and Let Live (2016) (digital) (The Magicians-Empire).cbr (48pp)
+            [19809] COL Spin Angels v04 - Godfinger (2016) (digital) (The Magicians-Empire).cbr (48pp)
+            [19810] COL Spin Angels v05 - Eternity Is Not Enough (2016) (digital) (The Magicians-Empire).cbr (48pp)
+            [19811] COL Spin Angels v06 - Just for Your Gods (2016) (digital) (The Magicians-Empire).cbr (48pp)
+            [19812] COL Spin Angels v07 - Resurrect Another Day (2017) (digital) (phillywilly-Empire).cbr (56pp)
+   CV linked:      vol 90068 "Spin Angels" 2016 Soleil 7 issues; cached #1-7 (7); yearΔ 0; ratio 0/7; no judged range
+   CV candidates:  (= linked) · 85823 "Spin Angels" 2015 Delcourt 1 issue 505053 s90 · 83110 "Spin Angels" 2015 Soleil 8 s90 · 27613 "Spin Angels" 2009 Marvel 4 s83 · 116151 "SPiN" 2018 Common Stock Productions 2 s43 · 54287 "Angels?" 1989 Chick Publications 1 issue 370187 s40 · 150957 "Spin Out" 1999 Shogakukan 4 s37   (v1 search)
+   CV local rip:   (= linked) · 83110 "Spin Angels" 2015 Soleil 8 · 85823 "Spin Angels" 2015 Delcourt 1 issue 505053 · 27613 "Spin Angels" 2009 Marvel 4   (rip lookup)
+   GCD dump:       53252 "Spin Angels" 2009-? Marvel [] 4   (dump lookup)
+
+== S104039 MySpace Dark Horse Presents (2007)  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: MySpace Dark Horse Presents (2007)  years 1987-2011  36 files / 0 collections
+   folders: [36] Dark Horse\Dark Horse Presents\02 MySpace Dark Horse Presents (2007)
+   files:   [12591] MySpace Dark Horse Presents 001 (2007) (webrip) (F) (Foyle-DCP).cbr (28pp) | [12592] MySpace Dark Horse Presents 002 (2007) (webrip) (F) (Foyle-DCP).cbr (30pp)
+            [12593] MySpace Dark Horse Presents 003 (2007) (webrip) (F) (Foyle-DCP).cbr (28pp) | [12594] MySpace Dark Horse Presents 004 (2007) (webrip) (F) (Foyle-DCP).cbr (28pp)
+            [12595] MySpace Dark Horse Presents 005 (2007) (webrip) (F) (Foyle-DCP).cbr (28pp) | [12596] MySpace Dark Horse Presents 006 (2008) (webrip) (Foyle-DCP).cbr (28pp)
+            [12597] MySpace Dark Horse Presents 007 (2008) (webrip) (Foyle-DCP).cbr (27pp) | [12598] MySpace Dark Horse Presents 008 (2008) (webrip) (F) (Foyle-DCP).cbr (28pp)
+            MySpace Dark Horse Presents 009 (2008) (webrip) (Foyle-DCP).cbr … MySpace Dark Horse Presents 033 (2010) (webrip) (Foyle-DCP).cbr  (25 files, pp 26-28)
+            [12624] MySpace Dark Horse Presents 034 (2010.) (webrip) (Foyle-DCP).cbr (28pp) | [12625] MySpace Dark Horse Presents 035 (2010.) (webrip) (Foyle-DCP).cbr (32pp)
+            [12626] MySpace Dark Horse Presents 036 (2010) (webrip) (Foyle-DCP).cbr (32pp)
+   ours:    ladder 1-36
+   CV per-file (v1): vol 3739 "Dark Horse Presents" 1986 Dark Horse Comics 162 on 30/36 files · vol 40417 "MySpace Dark Horse Presents" 2008 Dark Horse Comics 6 on 6/36 files
+   CV local rip:   (= per-file) · 39855 "Dark Horse Presents" 2011 Dark Horse Comics 36 (via CV name "Dark Horse Presents") · 76530 "Dark Horse Presents" 2014 Dark Horse Comics 33 (via CV name "Dark Horse Presents")   (rip lookup)
+   GCD per-file:   methods round2-seriesx30 ⚠ · numx2  (⚠ copies a folder neighbour's series — verify); series 3301 "Dark Horse Presents" 1986-2000 Dark Horse [was ongoing series] 162 on 30/36 files · series 38394 "MySpace Dark Horse Presents" 2008-2011 Dark Horse [collected edition] 6 on 2/36 files
+   GCD dump:       (= per-file) · 52744 "Dark Horse Presents" 1992-1992 Dark Horse [] 1 (via CV name "Dark Horse Presents") · 57599 "Dark Horse Presents" 2011-2014 Dark Horse [] 36 (via CV name "Dark Horse Presents") · 82399 "Dark Horse Presents" 2014-2017 Dark Horse [] 33 (via CV name "Dark Horse Presents")   (dump lookup)
+   bridges:        gcd 3301 -> LOCG 119154 "Dark Horse Presents" support 161 · gcd 38394 -> OL /works/OL21013563W "None" isbnSupport 6
+
+== S68158 The EC Artists' Library  [tier D]   keys: The EC Artists' Library  years 2012-2024  50 files / 34 collections
+   folders: [34] Fantagraphics\The EC Artists' Library (2012) · [10] Fantagraphics · [1] EC Comics & Others Archives (Dark Horse)\Will Edler · [1] Fantagraphics\Death Stand and Other Stories (2018) · [1] Fantagraphics\_EC Comics · [1] Fantagraphics\_Jim Woodring · [1] Fantagraphics\_Wallace Wood · [1] Graphic Novels
+   files:   [23810] The Million Year Picnic and Other Stories (2017) (Digital) (Bean-Empire).cbz (220pp) | [24820] Accidents and Old Lace and Other Stories (2020) (Digital) (Bean-Empire).cbz (237pp)
+            [25978] Death Stand and Other Stories (2018) (Digital) (Bean-Empire).cbz (277pp) | [25118] Kamen's Kalamity and Other Stories (2024) (digital) (DrVink-DCP).cbz (259pp)
+            [25126] Man and Superman and Other Stories (2020) (Digital) (Bean-Empire).cbz (188pp) | [25128] Master Race and Other Stories (2018) (Digital) (Bean-Empire).cbz (240pp)
+            [25184] Terror Train and Other Stories (2020) (Digital) (Bean-Empire).cbz (329pp) | [25187] The Bitter End and Other Stories (2024) (digital) (DrVink-DCP).cbz (238pp)
+            [24976] COL The EC Artists' Library v01 - Corpse on the Imjin! and Other Stories (2012) (Digital) (TLK-EMPIRE-HD).cbr (241pp)
+            [24977] COL The EC Artists' Library v02 - Came the Dawn and Other Stories (2012) (Digital) (TLK-EMPIRE-HD).cbr (209pp)
+            [24978] COL The EC Artists' Library v03 - 50 Girls 50 and Other Stories (2013) (Digital) (TLK-EMPIRE-HD).cbr (266pp)
+            [24979] COL The EC Artists' Library v04 - 'Taint the Meat...It's the Humanity! (2013) (Digital) (TLK-EMPIRE-HD).cbr (225pp)
+            [24980] COL The EC Artists' Library v05 - Fall Guy For Murder and Other Stories (2013) (Digital) (TLK-EMPIRE-HD).cbr (210pp)
+            [24981] COL The EC Artists' Library v06 - Child of Tomorrow and Other Stories (2013) (Digital) (TLK-EMPIRE-HD).cbr (218pp)
+            [24982] COL The EC Artists' Library v07 - Sucker Bait and Other Stories (2014) (Digital) (Bean-Empire).cbz (217pp)
+            [24983] COL The EC Artists' Library v08 - Zero Hour and Other Stories [Fantagraphics] (2014) (Digital) (Bean-Empire).cbz (169pp)
+            [24984] COL The EC Artists' Library v09 - Judgment Day and Other Stories (2014) (Digital) (Bean-Empire).cbz (191pp)
+            [24985] COL The EC Artists' Library v10 - Bomb Run and Other Stories (2014) (Digital) (TLK-EMPIRE-HD).cbr (265pp)
+            [24986] COL The EC Artists' Library v11 - Aces High (2014) (Digital) (TLK-EMPIRE-HD).cbr (211pp)
+            [24987] COL The EC Artists' Library v12 - Spawn of Mars and Other Stories (2015) (Digital) (TLK-EMPIRE-HD).cbr (241pp)
+            [24988] COL The EC Artists' Library v13 - Grave Business and Other Stories (2015) (Digital) (TLK-EMPIRE-HD).cbr (225pp)
+            [24989] COL The EC Artists' Library v14 - Forty Whacks and Other Stories (2015) (Digital) (TLK-EMPIRE-HD).cbr (203pp)
+            [24990] COL The EC Artists' Library v15 - The High Cost of Dying and Other Stories (2016) (Digital) (TLK-EMPIRE-HD).cbr (177pp)
+            [24991] COL The EC Artists' Library v16 - The Living Mummy and Other Stories (Jack Davis) (2016) (Digital) (Bean-Empire) (Fantagraphics).cbz (225pp)
+            [24992] COL The EC Artists' Library v17 - Voodoo Vengeance and Other Stories (Johnny Craig) (2016) (Digital) (Bean-Empire).cbz (217pp)
+            [24993] COL The EC Artists' Library v18 - The Million Year Picnic and Other Stories (Will Elder) (2017) (Digital) (Bean-Empire).cbz (220pp)
+            [24994] COL The EC Artists' Library v19 - The Thing from the Grave and Other Stories (Joe Orlando) (2017) (Digital) (Bean-Empire).cbz (240pp)
+            [24995] COL The EC Artists' Library v20 - Daddy Lost His Head and Other Stories (Jack Kamen) (2017) (Digital) (Bean-Empire).cbz (185pp)
+            [24996] COL The EC Artists' Library v21 - Master Race and Other Stories (Bernie Krigstein) (2018) (Digital) (Bean-Empire).cbz (240pp)
+            [24997] COL The EC Artists' Library v22 - Death Stand and Other Stories (Jack Davis) (2018) (Digital) (Bean-Empire).cbz (277pp)
+            [24998] COL The EC Artists' Library v23 - Doctor of Horror and Other Stories (2018) (Digital) (Bean-Empire).cbz (226pp)
+            [24999] COL The EC Artists' Library v24 - The Martian Monster and Other Stories (Jack Kamen) (2019) (Digital) (Bean-Empire).cbz (178pp)
+            [25000] COL The EC Artists' Library v25 - Woman Who Loved Life and Other Stories (Johnny Craig) (2019) (Digital) (Bean-Empire).cbr (233pp)
+            [25001] COL The EC Artists' Library v26 - Atom Bomb and Other Stories (Wallace Wood) (2019) (Digital) (Bean-Empire).cbz (289pp)
+            [25002] COL The EC Artists' Library v27 - Man and Superman and Other Stories (Harvey Kurtzman) (2020) (Digital) (Bean-Empire).cbz (188pp)
+            [25003] COL The EC Artists' Library v28 - Terror Train and Other Stories (Al Feldstein) (2020) (Digital) (Bean-Empire).cbz (329pp)
+            [25004] COL The EC Artists' Library v29 - Accidents and Old Lace and Other Stories (2020) (Digital) (Bean-Empire).cbz (237pp)
+            [25005] COL The EC Artists' Library v30 - A Slight Case of Murder and Other Stories (2021) (Digital) (Bean-Empire).cbz (232pp)
+            [25006] COL The EC Artists' Library v31 - Three for the Money and Other Stories (2021) (Digital) (Bean-Empire).cbz (240pp)
+            [25007] COL The EC Artists' Library v32 - Code Of Honor and Other Stories (2022) (Digital) (Lo Pan).cbr (261pp)
+            [25008] COL The EC Artists' Library v33 - Deadly Beloved and Other Stories (2023) (Digital) (Lo Pan).cbr (273pp)
+            [25009] COL The EC Artists' Library v34 - The Planetoid and Other Stories (2023) (Digital) (danke-Empire).cbz (231pp)
+            [24162] The High Cost of Dying and Other Stories (2016) (Digital) (TLK-EMPIRE-HD).cbr (177pp)
+            [25218] The Thing from the Grave and Other Stories (2017) (Digital) (Bean-Empire).cbz (240pp)
+            [25221] The Woman Who Loved Life and Other Stories (2019) (Digital) (Bean-Empire).cbz (233pp) | [25223] Three for the Money and Other Stories (2021) (Digital) (Bean-Empire).cbz (240pp)
+            [25975] A Slight Case of Murder and Other Stories (2021) (Digital) (Bean-Empire).cbz (232pp) | [24774] 50 Girls 50 And Other Stories (2014) (Digital) (TLK-EMPIRE-HD).cbr (266pp)
+            [24545] Atom Bomb and Other Stories (2019) (Digital) (Bean-Empire).cbz (289pp) | [26113] Zero Hour and Other Stories (2014) (Digital) (Bean-Empire).cbz (169pp)
+   ours:    ladder 50; ComicInfo Series: "Atom Bomb and Other Stories"x2, "Accidents and Old Lace and Other Stories"x2, "The Woman Who Loved Life and Other Stories"x2, "Man and Superman and Other Stories"x2; ComicInfo Publisher: "Fantagraphics"x14; barcode item 24984 [{"type": "EAN13", "data": "9781606997277", "page": "s (2014; barcode item 26113 [{"type": "EAN13", "data": "9781606997048", "page": "s (2014
+   GCD says: [24976] gcd_reprint 1033241: s762 Two-Fisted Tales (1950) #18-32, #35 [28 stories] · s834 Frontline Combat (1951) #1-9, #11-12, #14 [19 stories] · s14397 Two-Fisted Tales Annual (1952) #1 [1 story]
+             [24977] gcd_reprint 1034721: s913 Shock SuspenStories (1952) #3-15 [13 stories] · s784 Haunt of Fear (1950) #4-6 [5 stories] · s761 Tales from the Crypt (1950) #21, #24-25 [3 stories] · s759 Crime SuspenStories (1950) #1, #3 [2 stories]
+             [24978] gcd_reprint 1100560: s835 Weird Fantasy (1951) #14-21 [10 stories] · s836 Weird Science (1951) #15-22 [8 stories] · s1065 Weird Science-Fantasy (1954) #23-25, #28-29 [5 stories] · s759 Crime SuspenStories (1950) #13, #16-17 [3 stories]
+             [24979] gcd_reprint 1102480: s761 Tales from the Crypt (1950) #23-46 [24 stories] · s12149 Three Dimensional Tales from the Crypt of Terror (1954) #2 [1 story] · s69863 The Fantagraphics EC Artists' Library (2012) #1 [1 story]
+             [24980] gcd_reprint 1149220: s12404 Vault of Horror (1950) #21-31 [11 stories] · s759 Crime SuspenStories (1950) #8-12, #14-18 [10 stories] · s784 Haunt of Fear (1950) #12-13 [2 stories] · s69863 The Fantagraphics EC Artists' Library (2012) #1 [1 story]
+             [24981] gcd_reprint 1149238: s836 Weird Science (1951) #5-9, #14 [7 stories] · s835 Weird Fantasy (1951) #6-9 [6 stories] · s764 Weird Science (1950) #12-15 [5 stories] · s763 Weird Fantasy (1950) #13-17 [5 stories]
+             [24982] gcd_reprint 1179163: s12404 Vault of Horror (1950) #26-33 [8 stories] · s784 Haunt of Fear (1950) #14-21 [8 stories] · s761 Tales from the Crypt (1950) #32-38 [7 stories] · s759 Crime SuspenStories (1950) #14-15 [2 stories]
+             [24983] gcd_reprint 1179284: s835 Weird Fantasy (1951) #11-16, #18-22 [11 stories] · s836 Weird Science (1951) #11-13, #15-18, #20-21 [9 stories] · s1065 Weird Science-Fantasy (1954) #27-28 [2 stories]
+             [24984] gcd_reprint 1218639: s1065 Weird Science-Fantasy (1954) #23-25, #27-29 [6 stories] · s835 Weird Fantasy (1951) #17-22 [6 stories] · s836 Weird Science (1951) #17-22 [6 stories] · s913 Shock SuspenStories (1952) #7, #9-10 [3 stories]
+             [24985] gcd_reprint 1218663: s762 Two-Fisted Tales (1950) #19-29, #31, #35 [25 stories] · s834 Frontline Combat (1951) #2-11 [17 stories] · s69863 The Fantagraphics EC Artists' Library (2012) #1 [1 story]
+             [24986] gcd_reprint 1283984: s759 Crime SuspenStories (1950) #15, #19, #21, #23, #25, #27 [7 stories] · s913 Shock SuspenStories (1952) #8, #14-18 [6 stories] · s834 Frontline Combat (1951) #10-15 [6 stories] · s1149 Aces High (1955) #1-5 [5 stories]
+             [24987] gcd_reprint 1300587: s836 Weird Science (1951) #5-12 [11 stories] · s835 Weird Fantasy (1951) #6-12 [10 stories] · s763 Weird Fantasy (1950) #13-17 [5 stories] · s764 Weird Science (1950) #12-14 [3 stories]
+             [24988] gcd_reprint 1426443: s761 Tales from the Crypt (1950) #25-31 [7 stories] · s759 Crime SuspenStories (1950) #6-12 [7 stories] · s784 Haunt of Fear (1950) #8-13 [6 stories] · s12404 Vault of Horror (1950) #20, #22-25 [5 stories]
+             [24989] gcd_reprint 1463824: s759 Crime SuspenStories (1950) #2, #4-17 [16 stories] · s913 Shock SuspenStories (1952) #1-8 [8 stories] · s69863 The Fantagraphics EC Artists' Library (2012) #1 [1 story]
+             [24990] gcd_reprint 1536899: s759 Crime SuspenStories (1950) #18-23 [7 stories] · s913 Shock SuspenStories (1952) #9-13, #15 [6 stories] · s762 Two-Fisted Tales (1950) #35-36 [2 stories] · s12404 Vault of Horror (1950) #33-34 [2 stories]
+             [24991] gcd_reprint 1609430: s12404 Vault of Horror (1950) #17-26 [11 stories] · s784 Haunt of Fear (1950) #4-13 [10 stories] · s759 Crime SuspenStories (1950) #4-5, #7, #9-12 [9 stories] · s913 Shock SuspenStories (1952) #2-3 [2 stories]
+             [24992] gcd_reprint 1648489: s759 Crime SuspenStories (1950) #1-7 [7 stories] · s12404 Vault of Horror (1950) #14-20 [7 stories] · s784 Haunt of Fear (1950) #5, #7, #10 [5 stories] · s761 Tales from the Crypt (1950) #20, #22-24 [4 stories]
+             [24993] gcd_reprint 1666527: s1063 Panic (1954) #1-12 [15 stories] · s835 Weird Fantasy (1951) #17-21 [5 stories] · s761 Tales from the Crypt (1950) #37-38 [2 stories] · s759 Crime SuspenStories (1950) #17-18 [2 stories]
+             [24994] gcd_reprint 1724162: s1063 Panic (1954) #1-9 [9 stories] · s761 Tales from the Crypt (1950) #27-30, #35, #37, #39, #46 [8 stories] · s759 Crime SuspenStories (1950) #16, #22, #24, #26 [4 stories] · s784 Haunt of Fear (1950) #9, #12 [3 stories]
+             [24995] gcd_reprint 1745809: s784 Haunt of Fear (1950) #4, #6-7, #9-11, #13-14 [9 stories] · s12404 Vault of Horror (1950) #15-22, #25 [9 stories] · s761 Tales from the Crypt (1950) #20, #22, #25, #27-30 [7 stories] · s69863 The Fantagraphics EC Artists' Library (2012) #1 [1 story]
+             … 14 more book(s) with GCD notes (`python gcdnotes.py --issue <id>`)
+
+== S7590 Girls  [tier B]   keys: Girls  years 2005-2011  1 files / 1 collections
+   folders: [1] Image\Girls (2011)
+   files:   [34243] COL Girls - The Complete Collection (2011) (Digital-TPB) (JK-Empire).cbz (654pp)
+   CV linked:      vol 18163 "Girls" 2005 Image 24 issues; cached #1-24 (24); yearΔ 0; ratio 0/24; no judged range
+   CV candidates:  (= linked) · 92535 "Girls" 2005 Image 4 s93 · 156895 "A Girls" 2004 Mag Garden 3 s77 · 111869 "Girls" 2018 Silver Sprocket 1 issue 674989 s43 · 145550 "Happy Birthday Fantagraphics" 2006 Fantagraphics 1 issue 951210 s34 · 59658 "Transformers Generations 2011" 2011 Million Publishing 2 s30 · 124116 "Usagi Yojimbo Fantagraphics Collection" 2017 Planeta DeAgostini 2 s0   (v1 search)
+   CV local rip:   (= linked) · 92535 "Girls" 2005 Image 4 · 156895 "A Girls" 2004 Mag Garden 3 · 111869 "Girls" 2018 Silver Sprocket 1 issue 674989   (rip lookup)
+   GCD dump:       18558 "Girls" 2005-2007 Image [] 24 · 200605 "Girls" 2005-? Image [] 4 · 121197 "Girls" [fr] 2006-2007 Delcourt [] 4 · 117102 "A Girls" [fr] 2010-2011 Soleil [] 3 · 126413 "Girls" 2018-2018 Silver Sprocket [] 1 · 60843 "Girls" [no] 1989-2002 Hjemmet / Egmont [] 326   (dump lookup)
+
+== S20376 Transformers  [tier C] · gap 33  keys: Transformers (2019)  years 1986-2022  17 files / 4 collections
+   flags: #502 label-ambiguous [Pending] item 32594 — the cv row on Vol. 02 is a Transformers Classics book
+   folders: [17] IDW Hasbro\Transformers (IDW Chronology) (2005)\2016 - Phase Three\2019.03 - Transformers
+   files:   Transformers 019 (2020) (digital) (Knight Ripper-Empire).cbr … Transformers 043 (2022) (digital) (Knight Ripper-Empire).cbr  (13 files, pp 27-44)
+            [32593] COL Transformers Vol. 01 - The World in Your Eyes (2019) (digital) (Knight Ripper-Empire).cbr (290pp)
+            [32594] COL Transformers Vol. 02 - The Change in Their Nature (2020) (digital) (Knight Ripper-Empire).cbr (277pp)
+            [32595] COL Transformers Vol. 04 - Declaration Of War (2022) (digital) (Dr.Vink).cbz (305pp)
+            [32596] COL Transformers Vol. 05 - Horrors Near And Far (2022) (digital) (Dr.Vink).cbz (295pp)
+   ours:    ladder 19-24, 37-43; ComicInfo Series: "Transformers"x12, "Transformers (2019)"x2; ComicInfo Volume: "2019"x10; ComicInfo Publisher: "IDW"x14
+   GCD says: [32593] gcd notes 2058643 (#1 of Transformers): Transformers #1-12
+             [32595] gcd notes 2302273 (#4 of Transformers): Transformers #25-30; the Valentine's Day Special one-shot, and Transformers: Escape #1-5
+   CV linked:      vol 117551 "Transformers" 2019 IDW Publishing 43 issues; cached #1-2 (2); yearΔ 33; ratio 13/43 = 0.30; no judged range
+   CV per-file (v1): vol 3370 "The Transformers" 1984 Marvel 80 on 13/17 files
+   CV candidates:  (= linked) · 163604 "Transformers" 1990 Meribérica-Líber 17 s47 · 130616 "Transformers" 1987 Atlantic Förlags AB 31 s46 · 145602 "Transformers: IDW Collection Phase Three" 2021 IDW Publishing 3 s9 · 92009 "The Transformers: The IDW Collection Compendium" 2016 IDW Publishing 1 issue 538441 s8 · 171174 "Transformers" 2024 Moztros Producciones 3 s8 · 53103 "Transformers: The IDW Collection" 2010 IDW Publishing 8 s5   (v1 search)
+   CV local rip:   (= linked) · 130616 "Transformers" 1987 Atlantic Förlags AB 31 · 20559 "The Transformers" 1984 Marvel UK/Panini UK 333 · 163604 "Transformers" 1990 Meribérica-Líber 17 · 166262 "Transformers" 1991 TM-Semic 24 · 27885 "The Transformers" 2007 IDW Publishing 1 issue 170947   (rip lookup)
+   GCD per-file:   series 142349 "Transformers" 2019-2022 IDW [Ongoing  Series] 43 on 13/17 files; methods numx13
+   GCD dump:       20487 "Transformers" [nl] 1986-1991 Juniorpress [] 32 · 8363 "Transformers" [sv-se] 1987-1991 Atlantic Förlags AB [] 43 · 8366 "Transformers" [sv-se] 1987-1987 Atlantic Förlags AB [] 1 · 48655 "Transformers" [no] 1987-1987 Gevion [] 7 · 57190 "Transformers" [fi] 1987-1991 Semic [] 25 · 62124 "Transformers" [pt-br] 1985-1986 RGE [] 12   (dump lookup)
+   bridges:        gcd 142349 -> LOCG 114951 "The Transformers" support 15
+
+== S22790 Zero Hour: Crisis in Time  [tier A]   keys: Zero Hour | Zero Hour: Crisis in Time  years 1994-1994  11 files / 1 collections
+   folders: [5] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\064 Crisis in Time · [5] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\11 Zero Hour Crisis in Time · [1] DC\#DC Events\Zero Hour (1994)
+   files:   [15705] 03 Zero Hour Crisis in Time 04  Zero Hour.cbz (25pp) | [15707] 05 Zero Hour Crisis in Time 03  Zero Hour.cbz (24pp) | [15708] 06 Zero Hour Crisis in Time 02  Zero Hour.cbz (24pp)
+            [15710] 08 Zero Hour Crisis in Time 01  Zero Hour.cbz (25pp) | [15711] 09 Zero Hour Crisis in Time 00  Zero Hour.cbz (32pp) | [16834] 07_Zero_Hour_04.cbr (25pp)
+            [16835] 12_Zero_Hour_03.cbr (23pp) | [16836] 17_Zero_Hour_02.cbr (24pp) | [16837] 26_Zero_Hour_01.cbr (27pp) | [16838] 33_Zero_Hour_00.cbr (31pp)
+            [19362] COL Zero Hour - Crisis in Time (1994) (digital) (Minutemen-Thoth).cbr (155pp)
+   ours:    ladder 0-4, 12, 17, 26, 33; 1 number(s) name more than one file: 4; ComicInfo Series: "Zero Hour: Crisis in Time"x5; ComicInfo Publisher: "DC Comics"x5
+   GCD says: [19362] gcd_reprint 347326: s4983 Zero Hour: Crisis in Time (1994) #0-4 [5 stories]
+   CV linked:      vol 5271 "Zero Hour: Crisis in Time" 1994 DC Comics ? issues; cached #0-4 (5); yearΔ 0; ratio 10/? = 2.00; no judged range; v1 per-file: same volume on 5/11 files
+   CV candidates:  (= linked) · 85090 "Convergence: Zero Hour" 2015 DC Comics 2 s77 · 73624 "Zero Hour" 1995 ? 1 issue 452158 s75 · 41044 "Zero Hour Ashcan" 1994 DC Comics 1 issue 276716 s74 · 101923 "Batman: Zero Hour" 2017 DC Comics 1 issue 599830 s74 · 111701 "Superman: Zero Hour" 2018 DC Comics 1 issue 674116 s74 · 41043 "Zero Hour Sampler 1994" 1994 DC Comics 1 issue 276715 s73   (v1 search)
+   CV local rip:   (= linked) · 38677 "Zero Hour: Crisis in Time" 2003 DC Comics 1 issue 259470 · 110544 "Zero Hour: Crisis In Time" 2018 DC Comics 1 issue 668766 · 73624 "Zero Hour" 1995 ? 1 issue 452158 · 85090 "Convergence: Zero Hour" 2015 DC Comics 2 (via CV candidate name "Convergence: Zero Hour")   (rip lookup)
+   GCD per-file:   series 4983 "Zero Hour: Crisis in Time" 1994-1994 DC [miniseries] 5 on 5/11 files; methods numx5
+   GCD dump:       (= per-file) · 22856 "Zero Hour: Crisis in Time" 1994-1994 DC [] 1 · 59436 "Zero Hour: Crisis in Time" 1994-1994 DC [] 1 · 145974 "Zero Hour: Crisis in Time" 2004-2004 DC [] 1 · 123958 "Zero Hour: Crisis in Time" 2018-2018 DC [] 1 · 21694 "Zero Hour" 1995-1995 Dog Soup Comics [] 1   (dump lookup)
+   bridges:        gcd 4983 -> LOCG 114520 "Zero Hour: Crisis in Time" support 6
+
+== S16669 Star Wars Webcomic - Chapter  [tier B]   keys: Star Wars Webcomic - Chapter  years 2015-2018  40 files / 0 collections
+   folders: [40] Marvel-IDW Star Wars\_Completed Series and Minis\Star Wars Webcomic (2015)
+   files:   [104264] Star Wars Webcomic - Chapter 01 - An Old Friend (2015) (Digital-Empire).cbr (53pp)
+            [104265] Star Wars Webcomic - Chapter 02 - Meeting the Droids (2015) (Digital-Empire).cbr (52pp)
+            [104266] Star Wars Webcomic - Chapter 03 - Beginning of an Adventure (2015) (Digital-Empire).cbr (47pp)
+            [104267] Star Wars Webcomic - Chapter 04 - Only Hope (2015) (Digital-Empire).cbr (45pp) | [104268] Star Wars Webcomic - Chapter 05 - Escape (2015) (Digital-Empire).cbr (27pp)
+            [104269] Star Wars Webcomic - Chapter 06 - Death Star (2015) (Digital-Empire).cbr (42pp) | [104270] Star Wars Webcomic - Chapter 07 - Rescue (2015) (Digital-Empire).cbr (38pp)
+            [104271] Star Wars Webcomic - Chapter 08 - Darth Vader (2015) (Digital-Empire).cbr (46pp)
+            [104272] Star Wars Webcomic - Chapter 09 - Vanishing into the Force (2015) (Digital-Empire).cbr (39pp)
+            [104273] Star Wars Webcomic - Chapter 10 - The Little Spark (2015) (Digital-Empire).cbr (28pp) | [104274] Star Wars Webcomic - Chapter 11 - X-Wing (2015) (Digital-Empire).cbr (37pp)
+            [104275] Star Wars Webcomic - Chapter 12 - One Shot (2015) (Digital-Empire).cbr (32pp)
+            [104276] Star Wars Webcomic - Chapter 13 - Awakening of the Force (2015) (Digital-Empire).cbr (26pp)
+            [104277] Star Wars Webcomic - Chapter 14 - Miracle of Yavin (2015) (Digital-Empire).cbr (45pp) | [104278] Star Wars Webcomic - Chapter 15 - Suffering (2015) (Digital-Empire).cbr (37pp)
+            [104279] Star Wars Webcomic - Chapter 16 - Strike (2015) (Digital-Empire).cbr (27pp) | [104280] Star Wars Webcomic - Chapter 17 - Retreat (2015) (Digital-Empire).cbr (30pp)
+            [104281] Star Wars Webcomic - Chapter 18 - Dagobah (2015) (Digital-Empire).cbr (29pp) | [104282] Star Wars Webcomic - Chapter 19 - Master Yoda (2015) (Digital-Empire).cbr (29pp)
+            [104283] Star Wars Webcomic - Chapter 20 - Training (2015) (Digital-Empire).cbr (38pp)
+            [104284] Star Wars Webcomic - Chapter 21 - Dark Side of the Force (2015) (Digital-Empire).cbr (46pp) | [104285] Star Wars Webcomic - Chapter 22 - Calling (2015) (Digital-Empire).cbr (30pp)
+            [104286] Star Wars Webcomic - Chapter 23 - Trap (2015) (Digital-Empire).cbr (21pp) | [104287] Star Wars Webcomic - Chapter 24 - Unprepared Duel (2015) (Digital-Empire).cbr (25pp)
+            [104288] Star Wars Webcomic - Chapter 25 - The Cruel Truth (2015) (Digital-Empire).cbr (26pp) | [104289] Star Wars Webcomic - Chapter 26 - Choice (2015) (Digital-Empire).cbr (28pp)
+            [104290] Star Wars Webcomic - Chapter 27 - Determination (2015) (Digital-Empire).cbr (32pp) | [104291] Star Wars Webcomic - Chapter 28 - Jabba's Palace (2015) (Digital-Empire).cbr (22pp)
+            [104292] Star Wars Webcomic - Chapter 29 - Pit of Carkoon (2015) (Digital-Empire).cbr (32pp) | [104293] Star Wars Webcomic - Chapter 30 - Lightsaber (2016) (Digital-Empire).cbr (23pp)
+            [104294] Star Wars Webcomic - Chapter 31 - Rescue (2016) (Digital-Empire).cbr (23pp) | [104295] Star Wars Webcomic - Chapter 32 - Secret of Birth (2016) (Digital-Empire).cbr (30pp)
+            [104296] Star Wars Webcomic - Chapter 33 - Forest Moon (2016) (Digital-Empire).cbr (19pp)
+            [104297] Star Wars Webcomic - Chapter 34 - Protectors of the Forest (2016) (Digital-Empire).cbr (22pp)
+            [104298] Star Wars Webcomic - Chapter 35 - Surrender (2016) (Digital-Empire).cbr (29pp) | [104299] Star Wars Webcomic - Chapter 36 - The Emperor (2016) (Digital-Empire).cbr (29pp)
+            [104300] Star Wars Webcomic - Chapter 37 - Rage (2016) (Digital-Empire).cbr (31pp) | [104301] Star Wars Webcomic - Chapter 38 - Light vs. Dark (2016) (Digital-Empire).cbr (33pp)
+            [104302] Star Wars Webcomic - Chapter 39 - Epiphany (2016) (Digital-Empire).cbr (29pp) | [104303] Star Wars Webcomic - Chapter 40 - The End (2016) (Digital-Empire).cbr (56pp)
+   ours:    ladder 1-40
+   CV per-file (v1): vol 79398 "Star Wars" 2015 Marvel ? on 40/40 files
+   CV candidates:  (= per-file) · 2914 "Star Wars" 1977 Marvel ? s72 · 85138 "Star Wars: The Marvel Covers" 2015 Marvel ? s57 · 62365 "Star Wars: Clone Wars" 2008 Lucas Online ? s40 · 48895 "Star Wars The Clone Wars" 2012 Panini Verlag ? s38 · 25404 "Star Wars: Clone Wars" 2003 Dark Horse Comics ? s38 · 40416 "Star Wars: The Clone Wars" 2010 Titan Comics ? s38   (v1 search)
+   CV local rip:   (= per-file) · 105662 "Star Wars" 2015 Planeta DeAgostini 54 (via CV name "Star Wars") · 118573 "Star Wars" 2015 Panini Verlag 116 (via CV name "Star Wars") · 151347 "Star Wars" 2015 Panini Comics 79 (via CV name "Star Wars") · 75868 "The Star Wars" 2014 Dark Horse Comics 1 issue 460291 (via CV name "Star Wars") · 75910 "The Star Wars" 2014 Dark Horse Comics 1 issue 460410 (via CV name "Star Wars")   (rip lookup)
+   GCD dump:       85861 "Star Wars" 2015-2020 Marvel [] 75 (via CV name "Star Wars") · 90703 "Star Wars" [fr] 2015-2017 Panini France [] 13 (via CV name "Star Wars") · 92210 "Star Wars" [de] 2015-? Panini Deutschland [] 130 (via CV name "Star Wars") · 92889 "Star Wars" 2015-2020 Marvel [] 13 (via CV name "Star Wars") · 94756 "Star Wars" [nl] 2015-2016 Sanoma Uitgevers [] 13 (via CV name "Star Wars") · 119299 "Star Wars" [pt-br] 2015-2018 Panini Brasil [] 37 (via CV name "Star Wars")   (dump lookup)
+
+== S21439 West Coast Avengers  [tier C] · gap 40  keys: West Coast Avengers  years 1985-1985  18 files / 0 collections
+   folders: [15] Marvel\#MARVEL CURRENT ONGOING TITLES\West Coast Avengers v5 (2025)\Variant Covers · [3] Marvel\#MARVEL CURRENT ONGOING TITLES\West Coast Avengers v5 (2025)
+   files:   [49045] West Coast Avengers 001 (2024) (Adam Hughes Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49046] West Coast Avengers 001 (2024) (Artgerm Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49047] West Coast Avengers 001 (2024) (Artgerm Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49048] West Coast Avengers 001 (2024) (Danny Kim Design Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49049] West Coast Avengers 001 (2024) (Danny Kim Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49050] West Coast Avengers 001 (2024) (Gerardo Sandoval Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49051] West Coast Avengers 001 (2024) (Jeehyung Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49052] West Coast Avengers 001 (2024) (Jeehyung Lee Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49053] West Coast Avengers 001 (2024) (Joshua Cassara Gallery Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49054] West Coast Avengers 001 (2024) (Ron Lim Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49055] West Coast Avengers 001 (2024) (Sean Galloway Saturday Morning Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49056] West Coast Avengers 001 (2025) (Adam Hughes 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49057] West Coast Avengers 002 (2024) (Annie Wu Windowshades Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49058] West Coast Avengers 002 (2024) (Federico Vicentini Stormbreakers Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49059] West Coast Avengers 002 (2024) (Ron Lim Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49060] West Coast Avengers 001 (2025) (Digital) (Shan-Empire).cbz (31pp)
+            [49061] West Coast Avengers 002 (2025) (Digital) (Shan-Empire).cbz (23pp) | [49062] West Coast Avengers 003 (2025) (Digital) (Shan-Empire).cbz (24pp)
+   ours:    ladder 1-3; 2 number(s) name more than one file: 1, 2
+   CV linked:      vol 161322 "West Coast Avengers" 2025 Marvel 10 issues; cached #1-10 (10); yearΔ 40; ratio 18/10 = 1.80; no judged range
+   CV per-file (v1): vol 3521 "West Coast Avengers" 1985 Marvel 46 on 18/18 files
+   CV local rip:   (= linked) · 3372 "West Coast Avengers" 1984 Marvel 4 · 112977 "West Coast Avengers" 2018 Marvel 10 · 165818 "West Coast Avengers" 2025 Marvel 1 issue 1122569   (rip lookup)
+   GCD per-file:   series 218108 "West Coast Avengers" 2025-2025 Marvel [was ongoing series] 10 on 18/18 files; methods numx18
+   GCD dump:       (= per-file) · 3061 "West Coast Avengers" 1985-1989 Marvel [] 47 · 2900 "West Coast Avengers" 1984-1984 Marvel [] 4 · 127975 "West Coast Avengers" 2018-2019 Marvel [] 10 · 140641 "West Coast Avengers" 2019-2019 Marvel [] 2 · 226086 "West Coast Avengers" 2025-? Marvel [] 2   (dump lookup)
+   bridges:        gcd 218108 -> LOCG 178319 "West Coast Avengers" support 18
+
+== S20672 Uncanny Avengers  [tier C] · 8 number(s) x2+, 4 parsed key(s), ratio 1.31  keys: Uncanny Avengers | Uncanny Avengers 008AU | Uncanny Avengers Annual | Uncanny Avengers v1 (2012)  years 2012-2015  39 files / 5 collections
+   folders: [7] _Marvel Major Event Chronology (digital)\2014.10 - AXIS\00 Prelude - March to AXIS · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1044 The Apocalypse Twins · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1066 Ragnarok Now · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1088 Avenge the Earth · [5] Marvel\_Avengers\Uncanny Avengers (2012)\Uncanny Avengers v1 (2012) · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\1013 The Red Shadow · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\1106 March to AXIS · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\1031 Age of Ultron
+   files:   [53135] COL Uncanny Avengers Vol. 01 - The Red Shadow (2013) (Digital) (F) (Kileko-Empire).cbz (123pp)
+            [53136] COL Uncanny Avengers Vol. 02 - The Apocalypse Twins (2013) (Digital) (F) (Zone-Empire).cbr (142pp)
+            [53137] COL Uncanny Avengers Vol. 03 - Ragnarok Now (2014) (Digital) (F) (Zone-Empire).cbr (132pp)
+            [53138] COL Uncanny Avengers Vol. 04 - Avenge The Earth (2014) (Digital) (F) (BroadCast-Empire).cbz (116pp)
+            [53139] COL Uncanny Avengers Vol. 05 - AXIS Prelude (2015) (Digital) (F) (Zone-Empire).cbr (139pp) | [92251] 001 Uncanny Avengers 001 (2012) (digital) (Minutemen-PhD).cbr (24pp)
+            [92252] 002 Uncanny Avengers 002 (2013) (digital) (Minutemen-PhD).cbr (23pp) | [92253] 003 Uncanny Avengers 003 (2013) (digital) (Minutemen-PhD).cbr (24pp)
+            [92254] 004 Uncanny Avengers 004 (2013) (digital) (Minutemen-PhD).cbr (23pp) | [92255] 005 Uncanny Avengers 005 (2013) (digital) (Minutemen-PhD).cbr (23pp)
+            [92359] 015 Uncanny Avengers 008AU (2013) (digital) (Minutemen-PhD).cbr (21pp) | [92417] 001 Uncanny Avengers 006 (2013) (digital) (Minutemen-PhD).cbr (22pp)
+            [92418] 002 Uncanny Avengers 007 (2013) (digital) (Minutemen-PhD).cbr (21pp) | [92419] 003 Uncanny Avengers 008 (2013) (Digital) (Archangel+Zone-Empire).cbr (23pp)
+            004 Uncanny Avengers 009 (2013) (digital) (Minutemen-PhD).cbr … 006 Uncanny Avengers 017 (2014) (digital) (Minutemen-PhD).cbr  (9 files, pp 20-26)
+            [92655] 001 Uncanny Avengers Annual 01 (2014) (digital) (Minutemen-PhD).cbr (33pp) | [92656] 002 Uncanny Avengers 018.NOW (2014) (digital) (Minutemen-PhD).cbr (19pp)
+            003 Uncanny Avengers 019 (2014) (digital) (Minutemen-PhD).cbr … 005 Uncanny Avengers 025 (2014) (digital) (Minutemen-PhD).cbr  (7 files, pp 21-22)
+            [117807] 001 - Uncanny Avengers 001 (2013) (Digital) (Archangel+Zone-Empire).cbr (25pp) | [117808] 002 - Uncanny Avengers 002 (2013) (Digital) (Archangel+Zone-Empire).cbr (24pp)
+            [117809] 003 - Uncanny Avengers 003 (2013) (Digital) (Archangel Zone-Empire).cbr (25pp) | [117810] 004 - Uncanny Avengers 004 (2013) (Digital) (Archangel+Zone-Empire).cbr (24pp)
+            [117811] 005 - Uncanny Avengers 023 (2014) (Digital) (Zone-Empire).cbr (22pp) | [117816] 010 - Uncanny Avengers 024 (2014) (Digital) (Archangel+Zone-Empire).cbr (23pp)
+            [117817] 011 - Uncanny Avengers 025 (2014) (Digital) (Archangel+Zone-Empire).cbr (22pp)
+   ours:    ladder 1-25; 8 number(s) name more than one file: 1, 2, 3, 4, 15, 23, 24, 25; ComicInfo Series: "Uncanny Avengers"x5; ComicInfo Publisher: "Marvel"x5
+   GCD says: [53135] gcd_reprint 1171407: s69005 Uncanny Avengers (2012) #1-5 [10 stories] · s78167 Uncanny Avengers (2013) #1 [1 story]
+             [53136] gcd_reprint 1327356: s69005 Uncanny Avengers (2012) #6-11 [11 stories] · s78167 Uncanny Avengers (2013) #2 [1 story]
+             [53137] gcd_reprint 1327357: s69005 Uncanny Avengers (2012) #12-17 [6 stories] · s78167 Uncanny Avengers (2013) #3 [1 story]
+             [53138] gcd_reprint 1353476: s69005 Uncanny Avengers (2012) #19-22 [18 stories] · s78167 Uncanny Avengers (2013) #4 [1 story]
+             [53139] gcd_reprint 1443454: s69005 Uncanny Avengers (2012) #23-25 [3 stories] · s79393 Magneto (2014) #9-10 [2 stories] · s80406 Uncanny Avengers Annual (2014) #1 [1 story] · s78167 Uncanny Avengers (2013) #5 [1 story]
+   CV linked:      vol 52880 "Uncanny Avengers" 2012 Marvel 26 issues; cached #1-25 (26); yearΔ 0; ratio 34/26 = 1.31; no judged range
+   CV candidates:  (= linked) · 85318 "Uncanny Avengers" 2015 Marvel 30 s70 · 79736 "Uncanny Avengers" 2015 Marvel 5 s70 · 153018 "Uncanny Avengers" 2023 Marvel 5 s70 · 73264 "Uncanny Avengers" 2014 Panini France 3 s58 · 86135 "Uncanny Avengers Annual" 2015 Marvel 1 issue 506186 s58 · 73421 "Uncanny Avengers Annual" 2014 Marvel 1 issue 451773 s58   (v1 search)
+   CV local rip:   (= linked) · 62905 "Uncanny Avengers" 2013 Panini France 10 · 63315 "Uncanny Avengers" 2013 Panini Verlag 5 · 72503 "Uncanny Avengers" 2013 Editorial Televisa 18 · 73264 "Uncanny Avengers" 2014 Panini France 3 · 79736 "Uncanny Avengers" 2015 Marvel 5   (rip lookup)
+   GCD dump:       69005 "Uncanny Avengers" 2012-2014 Marvel [] 26 · 74469 "Uncanny Avengers" [es-mx] 2013-? Editorial Televisa [] 25 · 74810 "Uncanny Avengers" [fr] 2013-2014 Panini France [] 10 · 75380 "Uncanny Avengers" [de] 2013-2015 Panini Deutschland [] 5 · 78167 "Uncanny Avengers" 2013-2015 Marvel [] 5 · 78168 "Uncanny Avengers" 2014-2015 Marvel [] 5   (dump lookup)
+
+== S3744 Champions  [tier C] · ratio 0.20  keys: Champions by Jim Zub | Champions v3 (2019)  years 2019-2019  4 files / 2 collections
+   folders: [2] Marvel\_Champions\Champions v3 (2019) · [2] _Marvel Major Event Chronology (digital)\2019.03 - War of the Realms\02 Tie-ins\Champions
+   files:   [77724] COL Champions by Jim Zub Vol. 01 - Beat The Devil (2019) (Digital) (Kileko-Empire).cbz (132pp)
+            [77725] COL Champions by Jim Zub Vol. 02 - Give And Take (2020) (Digital) (Kileko-Empire).cbz (107pp) | [118395] Champions 005 (2019) (Digital) (Zone-Empire).cbr (24pp)
+            [118396] Champions 006 (2019) (Digital) (Zone-Empire).cbr (23pp)
+   ours:    ladder 5-6; judged item 77724 #1-6 conf 0.9; judged item 77725 #7-10 conf 0.9; ComicInfo Series: "Champions by Jim Zub"x2, "Champions"x2; ComicInfo Volume: "2019"x2; ComicInfo Publisher: "Marvel"x4
+   GCD says: [77724] gcd_reprint 2124926: s136749 Champions (2019) #1-2 [19 stories]
+             [77725] gcd_reprint 2124927: s136749 Champions (2019) (unnumbered) [5 stories] · s93596 Nova (2016) #1 [1 story]
+   CV linked:      vol 116243 "Champions" 2019 Marvel 10 issues; cached #1-10 (10); yearΔ 0; ratio 2/10 = 0.20; 2 of 2 judged fit
+   CV candidates:  123279 "Champions by Jim Zub: Give and Take" 2019 Marvel 1 issue 729695 s95 · 120539 "Champions by Jim Zub: Beat The Devil" 2019 Marvel 1 issue 715301 s95 · 141587 "Champions" 2015 Heroic Publishing 18 s51 · 29412 "Champions" 2007 Heroic Publishing 30 s48 · 88397 "Marvel Masterworks: The Champions" 2016 Marvel 1 issue 516959 s46 · 3666 "Champions" 1986 Eclipse 6 s45   (v1 search)
+   CV local rip:   (= linked) · 130979 "Champions" 2020 Marvel 10 · 112514 "Champions" 2017 self published 4 · 150095 "Champions" 2017 Panini Comics 14 · 94612 "Champions" 2016 Marvel 28 · 141587 "Champions" 2015 Heroic Publishing 18   (rip lookup)
+   GCD dump:       136749 "Champions" 2019-2019 Marvel [] 10 · 164653 "Champions" 2020-2021 Marvel [] 10 · 113813 "Champions" 2017-2018 Marvel [] 5 · 120624 "Champions" [es-mx] 2017-2018 Editorial Televisa [] 17 · 173432 "Champions" 2021-2021 Marvel [] 2 · 107878 "Champions" 2016-2019 Marvel [] 28   (dump lookup)
+
+== S96118 Conan the Barbarian  [tier C] · 219 files  keys: Conan the Barbarian v1 (1970)  years 1970-2022  219 files / 5 collections
+   flags: #701 provider-disagrees [Pending] item 78063 — the cv row on Epic Collection Vol. 05 is a Conan Omnibus book · #712 span-retracted [Pending] item 78063 — the audit withdrew the range the pass had written: the cv row that gave #116-149 is a Cona
+   folders: [213] Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) · [5] Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970)\Trades & Epic Collections · [1] Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970)\Annuals and Specials
+   files:   [77753] Conan The Barbarian - Facsimile Edition 001 (2022) (Digital) (Shadowcat-Empire).cbz (36pp)
+            Conan The Barbarian 001 [Marvel Edition] (1970) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz … Conan The Barbarian 013 [Marvel Edition] (1972) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz  (13 files, pp 21-37)
+            [77818] Conan The Barbarian 052 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77819] Conan The Barbarian 053 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77820] Conan The Barbarian 054 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77821] Conan The Barbarian 055 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77822] Conan The Barbarian 056 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77823] Conan The Barbarian 057 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77824] Conan The Barbarian 058 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77825] Conan The Barbarian 059 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77826] Conan The Barbarian 060 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77827] Conan The Barbarian 061 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77828] Conan The Barbarian 062 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77829] Conan The Barbarian 063 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77830] Conan The Barbarian 064 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77831] Conan The Barbarian 065 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77832] Conan The Barbarian 066 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77833] Conan The Barbarian 067 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77834] Conan The Barbarian 068 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77835] Conan The Barbarian 069 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77836] Conan The Barbarian 070 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77837] Conan The Barbarian 071 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77838] Conan The Barbarian 072 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77839] Conan The Barbarian 073 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77840] Conan The Barbarian 074 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77841] Conan The Barbarian 075 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77842] Conan The Barbarian 076 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77843] Conan The Barbarian 077 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77844] Conan The Barbarian 078 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77845] Conan The Barbarian 079 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77846] Conan The Barbarian 080 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77847] Conan The Barbarian 081 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77848] Conan The Barbarian 082 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77849] Conan The Barbarian 083 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77850] Conan The Barbarian 084 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77851] Conan The Barbarian 085 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77852] Conan The Barbarian 086 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77853] Conan The Barbarian 087 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77854] Conan The Barbarian 088 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77855] Conan The Barbarian 089 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77856] Conan The Barbarian 090 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77857] Conan The Barbarian 091 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77858] Conan The Barbarian 092 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77859] Conan The Barbarian 093 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77860] Conan The Barbarian 094 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77861] Conan The Barbarian 095 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77862] Conan The Barbarian 096 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77863] Conan The Barbarian 097 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77864] Conan The Barbarian 098 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77865] Conan The Barbarian 099 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77866] Conan The Barbarian 100 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (35pp)
+            [77867] Conan The Barbarian 101 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77868] Conan The Barbarian 102 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77869] Conan The Barbarian 103 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77870] Conan The Barbarian 104 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77871] Conan The Barbarian 105 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77872] Conan The Barbarian 106 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77873] Conan The Barbarian 107 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77874] Conan The Barbarian 108 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77875] Conan The Barbarian 109 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77876] Conan The Barbarian 110 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77877] Conan The Barbarian 111 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77878] Conan The Barbarian 112 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77879] Conan The Barbarian 113 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77880] Conan The Barbarian 114 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77881] Conan The Barbarian 115 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (37pp)
+            Conan The Barbarian 116 (1980) (Digital) (Shadowcat-Empire).cbz … Conan The Barbarian 170 (1986) (Digital) (Shadowcat-Empire).cbz  (41 files, pp 22-25)
+            [78017] Conan The Barbarian 171 1986) (Digital) (Shadowcat-Empire).cbz (24pp)
+            Conan The Barbarian 172 (1985) (Digital) (Shadowcat-Empire).cbz … Conan The Barbarian 213 (1989) (Digital) (Shadowcat-Empire).cbz  (42 files, pp 22-40)
+            Conan the Barbarian 014 (1972) (Digital) [Marvel Edition] (Shadowcat-Empire).cbz … Conan the Barbarian 021 (1972) (Digital) [Marvel Edition] (Shadowcat-Empire).cbz  (8 files, pp 14-23)
+            [77788] Conan the Barbarian 022 (1973) [Marvel Edition] (c2c) (Teach-Woodman).cbr (37pp)
+            Conan the Barbarian 023 (1973) (Digital) [Marvel Edition] (Shadowcat-Empire).cbz … Conan the Barbarian 051 (1975) (Digital) [Marvel Edition] (Shadowcat-Empire).cbz  (29 files, pp 11-22)
+            Conan the Barbarian 136 (1982) (Digital) (Shadowcat-Empire).cbz … Conan the Barbarian 149 (1983) (Digital) (Shadowcat-Empire).cbz  (14 files, pp 23-24)
+            [118017] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 01 - The Coming of Conan (2020) (Digital) (Bean-Empire).cbz (326pp)
+            [78061] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 02 - Hawks From The Sea (2021) (Digital) (Bean-Empire).cbz (267pp)
+            [118018] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 03 - The Curse of the Golden Skull (2021) (Digital) (Bean-Empire).cbz (324pp)
+            [78062] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 04 - Queen of the Black Coast (2021) (Digital-Empire).cbr (345pp)
+            [78063] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 05 - Of Once and Future Kings (2022) (Digital-Empire).cbr (348pp)
+   ours:    ladder 1-213; 1 number(s) name more than one file: 1; judged item 118017 #1-13 conf 0.95; judged item 78061 #14-26 conf 0.85; judged item 118018 #27-42 conf 0.85; judged item 78062 #43-59 conf 0.85; judged item 78063 #60-71 conf 0.95; ComicInfo Series: "Conan The Barbarian"x213, "Conan The Barbarian Epic Collection: The Original Marvel Years - Hawks From The Sea"x1, "Conan The Barbarian Epic Collection: The Original Marvel Years - Of Once And Future Kings"x1, "Conan The Barbarian Epic Collection: The Original Marvel Years - The Coming Of Conan"x1; ComicInfo Volume: "1970"x213; ComicInfo Publisher: "Marvel"x217
+   GCD says: [118017] gcd notes 2145960 (#1 of Conan the Barbarian: The Original Marvel Years Epic Collection): Conan the Barbarian (Marvel, 1970 series) #1-13; Chamber of Darkness (Marvel 1969 series) #4  |  gcd_reprint 2145960: s1939 Conan the Barbarian (1970) #1-13 [29 stories] · s4999 Conan Classic (1994) #1-11 [13 stories] · s25052 Conan (1978) (unnumbered) [6 stories] · s1907 Chamber of Darkness (1969) #4 [2 stories]
+             [78061] gcd notes 2212921 (#2 of Conan the Barbarian: The Original Marvel Years Epic Collection): Conan the Barbarian (Marvel, 1970 series) #14-26  |  gcd_reprint 2212921: s1939 Conan the Barbarian (1970) #14-26 [14 stories]
+             [118018] gcd_reprint 2248636: s1939 Conan the Barbarian (1970) #27-42 [17 stories] · s2114 Conan Annual (1973) #1 [1 story]
+             [78062] gcd_reprint 2282302: s1939 Conan the Barbarian (1970) #43-59 [35 stories] · s2180 Marvel Treasury Edition (1974) #4, #19 [4 stories] · s2187 The Savage Sword of Conan (1974) #1 [2 stories] · s2165 Giant-Size Conan (1974) #5 [1 story]
+             [78063] gcd notes 2383420 (#5 of Conan the Barbarian: The Original Marvel Years Epic Collection): Conan the Barbarian (Marvel, 1970 series) #60-71; Conan the Barbarian Annual (Marvel, 1973 series) #2-3; e Mists! (Peter Pan, 1976 series) #PR-31, and material from F.O.O.M. (Marvel, 1973 series) #14  |  gcd_reprint 2383420: s1939 Conan the Barbarian (1970) #60-71 [25 stories] · s2114 Conan Annual (1973) #2-3 [7 stories] · s16305 Conan the Barbarian: The Crawler in the Mists! [Book and Record Set] (1976) (unnumbered) [3 stories] · s2187 The Savage Sword of Conan (1974) #16, #40 [2 stories]
+   CV linked:      vol 2471 "Conan the Barbarian" 1970 Marvel 275 issues; cached #1-275 (275); yearΔ 0; ratio 214/275 = 0.78; 5 of 5 judged fit; v1 per-file: same volume on 213/219 files
+   CV local rip:   (= linked) · 114988 "Conan the Barbarian" 1975 Newton Comics 11 · 115117 "Conan the Barbarian " 1977 Yaffa / Page 11 · 136319 "Conan the Barbarian" 1993 Moria 4 · 22947 "Conan the Barbarian" 1997 Marvel 3 · 115185 "Conan the Barbarian " 2003 Gotham Entertainment Group 1 issue 691727   (rip lookup)
+   GCD per-file:   methods numx149 · round2-seriesx64 ⚠  (⚠ copies a folder neighbour's series — verify); series 1939 "Conan the Barbarian" 1970-1994 Marvel [was ongoing series] 275 on 213/219 files
+   GCD dump:       (= per-file) · 71496 "Conan the Barbarian" [en-au] 1975-1976 Newton Comics [] 12 · 71544 "Conan the Barbarian" [en-au] 1977-1981 Yaffa / Page [] 11 · 181731 "寇能勇士傳 [Conan the Barbarian]" [zh-tw] 1977-1977 ROC Comics Group [] 2 · 154863 "Κόναν ο Βάρβαρος [Conan the Barbarian]" [el-gr] 1978-1978 Kabanas Hellas [] 4 · 71500 "Conan the Barbarian" [en-au] 1984-1986 Federal [] 11   (dump lookup)
+   bridges:        gcd 1939 -> LOCG 114733 "Conan the Barbarian" support 213
+
+== S96254 Daredevil  [tier C] · 10 number(s) x2+, 3 parsed key(s), ratio 0.45  keys: Daredevil | Daredevil - Shadowland | Daredevil v2 (1998)  years 1998-2011  62 files / 2 collections
+   folders: [40] Marvel\_Daredevil\02 Daredevil v2 (1998) · [16] _Marvel Major Event Chronology (digital)\2010.07 - Shadowland\01 Lead In · [2] Marvel\_Daredevil\02 Daredevil v2 (1998)\Trades · [2] _Marvel Major Event Chronology (digital)\2006.07 - Civil War\03 Civil War - Spider-Man Unmasked\Extra · [1] Marvel\_Daredevil\02 Daredevil v2 (1998)\Annuals and Specials · [1] _Marvel Major Event Chronology (digital)\2010.07 - Shadowland\02 Shadowland
+   files:   [46868] Daredevil Annual 001 (2007) (Digital) (Zone-Empire).cbr (40pp)
+            Daredevil 020 (2001) (Digital) (Zone-Empire).cbr … Daredevil 114 (2009) (Digital) (Zone-Empire).cbr  (32 files, pp 20-40)
+            [46902] Daredevil 115 (495) (2009) (Digital) (Zone-Empire).cbr (25pp)
+            Daredevil 501 (2009) (Digital-HD) (Kleio-Empire).cbz … Daredevil 507 (2010) (Digital-HD) (Kleio-Empire).cbz  (7 files, pp 23-26)
+            [46911] COL Daredevil Vol. 02 - Parts of a Hole (2003) (Digital) (Asgard-Empire).cbr (161pp) | [46919] COL Daredevil Vol. 22 - Shadowland (2011) (Digital) (Zone-Empire).cbr (141pp)
+            [116709] Daredevil 092 (2007) (Digital) (Zone-Empire).cbr (24pp) | [116710] Daredevil 093 (2007) (digital) (Zone-Empire).cbr (24pp)
+            [117370] Daredevil 111 (2008) (Digital) (Zone-Empire).cbr (25pp) | [117372] Daredevil 113 (2008) (Digital) (Zone-Empire).cbr (25pp)
+            [117373] Daredevil 114 (2009) (Digital) (Zone-Empire).cbr (25pp) | [117374] Daredevil 115 (2009) (Digital) (Zone-Empire).cbr (25pp)
+            [117375] Daredevil 116 (2009) (Digital) (TheHand-Empire).cbr (24pp) | [117376] Daredevil 117 (2009) (Digital) (TheHand-Empire).cbr (26pp)
+            [117377] Daredevil 118 (2009) (Digital) (TheHand-Empire).cbr (26pp) | [117378] Daredevil 119 (2009) (Digital) (TheHand-Empire).cbr (26pp)
+            [117379] Daredevil 500 (2009) (Digital-HD) (Kleio-Empire).cbz (89pp)
+            Daredevil 501 (2009) (digital) (Minutemen-PhD).cbr … Daredevil 507 (2010) (digital) (Minutemen-PhD).cbr  (7 files, pp 23-26)
+            [117388] 02 Daredevil - Shadowland (2011) (Digital) (F) (Zone-Empire).cbr (143pp)
+   ours:    ladder 1-2, 20-25, 51-55, 92-119, 495, 500-507; 10 number(s) name more than one file: 111, 113, 114, 501, 502, 503, 504, 505, 506, 507; judged item 117388 #1-1 conf 0.9; ComicInfo Series: "Daredevil: Shadowland"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [46911] gcd_reprint 1883969: s6026 Daredevil (1998) #9-15 [8 stories]
+             [46919] gcd_reprint 2756366: s6026 Daredevil (1998) #508-512 [5 stories] · s225998 Shadowland: Daredevil (2011) (unnumbered) [1 story] · s53796 Shadowland: After the Fall (2011) #1 [1 story]
+   CV linked:      vol 6209 "Daredevil" 1998 Marvel 134 issues; cached #0-512 (134); yearΔ 0; ratio 60/134 = 0.45; 1 of 1 judged fit
+   CV candidates:  39421 "Shadowland: Daredevil" 2011 Marvel 1 issue 266235 s98 · 108581 "Daredevil: Shadowland Omnibus" 2018 Marvel 1 issue 659057 s82 · 39422 "Shadowland" 2011 Marvel 1 issue 266236 s63 · 34243 "Shadowland" 2010 Marvel 5 s58 · 70862 "Shadowland" 1989 Fantagraphics 2 s55 · 35274 "Shadowland: Elektra" 2010 Marvel 1 issue 232574 s52   (v1 search)
+   CV local rip:   (= linked) · 142709 "Daredevil" 2000 Panini Verlag 2 · 42073 "Daredevil" 2001 Panini France 1 issue 286286 · 42076 "Daredevil" 2005 Panini España 14 · 42077 "Daredevil" 2006 Panini España 48 · 77205 "Daredevil" 1989 Semic S.A. 19   (rip lookup)
+   GCD dump:       6026 "Daredevil" 1998-2011 Marvel [] 132 · 29843 "Daredevil" [es] 1998-1999 Planeta DeAgostini [] 4 · 14562 "Daredevil" 1999-1999 Marvel; Wizard [] 1 · 52618 "Daredevil" [fr] 1999-2011 Panini France [] 22 · 151712 "Daredevil" [fr] 1997-1998 Bethy [] 2 · 159157 "Daredevil" [de] 1999-2000 Panini Deutschland [] 2   (dump lookup)
+
+== S64502 Daredevil  [tier C] · ratio 0.10  keys: Daredevil (2014) | Daredevil by Mark Waid and Chris Samnee  years 2014-2016  4 files / 2 collections
+   folders: [2] Marvel\_Daredevil\04 Daredevil v3-v4 (2011) · [2] _Marvel Major Event Chronology (digital)\2014.04 - Original Sin\02 Tie-ins\Daredevil
+   files:   [46923] COL 04 Daredevil by Mark Waid & Chris Samnee Vol. 04 (2016) (Digital) (Zone-Empire).cbr (296pp)
+            [46924] COL 05 Daredevil by Mark Waid & Chris Samnee Vol. 05 (2016) (Digital) (Zone-Empire).cbr (201pp) | [117775] 032 - Daredevil 006 (2014) (Digital) (Zone-Empire).cbr (21pp)
+            [117776] 033 - Daredevil 007 (2014) (Digital) (Zone-Empire).cbr (23pp)
+   ours:    ladder 6-7; ComicInfo Series: "Daredevil by Mark Waid and Chris Samnee Vol. 4 Collection"x1, "Daredevil by Mark Waid and Chris Samnee Vol. 5 Collection"x1; ComicInfo Publisher: "Marvel"x2
+   GCD says: [46923] gcd_reprint 1531587: s79658 Daredevil (2014) #1-10 [11 stories] · s81546 Daredevil (2014) #0.1 [2 stories]
+             [46924] gcd_reprint 1566180: s79658 Daredevil (2014) #11-15, #15.1, #16-18 [10 stories]
+   CV linked:      vol 72417 "Daredevil" 2014 Marvel 21 issues; cached #0.1-18 (21); yearΔ 0; ratio 2/21 = 0.10; no judged range
+   CV candidates:  38934 "Fantastic Four by Mark Waid" 2004 Marvel 3 s57 · 57482 "Daredevil by Mark Waid" 2013 Marvel 5 s33 · 45530 "Daredevil by Mark Waid" 2012 Marvel 7 s33 · 99293 "Daredevil by Mark Waid Omnibus" 2017 Marvel 2 s23 · 155525 "Doctor Strange By Mark Waid" 2023 Marvel 2 s14 · 125480 "Black Widow by Waid & Samnee: The Complete Collection" 2020 Marvel 1 issue 739612 s12   (v1 search)
+   CV local rip:   (= linked) · 61233 "Daredevil" 2012 Panini Verlag 6 · 86343 "Daredevil" 2016 Marvel 46 · 110312 "Daredevil" 2016 Panini France 5 · 41410 "Daredevil" 2011 Marvel 37 · 116964 "Daredevil" 2019 Marvel 36   (rip lookup)
+   GCD dump:       79658 "Daredevil" 2014-2015 Marvel [] 20 · 81546 "Daredevil" 2014-2014 Marvel [] 1 · 90888 "Daredevil" 2014-2015 Marvel [] 4 · 202070 "Daredevil" [fr] 2015-2016 Panini France [] 4 · 68578 "Daredevil" [de] 2012-2014 Panini Deutschland [] 6 · 94624 "Daredevil" 2016-2019 Marvel [] 46   (dump lookup)
+
+== S64541 Deadpool  [tier C] · 8 number(s) x2+, 3 parsed key(s), ratio 1.09  keys: Deadpool (2008) | Deadpool v2 (2008) | Deadpool v3 (2008)  years 2008-2013  86 files / 13 collections
+   folders: [14] Marvel\_Deadpool\04 Deadpool v2 (2008) · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0950 Evil Deadpool · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0910 Space Oddity · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0974 Dead · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0839 Nation X · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0867 Tricky · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0883 I'm Your Man · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0925 Operation Annihilation · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0788 One Of Us · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0821 Bullseye · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0859 Whatever a Spider Can · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0939 Institutionalsized · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0982 Deadpool Reborn · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0990 Blacklisted · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0998 The Salted Earth · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0795 Horror Business · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0805 How Low Can You Go · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0813 Magnum Opus · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0835 Wave Of Mutilation · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0900 I Rule, You Suck · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0946 You Complete Me · [2] _Marvel Major Event Chronology (digital)\2011.06 - X-Men - Curse of the Mutants · [1] Marvel\_Deadpool\04 Deadpool v2 (2008)\Annuals and Specials · [1] _Marvel Major Event Chronology (digital)\2008.06 - Secret Invasion\03 Tie-ins\Deadpool · [1] _Marvel Major Event Chronology (digital)\2008.06 - Secret Invasion\03 Tie-ins\_Variant Covers · [1] _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Deadpool · [1] _Marvel Major Event Chronology (digital)\2010.04 - The Heroic Age\The Heroic Age - One Shots and Singles
+   files:   [79942] Deadpool Annual 001 (2011) (Digital-Empire).cbr (34pp) | [78462] Deadpool 008 (2009) (Digital-Empire).cbr (25pp) | [78463] Deadpool 009 (2009) (Digital-Empire).cbr (25pp)
+            [78465] Deadpool 900 (2009) (c2c) (Both Covers) (Minutemen).cbr (114pp) | [78466] COL Deadpool Vol. 01 - Secret Invasion (2009) (Digital) (F) (Asgard-Empire).cbz (130pp)
+            [78467] COL Deadpool Vol. 02 - Dark Reign (2009) (Digital) (Asgard-Empire).cbr (125pp) | [78468] COL Deadpool Vol. 03 - X Marks Spot (2010) (Digital) (Asgard-Empire).cbr (150pp)
+            [78469] COL Deadpool Vol. 04 - Monkey Business (2011) (Digital) (Asgard-Empire).cbr (127pp)
+            [78470] COL Deadpool Vol. 05 - What Happened In Vegas (2011) (Digital) (Asgard-Empire).cbr (113pp)
+            [78471] COL Deadpool Vol. 06 - I Rule You Suck (2011) (Digital) (F) (Kileko-Empire).cbz (119pp)
+            [78472] COL Deadpool Vol. 07 - Space Oddity (2011) (digital) (Minutemen-Slayer).cbr (123pp)
+            [78473] COL Deadpool Vol. 08 - Operation Annihilation (2012) (Digital) (F2) (Kileko-Empire).cbz (106pp)
+            [78474] COL Deadpool Vol. 09 - Institutionalized (2012) (digital) (Minutemen-Slayer).cbr (116pp)
+            [78475] COL Deadpool Vol. 10 - Evil Deadpool (2012) (digital) (Minutemen-Slayer).cbr (145pp) | [78476] COL Deadpool Vol. 11 - Dead (2013) (Digital) (F) (Kileko-Empire).cbz (302pp)
+            [91004] 001 Deadpool 001 (2008) (Digital) (JK-Empire).cbz (22pp) | [91005] 002 Deadpool 002 (2008) (digital-Empire).cbr (23pp) | [91006] 003 Deadpool 003 (2008) (digital-Empire).cbr (23pp)
+            [91029] 001 Deadpool 004 (2009) (digital-Empire).cbr (24pp) | [91030] 002 Deadpool 005 (2009) (digital-Empire).cbr (23pp)
+            001 Deadpool 006 (2009) (Digital-Empire).cbr … 002 Deadpool 033 (2011) (Digital-Empire).cbr  (28 files, pp 24-35) | [91713] 003 Deadpool 033.1 (2011) (Digital-Empire).cbr (24pp)
+            [91714] 004 Deadpool 034 (2011) (Digital-Empire).cbr (24pp) | [91715] 005 Deadpool 035 (2011) (Digital-Empire).cbr (22pp) | [91807] 001 Deadpool 036 (2011) (Digital) (JK-Empire).cbz (23pp)
+            [91808] 002 Deadpool 037 (2011) (Digital) (JK-Empire).cbz (22pp) | [91809] 003 Deadpool 038 (2011) (Digital) (JK-Empire).cbz (20pp)
+            [91810] 004 Deadpool 039 (2011) (Digital) (HD) (JK-Empire).cbz (23pp)
+            001 Deadpool 040 (2011) (Digital) (JK-Empire).cbz … 002 Deadpool 046 (2012) (Digital) (JK-Empire).cbz  (7 files, pp 22-24)
+            [91918] 003 Deadpool 047 (2012) (Digital) (HD) (JK-Empire).cbz (24pp) | [91919] 004 Deadpool 048 (2012) (Digital) (JK-Empire).cbz (23pp)
+            [91920] 005 Deadpool 049 (2012) (Digital) (JK-Empire).cbz (24pp) | [91921] 006 Deadpool 049.1 (2012) (Digital) (JK-Empire).cbz (23pp)
+            001 Deadpool 050 (2012) (Digital) (JK-Empire).cbz … 003 Deadpool 063 (2012) (Digital) (JK-Empire).cbz  (14 files, pp 21-32)
+            [117927] COL Deadpool Vol. 01 - Secret Invasion (2009) (Digital) (Asgard-Empire).cbr (118pp) | [116973] Deadpool 002 (2008) (2nd Printing Paco Medina Variant) (Minutemen-TheRain).cbr (2pp)
+            [117947] COL Deadpool Vol. 02 - Dark Reign (2009) (Digital) (Asgard-Empire).cbr (125pp) | [117351] Deadpool 023 (2010) (Digital) (GKing-Empire).cbr (26pp)
+            [117617] 19 Deadpool 030 (2011) (Digital) (JK-Empire).cbz (25pp) | [117618] 20 Deadpool 031 (2011) (Digital) (JK-Empire).cbz (25pp)
+   ours:    ladder 1-63, 900; 9 number(s) name more than one file: 1, 2, 8, 9, 23, 30, 31, 33, 49; ComicInfo Series: "Deadpool"x4; ComicInfo Publisher: "Marvel"x4
+   GCD says: [78466] gcd_reprint 1171219: s32043 Deadpool (2008) #1-5 [5 stories] · s78139 Deadpool (2009) #1 [1 story]
+             [78467] gcd_reprint 1171220: s32043 Deadpool (2008) #6-7, #10-12 [5 stories] · s78139 Deadpool (2009) #2 [1 story]
+             [78468] gcd_reprint 1171221: s32043 Deadpool (2008) #13-18 [14 stories] · s78139 Deadpool (2009) #3 [1 story]
+             [78469] gcd_reprint 1171222: s32043 Deadpool (2008) #19-22 [9 stories] · s43861 Hit-Monkey (MDCU) (2010) #1 [3 stories] · s78139 Deadpool (2009) #4 [1 story]
+             [78470] gcd_reprint 1171223: s32043 Deadpool (2008) #23-26 [4 stories] · s78139 Deadpool (2009) #5 [1 story]
+             [78471] gcd_reprint 1171224: s32043 Deadpool (2008) #27-31 [5 stories] · s78139 Deadpool (2009) #6 [1 story]
+             [78472] gcd_reprint 1171225: s32043 Deadpool (2008) #32-33, #33.1, #34-35 [5 stories] · s78139 Deadpool (2009) #7 [1 story]
+             [78473] gcd_reprint 1171226: s32043 Deadpool (2008) #36-39 [10 stories] · s5791 Deadpool (1997) #4 [2 stories] · s78139 Deadpool (2009) #8 [1 story]
+             [78474] gcd_reprint 1171227: s32043 Deadpool (2008) #40-44 [5 stories] · s78139 Deadpool (2009) #9 [1 story]
+             [78475] gcd_reprint 1171228: s32043 Deadpool (2008) #45-49, #49.1 [6 stories] · s78139 Deadpool (2009) #10 [1 story]
+             [78476] gcd_reprint 202164: s14931 Spooky (1955) #27 [1 story]  |  ⚠ stored GCD row is another book: our title 'Deadpool' has deadpool, GCD's series 'The Friendly Ghost, Casper' does not; our vol 11 vs GCD #6; 302pp vs GCD 36pp — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [117927] gcd_reprint 1171219: s32043 Deadpool (2008) #1-5 [5 stories] · s78139 Deadpool (2009) #1 [1 story]
+             [117947] gcd_reprint 1171220: s32043 Deadpool (2008) #6-7, #10-12 [5 stories] · s78139 Deadpool (2009) #2 [1 story]
+   CV linked:      vol 22955 "Deadpool" 2008 Marvel 67 issues; cached #1-1000 (67); yearΔ 0; ratio 73/67 = 1.09; no judged range; v1 per-file: same volume on 18/86 files
+   CV local rip:   (= linked) · 42212 "Deadpool" 2011 Panini Verlag 17 · 53726 "Deadpool" 2012 Marvel 45 · 42210 "Deadpool" 2003 Panini Brasil 3 · 127215 "Deadpool" 2013 Panini France 2 · 85750 "Deadpool" 2015 Marvel 37   (rip lookup)
+   GCD per-file:   series 32043 "Deadpool" 2008-2012 Marvel [was ongoing series] 65 on 18/86 files; methods numx18
+   GCD dump:       (= per-file) · 78139 "Deadpool" 2009-2012 Marvel [] 10 · 78140 "Deadpool" 2009-2012 Marvel [] 10 · 52109 "Deadpool" 2010-2010 Marvel [] 1 · 55359 "Deadpool" [de] 2011-2013 Panini Deutschland [] 18 · 62057 "Deadpool" [fr] 2011-2012 Panini France [] 11   (dump lookup)
+   bridges:        gcd 32043 -> LOCG 110921 "Deadpool" support 70
+
+== S5304 Defenders By Matt Fraction  [tier B]   keys: Defenders By Matt Fraction | Defenders v4 (2012)  years 2012-2013  5 files / 2 collections
+   folders: [3] _Marvel Major Event Chronology (digital)\2011.03 - Fear Itself\03 Shattered Heroes\The Defenders · [2] Marvel\_Defenders\Defenders v4 (2012)
+   files:   [78751] COL Defenders By Matt Fraction v01 (2012) (Digital) (Kileko-Empire).cbr (141pp) | [78752] COL Defenders By Matt Fraction v02 (2014) (Digital) (Kileko-Empire).cbr (141pp)
+            [117593] Defenders 001 (2012) (digital-Empire).cbz (23pp) | [117594] Defenders 002 (2012) (digital-Empire).cbz (23pp) | [117595] Defenders 003 (2012) (digital-Empire).cbz (23pp)
+   ours:    ladder 1-3; judged item 78751 #1-6 conf 0.95; judged item 78752 #7-12 conf 0.95
+   GCD says: [78751] gcd_reprint 2023507: s62406 Defenders (2012) #1-6 [25 stories] · s62026 Point One (2012) #1 [2 stories] · s57075 Fear Itself (2011) #7 [1 story]
+             [78752] gcd notes 2023508 (#2 of Defenders by Matt Fraction): Defenders (Marvel, 2012 series) #7-12  |  gcd_reprint 2023508: s62406 Defenders (2012) #7 [3 stories]
+   CV linked:      vol 44363 "Defenders" 2012 Marvel 12 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 3/?; none cached
+   CV candidates:  50398 "Defenders by Matt Fraction" 2012 Marvel 2 s120 · 138235 "Fraction" 2012 Editions IMHO 1 issue 879221 s63 · 68864 "Fraction" 2011 DC Comics 1 issue 431847 s60 · 23524 "Fraction" 2004 DC Comics 6 s53 · 144794 "Thor by Matt Fraction Omnibus" 2022 Marvel 1 issue 944338 s26 · 59412 "The Mighty Thor By Matt Fraction" 2013 Marvel 1 issue 395420 s25   (v1 search)
+   CV local rip:   (= linked) · 50398 "Defenders by Matt Fraction" 2012 Marvel 2 · 61283 "Defenders" 2012 Panini Verlag 2 (via the parsed key without the filing suffix "Defenders") · 138235 "Fraction" 2012 Editions IMHO 1 issue 879221 (via CV candidate name "Fraction") · 68864 "Fraction" 2011 DC Comics 1 issue 431847 (via CV candidate name "Fraction") · 102109 "The Defenders" 2017 Marvel 10 (via the parsed key without the filing suffix "Defenders")   (rip lookup)
+   GCD dump:       150985 "Defenders by Matt Fraction" 2012-2013 Marvel [] 2 · 62406 "Defenders" 2012-2013 Marvel [] 12 (via the parsed key without the filing suffix "Defenders") · 69880 "Defenders" [de] 2012-2013 Panini Deutschland [] 2 (via the parsed key without the filing suffix "Defenders") · 101271 "Fraction" [fr] 2012-? Éditions IMHO [] 1 (via CV candidate name "Fraction") · 109971 "Fraction" 2011-2011 DC [] 1 (via CV candidate name "Fraction") · 103844 "Fraction" [it] 2015-2015 Hikari Edizioni [] 1 (via CV candidate name "Fraction")   (dump lookup)
+
+== S20617 Ultimate Fantastic Four  [tier C] · ratio 0.05  keys: Ultimate Fantastic Four (2004) | Ultimate Fantastic Four Collection  years 2004-2009  8 files / 5 collections
+   folders: [5] Marvel\_Ultimate Comics\Ultimate Fantastic Four (2004)\01 Ultimate Fantastic Four (2004) · [3] _Marvel Major Event Chronology (digital)\2009.02 - Ultimatum (Ultimate)\02 Ultimatum
+   files:   [97073] COL Ultimate Fantastic Four Collection Book 01 (2019) (Digital) (EJGriffin-Empire).cbz (283pp)
+            [97074] COL Ultimate Fantastic Four Collection Book 02 (2019) (Digital) (EJGriffin-Empire).cbz (225pp)
+            [97075] COL Ultimate Fantastic Four Collection Book 03 (2019) (Digital) (EJGriffin-Empire).cbz (287pp)
+            [97076] COL Ultimate Fantastic Four Collection Book 05 (2019) (Digital) (EJGriffin-Empire).cbz (287pp)
+            [97077] COL Ultimate Fantastic Four Collection Book 06 (2019) (Digital) (EJGriffin-Empire).cbz (246pp) | [117181] 06 Ultimate Fantastic Four 058 (2009) (digital) (Minutemen-PhD).cbr (24pp)
+            [117183] 08 Ultimate Fantastic Four 059 (2009) (digital) (Minutemen-PhD).cbr (23pp) | [117187] 12 Ultimate Fantastic Four 060 (2009) (digital) (Minutemen-PhD).cbr (25pp)
+   ours:    ladder 58-60; judged item 97073 #1-12 conf 0.9; judged item 97074 #13-20 conf 0.9; judged item 97075 #21-32 conf 0.9; judged item 97076 #42-53 conf 0.9; judged item 97077 #54-57 conf 0.9; ComicInfo Series: "Ultimate Fantastic Four Collection"x5; ComicInfo Publisher: "Marvel"x5
+   CV linked:      vol 10379 "Ultimate Fantastic Four" 2004 Marvel 60 issues; cached #1-60 (60); yearΔ 0; ratio 3/60 = 0.05; 5 of 5 judged fit
+   CV local rip:   (= linked) · 43423 "Ultimate Fantastic Four" 2004 Panini France 23 · 43424 "Ultimate Fantastic Four" 2005 Panini España 31 · 43425 "Ultimate Fantastic Four" 2005 Marvel UK/Panini UK 10 · 70993 "Ultimate Fantastic Four" 2007 Z-Press Junior Media 2 · 122591 "Ultimate Fantastic Four Collection" 2019 Marvel 6   (rip lookup)
+   GCD per-file:   series 158768 "Ultimate Fantastic Four [Ούλτιμεϊτ Φαντάστικ Φορ Τόμοι]" [el-gr] 2005-? [] 6 (dump only) on 5/8 files; methods fulldump-rematchx5
+   GCD dump:       11256 "Ultimate Fantastic Four" 2004-2009 Marvel [] 60 · 21191 "Ultimate Fantastic Four" 2004-2008 Marvel [] 11 · 35663 "Ultimate Fantastic Four" [fr] 2004-2008 Panini France [] 32 · 184405 "Ultimate Fantastic Four" [en-in] 2004-2004 Gotham Entertainment Group [] 4 · 29059 "Ultimate Fantastic Four" [es] 2005-2008 Panini España [] 31 · 38596 "Ultimate Fantastic Four" [en-gb] 2005-2006 Panini UK [] 10   (dump lookup)
+
+== S64767 Ghost Rider  [tier A]   keys: Ghost Rider (1973) | Ghost Rider v2 (1973)  years 1973-2024  82 files / 0 collections
+   folders: [82] Marvel\_Ghost Rider\02 Ghost Rider v2 (1973)
+   files:   [80069] Ghost Rider 001 (1973) (Digital) (Shadowcat-Empire).cbz (20pp) | [80070] Ghost Rider 002 (1973) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [80071] Ghost Rider 003 (1973) (Digital) (Relic-Empire).cbz (20pp) | [80072] Ghost Rider 004 (1974) (Digital) (Relic-Empire).cbz (20pp)
+            [80073] Ghost Rider 005 (1974) (Digital) (Relic-Empire).cbz (19pp) | [80074] Ghost Rider 006 (1974) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [80075] Ghost Rider 007 (1974) (Digital) (Shadowcat-Empire).cbz (21pp) | [80076] Ghost Rider 008 (1974) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [80077] Ghost Rider 009 (1974) (Digital) (Shadowcat-Empire).cbz (20pp) | [80078] Ghost Rider 010 (1975) (c2c) (edits) (Blastaar-DCP).cbr (36pp)
+            Ghost Rider 011 (1975) (Digital) (Shadowcat-Empire).cbz … Ghost Rider 016 (1976) (Digital) (Shadowcat-Empire).cbz  (6 files, pp 18-20)
+            [80084] Ghost Rider 016 (1976) (c2c) (edits) (Blastaar-DCP).cbr (36pp)
+            Ghost Rider 017 (1976) (Digital) (Shadowcat-Empire).cbz … Ghost Rider 034 (1979) (Digital) (Shadowcat-Empire).cbz  (18 files, pp 18-19)
+            [80104] Ghost Rider 035 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp) | Ghost Rider 036 (1979) (Digital-Empire).cbz … Ghost Rider 049 (1980) (Digital-Empire).cbz  (14 files, pp 18-18)
+            [80119] Ghost Rider 050 (1980) (Digital) (Shadowcat-Empire).cbz (40pp) | [80120] Ghost Rider 051 (1980) (Digital-Empire).cbz (23pp)
+            [80121] Ghost Rider 052 (1981) (Digital-Empire).cbz (23pp) | [80122] Ghost Rider 053 (1981) (Digital-Empire).cbz (23pp) | [80123] Ghost Rider 054 (1981) (Digital-Empire).cbz (23pp)
+            [80124] Ghost Rider 055 (1981) (digital).cbz (23pp) | Ghost Rider 056 (1981) (Digital-Empire).cbz … Ghost Rider 062 (1981) (Digital-Empire).cbz  (7 files, pp 23-23)
+            Ghost Rider 063 (1981) (digital) (Marika-Empire).cbz … Ghost Rider 073 (1982) (digital) (Marika-Empire).cbz  (11 files, pp 23-24)
+            [80143] Ghost Rider 074 (1982) (c2c) (edits) (Blasty-DCP).cbr (36pp) | [80144] Ghost Rider 075 (1982) (c2c) (edits) (Blasty-DCP).cbr (35pp)
+            [80145] Ghost Rider 076 (1983) (c2c) (edits) (Blasty-DCP).cbr (35pp) | [80146] Ghost Rider 077 (1983) (c2c) (edits) (Blasty-DCP).cbr (36pp)
+            [80147] Ghost Rider 078 (1983) (c2c) (edits) (Blasty-DCP).cbr (36pp) | [80148] Ghost Rider 079 (1983) (c2c) (FB-DCP).cbr (36pp)
+            [80149] Ghost Rider 080 (1983) (c2c) (edits) (Blasty-DCP).cbr (36pp) | [80150] Ghost Rider 081 (1983) (c2c) (edits) (Blasty-DCP).cbr (36pp)
+   ours:    ladder 1-81; 1 number(s) name more than one file: 16; ComicInfo Series: "Ghost Rider"x41; ComicInfo Volume: "1973"x41; ComicInfo Count: "81"x11; ComicInfo Publisher: "Marvel"x40, "Marvel Comics"x1; ComicInfo Web: "21730"x1, "21857"x1, "21930"x1, "22008"x1
+   CV linked:      vol 2636 "Ghost Rider" 1973 Marvel 81 issues; cached #1-81 (81); yearΔ 0; ratio 82/81 = 1.01; no judged range
+   CV per-file (v1): vol 2636 "Ghost Rider" 1973 Marvel 81 on 78/82 files · vol 121736 "Ghost Rider" 2019 Marvel 7 on 3/82 files · vol 141707 "Ghost Rider" 2022 Marvel 21 on 1/82 files
+   CV local rip:   (= linked) · 2352 "Ghost Rider" 1967 Marvel 7 · 4397 "Ghost Rider" 1990 Marvel 94 · 11183 "Ghost Rider" 2001 Marvel 7 · 18217 "Ghost Rider" 2005 Marvel 6 · 18138 "Ghost Rider" 2006 Marvel 35   (rip lookup)
+   GCD per-file:   methods numx66 · round2-seriesx13 ⚠  (⚠ copies a folder neighbour's series — verify); series 2120 "Ghost Rider" 1973-1983 Marvel [was ongoing series] 81 on 79/82 files
+   GCD dump:       (= per-file) · 80329 "Ghost Rider" [en-au] 1977-1980 Yaffa / Page [] 10 · 1809 "The Ghost Rider" 1967-1967 Marvel [] 7 · 72141 "Ghost Rider" [en-au] 1984-1985 Federal [] 6 · 4025 "Ghost Rider" 1990-1998 Marvel [] 94 · 165518 "Ghost Rider" [fr] 1991-1993 Semic S.A. [] 15   (dump lookup)
+   bridges:        gcd 2120 -> LOCG 111651 "Ghost Rider" support 90
+
+== S14788 Rocket Raccoon & Groot  [tier B]   keys: Rocket Raccoon and Groot  years 2016-2016  2 files / 2 collections
+   flags: #385 label-ambiguous [Pending] item 118877 — items 80335 and 118877 are duplicate copies of Civil War II
+   folders: [2] Marvel\_Guardians of the Galaxy\_Rocket Raccoon and Groot\Rocket Raccoon and Groot v1 (2016)
+   files:   [80334] COL Rocket Raccoon and Groot Vol. 01 - Tricks of the Trade (2016) (Digital) (Zone-Empire).cbr (127pp)
+            [80335] COL Rocket Raccoon and Groot Vol. 02 - Civil War II (2016) (Digital) (Zone-Empire).cbr (113pp)
+   ours:    judged item 80334 #1-6 conf 0.95; judged item 80335 #7-10 conf 0.95
+   GCD says: [80334] gcd_reprint 1605030: s95266 Rocket Raccoon and Groot (2016) #1-6 [23 stories]
+             [80335] gcd_reprint 1648460: s95266 Rocket Raccoon and Groot (2016) #7-10 [11 stories] · s1866 The Incredible Hulk (1968) #271 [2 stories]
+   CV linked:      vol 86989 "Rocket Raccoon & Groot" 2016 Marvel 10 issues; cached #1-10 (10); yearΔ 0; ratio 0/10; 2 of 2 judged fit
+   CV candidates:  (= linked) · 97430 "Rocket Raccoon" 2016 Marvel 5 s100 · 92386 "Rocket Raccoon & Groot: Tricks of the Trade" 2016 Marvel 1 issue 540081 s89 · 157547 "Rocket Raccoon and Groot: Tricks of the Trade" 2016 Marvel UK/Panini UK 1 issue 1050760 s89 · 46366 "Rocket Raccoon and Groot Complete Collection" 2013 Marvel 1 issue 396609 s87 · 75336 "Rocket Raccoon" 2014 Marvel 11 s85 · 153548 "Rocket Raccoon Marvel Pocketbook" 2014 Marvel UK/Panini UK 1 issue 1014598 s58   (v1 search)
+   CV local rip:   (= linked) · 92386 "Rocket Raccoon & Groot: Tricks of the Trade" 2016 Marvel 1 issue 540081 (via CV candidate name "Rocket Raccoon & Groot: Tricks of the Trade") · 97430 "Rocket Raccoon" 2016 Marvel 5 (via CV candidate name "Rocket Raccoon") · 87370 "Rocket Raccoon" 2015 Panini Verlag 3 (via CV candidate name "Rocket Raccoon") · 75336 "Rocket Raccoon" 2014 Marvel 11 (via CV candidate name "Rocket Raccoon") · 3503 "Rocket Raccoon" 1985 Marvel 4 (via CV candidate name "Rocket Raccoon")   (rip lookup)
+   GCD dump:       102055 "Rocket Raccoon & Groot" [de] 2016-? Panini Deutschland [] 2 · 95266 "Rocket Raccoon and Groot" 2016-2016 Marvel [] 10 · 104355 "Rocket Raccoon and Groot" 2016-2016 Marvel [] 3 · 88319 "Rocket Raccoon" [de] 2015-2015 Panini Deutschland [] 3 (via CV candidate name "Rocket Raccoon") · 90883 "Rocket Raccoon" 2015-2015 Marvel [] 2 (via CV candidate name "Rocket Raccoon") · 93244 "Rocket Raccoon" 2015-2016 Marvel [] 2 (via CV candidate name "Rocket Raccoon")   (dump lookup)
+
+== S20338 Tony Stark: Iron Man  [tier B]   keys: Iron Man: The Ultron Agenda | Tony Stark: Iron Man  years 2018-2020  4 files / 4 collections
+   folders: [3] Marvel\_Iron Man\14 Tony Stark - Iron Man (2018) · [1] _Marvel Major Event Chronology (digital)\2019.03 - War of the Realms\02 Tie-ins\Tony Stark - Iron Man
+   files:   [82020] COL Tony Stark Iron Man Vol. 01 - Self-Made Man (2019) (Digital) (DrDoom-Empire).cbz (132pp)
+            [82021] COL Tony Stark Iron Man Vol. 02 - Stark Realities (2019) (Digital) (Zone-Empire).cbr (126pp)
+            [82022] COL Tony Stark Iron Man Vol. 03 - The Ultron Agenda (2020) (Digital) (Zone-Empire).cbr (107pp)
+            [118912] COL Tony Stark - Iron Man v03 - War of the Realms (2019) (Digital) (Zone-Empire).cbr (113pp)
+   ours:    ComicInfo Series: "Tony Stark: Iron Man"x2, "Iron Man: The Ultron Agenda"x1; ComicInfo Publisher: "Marvel"x3
+   GCD says: [82020] gcd_reprint 1889383: s126073 Tony Stark: Iron Man (2018) #1-3, #5 [41 stories]
+             [82021] gcd notes 1980738 (#2 of Tony Stark: Iron Man): Tony Stark: Iron Man (Marvel, 2018 series) #6-11  |  gcd_reprint 1980738: s126073 Tony Stark: Iron Man (2018) #6-8 [7 stories]
+             [82022] gcd_reprint 2267782: s126073 Tony Stark: Iron Man (2018) (unnumbered) [6 stories]
+             [118912] gcd_reprint 2211029: s126073 Tony Stark: Iron Man (2018) (unnumbered) [9 stories] · s6998 Iron Man (1998) #25 [8 stories]
+   CV linked:      vol 111704 "Tony Stark: Iron Man" 2018 Marvel 19 issues; cached #1-19 (19); yearΔ 0; ratio 0/19; no judged range
+   CV candidates:  (= linked) · 66113 "Iron Man: The Secret Origin of Tony Stark" 2013 Marvel 2 s90 · 156212 "Iron Man: The Secret Origin of Tony Stark" 2013 Marvel UK/Panini UK 2 s90 · 112320 "Invincible Iron Man: The Search For Tony Stark" 2018 Marvel 1 issue 677281 s89 · 111719 "Tony Stark: Iron Man: The Many Armors of Iron Man" 2018 Marvel 1 issue 674140 s87 · 49505 "Ultron" 2013 Marvel 1 issue 396434 s81 · 126521 "Iron Man: The Ultron Agenda" 2020 Marvel 1 issue 751965 s65   (v1 search)
+   CV local rip:   (= linked) · 126521 "Iron Man: The Ultron Agenda" 2020 Marvel 1 issue 751965 · 66113 "Iron Man: The Secret Origin of Tony Stark" 2013 Marvel 2 (via CV candidate name "Iron Man: The Secret Origin of Tony Stark") · 156212 "Iron Man: The Secret Origin of Tony Stark" 2013 Marvel UK/Panini UK 2 (via CV candidate name "Iron Man: The Secret Origin of Tony Stark")   (rip lookup)
+   GCD dump:       126073 "Tony Stark: Iron Man" 2018-2020 Marvel [] 19 · 136756 "Tony Stark: Iron Man" 2018-2019 Marvel [] 3 · 139246 "Tony Stark - Iron Man" [de] 2019-? Panini Deutschland [] 4 · 141574 "Tony Stark Iron Man" [es-mx] 2019-? Editorial Televisa [] 6 · 174274 "Tony Stark: Iron Man" [es] 2019-2020 Panini España [] 14 · 176779 "Iron Man: The Ultron Agenda" 2020-2020 Marvel [] 1   (dump lookup)
+
+== S102965 Iron Fist  [tier C] · ratio 0.13  keys: Iron Fist (1975)  years 1975-1977  2 files / 0 collections
+   folders: [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0009 Phoenix Rising · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0010 The Phoenix Saga
+   files:   [86677] 015 Iron Fist 014 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [86688] 011 Iron Fist 015 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+   ours:    ladder 14-15
+   CV linked:      vol 2766 "Iron Fist" 1975 Marvel 15 issues; cached #1-15 (5); yearΔ 0; ratio 2/15 = 0.13; no judged range; v1 per-file: same volume on 2/2 files
+   CV local rip:   (= linked) · 22401 "Iron Fist" 1996 Marvel 2 · 6214 "Iron Fist" 1998 Marvel 3 · 23561 "Iron Fist" 2004 Marvel 6 · 100082 "Iron Fist" 2017 Marvel 15 · 114112 "Iron Fist" 2018 Marvel 3   (rip lookup)
+   GCD per-file:   series 2252 "Iron Fist" 1975-1977 Marvel [Was Ongoing Series] 15 on 2/2 files; methods numx2
+   GCD dump:       (= per-file) · 71971 "Iron Fist" [en-au] 1978-1978 Yaffa / Page [] 6 · 118191 "Iron Fist" [en-ph] 1978-1978 National Book Store [] 4 · 15728 "Iron Fist" 1996-1996 Marvel [] 2 · 6033 "Iron Fist" 1998-1998 Marvel [] 3 · 15729 "Iron Fist" 2004-2004 Marvel [] 6   (dump lookup)
+   bridges:        gcd 2252 -> LOCG 112485 "Iron Fist" support 2
+
+== S11478 Marvel Masterworks - Golden Age Marvel Comics  [tier B]   keys: Marvel Masterworks - Golden Age Marvel Comics  years 2004-2012  7 files / 7 collections
+   flags: #329 label-ambiguous [Pending] item 83309 — vols 1-5 are each held twice (83304/83309 ... 83308/83313)
+   folders: [5] Marvel\_Marvel Masterworks\Marvel Comics (1939) · [2] Marvel\_Marvel Masterworks\Marvel Mystery Comics (1939)
+   files:   [83304] COL Marvel Masterworks - Golden Age Marvel Comics Vol. 01 (2004) (Digital) (Kileko-Empire).cbr (286pp)
+            [83305] COL Marvel Masterworks - Golden Age Marvel Comics Vol. 02 (2013) (Digital) (Shadowcat-Empire).cbz (278pp)
+            [83306] COL Marvel Masterworks - Golden Age Marvel Comics Vol. 03 (2008) (Digital) (Shadowcat-Empire).cbz (270pp)
+            [83307] COL Marvel Masterworks - Golden Age Marvel Comics Vol. 04 (2006) (Digital) (Kileko-Empire).cbr (277pp)
+            [83308] COL Marvel Masterworks - Golden Age Marvel Comics Vol. 05 (2008) (Digital) (Kileko-Empire).cbr (280pp)
+            [83314] COL Marvel Masterworks - Golden Age Marvel Comics Vol. 06 (2011) (Digital) (Zone-Empire).cbr (277pp)
+            [83315] COL Marvel Masterworks - Golden Age Marvel Comics Vol. 07 (2012) (Digital) (Zone-Empire).cbr (279pp)
+   ours:    judged item 83304 #1-1 conf 0.95; judged item 83305 #5-8 conf 0.95; judged item 83306 #9-12 conf 0.95; judged item 83307 #13-16 conf 0.95; judged item 83308 #17-20 conf 0.95; judged item 83314 #21-24 conf 0.95; judged item 83315 #25-28 conf 0.95
+   GCD says: [83304] gcd notes 278140 (#1 of Marvel Masterworks: Golden Age Marvel Comics): Marvel Comics (Marvel, 1939 Series) #1; Marvel Mystery Comics (Marvel, 1939 Series) #2-4  |  gcd_reprint 278140: s137 Marvel Mystery Comics (1939) #2-4 [29 stories] · s136 Marvel Comics (1939) #1 [10 stories]
+             [83305] gcd_reprint 1171044: s137 Marvel Mystery Comics (1939) #5-8 [37 stories] · s17373 Marvel Masterworks: Golden Age Marvel Comics (2004) #2 [1 story]
+             [83306] gcd notes 543429 (#3 of Marvel Masterworks: Golden Age Marvel Comics): Marvel Mystery Comics (Marvel, 1939 series) #9-12; sley Wong (interiors), Michael Kelleher (covers).
+Art reconstruction: Pacific Rim Graphics #9, #11; Dale Crain #10, #12  |  gcd_reprint 543429: s137 Marvel Mystery Comics (1939) #9-12 [42 stories]
+             [83307] gcd notes 643449 (#4 of Marvel Masterworks: Golden Age Marvel Comics): *Marvel Mystery Comics* (Marvel, 1939 series) #13-16  |  gcd_reprint 643449: s137 Marvel Mystery Comics (1939) #13-16 [43 stories]
+             [83308] gcd notes 783358 (#5 of Marvel Masterworks: Golden Age Marvel Comics): *Marvel Mystery Comics* (Marvel, 1939 series) #17-20  |  gcd_reprint 783358: s137 Marvel Mystery Comics (1939) #17-20 [50 stories]
+             [83314] gcd notes 880753 (#6 of Marvel Masterworks: Golden Age Marvel Comics): *Marvel Mystery Comics* (Marvel, 1939 series) #21-24  |  gcd_reprint 880753: s137 Marvel Mystery Comics (1939) #21-24 [49 stories]
+             [83315] gcd notes 968145 (#7 of Marvel Masterworks: Golden Age Marvel Comics): Marvel Mystery Comics (Marvel, 1939 Series) #25-28  |  gcd_reprint 968145: s137 Marvel Mystery Comics (1939) #25-28 [50 stories]
+   CV linked:      vol 35187 "Marvel Masterworks: Golden Age Marvel Comics" 2004 Marvel 7 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); cached #1-7 (7); yearΔ ?; ratio 0/?; 2 of 7 judged fit
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       17373 "Marvel Masterworks: Golden Age Marvel Comics" 2004-2012 Marvel [] 7 · 74965 "Marvel Masterworks: Golden Age Marvel Comics" 2011-2013 Marvel [] 2   (dump lookup)
+
+== S64771 Ghost Rider  [tier C] · ratio 0.14  keys: Ghost Rider (2019) | Ghost Rider v7 (2011) | Ghost Rider v9 (2019)  years 2019-2020  4 files / 3 collections
+   flags: #252 label-ambiguous [Pending] item 80224 — items 80224 and 80214 are duplicate copies of Vol. 01 - The King of Hell
+   folders: [2] Marvel\_Ghost Rider\11 Ghost Rider v9 (2019) · [1] Marvel\_Ghost Rider\08 Ghost Rider v7 (2011) · [1] Marvel\_Ghost Rider\11 Ghost Rider v9 (2019)\Annuals and Specials
+   files:   [80214] COL Ghost Rider v01 - The King of Hell (2020) (Digital) (Zone-Empire).cbr (143pp) | [80222] Ghost Rider - Director's Cut 001 (2019) (Digital) (F) (Zone-Empire).cbr (139pp)
+            [80224] COL Ghost Rider Vol. 01 - The King of Hell (2020) (Digital) (Zone-Empire).cbr (143pp)
+            [80225] COL Ghost Rider Vol. 02 - Hearts Of Darkness II (2020) (Digital) (Shan-Empire).cbz (137pp)
+   ours:    ladder 1; ComicInfo Series: "Ghost Rider"x4; ComicInfo Volume: "2019"x1; ComicInfo Publisher: "Marvel"x4
+   GCD says: [80214] gcd_reprint 2262166: s150725 Ghost Rider (2019) (unnumbered) [5 stories] · s154075 Incoming (2020) #1 [1 story] · s148760 Absolute Carnage: Symbiote of Vengeance (2019) #1 [1 story] · s137838 Marvel Comics Presents (2019) #6 [1 story]
+             [80224] gcd_reprint 2262166: s150725 Ghost Rider (2019) (unnumbered) [5 stories] · s154075 Incoming (2020) #1 [1 story] · s148760 Absolute Carnage: Symbiote of Vengeance (2019) #1 [1 story] · s137838 Marvel Comics Presents (2019) #6 [1 story]
+             [80225] gcd_reprint 2262167: s150725 Ghost Rider (2019) (unnumbered) [4 stories] · s153345 Ghost Rider 2099 (2020) #1 [1 story] · s156133 Spirits of Ghost Rider: Mother of Demons (2020) #1 [1 story]
+   CV linked:      vol 121736 "Ghost Rider" 2019 Marvel 7 issues; cached #1-7 (7); yearΔ 0; ratio 1/7 = 0.14; no judged range; v1 per-file: same volume on 1/4 files
+   CV local rip:   (= linked) · 96138 "Ghost Rider" 2016 Marvel 5 · 141707 "Ghost Rider" 2022 Marvel 21 · 40536 "Ghost Rider" 2011 Marvel 10 · 42393 "Ghost Rider" 2007 Panini Verlag 6 · 105882 "Ghost Rider" 2007 Panini Verlag 2   (rip lookup)
+   GCD per-file:   series 162633 "Ghost Rider" [de] 2020-? Panini Deutschland [] 2 on 1/4 files; methods numx1
+   GCD dump:       (= per-file) · 150725 "Ghost Rider" 2019-2020 Marvel [] 7 · 176041 "Ghost Rider" 2020-2020 Marvel [] 2 · 109699 "Ghost Rider" 2017-2017 Marvel [] 5 · 182068 "Ghost Rider" 2022-2024 Marvel [] 21 · 191541 "Ghost Rider" 2022-2024 Marvel [] 5   (dump lookup)
+   bridges:        gcd 162633 -> LOCG 111651 "Ghost Rider" support 2
+
+== S14876 Runaways  [tier B]   keys: Runaways by Rainbow Rowell | Runaways by Rainbow Rowell & Kris Anka  years 2017-2021  6 files / 6 collections
+   folders: [6] Marvel\_Runaways\Runaways v5 (2017)
+   files:   [93126] COL Runaways by Rainbow Rowell Vol. 01 - Find Your Way Home (2018) (Digital) (Kileko-Empire).cbz (128pp)
+            [93127] COL Runaways by Rainbow Rowell Vol. 02 - Best Friends Forever (2018) (Digital) (Kileko-Empire).cbz (129pp)
+            [93128] COL Runaways by Rainbow Rowell Vol. 03 - That Was Yesterday (2019) (Digital) (Kileko-Empire).cbz (122pp)
+            [93129] COL Runaways by Rainbow Rowell Vol. 04 - But You Can't Hide (2019) (Digital) (Kileko-Empire).cbz (130pp)
+            [93130] COL Runaways by Rainbow Rowell Vol. 05 - Cannon Fodder (2020) (Digital) (Kileko-Empire).cbz (148pp)
+            [93131] COL Runaways by Rainbow Rowell Vol. 06 - Come Away With Me (2021) (digital) (DrVink-HD-DCP).cbz (161pp)
+   ours:    ComicInfo Series: "Runaways by Rainbow Rowell"x4, "Runaways by Rainbow Rowell & Kris Anka"x2; ComicInfo Publisher: "Marvel"x5, "Marvel Entertainment, Inc."x1
+   GCD says: [93126] gcd_reprint 1800602: s116704 Runaways (2017) #1-6 [21 stories]
+             [93127] gcd_reprint 1858737: s116704 Runaways (2017) #7-12 [7 stories]
+             [93128] gcd notes 1947813 (#3 of Runaways by Rainbow Rowell & Kris Anka): Runaways (Marvel, 2017 series) #13-18  |  gcd_reprint 1947813: s116704 Runaways (2017) #13-18 [16 stories]
+             [93129] gcd_reprint 2216597: s116704 Runaways (2017) #19-24 [7 stories]
+             [93130] gcd_reprint 2216598: s116704 Runaways (2017) #25-31 [15 stories]
+             [93131] gcd_reprint 2266121: s116704 Runaways (2017) #32-38 [8 stories]
+   CV linked:      vol 104320 "Runaways" 2017 Marvel 38 issues; cached #1-38 (38); yearΔ 0; ratio 0/38; no judged range
+   CV candidates:  18055 "Runaways" 2005 Marvel 2 s71 · 105833 "Runaways Halloween Comic Fest 2017" 2017 Marvel 1 issue 634646 s44 · 126610 "Runaways by Rainbow Rowell: Cannon Fodder" 2020 Marvel 1 issue 756655 s36 · 149719 "She-Hulk by Rainbow Rowell" 2022 Marvel 5 s34 · 139435 "Runaways by Rainbow Rowell: Come Away With Me" 2021 Marvel 1 issue 888651 s34 · 109969 "Runaways by Rainbow Rowell: Find Your Way Home" 2018 Marvel 1 issue 666813 s34   (v1 search)
+   CV local rip:   (= linked) · 82705 "Runaways" 2015 Marvel 4 · 165025 "Runaways" 2025 Marvel 5 · 22775 "Runaways" 2008 Marvel 14 · 42887 "Runaways" 2007 Panini España 16 · 11872 "Runaways" 2005 Marvel 30   (rip lookup)
+   GCD dump:       116704 "Runaways" 2017-2021 Marvel [] 38 · 199359 "Runaways" [de] 2018-2018 Panini Deutschland [] 1 · 90174 "Runaways" 2015-2015 Marvel [] 4 · 208240 "Runaways" 2009-2010 Marvel [] 11 · 224670 "Runaways" 2025-2025 Marvel [] 5 · 31812 "Runaways" 2008-2009 Marvel [] 14   (dump lookup)
+
+== S99802 Silver Surfer v7 (2016)  [tier D]   keys: Silver Surfer v7 (2016)  years 2014-2017  5 files / 5 collections
+   flags: #640 overlap-in-series [Dismissed] item 93651 — two Silver Surfer ladders each contribute a Vol. 01 gcd 1-5/1-6
+   folders: [5] Marvel\_Silver Surfer\Silver Surfer v7-8 (2016)
+   files:   [93648] COL Silver Surfer Vol. 01 - New Dawn (2014) (Digital) (Zone-Empire).cbr (115pp) | [93649] COL Silver Surfer Vol. 02 - Worlds Apart (2015) (Digital) (F) (Kileko-Empire).cbz (103pp)
+            [93650] COL Silver Surfer Vol. 03 - Last Days (2015) (Digital) (Kileko-Empire).cbr (134pp)
+            [93651] COL Silver Surfer Vol. 04 - Citizen of Earth (2016) (Digital) (F) (Zone-Empire).cbr (130pp)
+            [93652] COL Silver Surfer Vol. 05 - A Power Greater Than Cosmic (2017) (Digital) (F) (Zone-Empire).cbr (159pp)
+   ours:    ComicInfo Series: "Silver Surfer"x3; ComicInfo Publisher: "Marvel"x3
+   GCD says: [93648] gcd_reprint 1278826: s79775 Silver Surfer (2014) #1-5 [16 stories] · s78583 All-New Marvel Now! Point One (2014) #1 [2 stories]
+             [93649] gcd_reprint 1388531: s79775 Silver Surfer (2014) #6-10 [12 stories]
+             [93650] gcd_reprint 1523498: s79775 Silver Surfer (2014) #11-15 [11 stories]
+             [93651] gcd_reprint 1628484: s95741 Silver Surfer (2016) #1-6 [7 stories]
+             [93652] gcd_reprint 1762522: s95741 Silver Surfer (2016) #7-14 [9 stories]
+   CV local rip:   72582 "Silver Surfer" 2014 Marvel 15 (via our own name without the filing suffix "Silver Surfer") · 87449 "Silver Surfer" 2016 Marvel 14 (via our own name without the filing suffix "Silver Surfer") · 39031 "Silver Surfer" 2011 Marvel 5 (via our own name without the filing suffix "Silver Surfer") · 23576 "Silver Surfer" 2003 Marvel 14 (via our own name without the filing suffix "Silver Surfer") · 144607 "Silver Surfer" 1997 Panini France 13 (via our own name without the filing suffix "Silver Surfer") · 142348 "Silver Surfer" 1995 Marvel Italia 1 issue 917461 (via our own name without the filing suffix "Silver Surfer")   (rip lookup)
+   GCD dump:       79775 "Silver Surfer" 2014-2016 Marvel [] 15 (via our own name without the filing suffix "Silver Surfer") · 84480 "Silver Surfer" 2014-2017 Marvel [] 5 (via our own name without the filing suffix "Silver Surfer") · 101434 "Silver Surfer" [de] 2015-? Panini Deutschland [] 3 (via our own name without the filing suffix "Silver Surfer") · 186316 "Silver Surfer" [fr] 2015-2016 Panini France [] 3 (via our own name without the filing suffix "Silver Surfer") · 95741 "Silver Surfer" 2016-2017 Marvel [] 14 (via our own name without the filing suffix "Silver Surfer") · 55825 "Silver Surfer" 2011-2011 Marvel [] 5 (via our own name without the filing suffix "Silver Surfer")   (dump lookup)
+
+== S94793 Silver Surfer v7-8 (2016)  [tier B]   keys: Silver Surfer v7-8 (2016)  years 2018-2018  1 files / 0 collections
+   folders: [1] Marvel\_Silver Surfer\Silver Surfer v7-8 (2016)\Annuals and Specials
+   files:   [93985] Silver Surfer Annual 001 (2018) (Digital) (Zone-Empire).cbr (31pp)
+   ours:    ladder 1
+   CV linked:      vol 113258 "Silver Surfer Annual" 2018 Marvel 1 issues issue 683834  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 1/?; none cached
+   CV local rip:   (= linked) · 4069 "Silver Surfer Annual" 1988 Marvel 7 (via CV name "Silver Surfer Annual")   (rip lookup)
+   GCD dump:       128743 "Silver Surfer Annual" 2018-? Marvel [] 1 (via CV name "Silver Surfer Annual") · 3665 "Silver Surfer Annual" 1988-1994 Marvel [] 7 (via CV name "Silver Surfer Annual")   (dump lookup)
+
+== S14052 Predator  [tier B]   keys: Predator  years 2007-2008  4 files / 4 collections
+   folders: [4] Dark Horse\Predator
+   files:   [13371] COL Predator Omnibus v01 (2007) (digital) (The Magicians-Empire).cbr (425pp) | [13372] COL Predator Omnibus v02 (2008) (digital) (The Magicians-Empire).cbr (354pp)
+            [13373] COL Predator Omnibus v03 (2008) (digital) (The Magicians-Empire).cbr (345pp) | [13374] COL Predator Omnibus v04 (2008) (digital) (The Magicians-Empire).cbr (346pp)
+   GCD says: [13371] gcd notes 640060 (#1 of Predator Omnibus): [gcd_link_issue](705504), [gcd_link_issue](712922) [s42031] #1-4; ? [s25036] #1-2; ? [s4532] #1, #2, #4-7, #10-12  |  gcd_reprint 640060: s4532 Dark Horse Comics (1992) #1-2, #4-7, #10-12 [10 stories] · s42031 Predator: Dark River (1996) #1-4 [5 stories] · s13413 Predator Cold War (1991) #1-4 [4 stories] · s16193 Predator (1989) #1-4 [4 stories]
+             [13372] gcd notes 640061 (#2 of Predator Omnibus): sue](712920), [gcd_link_issue](712917), [gcd_link_issue](359710),  [gcd_link_issue](48129) [s4532] #16, #17, #18, #20, #22  |  gcd_reprint 640061: s4532 Dark Horse Comics (1992) #16-18, #20-21 [7 stories] · s16191 Predator: Race War (1993) #0-4 [6 stories] · s16192 Predator: Big Game (1991) #1-4 [5 stories] · s25040 Predator: Invaders from the Fourth Dimension (1994) #1 [2 stories]
+             [13373] gcd notes 640062 (#3 of Predator Omnibus): ? [s4532] #12-14; ? [s42029] #1-4; [gcd_link_issue](712919), [gcd_link_issue](413495), [gcd_link_issue](359707), and [s3301] #119, #124  |  gcd_reprint 640062: s42034 Predator: Kindred (1996) #1-4 [10 stories] · s5865 Predator: Hell & Hot Water (1997) #1-3 [4 stories] · s4532 Dark Horse Comics (1992) #12-14 [4 stories] · s42029 Predator: Bad Blood (1993) #1-4 [4 stories]
+             [13374] gcd notes 640063 (#4 of Predator Omnibus): ? [s42037] #1-4; ? [s42036] #1-2; ? [s42033] #1-4; ? [s42039] #1-4; ? [s7175] #1-2  |  gcd_reprint 640063: s42039 Predator: Xenogenesis (1999) #1-4 [5 stories] · s42033 Predator: Homeworld (1999) #1-4 [5 stories] · s3301 Dark Horse Presents (1986) #68, #137 [3 stories] · s7175 Predator: Hell Come A -Walkin' (1998) #1-2 [3 stories]
+   CV linked:      vol 18950 "Predator Omnibus" 2007 Dark Horse Comics 4 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV local rip:   (= linked) · 26894 "Predator" 2009 Dark Horse Comics 4 · 144439 "Predator" 2022 Marvel 6 · 148782 "Predator" 2023 Marvel 5 · 153643 "Predator " 2023 Panini Verlag 3 · 30400 "Predator" 1989 Dark Horse Comics 4   (rip lookup)
+   GCD dump:       37860 "Predator" 2009-2010 Dark Horse [] 4 · 226811 "Predator" [hu] 1998-1999 Szukits [] 8 · 127243 "Predator" [de] 2018-2018 Cross Cult [] 1 · 188074 "Predator" 2022-2023 Marvel [] 6 · 145995 "Predator" [fr] 1991-1991 Zenda [] 2 · 197556 "Predator" 2023-2023 Marvel [] 5   (dump lookup)
+
+== S94637 Invincible Iron Man v2 (2015)  [tier B]   keys: Invincible Iron Man v2 (2015)  years 2015-2016  13 files / 3 collections
+   flags: #606 overlap-in-series [Dismissed] item 82009 — three Invincible Iron Man ladders each contribute a Vol. 01
+   folders: [6] _Marvel Major Event Chronology (digital)\2016.06 - Civil War II\00 Road to Civil War II · [3] Marvel\_Iron Man\09 Invincible Iron Man v2 (2015) · [3] _Marvel Major Event Chronology (digital)\2016.06 - Civil War II\02 Tie-Ins\Invincible Iron Man · [1] Marvel\_Iron Man\09 Invincible Iron Man v2 (2015)\Variant Covers
+   files:   [82009] COL Invincible Iron Man Vol. 01 - Reboot (2016) (Digital) (BroadCast-Empire).cbz (120pp)
+            [82010] COL Invincible Iron Man Vol. 02 - The War Machines (2016) (Digital) (F) (BroadCast-Empire).cbz (121pp)
+            [82011] COL Invincible Iron Man Vol. 03 - Civil War II (2017) (Digital) (F) (BroadCast-Empire).cbr (128pp)
+            [82012] Invincible Iron Man 001 (2015) (Timm Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            Invincible Iron Man 006 (2016) (Digital) (Zone-Empire).cbr … Invincible Iron Man 014 (2016) (Digital) (Zone-Empire).cbr  (9 files, pp 22-25)
+   ours:    ladder 1, 6-14; judged item 82009 #1-5 conf 0.97; judged item 82010 #6-11 conf 0.97; judged item 82011 #12-14 conf 0.95; ComicInfo Series: "Invincible Iron Man"x2; ComicInfo Publisher: "Marvel"x2
+   GCD says: [82009] gcd_reprint 1554109: s92883 Invincible Iron Man (2015) #1, #4-5 [5 stories]
+             [82010] gcd_reprint 1618899: s92883 Invincible Iron Man (2015) #6-11 [12 stories]
+             [82011] gcd_reprint 1673761: s92883 Invincible Iron Man (2015) #12-14 [6 stories] · s22524 The Mighty Avengers (2007) #9-11 [3 stories]
+   CV linked:      vol 85110 "Invincible Iron Man" 2015 Marvel 14 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 10/?; none cached
+   CV local rip:   (= linked) · 95596 "Invincible Iron Man" 2016 Marvel 19 (via our own name without the filing suffix "Invincible Iron Man") · 118416 "Invincible Iron Man" 2016 Editorial Televisa 7 (via our own name without the filing suffix "Invincible Iron Man") · 21487 "Invincible Iron Man" 2008 Marvel 62 (via our own name without the filing suffix "Invincible Iron Man") · 146873 "The Invincible Iron Man" 2022 Marvel 20 (via our own name without the filing suffix "Invincible Iron Man")   (rip lookup)
+   GCD dump:       92883 "Invincible Iron Man" 2015-2017 Marvel [] 14 (via our own name without the filing suffix "Invincible Iron Man") · 93680 "The Invincible Iron Man" 2015-2015 Marvel [] 1 (via our own name without the filing suffix "Invincible Iron Man") · 99297 "Invincible Iron Man" 2016-2017 Marvel [] 3 (via our own name without the filing suffix "Invincible Iron Man") · 110858 "Invincible Iron Man" 2016-2017 Marvel [] 3 (via our own name without the filing suffix "Invincible Iron Man") · 113146 "Invincible Iron Man" [es-mx] 2016-? Editorial Televisa [] 13 (via our own name without the filing suffix "Invincible Iron Man") · 109017 "Invincible Iron Man" 2017-2018 Marvel [] 19 (via our own name without the filing suffix "Invincible Iron Man")   (dump lookup)
+
+== S20604 Ultimate Comics Spider-Man  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Ultimate Comics Spider-Man | Ultimate Comics Spider-Man by Brian Michael Bendis  years 2011-2014  12 files / 5 collections
+   folders: [6] _Marvel Major Event Chronology (digital)\2012.09 - Ultimate Comics Divided We Fall, United We Stand · [5] Marvel\_Ultimate Comics\Ultimate Spider-Man (2000)\04 Ultimate Comics All-New Spider-Man (2011) · [1] Marvel\_Ultimate Comics\Ultimate Spider-Man (2000)\05 Ultimate Spider-Man 200 (2014) (Digital)
+   files:   [97122] COL Ultimate Comics Spider-Man by Brian Michael Bendis Vol. 01 (2012) (Digital) (F) (Asgard-Empire).cbz (127pp)
+            [97123] COL Ultimate Comics Spider-Man by Brian Michael Bendis Vol. 02 (2013) (Digital) (F) (Kileko-Empire).cbz (104pp)
+            [97124] COL Ultimate Comics Spider-Man by Brian Michael Bendis Vol. 03 (2014) (Digital) (Asgard-Empire).cbr (171pp)
+            [97125] COL Ultimate Comics Spider-Man by Brian Michael Bendis Vol. 04 (2013) (Digital) (F) (Asgard-Empire).cbz (96pp)
+            [97126] COL Ultimate Comics Spider-Man by Brian Michael Bendis Vol. 05 (2014) (Digital) (F) (Asgard-Empire).cbz (112pp)
+            [97969] Ultimate Spider-Man 200 (2014) (Digital) (Zone-Empire).cbr (27pp) | [117704] 05 Ultimate Comics Spider-Man 013 (2012) (digital) (Megan-Empire).cbr (23pp)
+            [117705] 06 Ultimate Comics Spider-Man 014 (2012) (Digital) (Megan-Empire).cbr (23pp) | [117708] 09 Ultimate Comics Spider-Man 015 (2012) (Digital) (Zone-Empire).cbr (23pp)
+            [117709] 10 Ultimate Comics Spider-Man 016 (2012) (Digital) (Zone-Empire).cbr (18pp) | [117713] 14 Ultimate Comics Spider-Man 017 (2013) (Digital) (Zone-Empire).cbr (24pp)
+            [117716] 17 Ultimate Comics Spider-Man 018 (2013) (digital) (Megan-Empire).cbr (20pp)
+   ours:    ladder 13-18, 200; ComicInfo Series: "Ultimate Comics Spider-Man by Brian Michael Bendis"x4; ComicInfo Publisher: "Marvel"x4
+   GCD says: [97122] gcd_reprint 1140088: s60934 Ultimate Comics Spider-Man (2011) #1-5 [13 stories] · s59888 Ultimate Fallout (2011) #4 [3 stories] · s76316 Ultimate Comics Spider-Man by Brian Michael Bendis (2012) #1 [1 story]
+             [97123] gcd_reprint 1140089: s60934 Ultimate Comics Spider-Man (2011) #6-10 [13 stories] · s76316 Ultimate Comics Spider-Man by Brian Michael Bendis (2012) #2 [1 story]
+             [97124] gcd_reprint 1140090: s60934 Ultimate Comics Spider-Man (2011) #11-18 [20 stories] · s76316 Ultimate Comics Spider-Man by Brian Michael Bendis (2012) #3 [1 story]
+             [97125] gcd_reprint 1140091: s60934 Ultimate Comics Spider-Man (2011) #16.1, #19-22 [10 stories] · s76316 Ultimate Comics Spider-Man by Brian Michael Bendis (2012) #4 [1 story]
+             [97126] gcd_reprint 2049819: s60934 Ultimate Comics Spider-Man (2011) #23-28 [13 stories]
+   CV linked:      vol 42821 "Ultimate Comics Spider-Man" 2011 Marvel 31 issues; cached #0-200 (31); yearΔ 0; ratio 7/31 = 0.23; no judged range; v1 per-file: same volume on 6/12 files
+   CV candidates:  (= linked) · 45916 "Ultimate Comics Spider-Man by Brian Michael Bendis" 2012 Marvel 5 s65 · 60441 "The Amazing Spider-Man 2000" 2000 Marvel ? s47 · 37329 "Ultimate Comics Spider-Man: Chameleons" 2010 Marvel ? s34 · 43375 "Ultimate Comics Spider-Man: Death of Spider-Man" 2011 Marvel ? s32 · 63559 "Ultimate Comics: Spider-Man" 2012 Panini Verlag ? s30 · 38936 "Avengers by Brian Michael Bendis" 2011 Marvel 5 s23   (v1 search)
+   CV local rip:   (= linked) · 63559 "Ultimate Comics: Spider-Man" 2012 Panini Verlag 5 · 45916 "Ultimate Comics Spider-Man by Brian Michael Bendis" 2012 Marvel 5 · 60441 "The Amazing Spider-Man 2000" 2000 Marvel 1 issue 143312 (via CV candidate name "The Amazing Spider-Man 2000")   (rip lookup)
+   GCD per-file:   series 60934 "Ultimate Comics Spider-Man" 2011-2013 Marvel [was ongoing series] 30 on 4/12 files · series 62823 "Ultimate Comics Spider-Man" [es-mx] 2012-? Editorial Televisa [Serie Regular] 18 on 2/12 files; methods numx6
+   GCD dump:       (= per-file) · 56278 "Ultimate Comics Spider-Man" [es-mx] 2010-2011 Editorial Televisa [] 21 · 101079 "Ultimate Comics: Spider-Man" [de] 2012-2014 Panini Deutschland [] 5 · 158434 "Ultimate Comics Spider-Man" 2010-2012 Marvel [] 4 · 210309 "Ultimate Comics Spider-Man" [en-gb] 2012-2014 Panini UK [] 2   (dump lookup)
+   bridges:        gcd 60934 -> LOCG 100050 "Ultimate Comics Spider-Man" support 4 · gcd 62823 -> LOCG 100050 "Ultimate Comics Spider-Man" support 3
+
+== S66237 Web of Spider-Man  [tier C] · 154 files  keys: Web Of Spider-Man | Web of Spider-Man (1985) | Web of Spider-Man Super Special | Web of Spider-Man v1 (1985) | Web of Spider-man (1985)  years 1985-2024  154 files / 0 collections
+   flags: #525 label-ambiguous [Pending] item 87322 — Web of Spider-man v1 047 and v1 048 are single issues, not collections
+   folders: [131] Marvel\_Spider-Man\__Completed Series\Web of Spider-Man v1 (1985) · [13] Marvel\_Spider-Man\__Completed Series\Web of Spider-Man v1 (1985)\Annuals and Specials · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0087 Inferno After Effects · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\Amazing Spider-man v6 (2022)\Annuals and Specials · [1] Marvel\_Spider-Man\__OGNs, Minis & One-shots\Spider-Man - Maximum Clonage (1995) · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0078 Evolutionary war · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0093 Atlantis Attacks
+   files:   [47152] Web of Spider-Man 001 (2024) (Digital) (dekabro-Empire).cbz (55pp) | [95413] Web of Spider-Man 129.1 (2012) (Digital) (Zone-Empire).cbr (24pp)
+            [95414] Web of Spider-Man 129.2 (2012) (Digital) (Zone-Empire).cbr (24pp) | [95418] Web of Spider-Man Annual 004 (1988).cbz (57pp) | [95419] Web of Spider-Man Annual 005 (1989).cbz (56pp)
+            [95420] Web of Spider-Man Annual 006 (1990) (Digital) (Shadowcat-Empire).cbz (57pp) | [95421] Web of Spider-Man Annual 007 (1991) (Digital) (AnHeroGold-Empire).cbz (51pp)
+            [95422] Web of Spider-Man Annual 008 (1992) (Digital) (AnHeroGold-Empire).cbz (53pp) | [95424] Web of Spider-Man Annual 010 (1994).cbr (57pp)
+            [95425] Web of Spider-Man Super Special 01 (1995) (digital) (Minutemen-Slayer).cbr (22pp) | [95415] Web of Spider-man Annual 001 (1985).cbr (37pp)
+            [95416] Web of Spider-man Annual 002 (1986).cbr (40pp) | [95417] Web of Spider-man Annual 003 (1987).cbr (51pp) | [95423] Web of Spider-man Annual 009 (1993).cbr (56pp)
+            [95426] Web of Spider-Man 001 (1985) (Digital) (AnHeroGold-Empire).cbz (23pp) | [95427] Web of Spider-Man 002 (1985).cbz (23pp)
+            [95428] Web of Spider-Man 003 (1985) (Digital) (Kileko-Empire).cbr (23pp) | [95429] Web of Spider-Man 004 (1985).cbz (23pp) | [95430] Web of Spider-Man 005 (1985).cbz (24pp)
+            [95431] Web of Spider-Man 006 (1985) (Digital) (Shadowcat-Empire).cbz (23pp) | [95432] Web of Spider-Man 007 (1985).cbz (23pp) | [95433] Web of Spider-Man 008 (1985).cbz (23pp)
+            [95434] Web of Spider-Man 009 (1985).cbr (24pp) | Web of Spider-Man 010 (1986).cbz … Web of Spider-Man 022 (1987).cbz  (13 files, pp 23-25)
+            [95448] Web of Spider-Man 023 (1987).cbr (25pp) | [95449] Web of Spider-Man 024 (1987).cbz (25pp) | [95450] Web of Spider-Man 025 (1987).cbz (23pp)
+            [95451] Web of Spider-Man 026 (1987).cbz (23pp) | [95452] Web of Spider-Man 027 (1987).cbz (23pp) | [95453] Web of Spider-Man 028 (1987).cbz (25pp)
+            [95454] Web of Spider-Man 029 (1987) (Digital) (Shadowcat-Empire).cbz (24pp) | [95455] Web of Spider-Man 030 (1987) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [95456] Web of Spider-Man 031 (1987) (Digital) (Shadowcat-Empire).cbz (23pp) | [95457] Web of Spider-Man 032 (1987) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [95458] Web of Spider-Man 033 (1987) (digital) (Marika-Empire).cbz (25pp) | [95459] Web of Spider-Man 033 (1987).cbz (24pp) | [95460] Web of Spider-Man 034 (1988).cbz (23pp)
+            [95461] Web of Spider-Man 035 (1988).cbz (24pp) | [95462] Web of Spider-Man 036 (1988).cbz (25pp) | [95463] Web of Spider-Man 037 (1988) (Digital) (Shadowcat-Empire).cbz (24pp)
+            Web of Spider-Man 038 (1988).cbz … Web of Spider-Man 043 (1988).cbz  (6 files, pp 23-25) | [95470] Web of Spider-Man 044 (1988) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [95471] Web of Spider-Man 045 (1988).cbz (23pp) | [95472] Web of Spider-Man 046 (c2c) (1989) (Nodge).cbr (37pp)
+            [95473] Web of Spider-Man 047 (1989) (Digital) (Shadowcat-Empire).cbz (24pp) | [95474] Web of Spider-Man 048 (1989) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [95475] Web of Spider-Man 049 (1989) (c2c) (Nodge).cbr (37pp) | Web of Spider-Man 049 (1989).cbz … Web of Spider-Man 056 (1989).cbz  (8 files, pp 23-40)
+            [95484] Web of Spider-Man 057 (1989).cbr (24pp) | [95485] Web of Spider-Man 058 (1989).cbz (23pp) | [95486] Web of Spider-Man 059 (1989) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [95487] Web of Spider-Man 060 (1990) (Digital) (Shadowcat-Empire).cbz (23pp) | [95488] Web of Spider-Man 061 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [95489] Web of Spider-Man 062 (c2c) (1990) (Nodge).cbr (37pp) | [95490] Web of Spider-Man 063 (1990).cbz (23pp)
+            [95491] Web of Spider-Man 064 (1990) (Digital) (Shadowcat-Empire).cbz (23pp) | [95492] Web of Spider-Man 065 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [95493] Web of Spider-Man 066 (1990).cbz (23pp) | [95494] Web of Spider-Man 067 (1990).cbr (25pp) | Web of Spider-Man 068 (1990).cbz … Web of Spider-Man 075 (1991).cbz  (8 files, pp 23-25)
+            [95503] Web of Spider-Man 076 (1991).cbr (25pp) | Web of Spider-Man 077 (1991).cbz … Web of Spider-Man 089 (1992).cbz  (12 files, pp 23-25)
+            [95517] Web of Spider-Man 090 (1992) (Digital) (Shadowcat-Empire).cbz (40pp) | [95518] Web of Spider-Man 091 (1992).cbz (25pp) | [95519] Web of Spider-Man 092 (1992).cbz (25pp)
+            [95520] Web of Spider-Man 093 (1992) (Digital-Empire).cbz (23pp) | [95521] Web of Spider-Man 094 (1992) (Digital-Empire).cbz (24pp)
+            [95522] Web of Spider-Man 095 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [95523] Web of Spider-Man 096 (1993) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [95524] Web of Spider-Man 097 (1993).cbz (24pp) | [95525] Web of Spider-Man 098 (1993).cbz (26pp) | [95526] Web of Spider-Man 099 (1993).cbz (26pp)
+            [95527] Web of Spider-Man 100 (1993).cbz (42pp) | [95528] Web of Spider-Man 101 (1993) (Digital) (Kileko-Empire).cbr (21pp)
+            [95529] Web of Spider-Man 102 (1993) (Digital) (Kileko-Empire).cbr (22pp) | [95530] Web of Spider-Man 103 (1993) (Digital) (Kileko-Empire).cbr (23pp)
+            Web of Spider-Man 104 (1993).cbz … Web of Spider-Man 111 (1994).cbz  (8 files, pp 24-26) | [95539] Web of Spider-Man 112 (1994) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [95540] Web of Spider-Man 113 (1994).cbz (51pp) | [95541] Web of Spider-Man 114 (1994).cbz (25pp) | [95542] Web of Spider-Man 115 (1994) (c2c) (Nodge).cbr (36pp)
+            [95543] Web of Spider-Man 116 (1994).cbz (24pp) | [95544] Web of Spider-Man 117 (1994) (digital) (Marika-Empire).cbz (34pp)
+            [95545] Web of Spider-Man 118 (1994) (Digital) (Shadowcat-Empire).cbz (24pp) | [95546] Web of Spider-Man 119 (1995) (Digital) (Kileko-Empire).cbr (23pp)
+            Web of Spider-Man 120 (1995) (Digital) (Shadowcat-Empire).cbz … Web of Spider-Man 129 (1995) (Digital) (Shadowcat-Empire).cbz  (10 files, pp 23-38)
+            [95515] Web of Spider-man 088 (c2c) (1992) (Nodge).cbr (39pp) | [95692] 02 Web of Spider-Man 127 (1995) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [87241] 008 Web of Spider-Man Annual 004 (1988) (Digital) (Shadowcat-Empire).cbz (40pp) | [87322] Web of Spider-man v1 047 (1989) (Minutemen-Syl3ntBob).cbz (26pp)
+            [87323] Web of Spider-man v1 048 (1989) (Minutemen-Syl3ntBob).cbz (26pp) | [87356] 011 Web of Spider-Man Annual 005 (1989) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [87498] 033 Web of Spider-Man #059.cbz (24pp) | [87522] 057 Web of Spider-Man #061.cbz (24pp) | [87531] 066 Web of Spider-Man 064 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [87532] 067 Web of Spider-Man 065 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+   ours:    ladder 1-129; 19 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 33, 47; ComicInfo Series: "Web of Spider-Man"x23, "Web Of Spider-Man"x1, "Web of Spider-Man Annual"x1, "Web of Spider-Man cvv3519"x1; ComicInfo Volume: "1985"x24, "2024"x1, "3519"x1; ComicInfo Count: "129"x2; ComicInfo Publisher: "Marvel"x25, "Marvel Comics"x1; ComicInfo Web: "28936"x1, "65542"x1
+   CV linked:      vol 3519 "Web of Spider-Man" 1985 Marvel 131 issues; cached #1-129.2 (131); yearΔ 0; ratio 154/131 = 1.18; no judged range; v1 per-file: same volume on 140/154 files
+   CV candidates:  (= linked) · 28576 "Web of Spider-Man" 2009 Marvel 12 s98 · 42960 "Essential Web of Spider-Man" 2011 Marvel 2 s91 · 5329 "Spider-Man: Web of Doom" 1994 Marvel 3 s80 · 3520 "Web of Spider-Man Annual" 1985 Marvel 10 s76 · 46069 "Marvel Adventures Spider-Man: Tangled Web" 2012 Marvel 1 issue 317022 s76 · 157311 "Web of Spider-Man" 2024 Marvel 1 issue 1048678 s65   (v1 search)
+   CV local rip:   (= linked) · 28576 "Web of Spider-Man" 2009 Marvel 12 · 157311 "Web of Spider-Man" 2024 Marvel 1 issue 1048678 · 23183 "Web of Spider-Man Super Special" 1995 Marvel 1 issue 139552 · 42960 "Essential Web of Spider-Man" 2011 Marvel 2 (via CV candidate name "Essential Web of Spider-Man")   (rip lookup)
+   GCD per-file:   methods numx135 · round2-seriesx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 3059 "Web of Spider-Man" 1985-1995 Marvel [was ongoing series] 130 on 134/154 files · series 165622 "Web of Spider-Man" [tl-ph] 1994-? Mahal Kong Pilipinas, Inc. (M.K.P.I.) [] 3 on 2/154 files
+   GCD dump:       (= per-file) · 40659 "Web of Spider-Man" 2009-2010 Marvel [] 12 · 68157 "Web of Spider-Man" 2012-2012 Marvel [] 2 · 210101 "Web of Spider-Man" 2024-2024 Marvel [] 1 · 5305 "Web of Spider-Man Super Special" 1995-1995 Marvel [] 1   (dump lookup)
+   bridges:        gcd 3059 -> LOCG 109052 "Web of Spider-Man" support 145 · gcd 165622 -> LOCG 109052 "Web of Spider-Man" support 2
+
+== S102434 X-23  [tier A]   keys: X-23 v1 (2005)  years 2005-2011  6 files / 0 collections
+   folders: [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0654 Guess Who's Back In Town
+   files:   001 X-23 001 (2005) (Digital) (Zone-Empire) (Ok).cbr … 006 X-23 006 (2005) (Digital) (Zone-Empire) (Ok).cbr  (6 files, pp 23-25)
+   ours:    ladder 1-6
+   CV linked:      vol 18176 "X-23" 2005 Marvel 6 issues; cached #1-6 (6); yearΔ 0; ratio 6/6 = 1.00; no judged range
+   CV per-file (v1): vol 35496 "X-23" 2010 Marvel 21 on 6/6 files
+   CV local rip:   (= linked) · 43531 "X-23" 2006 Panini España 3 · 32044 "X-23" 2010 Marvel 1 issue 201027 · 112212 "X-23" 2018 Marvel 12 · 125787 "X-23" 2019 Panini Comics 2   (rip lookup)
+   GCD per-file:   series 12327 "X-23" 2005-2005 Marvel [was ongoing series] 6 on 6/6 files; methods numx6
+   GCD dump:       (= per-file) · 36445 "X-23" [es] 2006-2008 Panini España [] 2 · 169676 "X-23" [pt-br] 2006-2006 Panini Brasil [] 3 · 45314 "X-23" 2010-2010 Marvel [] 1 · 52376 "X-23" 2010-2012 Marvel [] 21 · 63099 "X-23" 2011-2012 Marvel [] 3   (dump lookup)
+   bridges:        gcd 12327 -> LOCG 100127 "X-23" support 6

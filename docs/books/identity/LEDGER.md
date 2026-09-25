@@ -2235,3 +2235,10 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   shelf — restate the identity pass's judged C-line ranges as S lines (they cite GCD's collects notes) and `u` the
   editions with no judged range on this run (Deluxe books, Fables & Reflections' three stretches, Endless Nights).
   A facsimile of one book is its own record (Peanuts Facsimile S13656 -> GCD 163323, L-089; supersedes B-070).
+[L-414] pub:marvel kind:collected-line sig:split
+- Wave 180 (revisit sweep): most open revisit.txt identity lines were already satisfied by later P- joins and merges;
+  28 named shelves no longer exist (emptied by their joins). An Epic Collection line with no line shelf yet, sitting on
+  a run shelf (Conan: The Original Marvel Years Epic Collection on S96118, GCD 163625), splits out to its OWN line key
+  (cv=-) — L-409 — while the shelf keeps its run; the C lines record which run each book reprints. The ASM Epic rework
+  needs one batch holding every per-book shelf (anchor S871, the plain line key). Marvel Masterworks lines reprinting ONE
+  run stay lines pending Eric (L-409 exempts only Epic Collections) — revisit.txt S11478.
