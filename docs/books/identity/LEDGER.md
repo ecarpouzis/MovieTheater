@@ -2151,3 +2151,12 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Iron Man 2015 #6-14 -> S94637) make that shelf the RUN: restate it on the run's records, trades on I lines. Halts this
   round: a C line on an item a landed split moved (C-045 item 81993) -> comment it out; a second trade rip merged in
   unflagged (One Moment in Time 94006) -> iscollection csv + `u` beside its sibling on S4752.
+[L-403] pub:marvel sig:split
+- CORRECTS L-402's annual routing (waves 157-158): ASM Annual #40 goes to the 2014 run's shelf (CV 78715 = that run's
+  annual) and #41-42 to the 2015 run's (CV 95808) — not "the 1999 / 2014 runs" as L-402 says; the records decide.
+  Trade lines reprinting ONE run give way even when an older entry kept them (ASM Worldwide -> the 2015 run S103529,
+  L-031 superseded; Spencer -> the 2018 run S95051): their books are often also filed as "Dan Slott / Spencer Vol. NN"
+  rips on the run shelf. C/B-era "provider-missing" / "no record" claims need re-probing (Punisher 2009 = CV 25370 via
+  --year; Silver Surfer #14 facsimile under "No. 14"; Spider-Man J digests by GCD subtitle). GCD Moon Knight Omnibus
+  roll-ups exist after all — Book 01 = #1-20 (Book 02 starts at #21). Annual shelves missed by earlier readers:
+  Punisher Annual S34434 (cv 4064), Spectacular Spider-Man Annual S34224 (cv 3012).

@@ -1,0 +1,739 @@
+## Conventions for this batch (21 shown of 164 matched; 402 in LEDGER.md; 12 shelf/shelves: pub:marvel ×12 · kind:trade-only ×9 · kind:collected-line ×7 · folder:vn-year ×6 · folder:events ×4 · folder:sequel-subfolder ×4 · kind:new ×3 · folder:variant-covers ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-127] (11 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-136] (11 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-029] (9 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
+- On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
+  collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
+[L-031] (9 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-327] (9 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (9 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+[L-389] (9 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-053 / R-135 (waves 129-130): a run's issues never JOIN a creator-trade-keyed shelf ("Venom by Al Ewing & Ram V",
+  S21029, four trades) — keep them and meet through the SHARED cv at the next revisit (S20988 cv=140084 + merge-with=21029).
+  Marvel's 2019-2020 "Star Wars #1 facsimile" is "Star Wars No 1 Facsimile Edition" (CV 123267 / GCD 153348): probe the
+  "No N" form. Star Wars Insider and Titan's "Best of" books have no CV / GCD record: R + provider-missing, never the 1977
+  comic's stamp. The Dark Horse Star Wars Omnibus umbrella number (Vol. 32 / 35) raises a false "stored GCD row is another
+  book" warning against the sub-line's #1 / #2 — page counts and ISBNs decide. An Epic Collection / omnibus line spanning
+  several minis keeps its own GCD-line key in a split.
+[L-398] (9 shelf/shelves) kind:trade-only pub:marvel sig:stamp
+- Waves 147-148: Marvel 2008+ runs have a SEPARATE GCD trade-paperback-line series that earlier readers stored as the
+  shelf's S gcd (Totally Awesome Hulk 104142 -> run 94628; Rocket Raccoon & Groot 104355 -> run 95266) — the run's own GCD
+  series goes on the S. A Panini España CV VOLUME id can equal the right ISSUE id (S6478: 150718 = #1 of CV 25548).
+  Ghost Rider (2006) trades are GCD 55198; stored rows were Panini Deutschland (45859). Hulk (2008) trades have twin GCD
+  trade series (73891 / 73934) plus 2011-12 HCs — page counts pick 73891. Incredible Hulk (2000) and Ghost Rider (2006)
+  shelves carry legacy-number CV stamps (L-395) — per-file I lines. Byrne FF Omnibus merged onto the FF 1961 run (L-395).
+[L-298] (8 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (8 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-076] (7 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (7 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (7 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (7 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-132] (7 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-196] (7 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (7 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (7 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-306] (7 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (7 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (7 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+
++143 more matched entries not shown: L-329, L-332, L-392, L-397, L-400, L-401, L-060, L-116, L-164, L-269, L-291, L-388, L-391, L-135, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-034, L-064, L-085, L-101, L-124, L-130, L-142, L-169, L-191, L-272, L-281, L-310, L-319, L-345, L-371, L-387, L-395, L-399, L-016, L-032, L-113, L-114, L-193, L-014, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-174, L-177, L-204, L-242, L-253, L-264, L-267, L-273, L-292, L-294, L-324, L-341, L-346, L-347, L-357, L-378, L-390, L-393, L-396, L-402, L-175, L-290, L-028, L-033, L-036, L-077, L-119, L-133, L-173, L-297, L-311, L-331, L-343, L-054, L-020, L-023, L-027, L-106, L-111, L-112, L-121, L-128, L-129, L-137, L-172, L-181, L-187, L-188, L-194, L-219, L-233, L-243, L-265, L-330, L-336, L-373, L-374, L-376, L-377, L-379, L-380, L-383, L-007, L-065, L-097, L-099, L-123, L-217, L-252, L-262, L-274, L-288, L-293, L-352, L-354, L-150 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S14052 Predator  [split]  5 files / 5 collections  decided in R-157 (S)
+   decided: S 14052 cv=18950 gcd=37046 0.95 | Dark Horse's Predator Omnibus (2007-2009): CV 18950 "Predator Omnibus" (Dark Horse 2007, 4 issues "Volume 1-4") and GCD 37046 (Dark Horse 2007-2009, 4 rows) agree on publisher, span and count, and our four "Predator Omnibus v01-v04 (2007-2008)" in Dark Horse\Predator match row for row (425 / 354 / 345 / 346pp vs 436 / 364 / 348 / 360pp, per-file CV 18950 on all four); an omnibus line spanning many Predator minis keeps its own identity (L-109)
+   F 14052 wrong-cv-link | the stored CV 22515 "Dark Horse Classics: Aliens Versus Predator" (1997, 6) and GCD 41899 are an unrelated AvP reprint mini none of our files is; the shelf's key "Predator" is the omnibus line
+   F 14052 split-needed | item 85951 ("Predator by Ed Brisson Vol. 01 - Day of the Hunter (2023)" 145pp, folder Marvel\_Predator\Predator v1 (2022)) is Vol. 01 of the Predator by Ed Brisson line (CV 149606 issue 984758 / GCD 199076 row 2518564), the line S14053 stores (stored cv=149606, S line R-156 cv=149606 gcd=199076, holding Vol. 02) -> join S14053 on its key "Predator (2023)"
+   F 14052 needs-fetch cv=18950 | the omnibus line's CV volume has no CvVolume row (named from the rip)
+   N 14052 GCD 37046's collect notes are unreadable link stubs ("? #1-4"), so which Predator minis each omnibus reprints is not in our data - no C lines
+   named: S14053 Predator by Ed Brisson  1 files  keys: "Predator (2023)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S64506 "Dark Horse Presents" 170f [shares gcd=3301 (collected by item 13374) — S cv=3739 gcd=3301 (R-116 0.9)] keys: "Dark Horse Presents (1986)" | "Dark Horse Presents - Aliens" | "Dark Horse Presents Annual" | "Dark Horse Presents Annual (1986)" (+2 more: lookup.py --shelf 64506)
+   nearby: S14055 "Predator: Hunters" 1f [title+1 — S cv=101207 gcd=113841 (B-018 0.95)] keys: "Predator - Hunters"
+   keys now: "Predator" x5
+   groups (title x folder): 2
+   G1 "Predator Omnibus" in Dark Horse\Predator — 4 file(s), 4 COL, pp 345-425; cv per-file 18950x4; gcd per-file 37046x4; key 'Predator'
+      [13371] COL Predator Omnibus v01 (2007) (digital) (The Magicians-Empire).cbr (425pp)
+         own record cv 18950 / gcd s37046 "Predator Omnibus" (issue 640060) COLLECTS: gcd=4532 Dark Horse Comics (1992) #1-2, #4-7, #10-12 · gcd=42031 Predator: Dark River (1996) #1-4 · gcd=13413 Predator Cold War (1991) #1-4 · gcd=16193 Predator (1989) #1-4
+      [13372] COL Predator Omnibus v02 (2008) (digital) (The Magicians-Empire).cbr (354pp)
+         own record cv 18950 / gcd s37046 "Predator Omnibus" (issue 640061) COLLECTS: gcd=4532 Dark Horse Comics (1992) #16-18, #20-21 · gcd=16191 Predator: Race War (1993) #0-4 · gcd=16192 Predator: Big Game (1991) #1-4 · gcd=25040 Predator: Invaders from the Fourth Dimension (1994) #1
+      [13373] COL Predator Omnibus v03 (2008) (digital) (The Magicians-Empire).cbr (345pp)
+         own record cv 18950 / gcd s37046 "Predator Omnibus" (issue 640062) COLLECTS: gcd=42034 Predator: Kindred (1996) #1-4 · gcd=5865 Predator: Hell & Hot Water (1997) #1-3 · gcd=4532 Dark Horse Comics (1992) #12-14 · gcd=42029 Predator: Bad Blood (1993) #1-4
+      [13374] COL Predator Omnibus v04 (2008) (digital) (The Magicians-Empire).cbr (346pp)
+         own record cv 18950 / gcd s37046 "Predator Omnibus" (issue 640063) COLLECTS: gcd=42039 Predator: Xenogenesis (1999) #1-4 · gcd=42033 Predator: Homeworld (1999) #1-4 · gcd=3301 Dark Horse Presents (1986) #68, #137 · gcd=7175 Predator: Hell Come A -Walkin' (1998) #1-2
+   G2 "Predator by Ed Brisson" in Marvel\_Predator\Predator v1 (2022) — 1 file(s), 1 COL, pp 145-145; cv per-file 149606x1; gcd per-file 199076x1; key 'Predator'
+      [85951] COL Predator by Ed Brisson Vol. 01 - Day of the Hunter (2023) (Digital-Empire).cbr (145pp)
+         own record cv 149606 / gcd s199076 "Predator by Ed Brisson" (issue 2518564) COLLECTS: gcd=188074 Predator (2022) #1-6
+
+== S14876 Runaways  [split]  7 files / 6 collections  decided in R-157 (S)
+   decided: S 14876 cv=104320 gcd=116704 0.9 | Runaways (Marvel 2017-2021, Rowell): CV 104320 (2017, 38, cached #1-38) and GCD 116704 (2017-2021, 38) agree on publisher, span and count; the six trades Runaways by Rainbow Rowell (& Kris Anka) Vol. 01-06 in "Runaways v5 (2017)" collect #1-6 / #7-12 / #13-18 / #19-24 / #25-31 / #32-38 per GCD rows 1800602 / 1858737 / 1947813 / 2216597 / 2216598 / 2266121 - the whole run; restated after absorbing S35875 (L-396); 0.9 for the one misfiled 2009 issue split below
+   F 14876 split-needed | item 90979 ("039 Runaways v03 010 (2009)" 34pp, X-Men Complete Chronology "0783 Manifest Destiny") is Runaways (2008-2009) #10 (CV 22775 issue 158856 "Mollifest Destiny" / GCD 31812 row 642877, 44pp; 14 issues each), a run no shelf stores (who-stores cv=22775: 0 rows) -> new key "Runaways v3 (2008)" seeded cv=22775 gcd=31812 (lands new)
+   N 14876 flag #391 (label-ambiguous, item 90979) is right - "Runaways v03 010" is a single issue, the one leaving by the split; per-file CV 18055 on it is the 2005 volume
+   nearby: S14878 "Runaways: Battleworld" 2f [title+1 — S cv=86551 gcd=94779 (B-058 0.9)] keys: "Runaways: Battleworld" · S14875 "Runaways Saga" 1f [title+1 — S cv=18021 gcd=27047 (B-058 0.95)] keys: "Runaways Saga"
+   keys now: "Runaways by Rainbow Rowell" x4 · "Runaways by Rainbow Rowell & Kris Anka" x3
+   groups (title x folder): 2
+   G1 "Runaways by Rainbow Rowell" in Marvel\_Runaways\Runaways v5 (2017) — 6 file(s), 6 COL, pp 122-161; cv per-file 109969x1, 114420x1, 118264x1; gcd per-file 123749x3, 181605x3; key 'Runaways by Rainbow Rowell' | 'Runaways by Rainbow Rowell & Kris Anka'
+      [93126] COL Runaways by Rainbow Rowell Vol. 01 - Find Your Way Home (2018) (Digital) (Kileko-Empire).cbz (128pp)
+         own record cv 109969 / gcd s123749 "Runaways by Rainbow Rowell & Kris Anka" (issue 1800602) COLLECTS: gcd=116704 Runaways (2017) #1-6
+      [93127] COL Runaways by Rainbow Rowell Vol. 02 - Best Friends Forever (2018) (Digital) (Kileko-Empire).cbz (129pp)  key="Runaways by Rainbow Rowell & Kris Anka"
+         own record cv 114420 / gcd s123749 "Runaways by Rainbow Rowell & Kris Anka" (issue 1858737) COLLECTS: gcd=116704 Runaways (2017) #7-12
+      [93128] COL Runaways by Rainbow Rowell Vol. 03 - That Was Yesterday (2019) (Digital) (Kileko-Empire).cbz (122pp)  key="Runaways by Rainbow Rowell & Kris Anka"
+         own record cv 118264 / gcd s123749 "Runaways by Rainbow Rowell & Kris Anka" (issue 1947813) COLLECTS: gcd=116704 Runaways (2017) #13-18
+      [93129] COL Runaways by Rainbow Rowell Vol. 04 - But You Can't Hide (2019) (Digital) (Kileko-Empire).cbz (130pp)
+         own record cv 122073 / gcd s181605 "Runaways by Rainbow Rowell" (issue 2216597) COLLECTS: gcd=116704 Runaways (2017) #19-24
+      [93130] COL Runaways by Rainbow Rowell Vol. 05 - Cannon Fodder (2020) (Digital) (Kileko-Empire).cbz (148pp)
+         own record cv 126610 / gcd s181605 "Runaways by Rainbow Rowell" (issue 2216598) COLLECTS: gcd=116704 Runaways (2017) #25-31
+      [93131] COL Runaways by Rainbow Rowell Vol. 06 - Come Away With Me (2021) (digital) (DrVink-HD-DCP).cbz (161pp)
+         own record cv 139435 / gcd s181605 "Runaways by Rainbow Rowell" (issue 2266121) COLLECTS: gcd=116704 Runaways (2017) #32-38
+   G2 "Runaways" in Marvel\_X-Men\_X-Men Complete Chronology V2\0783 Manifest Destiny — 1 file(s), numbers 10, pp 34-34; cv per-file 22775x1; gcd per-file 31812x1; key 'Runaways by Rainbow Rowell & Kris Anka'
+      [90979] 039 Runaways v03 010 (2009) (digital-Empire).cbz (34pp)
+
+== S15642 Silver Surfer Epic Collection: Freedom  [split]  1 files / 1 collections  decided in R-158 (S)
+   decided: S 15642 cv=- gcd=80972 0.9 | volume 03 "Freedom" of the Silver Surfer Epic Collection LINE: GCD 80972 #3 row 1339629 (492pp, 2015-11-18, ISBN 978-0-7851-9903-8) is our 465pp book (ComicInfo Series "Silver Surfer Epic Collection: Freedom"); CV 86124 is only its count-1 book volume (issue 506181 "Volume 3"), so the line has no CV id (L-392)
+   F 15642 wrong-cv-link | the stored CV 86124 "Silver Surfer Epic Collection: Freedom" is the Vol. 03 book's own count-1 volume, not the line; it moves to the I line
+   F 15642 split-needed | item 93654 -> join S15641 on its ParsedKey "Silver Surfer Epic Collection" (S15641's S line R-156 is the same GCD 80972 line with cv=-; L-377 / L-392); the shelf empties by the join; replaces A-025's merge-with=15641, which cannot land on a cv=- line; checker anchor only (S15641 is outside this batch): the S15642-S15647 group meets as one, so this line also reads 'join S15643' - every item goes to S15641, nothing lands on S15643
+   N 93654 also collects Marvel Fanfare #1, #12, #33, #51, Super-Villain Classics #1, Silver Surfer (1982) #1 and Epic Illustrated #1
+   named: S15641 Silver Surfer Epic Collection  4 files  keys: "Silver Surfer Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S15647 Silver Surfer Epic Collection: The Herald Ordeal  1 files  keys: "Silver Surfer Epic Collection: The Herald Ordeal"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S15643 Silver Surfer Epic Collection: Parable  1 files  keys: "Silver Surfer Epic Collection: Parable"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65644 "Silver Surfer" 148f [shares gcd=3433 (collected by item 93654) — S cv=3857 gcd=3433 (R-156 0.9)] keys: "Silver Surfer (1987)" | "Silver Surfer v3 (1987)"
+   nearby: S11410 "Marvel Fanfare" 58f [shares gcd=2657 (collected by item 93654) — S cv=3143 gcd=2657 (R-140 0.95)] keys: "Marvel Fanfare"
+   nearby: S15644 "Silver Surfer Epic Collection: Resurrection" 1f [shares gcd=80972 — S gcd=80972 (R-158 0.9)] keys: "Silver Surfer Epic Collection: Resurrection"
+   nearby: S15645 "Silver Surfer Epic Collection: Sun Rise And Shadow Fall" 1f [shares gcd=80972 — S gcd=80972 (R-158 0.9)] keys: "Silver Surfer Epic Collection: Sun Rise And Shadow Fall"
+   nearby: S15646 "Silver Surfer Epic Collection: Thanos Quest" 1f [shares gcd=80972 — S gcd=80972 (R-158 0.9)] keys: "Silver Surfer Epic Collection: Thanos Quest"
+   nearby: S99801 "Silver Surfer" 1f [shares gcd=2663 (collected by item 93654) — S cv=22808 gcd=2663 (B-058 0.95)] keys: "Silver Surfer v2 (1982)"
+   keys now: "Silver Surfer Epic Collection: Freedom" x1
+   groups (title x folder): 1
+   G1 "Silver Surfer Epic Collection" in Marvel\_Silver Surfer\_Silver Surfer Epic Collections — 1 file(s), 1 COL, pp 465-465; cv per-file 86124x1; gcd per-file 80972x1; key 'Silver Surfer Epic Collection: Freedom'
+      [93654] COL Silver Surfer Epic Collection Vol. 03 - Freedom (2015) (Digital) (F) (AnHeroGold-Empire).cbz (465pp)
+         own record cv 86124 / gcd s80972 "Silver Surfer Epic Collection" (issue 1339629) COLLECTS: gcd=3433 Silver Surfer (1987) #1-14 · gcd=2657 Marvel Fanfare (1982) #1, #12, #33, #51 · gcd=2766 Super-Villain Classics (1983) #1 · gcd=2663 Silver Surfer (1982) #1
+
+== S15643 Silver Surfer Epic Collection: Parable  [split]  1 files / 1 collections  decided in R-158 (S)
+   decided: S 15643 cv=- gcd=80972 0.9 | volume 04 "Parable" of the Silver Surfer Epic Collection LINE: GCD 80972 #4 row 2413820 (508pp, 2022-06-22, ISBN 978-1-302-93232-9) is our 500pp book (ComicInfo Series "Silver Surfer Epic Collection: Parable"); CV 144795 is only its count-1 book volume (issue 944337 "Volume 4"), so the line has no CV id (L-392)
+   F 15643 wrong-cv-link | the stored CV 144795 "Silver Surfer Epic Collection: Parable" is the Vol. 04 book's own count-1 volume, not the line; it moves to the I line
+   F 15643 split-needed | item 93655 -> join S15641 on its ParsedKey "Silver Surfer Epic Collection" (S15641's S line R-156 is the same GCD 80972 line with cv=-; L-377 / L-392); the shelf empties by the join; checker anchor only (S15641 is outside this batch): the S15642-S15647 group meets as one, so this line also reads 'join S15642' - every item goes to S15641, nothing lands on S15642
+   N 93655 also collects Silver Surfer Annual #1-2, The Silver Surfer (1988 Parable) #1-2, the Judgment Day graphic novel, Fantastic Four #325 and Marvel Fanfare #39
+   named: S15641 Silver Surfer Epic Collection  4 files  keys: "Silver Surfer Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S15642 Silver Surfer Epic Collection: Freedom  1 files  keys: "Silver Surfer Epic Collection: Freedom"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S15647 Silver Surfer Epic Collection: The Herald Ordeal  1 files  keys: "Silver Surfer Epic Collection: The Herald Ordeal"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65644 "Silver Surfer" 148f [shares gcd=3433 (collected by item 93655) — S cv=3857 gcd=3433 (R-156 0.9)] keys: "Silver Surfer (1987)" | "Silver Surfer v3 (1987)"
+   nearby: S11417 "Marvel Graphic Novel" 26f [shares gcd=2658 (collected by item 93655) — S cv=3144 gcd=2658 (R-137 0.9)] keys: "Marvel Graphic Novel" | "Marvel Graphic Novel - Daredevil - Love and War" | "Marvel Graphic Novel - The New Mutants" | "Starstruck - Marvel Graphic Novel"
+   nearby: S65645 "Silver Surfer Annual" 7f [shares gcd=3665 (collected by item 93655) — S cv=4069 gcd=3665 (C-055 0.95)] keys: "Silver Surfer (1989)"
+   nearby: S12271 "The Silver Surfer" 2f [shares gcd=3666 (collected by item 93655) — S cv=4070 gcd=3666 (B-064 0.95)] keys: "Moebius - Silver Surfer - Parable"
+   nearby: S7992 "Greenberg The Vampire" 1f [shares gcd=2658 (collected by item 93655) — S gcd=2658 (C-039 0.9)] keys: "Greenberg The Vampire"
+   nearby: S15644 "Silver Surfer Epic Collection: Resurrection" 1f [shares gcd=80972 — S gcd=80972 (R-158 0.9)] keys: "Silver Surfer Epic Collection: Resurrection"
+   nearby: S15645 "Silver Surfer Epic Collection: Sun Rise And Shadow Fall" 1f [shares gcd=80972 — S gcd=80972 (R-158 0.9)] keys: "Silver Surfer Epic Collection: Sun Rise And Shadow Fall"
+   nearby: S15646 "Silver Surfer Epic Collection: Thanos Quest" 1f [shares gcd=80972 — S gcd=80972 (R-158 0.9)] keys: "Silver Surfer Epic Collection: Thanos Quest"
+   keys now: "Silver Surfer Epic Collection: Parable" x1
+   groups (title x folder): 1
+   G1 "Silver Surfer Epic Collection" in Marvel\_Silver Surfer\_Silver Surfer Epic Collections — 1 file(s), 1 COL, pp 500-500; cv per-file 144795x1; gcd per-file 80972x1; key 'Silver Surfer Epic Collection: Parable'
+      [93655] COL Silver Surfer Epic Collection Vol. 04 - Parable (2022) (Digital-Empire).cbr (500pp)
+         own record cv 144795 / gcd s80972 "Silver Surfer Epic Collection" (issue 2413820) COLLECTS: gcd=3433 Silver Surfer (1987) #15-23 · gcd=3665 Silver Surfer Annual (1988) #1-2 · gcd=3666 The Silver Surfer (1988) #1-2 · gcd=2658 Marvel Graphic Novel (1982) (unnumbered)
+
+== S15644 Silver Surfer Epic Collection: Resurrection  [split]  1 files / 1 collections  decided in R-158 (S)
+   decided: S 15644 cv=- gcd=80972 0.9 | volume 09 "Resurrection" of the Silver Surfer Epic Collection LINE: GCD 80972 #9 row 2151818 (460pp, 2020-09-09, ISBN 978-1-302-92507-9) is our 419pp book (ComicInfo Series "Silver Surfer Epic Collection: Resurrection"); CV 130195 is only its count-1 book volume (issue 798006 "Volume 9"), so the line has no CV id (L-392)
+   F 15644 wrong-cv-link | the stored CV 130195 "Silver Surfer Epic Collection: Resurrection" is the Vol. 09 book's own count-1 volume, not the line; it moves to the I line
+   F 15644 split-needed | item 93660 -> join S15641 on its ParsedKey "Silver Surfer Epic Collection" (S15641's S line R-156 is the same GCD 80972 line with cv=-; L-377 / L-392); the shelf empties by the join; checker anchor only (S15641 is outside this batch): the S15642-S15647 group meets as one, so this line also reads 'join S15643' - every item goes to S15641, nothing lands on S15643
+   N 93660 also collects Silver Surfer Annual #6, Silver Surfer / Warlock: Resurrection #1-4 and Secret Defenders #9-10
+   named: S15641 Silver Surfer Epic Collection  4 files  keys: "Silver Surfer Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S15642 Silver Surfer Epic Collection: Freedom  1 files  keys: "Silver Surfer Epic Collection: Freedom"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S15647 Silver Surfer Epic Collection: The Herald Ordeal  1 files  keys: "Silver Surfer Epic Collection: The Herald Ordeal"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S15643 Silver Surfer Epic Collection: Parable  1 files  keys: "Silver Surfer Epic Collection: Parable"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65644 "Silver Surfer" 148f [shares gcd=3433 (collected by item 93660) — S cv=3857 gcd=3433 (R-156 0.9)] keys: "Silver Surfer (1987)" | "Silver Surfer v3 (1987)"
+   nearby: S15234 "Secret Defenders" 16f [shares gcd=4730 (collected by item 93660) — S cv=5044 gcd=4730 (B-055 0.95)] keys: "Doctor Strange and the Secret Defenders" | "Secret Defenders"
+   nearby: S65645 "Silver Surfer Annual" 7f [shares gcd=3665 (collected by item 93660) — S cv=4069 gcd=3665 (C-055 0.95)] keys: "Silver Surfer (1989)"
+   nearby: S15645 "Silver Surfer Epic Collection: Sun Rise And Shadow Fall" 1f [shares gcd=80972 — S gcd=80972 (R-158 0.9)] keys: "Silver Surfer Epic Collection: Sun Rise And Shadow Fall"
+   nearby: S15646 "Silver Surfer Epic Collection: Thanos Quest" 1f [shares gcd=80972 — S gcd=80972 (R-158 0.9)] keys: "Silver Surfer Epic Collection: Thanos Quest"
+   keys now: "Silver Surfer Epic Collection: Resurrection" x1
+   groups (title x folder): 1
+   G1 "Silver Surfer Epic Collection" in Marvel\_Silver Surfer\_Silver Surfer Epic Collections — 1 file(s), 1 COL, pp 419-419; cv per-file 130195x1; gcd per-file 80972x1; key 'Silver Surfer Epic Collection: Resurrection'
+      [93660] COL Silver Surfer Epic Collection Vol. 09 - Resurrection (2020) (Digital) (Zone-Empire).cbr (419pp)
+         own record cv 130195 / gcd s80972 "Silver Surfer Epic Collection" (issue 2151818) COLLECTS: gcd=3433 Silver Surfer (1987) #76-85 · gcd=3665 Silver Surfer Annual (1988) #6 · gcd=4732 Silver Surfer / Warlock: Resurrection (1993) #1-4 · gcd=4730 The Secret Defenders (1993) #9-10
+
+== S15645 Silver Surfer Epic Collection: Sun Rise And Shadow Fall  [split]  1 files / 1 collections  decided in R-158 (S)
+   decided: S 15645 cv=- gcd=80972 0.9 | volume 14 "Sun Rise and Shadow Fall" of the Silver Surfer Epic Collection LINE: GCD 80972 #14 row 2591750 (492pp, 2023-12-27, ISBN 978-1-302-95335-5) is our 474pp book (ComicInfo Series "Silver Surfer Epic Collection: Sun Rise And Shadow Fall"); CV 155751 is only its count-1 book volume (issue 1038538 "Volume 14"), so the line has no CV id (L-392)
+   F 15645 wrong-cv-link | the stored CV 155751 "Silver Surfer Epic Collection: Sun Rise and Shadow Fall" is the Vol. 14 book's own count-1 volume, not the line; it moves to the I line
+   F 15645 split-needed | item 93662 -> join S15641 on its ParsedKey "Silver Surfer Epic Collection" (S15641's S line R-156 is the same GCD 80972 line with cv=-; L-377 / L-392); the shelf empties by the join; checker anchor only (S15641 is outside this batch): the S15642-S15647 group meets as one, so this line also reads 'join S15643' - every item goes to S15641, nothing lands on S15643
+   N 93662 also collects Galactus the Devourer #1-6, Silver Surfer: Loftier Than Mortals #1-2 and Silver Surfer / Thor '98
+   named: S15641 Silver Surfer Epic Collection  4 files  keys: "Silver Surfer Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S15642 Silver Surfer Epic Collection: Freedom  1 files  keys: "Silver Surfer Epic Collection: Freedom"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S15647 Silver Surfer Epic Collection: The Herald Ordeal  1 files  keys: "Silver Surfer Epic Collection: The Herald Ordeal"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S15643 Silver Surfer Epic Collection: Parable  1 files  keys: "Silver Surfer Epic Collection: Parable"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65644 "Silver Surfer" 148f [shares gcd=3433 (collected by item 93662) — S cv=3857 gcd=3433 (R-156 0.9)] keys: "Silver Surfer (1987)" | "Silver Surfer v3 (1987)"
+   nearby: S15648 "Silver Surfer: Loftier Than Mortals" 2f [shares gcd=78323 (collected by item 93662) — S cv=26874 gcd=78323 (A-025 0.95)] keys: "Silver Surfer Loftier than Mortals"
+   nearby: S15639 "Silver Surfer / Thor '98" 1f [shares gcd=63706 (collected by item 93662) — S cv=39906 gcd=63706 (B-058 1.0)] keys: "Silver Surfer / Thor '98"
+   nearby: S15644 "Silver Surfer Epic Collection: Resurrection" 1f [shares gcd=80972 — S gcd=80972 (R-158 0.9)] keys: "Silver Surfer Epic Collection: Resurrection"
+   nearby: S15646 "Silver Surfer Epic Collection: Thanos Quest" 1f [shares gcd=80972 — S gcd=80972 (R-158 0.9)] keys: "Silver Surfer Epic Collection: Thanos Quest"
+   keys now: "Silver Surfer Epic Collection: Sun Rise And Shadow Fall" x1
+   groups (title x folder): 1
+   G1 "Silver Surfer Epic Collection" in Marvel\_Silver Surfer\_Silver Surfer Epic Collections — 1 file(s), 1 COL, pp 474-474; cv per-file 155751x1; gcd per-file 80972x1; key 'Silver Surfer Epic Collection: Sun Rise And Shadow Fall'
+      [93662] COL Silver Surfer Epic Collection Vol. 14 - Sun Rise and Shadow Fall (2024) (Digital) (Shan-Empire).cbz (474pp)
+         own record cv 155751 / gcd s80972 "Silver Surfer Epic Collection" (issue 2591750) COLLECTS: gcd=3433 Silver Surfer (1987) #139-146 · gcd=9843 Galactus the Devourer (1999) #1-6 · gcd=78323 Silver Surfer: Loftier Than Mortals (1999) #1-2 · gcd=63706 Silver Surfer / Thor '98 (1998) (unnumbered)
+
+== S15646 Silver Surfer Epic Collection: Thanos Quest  [split]  1 files / 1 collections  decided in R-158 (S)
+   decided: S 15646 cv=- gcd=80972 0.9 | volume 06 "Thanos Quest" of the Silver Surfer Epic Collection LINE: GCD 80972 #6 row 1812167 (484pp, 2018-05-30, ISBN 978-1-302-91186-7) is our 473pp book (ComicInfo Series "Silver Surfer Epic Collection: Thanos Quest"); CV 111152 is only its count-1 book volume (issue 671338 "Volume 6"), so the line has no CV id (L-392)
+   F 15646 wrong-cv-link | the stored CV 111152 "Silver Surfer Epic Collection: Thanos Quest" is the Vol. 06 book's own count-1 volume, not the line; it moves to the I line
+   F 15646 split-needed | item 93657 -> join S15641 on its ParsedKey "Silver Surfer Epic Collection" (S15641's S line R-156 is the same GCD 80972 line with cv=-; L-377 / L-392); the shelf empties by the join; checker anchor only (S15641 is outside this batch): the S15642-S15647 group meets as one, so this line also reads 'join S15643' - every item goes to S15641, nothing lands on S15643
+   N 93657 also collects The Thanos Quest #1-2 and Silver Surfer Annual #3
+   named: S15641 Silver Surfer Epic Collection  4 files  keys: "Silver Surfer Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S15642 Silver Surfer Epic Collection: Freedom  1 files  keys: "Silver Surfer Epic Collection: Freedom"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S15647 Silver Surfer Epic Collection: The Herald Ordeal  1 files  keys: "Silver Surfer Epic Collection: The Herald Ordeal"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S15643 Silver Surfer Epic Collection: Parable  1 files  keys: "Silver Surfer Epic Collection: Parable"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65644 "Silver Surfer" 148f [shares gcd=3433 (collected by item 93657) — S cv=3857 gcd=3433 (R-156 0.9)] keys: "Silver Surfer (1987)" | "Silver Surfer v3 (1987)"
+   nearby: S11370 "Marvel Age" 39f [shares gcd=69795 (collected by item 93657) — S cv=19176 gcd=69795 (R-137 0.9)] keys: "Marvel Age" | "Marvel Age Annual"
+   nearby: S65645 "Silver Surfer Annual" 7f [shares gcd=3665 (collected by item 93657) — S cv=4069 gcd=3665 (C-055 0.95)] keys: "Silver Surfer (1989)"
+   nearby: S15644 "Silver Surfer Epic Collection: Resurrection" 1f [shares gcd=80972 — S gcd=80972 (R-158 0.9)] keys: "Silver Surfer Epic Collection: Resurrection"
+   nearby: S15645 "Silver Surfer Epic Collection: Sun Rise And Shadow Fall" 1f [shares gcd=80972 — S gcd=80972 (R-158 0.9)] keys: "Silver Surfer Epic Collection: Sun Rise And Shadow Fall"
+   nearby: S17846 "The Thanos Quest" 1f [shares gcd=4053 (collected by item 93657) — S cv=4425 gcd=4053 (B-059 0.95)] keys: "Thanos Quest"
+   keys now: "Silver Surfer Epic Collection: Thanos Quest" x1
+   groups (title x folder): 1
+   G1 "Silver Surfer Epic Collection" in Marvel\_Silver Surfer\_Silver Surfer Epic Collections — 1 file(s), 1 COL, pp 473-473; cv per-file 111152x1; gcd per-file 80972x1; key 'Silver Surfer Epic Collection: Thanos Quest'
+      [93657] COL Silver Surfer Epic Collection Vol. 06 - Thanos Quest (2018) (digital-Empire).cbr (473pp)
+         own record cv 111152 / gcd s80972 "Silver Surfer Epic Collection" (issue 1812167) COLLECTS: gcd=3433 Silver Surfer (1987) #39-50 · gcd=4053 The Thanos Quest (1990) #1-2 · gcd=3665 Silver Surfer Annual (1988) #3 · gcd=69795 Marvel Age (1983) #91-92, #95
+
+== S15647 Silver Surfer Epic Collection: The Herald Ordeal  [split]  1 files / 1 collections  decided in R-158 (S)
+   decided: S 15647 cv=- gcd=80972 0.9 | volume 08 "The Herald Ordeal" of the Silver Surfer Epic Collection LINE: GCD 80972 #8 row 2683724 (460pp, 2024-12-04, ISBN 978-1-302-95965-4) is our 437pp book; its ComicInfo Web 1080325 is CV 161445's issue (the Vol. 08 book's count-1 volume, "Volume 8"), so the book is certain but the line has no CV id (L-392)
+   F 15647 wrong-cv-link | the stored CV 161445 "Silver Surfer Epic Collection: The Herald Ordeal" is the Vol. 08 book's own count-1 volume, not the line; it moves to the I line
+   F 15647 split-needed | item 93659 -> join S15641 on its ParsedKey "Silver Surfer Epic Collection" (S15641's S line R-156 is the same GCD 80972 line with cv=-; L-377 / L-392); the shelf empties by the join; checker anchor only (S15641 is outside this batch): the S15642-S15647 group meets as one, so this line also reads 'join S15643' - every item goes to S15641, nothing lands on S15643
+   N 93659 also collects Silver Surfer Annual #5, Silver Surfer: Homecoming and the 1991-92 Doctor Strange / Namor / Incredible Hulk annual chapters
+   named: S15641 Silver Surfer Epic Collection  4 files  keys: "Silver Surfer Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S15642 Silver Surfer Epic Collection: Freedom  1 files  keys: "Silver Surfer Epic Collection: Freedom"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S15643 Silver Surfer Epic Collection: Parable  1 files  keys: "Silver Surfer Epic Collection: Parable"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65644 "Silver Surfer" 148f [shares gcd=3433 (collected by item 93659) — S cv=3857 gcd=3433 (R-156 0.9)] keys: "Silver Surfer (1987)" | "Silver Surfer v3 (1987)"
+   nearby: S34388 "The Incredible Hulk Annual" 17f [shares gcd=2348 (collected by item 93659) — S cv=2860 gcd=2348 (R-153 0.9)] keys: "The Incredible Hulk Annual"
+   nearby: S5647 "Doctor Strange, Sorcerer Supreme Annual" 3f [shares gcd=4448 (collected by item 93659) — S cv=4786 gcd=4448 (C-043 0.9)] keys: "Doctor Strange: Sorcerer Supreme Annual"
+   nearby: S15644 "Silver Surfer Epic Collection: Resurrection" 1f [shares gcd=80972 — S gcd=80972 (R-158 0.9)] keys: "Silver Surfer Epic Collection: Resurrection"
+   nearby: S15645 "Silver Surfer Epic Collection: Sun Rise And Shadow Fall" 1f [shares gcd=80972 — S gcd=80972 (R-158 0.9)] keys: "Silver Surfer Epic Collection: Sun Rise And Shadow Fall"
+   nearby: S15646 "Silver Surfer Epic Collection: Thanos Quest" 1f [shares gcd=80972 — S gcd=80972 (R-158 0.9)] keys: "Silver Surfer Epic Collection: Thanos Quest"
+   keys now: "Silver Surfer Epic Collection: The Herald Ordeal" x1
+   groups (title x folder): 1
+   G1 "Silver Surfer Epic Collection" in Marvel\_Silver Surfer\_Silver Surfer Epic Collections — 1 file(s), 1 COL, pp 437-437; cv per-file 161445x1; gcd per-file 80972x1; key 'Silver Surfer Epic Collection: The Herald Ordeal'
+      [93659] COL Silver Surfer Epic Collection Vol. 08 - The Herald Ordeal (2024) (digital) (Marika-Empire).cbz (437pp)
+         own record cv 161445 / gcd s80972 "Silver Surfer Epic Collection" (issue 2683724) COLLECTS: gcd=3433 Silver Surfer (1987) #67-75 · gcd=4448 Doctor Strange, Sorcerer Supreme Annual (1992) #2 · gcd=10220 Namor, the Sub-Mariner Annual (1991) #2 · gcd=2348 The Incredible Hulk Annual (1976) #18
+
+== S4752 The Amazing Spider-Man  [split]  815 files / 23 collections  decided in R-158 (S)
+   decided: S 4752 cv=2127 gcd=1570 0.9 | The Amazing Spider-Man (Marvel 1963-2014, legacy numbering): CV 2127 (1963, 651, cached #1-700.5) spans our whole ladder 1-441 + 500-700 (incl. 654.1 / 679.1 / 699.1) and 752 of 814 files carry it per-file; GCD 1570 (1963-1998, 443) is the majority GCD era (#1-441, 379 per-file) and ComicInfo Volume "1963" x7 agrees; the nineteen Dan Slott-line trades, Death of the Stacys (twice) and One Moment in Time are this run's own editions; 0.9 for the four Facsimile Editions (2019-2024, own count-1 records) and for the annuals, which leave by the split lines below
+   F 4752 split-needed | items 93849, 93850, 93851, 93852, 93853, 93854, 93855, 93856, 93857, 93858, 93859, 93860, 93861, 93862, 93863, 93864, 93865, 93866, 93867, 93868, 93869, 93870, 93872, 93873, 93874, 93877, 93878, 93881, 93882, 93883, 93884, 93885, 93886, 93887, 93888, 87238, 87349, 91734 ("Amazing Spider-Man Annual 001-039 (1964-2012)" in "00 Annuals and Specials" and three chronology second rips of #22, #23, #38) are The Amazing Spider-Man Annual (CV 2189, 1964, 33 cached = #1-28 + #35-39; GCD 1635 #1-28 and GCD 36686 #35-39), the annual series S42165 stores (stored cv=2189, S line R-089 1.0, holding #23, #27, #28) -> join S42165 on its key "The Amazing Spider-Man Annual" (L-391 - that shelf did not exist when R-053 / R-058 kept them here)
+   F 4752 split-needed | item 93889 ("Amazing Spider-Man Annual 040 (2015)" 29pp) is Amazing Spider-Man Annual (2014) #1 (CV 78715 issue 472898 / GCD 85112 row 1288713), the annual of the 2014 run S95052 stores (stored cv=73420); no annual shelf stores cv=78715 -> join S95052 on its key "Amazing Spider-man v3 (2014)" (L-391)
+   F 4752 split-needed | items 93890, 93891 ("Amazing Spider-Man Annual 041 (2017)" / "042 (2018)") are Amazing Spider-Man Annual (2016) #1 / #42 (CV 95808 issues 558953 / 660005, GCD 109549 rows 1653342 / 1785543), the annual of the 2015 run S103529 stores (stored cv=85076); no annual shelf stores cv=95808 -> join S103529 on its key "Amazing Spider-Man v4 (2015)" (L-391)
+   N 4752 the ripper numbers the 1995-2001 annuals #29-34 (93877, 93878, 93881-93883) in the legacy count Marvel resumed at #35 in 2008; neither catalogue has them inside CV 2189 / GCD 1635 (separate one-shots) - they go with the annual line, one numbering (L-390)
+   N 4752 GCD splits what CV keeps as one volume (L-198 shape): our #500-700 ("03 Amazing Spider-Man v1 (2003)", 203 files) and the Dan Slott trades count in GCD 11288 (1999-2014, the series whose #1-58 are on S103846), not GCD 1570 - hence the C lines carry gcd=11288; per-file GCD 172683 (x89) is Panini UK
+   N 4752 S16107 (a second rip of One Moment in Time) merges in by this batch's shared cv=2127; the facsimile variant covers (257, 260-263, 1pp) and the "Amazing Spider-man 010 (Alternate Ditko Cover Only)" cost nothing
+   N 93916 the packet's "stored GCD row is another book" warning is void: row 2775144 is Spider-Man: The Gauntlet #1 "Electro & Sandman", which IS this book (the Dan Slott filing prefix is what failed the name check)
+   N 93917 the packet's "stored GCD row is another book" warning is void: row 2775610 is Spider-Man: The Gauntlet #2 "Rhino & Mysterio", this book
+   N 94003 second stretch: #121-122 of the same run (CV 2127 / GCD 1570, "The Night Gwen Stacy Died" / "The Goblin's Last Stand!"); the judged range #88-122 is widened across the gap #93-120 and should be read as #88-92 + #121-122
+   N 116306 second stretch: The Amazing Spider-Man (1963) #121-122, CV 2127 / GCD 1570 — never widen to #88-122
+   named: S42165 The Amazing Spider-Man Annual  3 files  keys: "The Amazing Spider-Man Annual"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S95052 The Amazing Spider-Man  14 files  keys: "Amazing Spider-Man.1 - Learning to Crawl" | "Amazing Spider-man v3 (2014)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S103529 Amazing Spider-Man v4 (2015)  11 files  keys: "Amazing Spider-Man v4 (2015)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S103846 "The Amazing Spider-Man v2 (1999)" 46f [shares gcd=11288 (collected by item 93755), named S103846 in the decision's R/N lines — S cv=78701 gcd=11288 (R-079 0.95)] keys: "The Amazing Spider-Man v2 (1999)"
+   nearby: S20826 "Untold Tales of Spider-Man" 29f [shares gcd=5302 (collected by item 93929) — S cv=5562 gcd=5302 (A-025 0.9)] keys: "Untold Tales of Spider-Man" | "Untold Tales of Spider-Man: Strange Encounter"
+   nearby: S883 "Amazing Spider-Man Family" 8f [shares gcd=31600 (collected by item 93914) — S cv=22669 gcd=31600 (A-025 0.95)] keys: "Amazing Spider-Man Family"
+   nearby: S4834 "Daredevil by Mark Waid Vol. 1 Collection" 6f [shares gcd=60120 (collected by item 93926) — S cv=41410 gcd=60120 (R-146 0.9)] keys: "Daredevil by Mark Waid Vol. 1 Collection" | "Daredevil v3 (2011)"
+   nearby: S1692 "Avenging Spider-Man" 4f [shares gcd=61993 (collected by item 93930) — S cv=43884 gcd=61993 (C-042 0.9)] keys: "Avenging Spider-Man" | "Avenging Spider-Man: The Complete Collection"
+   nearby: S16234 "Spider-Man: The Gauntlet" 3f [shares gcd=228525 — S gcd=228525 (R-069 0.9)] keys: "Spider-Man: The Gauntlet"
+   nearby: S911 "Spider-Man: Swing Shift Director's Cut" 1f [shares gcd=33240 (collected by item 93907) — S cv=31249 gcd=33240 (D-014 0.9)] keys: "Amazing Spider-man Swing Shift"
+   nearby: S16070 "Spider-Island Spotlight" 1f [shares gcd=69142 (collected by item 93925) — S cv=64146 gcd=69142 (B-072 0.95)] keys: "Spider-Island Spotlight"
+   nearby: S16097 "Spider-Man: Kraven's First Hunt" 1f [shares cv=31702, shares gcd=176664 — S cv=31702 gcd=176664 (B-071 0.9)] keys: "Spider-Man - Kraven's First Hunt"
+   nearby: S16116 "Amazing Spider-Man: Spider-Island" 1f [shares cv=45175, shares gcd=178463 — S cv=45175 gcd=178463 (B-072 0.9)] keys: "Spider-Man - Spider-Island"
+   nearby: S21016 "Venom Super Special" 1f [shares gcd=5303 (collected by item 93907) — S cv=22554 gcd=5303 (B-060 0.95)] keys: "Venom Super Special"
+   nearby: S95053 "The Amazing Spider-Man" 159f [title — S cv=142577 gcd=184161 (R-135 0.9)] keys: "Amazing Spider-man v6 (2022)"
+   nearby: S95051 "The Amazing Spider-Man" 37f [title — S cv=112161 gcd=126774 (R-135 0.9)] keys: "Amazing Spider-Man v5 (2018)"
+   nearby: S34339 "The Amazing Spider-Man" 13f [title] keys: "Amazing Spider-Man" | "The Amazing Spider-Man"
+   nearby: S64135 "Amazing Spider-Man (2021)" 1f [title — S cv=150410 gcd=188477 (R-089 1.0)] keys: "Amazing Spider-Man (2021)"
+   nearby: S103519 "The Amazing Spider-Man '97 (1997)" 1f [title — S cv=60438 gcd=20854 (R-044 0.95)] keys: "The Amazing Spider-Man '97 (1997)"
+   nearby: S863 "Amazing Spider-Man: Worldwide" 10f [title+1 — S cv=89345 gcd=99294 (B-059 0.9)] keys: "Amazing Spider-Man - Worldwide"
+   nearby: S842 "Amazing Spider-Man: Beyond" 5f [title+1 — S cv=142077 gcd=180479 (A-025 0.9)] keys: "Amazing Spider-Man - Beyond" | "The Amazing Spider-Man Beyond"
+   nearby: S864 "Amazing Spider-Man 2099 Companion" 2f [title+1 — S cv=128891 gcd=176129 (B-059 0.95)] keys: "Amazing Spider-Man 2099 Companion"
+   nearby: S900 "Amazing Spider-Man: Amazing Grace" 2f [title+1 — S cv=93365 gcd=105638 (B-059 0.95)] keys: "Amazing Spider-Man.1 - Amazing Grace" | "Amazing Spider-Man: Amazing Grace"
+   nearby: S848 "Amazing Spider-Man: Hooky" 1f [title+1 — S cv=47832 gcd=65039 (A-025 0.95)] keys: "Amazing Spider-Man - Hooky"
+   nearby: S850 "Spider-Man: Masques" 1f [title+1 — S cv=44977 gcd=74104 (B-059 0.95)] keys: "Amazing Spider-Man - Masques"
+   nearby: S854 "Spider-Man: Perceptions" 1f [title+1 — S cv=49870 gcd=74108 (B-059 0.95)] keys: "Amazing Spider-Man - Perceptions" · (+1 more by title)
+   keys now: "Amazing Spider-Man v1 (1963)" x440 · "Amazing Spider-Man v1 (2003)" x212 · "Amazing Spider-Man (1963)" x134 · "Dan Slott Spider-Man" x19 · "The Amazing Spider-Man (1963)" x5 · "Spider-Man - Death of the Stacys" x2 · "Spider-Man: One Moment in Time (2011)" x1 · "Amazing Spider-man (1963)" x1 · "Spider-Man - One Moment In Time" x1
+   groups (title x folder): 40
+   G1 "Amazing Spider-Man" in Marvel\_Marvel Facsimile Editions — 4 file(s), numbers 238, 252, 254, 347, pp 36-37; cv per-file 150412x1, 118373x1, 2127x1; gcd per-file 184317x1, 144187x1, 210099x1; key 'Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man 238 - Facsimile Edition (2022) (Digital) (Shadowcat-Empire).cbz
+        83015 #238 2022 36pp · 83016 #252 2019 36pp · 83018 #254 2024 37pp · 83027 #347 2020 36pp
+   G2 "Amazing Spider-Man" in Marvel\_Marvel Facsimile Editions\Variant Covers — 5 file(s), numbers 257, 260-263, pp 1-1; cv per-file 2127x5; key 'Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man 257 (2024) (Facsimile Edition Tony Daniel Variant) (Digital) (MikeNY76).cbz
+        83101 #257 2024 1pp · 83102 #260 2024 1pp · 83103 #261 2024 1pp · 83104 #262 2024 1pp · 83105 #263 2024 1pp
+   G3 "Spider-Man - One Moment In Time (2011) (Digital) (Kileko-Empire)" in Marvel\_Spider-Man\_Misc Trades — 1 file(s), 1 COL, pp 155-155; cv per-file 36727x1; gcd per-file 75393x1; key 'Spider-Man: One Moment in Time (2011)'
+      [93755] COL Spider-Man - One Moment In Time (2011) (Digital) (Kileko-Empire).cbz (155pp)
+         own record cv 36727 / gcd s75393 "Spider-Man: One Moment in Time" (issue 1128064) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #638-641 · gcd=67151 Spider-Man: One Moment in Time (2010) (unnumbered)
+   G4 "Amazing Spider-Man Annual" in Marvel\_Spider-Man\__Amazing Spider-Man\00 Annuals and Specials — 38 file(s), numbers 1-22, 24-26, 29-30, 32-42, pp 23-74; cv per-file 2189x30, 2127x5, 95808x2; gcd per-file 1635x25, 172683x6, 36686x4; key 'Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man Annual 001 (1964) (Digital) (TLK-EMPIRE-HD).cbr
+        93849 #1 1964 74pp · 93850 #2 1965 27pp · 93851 #3 1966 23pp · 93852 #4 1967 52pp · 93853 #5 1968 49pp · 93854 #6 1969 54pp · 93855 #7 1970 67pp · 93856 #8 1971 66pp · 93857 #9 1973 52pp
+        93858 #10 1976 37pp · 93859 #11 1977 36pp · 93860 #12 1978 44pp · 93861 #13 1979 36pp · 93862 #14 1980 36pp · 93863 #15 1981 31pp · 93864 #16 1982 39pp · 93865 #17 1983 40pp
+        93866 #18 1984 40pp · 93867 #19 1985 41pp · 93868 #20 1986 40pp · 93869 #21 1987 44pp · 93870 #22 1988 52pp · 93872 #24 1990 56pp · 93873 #25 1991 55pp · 93874 #26 1992 55pp
+        93877 #29 1995 56pp · 93878 #30 1996 56pp · 93881 #32 1999 37pp · 93882 #33 2000 40pp · 93883 #34 2001 39pp · 93884 #35 2008 39pp · 93885 #36 2009 39pp · 93886 #37 2010 40pp
+        93887 #38 2011 34pp · 93888 #39 2012 44pp · 93889 #40 2015 29pp · 93890 #41 2017 36pp · 93891 #42 2018 41pp
+   G5 "Amazing Spider-man" in Marvel\_Spider-Man\__Amazing Spider-Man\00 Annuals and Specials — 1 file(s), numbers 10, pp 1-1; cv per-file 2127x1; key 'Amazing Spider-man (1963)'
+      [93848] Amazing Spider-man 010 (Alternate Ditko Cover Only) (Nodge).cbr (1pp)
+   G6 "Spider-Man - Death of the Stacys (2007) (Digital) (F) (Kileko-Empire)" in Marvel\_Spider-Man\__Amazing Spider-Man\00 TPBs — 1 file(s), 1 COL, pp 157-157; cv per-file 33398x1; gcd per-file 27784x1; key 'Spider-Man - Death of the Stacys'
+      [94003] COL Spider-Man - Death of the Stacys (2007) (Digital) (F) (Kileko-Empire).cbz (157pp)
+         own record cv 33398 / gcd s27784 "Spider-Man: Death of the Stacys" (issue 394243) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #88-92, #121-122
+   G7 "Spider-Man - One Moment In Time (2012) (digital) (Minutemen-Slayer)" in Marvel\_Spider-Man\__Amazing Spider-Man\00 TPBs — 1 file(s), 1 COL, pp 155-155; cv per-file 36727x1; gcd per-file 75393x1; key 'Spider-Man - One Moment In Time'
+      [94006] COL Spider-Man - One Moment In Time (2012) (digital) (Minutemen-Slayer).cbr (155pp)
+         own record cv 36727 / gcd s75393 "Spider-Man: One Moment in Time" (issue 1128064) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #638-641 · gcd=67151 Spider-Man: One Moment in Time (2010) (unnumbered)
+   G8 "Dan Slott Spider-Man" in Marvel\_Spider-Man\__Amazing Spider-Man\00 TPBs\Dan Slott Era — 19 file(s), 19 COL, pp 102-390; cv per-file 31706x3, 31702x1, 31703x1; gcd per-file 59908x2, 71799x1, 176664x1; key 'Dan Slott Spider-Man'
+      [93907] COL Dan Slott Spider-Man Vol. 01 - Brand New Day Vol. 01 - Brand New Day (2008) (Digital) (F2) (Kileko-Empire).cbz (196pp)
+         own record cv 31706 / gcd s59908 "Spider-Man: Brand New Day" (issue 858684) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #546-551 · gcd=24030 Free Comic Book Day 2007 (Spider-Man) (2007) #1 · gcd=5303 Venom Super Special (1995) #1 · gcd=33240 Spider-Man: Swing Shift Director's Cut (2008) #1
+      [93908] COL Dan Slott Spider-Man Vol. 02 - Brand New Day Vol. 02 (2009) (Digital) (F2) (Kileko-Empire).cbz (167pp)
+         own record cv 31706 / gcd s59908 "Spider-Man: Brand New Day" (issue 858685) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #552-558
+      [93909] COL Dan Slott Spider-Man Vol. 03 - Brand New Day Vol. 03 (2009) (Digital-SD) (Kileko-Empire).cbr (127pp)
+         own record cv 31706 / gcd s71799 "Spider-Man: Brand New Day" (issue 1070757) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #559-563
+      [93910] COL Dan Slott Spider-Man Vol. 04 - Kraven's First Hunt (2009) (Digital) (Zone-Empire).cbr (102pp)
+         own record cv 31702 / gcd s176664 "Spider-Man: Kraven's First Hunt" (issue 2267354) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #564-567 · gcd=37037 Spider-Man: Brand New Day - Extra (2008) #1
+      [93911] COL Dan Slott Spider-Man Vol. 05 - New Ways To Die (2009) (Digital) (F) (Kileko-Empire).cbz (175pp)
+         own record cv 31703 / gcd s113428 "Spider-Man: New Ways to Die" (issue 2384608) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #568-573 · gcd=69156 Marvel Spotlight: Spider-Man - Brand New Day (2008) (unnumbered)
+      [93912] COL Dan Slott Spider-Man Vol. 07 - Death and Dating (2009) (Digital) (Kileko-Empire).cbr (171pp)
+         own record cv 31700 / gcd s223095 "Spider-Man: Death and Dating" (issue 2729480) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #578-583 · gcd=36686 Amazing Spider-Man Annual (2008) (unnumbered) · gcd=59906 Spider-Man: Death and Dating (2009) (unnumbered)
+      [93913] COL Dan Slott Spider-Man Vol. 09 - 24-7 (2010) (Digital) (Kileko-Empire).cbr (153pp)
+         own record cv 30964 / gcd s215244 "Spider-Man: 24/7" (issue 2656521) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #589-594 · gcd=40934 Amazing Spider-Man: Extra! (2008) #2-3
+      [93914] COL Dan Slott Spider-Man Vol. 11 - Died In Your Arms Tonight (2012) (Digital) (Zone-Empire).cbr (174pp)
+         own record cv 32422 / gcd s161937 "Spider-Man: Died in Your Arms Tonight" (issue 2127405) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #600-601 · gcd=31600 Amazing Spider-Man Family (2008) #7 · gcd=36686 Amazing Spider-Man Annual (2008) #36
+      [93916] COL Dan Slott Spider-Man Vol. 14 - The Gauntlet Vol. 01 - Electro and Sandman (2010) (Digital) (Kileko-Empire).cbr (177pp)
+         own record cv 32192 / gcd s228525 "Spider-Man: The Gauntlet" (issue 2775144) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #612-616 · gcd=42178 Dark Reign: The List - Amazing Spider-Man (2010) #1 · gcd=40659 Web of Spider-Man (2009) #2 · gcd=228574 Spider-Man: The Gauntlet (2010) #1  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [93917] COL Dan Slott Spider-Man Vol. 15 - The Gauntlet Vol. 02 - Rhino and Mysterio (2010) (Digital) (Kileko-Empire).cbr (136pp)
+         own record cv 32699 / gcd s228574 "Spider-Man: The Gauntlet" (issue 2775610) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #619  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [93921] COL Dan Slott Spider-Man Vol. 22 - Big Time (2011) (Digital) (Zone-Empire).cbr (147pp)
+         own record cv 39086 / gcd s67153 "Spider-Man: Big Time" (issue 1108253) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #648-651
+      [93923] COL Dan Slott Spider-Man Vol. 24 - The Fantastic Spider-Man (2012) (Digital) (Kileko-Empire).cbr (165pp)
+         own record cv 42582 / gcd s222777 "Spider-Man: The Fantastic Spider-Man" (issue 2724338) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #658-662
+      [93924] COL Dan Slott Spider-Man Vol. 25 - The Return of Anti-Venom (2012) (Digital) (Kileko-Empire).cbr (102pp)
+         own record cv 43148 / gcd s222513 "Spider-Man: The Return of Anti-Venom" (issue 2722680) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #663-665 · gcd=58366 Free Comic Book Day 2011 (Spider-Man) (2011) #1
+      [93925] COL Dan Slott Spider-Man Vol. 26 - Spider-Island (2011) (Digital) (TheHand-Empire).cbr (390pp)
+         own record cv 45175 / gcd s178463 "Spider-Man: Spider-Island" (issue 2281283) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #666-673 · gcd=56418 Venom (2011) #6-9 · gcd=69142 Spider-Island Spotlight (2011) (unnumbered) · gcd=60768 Amazing Spider-Man: Infested (2011) #1
+      [93926] COL Dan Slott Spider-Man Vol. 27 - Flying Blind (2012) (Digital) (Kileko-Empire).cbr (122pp)
+         own record cv 49081 / gcd s181585 "Spider-Man: Flying Blind" (issue 2350381) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #674-677 · gcd=60120 Daredevil (2011) #8
+      [93928] COL Dan Slott Spider-Man Vol. 28 - Trouble On The Horizon (2012) (Digital) (Kileko-Empire).cbr (113pp)
+         own record cv 50330 / gcd s181586 "Spider-Man: Trouble on the Horizon" (issue 2355985) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #678-679, #679.1, #680-681 · gcd=181587 Spider-Man: Trouble on the Horizon (2012) (unnumbered)
+      [93929] COL Dan Slott Spider-Man Vol. 30 - Lizard - No Turning Back (2012) (Digital) (Kileko-Empire).cbr (117pp)
+         own record cv 54370 / gcd s181957 "Spider-Man: Lizard - No Turning Back" (issue 2360649) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #688-691 · gcd=5302 Untold Tales of Spider-Man (1995) #9
+      [93930] COL Dan Slott Spider-Man Vol. 31 - Danger Zone (2012) (Digital) (Kileko-Empire).cbr (202pp)
+         own record cv 58338 / gcd s150443 "Spider-Man: Danger Zone" (issue 2016543) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #692-697 · gcd=61993 Avenging Spider-Man (2012) #11
+      [93931] COL Dan Slott Spider-Man Vol. 32 - Dying Wish (2013) (Digital) (F) (Kileko-Empire).cbz (130pp)
+         own record cv 58601 / gcd s182901 "Spider-Man: Dying Wish" (issue 2379381) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #698-700
+   G9 "Amazing Spider-Man" in Marvel\_Spider-Man\__Amazing Spider-Man\01 Amazing Spider-Man v1 (1963) — 441 file(s), numbers 1-441, pp 17-69; cv per-file 2127x441; gcd per-file 1570x339, 172683x68; key 'Amazing Spider-Man v1 (1963)' | 'The Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man 001 (1963) (Digital) (Shadowcat-Empire).cbz
+        94029 #1 1963 27pp · 94030 #2 1963 26pp · 94031 #3 1963 26pp · 94032 #4 1963 25pp · 94033 #5 1963 25pp · 94034 #6 1963 25pp · 94035 #7 1963 25pp · 94036 #8 1964 27pp · 94037 #9 1964 26pp
+        94038 #10 1964 26pp · 94039 #11 1964 25pp · 94040 #12 1964 26pp · 94041 #13 1964 26pp · 94042 #14 1964 26pp · 94043 #15 1964 26pp · 94044 #16 1964 26pp · 94045 #17 1964 26pp
+        94046 #18 1964 26pp · 94047 #19 1964 26pp · 94048 #20 1965 25pp · 94049 #21 1965 25pp · 94050 #22 1965 24pp · 94051 #23 1965 25pp · 94052 #24 1965 24pp · 94053 #25 1965 24pp
+        94054 #26 1965 22pp · 94055 #27 1965 22pp · 94056 #28 1965 22pp · 94057 #29 1965 22pp · 94058 #30 1965 22pp · 94059 #31 1965 22pp · 94060 #32 1966 22pp · 94061 #33 1966 22pp
+        94062 #34 1966 22pp · 94063 #35 1966 22pp · 94064 #36 1966 22pp · 94065 #37 1966 22pp · 94066 #38 1966 22pp · 94067 #39 1966 22pp · 94068 #40 1966 22pp · 94069 #41 1966 22pp
+        94070 #42 1966 22pp · 94071 #43 1966 22pp · 94072 #44 1967 22pp · 94073 #45 1967 22pp · 94074 #46 1967 22pp · 94075 #47 1967 22pp · 94076 #48 1967 22pp · 94077 #49 1967 22pp
+        94078 #50 1967 22pp · 94079 #51 1967 22pp · 94080 #52 1967 22pp · 94081 #53 1967 22pp · 94082 #54 1967 22pp · 94083 #55 1967 22pp · 94084 #56 1968 22pp · 94085 #57 1968 22pp
+        94086 #58 1968 22pp · 94087 #59 1968 22pp · 94088 #60 1968 22pp · 94089 #61 1968 22pp · 94090 #62 1968 22pp · 94091 #63 1968 22pp · 94092 #64 1968 22pp · 94093 #65 1968 22pp
+        94094 #66 1968 22pp · 94095 #67 1968 22pp · 94096 #68 1969 22pp · 94097 #69 1969 22pp · 94098 #70 1969 22pp · 94099 #71 1969 21pp · 94100 #72 1969 21pp · 94101 #73 1969 21pp
+        94102 #74 1969 21pp · 94103 #75 1969 21pp · 94104 #76 1969 21pp · 94105 #77 1969 21pp · 94106 #78 1969 22pp · 94107 #79 1969 22pp · 94108 #80 1970 22pp · 94109 #81 1970 22pp
+        94110 #82 1970 21pp · 94111 #83 1970 21pp · 94112 #84 1970 20pp · 94113 #85 1970 20pp · 94114 #86 1970 20pp · 94115 #87 1970 20pp · 94116 #88 1970 20pp · 94117 #89 1970 20pp
+        94118 #90 1970 20pp · 94119 #91 1970 20pp · 94120 #92 1971 20pp · 94121 #93 1971 20pp · 94122 #94 1971 20pp · 94123 #95 1971 20pp · 94124 #96 1971 20pp · 94125 #97 1971 20pp
+        94126 #98 1971 21pp · 94127 #99 1971 21pp · 94128 #100 1971 21pp · 94129 #101 1971 22pp · 94130 #102 1971 37pp · 94131 #103 1971 26pp · 94132 #104 1972 23pp · 94133 #105 1972 24pp
+        94134 #106 1972 23pp · 94135 #107 1972 23pp · 94136 #108 1972 23pp · 94137 #109 1972 23pp · 94138 #110 1972 21pp · 94139 #111 1972 21pp · 94140 #112 1972 21pp · 94141 #113 1972 21pp
+        94142 #114 1972 21pp · 94143 #115 1972 21pp · 94144 #116 1973 21pp · 94145 #117 1973 21pp · 94146 #118 1973 21pp · 94147 #119 1973 21pp · 94148 #120 1973 21pp · 94149 #121 1973 22pp
+        94150 #122 1973 22pp · 94151 #123 1973 20pp · 94152 #124 1973 20pp · 94153 #125 1973 20pp · 94154 #126 1973 20pp · 94155 #127 1973 20pp · 94156 #128 1974 20pp · 94157 #129 1974 20pp
+        94158 #130 1974 20pp · 94159 #131 1974 20pp · 94160 #132 1974 21pp · 94161 #133 1974 20pp · 94162 #134 1974 20pp · 94163 #135 1974 20pp · 94164 #136 1974 19pp · 94165 #137 1974 19pp
+        94166 #138 1974 19pp · 94167 #139 1974 19pp · 94168 #140 1975 19pp · 94169 #141 1975 19pp · 94170 #142 1975 20pp · 94171 #143 1975 20pp · 94172 #144 1975 20pp · 94173 #145 1975 20pp
+        94174 #146 1975 20pp · 94175 #147 1975 20pp · 94176 #148 1975 20pp · 94177 #149 1975 20pp · 94178 #150 1975 20pp · 94179 #151 1975 20pp · 94180 #152 1976 20pp · 94181 #153 1976 20pp
+        94182 #154 1976 19pp · 94183 #155 1976 19pp · 94184 #156 1976 19pp · 94185 #157 1976 18pp · 94186 #158 1976 18pp · 94187 #159 1976 18pp · 94188 #160 1976 18pp · 94189 #161 1976 19pp
+        94190 #162 1976 20pp · 94191 #163 1977 18pp · 94192 #164 1977 18pp · 94193 #165 1977 18pp · 94194 #166 1977 19pp · 94195 #167 1977 18pp · 94196 #168 1977 18pp · 94197 #169 1977 19pp
+        94198 #170 1977 19pp · 94199 #171 1977 18pp · 94200 #172 1977 20pp · 94201 #173 1977 20pp · 94202 #174 1977 19pp · 94203 #175 1977 19pp · 94204 #176 1978 19pp · 94205 #177 1978 19pp
+        94206 #178 1978 19pp · 94207 #179 1978 19pp · 94208 #180 1978 20pp · 94209 #181 1978 18pp · 94210 #182 1978 19pp · 94211 #183 1978 19pp · 94212 #184 1978 18pp · 94213 #185 1978 19pp
+        94214 #186 1978 19pp · 94215 #187 1978 19pp · 94216 #188 1978 19pp · 94217 #189 1979 20pp · 94218 #190 1979 19pp · 94219 #191 1979 18pp · 94220 #192 1979 19pp · 94221 #193 1979 18pp
+        94222 #194 1979 18pp · 94223 #195 1979 19pp · 94224 #196 1979 18pp · 94225 #197 1979 19pp · 94226 #198 1979 18pp · 94227 #199 1979 18pp · 94228 #200 1980 37pp · 94229 #201 1980 17pp
+        94230 #202 1980 18pp · 94231 #203 1980 19pp · 94232 #204 1980 18pp · 94233 #205 1980 19pp · 94234 #206 1980 19pp · 94235 #207 1980 18pp · 94236 #208 1980 19pp · 94237 #209 1980 19pp
+        94238 #210 1980 24pp · 94239 #211 1980 24pp · 94240 #212 1981 24pp · 94241 #213 1981 24pp · 94242 #214 1981 24pp · 94243 #215 1981 24pp · 94244 #216 1981 24pp · 94245 #217 1981 24pp
+        94246 #218 1981 24pp · 94247 #219 1981 24pp · 94248 #220 1981 24pp · 94249 #221 1981 23pp · 94250 #222 1981 23pp · 94251 #223 1981 24pp · 94252 #224 1982 23pp · 94253 #225 1982 22pp
+        94254 #226 1982 23pp · 94255 #227 1982 23pp · 94256 #228 1982 23pp · 94257 #229 1982 25pp · 94258 #230 1982 24pp · 94259 #231 1982 24pp · 94260 #232 1982 24pp · 94261 #233 1982 24pp
+        94262 #234 1982 24pp · 94263 #235 1982 24pp · 94264 #236 1983 24pp · 94265 #237 1983 24pp · 94266 #238 1983 24pp · 94267 #239 1983 24pp · 94268 #240 1983 23pp · 94269 #241 1983 24pp
+        94270 #242 1983 24pp · 94271 #243 1983 24pp · 94272 #244 1983 24pp · 94273 #245 1983 24pp · 94274 #246 1983 24pp · 94275 #247 1983 24pp · 94276 #248 1984 24pp · 94277 #249 1984 24pp
+        94278 #250 1984 24pp · 94279 #251 1984 22pp · 94280 #252 1984 23pp · 94281 #253 1984 24pp · 94282 #254 1984 24pp · 94283 #255 1984 24pp · 94284 #256 1984 24pp · 94285 #257 1984 24pp
+        94286 #258 1984 25pp · 94287 #259 1984 24pp · 94288 #260 1985 24pp · 94289 #261 1985 24pp · 94290 #262 1985 23pp · 94291 #263 1985 24pp · 94292 #264 1985 24pp · 94293 #265 1985 24pp
+        94294 #266 1985 25pp · 94295 #267 1985 24pp · 94296 #268 1985 24pp · 94297 #269 1985 24pp · 94298 #270 1985 24pp · 94299 #271 1985 24pp · 94300 #272 1986 24pp · 94301 #273 1986 25pp
+        94302 #274 1986 29pp · 94303 #275 1986 39pp · 94304 #276 1986 24pp · 94305 #277 1986 24pp · 94306 #278 1986 24pp · 94307 #279 1986 24pp · 94308 #280 1986 24pp · 94309 #281 1986 24pp
+        94310 #282 1986 24pp · 94311 #283 1986 25pp · 94312 #284 1987 23pp · 94313 #285 1987 24pp · 94314 #286 1987 24pp · 94315 #287 1987 24pp · 94316 #288 1987 23pp · 94317 #289 1987 42pp
+        94318 #290 1987 24pp · 94319 #291 1995 26pp · 94320 #292 1987 25pp · 94321 #293 1987 24pp · 94322 #294 1987 26pp · 94323 #295 1987 24pp · 94324 #296 1988 25pp · 94325 #297 1988 25pp
+        94326 #298 1988 24pp · 94327 #299 1988 24pp · 94328 #300 1988 42pp · 94329 #301 1988 24pp · 94330 #302 1988 24pp · 94331 #303 1988 25pp · 94332 #304 1988 24pp · 94333 #305 1988 24pp
+        94334 #306 1988 24pp · 94335 #307 1988 24pp · 94336 #308 1988 24pp · 94337 #309 1988 24pp · 94338 #310 1988 24pp · 94339 #311 1989 25pp · 94340 #312 1989 24pp · 94341 #313 1989 24pp
+        94342 #314 1989 24pp · 94343 #315 1989 24pp · 94344 #316 1989 24pp · 94345 #317 1989 24pp · 94346 #318 1989 24pp · 94347 #319 1989 24pp · 94348 #320 1989 24pp · 94349 #321 1989 24pp
+        94350 #322 1989 24pp · 94351 #323 1989 23pp · 94352 #324 1989 23pp · 94353 #325 1989 24pp · 94354 #326 1989 24pp · 94355 #327 1989 24pp · 94356 #328 1990 25pp · 94357 #329 1990 24pp
+        94358 #330 1990 23pp · 94359 #331 1990 23pp · 94360 #332 1990 24pp · 94361 #333 1990 23pp · 94362 #334 1990 24pp · 94363 #335 1990 23pp · 94364 #336 1990 24pp · 94365 #337 1990 24pp
+        94366 #338 1990 25pp · 94367 #339 1990 24pp · 94368 #340 1990 24pp · 94369 #341 1990 24pp · 94370 #342 1990 24pp · 94371 #343 1991 24pp · 94372 #344 1991 23pp · 94373 #345 1991 24pp
+        94374 #346 1991 24pp · 94375 #347 1991 24pp · 94376 #348 1991 24pp · 94377 #349 1991 24pp · 94378 #350 1991 39pp · 94379 #351 1991 25pp · 94380 #352 1991 24pp · 94381 #353 1991 24pp
+        94382 #354 1991 25pp · 94383 #355 1991 24pp · 94384 #356 1991 24pp · 94385 #357 1992 23pp · 94386 #358 1992 24pp · 94387 #359 1992 24pp · 94388 #360 1992 24pp · 94389 #361 1992 25pp
+        94390 #362 1992 24pp · 94391 #363 1992 24pp · 94392 #364 1992 24pp · 94393 #365 1992 69pp · 94394 #366 1992 24pp · 94395 #367 1992 25pp · 94396 #368 1992 24pp · 94397 #369 1992 24pp
+        94398 #370 1992 24pp · 94399 #371 1992 24pp · 94400 #372 1993 25pp · 94401 #373 1993 24pp · 94402 #374 1993 24pp · 94403 #375 1993 54pp key="The Amazing Spider-Man (1963)"
+        94404 #376 1993 24pp · 94405 #377 1993 24pp · 94406 #378 1993 25pp · 94407 #379 1993 25pp · 94408 #380 1993 24pp · 94409 #381 1993 25pp · 94410 #382 1993 24pp · 94411 #383 1993 24pp
+        94412 #384 1993 24pp · 94413 #385 1994 25pp · 94414 #386 1994 24pp · 94415 #387 1994 24pp · 94416 #388 1994 56pp · 94417 #389 1994 25pp · 94418 #390 1994 24pp · 94419 #391 1994 24pp
+        94420 #392 1994 25pp · 94421 #393 1994 24pp · 94422 #394 1994 36pp key="The Amazing Spider-Man (1963)" · 94423 #395 1994 25pp · 94424 #396 1994 25pp · 94425 #397 1995 24pp
+        94426 #398 1995 25pp · 94427 #399 1995 24pp · 94428 #400 1995 53pp · 94429 #401 1995 24pp · 94430 #402 1995 23pp · 94431 #403 1995 24pp · 94432 #404 1995 24pp · 94433 #405 1995 24pp
+        94434 #406 1995 24pp · 94435 #407 1996 24pp · 94436 #408 1996 24pp · 94437 #409 1996 23pp · 94438 #410 1996 23pp · 94439 #411 1996 23pp · 94440 #412 1996 22pp · 94441 #413 1996 22pp
+        94442 #414 1996 23pp · 94443 #415 1996 23pp · 94444 #416 1996 22pp · 94445 #417 1996 23pp · 94446 #418 1996 21pp · 94447 #419 1997 23pp · 94448 #420 1997 22pp · 94449 #421 1997 24pp
+        94450 #422 1997 24pp · 94451 #423 1997 24pp · 94452 #424 1997 24pp · 94453 #425 1997 41pp · 94454 #426 1997 24pp · 94455 #427 1997 22pp · 94456 #428 1997 24pp · 94457 #429 1997 25pp
+        94458 #430 1998 24pp · 94459 #431 1998 24pp · 94460 #432 1998 24pp · 94461 #433 1998 24pp · 94462 #434 1998 24pp · 94463 #435 1998 24pp · 94464 #436 1998 24pp · 94465 #437 1998 24pp
+        94466 #438 1998 24pp · 94468 #440 1998 24pp · 94469 #441 1998 24pp
+      [94467] Amazing Spider-Man 439 (1998) (Digital) (Shadowcat-Empire.cbz (24pp)
+   G10 "Amazing Spider-Man" in Marvel\_Spider-Man\__Amazing Spider-Man\03 Amazing Spider-Man v1 (2003) — 203 file(s), numbers 1, 500-536, 538-700, pp 20-104; cv per-file 2127x203; gcd per-file 11288x200; key 'Amazing Spider-Man v1 (2003)'
+      e.g. Amazing Spider-Man 500 (2003) (digital) (Minutemen-Faessla).cbz
+        94512 #500 2003 38pp · 94513 #501 2004 22pp · 94514 #502 2004 23pp · 94515 #503 2004 23pp · 94516 #504 2004 21pp · 94517 #505 2004 23pp · 94518 #506 2004 21pp · 94519 #507 2004 22pp
+        94520 #508 2004 24pp · 94521 #509 2004 23pp · 94522 #510 2004 23pp · 94523 #511 2004 22pp · 94524 #512 2004 23pp · 94525 #513 2004 23pp · 94526 #514 2005 23pp · 94527 #515 2005 23pp
+        94528 #516 2005 24pp · 94529 #517 2005 23pp · 94530 #518 2005 24pp · 94531 #519 2005 23pp · 94532 #520 2005 23pp · 94533 #521 2005 23pp · 94534 #522 2005 21pp · 94535 #523 2005 24pp
+        94536 #524 2005 23pp · 94537 #525 2005 24pp · 94538 #526 2006 22pp · 94539 #527 2006 25pp · 94540 #528 2006 24pp · 94541 #529 2006 23pp · 94542 #530 2006 23pp · 94543 #531 2006 23pp
+        94544 #532 2006 23pp · 94545 #533 2006 24pp · 94546 #534 2006 23pp · 94547 #535 2006 21pp · 94548 #536 2006 24pp · 94550 #538 2007 23pp · 94551 #539 2007 26pp · 94552 #540 2007 26pp
+        94553 #541 2007 25pp · 94554 #542 2007 25pp · 94555 #543 2007 24pp · 94556 #544 2006 26pp · 94557 #545 2006 40pp · 94558 #546 2008 38pp · 94559 #547 2008 26pp · 94560 #548 2008 26pp
+        94561 #549 2008 25pp · 94562 #550 2008 26pp · 94563 #551 2008 26pp · 94564 #552 2008 26pp · 94565 #553 2008 25pp · 94566 #554 2008 27pp · 94567 #555 2008 26pp · 94568 #556 2008 26pp
+        94569 #557 2008 25pp · 94570 #558 2008 26pp · 94571 #559 2008 25pp · 94572 #560 2008 26pp · 94573 #561 2008 27pp · 94574 #562 2008 25pp · 94575 #563 2008 26pp · 94576 #564 2008 26pp
+        94577 #565 2008 25pp · 94578 #566 2008 25pp · 94579 #567 2008 26pp · 94580 #568 2008 40pp · 94581 #569 2008 26pp · 94582 #570 2008 27pp · 94583 #571 2008 26pp · 94584 #572 2008 27pp
+        94585 #573 2008 39pp · 94586 #574 2008 26pp · 94587 #575 2008 24pp · 94588 #576 2009 25pp · 94589 #577 2009 42pp · 94590 #578 2009 26pp · 94591 #579 2009 26pp · 94592 #580 2009 26pp
+        94593 #581 2009 26pp · 94594 #582 2009 32pp · 94595 #583 2009 38pp · 94596 #584 2009 31pp · 94597 #585 2009 26pp · 94598 #586 2009 33pp · 94599 #587 2009 33pp · 94600 #588 2009 35pp
+        94601 #589 2009 26pp · 94602 #590 2009 25pp · 94603 #591 2009 27pp · 94604 #592 2009 25pp · 94605 #593 2009 26pp · 94606 #594 2009 27pp · 94607 #595 2009 28pp · 94608 #596 2009 25pp
+        94609 #597 2009 24pp · 94610 #598 2009 27pp · 94611 #599 2009 25pp · 94612 #600 2009 104pp · 94613 #601 2009 30pp · 94614 #602 2009 26pp · 94615 #603 2009 26pp · 94616 #604 2009 27pp
+        94617 #605 2009 51pp · 94618 #606 2009 25pp · 94619 #607 2009 26pp · 94620 #608 2009 26pp · 94621 #609 2009 26pp · 94622 #610 2010 26pp · 94623 #611 2010 24pp · 94624 #612 2010 34pp
+        94625 #613 2010 26pp · 94626 #614 2010 27pp · 94627 #615 2010 26pp · 94628 #616 2010 24pp · 94629 #617 2010 37pp · 94630 #618 2010 24pp · 94631 #619 2010 26pp · 94632 #620 2010 25pp
+        94633 #621 2010 26pp · 94634 #622 2010 36pp · 94635 #623 2010 26pp · 94636 #624 2010 26pp · 94637 #625 2010 27pp · 94638 #626 2010 25pp · 94639 #627 2010 25pp · 94640 #628 2010 33pp
+        94641 #629 2010 29pp · 94642 #630 2010 24pp · 94643 #631 2010 24pp · 94644 #632 2010 25pp · 94645 #633 2010 27pp · 94646 #634 2010 38pp · 94647 #635 2010 37pp · 94648 #636 2010 38pp
+        94649 #637 2010 49pp · 94650 #638 2010 46pp · 94651 #639 2010 35pp · 94652 #640 2010 29pp · 94653 #641 2010 45pp · 94654 #642 2010 27pp · 94655 #643 2010 27pp · 94656 #644 2010 27pp
+        94657 #645 2010 27pp · 94658 #646 2010 25pp · 94659 #647 2010 61pp · 94660 #648 2011 50pp · 94661 #649 2011 34pp · 94662 #650 2011 34pp · 94663 #651 2011 32pp · 94664 #652 2011 33pp
+        94665 #653 2011 34pp · 94666 #654 2011 34pp · 94668 #655 2011 29pp · 94669 #656 2011 32pp · 94670 #657 2011 34pp · 94671 #658 2011 32pp · 94672 #659 2011 35pp · 94673 #660 2011 34pp
+        94674 #661 2011 30pp · 94675 #662 2011 36pp · 94676 #663 2011 38pp · 94677 #664 2011 32pp · 94678 #665 2011 32pp · 94679 #666 2011 33pp · 94680 #667 2011 24pp · 94681 #668 2011 27pp
+        94682 #669 2011 25pp · 94683 #670 2011 28pp · 94684 #671 2011 28pp · 94685 #672 2011 25pp · 94686 #673 2012 26pp · 94687 #674 2012 25pp · 94688 #675 2012 23pp · 94689 #676 2012 24pp
+        94690 #677 2012 24pp · 94691 #678 2012 20pp · 94692 #679 2012 22pp · 94694 #680 2012 20pp · 94695 #681 2012 24pp · 94696 #682 2012 21pp · 94697 #683 2012 20pp · 94698 #684 2012 23pp
+        94699 #685 2012 22pp · 94700 #686 2012 21pp · 94701 #687 2012 23pp · 94702 #688 2012 24pp · 94703 #689 2012 23pp · 94704 #690 2012 24pp · 94705 #691 2012 22pp · 94706 #692 2012 56pp
+        94707 #693 2012 24pp · 94708 #694 2012 24pp · 94709 #695 2012 24pp · 94710 #696 2012 24pp · 94711 #697 2013 24pp · 94712 #698 2013 23pp · 94713 #699 2013 22pp · 94715 #700 2013 97pp
+      [94667] Amazing Spider-Man 654.1 (2011) (Digital) (G85-Empire).cbr (24pp)
+      [94693] Amazing Spider-Man 679.1 (2012) (digital) (Minutemen-Faessla).cbz (24pp)
+      [94714] Amazing Spider-Man 699.1 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp)
+   G11 "Amazing Spider-Man" in Marvel\_Spider-Man\__Amazing Spider-Man\03 Amazing Spider-Man v1 (2003)\Variant Covers — 9 file(s), numbers 2-3, 555, 568, 600, 612-613, 638-639, pp 1-1; cv per-file 2127x9; gcd per-file 11288x7; key 'Amazing Spider-Man v1 (2003)'
+      e.g. Amazing Spider-Man 555 (Variant) (2008) (Digital) (MikeNY76-Empire).cbz
+        94716 #555 2008 1pp · 94717 #568 2008 1pp · 94718 #600 2009 1pp · 94719 #612 2009 1pp · 94720 #613 2009 1pp · 94721 #638 2010 1pp · 94722 #639 2010 1pp
+      [94723] Amazing Spider-Man 700.2 (Variant) (2013) (Digital) (MikeNY76-Empire).cbz (1pp)
+      [94724] Amazing Spider-Man 700.3 (Variant) (2013) (Digital) (MikeNY76-Empire).cbz (1pp)
+   G12 "Amazing Spider-Man" in Marvel\_Spider-Man\__OGNs, Minis & One-shots\Spider-Man - Maximum Clonage (1995) — 1 file(s), numbers 404, pp 24-24; cv per-file 2127x1; gcd per-file 1570x1; key 'Amazing Spider-Man (1963)'
+      [95693] 03 Amazing Spider-Man 404 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+   G13 "Amazing Spider-Man" in Marvel\_Venom\11 Venom - Sinner Takes All (1995)\Bride of Venom (First She-Venom Appearance) — 1 file(s), numbers 375, pp 29-29; cv per-file 2127x1; gcd per-file 1570x1; key 'Amazing Spider-Man (1963)'
+      [97980] Amazing Spider-Man 375 (1993) (Digital) (AnPymGold-Empire).cbz (29pp)
+   G14 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0006 Various Cameos — 1 file(s), numbers 92, pp 20-20; cv per-file 2127x1; gcd per-file 1570x1; key 'Amazing Spider-Man (1963)'
+      [86622] 007 Amazing Spider-Man 092 (1971) (Digital) (AnPymGold - Empire).cbz (20pp)
+   G15 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0008 Second Genesis — 2 file(s), numbers 161-162, pp 18-19; cv per-file 2127x2; gcd per-file 1570x2; key 'Amazing Spider-Man (1963)'
+      [86659] 014 Amazing Spider-Man 161 (1976) (Digital) (AnPymGold - Empire).cbz (18pp)
+      [86660] 015 Amazing Spider-Man 162 (1976) (Digital) (AnPymGold - Empire).cbz (19pp)
+   G16 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0012 Proteus — 1 file(s), numbers 203, pp 19-19; cv per-file 2127x1; gcd per-file 1570x1; key 'Amazing Spider-Man (1963)'
+      [86742] 017 Amazing Spider-Man 203 (1980) (Digital) (AnHeroGold-Empire).cbz (19pp)
+   G17 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0059 Untitled — 1 file(s), numbers 282, pp 24-24; cv per-file 2127x1; gcd per-file 1570x1; key 'Amazing Spider-Man (1963)'
+      [87120] 001 Amazing Spider-Man 282 (1986) (Digital) (AnPymGold - Empire).cbz (24pp)
+   G18 "Amazing Spider-Man Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0078 Evolutionary war — 1 file(s), numbers 22, pp 52-52; cv per-file 2189x1; gcd per-file 1635x1; key 'Amazing Spider-Man (1963)'
+      [87238] 005 Amazing Spider-Man Annual 022 (1988) (Digital) (Shadowcat-Empire).cbz (52pp)
+   G19 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0087 Inferno After Effects — 3 file(s), numbers 311-313, pp 23-24; cv per-file 2127x3; gcd per-file 1570x3; key 'Amazing Spider-Man (1963)'
+      [87304] Amazing Spider-Man 311 (1989) (Digital) (AnPymGold - Empire).cbz (24pp)
+      [87305] Amazing Spider-Man 312 (1989) (Digital) (AnPymGold - Empire).cbz (23pp)
+      [87306] Amazing Spider-Man 313 (1989) (Digital) (AnPymGold - Empire).cbz (23pp)
+   G20 "Amazing Spider-Man Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0093 Atlantis Attacks — 1 file(s), numbers 23, pp 57-57; cv per-file 2189x1; gcd per-file 1635x1; key 'Amazing Spider-Man (1963)'
+      [87349] 004 Amazing Spider-Man Annual 023 (1989) (Digital) (Shadowcat-Empire).cbz (57pp)
+   G21 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance — 4 file(s), numbers 326-329, pp 23-24; cv per-file 2127x4; gcd per-file 1570x4; key 'Amazing Spider-Man (1963)'
+      e.g. 014 Amazing Spider-Man 326 (1989) (Digital) (AnPymGold - Empire).cbz
+        87479 #326 1989 24pp · 87514 #327 1989 23pp · 87518 #328 1990 24pp · 87530 #329 1990 24pp
+   G22 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught — 1 file(s), numbers 415, pp 23-23; cv per-file 2127x1; gcd per-file 1570x1; key 'Amazing Spider-Man (1963)'
+      [88436] 026 Amazing Spider-Man 415 (1996) (digital) (Minutemen-Bluntman).cbr (23pp)
+   G23 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0311 Untitled — 1 file(s), numbers 420, pp 22-22; cv per-file 2127x1; gcd per-file 1570x1; key 'Amazing Spider-Man (1963)'
+      [88550] 006 Amazing Spider-Man 420 (1997) (Digital) (AnPymGold-Empire).cbz (22pp)
+   G24 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0719 Civil War - Phase One — 5 file(s), numbers 529-533, pp 23-24; cv per-file 2127x5; gcd per-file 11288x5; key 'Amazing Spider-Man (1963)'
+      e.g. 004 Amazing Spider-Man 529 (2006) (digital-hd) (Kleio-Empire).cbz
+        90463 #529 2006 23pp · 90464 #530 2006 23pp · 90465 #531 2006 23pp · 90471 #532 2006 23pp · 90477 #533 2006 24pp
+   G25 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0723 Civil War - X-Men — 1 file(s), numbers 534, pp 23-23; cv per-file 2127x1; gcd per-file 11288x1; key 'Amazing Spider-Man (1963)'
+      [90514] 016 Amazing Spider-Man 534 (2006) (digital) (Minutemen-Faessla).cbz (23pp)
+   G26 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0728 Civil War - Phase Two — 4 file(s), numbers 535-538, pp 21-24; cv per-file 2127x4; gcd per-file 11288x4; key 'Amazing Spider-Man (1963)'
+      e.g. 001 Amazing Spider-Man 535 (2006) (digital) (Minutemen-Faessla).cbz
+        90546 #535 2006 21pp · 90565 #536 2006 24pp · 90583 #537 2007 23pp · 90591 #538 2007 23pp
+   G27 "Amazing Spider-Man Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0915 Identity Wars — 1 file(s), numbers 38, pp 34-34; cv per-file 2189x1; key 'Amazing Spider-Man (1963)'
+      [91734] 001 Amazing Spider-Man Annual 038 (2011) (Digital) (Zone-Empire).cbr (34pp)
+   G28 "Spider-Man - Death of the Stacys (2007) (Digital) (Kileko-Empire)" in _Marvel Major Event Chronology (digital)\1973.06 - Spider-man - The Death of Gwen Stacy — 1 file(s), 1 COL, pp 145-145; cv per-file 33398x1; gcd per-file 27784x1; key 'Spider-Man - Death of the Stacys'
+      [116306] COL Spider-Man - Death of the Stacys (2007) (Digital) (Kileko-Empire).cbr (145pp)
+         own record cv 33398 / gcd s27784 "Spider-Man: Death of the Stacys" (issue 394243) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #88-92, #121-122
+   G29 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\1973.06 - Spider-man - The Death of Gwen Stacy\Extras — 5 file(s), numbers 14, 31, 39, 53, 59, pp 22-26; cv per-file 2127x5; gcd per-file 172683x5; key 'Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man 014 (1964) (Digital) (TLK-EMPIRE-HD).cbr
+        116295 #14 1964 26pp · 116296 #31 1965 22pp · 116297 #39 1966 22pp · 116298 #53 1967 22pp · 116299 #59 1968 22pp
+   G30 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\1975.02 - Spider-man - The Clone Saga I — 13 file(s), numbers 139-151, pp 18-19; cv per-file 2127x13; gcd per-file 1570x13; key 'Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man 139 (1974) (Digital) (F) (AnPymGold - Empire).cbz
+        116321 #139 1974 18pp · 116322 #140 1975 18pp · 116323 #141 1975 18pp · 116324 #142 1975 19pp · 116325 #143 1975 19pp · 116326 #144 1975 19pp · 116327 #145 1975 19pp · 116328 #146 1975 19pp
+        116329 #147 1975 19pp · 116330 #148 1975 19pp · 116331 #149 1975 19pp · 116332 #150 1975 19pp · 116333 #151 1975 19pp
+   G31 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\1975.02 - Spider-man - The Clone Saga I\Extra — 3 file(s), numbers 129, 136-137, pp 18-20; cv per-file 2127x3; gcd per-file 1570x3; key 'Amazing Spider-Man (1963)'
+      [116334] Amazing Spider-Man 129 (1974) (Digital) (AnHeroGold-Empire).cbz (20pp)
+      [116335] Amazing Spider-Man 136 (1974) (Digital) (AnPymGold - Empire).cbz (18pp)
+      [116336] Amazing Spider-Man 137 (1974) (Digital) (AnPymGold - Empire).cbz (18pp)
+   G32 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\1986.02 - Daredevil - Born Again\Extra\Amazing Spider-Man 050-52 (1967) — 3 file(s), numbers 50-52, pp 22-22; cv per-file 2127x3; gcd per-file 172683x3; key 'Amazing Spider-Man (1963)'
+      [116394] Amazing Spider-Man 050 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+      [116395] Amazing Spider-Man 051 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+      [116396] Amazing Spider-Man 052 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+   G33 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\1987.10 - Spider-man - Kraven's Last Hunt\Extra — 2 file(s), numbers 15, 18, pp 26-26; cv per-file 2127x2; gcd per-file 172683x2; key 'Amazing Spider-Man (1963)'
+      [116400] Amazing Spider-Man 015 (1964) (Digital) (TLK-EMPIRE-HD).cbr (26pp)
+      [116401] Amazing Spider-Man 018 (1964) (Digital) (TLK-EMPIRE-HD).cbr (26pp)
+   G34 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\1993.05 - Spider-man - Maximum Carnage\Extra\01 Amazing Spider-man - Venom (1988) (Digital) (AnPymGold-Empire) — 2 file(s), numbers 299-300, pp 23-41; cv per-file 2127x2; gcd per-file 1570x2; key 'Amazing Spider-Man (1963)'
+      [116453] Amazing Spider-Man 299 (1988) (Digital) (AnPymGold - Empire).cbz (23pp)
+      [116454] Amazing Spider-Man 300 (1988) (Digital) (AnPymGold - Empire).cbz (41pp)
+   G35 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\1993.05 - Spider-man - Maximum Carnage\Extra\03 Amazing Spider-man - Carnage (1992) (Digital) (AnPymGold-Empire) — 3 file(s), numbers 361-363, pp 23-24; cv per-file 2127x3; gcd per-file 1570x3; key 'Amazing Spider-Man (1963)'
+      [116455] Amazing Spider-Man 361 (1992) (Digital) (AnPymGold-Empire).cbz (24pp)
+      [116456] Amazing Spider-Man 362 (1992) (Digital) (AnPymGold-Empire).cbz (23pp)
+      [116457] Amazing Spider-Man 363 (1992) (Digital) (AnPymGold-Empire).cbz (24pp)
+   G36 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2006.07 - Civil War\03 Civil War - Spider-Man Unmasked — 1 file(s), numbers 538, pp 23-23; cv per-file 2127x1; gcd per-file 11288x1; key 'Amazing Spider-Man (1963)'
+      [116708] 05 Amazing Spider-Man 538 (2007) (digital-hd) (Kleio-Empire).cbz (23pp)
+   G37 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2007.11 - Spider-man - One More Day\Extra — 6 file(s), numbers 25, 42-43, 257-259, pp 22-24; cv per-file 2127x6; gcd per-file 172683x3, 1570x3; key 'Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man 025 (1965) (Digital) (TLK-EMPIRE-HD).cbr
+        116916 #25 1965 24pp · 116917 #42 1966 22pp · 116918 #43 1966 22pp · 116919 #257 1984 23pp · 116920 #258 1984 24pp · 116921 #259 1984 23pp
+   G38 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2007.11 - Spider-man - One More Day\Extra\Spider-man - Brand New Day — 15 file(s), numbers 547-553, 555-556, 558-562, 564, pp 25-27; cv per-file 2127x15; gcd per-file 11288x15; key 'Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man 547 (2008) (Digital-HD) (Monafekk-Empire).cbr
+        116923 #547 2008 26pp · 116924 #548 2008 26pp · 116925 #549 2008 25pp · 116926 #550 2008 26pp · 116927 #551 2008 26pp · 116928 #552 2008 26pp · 116929 #553 2008 25pp · 116931 #555 2008 26pp
+        116932 #556 2008 26pp · 116934 #558 2008 26pp · 116935 #559 2008 25pp · 116936 #560 2008 26pp · 116937 #561 2008 27pp · 116938 #562 2008 25pp · 116940 #564 2008 26pp
+   G39 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Amazing Spider-man — 5 file(s), numbers 595-599, pp 24-28; cv per-file 2127x5; gcd per-file 11288x5; key 'Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man 595 (2009) (Digital-HD) (Monafekk-Empire).cbr
+        116999 #595 2009 28pp · 117000 #596 2009 25pp · 117001 #597 2009 24pp · 117002 #598 2009 27pp · 117003 #599 2009 25pp
+   G40 "The Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2012.11 - Spider-man - Dying Wish — 4 file(s), numbers 3, 698-700, pp 22-97; cv per-file 2127x3, 73420x1; gcd per-file 11288x3, 80405x1; key 'The Amazing Spider-Man (1963)' | 'Amazing Spider-Man v1 (1963)'
+      [117718] 01 The Amazing Spider-Man 698 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp)  key="The Amazing Spider-Man (1963)"
+      [117719] 02 The Amazing Spider-Man 699 (2013) (digital) (Minutemen-InnerDemons).cbr (22pp)  key="The Amazing Spider-Man (1963)"
+      [117720] 03 The Amazing Spider-Man 699.1 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp)
+      [117721] 04 The Amazing Spider-Man 700 (2013) (digital) (Minutemen-InnerDemons).cbr (97pp)  key="The Amazing Spider-Man (1963)"
+
+== S64850 Guardians of the Galaxy  [split]  72 files / 5 collections  decided in R-157 (S)
+   decided: S 64850 cv=4398 gcd=4026 0.9 | Guardians of the Galaxy (Marvel 1990-1995): CV 4398 (1990, 62, cached #1-62) and GCD 4026 (1990-1995, 62) agree on publisher, span and count; our "Guardians of the Galaxy #001-#062" ladder 1-9, 11-62 fills it, and the five books are its own editions - Guardians of the Galaxy by Jim Valentino Vol. 1-3 (CV 70825 / GCD 79146, a creator line reprinting this one run) and Classic: In the Year 3000 Vol. 1-2 (GCD 104530 rows roll up s4026 #30-39 / #40-50); 0.9 for the four 1991-1994 Annuals, the Marvel Presents #3 facsimile and a 2017 #1.MU
+   F 64850 split-needed | item 101939 ("Guardians of the Galaxy 001.MU (2017)" 33pp, folder Monsters Unleashed\Dot MU Tie-ins) is Guardians of the Galaxy (2015) #1.MU (CV 85290 issue 585079 / GCD 93071 row 1680026, 40pp), the run S8162 stores (stored cv=85290, S line R-070 cv=85290 gcd=93071) -> join S8162 on its key "Guardians of the Galaxy v4 (2015)" (L-368)
+   N 64850 residue kept: Guardians of the Galaxy Annual #1-4 (1991-1994; CV 4595 / GCD 4244) - no shelf stores the annual series, so they stay with the run (L-391); "Guardians of the Galaxy - Marvel Presents 003 - Facsimile Edition (2019)" is the one-shot Guardians of the Galaxy: Marvel Presents No. 3 Facsimile Edition (CV 116369 / GCD 137206), stored by no shelf - a single one-shot left as residue
+   N 80290 also collects Galactic Guardians (1994) #1-4 and Guardians of the Galaxy Annual #4 per GCD row 1618897's roll-up
+   named: S8162 Guardians of the Galaxy - New Guard  8 files  keys: "Guardians of the Galaxy - New Guard" | "Guardians of the Galaxy v4 (2015)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65131 "Marvel Comics Presents" 523f [shares gcd=3654 (collected by item 80289) — S cv=4058 gcd=3654 (C-046 0.95)] keys: "Marvel Comics Presents (1988)" | "Marvel Comics Presents v1 (1988)"
+   nearby: S11370 "Marvel Age" 39f [shares gcd=69795 (collected by item 80286) — S cv=19176 gcd=69795 (R-137 0.9)] keys: "Marvel Age" | "Marvel Age Annual"
+   nearby: S11597 "Marvel Super-Heroes" 9f [shares gcd=1810 (collected by item 80288) — S cv=2353 gcd=1810 (R-046 0.95)] keys: "Marvel Super-Heroes" | "Marvel Super-Heroes v1 (1967)"
+   nearby: S7155 "Galactic Guardians" 4f [shares gcd=5011 (collected by item 80290) — S cv=5299 gcd=5011 (B-057 0.95)] keys: "Galactic Guardians"
+   nearby: S64851 "Guardians of the Galaxy" 83f [title — S cv=21550 gcd=30802 (R-157 0.95)] keys: "Guardians of the Galaxy (2008)" | "Guardians of the Galaxy v2 (2008)"
+   nearby: S8138 "Guardians of the Galaxy" 34f [title — S cv=57960 gcd=72411 (R-157 0.9)] keys: "Guardians Of The Galaxy" | "Guardians of the Galaxy" | "Guardians of the Galaxy v3 (2013)"
+   nearby: S94617 "Guardians of the Galaxy v6 (2020)" 4f [title — S cv=124447 gcd=155084 (R-069 0.9)] keys: "Guardians of the Galaxy v6 (2020)"
+   nearby: S94618 "Guardians of the Galaxy" 3f [title — S cv=149391 gcd=199169 (R-016 0.95)] keys: "Guardians Of The Galaxy - Grootrise" | "Guardians of the Galaxy v7 (2023)"
+   nearby: S94616 "Guardians of the Galaxy v5 (2019)" 2f [title — S cv=116702 gcd=138278 (R-069 0.95)] keys: "Guardians of the Galaxy v5 (2019)"
+   nearby: S8158 "Guardians of the Galaxy - Guardians of Infinity" 1f [title+1 — S cv=86359 gcd=94625 (R-069 0.95)] keys: "Guardians of the Galaxy - Guardians of Infinity"
+   keys now: "Guardians of the Galaxy (1990)" x66 · "Guardians of the Galaxy By Jim Valentino (2014)" x3 · "Guardians of the Galaxy Classic - In The Year (1990)" x2 · "Guardians of the Galaxy: Marvel Presents (1990)" x1
+   groups (title x folder): 6
+   G1 "Guardians of the Galaxy 001.MU (2017) (Digital) (Zone-Empire)" in Marvel\Monsters Unleashed\Monsters Unleashed v1 (2017)\Dot MU Tie-ins — 1 file(s), numbers 1, pp 33-33; cv per-file 85290x1; gcd per-file 93071x1; key 'Guardians of the Galaxy (1990)'
+      [101939] Guardians of the Galaxy 001.MU (2017) (Digital) (Zone-Empire).cbr (33pp)
+   G2 "Guardians of the Galaxy By Jim Valentino" in Marvel\_Guardians of the Galaxy\01 Guardians of the Galaxy v1 (1990) — 3 file(s), 3 COL, pp 297-301; cv per-file 70825x3; gcd per-file 79146x3; key 'Guardians of the Galaxy By Jim Valentino (2014)'
+      [80286] COL 01 Guardians of the Galaxy By Jim Valentino Vol. 01 (2014) (digital) (Minutemen-Slayer).cbr (297pp)
+         own record cv 70825 / gcd s79146 "Guardians of the Galaxy by Jim Valentino" (issue 1181243) COLLECTS: gcd=4026 Guardians of the Galaxy (1990) #1-7 · gcd=4244 Guardians of the Galaxy Annual (1991) #1 · gcd=1750 Thor Annual (1966) #16 · gcd=69795 Marvel Age (1983) #86, #88
+      [80287] COL 02 Guardians of the Galaxy By Jim Valentino Vol. 02 (2014) (Digital) (AnHeroGold-Empire).cbz (301pp)
+         own record cv 70825 / gcd s79146 "Guardians of the Galaxy by Jim Valentino" (issue 1181244) COLLECTS: gcd=4026 Guardians of the Galaxy (1990) #8-20 · gcd=69795 Marvel Age (1983) #98
+      [80288] COL 03 Guardians of the Galaxy By Jim Valentino Vol. 03 (2015) (Digital) (AnHeroGold-Empire).cbz (297pp)
+         own record cv 70825 / gcd s79146 "Guardians of the Galaxy by Jim Valentino" (issue 1485017) COLLECTS: gcd=4026 Guardians of the Galaxy (1990) #21-29 · gcd=4244 Guardians of the Galaxy Annual (1991) #2 · gcd=1810 Marvel Super-Heroes (1967) #18
+   G3 "Guardians of the Galaxy Classic - In The Year 3000" in Marvel\_Guardians of the Galaxy\01 Guardians of the Galaxy v1 (1990) — 2 file(s), 2 COL, pp 320-368; cv per-file 92555x2; gcd per-file 104530x2; key 'Guardians of the Galaxy Classic - In The Year (1990)'
+      [80289] COL 04 Guardians of the Galaxy Classic - In The Year 3000 Vol. 01 (2016) (digital) (Minutemen-Slayer).cbr (320pp)
+         own record cv 92555 / gcd s104530 "Guardians of the Galaxy Classic: In the Year 3000" (issue 1607064) COLLECTS: gcd=4026 Guardians of the Galaxy (1990) #30-39 · gcd=4244 Guardians of the Galaxy Annual (1991) #3 · gcd=3654 Marvel Comics Presents (1988) #134
+      [80290] COL 05 Guardians of the Galaxy Classic - In The Year 3000 Vol. 02 (2016) (digital) (Minutemen-Slayer).cbr (368pp)
+         own record cv 92555 / gcd s104530 "Guardians of the Galaxy Classic: In the Year 3000" (issue 1618897) COLLECTS: gcd=4026 Guardians of the Galaxy (1990) #40-50 · gcd=5011 Galactic Guardians (1994) #1-4 · gcd=4244 Guardians of the Galaxy Annual (1991) #4
+   G4 "Guardians of the Galaxy" in Marvel\_Marvel Cosmic\Guardians of the Galaxy\Vol 1 — 61 file(s), numbers 1-9, 11-62, pp 15-42; cv per-file 4398x61; key 'Guardians of the Galaxy (1990)'
+      e.g. Guardians of the Galaxy #001.cbr
+        82887 #1 25pp · 82888 #2 25pp · 82889 #3 25pp · 82890 #4 25pp · 82891 #5 24pp · 82892 #6 24pp · 82893 #7 24pp · 82894 #8 25pp · 82895 #9 15pp · 82897 #11 27pp · 82898 #12 25pp
+        82899 #13 25pp · 82900 #14 24pp · 82901 #15 24pp · 82902 #16 42pp · 82903 #17 23pp · 82904 #18 21pp · 82905 #19 23pp · 82906 #20 23pp · 82907 #21 23pp · 82908 #22 23pp · 82909 #23 23pp
+        82910 #24 23pp · 82911 #25 41pp · 82912 #26 23pp · 82913 #27 23pp · 82914 #28 25pp · 82915 #29 23pp · 82916 #30 23pp · 82917 #31 23pp · 82918 #32 23pp · 82919 #33 23pp · 82920 #34 23pp
+        82921 #35 23pp · 82922 #36 23pp · 82923 #37 23pp · 82924 #38 23pp · 82925 #39 39pp · 82926 #40 23pp · 82927 #41 23pp · 82928 #42 23pp · 82929 #43 23pp · 82930 #44 23pp · 82931 #45 23pp
+        82932 #46 23pp · 82933 #47 23pp · 82934 #48 23pp · 82935 #49 23pp · 82936 #50 39pp · 82937 #51 23pp · 82938 #52 23pp · 82939 #53 23pp · 82940 #54 23pp · 82941 #55 23pp · 82942 #56 23pp
+        82943 #57 23pp · 82944 #58 23pp · 82945 #59 23pp · 82946 #60 23pp · 82947 #61 23pp · 82948 #62 41pp
+   G5 "Guardians of the Galaxy Annual" in Marvel\_Marvel Cosmic\Guardians of the Galaxy\Vol 1 — 4 file(s), numbers 1-4, pp 53-56; cv per-file 4595x4; gcd per-file 4244x4; key 'Guardians of the Galaxy (1990)'
+      e.g. Guardians of the Galaxy Annual #001.cbz
+        82949 #1 54pp · 82950 #2 53pp · 82951 #3 55pp · 82952 #4 56pp
+   G6 "Guardians of the Galaxy - Marvel Presents" in Marvel\_Marvel Facsimile Editions — 1 file(s), numbers 3, pp 35-35; cv per-file 116369x1; gcd per-file 137206x1; key 'Guardians of the Galaxy: Marvel Presents (1990)'
+      [83051] Guardians of the Galaxy - Marvel Presents 003 - Facsimile Edition (2019) (Digital) (Shadowcat-Empire).cbz (35pp)
+
+== S95052 The Amazing Spider-Man  [split]  14 files / 9 collections  decided in R-158 (S)
+   decided: S 95052 cv=73420 gcd=80405 0.9 | The Amazing Spider-Man (Marvel 2014-2015, Slott): CV 73420 (2014, 28 incl. #1.1-1.5, #16.1-20.1) and GCD 80405 (2014-2015, 28) agree; the five Dan Slott-line Vol. 39-43 and the second rips of Vol. 03-05 reprint this run (GCD TPB line 86777 rows roll up s80405 #1-6 ... #16.1-20.1), Learning to Crawl is its #1.1-1.5, and #4-5 (2014) and a #15 variant sit inside it; 0.9 for the 2015 Special and the misfiled #794 split below
+   F 95052 split-needed | item 118375 ("03 Amazing Spider-Man 794 (2018)" 24pp, Return of Wolverine end-credit folder) is The Amazing Spider-Man (2015) legacy #794 (CV 85076 issue 655497 / GCD 92892), the run S103529 stores (stored cv=85076, S line R-053 cv=85076 gcd=92892) -> join S103529 on its key "Amazing Spider-Man v4 (2015)"; replaces R-053's F misfiled line (L-368)
+   F 95052 split-needed | item 94740 ("Amazing Spider-Man Special 001 (2015)" 33pp) is the one-shot The Amazing Spider-Man Special (CV 80596 issue 482151 / GCD 87139 row 1330487), which S29275 stores (stored cv=80596, S line A-024 cv=80596 gcd=87139) and where another rip of it already sits (81382) -> join S29275 on its key "The Amazing Spider-Man Special"
+   N 95052 per-file CV 2127 on four files is the legacy volume stamped by issue number; the stored GCD row 1466451 on Learning to Crawl is Amazing Spider-Man (2015) #1, another book - its own GCD row is 86777 #1.1 row 2593485; S4752's Annual #40 (2015, CV 78715) joins here as this run's annual (L-391)
+   named: S103529 Amazing Spider-Man v4 (2015)  11 files  keys: "Amazing Spider-Man v4 (2015)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S29275 The Amazing Spider-Man Special  1 files  keys: "The Amazing Spider-Man Special"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 815f [shares cv=2127, named S4752 in the decision's R/N lines — S cv=2127 gcd=1570 (R-158 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S17160 "Superior Spider-Man" 20f [shares gcd=71030 (collected by item 94736) — S cv=55552 gcd=71030 (R-045 0.95)] keys: "Superior Spider-Man" | "Superior Spider-Man 006AU"
+   nearby: S95053 "The Amazing Spider-Man" 159f [title — S cv=142577 gcd=184161 (R-135 0.9)] keys: "Amazing Spider-man v6 (2022)"
+   nearby: S103846 "The Amazing Spider-Man v2 (1999)" 46f [title — S cv=78701 gcd=11288 (R-079 0.95)] keys: "The Amazing Spider-Man v2 (1999)"
+   nearby: S95051 "The Amazing Spider-Man" 37f [title — S cv=112161 gcd=126774 (R-135 0.9)] keys: "Amazing Spider-Man v5 (2018)"
+   nearby: S34339 "The Amazing Spider-Man" 13f [title] keys: "Amazing Spider-Man" | "The Amazing Spider-Man"
+   nearby: S64135 "Amazing Spider-Man (2021)" 1f [title — S cv=150410 gcd=188477 (R-089 1.0)] keys: "Amazing Spider-Man (2021)"
+   nearby: S103519 "The Amazing Spider-Man '97 (1997)" 1f [title — S cv=60438 gcd=20854 (R-044 0.95)] keys: "The Amazing Spider-Man '97 (1997)"
+   nearby: S863 "Amazing Spider-Man: Worldwide" 10f [title+1 — S cv=89345 gcd=99294 (B-059 0.9)] keys: "Amazing Spider-Man - Worldwide"
+   nearby: S883 "Amazing Spider-Man Family" 8f [title+1 — S cv=22669 gcd=31600 (A-025 0.95)] keys: "Amazing Spider-Man Family"
+   nearby: S842 "Amazing Spider-Man: Beyond" 5f [title+1 — S cv=142077 gcd=180479 (A-025 0.9)] keys: "Amazing Spider-Man - Beyond" | "The Amazing Spider-Man Beyond"
+   nearby: S42165 "The Amazing Spider-Man Annual" 3f [title+1 — S cv=2189 gcd=1635 (R-089 1.0)] keys: "The Amazing Spider-Man Annual"
+   nearby: S864 "Amazing Spider-Man 2099 Companion" 2f [title+1 — S cv=128891 gcd=176129 (B-059 0.95)] keys: "Amazing Spider-Man 2099 Companion"
+   nearby: S900 "Amazing Spider-Man: Amazing Grace" 2f [title+1 — S cv=93365 gcd=105638 (B-059 0.95)] keys: "Amazing Spider-Man.1 - Amazing Grace" | "Amazing Spider-Man: Amazing Grace" · (+5 more by title)
+   keys now: "Amazing Spider-man v3 (2014)" x13 · "Amazing Spider-Man.1 - Learning to Crawl" x1
+   groups (title x folder): 6
+   G1 "Dan Slott Spider-Man" in Marvel\_Spider-Man\__Amazing Spider-Man\00 TPBs\Dan Slott Era — 5 file(s), 5 COL, pp 100-170; cv per-file 77621x1, 79315x1, 83232x1; gcd per-file 86777x5; key 'Amazing Spider-man v3 (2014)'
+      [93938] COL Dan Slott Spider-Man Vol. 39 - Amazing Spider-Man Vol. 01 - The Parker Luck (2014) (Digital) (Zone-Empire).cbr (170pp)
+         own record cv 77621 / gcd s86777 "The Amazing Spider-Man" (issue 1325205) COLLECTS: gcd=80405 The Amazing Spider-Man (2014) #1-6 · gcd=81678 Spider-Man 2099 (2014) #1 · gcd=71030 Superior Spider-Man (2013) #31  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [93939] COL Dan Slott Spider-Man Vol. 40 - Amazing Spider-Man Vol. 02 - Spider-Verse Prelude (2015) (Digital) (Zone-Empire).cbr (111pp)
+         own record cv 79315 / gcd s86777 "The Amazing Spider-Man" (issue 1325206) COLLECTS: gcd=80405 The Amazing Spider-Man (2014) #7-8 · gcd=71030 Superior Spider-Man (2013) #32-33 · gcd=80545 Free Comic Book Day 2014 (Guardians of the Galaxy) (2014) #1  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [93940] COL Dan Slott Spider-Man Vol. 41 - Amazing Spider-Man Vol. 03 - Spider-Verse (2015) (Digital) (Zone-Empire).cbr (143pp)
+         own record cv 83232 / gcd s86777 "The Amazing Spider-Man" (issue 1325207) COLLECTS: gcd=80405 The Amazing Spider-Man (2014) #9-15 · gcd=71030 Superior Spider-Man (2013) #32  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [93941] COL Dan Slott Spider-Man Vol. 42 - Amazing Spider-Man Vol. 04 - Graveyard Shift (2015) (Digital) (F) (Zone-Empire).cbr (100pp)
+         own record cv 84084 / gcd s86777 "The Amazing Spider-Man" (issue 1450278) COLLECTS: gcd=80405 The Amazing Spider-Man (2014) #16-18 · gcd=85112 Amazing Spider-Man Annual (2015) #1  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [93942] COL Dan Slott Spider-Man Vol. 43 - Amazing Spider-Man Vol. 05 - Spiral (2015) (Digital) (Zone-Empire).cbr (103pp)
+         own record cv 84745 / gcd s86777 "The Amazing Spider-Man" (issue 1460652) COLLECTS: gcd=80405 The Amazing Spider-Man (2014) #16.1-20.1  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+   G2 "Amazing Spider-Man" in Marvel\_Spider-Man\__Amazing Spider-Man\05 Amazing Spider-man v3 (2014) — 4 file(s), 4 COL, pp 100-143; cv per-file 78432x1, 83232x1, 84084x1; gcd per-file 86777x4; key 'Amazing Spider-Man.1 - Learning to Crawl' | 'Amazing Spider-man v3 (2014)'
+      [94734] COL Amazing Spider-Man Vol. 01.1 - Learning to Crawl (2014) (Digital) (Zone-Empire).cbr (115pp)  key="Amazing Spider-Man.1 - Learning to Crawl"
+         own record cv 78432 / gcd s86777 "The Amazing Spider-Man" (issue 2593485) COLLECTS: gcd=80405 The Amazing Spider-Man (2014) #1, #1.1, #1.2, #1.3, #1.4, #1.5  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [94736] COL Amazing Spider-Man Vol. 03 - Spider-Verse (2015) (Digital) (Zone-Empire).cbr (143pp)
+         own record cv 83232 / gcd s86777 "The Amazing Spider-Man" (issue 1325207) COLLECTS: gcd=80405 The Amazing Spider-Man (2014) #9-15 · gcd=71030 Superior Spider-Man (2013) #32
+      [94737] COL Amazing Spider-Man Vol. 04 - Graveyard Shift (2015) (Digital) (F) (Zone-Empire).cbr (100pp)
+         own record cv 84084 / gcd s86777 "The Amazing Spider-Man" (issue 1450278) COLLECTS: gcd=80405 The Amazing Spider-Man (2014) #16-18 · gcd=85112 Amazing Spider-Man Annual (2015) #1
+      [94738] COL Amazing Spider-Man Vol. 05 - Spiral (2015) (Digital) (F) (Zone-Empire).cbr (107pp)
+         own record cv 84745 / gcd s86777 "The Amazing Spider-Man" (issue 1460652) COLLECTS: gcd=80405 The Amazing Spider-Man (2014) #16.1-20.1
+   G3 "Amazing Spider-Man" in Marvel\_Spider-Man\__Amazing Spider-Man\05 Amazing Spider-man v3 (2014)\Annuals and Specials — 1 file(s), numbers 15, pp 1-1; cv per-file 2127x1; gcd per-file 92892x1; key 'Amazing Spider-man v3 (2014)'
+      [94739] Amazing Spider-Man 015 (2015) (Comicxposure B&W Connecting Variant Only) (digital) (Minutemen-Mastodon).cbz (1pp)
+   G4 "Amazing Spider-Man Special" in Marvel\_Spider-Man\__Amazing Spider-Man\05 Amazing Spider-man v3 (2014)\Annuals and Specials — 1 file(s), numbers 1, pp 33-33; cv per-file 80596x1; gcd per-file 87139x1; key 'Amazing Spider-man v3 (2014)'
+      [94740] Amazing Spider-Man Special 001 (2015) (Digital) (Zone-Empire).cbr (33pp)
+   G5 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2014.04 - Original Sin\02 Tie-ins\Amazing Spider-Man — 2 file(s), numbers 4-5, pp 22-23; cv per-file 2127x2; key 'Amazing Spider-man v3 (2014)'
+      [117767] 013 - Amazing Spider-Man 004 (2014) (Digital) (Darkness-Empire).cbr (22pp)
+      [117768] 014 - Amazing Spider-Man 005 (2014) (Digital) (Darkness-Empire).cbr (23pp)
+   G6 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2018.04 - The Return of Wolverine\00 End Credit Scenes — 1 file(s), numbers 794, pp 24-24; cv per-file 2127x1; gcd per-file 92892x1; key 'Amazing Spider-man v3 (2014)'
+      [118375] 03 Amazing Spider-Man 794 (2018) (Digital) (Zone-Empire).cbr (24pp)
+
+== S9539 Invincible Iron Man  [split]  59 files / 11 collections  decided in R-157 (S)
+   decided: S 9539 cv=21487 gcd=30723 0.9 | Invincible Iron Man (Marvel 2008-2012, Fraction): CV 21487 (2008, 62, cached #1-527 incl. the #500-527 legacy numbers) and GCD 30723 (2008-2012, 62) agree on publisher, span and count; our #8-19 (2009), #25-27 (2010), #503-515 (2011-2012) and the variant covers of #1, #19, #30, #500 fill it, and the eleven trades Vol. 01-11 are its own editions (GCD 150986 / 41852 SC and HC lines, CV per-book volumes); 0.9 for the 2010 Annual and ten issues of two later runs split below
+   F 9539 split-needed | items 118160, 118161, 118162, 118163, 118164, 118165, 118199, 118200, 118201 ("Invincible Iron Man 006-014 (2016)", Civil War II chronology, 22-25pp) are Invincible Iron Man (2015-2016) #6-14 (CV 85110, 14 issues; GCD 92883, 14 rows, per-file on 4) - S94637 holds that run's own three trades (Reboot / The War Machines / Civil War II = GCD 99297 rows, 110858 row 1745202 collects "Invincible Iron Man (2015 series) #12-14") under key "Invincible Iron Man v2 (2015)" -> join S94637 on that key (its S line C-045 stores the TPB line gcd=99297 cv=-; by RUN WINS it should become cv=85110 gcd=92883 at its revisit - lead to confirm)
+   F 9539 split-needed | item 118382 ("10 Invincible Iron Man 598 (2018)", Return of Wolverine end-credit folder, 22pp) is Invincible Iron Man (2016-2018) #598 (CV 95596 issue 664299 "The Search For Tony Stark Part Six" / GCD 109017), a run no shelf stores (who-stores cv=95596: 0 rows; gcd=109017: no S line) -> new key "Invincible Iron Man v3 (2016)" seeded cv=95596 gcd=109017 (lands new; v1 2008 / v2 2015 / v5 2023 are the folder ordinals)
+   N 9539 residue kept: "Invincible Iron Man Annual 1.1 / 1.2 / 1.3 (2010)" (24 + 23 + 27pp) are one book cut in three - Invincible Iron Man Annual #1 (2010, CV 34038 issue 222077 / GCD 50887 row 768610, 84pp); no shelf stores that annual, so it stays with the run (L-391). Per-file GCD 150986 (x11) is the SC TPB line, 113146 Editorial Televisa
+   named: S94637 Invincible Iron Man v2 (2015)  6 files  keys: "Invincible Iron Man v2 (2015)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S9575 "Iron Man" 17f [shares gcd=56002 (collected by item 81916) — S cv=39122 gcd=56002 (R-154 0.9)] keys: "Iron Man"
+   nearby: S14588 "Rescue" 1f [shares gcd=62335 (collected by item 81917) — S cv=33230 gcd=62335 (A-024 0.95)] keys: "Rescue"
+   nearby: S18845 "The Invincible Iron Man" 44f [title — S cv=146873 gcd=194084 (R-157 0.95)] keys: "Invincible Iron Man v5 (2023)" | "The Invincible Iron Man" | "The Invincible Iron Man (2022)" | "The Invincible Iron Man 002i (2022)"
+   nearby: S65979 "Invincible Iron Man Omnibus" 3f [title — S cv=27514 gcd=66422 (B-057 0.95)] keys: "The Invincible Iron Man (2008)"
+   keys now: "Invincible Iron Man" x42 · "Invincible Iron Man v1 (2008)" x17
+   groups (title x folder): 11
+   G1 "Invincible Iron Man Annual" in Marvel\_Iron Man\00 Annuals — 3 file(s), numbers 1.1, 1.2, 1.3, pp 23-27; cv per-file 34038x3; gcd per-file 50887x3; key 'Invincible Iron Man'
+      [81485] Invincible Iron Man Annual 1.1 (2010) (Digital) (Shadowcat-Empire).cbz (24pp)
+      [81486] Invincible Iron Man Annual 1.2 (2010) (Digital) (Shadowcat-Empire).cbz (23pp)
+      [81487] Invincible Iron Man Annual 1.3 (2010) (Digital) (Shadowcat-Empire).cbz (27pp)
+   G2 "Invincible Iron Man" in Marvel\_Iron Man\06 Invincible Iron Man v1 (2008) — 11 file(s), 11 COL, pp 106-171; cv per-file 29501x1, 30989x1, 30990x1; gcd per-file 150986x10, 41852x1; key 'Invincible Iron Man v1 (2008)'
+      [81910] COL Invincible Iron Man Vol. 01 - The Five Nightmares (2008) (digital) (Minutemen-Slayer).cbr (171pp)
+      [81911] COL Invincible Iron Man Vol. 02 - World's Most Wanted Book 1 (2009) (F2) (Digital) (Asgard-Empire).cbz (148pp)
+         own record cv 30989 / gcd s150986 "Invincible Iron Man" (issue 2023518) COLLECTS: gcd=30723 Invincible Iron Man (2008) #8-13 · gcd=41852 Invincible Iron Man (2008) #2
+      [81912] COL Invincible Iron Man Vol. 03 - World's Most Wanted Book 2 (2010) (Digital) (F) (Asgard-Empire).cbz (159pp)
+         own record cv 30990 / gcd s150986 "Invincible Iron Man" (issue 2023519) COLLECTS: gcd=30723 Invincible Iron Man (2008) #14-19 · gcd=41852 Invincible Iron Man (2008) #3
+      [81913] COL Invincible Iron Man Vol. 04 - Stark Disassembled (2011) (Digital-HD) (Asgard-Empire).cbz (125pp)
+         own record cv 34528 / gcd s150986 "Invincible Iron Man" (issue 2023520) COLLECTS: gcd=30723 Invincible Iron Man (2008) #20-24 · gcd=41852 Invincible Iron Man (2008) #4
+      [81914] COL Invincible Iron Man Vol. 05 - Stark Resilient Book 1 (2011) (Digital) (Asgard-Empire).cbr (124pp)
+         own record cv 36174 / gcd s150986 "Invincible Iron Man" (issue 2023521) COLLECTS: gcd=30723 Invincible Iron Man (2008) #25-28 · gcd=41852 Invincible Iron Man (2008) #5
+      [81915] COL Invincible Iron Man Vol. 06 - Stark Resilient Book 2 (2011) (Digital) (Asgard-Empire).cbr (144pp)
+         own record cv 39420 / gcd s150986 "Invincible Iron Man" (issue 2023522) COLLECTS: gcd=30723 Invincible Iron Man (2008) #29-33 · gcd=41852 Invincible Iron Man (2008) #6
+      [81916] COL Invincible Iron Man Vol. 07 - My Monsters (2011) (Digital) (Asgard-Empire).cbr (164pp)
+         own record cv 40807 / gcd s150986 "Invincible Iron Man" (issue 2023523) COLLECTS: gcd=30723 Invincible Iron Man (2008) #500, #500.1, #501-503 · gcd=56002 Iron Man 2.0 (2011) #1-3 · gcd=50887 Invincible Iron Man Annual (2010) #1 · gcd=41852 Invincible Iron Man (2008) #7
+      [81917] COL Invincible Iron Man Vol. 08 - Unfixable (2012) (Digital) (Asgard-Empire).cbr (106pp)
+         own record cv 42991 / gcd s150986 "Invincible Iron Man" (issue 2023524) COLLECTS: gcd=30723 Invincible Iron Man (2008) #501-503 · gcd=62335 Rescue (2010) #1 · gcd=47857 Free Comic Book Day 2010 (Iron Man / Thor) (2010) #1 · gcd=41852 Invincible Iron Man (2008) #8
+      [81919] COL Invincible Iron Man Vol. 09 - Demon (2013) (Digital) (F) (Asgard-Empire).cbz (131pp)
+         own record cv 50329 / gcd s150986 "Invincible Iron Man" (issue 2023525) COLLECTS: gcd=30723 Invincible Iron Man (2008) #510-515 · gcd=41852 Invincible Iron Man (2008) #9
+      [81920] COL Invincible Iron Man Vol. 10 - Long Way Down (2013) (Digital) (Asgard-Empire).cbr (117pp)
+         own record cv 59291 / gcd s150986 "Invincible Iron Man" (issue 2023526) COLLECTS: gcd=30723 Invincible Iron Man (2008) #516-520 · gcd=41852 Invincible Iron Man (2008) #10
+      [81921] COL Invincible Iron Man Vol. 11 - The Future (2013) (Digital) (Asgard-Empire).cbr (165pp)
+         own record cv 63876 / gcd s150986 "Invincible Iron Man" (issue 2023527) COLLECTS: gcd=30723 Invincible Iron Man (2008) #521-527 · gcd=41852 Invincible Iron Man (2008) #11
+   G3 "Invincible Iron Man" in Marvel\_Iron Man\06 Invincible Iron Man v1 (2008)\Variant Covers — 6 file(s), numbers 1, 30, 500, pp 1-1; cv per-file 21487x6; gcd per-file 30723x6; key 'Invincible Iron Man v1 (2008)'
+      e.g. Invincible Iron Man 001 (Variant) [1] (2008) (Digital) (MikeNY76-Empire).cbz
+        81922 #1 2008 1pp · 81923 #1 2008 1pp · 81924 #1 2008 1pp · 81925 #1 2008 1pp · 81926 #30 2010 1pp · 82001 #500 2011 1pp
+   G4 "Invincible Iron Man" in Marvel\_Iron Man\17 Invincible Iron Man v5 (2023)\Variant Covers — 1 file(s), numbers 19, pp 1-1; cv per-file 21487x1; gcd per-file 30723x1; key 'Invincible Iron Man'
+      [82061] Invincible Iron Man 019 (Shs Variant) (2009) (Digital) (MikeNY76-Empire).cbz (1pp)
+   G5 "Invincible Iron Man" in _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Invincible Iron Man — 12 file(s), numbers 8-19, pp 23-35; cv per-file 21487x12; gcd per-file 30723x12; key 'Invincible Iron Man'
+      e.g. Invincible Iron Man 008 (2009) (Digital-HD) (Monafekk-Empire).cbr
+        117075 #8 2009 23pp · 117076 #9 2009 31pp · 117077 #10 2009 25pp · 117078 #11 2009 25pp · 117079 #12 2009 27pp · 117080 #13 2009 26pp · 117081 #14 2009 26pp · 117082 #15 2009 25pp
+        117083 #16 2009 26pp · 117084 #17 2009 25pp · 117085 #18 2009 25pp · 117086 #19 2009 35pp
+   G6 "Invincible Iron Man" in _Marvel Major Event Chronology (digital)\2010.04 - The Heroic Age\The Heroic Age - Iron Man — 3 file(s), numbers 25-27, pp 26-47; cv per-file 21487x3; gcd per-file 30723x3; key 'Invincible Iron Man'
+      [117342] Invincible Iron Man 025 (2010) (Digital) (Zone-Empire).cbr (47pp)
+      [117343] Invincible Iron Man 026 (2010) (Digital) (Zone-Empire).cbr (26pp)
+      [117344] Invincible Iron Man 027 (2010) (Digital) (Zone-Empire).cbr (26pp)
+   G7 "Invincible Iron Man" in _Marvel Major Event Chronology (digital)\2011.03 - Fear Itself\02 Tie-ins\Iron Man\Invincible Iron Man — 7 file(s), numbers 503-509, pp 24-33; cv per-file 21487x7; gcd per-file 30723x7; key 'Invincible Iron Man'
+      e.g. Invincible Iron Man 503 (2011) (digital) (Megan-Empire).cbr
+        117504 #503 2011 33pp · 117505 #504 2011 24pp · 117506 #505 2011 25pp · 117507 #506 2011 26pp · 117508 #507 2011 25pp · 117509 #508 2011 25pp · 117510 #509 2011 26pp
+   G8 "Invincible Iron Man" in _Marvel Major Event Chronology (digital)\2011.03 - Fear Itself\03 Shattered Heroes\Invincible Iron Man — 6 file(s), numbers 510-515, pp 23-24; cv per-file 21487x6; gcd per-file 30723x6; key 'Invincible Iron Man'
+      e.g. Invincible Iron Man 510 (2012) (digital) (Megan-Empire) (Ok).cbr
+        117572 #510 2012 24pp · 117573 #511 2012 24pp · 117574 #512 2012 23pp · 117575 #513 2012 23pp · 117576 #514 2012 23pp · 117577 #515 2012 23pp
+   G9 "Invincible Iron Man" in _Marvel Major Event Chronology (digital)\2016.06 - Civil War II\00 Road to Civil War II — 6 file(s), numbers 6-11, pp 22-22; cv per-file 21487x6; gcd per-file 113146x5, 92883x1; key 'Invincible Iron Man'
+      e.g. Invincible Iron Man 006 (2016) (Digital) (Zone-Empire).cbr
+        118160 #6 2016 22pp · 118161 #7 2016 22pp · 118162 #8 2016 22pp · 118163 #9 2016 22pp · 118164 #10 2016 22pp · 118165 #11 2016 22pp
+   G10 "Invincible Iron Man" in _Marvel Major Event Chronology (digital)\2016.06 - Civil War II\02 Tie-Ins\Invincible Iron Man — 3 file(s), numbers 12-14, pp 22-25; cv per-file 21487x3; gcd per-file 92883x3; key 'Invincible Iron Man'
+      [118199] Invincible Iron Man 012 (2016) (Digital) (Zone-Empire).cbr (22pp)
+      [118200] Invincible Iron Man 013 (2016) (Digital) (Zone-Empire).cbr (25pp)
+      [118201] Invincible Iron Man 014 (2016) (Digital) (Zone-Empire).cbr (24pp)
+   G11 "Invincible Iron Man" in _Marvel Major Event Chronology (digital)\2018.04 - The Return of Wolverine\00 End Credit Scenes — 1 file(s), numbers 598, pp 22-22; cv per-file 21487x1; gcd per-file 109017x1; key 'Invincible Iron Man'
+      [118382] 10 Invincible Iron Man 598 (2018) (Digital) (Zone-Empire).cbr (22pp)
