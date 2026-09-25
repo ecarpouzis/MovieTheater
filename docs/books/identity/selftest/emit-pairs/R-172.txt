@@ -1,4 +1,4 @@
-## Conventions for this batch (33 shown of 181 matched; 380 in LEDGER.md; 48 shelf/shelves: pub:dc ×26 · kind:collected-line ×14 · kind:trade-only ×13 · kind:new ×11 · folder:vn-year ×10 · folder:sequel-subfolder ×9 · pub:marvel ×7 · folder:graphic-novels ×4)
+## Conventions for this batch (33 shown of 217 matched; 409 in LEDGER.md; 48 shelf/shelves: pub:dc ×26 · kind:collected-line ×13 · kind:trade-only ×12 · folder:vn-year ×10 · kind:new ×10 · folder:sequel-subfolder ×9 · pub:marvel ×7 · folder:graphic-novels ×4)
 LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
 reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 
@@ -36,95 +36,95 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 [L-160] (48 shelf/shelves) pass:revisit sig:withheld
 - A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
   revisit pair re-links the partner and then the S line can be written.
-[L-014] (47 shelf/shelves) sig:probe sig:round2
+[L-014] (46 shelf/shelves) sig:probe sig:round2
 - `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
   batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
   right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
 [L-193] (46 shelf/shelves) sig:legacy-stamp sig:probe
 - GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
   plain title returns 0 hits — probe with the ordinal or `--contains`.
-[L-013] (45 shelf/shelves) sig:probe
+[L-013] (44 shelf/shelves) sig:probe
 - GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
   with the other spelling.
-[L-043] (45 shelf/shelves) sig:probe
+[L-043] (44 shelf/shelves) sig:probe
 - "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
   CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
-[L-050] (45 shelf/shelves) sig:probe
+[L-050] (44 shelf/shelves) sig:probe
 - When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
   punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
   abbreviation the publisher uses ("HSE").
-[L-072] (45 shelf/shelves) sig:probe
+[L-072] (44 shelf/shelves) sig:probe
 - GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
   nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
-[L-088] (45 shelf/shelves) sig:probe
+[L-088] (44 shelf/shelves) sig:probe
 - GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
   shorter one — probe both directions before `provider-missing`.
-[L-089] (45 shelf/shelves) sig:probe
+[L-089] (44 shelf/shelves) sig:probe
 - A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
-[L-095] (45 shelf/shelves) sig:probe
+[L-095] (44 shelf/shelves) sig:probe
 - A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
   spanning record — the ladder is arc numbers, not issue numbers.
-[L-096] (45 shelf/shelves) sig:probe
+[L-096] (44 shelf/shelves) sig:probe
 - GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
   Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
   `provider-missing`.
-[L-118] (45 shelf/shelves) sig:probe
+[L-118] (44 shelf/shelves) sig:probe
 - A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
   page count, places a trade when a shelf holds several volumes of one line.
-[L-125] (45 shelf/shelves) sig:probe
+[L-125] (44 shelf/shelves) sig:probe
 - A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
   1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
-[L-157] (45 shelf/shelves) sig:probe
+[L-157] (44 shelf/shelves) sig:probe
 - A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
   Archer & Armstrong: Revival 164703) → `provider-missing`.
-[L-159] (45 shelf/shelves) sig:probe
+[L-159] (44 shelf/shelves) sig:probe
 - An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
   exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
-[L-163] (45 shelf/shelves) sig:probe
+[L-163] (44 shelf/shelves) sig:probe
 - GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
   Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
-[L-177] (45 shelf/shelves) sig:probe
+[L-177] (44 shelf/shelves) sig:probe
 - A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
   ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
-[L-204] (45 shelf/shelves) pass:item pass:revisit sig:probe
+[L-204] (44 shelf/shelves) pass:item pass:revisit sig:probe
 - `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
   R-018 carry an item-level CV id instead of `cv=-`.
-[L-253] (45 shelf/shelves) sig:probe
+[L-253] (44 shelf/shelves) sig:probe
 - A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
   GCD 201441, not the 2014 run) — the `C` names the sequel run.
-[L-264] (45 shelf/shelves) sig:probe
+[L-264] (44 shelf/shelves) sig:probe
 - Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
   Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
-[L-267] (45 shelf/shelves) sig:probe
+[L-267] (44 shelf/shelves) sig:probe
 - A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
   County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
-[L-273] (45 shelf/shelves) sig:probe
+[L-273] (44 shelf/shelves) sig:probe
 - The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
   ENGLISH title was right for all 23 — the pool over the pick, again.
-[L-292] (45 shelf/shelves) sig:probe
+[L-292] (44 shelf/shelves) sig:probe
 - A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
   books take gcd-only identities from the GCD series' full list, cv=-.
-[L-294] (45 shelf/shelves) pass:item sig:probe
+[L-294] (44 shelf/shelves) pass:item sig:probe
 - ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
   18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
   no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
   belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
   for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
   a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
-[L-341] (45 shelf/shelves) sig:probe
+[L-341] (44 shelf/shelves) sig:probe
 - GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
   Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
   subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
   volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
   Graphic Novel"). CV spells "'Til" where rippers write "'till".
-[L-346] (45 shelf/shelves) sig:probe
+[L-346] (44 shelf/shelves) sig:probe
 - GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
   the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
   Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
   "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
   chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
 
-+148 more matched entries not shown: L-347, L-082, L-093, L-164, L-191, L-135, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-281, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-365, L-124, L-210, L-031, L-033, L-142, L-329, L-348, L-378, L-113, L-272, L-016, L-032, L-114, L-055, L-085, L-195, L-197, L-290, L-306, L-372, L-052, L-064, L-076, L-101, L-109, L-115, L-117, L-132, L-196, L-198, L-295, L-296, L-298, L-307, L-308, L-310, L-313, L-327, L-328, L-332, L-366, L-367, L-175, L-029, L-040, L-059, L-199, L-211, L-008, L-047, L-051, L-060, L-116, L-127, L-167, L-188, L-206, L-228, L-229, L-249, L-257, L-261, L-319, L-337, L-364, L-371, L-007, L-011, L-015, L-022, L-034, L-046, L-136, L-139, L-140, L-148, L-169, L-203, L-205, L-215, L-217, L-242, L-254, L-255, L-256, L-260, L-266, L-271, L-299, L-363, L-369, L-373, L-377, L-023, L-041, L-056, L-119, L-121, L-123, L-126, L-129, L-130, L-133, L-174, L-192, L-241, L-243, L-315, L-324, L-325, L-343, L-374, L-150, L-165, L-065, L-099, L-128, L-181, L-194, L-262, L-330, L-336 (grep LEDGER.md for them)
++184 more matched entries not shown: L-347, L-082, L-093, L-191, L-164, L-281, L-291, L-365, L-124, L-135, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-210, L-033, L-113, L-142, L-348, L-378, L-272, L-016, L-032, L-114, L-031, L-055, L-085, L-195, L-197, L-290, L-329, L-372, L-052, L-064, L-101, L-198, L-298, L-306, L-310, L-313, L-366, L-367, L-175, L-040, L-059, L-076, L-109, L-115, L-117, L-132, L-196, L-199, L-211, L-295, L-296, L-307, L-308, L-319, L-327, L-328, L-332, L-388, L-392, L-395, L-397, L-400, L-401, L-405, L-406, L-407, L-409, L-008, L-029, L-047, L-051, L-060, L-116, L-127, L-167, L-188, L-206, L-228, L-229, L-242, L-249, L-257, L-261, L-337, L-364, L-371, L-389, L-396, L-398, L-408, L-007, L-011, L-015, L-022, L-034, L-046, L-130, L-136, L-139, L-140, L-148, L-169, L-174, L-203, L-205, L-215, L-217, L-254, L-255, L-256, L-260, L-266, L-271, L-299, L-363, L-369, L-373, L-377, L-383, L-391, L-393, L-399, L-123, L-023, L-027, L-028, L-036, L-041, L-056, L-119, L-121, L-126, L-129, L-133, L-173, L-192, L-241, L-243, L-265, L-315, L-324, L-325, L-343, L-374, L-379, L-387, L-390, L-402, L-403, L-404, L-065, L-097, L-099, L-150, L-165, L-194, L-252, L-262, L-274, L-288, L-293, L-330, L-352, L-354, L-128, L-181, L-336 (grep LEDGER.md for them)
 
 ====================================================================================================
 
@@ -354,19 +354,31 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
    CV local rip:   (= linked) · 157206 "Die!namite" 2021 Dynamite Entertainment 1 issue 1047879 · 141851 "DIE!namite Never Dies" 2022 Dynamite Entertainment 5 · 156359 "DIE!namite Never Dies!" 2022 Dynamite Entertainment 1 issue 1042211   (rip lookup)
    GCD dump:       165069 "Die!namite" 2020-2021 Dynamite Entertainment [] 5 · 185272 "Die!namite" 2022-? Dynamite Entertainment [] 1 · 182269 "Die!namite Never Dies!" 2022-2022 Dynamite Entertainment [] 5 · 207354 "Die!namite Never Dies" 2023-2023 Dynamite Entertainment [] 1   (dump lookup)
 
-== S64503 Daredevil  [tier B]   keys: Daredevil (2022) | Daredevil v7 (2022)  years 2022-2023  3 files / 3 collections
+== S64503 Daredevil  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Daredevil (2022) | Daredevil v7 (2022)  years 1964-2023  19 files / 3 collections
    split run: "Daredevil v7 (2022)" run=- (new shelf from P-003) — seed the S line from these ids, then verify them
    flags: #114 conflated-series [Dismissed] item 46946 — Daredevil & Elektra (2022) volumes sit in the Ultimate Daredevil and Elektra Series
-   folders: [3] Marvel\_Daredevil\09 Daredevil v7 (2022)
-   files:   [46945] COL 01 Daredevil by Chip Zdarsky Vol. 01 - The Red Fist Saga Part 01 (2023) (Digital) (EJGriffin-Empire).cbz (144pp)
+   folders: [16] Marvel\#MARVEL CURRENT ONGOING TITLES\Daredevil v8 (2023)\Variant Covers · [3] Marvel\_Daredevil\09 Daredevil v7 (2022)
+   files:   [47531] Daredevil 001 (2022) (Dan Panosian Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [47532] Daredevil 001 (2022) (John Romita Jr. Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [47533] Daredevil 001 (2022) (Peach Momoko Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [47535] Daredevil 002 (2022) (1-in-25 Gary Frank Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [47536] Daredevil 002 (2022) (Woods Skrull Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [47538] Daredevil 003 (2022) (1-in-25 Maleev Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [47539] Daredevil 003 (2022) (Siqueira Promo Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [47541] Daredevil 004 (2022) (Siqueira Promo Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [47543] Daredevil 005 (2022) Checchetto Design Variant (Digital) (MikeNY76-Empire).cbz (1pp) | [47546] Daredevil 006 (2022) (Momoko Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [47551] Daredevil 009 (2023) (Juni Ba Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [47556] Daredevil 010 (2023) (Eastman Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [47560] Daredevil 011 (2023) (Vicentini Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [47563] Daredevil 012 (2023) (Liefeld Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [47568] Daredevil 013 (2023) (Mooney Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [47571] Daredevil 014 (2023) Leinil Yu Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [46945] COL 01 Daredevil by Chip Zdarsky Vol. 01 - The Red Fist Saga Part 01 (2023) (Digital) (EJGriffin-Empire).cbz (144pp)
             [46946] COL 02 Daredevil & Elektra by Chip Zdarsky Vol. 02 - The Red Fist Saga Part 02 (2023) (Digital-Empire).cbr (112pp)
             [46947] COL 03 Daredevil & Elektra by Chip Zdarsky v03 - The Red Fist Saga Part 03 (2024) (EJGriffin-Empire).cbz (114pp)
+   ours:    ladder 1-6, 9-14; 3 number(s) name more than one file: 1, 2, 3
    GCD says: [46945] gcd_reprint 2494781: s187163 Daredevil (2022) (unnumbered) [6 stories]
              [46946] gcd_reprint 2557635: s187163 Daredevil (2022) (unnumbered) [6 stories]
              [46947] gcd_reprint 2578795: s187163 Daredevil (2022) (unnumbered) [5 stories]
-   CV linked:      vol 144027 "Daredevil" 2022 Marvel 14 issues; cached #5-8 (4); yearΔ 0; ratio 0/14; no judged range
-   CV local rip:   (= linked) · 153465 "Daredevil" 2023 Marvel 25 · 116964 "Daredevil" 2019 Marvel 36 · 148811 "Daredevil" 2019 Panini España 53 · 86343 "Daredevil" 2016 Marvel 46 · 110312 "Daredevil" 2016 Panini France 5   (rip lookup)
-   GCD dump:       187163 "Daredevil" 2022-2023 Marvel [] 14 · 204057 "Daredevil" 2023-2025 Marvel [] 25 · 207588 "Daredevil" [fr] 2023-2023 Panini France [] 3 · 186522 "Daredevil" [fr] 2020-? Panini France [] 7 · 220168 "Daredevil" [fr] 2024-2026 Panini France [] 5 · 139716 "Daredevil" 2019-2022 Marvel [] 36   (dump lookup)
+   CV linked:      vol 144027 "Daredevil" 2022 Marvel 14 issues; cached #5-8 (4); yearΔ 58; ratio 16/14 = 1.14; no judged range
+   CV per-file (v1): vol 2190 "Daredevil" 1964 Marvel 381 on 16/19 files
+   CV local rip:   (= linked) · 148896 "Daredevil" 1979 Editions Héritage 32 · 77205 "Daredevil" 1989 Semic S.A. 19 · 6209 "Daredevil" 1998 Marvel 134 · 142709 "Daredevil" 2000 Panini Verlag 2 · 42073 "Daredevil" 2001 Panini France 1 issue 286286   (rip lookup)
+   GCD per-file:   series 207588 "Daredevil" [fr] 2023-2023 Panini France [série continue terminée [was ongoing series]] 3 on 7/19 files · series 186522 "Daredevil" [fr] 2020-? Panini France [série continue [ongoing series]] 7 on 3/19 files; methods numx10
+   GCD dump:       1636 "Daredevil" 1964-1998 Marvel [] 381 · 65541 "Daredevil" [en-au] 1965-? Horwitz [] 1 · 31442 "Daredevil" 1967-1967 Lancer Books [] 1 · 149586 "Daredevil" [en-ph] 1972-1972 Goodwill Bookstore [] 1 · 23221 "Daredevil" [en-gb] 1953-1953 L. Miller & Son [] 7 · 71495 "Daredevil" [en-au] 1976-1976 Newton Comics [] 2   (dump lookup)
+   bridges:        gcd 207588 -> LOCG 111619 "Daredevil" support 14 · gcd 186522 -> LOCG 111619 "Daredevil" support 8
 
 == S4824 Daredevil and Elektra  [tier B]   keys: Daredevil and Elektra  years 2003-2003  1 files / 1 collections
    split: the KEPT half of the P-003 split — moved out -> S64503 "Daredevil v7 (2022)"; re-identify what stayed
@@ -469,13 +481,14 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
    CV lookups:     the v1 search and the local rip name no volume but the one above
    GCD dump:       204677 "Ghost Rider: Danny Ketch Epic Collection" 2023-? Marvel [] 2 (via our own name without the filing suffix "Ghost Rider: Danny Ketch Epic Collection")   (dump lookup)
 
-== S102623 Ghost Rider Epic Collection (2022)  [tier B]   keys: Ghost Rider Epic Collection (2022)  years 2022-2022  1 files / 1 collections
+== S102623 Ghost Rider Epic Collection (2022)  [tier D]   keys: Ghost Rider Epic Collection (2022)  years 2022-2024  2 files / 2 collections
    split run: "Ghost Rider Epic Collection (2022)" run={"cv": 144790, "gcd": 184834} (new shelf from P-003) — seed the S line from these ids, then verify them
-   folders: [1] Marvel\_Ghost Rider\_Epic Collections
+   folders: [2] Marvel\_Ghost Rider\_Epic Collections
    files:   [80256] COL Ghost Rider Epic Collection Vol. 01 - Hell on Wheels (2022) (Digital-Empire).cbr (425pp)
+            [80257] COL Ghost Rider Epic Collection Vol. 02 - The Salvation Run 001 (2024) (digital) (Marika-Empire).cbz (405pp)
+   ours:    ComicInfo Series: "Ghost Rider Epic Collection v02: The Salvation Run"x1
    GCD says: [80256] gcd_reprint 2399209: s2120 Ghost Rider (1973) #1-11 [22 stories] · s15643 The Original Ghost Rider (1992) #1-18 [18 stories] · s1992 Marvel Spotlight (1971) #5-12 [16 stories] · s1747 Marvel Tales (1966) #254 [4 stories]
-   CV linked:      vol 144790 "Ghost Rider Epic Collection: Hell On Wheels" 2022 Marvel 1 issues issue 944343  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
-   CV lookups:     the v1 search and the local rip name no volume but the one above
+             [80257] gcd_reprint 2670693: s2120 Ghost Rider (1973) #12-28 [18 stories] · s1747 Marvel Tales (1966) #255 [2 stories] · s2055 Marvel Premiere (1972) #28 [1 story] · s2056 Marvel Team-Up (1972) #58 [1 story]
    GCD dump:       184834 "Ghost Rider Epic Collection" 2022-? Marvel [] 3 (via our own name without the filing suffix "Ghost Rider Epic Collection")   (dump lookup)
 
 == S7436 Ghost Rider - Robbie Reyes Special  [tier B]   keys: Ghost Rider - Robbie Reyes Special  years 2024-2024  1 files / 0 collections

@@ -1,0 +1,144 @@
+## Conventions for this batch (21 shown of 51 matched; 409 in LEDGER.md; 1 shelf/shelves: kind:foreign ×1 · folder:vn-year ×1 · pub:marvel ×1 · folder:sequel-subfolder ×1 · folder:variant-covers ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-027] (1 shelf/shelves) kind:foreign pub:marvel
+- Foreign-language stored links are a cluster (Berserk → Glénat's French volume while our 41 books are Dark
+  Horse's; The Marvels → Panini España; Avengers → Panini Verlag): the English pair is in the rip/dump every time.
+[L-028] (1 shelf/shelves) folder:variant-covers pub:marvel
+- Marvel `\Variant Covers` 1pp packs (always of #1) are the whole of every ratio 1.2–2.0 on modern Marvel shelves.
+[L-033] (1 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-036] (1 shelf/shelves) folder:skottie folder:variant-covers pub:marvel
+- A shelf that is ONLY 1pp variant covers (Skottie Young) still identifies its comic → run ids + `F partial-rip`.
+[L-060] (1 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (1 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-130] (1 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-142] (1 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-173] (1 shelf/shelves) folder:skottie folder:variant-covers pub:marvel sig:collision
+- `Marvel\__Skottie Young Covers` holds a 1pp variant shelf for nearly every 2015 Secret Wars mini, each already linked
+  to that mini's volume — the commonest stored-link collision on Secret Wars shelves (merge-with when it is the mini).
+[L-174] (1 shelf/shelves) pub:marvel sig:legacy-stamp sig:stamp
+- A legacy-renumbered run is its own volume in both legs (Captain Marvel #125-129 = CV 105506 / GCD 117972; GotG
+  #146-150 = GCD 118041); the per-file matcher reaches the 1960s/1990s namesake by issue number every time.
+[L-242] (1 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-265] (1 shelf/shelves) kind:foreign pub:delcourt pub:europe-comics pub:marvel
+- Delcourt / Soleil English-digital shelves pair the English CV volume with the French GCD original at 0.9 (the
+  Europe Comics shape) — except when GCD's same-name row is an unrelated book (Spin Angels → Marvel's GCD 53252).
+[L-298] (1 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (1 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-319] (1 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-324] (1 shelf/shelves) folder:vn-year kind:foreign kind:manga kind:trade-only pub:marvel sig:collision sig:probe sig:trade-link tier:D
+- TIER D (D-013..D-015) — LEAD RULING confirming the reader's tie-break for a single trade alone in a `<Title> vN
+  (<year>)` run folder: (a) both legs hold a multi-volume line coextensive with the shelf → the LINE at 0.9, the run
+  on N; (b) otherwise the RUN, with `F merge-with` into the run's landed shelf (a lone trade is an edition of its
+  run, never a second comic); (c) otherwise the book's own count-1 record. One published work shipped as separate
+  printed objects is indexed that way by GCD (Building Stories: 14 lettered rows vs CV's one volume — 0.9 by
+  construction). An album title can be an ISSUE row no series probe reaches (Asterix Miscellany #29 / #31 / #33 of
+  the Hodder line) — search `gcd_issue.title` / `cv_iss.name`. Spellings that hide records: superscripts (Alien³),
+  periods (N.H.K.), an apostrophe year ("Cable '99" = "Cable 1999"), a doubled letter, an "∞" issue number, a literal
+  translation of a Japanese title. ComicVine carries Japanese originals GCD lacks — probe the Japanese title before
+  conceding a scanlation shelf. Marvel renumbers sub-series into one volume (Ultimate Comics Avengers 1/2/3 = #1-18).
+[L-371] (1 shelf/shelves) pub:marvel sig:split
+- A split F line's "new key" can already be a LIVE shelf's key (a trade-only shelf of the same run, e.g. Superboy v6
+  (2011) = S100132's key) — check `nearby:` / `lookup.py --shelf` and write it as an explicit join. Stored GCD rows on
+  Marvel 2022+ trades can be the PANINI FRANCE edition — `--collects` on the English row confirms the right one.
+  Digital rips of Marvel trades run ~88-92% of GCD's printed page count — a usable per-book fit when the filename year is
+  the digital release date (R-111).
+[L-378] (1 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-379] (1 shelf/shelves) kind:foreign pub:delcourt pub:marvel
+- CORRECTS L-265 (lead ruling 2026-09-24): GCD 53252 is NOT an unrelated book — it is Marvel's 2009 Soleil-imprint English
+  floppy edition of Spin Angels albums 1-4. It is still the wrong leg for a seven-album shelf (four issues against seven
+  albums fails the ladder test): S24306 stores cv=90068 with the GCD leg empty (or the French Soleil original's GCD row if
+  lookup finds one) and names 53252 on an N line as the Marvel edition of albums 1-4.
+[L-388] (1 shelf/shelves) pub:marvel sig:split
+- R-134 (wave 128, lead ruling): RESIDUE vs co-equal — two or more whole trades of another run are a co-equal run (R +
+  split-needed) only when that run has NO shelf of its own; when its run or line already has a shelf, they are misfiled
+  books: S + `F split-needed | items -> join S<home>` (L-368; X-Factor 2024 S66336's two Peter David omnibuses -> S22172).
+  `#MARVEL CURRENT ONGOING TITLES`: Marika / MikeNY76 ComicInfo Web ids and "cvv<id>" Series strings name the stored CV
+  volume (1.0 evidence). From the Ashes "Variant Covers" folders hold the PREVIOUS run's finale covers (X-Men v6 #35 in
+  the v7 folder). "_X-Men Complete Chronology V2\NNNN <event>" annuals are event-chapter excerpts = partial rips. A
+  ripper's "Omnibus Book 01" in a run's folder can be that run's first omnibus, not the line's Vol. 1 (page count decides).
+  CV mints one count-1 volume per Venom by Ewing trade; GCD keeps two lines (183532 Vols 1-4, 208820 Vols 5-8).
+[L-395] (1 shelf/shelves) pub:marvel sig:split sig:stamp
+- Waves 141-142: Marvel RELAUNCH shelves carry the legacy volume's CV issue ids BY NUMBER (Daredevil 1998 -> 2190,
+  Deadpool 2008 / 2012 -> 6000) — compare each file's linked issue number to its filename and correct with I lines.
+  Daredevil by Mark Waid Vol. 01 at 272pp is the HC line (CV 57482 / GCD 79153), not the TPB line (45530 / 64482). GCD
+  numbers Daredevil 1998's legacy issues "#22 (402)"; a file "115 (495)" is #115. GCD files Daredevil Annual #5 (1989) as
+  "#4 [5]". Creator lines reprinting ONE run give way to the run (Miller/Janson -> 1964 run, To Heaven Through Hell ->
+  2019 run) — the standing run-vs-line ruling supersedes L-115 / L-196's 0.9 practice. A dismissed conflated flag does not
+  stop the RESIDUE ruling: two whole books of another record with no shelf -> R + split-needed (Deadpool Classic
+  Companion). An R- file that restates a shelf a pending P- batch splits MUST repeat its F split-needed (L-370 halt,
+  S95620 in R-145).
+
++30 more matched entries not shown: L-396, L-404, L-097, L-124, L-191, L-252, L-272, L-274, L-281, L-288, L-290, L-291, L-293, L-352, L-354, L-030, L-064, L-065, L-085, L-099, L-101, L-113, L-123, L-151, L-160, L-193, L-194, L-262, L-310, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S64503 Daredevil  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Daredevil (2022) | Daredevil v7 (2022)  years 1964-2023  19 files / 3 collections
+   split: the KEPT half of the P-999 split — moved out -> (fixture); re-identify what stayed
+   ⚠ stored cv 144027 = the moved run's — the run that left this shelf is CV 144027; unless this half IS that run, write `F 64503 wrong-cv-link` and give the S line this half's own id (or cv=-) so the new shelf can keep 144027
+   flags: #114 conflated-series [Dismissed] item 46946 — Daredevil & Elektra (2022) volumes sit in the Ultimate Daredevil and Elektra Series
+   folders: [16] Marvel\#MARVEL CURRENT ONGOING TITLES\Daredevil v8 (2023)\Variant Covers · [3] Marvel\_Daredevil\09 Daredevil v7 (2022)
+   files:   [47531] Daredevil 001 (2022) (Dan Panosian Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [47532] Daredevil 001 (2022) (John Romita Jr. Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [47533] Daredevil 001 (2022) (Peach Momoko Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [47535] Daredevil 002 (2022) (1-in-25 Gary Frank Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [47536] Daredevil 002 (2022) (Woods Skrull Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [47538] Daredevil 003 (2022) (1-in-25 Maleev Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [47539] Daredevil 003 (2022) (Siqueira Promo Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [47541] Daredevil 004 (2022) (Siqueira Promo Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [47543] Daredevil 005 (2022) Checchetto Design Variant (Digital) (MikeNY76-Empire).cbz (1pp) | [47546] Daredevil 006 (2022) (Momoko Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [47551] Daredevil 009 (2023) (Juni Ba Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [47556] Daredevil 010 (2023) (Eastman Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [47560] Daredevil 011 (2023) (Vicentini Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [47563] Daredevil 012 (2023) (Liefeld Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [47568] Daredevil 013 (2023) (Mooney Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [47571] Daredevil 014 (2023) Leinil Yu Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [46945] COL 01 Daredevil by Chip Zdarsky Vol. 01 - The Red Fist Saga Part 01 (2023) (Digital) (EJGriffin-Empire).cbz (144pp)
+            [46946] COL 02 Daredevil & Elektra by Chip Zdarsky Vol. 02 - The Red Fist Saga Part 02 (2023) (Digital-Empire).cbr (112pp)
+            [46947] COL 03 Daredevil & Elektra by Chip Zdarsky v03 - The Red Fist Saga Part 03 (2024) (EJGriffin-Empire).cbz (114pp)
+   ours:    ladder 1-6, 9-14; 3 number(s) name more than one file: 1, 2, 3
+   GCD says: [46945] gcd_reprint 2494781: s187163 Daredevil (2022) (unnumbered) [6 stories]
+             [46946] gcd_reprint 2557635: s187163 Daredevil (2022) (unnumbered) [6 stories]
+             [46947] gcd_reprint 2578795: s187163 Daredevil (2022) (unnumbered) [5 stories]
+   CV linked:      vol 144027 "Daredevil" 2022 Marvel 14 issues; cached #5-8 (4); yearΔ 58; ratio 16/14 = 1.14; no judged range
+   CV per-file (v1): vol 2190 "Daredevil" 1964 Marvel 381 on 16/19 files
+   CV local rip:   (= linked) · 148896 "Daredevil" 1979 Editions Héritage 32 · 77205 "Daredevil" 1989 Semic S.A. 19 · 6209 "Daredevil" 1998 Marvel 134 · 142709 "Daredevil" 2000 Panini Verlag 2 · 42073 "Daredevil" 2001 Panini France 1 issue 286286   (rip lookup)
+   GCD per-file:   series 207588 "Daredevil" [fr] 2023-2023 Panini France [série continue terminée [was ongoing series]] 3 on 7/19 files · series 186522 "Daredevil" [fr] 2020-? Panini France [série continue [ongoing series]] 7 on 3/19 files; methods numx10
+   GCD dump:       1636 "Daredevil" 1964-1998 Marvel [] 381 · 65541 "Daredevil" [en-au] 1965-? Horwitz [] 1 · 31442 "Daredevil" 1967-1967 Lancer Books [] 1 · 149586 "Daredevil" [en-ph] 1972-1972 Goodwill Bookstore [] 1 · 23221 "Daredevil" [en-gb] 1953-1953 L. Miller & Son [] 7 · 71495 "Daredevil" [en-au] 1976-1976 Newton Comics [] 2   (dump lookup)
+   bridges:        gcd 207588 -> LOCG 111619 "Daredevil" support 14 · gcd 186522 -> LOCG 111619 "Daredevil" support 8

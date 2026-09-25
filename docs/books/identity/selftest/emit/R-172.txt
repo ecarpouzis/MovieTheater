@@ -1,0 +1,62 @@
+## Conventions for this batch (13 shown of 13 matched; 409 in LEDGER.md; 1 shelf/shelves: pub:dc ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-082] (1 shelf/shelves) pub:dc sig:comicinfo
+- A Glorith-HD rip's ComicInfo `Web` id CAN be a ComicVine ISSUE id of the stored volume (599834, DC 100-Page
+  Spectacular) — Glorith's Web ids are never GCD ids, but check them against the CV rip.
+[L-093] (1 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
+[L-212] (1 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-222] (1 shelf/shelves) pub:dc sig:collision
+- Second-rip fragments of shelves already read in earlier batches (Flash Secret Files, Spectre 1992, Teen Titans
+  2003/2016, Wonder Woman 1942/2016, Zatanna 1993, Donna Troy) surface as `--all` collisions — `merge-with` after
+  grepping the partner's name and count.
+[L-237] (1 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+[L-245] (1 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-016] (1 shelf/shelves) sig:comicinfo
+- Glorith rips' ComicInfo `Web` ids are NOT GCD issue ids in our dump (29 checked: missing or unrelated). Never
+  claim 1.0 from one. A ComicInfo `Volume` holding a 6-digit number IS a ComicVine volume id (Lex and the City =
+  162184) — a genuine 1.0 assertion.
+[L-030] (1 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-032] (1 shelf/shelves) sig:comicinfo
+- A Marika-Empire rip's ComicInfo `Web` id IS a ComicVine ISSUE id (21/21 resolve to the stored volume) — the
+  1.0 shape. The ripper decides: Glorith's Web ids are not GCD issue ids. Check one against the rip before
+  claiming 1.0 on a new ripper.
+[L-113] (1 shelf/shelves) sig:comicinfo sig:stamp
+- ComicInfo `Volume` holding a 4-digit ComicVine volume id (not a year) is a 1.0 assertion like the 6-digit
+  case (Ka-Zar v2 1974: `Volume 2692` + `Count 20` = CV 2692) and disproves the per-file matcher's pick.
+[L-114] (1 shelf/shelves) sig:comicinfo
+- Marika-Empire and Glorith-HD `Web` ids are ComicVine ISSUE ids of the stored volume (7 of 7 here).
+[L-151] (1 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (1 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+
+====================================================================================================
+
+== S33 1st Issue Special  [tier A]   keys: 1st Issue Special  years 1975-1976  13 files / 0 collections
+   folders: [13] DC\1st Issue Special (1975)
+   files:   1st Issue Special 001 (1975) (Digital) (Shadowcat-Empire).cbz … 1st Issue Special 007 (1975) (Digital) (Shadowcat-Empire).cbz  (7 files, pp 19-22)
+            [53674] 1st Issue Special 008 (1976) (digital) (Shadowcat-Empire).cbz (20pp) | [53675] 1st Issue Special 009 (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [53676] 1st Issue Special 010 (1976) (Digital) (Shadowcat-Empire).cbz (19pp) | [53677] 1st Issue Special 011 (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [53678] 1st Issue Special 012 (1976) (Digital) (Shadowcat-Empire).cbz (20pp) | [53679] 1st Issue Special 013 (1976) (Digital) (Shadowcat-Empire).cbz (20pp)
+   ours:    ladder 1-13; ComicInfo Series: "1st Issue Special"x13; ComicInfo Volume: "1975"x13; ComicInfo Publisher: "DC"x13
+   CV linked:      vol 2726 "1st Issue Special" 1975 DC Comics 13 issues; cached #1-13 (13); yearΔ 0; ratio 13/13 = 1.00; no judged range; v1 per-file: same volume on 13/13 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 2212 "1st Issue Special" 1975-1976 DC [was ongoing series] 13 on 13/13 files; methods numx13
+   GCD dump:       (= per-file) · 150191 "1st Issue Special" [es] 2019-2019 ECC Ediciones [] 3   (dump lookup)
+   bridges:        gcd 2212 -> LOCG 114350 "1st Issue Special" support 13

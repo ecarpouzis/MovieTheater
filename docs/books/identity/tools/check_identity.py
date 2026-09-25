@@ -424,7 +424,10 @@ def parse(path, ck, errors):
     # merge-with (which cannot land without a shared cv) — so a shared gcd stands when every shelf of the group
     # either joins another member (`F <sid> split-needed | ... join S<member>`) or is the target of such a join.
     def _joined(group):
-        return all(any((s, t) in split_joins or (t, s) in split_joins for t in group if t != s) for s in group)
+        # a member that joins ANY shelf empties and no longer holds the gcd (an Epic line straddling two batches:
+        # R-171's per-book shelves join a line shelf decided in R-169); a member neither joining nor joined still fails
+        joiners = {s for s, _t in split_joins}
+        return all(s in joiners or any((t, s) in split_joins for t in group if t != s) for s in group)
     for gid, sids in gcd_seen.items():
         if len(set(sids)) > 1 and not (set(sids) & merges) and not _joined(set(sids)):
             errors.append(f"{base}: shelves {sorted(set(sids))} share gcd={gid} with no 'F <sid> merge-with=' line")

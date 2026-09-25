@@ -2194,3 +2194,14 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   sits inside CV 4250 (issue 158752) while GCD files it as its own series 40645 "Wolverine Special" — it stays on the
   run shelf. A 0-file key Manual-linked to another cv (S12823's "New Mutants - Lethal Legion" -> cv 18351) or a Manual
   gcd link to a trade line (S21922 -> 104143) is a trap for future rips: note it on an N line.
+[L-409] pub:marvel sig:split kind:collected-line
+- Waves 170-171 (lead ruling, closes L-392's OPEN question): an Epic Collection line reprinting ONE run KEEPS its line
+  (L-109 shape, what every landed Epic line already does) — it does NOT give way to the run. Giving way would rework
+  ~160 shelves / 399 files and split the section's Epic lines between multi-run lines (X-Men Epic) and ones folded
+  into a run shelf; the C lines already record which run each book reprints, so containment and dedup lose nothing.
+  L-350's give-way stays scoped to archive lines with no record of their own; L-406's give-way is for creator lines,
+  not Epic Collections. check_identity's shared-gcd rule now counts a member covered when it joins ANY shelf (an Epic
+  line straddling two batches: R-171's X-Factor Epic per-book shelves join S22162, whose S line is in R-169). Generation
+  X Epic anchors on S7350 (the split lane cannot empty a shelf into a NEW key); after landing its name falls to its key
+  "Generation X Epic Collection: Back To School" (cv=- shelves take Name = ParsedKey) — owes a DisplayNameOverride;
+  S7349 (Vol. 04) still owes its join.

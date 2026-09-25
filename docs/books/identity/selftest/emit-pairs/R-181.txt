@@ -1,4 +1,4 @@
-## Conventions for this batch (35 shown of 193 matched; 380 in LEDGER.md; 37 shelf/shelves: pub:marvel ×13 · kind:collected-line ×12 · kind:trade-only ×11 · folder:vn-year ×9 · folder:bucket ×9 · folder:events ×8 · folder:sequel-subfolder ×5 · kind:new ×5)
+## Conventions for this batch (35 shown of 223 matched; 409 in LEDGER.md; 39 shelf/shelves: kind:collected-line ×14 · kind:trade-only ×13 · pub:marvel ×13 · folder:bucket ×9 · folder:vn-year ×9 · folder:events ×8 · kind:new ×6 · folder:sequel-subfolder ×5)
 LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
 reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 
@@ -6,6 +6,8 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 - A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
   matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
   ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-030] (39 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
 [L-033] (13 shelf/shelves) pub:marvel sig:collision sig:probe
 - Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
   → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
@@ -15,6 +17,12 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 - A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
   folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
   partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-151] (39 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (39 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
 [L-378] (13 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
 - PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
   ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
@@ -23,14 +31,9 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
   first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
   The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
   fraction of the shelf fails the ladder test anyway.
-[L-030] (37 shelf/shelves) sig:collision
-- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
-[L-151] (37 shelf/shelves) sig:collision sig:withheld
-- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
-  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
-[L-160] (37 shelf/shelves) pass:revisit sig:withheld
-- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
-  revisit pair re-links the partner and then the S line can be written.
+[L-193] (36 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
 [L-124] (17 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
 - A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
   line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
@@ -38,97 +41,119 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 [L-175] (17 shelf/shelves) folder:bucket folder:events pass:item
 - In the chronology folders the RUN rule stands over the bucket rule: `S` = the numbered run, the tie-in's collected
   record goes on the `I` line (B-072/073, ~90 shelves); the book's own record is the S only where no numbered run exists.
-[L-193] (34 shelf/shelves) sig:legacy-stamp sig:probe
-- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
-  plain title returns 0 hits — probe with the ordinal or `--contains`.
-[L-014] (30 shelf/shelves) sig:probe sig:round2
+[L-014] (32 shelf/shelves) sig:probe sig:round2
 - `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
   batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
   right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-013] (30 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-043] (30 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (30 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (30 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (30 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (30 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (30 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (30 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (30 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (30 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
 [L-127] (10 shelf/shelves) pub:marvel sig:comicinfo
 - A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
   6-digit cases.
 [L-136] (10 shelf/shelves) pub:marvel sig:comicinfo
 - Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
   45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
-[L-013] (28 shelf/shelves) sig:probe
-- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
-  with the other spelling.
-[L-043] (28 shelf/shelves) sig:probe
-- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
-  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
-[L-050] (28 shelf/shelves) sig:probe
-- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
-  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
-  abbreviation the publisher uses ("HSE").
-[L-072] (28 shelf/shelves) sig:probe
-- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
-  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
-[L-088] (28 shelf/shelves) sig:probe
-- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
-  shorter one — probe both directions before `provider-missing`.
-[L-089] (28 shelf/shelves) sig:probe
-- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
-[L-095] (28 shelf/shelves) sig:probe
-- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
-  spanning record — the ladder is arc numbers, not issue numbers.
-[L-096] (28 shelf/shelves) sig:probe
-- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
-  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
-  `provider-missing`.
-[L-118] (28 shelf/shelves) sig:probe
-- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
-  page count, places a trade when a shelf holds several volumes of one line.
-[L-125] (28 shelf/shelves) sig:probe
-- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
-  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
-[L-157] (28 shelf/shelves) sig:probe
+[L-157] (30 shelf/shelves) sig:probe
 - A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
   Archer & Armstrong: Revival 164703) → `provider-missing`.
-[L-159] (28 shelf/shelves) sig:probe
+[L-159] (30 shelf/shelves) sig:probe
 - An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
   exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
-[L-163] (28 shelf/shelves) sig:probe
+[L-163] (30 shelf/shelves) sig:probe
 - GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
   Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
-[L-177] (28 shelf/shelves) sig:probe
+[L-177] (30 shelf/shelves) sig:probe
 - A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
   ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
-[L-204] (28 shelf/shelves) pass:item pass:revisit sig:probe
+[L-204] (30 shelf/shelves) pass:item pass:revisit sig:probe
 - `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
   R-018 carry an item-level CV id instead of `cv=-`.
-[L-253] (28 shelf/shelves) sig:probe
+[L-253] (30 shelf/shelves) sig:probe
 - A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
   GCD 201441, not the 2014 run) — the `C` names the sequel run.
-[L-264] (28 shelf/shelves) sig:probe
+[L-264] (30 shelf/shelves) sig:probe
 - Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
   Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
-[L-267] (28 shelf/shelves) sig:probe
+[L-267] (30 shelf/shelves) sig:probe
 - A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
   County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
-[L-273] (28 shelf/shelves) sig:probe
+[L-273] (30 shelf/shelves) sig:probe
 - The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
   ENGLISH title was right for all 23 — the pool over the pick, again.
-[L-292] (28 shelf/shelves) sig:probe
+[L-292] (30 shelf/shelves) sig:probe
 - A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
   books take gcd-only identities from the GCD series' full list, cv=-.
-[L-294] (28 shelf/shelves) pass:item sig:probe
+[L-294] (30 shelf/shelves) pass:item sig:probe
 - ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
   18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
   no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
   belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
   for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
   a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
-[L-341] (28 shelf/shelves) sig:probe
+[L-341] (30 shelf/shelves) sig:probe
 - GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
   Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
   subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
   volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
   Graphic Novel"). CV spells "'Til" where rippers write "'till".
 
-+158 more matched entries not shown: L-346, L-347, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-319, L-191, L-007, L-029, L-034, L-060, L-113, L-116, L-169, L-217, L-272, L-016, L-032, L-114, L-130, L-242, L-373, L-377, L-064, L-085, L-101, L-310, L-020, L-031, L-152, L-158, L-168, L-174, L-188, L-219, L-223, L-233, L-243, L-306, L-329, L-359, L-290, L-023, L-076, L-109, L-115, L-117, L-132, L-196, L-295, L-296, L-298, L-307, L-308, L-313, L-324, L-327, L-328, L-332, L-374, L-376, L-380, L-065, L-099, L-123, L-194, L-262, L-330, L-040, L-052, L-055, L-059, L-172, L-195, L-197, L-199, L-206, L-212, L-222, L-237, L-245, L-257, L-337, L-345, L-365, L-366, L-368, L-098, L-100, L-274, L-276, L-277, L-278, L-280, L-283, L-284, L-288, L-293, L-304, L-344, L-011, L-015, L-028, L-036, L-068, L-073, L-082, L-091, L-093, L-119, L-121, L-129, L-140, L-154, L-173, L-203, L-205, L-210, L-211, L-214, L-215, L-254, L-255, L-260, L-297, L-321, L-325, L-331, L-340, L-343, L-348, L-357, L-363, L-364, L-369, L-370, L-371, L-128, L-150, L-181, L-336 (grep LEDGER.md for them)
++188 more matched entries not shown: L-346, L-347, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-319, L-191, L-388, L-391, L-007, L-029, L-034, L-060, L-113, L-116, L-169, L-217, L-272, L-399, L-016, L-032, L-064, L-085, L-101, L-114, L-130, L-242, L-310, L-373, L-377, L-383, L-020, L-031, L-152, L-158, L-168, L-174, L-188, L-219, L-223, L-233, L-243, L-306, L-329, L-359, L-395, L-290, L-023, L-076, L-109, L-115, L-117, L-132, L-196, L-295, L-296, L-298, L-307, L-308, L-313, L-324, L-327, L-328, L-332, L-374, L-376, L-380, L-387, L-392, L-393, L-397, L-398, L-400, L-401, L-403, L-405, L-406, L-407, L-408, L-409, L-065, L-099, L-123, L-194, L-262, L-330, L-006, L-040, L-045, L-052, L-055, L-059, L-172, L-176, L-178, L-184, L-185, L-195, L-197, L-199, L-206, L-212, L-222, L-237, L-245, L-257, L-333, L-337, L-345, L-365, L-366, L-368, L-098, L-100, L-274, L-276, L-277, L-278, L-280, L-283, L-284, L-288, L-293, L-304, L-344, L-011, L-015, L-028, L-036, L-068, L-073, L-082, L-091, L-093, L-119, L-121, L-129, L-140, L-154, L-173, L-203, L-205, L-210, L-211, L-214, L-215, L-254, L-255, L-260, L-297, L-321, L-325, L-331, L-340, L-343, L-348, L-357, L-363, L-364, L-369, L-370, L-371, L-389, L-390, L-396, L-402, L-404, L-128, L-150, L-181, L-336 (grep LEDGER.md for them)
 
 ====================================================================================================
+
+== S102809 Karl the Viking  [tier B]   keys: Karl the Viking (2022)  years 2022-2022  2 files / 2 collections
+   split run: "Karl the Viking (2022)" run={"cv": 146917} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [2] 2000AD\Karl the Viking
+   files:   [4497] COL Karl the Viking v01 - The Sword of Eingar (2022) (digital) (Mr Norrell-Empire).cbr (245pp)
+            [4498] COL Karl the Viking v02 - The Voyage of the Sea Raiders (2022) (digital) (Mr Norrell-Empire).cbr (244pp)
+   CV linked:      vol 146917 "Karl the Viking" 2022 Rebellion 2 issues; cached #1-2 (2); yearΔ 0; ratio 0/2; no judged range
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       87995 "Karl the Viking" [en-nl] 2008-2008 Don Lawrence Collection [] 4   (dump lookup)
+
+== S23592 Karl the Viking  [tier B]   keys: Karl the Viking  years 2008-2008  4 files / 4 collections
+   split: the KEPT half of the P-004 split — moved out -> S102809 "Karl the Viking (2022)"; re-identify what stayed
+   folders: [4] 2000AD\Karl the Viking
+   files:   [4493] COL Karl the Viking the Collection v01 - The Sword of Eingar (2008) (Trigo&MickRC) (SZ).cbr (129pp)
+            [4494] COL Karl the Viking the Collection v02 - The Powers of Helvud (2008) (Trigo&MickRC) (SZ).cbr (128pp)
+            [4495] COL Karl the Viking the Collection v03 - Island of the Monsters (2008) (Trigo&MickRC) (SZ).cbr (127pp)
+            [4496] COL Karl the Viking the Collection v04 - The Quest of the Long Ships (2008) (Trigo&MickRC) (SZ).cbr (126pp)
+   GCD says: [4493] gcd_reprint 1336007: s60571 Lion (1960) (unnumbered) [55 stories]
+             [4494] gcd_reprint 1336008: s60571 Lion (1960) (unnumbered) [55 stories]
+             [4495] gcd_reprint 1336009: s60571 Lion (1960) (unnumbered) [50 stories] · s35204 Lion Annual (1954) #1963, #1966 [2 stories]
+             [4496] gcd_reprint 1336010: s60571 Lion (1960) (unnumbered) [45 stories] · s35204 Lion Annual (1954) #1964-1965, #1969 [3 stories]
+   CV linked:      vol 46698 "Karl the Viking - The Collection" 2008 Don Lawrence Collection 4 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); cached #1-4 (4); yearΔ ?; ratio 0/?; no judged range
+   CV candidates:  (= linked) · 146917 "Karl the Viking" 2022 Rebellion 2 s78 · 7562 "Viking" 2009 Image 5 s55 · 168562 "Karl" 2017 Finix 4 s48 · 143191 "Karl" 1988 ak-Verlag 1 issue 927441 s40 · 101992 "Viking" 2017 Éditions Glénat 1 issue 600059 s40 · 38945 "Viking Glory: The Viking Prince" 1991 DC Comics 1 issue 261537 s37   (v1 search)
+   CV local rip:   (= linked) · 146917 "Karl the Viking" 2022 Rebellion 2 · 7562 "Viking" 2009 Image 5 (via CV candidate name "Viking") · 101992 "Viking" 2017 Éditions Glénat 1 issue 600059 (via CV candidate name "Viking")   (rip lookup)
+   GCD dump:       87995 "Karl the Viking" [en-nl] 2008-2008 Don Lawrence Collection [] 4 · 35800 "Viking" 2009-2010 Image [] 5 (via CV candidate name "Viking") · 61243 "Viking" 2009-2009 Image [] 1 (via CV candidate name "Viking") · 139064 "Viking!" [fr] 2006-2007 Editions Carabas [] 2 (via CV candidate name "Viking") · 103042 "Viking" [de] 2016-2016 Cross Cult [] 1 (via CV candidate name "Viking") · 233422 "Viking" [fr-us] 2016-2016 Hollywood Comics [] 1 (via CV candidate name "Viking")   (dump lookup)
 
 == S102724 Age of X-Man: Apocalypse and the X-Tracts (2019)  [tier B]   keys: Age of X-Man: Apocalypse and the X-Tracts (2019)  years 2019-2019  1 files / 0 collections
    split run: "Age of X-Man: Apocalypse and the X-Tracts (2019)" run={"cv": 117569, "gcd": 142246} (new shelf from P-004) — seed the S line from these ids, then verify them
