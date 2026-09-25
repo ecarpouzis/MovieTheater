@@ -1,0 +1,22 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S66376	X-Men Unlimited (1993)	run={"cv": 5066, "gcd": 4754}	P-074.jsonl	new	pair=101518
+S22224	X-Men '92 - Warzones!	run={"cv": 82858, "gcd": 90351}	P-074.jsonl	new	pair=22222
+S103823	X-Men: Second Coming (2011)	run={"cv": 35716, "gcd": 227085}	P-074.jsonl	new	pair=22374
+S22153	X-Factor v3 (2006)	run={"cv": 18109, "gcd": 16465}	P-074.jsonl	new	pair=66333
+S22172	X-Factor by Peter David Omnibus	run={"cv": 138276, "gcd": 174889}	P-074.jsonl	new	pair=66333
+S104235	X-Factor by Peter David: The Complete Collection (2014)	run={"cv": 71227, "gcd": 79142}	P-074.jsonl	new	pair=66333
+S102429	X-Men Annual	run={"cv": 10748, "gcd": 11656}	P-074.jsonl	new	pair=66349
+S12829	New Mutants Epic Collection	run={"gcd": 112586}	P-074.jsonl	new	pair=12830
+S22162	X-Factor Epic Collection	run={"gcd": 112457}	P-074.jsonl	new	pair=22163
+S22185	X-Force Epic Collection	run={"gcd": 112917}	P-074.jsonl	new	pair=22186
+S22349	X-Men Epic Collection	run={"gcd": 82692}	P-074.jsonl	new	pair=22350
+S6295	Excalibur Epic Collection	run={"gcd": 112667}	P-074.jsonl	new	pair=6296
+S7350	Generation X Epic Collection: Back To School	run={"gcd": 174151}	P-074.jsonl	new	pair=7351
+S101518	moved out -> S66376 "X-Men Unlimited (1993)"	run=-	P-074.jsonl	kept	pair=101518	moved_cv=5066
+S22222	moved out -> S22224 "X-Men '92 - Warzones!"	run=-	P-074.jsonl	kept	pair=22222	moved_cv=82858
+S22374	moved out -> S103823 "X-Men: Second Coming (2011)"	run=-	P-074.jsonl	kept	pair=22374	moved_cv=35716
+S66333	moved out -> S22153 "X-Factor v3 (2006)"; S22172 "X-Factor by Peter David Omnibus"; S104235 "X-Factor by Peter David: The Complete Collection (2014)"	run=-	P-074.jsonl	kept	pair=66333	moved_cv=18109,138276,71227
+S66349	moved out -> S102429 "X-Men Annual"	run=-	P-074.jsonl	kept	pair=66349	moved_cv=10748
