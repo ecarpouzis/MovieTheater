@@ -2242,3 +2242,8 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   (cv=-) — L-409 — while the shelf keeps its run; the C lines record which run each book reprints. The ASM Epic rework
   needs one batch holding every per-book shelf (anchor S871, the plain line key). Marvel Masterworks lines reprinting ONE
   run stay lines pending Eric (L-409 exempts only Epic Collections) — revisit.txt S11478.
+[L-415] pub:marvel kind:collected-line sig:split
+- Wave 182: the ASM Epic Collection line anchors on S871 (key 'Amazing Spider-Man Epic Collection', cv=- gcd=74602);
+  the 22 per-book shelves join it and each drops its stored count-1 cv (F wrong-cv-link). The anchor is the shelf whose
+  ParsedKey is the PLAIN line name (who-stores gcd=<line> lists the candidates). Epic C lines name the main run AND the
+  annuals / crossovers each book reprints. Conan: The Original Marvel Years Epic Collection = S104264 (gcd 163625).
