@@ -1,0 +1,421 @@
+## Conventions for this batch (23 shown of 140 matched; 399 in LEDGER.md; 12 shelf/shelves: pub:marvel ×12 · folder:vn-year ×8 · kind:collected-line ×6 · folder:sequel-subfolder ×6 · folder:events ×5 · kind:trade-only ×4 · folder:bucket ×1 · kind:ogn ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (12 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (12 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (12 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-060] (8 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (8 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-119] (8 shelf/shelves) pub:marvel
+- GCD filing quirks that recovered legs: drop "Comics" from a title, "and" for "&", "Digest" appended, reversed
+  or reordered name lists ("Deadpool / Amazing Spider-Man / Hulk: Identity Wars").
+[L-127] (8 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-031] (6 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (6 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (6 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (6 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (6 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-132] (6 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-136] (6 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-196] (6 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (6 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (6 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-298] (6 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-306] (6 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (6 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (6 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-313] (6 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-327] (6 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+
++117 more matched entries not shown: L-328, L-329, L-332, L-343, L-388, L-389, L-391, L-392, L-397, L-124, L-191, L-272, L-281, L-034, L-169, L-319, L-387, L-393, L-395, L-399, L-029, L-030, L-135, L-151, L-160, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-290, L-291, L-309, L-314, L-398, L-085, L-175, L-014, L-064, L-101, L-106, L-111, L-112, L-130, L-133, L-187, L-193, L-310, L-371, L-390, L-396, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-113, L-174, L-242, L-357, L-016, L-032, L-114, L-123, L-121, L-128, L-129, L-134, L-138, L-172, L-181, L-305, L-312, L-315, L-324, L-336, L-345, L-007, L-065, L-099, L-150, L-194, L-217, L-262, L-330, L-041, L-192 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S104182 Rocket Raccoon & Groot: The Complete Collection (2013)  [tier D]   keys: Rocket Raccoon & Groot: The Complete Collection (2013)  years 2013-2014  2 files / 2 collections
+   split run: "Rocket Raccoon & Groot: The Complete Collection (2013)" run={"cv": 46366, "gcd": 73369} (new shelf from P-063) — seed the S line from these ids, then verify them
+   folders: [2] Marvel\_Guardians of the Galaxy\_Rocket Raccoon and Groot
+   files:   [80332] COL Rocket Raccoon & Groot - The Complete Collection (2013) (digital) (Minutemen-InnerPhDemons).cbr (272pp)
+            [80333] COL Rocket Raccoon And Groot Ultimate Collection (2014) (Digital) (Kileko-Empire).cbr (272pp)
+   GCD says: [80332] gcd_reprint 1098985: s56227 Annihilators (2011) #1-4 [5 stories] · s61189 Annihilators: Earthfall (2011) #1-4 [4 stories] · s3042 Rocket Raccoon (1985) #1-4 [4 stories] · s2260 Marvel Preview (1975) #7 [1 story]
+             [80333] gcd_reprint 1098985: s56227 Annihilators (2011) #1-4 [5 stories] · s61189 Annihilators: Earthfall (2011) #1-4 [4 stories] · s3042 Rocket Raccoon (1985) #1-4 [4 stories] · s2260 Marvel Preview (1975) #7 [1 story]
+   GCD dump:       73369 "Rocket Raccoon & Groot: The Complete Collection" 2013-2013 Marvel [] 1 (via our own name without the filing suffix "Rocket Raccoon & Groot: The Complete Collection")   (dump lookup)
+
+== S14788 Rocket Raccoon & Groot  [tier B]   keys: Rocket Raccoon and Groot  years 2016-2016  2 files / 2 collections
+   split: the KEPT half of the P-063 split — moved out -> S104182 "Rocket Raccoon & Groot: The Complete Collection (2013)"; re-identify what stayed
+   flags: #385 label-ambiguous [Pending] item 118877 — items 80335 and 118877 are duplicate copies of Civil War II
+   folders: [2] Marvel\_Guardians of the Galaxy\_Rocket Raccoon and Groot\Rocket Raccoon and Groot v1 (2016)
+   files:   [80334] COL Rocket Raccoon and Groot Vol. 01 - Tricks of the Trade (2016) (Digital) (Zone-Empire).cbr (127pp)
+            [80335] COL Rocket Raccoon and Groot Vol. 02 - Civil War II (2016) (Digital) (Zone-Empire).cbr (113pp)
+   ours:    judged item 80334 #1-6 conf 0.95; judged item 80335 #7-10 conf 0.95
+   GCD says: [80334] gcd_reprint 1605030: s95266 Rocket Raccoon and Groot (2016) #1-6 [23 stories]
+             [80335] gcd_reprint 1648460: s95266 Rocket Raccoon and Groot (2016) #7-10 [11 stories] · s1866 The Incredible Hulk (1968) #271 [2 stories]
+   CV linked:      vol 86989 "Rocket Raccoon & Groot" 2016 Marvel 10 issues; cached #1-10 (10); yearΔ 0; ratio 0/10; 2 of 2 judged fit
+   CV candidates:  (= linked) · 97430 "Rocket Raccoon" 2016 Marvel 5 s100 · 92386 "Rocket Raccoon & Groot: Tricks of the Trade" 2016 Marvel 1 issue 540081 s89 · 157547 "Rocket Raccoon and Groot: Tricks of the Trade" 2016 Marvel UK/Panini UK 1 issue 1050760 s89 · 46366 "Rocket Raccoon and Groot Complete Collection" 2013 Marvel 1 issue 396609 s87 · 75336 "Rocket Raccoon" 2014 Marvel 11 s85 · 153548 "Rocket Raccoon Marvel Pocketbook" 2014 Marvel UK/Panini UK 1 issue 1014598 s58   (v1 search)
+   CV local rip:   (= linked) · 92386 "Rocket Raccoon & Groot: Tricks of the Trade" 2016 Marvel 1 issue 540081 (via CV candidate name "Rocket Raccoon & Groot: Tricks of the Trade") · 97430 "Rocket Raccoon" 2016 Marvel 5 (via CV candidate name "Rocket Raccoon") · 87370 "Rocket Raccoon" 2015 Panini Verlag 3 (via CV candidate name "Rocket Raccoon") · 75336 "Rocket Raccoon" 2014 Marvel 11 (via CV candidate name "Rocket Raccoon") · 3503 "Rocket Raccoon" 1985 Marvel 4 (via CV candidate name "Rocket Raccoon")   (rip lookup)
+   GCD dump:       102055 "Rocket Raccoon & Groot" [de] 2016-? Panini Deutschland [] 2 · 95266 "Rocket Raccoon and Groot" 2016-2016 Marvel [] 10 · 104355 "Rocket Raccoon and Groot" 2016-2016 Marvel [] 3 · 88319 "Rocket Raccoon" [de] 2015-2015 Panini Deutschland [] 3 (via CV candidate name "Rocket Raccoon") · 90883 "Rocket Raccoon" 2015-2015 Marvel [] 2 (via CV candidate name "Rocket Raccoon") · 93244 "Rocket Raccoon" 2015-2016 Marvel [] 2 (via CV candidate name "Rocket Raccoon")   (dump lookup)
+
+== S34388 The Incredible Hulk Annual  [tier B]   keys: The Incredible Hulk Annual  years 1968-1994  17 files / 0 collections
+   split run: "The Incredible Hulk Annual" run=- (new shelf from P-063) — seed the S line from these ids, then verify them
+   split: the KEPT half of the P-063 split — moved out -> S22213 "X-Man and Hulk Annual"; re-identify what stayed
+   folders: [16] Marvel\_Hulk\03 The Incredible Hulk v1 (1968)\Annuals and Specials · [1] Marvel\_Hulk\03 The Incredible Hulk v1 (1968)\Annuals and Specials\Ink Editions
+   files:   [80922] Incredible Hulk Annual 001 (1976) (Digital) (Shadowcat-Empire).cbz (54pp) | [80923] Incredible Hulk Annual 005 (1976) (Digital) (Shadowcat-Empire).cbz (37pp)
+            [80924] Incredible Hulk Annual 006 (1977) (Digital) (Shadowcat-Empire).cbz (35pp) | [80925] Incredible Hulk Annual 007 (1978) (Digital) (TLK-EMPIRE-HD).cbr (37pp)
+            [80926] Incredible Hulk Annual 008 (1979) (Digital) (TheArchivist-Empire).cbr (36pp) | [80927] Incredible Hulk Annual 009 (1980) (digital) (Marika-Empire).cbz (35pp)
+            [80928] Incredible Hulk Annual 010 (1981) (Digital) (TheArchivist-Empire).cbr (40pp) | [80929] Incredible Hulk Annual 011 (1982) (Digital-Empire).cbz (39pp)
+            [80930] Incredible Hulk Annual 013 (1984) (Digital) (TheArchivist-Empire).cbr (39pp) | [80931] Incredible Hulk Annual 014 (1985) (Digital) (TheArchivist-Empire).cbr (42pp)
+            [80932] Incredible Hulk Annual 015 (1986) (Digital) (Shadowcat-Empire).cbz (41pp) | [80933] Incredible Hulk Annual 016 (1990) (digital) (Marika-Empire).cbz (58pp)
+            [80934] Incredible Hulk Annual 017 (1991) (digital) (Marika-Empire).cbz (60pp) | [80935] Incredible Hulk Annual 018 (1992) (Digital-HD) (Monafekk-Empire).cbr (55pp)
+            [80936] Incredible Hulk Annual 019 (1993) (Digital-HD) (Monafekk-Empire).cbr (53pp) | [80937] Incredible Hulk Annual 020 (1994) (Digital) (TheArchivist-Empire).cbr (58pp)
+            [80945] Incredible Hulk Annual 007 (1978) b&w (Bchry-DCP).cbz (36pp)
+   ours:    ladder 1, 5-11, 13-20; 1 number(s) name more than one file: 7; ComicInfo Series: "The Incredible Hulk Annual"x3, "Incredible Hulk Annual"x2; ComicInfo Volume: "1968"x3, "1962"x2; ComicInfo Count: "20"x3; ComicInfo Publisher: "Marvel Comics"x3, "Marvel"x2; ComicInfo Web: "20663"x1, "32839"x1
+   CV linked:      vol 2860 "The Incredible Hulk Annual" 1968 Marvel 20 issues; cached #1-20 (20); yearΔ 0; ratio 17/20 = 0.85; no judged range
+   CV candidates:  (= linked) · 2077 "The Incredible Hulk" 1962 Marvel 6 s88 · 2406 "The Incredible Hulk" 1968 Marvel 374 s85 · 159483 "Incredible Hulk Annual" 2024 Marvel 1 issue 1067979 s33 · 43516 "Incredible Hulk" 2011 Marvel 16 s30 · 6558 "Incredible Hulk" 2000 Marvel 101 s30 · 151522 "Incredible Hulk" 2023 Marvel 30 s30   (v1 search)
+   CV local rip:   (= linked) · 142306 "Incredible Hulk Annual " 1977 Marvel UK/Panini UK 8 · 159483 "Incredible Hulk Annual" 2024 Marvel 1 issue 1067979 · 2406 "The Incredible Hulk" 1968 Marvel 374 (via CV candidate name "The Incredible Hulk") · 2077 "The Incredible Hulk" 1962 Marvel 6 (via CV candidate name "The Incredible Hulk") · 139134 "The Incredible Hulk" 1979 Pocket Books 1 issue 885744 (via CV candidate name "The Incredible Hulk")   (rip lookup)
+   GCD dump:       2348 "The Incredible Hulk Annual" 1976-1994 Marvel [] 16 · 77520 "Incredible Hulk Annual" [en-gb] 1978-1979 World Distributors [] 2 · 77522 "Incredible Hulk Annual" [en-gb] 2004-2009 Pedigree Books [] 2 · 214854 "Incredible Hulk Annual" 2024-2024 Marvel [] 1 · 1866 "The Incredible Hulk" 1968-1999 Marvel [] 374 (via CV candidate name "The Incredible Hulk") · 95393 "The Incredible Hulk" [en-gb] 1967-1967 Souvenir Press Ltd [] 1 (via CV candidate name "The Incredible Hulk")   (dump lookup)
+
+== S22213 X-Man / Hulk '98  [tier A]   keys: X-Man and Hulk Annual  years 1998-1998  2 files / 0 collections
+   split run: "X-Man and Hulk Annual" run=- (new shelf from P-063) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\_X-Men\X-Man v1 (1995)\Annuals and Specials · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0365 PayBack
+   files:   [85791] X-Man and The Incredible Hulk Annual 001 (1998) (Digital-Empire).cbz (41pp) | [88829] 006 X-Man & Hulk Annual (1998) (Meganubis-Novus).cbz (45pp)
+   ours:    ladder 1, 6
+   CV linked:      vol 28192 "X-Man / Hulk '98" 1998 Marvel 1 issues issue 173329; cached #1-1 (1); yearΔ 0; ratio 2/1 = 2.00; no judged range
+   CV candidates:  (= linked) · 150434 "Hulk Annual" 2023 Marvel 1 issue 989661 s85 · 76982 "Hulk Annual" 2014 Marvel 1 issue 465845 s85 · 25407 "Ultimate Hulk Annual" 2008 Marvel 1 issue 149972 s59 · 69687 "Indestructible Hulk Annual" 2013 Marvel 1 issue 435582 s59 · 39873 "Marvel Adventures: Iron Man and Hulk" 2007 Marvel 1 issue 268940 s56 · 5567 "X-Man" 1995 Marvel 76 s55   (v1 search)
+   CV local rip:   (= linked) · 6000 "Deadpool" 1997 Marvel 71 (via GCD name "Deadpool") · 59624 "Deadpool" 1994 Marvel 4 (via GCD name "Deadpool") · 5003 "Deadpool" 1993 Marvel 4 (via GCD name "Deadpool") · 42210 "Deadpool" 2003 Panini Brasil 3 (via GCD name "Deadpool") · 22955 "Deadpool" 2008 Marvel 67 (via GCD name "Deadpool")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 5791 "Deadpool" 1997-2002 Marvel [was ongoing series] 70 on 1/2 files
+   GCD dump:       6048 "X-Man / Hulk '98" 1998-1998 Marvel [] 1 · 82869 "Hulk Annual" 2014-2014 Marvel [] 1 (via CV candidate name "Hulk Annual") · 70648 "Hulk Annual" [en-gb] 1981-1985 Marvel UK [] 4 (via CV candidate name "Hulk Annual") · 89374 "Hulk Annual" [en-gb] 1980-1981 Grandreams [] 2 (via CV candidate name "Hulk Annual") · 200635 "Hulk Annual" 2023-2023 Marvel [] 1 (via CV candidate name "Hulk Annual")   (dump lookup)
+   bridges:        gcd 5791 -> LOCG 110921 "Deadpool" support 121
+
+== S94719 Incredible Hulk  [tier C] · by 5  keys: The Incredible Hulk v2 (1999)  years 2000-2007  93 files / 7 collections
+   split run: "The Incredible Hulk v2 (1999)" run=- (new shelf from P-063) — seed the S line from these ids, then verify them
+   flags: #473 label-ambiguous [Pending] item 98949 — The Incredible Hulk v3 093-094 are single issues, not collections
+   folders: [72] Marvel\_Hulk\05 The Incredible Hulk v2 (1999) · [7] Marvel\_Hulk\05 The Incredible Hulk v2 (1999)\Trades · [6] _Marvel Major Event Chronology (digital)\2007.08 - World War Hulk\02 Tie-ins\The Incredible Hulk · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0679 House of M · [2] Marvel\Death's Head\3. Death's Head (3.0) · [1] Marvel\_Hulk\05 The Incredible Hulk v2 (1999)\Annuals and Specials · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0463 Maximum Security
+   files:   [98949] 120 - The Incredible Hulk v3 093.cbr (27pp) | [98950] 121 - The Incredible Hulk v3 094.cbr (27pp)
+            [80951] Incredible Hulk Annual 2001 (2001) (Digital) (Shadowcat-Empire).cbz (39pp)
+            Incredible Hulk 012 (2000) (digital) (Minutemen-Slayer).cbr … Incredible Hulk 054 (2003) (digital) (Minutemen-Slayer).cbr  (37 files, pp 20-40)
+            Incredible Hulk 077 (2005) (Digital-Empire).cbr … Incredible Hulk 105 (2007) (Digital-Empire).cbr  (29 files, pp 20-33)
+            Incredible Hulk 106 (2007) (digital) (Minutemen-InnerDemons).cbr … Incredible Hulk 111 (2007) (digital) (Minutemen-InnerDemons).cbr  (6 files, pp 22-24)
+            [81025] COL The Incredible Hulk Vol. 01- Return of the Monster (2012) (Digital) (Zone-Empire) (1).cbr (252pp)
+            [81026] COL The Incredible Hulk Vol. 03 - Transfer of Power (2003) (Digital-Empire).cbr (140pp)
+            [81027] COL The Incredible Hulk Vol. 05 - Hide in Plain Sight (2003) (Digital-Empire).cbr (118pp)
+            [81028] COL The Incredible Hulk Vol. 06 - Split Decisions (2004) (Digital) (EJGriffin-Empire).cbz (134pp)
+            [81029] COL The Incredible Hulk Vol. 07 - Dead Like Me (2004) (Digital) (EJGriffin-Empire).cbz (136pp)
+            [81030] COL The Incredible Hulk Vol. 08 - Big Things (2004) (Digital) (EJGriffin-Empire).cbz (183pp)
+            [81031] COL The Incredible Hulk Vol. 11 - Tempest Fugit (2005) (digital) (Minutemen-Slayer).cbr (142pp) | [89264] 011 Incredible Hulk 021 (2000) (digital) (Minutemen-Slayer).cbr (23pp)
+            [90246] 007 Incredible Hulk 083 (2005) (digital) (Minutemen-InnerDemons).cbr (24pp) | [90247] 008 Incredible Hulk 084 (2005) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            [90248] 009 Incredible Hulk 085 (2005) (digital) (Minutemen-InnerDemons).cbr (23pp) | [90249] 010 Incredible Hulk 086 (2005) (digital) (Minutemen-InnerDemons).cbr (22pp)
+            Incredible Hulk 106 (2007) (digital) (Minutemen-InnerDemons).cbr … Incredible Hulk 111 (2007) (digital) (Minutemen-InnerDemons).cbr  (6 files, pp 22-24)
+   ours:    ladder 12-43, 50-54, 77-111, 2001; 13 number(s) name more than one file: 21, 83, 84, 85, 86, 93, 94, 106, 107, 108, 109, 110; judged item 81025 #34-39 conf 0.96; judged item 81026 #44-49 conf 0.96; judged item 81027 #55-59 conf 0.96; judged item 81028 #60-65 conf 0.96; judged item 81029 #66-69 conf 0.95; judged item 81030 #70-76 conf 0.96; judged item 81031 #77-82 conf 0.96
+   GCD says: [81025] gcd_reprint 1109061: s7053 Incredible Hulk (2000) #34-39 [7 stories] · s10263 Startling Stories: Banner (2001) #1-4 [4 stories]
+             [81031] gcd_reprint 553195: s7053 Incredible Hulk (2000) #77-82 [7 stories]
+   CV linked:      vol 6558 "Incredible Hulk" 2000 Marvel 101 issues; cached #12-112 (101); yearΔ 0; ratio 86/101 = 0.85; 7 of 7 judged fit
+   CV per-file (v1): vol 2406 "The Incredible Hulk" 1968 Marvel ? on 1/93 files
+   CV local rip:   (= linked) · 24715 "Incredible Hulk" 2009 Marvel 12 · 43516 "Incredible Hulk" 2011 Marvel 16 · 105325 "Incredible Hulk" 2017 Marvel 9 · 47471 "Incredible Hulk" 1982 Marvel UK/Panini UK 26 · 139134 "The Incredible Hulk" 1979 Pocket Books 1 issue 885744   (rip lookup)
+   GCD per-file:   series 184083 "The Incredible Hulk" [en-in] 2005-2007 Gotham Entertainment Group [was ongoing series] 32 on 3/93 files; methods numx3
+   GCD dump:       7053 "Incredible Hulk" 2000-2008 Marvel [] 101 · 101846 "The Incredible Hulk" [de] 1999-1999 Panini Deutschland [] 2 · 26014 "Incredible Hulk" 2002-2004 Marvel [] 8 · 60907 "Incredible Hulk" 2002-2002 Marvel [] 1 · 66295 "Incredible Hulk" 2002-2003 Marvel [] 2 · 72932 "The Incredible Hulk" [el-gr] 1997-1998 Modern Times [Μόντερν Τάιμς] [] 7   (dump lookup)
+   bridges:        gcd 184083 -> LOCG 165670 "The Incredible Hulk" support 5
+
+== S18826 The Incredible Hulk  [tier C] · 409 files  keys: The Incredible Hulk | The Incredible Hulk v1 (1968)  years 1968-2023  409 files / 2 collections
+   split: the KEPT half of the P-063 split — moved out -> S34388 "The Incredible Hulk Annual"; S94719 "The Incredible Hulk v2 (1999)"; re-identify what stayed
+   flags: #288 label-ambiguous [Pending] item 87488 — four Incredible Hulk v1 single issues carry a collection format
+   folders: [373] Marvel\_Hulk\03 The Incredible Hulk v1 (1968) · [6] Marvel\_Hulk\03 The Incredible Hulk v1 (1968)\Annuals and Specials\Ink Editions · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0322 War · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0007 Enter The Wolverine · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0155 War and Pieces · [2] Marvel\_Hulk\_Omnibus Editions · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0006 Various Cameos · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0069 Untitled · [2] _Marvel Major Event Chronology (digital)\1992.12 - Incredible Hulk - Future Imperfect\Extras · [2] _Marvel Major Event Chronology (digital)\2014.11 - X-Men - Death of Wolverine\Extras · [1] Marvel\_Guardians of the Galaxy\_Rocket Raccoon and Groot · [1] Marvel\_Hulk\03 The Incredible Hulk v1 (1968)\Annuals and Specials · [1] Marvel\_Marvel Cosmic\Guardians of the Galaxy\Rocket Raccoon · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0005 Beast · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0048 Secret Wars II · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0075 The Sword is Drawn · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught · [1] _Marvel Major Event Chronology (digital)\1973.09 - The Avengers-Defenders War\Extra\Formation of the Defenders · [1] _Marvel Major Event Chronology (digital)\1989.12 - Acts of Vengeance\Acts of Vengeance - Marvel Universe
+   files:   [80329] Incredible Hulk 271 (1982) (Digital-HD) (Monafekk-Empire).cbr (24pp) | [80921] Incredible Hulk -1 (1997) (Digital) (Shadowcat-Empire).cbz (24pp)
+            Incredible Hulk 314 (1985) b&w (Bchry-DCP).cbz … Incredible Hulk 319 (1986) b&w (Bchry-DCP).cbz  (6 files, pp 22-24)
+            [80547] Incredible Hulk 102 (1968) (Digital) (Monafekk-Empire).cbr (22pp)
+            Incredible Hulk 103 (1968) (Digital) (TheArchivist-Empire).cbr … Incredible Hulk 139 (1971) (Digital) (TheArchivist-Empire).cbr  (36 files, pp 21-23)
+            [80584] Incredible Hulk 140 (1971) (Digital) (Shadowcat-Empire).cbz (20pp)
+            Incredible Hulk 141 (1971) (Digital) (TheArchivist-Empire).cbr … Incredible Hulk 175 (1974) (Digital) (TheArchivist-Empire).cbr  (35 files, pp 20-35)
+            [80620] Incredible Hulk 176 (1974) (Digital) (Monafekk-Empire).cbr (20pp) | [80621] Incredible Hulk 177 (1974) (Digital) (Monafekk-Empire).cbr (20pp)
+            [80622] Incredible Hulk 178 (1974) (Digital) (Monafekk-Empire).cbr (21pp) | [80623] Incredible Hulk 179 (1974) (Digital) (TheArchivist-Empire).cbr (20pp)
+            [80624] Incredible Hulk 180 (1974) (Digital) (TheArchivist-Empire).cbr (20pp) | [80625] Incredible Hulk 181 (1974) (Digital) (Monafekk-Empire).cbr (20pp)
+            Incredible Hulk 182 (1974) (Digital) (TheArchivist-Empire).cbr … Incredible Hulk 270 (1982) (Digital) (TheArchivist-Empire).cbr  (89 files, pp 18-36)
+            [80715] Incredible Hulk 271 (1982) (Digital) (Monafekk-Empire).cbr (24pp)
+            Incredible Hulk 272 (1982) (Digital) (TheArchivist-Empire).cbr … Incredible Hulk 295 (1984) (Digital) (TheArchivist-Empire).cbr  (24 files, pp 23-25)
+            [80740] Incredible Hulk 296 (1984) (digital) (Marika-Empire).cbz (25pp)
+            Incredible Hulk 297 (1984) (Digital) (TheArchivist-Empire).cbr … Incredible Hulk 330 (1987) (Digital) (TheArchivist-Empire).cbr  (34 files, pp 23-41)
+            Incredible Hulk 331 (1987) (Digital) (Monafekk-Empire).cbr … Incredible Hulk 363 (1989) (Digital) (Monafekk-Empire).cbr  (33 files, pp 23-39)
+            Incredible Hulk 364 (1989) (Digital) (TheArchivist-Empire).cbr … Incredible Hulk 389 (1992) (Digital) (TheArchivist-Empire).cbr  (26 files, pp 23-25)
+            [80834] Incredible Hulk 390 (1992) (Digital) (Monafekk-Empire).cbr (23pp) | [80835] Incredible Hulk 391 (1992) (Digital) (Monafekk-Empire).cbr (24pp)
+            [80836] Incredible Hulk 392 (1992) (Digital) (Monafekk-Empire).cbr (24pp) | [80837] Incredible Hulk 393 (1992) (Digital) (TheArchivist-Empire).cbr (55pp)
+            [80838] Incredible Hulk 394 (1992) (Digital) (TheArchivist-Empire).cbr (24pp) | [80839] Incredible Hulk 395 (1992) (Digital) (TheArchivist-Empire).cbr (24pp)
+            [80840] Incredible Hulk 396 (1992) (Digital) (TheArchivist-Empire).cbr (24pp)
+            Incredible Hulk 397 (1992) (Digital) (Monafekk-Empire).cbr … Incredible Hulk 406 (1993) (Digital) (Monafekk-Empire).cbr  (10 files, pp 23-45)
+            [80851] Incredible Hulk 407 (1993) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            Incredible Hulk 408 (1993) (Digital) (TheArchivist-Empire).cbr … Incredible Hulk 440 (1996) (Digital) (TheArchivist-Empire).cbr  (33 files, pp 22-40)
+            [80885] Incredible Hulk 441 (1996) (digital) (Marika-Empire).cbz (24pp) | [80886] Incredible Hulk 442 (1996) (digital) (Marika-Empire).cbz (24pp)
+            [80887] Incredible Hulk 443 (1996) (Digital) (TheArchivist-Empire).cbr (23pp) | [80888] Incredible Hulk 444 (1996) (Digital) (Monafekk-Empire).cbr (23pp)
+            [80889] Incredible Hulk 445 (1996) (Digital) (Monafekk-Empire).cbr (23pp) | [80890] Incredible Hulk 446 (1996) (Digital) (TheArchivist-Empire).cbr (20pp)
+            [80891] Incredible Hulk 447 (1996) (Digital) (TheArchivist-Empire).cbr (22pp) | [80892] Incredible Hulk 448 (1996) (Digital) (TheArchivist-Empire).cbr (23pp)
+            [80893] Incredible Hulk 449 (1997) (Digital) (Monafekk-Empire).cbr (23pp) | [80894] Incredible Hulk 450 (1997) (Digital) (TheArchivist-Empire).cbr (39pp)
+            [80895] Incredible Hulk 451 (1997) (Digital) (TheArchivist-Empire).cbr (22pp) | [80896] Incredible Hulk 452 (1997) (Digital) (TheArchivist-Empire).cbr (22pp)
+            [80897] Incredible Hulk 453 (1997) (Digital) (TheArchivist-Empire).cbr (21pp) | [80898] Incredible Hulk 454 (1997) (Digital) (TheArchivist-Empire).cbr (21pp)
+            [80899] Incredible Hulk 455 (1997) (Digital) (TheArchivist-Empire).cbr (24pp) | [80900] Incredible Hulk 456 (1997) (Digital) (TheArchivist-Empire).cbr (23pp)
+            [80901] Incredible Hulk 457 (1997) (Digital) (TheArchivist-Empire).cbr (24pp) | [80902] Incredible Hulk 458 (1997) (Digital) (TheArchivist-Empire).cbr (23pp)
+            [80903] Incredible Hulk 459 (1997) (Digital) (TheArchivist-Empire).cbr (22pp) | [80904] Incredible Hulk 460 (1998) (Digital) (TheArchivist-Empire).cbr (23pp)
+            [80905] Incredible Hulk 461 (1998) (Digital) (TheArchivist-Empire).cbr (24pp) | [80906] Incredible Hulk 462 (1998) (Digital) (TheArchivist-Empire).cbr (22pp)
+            [80907] Incredible Hulk 463 (1998) (Digital) (TheArchivist-Empire).cbr (22pp) | [80908] Incredible Hulk 464 (1998) (Digital) (TheArchivist-Empire).cbr (21pp)
+            [80909] Incredible Hulk 465 (1998) (Digital) (TheArchivist-Empire).cbr (25pp) | [80910] Incredible Hulk 466 (1998) (Digital) (TheArchivist-Empire).cbr (20pp)
+            [80911] Incredible Hulk 467 (1998) (Digital) (TheArchivist-Empire).cbr (17pp) | [80912] Incredible Hulk 468 (1998) (Digital) (TheArchivist-Empire).cbr (24pp)
+            [80913] Incredible Hulk 469 (1998) (Digital) (TheArchivist-Empire).cbr (24pp) | [80914] Incredible Hulk 470 (1998) (Digital) (TheArchivist-Empire).cbr (24pp)
+            [80915] Incredible Hulk 471 (1998) (Digital) (TheArchivist-Empire).cbr (23pp) | [80916] Incredible Hulk 472 (1999) (Digital) (TheArchivist-Empire).cbr (23pp)
+            [80917] Incredible Hulk 473 (1999) (Digital) (TheArchivist-Empire).cbr (23pp) | [80918] Incredible Hulk 474 (1999) (Digital) (TheArchivist-Empire).cbr (40pp)
+            [80919] The Incredible Hulk 108 (1968) (Digital) (F) (TheArchivist-Empire).cbr (22pp) | [81357] COL The Incredible Hulk Omnibus Book 01 (2022) (Digital) (Kileko-Empire).cbz (785pp)
+            [81358] COL The Incredible Hulk Omnibus Book 02 (2024) (Digital) (Kileko-Empire).cbz (830pp) | [82861] 002 Incredible Hulk v2 #271.cbz (24pp)
+            [86613] 007 Incredible Hulk 161 (1973) (Digital) (AnPymGold-Empire).cbz (21pp) | [86623] 008 Incredible Hulk 150 (1972) (Digital) (AnPymGold - Empire).cbz (22pp)
+            [86631] 016 Incredible Hulk 172 (1974) (Digital) (AnPymGold - Empire).cbz (21pp) | [86640] 001 Incredible Hulk 180 (1974) (Digital) (AnPymGold - Empire).cbz (19pp)
+            [86641] 002 Incredible Hulk 181 (1974) (Digital) (AnPymGold - Empire).cbz (19pp) | [86642] 003 Incredible Hulk 182 (1974) (Digital) (AnPymGold - Empire).cbz (18pp)
+            [87038] 035 Incredible Hulk 313 (1985) (Digital) (TheArchivist-Empire).cbr (24pp) | [87166] 008 Incredible Hulk 336 (1987) (Digital) (AnPymGold - Empire).cbz (23pp)
+            [87167] 009 Incredible Hulk 337 (1987) (Digital) (AnPymGold - Empire).cbz (24pp) | [87219] 005 Incredible Hulk 340 (1988) (Digital) (AnPymGold - Empire).cbz (24pp)
+            [87488] 023 Incredible Hulk v1 363 (1989) (Digital-HD) (Monafekk-Empire).cbr (24pp) | [87764] 001 Incredible Hulk v1 390 (1992) (Digital) (Monafekk-Empire).cbr (23pp)
+            [87765] 002 Incredible Hulk v1 391 (1992) (Digital) (Monafekk-Empire).cbr (24pp) | [87767] 004 Incredible Hulk v1 392 (1992) (Digital) (Monafekk-Empire).cbr (24pp)
+            [88428] 018 The Incredible Hulk 445 (1996) (digital) (Minutemen-Bluntman).cbr (23pp) | [88592] 001 Incredible Hulk 454 (1997) (Digital) (AnPymGold - Empire).cbz (20pp)
+            [88593] 002 Incredible Hulk 455 (1997) (Digital) (AnPymGold - Empire).cbz (23pp) | [88594] 003 Incredible Hulk 456 (1997) (Digital) (AnPymGold - Empire).cbz (22pp)
+            [88595] 004 Incredible Hulk 457 (1997) (Digital) (AnPymGold - Empire).cbz (23pp) | [117999] 03 Incredible Hulk 126 (1970) (Digital) (AnPymGold - Empire).cbz (21pp)
+            [116428] Incredible Hulk 363 (1989) (Digital) (Monafekk-Empire).cbr (24pp) | [116450] Incredible Hulk 460 (1998) (Digital) (AnPymGold-Empire).cbz (23pp)
+            [116451] Incredible Hulk 461 (1998) (Digital) (AnPymGold - Empire).cbz (23pp) | [118052] Incredible Hulk 180 (1974) (Digital) (AnPymGold-Empire).cbz (19pp)
+            [118053] Incredible Hulk 181 (1974) (Digital) (Monafekk-Empire).cbr (20pp)
+   ours:    ladder 102-474; 29 number(s) name more than one file: 126, 150, 161, 172, 180, 181, 182, 271, 313, 314, 315, 316; ComicInfo Series: "The Incredible Hulk"x3, "Incredible Hulk"x2, "The Incredible Hulk Omnibus "x2; ComicInfo Volume: "1968"x3, "1962"x2; ComicInfo Count: "474"x3; ComicInfo Publisher: "Marvel"x3, "Marvel Comics"x2, "Marvel Entertainment, Inc."x2; ComicInfo Web: "24409"x1, "42399"x1, "42492"x1
+   GCD says: [81357] gcd_reprint 1194694: s1443 Tales to Astonish (1959) #59-101 [130 stories] · s1515 The Incredible Hulk (1962) #1-6 [29 stories] · s1810 Marvel Super-Heroes (1967) #25-27, #32-56 [28 stories] · s1686 Marvel Collectors' Item Classics (1965) #3-16 [14 stories]
+             [81358] gcd_reprint 2580075: s1866 The Incredible Hulk (1968) #103-134 [33 stories] · s1865 Incredible Hulk [King Size Special] (1968) #1 [1 story]
+   CV linked:      vol 2406 "The Incredible Hulk" 1968 Marvel ? issues; cached #102-474 (374); yearΔ 0; ratio 406/?; no judged range; v1 per-file: same volume on 407/409 files
+   CV local rip:   (= linked) · 2077 "The Incredible Hulk" 1962 Marvel 6 · 139134 "The Incredible Hulk" 1979 Pocket Books 1 issue 885744 · 47471 "Incredible Hulk" 1982 Marvel UK/Panini UK 26 · 6558 "Incredible Hulk" 2000 Marvel 101 · 24715 "Incredible Hulk" 2009 Marvel 12   (rip lookup)
+   GCD per-file:   methods round2-seriesx10 ⚠ · numx5  (⚠ copies a folder neighbour's series — verify); series 7053 "Incredible Hulk" 2000-2008 Marvel [was ongoing series] 101 on 10/409 files · series 1866 "The Incredible Hulk" 1968-1999 Marvel [was ongoing series] 374 on 5/409 files
+   GCD dump:       (= per-file) · 95393 "The Incredible Hulk" [en-gb] 1967-1967 Souvenir Press Ltd [] 1 · 31441 "The Incredible Hulk" 1966-1966 Lancer Books [] 1 · 1515 "The Incredible Hulk" 1962-1963 Marvel [] 6 · 72937 "The Incredible Hulk" [en-au] 1974-? Newton Comics [] 14 · 171393 "The Incredible Hulk" [en-ph] 1975-1975 Goodwill Bookstore [] 1   (dump lookup)
+   bridges:        gcd 7053 -> LOCG 103990 "The Incredible Hulk" support 132 · gcd 1866 -> LOCG 112463 "The Incredible Hulk" support 5
+
+== S104185 Ultimate Hulk Annual (2008)  [tier D]   keys: Ultimate Hulk Annual (2008)  years 2009-2009  1 files / 0 collections
+   split run: "Ultimate Hulk Annual (2008)" run={"cv": 25407, "gcd": 33366} (new shelf from P-063) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\_Ultimate Comics\_Ultimate Annuals
+   files:   [97267] Ultimate Hulk Annual 01 (2009) (Empire-DangerZone).cbr (31pp)
+   ours:    ladder 1
+   CV local rip:   25407 "Ultimate Hulk Annual" 2008 Marvel 1 issue 149972 (via our own name without the filing suffix "Ultimate Hulk Annual")   (rip lookup)
+   GCD dump:       33366 "Ultimate Hulk Annual" 2008-2008 Marvel [] 1 (via our own name without the filing suffix "Ultimate Hulk Annual")   (dump lookup)
+
+== S64928 Hulk  [tier C] · 3 number(s) x2+, 2 parsed key(s), ratio 0.74  keys: Hulk (2008) | Hulk v2 (2008)  years 2008-2014  51 files / 8 collections
+   split: the KEPT half of the P-063 split — moved out -> S104185 "Ultimate Hulk Annual (2008)"; re-identify what stayed
+   folders: [34] Marvel\_Hulk\06 Hulk v2 (2008) · [6] Marvel\_Hulk\06 Hulk v2 (2008)\Trades · [6] _Marvel Major Event Chronology (digital)\2007.08 - World War Hulk\03 World War Hulk Aftersmash\Hulk · [2] _Marvel Major Event Chronology (digital)\2011.03 - Fear Itself\02 Tie-ins\Hulk · [1] Marvel\_Hulk\_Minis, OGNs and Trades\Hulk by Jeph Loeb - The Complete Collection (2019) · [1] _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Dark Reign - One Shots and Singles · [1] _Marvel Major Event Chronology (digital)\2010.05 - World War Hulks
+   files:   [81033] Hulk 025 (2010) (Digital) (Zone-Empire).cbr (34pp) | [81034] Hulk 026 (2010) (Digital) (Zone-Empire).cbr (36pp) | [81035] Hulk 027 (2011) (Digital) (Zone-Empire).cbr (35pp)
+            [81036] Hulk 028 (2011) (Digital) (Zone-Empire).cbr (33pp) | [81037] Hulk 029 (2011) (Digital) (Zone II-Empire).cbr (34pp) | [81038] Hulk 030 (2011) (Digital) (Zone-Empire).cbr (33pp)
+            [81039] Hulk 030.1 (2011) (Digital) (Zone-Empire).cbr (25pp) | Hulk 031 (2011) (Digital) (Zone-Empire).cbr … Hulk 052 (2012) (Digital) (Zone-Empire).cbr  (22 files, pp 22-34)
+            [81062] Hulk 053 (2012) (digital-hd-Empire).cbr (22pp) | [81063] Hulk 054 (2012) (digital-hd-Empire).cbr (22pp) | [81064] Hulk 055 (2012) (digital-hd-Empire).cbr (22pp)
+            [81065] Hulk 056 (2012) (digital-hd-Empire).cbr (22pp) | [81066] Hulk 057 (2012) (digital-hd-Empire).cbr (23pp)
+            [81068] COL Hulk Vol. 02 - Red & Green (2009) (digital) (Minutemen-Slayer).cbr (165pp) | [81069] COL Hulk Vol. 03 - Hulk No More (2010) (digital) (Minutemen-Slayer).cbr (138pp)
+            [81070] COL Hulk Vol. 04 - Hulk vs. X-Force (2010) (digital) (Minutemen-Slayer).cbr (118pp) | [81071] COL Hulk Vol. 05 - Fall of the Hulks (2010) (digital) (Minutemen-Slayer).cbr (115pp)
+            [81072] COL Hulk Vol. 06 - World War Hulks (2010) (digital) (Minutemen-Thoth).cbz (107pp) | [81067] COL Hulk vol. 01 - Red Hulk (2009) (digital) (Minutemen-Faessla).cbz (128pp)
+            [81198] COL Hulk by Jeph Loeb - The Complete Collection Book 02 (2019) (Digital) (EJGriffin-Empire).cbz (375pp)
+            Hulk 001 (2008) (Digital) (Zone-Empire).cbr … Hulk 013 (2009) (Digital) (Zone-Empire).cbr  (7 files, pp 20-24)
+            [117367] COL Hulk Vol. 06 - World War Hulks (2010) (digital) (Minutemen-Thoth).cbz (107pp) | [117502] Hulk 037 (2011) (Digital) (Zone-Empire).cbr (23pp)
+            [117503] Hulk 038 (2011) (Digital) (Zone-Empire).cbr (22pp)
+   ours:    ladder 1-6, 13, 25-57; 3 number(s) name more than one file: 30, 37, 38
+   GCD says: [81068] gcd_reprint 1106633: s28683 Hulk (2008) #7-9 [9 stories] · s30923 King-Size Hulk (2008) #1 [4 stories] · s73934 Hulk (2008) #2 [1 story]
+             [81069] gcd_reprint 1106634: s28683 Hulk (2008) #10-13 [21 stories] · s38633 Incredible Hulk (2009) #600 [6 stories] · s73934 Hulk (2008) #3 [1 story]
+             [81070] gcd_reprint 1106635: s28683 Hulk (2008) #14-18 [5 stories] · s73934 Hulk (2008) #4 [1 story]
+             [81071] gcd_reprint 1106636: s28683 Hulk (2008) #19-21 [3 stories] · s73934 Hulk (2008) #5 [1 story] · s41109 Fall of the Hulks: Gamma (2010) #1 [1 story]
+             [81072] gcd_reprint 1106637: s28683 Hulk (2008) #22-24 [3 stories] · s73934 Hulk (2008) #6 [1 story]
+             [81067] gcd_reprint 1106632: s28683 Hulk (2008) #1-6 [24 stories] · s86771 Wizard: The Comics Magazine (1991) #198 [1 story] · s11723 Wolverine (2003) #50 [1 story] · s13997 Marvel Adventures Fantastic Four (2005) #37 [1 story]
+             [81198] gcd_reprint 2246195: s28683 Hulk (2008) #4, #13-24 [13 stories] · s41109 Fall of the Hulks: Gamma (2010) #1 [1 story]
+             [117367] gcd_reprint 1106637: s28683 Hulk (2008) #22-24 [3 stories] · s73934 Hulk (2008) #6 [1 story]
+   CV linked:      vol 20291 "Hulk" 2008 Marvel 58 issues; cached #1-57 (58); yearΔ 0; ratio 43/58 = 0.74; no judged range; v1 per-file: same volume on 43/51 files
+   CV local rip:   (= linked) · 42415 "Hulk" 2008 Panini Verlag 19 · 42416 "Hulk" 2005 Panini España 12 · 57084 "Hulk" 2011 ID Komiks 1 issue 385876 · 121005 "Hulk" 2012 Panini France 12 · 73100 "Hulk" 2014 Marvel 16   (rip lookup)
+   GCD per-file:   series 28683 "Hulk" 2008-2012 Marvel [was ongoing series] 58 on 43/51 files; methods numx43
+   GCD dump:       (= per-file) · 45863 "Hulk" [de] 2008-2013 Panini Deutschland [] 19 · 73934 "Hulk" 2008-2010 Marvel [] 6 · 73891 "Hulk" 2009-2011 Marvel [] 6 · 28993 "Hulk" [es] 2005-2007 Panini España [] 10 · 67108 "Hulk" [fr] 2012-2013 Panini France [] 12   (dump lookup)
+   bridges:        gcd 28683 -> LOCG 103988 "Hulk" support 43
+
+== S6495 Fantastic Four Epic Collection  [tier D]   keys: Fantastic Four Epic Collection  years 2014-2024  19 files / 19 collections
+   split run: "Fantastic Four Epic Collection" run=- (new shelf from P-063) — seed the S line from these ids, then verify them
+   folders: [19] Marvel\_Fantastic Four\Fantastic Four Epic Collections
+   files:   [79795] COL Fantastic Four Epic Collection Vol. 01 - The World's Greatest Comic Magazine (2014) (Digital) (Kileko-Empire).cbz (439pp)
+            [79796] COL Fantastic Four Epic Collection Vol. 02 - The Master Plan of Doctor Doom (2017) (Digital-Empire).cbr (448pp)
+            [79797] COL Fantastic Four Epic Collection Vol. 03 - The Coming of Galactus (2018) (Digital) (Zone-Empire).cbr (450pp)
+            [79798] COL Fantastic Four Epic Collection Vol. 04 - The Mystery of the Black Panther (2019) (Digital) (Zone-Empire).cbr (448pp)
+            [79799] COL Fantastic Four Epic Collection Vol. 05 - The Name is Doom (2020) (Digital) (Zone-Empire).cbr (504pp)
+            [79800] COL Fantastic Four Epic Collection Vol. 06 - At War With Atlantis (2020) (Digital) (Zone-Empire).cbr (408pp)
+            [79801] COL Fantastic Four Epic Collection Vol. 07 - Battle of the Behemoths (2021) (Digital-Empire).cbr (472pp)
+            [79802] COL Fantastic Four Epic Collection Vol. 08 - Annihilus Revealed (2022) (Digital-Empire).cbr (498pp)
+            [79803] COL Fantastic Four Epic Collection Vol. 09 - The Crusader Syndrome (2023) (Digital-Empire).cbr (512pp)
+            [79804] COL Fantastic Four Epic Collection Vol. 10 - Counter-Earth Must Die (2024) (digital) (Marika-Empire).cbz (512pp)
+            [79805] COL Fantastic Four Epic Collection Vol. 17 - All in the Family (2014) (Digital) (Zone-Empire).cbr (488pp)
+            [79806] COL Fantastic Four Epic Collection Vol. 18 - The More Things Change (2019) (F) (digital-Empire).cbz (467pp)
+            [79807] COL Fantastic Four Epic Collection Vol. 19 - The Dream Is Dead (2023) (Digital) (Kileko-Empire).cbz (465pp)
+            [79808] COL Fantastic Four Epic Collection Vol. 20 - Into the Timestream (2014) (Digital) (Zone-Empire).cbr (517pp)
+            [79809] COL Fantastic Four Epic Collection Vol. 21 - The New Fantastic Four (2018) (Digital) (Asgard-Empire).cbr (495pp)
+            [79810] COL Fantastic Four Epic Collection Vol. 22 - This Flame, This Fury (2022) (Digital-Empire).cbr (489pp)
+            [79811] COL Fantastic Four Epic Collection Vol. 23 - Nobody Gets Out Alive (2022) (Digital-Empire).cbr (491pp)
+            [79812] COL Fantastic Four Epic Collection Vol. 24 - Atlantis Rising (2024) (Digital) (Shan-Empire).cbz (467pp)
+            [79813] COL Fantastic Four Epic Collection Vol. 25 - Strange Days (2015) (F) (Digital-Empire).cbr (450pp)
+   ours:    ComicInfo Series: "Fantastic Four Epic Collection"x6, "Fantastic Four Epic Collection: The Name Is Doom"x1, "Fantastic Four Epic Collection: At War With Atlantis"x1, "Fantastic Four Epic Collection: Battle Of The Behemoths"x1; ComicInfo Volume: "2024"x1; ComicInfo Publisher: "Marvel"x16; ComicInfo Web: "1071859"x1
+   GCD says: [79795] gcd_reprint 1205396: s1482 Fantastic Four (1961) #1-18 [89 stories]
+             [79796] gcd_reprint 1718663: s1572 Fantastic Four Annual (1963) #1-2 [30 stories] · s1482 Fantastic Four (1961) #19-32 [29 stories] · s61146 Marvel Masterworks: The Fantastic Four (2009) #1-4 [4 stories]
+             [79797] gcd_reprint 1830981: s1482 Fantastic Four (1961) #33-51 [60 stories] · s1572 Fantastic Four Annual (1963) #3 [4 stories] · s61146 Marvel Masterworks: The Fantastic Four (2009) #5-6 [2 stories]
+             [79798] gcd notes 2015196 (#4 of Fantastic Four Epic Collection): Fantastic Four (Marvel, 1961 series) #52-67; Fantastic Four Annual (Marvel, 1963 series) #4-5; Not Brand Echh (Marvel, 1967 series) #1, #5  |  gcd_reprint 2015196: s1482 Fantastic Four (1961) #52-67 [17 stories] · s1811 Not Brand Echh (1967) #1, #5 [2 stories] · s1572 Fantastic Four Annual (1963) #4-5 [2 stories]
+             [79799] gcd notes 2123267 (#5 of Fantastic Four Epic Collection): Fantastic Four (Marvel, 1961 series) #68-87; Fantastic Four Annual (Marvel, 1963 series) #6; Not Brand Echh (Marvel, 1967 series) #6-7  |  gcd_reprint 2123267: s1482 Fantastic Four (1961) #68-87 [41 stories] · s1811 Not Brand Echh (1967) #6-7 [4 stories] · s1572 Fantastic Four Annual (1963) #6 [2 stories] · s61146 Marvel Masterworks: The Fantastic Four (2009) #8-9 [2 stories]
+             [79800] gcd notes 2164079 (#6 of Fantastic Four Epic Collection): Fantastic Four (Marvel, 1961 series) #88-104; Fantastic Four: The Lost Adventure (Marvel, 2008 series) #1  |  gcd_reprint 2164079: s1482 Fantastic Four (1961) #88-104 [34 stories] · s27869 Fantastic Four: The Lost Adventure (2008) #1 [3 stories] · s1572 Fantastic Four Annual (1963) #7 [2 stories]
+             [79801] gcd_reprint 2257108: s1482 Fantastic Four (1961) #105-125 [22 stories]
+             [79802] gcd_reprint 2428300: s1482 Fantastic Four (1961) #1, #73, #126-146 [48 stories] · s158698 FOOM Magazine (1973) #1, #4-5 [15 stories] · s2174 Giant-Size Super-Stars (1974) #1 [4 stories] · s1988 Creatures on the Loose (1971) #29 [1 story]
+             [79803] gcd notes 2564754 (#9 of Fantastic Four Epic Collection): Fantastic Four (Marvel, 1961 series) #147-167; Giant-Size Fantastic Four (Marvel, 1974 series) #2-4; The Avengers (Marvel, 1963 series) #127  |  gcd_reprint 2564754: s1482 Fantastic Four (1961) #147-167 [43 stories] · s2169 Giant-Size Fantastic Four (1974) #2-6 [8 stories] · s2180 Marvel Treasury Edition (1974) #2 [5 stories] · s158698 FOOM Magazine (1973) #8-10 [3 stories]
+             [79804] gcd_reprint 2658825: s1482 Fantastic Four (1961) #168-191 [26 stories] · s2180 Marvel Treasury Edition (1974) #11 [3 stories] · s2353 Marvel Two-in-One Annual (1976) #1 [1 story] · s2182 Marvel Two-in-One (1974) #20 [1 story]
+             [79805] gcd_reprint 1180517: s1482 Fantastic Four (1961) #296-307 [13 stories] · s3415 Fantastic Four vs. X-Men (1987) #1-4 [4 stories] · s1572 Fantastic Four Annual (1963) #20 [4 stories]
+             [79806] gcd notes 1978753 (#18 of Fantastic Four Epic Collection): Fantastic Four (Marvel, 1961 series) #308-320; Fantastic Four Annual (Marvel, 1963 series) #21; The Incredible Hulk (Marvel, 1968 series) #350  |  gcd_reprint 1978753: s1482 Fantastic Four (1961) #308-320 [16 stories] · s22322 Marvel Graphic Novel: The Big Change (1987) (unnumbered) [1 story] · s1866 The Incredible Hulk (1968) #350 [1 story] · s1572 Fantastic Four Annual (1963) #21 [1 story]
+             [79807] gcd_reprint 2509762: s1482 Fantastic Four (1961) #321-333 [14 stories] · s14535 Dr. Strange and Dr. Doom: Triumph and Torment [Marvel Graphic Novel] (1989) (unnumbered) [1 story] · s1572 Fantastic Four Annual (1963) #22 [1 story]
+             [79808] gcd_reprint 1180518: s1482 Fantastic Four (1961) #334-346 [27 stories] · s1572 Fantastic Four Annual (1963) #23 [5 stories] · s69795 Marvel Age (1983) #80, #91 [4 stories] · s1951 X-Men Annual (1970) #14 [2 stories]
+             [79809] gcd_reprint 1820505: s1482 Fantastic Four (1961) #347-361 [51 stories] · s1572 Fantastic Four Annual (1963) #24 [6 stories] · s10581 Fantastic Four: Monsters Unleashed (1992) (unnumbered) [4 stories] · s20144 Marvel Holiday Special (1991) #1 [3 stories]
+             [79810] gcd_reprint 2275039: s1482 Fantastic Four (1961) #362-376 [16 stories] · s1572 Fantastic Four Annual (1963) #25-26 [2 stories] · s4433 The Adventures of the Thing (1992) #3 [1 story]
+             [79811] gcd_reprint 2372321: s1482 Fantastic Four (1961) #377-392 [17 stories] · s4034 Namor, the Sub-Mariner (1990) #47-48 [2 stories] · s40640 Fantastic Four Ashcan (1994) (unnumbered) [1 story] · s1572 Fantastic Four Annual (1963) #27 [1 story]
+             [79812] gcd_reprint 2616793: s1482 Fantastic Four (1961) #393-402 [30 stories] · s7795 Fantastic Four: Atlantis Rising Collectors' Preview (1995) #1 [12 stories] · s5008 Fantastic Force (1994) #7-9 [6 stories] · s7796 Fantastic Four: Atlantis Rising (1995) #1-2 [4 stories]
+             [79813] gcd_reprint 1309965: s1482 Fantastic Four (1961) #403-416 [16 stories] · s9784 Fantastic Four: The Legend (1996) #1 [1 story] · s15183 Tales of the Marvel Universe (1997) #1 [1 story] · s10769 Onslaught: Marvel (1996) #1 [1 story]
+   CV candidates:  82103 "Fantastic Four Epic Collection: Strange Days" 2015 Marvel 1 issue 489318 s73 · 157337 "Fantastic Four Epic Collection: Atlantis Rising" 2024 Marvel 1 issue 1048848 s73 · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 s72 · 111826 "Fantastic Four Epic Collection: The New Fantastic Four" 2018 Marvel 1 issue 675139 s71 · 162643 "Fantastic Four Epic Collection Four No More Marvel " 2025 Marvel 1 issue 1097890 s71 · 70951 "Fantastic Four Epic Collection: All In the Family" 2014 Marvel 1 issue 442431 s71   (v1 search)
+   CV local rip:   82103 "Fantastic Four Epic Collection: Strange Days" 2015 Marvel 1 issue 489318 (via CV candidate name "Fantastic Four Epic Collection: Strange Days") · 157337 "Fantastic Four Epic Collection: Atlantis Rising" 2024 Marvel 1 issue 1048848 (via CV candidate name "Fantastic Four Epic Collection: Atlantis Rising") · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 (via CV candidate name "Ultimate Fantastic Four Epic Collection: The Fantastic")   (rip lookup)
+   GCD dump:       79136 "Fantastic Four Epic Collection" 2014-? Marvel [] 22   (dump lookup)
+
+== S94745 All-New Guardians of the Galaxy Vol. 3 - Infinity Quest (2017)  [tier A]   keys: All-New Guardians of the Galaxy Vol. 3 - Infinity Quest (2017)  years 2018-2018  6 files / 1 collections
+   split run: "All-New Guardians of the Galaxy Vol. 3 - Infinity Quest (2017)" run=- (new shelf from P-063) — seed the S line from these ids, then verify them
+   folders: [5] _Marvel Major Event Chronology (digital)\2018.02 - Infinity Wars\00 Prelude\All-New Guardians of the Galaxy Vol. 3 - Infinity Quest (2017) · [1] Marvel\_Guardians of the Galaxy\07 All-New Guardians of the Galaxy v1 (2017)
+   files:   [80311] COL All-New Guardians of the Galaxy Vol. 03 - Infinity Quest (2018) (Digital) (Kileko-Empire).cbr (129pp)
+            [118355] Guardians of the Galaxy 146 (2018) (Digital) (Zone-Empire).cbr (27pp) | [118356] Guardians of the Galaxy 147 (2018) (Digital) (Zone-Empire).cbr (25pp)
+            [118357] Guardians of the Galaxy 148 (2018) (Digital) (Zone-Empire).cbr (24pp) | [118358] Guardians of the Galaxy 149 (2018) (Digital) (Zone-Empire).cbr (24pp)
+            [118359] Guardians of the Galaxy 150 (2018) (Digital) (Zone-Empire).cbr (34pp)
+   ours:    ladder 146-150
+   GCD says: [80311] gcd_reprint 1790980: s118041 Guardians of the Galaxy (2018) #146-150 [6 stories]
+   CV linked:      vol 105759 "Guardians of the Galaxy" 2017 Marvel 5 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ 0; ratio 5/? = 1.00; none cached
+   CV per-file (v1): vol 4398 "Guardians of the Galaxy" 1990 Marvel 62 on 5/6 files
+   CV local rip:   (= linked) · 116702 "Guardians of the Galaxy" 2019 Marvel 12 (via CV name "Guardians of the Galaxy") · 124447 "Guardians of the Galaxy" 2020 Marvel 18 (via CV name "Guardians of the Galaxy") · 142800 "Guardians of the Galaxy" 2020 Panini Verlag 5 (via CV name "Guardians of the Galaxy") · 146623 "Guardians of the Galaxy" 2016 Panini Verlag 8 (via CV name "Guardians of the Galaxy") · 81904 "Guardians of the Galaxy" 2015 Marvel 5 (via CV name "Guardians of the Galaxy")   (rip lookup)
+   GCD per-file:   series 118041 "Guardians of the Galaxy" 2018-2018 Marvel [was ongoing series] 5 on 5/6 files; methods numx5
+   GCD dump:       (= per-file) · 142367 "Guardians of the Galaxy" [es-mx] 2018-? Editorial Televisa [] 5 (via CV name "Guardians of the Galaxy") · 138278 "Guardians of the Galaxy" 2019-2020 Marvel [] 12 (via CV name "Guardians of the Galaxy") · 144459 "Guardians of the Galaxy" [es-mx] 2019-? Editorial Televisa [] 6 (via CV name "Guardians of the Galaxy") · 149640 "Guardians of the Galaxy" 2019-2019 Marvel [] 2 (via CV name "Guardians of the Galaxy") · 104334 "Guardians of the Galaxy" [de] 2016-2018 Panini Deutschland [] 8 (via CV name "Guardians of the Galaxy")   (dump lookup)
+   bridges:        gcd 118041 -> LOCG 175003 "Guardians of the Galaxy" support 3
+
+== S735 All-New Guardians of the Galaxy  [tier C] · ratio 0.08  keys: All-New Guardians of the Galaxy  years 2017-2017  3 files / 2 collections
+   split: the KEPT half of the P-063 split — moved out -> S94745 "All-New Guardians of the Galaxy Vol. 3 - Infinity Quest (2017)"; re-identify what stayed
+   flags: #1 arithmetic-odd [Pending] item 80309 — 86 pp for six issues (14 pp each) - the file may be a partial scan
+   folders: [2] Marvel\_Guardians of the Galaxy\07 All-New Guardians of the Galaxy v1 (2017) · [1] Marvel\_Guardians of the Galaxy\07 All-New Guardians of the Galaxy v1 (2017)\Annuals and Specials
+   files:   [80309] COL All-New Guardians of the Galaxy Vol. 01 - Communication Breakdown (2017) (Digital) (F) (Zone-Empire).cbr (86pp)
+            [80310] COL All-New Guardians of the Galaxy Vol. 02 - Riders In The Sky (2018) (Digital) (Kileko-Empire).cbr (146pp)
+            [81939] All-New Guardians of the Galaxy Annual 001 (2017) (Digital) (Zone-Empire).cbr (32pp)
+   ours:    ladder 1; judged item 80309 #1-6 conf 0.65; judged item 80310 #7-12 conf 0.8
+   GCD says: [80309] gcd_reprint 1761081: s113811 All-New Guardians of the Galaxy (2017) #1-2, #4, #6, #8, #10 [21 stories] · s113915 Free Comic Book Day 2017 (All-New Guardians of the Galaxy) (2017) #1 [2 stories]
+             [80310] gcd_reprint 1769733: s113811 All-New Guardians of the Galaxy (2017) #3, #5, #7, #9, #11-12 [7 stories]
+   CV linked:      vol 101158 "All-New Guardians of the Galaxy" 2017 Marvel 12 issues; cached #1-12 (12); yearΔ 0; ratio 1/12 = 0.08; 2 of 2 judged fit
+   CV candidates:  (= linked) · 102442 "All-New Guardians of the Galaxy Annual" 2017 Marvel 1 issue 605104 s92 · 106274 "All-New Guardians of the Galaxy: Communication Breakdown" 2017 Marvel 1 issue 641395 s91 · 100367 "Guardians of the Galaxy: All-New Marvel Treasury Edition" 2017 Marvel 1 issue 589827 s90 · 107128 "All-New Guardians of the Galaxy: Riders In the Sky" 2017 Marvel 1 issue 647934 s89 · 101264 "Free Comic Book Day 2017 (All-New Guardians of the Galaxy)" 2017 Marvel 1 issue 594539 s88 · 80115 "Marvel Universe Guardians of the Galaxy" 2015 Marvel 4 s88   (v1 search)
+   CV local rip:   (= linked) · 102442 "All-New Guardians of the Galaxy Annual" 2017 Marvel 1 issue 605104 (via CV candidate name "All-New Guardians of the Galaxy Annual") · 106274 "All-New Guardians of the Galaxy: Communication Breakdown" 2017 Marvel 1 issue 641395 (via CV candidate name "All-New Guardians of the Galaxy: Communication Breakdown")   (rip lookup)
+   GCD dump:       113811 "All-New Guardians of the Galaxy" 2017-2017 Marvel [] 12 · 118812 "All-New Guardians of the Galaxy" 2017-2018 Marvel [] 3 · 120629 "All-New Guardians of the Galaxy" [es-mx] 2017-2018 Editorial Televisa [] 12 · 115140 "All-New Guardians of the Galaxy Annual" 2017-2017 Marvel [] 1 (via CV candidate name "All-New Guardians of the Galaxy Annual")   (dump lookup)
+
+== S9385 Incredible Hulk Epic Collection  [tier D]   keys: Incredible Hulk Epic Collection  years 2015-2024  13 files / 13 collections
+   split run: "Incredible Hulk Epic Collection" run=- (new shelf from P-063) — seed the S line from these ids, then verify them
+   folders: [13] Marvel\_Hulk\_Incredible Hulk Epic Collection
+   files:   [81149] COL Incredible Hulk Epic Collection Vol. 01 - Man Or Monster (Digital) (F) (Asgard-Empire).cbr (386pp)
+            [81150] COL Incredible Hulk Epic Collection Vol. 02 - The Hulk Must Die (2017) (Digital) (Zone-Empire).cbr (434pp)
+            [81151] COL Incredible Hulk Epic Collection Vol. 03 - The Leader Lives (2018) (Digital) (Zone-Empire).cbr (490pp)
+            [81152] COL Incredible Hulk Epic Collection Vol. 04 - In the Hands of Hydra (2019) (Digital) (Zone-Empire).cbr (442pp)
+            [81154] COL Incredible Hulk Epic Collection Vol. 06 - Crisis on Counter-Earth (2021) (Digital-Empire).cbr (469pp)
+            [81155] COL Incredible Hulk Epic Collection Vol. 07 - And Now... The Wolverine (2022) (Digital) (Kileko-Empire).cbz (471pp)
+            [81157] COL Incredible Hulk Epic Collection Vol. 09 - Kill or Be Killed (2024) (digital) (Marika-Empire).cbz (519pp)
+            [81158] COL Incredible Hulk Epic Collection Vol. 13 - Crossroads (2022) (Digital-Empire).cbr (479pp)
+            [81160] COL Incredible Hulk Epic Collection Vol. 15 - Ground Zero 001 (2024) (digital) (Marika-Empire).cbz (459pp)
+            [81161] COL Incredible Hulk Epic Collection Vol. 19 - Ghosts of the Past (2015) (Digital) (Kileko-Empire).cbr (461pp)
+            [81162] COL Incredible Hulk Epic Collection Vol. 20 - Future Imperfect (2017) (Digital) (Kileko-Empire).cbr (480pp)
+            [81163] COL Incredible Hulk Epic Collection Vol. 21 - Fall of the Pantheon (2018) (Digital) (Shadowcat-Empire).cbz (492pp)
+            [81164] COL Incredible Hulk Epic Collection Vol. 22 - Ghosts of the Future (2019) (Digital) (Zone-Empire).cbr (471pp)
+   ours:    ComicInfo Series: "Incredible Hulk Epic Collection"x3, "Incredible Hulk Epic Collection: And Now... The Wolverine"x1, "Incredible Hulk Epic Collection 09: Kill Or Be Killed"x1, "Incredible Hulk Epic Collection: Crossroads"x1; ComicInfo Volume: "2024"x2; ComicInfo Publisher: "Marvel"x5, "Marvel Comics"x2; ComicInfo Web: "1067472"x1
+   GCD says: [81149] gcd notes 1578432 (#1 of Incredible Hulk Epic Collection): The Incredible Hulk (Marvel, 1962 series) #1-6; Fantastic Four (Marvel, 1961 series) #12, #25-26; The Avengers (Marvel, 1963 series) #1-3, #5; The Amazing Spider-Man (Marvel, 1963 series) #14; Tales to Astonish (Marvel, 1959 series) #59; Jo  |  gcd_reprint 1578432: s1515 The Incredible Hulk (1962) #1-6 [25 stories] · s1482 Fantastic Four (1961) #5, #12, #25-26 [10 stories] · s1571 The Avengers (1963) #1-3, #5 [9 stories] · s1443 Tales to Astonish (1959) #59 [3 stories]
+             [81150] gcd notes 1745201 (#2 of Incredible Hulk Epic Collection): Tales to Astonish (Marvel, 1959 series) #60-96; Not Brand Echh (Marvel, 1967 series) #3  |  gcd_reprint 1745201: s1443 Tales to Astonish (1959) #60-96 [76 stories] · s75475 Marvel Masterworks: The Incredible Hulk (2009) #2 [3 stories] · s1811 Not Brand Echh (1967) #3 [2 stories] · s79894 The Incredible Hulk Omnibus (2008) #1 [1 story]
+             [81151] gcd_reprint 1863737: s1866 The Incredible Hulk (1968) #102-117 [33 stories] · s1443 Tales to Astonish (1959) #97-101 [10 stories] · s1865 Incredible Hulk [King Size Special] (1968) #1 [3 stories] · s1811 Not Brand Echh (1967) #9 [2 stories]
+             [81152] gcd notes 2023695 (#4 of Incredible Hulk Epic Collection): Incredible Hulk (Marvel, 1968 series) #118-137; Marvel Super-Heroes (Marvel, 1967 series) #16  |  gcd_reprint 2023695: s1866 The Incredible Hulk (1968) #118-137 [42 stories] · s1810 Marvel Super-Heroes (1967) #16 [2 stories] · s1865 Incredible Hulk [King Size Special] (1968) #2 [1 story]
+             [81154] gcd_reprint 2264304: s1866 The Incredible Hulk (1968) #157-178 [45 stories] · s158698 FOOM Magazine (1973) #2 [5 stories]
+             [81155] gcd_reprint 2440585: s1866 The Incredible Hulk (1968) #179-200 [45 stories] · s2180 Marvel Treasury Edition (1974) #5 [5 stories] · s9823 Wolverine Battles the Incredible Hulk (1989) #1 [2 stories] · s158698 FOOM Magazine (1973) #8, #11 [2 stories]
+             [81157] gcd notes 2648970 (#9 of Incredible Hulk Epic Collection): Incredible Hulk (Marvel, 1968 series) #227-244; Incredible Hulk Annual (Marvel, 1976 series) #7-9; Captain America (Marvel, 1968 series) #230  |  gcd_reprint 2648970: s1866 The Incredible Hulk (1968) #227-244 [37 stories] · s2348 The Incredible Hulk Annual (1976) #7-9 [6 stories] · s2180 Marvel Treasury Edition (1974) #20, #24 [5 stories] · s1860 Captain America (1968) #230 [2 stories]
+             [81158] gcd_reprint 2399184: s1866 The Incredible Hulk (1968) #297-313 [35 stories] · s2657 Marvel Fanfare (1982) #20, #22 [2 stories] · s2737 Alpha Flight (1983) #29 [2 stories] · s2348 The Incredible Hulk Annual (1976) #13 [2 stories]
+             [81160] gcd notes 2648885 (#15 of Incredible Hulk Epic Collection): The Incredible Hulk (Marvel, 1968 series) #331-346  |  gcd_reprint 2648885: s1866 The Incredible Hulk (1968) #331-346 [33 stories] · s22322 Marvel Graphic Novel: The Big Change (1987) (unnumbered) [4 stories] · s74368 Marvel Age Annual (1985) #3 [2 stories] · s69795 Marvel Age (1983) #51 [1 story]
+             [81161] gcd_reprint 1331405: s1866 The Incredible Hulk (1968) #397-406 [29 stories] · s2348 The Incredible Hulk Annual (1976) #18-19 [15 stories] · s4710 Marvel Holiday Special (1992) (unnumbered) [3 stories] · s69795 Marvel Age (1983) #113, #118 [3 stories]
+             [81162] gcd_reprint 1663407: s1866 The Incredible Hulk (1968) #407-419 [36 stories] · s28132 The Incredible Hulk Ashcan Edition (1994) (unnumbered) [6 stories] · s2348 The Incredible Hulk Annual (1976) #20 [6 stories] · s4456 Hulk: Future Imperfect (1992) #1-2 [4 stories]
+             [81163] gcd notes 1775185 (#21 of Incredible Hulk Epic Collection): Tales to Astonish (Marvel, 1994 series) #1; Incredible Hulk vs. Venom (Marvel, 1994 series) #1; Incredible Hulk (Marvel, 1968 series) #420-435  |  gcd_reprint 1775185: s1866 The Incredible Hulk (1968) #420-435 [39 stories] · s69795 Marvel Age (1983) #135, #139 [3 stories] · s12129 Tales to Astonish (1994) #1 [3 stories] · s20474 Incredible Hulk vs. Venom (1994) #1 [2 stories]
+             [81164] gcd_reprint 1905245: s1866 The Incredible Hulk (1968) #436-448 [28 stories] · s10731 The Savage Hulk (1996) (unnumbered) [11 stories] · s10769 Onslaught: Marvel (1996) #1 [4 stories] · s4675 Cable (1993) #34 [2 stories]
+   CV candidates:  144791 "Incredible Hulk Epic Collection: Crossroads" 2022 Marvel 1 issue 944342 s74 · 91103 "Incredible Hulk Epic Collection: Man or Monster?" 2016 Marvel 1 issue 534292 s72 · 97755 "The Incredible Hulk Epic Collection: Future Imperfect" 2017 Marvel 1 issue 574866 s72 · 105534 "Incredible Hulk Epic Collection: The Hulk Must Die" 2017 Marvel 1 issue 632497 s71 · 146073 "Incredible Hulk Epic Collection: And Now… The Wolverine" 2022 Marvel 1 issue 955129 s71 · 84592 "Incredible Hulk Epic Collection: Ghosts of the Past" 2015 Marvel 1 issue 500303 s71   (v1 search)
+   CV local rip:   91103 "Incredible Hulk Epic Collection: Man or Monster?" 2016 Marvel 1 issue 534292 (via CV candidate name "Incredible Hulk Epic Collection: Man or Monster?") · 97755 "The Incredible Hulk Epic Collection: Future Imperfect" 2017 Marvel 1 issue 574866 (via CV candidate name "The Incredible Hulk Epic Collection: Future Imperfect") · 144791 "Incredible Hulk Epic Collection: Crossroads" 2022 Marvel 1 issue 944342 (via CV candidate name "Incredible Hulk Epic Collection: Crossroads")   (rip lookup)
+   GCD dump:       87446 "Incredible Hulk Epic Collection" 2015-? Marvel [] 19   (dump lookup)

@@ -2127,3 +2127,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   numbering after a relaunch that keeps legacy numbering ("Ghost Rider Vol. 05: Final Vengeance", GCD 191541 #5) joins the
   run's shelf. L-389 blocks only a run's ISSUES from a creator-trade shelf: that creator line's own books join it
   (Doctor Strange by Mark Waid Books 01-02 -> S5642). C lines on a containment-refused book stand (identity-level).
+[L-400] pub:marvel sig:split kind:collected-line
+- Waves 151-152: a lead-proposed "new" key may be a LIVE key on a different run (Ghost Rider v7 (2011) is S64771's 2019
+  run key) — the reader respells ("Ghost Rider (2011)"); L-371 guards joins, this guards mis-joins. Marvel Digital
+  Original series (Iron Fist: Phantom Limb 2018) are their own CV volume with no GCD run row; GCD indexes only the trade
+  ("collects <Title>: Marvel Digital Original #1-3"). GCD Masterworks notes can misprint a range start (ASM Masterworks
+  #7 "#52-67") — check the neighbouring volumes. Masterworks Golden Age / Invincible Iron Man paperback re-issues (GCD
+  74965 / 78703) are what digital rips with a later filename year usually are. Tales-of-Suspense-foldered Masterworks
+  shelves duplicate the line's own shelf (merge on the shared cv).
