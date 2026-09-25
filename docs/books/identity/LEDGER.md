@@ -2227,3 +2227,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Robotech: the Macross -> Robotech: The Macross Saga retitle stores GCD 21439 (Macross #1), the chain's first record
   (L-212); GCD's 35-issue 11694 is the alternative, noted on an N line. A trade line cv stored on a run shelf (Good
   Boy v3 CV 142228, Conan Battle of the Black Stone GCD 208813) = F wrong-cv-link.
+[L-413] pub:dc kind:collected-line sig:split
+- Waves 178-179: arc trades and 'Complete Edition' / Deluxe / Cosmic Collection books reprinting ONE run give way to
+  it (Wasted Space, Sweet Tooth Deluxe, Wolverine: Enemy of the State, Avengers: Unleashed, Avengers by Jed Mackay).
+  Moving a run shelf's S line off a TPB line's GCD id onto the run (The Sandman S19506 -> GCD 3817) turns its
+  collected editions into live containers: the containment decision file then owes a line for EVERY edition on the
+  shelf — restate the identity pass's judged C-line ranges as S lines (they cite GCD's collects notes) and `u` the
+  editions with no judged range on this run (Deluxe books, Fables & Reflections' three stretches, Endless Nights).
+  A facsimile of one book is its own record (Peanuts Facsimile S13656 -> GCD 163323, L-089; supersedes B-070).

@@ -1,0 +1,127 @@
+# R-178 - the P-077 split wave re-read: 22 shelves, the kept halves and the new / joined shelves of Lenore, Armorines,
+# Rai, Solar, Smurfs, Blade Runner, Bloodshot, Ninjak, Fearscape / A Dark Interlude and Harbinger. Every kept half now
+# holds one run; every new shelf holds the run R-177 named. What the re-read found:
+# - Valiant "_Chronological Valiant" parents (Harbinger S8317, Rai S14355) now store the 1992 runs (CV 4827 / CV 4828),
+#   neither of which has a CvVolume row (needs-fetch); their keys still carry the relaunch GCD (66244 / 80415) and every
+#   file still carries the relaunch per-file CV -> F wrong-cv-link (L-412).
+# - Every shelf that received files from a parent inherited the parent's per-file stamp (Lenore v2: 22998 on 10/11;
+#   Bloodshot 1997: 5067 on 10; Ninjak 1997: 5348 on 6) -> F wrong-cv-link (L-366); the kept Armorines 1994 files carry
+#   the 1999 volume's stamp 26141 the same way.
+# - The two label-ambiguous flags (#315 Lenore, #416 Solar) and #186 Blade Runner 2019 are answered on N lines (L-367).
+# - No merge-with, no join, no stale-flag was needed: every run has exactly one shelf after P-077.
+
+# ---- SLG / Titan: Lenore ----
+S 10712 cv=22998 gcd=19028 0.95 | Lenore (SLG 1998-2007, 13): CV 22998 (13 cached #1-13) and GCD 19028 (Slave Labor 1998-2007, 13) agree on publisher, years and count, and our 13 "Lenore v1 01-13 (1998-2007)" 21-33pp files are exactly that ladder 1-13; per-file CV on 13/13, GCD on 9/13
+N 10712 flag #315 label-ambiguous (item 109571): answered - the "Lenore v1 01-13" files are 21-33pp single issues of the SLG run, not collections (L-367)
+S 104254 cv=41875 gcd=53104 0.9 | Lenore (Titan 2009-2014, 11): GCD 53104 (Titan 2009-?, 11) and CV 41875 (11 cached, #1 "The Macabre Malevolence Of Mortimer Fledge" 2011-02 ... #11 2014-12-31) both count 11 = our "Lenore 001-011 (2009-2014)" 26-30pp ladder 1-11; 0.9 because CV dates its #1 2011 and mints the 2009 #1 (same story title) as a separate count-1 volume 39319
+F 104254 wrong-cv-link | the per-file CV 22998 (SLG Lenore 1998) rides on 10 of the 11 Titan files - the parent S10712's stamp, inherited through the P-077 split (L-366); CV 39319 (the 2009 count-1 #1) sits on the 11th
+F 104254 needs-fetch cv=41875 | "Lenore" (Titan 2011, 11) is named from the rip and has no CvVolume row
+S 104255 cv=120560 gcd=178490 0.95 | Lenore (Titan 2019, 1): CV 120560 (issue 715250) and GCD 178490 (Titan 2019, [limited series] 1) agree on publisher, year and a one-issue count with our single 30pp "Lenore 001 (2019) (2 covers)" in Titan Comics\Lenore v2 (2019); ComicInfo Publisher Titan; per-file CV and GCD agree
+
+# ---- Valiant / Acclaim: Armorines ----
+S 1312 cv=5340 gcd=5057 0.95 | Armorines (Acclaim 1994-1995, 13 = #0-12): CV 5340 (13 cached #0-12) and GCD 5057 (13 rows, #0 1994-02 20pp ... #12 1995-06) agree and equal our 13 "_Chronological Valiant" files "270.01 Armorines 00" (16pp) ... "536. Armorines 12" - ladder 0-12 exactly
+F 1312 wrong-cv-link | the per-file CV 26141 (Armorines 1999, 4) is stamped on all 13 kept files; they are the 1994 run - a ladder 0-12 cannot sit in a 4-issue volume
+S 104250 cv=26141 gcd=13865 0.95 | Armorines (Acclaim 1999-2000, 4): CV 26141 (#1 "Return To Sender" 1999-10 ... #4 "Bugs Must Die" 2000-01) and GCD 13865 ([limited series] 4) agree with our "Armorines 01-04 (of 04) (1999-2000)" 24-39pp - "(of 04)" names the count; per-file CV and GCD on 4/4
+
+# ---- Valiant: Rai ----
+S 14355 cv=4828 gcd=4493 0.9 | Rai (Valiant 1992-1995, 34 = #0-33): CV 4828 (34 cached) equals our 34 "_Chronological Valiant" files "041. Rai 01" ... "544. Rai 33" with "149. Rai 00" read between #8 and #9 - ladder 0-33; GCD 4493 "Rai" (1992, 9 = #0-8) is the chain's FIRST record (L-212), GCD filing the retitled stretch as "Rai and the Future Force" 5067 (1993-1994, 15); 0.9 for that GCD split
+F 14355 wrong-cv-link | the per-file CV 73417 (Rai 2014, 16) is stamped on all 34 kept files and the key still links GCD 80415 (Rai 2014); a ladder 0-33 runs past the 16-issue relaunch - these are the 1992 run (L-412)
+F 14355 needs-fetch cv=4828 | "Rai" (Valiant/Acclaim 1992, 34) is named from the rip and has no CvVolume row
+N 14355 GCD's other leg of the chain: 5067 "Rai and the Future Force" (Acclaim / Valiant 1993-1994, 15) - the retitle continuing the numbering; the S line keeps the chain's first record 4493
+S 104257 cv=73417 gcd=80415 0.9 | Rai (Valiant 2014-2016, 16): CV 73417 (16) and GCD 80415 (2014-2016, 18) name our "Rai 016 (2016)" 36pp and both trades - GCD's roll-ups say Deluxe Edition Book 01 collects #1-12 and "Rai v04 - 4001 A.D." collects #13-16, together #1-16 = CV's count; 0.9 for GCD's unexplained 18 against 16
+I 110907 cv=528495 gcd=1712321 isbn=9781682151174 0.95 | "COL Rai - Deluxe Edition - Book 01 (2016)" 347pp = CV 90119 "Rai Deluxe Edition" issue 528495 "HC" (2016-05-31) and GCD 114648 row 1712321 (356pp), whose gcd_reprint is s80415 Rai (2014) #1-12 - the shelf's own run
+I 110910 cv=553940 gcd=1712320 isbn=9781682151471 0.95 | "COL Rai v04 - 4001 A.D. (2016)" 132pp = CV 95029 "Rai: 4001 A.D." issue 553940 "Volume 4" (2016-10-31) and GCD 114649 #4 row 1712320 (132pp), whose gcd_reprint is s80415 #13-16
+S 99414 cv=122982 gcd=152850 0.9 | Rai (Valiant 2019-2020, 10): CV 122982 (10) and GCD 152850 (20 rows = ten issues indexed twice, L-153) are the run both our Books collect - GCD 2148376's notes #1-5 and 2195999's #6-10 cover #1-10 exactly; ComicInfo Volume 2019 on both; the Book line CV 130388 reprints this one run and gives way to it; 0.9 for the pre-order doubling
+F 99414 needs-fetch cv=122982 | "Rai" (DMG/Valiant 2019, 10) is named from the rip and has no CvVolume row
+I 110911 cv=799931 gcd=2148376 isbn=9781682153604 0.95 | "COL Rai Book 01 (2020)" 126pp = CV 130388 #1 issue 799931 "Book One" (2020-09-18) and GCD 164011 #1 row 2148376 (132pp), notes collect Rai (2019) #1-5
+I 110912 cv=828132 gcd=2195999 isbn=9781682153901 0.95 | "COL Rai Book 02 (2020)" 124pp = CV 130388 #2 issue 828132 "Book Two" (2021-02-12) and GCD 164011 #2 row 2195999 (132pp), notes collect Rai (2019) #6-10
+C 110911 cv=122982 gcd=152850 #1-5 0.9 | GCD 2148376's notes: Book One collects #1-5 of Rai (Valiant 2019-2020, CV 122982 count 10 / GCD 152850) - 126pp is five issues
+C 110912 cv=122982 gcd=152850 #6-10 0.9 | GCD 2195999's notes: Book Two collects #6-10 of Rai (Valiant 2019-2020, CV 122982 count 10 / GCD 152850) - 124pp is five issues
+
+# ---- Valiant / Dynamite: Solar ----
+S 15854 cv=4607 gcd=4256 0.9 | Solar, Man of the Atom (Valiant 1991-1996, 60): CV 4607 (60 cached) and GCD 4256 (1991-1996, 60) agree and equal our 60 "_Chronological Valiant" files "019. Solar Man of the Atom v2 01 [Alpha & Omega part #01]" ... "689. ... v2 60" - ladder 1-60; 0.9 for the two 1997 Acclaim one-shots (residue, I lines below)
+F 15854 wrong-cv-link | the per-file CV 73103 (Dynamite's 2014 Solar: Man of the Atom) is stamped on 61 of the 62 files - the 1991 Valiant issues and one 1997 one-shot
+N 15854 flag #416 label-ambiguous (item 111306): answered - the "Solar Man of the Atom v2 01-60" files are 21-43pp single issues of the 1991 run, not collections (L-367)
+I 111098 cv=154423 gcd=60223 isbn=- 0.9 | "COL Solar - Man Of The Atom v2 (1997)" 42pp = the 1997 Acclaim one-shot, CV 26075 "Solar, Man of the Atom" (1997, 1) issue 154423 and GCD 5828 row 60223 (52pp, 1997-05)
+I 111099 cv=- gcd=375173 isbn=- 0.9 | "Solar Man of the Atom - Revelations (1997) (oneshot)" 43pp = GCD 26609 "Solar, Man of the Atom - Revelations" row 375173 (52pp, 1997-11); the CV rip names no volume for it
+S 104258 cv=73103 gcd=80249 0.95 | Solar: Man of the Atom (Dynamite 2014-2015, 12): CV 73103 (12 cached) and GCD 80249 ([was ongoing series] 12) agree on publisher, years and count with our "Solar - Man of the Atom 009-012 (2015)" 24-25pp and the Vol. 01-02 trades, which GCD 93498 says collect #1-4 and #5-8 - the run's own books, costing nothing
+I 21668 cv=471333 gcd=1490086 isbn=978-1606905425 0.95 | "COL Solar - Man of the Atom Vol. 01 - Nuclear Family (2014)" 148pp = CV 78358 "Solar: Man of the Atom - Nuclear Family" issue 471333 "Volume One" (2014-11-30) and GCD 93498 #1 "Nuclear Family" row 1490086 (2014-11-26)
+I 21669 cv=495290 gcd=1490976 isbn=978-1606906835 0.9 | "COL ... Vol. 02 - Woman of the Atom (2015)" 105pp = CV 83341 "Solar: Man of the Atom - Woman of the Atom" issue 495290 "Volume Two" (2015-07-31) and GCD 93498 #2 row 1490976 (2015-07-01, notes #5-8); 0.9 because GCD titles the row "Interglactic"
+N 21669 the packet's "stored GCD row is another book" warning is void: row 1490976 is #2 of the same TPB line 93498 (ISBN 978-1606906835, July 2015, notes #5-8), titled by its first story "Interglactic" rather than the cover title
+
+# ---- Papercutz / NBM: Smurfs ----
+S 19639 cv=73592 gcd=74272 0.9 | the Smurfs 2014 Free Comic Book Day giveaway: CV 73592 (NBM 2014, 1, issue 452078) and GCD 74272 (NBM 2013-2014, 2) whose "[2014]" row 1204062 is 32pp against our 33pp "Silver Book (FCBD) (2014)" and 32pp "The Smurfs (2014, FCBD)" - two rips of one book; 0.9 because GCD keeps both FCBD years in one series while CV mints a volume per year
+I 109336 cv=452078 gcd=1204062 isbn=- 0.95 | "The Smurfs Silver Book (FCBD) (2014)" 33pp = CV 73592 issue 452078 (2014-05-31) and GCD 74272 row 1204062 "[2014]" (32pp, 2014-05-03)
+I 109339 cv=452078 gcd=1204062 isbn=- 0.95 | "The Smurfs (2014, FCBD)" 32pp, a second rip of the 2014 giveaway = CV 73592 issue 452078 and GCD 74272 row 1204062 (32pp, 2014-05-03)
+S 19635 cv=50583 gcd=60513 0.9 | Smurfs (Papercutz/NBM 2010-2019, 26): CV 50583 (26 cached, "The Purple Smurfs" ... "Smurf Salad") and GCD 60513 "Smurfs Graphic Novel" (26 rows) agree title by title with our "Vol. 01-26" (49-66pp) - a graphic-novel line with no issue run beneath it; 0.9 for residue: the #0 Smurfnapper and the 2013 FCBD one-shot
+I 109349 cv=223499 gcd=771531 isbn=- 0.95 | "The Smurfs Vol. 00 - Smurfnapper (2010)" 24pp = CV 34259 "Smurfs" (NBM 2010, 1) issue 223499 "The Smurfnapper" and GCD 51201 row 771531 (24pp, 2010-05)
+I 109330 cv=400906 gcd=1109909 isbn=- 0.95 | "The Smurfs - FCBD 2013" 32pp = CV 60812 (NBM 2013) issue 400906 (2013-05-01) and GCD 74272 row 1109909 "[nn]" (32pp, 2013-05-04)
+I 109350 cv=346302 gcd=868857 isbn=9781597072069 0.9 | Vol. 01 The Purple Smurfs 58pp = CV 50583 #1 issue 346302 and GCD 60513 #1 row 868857 "The Purple Smurfs" (64pp)
+I 109351 cv=346646 gcd=868858 isbn=9781597072083 0.9 | Vol. 02 The Smurfs and the Magic Flute 66pp = CV 50583 #2 issue 346646 and GCD 60513 #2 row 868858 (68pp)
+I 109352 cv=346647 gcd=868859 isbn=9781597072243 0.9 | Vol. 03 The Smurf King 65pp = CV 50583 #3 issue 346647 and GCD 60513 #3 row 868859 (68pp)
+I 109353 cv=346648 gcd=868860 isbn=- 0.9 | Vol. 04 The Smurfette 65pp = CV 50583 #4 issue 346648 "The Smurfette" and GCD 60513 #4 row 868860 (68pp)
+I 109354 cv=346650 gcd=868861 isbn=9781597072465 0.9 | Vol. 05 The Smurfs and the Egg 65pp = CV 50583 #5 issue 346650 and GCD 60513 #5 row 868861 (68pp)
+I 109355 cv=346913 gcd=868862 isbn=- 0.9 | Vol. 06 The Smurfs and the Howlibird 56pp = CV 50583 #6 issue 346913 "The Howlibird" and GCD 60513 #6 row 868862 "The Smurfs and the Howlibird"
+I 109356 cv=346915 gcd=868863 isbn=9781597072502 0.9 | Vol. 07 The Astro Smurf 58pp = CV 50583 #7 issue 346915 "The Astrosmurf" and GCD 60513 #7 row 868863 (60pp)
+I 109357 cv=346916 gcd=868864 isbn=- 0.9 | Vol. 08 The Smurf Apprentice 56pp = CV 50583 #8 issue 346916 and GCD 60513 #8 row 868864 "The Smurf Apprentice"
+I 109358 cv=347022 gcd=1030095 isbn=9781597072892 0.9 | Vol. 09 Gargamel and the Smurfs 56pp = CV 50583 #9 issue 347022 and GCD 60513 #9 row 1030095 (60pp)
+I 109359 cv=347023 gcd=1030096 isbn=- 0.9 | Vol. 10 The Return of the Smurfette 58pp = CV 50583 #10 issue 347023 and GCD 60513 #10 row 1030096
+I 109360 cv=347024 gcd=1030097 isbn=- 0.9 | Vol. 11 The Smurf Olympics 57pp = CV 50583 #11 issue 347024 and GCD 60513 #11 row 1030097
+I 109361 cv=347025 gcd=1030098 isbn=9781597073202 0.9 | Vol. 12 Smurf vs. Smurf 57pp = CV 50583 #12 issue 347025 and GCD 60513 #12 row 1030098 (60pp)
+I 109362 cv=366004 gcd=1559172 isbn=- 0.9 | Vol. 13 Smurf Soup 57pp = CV 50583 #13 issue 366004 and GCD 60513 #13 row 1559172 "Smurf Soup"
+I 109363 cv=387312 gcd=1559173 isbn=- 0.9 | Vol. 14 The Baby Smurf 54pp = CV 50583 #14 issue 387312 and GCD 60513 #14 row 1559173 "The Baby Smurf"
+I 109364 cv=401277 gcd=1559174 isbn=- 0.9 | Vol. 15 Smurflings 58pp = CV 50583 #15 issue 401277 "The Smurflings" and GCD 60513 #15 row 1559174
+I 109365 cv=421025 gcd=1559175 isbn=- 0.9 | Vol. 16 Aerosmurf 58pp = CV 50583 #16 issue 421025 "The Aerosmurf" and GCD 60513 #16 row 1559175
+I 109366 cv=447565 gcd=1559176 isbn=- 0.9 | Vol. 17 The Strange Awakening of Lazy Smurf 56pp = CV 50583 #17 issue 447565 and GCD 60513 #17 row 1559176
+I 109367 cv=457704 gcd=1559177 isbn=- 0.9 | Vol. 18 The Finance Smurf 49pp = CV 50583 #18 issue 457704 and GCD 60513 #18 row 1559177
+I 109368 cv=494440 gcd=1559178 isbn=- 0.9 | Vol. 19 The Jewel Smurfer 49pp = CV 50583 #19 issue 494440 and GCD 60513 #19 row 1559178
+I 109369 cv=514329 gcd=1559179 isbn=- 0.9 | Vol. 20 Doctor Smurf 49pp = CV 50583 #20 issue 514329 and GCD 60513 #20 row 1559179 "Doctor Smurf"
+I 109370 cv=548653 gcd=1964746 isbn=- 0.9 | Vol. 21 The Wild Smurf 65pp = CV 50583 #21 issue 548653 "The Wild Smurf" and GCD 60513 #21 row 1964746 (untitled) by ordinal
+I 109371 cv=575924 gcd=1964747 isbn=- 0.9 | Vol. 22 The Smurf Menace 66pp = CV 50583 #22 issue 575924 "The Smurf Menace" and GCD 60513 #22 row 1964747 (untitled) by ordinal
+I 109372 cv=599924 gcd=1964748 isbn=- 0.9 | Vol. 23 Can't Smurf Progress 65pp = CV 50583 #23 issue 599924 "Can't Smurf Progress" and GCD 60513 #23 row 1964748 (untitled) by ordinal
+I 109373 cv=698650 gcd=1964749 isbn=- 0.9 | Vol. 24 The Smurf Reporter 65pp = CV 50583 #24 issue 698650 "The Smurf Reporter" and GCD 60513 #24 row 1964749 (untitled) by ordinal
+I 109374 cv=709248 gcd=1964750 isbn=- 0.9 | Vol. 25 The Gambling Smurfs 66pp = CV 50583 #25 issue 709248 "The Gambling Smurfs" and GCD 60513 #25 row 1964750 (untitled) by ordinal
+I 109375 cv=721235 gcd=2037182 isbn=9781545803585 0.95 | Vol. 26 Smurfs Salad 66pp = CV 50583 #26 issue 721235 "Smurf Salad" (2019-10-03) and GCD 60513 #26 row 2037182 "Smurf Salad" (2019-10-08)
+
+# ---- Titan: Blade Runner ----
+S 2862 cv=120232 gcd=148828 0.9 | Blade Runner 2019 (Titan 2019-2020, 12): CV 120232 (12 cached) and GCD 148828 ([en-gb] 2019-2020, 12) agree, and GCD's roll-ups say our Vol. 01 (two rips), Vol. 02 and Vol. 03 collect #1-4 / #5-8 / #9-12 - the run's own books; 0.9 for the 23pp Free Comic Book Day 2020 one-shot
+N 2862 flag #186 label-ambiguous (item 111858): answered - items 110050 and 111858 are two rips of Vol. 01 - Los Angeles (105 / 110pp); the 2039 volume that also sat here moved to S2865 (L-367)
+I 110050 cv=728398 gcd=2039431 isbn=9781787731615 0.95 | Vol. 01 - Los Angeles 105pp = CV 122978 "Blade Runner 2019: Los Angeles" issue 728398 and GCD 152805 #1 "Los Angeles" row 2039431 (116pp, 2019-11-20)
+I 111858 cv=728398 gcd=2039431 isbn=9781787731615 0.95 | a second rip of Vol. 01 - Los Angeles (110pp) = CV 122978 issue 728398 and GCD 152805 row 2039431 (116pp)
+I 110051 cv=799930 gcd=2174306 isbn=9781787731929 0.95 | Vol. 02 - Off World 104pp = CV 130387 "Blade Runner 2019: Off-World" issue 799930 "Volume 2" and GCD 152805 #2 "Off-World" row 2174306 (116pp, 2020-09-16)
+I 110052 cv=829749 gcd=2254837 isbn=9781787731936 0.95 | Vol. 03 - Home Again, Home Again 125pp = CV 134026 "Blade Runner 2019: Home Again, Home Again" issue 829749 "Volume 3" (2021-02-26) and GCD 152805 #3 row 2254837 (132pp, 2021-02-23)
+I 111857 cv=793241 gcd=2133352 isbn=- 0.95 | "Blade Runner 2019 - Free Comic Book Day (2020)" 23pp = CV 129517 "Blade Runner 2019: Free Comic Book Day Issue" issue 793241 (2020-05) and GCD 162806 row 2133352 "#00" (24pp, 2020-08-12)
+S 2865 cv=146794 gcd=193782 0.95 | Blade Runner 2039 (Titan 2022-2024, 12): CV 146794 (12 cached) and GCD 193782 ([limited series] 12) agree and hold our "Blade Runner 2039 009-012 (2024)" 32-35pp; the Vol. 01 / Vol. 02 trades collect #1-4 / #5-8 (GCD 2654808 notes, 2666989 roll-up) - the run's own books
+I 110060 cv=1018587 gcd=2654808 isbn=978-1787738447 0.95 | "COL Blade Runner 2039 Vol. 01 - Luv (2023)" 105pp = CV 153750 "Blade Runner 2039: Luv" issue 1018587 "Vol. 1" (2023-09-26) and GCD 214913 #1 "Luv" row 2654808 (116pp, 2023-09-19), notes #1-4
+I 110061 cv=- gcd=2666989 isbn=978-1787738454 0.9 | "COL Blade Runner 2039 Vol. 02 - Upgrade (2024)" 115pp = GCD 214913 #2 "Upgrade" row 2666989 (2024-02-14), roll-up #5-8; the CV rip names no Upgrade volume ("Blade Runner 2039" --contains: 146794, Norma, Luv, Panini only)
+
+# ---- Valiant / Acclaim: Bloodshot, Ninjak ----
+S 64338 cv=5067 gcd=4755 0.95 | Bloodshot (Valiant 1993-1996, 52 = #0-51): CV 5067 (52 cached #0-51) and GCD 4755 (52) agree with the 42 chronological files "121. Bloodshot 00" ... "705. Bloodshot 51" and the two 2021 Valiant Classics trades (judged #0-7, #8-14) - the run's own books, which cost nothing
+I 110796 cv=831992 gcd=- isbn=- 0.9 | "COL Bloodshot Vol. 01 - The Blood of Heroes (2021)" 274pp = CV 134187 "Bloodshot: The Blood of Heroes" (Valiant 2021, 1) issue 831992 "TPB"; GCD has no row; collects the shelf's own #0-7
+I 110797 cv=877542 gcd=- isbn=- 0.9 | "COL Bloodshot Vol. 02 - Empirical Dynasty (2021)" 309pp = CV 138084 "Bloodshot: Empirical Dynasty" (Valiant 2021, 1) issue 877542 "TPB"; GCD has no row; collects the shelf's own #8-14
+S 64339 cv=11899 gcd=12912 0.95 | Bloodshot (Acclaim 1997-1998, 16): CV 11899 (16 cached) and GCD 12912 (1997-1998, [was ongoing series] 16) agree and equal our "Bloodshot 01-16 (1997-1998) (d'argh-Empire)" 20-24pp in Valiant\_Acclaim\Bloodshot v2 - ladder 1-16 complete; per-file GCD 12912 on 16/16
+F 64339 wrong-cv-link | the per-file CV 5067 (Bloodshot 1993, 52) rides on the ten files #7-16 that joined from S64338 in P-077 - the parent's stamp (L-366); all sixteen are the 1997 run
+S 65364 cv=5348 gcd=5065 0.9 | Ninjak (Valiant 1994-1995, 28 = #0, #00, #1-26): CV 5348 (28 cached #0-26) and GCD 5065 (28) agree with the chronological "252. Ninjak 00b (origin part 2)" and "276. Ninjak 01" ... "623. Ninjak 26"; 0.9 for the 2021 run's Book 01 (residue, I and C below)
+I 111980 cv=932658 gcd=- isbn=- 0.9 | "COL Ninjak Book 01 (2021)" 93pp = CV 143832 "Ninjak" (Valiant 2022, 1) issue 932658 "Book One" (2022-03); GCD has no row for the book
+C 111980 cv=137582 gcd=174086 #1-4 0.9 | Book One collects Ninjak (Valiant 2021, 4; CV 137582 / GCD 174086 regular rows #1-4) - 93pp is four issues; not the shelf's 1994 run
+S 65365 cv=6030 gcd=5825 0.95 | Ninjak (Acclaim 1997-1998, 12): CV 6030 (12 cached) and GCD 5825 (1997-1998, [was ongoing series] 12) agree and equal our "Ninjak 001-012 (1997-1998) (Vee-Empire)" 22-26pp in Valiant\_Acclaim\Ninjak v2 - ladder 1-12 complete; per-file GCD 5825 on 12/12
+F 65365 wrong-cv-link | the per-file CV 5348 (Ninjak 1994, 28) rides on the six files #7-12 that joined from S65364 in P-077 - the parent's stamp (L-366); all twelve are the 1997 run
+
+# ---- Vault: Fearscape / A Dark Interlude ----
+S 184 cv=132091 gcd=168041 0.95 | A Dark Interlude (Vault 2020-2022, 5): CV 132091 (5 cached) and GCD 168041 ([limited series] 5) agree and equal our "A Dark Interlude 001-005 (2020-2022)" 33-36pp; "Fearscape Vol. 02 - A Dark Interlude" 146pp is this run's own trade (CV 119851 #2 "Vol. 2: A Dark Interlude") and costs nothing
+I 112167 cv=1030016 gcd=- isbn=- 0.9 | "COL Fearscape Vol. 02 - A Dark Interlude (2023)" 146pp = CV 119851 #2 issue 1030016 "Vol. 2: A Dark Interlude" (2023-02-01); GCD's trade series 148468 holds only #1
+S 6599 cv=113871 gcd=143795 0.95 | Fearscape (Vault 2018-2019, 5): CV 113871 (5) and GCD 143795 (2018-?, 5) agree, and our one book "COL Fearscape Vol. 01 (2019)" 152pp is judged #1-5 = the whole run - the run's own trade (L-109: a line reprinting one run gives way to the run)
+I 112166 cv=712466 gcd=1981117 isbn=978-1-939424-44-0 0.95 | "COL Fearscape Vol. 01 (2019)" 152pp = CV 119851 #1 issue 712466 "Volume One" (2019-06-26) and GCD 148468 #1 row 1981117 (2019-06-12), ISBN on the GCD row
+
+# ---- Valiant: Harbinger ----
+S 8317 cv=4827 gcd=4492 0.95 | Harbinger (Valiant 1992-1995, 42 = #0-41): CV 4827 (42 cached, #0 "The Beginning" ... #41 "Postcards") and GCD 4492 (1992-1995, 42) agree on count and years with our 42 "_Chronological Valiant" files "027. Harbinger 00" ... "535. Harbinger 41" - ladder 0-41 exactly, which cannot fit the 26-issue 2012 volume
+F 8317 wrong-cv-link | the per-file CV 49539 (Harbinger 2012, 26) is stamped on all 42 kept files and the key still links GCD 66244 (Harbinger 2012) - the relaunch, whose Deluxe Editions moved to S104253 (L-412)
+F 8317 needs-fetch cv=4827 | "Harbinger" (Valiant/Acclaim 1992, 42) is named from the rip and has no CvVolume row
+S 104253 cv=49539 gcd=66244 0.95 | Harbinger (Valiant 2012-2014, 26): CV 49539 (26) and GCD 66244 (2012-2014, 26) agree; our two Deluxe Editions collect #0-14 and #15-25 of it (GCD 1712274 / 1712275 roll-ups) = the whole run; the Deluxe line (CV 69120 / GCD 114629, 2 each) reprints this run and gives way to it
+I 110862 cv=433165 gcd=1712274 isbn=9781939346131 0.95 | "COL Harbinger - Deluxe Edition - Book 01 (2013)" 405pp = CV 69120 "Harbinger Deluxe Edition" #1 issue 433165 "Volume 1" (2013-11-30) and GCD 114629 #1 row 1712274 (410pp)
+I 110863 cv=501013 gcd=1712275 isbn=9781939346773 0.95 | "COL Harbinger - Deluxe Edition - Book 02 (2015)" 414pp = CV 69120 #2 issue 501013 "Volume 2" (2015-09-29) and GCD 114629 #2 row 1712275 (420pp)
+C 110862 cv=59509 gcd=73398 #1-1 0.9 | GCD 1712274's roll-up: Book 01 also reprints Harbinger Wars (Valiant 2013, 4; CV 59509 / GCD 73398) #1 - one story, a run other than the shelf's
+C 110862 cv=50367 gcd=66766 #10-10 0.9 | GCD 1712274's roll-up: Book 01 also reprints Bloodshot (Valiant 2012; CV 50367 count 16 / GCD 66766) #10 - one story, a run other than the shelf's
+C 110863 cv=76261 gcd=82310 #1-3 0.9 | GCD 1712275's roll-up: Book 02 also collects Harbinger: Omegas (Valiant 2014, 3; CV 76261 / GCD 82310) #1-3 - the whole mini, a run other than the shelf's
+C 110863 cv=72416 gcd=82311 #0-0 0.9 | GCD 1712275's roll-up: Book 02 also collects Harbinger: Bleeding Monk (Valiant 2014, 1; CV 72416 / GCD 82311) #0 - a one-shot, not the shelf's run
+C 110863 cv=79862 gcd=86552 #1-1 0.9 | GCD 1712275's roll-up: Book 02 also reprints Imperium (Valiant 2015-2016, 16; CV 79862 / GCD 86552) #1 - two stories, a run other than the shelf's
