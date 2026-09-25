@@ -1,0 +1,345 @@
+## Conventions for this batch (17 shown of 133 matched; 403 in LEDGER.md; 3 shelf/shelves: folder:vn-year ×3 · pub:marvel ×3 · folder:events ×3 · folder:sequel-subfolder ×3 · kind:collected-line ×1 · folder:facsimile ×1 · folder:bucket ×1 · kind:archive ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (3 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-034] (3 shelf/shelves) folder:events pub:marvel sig:round2
+- `_X-Men Complete Chronology` / `_Marvel Major Event Chronology` folders re-file the same books a second and
+  third time — every ratio 2.00 there, never a second run. Crossover blocks get handed one member's series by
+  `round2-folder` (four Age of Apocalypse shelves → "X-Man", a 76-issue hull).
+[L-060] (3 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (3 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-127] (3 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-133] (3 shelf/shelves) pub:marvel sig:probe
+- GCD splits a compound word ComicVine joins: "X-Men: Clan Destine" (5570) is invisible to a "ClanDestine" probe,
+  and 32535 "ClanDestine vs. The X-Men" is the collected edition, not the mini.
+[L-136] (3 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-142] (3 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-169] (3 shelf/shelves) folder:events pub:marvel sig:trade-link
+- `_Marvel Major Event Chronology (digital)` is one folder per tie-in holding that tie-in's collected edition: the
+  count-1-trade-as-stored-link artefact runs at 86 of 202 shelves there, the highest rate in any single folder.
+[L-319] (3 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-343] (3 shelf/shelves) pub:dark-horse pub:idw pub:marvel sig:probe
+- More GCD name shapes (R-067): Dark Horse High Republic Adventures inserts "(Phase III)" and uses a comma form
+  ("…Adventures, The Nameless Terror"); IDW / Disney / Marvel Illustrated drop a leading "The" or "A Graphic Novel";
+  Marvel's Dark Tower strips punctuation ("Drawing of Three"). GCD indexes NO Marvel Infinity Comics (gcd=- stands).
+  An Image-style deluxe / "Complete" edition of ONE run merges into the run shelf (Department of Truth).
+[L-345] (3 shelf/shelves) pub:marvel sig:probe
+- Marvel on GCD (R-069): "&" for "and" (Infinity Gauntlet, Gods & Gladiators, Rise & Fall); runs filed under an imprint
+  or shortened name ("Punisher MAX: …", "Ant-Man and Wasp Prelude", "Spider-Man: Spider's Shadow") — a trade's
+  `--collects` roll-up names the run's GCD id fastest; a special's name carries its cover year ("Punisher: X-Mas Special
+  2006"). Masterworks lines HAVE a CV line volume with "Volume N" issues (23402 ASM, 35197 FF, 35188 Sub-Mariner, 59106
+  ToS, 23450 TtA) → the line is the S (it spans several titles), one I per book; GCD keeps separate series for second
+  printings (FF 61146, ASM 52975) — match by year. Digital-first runs (Daughters of the Dragon 2018, Back to Basics,
+  Long Live the King, Purple Daughter) have no GCD series: provider-missing is right.
+[L-388] (3 shelf/shelves) pub:marvel sig:split
+- R-134 (wave 128, lead ruling): RESIDUE vs co-equal — two or more whole trades of another run are a co-equal run (R +
+  split-needed) only when that run has NO shelf of its own; when its run or line already has a shelf, they are misfiled
+  books: S + `F split-needed | items -> join S<home>` (L-368; X-Factor 2024 S66336's two Peter David omnibuses -> S22172).
+  `#MARVEL CURRENT ONGOING TITLES`: Marika / MikeNY76 ComicInfo Web ids and "cvv<id>" Series strings name the stored CV
+  volume (1.0 evidence). From the Ashes "Variant Covers" folders hold the PREVIOUS run's finale covers (X-Men v6 #35 in
+  the v7 folder). "_X-Men Complete Chronology V2\NNNN <event>" annuals are event-chapter excerpts = partial rips. A
+  ripper's "Omnibus Book 01" in a run's folder can be that run's first omnibus, not the line's Vol. 1 (page count decides).
+  CV mints one count-1 volume per Venom by Ewing trade; GCD keeps two lines (183532 Vols 1-4, 208820 Vols 5-8).
+[L-390] (3 shelf/shelves) pub:marvel sig:split
+- Lead ruling (waves 131-132): West Coast Avengers #1-46 -> Avengers West Coast #47-102 is an L-212 RETITLE (same
+  publisher, numbering continues) although CV (3521 / 18494) and GCD (3061 / 3830) keep two records — L-378's widest-era
+  rule is for PUBLISHER changes only. One run: split-lane join S1629 -> S101396, the survivor storing the chain's FIRST
+  record (CV 3521 / GCD 3061, L-369; Firestorm precedent), AWC's records on N lines, each book's era record on its I line.
+  Marvel Tales: GCD 1747 keeps ONE record for #3-291 while CV splits it (2293 / 138122 / 137722) — the shelves meet on
+  cv=2293 (L-369); they merged into S11602 in wave 132. GCD's "Collects" notes on New Exiles trades run one issue high
+  (the run ends at #18). Marvel Graphic Novel: CV #32 / #33 = Thor / Iron Man: Crash but GCD #[32] / #[33] = Groo / Thor
+  (Crash is GCD 15018); CV's volume stops at #38 — match by title. Marvel Tales Annual #1-2 is its own series on both legs
+  (CV 131835 / GCD 1637) even when named "Marvel Tales 001 / 002". Marika "B Story" files = backup-story extracts (partial
+  rips). A lead instruction to write wrong-cv-link on a shelf with NO stored cv was wrong — N line (L-374).
+[L-391] (3 shelf/shelves) pub:marvel sig:split
+- Lead rulings (waves 133-134): annuals on a monthly's shelf are residue ONLY while they have no home — when an annual
+  series has its own shelf (Avengers Annual S1612, CV 2350 / GCD 1807), they JOIN it (refines L-369). L-369's first-record
+  rule needs the chain's OPENING issues on the shelf: Rawhide Kid S14413 holds only the 1960+ era, so it stores the 1960
+  records. A TPB line spanning two runs keeps its own identity (Spider-Man 2099 GCD 86779 Vols 1-7 over the 2014 and 2015
+  runs; L-109/L-318). Star Brand: CV splits the retitle (3652 #1-10 / 51406 #11-19), GCD 3204 keeps #1-19 — store 3652
+  (L-369). Humorama Zip: CV numbers by cover month (#196403); "v14 07" = January 1968. Time Runs Out: GCD 89288 = the
+  2015 HC rows, 92245 = the TPB rows; CV 79464 follows the HC dates. Chronology `NNN Avengers` refiles of v1 issues are
+  second rips; later-volume files were folded onto the v1 shelf by bare title — split by year.
+[L-393] (3 shelf/shelves) pub:marvel sig:split
+- Lead rulings (waves 137-138): L-389 blocks joins onto a CREATOR-trade-keyed shelf only; a shelf keyed by its own trade's
+  SUBTITLE that stores the run ("Uncanny Avengers - The Resistance" S20673, CV 153018) takes stray issues/covers of that
+  run by join. An annual goes with its run when no annual-series shelf exists (Uncanny Avengers Annual 2016 -> S94729).
+  GCD indexes each Skottie Young "baby" cover as a variant row of #1 ("Young Cover") — that row decides which relaunch a
+  lone "001 (YYYY) Skottie Young" file belongs to. At a retitle, GCD and CV can split at different issues (GCD keeps WCA
+  #47 on 3061, CV starts AWC at #47). Marvel arc minis (Ultimate Avengers 1-3): both legs number one continuous series
+  (#1-18) while rips restart at 01 per arc — issue files need I lines or they resolve to the wrong issue.
+[L-395] (3 shelf/shelves) pub:marvel sig:split sig:stamp
+- Waves 141-142: Marvel RELAUNCH shelves carry the legacy volume's CV issue ids BY NUMBER (Daredevil 1998 -> 2190,
+  Deadpool 2008 / 2012 -> 6000) — compare each file's linked issue number to its filename and correct with I lines.
+  Daredevil by Mark Waid Vol. 01 at 272pp is the HC line (CV 57482 / GCD 79153), not the TPB line (45530 / 64482). GCD
+  numbers Daredevil 1998's legacy issues "#22 (402)"; a file "115 (495)" is #115. GCD files Daredevil Annual #5 (1989) as
+  "#4 [5]". Creator lines reprinting ONE run give way to the run (Miller/Janson -> 1964 run, To Heaven Through Hell ->
+  2019 run) — the standing run-vs-line ruling supersedes L-115 / L-196's 0.9 practice. A dismissed conflated flag does not
+  stop the RESIDUE ruling: two whole books of another record with no shelf -> R + split-needed (Deadpool Classic
+  Companion). An R- file that restates a shelf a pending P- batch splits MUST repeat its F split-needed (L-370 halt,
+  S95620 in R-145).
+
++116 more matched entries not shown: L-399, L-403, L-119, L-124, L-130, L-175, L-191, L-272, L-281, L-290, L-297, L-331, L-357, L-371, L-378, L-387, L-389, L-396, L-402, L-016, L-031, L-032, L-076, L-077, L-109, L-113, L-114, L-115, L-117, L-121, L-129, L-132, L-172, L-174, L-196, L-242, L-295, L-296, L-298, L-306, L-307, L-308, L-311, L-312, L-313, L-327, L-328, L-329, L-332, L-392, L-397, L-400, L-401, L-007, L-014, L-054, L-064, L-085, L-101, L-123, L-128, L-135, L-164, L-181, L-186, L-217, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-310, L-314, L-336, L-013, L-043, L-050, L-065, L-072, L-088, L-089, L-095, L-096, L-099, L-118, L-125, L-150, L-157, L-159, L-163, L-177, L-193, L-194, L-204, L-253, L-262, L-264, L-267, L-273, L-292, L-294, L-330, L-341, L-346, L-347 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S16006 Spectacular Spider-Man  [split]  8 files / 7 collections  decided in R-160 (S)
+   decided: S 16006 cv=11069 gcd=12001 0.9 | Spectacular Spider-Man (Marvel 2003-2005, Jenkins): CV 11069 (2003, 27, cached #1-27) and GCD 12001 (Marvel 2003-2005, 27) agree on publisher, span and count; the six trades in "03 The Spectacular Spider-Man v2 (2003)" (Vol. 04 twice) are this run's own editions - GCD collected series 63977 rows collect #1-5 / #6-10 / #11-14 / #15-20 / #23-26 / #21-22 + #27 - and the page counts match (121 / 124 / 100 / 143 / 101 / 146pp vs 124 / 124 / 116 / 148 / 100pp); 0.9 for the one misfiled 1989 issue split below
+   F 16006 split-needed | item 87487 ("022 Spectacular Spider-Man 158 (1989)" 23pp, X-Men Complete Chronology "0111 Acts of Vengeance") is The Spectacular Spider-Man (1976) #158 (CV 2870 issue 32014 / GCD 2359), the run S19654 stores (stored cv=2870, S line in this file) and where another rip of #158 already sits (95061) -> join S19654 on its key "The Spectacular Spider-Man" (L-368); replaces B-059's F misfiled line
+   N 16006 flag #419 (label-ambiguous, 117889) is right: 95171 and 117889 are two rips of Vol. 04 Disassembled; per-file CV 2870 on all files is the 1976 volume stamped by number, per-file GCD 63977 is the TPB line
+   named: S19654 The Spectacular Spider-Man  272 files  keys: "Peter Parker, The Spectacular Spider-Man" | "Peter Parker, the Spectacular Spider-Man" | "The Spectacular Spider-Man" | "The Spectacular Spider-Man cvv2870"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S16157 "Spider-Man Spectacular" 1f [title — S cv=75142 gcd=81411 (C-051 0.95)] keys: "Spider-Man Spectacular"
+   nearby: S34224 "The Spectacular Spider-Man Annual" 5f [title+1 — S cv=3012 gcd=2518 (C-055 0.95)] keys: "Peter Parker, The Spectacular Spider-Man Annual" | "Spectacular Spider-Man Annual"
+   nearby: S19656 "The Spectacular Spider-Man Magazine" 2f [title+1 — S cv=27251 gcd=1873 (B-059 0.95)] keys: "The Spectacular Spider-Man Magazine"
+   keys now: "Spectacular Spider-Man" x8
+   groups (title x folder): 3
+   G1 "Spectacular Spider-Man" in Marvel\_Spider-Man\__Completed Series\Spectacular Spider-Man\03 The Spectacular Spider-Man v2 (2003) — 6 file(s), 6 COL, pp 100-146; cv per-file 30302x1, 30303x1, 30304x1; gcd per-file 63977x6; key 'Spectacular Spider-Man'
+      [95168] COL Spectacular Spider-Man Vol. 01 - The Hunger (2016) (Digital) (F) (Kileko-Empire).cbz (121pp)
+         own record cv 30302 / gcd s63977 "Spectacular Spider-Man" (issue 928174) COLLECTS: gcd=12001 Spectacular Spider-Man (2003) #1-5
+      [95169] COL Spectacular Spider-Man Vol. 02 - Countdown (2016) (Digital) (Kileko-Empire).cbr (124pp)
+         own record cv 30303 / gcd s63977 "Spectacular Spider-Man" (issue 928175) COLLECTS: gcd=12001 Spectacular Spider-Man (2003) #6-10
+      [95170] COL Spectacular Spider-Man Vol. 03 - Here There Be Monsters (2016) (Digital) (Kileko-Empire).cbr (100pp)
+      [95171] COL Spectacular Spider-Man Vol. 04 - Disassembled (2016) (Digital) (Kileko-Empire).cbr (143pp)
+      [95172] COL Spectacular Spider-Man Vol. 05 - Sins Remembered (2016) (Digital) (Kileko-Empire).cbr (101pp)
+         own record cv 22165 / gcd s63977 "Spectacular Spider-Man" (issue 928178) COLLECTS: gcd=12001 Spectacular Spider-Man (2003) #23-26
+      [95173] COL Spectacular Spider-Man Vol. 06 - Final Curtain (2016) (Digital) (Kileko-Empire).cbr (146pp)
+   G2 "Spectacular Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance — 1 file(s), numbers 158, pp 23-23; cv per-file 2870x1; key 'Spectacular Spider-Man'
+      [87487] 022 Spectacular Spider-Man 158 (1989) (Digital) (AnHeroGold-Empire).cbz (23pp)
+   G3 "Spectacular Spider-Man" in _Marvel Major Event Chronology (digital)\2004.09 - Avengers Disassembled\03 Tie-ins\The Spectacular Spider-Man — 1 file(s), 1 COL, pp 143-143; cv per-file 30305x1; gcd per-file 63977x1; key 'Spectacular Spider-Man'
+      [117889] COL Spectacular Spider-Man Vol. 04 - Disassembled (2016) (Digital) (Kileko-Empire).cbr (143pp)
+
+== S19654 The Spectacular Spider-Man  [split]  272 files / 2 collections  decided in R-160 (S)
+   decided: S 19654 cv=2870 gcd=2359 0.9 | Peter Parker, the Spectacular Spider-Man / The Spectacular Spider-Man (Marvel 1976-1998): CV 2870 (1976, 265 cached incl. #-1) and GCD 2359 (Marvel 1976-1998, 265) agree on publisher, span and count; ComicInfo Web 21192 / 23303 / 23644 / 23890 are CV 2870 #53 / #80 / #84 / #86 (L-136), Volume "1976" x55, Count "263" x9; our ladder 1-136, 146-148, 151-263 plus the Tombstone trade (#137-150) and the Omnibus Book 01 (#1-42) are this run and its editions; 0.9 for the 2022 #1 facsimile (a one-shot with its own records) and the eleven annuals, which leave by the split line below
+   F 19654 split-needed | items 94899, 94903, 94904, 94905, 94906, 94907, 94908, 94909, 94910, 94911, 94912 ("NN Peter Parker, the / The Spectacular Spider-Man Annual 001, 005-014 (1979-1994)" in "00 Annuals and Specials") are The Spectacular Spider-Man Annual (1979-1994; CV 3012 / GCD 2518, 14 issues), the annual series S34224 stores (stored cv=3012, S line C-055 cv=3012 gcd=2518, holding #2-4, #8-9) -> join S34224 on its key "Spectacular Spider-Man Annual" (L-391 / L-402; R-050 kept them as residue while missing that shelf); checker anchor only: S34224 is outside this batch
+   N 95051 flag #151 (label-ambiguous, 94755 / 118417) is right: two rips of Vol. 06 Absolute Carnage; per-file CV 2127 is the 1963 legacy-number stamp (L-174), 110451 Panini
+   N 19654 flag #489 (label-ambiguous, item 95949) is stale in substance: 95949's per-file CV 161379 is "The Spectacular Spider-Man Omnibus" (2022) issue 1079766 "Volume 1", not a Ben Reilly omnibus; C-050's merge-with=34082 and duplicate-shelf are obsolete
+   named: S34224 The Spectacular Spider-Man Annual  5 files  keys: "Peter Parker, The Spectacular Spider-Man Annual" | "Spectacular Spider-Man Annual"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares cv=2127 (N line) — S cv=2127 gcd=1570 (R-158 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S66237 "Web of Spider-Man" 155f [shares gcd=3059 (collected by item 95948) — S cv=3519 gcd=3059 (R-028 0.9)] keys: "The Amazing Spider-Man Epic Collection 28: Web of Life, Web of Death (1985)" | "Web Of Spider-Man" | "Web of Spider-Man (1985)" | "Web of Spider-Man Super Special" (+2 more: lookup.py --shelf 66237)
+   nearby: S42165 "The Amazing Spider-Man Annual" 41f [shares gcd=1635 (collected by item 95949) — S cv=2189 gcd=1635 (R-089 1.0)] keys: "The Amazing Spider-Man Annual"
+   nearby: S16007 "Spectacular Spider-Man No. 1 Facsimile Edition" 1f [shares cv=150958, shares gcd=184318 — S cv=150958 gcd=184318 (A-024 1.0)] keys: "Spectacular Spider-Man #1: Facsimile Edition"
+   nearby: S99972 "Spider-Man" 66f [title — S cv=4421 gcd=4049 (R-050 1.0)] keys: "Spider-Man v1 (1990)" · S16072 "Spider-Man" 60f [title — S cv=155969 gcd=206726 (R-050 0.95)] keys: "Spider-Man"
+   nearby: S99973 "Spider-Man v4 (2022)" 30f [title — S cv=145364 gcd=190178 (R-086 0.9)] keys: "Spider-Man v4 (2022)"
+   nearby: S16131 "Spider-Man 2099" 16f [title — S cv=18354 gcd=4477 (R-142 0.9)] keys: "Spider-Man 2099" | "Spider-Man 2099 Classic" | "Spider-Man 2099 vs. Venom 2099"
+   nearby: S16006 "Spectacular Spider-Man" 8f [title — S cv=11069 gcd=12001 (R-160 0.9)] keys: "Spectacular Spider-Man"
+   nearby: S103767 "Spider-Man 2099 (2015)" 8f [title — S gcd=86779 (R-142 0.9)] keys: "Spider-Man 2099 (2015)"
+   nearby: S13786 "Peter Parker: The Spectacular Spider-Man" 6f [title — S cv=102272 gcd=115045 (A-025 0.95)] keys: "Peter Parker: The Spectacular Spider-Man"
+   nearby: S103766 "Spider-Man 1602 (2009)" 5f [title — S cv=28515 gcd=43800 (R-050 0.95)] keys: "Spider-Man 1602 (2009)"
+   nearby: S103778 "Spider-Man v2 (2016)" 5f [title — S cv=87820 gcd=96682 (R-050 0.95)] keys: "Spider-Man v2 (2016)"
+   nearby: S103770 "Spider-Man 2099 v2 (2014)" 2f [title — S cv=75557 gcd=81678 (R-050 0.9)] keys: "Spider-Man 2099 v2 (2014)"
+   nearby: S16157 "Spider-Man Spectacular" 1f [title — S cv=75142 gcd=81411 (C-051 0.95)] keys: "Spider-Man Spectacular"
+   nearby: S95053 "The Amazing Spider-Man" 159f [title+1 — S cv=142577 gcd=184161 (R-135 0.9)] keys: "Amazing Spider-man v6 (2022)" · (+48 more by title)
+   keys now: "The Spectacular Spider-Man" x116 · "Peter Parker, the Spectacular Spider-Man" x91 · "Peter Parker, The Spectacular Spider-Man" x64 · "The Spectacular Spider-Man cvv2870" x1
+   groups (title x folder): 10
+   G1 "Peter Parker, The Spectacular Spider-Man - Facsimile Edition" in Marvel\_Marvel Facsimile Editions — 1 file(s), numbers 1, pp 36-36; cv per-file 150958x1; gcd per-file 184318x1; key 'Peter Parker, The Spectacular Spider-Man'
+      [83077] Peter Parker, The Spectacular Spider-Man - Facsimile Edition 001 (2022) (Digital) (Shadowcat-Empire).cbz (36pp)
+   G2 "Peter Parker, the Spectacular Spider-Man Annual" in Marvel\_Spider-Man\__Completed Series\Spectacular Spider-Man\00 Annuals and Specials — 6 file(s), numbers 1, 5-7, 11-12, pp 36-68; gcd per-file 73264x2; key 'Peter Parker, the Spectacular Spider-Man'
+      e.g. 01 Peter Parker, the Spectacular Spider-Man Annual 001 (1979) (digital) (Shadowcat-Empire).cbz
+        94899 #1 1979 36pp · 94903 #5 1985 53pp · 94904 #6 1986 53pp · 94905 #7 1987 52pp · 94909 #11 1991 54pp · 94910 #12 1992 68pp
+   G3 "The Spectacular Spider-Man Annual" in Marvel\_Spider-Man\__Completed Series\Spectacular Spider-Man\00 Annuals and Specials — 5 file(s), numbers 8-10, 13-14, pp 57-71; cv per-file 2870x5; gcd per-file 2359x3; key 'The Spectacular Spider-Man'
+      e.g. 08 The Spectacular Spider-Man Annual 008 (1988) (c2c) (Teach-Woodman).cbr
+        94906 #8 1988 69pp · 94907 #9 1989 69pp · 94908 #10 1990 57pp · 94911 #13 71pp · 94912 #14 66pp
+   G4 "Peter Parker, The Spectacular Spider-Man" in Marvel\_Spider-Man\__Completed Series\Spectacular Spider-Man\01 Peter Parker - The Spectacular Spider-Man (1976) — 18 file(s), numbers 53, 67-68, 71-80, 84, 86-89, pp 21-40; key 'Peter Parker, The Spectacular Spider-Man'
+      e.g. Peter Parker, The Spectacular Spider-Man 053 (1981) (digital) (Marika-Empire).cbz
+        94967 #53 1981 24pp · 94981 #67 1982 23pp · 94982 #68 1982 23pp · 94985 #71 1982 21pp · 94986 #72 1982 22pp · 94987 #73 1982 23pp · 94988 #74 1983 23pp · 94989 #75 1983 40pp
+        94990 #76 1983 23pp · 94991 #77 1983 23pp · 94992 #78 1983 23pp · 94993 #79 1983 24pp · 94994 #80 1983 24pp · 94998 #84 1983 25pp · 95000 #86 1984 25pp · 95001 #87 1984 24pp
+        95002 #88 1984 24pp · 95003 #89 1984 23pp
+   G5 "Peter Parker, the Spectacular Spider-Man" in Marvel\_Spider-Man\__Completed Series\Spectacular Spider-Man\01 Peter Parker - The Spectacular Spider-Man (1976) — 116 file(s), numbers 1-52, 54-66, 69-70, 81-83, 85, 90-133, pp 17-40; cv per-file 2870x1; gcd per-file 2359x1; key 'Peter Parker, the Spectacular Spider-Man' | 'Peter Parker, The Spectacular Spider-Man' | 'The Spectacular Spider-Man'
+      e.g. Peter Parker, the Spectacular Spider-Man 001 (1976) (Digital) (Shadowcat-Empire).cbz
+        94914 #1 1976 18pp key="Peter Parker, the Spectacular Spider-Man" · 94915 #2 1977 18pp key="Peter Parker, the Spectacular Spider-Man"
+        94916 #3 1977 18pp key="Peter Parker, the Spectacular Spider-Man" · 94917 #4 1977 18pp key="Peter Parker, the Spectacular Spider-Man"
+        94918 #5 1977 18pp key="Peter Parker, the Spectacular Spider-Man" · 94919 #6 1977 18pp key="Peter Parker, the Spectacular Spider-Man"
+        94920 #7 1977 18pp key="Peter Parker, the Spectacular Spider-Man" · 94921 #8 1977 18pp key="Peter Parker, the Spectacular Spider-Man"
+        94922 #9 1977 18pp key="Peter Parker, the Spectacular Spider-Man" · 94923 #10 1977 18pp key="Peter Parker, the Spectacular Spider-Man"
+        94924 #11 1977 18pp key="Peter Parker, the Spectacular Spider-Man" · 94925 #12 1977 18pp key="Peter Parker, the Spectacular Spider-Man"
+        94926 #13 1977 18pp key="Peter Parker, the Spectacular Spider-Man" · 94927 #14 1978 18pp key="Peter Parker, the Spectacular Spider-Man"
+        94928 #15 1978 18pp key="Peter Parker, the Spectacular Spider-Man" · 94929 #16 1978 18pp key="Peter Parker, The Spectacular Spider-Man"
+        94930 #17 1978 19pp key="Peter Parker, the Spectacular Spider-Man" · 94931 #18 1978 19pp key="Peter Parker, the Spectacular Spider-Man"
+        94932 #19 1978 18pp key="Peter Parker, The Spectacular Spider-Man" · 94933 #20 1978 18pp key="Peter Parker, The Spectacular Spider-Man"
+        94934 #21 1978 18pp key="Peter Parker, The Spectacular Spider-Man" · 94935 #22 1978 18pp key="Peter Parker, The Spectacular Spider-Man"
+        94936 #23 1978 19pp key="Peter Parker, The Spectacular Spider-Man" · 94938 #24 1978 18pp key="Peter Parker, The Spectacular Spider-Man"
+        94937 #24 1978 36pp key="Peter Parker, the Spectacular Spider-Man" · 94939 #25 1978 17pp key="Peter Parker, the Spectacular Spider-Man"
+        94940 #26 1979 18pp key="Peter Parker, the Spectacular Spider-Man" · 94941 #27 1979 19pp key="Peter Parker, the Spectacular Spider-Man"
+        94942 #28 1979 20pp key="Peter Parker, the Spectacular Spider-Man" · 94943 #29 1979 18pp key="Peter Parker, the Spectacular Spider-Man"
+        94944 #30 1979 18pp key="Peter Parker, the Spectacular Spider-Man" · 94945 #31 1979 18pp key="Peter Parker, the Spectacular Spider-Man"
+        94946 #32 1979 19pp key="Peter Parker, The Spectacular Spider-Man" · 94947 #33 1979 19pp key="Peter Parker, The Spectacular Spider-Man"
+        94948 #34 1979 19pp key="Peter Parker, The Spectacular Spider-Man" · 94949 #35 1979 19pp key="Peter Parker, The Spectacular Spider-Man"
+        94950 #36 1979 19pp key="Peter Parker, The Spectacular Spider-Man" · 94951 #37 1979 18pp key="Peter Parker, The Spectacular Spider-Man"
+        94952 #38 1980 19pp key="Peter Parker, The Spectacular Spider-Man" · 94953 #39 1980 19pp key="Peter Parker, The Spectacular Spider-Man"
+        94954 #40 1980 20pp key="Peter Parker, The Spectacular Spider-Man" · 94955 #41 1980 19pp key="Peter Parker, The Spectacular Spider-Man"
+        94956 #42 1980 18pp key="Peter Parker, the Spectacular Spider-Man" · 94957 #43 1980 18pp key="Peter Parker, the Spectacular Spider-Man"
+        94958 #44 1980 19pp key="Peter Parker, the Spectacular Spider-Man" · 94959 #45 1980 19pp key="Peter Parker, the Spectacular Spider-Man"
+        94960 #46 1980 18pp key="Peter Parker, the Spectacular Spider-Man" · 94961 #47 1980 18pp key="Peter Parker, the Spectacular Spider-Man"
+        94962 #48 1980 23pp key="Peter Parker, the Spectacular Spider-Man" · 94963 #49 1980 23pp key="Peter Parker, the Spectacular Spider-Man"
+        94964 #50 1981 23pp key="Peter Parker, the Spectacular Spider-Man" · 94965 #51 1981 23pp key="Peter Parker, the Spectacular Spider-Man"
+        94966 #52 1981 23pp key="Peter Parker, the Spectacular Spider-Man" · 94968 #54 1981 23pp key="Peter Parker, the Spectacular Spider-Man"
+        94969 #55 1981 24pp key="Peter Parker, the Spectacular Spider-Man" · 94970 #56 1981 23pp key="Peter Parker, the Spectacular Spider-Man"
+        94971 #57 1981 23pp key="Peter Parker, the Spectacular Spider-Man" · 94972 #58 1981 23pp key="Peter Parker, the Spectacular Spider-Man"
+        94973 #59 1981 23pp key="Peter Parker, the Spectacular Spider-Man" · 94974 #60 1981 40pp key="Peter Parker, the Spectacular Spider-Man"
+        94975 #61 1981 22pp key="Peter Parker, the Spectacular Spider-Man" · 94976 #62 1982 22pp key="Peter Parker, The Spectacular Spider-Man"
+        94977 #63 1982 22pp key="Peter Parker, The Spectacular Spider-Man" · 94978 #64 1982 22pp key="Peter Parker, the Spectacular Spider-Man"
+        94979 #65 1982 22pp key="Peter Parker, The Spectacular Spider-Man" · 94980 #66 1982 23pp key="Peter Parker, The Spectacular Spider-Man"
+        94983 #69 1982 23pp key="Peter Parker, the Spectacular Spider-Man" · 94984 #70 1982 24pp key="Peter Parker, the Spectacular Spider-Man"
+        94995 #81 1983 23pp key="Peter Parker, The Spectacular Spider-Man" · 94996 #82 1983 23pp key="Peter Parker, The Spectacular Spider-Man"
+        94997 #83 1983 36pp key="Peter Parker, the Spectacular Spider-Man" · 94999 #85 1983 23pp key="Peter Parker, the Spectacular Spider-Man"
+        95004 #90 1984 23pp key="Peter Parker, the Spectacular Spider-Man" · 95005 #91 1984 23pp key="Peter Parker, the Spectacular Spider-Man"
+        95006 #92 1984 23pp key="Peter Parker, the Spectacular Spider-Man" · 95007 #93 1984 23pp key="Peter Parker, the Spectacular Spider-Man"
+        95008 #94 1984 23pp key="Peter Parker, the Spectacular Spider-Man" · 95009 #95 1984 23pp key="Peter Parker, the Spectacular Spider-Man"
+        95010 #96 1984 24pp key="Peter Parker, The Spectacular Spider-Man" · 95011 #97 1984 24pp key="Peter Parker, The Spectacular Spider-Man"
+        95012 #98 1985 23pp key="Peter Parker, The Spectacular Spider-Man" · 95013 #99 1985 23pp key="Peter Parker, The Spectacular Spider-Man"
+        95014 #100 1985 40pp key="Peter Parker, The Spectacular Spider-Man" · 95015 #101 1985 37pp key="Peter Parker, the Spectacular Spider-Man"
+        95016 #102 1985 37pp key="Peter Parker, the Spectacular Spider-Man" · 95017 #103 1985 37pp key="Peter Parker, the Spectacular Spider-Man"
+        95018 #104 1985 36pp key="Peter Parker, the Spectacular Spider-Man" · 95019 #105 1985 37pp key="Peter Parker, the Spectacular Spider-Man"
+        95020 #106 1985 37pp key="Peter Parker, the Spectacular Spider-Man" · 95021 #107 1985 23pp key="Peter Parker, the Spectacular Spider-Man"
+        95022 #108 1985 23pp key="Peter Parker, the Spectacular Spider-Man" · 95023 #109 1985 23pp key="Peter Parker, the Spectacular Spider-Man"
+        95024 #110 1986 25pp key="Peter Parker, the Spectacular Spider-Man" · 95025 #111 1986 26pp key="Peter Parker, the Spectacular Spider-Man"
+        95026 #112 1986 37pp key="Peter Parker, the Spectacular Spider-Man" · 95027 #113 1986 37pp key="Peter Parker, the Spectacular Spider-Man"
+        95028 #114 1986 37pp key="Peter Parker, the Spectacular Spider-Man" · 95029 #115 1986 37pp key="Peter Parker, the Spectacular Spider-Man"
+        95030 #116 1986 37pp key="Peter Parker, the Spectacular Spider-Man" · 95031 #117 1986 37pp key="Peter Parker, the Spectacular Spider-Man"
+        95032 #118 1986 37pp key="Peter Parker, the Spectacular Spider-Man" · 95033 #119 1986 25pp · 95034 #120 1986 37pp key="Peter Parker, the Spectacular Spider-Man"
+        95035 #121 1986 36pp key="Peter Parker, the Spectacular Spider-Man" · 95036 #122 1986 37pp key="Peter Parker, the Spectacular Spider-Man"
+        95037 #123 1986 37pp key="Peter Parker, the Spectacular Spider-Man" · 95038 #124 1986 37pp key="Peter Parker, the Spectacular Spider-Man"
+        95039 #125 1986 37pp key="Peter Parker, the Spectacular Spider-Man" · 95040 #126 1986 37pp key="Peter Parker, the Spectacular Spider-Man"
+        95041 #127 1987 37pp key="Peter Parker, the Spectacular Spider-Man" · 95042 #128 1987 23pp key="Peter Parker, The Spectacular Spider-Man"
+        95043 #129 1987 23pp key="Peter Parker, The Spectacular Spider-Man" · 95044 #130 1987 36pp key="Peter Parker, the Spectacular Spider-Man"
+        95045 #131 1987 23pp key="Peter Parker, the Spectacular Spider-Man" · 95046 #132 1987 23pp key="Peter Parker, the Spectacular Spider-Man"
+        95047 #133 1987 24pp key="Peter Parker, the Spectacular Spider-Man"
+   G6 "The Spectacular Spider-Man" in Marvel\_Spider-Man\__Completed Series\Spectacular Spider-Man\02 The Spectacular Spider-Man v1 (1988) — 120 file(s), numbers 134-136, 146-148, 151-263, pp 21-55; cv per-file 2870x106; gcd per-file 2359x104, 165706x2; key 'The Spectacular Spider-Man' | 'Peter Parker, The Spectacular Spider-Man' | 'The Spectacular Spider-Man cvv2870'
+      e.g. The Spectacular Spider-Man 134 (1988) (Digital-Empire).cbr
+        95048 #134 1988 23pp · 95049 #135 1988 23pp · 95050 #136 1988 24pp · 95051 #146 1989 23pp key="Peter Parker, The Spectacular Spider-Man"
+        95052 #147 1989 23pp key="Peter Parker, The Spectacular Spider-Man" · 95053 #148 1989 23pp key="Peter Parker, The Spectacular Spider-Man" · 95054 #151 1989 37pp · 95055 #152 1989 37pp
+        95056 #153 1989 37pp · 95057 #154 1989 37pp · 95058 #155 1989 37pp · 95059 #156 1989 37pp · 95060 #157 1989 37pp · 95061 #158 1989 23pp · 95062 #159 1989 23pp · 95063 #160 1990 23pp
+        95064 #161 1990 37pp · 95065 #162 1990 23pp · 95066 #163 1990 23pp · 95067 #164 1990 37pp · 95068 #165 1990 37pp · 95069 #166 1990 37pp · 95070 #167 1990 36pp · 95071 #168 1990 36pp
+        95072 #169 1990 36pp · 95073 #170 1990 36pp · 95074 #171 1990 38pp · 95075 #172 1991 39pp · 95076 #173 1991 37pp · 95077 #174 1991 37pp · 95078 #175 1991 37pp · 95079 #176 1991 37pp
+        95080 #177 1991 40pp · 95081 #178 1991 37pp · 95082 #179 1991 37pp · 95083 #180 1991 41pp · 95084 #181 1991 39pp · 95085 #182 1991 39pp · 95086 #183 1991 39pp · 95087 #184 1992 36pp
+        95088 #185 1992 37pp · 95089 #186 1992 23pp · 95090 #187 1992 24pp · 95091 #188 1992 24pp · 95092 #189 1992 35pp · 95093 #190 1992 37pp · 95094 #191 1992 37pp · 95095 #192 1992 36pp
+        95096 #193 1992 35pp · 95097 #194 1992 34pp · 95098 #195 1992 36pp · 95099 #196 1993 36pp · 95100 #197 1993 37pp · 95101 #198 1993 36pp · 95102 #199 1993 35pp · 95103 #200 1993 42pp
+        95104 #201 1993 21pp · 95105 #202 1993 21pp · 95106 #203 1993 23pp · 95107 #204 1993 36pp · 95108 #205 1993 23pp · 95109 #206 1993 24pp · 95110 #207 1993 23pp · 95111 #208 1994 37pp
+        95112 #209 1994 36pp · 95113 #210 1994 37pp · 95114 #211 1994 33pp · 95115 #211 1994 22pp · 95116 #212 1994 37pp · 95117 #213 1994 23pp key="Peter Parker, The Spectacular Spider-Man"
+        95118 #214 1994 21pp key="Peter Parker, The Spectacular Spider-Man" · 95119 #215 1994 38pp · 95120 #216 1994 35pp · 95121 #217 1994 35pp key="The Spectacular Spider-Man cvv2870"
+        95122 #218 1994 22pp key="Peter Parker, The Spectacular Spider-Man" · 95123 #219 1994 23pp key="Peter Parker, The Spectacular Spider-Man"
+        95124 #220 1995 23pp key="Peter Parker, The Spectacular Spider-Man" · 95125 #221 1995 23pp key="Peter Parker, The Spectacular Spider-Man"
+        95126 #222 1995 23pp key="Peter Parker, The Spectacular Spider-Man" · 95127 #223 1995 33pp · 95128 #224 1995 22pp key="Peter Parker, The Spectacular Spider-Man"
+        95129 #225 1995 39pp key="Peter Parker, The Spectacular Spider-Man" · 95130 #226 1995 23pp key="Peter Parker, The Spectacular Spider-Man"
+        95131 #227 1995 24pp key="Peter Parker, The Spectacular Spider-Man" · 95132 #228 1995 22pp · 95133 #229 1995 38pp · 95134 #230 1996 23pp · 95135 #231 1996 22pp · 95136 #232 1996 23pp
+        95137 #233 1996 23pp · 95138 #234 1996 23pp · 95139 #235 1996 22pp · 95140 #236 1996 22pp · 95141 #237 1996 23pp · 95142 #238 1996 23pp · 95143 #239 1996 22pp · 95144 #240 1996 23pp
+        95145 #241 1996 22pp · 95146 #242 1997 37pp · 95147 #243 1997 39pp · 95148 #244 1997 37pp · 95149 #245 1997 45pp · 95150 #246 1997 45pp · 95151 #247 1997 45pp · 95152 #248 1997 38pp
+        95153 #249 1997 37pp · 95154 #250 1997 55pp · 95155 #251 1997 38pp · 95156 #252 1997 40pp · 95157 #253 1998 35pp · 95158 #254 1998 23pp · 95159 #255 1998 40pp · 95160 #256 1998 24pp
+        95161 #257 1998 23pp · 95162 #258 1998 24pp · 95163 #259 1998 23pp · 95164 #260 1998 23pp · 95165 #261 1998 23pp · 95166 #262 1998 23pp · 95167 #263 1998 23pp
+   G7 "Spider-Man" in Marvel\_Spider-Man\__Completed Series\Spectacular Spider-Man\02 The Spectacular Spider-Man v1 (1988)\Trades — 1 file(s), 1 COL, pp 367-367; cv per-file 90722x1; gcd per-file 102633x1; key 'The Spectacular Spider-Man'
+      [95948] COL Spider-Man Vol. 01 - Tombstone (2016) (Digital) (Kileko-Empire).cbr (367pp)
+         own record cv 90722 / gcd s102633 "Spider-Man: Tombstone" (issue 1575786) COLLECTS: gcd=2359 The Spectacular Spider-Man (1976) #137-150 · gcd=2518 The Spectacular Spider-Man Annual (1979) #8 · gcd=3059 Web of Spider-Man (1985) #36
+   G8 "The Spectacular Spider-Man Omnibus" in Marvel\_Spider-Man\__Completed Series\Spectacular Spider-Man\_Omnibus Editions — 1 file(s), 1 COL, pp 918-918; cv per-file 161379x1; gcd per-file 193052x1; key 'The Spectacular Spider-Man'
+      [95949] COL The Spectacular Spider-Man Omnibus Book 01 (2022) (Digital-Empire).cbr (918pp)
+         own record cv 161379 / gcd s193052 "The Spectacular Spider-Man Omnibus" (issue 2456778) COLLECTS: gcd=2359 The Spectacular Spider-Man (1976) #1-42 · gcd=1635 The Amazing Spider-Man Annual (1964) #13 · gcd=2892 Spider-Man and Daredevil Special Edition (1984) #1 · gcd=2518 The Spectacular Spider-Man Annual (1979) #1
+   G9 "Spectacular Spider-Man" in Marvel\_Spider-Man\__OGNs, Minis & One-shots\Spider-Man - Maximum Clonage (1995) — 1 file(s), numbers 227, pp 24-24; key 'Peter Parker, The Spectacular Spider-Man'
+      [95695] 05 Spectacular Spider-Man 227 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+   G10 "The Spectacular Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0087 Inferno After Effects — 3 file(s), numbers 146-148, pp 23-23; cv per-file 2870x3; gcd per-file 2359x3; key 'The Spectacular Spider-Man'
+      [87319] The Spectacular Spider-Man 146 (1989) (Digital) (AnPymGold-Empire).cbz (23pp)
+      [87320] The Spectacular Spider-Man 147 (1989) (Digital) (AnPymGold-Empire).cbz (23pp)
+      [87321] The Spectacular Spider-Man 148 (1989) (Digital) (AnPymGold-Empire).cbz (23pp)
+
+== S65458 The Punisher  [split]  111 files / 0 collections  decided in R-159 (S)
+   decided: S 65458 cv=3855 gcd=3431 0.9 | The Punisher (1987-1995): CV 3855 (Marvel 1987, 104, cached #1-104) and GCD 3431 (Marvel 1987-1995, 104) agree on publisher, span and count; ComicInfo Web 31927 / 32008 / 32428 / 32527 are CV 3855 #26 / #27 / #30 / #31 (L-136), Volume 1987 x34, Count 104 x7; our ladder 1-52, 60-76, 80-81, 85-88, 93, 96-104 fills it (the #29 second rips cost nothing); 0.9 for the five 1988-series annuals, which leave by the split line below
+   F 65458 split-needed | items 82256, 82257, 82258, 87235, 87350 ("Punisher Annual 005 / 006 / 007 (1992-1994)" and the chronology rips "002 Punisher Annual 001 (1988)" 37pp / "005 Punisher Annual 002 (1989)" 26pp) are The Punisher Annual (1988-1994; CV 4064 / GCD 3660, 7 issues), the annual series S34434 stores (stored cv=4064, S line B-058 1.0, holding #1-4) -> join S34434 on its key "The Punisher Annual" (L-391 / L-402; R-156's "no shelf stores the 1988 annual series" missed it - who-stores cv=4064 names S34434); checker anchor only: S34434 is outside this batch
+   N 65458 per-file GCD 204244 (Cano y Llaquet, Spanish) and 69843 (Marvel UK) are foreign reprint stamps; P-066's three split lines have landed (the 1995, 2009 and 2014 books left)
+   named: S34434 The Punisher Annual  4 files  keys: "The Punisher Annual"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S99393 "Punisher" 23f [title — S cv=18328 gcd=13738 (R-159 0.95)] keys: "Punisher v03 (1995)" · S94790 "Punisher v08 (2009)" 14f [title — S cv=25370 gcd=33759 (R-159 0.95)] keys: "Punisher v08 (2009)"
+   nearby: S65459 "Punisher: Year One" 6f [title — S cv=25891 gcd=17969 (R-086 0.9)] keys: "Punisher (1995)" · S34431 "The Punisher" 5f [title — S cv=9133 gcd=9867 (C-058 0.9)] keys: "Punisher" | "The Punisher"
+   nearby: S94684 "The Punisher" 4f [title — S cv=90118 gcd=100917 (R-057 0.95)] keys: "Punisher v11 (2016)" · S66039 "The Punisher" 3f [title — S cv=112965 gcd=127969 (R-035 0.95)] keys: "The Punisher (2018)"
+   nearby: S94683 "The Punisher" 3f [title — S cv=71435 gcd=78896 (R-159 0.95)] keys: "Punisher v10 (2014)" · S14194 "Punisher" 2f [title — S cv=141843 gcd=182714 (B-058 0.95)] keys: "Punisher - The King of Killers"
+   nearby: S14200 "The Punisher" 2f [title — S cv=41758 gcd=60377 (R-156 0.95)] keys: "Punisher By Greg Rucka" · S19402 "The Punisher" 1f [title — S cv=3649 gcd=3201 (D-014 0.9)] keys: "The Punisher - Circle of Blood"
+   nearby: S94805 "The Punisher Annual" 1f [title — S cv=120239 gcd=148835 (C-040 0.95)] keys: "The Punisher v12 (2018)"
+   nearby: S14210 "Punisher MAX: The Complete Collection" 7f [title+1 — S cv=87448 gcd=95740 (R-156 0.9)] keys: "Punisher Max" | "Punisher Max: The Complete Collection" · (+7 more by title)
+   keys now: "Punisher v02 (1987)" x73 · "The Punisher (1987)" x34 · "Punisher (1987)" x4
+   groups (title x folder): 6
+   G1 "Punisher" in Marvel\_Punisher\02 Punisher v02 (1987) — 104 file(s), numbers 1-52, 60-76, 80-81, 85-88, 93, 96-102, pp 20-57; cv per-file 3855x104; gcd per-file 3431x37, 204244x23, 69843x11; key 'Punisher v02 (1987)' | 'The Punisher (1987)'
+      e.g. Punisher 001 (1987) (Digital) (Shadowcat-Empire).cbz
+        82259 #1 1987 24pp · 82260 #2 1987 24pp · 82261 #3 1987 23pp · 82262 #4 1987 23pp · 82263 #5 1988 23pp · 82264 #6 1988 23pp · 82265 #7 1988 24pp · 82266 #8 1988 23pp · 82267 #9 1988 22pp
+        82268 #10 1988 23pp · 82269 #11 1988 23pp key="The Punisher (1987)" · 82270 #12 1988 22pp key="The Punisher (1987)" · 82271 #13 1988 23pp key="The Punisher (1987)"
+        82272 #14 1988 22pp key="The Punisher (1987)" · 82273 #15 1989 23pp key="The Punisher (1987)" · 82274 #16 1989 23pp key="The Punisher (1987)" · 82275 #17 1989 22pp key="The Punisher (1987)"
+        82276 #18 1989 24pp key="The Punisher (1987)" · 82277 #19 1989 23pp key="The Punisher (1987)" · 82278 #20 1989 22pp key="The Punisher (1987)" · 82279 #21 1989 23pp key="The Punisher (1987)"
+        82280 #22 1989 22pp key="The Punisher (1987)" · 82281 #23 1989 22pp key="The Punisher (1987)" · 82282 #24 1989 22pp · 82283 #25 1989 39pp · 82284 #26 1989 24pp key="The Punisher (1987)"
+        82285 #27 1989 23pp key="The Punisher (1987)" · 82286 #28 1989 23pp · 82287 #29 1990 22pp · 82288 #30 1990 24pp key="The Punisher (1987)" · 82289 #31 1990 24pp key="The Punisher (1987)"
+        82290 #32 1990 24pp key="The Punisher (1987)" · 82291 #33 1990 24pp key="The Punisher (1987)" · 82292 #34 1990 24pp key="The Punisher (1987)" · 82293 #35 1990 23pp key="The Punisher (1987)"
+        82294 #36 1990 22pp key="The Punisher (1987)" · 82295 #37 1990 23pp key="The Punisher (1987)" · 82296 #38 1990 23pp key="The Punisher (1987)" · 82297 #39 1990 23pp key="The Punisher (1987)"
+        82298 #40 1990 23pp key="The Punisher (1987)" · 82299 #41 1990 23pp key="The Punisher (1987)" · 82300 #42 1990 23pp key="The Punisher (1987)" · 82301 #43 1990 23pp key="The Punisher (1987)"
+        82302 #44 1991 23pp key="The Punisher (1987)" · 82303 #45 1991 23pp key="The Punisher (1987)" · 82304 #46 1991 22pp key="The Punisher (1987)" · 82305 #47 1991 23pp key="The Punisher (1987)"
+        82306 #48 1991 22pp key="The Punisher (1987)" · 82321 #63 1992 22pp · 82322 #64 1992 22pp · 82323 #65 1992 22pp · 82324 #66 1992 24pp · 82325 #67 1992 23pp · 82326 #68 1992 24pp
+        82327 #69 1992 24pp · 82328 #70 1992 25pp · 82329 #71 1992 23pp · 82330 #72 1992 24pp · 82331 #73 1992 24pp · 82332 #74 1993 23pp · 82333 #75 1993 38pp · 82343 #85 1993 23pp
+        82344 #86 1994 37pp · 82345 #87 1994 23pp · 82346 #88 1994 24pp
+      [82307] Punisher 049 - Death below Zero.cbr (23pp)
+      [82308] Punisher 050 - Yo Yo.cbr (39pp)
+      [82309] Punisher 051 - Golden Buddha.cbr (22pp)
+      [82310] Punisher 052 - Lupe.cbr (25pp)
+      [82311] Punisher 053 - The Final Days 01.cbr (24pp)
+      [82312] Punisher 054 - The Final Days 02.cbr (24pp)
+      [82313] Punisher 055 - The Final Days 03.cbr (25pp)
+      [82314] Punisher 056 - The Final Days 04.cbr (24pp)
+      [82315] Punisher 057 - The Final Days 05.cbr (25pp)
+      [82316] Punisher 058 - The Final Days 06.cbr (22pp)
+      [82317] Punisher 059 - The Final Days 07.cbr (21pp)
+      [82318] Punisher 060 - Escape from New York.cbr (20pp)
+      [82319] Punisher 061 - Crackdown.cbr (23pp)
+      [82320] Punisher 062 - Fade... to white.cbr (22pp)
+      [82334] Punisher 076 - Lava.cbr (22pp)
+      [82335] Punisher 077 - Survival 01.cbr (25pp)
+      [82336] Punisher 078 - Survival 02.cbr (24pp)
+      [82337] Punisher 079 - Survival 03.cbr (21pp)
+      [82338] Punisher 080 - Last Confession.cbr (24pp)
+      [82339] Punisher 081 - Bodies of Evidence.cbr (24pp)
+      [82340] Punisher 082 - Firefight 01.cbr (23pp)
+      [82341] Punisher 083 - Firefight 02.cbr (24pp)
+      [82342] Punisher 084 - Firefight 03.cbr (23pp)
+      [82347] Punisher 089 - Fortress Miami 01.cbr (24pp)
+      [82348] Punisher 090 - Fortress Miami 02.cbr (23pp)
+      [82349] Punisher 091 - Fortress Miami 03.cbr (24pp)
+      [82350] Punisher 092 - Fortress Miami 04.cbr (24pp)
+      [82351] Punisher 093 - Killing Streets.cbr (22pp)
+      [82352] Punisher 094 - No Rules 01.cbr (24pp)
+      [82353] Punisher 095 - No Rules 02.cbr (24pp)
+      [82354] Punisher 096 - Raving Beauty.cbr (24pp)
+      [82355] Punisher 097 - The Devil's Secret Name.cbr (23pp)
+      [82356] Punisher 098 - Armies of the Night.cbr (24pp)
+      [82357] Punisher 099 - Bury me Deep.cbr (24pp)
+      [82358] Punisher 100 - The Cage.cbr (57pp)
+      [82359] Punisher 101 - Dead Tomorrows.cbr (23pp)
+      [82360] Punisher 102 - Under the Gun.cbr (23pp)
+      [82361] Punisher 103 - Countdown 04.cbr (23pp)
+      [82362] Punisher 104 - Countdown 01.cbr (23pp)
+   G2 "Punisher Annual" in Marvel\_Punisher\02 Punisher v02 (1987)\Annuals and Specials — 3 file(s), numbers 5-7, pp 56-57; cv per-file 4064x3; gcd per-file 3660x3; key 'Punisher v02 (1987)'
+      [82256] Punisher Annual 005 (1992) (noads) (BeasiL-OCD).cbr (56pp)
+      [82257] Punisher Annual 006 (1993).cbr (57pp)
+      [82258] Punisher Annual 007 (1994).cbr (57pp)
+   G3 "Punisher Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0078 Evolutionary war — 1 file(s), numbers 1, pp 37-37; cv per-file 4064x1; gcd per-file 3660x1; key 'Punisher (1987)'
+      [87235] 002 Punisher Annual 001 (1988) (Digital) (Shadowcat-Empire).cbz (37pp)
+   G4 "Punisher Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0093 Atlantis Attacks — 1 file(s), numbers 2, pp 26-26; cv per-file 4064x1; gcd per-file 3660x1; key 'Punisher (1987)'
+      [87350] 005 Punisher Annual 002 (1989) (Digital) (Shadowcat-Empire).cbz (26pp)
+   G5 "Punisher" in Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance — 1 file(s), numbers 29, pp 22-22; cv per-file 3855x1; key 'Punisher (1987)'
+      [87497] 032 Punisher 029 (1990) (Digital) (Shadowcat-Empire).cbz (22pp)
+   G6 "Punisher" in _Marvel Major Event Chronology (digital)\1989.12 - Acts of Vengeance\Acts of Vengeance - Marvel Universe — 1 file(s), numbers 29, pp 22-22; cv per-file 3855x1; key 'Punisher (1987)'
+      [116434] Punisher 029 (1990) (Digital) (Shadowcat-Empire).cbz (22pp)

@@ -2160,3 +2160,9 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   --year; Silver Surfer #14 facsimile under "No. 14"; Spider-Man J digests by GCD subtitle). GCD Moon Knight Omnibus
   roll-ups exist after all — Book 01 = #1-20 (Book 02 starts at #21). Annual shelves missed by earlier readers:
   Punisher Annual S34434 (cv 4064), Spectacular Spider-Man Annual S34224 (cv 3012).
+[L-404] pub:marvel sig:probe folder:variant-covers
+- Waves 159-160: ASM legacy annuals #30 and #32-34 are the year-titled one-shots — "The Amazing Spider-Man '96" (CV 60436
+  / GCD 20855) and "Amazing Spider-Man 1999 / 2000 / 2001" (CV 60440-60442; GCD 14151 / 20852 / 7330): probe
+  `lookup.py "Amazing Spider-Man '96" --contains`, never "Annual --year"; only #29 (1995) has no record. MikeNY76
+  "Variant Covers" folders mix in covers from the NEXT run: GCD's named variant rows (Timm, XCI, Anka) decide the relaunch
+  (same method as L-393's Skottie Young rows). `lookup.py --help` prints nothing useful — the flags are in the source.
