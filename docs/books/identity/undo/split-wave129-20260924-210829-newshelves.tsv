@@ -1,0 +1,18 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S66353	X-Men (2021)	run=-	P-053.jsonl	new	pair=102431
+S104128	Venom v3 (2016)	run={"cv": 95845, "gcd": 109553}	P-053.jsonl	new	pair=20988
+S101296	Venom v4 (2018)	run=-	P-053.jsonl	new	pair=20988
+S104126	Venom Epic Collection (2020)	run={"gcd": 166812}	P-053.jsonl	new	pair=20988
+S104127	Venom Modern Era Epic Collection (2023)	run={"gcd": 203413}	P-053.jsonl	new	pair=20988
+S101396	West Coast Avengers v2 (1985)	run=-	P-053.jsonl	new	pair=21439
+S1629	Avengers West Coast	run=-	P-053.jsonl	new	pair=21439
+S22172	X-Factor by Peter David Omnibus	run=-	P-053.jsonl	new	pair=66336
+S102430	X-Men v5 (2019)	run=-	P-053.jsonl	new	pair=66353
+S102431	moved out -> S66353 "X-Men (2021)"	run=-	P-053.jsonl	kept	pair=102431
+S20988	moved out -> S104128 "Venom v3 (2016)"; S101296 "Venom v4 (2018)"; S104126 "Venom Epic Collection (2020)"; S104127 "Venom Modern Era Epic Collection (2023)"	run=-	P-053.jsonl	kept	pair=20988	moved_cv=95845
+S21439	moved out -> S101396 "West Coast Avengers v2 (1985)"; S1629 "Avengers West Coast"	run=-	P-053.jsonl	kept	pair=21439
+S66336	moved out -> S22172 "X-Factor by Peter David Omnibus"	run=-	P-053.jsonl	kept	pair=66336
+S66353	moved out -> S102430 "X-Men v5 (2019)"	run=-	P-053.jsonl	kept	pair=66353
