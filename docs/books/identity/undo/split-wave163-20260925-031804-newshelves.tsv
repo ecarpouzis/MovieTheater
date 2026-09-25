@@ -1,0 +1,19 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S20097	Thor Epic Collection	run={"gcd": 74601}	P-070.jsonl	new	pair=20098
+S20189	Thunderbolts Epic Collection	run={"gcd": 202496}	P-070.jsonl	new	pair=20190
+S20604	Ultimate Comics Spider-Man	run={"cv": 42821, "gcd": 60934}	P-070.jsonl	new	pair=20622
+S104217	Ultimate Spider-Man v2 (2009)	run={"cv": 27381, "gcd": 38918}	P-070.jsonl	new	pair=20622
+S96692	Elektra v2 (2001)	run={"cv": 9408, "gcd": 10194}	P-070.jsonl	new	pair=6071
+S104210	Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)	run={"cv": 160910}	P-070.jsonl	new	pair=66237
+S94814	Thunderbolts v1 (2006)	run={"gcd": 17522}	P-070.jsonl	new	pair=94813
+S102366	Thunderbolts (2016)	run={"cv": 90125, "gcd": 100916}	P-070.jsonl	new	pair=94813
+S94776	Journey into Mystery v1 (2011)	run={"cv": 39761, "gcd": 57209}	P-070.jsonl	new	pair=9984
+S94775	Journey into Mystery v1 (1996)	run={"cv": 7168, "gcd": 7722}	P-070.jsonl	new	pair=9984
+S20622	moved out -> S20604 "Ultimate Comics Spider-Man"; S104217 "Ultimate Spider-Man v2 (2009)"	run=-	P-070.jsonl	kept	pair=20622	moved_cv=42821,27381
+S6071	moved out -> S96692 "Elektra v2 (2001)"	run=-	P-070.jsonl	kept	pair=6071	moved_cv=9408
+S66237	moved out -> S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"	run=-	P-070.jsonl	kept	pair=66237	moved_cv=160910
+S94813	moved out -> S94814 "Thunderbolts v1 (2006)"; S102366 "Thunderbolts (2016)"	run=-	P-070.jsonl	kept	pair=94813	moved_cv=90125
+S9984	moved out -> S94776 "Journey into Mystery v1 (2011)"; S94775 "Journey into Mystery v1 (1996)"	run=-	P-070.jsonl	kept	pair=9984	moved_cv=39761,7168

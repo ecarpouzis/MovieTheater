@@ -1,0 +1,557 @@
+## Conventions for this batch (21 shown of 156 matched; 405 in LEDGER.md; 12 shelf/shelves: pub:marvel ×12 · kind:collected-line ×11 · kind:trade-only ×8 · folder:events ×5 · kind:new ×4 · folder:sequel-subfolder ×4 · folder:vn-year ×3 · folder:variant-covers ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-136] (12 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-031] (11 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (11 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (11 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (11 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (11 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-127] (11 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-132] (11 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-196] (11 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (11 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (11 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-298] (11 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-306] (11 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (11 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (11 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-313] (11 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-327] (11 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (11 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+[L-329] (11 shelf/shelves) kind:collected-line pub:dc pub:marvel
+- DC/Marvel trade lines often store a GCD row that belongs to a FOREIGN or other edition (Urban Comics' French GL
+  2011, a German GL 2023 Vol. 1) — check the stored row's series before using its roll-up. GCD carries twin HC/SC
+  series for most 2006-2016 DC/Marvel trades (77116/77117, 77936/77937) → cap those I lines at 0.9. CV keeps count-1
+  "Title: Subtitle" volumes per trade before ~2016, numbered TPB-line volumes after (R-054).
+[L-332] (11 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection one-rule (lead, wave 44): each Epic book is its OWN shelf; its S line carries the book's own
+  count-1 CV volume and `gcd=-`; the line's GCD series (74602 ASM, 74592 Iron Man) goes on the book's I line with
+  its ISBN; C lines name the runs reprinted. `lookup.py "<Line> Epic Collection" --contains` lists every volume.
+[L-389] (11 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-053 / R-135 (waves 129-130): a run's issues never JOIN a creator-trade-keyed shelf ("Venom by Al Ewing & Ram V",
+  S21029, four trades) — keep them and meet through the SHARED cv at the next revisit (S20988 cv=140084 + merge-with=21029).
+  Marvel's 2019-2020 "Star Wars #1 facsimile" is "Star Wars No 1 Facsimile Edition" (CV 123267 / GCD 153348): probe the
+  "No N" form. Star Wars Insider and Titan's "Best of" books have no CV / GCD record: R + provider-missing, never the 1977
+  comic's stamp. The Dark Horse Star Wars Omnibus umbrella number (Vol. 32 / 35) raises a false "stored GCD row is another
+  book" warning against the sub-line's #1 / #2 — page counts and ISBNs decide. An Epic Collection / omnibus line spanning
+  several minis keeps its own GCD-line key in a split.
+
++135 more matched entries not shown: L-392, L-397, L-400, L-401, L-405, L-390, L-029, L-398, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-345, L-034, L-169, L-319, L-388, L-391, L-393, L-399, L-033, L-064, L-085, L-101, L-133, L-142, L-310, L-343, L-395, L-403, L-016, L-032, L-113, L-114, L-175, L-191, L-281, L-014, L-060, L-116, L-130, L-193, L-357, L-371, L-378, L-387, L-396, L-402, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-290, L-292, L-294, L-341, L-346, L-347, L-028, L-036, L-119, L-121, L-124, L-129, L-173, L-174, L-242, L-272, L-297, L-312, L-316, L-331, L-404, L-007, L-217, L-027, L-128, L-137, L-170, L-172, L-181, L-187, L-265, L-324, L-336, L-379, L-394, L-097, L-123, L-194, L-252, L-274, L-288, L-293, L-330, L-352, L-354, L-065, L-074, L-083, L-099, L-150, L-250, L-262 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S20098 Thor Epic Collection: Even An Immortal Can Die  [split]  1 files / 1 collections  decided in R-162 (S)
+   decided: S 20098 cv=- gcd=74601 0.9 | volume 09 "Even an Immortal Can Die" of the Thor Epic Collection LINE: GCD 74601 #9 row 2523955 (524pp, ISBN 978-1-302-94868-9, collects Thor #260-280 and Annual #6-7) is our 517pp book; CV 149295 is only its count-1 book volume (issue 981300, on the I line)
+   F 20098 wrong-cv-link | the stored CV 149295 "Thor Epic Collection: Even an Immortal Can Die" is the Vol. 09 book's own count-1 volume, not the line (CV has no line volume); it belongs on the I line
+   F 20098 split-needed | item 96773 -> join S20097 on its ParsedKey "Thor Epic Collection" - S20097's S line is the same GCD 74601 line and holds thirteen of its volumes; the one-book shelf empties by the join (L-377 / L-392)
+   named: S20097 Thor Epic Collection  13 files  keys: "Thor Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S20070 "Thor" 422f [shares gcd=1749 (collected by item 96773) — S cv=2294 gcd=1749 (R-162 0.9)] keys: "Thor" | "Thor by Walter Simonson" | "Thor v1 (1966)"
+   nearby: S11549 "Marvel Preview" 16f [shares gcd=2260 (collected by item 96773) — S cv=2774 gcd=2260 (R-038 0.95)] keys: "Marvel Preview"
+   nearby: S20099 "Thor Epic Collection: Hel On Earth" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: Hel On Earth"
+   nearby: S20100 "Thor Epic Collection: Into The Dark Nebula" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: Into The Dark Nebula"
+   nearby: S20101 "Thor Epic Collection: The Final Gauntlet" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: The Final Gauntlet"
+   nearby: S20102 "Thor Epic Collection: The God Of Thunder" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: The God Of Thunder"
+   nearby: S20103 "Thor Epic Collection: The Lost Gods" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: The Lost Gods"
+   keys now: "Thor Epic Collection: Even An Immortal Can Die" x1
+   groups (title x folder): 1
+   G1 "Thor Epic Collection" in Marvel\_Thor\_Thor Epic Collections — 1 file(s), 1 COL, pp 517-517; cv per-file 149295x1; gcd per-file 74601x1; key 'Thor Epic Collection: Even An Immortal Can Die'
+      [96773] COL Thor Epic Collection Vol. 09 - Even an Immortal Can Die (2023) (Digital-Empire).cbr (517pp)
+         own record cv 149295 / gcd s74601 "Thor Epic Collection" (issue 2523955) COLLECTS: gcd=1749 Thor (1966) #260-280 · gcd=2260 Marvel Preview (1975) #2, #10 · gcd=1750 Thor Annual (1966) #6-7 · gcd=140330 The Marvel Comics Index (1976) #5
+
+== S20099 Thor Epic Collection: Hel On Earth  [split]  1 files / 1 collections  decided in R-162 (S)
+   decided: S 20099 cv=- gcd=74601 0.9 | volume 22 "Hel on Earth" of the Thor Epic Collection LINE: GCD 74601 #22 row 2555892 (516pp, ISBN 978-1-302-95189-4, notes "Thor #476-490; Thor Annual #19; Avengers Annual #23") is our 500pp book; CV 152345 is only its count-1 book volume (issue 1002276, on the I line)
+   F 20099 wrong-cv-link | the stored CV 152345 "Thor Epic Collection: Hel on Earth" is the Vol. 22 book's own count-1 volume, not the line; it belongs on the I line
+   F 20099 split-needed | item 96781 -> join S20097 on its ParsedKey "Thor Epic Collection" - S20097's S line is the same GCD 74601 line; the one-book shelf empties by the join (L-377 / L-392)
+   named: S20097 Thor Epic Collection  13 files  keys: "Thor Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S20070 "Thor" 422f [shares gcd=1749 (collected by item 96781) — S cv=2294 gcd=1749 (R-162 0.9)] keys: "Thor" | "Thor by Walter Simonson" | "Thor v1 (1966)"
+   nearby: S1612 "The Avengers Annual" 22f [shares gcd=1807 (collected by item 96781) — S cv=2350 gcd=1807 (R-142 0.95)] keys: "Avengers King Size Annual"
+   nearby: S20098 "Thor Epic Collection: Even An Immortal Can Die" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: Even An Immortal Can Die"
+   nearby: S20100 "Thor Epic Collection: Into The Dark Nebula" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: Into The Dark Nebula"
+   nearby: S20101 "Thor Epic Collection: The Final Gauntlet" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: The Final Gauntlet"
+   nearby: S20102 "Thor Epic Collection: The God Of Thunder" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: The God Of Thunder"
+   nearby: S20103 "Thor Epic Collection: The Lost Gods" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: The Lost Gods"
+   keys now: "Thor Epic Collection: Hel On Earth" x1
+   groups (title x folder): 1
+   G1 "Thor Epic Collection" in Marvel\_Thor\_Thor Epic Collections — 1 file(s), 1 COL, pp 500-500; cv per-file 152345x1; gcd per-file 74601x1; key 'Thor Epic Collection: Hel On Earth'
+      [96781] COL Thor Epic Collection Vol. 22 - Hel on Earth (2023) (Digital-Empire).cbr (500pp)
+         own record cv 152345 / gcd s74601 "Thor Epic Collection" (issue 2555892) COLLECTS: gcd=1749 Thor (1966) #476-490 · gcd=1750 Thor Annual (1966) #19 · gcd=1807 The Avengers Annual (1967) #23
+
+== S20100 Thor Epic Collection: Into The Dark Nebula  [split]  1 files / 1 collections  decided in R-162 (S)
+   decided: S 20100 cv=- gcd=74601 0.9 | volume 06 "Into the Dark Nebula" of the Thor Epic Collection LINE: GCD 74601 #6 row 2093892 (480pp, ISBN 978-1-302-92248-1, roll-up Thor #195-216) is our 477pp book; CV 126042 is only its count-1 book volume (issue 743826, on the I line)
+   F 20100 wrong-cv-link | the stored CV 126042 "Thor Epic Collection: Into The Dark Nebula" is the Vol. 06 book's own count-1 volume, not the line; it belongs on the I line
+   F 20100 split-needed | item 96770 -> join S20097 on its ParsedKey "Thor Epic Collection" - S20097's S line is the same GCD 74601 line; the one-book shelf empties by the join (L-377 / L-392)
+   named: S20097 Thor Epic Collection  13 files  keys: "Thor Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S20070 "Thor" 422f [shares gcd=1749 (collected by item 96770) — S cv=2294 gcd=1749 (R-162 0.9)] keys: "Thor" | "Thor by Walter Simonson" | "Thor v1 (1966)"
+   nearby: S20098 "Thor Epic Collection: Even An Immortal Can Die" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: Even An Immortal Can Die"
+   nearby: S20099 "Thor Epic Collection: Hel On Earth" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: Hel On Earth"
+   nearby: S20101 "Thor Epic Collection: The Final Gauntlet" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: The Final Gauntlet"
+   nearby: S20102 "Thor Epic Collection: The God Of Thunder" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: The God Of Thunder"
+   nearby: S20103 "Thor Epic Collection: The Lost Gods" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: The Lost Gods"
+   keys now: "Thor Epic Collection: Into The Dark Nebula" x1
+   groups (title x folder): 1
+   G1 "Thor Epic Collection" in Marvel\_Thor\_Thor Epic Collections — 1 file(s), 1 COL, pp 477-477; cv per-file 126042x1; gcd per-file 74601x1; key 'Thor Epic Collection: Into The Dark Nebula'
+      [96770] COL Thor Epic Collection Vol. 06 - Into the Dark Nebula (2020) (Digital) (Bean-Empire).cbz (477pp)
+         own record cv 126042 / gcd s74601 "Thor Epic Collection" (issue 2093892) COLLECTS: gcd=1749 Thor (1966) #195-216
+
+== S20101 Thor Epic Collection: The Final Gauntlet  [split]  1 files / 1 collections  decided in R-162 (S)
+   decided: S 20101 cv=- gcd=74601 0.9 | volume 20 "The Final Gauntlet" of the Thor Epic Collection LINE: GCD 74601 #20 row 2233170 (508pp, ISBN 978-1-302-93088-2, roll-up Thor #451-467 + Thor Corps #1-4) is our 481pp book; CV 136827 is only its count-1 book volume (issue 858904, on the I line)
+   F 20101 wrong-cv-link | the stored CV 136827 "Thor Epic Collection: The Final Gauntlet" is the Vol. 20 book's own count-1 volume, not the line; it belongs on the I line
+   F 20101 split-needed | item 96779 -> join S20097 on its ParsedKey "Thor Epic Collection" - S20097's S line is the same GCD 74601 line; the one-book shelf empties by the join (L-377 / L-392)
+   named: S20097 Thor Epic Collection  13 files  keys: "Thor Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S20070 "Thor" 422f [shares gcd=1749 (collected by item 96779) — S cv=2294 gcd=1749 (R-162 0.9)] keys: "Thor" | "Thor by Walter Simonson" | "Thor v1 (1966)"
+   nearby: S20096 "Thor Corps" 1f [shares gcd=4740 (collected by item 96779) — S cv=5054 gcd=4740 (B-060 0.95)] keys: "Thor Corps"
+   nearby: S20098 "Thor Epic Collection: Even An Immortal Can Die" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: Even An Immortal Can Die"
+   nearby: S20099 "Thor Epic Collection: Hel On Earth" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: Hel On Earth"
+   nearby: S20100 "Thor Epic Collection: Into The Dark Nebula" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: Into The Dark Nebula"
+   nearby: S20102 "Thor Epic Collection: The God Of Thunder" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: The God Of Thunder"
+   nearby: S20103 "Thor Epic Collection: The Lost Gods" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: The Lost Gods"
+   keys now: "Thor Epic Collection: The Final Gauntlet" x1
+   groups (title x folder): 1
+   G1 "Thor Epic Collection" in Marvel\_Thor\_Thor Epic Collections — 1 file(s), 1 COL, pp 481-481; cv per-file 136827x1; gcd per-file 74601x1; key 'Thor Epic Collection: The Final Gauntlet'
+      [96779] COL Thor Epic Collection Vol. 20 - The Final Gauntlet (2021) (Digital-Empire).cbr (481pp)
+         own record cv 136827 / gcd s74601 "Thor Epic Collection" (issue 2233170) COLLECTS: gcd=1749 Thor (1966) #451-467 · gcd=4740 Thor Corps (1993) #1-4
+
+== S20102 Thor Epic Collection: The God Of Thunder  [split]  1 files / 1 collections  decided in R-162 (S)
+   decided: S 20102 cv=- gcd=74601 0.9 | volume 01 "The God of Thunder" of the Thor Epic Collection LINE: GCD 74601 #1 row 1205407 (484pp, ISBN 978-0-7851-8835-3, roll-up Journey into Mystery #83-109) is our 480pp book; CV 77662 is only its count-1 book volume (issue 468320, on the I line)
+   F 20102 wrong-cv-link | the stored CV 77662 "Thor Epic Collection: The God Of Thunder" is the Vol. 01 book's own count-1 volume, not the line; it belongs on the I line
+   F 20102 split-needed | item 96765 -> join S20097 on its ParsedKey "Thor Epic Collection" - S20097's S line is the same GCD 74601 line; the one-book shelf empties by the join (L-377 / L-392)
+   named: S20097 Thor Epic Collection  13 files  keys: "Thor Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S9984 "Journey into Mystery" 102f [shares gcd=896 (collected by item 96765) — S cv=1497 gcd=896 (R-162 0.9)] keys: "Journey Into Mystery" | "Journey into Mystery" | "Journey into Mystery Annual" | "Journey into Mystery v1 (1962)" (+1 more: lookup.py --shelf 9984)
+   nearby: S20098 "Thor Epic Collection: Even An Immortal Can Die" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: Even An Immortal Can Die"
+   nearby: S20099 "Thor Epic Collection: Hel On Earth" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: Hel On Earth"
+   nearby: S20100 "Thor Epic Collection: Into The Dark Nebula" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: Into The Dark Nebula"
+   nearby: S20101 "Thor Epic Collection: The Final Gauntlet" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: The Final Gauntlet"
+   nearby: S20103 "Thor Epic Collection: The Lost Gods" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: The Lost Gods"
+   keys now: "Thor Epic Collection: The God Of Thunder" x1
+   groups (title x folder): 1
+   G1 "Thor Epic Collection" in Marvel\_Thor\_Thor Epic Collections — 1 file(s), 1 COL, pp 480-480; cv per-file 77662x1; gcd per-file 74601x1; key 'Thor Epic Collection: The God Of Thunder'
+      [96765] COL Thor Epic Collection Vol. 01 - The God of Thunder (2013) (Digital) (F) (AnHeroGold-Empire).cbz (480pp)
+         own record cv 77662 / gcd s74601 "Thor Epic Collection" (issue 1205407) COLLECTS: gcd=896 Journey into Mystery (1952) #83-109
+
+== S20103 Thor Epic Collection: The Lost Gods  [split]  1 files / 1 collections  decided in R-162 (S)
+   decided: S 20103 cv=- gcd=74601 0.9 | volume 24 "The Lost Gods" of the Thor Epic Collection LINE: GCD 74601 #24 row 2636588 (404pp, ISBN 978-1-302-95650-9, notes JIM 1996 #503-513, #-1, Valkyrie #1, Hercules: Heart of Chaos #1-3) is our 400pp book; CV 158514 is only its count-1 book volume (issue 1059614, on the I line)
+   F 20103 wrong-cv-link | the stored CV 158514 "Thor Epic Collection: The Lost Gods" is the Vol. 24 book's own count-1 volume, not the line; it belongs on the I line
+   F 20103 split-needed | item 96783 -> join S20097 on its ParsedKey "Thor Epic Collection" - S20097's S line is the same GCD 74601 line; the one-book shelf empties by the join (L-377 / L-392)
+   named: S20097 Thor Epic Collection  13 files  keys: "Thor Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S94775 "Journey into Mystery" 9f [shares gcd=7722 (collected by item 96783) — S cv=7168 gcd=7722 (R-162 0.95)] keys: "Journey into Mystery v1 (1996)"
+   nearby: S8820 "Hercules: Heart of Chaos" 3f [shares gcd=15217 (collected by item 96783) — S cv=25908 gcd=15217 (A-021 0.95)] keys: "Hercules: Heart of Chaos"
+   nearby: S20098 "Thor Epic Collection: Even An Immortal Can Die" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: Even An Immortal Can Die"
+   nearby: S20099 "Thor Epic Collection: Hel On Earth" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: Hel On Earth"
+   nearby: S20100 "Thor Epic Collection: Into The Dark Nebula" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: Into The Dark Nebula"
+   nearby: S20101 "Thor Epic Collection: The Final Gauntlet" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: The Final Gauntlet"
+   nearby: S20102 "Thor Epic Collection: The God Of Thunder" 1f [shares gcd=74601 — S gcd=74601 (R-162 0.9)] keys: "Thor Epic Collection: The God Of Thunder"
+   nearby: S20894 "Valkyrie" 1f [shares gcd=12127 (collected by item 96783) — S cv=25839 gcd=12127 (A-025 1.0)] keys: "Valkyrie"
+   keys now: "Thor Epic Collection: The Lost Gods" x1
+   groups (title x folder): 1
+   G1 "Thor Epic Collection" in Marvel\_Thor\_Thor Epic Collections — 1 file(s), 1 COL, pp 400-400; cv per-file 158514x1; gcd per-file 74601x1; key 'Thor Epic Collection: The Lost Gods'
+      [96783] COL Thor Epic Collection Vol. 24 - The Lost Gods (2024) (digital) (Marika-Empire).cbz (400pp)
+         own record cv 158514 / gcd s74601 "Thor Epic Collection" (issue 2636588) COLLECTS: gcd=7722 Journey into Mystery (1996) #503-513 · gcd=15217 Hercules: Heart of Chaos (1997) #1-3 · gcd=12127 Valkyrie (1997) #1
+
+== S20190 Thunderbolts Epic Collection: Justice, Like Lightning  [split]  1 files / 1 collections  decided in R-164 (S)
+   decided: S 20190 cv=- gcd=202496 0.9 | volume 01 "Justice, Like Lightning" of the Thunderbolts Epic Collection LINE: GCD 202496 #1 row 2557652 (524pp, ISBN 978-1-302-95205-1, roll-up Thunderbolts #1-12) is our 507pp book; CV 152562 is only its count-1 book volume (issue 1003981, on the I line)
+   F 20190 wrong-cv-link | the stored CV 152562 "Thunderbolts Epic Collection: Justice, Like Lightning" is the Vol. 01 book's own count-1 volume, not the line; it belongs on the I line
+   F 20190 split-needed | item 97035 -> join S20189 on its ParsedKey "Thunderbolts Epic Collection" - S20189's S line is the same GCD 202496 line and holds Vol. 02; the one-book shelf empties by the join (L-377 / L-392)
+   named: S20189 Thunderbolts Epic Collection  1 files  keys: "Thunderbolts Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S94813 "Thunderbolts" 72f [shares gcd=5812 (collected by item 97035) — S cv=6020 gcd=5812 (R-162 0.9)] keys: "Hawkeye and The Thunderbolts" | "Thunderbolts" | "Thunderbolts v1 (1997)"
+   nearby: S8861 "Heroes for Hire" 23f [shares gcd=5794 (collected by item 97035) — S cv=6003 gcd=5794 (R-043 0.95)] keys: "Heroes For Hire (1997)" | "Heroes for Hire" | "Heroes for Hire v1 (1997)" | "Luke Cage, Iron Fist, and the Heroes for Hire (1997)"
+   nearby: S16159 "Spider-Man Team-Up" 11f [shares gcd=5301 (collected by item 97035) — S cv=5561 gcd=5301 (C-039 0.9)] keys: "Spider-Man Team-Up" | "Spider-Man Team-Up: A Little Help From My Friends"
+   keys now: "Thunderbolts Epic Collection: Justice, Like Lightning" x1
+   groups (title x folder): 1
+   G1 "Thunderbolts Epic Collection" in Marvel\_Thunderbolts\Thunderbolts Epic Collections — 1 file(s), 1 COL, pp 507-507; cv per-file 152562x1; gcd per-file 202496x1; key 'Thunderbolts Epic Collection: Justice, Like Lightning'
+      [97035] COL Thunderbolts Epic Collection Vol. 01 - Justice, Like Lightning (2023) (Digital-Empire).cbr (507pp)
+         own record cv 152562 / gcd s202496 "Thunderbolts Epic Collection" (issue 2557652) COLLECTS: gcd=5812 Thunderbolts (1997) #1-12 · gcd=15183 Tales of the Marvel Universe (1997) #1 · gcd=5794 Heroes for Hire (1997) #7 · gcd=5301 Spider-Man Team-Up (1995) #7
+
+== S20622 Ultimate Spider-Man  [split]  53 files / 25 collections  decided in R-164 (S)
+   decided: S 20622 cv=7257 gcd=7825 0.9 | Ultimate Spider-Man (Marvel 2000-2009): CV 7257 (2000, 134 cached incl. #1/2) and GCD 7825 (Marvel 2000-2009, 133) agree on publisher, span and count; ours = #1/2, #1-7, #129-133 and the run's own editions - Vols. 01-22 (GCD trade line 32858, judged #1-133) and Omnibus Books 01-03 (#1-39 / #40-71 / #72-111); 0.9 for the Annual #3 (2008, no annual shelf) and the 2009 run's books split below
+   F 20622 split-needed | items 117441, 117442, 117443, 117444, 117446, 117448, 117453, 117459 ("NN Ultimate Spider-Man 153-160 (2011)", Death of Spider-Man chronology) and the 1pp covers 117473, 117474, 117475, 117476, 117477 ("Ultimate Spider-Man 153 / 153-155 / 154 / 155 (2011)" 2nd-printing and C2E2 variants) are Ultimate Spider-Man (2009-2011; CV 27381 = GCD 38918, #1-15 then #150-160), a relaunch whose return to #150 is not a retitle (L-370); no shelf stores that run (who-stores cv=27381 / gcd=38918 name only this shelf) -> a new shelf on key "Ultimate Spider-Man v2 (2009)", run cv=27381 gcd=38918
+   F 20622 split-needed | item 97969 "Ultimate Spider-Man 200 (2014)" 27pp is GCD 60934 #200 row 1206423 / CV 42821 #200 issue 449370 - the 2011 Ultimate Comics Spider-Man run's anniversary issue, which S20604 stores (stored cv=42821, S line C-064 cv=42821 gcd=60934) -> join S20604 on its key "Ultimate Comics Spider-Man" (L-368); checker anchor only: S20604 is outside this batch
+   N 20622 flag #510 (label-ambiguous, 97101) is right in substance: Vol. 07's per-file CV rows are other editions - its I line uses the GCD trade-line row; per-file CV 43261 (Panini France "Spider-Man") on 19 and GCD 43298 / 175050 are foreign stamps; S20604 also holds the 2009 run's trades Vols. 01-04 (GCD 158434) under the 2011 run's cv - it owes its own split at its revisit
+   named: S20604 Ultimate Comics Spider-Man  15 files  keys: "Ultimate Comics Spider-Man" | "Ultimate Comics Spider-Man by Brian Michael Bendis"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S15708 "Ultimate Six" 8f [shares gcd=18989 (collected by item 97103) — S cv=19405 gcd=18989 (C-064 0.95)] keys: "Six"
+   keys now: "Ultimate Spider-Man" x53
+   groups (title x folder): 9
+   G1 "Ultimate Spider-Man" in Marvel\_Ultimate Comics\Ultimate Spider-Man (2000)\01 Ultimate Spider-Man (2000) — 22 file(s), 22 COL, pp 106-205; cv per-file 7257x17, 43261x1, 35782x1; gcd per-file 32858x20, 158816x1, 158817x1; key 'Ultimate Spider-Man'
+      [97095] COL Ultimate Spider-Man Vol. 01 - Power & Responsibility (2009) (Digital) (Kileko-Empire).cbr (181pp)
+         own record cv 43261 / gcd s158816 "Ultimate Spider-Man: Power and Responsibility" (issue 2101339) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #1-7
+      [97096] COL Ultimate Spider-Man Vol. 02 - Learning Curve (2006) (Digital) (Asgard-Empire).cbr (135pp)
+         own record cv 35782 / gcd s32858 "Ultimate Spider-Man" (issue 553955) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #1, #8-13
+      [97097] COL Ultimate Spider-Man Vol. 03 - Double Trouble (2006) (Digital) (Asgard-Empire).cbr (170pp)
+         own record cv 35783 / gcd s32858 "Ultimate Spider-Man" (issue 553956) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #14-21
+      [97098] COL Ultimate Spider-Man Vol. 04 - Legacy (2007) (Digital) (F) (Kileko-Empire).cbz (146pp)
+         own record cv 7257 / gcd s32858 "Ultimate Spider-Man" (issue 553957) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #22-27
+      [97099] COL Ultimate Spider-Man Vol. 05 - Public Scrutiny (2003) (Digital) (Kileko-Empire).cbr (115pp)
+         own record cv 35795 / gcd s32858 "Ultimate Spider-Man" (issue 553958) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #28-32
+      [97100] COL Ultimate Spider-Man Vol. 06 - Venom (2007) (Digital) (Asgard-Empire).cbr (165pp)
+         own record cv 35802 / gcd s158817 "Ultimate Spider-Man: Venom" (issue 2101340) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #33-39
+      [97101] COL Ultimate Spider-Man Vol. 07 - Irresponsible (2003) (Digital) (F) (Kileko-Empire).cbz (134pp)
+         own record cv 7257 / gcd s32858 "Ultimate Spider-Man" (issue 553960) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #40-45
+      [97102] COL Ultimate Spider-Man Vol. 08 - Cats and Kings (2004) (Digital) (F) (Kileko-Empire).cbz (168pp)
+         own record cv 7257 / gcd s32858 "Ultimate Spider-Man" (issue 553961) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #47-53
+      [97103] COL Ultimate Spider-Man Vol. 09 - Ultimate Six (2004) (Digital) (F) (Kileko-Empire).cbz (174pp)
+         own record cv 7257 / gcd s32858 "Ultimate Spider-Man" (issue 553962) COLLECTS: gcd=18989 Ultimate Six (2003) #1-7 · gcd=7825 Ultimate Spider-Man (2000) #46
+      [97104] COL Ultimate Spider-Man Vol. 10 - Hollywood (2004) (Digital) (F) (Kileko-Empire).cbz (123pp)
+         own record cv 7257 / gcd s32858 "Ultimate Spider-Man" (issue 553963) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #54-59
+      [97105] COL Ultimate Spider-Man Vol. 11 - Carnage (2007) (Digital) (F) (Kileko-Empire).cbz (122pp)
+         own record cv 7257 / gcd s32858 "Ultimate Spider-Man" (issue 553964) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #60-65
+      [97106] COL Ultimate Spider-Man Vol. 12 - Superstars (2005) (Digital) (F) (Kileko-Empire).cbz (135pp)
+         own record cv 7257 / gcd s32858 "Ultimate Spider-Man" (issue 553965) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #66-71
+      [97107] COL Ultimate Spider-Man Vol. 13 - Hobgoblin (2005) (Digital) (F) (Kileko-Empire).cbz (143pp)
+         own record cv 7257 / gcd s32858 "Ultimate Spider-Man" (issue 553966) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #72-78
+      [97108] COL Ultimate Spider-Man Vol. 14 - Warriors (2006) (Digital) (F) (Kileko-Empire).cbz (141pp)
+         own record cv 7257 / gcd s32858 "Ultimate Spider-Man" (issue 553967) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #79-85
+      [97109] COL Ultimate Spider-Man Vol. 15 - Silver Sable (2006) (Digital) (F) (Kileko-Empire).cbz (139pp)
+         own record cv 7257 / gcd s32858 "Ultimate Spider-Man" (issue 553968) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #86-90 · gcd=18910 Ultimate Spider-Man Annual (2005) #1
+      [97110] COL Ultimate Spider-Man Vol. 16 - Deadpool (2006) (Digital) (F) (Kileko-Empire).cbz (162pp)
+         own record cv 7257 / gcd s32858 "Ultimate Spider-Man" (issue 553969) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #91-96 · gcd=18910 Ultimate Spider-Man Annual (2005) #2
+      [97111] COL Ultimate Spider-Man Vol. 17 - Clone Saga (2007) (Digital) (F) (Kileko-Empire).cbz (205pp)
+         own record cv 7257 / gcd s32858 "Ultimate Spider-Man" (issue 553970) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #97-105
+      [97112] COL Ultimate Spider-Man Vol. 18 - Ultimate Knights (2007) (Digital) (F) (Kileko-Empire).cbz (128pp)
+         own record cv 7257 / gcd s32858 "Ultimate Spider-Man" (issue 553971) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #106-111
+      [97113] COL Ultimate Spider-Man Vol. 19 - Death of a Goblin (2013) (Digital) (F) (Kileko-Empire).cbz (125pp)
+         own record cv 7257 / gcd s32858 "Ultimate Spider-Man" (issue 553972) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #112-117
+      [97114] COL Ultimate Spider-Man Vol. 20 - And His Amazing Friends (2014) (Digital) (F) (Kileko-Empire).cbz (106pp)
+         own record cv 7257 / gcd s32858 "Ultimate Spider-Man" (issue 553973) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #118-122
+      [97115] COL Ultimate Spider-Man Vol. 21 - War of the Symbiotes (2009) (Digital) (F) (Kileko-Empire).cbz (127pp)
+         own record cv 7257 / gcd s32858 "Ultimate Spider-Man" (issue 553974) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #123-128
+      [97116] COL Ultimate Spider-Man Vol. 22 - Ultimatum (2014) (Digital) (F) (Kileko-Empire).cbz (134pp)
+         own record cv 7257 / gcd s32858 "Ultimate Spider-Man" (issue 793811) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #129-133 · gcd=18910 Ultimate Spider-Man Annual (2005) #3 · gcd=158819 Ultimatum: Spider-Man (2009) (unnumbered)
+   G2 "Ultimate Spider-Man" in Marvel\_Ultimate Comics\Ultimate Spider-Man (2000)\01 Ultimate Spider-Man (2000)\Annuals and Specials — 1 file(s), numbers 0, pp 15-15; cv per-file 7257x1; key 'Ultimate Spider-Man'
+      [97968] Ultimate Spider-Man 00.5 (2002) (digital-Empire).cbr (15pp)
+   G3 "Ultimate Spider-Man" in Marvel\_Ultimate Comics\Ultimate Spider-Man (2000)\05 Ultimate Spider-Man 200 (2014) (Digital) — 1 file(s), numbers 200, pp 27-27; cv per-file 42821x1; gcd per-file 60934x1; key 'Ultimate Spider-Man'
+      [97969] Ultimate Spider-Man 200 (2014) (Digital) (Zone-Empire).cbr (27pp)
+   G4 "Ultimate Spider-Man Omnibus" in Marvel\_Ultimate Comics\Ultimate Spider-Man (2000)\_Omnibus Editions — 3 file(s), 3 COL, pp 848-918; cv per-file 49871x3; gcd per-file 76302x3; key 'Ultimate Spider-Man'
+      [97129] COL Ultimate Spider-Man Omnibus Book 01 (2022) (digital).cbz (899pp)
+         own record cv 49871 / gcd s76302 "Ultimate Spider-Man Omnibus" (issue 1139852) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #1-39
+      [97130] COL Ultimate Spider-Man Omnibus Book 02 (2023) (hd-webrip) (JTR).cbz (848pp)
+         own record cv 49871 / gcd s76302 "Ultimate Spider-Man Omnibus" (issue 2481451) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #40-71 · gcd=18989 Ultimate Six (2003) #1-7
+      [97131] COL Ultimate Spider-Man Omnibus Book 03 (2023) (hd-webrip) (JTR).cbz (918pp)
+         own record cv 49871 / gcd s76302 "Ultimate Spider-Man Omnibus" (issue 2585409) COLLECTS: gcd=7825 Ultimate Spider-Man (2000) #72-111 · gcd=18910 Ultimate Spider-Man Annual (2005) #1-2
+   G5 "Ultimate Spider-Man Annual" in Marvel\_Ultimate Comics\_Ultimate Annuals — 1 file(s), numbers 3, pp 31-31; cv per-file 18223x1; gcd per-file 18910x1; key 'Ultimate Spider-Man'
+      [97268] Ultimate Spider-Man Annual 03 (2008) (digital) (Minutemen-InnerDemons).cbr (31pp)
+   G6 "Ultimate Spider-Man" in _Marvel Major Event Chronology (digital)\2009.02 - Ultimatum (Ultimate)\02 Ultimatum — 5 file(s), numbers 129-133, pp 18-22; cv per-file 43261x3, 7257x2; gcd per-file 7825x2; key 'Ultimate Spider-Man'
+      e.g. 01 Ultimate Spider-Man 129 (2009) (digital) (Son of Ultron-Empire).cbr
+        117176 #129 2009 22pp · 117178 #130 2009 22pp · 117182 #131 2009 20pp · 117186 #132 2009 18pp · 117190 #133 2009 21pp
+   G7 "Ultimate Spider-Man" in _Marvel Major Event Chronology (digital)\2011.02 - Death of Spider-man (Ultimate) — 8 file(s), numbers 153-160, pp 20-27; cv per-file 7257x8; gcd per-file 38918x8; key 'Ultimate Spider-Man'
+      e.g. 02 Ultimate Spider-Man 153 (2011) (Digital) (Zone-Empire).cbr
+        117441 #153 2011 20pp · 117442 #154 2011 24pp · 117443 #155 2011 22pp · 117444 #156 2011 22pp · 117446 #157 2011 22pp · 117448 #158 2011 22pp · 117453 #159 2011 21pp · 117459 #160 2011 27pp
+   G8 "Ultimate Spider-Man" in _Marvel Major Event Chronology (digital)\2011.02 - Death of Spider-man (Ultimate)\Extras\Ultimate Spider-Man Vol. 01 - Power and Responsibility — 7 file(s), numbers 1-7, pp 21-47; cv per-file 43261x7; gcd per-file 43298x4, 175050x3; key 'Ultimate Spider-Man'
+      e.g. Ultimate Spider-Man 001 (2000) (digital) (Son of Ultron-Empire).cbr
+        117465 #1 2000 47pp · 117466 #2 2000 24pp · 117467 #3 2001 23pp · 117468 #4 2001 23pp · 117469 #5 2001 22pp · 117470 #6 2001 25pp · 117471 #7 2001 21pp
+   G9 "Ultimate Spider-Man" in _Marvel Major Event Chronology (digital)\2011.02 - Death of Spider-man (Ultimate)\Variant Covers — 5 file(s), numbers 153-155, pp 1-1; cv per-file 43261x5; key 'Ultimate Spider-Man'
+      e.g. Ultimate Spider-Man 153 (2011) (2nd Printing Variant) (Cover ONLY) (ScanDog & ArtNet-DCP).cbz
+        117473 #153 2011 1pp · 117475 #154 2011 1pp · 117476 #155 2011 1pp · 117477 #155 2011 1pp
+      [117474] Ultimate Spider-Man 153-155 (2011) (2nd Printing Variants Cover Poster Join) (Covers ONLY) (ScanDog & ArtNet-DCP).cbz (1pp)
+
+== S6071 Ultimate Elektra  [split]  7 files / 1 collections  decided in R-164 (S)
+   decided: S 6071 cv=20985 gcd=17714 0.9 | Ultimate Elektra (Marvel 2004-2005, 5): the five "Ultimate Elektra 01-05 (of 05) (2004)" files (23-26pp) = CV 20985 (2004, 5 cached #1-5) and GCD 17714 (Marvel 2004-2005, 5 rows 290776-290780) agreeing on publisher, span and the solicited "(of 05)"; 0.9 for the two books of other Elektra runs below
+   F 6071 split-needed | item 79097 "COL Elektra by Greg Rucka Ultimate Collection (2012)" 365pp collects Elektra (2001) #7-22 (GCD row 2035688's roll-up), the run S96692 stores (stored cv=9408, S line C-044 cv=9408 gcd=10194, holding #1-35) -> join S96692 on its key "Elektra v2 (2001)" (L-368); checker anchor only: S96692 is outside this batch
+   N 6071 residue kept: item 88759 "001 Elektra v1 015" 23pp (X-Men chronology) is Elektra (1996) #15 (CV 5779 / GCD 5546) - no shelf stores that run (who-stores cv=5779 names only this shelf); the five Ultimate Elektra files carry the parsed key "Elektra (2001)" and per-file CV 9408 (Elektra 2001) - stamps the I lines below override
+   named: S96692 Elektra  35 files  keys: "Elektra v2 (2001)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S103486 "Marvel Knights Double Shot" 6f [shares gcd=12132 (collected by item 79097) — S cv=11197 gcd=12132 (R-043 1.0)] keys: "Marvel Knights Double Shot (2002)"
+   nearby: S101835 "Elektra" 3f [title — S cv=73240 gcd=80317 (C-044 0.9)] keys: "Elektra (2014)" · S6072 "Elektra" 1f [title — S cv=99034 gcd=112293 (B-055 0.95)] keys: "Elektra - Always Bet On Red"
+   nearby: S96691 "Elektra" 1f [title — S cv=142345 gcd=183928 (B-055 0.95)] keys: "Elektra v1 (2022)" · S6077 "Elektra: Assassin" 1f [title+1 — S cv=3630 gcd=3180 (B-055 0.95)] keys: "Elektra: Assassin"
+   nearby: S18514 "Elektra Saga" 1f [title+1 — S cv=3340 gcd=2868 (C-044 0.9)] keys: "The Elektra Saga"
+   keys now: "Elektra (2001)" x6 · "Elektra" x1
+   groups (title x folder): 3
+   G1 "Elektra by Greg Rucka Ultimate Collection (2012) (Digital) (Zone-Empire)" in Marvel\_Elektra — 1 file(s), 1 COL, pp 365-365; cv per-file 46613x1; gcd per-file 152146x1; key 'Elektra'
+      [79097] COL Elektra by Greg Rucka Ultimate Collection (2012) (Digital) (Zone-Empire).cbr (365pp)
+         own record cv 46613 / gcd s152146 "Elektra by Greg Rucka Ultimate Collection" (issue 2035688) COLLECTS: gcd=10194 Elektra (2001) #7-22 · gcd=12132 Marvel Knights Double Shot (2002) #3
+   G2 "Ultimate Elektra" in Marvel\_Ultimate Comics\Ultimate Elektra (2003)\02 Ultimate Elektra (2004) — 5 file(s), numbers 1-5, pp 23-26; cv per-file 20985x5; gcd per-file 17714x5; key 'Elektra (2001)'
+      e.g. Ultimate Elektra 01 (of 05) (2004) (NOT HD) (Digital) (AnHeroGold-Empire).cbr
+        97068 #1 2004 23pp · 97069 #2 2004 24pp · 97070 #3 2004 25pp · 97071 #4 2004 24pp · 97072 #5 2004 26pp
+   G3 "Elektra" in Marvel\_X-Men\_X-Men Complete Chronology V2\0350 Unnamed — 1 file(s), numbers 15, pp 23-23; cv per-file 5779x1; gcd per-file 5546x1; key 'Elektra (2001)'
+      [88759] 001 Elektra v1 015.cbz (23pp)
+
+== S66237 Web of Spider-Man  [split]  155 files / 1 collections  decided in R-162 (S)
+   decided: S 66237 cv=3519 gcd=3059 0.9 | Web of Spider-Man (Marvel 1985-1995): CV 3519 (1985, 131 cached #1-129.2) and GCD 3059 (Marvel 1985-1995, 130) agree on publisher, span and count; ComicInfo Volume "1985" x24, Count "129" x2, Series "Web of Spider-Man cvv3519" names the volume; per-file CV 3519 on 140/155; ladder 1-129 plus the 2012 #129.1-129.2 (inside CV 3519's cached span); 0.9 for residue that is other comics: Web of Spider-Man Annual #1-10 (12 files, CV 3520 / GCD 3060 - no shelf stores either, so they stay, L-391), the 1995 Super Special, the 2024 one-shot, and the Epic Collection book split below
+   F 66237 split-needed | item 95819 "COL Amazing Spider-Man Epic Collection Vol. 28 - Web of Life, Web of Death (2025)" 475pp is a book of the ASM Epic Collection line (GCD 74602 #28 row 2673333, CV 160910 issue 1076686, ComicInfo Web 1076686) -> a shelf of its own on key "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)", the per-book shape R-060 gave the line's other books (S103847-S103856 store cv=<book> gcd=-; no ASM Epic line shelf with cv=- exists to join)
+   N 66237 flag #525 (label-ambiguous, 87322) is right in substance: "Web of Spider-man v1 047 / 048 (1989)" are single issues, second rips of #47-48; flag #526 is Dismissed; no WoSM annual shelf exists (who-stores cv=3520 / gcd=3060 name only this shelf)
+   named: S103847 Amazing Spider-Man Epic Collection: Assassin Nation (2019)  1 files  keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S103856 Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)  1 files  keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95819) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S19654 "The Spectacular Spider-Man" 261f [shares gcd=2359 (collected by item 95819) — S cv=2870 gcd=2359 (R-163 0.95)] keys: "Peter Parker, The Spectacular Spider-Man" | "Peter Parker, the Spectacular Spider-Man" | "The Spectacular Spider-Man" | "The Spectacular Spider-Man cvv2870"
+   nearby: S101369 "Web of Spider-Man" 12f [title — S cv=28576 gcd=40659 (B-059 0.95)] keys: "Web of Spider-Man v2 (2009)"
+   nearby: S871 "Amazing Spider-Man Epic Collection" 1f [title — S cv=77149 (R-060 0.9)] keys: "Amazing Spider-Man Epic Collection"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [title+1 — S cv=113053 (R-059 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [title+1 — S cv=142111 (R-060 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   keys now: "Web of Spider-Man v1 (1985)" x139 · "Web of Spider-Man (1985)" x5 · "Web of Spider-man Annual" x4 · "Web Of Spider-Man" x3 · "Web of Spider-man (1985)" x2 · "Web of Spider-Man Super Special" x1 · "The Amazing Spider-Man Epic Collection 28: Web of Life, Web of Death (1985)" x1
+   groups (title x folder): 13
+   G1 "Web of Spider-Man" in Marvel\#MARVEL CURRENT ONGOING TITLES\Amazing Spider-man v6 (2022)\Annuals and Specials — 1 file(s), numbers 1, pp 55-55; cv per-file 157311x1; gcd per-file 210101x1; key 'Web Of Spider-Man'
+      [47152] Web of Spider-Man 001 (2024) (Digital) (dekabro-Empire).cbz (55pp)
+   G2 "Web of Spider-Man" in Marvel\_Spider-Man\__Completed Series\Web of Spider-Man v1 (1985) — 130 file(s), numbers 1-87, 89-129, pp 21-51; cv per-file 3519x130; gcd per-file 3059x128, 165622x2; key 'Web of Spider-Man v1 (1985)'
+      e.g. Web of Spider-Man 001 (1985) (Digital) (AnHeroGold-Empire).cbz
+        95426 #1 1985 23pp · 95427 #2 1985 23pp · 95428 #3 1985 23pp · 95429 #4 1985 23pp · 95430 #5 1985 24pp · 95431 #6 1985 23pp · 95432 #7 1985 23pp · 95433 #8 1985 23pp · 95434 #9 1985 24pp
+        95435 #10 1986 24pp · 95436 #11 1986 24pp · 95437 #12 1986 24pp · 95438 #13 1986 24pp · 95439 #14 1986 23pp · 95440 #15 1986 24pp · 95441 #16 1986 23pp · 95442 #17 1986 23pp
+        95443 #18 1986 23pp · 95444 #19 1986 23pp · 95445 #20 1986 23pp · 95446 #21 1986 25pp · 95447 #22 1987 24pp · 95448 #23 1987 25pp · 95449 #24 1987 25pp · 95450 #25 1987 23pp
+        95451 #26 1987 23pp · 95452 #27 1987 23pp · 95453 #28 1987 25pp · 95454 #29 1987 24pp · 95455 #30 1987 23pp · 95456 #31 1987 23pp · 95457 #32 1987 23pp · 95458 #33 1987 25pp
+        95459 #33 1987 24pp · 95460 #34 1988 23pp · 95461 #35 1988 24pp · 95462 #36 1988 25pp · 95463 #37 1988 24pp · 95464 #38 1988 24pp · 95465 #39 1988 25pp · 95466 #40 1988 23pp
+        95467 #41 1988 24pp · 95468 #42 1988 25pp · 95469 #43 1988 25pp · 95470 #44 1988 23pp · 95471 #45 1988 23pp · 95472 #46 1989 37pp · 95473 #47 1989 24pp · 95474 #48 1989 23pp
+        95475 #49 1989 37pp · 95476 #49 1989 23pp · 95477 #50 1989 40pp · 95478 #51 1989 25pp · 95479 #52 1989 23pp · 95480 #53 1989 23pp · 95481 #54 1989 23pp · 95482 #55 1989 23pp
+        95483 #56 1989 23pp · 95484 #57 1989 24pp · 95485 #58 1989 23pp · 95486 #59 1989 23pp · 95487 #60 1990 23pp · 95488 #61 1990 23pp · 95489 #62 1990 37pp · 95490 #63 1990 23pp
+        95491 #64 1990 23pp · 95492 #65 1990 23pp · 95493 #66 1990 23pp · 95494 #67 1990 25pp · 95495 #68 1990 25pp · 95496 #69 1990 24pp · 95497 #70 1990 24pp · 95498 #71 1990 24pp
+        95499 #72 1991 25pp · 95500 #73 1991 25pp · 95501 #74 1991 24pp · 95502 #75 1991 23pp · 95503 #76 1991 25pp · 95504 #77 1991 25pp · 95505 #78 1991 25pp · 95506 #79 1991 25pp
+        95507 #80 1991 23pp · 95508 #81 1991 24pp · 95509 #82 1991 24pp · 95510 #83 1991 25pp · 95511 #84 1992 25pp · 95512 #85 1992 25pp · 95513 #86 1992 25pp · 95514 #87 1992 25pp
+        95516 #89 1992 24pp · 95517 #90 1992 40pp · 95518 #91 1992 25pp · 95519 #92 1992 25pp · 95520 #93 1992 23pp · 95521 #94 1992 24pp · 95522 #95 1992 24pp · 95523 #96 1993 24pp
+        95524 #97 1993 24pp · 95525 #98 1993 26pp · 95526 #99 1993 26pp · 95527 #100 1993 42pp · 95528 #101 1993 21pp · 95529 #102 1993 22pp · 95530 #103 1993 23pp · 95531 #104 1993 24pp
+        95532 #105 1993 26pp · 95533 #106 1993 24pp · 95534 #107 1993 25pp · 95535 #108 1994 25pp · 95536 #109 1994 25pp · 95537 #110 1994 26pp · 95538 #111 1994 24pp · 95539 #112 1994 23pp
+        95540 #113 1994 51pp · 95541 #114 1994 25pp · 95542 #115 1994 36pp · 95543 #116 1994 24pp · 95544 #117 1994 34pp · 95545 #118 1994 24pp · 95546 #119 1995 23pp · 95547 #120 1995 23pp
+        95548 #121 1995 23pp · 95549 #122 1995 23pp · 95550 #123 1995 23pp · 95551 #124 1995 23pp · 95552 #125 1995 38pp · 95553 #126 1995 24pp · 95554 #127 1995 23pp · 95555 #128 1995 24pp
+        95556 #129 1995 23pp
+   G3 "Web of Spider-man" in Marvel\_Spider-Man\__Completed Series\Web of Spider-Man v1 (1985) — 1 file(s), numbers 88, pp 39-39; cv per-file 3519x1; gcd per-file 3059x1; key 'Web of Spider-Man v1 (1985)'
+      [95515] Web of Spider-man 088 (c2c) (1992) (Nodge).cbr (39pp)
+   G4 "Web of Spider-Man" in Marvel\_Spider-Man\__Completed Series\Web of Spider-Man v1 (1985)\Annuals and Specials — 2 file(s), numbers 1-2, pp 24-24; cv per-file 3519x2; key 'Web of Spider-Man v1 (1985)'
+      [95413] Web of Spider-Man 129.1 (2012) (Digital) (Zone-Empire).cbr (24pp)
+      [95414] Web of Spider-Man 129.2 (2012) (Digital) (Zone-Empire).cbr (24pp)
+   G5 "Web of Spider-Man Annual" in Marvel\_Spider-Man\__Completed Series\Web of Spider-Man v1 (1985)\Annuals and Specials — 6 file(s), numbers 4-8, 10, pp 51-57; cv per-file 3520x6; gcd per-file 3060x6; key 'Web of Spider-Man v1 (1985)'
+      e.g. Web of Spider-Man Annual 004 (1988).cbz
+        95418 #4 1988 57pp · 95419 #5 1989 56pp · 95420 #6 1990 57pp · 95421 #7 1991 51pp · 95422 #8 1992 53pp · 95424 #10 1994 57pp
+   G6 "Web of Spider-Man Super Special" in Marvel\_Spider-Man\__Completed Series\Web of Spider-Man v1 (1985)\Annuals and Specials — 1 file(s), numbers 1, pp 22-22; cv per-file 23183x1; gcd per-file 5305x1; key 'Web of Spider-Man Super Special'
+      [95425] Web of Spider-Man Super Special 01 (1995) (digital) (Minutemen-Slayer).cbr (22pp)
+   G7 "Web of Spider-man Annual" in Marvel\_Spider-Man\__Completed Series\Web of Spider-Man v1 (1985)\Annuals and Specials — 4 file(s), numbers 1-3, 9, pp 37-56; cv per-file 3520x4; gcd per-file 3060x4; key 'Web of Spider-man Annual'
+      e.g. Web of Spider-man Annual 001 (1985).cbr
+        95415 #1 1985 37pp · 95416 #2 1986 40pp · 95417 #3 1987 51pp · 95423 #9 1993 56pp
+   G8 "Web of Spider-Man" in Marvel\_Spider-Man\__OGNs, Minis & One-shots\Spider-Man - Maximum Clonage (1995) — 1 file(s), numbers 127, pp 23-23; cv per-file 3519x1; gcd per-file 3059x1; key 'Web of Spider-Man (1985)'
+      [95692] 02 Web of Spider-Man 127 (1995) (Digital) (Shadowcat-Empire).cbz (23pp)
+   G9 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 475-475; cv per-file 160910x1; gcd per-file 74602x1; key 'The Amazing Spider-Man Epic Collection 28: Web of Life, Web of Death (1985)'
+      [95819] COL Amazing Spider-Man Epic Collection Vol. 28 - Web of Life, Web of Death 001 (2025) (digital) (Marika-Empire).cbz (475pp)
+         own record cv 160910 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 2673333) COLLECTS: gcd=3059 Web of Spider-Man (1985) #120-123 · gcd=18327 Spider-Man: Funeral for an Octopus (1995) #1-3 · gcd=2359 The Spectacular Spider-Man (1976) #220-222 · gcd=1570 The Amazing Spider-Man (1963) #397-399
+   G10 "Web of Spider-Man Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0078 Evolutionary war — 1 file(s), numbers 4, pp 40-40; cv per-file 3520x1; gcd per-file 3060x1; key 'Web Of Spider-Man'
+      [87241] 008 Web of Spider-Man Annual 004 (1988) (Digital) (Shadowcat-Empire).cbz (40pp)
+   G11 "Web of Spider-man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0087 Inferno After Effects — 2 file(s), numbers 47-48, pp 26-26; cv per-file 3519x2; gcd per-file 3059x2; key 'Web of Spider-man (1985)'
+      [87322] Web of Spider-man v1 047 (1989) (Minutemen-Syl3ntBob).cbz (26pp)
+      [87323] Web of Spider-man v1 048 (1989) (Minutemen-Syl3ntBob).cbz (26pp)
+   G12 "Web of Spider-Man Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0093 Atlantis Attacks — 1 file(s), numbers 5, pp 25-25; cv per-file 3520x1; gcd per-file 3060x1; key 'Web Of Spider-Man'
+      [87356] 011 Web of Spider-Man Annual 005 (1989) (Digital) (Shadowcat-Empire).cbz (25pp)
+   G13 "Web of Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance — 4 file(s), numbers 59, 61, 64-65, pp 23-24; cv per-file 3519x4; gcd per-file 3059x2; key 'Web of Spider-Man (1985)'
+      [87498] 033 Web of Spider-Man #059.cbz (24pp)
+      [87522] 057 Web of Spider-Man #061.cbz (24pp)
+      [87531] 066 Web of Spider-Man 064 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+      [87532] 067 Web of Spider-Man 065 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+
+== S94813 Thunderbolts  [split]  72 files / 9 collections  decided in R-162 (S)
+   decided: S 94813 cv=6020 gcd=5812 0.9 | Thunderbolts (Marvel 1997-2003): CV 6020 (1997, 83 cached #0-81) and GCD 5812 (Marvel 1997-2003, 81) agree on publisher, span and count; our "01 Thunderbolts v1 (1997)" ladder 45, 51-75, 81 sits inside, the Thunderbolts Classic Vols. 01-03 (#1-5 / #6-14 / #15-22) and Omnibus Books 01-03 (#1-33 / #34-63 / #64-75 + New Thunderbolts / 2006 #100-109) are this run's editions; 0.9 for the '97 / 1998 / 2000 annuals, the Life Sentences / Desperate Measures / From the Marvel Vault one-shots, Widowmaker, the 2013 Skottie Young cover, and the two other runs split below
+   F 94813 split-needed | items 90473, 90482, 90518, 116858, 116859, 116860, 116861, 116863, 91151, 91153, 117127, 117128, 117129, 117130, 117115, 117362, 117363, 117364, 117403, 117404 ("Thunderbolts 103-105 (2006)", "110-113, 115 (2007)", "130-135 (2009)", "144-146, 148-149 (2010)", per-file GCD 17522 on 20) are Thunderbolts (2006-2012; GCD 17522, #100-174), the run S94814 stores (S line C-051 cv=- gcd=17522, keyed "Thunderbolts v1 (2006)", holding #100-168) -> join S94814 on its key "Thunderbolts v1 (2006)" (L-368 / L-388); checker anchor only: S94814 is outside this batch
+   F 94813 split-needed | items 118265, 118266, 118267, 118268, 118269, 118274 ("Thunderbolts 007-012 (2017)", Secret Empire prelude folder, per-file GCD 100916 on 6) are Thunderbolts (2016-2017; CV 90125 / GCD 100916, 12 issues), the run S102366 stores (stored cv=90125, S line C-051 cv=90125 gcd=100916, holding #5 and both trades) -> join S102366 on its key "Thunderbolts (2016)" (L-368); checker anchor only: S102366 is outside this batch
+   N 94813 residue kept: 52033 "Thunderbolts 001 (2013) (Skottie Young 'Baby' Variant)" is a 1pp cover of the 2013 run (per-file GCD 70262) whose trades sit on S94862 keyed by the TPB line (gcd=74352) - no shelf stores that run, so it stays; "Thunderbolts Annual 1998" (96898, 40pp) has no record under that name - probably "Captain America / Citizen V '98" (GCD 10247) - unconfirmed, no I line; S8456 (Hawkeye & The Thunderbolts) merges here on cv=6020
+   named: S94814 Thunderbolts v1 (2006)  64 files  keys: "Thunderbolts v1 (2006)" | "Thunderbolts: Burning Down The House"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S102366 Thunderbolts  3 files  keys: "Thunderbolts (2016)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S18826 "The Incredible Hulk" 409f [shares gcd=1866 (collected by item 96931) — S cv=2406 gcd=1866 (R-153 0.9)] keys: "The Incredible Hulk" | "The Incredible Hulk v1 (1968)"
+   nearby: S95223 "Avengers" 36f [shares gcd=7636 (collected by item 96901) — S cv=7084 gcd=7636 (R-142 0.95)] keys: "Avengers - Lionheart of Avalon" | "Avengers v3 (1998)"
+   nearby: S8861 "Heroes for Hire" 23f [shares gcd=5794 (collected by item 96932) — S cv=6003 gcd=5794 (R-043 0.95)] keys: "Heroes For Hire (1997)" | "Heroes for Hire" | "Heroes for Hire v1 (1997)" | "Luke Cage, Iron Fist, and the Heroes for Hire (1997)"
+   nearby: S1664 "Avengers/Thunderbolts" 8f [shares gcd=12451 (collected by item 96903) — S cv=11486 gcd=12451 (A-025 0.95)] keys: "Avengers-Thunderbolts" | "Avengers/Thunderbolts"
+   nearby: S94862 "Thunderbolts v2 (2013)" 5f [shares gcd=74352 (N line), named S94862 in the decision's R/N lines — S gcd=74352 (C-051 0.9)] keys: "Thunderbolts v2 (2013)"
+   nearby: S12852 "New Thunderbolts" 4f [shares gcd=12244 (collected by item 96903) — S cv=11298 gcd=12244 (R-162 0.95)] keys: "New Thunderbolts"
+   nearby: S20182 "Thunderbolts: Desperate Measures" 1f [shares cv=18910, shares gcd=25817 — S cv=18910 gcd=25817 (B-060 0.95)] keys: "Thunderbolts 115a - Desperate Measures"
+   nearby: S20180 "Thunderbolts" 3f [title — S cv=155139 gcd=206551 (B-060 0.95)] keys: "Thunderbolts - Worldstrike" | "Thunderbolts v5 (2024)"
+   nearby: S94863 "Thunderbolts" 1f [title — S cv=144863 gcd=188709 (B-060 0.95)] keys: "Thunderbolts v4 (2022)"
+   nearby: S15605 "Siege: Thunderbolts" 1f [title+1 — S cv=35589 gcd=71144 (B-072 0.9)] keys: "Siege: Thunderbolts"
+   nearby: S20192 "Thunderbolts: Red Omnibus" 1f [title+1 — S cv=156835 gcd=208772 (D-014 0.9)] keys: "Thunderbolts Red"
+   nearby: S20199 "Thunderbolts: Uncaged Omnibus" 1f [title+1 — S cv=155154 gcd=206376 (B-060 0.95)] keys: "Thunderbolts: Uncaged Omnibus"
+   keys now: "Thunderbolts v1 (1997)" x29 · "Thunderbolts" x21 · "Thunderbolts (1997)" x9 · "Thunderbolts Annual" x4 · "Hawkeye and The Thunderbolts" x3 · "Thunderbolts Classic" x2 · "Thunderbolts Classic (1997)" x1 · "Thunderbolts - Widowmaker" x1 · "Thunderbolts 053a - Life Sentences (1997)" x1 · "Thunderbolts (2010)" x1
+   groups (title x folder): 23
+   G1 "Thunderbolts - From the Marvel Vault" in Marvel\_Thunderbolts — 1 file(s), numbers 1, pp 26-26; cv per-file 39646x1; gcd per-file 57076x1; key 'Thunderbolts (2010)'
+      [97032] Thunderbolts - From the Marvel Vault 001 (2011) (Digital) (Cypher-Empire).cbr (26pp)
+   G2 "Thunderbolts - Life Sentences" in Marvel\_Thunderbolts — 1 file(s), numbers 1, pp 41-41; cv per-file 25927x1; gcd per-file 14081x1; key 'Thunderbolts'
+      [97033] Thunderbolts - Life Sentences 001 (2001) (Digital) (Shadowcat-Empire).cbz (41pp)
+   G3 "Thunderbolts Desperate Measures" in Marvel\_Thunderbolts — 1 file(s), numbers 1, pp 24-24; cv per-file 18910x1; gcd per-file 25817x1; key 'Thunderbolts (1997)'
+      [97034] Thunderbolts Desperate Measures 001 (2007) (Digital) (Shadowcat-Empire).cbz (24pp)
+   G4 "Thunderbolts" in Marvel\_Thunderbolts\01 Thunderbolts v1 (1997) — 26 file(s), numbers 51-75, 81, pp 23-38; cv per-file 6020x26; gcd per-file 5812x26; key 'Thunderbolts v1 (1997)'
+      e.g. Thunderbolts 051 (2001) (Beast's Library).cbr
+        96904 #51 2001 25pp · 96905 #52 2001 26pp · 96906 #53 2001 26pp · 96908 #54 2001 25pp · 96909 #55 2001 23pp · 96910 #56 2001 24pp · 96911 #57 2001 24pp · 96912 #58 2002 25pp
+        96913 #59 2002 31pp · 96914 #60 2002 24pp · 96915 #61 2002 24pp · 96916 #62 2002 23pp · 96917 #63 2002 25pp · 96918 #64 2002 ?pp · 96919 #65 2002 24pp · 96920 #66 2002 ?pp
+        96921 #67 2002 25pp · 96922 #68 2002 ?pp · 96923 #69 2002 ?pp · 96924 #70 2002 ?pp · 96925 #71 2002 25pp · 96926 #72 2002 25pp · 96927 #73 2002 25pp · 96928 #74 2003 25pp
+        96929 #75 2003 38pp · 96930 #81 2003 23pp
+   G5 "Thunderbolts 053a - Life Sentences" in Marvel\_Thunderbolts\01 Thunderbolts v1 (1997) — 1 file(s), numbers 1, pp 52-52; cv per-file 25927x1; gcd per-file 14081x1; key 'Thunderbolts 053a - Life Sentences (1997)'
+      [96907] Thunderbolts 053a - Life Sentences 001 (c2c) (2001) (ArtNet-DCP).cbz.cbz (52pp)
+   G6 "Thunderbolts Annual" in Marvel\_Thunderbolts\01 Thunderbolts v1 (1997)\Annuals and Specials — 4 file(s), numbers 1997-1998, 2000, pp 38-40; cv per-file 60491x2, 18276x1, 6020x1; gcd per-file 14077x2, 5813x1; key 'Thunderbolts Annual'
+      e.g. Thunderbolts Annual 1997 (1997) (Digital) (AnHeroGold-Empire).cbz
+        96897 #1997 1997 39pp · 96898 #1998 40pp · 96899 #2000 2000 38pp · 96900 #2000 39pp
+   G7 "Thunderbolts Omnibus" in Marvel\_Thunderbolts\01 Thunderbolts v1 (1997)\Omnibus Editions — 3 file(s), 3 COL, pp 1106-1154; cv per-file 135611x3; gcd per-file 172120x3; key 'Thunderbolts v1 (1997)'
+      [96901] COL Thunderbolts Omnibus Book 01 (2022) (Digital-HD) (Shan-Empire).cbz (1106pp)
+         own record cv 135611 / gcd s172120 "Thunderbolts Omnibus" (issue 2219083) COLLECTS: gcd=5812 Thunderbolts (1997) #1-33 · gcd=5813 Thunderbolts '97 (1997) (unnumbered) · gcd=15183 Tales of the Marvel Universe (1997) #1 · gcd=7636 Avengers (1998) #12
+      [96902] COL Thunderbolts Omnibus Book 02 (2022) (Digital-HD) (Shan-Empire).cbz (1137pp)
+         own record cv 135611 / gcd s172120 "Thunderbolts Omnibus" (issue 2409858) COLLECTS: gcd=5812 Thunderbolts (1997) #34-63 · gcd=16585 Citizen V and the V-Battalion: The Everlasting (2002) #1-4 · gcd=7636 Avengers (1998) #31-34 · gcd=15101 Citizen V and the V-Battalion (2001) #1-3
+      [96903] COL Thunderbolts Omnibus Book 03 (2023) (Digital-HD) (Shan-Empire).cbz (1154pp)
+         own record cv 135611 / gcd s172120 "Thunderbolts Omnibus" (issue 2525353) COLLECTS: gcd=12244 New Thunderbolts (2005) (unnumbered) · gcd=5812 Thunderbolts (1997) #64-75 · gcd=17522 Thunderbolts (2006) #100-109 · gcd=12451 Avengers / Thunderbolts (2004) #1-6
+   G8 "Hawkeye and The Thunderbolts" in Marvel\_Thunderbolts\01 Thunderbolts v1 (1997)\TPBs — 2 file(s), 2 COL, pp 431-451; cv per-file 89784x2; gcd per-file 100292x2; key 'Hawkeye and The Thunderbolts'
+      [96934] COL 04 Hawkeye and The Thunderbolts Vol. 01 (2016) (F) (Digital) (AnHeroGold-Empire).cbr (451pp)
+         own record cv 89784 / gcd s100292 "Hawkeye & the Thunderbolts" (issue 1559064) COLLECTS: gcd=5812 Thunderbolts (1997) #23-37 · gcd=14077 Thunderbolts 2000 (2000) (unnumbered) · gcd=7633 Avengers 2000 (2000) (unnumbered)
+      [96935] COL 05 Hawkeye and The Thunderbolts Vol. 02 (2016) (Digital).cbz (431pp)
+         own record cv 89784 / gcd s100292 "Hawkeye & the Thunderbolts" (issue 1599827) COLLECTS: gcd=5812 Thunderbolts (1997) #38-50 · gcd=7636 Avengers (1998) #31-34
+   G9 "Thunderbolts - Widowmaker (2010) (Digital-HD) (Shan-Empire)" in Marvel\_Thunderbolts\01 Thunderbolts v1 (1997)\TPBs — 1 file(s), pp 142-142; cv per-file 30772x1; gcd per-file 71143x1; key 'Thunderbolts - Widowmaker'
+      [96938] Thunderbolts - Widowmaker (2010) (Digital-HD) (Shan-Empire).cbz (142pp)
+   G10 "Thunderbolts Classic" in Marvel\_Thunderbolts\01 Thunderbolts v1 (1997)\TPBs — 3 file(s), 3 COL, pp 243-286; cv per-file 40490x3; gcd per-file 73452x3; key 'Thunderbolts Classic' | 'Thunderbolts Classic (1997)'
+      [96931] COL 01 Thunderbolts Classic Vol. 01 (2011) (Digital) (AnHeroGold-Empire).cbz (243pp)  key="Thunderbolts Classic"
+         own record cv 40490 / gcd s73452 "Thunderbolts Classic" (issue 1099261) COLLECTS: gcd=5812 Thunderbolts (1997) #1-5 · gcd=5813 Thunderbolts '97 (1997) (unnumbered) · gcd=5814 Thunderbolts: Distant Rumblings (1997) (unnumbered) · gcd=1866 The Incredible Hulk (1968) #449-450
+      [96932] COL 02 Thunderbolts Classic Vol. 02 (2012) (digital) (Minutemen-Slayer).cbr (248pp)  key="Thunderbolts Classic"
+         own record cv 40490 / gcd s73452 "Thunderbolts Classic" (issue 1099262) COLLECTS: gcd=5812 Thunderbolts (1997) #6-14 · gcd=5794 Heroes for Hire (1997) #7
+      [96933] COL 03 Thunderbolts Classic Vol. 03 (2012) (digital) (Minutemen-Slayer).cbr (286pp)  key="Thunderbolts Classic (1997)"
+         own record cv 40490 / gcd s73452 "Thunderbolts Classic" (issue 1099263) COLLECTS: gcd=5812 Thunderbolts (1997) #15-22 · gcd=14078 Thunderbolts (1998) #0 · gcd=7636 Avengers (1998) #12 · gcd=10247 Captain America / Citizen V '98 (1998) (unnumbered)
+   G11 "Hawkeye & The Thunderbolts" in Marvel\_Thunderbolts\_Trades — 1 file(s), 1 COL, pp 451-451; cv per-file 89784x1; gcd per-file 100292x1; key 'Hawkeye and The Thunderbolts'
+      [97041] COL Hawkeye & The Thunderbolts v1 (2016) (F) (Digital) (AnHeroGold-Empire).cbz (451pp)
+         own record cv 89784 / gcd s100292 "Hawkeye & the Thunderbolts" (issue 1559064) COLLECTS: gcd=5812 Thunderbolts (1997) #23-37 · gcd=14077 Thunderbolts 2000 (2000) (unnumbered) · gcd=7633 Avengers 2000 (2000) (unnumbered)
+   G12 "Thunderbolts" in Marvel\_X-Men\_X-Men Complete Chronology V2\0463 Maximum Security — 1 file(s), numbers 45, pp 23-23; cv per-file 6020x1; gcd per-file 5812x1; key 'Thunderbolts (1997)'
+      [89266] 013 Thunderbolts 045 (2000) (Digital) (AnHeroGold-Empire).cbz (23pp)
+   G13 "Thunderbolts" in Marvel\_X-Men\_X-Men Complete Chronology V2\0719 Civil War - Phase One — 2 file(s), numbers 103-104, pp 22-22; cv per-file 6020x2; gcd per-file 17522x2; key 'Thunderbolts'
+      [90473] 014 Thunderbolts 103 (2006) (digital-hd) (Kleio-Empire).cbz (22pp)
+      [90482] 023 Thunderbolts 104 (2006) (digital-hd) (Kleio-Empire).cbz (22pp)
+   G14 "Thunderbolts" in Marvel\_X-Men\_X-Men Complete Chronology V2\0723 Civil War - X-Men — 1 file(s), numbers 105, pp 22-22; cv per-file 6020x1; gcd per-file 17522x1; key 'Thunderbolts'
+      [90518] 020 Thunderbolts 105 (2006) (digital-hd) (Kleio-Empire).cbz (22pp)
+   G15 "Thunderbolts" in Marvel\_X-Men\_X-Men Complete Chronology V2\0813 Magnum Opus — 2 file(s), numbers 130-131, pp 24-25; cv per-file 6020x2; gcd per-file 17522x2; key 'Thunderbolts'
+      [91151] 002 Thunderbolts 130 (2009) (Minutemen-DTs&Locke).cbr (24pp)
+      [91153] 004 Thunderbolts 131 (2009) (Minutemen-Rosie).cbr (25pp)
+   G16 "Thunderbolts" in Marvel\__Skottie Young Covers — 1 file(s), numbers 1, pp 1-1; cv per-file 6020x1; gcd per-file 70262x1; key 'Thunderbolts (1997)'
+      [52033] Thunderbolts 001 (2013) (Skottie Young 'Baby' Variant) (Cover ONLY) (ScanDog+ArtNet).cbz (1pp)
+   G17 "Thunderbolts" in _Marvel Major Event Chronology (digital)\2007.06 - The Initiative\Thunderbolts — 5 file(s), numbers 110-113, 115, pp 22-25; cv per-file 6020x5; gcd per-file 17522x5; key 'Thunderbolts'
+      e.g. Thunderbolts 110 (2007) (digital) (Minutemen-PhD).cbr
+        116858 #110 2007 25pp · 116859 #111 2007 23pp · 116860 #112 2007 24pp · 116861 #113 2007 23pp · 116863 #115 2007 22pp
+   G18 "Thunderbolts" in _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Secret Warriors (2009) — 1 file(s), numbers 135, pp 24-24; cv per-file 6020x1; gcd per-file 17522x1; key 'Thunderbolts'
+      [117115] 06 Thunderbolts 135 (2009) (Digital) (Shadowcat-Empire).cbz (24pp)
+   G19 "Thunderbolts" in _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Thunderbolts — 4 file(s), numbers 132-135, pp 24-25; cv per-file 6020x4; gcd per-file 17522x4; key 'Thunderbolts'
+      e.g. Thunderbolts 132 (2009) (digital) (Minutemen-Faessla).cbz
+        117127 #132 2009 25pp · 117128 #133 2009 24pp · 117129 #134 2009 24pp · 117130 #135 2009 24pp
+   G20 "Thunderbolts" in _Marvel Major Event Chronology (digital)\2010.04 - The Heroic Age\The Heroic Age - Thunderbolts — 3 file(s), numbers 144-146, pp 24-25; cv per-file 6020x3; gcd per-file 17522x3; key 'Thunderbolts'
+      [117362] Thunderbolts 144 (2010) (digital) (Minutemen-Faessla).cbz (24pp)
+      [117363] Thunderbolts 145 (2010) (digital) (Minutemen-Faessla).cbz (25pp)
+      [117364] Thunderbolts 146 (2010) (digital) (Minutemen-Faessla).cbz (25pp)
+   G21 "Thunderbolts" in _Marvel Major Event Chronology (digital)\2010.07 - Shadowland\03 Tie-ins\Thunderbolts — 2 file(s), numbers 148-149, pp 25-25; cv per-file 6020x2; gcd per-file 17522x2; key 'Thunderbolts'
+      [117403] Thunderbolts 148 (2010) (digital-hd-Empire).cbr (25pp)
+      [117404] Thunderbolts 149 (2010) (digital-hd-Empire).cbr (25pp)
+   G22 "Thunderbolts" in _Marvel Major Event Chronology (digital)\2017.04 - Secret Empire\00 Prelude\08 Thunderbolts - No Going Back — 5 file(s), numbers 7-11, pp 24-34; cv per-file 6020x5; gcd per-file 100916x5; key 'Thunderbolts (1997)'
+      e.g. Thunderbolts 007 (2017) (Digital) (Zone-Empire).cbr
+        118265 #7 2017 25pp · 118266 #8 2017 24pp · 118267 #9 2017 24pp · 118268 #10 2017 34pp · 118269 #11 2017 24pp
+   G23 "Thunderbolts" in _Marvel Major Event Chronology (digital)\2017.04 - Secret Empire\00 Prelude\12 Opening Salvo — 1 file(s), numbers 12, pp 25-25; cv per-file 6020x1; gcd per-file 100916x1; key 'Thunderbolts (1997)'
+      [118274] 01 Thunderbolts 012 (2017) (Digital) (Zone-Empire).cbr (25pp)
+
+== S9984 Journey into Mystery  [split]  102 files / 6 collections  decided in R-162 (S)
+   decided: S 9984 cv=1497 gcd=896 0.9 | Journey into Mystery (Marvel 1952-1966): CV 1497 (1952, 125 cached #1-125) and GCD 896 (Marvel 1952-1966, 125) agree on publisher, span and count; ComicInfo Web 6688, Volume "1952", Count "125"; ladder 1-40, 62, 83-125; the four Masterworks: Atlas Era JIM volumes reprint #1-40 of this run (its own editions); 0.9 for JIM Annual #1 (1965, CV 19069 / GCD 1685, no shelf) and for the other runs' books split below
+   F 9984 split-needed | items 117578, 117579, 117580, 117581, 117582, 117583, 92038, 92040 ("Journey Into Mystery 631-638 (2012)", Fear Itself / Exiled chronology folders, per-file GCD 57209) and the trades 117514 / 117515 ("Journey Into Mystery Vol. 01 - Fear Itself" 119pp / "Vol. 02 - Fear Itself Fallout" 142pp, second rips of S94776's 96670 / 96671) are Journey into Mystery (2011-2013; CV 39761 / GCD 57209, #622-655), the run S94776 stores (stored cv=39761, S line in this file) -> join S94776 on its key "Journey into Mystery v1 (2011)" (L-368 / L-388)
+   F 9984 split-needed | item 96084 "Journey Into Mystery (-1) (1997)" 23pp is Journey into Mystery (1996) #-1 (CV 7168 issue 152373 / GCD 7722 row 305114), the run S94775 stores (stored cv=7168, S line in this file) -> join S94775 on its key "Journey into Mystery v1 (1996)" (L-368)
+   N 9984 flag #299 (label-ambiguous, 117514) is right: Fear Itself Vols. 01-02 are held twice (96670/117514, 96671/117515) - the join puts both rips on S94776; C-051's duplicate-shelf line is obsolete; 116382 / 116383 are second rips of #83 / #85
+   named: S94776 Journey into Mystery  18 files  keys: "Journey into Mystery v1 (2011)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S94775 Journey into Mystery  9 files  keys: "Journey into Mystery v1 (1996)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Journey into Mystery v1 (1962)" x85 · "Journey Into Mystery" x11 · "Marvel Masterworks - Atlas Era Journey Into Mystery" x4 · "Journey into Mystery Annual" x1 · "Journey into Mystery" x1
+   groups (title x folder): 10
+   G1 "Marvel Masterworks - Atlas Era Journey Into Mystery" in Marvel\_Marvel Masterworks\Journey Into Mystery (Atlas) (1952) — 4 file(s), 4 COL, pp 248-274; cv per-file 49893x4; gcd per-file 33693x4; key 'Marvel Masterworks - Atlas Era Journey Into Mystery'
+      [83293] COL Marvel Masterworks - Atlas Era Journey Into Mystery Vol. 01 (2008) (Digital) (Shadowcat-Empire).cbz (248pp)
+         own record cv 49893 / gcd s33693 "Marvel Masterworks: Atlas Era Journey into Mystery" (issue 566284) COLLECTS: gcd=896 Journey into Mystery (1952) #1-10
+      [83294] COL Marvel Masterworks - Atlas Era Journey Into Mystery Vol. 02 (2009) (Digital) (Zone-Empire).cbr (274pp)
+         own record cv 49893 / gcd s33693 "Marvel Masterworks: Atlas Era Journey into Mystery" (issue 649241) COLLECTS: gcd=896 Journey into Mystery (1952) #11-20
+      [83295] COL Marvel Masterworks - Atlas Era Journey Into Mystery Vol. 03 (2010) (Digital) (Zone-Empire).cbr (273pp)
+         own record cv 49893 / gcd s33693 "Marvel Masterworks: Atlas Era Journey into Mystery" (issue 783101) COLLECTS: gcd=896 Journey into Mystery (1952) #21-30
+      [83296] COL Marvel Masterworks - Atlas Era Journey Into Mystery Vol. 04 (2012) (Digital) (Zone-Empire).cbr (274pp)
+         own record cv 49893 / gcd s33693 "Marvel Masterworks: Atlas Era Journey into Mystery" (issue 946719) COLLECTS: gcd=896 Journey into Mystery (1952) #31-40
+   G2 "Journey Into Mystery" in Marvel\_Thor\01 Journey into Mystery v1 (1962) — 83 file(s), numbers 1-40, 62, 83-95, 97-125, pp 11-26; cv per-file 1497x83; gcd per-file 896x83; key 'Journey into Mystery v1 (1962)'
+      e.g. Journey Into Mystery 001 (1952) (digital) (Minutemen-Slayer).cbr
+        96085 #1 1952 26pp · 96086 #2 1952 26pp · 96087 #3 1952 26pp · 96088 #4 1952 26pp · 96089 #5 1953 26pp · 96090 #6 1953 26pp · 96091 #7 1953 26pp · 96092 #8 1953 26pp · 96093 #9 1953 26pp
+        96094 #10 1953 26pp · 96095 #11 1953 26pp · 96096 #12 1953 26pp · 96097 #13 1953 26pp · 96098 #14 1954 26pp · 96099 #15 1954 26pp · 96100 #16 1954 26pp · 96101 #17 1954 26pp
+        96102 #18 1954 26pp · 96103 #19 1954 26pp · 96104 #20 1954 26pp · 96105 #21 1955 26pp · 96106 #22 1955 26pp · 96107 #23 1955 26pp · 96108 #24 1955 26pp · 96109 #25 1955 26pp
+        96110 #26 1955 26pp · 96111 #27 1955 26pp · 96112 #28 1955 26pp · 96113 #29 1955 26pp · 96114 #30 1956 26pp · 96115 #31 1956 26pp · 96116 #32 1956 26pp · 96117 #33 1956 26pp
+        96118 #34 1956 26pp · 96119 #35 1956 26pp · 96120 #36 1956 26pp · 96121 #37 1956 26pp · 96122 #38 1956 26pp · 96123 #39 1956 26pp · 96124 #40 1956 26pp · 96125 #62 1960 14pp
+        96126 #83 1962 15pp · 96127 #84 1962 14pp · 96128 #85 1962 14pp · 96129 #86 1962 14pp · 96130 #87 1962 11pp · 96131 #88 1963 14pp · 96132 #89 1963 14pp · 96133 #90 1963 14pp
+        96134 #91 1963 14pp · 96135 #92 1963 14pp · 96136 #93 1963 14pp · 96137 #94 1963 14pp · 96138 #95 1963 14pp · 96140 #97 1963 19pp · 96141 #98 1963 19pp · 96142 #99 1963 19pp
+        96143 #100 1964 19pp · 96144 #101 1964 19pp · 96145 #102 1964 19pp · 96146 #103 1964 19pp · 96147 #104 1964 19pp · 96148 #105 1964 24pp · 96149 #106 1964 24pp · 96150 #107 1964 24pp
+        96151 #108 1964 24pp · 96152 #109 1964 24pp · 96153 #110 1964 23pp · 96154 #111 1964 23pp · 96155 #112 1965 22pp · 96156 #113 1965 22pp · 96157 #114 1965 22pp · 96158 #115 1965 22pp
+        96159 #116 1965 22pp · 96160 #117 1965 22pp · 96161 #118 1965 22pp · 96162 #119 1965 22pp · 96163 #120 1965 22pp · 96164 #121 1965 22pp · 96165 #122 1965 22pp · 96166 #123 1965 22pp
+        96167 #124 1966 22pp · 96168 #125 1966 22pp
+   G3 "Journey Into Mystery (-1) (1997) (Digital) (Shadowcat-Empire)" in Marvel\_Thor\01 Journey into Mystery v1 (1962) — 1 file(s), numbers 1, pp 23-23; cv per-file 7168x1; gcd per-file 7722x1; key 'Journey into Mystery v1 (1962)'
+      [96084] Journey Into Mystery (-1) (1997) (Digital) (Shadowcat-Empire).cbz (23pp)
+   G4 "Journey into Mystery" in Marvel\_Thor\01 Journey into Mystery v1 (1962) — 1 file(s), numbers 96, pp 27-27; cv per-file 1497x1; gcd per-file 896x1; key 'Journey into Mystery v1 (1962)'
+      [96139] Journey into Mystery 096 (1963) (digital) (Marika-Empire).cbz (27pp)
+   G5 "Journey into Mystery Annual" in Marvel\_Thor\01 Journey into Mystery v1 (1962)\Annuals and Specials — 1 file(s), numbers 1, pp 75-75; cv per-file 19069x1; gcd per-file 1685x1; key 'Journey into Mystery Annual'
+      [97934] Journey into Mystery Annual 001 (1965).cbz (75pp)
+   G6 "Journey Into Mystery" in Marvel\_X-Men\_X-Men Complete Chronology V2\0978 Exiled — 2 file(s), numbers 637-638, pp 24-24; cv per-file 1497x2; gcd per-file 57209x2; key 'Journey Into Mystery'
+      [92038] 002 Journey Into Mystery 637 (2012) (Digital) (Zone-Empire).cbr (24pp)
+      [92040] 004 Journey Into Mystery 638 (2012) (Digital) (Zone-Empire).cbr (24pp)
+   G7 "Journey Into Mystery" in _Marvel Major Event Chronology (digital)\1984.07 - Thor - Casket of Ancient Winters\Extras — 2 file(s), numbers 83, 85, pp 14-15; cv per-file 1497x2; gcd per-file 896x2; key 'Journey Into Mystery'
+      [116382] Journey Into Mystery 083 (1962) (Digital) (Shadowcat-Empire).cbz (15pp)
+      [116383] Journey Into Mystery 085 (1962) (Digital) (Shadowcat-Empire).cbz (14pp)
+   G8 "Journey Into Mystery" in _Marvel Major Event Chronology (digital)\2011.03 - Fear Itself\02 Tie-ins\Journey into Mystery — 2 file(s), 2 COL, pp 119-142; cv per-file 45306x1, 46624x1; gcd per-file 70373x2; key 'Journey Into Mystery'
+      [117514] COL Journey Into Mystery Vol. 01 - Fear Itself (2012) (Digital) (Kileko-Empire).cbz (119pp)
+         own record cv 45306 / gcd s70373 "Journey into Mystery" (issue 1038095) COLLECTS: gcd=57209 Journey into Mystery (2011) #622-626
+      [117515] COL Journey Into Mystery Vol. 02 - Fear Itself Fallout (2012) (Digital) (Kileko-Empire).cbz (142pp)
+         own record cv 46624 / gcd s70373 "Journey into Mystery" (issue 1038098) COLLECTS: gcd=57209 Journey into Mystery (2011) #626.1, #627-631 · gcd=78274 Journey into Mystery: Fear Itself Fallout (2012) (unnumbered)
+   G9 "Journey Into Mystery" in _Marvel Major Event Chronology (digital)\2011.03 - Fear Itself\03 Shattered Heroes\Journey Into Mystery — 5 file(s), numbers 631-633, 635-636, pp 22-25; cv per-file 1497x5; gcd per-file 57209x5; key 'Journey Into Mystery'
+      e.g. Journey Into Mystery 631 (2012) (Digital) (Zone-Empire).cbr
+        117578 #631 2012 24pp · 117579 #632 2012 25pp · 117580 #633 2012 24pp · 117582 #635 2012 24pp · 117583 #636 2012 22pp
+   G10 "Journey into Mystery" in _Marvel Major Event Chronology (digital)\2011.03 - Fear Itself\03 Shattered Heroes\Journey Into Mystery — 1 file(s), numbers 634, pp 27-27; cv per-file 1497x1; gcd per-file 57209x1; key 'Journey into Mystery'
+      [117581] Journey into Mystery 634 (2012) (Digital) (Zone-Empire).cbr (27pp)

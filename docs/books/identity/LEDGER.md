@@ -2173,3 +2173,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   legacy count but it stays a separate run (L-370). Story-titled rips ("Punisher 053 - The Final Days 01") parse by PART
   number — I lines pin them. A merge that brings covers under an unjudged trade (Thunderbolts 2024 -> Worldstrike) halts
   audit_containment: `u` line (containment/decisions/S20180.txt) + wave_fix, as L-376 / L-394.
+[L-406] pub:marvel sig:split kind:collected-line
+- Waves 163-164 (lead rulings): a creator-trade-keyed shelf that STORES the run and already holds its issues under an
+  alias key ("Cable (2020-)" on S3327, ParsedKey "Cable by Gerry Duggan") takes the run's stray issues on that alias —
+  L-389 does not apply when the shelf is the run in fact. A line reprinting ONE run gives way even against an older
+  "keep the line" (Uncanny X-Men by Gillen -> S101234, C-053 superseded). A 110pp "Epic Collection Vol. N" whose number
+  is missing from the GCD line is a misnamed arc trade, not an Epic book. Rippers file the What If? 2007-09 one-shots
+  under Manual key links to the 1989 run's cv — each one-shot has its own count-1 CV / GCD record. Marvel creator-line
+  trade ranges (Marauders by Duggan) skip event-crossover issues — GCD's roll-up beats a judged range there.

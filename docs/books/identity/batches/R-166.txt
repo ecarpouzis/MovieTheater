@@ -1,0 +1,736 @@
+## Conventions for this batch (20 shown of 154 matched; 405 in LEDGER.md; 25 shelf/shelves: pub:marvel ×25 · folder:vn-year ×22 · folder:sequel-subfolder ×16 · kind:collected-line ×13 · folder:events ×12 · kind:trade-only ×11 · kind:foreign ×6 · kind:new ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (25 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (25 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (25 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-127] (23 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-136] (23 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-060] (22 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (22 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-298] (18 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (18 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-388] (17 shelf/shelves) pub:marvel sig:split
+- R-134 (wave 128, lead ruling): RESIDUE vs co-equal — two or more whole trades of another run are a co-equal run (R +
+  split-needed) only when that run has NO shelf of its own; when its run or line already has a shelf, they are misfiled
+  books: S + `F split-needed | items -> join S<home>` (L-368; X-Factor 2024 S66336's two Peter David omnibuses -> S22172).
+  `#MARVEL CURRENT ONGOING TITLES`: Marika / MikeNY76 ComicInfo Web ids and "cvv<id>" Series strings name the stored CV
+  volume (1.0 evidence). From the Ashes "Variant Covers" folders hold the PREVIOUS run's finale covers (X-Men v6 #35 in
+  the v7 folder). "_X-Men Complete Chronology V2\NNNN <event>" annuals are event-chapter excerpts = partial rips. A
+  ripper's "Omnibus Book 01" in a run's folder can be that run's first omnibus, not the line's Vol. 1 (page count decides).
+  CV mints one count-1 volume per Venom by Ewing trade; GCD keeps two lines (183532 Vols 1-4, 208820 Vols 5-8).
+[L-389] (17 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-053 / R-135 (waves 129-130): a run's issues never JOIN a creator-trade-keyed shelf ("Venom by Al Ewing & Ram V",
+  S21029, four trades) — keep them and meet through the SHARED cv at the next revisit (S20988 cv=140084 + merge-with=21029).
+  Marvel's 2019-2020 "Star Wars #1 facsimile" is "Star Wars No 1 Facsimile Edition" (CV 123267 / GCD 153348): probe the
+  "No N" form. Star Wars Insider and Titan's "Best of" books have no CV / GCD record: R + provider-missing, never the 1977
+  comic's stamp. The Dark Horse Star Wars Omnibus umbrella number (Vol. 32 / 35) raises a false "stored GCD row is another
+  book" warning against the sub-line's #1 / #2 — page counts and ISBNs decide. An Epic Collection / omnibus line spanning
+  several minis keeps its own GCD-line key in a split.
+[L-133] (16 shelf/shelves) pub:marvel sig:probe
+- GCD splits a compound word ComicVine joins: "X-Men: Clan Destine" (5570) is invisible to a "ClanDestine" probe,
+  and 32535 "ClanDestine vs. The X-Men" is the collected edition, not the mini.
+[L-124] (23 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-281] (23 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-191] (22 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-272] (22 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-324] (14 shelf/shelves) folder:vn-year kind:foreign kind:manga kind:trade-only pub:marvel sig:collision sig:probe sig:trade-link tier:D
+- TIER D (D-013..D-015) — LEAD RULING confirming the reader's tie-break for a single trade alone in a `<Title> vN
+  (<year>)` run folder: (a) both legs hold a multi-volume line coextensive with the shelf → the LINE at 0.9, the run
+  on N; (b) otherwise the RUN, with `F merge-with` into the run's landed shelf (a lone trade is an edition of its
+  run, never a second comic); (c) otherwise the book's own count-1 record. One published work shipped as separate
+  printed objects is indexed that way by GCD (Building Stories: 14 lettered rows vs CV's one volume — 0.9 by
+  construction). An album title can be an ISSUE row no series probe reaches (Asterix Miscellany #29 / #31 / #33 of
+  the Hodder line) — search `gcd_issue.title` / `cv_iss.name`. Spellings that hide records: superscripts (Alien³),
+  periods (N.H.K.), an apostrophe year ("Cable '99" = "Cable 1999"), a doubled letter, an "∞" issue number, a literal
+  translation of a Japanese title. ComicVine carries Japanese originals GCD lacks — probe the Japanese title before
+  conceding a scanlation shelf. Marvel renumbers sub-series into one volume (Ultimate Comics Avengers 1/2/3 = #1-18).
+[L-393] (14 shelf/shelves) pub:marvel sig:split
+- Lead rulings (waves 137-138): L-389 blocks joins onto a CREATOR-trade-keyed shelf only; a shelf keyed by its own trade's
+  SUBTITLE that stores the run ("Uncanny Avengers - The Resistance" S20673, CV 153018) takes stray issues/covers of that
+  run by join. An annual goes with its run when no annual-series shelf exists (Uncanny Avengers Annual 2016 -> S94729).
+  GCD indexes each Skottie Young "baby" cover as a variant row of #1 ("Young Cover") — that row decides which relaunch a
+  lone "001 (YYYY) Skottie Young" file belongs to. At a retitle, GCD and CV can split at different issues (GCD keeps WCA
+  #47 on 3061, CV starts AWC at #47). Marvel arc minis (Ultimate Avengers 1-3): both legs number one continuous series
+  (#1-18) while rips restart at 01 per arc — issue files need I lines or they resolve to the wrong issue.
+[L-031] (13 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (13 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+
++134 more matched entries not shown: L-109, L-115, L-117, L-132, L-196, L-295, L-296, L-306, L-307, L-308, L-319, L-327, L-328, L-329, L-332, L-392, L-395, L-397, L-400, L-401, L-405, L-034, L-169, L-291, L-343, L-387, L-391, L-399, L-029, L-398, L-402, L-290, L-371, L-390, L-396, L-403, L-130, L-242, L-135, L-164, L-175, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-030, L-151, L-160, L-113, L-174, L-016, L-032, L-114, L-064, L-085, L-101, L-310, L-345, L-027, L-265, L-379, L-014, L-123, L-193, L-097, L-252, L-274, L-288, L-293, L-315, L-352, L-354, L-128, L-181, L-336, L-028, L-036, L-119, L-150, L-172, L-173, L-187, L-404, L-194, L-330, L-065, L-099, L-262, L-111, L-357, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-106, L-112, L-121, L-129, L-297, L-007, L-217 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S21522 What If...?  [tier C] · 192 files  keys: What If - Back in Black | What If - Civil War | What If - Fallen Son | What If - House of M | What If - Secret Wars | What If Planet Hulk | What If v2 (1989) | What If v3 (1997) | What If...? | What if Annihilation  years 1989-2009  192 files / 35 collections
+   flags: #532 label-ambiguous [Pending] item 97533 — the What If v1 and v2 items are single issues, not collections
+   folders: [122] Marvel\_What If..._\What If v3 (1997) · [39] Marvel\_What If..._\What If v2 (1989) · [3] Marvel\_What If..._\What If 2008 · [2] Marvel\_What If..._\What If 2007 · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0008 Second Genesis · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0013 The Dark Phoenix Saga · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0086 Inferno · [2] _Marvel Major Event Chronology (digital)\1992.03 - Avengers - Operation Galactic Storm\Extra · [1] Marvel\Death's Head\2. Death's Head (Minion) · [1] Marvel\_What If..._\What If v2 (1989)\Annuals and Specials · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0007 Enter The Wolverine · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0017 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0025 Unnamed · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0051 X-Men & Alpha Flight · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0070 The Horsemen of Apocalypse · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0078 Evolutionary war · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0093 Atlantis Attacks · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0114 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0214 The Ties that Bind · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0245 Legionquest · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0247 After Xavier - The Age of Apocolypse · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0248 The Fall of Avalon · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0255 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0329 Zero Tolerance · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0679 House of M · [1] _Marvel Major Event Chronology (digital)\2007.08 - World War Hulk\05 What If
+   files:   [98868] 035 - What If V2 054 - Death's Head Had Lived.cbr (30pp) | [97434] What If Civil War (2008) (Digital) (Shadowcat-Empire).cbz (52pp)
+            [97435] What If Planet Hulk (2007) (Digital) (Shadowcat-Empire).cbz (40pp) | [97438] What If Fallen Son (2009) (Digital) (Shadowcat-Empire).cbz (31pp)
+            [97439] What If House Of M (2009) (Digital) (Shadowcat-Empire).cbz (40pp) | [97441] What If Secret Wars (2009) (Digital) (Shadowcat-Empire).cbz (43pp)
+            [97466] What If Special 001 (1988) (Digital-Empire).cbz (39pp) | [97467] What If 001 (1989) (Digital-Empire).cbz (30pp) | [97468] What If 002 (1989) (Digital-Empire).cbz (29pp)
+            [97469] What If 003 (1989) (Digital-Empire).cbz (28pp) | [97470] What If 004 (1989) (digital) (Shadowcat-Empire).cbz (29pp) | [97471] What If 005 (1989) (Digital-Empire).cbz (30pp)
+            [97472] What If 006 (1989) (Digital-Empire).cbz (28pp) | [97473] What If 007 (1989) (Digital-Empire).cbz (28pp) | [97474] What If 008 (1989) (Digital-Empire).cbz (29pp)
+            [97475] What If 009 (1990) (Digital) (AnHeroGold-Empire).cbz (27pp) | What If 010 (1990) (Digital-Empire).cbz … What If 015 (1990) (Digital-Empire).cbz  (6 files, pp 27-29)
+            [97482] What If 017 (1990) (Digital) (Shadowcat-Empire).cbz (27pp) | [97483] What If 018 (1990) (Digital-Empire).cbz (28pp) | [97484] What If 019 (1990) (Digital-Empire).cbz (29pp)
+            [97485] What If 020 (1990) (Digital-Empire).cbz (23pp) | [97486] What If 021 (1991) (Digital-Empire).cbz (28pp) | [97487] What If 023 (1991) (Digital) (AnHeroGold-Empire).cbz (28pp)
+            What If 024 (1991) (digital).cbz … What If 108 (1998) (digital).cbz  (13 files, pp 25-45) | [97501] What If... 016 (1990) (digital) (Marika-Empire).cbz (30pp)
+            [97502] What If... 035 (1992) (digital) (Marika-Empire).cbz (30pp) | [97503] What If... 036 (1992) (digital) (Marika-Empire).cbz (29pp)
+            [97504] What If... 038 (1992) (digital) (Marika-Empire).cbz (29pp) | [97505] What If... 039 (1992) (digital) (Marika-Empire).cbz (30pp)
+            [97506] What If - Back in Black 01 (2009) (Minutemen-D.T. Rocafella).cbr (33pp) | [97507] What If - Fallen Son (2009) (Minutemen-D.T. Rocafella).cbr (30pp)
+            [97508] What If - House of M 001 (2009) (Never be Mad!-DCP).cbz (40pp) | [97510] What If - Secret Wars 01 (2009) (GreenGiant-DCP).cbr (43pp)
+            [97511] What If 105 (1998) (Digital) (Shadowcat-Empire).cbz (27pp) | [141127] COL What If V2 00-1.rar (?pp) | [141128] COL What If V2 001.zip (?pp) | [141130] COL What If V2 003.zip (?pp)
+            [141131] COL What If V2 004.zip (?pp) | [141132] COL What If V2 005.zip (?pp) | [141133] COL What If V2 006.zip (?pp) | [141134] COL What If V2 007.zip (?pp)
+            [141135] COL What If V2 008.zip (?pp) | [141136] COL What If V2 009.zip (?pp) | [97513] What If V2 010.cbr (29pp) | [141137] COL What If V2 011.zip (?pp)
+            [141138] COL What If V2 012.zip (?pp) | [141139] COL What If V2 013.zip (?pp) | [97514] What If V2 014.cbr (29pp) | [141140] COL What If V2 015.zip (?pp)
+            [141141] COL What If V2 016.zip (?pp) | [141142] COL What If V2 017.zip (?pp) | [141143] COL What If V2 018.zip (?pp) | [97515] What If V2 019.cbr (29pp)
+            [141144] COL What If V2 020.zip (?pp) | [141145] COL What If V2 021.zip (?pp) | [141146] COL What If V2 022.zip (?pp) | [97516] What If V2 023.cbz (29pp)
+            [141147] COL What If V2 024.zip (?pp) | [141148] COL What If V2 025.zip (?pp) | [141149] COL What If V2 026.zip (?pp) | [97517] What If V2 027.cbr (29pp)
+            [97518] What If V2 028.cbr (28pp) | [141150] COL What If V2 029.rar (?pp) | [141151] COL What If V2 030.rar (?pp) | [141152] COL What If V2 031.zip (?pp)
+            [141153] COL What If V2 032.zip (?pp) | [141154] COL What If V2 033.zip (?pp) | [141155] COL What If V2 034.zip (?pp) | [141156] COL What If V2 035.rar (?pp)
+            [141157] COL What If V2 036.rar (?pp) | [141158] COL What If V2 037.zip (?pp) | [141159] COL What If V2 038.rar (?pp) | [141160] COL What If V2 039.rar (?pp)
+            [141161] COL What If V2 040.zip (?pp) | [97519] What If V2 041 ..The Avengers Had Fought Galactus.cbz (44pp) | [97520] What If V2 042 ..Spider-Man Had Kept His Six Arms.cbr (29pp)
+            [97521] What If V2 043 ..Wolverine Had Married Mariko.cbr (28pp) | [97522] What If V2 044 ..Venom Had Possessed The Punisher.cbr (29pp)
+            [97523] What If V2 045 ..Barbara Ketch Had Become Ghost Rider.cbr (27pp) | [97524] What If V2 046 ..Cable Had Destroyed The X-Men.cbr (29pp)
+            [97525] What If V2 047 Magneto Took Over The Usa.cbr (28pp) | [97526] What If V2 048 Daredevil Had Saved Nuke.cbr (29pp)
+            [97527] What If V2 049 ..Silver Surfer Possessed The Infinity Gauntlet.cbz (29pp) | [97528] What If V2 050 ..The Hulk Had Killed Wolverine.cbz (45pp)
+            [97529] What If V2 051 The Punisher Became Captain America.cbr (30pp) | [97530] What If V2 052 Doom Became Sorceror Supreme.cbr (29pp)
+            [97531] What If V2 053 ..The Iron Man Of 2020 Had Stayed In The Past.cbr (29pp) | [97532] What If V2 054 ..Death's Head Had Lived.cbr (30pp)
+            [97533] What If V2 055 ..The Avengers Lost Operation Galactic Storm Pt. 1.cbr (28pp) | [97534] What If V2 056 ..The Avengers Lost Operation Galactic Storm Pt. 2.cbr (28pp)
+            [97535] What If V2 057 ..The Punisher Became An Agent Of S.H.I.E.L.D.cbz (27pp) | [97536] What If V2 058 ..The Punisher Had Killed Spider-Man.cbr (29pp)
+            [97537] What If V2 059 ..Wolverine Led Alpha Flight.cbz (30pp) | [97538] What If V2 060 ..Scott Summers And Jean Grey Had Married Earlier.cbr (28pp)
+            [97539] What If V2 061 ..Spider-Man's Parents Destroyed His Family.cbr (28pp) | [97540] What If V2 062 ..Wolverine Battled Weapon X.cbz (29pp)
+            [97541] What If V2 063 ..War Machine Had Not Destroyed The Living Laser.cbz (29pp) | [97542] What If V2 064 ..Iron Man Sold Out.cbr (45pp)
+            [97543] What If V2 065 ..Archangel Fell From Grace.cbz (29pp) | [97544] What If V2 066 ..Rogue Possessed The Power Of Thor.cbr (29pp)
+            [97545] What If V2 067 ..Captain America Were Revived Today 1.cbr (29pp) | [97546] What If V2 068 ..Captain America Were Revived Today 2.cbr (28pp)
+            [97547] What If V2 069 ..Stryfe Killed The X-Men.cbr (28pp) | [97548] What If V2 070 ..Silver Surfer Had Not Betrayed Galactus.cbr (29pp)
+            [97549] What If V2 071 ..The Gamma Bomb Spawned A Thousand Hulks.cbr (25pp) | [97550] What If V2 072 ..Spider-Man Became A Murderer.cbr (29pp)
+            [97551] What If V2 073 ..Kingpin Owned Daredevil.cbz (25pp) | [97552] What If V2 074 ..Mr. Sinister Formed The X-Men.cbr (30pp)
+            [97553] What If V2 075 ..Blink Of Generation X Had Not Died.cbz (28pp) | [97554] What If V2 076 ..Peter Parker Had To Destroy Spider-Man.cbz (24pp)
+            [97555] What If V2 077 ..Legion Had Killed Magneto.cbz (27pp) | [97556] What If V2 078 ..The New Ff Had Remained A Team.cbr (29pp)
+            [97557] What If V2 079 ..Storm Had The Power Of Phoenix.cbz (27pp) | [97558] What If V2 080 ..The Hulk Had Evolved Into The Maestro.cbz (23pp)
+            [97559] What If V2 081 ..The Age Of Apocalypse Had Not Ended.cbz (28pp) | [97560] What If V2 082 ..J. Jonah Jameson Adopted Spider-Man.cbr (28pp)
+            [97561] What If V2 083 ..Daredevil Was Disciple Of Dr. Strange.cbr (28pp) | [97562] What If V2 084 ..Shard Had Lived Instead Of Bishop.cbr (28pp)
+            [97563] What If V2 085 ..Magneto Ruled All Mutants.cbz (25pp) | [97564] What If V2 086 ..The Scarlet Spider Had Killed Spider-Man.cbr (27pp)
+            [97565] What If V2 087 ..Sabretooth Screams In The Night.cbz (26pp) | [97566] What If V2 088 Arachnamorphosis.cbr (28pp) | [97567] What If V2 089 Deadly Inheritance.cbz (29pp)
+            [97568] What If V2 090 In The Shadows.cbr (28pp) | [97569] What If V2 091 The Man..The Monster.cbr (27pp) | [97570] What If V2 092 I'll Be Your Best Friend.cbr (27pp)
+            [97571] What If V2 093 ..Wolverine, A Man - No More.cbz (25pp) | [97572] What If V2 094 The Kingdom Of Cain.cbr (25pp) | [97573] What If V2 095 Broken Soul.cbr (28pp)
+            [97574] What If V2 096 The Quick And The Dead.cbr (27pp) | [97575] What If V2 097 Camelot Reborn.cbr (28pp) | [97576] What If V2 098 Children In The Attic.cbr (26pp)
+            [97577] What If V2 099 Mask Of The Innocent.cbr (27pp) | [97578] What If V2 100 ..The Greatest Secret Of The Marvel Universe Revealed.cbz (40pp)
+            [97579] What If V2 101 ..The Angel Remained A Horseman Of Apocalypse.cbr (28pp) | [97580] What If V2 102 ..Daredevil's Dad Had Thrown The Big Fight.cbr (27pp)
+            [97581] What If V2 103 ..Captain America Had Saved The Life Of The Inventor Of The Super Soldier Serum.cbr (28pp)
+            [97582] What If V2 104 ..The Impossible Man Obtained The Infinity Gauntlet.cbz (28pp) | [97583] What If V2 106 ..The X-Men Condemned Gambit To Death.cbr (28pp)
+            [97584] What If V2 107 ..Thor Had Never Gone Insane And Assumed The Throne Of Asgard.cbz (29pp) | [97585] What If V2 108 ..The Avengers Battled Carnage.cbz (29pp)
+            [97586] What If V2 109 ..The Thing Had Refused To Leave Liddleville.cbr (29pp) | [97587] What If V2 110 ..Collossus Had Never Joined The X-Men.cbr (28pp)
+            [97588] What If V2 111 ..Wolverine Had Become A Horseman Of Apocalypse.cbr (27pp) | [97589] What If V2 112 ..New York Had Become Ka-Zar's Savage Land..Forever.cbr (29pp)
+            [97590] What If V2 113 ..Tony Stark Became The Master Of The Mystical Arts.cbr (28pp) | [97591] What If V2 114 ..Secret Wars, 25 Years Later.cbz (36pp)
+            [141129] COL What If v2 002.rar (?pp) | [97592] What_If_-_Civil_War_01__2008___greengiant-DCP_.cbr (52pp) | [97594] What_If_Planet_Hulk_01_(2007)_(noads)_(Team-DCP)1.cbr (40pp)
+            [97593] What_if_Annihilation_01_2008_MinuteMen-DarthScanner_.cbr (25pp) | [86644] 005 What If v2 007 ..Wolverine Was An Agent Of S.H.I.E.L.D.cbz (30pp)
+            [86661] 016 What If 009 (1990) (Digital) (AnHeroGold-Empire).cbz (27pp) | [86662] 017 What If 023 (1991) (Digital) (AnHeroGold-Empire).cbz (28pp)
+            [86760] 018 What If v2 032 ..Phoenix Had Not Died.cbz (28pp) | [86761] 019 What If v2 033 ..Phoenix Rose Again.cbz (29pp)
+            [86822] 046 What If v2 024 ..Wolverine Was Lord Of The Vampires.cbz (29pp) | [86870] 006 What If v2 043 ..Wolverine Had Married Mariko.cbr (28pp)
+            [87072] 003 What If v2 012 ..The X-Men Had Stayed In Asgard.cbz (29pp) | [87187] 011 What If v2 101 ..The Angel Remained A Horseman Of Apocalypse.cbr (28pp)
+            [87247] 014 What If v2 001 ..The Avengers Lost The Evolutionary War.cbz (30pp) | [87302] 019 What If v2 006 ..X-Men Lost Inferno.cbz (28pp)
+            [87303] 020 What If v2 037 ..Wolverine Had Been Lord Of The Vampires During Inferno (Timequake Part Iii).cbz (28pp)
+            [87360] What If v2 025 ..The Marvel Super Heroes Had Lost Atlantis Attacks.cbz (45pp) | [87555] 010 What If v2 012 ..The X-Men Had Stayed In Asgard.cbz (29pp)
+            [88062] 005 What If 060 (1994) (Digital) (AnHeroGold-Empire).cbz (28pp) | [88189] What If v2 077 ..Legion Had Killed Magneto.cbz (27pp)
+            [88243] 048 What If v2 081 ..The Age Of Apocalypse Had Not Ended.cbz (28pp) | [88251] 004 What If v2 075 ..Blink Of Generation X Had Not Died.cbz (28pp)
+            [88275] 004 What If v2 077 ..Legion Had Killed Magneto.cbz (27pp) | [88655] 024 What If v2 106 ..The X-Men Condemned Gambit To Death.cbr (28pp)
+            [90290] 051 What If - House of M 001.cbr (38pp) | [116447] What If v2 055 - The Avengers lost Operation Galactic Storm (Part 1 of 2) (1993) (Digital) (AnHeroGold-Empire).cbz (26pp)
+            [116448] What If v2 056 - The Avengers lost Operation Galactic Storm (Part 2 of 2) (1993) (Digital) (AnHeroGold-Empire).cbz (27pp)
+            [116913] What If - Planet Hulk 001 (2007) (Digital) (AnPymGold-Empire).cbr (39pp)
+   ours:    ladder 1-21, 23-39, 41-66, 69-114; 26 number(s) name more than one file: 1, 2, 6, 7, 9, 10, 12, 14, 19, 23, 24, 25; ComicInfo Series: "What If...?"x5, "What If?"x2; ComicInfo Volume: "1989"x7; ComicInfo Count: "113"x5; ComicInfo Publisher: "Marvel"x7; ComicInfo Web: "33101"x1, "35482"x1, "35585"x1, "35793"x1
+   CV linked:      vol 4249 "What If...?" 1989 Marvel 115 issues; cached #1-114 (115); yearΔ 0; ratio 149/115 = 1.30; no judged range
+   CV per-file (v1): vol 4249 "What If...?" 1989 Marvel 115 on 154/192 files · vol 19301 "What If? Planet Hulk" 2007 Marvel 1 issue 115812 on 2/192 files · vol 24272 "What If? House Of M" 2009 Marvel 1 issue 144410 on 1/192 files
+   CV candidates:  (= linked) · 2918 "What If?" 1977 Marvel 47 s76 · 20155 "What If? Civil War" 2008 Marvel 1 issue 120241 s58 · 30060 "What If? Civil War" 2008 Marvel 1 issue 185207 s58 · 24584 "What If? Fallen Son" 2009 Marvel 1 issue 145487 s58 · 28948 "What If? Secret Wars" 2009 Marvel 1 issue 178295 s58 · 25308 "What If? Secret Wars" 2009 Marvel 1 issue 149482 s58   (v1 search)
+   CV local rip:   (= linked) · 2918 "What If?" 1977 Marvel 47 · 85149 "What If?" 2015 Delcourt 4 · 87863 "What If?" 2016 Delcourt 1 issue 513819 · 88650 "What If?" 2016 Delcourt 2   (rip lookup)
+   GCD per-file:   methods numx50 · round2-seriesx1 ⚠ · fulldump-rematchx1  (⚠ copies a folder neighbour's series — verify); series 3864 "What If...?" 1989-1998 Marvel [was ongoing series] 115 on 48/192 files · series 72361 "What If? Planet Hulk" 2007-2007 Marvel [one-shot] 1 on 2/192 files · series 32968 "What If? House of M" 2009-2009 Marvel [one-shot] 1 on 1/192 files · series 33369 "What If? Secret Wars" 2009-2009 Marvel [] 1 on 1/192 files
+   GCD dump:       (= per-file) · 204261 "What If" [es] 1989-1994 Planeta DeAgostini [] 70 · 71978 "What If?" [en-au] 1980-1980 Yaffa / Page [] 1 · 2410 "What If?" 1977-1984 Marvel [] 47 · 80331 "What If" [en-au] 1977-1977 Yaffa / Page [] 1 · 237663 "What if...?" [de] 2026-2026 Egmont Ehapa [] 1   (dump lookup)
+
+== S21852 Wolverine Epic Collection  [tier D]   keys: Wolverine Epic Collection  years 2014-2019  5 files / 5 collections
+   folders: [5] Marvel\_Wolverine\02 Wolverine v2 (1988)\Trades
+   files:   [97645] COL Wolverine Epic Collection Vol. 01 - Madripoor Nights (2014) (Digital) (F) (AnHeroGold-Empire).cbz (495pp)
+            [97646] COL Wolverine Epic Collection Vol. 02 - Back to Basics (2019) (Digital) (Zone-Empire).cbr (466pp)
+            [97652] COL Wolverine Epic Collection Vol. 10 - Not Dead Yet (2017) (Digital) (Asgard-Empire).cbr (110pp)
+            [97653] COL Wolverine Epic Collection Vol. 12 - Shadow of Apocalypse (2017) (Digital) (Kileko-Empire).cbr (487pp)
+            [97654] COL Wolverine Epic Collection Vol. 13 - Blood Debt (2018) (Digital) (Kileko-Empire).cbr (469pp)
+   ours:    ComicInfo Series: "Wolverine Epic Collection"x2; ComicInfo Publisher: "Marvel"x2
+   CV candidates:  125689 "Wolverine Epic Collection: Inner Fury" 2020 Marvel ? s33 · 78816 "Wolverine Epic Collection: Madripoor Nights" 2014 Marvel ? s33 · 109464 "Wolverine Epic Collection: Blood Debt" 2018 Marvel ? s33 · 151521 "Wolverine Epic Collection: To the Bone" 2023 Marvel ? s32 · 86412 "Wolverine Epic Collection: The Dying Game" 2015 Marvel ? s32 · 98540 "Wolverine Epic Collection: Shadow of Apocalypse" 2017 Marvel ? s32   (v1 search)
+   CV local rip:   78816 "Wolverine Epic Collection: Madripoor Nights" 2014 Marvel 1 issue 473228 (via CV candidate name "Wolverine Epic Collection: Madripoor Nights") · 109464 "Wolverine Epic Collection: Blood Debt" 2018 Marvel 1 issue 664316 (via CV candidate name "Wolverine Epic Collection: Blood Debt") · 125689 "Wolverine Epic Collection: Inner Fury" 2020 Marvel 1 issue 740894 (via CV candidate name "Wolverine Epic Collection: Inner Fury")   (rip lookup)
+   GCD dump:       80971 "Wolverine Epic Collection" 2014-? Marvel [] 11   (dump lookup)
+
+== S21853 Wolverine Epic Collection: Blood and Claws  [tier C] · by 7  keys: Wolverine Epic Collection: Blood And Claws  years 2021-2021  1 files / 1 collections
+   folders: [1] Marvel\_Wolverine\02 Wolverine v2 (1988)\Trades
+   files:   [97647] COL Wolverine Epic Collection Vol. 03 - Blood and Claws (2021) (Digital-Empire).cbr (446pp)
+   ours:    ComicInfo Series: "Wolverine Epic Collection: Blood And Claws"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [97647] gcd_reprint 2238352: s3865 Wolverine (1988) #31-44 [29 stories] · s28501 Wolverine: Bloody Choices (1991) (unnumbered) [2 stories] · s7742 Wolverine Annual 2 - Bloodlust (1990) #2 [2 stories]
+   CV linked:      vol 137509 "Wolverine Epic Collection: Blood and Claws" 2021 Marvel 1 issues issue 869600; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 109464 "Wolverine Epic Collection: Blood Debt" 2018 Marvel 1 issue 664316 s29 · 144800 "Wolverine Epic Collection: Tooth and Claw" 2022 Marvel 1 issue 944339 s28 · 125689 "Wolverine Epic Collection: Inner Fury" 2020 Marvel 1 issue 740894 s18 · 78816 "Wolverine Epic Collection: Madripoor Nights" 2014 Marvel 1 issue 473228 s18 · 151521 "Wolverine Epic Collection: To the Bone" 2023 Marvel 1 issue 996059 s17 · 86412 "Wolverine Epic Collection: The Dying Game" 2015 Marvel 1 issue 507192 s17   (v1 search)
+   CV local rip:   (= linked) · 144800 "Wolverine Epic Collection: Tooth and Claw" 2022 Marvel 1 issue 944339 (via CV candidate name "Wolverine Epic Collection: Tooth and Claw") · 109464 "Wolverine Epic Collection: Blood Debt" 2018 Marvel 1 issue 664316 (via CV candidate name "Wolverine Epic Collection: Blood Debt")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 80971 "Wolverine Epic Collection" 2014-? Marvel [collected edition] 11 on 1/1 files; the dump names no other series
+   bridges:        gcd 80971 -> LOCG 119840 "Wolverine Epic Collection: The Return of Weapon X TP" support 10 · gcd 80971 -> OL /works/OL21658543W "None" isbnSupport 10
+
+== S21854 Wolverine Epic Collection: Inner Fury  [tier C] · by 6  keys: Wolverine Epic Collection: Inner Fury  years 2020-2020  1 files / 1 collections
+   folders: [1] Marvel\_Wolverine\02 Wolverine v2 (1988)\Trades
+   files:   [97648] COL Wolverine Epic Collection Vol. 06 - Inner Fury (2020) (Digital) (Kileko-Empire).cbz (460pp)
+   ours:    ComicInfo Series: "Wolverine Epic Collection: Inner Fury"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [97648] gcd notes 2116112 (#6 of Wolverine Epic Collection): Wolverine (Marvel, 1988 series) #69-75; eries), Wolverine: Global Jeopardy (Marvel, 1993 series), Sabretooth (Marvel, 1993 series) #1-4; X-Men (Marvel, 1991 series) #25  |  gcd_reprint 2116112: s3865 Wolverine (1988) #69-75 [8 stories] · s4727 Sabretooth (1993) #1-4 [4 stories] · s4254 X-Men (1991) #25 [1 story] · s9942 Wolverine: Global Jeopardy (1993) #1 [1 story]
+   CV linked:      vol 125689 "Wolverine Epic Collection: Inner Fury" 2020 Marvel 1 issues issue 740894; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 23052 "Wolverine: Inner Fury" 1992 Marvel 1 issue 138921 s45 · 78816 "Wolverine Epic Collection: Madripoor Nights" 2014 Marvel 1 issue 473228 s24 · 109464 "Wolverine Epic Collection: Blood Debt" 2018 Marvel 1 issue 664316 s24 · 151521 "Wolverine Epic Collection: To the Bone" 2023 Marvel 1 issue 996059 s23 · 119305 "Silver Surfer Epic Collection: Inner Demons" 2019 Marvel 1 issue 709724 s23 · 86412 "Wolverine Epic Collection: The Dying Game" 2015 Marvel 1 issue 507192 s23   (v1 search)
+   CV local rip:   (= linked) · 78816 "Wolverine Epic Collection: Madripoor Nights" 2014 Marvel 1 issue 473228 (via CV candidate name "Wolverine Epic Collection: Madripoor Nights") · 23052 "Wolverine: Inner Fury" 1992 Marvel 1 issue 138921 (via CV candidate name "Wolverine: Inner Fury")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 80971 "Wolverine Epic Collection" 2014-? Marvel [collected edition] 11 on 1/1 files
+   GCD dump:       4486 "Wolverine: Inner Fury" 1992-1992 Marvel [] 1 (via CV candidate name "Wolverine: Inner Fury")   (dump lookup)
+   bridges:        gcd 80971 -> LOCG 119840 "Wolverine Epic Collection: The Return of Weapon X TP" support 10 · gcd 80971 -> OL /works/OL21658543W "None" isbnSupport 10
+
+== S21856 Wolverine Epic Collection: The Return of Weapon X  [tier C] · by 10  keys: Wolverine Epic Collection: The Return Of Weapon X  years 2024-2024  1 files / 1 collections
+   folders: [1] Marvel\_Wolverine\02 Wolverine v2 (1988)\Trades
+   files:   [97655] COL Wolverine Epic Collection Vol. 14 - The Return Of Weapon X (2024) (Digital) (Kileko-Empire).cbz (425pp)
+   ours:    ComicInfo Series: "Wolverine Epic Collection: The Return Of Weapon X"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [97655] gcd_reprint 2617434: s3865 Wolverine (1988) #159-172 [44 stories] · s11777 Wolverine 2001 (2001) (unnumbered) [4 stories] · s86771 Wizard: The Comics Magazine (1991) #115, #117, #130 [3 stories] · s11776 Wolverine 2000 (2000) (unnumbered) [3 stories]
+   CV linked:      vol 157408 "Wolverine Epic Collection: The Return of Weapon X" 2024 Marvel 1 issues issue 1049421; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 67509 "Wolverine: The Return of Weapon X" 2013 Marvel 1 issue 426114 s45 · 153947 "Wolverine: Weapon X" 2023 Marvel UK/Panini UK 1 issue 1021492 s45 · 30039 "Wolverine: Weapon X" 2009 Marvel 1 issue 185026 s45 · 26150 "Wolverine Weapon X" 2009 Marvel 16 s30 · 110542 "Weapon X: The Return Omnibus" 2018 Marvel 1 issue 668790 s22 · 26290 "Wolverine: Weapon X Files" 2009 Marvel 1 issue 156064 s20   (v1 search)
+   CV local rip:   (= linked) · 153947 "Wolverine: Weapon X" 2023 Marvel UK/Panini UK 1 issue 1021492 (via CV candidate name "Wolverine: Weapon X") · 67509 "Wolverine: The Return of Weapon X" 2013 Marvel 1 issue 426114 (via CV candidate name "Wolverine: The Return of Weapon X") · 26150 "Wolverine Weapon X" 2009 Marvel 16 (via CV candidate name "Wolverine: Weapon X") · 30039 "Wolverine: Weapon X" 2009 Marvel 1 issue 185026 (via CV candidate name "Wolverine: Weapon X")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 80971 "Wolverine Epic Collection" 2014-? Marvel [collected edition] 11 on 1/1 files
+   GCD dump:       222708 "Wolverine: Weapon X" [en-gb] 2023-2023 Panini UK [] 1 (via CV candidate name "Wolverine: Weapon X") · 193833 "Wolverine Weapon X" [nl] 2022-2022 Dark Dragon Books [] 1 (via CV candidate name "Wolverine: Weapon X") · 215386 "Wolverine: The Return of Weapon X" 2013-2013 Marvel [] 1 (via CV candidate name "Wolverine: The Return of Weapon X") · 36479 "Wolverine Weapon X" 2009-2010 Marvel [] 16 (via CV candidate name "Wolverine: Weapon X") · 75051 "Wolverine: Weapon X" 2009-2009 Marvel [] 1 (via CV candidate name "Wolverine: Weapon X") · 158861 "Wolverine: Weapon X" 2009-2010 Marvel [] 3 (via CV candidate name "Wolverine: Weapon X")   (dump lookup)
+   bridges:        gcd 80971 -> LOCG 119840 "Wolverine Epic Collection: The Return of Weapon X TP" support 10 · gcd 80971 -> OL /works/OL21658543W "None" isbnSupport 10
+
+== S21857 Wolverine Epic Collection: To the Bone  [tier C] · by 9  keys: Wolverine Epic Collection: To The Bone  years 2023-2023  1 files / 1 collections
+   folders: [1] Marvel\_Wolverine\02 Wolverine v2 (1988)\Trades
+   files:   [97649] COL Wolverine Epic Collection Vol. 07 - To The Bone (2023) (Digital) (Kileko-Empire).cbz (436pp)
+   ours:    ComicInfo Series: "Wolverine Epic Collection: To The Bone"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [97649] gcd notes 2546675 (#7 of Wolverine Epic Collection): Wolverine (Marvel, 1988 series) #76-86; Cable (Marvel 1993 series) #16  |  gcd_reprint 2546675: s3865 Wolverine (1988) #76-86 [26 stories] · s16225 Scorpio Rising [Wolverine & Nick Fury] (1994) (unnumbered) [5 stories] · s18444 Wolverine: Evilution (1994) (unnumbered) [5 stories] · s16873 Ghost Rider, Wolverine, Punisher: The Dark Design (1994) (unnumbered) [3 stories]
+   CV linked:      vol 151521 "Wolverine Epic Collection: To the Bone" 2023 Marvel 1 issues issue 996059; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 86412 "Wolverine Epic Collection: The Dying Game" 2015 Marvel 1 issue 507192 s28 · 163033 "Wolverine Epic Collection: Law of the Jungle" 2025 Marvel 1 issue 1100493 s27 · 139247 "Bone Collection" 2021 Viz 2 s23 · 129201 "Bone Collection" 2020 Shueisha 2 s23 · 125689 "Wolverine Epic Collection: Inner Fury" 2020 Marvel 1 issue 740894 s18 · 78816 "Wolverine Epic Collection: Madripoor Nights" 2014 Marvel 1 issue 473228 s18   (v1 search)
+   CV local rip:   (= linked) · 163033 "Wolverine Epic Collection: Law of the Jungle" 2025 Marvel 1 issue 1100493 (via CV candidate name "Wolverine Epic Collection: Law of the Jungle") · 86412 "Wolverine Epic Collection: The Dying Game" 2015 Marvel 1 issue 507192 (via CV candidate name "Wolverine Epic Collection: The Dying Game")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 80971 "Wolverine Epic Collection" 2014-? Marvel [collected edition] 11 on 1/1 files; the dump names no other series
+   bridges:        gcd 80971 -> LOCG 119840 "Wolverine Epic Collection: The Return of Weapon X TP" support 10 · gcd 80971 -> OL /works/OL21658543W "None" isbnSupport 10
+
+== S21858 Wolverine Epic Collection: Tooth and Claw  [tier C] · by 8  keys: Wolverine Epic Collection: Tooth And Claw  years 2022-2022  1 files / 1 collections
+   folders: [1] Marvel\_Wolverine\02 Wolverine v2 (1988)\Trades
+   files:   [97651] COL Wolverine Epic Collection Vol. 09 - Tooth And Claw (2022) (Digital) (Kileko-Empire).cbz (466pp)
+   ours:    ComicInfo Series: "Wolverine Epic Collection: Tooth And Claw"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [97651] gcd_reprint 2421280: s3865 Wolverine (1988) #101-109 [18 stories] · s11964 Venom: Tooth and Claw (1996) #1-3 [7 stories] · s40645 Wolverine Special (1996) #102.5 [4 stories] · s7736 Logan: Shadow Society (1996) (unnumbered) [3 stories]
+   CV linked:      vol 144800 "Wolverine Epic Collection: Tooth and Claw" 2022 Marvel 1 issues issue 944339; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 118196 "Tooth & Claw" 2019 Hex Publishers 1 issue 705659 s30 · 11890 "Tooth and Claw" 1999 Image 3 s18 · 151521 "Wolverine Epic Collection: To the Bone" 2023 Marvel 1 issue 996059 s17 · 11033 "Venom: Tooth and Claw" 1996 Marvel 3 s8 · 136514 "Wolves: Tooth & Claw" 2021 Pizza Bandit! 1 issue 856366 s5 · 162000 "Cadet Dredd: Tooth and Claw" 2024 Rebellion 1 issue 1090048 s3   (v1 search)
+   CV local rip:   (= linked) · 11890 "Tooth and Claw" 1999 Image 3 (via CV candidate name "Tooth and Claw") · 118196 "Tooth & Claw" 2019 Hex Publishers 1 issue 705659 (via CV candidate name "Tooth & Claw")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 80971 "Wolverine Epic Collection" 2014-? Marvel [collected edition] 11 on 1/1 files
+   GCD dump:       12902 "Tooth and Claw" 1999-1999 Image [] 3 (via CV candidate name "Tooth and Claw")   (dump lookup)
+   bridges:        gcd 80971 -> LOCG 119840 "Wolverine Epic Collection: The Return of Weapon X TP" support 10 · gcd 80971 -> OL /works/OL21658543W "None" isbnSupport 10
+
+== S21932 Wolverine  [tier C] · 5 named, the minority on >= 2 files or >= 10%  keys: Wolverine v2 (2012) | Wolverine v4 (2010) | Wolverine: Wolverine Goes To Hell  years 1989-2015  61 files / 5 collections
+   folders: [13] Marvel\_Wolverine\09 Wolverine v2 (2012) · [5] Marvel\_Wolverine\07 Wolverine v4 (2010) · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0889 Wolverine Goes To Hell · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0913 Wolverine Vs The X-Men · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0935 Wolverine's Revenge · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0966 Back In Japan · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0981 Rot · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0989 Sabertooth Reborn · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0954 Goodbye Chinatown · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\1007 Covenant · [3] _Marvel Major Event Chronology (digital)\2011.07 - X-Men - Schism - Regenesis\03 Regenesis\Team Gold (Wolverine) · [2] Marvel\_Wolverine\07 Wolverine v4 (2010)\Annuals and Specials · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0947 Wolverine No More
+   files:   [97831] Wolverine 1000 (2011) (digital-Empire).cbr (74pp) | [97832] Wolverine 900 (2010) (Digital) (Shadowcat-Empire).cbz (102pp)
+            [97833] COL Wolverine Vol. 01 - Wolverine Goes To Hell (2011) (Digital) (F) (Kileko-Empire).cbr.cbz (175pp)
+            [97834] COL Wolverine Vol. 02 - Wolverine vs. the X-Men (2012) (Digital) (Kileko-Empire).cbr (126pp)
+            [97835] COL Wolverine Vol. 03 - Wolverine's Revenge (2012) (Digital) (Kileko-Empire).cbr (166pp)
+            [97836] COL Wolverine Vol. 04 - Goodbye Chinatown (2012) (Digital) (Kileko-Empire).cbr (96pp) | [97837] COL Wolverine Vol. 05 - Back In Japan (2012) (Digital) (Kileko-Empire).cbr (127pp)
+            [97847] Wolverine 305 (2012) (Digital) (Minutemen-PhD).cbr (22pp) | [97848] Wolverine 306 (2012) (Digital) (Minutemen-PhD).cbr (22pp)
+            [97849] Wolverine 307 (2012) (Digital) (Minutemen-PhD).cbr (23pp) | [97850] Wolverine 308 (2012) (Digital) (Minutemen-PhD).cbr (23pp)
+            [97851] Wolverine 309 (2012) (Digital) (Minutemen-Acan).cbr (39pp) | [97852] Wolverine 310 (2012) (Digital) (Minutemen-Acan).cbr (20pp)
+            [97853] Wolverine 311 (2012) (Digital) (Minutemen-Acan).cbr (22pp) | [97854] Wolverine 312 (2012) (Digital) (Minutemen-Acan).cbr (21pp)
+            [97855] Wolverine 313 (2012) (digital) (minutemen-acan).cbr (22pp) | [97856] Wolverine 314 (2012) (Digital) (Minutemen-Acan).cbr (24pp)
+            [97857] Wolverine 315 (2012) (Digital) (Minutemen-Acan).cbr (24pp) | [97858] Wolverine 316 (2013) (Digital) (Minutemen-Acan).cbr (23pp)
+            [97859] Wolverine 317 (2013) (Digital) (Minutemen-Acan).cbr (23pp) | [91593] 002 Wolverine 001 (2010) (Digital) (Zone-Empire).cbr (33pp)
+            [91594] 003 Wolverine 002 (2010) (Digital) (Zone-Empire).cbr (32pp) | [91595] 004 Wolverine 003 (2011) (Digital) (Zone-Empire).cbr (32pp)
+            [91596] 005 Wolverine 004 (2011) (Digital) (Zone-Empire).cbr (31pp) | [91597] 006 Wolverine 005 (2011) (Digital) (Zone-Empire).cbr (32pp)
+            [91725] 002 Wolverine 005.1 (2011) (Digital) (Zone-Empire).cbr (24pp) | [91726] 003 Wolverine 006 (2011) (Digital) (Zone-Empire).cbr (26pp)
+            [91727] 004 Wolverine 007 (2011) (Digital) (Zone-Empire).cbr (26pp) | [91728] 005 Wolverine 008 (2011) (Digital) (Zone-Empire).cbr (26pp)
+            [91729] 006 Wolverine 009 (2011) (Digital) (Zone-Empire).cbr (26pp)
+            001 Wolverine 010 (2011) (digital) (Minutemen-PhD).cbr … 001 Wolverine 020 (2012) (digital) (Minutemen-PhD).cbr  (11 files, pp 21-24)
+            [91986] 002 Wolverine 300 (2012) (Digital) (Zone-Empire).cbr (33pp)
+            003 Wolverine 301 (2012) (digital) (Minutemen-PhD).cbr … 005 Wolverine 308 (2012) (digital) (Minutemen-PhD).cbr  (8 files, pp 22-24)
+            001 Wolverine 310 (2012) (Digital) (Minutemen-Acan).cbr … 003 Wolverine 316 (2013) (Digital) (Minutemen-Acan).cbr  (8 files, pp 20-39)
+            [117657] Wolverine 017 (2011) (Digital) (Shadowcat-Empire).cbz (23pp) | [117658] Wolverine 018 (2012) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [117659] Wolverine 019 (2012) (Digital) (Shadowcat-Empire).cbz (24pp)
+   ours:    ladder 1-20, 300-317, 900, 1000; 16 number(s) name more than one file: 5, 17, 18, 19, 305, 306, 307, 308, 309, 310, 311, 312; ComicInfo Series: "Wolverine"x1, "Wolverine: Wolverine Goes To Hell"x1; ComicInfo Volume: "2010"x1; ComicInfo Publisher: "Marvel"x2
+   GCD says: [97833] gcd notes 865235 (#1 of Wolverine: Wolverine Goes to Hell): Wolverine (Marvel, 2010 series) #1-3
+             [97834] gcd_reprint 2729342: s52076 Wolverine (2010) #5.1, #6-9 [5 stories] · s223059 Wolverine: Wolverine vs. the X-Men (2011) (unnumbered) [1 story]
+             [97835] gcd_reprint 2394606: s52076 Wolverine (2010) #10-14 [6 stories]
+             [97836] gcd_reprint 2101620: s52076 Wolverine (2010) #17-20 [4 stories] · s220416 Wolverine: Goodbye Chinatown (2012) (unnumbered) [1 story]
+             [97837] gcd_reprint 2685472: s52076 Wolverine (2010) #300-304 [5 stories] · s221175 Wolverine: Back in Japan (2012) (unnumbered) [1 story]
+   CV linked:      vol 35263 "Wolverine" 2010 Marvel 40 issues; cached #1-1000 (40); yearΔ 21; ratio 56/40 = 1.40; no judged range
+   CV per-file (v1): vol 69993 "Wolverine" 1989 Panini Comics 445 on 57/61 files
+   CV candidates:  (= linked) · 35279 "Wolverine: The Road to Hell" 2010 Marvel 1 issue 232620 s79 · 35672 "Wolverine: Development Hell" 2010 Marvel Digital Comics Unlimited 1 issue 236113 s71 · 39248 "Wolverine: Wolverine Goes to Hell" 2011 Marvel 1 issue 264800 s65 · 45481 "Wolverine: Wolverine Goes to Hell" 2011 Marvel 1 issue 313297 s65 · 4250 "Wolverine" 1988 Marvel 192 s60 · 43493 "Wolverine" 2004 Panini Brasil 107 s50   (v1 search)
+   CV local rip:   (= linked) · 4250 "Wolverine" 1988 Marvel 192 · 23055 "Wolverine" 1990 Marvel 1 issue 138925 · 127236 "Wolverine" 1990 JuniorPress BV 89 · 159867 "Wolverine" 1992 Abril 9 · 3157 "Wolverine" 1982 Marvel 4   (rip lookup)
+   GCD per-file:   series 52076 "Wolverine" 2010-2013 Marvel [was ongoing series] 39 on 39/61 files · series 62055 "Wolverine" [fr] 2011-2012 Panini France [série continue terminée [was ongoing series]] 12 on 8/61 files · series 75524 "Wolverine" [es-ar] 2011-2013 Ovni Press [Ongoing Series] 16 on 7/61 files · series 55594 "Wolverine" 2011-2011 Marvel [one-shot] 1 on 1/61 files; methods numx56
+   GCD dump:       28557 "Wolverine" [it] 1989-1994 Play Press [] 48 · 87061 "Wolverine" [in-id] 1989-? Misurind [] 12 · 3865 "Wolverine" 1988-2003 Marvel [] 190 · 18493 "Wolverine" [nl] 1990-2000 Juniorpress [] 89 · 131107 "Wolverine" [pt-br] 1988-1988 Editora Abril [] 1 · 9901 "Wolverine" 1987-1987 Marvel [] 1   (dump lookup)
+   bridges:        gcd 52076 -> LOCG 112255 "Wolverine" support 45 · gcd 62055 -> LOCG 180055 "Wolverine: Development Hell" support 1
+
+== S21922 Wolverine: Old Man Logan  [tier B]   keys: Wolverine: Old Man Logan  years 2010-2019  4 files / 3 collections
+   folders: [3] Marvel\_Wolverine\15 Old Man Logan v2 (2016) · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0779 Old Man Logan
+   files:   [97894] COL Old Man Logan Vol. 06 - Days of Anger (2018) (Digital) (F) (Zone-Empire).cbr (131pp)
+            [97898] COL Old Man Logan Vol. 09 - The Hunter and the Hunted (2018) (Digital) (Zone-Empire).cbr (108pp)
+            [97899] COL Old Man Logan Vol. 10 - End of the World (2019) (Digital) (Zone-Empire).cbr (154pp)
+            [90924] 008 Wolverine - Old Man Logan Giant Size 1 (2009) (3 covers) (Minutemen-Darth)&Danger.cbr (54pp)
+   ours:    ladder 1; judged item 97894 #25-30 conf 0.95; judged item 97898 #41-45 conf 0.95; judged item 97899 #46-50 conf 0.95; ComicInfo Series: "Wolverine: Old Man Logan"x3; ComicInfo Publisher: "Marvel"x3
+   GCD says: [97894] gcd_reprint 1777754: s96095 Old Man Logan (2016) #25-30 [18 stories]
+             [97898] gcd_reprint 1878784: s96095 Old Man Logan (2016) #41-45 [11 stories]
+             [97899] gcd_reprint 1891187: s96095 Old Man Logan (2016) #46-50 [6 stories] · s128742 Old Man Logan Annual (2018) #1 [1 story]
+   CV per-file (v1): vol 31674 "Wolverine: Old Man Logan" 2009 Marvel 1 issue 198497 on 1/4 files
+   CV candidates:  (= per-file) · 92216 "Wolverine: Old Man Logan: Berzerker" 2016 Marvel 1 issue 539261 s92 · 94829 "Wolverine: Old Man Logan: Bordertown" 2016 Marvel 1 issue 553026 s92 · 86317 "Wolverine: Old Man Logan: Warzones!" 2015 Marvel 1 issue 507056 s89 · 87624 "Old Man Logan" 2016 Marvel 50 s85 · 101797 "Wolverine: Old Man Logan: Old Monsters" 2017 Marvel 1 issue 598392 s36 · 113270 "Wolverine: Old Man Logan: To Kill For" 2018 Marvel 1 issue 683844 s35   (v1 search)
+   CV local rip:   (= per-file) · 92216 "Wolverine: Old Man Logan: Berzerker" 2016 Marvel 1 issue 539261 (via CV candidate name "Wolverine: Old Man Logan: Berzerker") · 94829 "Wolverine: Old Man Logan: Bordertown" 2016 Marvel 1 issue 553026 (via CV candidate name "Wolverine: Old Man Logan: Bordertown")   (rip lookup)
+   GCD dump:       72767 "Wolverine: Old Man Logan" 2010-2010 Marvel [] 1 · 51299 "Wolverine: Old Man Logan" 2009-2009 Marvel [] 1 · 104143 "Wolverine: Old Man Logan" 2015-2018 Marvel [] 12 · 111913 "Wolverine - Old Man Logan" [de] 2017-? Panini Deutschland [] 1 · 140061 "Wolverine - Old Man Logan" [nl] 2019-2019 Dark Dragon Books [] 4   (dump lookup)
+
+== S13205 Old Man Logan  [tier C] · ratio 0.20  keys: Old Man Logan  years 2015-2018  20 files / 10 collections
+   flags: #363 label-ambiguous [Pending] item 118134 — items 97888 and 118134 are duplicate copies of Vol. 00 - Warzones!
+   folders: [10] Marvel\_Wolverine\15 Old Man Logan v2 (2016)\Variant Covers · [9] Marvel\_Wolverine\15 Old Man Logan v2 (2016) · [1] _Marvel Major Event Chronology (digital)\2015.05 - Secret Wars\04 Warzones!
+   files:   [97888] COL Old Man Logan Vol. 00 - Warzones! (2015) (Digital) (Zone-Empire).cbr (111pp) | [97889] COL Old Man Logan Vol. 01 - Berzerker (2016) (Digital) (Zone-Empire).cbr (115pp)
+            [97890] COL Old Man Logan Vol. 02 - Bordertown (2016) (Digital) (Zone-Empire).cbr (110pp) | [97891] COL Old Man Logan Vol. 03 - The Last Ronin (2017) (Digital) (Kileko-Empire).cbr (106pp)
+            [97892] COL Old Man Logan Vol. 04 - Old Monsters (2017) (Digital) (Kileko-Empire).cbr (106pp) | [97893] COL Old Man Logan Vol. 05 - Past Lives (2017) (Digital) (Zone-Empire).cbr (122pp)
+            [97895] COL Old Man Logan Vol. 06 - Days of Anger - Black and White (2018) (Digital) (Zone-Empire).cbr (132pp)
+            [97896] COL Old Man Logan Vol. 07 - Scarlet Samurai (2018) (Digital) (Zone-Empire).cbr (112pp) | [97897] COL Old Man Logan Vol. 08 - To Kill For (2018) (Digital) (Zone-Empire).cbr (111pp)
+            [97900] Old Man Logan 002 (2016) (Giuseppe Camuncoli Variant) [extracted] (digital) (Minutemen-InnerDemons).cbr (1pp)
+            [97901] Old Man Logan 003 (2016) (Declan Shalvey Variant) [extracted] (digital) (Minutemen-InnerDemons).cbr (1pp)
+            [97902] Old Man Logan 003 (2016) (Terry Dodson Captain America 75th Anniversary Variant) [extracted] (digital) (Minutemen-InnerDemons).cbr (1pp)
+            [97903] Old Man Logan 004 (2016) (Kalman Andrasofszky Civil War Variant) [extracted] (digital) (Minutemen-InnerDemons).cbr (1pp)
+            [97904] Old Man Logan 005 (2016) (Greg Hildebrandt Classic Variant) [extracted] (digital) (Minutemen-InnerDemons).cbr (1pp)
+            [97905] Old Man Logan 005 (2016) (Scott Wilson The Story Thus Far Variant) [extracted] (digital) (Minutemen-InnerDemons).cbr (1pp)
+            [97906] Old Man Logan 008 (2016) (Rafael Albuquerque Death of X Variant) [extracted] (digital) (Minutemen-InnerDemons).cbr (1pp)
+            [97907] Old Man Logan 019 (2017) (Venomized Variant Cover) (Ghosts-Novus-HD).cbz (1pp)
+            [97908] Old Man Logan 022 (2017) (Chris Stevens variant) [extracted] (digital) (Minutemen-Thoth).cbz (1pp)
+            [97909] Old Man Logan 022 (2017) (Greg Land 'Past Lives' variant) [extracted] (digital) (Minutemen-Thoth).cbz (1pp)
+            [118134] COL Old Man Logan Vol. 00 - Warzones! (2015) (Digital) (Zone-Empire).cbr (111pp)
+   ours:    ladder 2-5, 8, 19, 22; 3 number(s) name more than one file: 3, 5, 22; judged item 97889 #1-4 conf 0.75; judged item 97890 #5-8 conf 0.75; judged item 97891 #9-13 conf 0.8; judged item 97892 #14-18 conf 0.75; judged item 97893 #19-24 conf 0.75; judged item 97895 #25-30 conf 0.85; judged item 97896 #31-35 conf 0.75; judged item 97897 #36-40 conf 0.8
+   GCD says: [97888] gcd_reprint 1505959: s89543 Old Man Logan (2015) #1-5 [20 stories]
+             [97889] gcd_reprint 1602262: s96095 Old Man Logan (2016) #1-4 [19 stories] · s40012 Wolverine: Old Man Logan Giant-Size (2009) #1 [4 stories]
+             [97890] gcd_reprint 1637940: s96095 Old Man Logan (2016) #5-8 [13 stories] · s2605 The Uncanny X-Men (1981) #205 [2 stories]
+             [97891] gcd_reprint 1667257: s96095 Old Man Logan (2016) #9-13 [12 stories]
+             [97892] gcd_reprint 1708621: s96095 Old Man Logan (2016) #14-18 [11 stories]
+             [97893] gcd_reprint 1737151: s96095 Old Man Logan (2016) #19-24 [22 stories]
+             [97895] gcd_reprint 2434225: s96095 Old Man Logan (2016) #25-30 [6 stories] · s104143 Wolverine: Old Man Logan (2015) #6 [1 story]
+             [97896] gcd_reprint 1824071: s96095 Old Man Logan (2016) #31-35 [6 stories]
+             [97897] gcd_reprint 1843116: s96095 Old Man Logan (2016) #36-40 [13 stories]
+             [118134] gcd_reprint 1505959: s89543 Old Man Logan (2015) #1-5 [20 stories]
+   CV linked:      vol 87624 "Old Man Logan" 2016 Marvel 50 issues; cached #1-50 (50); yearΔ 1; ratio 10/50 = 0.20; 8 of 8 judged fit; v1 per-file: same volume on 10/20 files
+   CV candidates:  (= linked) · 82208 "Old Man Logan" 2015 Marvel 5 s105 · 118907 "Old Man Logan " 2016 Panini Verlag 9 s93 · 31674 "Wolverine: Old Man Logan" 2009 Marvel 1 issue 198497 s84 · 105311 "Deadpool vs. Old Man Logan" 2017 Marvel 5 s36 · 113250 "Old Man Logan Annual" 2018 Marvel 1 issue 683832 s34 · 99086 "True Believers: Old Man Logan" 2017 Marvel 1 issue 582695 s33   (v1 search)
+   CV local rip:   (= linked) · 82208 "Old Man Logan" 2015 Marvel 5 · 118907 "Old Man Logan " 2016 Panini Verlag 9   (rip lookup)
+   GCD per-file:   series 96095 "Old Man Logan" 2016-2018 Marvel [was ongoing series] 50 on 10/20 files; methods numx10
+   GCD dump:       (= per-file) · 89543 "Old Man Logan" 2015-2015 Marvel [] 5 · 179044 "Old Man Logan" [es-mx] 2015-2016 Editorial Televisa [] 5 · 104431 "Old Man Logan" [es-mx] 2016-? Editorial Televisa [] 42 · 106705 "Old Man Logan" [de] 2016-2019 Panini Deutschland [] 10 · 179838 "Old Man Logan" [fr] 2017-2019 Panini France [] 6   (dump lookup)
+   bridges:        gcd 96095 -> LOCG 121150 "Old Man Logan" support 15
+
+== S4726 Daken: Dark Wolverine: Empire  [tier A]   keys: Daken: Dark Wolverine - Empire  years 2011-2011  1 files / 1 collections
+   folders: [1] Marvel\_Wolverine\Daken
+   files:   [98007] COL 01 Daken - Dark Wolverine Vol. 01 - Empire (2011) (Digital) (F) (Kileko-Empire).cbz (132pp)
+   ours:    judged item 98007 #1-4 conf 0.85; ComicInfo Series: "Daken: Dark Wolverine - Empire"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [98007] gcd notes 852144 (#1 of Daken: Dark Wolverine - Empire): Daken: Dark Wolverine (Marvel, 2010 series) #1-3  |  gcd_reprint 852144: s52299 Daken: Dark Wolverine (2010) #1-3 [4 stories]  |  ⚠ RANGE CONTRADICTED by GCD notes (count): judged #1-4, GCD says Daken: Dark Wolverine (Marvel, 2010 series) #1-3
+   CV linked:      vol 49035 "Daken: Dark Wolverine: Empire" 2011 Marvel 1 issues issue 336248; cached #1-1 (1); yearΔ 0; ratio 0/1; 1 of 1 judged fit
+   CV candidates:  (= linked) · 39214 "Daken: Dark Wolverine: Empire" 2011 Marvel 1 issue 264452 s105 · 32155 "Wolverine: Dark Wolverine" 2010 Marvel 2 s78 · 102745 "Daken: Dark Wolverine - Punishment" 2017 Marvel 1 issue 608239 s74 · 43774 "Daken: Dark Wolverine: Big Break" 2011 Marvel 1 issue 300930 s73 · 49800 "Daken: Dark Wolverine: No More Heroes" 2012 Marvel 1 issue 341552 s72 · 35409 "Daken: Dark Wolverine" 2010 Marvel 24 s70   (v1 search)
+   CV local rip:   (= linked) · 39214 "Daken: Dark Wolverine: Empire" 2011 Marvel 1 issue 264452 · 32155 "Wolverine: Dark Wolverine" 2010 Marvel 2 (via CV candidate name "Wolverine: Dark Wolverine")   (rip lookup)
+   GCD per-file:   series 59566 "Daken: Dark Wolverine - Empire" 2011-2011 Marvel [one-shot] 1 on 1/1 files; methods numx1
+   GCD dump:       (= per-file) · 78400 "Daken: Dark Wolverine - Empire" 2011-2011 Marvel [] 1 · 192067 "Daken: Dark Wolverine - Empire" 2011-2011 Marvel [] 1 · 65886 "Wolverine: Dark Wolverine" 2010-2010 Marvel [] 2 (via CV candidate name "Wolverine: Dark Wolverine") · 78330 "Wolverine: Dark Wolverine" 2009-2009 Marvel [] 2 (via CV candidate name "Wolverine: Dark Wolverine")   (dump lookup)
+
+== S102418 5 Ronin  [tier C] · gap 21  keys: Wolverine - 5 Ronin (2011)  years 1990-1990  1 files / 0 collections
+   folders: [1] Marvel\_Wolverine\_Trades, Minis and One-shots\Wolverine - 5 Ronin (2011)
+   files:   [99957] Wolverine - 5 Ronin (2011) (digital) (Minutemen-Slayer).cbr (134pp)
+   CV linked:      vol 39223 "5 Ronin" 2011 Marvel 5 issues; cached #1-5 (5); yearΔ 21; ratio 0/5; no judged range
+   CV per-file (v1): vol 69993 "Wolverine" 1989 Panini Comics 445 on 1/1 files
+   CV local rip:   (= linked) · 40802 "5 Ronin" 2011 Marvel 1 issue 275133 · 23055 "Wolverine" 1990 Marvel 1 issue 138925 (via CV name "Wolverine") · 127236 "Wolverine" 1990 JuniorPress BV 89 (via CV name "Wolverine") · 4250 "Wolverine" 1988 Marvel 192 (via CV name "Wolverine")   (rip lookup)
+   GCD per-file:   series 104338 "Wolverine" [de] 2016-2019 Panini Deutschland [] 7 on 1/1 files; methods page-rematchx1
+   GCD dump:       56292 "5 Ronin" 2011-2011 Marvel [] 5 · 223796 "5 Ronin" 2011-2011 Marvel [] 1 · 223827 "5 Ronin" 2011-2011 Marvel [] 1 · 168280 "5 Ronin" [fr] 2012-2012 Panini France [] 1 · 18493 "Wolverine" [nl] 1990-2000 Juniorpress [] 89 (via CV name "Wolverine") · 28557 "Wolverine" [it] 1989-1994 Play Press [] 48 (via CV name "Wolverine")   (dump lookup)
+
+== S64179 Astonishing X-Men  [tier C] · 7 named, the minority on >= 2 files or >= 10%  keys: Astonishing X-Men (2004) | Astonishing X-Men v3 (2004)  years 2004-2024  89 files / 12 collections
+   folders: [11] Marvel\_X-Men\Astonishing X-Men\Astonishing X-Men v3 (2004) · [7] Marvel\_X-Men\_X-Men Complete Chronology V2\0916 Monstrous & Meanwhile · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0611 Gifted · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0646 Danger · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0712 Torn · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0744 Unstoppable · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0783 Manifest Destiny · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1003 Weaponized · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0846 eXogenetic · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0951 Exalted · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0247 After Xavier - The Age of Apocolypse · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0985 Northstar · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\1037 Frozen · [4] _Marvel Major Event Chronology (digital)\2011.07 - X-Men - Schism - Regenesis\03 Regenesis\Team Blue (Cyclops) · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\1019 Untitled · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\1054 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\1028 X-Termination · [1] Marvel\_X-Men\_X-Book Epic Collections\Astonishing X-Men
+   files:   [84264] COL 00 Astonishing X-Men Companion (2020) (Digital) (Kileko-Empire).cbz (366pp)
+            [84265] COL 01 Astonishing X-Men by Joss Whedon & John Cassaday Ultimate Collection Book 01 (2012) (Digital) (Zone-Empire).cbr (310pp)
+            [84266] COL 02 Astonishing X-Men by Joss Whedon & John Cassaday Ultimate Collection Book 02 (2012) (Digital) (Zone-Empire).cbr (331pp)
+            [84267] COL 03 Astonishing X-Men Vol. 05 - Ghost Box (2009) (Digital) (F) (Kileko-Empire).cbz (177pp)
+            [84268] COL 04 Astonishing X-Men Vol. 06 - Exogenetic (2011) (Digital) (F) (Kileko-Empire).cbz (119pp)
+            [84269] COL 05 Astonishing X-Men Vol. 07 - Monstrous (2013) (Digital) (Kileko-Empire).cbr (99pp)
+            [84270] COL 06 Astonishing X-Men Vol. 08 - Children of the Brood (2013) (Digital) (Kileko-Empire).cbr (119pp)
+            [84271] COL 07 Astonishing X-Men Vol. 09 - Exalted (2013) (Digital) (Kileko-Empire).cbr (97pp)
+            [84272] COL 08 Astonishing X-Men Vol. 10 - Northstar (2014) (Digital) (Kileko-Empire).cbr (159pp)
+            [84273] COL 09 Astonishing X-Men Vol. 11 - Weaponized (2014) (Digital) (Kileko-Empire).cbr (160pp)
+            [84274] COL 10 Astonishing X-Men Vol. 12 - Unmasked (2014) (Digital) (Kileko-Empire).cbr (229pp)
+            [87997] COL Astonishing X-Men Modern Era Epic Collection Vol. 01 - Gifted (2024) (Digital) (dekabro-Empire).cbz (320pp)
+            [88207] 012 Astonishing X-Men 01 (of 04) (1995) (digital) (Minutemen-Faessla).cbz (22pp) | [88220] 025 Astonishing X-Men 02 (of 04) (1995) (digital) (Minutemen-Faessla).cbz (22pp)
+            [88223] 028 Astonishing X-Men 03 (of 04) (1995) (digital) (Minutemen-Faessla).cbz (23pp) | [88232] 037 Astonishing X-Men 04 (of 04) (1995) (digital) (Minutemen-Faessla).cbz (21pp)
+            001 Astonishing X-Men 001 (2004) (Digital) (Megan-Empire).cbr … 005 Astonishing X-Men 035 (2010) (Digital) (Megan-Empire).cbr  (35 files, pp 23-27)
+            001 Astonishing X-Men 036 (2011) (Digital) (G85-Empire).cbr … 002 Astonishing X-Men 049 (2012) (Digital) (G85-Empire).cbr  (14 files, pp 23-26)
+            003 Astonishing X-Men 050 (2012) (Digital) (Zone-Empire).cbr … 005 Astonishing X-Men 056 (2013) (Digital) (Zone-Empire).cbr  (7 files, pp 23-31)
+            [92212] 006 Astonishing X-Men Annual (2013) (digital-Empire).cbz (44pp) | [92285] 001 Astonishing X-Men 057 (2013) (Digital) (Zone-Empire).cbr (24pp)
+            002 Astonishing X-Men 058 (2013) (Digital) (G85-Empire).cbr … 003 Astonishing X-Men 068 (2013) (Digital) (G85-Empire).cbr  (11 files, pp 23-24)
+            [117628] Astonishing X-Men 044 (2012) (Digital) (G85-Empire).cbr (25pp) | [117629] Astonishing X-Men 045 (2012) (Digital) (G85-Empire).cbr (24pp)
+            [117630] Astonishing X-Men 046 (2012) (Digital) (G85-Empire).cbr (24pp) | [117631] Astonishing X-Men 047 (2012) (Digital) (G85-Empire).cbr (25pp)
+   ours:    ladder 1-68; 9 number(s) name more than one file: 1, 2, 3, 4, 6, 44, 45, 46, 47; ComicInfo Series: "Astonishing X-Men Companion"x1, "Astonishing X-Men by Joss Whedon & John Cassaday Ultimate Collection Book 1"x1, "Astonishing X-Men by Joss Whedon & John Cassaday Ultimate Collection Book 2"x1, "Astonishing X-Men"x1; ComicInfo Publisher: "Marvel"x5
+   GCD says: [84264] gcd_reprint 2263478: s11652 X-Men Unlimited (2004) #2-14 [14 stories] · s19899 Giant-Size X-Men (2005) #3-4 [2 stories] · s30928 Mythos (2006) #1 [1 story] · s17815 Free Comic Book Day 2006 [X-Men / Runaways] (2006) (unnumbered) [1 story]
+             [84265] gcd_reprint 1171016: s11653 Astonishing X-Men (2004) #1-12 [13 stories]
+             [84266] gcd_reprint 1171017: s11653 Astonishing X-Men (2004) #13-24 [12 stories] · s30925 Giant-Size Astonishing X-Men (2008) #1 [2 stories]
+             [84267] gcd_reprint 870794: s11653 Astonishing X-Men (2004) #25-30 [16 stories] · s31675 Astonishing X-Men: Ghost Boxes (2008) #1-2 [6 stories]
+             [84268] gcd_reprint 1086979: s11653 Astonishing X-Men (2004) #31-35 [6 stories]
+             [84269] gcd_reprint 2460169: s11653 Astonishing X-Men (2004) #36-37, #39, #41 [9 stories]
+             [84270] gcd_reprint 2460291: s11653 Astonishing X-Men (2004) #38, #40, #42-43 [9 stories] · s2605 The Uncanny X-Men (1981) #162 [2 stories]
+             [84271] gcd_reprint 2470482: s11653 Astonishing X-Men (2004) #44-47 [9 stories] · s31675 Astonishing X-Men: Ghost Boxes (2008) #1 [1 story]
+             [84272] gcd_reprint 1139499: s11653 Astonishing X-Men (2004) #48-51 [8 stories] · s156383 Astonishing X-Men: Northstar (2012) (unnumbered) [1 story]
+             [84273] gcd_reprint 1139500: s11653 Astonishing X-Men (2004) #52-56 [12 stories] · s70963 Astonishing X-Men Annual (2013) #1 [2 stories]
+             [84274] gcd_reprint 1139501: s11653 Astonishing X-Men (2004) #57-59, #62-68 [16 stories]
+   CV linked:      vol 10746 "Astonishing X-Men" 2004 Marvel 68 issues; cached #1-68 (68); yearΔ 0; ratio 77/68 = 1.13; no judged range; v1 per-file: same volume on 77/89 files
+   CV local rip:   (= linked) · 41777 "Astonishing X-Men" 2005 Panini France 69 · 41780 "Astonishing X-Men" 2005 Panini España 12 · 30217 "Astonishing X-Men" 2006 Marvel 2 · 72523 "Astonishing X-Men" 2006 Editorial Televisa 25 · 41781 "Astonishing X-Men" 2007 Panini España 13   (rip lookup)
+   GCD per-file:   series 11653 "Astonishing X-Men" 2004-2013 Marvel [was ongoing series] 68 on 54/89 files · series 29657 "Astonishing X-Men" [fr] 2005-2011 Panini France [était une série continue [was ongoing series]] 69 on 7/89 files · series 28944 "Astonishing X-Men" [es] 2005-2006 Panini España [] 12 on 5/89 files · series 5274 "Astonishing X-Men" 1995-1995 Marvel [Limited Series] 4 on 4/89 files; methods numx79
+   GCD dump:       (= per-file) · 151172 "Astonishing X-Men [Χ-Μεν Εστόνισινγκ]" [el-gr] 2004-? Anubis [] 12 · 151175 "Astonishing X-Men [Εστόνισινγκ Χ-Μεν Τόμος]" [el-gr] 2004-? Anubis [] 1   (dump lookup)
+   bridges:        gcd 11653 -> LOCG 100076 "Astonishing X-Men" support 54 · gcd 29657 -> LOCG 100076 "Astonishing X-Men" support 5 · gcd 28944 -> LOCG 100076 "Astonishing X-Men" support 5
+
+== S64363 Cable  [tier C] · 222 files  keys: Cable (1993) | Cable v1 (1992)  years 1993-2021  222 files / 3 collections
+   flags: #192 label-ambiguous [Pending] item 88485 — Cable v1 037 and v1 044 are single issues, not collections
+   folders: [86] Marvel\_X-Men\Cable\01 Cable v1 (1992) · [7] Marvel\_X-Men\_X-Men Complete Chronology V2\0335 The Hellfire Hunt · [7] Marvel\_X-Men\_X-Men Complete Chronology V2\0506 Cable - The End · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0439 Fire Burn · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0395 Total Chaos · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0772 Divided We Stand · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0785 Waiting For The End Of The World · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0852 Homecoming · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0186 Clan Chosen · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0475 Dark Tide Rising · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0497 The Shining Path · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0208 Fathers and Sons · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0213 The Killing Field · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0226 Fear and Loathing · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0240 The Dark Ride · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0256 What Is...Is · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0269 Death of a Nation · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0300 True Lies · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0378 Nemesis Contract · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0422 Broken Pillars · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0811 Messiah War · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0840 Brood · [2] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2020.03.11 - Cable v4 · [2] Marvel\_X-Men\Cable\01 Cable v1 (1992)\Trades · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0281 Identity Crisis · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0288 Onslaught Preview · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0309 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0311 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0329 Zero Tolerance · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0357 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0367 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0390 Unnamed · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0429 Apocalypse - The Twelve · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0458 Fall of Clan Askani · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0483 Countdown · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0809 X-Force, Cable and Bishop · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0827 No Time For Tears · [1] Marvel\_X-Men\Cable\04 Cable v3 (2017) · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0206 The Tithing Time · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0232 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0235 The Phalanx Covenant - Final Sanction · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0245 Legionquest · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0249 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0251 Unnamed · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0277 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0293 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0325 Flashback · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0385 Blood Brothers · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0408 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0433 Ages of Apocalypse · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0435 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0460 Cruel Summer · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0464 Dream's End · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0783 Manifest Destiny · [1] _Marvel Major Event Chronology (digital)\2001.01 - X-Men - Dream's End · [1] _Marvel Major Event Chronology (digital)\2008.06 - Secret Invasion\03 Tie-ins\_Variant Covers
+   files:   [49511] Cable 001 (2020) (Digital) (Zone-Empire).cbr (38pp) | [49522] Cable 012 (2021) (Digital) (Zone-Empire).cbr (26pp)
+            Cable 021 (1995) (Digital) (Shadowcat-Empire).cbz … Cable 039 (1997) (Digital) (Shadowcat-Empire).cbz  (19 files, pp 18-36) | [84308] Cable 040 (1997) (PH).cbr (29pp)
+            [84309] Cable 041 (1997) (PH).cbr (28pp) | [84310] Cable 042 (1997) (PH).cbr (27pp) | [84311] Cable 043 (1997) (PH).cbr (27pp) | [84312] Cable 044 (1997) (PH).cbr (28pp)
+            [84313] Cable 045 (1997) (Digital) (AnHeroGold-Empire).cbz (22pp) | [84314] Cable 046 (1997) (Digital) (AnHeroGold-Empire).cbz (21pp)
+            [84315] Cable 047 (1997) (Digital) (AnHeroGold-Empire).cbz (21pp)
+            Cable 048 (1997) (Digital) (Shadowcat-Empire).cbz … Cable 058 (1998) (Digital) (Shadowcat-Empire).cbz  (11 files, pp 21-41)
+            [84327] Cable 059 (1998) (Digital) (AnHeroGold-Empire).cbz (24pp) | [84328] Cable 060 (1998) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [84329] Cable 061 (1998) (Digital) (AnHeroGold-Empire).cbz (23pp) | [84330] Cable 062 (1998) (Digital) (AnHeroGold-Empire).cbz (24pp)
+            Cable 063 (1999) (Digital) (Shadowcat-Empire).cbz … Cable 070 (1999) (Digital) (Shadowcat-Empire).cbz  (8 files, pp 21-25) | [84339] Cable 071 (1999) (PH).cbr (23pp)
+            [84340] Cable 072 (1999) (PH).cbr (23pp) | [84341] Cable 073 (1999) (Digital) (Kileko-Empire).cbr (22pp) | [84342] Cable 074 (1999) (Digital) (Kileko-Empire).cbr (24pp)
+            [84343] Cable 075 (2000) (Digital) (Kileko-Empire).cbr (28pp) | [84344] Cable 076 (2000) (Digital) (Kileko-Empire).cbr (20pp)
+            [84345] Cable 077 (2000) (Digital) (AnHeroGold-Empire).cbz (22pp) | [84346] Cable 078 (2000) (Digital) (Kileko-Empire).cbr (23pp)
+            Cable 079 (2000) (Digital) (Shadowcat-Empire).cbz … Cable 107 (2002) (Digital) (Shadowcat-Empire).cbz  (28 files, pp 20-39)
+            [84379] COL Cable Vol. 01 - Shining Path (2002) (Digital) (Kileko-Empire).cbz (128pp) | [84380] COL Cable Vol. 02 - The End (2002) (Digital) (Kileko-Empire).cbz (158pp)
+            [85958] COL Cable Vol. 01 - Conquest (2017) (Digital) (F) (Zone-Empire).cbz (105pp) | [87926] 001 Cable 001 (1993) (digital) (Minutemen-Bluntman).cbr (39pp)
+            [87927] 002 Cable 002 (1993) (digital) (Minutemen-Bluntman).cbr (23pp) | [87928] 003 Cable 003 (1993) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [87929] 004 Cable 004 (1993) (digital) (Minutemen-Bluntman).cbr (25pp)
+            006 Cable 005 (1993) (digital) (Minutemen-Slayer).cbr … 003 Cable 019 (1995) (digital) (Minutemen-Slayer).cbr  (15 files, pp 20-36)
+            [88186] 004 Cable 020 (1995) (digital) (Minutemen-Phantasm).cbr (21pp)
+            001 Cable 021 (1995) (digital) (Minutemen-Slayer).cbr … 011 Cable 033 (1996) (digital) (Minutemen-Slayer).cbr  (13 files, pp 18-36)
+            [88415] 005 Cable 034 (1996) (Digital) (AnPymGold-Empire).cbz (23pp) | [88426] 016 Cable 035 (1996) (Digital) (AnPymGold-Empire).cbz (22pp)
+            [88454] 001 Cable 036 (1996) (Digital) (AnPymGold-Empire).cbz (22pp) | [88485] 002 Cable v1 037.cbr (26pp) | [88486] 003 Cable 038 (1996) (Beast's Library).cbr (23pp)
+            [88487] 004 Cable 039 (1997) (Beast's Library).cbr (26pp) | [88534] 001 Cable 040 (1997) (Beast's Library).cbr (29pp) | [88541] 008 Cable 041 (1997) (Beast's Library).cbr (28pp)
+            [88548] 004 Cable 042 (1997) (Beast's Library).cbr (27pp) | [88554] 010 Cable v1 044.cbr (28pp) | [88610] 001 Cable -001 (1997) (digital) (Glorith-HD).cbz (25pp)
+            [88644] 013 Cable 045 (1997) (Digital) (AnHeroGold-Empire).cbz (22pp) | [88645] 014 Cable 046 (1997) (Digital) (AnHeroGold-Empire).cbz (21pp)
+            001 Cable 048 (1997) (digital) (Glorith-HD).cbz … 002 Cable 058 (1998) (digital) (Glorith-HD).cbz  (11 files, pp 22-41)
+            [88877] 002 Cable 059 (1998) (Digital) (AnHeroGold-Empire).cbz (24pp) | [88878] 003 Cable 060 (1998) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [88880] 005 Cable 062 (1998) (Digital) (AnHeroGold-Empire).cbz (24pp)
+            003 Cable 063 (1999) (Digital) (Shadowcat-Empire).cbz … 005 Cable 070 (1999) (Digital) (Shadowcat-Empire).cbz  (8 files, pp 21-25) | [89009] 003 Cable #071.cbr (23pp)
+            [89063] 001 Cable #072.cbr (23pp) | [89064] 002 Cable 073 (1999) (digital) (Minutemen-Bluntman).cbr (23pp) | [89065] 003 Cable 074 (1999) (digital) (Minutemen-Bluntman).cbr (25pp)
+            [89097] 002 Cable 075 (2000) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (29pp) | [89104] 009 Cable 076 (1999) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (21pp)
+            [89117] 002 Cable 077 (2000) (Digital) (AnHeroGold-Empire).cbz (22pp) | [89127] 004 Cable 078 (2000) (digital) (Minutemen-Slayer).cbr (23pp)
+            [89151] 001 Cable 079 (2000) (digital) (Minutemen-Slayer).cbr (23pp) | [89152] 002 Cable 080 (2000) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [89153] 003 Cable 081 (2000) (Digital) (Shadowcat-Empire).cbz (22pp) | [89154] 004 Cable 082 (2000) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [89155] 005 Cable 083 (2000) (Digital) (Shadowcat-Empire).cbz (22pp) | [89156] 006 Cable 084 (2000) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [89232] Cable 085 (2000) (Digital) (Shadowcat-Empire).cbz (22pp) | [89233] Cable 086 (2000) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [89241] 005 Cable 088 (2001) (Digital) (Shadowcat-Empire).cbz (20pp) | [89276] 002 Cable 087 (2001) (digital) (Minutemen-Slayer).cbr (22pp)
+            [89328] Cable 089 (2001) (Digital) (Shadowcat-Empire).cbz (22pp) | [89329] Cable 090 (2001) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [89330] Cable 091 (2001) (Digital) (Shadowcat-Empire).cbz (22pp) | [89331] Cable 092 (2001) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [89363] 001 Cable 093 (2001) (Digital) (Shadowcat-Empire).cbz (23pp) | [89366] 004 Cable 096 (2001) (Digital) (Shadowcat-Empire).cbz (21pp)
+            001 Cable 097 (2001) (digital) (Minutemen-Slayer).cbr … 007 Cable 107 (2002) (digital) (Minutemen-Slayer).cbr  (11 files, pp 22-39)
+            006 Cable 001 (2008) (digital-Empire).cbz … 005 Cable 025 (2010) (digital-Empire).cbz  (26 files, pp 23-39) | [116532] 02 Cable 087 (F) (2001) (Digital) (AnPymGold-Empire).cbz (22pp)
+            [116972] Cable 003 (2008) (Skrully Incentive Variant) (Minutemen-RainsDesire).cbr (2pp)
+   ours:    ladder 1-107; 101 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12; ComicInfo Series: "Cable"x42; ComicInfo Volume: "1993"x37; ComicInfo Count: "107"x14; ComicInfo Publisher: "Marvel"x28, "Marvel Comics"x14; ComicInfo Web: "43910"x1, "66212"x1, "135789"x1, "44598"x1
+   GCD says: [84379] gcd notes 911910 (#1 of Cable): Cable (Marvel, 2008 series) #1-5  |  gcd_reprint 911910: s29892 Cable (2008) #1 [1 story]  |  ⚠ stored GCD row is another book: our subtitle 'Shining Path' vs GCD title 'Messiah War'; GCD row 2008, our file (2002) — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+   CV linked:      vol 4993 "Cable" 1993 Marvel 108 issues; cached #1-107 (108); yearΔ 0; ratio 218/108 = 2.02; no judged range; v1 per-file: same volume on 219/222 files
+   CV local rip:   (= linked) · 4778 "Cable" 1992 Marvel 2 · 74274 "Cable" 1994 Panini France 21 · 77204 "Cable" 1994 Semic S.A. 15 · 127570 "Cable" 1994 JuniorPress BV 21 · 128112 "Cable" 1994 Planeta DeAgostini 21   (rip lookup)
+   GCD per-file:   series 4675 "Cable" 1993-2002 Marvel [was ongoing series] 108 on 150/222 files · series 29892 "Cable" 2008-2010 Marvel [was ongoing series] 25 on 27/222 files · series 34917 "Cable" [es] 1996-2000 Planeta DeAgostini [] 49 on 24/222 files · series 50570 "Cable" [es] 1994-1995 Planeta DeAgostini [Was ongoing series] 21 on 12/222 files; methods numx216 · page-rematchx2
+   GCD dump:       (= per-file) · 18167 "Cable" [nl] 1994-1997 Juniorpress [] 21 · 50761 "Cable" [fr] 1994-1996 Semic S.A. [] 15 · 173095 "Cable" [fr] 1997-1998 Panini France [] 6   (dump lookup)
+   bridges:        gcd 4675 -> LOCG 111922 "Cable" support 153 · gcd 29892 -> LOCG 111922 "Cable" support 17 · gcd 34917 -> LOCG 111922 "Cable" support 24
+
+== S6284 Excalibur  [tier C] · 169 files  keys: Excalibur | Excalibur (1988) | Excalibur - Flashback -1 | Excalibur Annual | Excalibur Annual (1988) | Excalibur Classic (1988) | Excalibur v1 (1988)  years 1988-2016  169 files / 5 collections
+   flags: #235 label-ambiguous [Pending] item 98946 — fifteen 22-35 pp Excalibur v1 single issues carry a collection format
+   folders: [33] Marvel\_X-Men\Excalibur\01 Excalibur v1 (1988) · [13] Marvel\_X-Men\_X-Men Complete Chronology V2\0105 The Cross-Time Caper · [7] Marvel\_X-Men\_X-Men Complete Chronology V2\0123 Untitled · [7] Marvel\_X-Men\_X-Men Complete Chronology V2\0158 Unnamed · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0139 Promethium Exchange · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0145 Unnamed · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0173 Madness · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0354 Preludes and Nightmares · [5] Marvel\_X-Men\Excalibur\01 Excalibur v1 (1988)\Trades · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0083 Warwolves of London · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0178 Untitled · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0092 Untitled · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0128 Girls' school from heck · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0194 Exile · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0227 The Douglock Chronicles · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0238 Soulsword · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0253 Dream Nails · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0316 Battle for Britain · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0327 Untitled · [2] Marvel\Death's Head\3. Death's Head (3.0) · [2] Marvel\_X-Men\Excalibur\01 Excalibur v1 (1988)\Annuals and Specials · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0086 Inferno · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0190 Days of Future Yet to Come · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0222 Hope and D'Spayre · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0223 Shadow Games · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0257 Victims · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0277 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0287 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0305 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0347 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0365 PayBack · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0129 The X-Tinction Agenda · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0202 Fatal Attractions · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0213 The Killing Field · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0214 The Ties that Bind · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0230 Hunters in Darkness · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0232 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0234 The Phalanx Covenant - Life Signs · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0246 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0247 After Xavier - The Age of Apocolypse · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0262 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0267 Death Wail · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0275 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0299 Unnamed · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0300 True Lies · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0313 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0325 Flashback · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0334 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0350 Unnamed
+   files:   [98946] 117 - Excalibur v1 066.cbz (24pp) | [98947] 118 - Excalibur v1 067.cbz (26pp) | [84419] Excalibur Annual 001 (1993) (digital) (Marika-Empire).cbz (53pp)
+            [84420] Excalibur Annual 002 (1994) (digital) (Marika-Empire).cbz (54pp) | [84421] Excalibur -1 (1997) (Digital) (Shadowcat-Empire).cbz (21pp)
+            Excalibur 068 (1993) (digital) (Marika-Empire).cbz … Excalibur 081 (1994) (digital) (Marika-Empire).cbz  (10 files, pp 22-39)
+            Excalibur 104 (1996) (Digital) (Shadowcat-Empire).cbz … Excalibur 113 (1997) (Digital) (Shadowcat-Empire).cbz  (10 files, pp 22-24)
+            [84442] Excalibur 114 (1997 (Digital) (Shadowcat-Empire).cbz (24pp) | [84443] Excalibur 115 (1997) (Digital) (Shadowcat-Empire).cbz (24pp)
+            Excalibur 116 (1998) (Digital-Empire).cbz … Excalibur 125 (1998) (Digital-Empire).cbz  (10 files, pp 22-39)
+            [84454] COL 01 Excalibur Classic Vol. 01 - The Sword is Drawn (2006) (Digital) (Kileko-Empire).cbr (174pp)
+            [84455] COL 02 Excalibur Classic Vol. 02 - Two-Edged Sword (2006) (Digital) (F) (Kileko-Empire).cbz (197pp)
+            [84456] COL 03 Excalibur Classic Vol. 03 - Cross Time Caper Book One (2016) (Digital) (F) (Kileko-Empire).cbz (215pp)
+            [84457] COL 04 Excalibur Classic Vol. 04 - Cross Time Caper Book Two (2016) (Digital) (F) (Kileko-Empire).cbz (192pp)
+            [84458] COL 05 Excalibur Classic Vol. 05 (2008) (Digital) (F) (Kileko-Empire).cbz (200pp)
+            001 Excalibur 001 (1988) (Digital) (AnHeroGold-Empire).cbz … 004 Excalibur 028 (1990) (Digital) (AnHeroGold-Empire).cbz  (28 files, pp 23-25)
+            005 Excalibur 029 (1990) (Digital) (AnPymGold-Empire).cbz … 003 Excalibur 034 (1991) (Digital) (AnPymGold-Empire).cbz  (6 files, pp 19-24)
+            [87630] 010 Excalibur 035 (1991) (beast's library).cbr (25pp) | [87678] 001 Excalibur 036 (1991).cbr (26pp) | [87679] 002 Excalibur 037 (1991).cbr (25pp)
+            [87680] 003 Excalibur 038 (1991) (Beast's Library).cbr (25pp) | [87681] 004 Excalibur 039 (1991).cbr (25pp) | [87682] 005 Excalibur 040 (1991).cbr (24pp)
+            [87683] 006 Excalibur 041 (1991).cbr (26pp) | [87716] 001 Excalibur 042 (1991) (Digital) (AnPymGold-Empire).cbz (23pp)
+            [87717] 002 Excalibur 043 (1991) (Digital) (AnPymGold-Empire).cbz (23pp) | [87718] 003 Excalibur 044 (1991) (digital) (Minutemen-FactorX).cbr (23pp)
+            [87719] 004 Excalibur 045 (1991) (Digital) (Shadowcat-Empire).cbz (22pp)
+            005 Excalibur 046 (1992) (digital) (Minutemen-FactorX).cbr … 004 Excalibur 058 (1992) (digital) (Minutemen-FactorX).cbr  (13 files, pp 22-38)
+            [87856] 005 Excalibur 059 (1992) (digital) (Glorith-HD).cbz (24pp) | [87857] 006 Excalibur 060 (1992) (digital) (Glorith-HD).cbz (22pp)
+            [87886] 001  Excalibur 061 (1992) (digital) (Glorith-HD).cbz (24pp) | [87887] 002  Excalibur 062 (1992) (digital) (Glorith-HD).cbz (23pp)
+            [87888] 003  Excalibur 063 (1993) (digital) (Glorith-HD).cbz (24pp) | [87889] 004  Excalibur 064 (1993) (digital) (Glorith-HD).cbz (24pp)
+            [87890] 005  Excalibur 065 (1993) (digital) (Glorith-HD).cbz (24pp) | [87943] 001 Excalibur 066 (1993) (digital) (Glorith-HD).cbz (24pp)
+            [87944] 002 Excalibur 067 (1993) (digital) (Glorith-HD).cbz (23pp) | [87960] 001 Excalibur v1 068 (1998) (c2c) (Heintje scan).cbr (35pp)
+            [87961] 002 Excalibur v1 069 (1988) [BeastCharming].cbr (24pp) | [87962] 003 Excalibur v1 070.cbr (33pp) | [88007] 003 Excalibur 071 (1993) (digital) (Minutemen-Phantasm).cbr (38pp)
+            [88057] 004 Excalibur v1 074.cbr (22pp) | [88061] 004 Excalibur 075 (1994) (c2c) (Re-Edit) (original scanner-Montagnard93-DCP).cbr (46pp) | [88090] 002 Excalibur v1 076.cbr (33pp)
+            [88091] 003 Excalibur v1 077.cbr (33pp) | [88096] 004 Excalibur v1 072.cbr (32pp) | [88097] 005 Excalibur 073 (1994) (c2c) (Re-Edit) (original scanner-Montagnard93-DCP).cbr (33pp)
+            [88107] 001 Excalibur 078 (1994) (c2c) (Re-Edit) (original scanner-Montagnard93-DCP).cbr (32pp) | [88108] 002 Excalibur v1 079.cbr (32pp) | [88109] 003 Excalibur v1 080.cbr (34pp)
+            [88121] 003 Excalibur v1 081 (1994) (c2c) (Re-Edit) (original scanner-Montagnard93-DCP).cbr (35pp) | [88128] 003 Excalibur Annual v1 002.cbr (66pp)
+            [88136] 003 Excalibur 082 (1994) (digital) (Glorith-Novus-HD).cbz (38pp)
+            001 Excalibur 083 (1994) (Digital) (AnPymGold-Empire).cbz … 002 Excalibur 089 (1995) (Digital) (AnPymGold-Empire).cbz  (7 files, pp 22-25)
+            [88265] 003 Excalibur 090 (1995) (Digital) (Shadowcat-Empire).cbz (37pp) | [88283] 005 Excalibur 091 (1995) (Digital) (AnPymGold-Empire).cbz (23pp)
+            [88284] 006 Excalibur 092 (1995) (Digital) (AnPymGold-Empire).cbz (24pp) | [88300] 004 Excalibur 093 (1996) (Digital) (AnPymGold-Empire).cbz (20pp)
+            [88319] 005 Excalibur 094 (1996) (Digital) (AnPymGold-Empire).cbz (20pp) | [88351] 003 Excalibur 095 (1996) (Digital) (AnPymGold-Empire).cbz (20pp)
+            [88354] 001 Excalibur 096 (1996) (Digital) (Shadowcat-Empire).cbz (19pp) | [88355] 002 Excalibur 097 (1996) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [88388] 001 Excalibur 098 (1996) (Digital) (Shadowcat-Empire).cbz (22pp) | [88389] 002 Excalibur 099 (1996) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [88418] 008 Excalibur 100 (1996) (digital) (Minutemen-Bluntman).cbr (43pp) | [88443] 033 Excalibur 101 (1996) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [88444] 034 Excalibur 102 (1996) (Digital) (Shadowcat-Empire).cbz (23pp) | [88481] 003 Excalibur 103 (1996) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [88488] 005 Excalibur v1 106.cbr (28pp) | [88518] 012 Excalibur 104 (1996) (Beast's Library).cbr (32pp) | [88519] 013  Excalibur v1 105.cbr (28pp)
+            [88563] 001 Excalibur 107 (1997) (Beast's Library).cbr (28pp) | [88573] 001 Excalibur 108 (1997) (Beast's Library).cbr (27pp)
+            [88574] 002 Excalibur 109 (1997) (Beast's Library).cbr (27pp) | [88575] 003 Excalibur 110 (1997) (Beast's Library).cbr (28pp) | [88616] 007 Excalibur - Flashback -1.cbr (22pp)
+            [88625] 002 Excalibur 111 (1997).cbr (26pp) | 003 Excalibur v1 #112.cbr … 003 Excalibur v1 #115.cbr  (6 files, pp 24-27) | [88777] 001 Excalibur 118 (1998) (Beast's Library).cbr (26pp)
+            [88778] 002 Excalibur 119 (1998) (Beast's Library).cbr (25pp) | [88779] 003 Excalibur 120.cbz (24pp) | [88780] 004 Excalibur v1 #121.cbr (24pp) | [88781] 005 Excalibur v1 122.cbr (24pp)
+            [88782] 006 Excalibur 123.cbz (24pp) | [88830] 007 Excalibur v1 #124.cbr (24pp) | [88831] 008 Excalibur v1 #125.cbr (39pp)
+   ours:    ladder 1-125; 36 number(s) name more than one file: 1, 2, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75; judged item 84458 #29-34 conf 0.95; ComicInfo Series: "Excalibur"x33, "Excalibur Classic"x5, "Excalibur Annual"x2; ComicInfo Volume: "1988"x33, "1993"x2; ComicInfo Count: "125"x20, "2"x2; ComicInfo Publisher: "Marvel Comics"x21, "Marvel"x19; ComicInfo Web: "66561"x1, "66562"x1, "66357"x1, "66358"x1
+   GCD says: [84454] gcd notes 807884 (#1 of Excalibur Classic): Excalibur (Marvel, 1988 series) #1-5  |  gcd_reprint 807884: s3648 Excalibur (1988) #1 [1 story]
+             [84455] gcd notes 807885 (#2 of Excalibur Classic): Excalibur (Marvel, 1988 series) #6-11; Excalibur: Mojo Mayhem (Marvel, 1989 series) #1  |  gcd_reprint 807885: s3648 Excalibur (1988) #6-11 [18 stories] · s3838 Excalibur: Mojo Mayhem (1989) (unnumbered) [4 stories]
+             [84456] gcd notes 807886 (#3 of Excalibur Classic): Excalibur (Marvel, 1988 series) #12-20  |  gcd_reprint 807886: s3648 Excalibur (1988) #14 [1 story]
+             [84457] gcd notes 807887 (#4 of Excalibur Classic): Excalibur (Marvel, 1998 series) #21-28  |  gcd_reprint 807887: s3648 Excalibur (1988) #26 [1 story]
+             [84458] gcd notes 807888 (#5 of Excalibur Classic): Excalibur (Marvel, 1998 series) #29-34  |  gcd_reprint 807888: s3648 Excalibur (1988) #34 [1 story]
+   CV linked:      vol 4052 "Excalibur" 1988 Marvel 126 issues; cached #1-125 (126); yearΔ 0; ratio 163/126 = 1.29; 1 of 1 judged fit
+   CV per-file (v1): vol 4052 "Excalibur" 1988 Marvel 126 on 161/169 files · vol 9101 "Excalibur Annual" 1993 Marvel 2 on 2/169 files
+   CV candidates:  (= linked) · 45547 "Excalibur" 1988 Planeta DeAgostini 81 s93 · 122488 "Excalibur" 2019 Marvel 26 s50 · 11292 "Excalibur" 2004 Marvel 14 s50 · 22316 "Excalibur" 2001 Marvel 4 s50 · 64835 "Flashback" 1971 DynaPubs Enterprises 2 s48 · 64539 "Flashback" 1973 DynaPubs Enterprises 4 s43   (v1 search)
+   CV local rip:   (= linked) · 45547 "Excalibur" 1988 Planeta DeAgostini 81 · 45551 "Excalibur" 1996 Planeta DeAgostini 40 · 22316 "Excalibur" 2001 Marvel 4 · 46184 "Excalibur" 2001 Planeta DeAgostini 1 issue 317984 · 106821 "Excalibur" 2001 Carlsen Verlag 6   (rip lookup)
+   GCD per-file:   methods numx125 · round2-seriesx12 ⚠ · round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 3648 "Excalibur" 1988-1998 Marvel [was ongoing series] 126 on 116/169 files · series 47024 "Excalibur" [es] 1989-1996 Planeta DeAgostini [was ongoing series] 80 on 15/169 files · series 182016 "Excalibur" [tl-ph] 1994-1994 Mahal Kong Pilipinas, Inc. (M.K.P.I.) [] 3 on 4/169 files · series 9832 "Excalibur Annual" 1993-1994 Marvel [was ongoing series] 2 on 2/169 files
+   GCD dump:       (= per-file) · 56580 "Excalibur" [es] 1996-1999 Planeta DeAgostini [] 40 · 81369 "Excalibur" [nl-be] 1998-1998 Enigma [] 1 · 20462 "Excalibur" 2001-2001 Marvel [] 4   (dump lookup)
+   bridges:        gcd 3648 -> LOCG 114590 "Excalibur" support 139 · gcd 47024 -> LOCG 114590 "Excalibur" support 16 · gcd 182016 -> LOCG 114590 "Excalibur" support 4
+
+== S7339 Generation X  [tier C] · 156 files  keys: Counter X - Generation X - Four Days | Generation X | Generation X - Flashback -1 | Generation X - Underground | Generation X -1 | Generation X / Dracula '98 | Generation X Annual | Generation X Annual '96 | Generation X Classic | Generation X Holiday Special  years 1994-2014  156 files / 2 collections
+   folders: [62] Marvel\_X-Men\Generation X\Generation X v1 (1994) · [11] Marvel\_X-Men\Generation X\Generation X v1 (1994)\Annuals and Specials · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0267 Death Wail · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0346 M-Plate · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0380 Comings and Goings · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0412 Sins of the Past · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0438 Correction · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0449 Come on Die Young · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0467 Four Days · [3] Marvel\_X-Men\Generation X\Generation X v1 (1994)\Trades · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0241 The Third Genesis · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0258 Glamour · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0285 Out of Synch · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0311 Untitled · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0329 Zero Tolerance · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0254 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0274 Family Secret · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0293 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0305 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0357 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0367 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0390 Unnamed · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0404 Land of the Rising Sons · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0432 Christmas Fear · [2] _Marvel Major Event Chronology (digital)\1997.06 - X-Men - Operation Zero Tolerance\01 Prelude · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0246 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0309 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0323 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0325 Flashback · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0326 Psylocke & Archangel - Crimson Dawn · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0328 Daydreamers · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0344 The Drowning Man · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0350 Unnamed · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0352 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0399 Unnamed · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0400 Untitlted · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0418 Bishop - The Last X-Men · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0425 Unnamed · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0435 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0481 E is for Extinction
+   files:   [84565] Generation X '96 001 (1996) (Digital) (Shadowcat-Empire).cbz (54pp) | [84566] Generation X - Dracula '98 001 (1998) (digital) (Marika-Empire).cbz (42pp)
+            [84567] Generation X -1 (1994) (Digital-Empire).cbz (22pp) | [84568] Generation X 00.5 (1998) (two covers) (digital) (Marika-Empire).cbz (23pp)
+            [84569] Generation X Annual 001 (1995) (Digital) (Meganubis-Empire).cbz (57pp) | [84570] Generation X Annual 002 (1996) (Digital) (Shadowcat-Empire).cbz (54pp)
+            [84571] Generation X Annual 003 (1997) (Digital-Empire).cbz (38pp) | [84572] Generation X Annual 004 (1998).cbz (40pp) | [84573] Generation X Annual 005 (1999).cbz (37pp)
+            [84574] Generation X Holiday Special 001 (1998) (digital) (Marika-Empire).cbz (41pp) | [84576] Generation X Underground 001 (1998) (Digital-Empire).cbz (35pp)
+            Generation X 012 (1996) (Digital) (Shadowcat-Empire).cbz … Generation X 023 (1997) (Digital) (Shadowcat-Empire).cbz  (12 files, pp 18-23)
+            [84589] Generation X 024 (1997) (Digital-Empire).cbz (24pp) | [84590] Generation X 025 (1997) (Digital-Empire).cbz (34pp)
+            [84591] Generation X 026 (1997) (Digital) (AnHeroGold-Empire).cbz (24pp) | [84592] Generation X 027 (1997) (digital) (Marika-Empire).cbz (24pp)
+            [84593] Generation X 028 (1997) (Digital) (AnHeroGold-Empire).cbz (26pp) | [84594] Generation X 029 (1997) (Digital) (AnHeroGold-Empire).cbz (24pp)
+            [84595] Generation X 030 (1997) (Digital) (AnHeroGold-Empire).cbz (21pp) | [84596] Generation X 031 (1997) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            [84597] Generation X 032 (1997) (Digital-Empire).cbz (22pp)
+            Generation X 033 (1997) (digital) (Marika-Empire).cbz … Generation X 047 (1999) (digital) (Marika-Empire).cbz  (14 files, pp 22-24)
+            Generation X 048 (1999).cbr … Generation X 062 (2000).cbr  (15 files, pp 22-42)
+            Generation X 063 (2000) (Digital) (Shadowcat-Empire).cbz … Generation X 075 (2001) (Digital) (Shadowcat-Empire).cbz  (12 files, pp 24-40)
+            [84641] Counter X - Generation X - Four Days (2013) (Digital) (Kileko-Empire).cbr (172pp) | [84642] COL Generation X Classic Vol. 01 (2011) (Digital) (F) (Kileko-Empire).cbz (242pp)
+            [84643] COL Generation X Classic Vol. 02 (2013) (Digital) (F) (Kileko-Empire).cbz (235pp) | [88160] 001 Generation X 001 (1994) (Digital) (Meganubis-Empire).cbz (38pp)
+            [88161] 002 Generation X 002 (1994) (Digital) (Meganubis-Empire).cbz (24pp)
+            003 Generation X 003 (1995) (Digital) (Shadowcat-Empire.cbz … 003 Generation X 009 (1995) (Digital) (Shadowcat-Empire.cbz  (7 files, pp 23-46)
+            [88315] 001 Generation X - Annual '95 (1995) (Digital) (Shadowcat-Empire.cbz (58pp) | [88316] 002 Generation X 010 (1995) (Digital) (Shadowcat-Empire.cbz (24pp)
+            [88317] 003 Generation X 011 (1995) (Digital) (Shadowcat-Empire.cbz (23pp) | [88318] 004 Generation X 000.cbr (10pp) | [88347] 002 Generation X #13.cbr (24pp)
+            [88348] 003 Generation X #14.cbr (23pp) | [88381] 001 Generation X #15.cbr (25pp) | [88382] 002 Generation X #16.cbr (25pp) | [88383] 003 Generation X #17.cbr (27pp)
+            [88421] 011 Generation X 018.cbr (26pp) | [88435] 025 Generation X #019.cbz (23pp) | [88455] 002 Generation X 020 (1994) [BeastCharming].cbr (27pp)
+            [88456] 003 Generation X v1 021.cbz (29pp) | [88508] 002 Generation X #022.cbr (26pp) | [88509] 003 Generation X Annual 1996.cbr (53pp) | [88535] 002 Generation X #023.cbr (27pp)
+            [88555] 011 Generation X #024.cbr (29pp) | [88558] 014 Generation X Annual 1997.cbz (38pp) | [88559] 015 Generation X #025.cbr (36pp)
+            [88600] 004 Generation X 028 (1997) (Digital) (Shadowcat-Empire.cbz (27pp) | [88612] 003 Generation X - Flashback  -1 (1997).cbr (23pp)
+            [88623] 005 Generation X 026 (1997) (Digital) (Shadowcat-Empire.cbz (25pp) | [88631] 004 Generation X 027 (1997) (Digital) (Shadowcat-Empire.cbz (23pp)
+            [88633] 002 Generation X 029 (1997) (Digital) (Shadowcat-Empire.cbz (25pp) | [88640] 009 Generation X 030 (1997) (Digital) (Shadowcat-Empire.cbz (22pp)
+            [88641] 010 Generation X 031 (1997) (Digital) (Shadowcat-Empire.cbz (23pp) | [88730] 005 Generation X #032.cbr (25pp) | [88733] 001 Generation X #034.cbr (23pp)
+            [88734] 002 Generation X #035.cbr (23pp) | [88735] 003 Generation X Holiday Special (1998) (Meganubis).cbz (42pp) | [88737] 005 Generation X #037.cbr (23pp)
+            [88760] 002 Generation X #033.cbr (23pp) | [88771] 006 Generation X - Underground.cbr (35pp) | 012 Generation X #040.cbr … 007 Generation X #049.cbr  (10 files, pp 23-23)
+            [88981] 003 Generation X 051 (1994) (c2c) (FBScan).cbr (34pp) | [88983] 001 Generation X 052 (1994) (c2c) (FBScan).cbr (42pp)
+            001 Generation X #053.cbr … 004 Generation X #058.cbr  (6 files, pp 22-42) | [89055] 004 Generation X Annual 1999.cbz (37pp) | [89079] 004 Generation X #059.cbr (23pp)
+            [89114] 001 Generation X #060.cbr (23pp) | [89115] 002 Generation X #061.cbr (23pp) | [89132] 009 Generation X #062.cbr (23pp)
+            001 Generation X 063 (2000) (digital) (Glorith-Novus-HD).cbz … 001 Generation X 075 (2001) (digital) (Glorith-Novus-HD).cbz  (13 files, pp 24-40)
+            [116514] 04 Generation X 026 (1997) (Digital) (AnHeroGold-Empire).cbz (24pp) | [116515] 05 Generation X 027 (1997) (Digital) (AnHeroGold-Empire).cbz (22pp)
+   ours:    ladder 0, 0.5, 1-75, 1996-1997, 1999; 61 number(s) name more than one file: 1, 3, 4, 5, 13, 14, 15, 16, 17, 18, 19, 20; ComicInfo Series: "Generation X"x41, "Generation X Annual '96"x2, "Generation X Classic"x2, "Generation X / Dracula '98"x1; ComicInfo Volume: "1994"x41, "1998"x2; ComicInfo Count: "75"x28, "30"x1; ComicInfo Publisher: "Marvel"x25, "Marvel Comics"x22; ComicInfo Web: "123569"x1, "165114"x1, "114006"x1, "43683"x1
+   GCD says: [84642] gcd_reprint 1099264: s5012 Generation X (1994) #1-4 [5 stories] · s2605 The Uncanny X-Men (1981) #316-318 [4 stories] · s4254 X-Men (1991) #36-37 [2 stories] · s15808 Generation X Collectors' Preview (1994) #1 [1 story]
+             [84643] gcd_reprint 1099265: s5012 Generation X (1994) #5-11 [7 stories] · s5286 Generation X '95 (1995) #1 [3 stories] · s23539 Generation X [San Diego Con Edition] (1994) (unnumbered) [1 story]
+   CV linked:      vol 5300 "Generation X" 1994 Marvel 77 issues; cached #1-75 (77); yearΔ 0; ratio 152/77 = 1.97; no judged range
+   CV per-file (v1): vol 5300 "Generation X" 1994 Marvel 77 on 149/156 files · vol 60445 "Generation X / Dracula '98" 1998 Marvel 1 issue 123569 on 1/156 files · vol 19089 "Generation X Holiday Special" 1998 Marvel 1 issue 114006 on 1/156 files · vol 19095 "Generation X Underground" 1998 Marvel 1 issue 114105 on 1/156 files
+   CV candidates:  (= linked) · 47855 "Marvel Bumper Comic Holiday Special" 1989 Marvel UK/Panini UK 1 issue 329734 s61 · 37205 "Underground" 1987 Aircel Publishing 1 issue 247929 s58 · 18442 "Marvel Holiday Special" 1991 Marvel 10 s55 · 92892 "Underground" 1976 Interpresse (DK) 1 issue 543199 s54 · 64835 "Flashback" 1971 DynaPubs Enterprises 2 s48 · 64539 "Flashback" 1973 DynaPubs Enterprises 4 s43   (v1 search)
+   CV local rip:   (= linked) · 47374 "Generation X" 1997 Panini France 13 · 101478 "Generation X" 2017 Marvel 12   (rip lookup)
+   GCD per-file:   methods numx86 · round2-seriesx21 ⚠ · round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 5012 "Generation X" 1994-2001 Marvel [was ongoing series] 76 on 105/156 files · series 16501 "Generation X Holiday Special" 1999-1999 Marvel [One-Shot] 1 on 1/156 files · series 15494 "Generation X Underground" 1998-1998 Marvel [One-shot] 1 on 1/156 files · series 4675 "Cable" 1993-2002 Marvel [was ongoing series] 108 on 1/156 files
+   GCD dump:       (= per-file) · 16993 "Generation X" 1998-1998 Marvel; Wizard [] 1 · 173104 "Generation X" [fr] 1998-1999 Panini France [] 12 · 173149 "Generation X" [fr] 1999-1999 Panini France [] 1 · 114163 "Generation X" 2017-2018 Marvel [] 12 · 118040 "Generation X" 2018-2018 Marvel [] 2   (dump lookup)
+   bridges:        gcd 5012 -> LOCG 101818 "Generation X" support 152
+
+== S11283 Marauders by Gerry Duggan  [tier B]   keys: Marauders By Gerry Duggan | Marauders by Gerry Duggan  years 2020-2022  4 files / 4 collections
+   folders: [4] Marvel\_X-Men\Marauders\Marauders v1 (2019) (Krakoa)
+   files:   [84718] COL Marauders by Gerry Duggan Vol. 01 (2020) (Digital) (Kileko-Empire).cbz (177pp) | [84719] COL Marauders by Gerry Duggan Vol. 02 (2021) (Digital) (Kileko-Empire).cbz (157pp)
+            [84720] COL Marauders by Gerry Duggan Vol. 03 (2021) (Digital) (Kileko-Empire).cbz (163pp) | [84721] COL Marauders by Gerry Duggan Vol. 04 (2022) (Digital) (Kileko-Empire).cbz (175pp)
+   ours:    judged item 84718 #1-6 conf 0.9; judged item 84719 #7-12 conf 0.9; judged item 84720 #13-18 conf 0.9; judged item 84721 #19-27 conf 0.9; ComicInfo Series: "Marauders by Gerry Duggan"x3, "Marauders By Gerry Duggan"x1; ComicInfo Publisher: "Marvel"x4
+   GCD says: [84718] gcd_reprint 2255611: s151261 Marauders (2019) #1-6 [7 stories]
+             [84719] gcd_reprint 2255612: s151261 Marauders (2019) #7-12 [7 stories]
+             [84720] gcd_reprint 2255613: s151261 Marauders (2019) #16-20 [6 stories] · s169119 King in Black: Marauders (2021) #1 [1 story]
+             [84721] gcd_reprint 2357689: s151261 Marauders (2019) #22-27 [7 stories]
+   CV linked:      vol 126382 "Marauders by Gerry Duggan" 2020 Marvel 4 issues; cached #1-4 (4); yearΔ 0; ratio 0/4; 1 of 4 judged fit
+   CV candidates:  (= linked) · 121419 "Infinity Wars by Gerry Duggan: The Complete Collection" 2019 Marvel 1 issue 719456 s85 · 113878 "Guardians of the Galaxy by Gerry Duggan Omnibus" 2018 Marvel 1 issue 686381 s82 · 138729 "Marauders By Gerry Duggan" 2021 Marvel 2 s58 · 144819 "Cable by Gerry Duggan" ? ? 1 issue 944877 s54 · 149044 "Savage Avengers by Gerry Duggan Omnibus" 2023 Marvel 1 issue 979322 s32 · 132133 "Cable by Gerry Duggan" 2020 Marvel 2 s27   (v1 search)
+   CV local rip:   (= linked) · 138729 "Marauders By Gerry Duggan" 2021 Marvel 2 · 121419 "Infinity Wars by Gerry Duggan: The Complete Collection" 2019 Marvel 1 issue 719456 (via CV candidate name "Infinity Wars by Gerry Duggan: The Complete Collection") · 113878 "Guardians of the Galaxy by Gerry Duggan Omnibus" 2018 Marvel 1 issue 686381 (via CV candidate name "Guardians of the Galaxy by Gerry Duggan Omnibus")   (rip lookup)
+   GCD dump:       175103 "Marauders by Gerry Duggan" 2020-2021 Marvel [] 4 · 174673 "Marauders by Gerry Duggan" 2021-? Marvel [] 2 · 177947 "Infinity Wars by Gerry Duggan: The Complete Collection" 2019-2019 Marvel [] 1 (via CV candidate name "Infinity Wars by Gerry Duggan: The Complete Collection") · 130423 "Guardians of the Galaxy by Gerry Duggan Omnibus" 2018-2018 Marvel [] 1 (via CV candidate name "Guardians of the Galaxy by Gerry Duggan Omnibus")   (dump lookup)
+
+== S12823 New Mutants  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: New Mutants (2003) | New Mutants - Lethal Legion  years 2003-2024  33 files / 0 collections
+   folders: [13] Marvel\_X-Men\New Mutants\New Mutants v2 (2003) · [6] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2023.03.08 - New Mutants - Lethal Legion v1\Variant Covers · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0565 Back to School · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0584 The Ties that Bind · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2023.03.08 - New Mutants - Lethal Legion v1 · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0606 Untitled
+   files:   [49894] New Mutants - Lethal Legion (2024) (Digital) (Shan-Empire).cbz (130pp)
+            [49895] New Mutants - Lethal Legion 001 (2023) (1-in-25 Ganucheau Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49896] New Mutants - Lethal Legion 001 (2023) (Fuji Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49897] New Mutants - Lethal Legion 001 (2023) (Land Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49898] New Mutants - Lethal Legion 001 (2023) (Luciano Vecchio Planet Of The Apes Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49899] New Mutants - Lethal Legion 002 (2023) (McKone Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49900] New Mutants - Lethal Legion 003 (2023) (Lopez Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            New Mutants, 2003-05-00 (#01) (digital) (Glorith-HD).cbz … New Mutants, 2004-04-00 (#13) (digital) (Glorith-HD).cbz  (13 files, pp 23-27)
+            001 New Mutants 001 (2003) (digital) (Glorith-HD).cbz … 001 New Mutants 013 (2004) (digital) (Glorith-HD).cbz  (13 files, pp 23-27)
+   ours:    ladder 1-13; 13 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12; ComicInfo Series: "New Mutants"x26; ComicInfo Volume: "2003"x26; ComicInfo Count: "13"x26; ComicInfo Publisher: "Marvel Comics"x26; ComicInfo Web: "107614"x2, "107647"x2, "107652"x2, "107650"x2
+   CV linked:      vol 18351 "New Mutants" 2003 Marvel 13 issues; cached #1-13 (13); yearΔ 0; ratio 32/13 = 2.46; no judged range; v1 per-file: same volume on 33/33 files
+   CV local rip:   (= linked) · 26327 "New Mutants" 2009 Marvel 50 · 122666 "New Mutants" 2020 Marvel 33 · 125858 "New Mutants" 2020 Panini Comics 21 · 149285 "New Mutants" 2022 Panini Comics 2 · 3234 "The New Mutants" 1983 Marvel 100   (rip lookup)
+   GCD per-file:   series 14023 "New Mutants" 2003-2004 Marvel [was ongoing series] 13 on 26/33 files · series 197232 "New Mutants Lethal Legion" 2023-2023 Marvel [limited series] 5 on 6/33 files; methods numx32
+   GCD dump:       (= per-file) · 36520 "New Mutants" 2009-2012 Marvel [] 50 · 63106 "New Mutants" 2010-2012 Marvel [] 7 · 33344 "The New Mutants" 1994-1994 Marvel [] 1 · 151883 "New Mutants" 2020-2023 Marvel [] 33 · 2755 "The New Mutants" 1983-1991 Marvel [] 100   (dump lookup)
+   bridges:        gcd 14023 -> LOCG 114830 "New Mutants" support 26
+
+== S65556 Sabretooth  [tier C] · 4 number(s) x2+, 1 parsed key(s), ratio 2.25  keys: Sabretooth (1993)  years 1993-1993  9 files / 0 collections
+   folders: [4] Marvel\_X-Men\Sabretooth\Sabretooth v1 (1993) · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0198 Death Hunt · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0270 The Red Zone
+   files:   [84865] Sabretooth 01 (of 04) (1993) (Digital) (Shadowcat-Empire).cbz (25pp) | [84866] Sabretooth 02 (of 04) (1993) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [84867] Sabretooth 03 (of 04) (1993) (Digital) (Shadowcat-Empire).cbz (22pp) | [84868] Sabretooth 04 (of 04) (1993) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [87975] 001 Sabretooth 01 (of 04) (1993) (Meganubis).cbz (28pp) | [87976] 002 Sabretooth 02 (of 04) (1993) (Meganubis).cbz (26pp)
+            [87977] 003 Sabretooth 03 (of 04) (1993) (Meganubis).cbz (24pp) | [87978] 004 Sabretooth 04 (of 04) (1993) (Meganubis).cbz (24pp)
+            [88331] 002 Sabretooth Special (1996) (Digital) (AnHeroGold-Empire).cbz (49pp)
+   ours:    ladder 1-4; 4 number(s) name more than one file: 1, 2, 3, 4; ComicInfo Series: "Sabretooth"x4; ComicInfo Volume: "1993"x4; ComicInfo Publisher: "Marvel"x4
+   CV linked:      vol 5041 "Sabretooth" 1993 Marvel 4 issues; cached #1-4 (4); yearΔ 0; ratio 9/4 = 2.25; no judged range; v1 per-file: same volume on 9/9 files
+   CV local rip:   (= linked) · 27157 "Sabretooth" 1998 Marvel 1 issue 165007 · 22216 "Sabretooth" 2004 Marvel 4 · 141524 "Sabretooth" 2022 Marvel 5   (rip lookup)
+   GCD per-file:   series 4727 "Sabretooth" 1993-1993 Marvel [limited series] 4 on 8/9 files; methods fulldump-rematchx4 · numx4
+   GCD dump:       (= per-file) · 12325 "Sabretooth" 1998-1998 Marvel [] 1 · 20851 "Sabretooth" 2004-2005 Marvel [] 4 · 182136 "Sabretooth" 2022-2022 Marvel [] 5   (dump lookup)
+   bridges:        gcd 4727 -> LOCG 109709 "Sabretooth" support 5
+
+== S20706 Uncanny X-Men by Kieron Gillen  [tier B]   keys: Uncanny X-Men By Kieron Gillen  years 2012-2012  3 files / 3 collections
+   folders: [3] Marvel\_X-Men\Uncanny X-Men\Uncanny X-Men v2 (2012)
+   files:   [85379] COL Uncanny X-Men By Kieron Gillen Vol. 02 (2012) (Digital) (F) (Kileko-Empire).cbz (136pp)
+            [85380] COL Uncanny X-Men By Kieron Gillen Vol. 03 (2013) (Digital) (Kileko-Empire).cbr (96pp)
+            [85381] COL Uncanny X-Men By Kieron Gillen Vol. 04 (2013) (Digital) (F) (Kileko-Empire).cbz (134pp)
+   ours:    ComicInfo Series: "Uncanny X-Men By Kieron Gillen"x2; ComicInfo Publisher: "Marvel"x2
+   GCD says: [85379] gcd_reprint 2057762: s61973 Uncanny X-Men (2012) #5-10 [7 stories]
+             [85380] gcd_reprint 2675158: s61973 Uncanny X-Men (2012) #11-14 [5 stories]
+             [85381] gcd_reprint 2057764: s61973 Uncanny X-Men (2012) #15-20 [19 stories]
+   CV linked:      vol 47000 "Uncanny X-Men by Kieron Gillen" 2012 Marvel 4 issues; cached #1-4 (4); yearΔ 0; ratio 0/4; no judged range
+   CV candidates:  (= linked) · 71565 "Uncanny X-Men" 2009 Editorial Televisa 35 s66 · 44688 "Thor by Kieron Gillen Ultimate Collection" 2011 Marvel 1 issue 307675 s63 · 153416 "The Uncanny X-Men Marvel Pocketbook" 2004 Marvel UK/Panini UK 16 s46 · 30807 "Marvel Masterworks: The Uncanny X-Men" 2003 Marvel 17 s45 · 117229 "Uncanny X-Men by Kieron Gillen: The Complete Collection" 2019 Marvel 2 s40 · 147356 "Immortal X-Men by Kieron Gillen" 2022 Marvel 5 s30   (v1 search)
+   CV local rip:   (= linked) · 71529 "Uncanny X-Men" 2012 Editorial Televisa 14 (via CV candidate name "Uncanny X-Men") · 43785 "Uncanny X-Men" 2011 Marvel 20 (via CV candidate name "Uncanny X-Men") · 57181 "Uncanny X-Men" 2013 Marvel 36 (via CV candidate name "Uncanny X-Men") · 69323 "Uncanny X-Men" 2013 Panini Verlag 7 (via CV candidate name "Uncanny X-Men") · 71521 "Uncanny X-Men" 2013 Editorial Televisa 18 (via CV candidate name "Uncanny X-Men")   (rip lookup)
+   GCD dump:       154972 "Uncanny X-Men by Kieron Gillen" 2012-2013 Marvel [] 4 · 204851 "Uncanny X-Men by Kieron Gillen" 2012-2013 Marvel [] 4 · 61973 "Uncanny X-Men" 2012-2012 Marvel [] 20 (via CV candidate name "Uncanny X-Men") · 71939 "Uncanny X-Men" 2013-2016 Marvel [] 36 (via CV candidate name "Uncanny X-Men") · 78983 "Uncanny X-Men" [de] 2013-2016 Panini Deutschland [] 7 (via CV candidate name "Uncanny X-Men") · 89427 "Uncanny X-Men" 2013-2015 Marvel [] 6 (via CV candidate name "Uncanny X-Men")   (dump lookup)
+
+== S20719 Uncanny X-Men  [tier C] · ratio 0.05  keys: Uncanny X-Men v5 (2019) | Uncanny X-Men: Wolverine And Cyclops | Uncanny X-Men: X-Men Disassembled  years 2018-2019  4 files / 3 collections
+   folders: [3] Marvel\_X-Men\Uncanny X-Men\Uncanny X-Men v5 (2019) · [1] Marvel\_X-Men\Uncanny X-Men\Uncanny X-Men v5 (2019)\Annuals and Specials
+   files:   [85392] 01 Uncanny X-Men - X-Men Disassembled (2019) (Digital) (Kileko-Empire).cbz (264pp)
+            [85393] COL 02 Uncanny X-Men - Cyclops And Wolverine Vol. 01 (2019) (Digital) (Kileko-Empire).cbz (181pp)
+            [85394] COL 03 Uncanny X-Men - Wolverine And Cyclops Vol. 02 (2019) (Digital) (Kileko-Empire).cbz (152pp)
+            [85396] COL Uncanny X-Men - Director's Edition 001 (2019) (Digital) (F) (Zone-Empire).cbr (288pp)
+   ours:    ladder 1; ComicInfo Series: "Uncanny X-Men"x2, "Uncanny X-Men: X-Men Disassembled"x1, "Uncanny X-Men: Wolverine And Cyclops"x1; ComicInfo Volume: "2018"x1; ComicInfo Publisher: "Marvel"x4
+   GCD says: [85393] gcd notes 1978993 (#1 of Uncanny X-Men: Wolverine and Cyclops): Uncanny X-Men (Marvel, 2019 series) #11-16  |  gcd_reprint 1978993: s133732 Uncanny X-Men (2019) (unnumbered) [7 stories]
+   CV linked:      vol 115285 "Uncanny X-Men" 2018 Marvel 22 issues; cached #1-22 (22); yearΔ 0; ratio 1/22 = 0.05; no judged range
+   CV per-file (v1): vol 117768 "Uncanny X-Men: X-Men Disassembled" 2019 Marvel 1 issue 703957 on 1/4 files · vol 119782 "Uncanny X-Men: Cyclops and Wolverine" 2019 Marvel 2 on 1/4 files
+   CV candidates:  (= linked) · 87825 "Uncanny X-Men" 2016 Marvel 2 s89 · 43785 "Uncanny X-Men" 2011 Marvel 20 s80 · 58060 "Marvel Noir: Wolverine & the X-Men" 2013 Marvel 1 issue 388848 s73 · 40694 "Uncanny X-Men: Quarantine" 2011 Marvel 1 issue 274410 s69 · 31052 "X-Men Origins: Cyclops" 2010 Marvel 1 issue 192575 s65 · 69323 "Uncanny X-Men" 2013 Panini Verlag 7 s65   (v1 search)
+   CV local rip:   (= linked) · 87190 "Uncanny X-Men" 2016 Marvel 19 · 87825 "Uncanny X-Men" 2016 Marvel 2 · 57181 "Uncanny X-Men" 2013 Marvel 36 · 69323 "Uncanny X-Men" 2013 Panini Verlag 7 · 71521 "Uncanny X-Men" 2013 Editorial Televisa 18   (rip lookup)
+   GCD per-file:   series 149407 "Uncanny X-Men" [de] 2019-2019 Panini Deutschland [] 4 on 1/4 files; methods numx1
+   GCD dump:       (= per-file) · 133732 "Uncanny X-Men" 2019-2019 Marvel [] 22 · 95480 "Uncanny X-Men" 2016-2017 Marvel [] 19 · 96679 "Uncanny X-Men" 2016-2016 Marvel [] 2 · 106351 "Uncanny X-Men" [de] 2016-2017 Panini Deutschland [] 4 · 89426 "Uncanny X-Men" 2014-2016 Marvel [] 6   (dump lookup)
+   bridges:        gcd 149407 -> LOCG 174842 "Uncanny X-Men" support 11
+
+== S21357 Weapon X  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: Weapon X | Weapon X v2 (2002)  years 1994-2021  52 files / 3 collections
+   flags: #524 label-ambiguous [Pending] item 118892 — items 85421 and 118892 are duplicate copies of Vol. 01 - Weapons of Mutant Destruction Pre
+   folders: [17] Marvel\_X-Men\Weapon X\Weapon X v2 (2002) · [7] Marvel\_X-Men\_X-Men Complete Chronology V2\0547 The Underground · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0580 Defection · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0247 After Xavier - The Age of Apocolypse · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0531 Hunt for Sabertooth · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0601 Countdown To Zero · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0615 War Of The Programs · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0622 Man And Monster · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0135 Weapon X · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0527 Weapon X - The Draft · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0546 Good Cop Bad Cop · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0553 Dead Ends · [1] _Marvel Major Event Chronology (digital)\2017.06 - Weapons of Mutant Destruction\01 Prelude
+   files:   [85404] Weapon X 014 (2003) (digital-hd-Empire).cbr (24pp) | Weapon X 015 (2003) (Digital).cbr … Weapon X 021 (2004) (Digital).cbr  (7 files, pp 23-24)
+            [85412] Weapon X 022 (2004) (digital-hd-Empire).cbr (25pp) | Weapon X 023 (2004) (Digital).cbr … Weapon X 028 (2004) (Digital).cbr  (6 files, pp 23-25)
+            [85419] COL Weapon X Vol. 01 - The Draft (2003) (Digital) (Kileko-Empire).cbz (236pp) | [85420] COL Weapon X Vol. 02 - The Underground (2003) (Digital) (Kileko-Empire).cbz (183pp)
+            [88000] Weapon X (1994) (MCP 072 - 084) (Digital) (TheHand-Empire).cbr (137pp) | [88210] 015 Weapon X 01 (of 04) (1995) (digital) (Minutemen-Faessla).cbz (21pp)
+            [88217] 022 Weapon X 02 (of 04) (1995) (digital) (Minutemen-Faessla).cbz (19pp) | [88227] 032 Weapon X 03 (of 04) (1995) (digital) (Minutemen-Faessla).cbz (22pp)
+            [88239] 044 Weapon X 04 (of 04) (1995) (digital) (Minutemen-Faessla).cbz (19pp) | [89574] 000 Weapon X 000.5 (2002) (digital-hd-Empire).cbr (22pp)
+            001 Weapon X 001 (2002) (digital-hd-Empire).cbr … 003 Weapon X 028 (2004) (digital-hd-Empire).cbr  (28 files, pp 22-25)
+            [118892] COL Weapon X Vol. 01 - Weapons of Mutant Destruction Prelude (2017) (Digital) (Kileko-Empire).cbr (127pp)
+   ours:    ladder 0-28; 19 number(s) name more than one file: 1, 2, 3, 4, 14, 15, 16, 17, 18, 19, 20, 21; ComicInfo Series: "Weapon X"x2; ComicInfo Publisher: "Marvel"x2
+   GCD says: [118892] gcd notes 545514 (#[nn] of Weapon X): the Weapon X storyline from Marvel Comics Presents (Marvel, 1988 series) #72-84  |  gcd_reprint 545514: s3654 Marvel Comics Presents (1988) #72-84 [15 stories]
+   CV linked:      vol 18390 "Weapon X" 2002 Marvel 29 issues; cached #1-28 (29); yearΔ 8; ratio 48/29 = 1.66; no judged range; v1 per-file: same volume on 49/52 files
+   CV candidates:  (= linked) · 5564 "Weapon X" 1995 Marvel 4 s100 · 35703 "Weapon X" 1994 Marvel 1 issue 236149 s100 · 100709 "Weapon X" 2017 Marvel 27 s53 · 26150 "Wolverine Weapon X" 2009 Marvel 16 s37 · 125789 "Weapon X" 2017 Panini Comics 6 s35 · 116845 "Weapon X: Weapon X-Force" 2019 Marvel 1 issue 699416 s33   (v1 search)
+   CV local rip:   (= linked) · 35703 "Weapon X" 1994 Marvel 1 issue 236149 · 5564 "Weapon X" 1995 Marvel 4 · 100709 "Weapon X" 2017 Marvel 27 · 125789 "Weapon X" 2017 Panini Comics 6   (rip lookup)
+   GCD per-file:   series 18512 "Weapon X" 2002-2004 Marvel [was ongoing series] 28 on 43/52 files · series 5304 "Weapon X" 1995-1995 Marvel [limited series] 4 on 4/52 files · series 32261 "Weapon X" 1993-1993 ? [] 1 on 1/52 files; methods numx47 · page-rematchx1
+   GCD dump:       (= per-file) · 49836 "Weapon-X" 1994-1994 Marvel [] 1 · 18509 "Weapon X" 2002-2002 Marvel; Wizard [] 1 · 179629 "Weapon X" 2003-2003 Marvel [] 2   (dump lookup)
+   bridges:        gcd 18512 -> LOCG 115425 "Weapon X" support 43 · gcd 5304 -> LOCG 115425 "Weapon X" support 4
+
+== S94734 Weapon X  [tier C] · gap 15  keys: Weapon X v3 (2017)  years 2002-2019  5 files / 5 collections
+   folders: [5] Marvel\_X-Men\Weapon X\Weapon X v3 (2017)
+   files:   [85421] COL Weapon X Vol. 01 - Weapons of Mutant Destruction Prelude (2017) (Digital) (F) (Kileko-Empire).cbr (113pp)
+            [85422] COL Weapon X Vol. 02 - The Hunt For Weapon X (2018) (Digital) (Kileko-Empire).cbr (111pp)
+            [85423] COL Weapon X Vol. 03 - Modern Warfare (2018) (Digital) (Kileko-Empire).cbr (110pp) | [85424] COL Weapon X Vol. 04 - Russian Revolution (2018) (Digital) (Zone-Empire).cbr (103pp)
+            [85425] COL Weapon X Vol. 05 - Weapon X-Force (2019) (Digital) (Zone-Empire).cbr (133pp)
+   ours:    ComicInfo Series: "Weapon X"x4; ComicInfo Publisher: "Marvel"x4
+   GCD says: [85421] gcd_reprint 1729115: s113426 Weapon X (2017) #1-4 [18 stories] · s94628 Totally Awesome Hulk (2016) #19 [3 stories]
+             [85422] gcd_reprint 1788637: s113426 Weapon X (2017) #7-11 [13 stories]
+             [85423] gcd_reprint 1818312: s113426 Weapon X (2017) #12-16 [15 stories]
+             [85424] gcd_reprint 1863739: s113426 Weapon X (2017) #17-21 [11 stories]
+             [85425] gcd_reprint 1914759: s113426 Weapon X (2017) #22-27 [13 stories]
+   CV linked:      vol 100709 "Weapon X" 2017 Marvel 27 issues; cached #1-27 (27); yearΔ 15; ratio 0/27; no judged range
+   CV per-file (v1): vol 18390 "Weapon X" 2002 Marvel 29 on 1/5 files
+   CV local rip:   (= linked) · 5564 "Weapon X" 1995 Marvel 4 · 35703 "Weapon X" 1994 Marvel 1 issue 236149 · 125789 "Weapon X" 2017 Panini Comics 6   (rip lookup)
+   GCD per-file:   series 116037 "Weapon X" 2017-2018 Marvel [collected edition] 5 on 4/5 files; methods numx3 · page-rematchx1
+   GCD dump:       18509 "Weapon X" 2002-2002 Marvel; Wizard [] 1 · 18512 "Weapon X" 2002-2004 Marvel [] 28 · 179629 "Weapon X" 2003-2003 Marvel [] 2 · 5304 "Weapon X" 1995-1995 Marvel [] 4 · 49836 "Weapon-X" 1994-1994 Marvel [] 1 · 32261 "Weapon X" 1993-1993 Marvel [] 1   (dump lookup)
+   bridges:        gcd 116037 -> LOCG 115425 "Weapon X" support 5 · gcd 116037 -> OL /works/OL19748629W "None" isbnSupport 6
+
+== S21879 Wolverine & the X-Men  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: Wolverine and The X-Men | Wolverine and the X-Men | Wolverine and the X-Men 027AU | Wolverine and the X-Men v1 (2011)  years 2011-2014  93 files / 1 collections
+   folders: [42] Marvel\_X-Men\Wolverine and the X-Men\Wolverine and the X-Men v1 (2011) · [10] Marvel\_X-Men\_X-Men Complete Chronology V2\0988 AvX · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1045 The Hellfire Saga · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1072 Wolverine and the X-Men Untitled · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0969 Mutatis Mutandis · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\1023 Savage Learning · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\1011 The Greatest Freakshow on Earth · [4] _Marvel Major Event Chronology (digital)\2011.07 - X-Men - Schism - Regenesis\03 Regenesis\Team Gold (Wolverine) · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0956 Wolverine & The X-Men Regenesis · [2] Marvel\_X-Men\Wolverine and the X-Men\Wolverine and the X-Men v1 (2011)\Annuals and Specials · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\1004 More Pencils More Books More Teacher's Dirty Looks · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\1058 Battle of the Atom · [1] Marvel\_Wolverine\08 Wolverine and the X-Men v1 (2011)\Omnibus Edition · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\1031 Age of Ultron
+   files:   [97999] COL Wolverine & The X-Men by Jason Aaron Omnibus (2014) (Digital) (Kileko-Empire).cbz (894pp) | [85436] Wolverine and the X-Men 027AU (2013) (Digital) (Zone-Empire).cbr (23pp)
+            [85437] Wolverine and the X-Men Annual 001 (2014) (Digital) (Zone-Empire).cbr (31pp) | [85438] Wolverine and the X-Men 001 (2011) (F) (Digital) (Zone-Empire).cbr (32pp)
+            [85439] Wolverine and the X-Men 002 (2012) (F) (Digital) (Zone-Empire).cbr (25pp)
+            Wolverine and the X-Men 003 (2012) (Digital) (Zone-Empire).cbr … Wolverine and the X-Men 025 (2013) (Digital) (Zone-Empire).cbr  (23 files, pp 20-25)
+            [85463] Wolverine and the X-Men 026 (2013) (digital) (Zone-Empire).cbr (22pp)
+            Wolverine and the X-Men 027 (2013) (Digital) (Zone-Empire).cbr … Wolverine and the X-Men 042 (2014) (Digital) (Zone-Empire).cbr  (16 files, pp 21-31)
+            001 Wolverine and the X-Men 001 (2011) (digital) (Minutemen-PhD).cbr … 026 Wolverine and the X-Men 011 (2012) (digital) (Minutemen-PhD).cbr  (11 files, pp 19-31)
+            045 Wolverine and the X-Men 012 (2012) (digital) (Minutemen-Acan).cbr … 003 Wolverine and the X-Men 027 (2013) (digital) (Minutemen-Acan).cbr  (16 files, pp 19-24)
+            [92306] 004 Wolverine and the X-Men 028 (2013) (digital) (Minutemen-PhD).cbr (23pp) | [92307] 005 Wolverine and the X-Men 029 (2013) (digital) (Minutemen-PhD).cbr (22pp)
+            [92356] 012 Wolverine and the X-Men 027AU (2013) (digital) (Minutemen-Acan).cbr (22pp)
+            001 Wolverine and the X-Men 030 (2013) (digital) (Minutemen-PhD).cbr … 009 Wolverine and the X-Men 037 (2013) (digital) (Minutemen-PhD).cbr  (8 files, pp 20-24)
+            [92563] 001 Wolverine and the X-Men Annual 01 (2014) (digital) (Minutemen-PhD).cbr (30pp) | [92564] 002 Wolverine and the X-Men 038 (2014) (digital) (Minutemen-PhD).cbr (21pp)
+            [92565] 003 Wolverine and the X-Men 039 (2014) (digital) (Minutemen-PhD).cbr (21pp) | [92566] 004 Wolverine and the X-Men 040 (2014) (digital) (Minutemen-PhD).cbr (23pp)
+            [92567] 005 Wolverine and the X-Men 041 (2014) (digital) (Minutemen-PhD).cbr (22pp) | [92568] 006 Wolverine and the X-Men 042 (2014) (digital) (Minutemen-PhD).cbr (30pp)
+            [117653] Wolverine & The X-Men 001 (2011) (Digital-Empire).cbr (32pp) | [117654] Wolverine & The X-Men 002 (2012) (Digital) (Zone-Empire).cbr (26pp)
+            [117655] Wolverine & The X-Men 003 (2012) (Digital) (Zone-Empire).cbr (24pp) | [117656] Wolverine & The X-Men 004 (2012) (Digital) (Zone-Empire).cbr (25pp)
+   ours:    ladder 1-42; 42 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12; ComicInfo Series: "Wolverine & The X-Men by Jason Aaron Omnibus"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [97999] gcd_reprint 2305094: s61815 Wolverine & the X-Men (2011) #1-35, #38-42 [41 stories] · s77849 Wolverine & the X-Men Annual (2014) #1 [1 story]
+   CV linked:      vol 43539 "Wolverine & the X-Men" 2011 Marvel 43 issues; cached #1-42 (43); yearΔ 0; ratio 91/43 = 2.12; no judged range; v1 per-file: same volume on 90/93 files
+   CV candidates:  (= linked) · 72113 "Wolverine & the X-Men" 2014 Marvel 12 s93 · 28620 "Wolverine and the X-Men Magazine" 2009 Marvel 2 s82 · 69573 "Wolverine & the X-Men Annual" 2013 Marvel 1 issue 435070 s77 · 58060 "Marvel Noir: Wolverine & the X-Men" 2013 Marvel 1 issue 388848 s76 · 79793 "Wolverine and the X-Men: Death of Wolverine" 2015 Marvel 1 issue 478156 s75 · 42053 "Wolverine: Wolverine vs. the X-Men" 2011 Marvel 1 issue 286197 s61   (v1 search)
+   CV local rip:   (= linked) · 72113 "Wolverine & the X-Men" 2014 Marvel 12 · 47331 "Avengers Vs. X-Men" 2012 Marvel 13 (via GCD name "Avengers vs. X-Men") · 53475 "Avengers Vs. X-Men" 2012 Panini France 6 (via GCD name "Avengers vs. X-Men") · 53793 "Avengers Vs. X-Men" 2012 Marvel 1 issue 366376 (via GCD name "Avengers vs. X-Men") · 55951 "Avengers Vs. X-Men" 2012 Panini Verlag 6 (via GCD name "Avengers vs. X-Men")   (rip lookup)
+   GCD per-file:   methods fulldump-rematchx80 · round2-folderx8 ⚠  (⚠ copies a folder neighbour's series — verify); series 61815 "Wolverine & the X-Men" 2011-2014 [] 43 (dump only) on 80/93 files · series 64737 "Avengers vs. X-Men" 2012-2012 Marvel [limited series] 13 on 4/93 files · series 52076 "Wolverine" 2010-2013 Marvel [was ongoing series] 39 on 4/93 files
+   GCD dump:       (= per-file) · 79392 "Wolverine & the X-Men" 2014-2015 Marvel [] 12 · 157312 "Wolverine & the X-Men" 2014-2015 Marvel [] 2 · 214129 "Wolverine and the X-Men Magazine" 2009-2009 Marvel [] 2 (via CV candidate name "Wolverine and the X-Men Magazine")   (dump lookup)
+   bridges:        gcd 64737 -> LOCG 100010 "Avengers vs. X-Men" support 18 · gcd 52076 -> LOCG 112255 "Wolverine" support 45
+
+== S22139 X-23: The Complete Collection  [tier B]   keys: X-23: The Complete Collection  years 2016-2016  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\X-23 (2004)
+   files:   [85484] COL 03 X-23 - The Complete Collection v02 (2019) (Digital) (Kileko-Empire).cbz (459pp)
+   ours:    ComicInfo Series: "X-23: The Complete Collection"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [85484] gcd notes 1655283 (#2 of X-23: The Complete Collection): X-23 (Marvel 2010 series) #4-21; Daken: Dark Wolverine (Marvel 2010 series) #8-9; All-New Wolverine Saga (Marvel 2010 series) #1; Wolverine: The Road to Hell (Marvel 2010 series) #1  |  gcd_reprint 1655283: s52376 X-23 (2010) #4-21 [19 stories] · s52123 Wolverine: The Road to Hell (2010) #1 [2 stories] · s52299 Daken: Dark Wolverine (2010) #8-9 [2 stories] · s106321 All-New Wolverine Saga (2010) (unnumbered) [1 story]
+   CV linked:      vol 92585 "X-23: The Complete Collection" 2016 Marvel 2 issues; cached #1-2 (2); yearΔ 0; ratio 0/2; no judged range
+   CV candidates:  (= linked) · 32044 "X-23" 2010 Marvel 1 issue 201027 s30 · 35496 "X-23" 2010 Marvel 21 s15 · 18176 "X-23" 2005 Marvel 6 s15 · 112212 "X-23" 2018 Marvel 12 s15 · 125787 "X-23" 2019 Panini Comics 2 s8 · 126158 "X-23" 2019 Panini Verlag 2 s8   (v1 search)
+   CV local rip:   (= linked) · 112212 "X-23" 2018 Marvel 12 (via CV candidate name "X-23") · 125787 "X-23" 2019 Panini Comics 2 (via CV candidate name "X-23") · 126158 "X-23" 2019 Panini Verlag 2 (via CV candidate name "X-23") · 32044 "X-23" 2010 Marvel 1 issue 201027 (via CV candidate name "X-23") · 35496 "X-23" 2010 Marvel 21 (via CV candidate name "X-23")   (rip lookup)
+   GCD dump:       104522 "X-23: The Complete Collection" 2016-2016 Marvel [] 2 · 126773 "X-23" 2018-2019 Marvel [] 12 (via CV candidate name "X-23") · 137218 "X-23" 2018-2019 Marvel [] 2 (via CV candidate name "X-23") · 147506 "X-23" [de] 2019-? Panini Deutschland [] 2 (via CV candidate name "X-23") · 63099 "X-23" 2011-2012 Marvel [] 3 (via CV candidate name "X-23") · 63121 "X-23" 2011-2012 Marvel [] 3 (via CV candidate name "X-23")   (dump lookup)
