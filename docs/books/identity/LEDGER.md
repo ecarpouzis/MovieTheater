@@ -2119,3 +2119,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Ghost Rider (2006) trades are GCD 55198; stored rows were Panini Deutschland (45859). Hulk (2008) trades have twin GCD
   trade series (73891 / 73934) plus 2011-12 HCs — page counts pick 73891. Incredible Hulk (2000) and Ghost Rider (2006)
   shelves carry legacy-number CV stamps (L-395) — per-file I lines. Byrne FF Omnibus merged onto the FF 1961 run (L-395).
+[L-399] pub:marvel sig:split folder:events
+- Waves 149-150: Marvel chronology folders — "Ghost Rider v2 NNN" / "(1992)" follows CV's VOLUME ordinal (1990 = Vol. 2),
+  not our folder vN (1973 = v2); check the file's year against the shelf's run. An FF annual that looks recordless can
+  sit under its exact slash title ("Fantastic Four / Fantastic 4 '98", CV 138969 / GCD 7723). GCD splits FF Annual #32-33
+  into a separate 2010-2012 series (67080) while CV keeps them on 2129. A Marvel TPB volume continuing a run's trade
+  numbering after a relaunch that keeps legacy numbering ("Ghost Rider Vol. 05: Final Vengeance", GCD 191541 #5) joins the
+  run's shelf. L-389 blocks only a run's ISSUES from a creator-trade shelf: that creator line's own books join it
+  (Doctor Strange by Mark Waid Books 01-02 -> S5642). C lines on a containment-refused book stand (identity-level).

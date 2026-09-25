@@ -1,0 +1,523 @@
+## Conventions for this batch (19 shown of 128 matched; 398 in LEDGER.md; 13 shelf/shelves: pub:marvel ×13 · kind:collected-line ×11 · kind:trade-only ×9 · folder:vn-year ×5 · kind:new ×5 · folder:sequel-subfolder ×4 · folder:events ×2 · folder:bucket ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-031] (11 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (11 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (11 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (11 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (11 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-132] (11 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-196] (11 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (11 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (11 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-298] (11 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-306] (11 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (11 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (11 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-313] (11 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-327] (11 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (11 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+[L-329] (11 shelf/shelves) kind:collected-line pub:dc pub:marvel
+- DC/Marvel trade lines often store a GCD row that belongs to a FOREIGN or other edition (Urban Comics' French GL
+  2011, a German GL 2023 Vol. 1) — check the stored row's series before using its roll-up. GCD carries twin HC/SC
+  series for most 2006-2016 DC/Marvel trades (77116/77117, 77936/77937) → cap those I lines at 0.9. CV keeps count-1
+  "Title: Subtitle" volumes per trade before ~2016, numbered TPB-line volumes after (R-054).
+[L-332] (11 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection one-rule (lead, wave 44): each Epic book is its OWN shelf; its S line carries the book's own
+  count-1 CV volume and `gcd=-`; the line's GCD series (74602 ASM, 74592 Iron Man) goes on the book's I line with
+  its ISBN; C lines name the runs reprinted. `lookup.py "<Line> Epic Collection" --contains` lists every volume.
+[L-392] (11 shelf/shelves) kind:collected-line pub:marvel sig:split
+- Waves 135-136: Timely/Atlas Marvel Comics #1 -> Marvel Mystery Comics #2-92 -> Marvel Tales #93-159 is ONE numbering
+  (L-390): S11600's Atlas Marvel Tales join S11538. The Epic Collection per-book-shelf shape (Avengers S1589 / GCD 74603,
+  AWC S1632 / GCD 130433, MTIO S11633 / GCD 127449) is fixed by cv=- on the line + split-lane joins of the per-book
+  shelves, never merge-with chains (each per-book shelf stored a different count-1 cv). OPEN for Eric: an Epic line
+  reprinting ONE run — keep the line (L-109/L-350, current practice) or give way to the run (run-vs-line)? A split-lane
+  JOIN of an issue onto a shelf of UNJUDGED trades arms them (New Avengers #13.INH -> S94666): armed_unjudged LIVE
+  EXPOSURE -> `u` lines in containment/decisions/S94666.txt + wave_fix. Minutemen digital Secret Avengers "(2014)" is the
+  digital release year (#13-15 = 2010 run Fear Itself tie-ins). A single-issue facsimile is its own book (L-077).
+
++109 more matched entries not shown: L-397, L-127, L-389, L-029, L-398, L-136, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-119, L-060, L-116, L-014, L-064, L-085, L-101, L-310, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-193, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-124, L-191, L-272, L-281, L-142, L-387, L-388, L-391, L-393, L-016, L-032, L-113, L-114, L-290, L-033, L-034, L-133, L-169, L-319, L-343, L-371, L-378, L-390, L-395, L-396, L-175, L-106, L-111, L-112, L-121, L-129, L-130, L-134, L-172, L-174, L-187, L-242, L-305, L-312, L-324, L-357, L-007, L-128, L-181, L-217, L-336, L-123, L-150, L-194, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S14788 Rocket Raccoon & Groot  [split]  4 files / 4 collections  decided in R-151 (S)
+   decided: S 14788 cv=86989 gcd=95266 0.9 | Rocket Raccoon and Groot (2016): CV 86989 (Marvel 2016, 10, cached #1-10) and GCD 95266 (Marvel 2016, 10) agree on publisher, year and count; our Vol. 01 Tricks of the Trade and Vol. 02 Civil War II collect #1-6 / #7-10 (GCD 104355 rows 1605030 / 1648460 - GCD's TPB line, so it moves off the S leg); 0.9 for the 2013 Complete Collection, a compilation of other runs, split below
+   F 14788 split-needed | items 80332 ("Rocket Raccoon & Groot - The Complete Collection (2013)" 272pp = CV 46366 issue 396609 / GCD 73369 row 1098985) and 80333 ("Rocket Raccoon And Groot Ultimate Collection (2014)" 272pp, the same page count, no record of its own) are the 2013 compilation of Annihilators #1-4, Annihilators: Earthfall #1-4, Rocket Raccoon (1985) #1-4 and Marvel Preview #7 - a different book stored by no shelf (lookup --who-stores cv=46366: 0 rows) -> new key "Rocket Raccoon & Groot: The Complete Collection (2013)" seeded cv=46366 gcd=73369
+   N 14788 flag #385 (label-ambiguous, item 118877) names a Civil War II copy no longer on this shelf; 80335 is the only Vol. 02 here. The stored GCD 104355 is the 3-book TPB line (Bite and Bark / Tricks of the Trade / Civil War II); CV 86989 now has its CvVolume row (C-044's needs-fetch is done)
+   nearby: S18826 "The Incredible Hulk" 425f [shares gcd=1866 (collected by item 80335) — S cv=2406 gcd=1866 (R-151 0.9)] keys: "The Incredible Hulk" | "The Incredible Hulk v1 (1968)"
+   nearby: S11549 "Marvel Preview" 16f [shares gcd=2260 (collected by item 80332) — S cv=2774 gcd=2260 (R-038 0.95)] keys: "Marvel Preview"
+   nearby: S36592 "Rocket Raccoon" 14f [shares gcd=3042 (collected by item 80332) — S cv=3503 gcd=3042 (B-056 0.95)] keys: "Rocket Raccoon" | "Rocket Raccoon: Guardian of the Keystone Quadrant"
+   nearby: S1097 "Annihilators" 5f [shares gcd=56227 (collected by item 80332) — S cv=39231 gcd=56227 (A-024 0.95)] keys: "Annhilators" | "Annihilators"
+   nearby: S1098 "Annihilators: Earthfall" 5f [shares gcd=61189 (collected by item 80332) — S cv=43020 gcd=61189 (A-024 0.95)] keys: "Annihilators - Earthfall"
+   keys now: "Rocket Raccoon and Groot" x3 · "Rocket Raccoon And Groot" x1
+   groups (title x folder): 3
+   G1 "Rocket Raccoon & Groot - The Complete Collection (2013) (digital) (Minutemen-InnerPhDemons)" in Marvel\_Guardians of the Galaxy\_Rocket Raccoon and Groot — 1 file(s), 1 COL, pp 272-272; cv per-file 46366x1; gcd per-file 73369x1; key 'Rocket Raccoon and Groot'
+      [80332] COL Rocket Raccoon & Groot - The Complete Collection (2013) (digital) (Minutemen-InnerPhDemons).cbr (272pp)
+         own record cv 46366 / gcd s73369 "Rocket Raccoon & Groot: The Complete Collection" (issue 1098985) COLLECTS: gcd=56227 Annihilators (2011) #1-4 · gcd=61189 Annihilators: Earthfall (2011) #1-4 · gcd=3042 Rocket Raccoon (1985) #1-4 · gcd=2260 Marvel Preview (1975) #7
+   G2 "Rocket Raccoon And Groot Ultimate Collection (2014) (Digital) (Kileko-Empire)" in Marvel\_Guardians of the Galaxy\_Rocket Raccoon and Groot — 1 file(s), 1 COL, pp 272-272; cv per-file 46366x1; gcd per-file 73369x1; key 'Rocket Raccoon And Groot'
+      [80333] COL Rocket Raccoon And Groot Ultimate Collection (2014) (Digital) (Kileko-Empire).cbr (272pp)
+         own record cv 46366 / gcd s73369 "Rocket Raccoon & Groot: The Complete Collection" (issue 1098985) COLLECTS: gcd=56227 Annihilators (2011) #1-4 · gcd=61189 Annihilators: Earthfall (2011) #1-4 · gcd=3042 Rocket Raccoon (1985) #1-4 · gcd=2260 Marvel Preview (1975) #7
+   G3 "Rocket Raccoon and Groot" in Marvel\_Guardians of the Galaxy\_Rocket Raccoon and Groot\Rocket Raccoon and Groot v1 (2016) — 2 file(s), 2 COL, pp 113-127; cv per-file 92386x1, 95606x1; gcd per-file 104355x2; key 'Rocket Raccoon and Groot'
+      [80334] COL Rocket Raccoon and Groot Vol. 01 - Tricks of the Trade (2016) (Digital) (Zone-Empire).cbr (127pp)
+         own record cv 92386 / gcd s104355 "Rocket Raccoon and Groot" (issue 1605030) COLLECTS: gcd=95266 Rocket Raccoon and Groot (2016) #1-6
+      [80335] COL Rocket Raccoon and Groot Vol. 02 - Civil War II (2016) (Digital) (Zone-Empire).cbr (113pp)
+         own record cv 95606 / gcd s104355 "Rocket Raccoon and Groot" (issue 1648460) COLLECTS: gcd=95266 Rocket Raccoon and Groot (2016) #7-10 · gcd=1866 The Incredible Hulk (1968) #271
+
+== S18826 The Incredible Hulk  [split]  425 files / 2 collections  decided in R-151 (S)
+   decided: S 18826 cv=2406 gcd=1866 0.9 | The Incredible Hulk (1968-1999): CV 2406 (Marvel 1968, cached #102-474, continuing Tales to Astonish's numbering) and GCD 1866 (Marvel 1968-1999, 374) agree on publisher, span and count; our ladder #102-474 plus #-1 (folder "03 The Incredible Hulk v1 (1968)", ComicInfo Volume 1968 / Count 474, per-file CV 2406 on 409 files) fills it, the doubled numbers are X-Men Complete / Major Event Chronology second rips and the b&w "Ink Editions" of #314-319, and Omnibus Book 02 (GCD 79894 #2 collects s1866 #103-134) is the run's own; 0.9 for Omnibus Book 01 (Hulk 1962 / Tales to Astonish) and the Annual series and 2000-run strays split below
+   F 18826 split-needed | the Annual series - items 80922-80926, 80928-80932, 80935-80937 ("Incredible Hulk Annual 001, 005-008, 010-011, 013-015, 018-020", per-file CV 2860 / GCD 2348 on each) and 80945 (the b&w Ink Edition of Annual #7) - are The Incredible Hulk Annual (CV 2860 = King-Size #1-4 + Annual #5-20 / GCD 2348 = #5-20), the series S34388 stores (S line below cv=2860 gcd=2348) -> join S34388 on its key "The Incredible Hulk Annual" (L-391)
+   F 18826 split-needed | items 98949-98950 ("120 / 121 - The Incredible Hulk v3 093 / 094", 27pp, X-Men Complete Chronology folders) are Incredible Hulk (2000) #93-94 (CV 6558 / GCD 7053), the run S94719 stores (S line below cv=6558 gcd=7053) -> join S94719 on its key "The Incredible Hulk v2 (1999)" (L-368; replaces R-047's F misfiled)
+   N 18826 flags #288 (label-ambiguous, item 87488: four "Incredible Hulk v1" chronology files carry a collection format) and #473 (98949: the v3 093-094 files are single issues) are right - both are single issues, handled above. Per-file GCD 7053 on ten 1968-run files is a round2-series stamp; the S leg's 1866 is theirs
+   N 81357 also collects Marvel Super-Heroes (1967) #25-27, #32-56 and Marvel Collectors' Item Classics #3-16 reprint pages
+   named: S34388 The Incredible Hulk Annual  4 files  keys: "The Incredible Hulk Annual" | "X-Man and The Incredible Hulk Annual"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S94719 Incredible Hulk  91 files  keys: "The Incredible Hulk v2 (1999)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S17562 "Tales to Astonish" 151f [shares gcd=1443 (collected by item 81357) — S cv=2008 gcd=1443 (A-024 0.95)] keys: "Tales to Astonish" | "Tales to Astonish v1 (1959)"
+   nearby: S11597 "Marvel Super-Heroes" 9f [shares gcd=1810 (collected by item 81357) — S cv=2353 gcd=1810 (R-046 0.95)] keys: "Marvel Super-Heroes" | "Marvel Super-Heroes v1 (1967)"
+   nearby: S94859 "The Incredible Hulk" 7f [shares gcd=1515 (collected by item 81357) — S cv=2077 gcd=1515 (R-047 0.95)] keys: "The Incredible Hulk v1 (1962)"
+   nearby: S94838 "Incredible Hulk v4 (2023)" 62f [title — S cv=151522 gcd=201474 (R-132 0.9)] keys: "Incredible Hulk v4 (2023)"
+   nearby: S94837 "Incredible Hulk" 11f [title — S cv=105325 gcd=117738 (R-047 0.95)] keys: "Incredible Hulk v1 (2017)" · S9373 "Incredible Hulk" 7f [title — S cv=142306 (R-047 1.0)] keys: "Incredible Hulk"
+   nearby: S94860 "Incredible Hulk" 6f [title — S cv=24715 gcd=38633 (R-047 0.95)] keys: "The Incredible Hulk v1 (2009)"
+   nearby: S103880 "Incredible Hulk Annual (2024)" 1f [title — S cv=159483 gcd=214854 (R-087 0.95)] keys: "Incredible Hulk Annual (2024)"
+   nearby: S18830 "The Incredible Hulk Weekly" 14f [title+1 — S cv=37822 gcd=30586 (B-056 0.95)] keys: "The Incredible Hulk Weekly"
+   nearby: S9376 "Incredible Hulk: Crossroads" 1f [title+1 — S cv=61401 gcd=73757 (B-056 0.9)] keys: "Incredible Hulk - Crossroads"
+   nearby: S9378 "Incredible Hulk: Pardoned" 1f [title+1 — S cv=48760 gcd=73760 (B-056 0.9)] keys: "Incredible Hulk - Pardoned"
+   nearby: S9380 "Incredible Hulk: Regression" 1f [title+1 — S cv=51322 gcd=73761 (B-056 0.9)] keys: "Incredible Hulk - Regression"
+   nearby: S18827 "The Incredible Hulk #180 Page" 1f [title+1] keys: "The Incredible Hulk #180 Page"
+   nearby: S21917 "Incredible Hulk No. 181 Facsimile Edition" 1f [title+1 — S cv=117971 gcd=142959 (B-057 0.95)] keys: "Wolverine: Incredible Hulk"
+   keys now: "The Incredible Hulk v1 (1968)" x420 · "The Incredible Hulk" x5
+   groups (title x folder): 24
+   G1 "The Incredible Hulk" in Marvel\Death's Head\3. Death's Head (3.0) — 2 file(s), numbers 93-94, pp 27-27; cv per-file 6558x2; gcd per-file 7053x2; key 'The Incredible Hulk'
+      [98949] 120 - The Incredible Hulk v3 093.cbr (27pp)
+      [98950] 121 - The Incredible Hulk v3 094.cbr (27pp)
+   G2 "Incredible Hulk" in Marvel\_Guardians of the Galaxy\_Rocket Raccoon and Groot — 1 file(s), numbers 271, pp 24-24; cv per-file 2406x1; key 'The Incredible Hulk v1 (1968)'
+      [80329] Incredible Hulk 271 (1982) (Digital-HD) (Monafekk-Empire).cbr (24pp)
+   G3 "Incredible Hulk" in Marvel\_Hulk\03 The Incredible Hulk v1 (1968) — 372 file(s), numbers 102-107, 109-474, pp 17-55; cv per-file 2406x372; gcd per-file 7053x10, 1866x3; key 'The Incredible Hulk v1 (1968)'
+      e.g. Incredible Hulk 102 (1968) (Digital) (Monafekk-Empire).cbr
+        80547 #102 1968 22pp · 80548 #103 1968 22pp · 80549 #104 1968 22pp · 80550 #105 1968 22pp · 80551 #106 1968 22pp · 80552 #107 1968 22pp · 80553 #109 1968 22pp · 80554 #110 1968 22pp
+        80555 #111 1969 23pp · 80556 #112 1969 22pp · 80557 #113 1969 22pp · 80558 #114 1969 22pp · 80559 #115 1969 22pp · 80560 #116 1969 22pp · 80561 #117 1969 22pp · 80562 #118 1969 22pp
+        80563 #119 1969 22pp · 80564 #120 1969 22pp · 80565 #121 1969 22pp · 80566 #122 1969 22pp · 80567 #123 1970 22pp · 80568 #124 1970 22pp · 80569 #125 1970 22pp · 80570 #126 1970 22pp
+        80571 #127 1970 21pp · 80572 #128 1970 21pp · 80573 #129 1970 21pp · 80574 #130 1970 21pp · 80575 #131 1970 21pp · 80576 #132 1970 21pp · 80577 #133 1970 21pp · 80578 #134 1970 21pp
+        80579 #135 1971 21pp · 80580 #136 1971 21pp · 80581 #137 1971 21pp · 80582 #138 1971 21pp · 80583 #139 1971 21pp · 80584 #140 1971 20pp · 80585 #141 1971 21pp · 80586 #142 1971 21pp
+        80587 #143 1971 21pp · 80588 #144 1971 21pp · 80589 #145 1971 35pp · 80590 #146 1971 23pp · 80591 #147 1972 23pp · 80592 #148 1972 24pp · 80593 #149 1972 23pp · 80594 #150 1972 23pp
+        80595 #151 1972 23pp · 80596 #152 1972 23pp · 80597 #153 1972 23pp · 80598 #154 1972 23pp · 80599 #155 1972 22pp · 80600 #156 1972 22pp · 80601 #157 1972 22pp · 80602 #158 1972 22pp
+        80603 #159 1973 22pp · 80604 #160 1973 22pp · 80605 #161 1973 22pp · 80606 #162 1973 22pp · 80607 #163 1973 22pp · 80608 #164 1973 22pp · 80609 #165 1973 21pp · 80610 #166 1973 21pp
+        80611 #167 1973 21pp · 80612 #168 1973 21pp · 80613 #169 1973 21pp · 80614 #170 1973 21pp · 80615 #171 1974 22pp · 80616 #172 1974 22pp · 80617 #173 1974 21pp · 80618 #174 1974 21pp
+        80619 #175 1974 20pp · 80620 #176 1974 20pp · 80621 #177 1974 20pp · 80622 #178 1974 21pp · 80623 #179 1974 20pp · 80624 #180 1974 20pp · 80625 #181 1974 20pp · 80626 #182 1974 19pp
+        80627 #183 1975 19pp · 80628 #184 1975 19pp · 80629 #185 1975 19pp · 80630 #186 1975 20pp · 80631 #187 1975 20pp · 80632 #188 1975 20pp · 80633 #189 1975 20pp · 80634 #190 1975 20pp
+        80635 #191 1975 20pp · 80636 #192 1975 20pp · 80637 #193 1975 20pp · 80638 #194 1975 20pp · 80639 #195 1976 20pp · 80640 #196 1976 20pp · 80641 #197 1976 20pp · 80642 #198 1976 19pp
+        80643 #199 1976 19pp · 80644 #200 1976 20pp · 80645 #201 1976 19pp · 80646 #202 1976 19pp · 80647 #203 1976 19pp · 80648 #204 1976 20pp · 80649 #205 1976 19pp · 80650 #206 1976 19pp
+        80651 #207 1977 19pp · 80652 #208 1977 19pp · 80653 #209 1977 19pp · 80654 #210 1977 19pp · 80655 #211 1977 19pp · 80656 #212 1977 19pp · 80657 #213 1977 19pp · 80658 #214 1977 19pp
+        80659 #215 1977 19pp · 80660 #216 1977 19pp · 80661 #217 1977 20pp · 80662 #218 1977 19pp · 80663 #219 1978 19pp · 80664 #220 1978 19pp · 80665 #221 1978 19pp · 80666 #222 1978 20pp
+        80667 #223 1978 18pp · 80668 #224 1978 19pp · 80669 #225 1978 19pp · 80670 #226 1978 18pp · 80671 #227 1978 19pp · 80672 #228 1978 19pp · 80673 #229 1978 19pp · 80674 #230 1978 20pp
+        80675 #231 1979 19pp · 80676 #232 1979 19pp · 80677 #233 1979 19pp · 80678 #234 1979 19pp · 80679 #235 1979 19pp · 80680 #236 1979 19pp · 80681 #237 1979 19pp · 80682 #238 1979 18pp
+        80683 #239 1979 19pp · 80684 #240 1979 19pp · 80685 #241 1979 19pp · 80686 #242 1979 19pp · 80687 #243 1980 18pp · 80688 #244 1980 19pp · 80689 #245 1980 18pp · 80690 #246 1980 19pp
+        80691 #247 1980 19pp · 80692 #248 1980 19pp · 80693 #249 1980 19pp · 80694 #250 1980 36pp · 80695 #251 1980 19pp · 80696 #252 1980 19pp · 80697 #253 1980 24pp · 80698 #254 1980 24pp
+        80699 #255 1981 24pp · 80700 #256 1981 24pp · 80701 #257 1981 24pp · 80702 #258 1981 24pp · 80703 #259 1981 24pp · 80704 #260 1981 24pp · 80705 #261 1981 23pp · 80706 #262 1981 24pp
+        80707 #263 1981 23pp · 80708 #264 1981 23pp · 80709 #265 1981 23pp · 80710 #266 1981 23pp · 80711 #267 1982 23pp · 80712 #268 1982 23pp · 80713 #269 1982 24pp · 80714 #270 1982 24pp
+        80715 #271 1982 24pp · 80716 #272 1982 24pp · 80717 #273 1982 24pp · 80718 #274 1982 24pp · 80719 #275 1982 24pp · 80720 #276 1982 24pp · 80721 #277 1982 24pp · 80722 #278 1982 23pp
+        80723 #279 1983 23pp · 80724 #280 1983 24pp · 80725 #281 1983 24pp · 80726 #282 1983 24pp · 80727 #283 1983 24pp · 80728 #284 1983 25pp · 80729 #285 1983 23pp · 80730 #286 1983 24pp
+        80731 #287 1983 24pp · 80732 #288 1983 24pp · 80733 #289 1983 24pp · 80734 #290 1983 24pp · 80735 #291 1984 24pp · 80736 #292 1984 24pp · 80737 #293 1984 23pp · 80738 #294 1984 23pp
+        80739 #295 1984 24pp · 80740 #296 1984 25pp · 80741 #297 1984 23pp · 80742 #298 1984 24pp · 80743 #299 1984 24pp · 80744 #300 1984 41pp · 80745 #301 1984 24pp · 80746 #302 1984 24pp
+        80747 #303 1985 23pp · 80748 #304 1985 23pp · 80749 #305 1985 24pp · 80750 #306 1985 24pp · 80751 #307 1985 24pp · 80752 #308 1985 23pp · 80753 #309 1985 24pp · 80754 #310 1985 23pp
+        80755 #311 1985 24pp · 80756 #312 1985 28pp · 80757 #313 1985 24pp · 80758 #314 1985 24pp · 80759 #315 1986 24pp · 80760 #316 1986 25pp · 80761 #317 1986 23pp · 80762 #318 1986 23pp
+        80763 #319 1986 24pp · 80764 #320 1986 24pp · 80765 #321 1986 24pp · 80766 #322 1986 24pp · 80767 #323 1986 24pp · 80768 #324 1986 24pp · 80769 #325 1986 23pp · 80770 #326 1986 24pp
+        80771 #327 1987 25pp · 80772 #328 1987 24pp · 80773 #329 1987 24pp · 80774 #330 1987 25pp · 80775 #331 1987 24pp · 80776 #332 1987 24pp · 80777 #333 1987 24pp · 80778 #334 1987 24pp
+        80779 #335 1987 24pp · 80780 #336 1987 24pp · 80781 #337 1987 25pp · 80782 #338 1987 24pp · 80783 #339 1988 24pp · 80784 #340 1988 25pp · 80785 #341 1988 24pp · 80786 #342 1988 23pp
+        80787 #343 1988 25pp · 80788 #344 1988 24pp · 80789 #345 1988 39pp · 80790 #346 1988 24pp · 80791 #347 1988 24pp · 80792 #348 1988 24pp · 80793 #349 1988 24pp · 80794 #350 1988 26pp
+        80795 #351 1989 24pp · 80796 #352 1989 25pp · 80797 #353 1989 24pp · 80798 #354 1989 24pp · 80799 #355 1989 24pp · 80800 #356 1989 24pp · 80801 #357 1989 24pp · 80802 #358 1989 24pp
+        80803 #359 1989 23pp · 80804 #360 1989 25pp · 80805 #361 1989 24pp · 80806 #362 1989 24pp · 80807 #363 1989 24pp · 80808 #364 1989 24pp · 80809 #365 1990 24pp · 80810 #366 1990 24pp
+        80811 #367 1990 24pp · 80812 #368 1990 24pp · 80813 #369 1990 24pp · 80814 #370 1990 24pp · 80815 #371 1990 24pp · 80816 #372 1990 24pp · 80817 #373 1990 24pp · 80818 #374 1990 24pp
+        80819 #375 1990 24pp · 80820 #376 1990 24pp · 80821 #377 1991 24pp · 80822 #378 1991 24pp · 80823 #379 1991 24pp · 80824 #380 1991 24pp · 80825 #381 1991 23pp · 80826 #382 1991 24pp
+        80827 #383 1991 25pp · 80828 #384 1991 25pp · 80829 #385 1991 24pp · 80830 #386 1991 24pp · 80831 #387 1991 25pp · 80832 #388 1991 25pp · 80833 #389 1992 25pp · 80834 #390 1992 23pp
+        80835 #391 1992 24pp · 80836 #392 1992 24pp · 80837 #393 1992 55pp · 80838 #394 1992 24pp · 80839 #395 1992 24pp · 80840 #396 1992 24pp · 80841 #397 1992 23pp · 80842 #398 1992 23pp
+        80843 #399 1992 24pp · 80844 #400 1992 45pp · 80845 #401 1993 24pp · 80846 #402 1993 24pp · 80847 #403 1993 24pp · 80848 #404 1993 25pp · 80849 #405 1993 24pp · 80850 #406 1993 24pp
+        80851 #407 1993 23pp · 80852 #408 1993 24pp · 80853 #409 1993 24pp · 80854 #410 1993 24pp · 80855 #411 1993 24pp · 80856 #412 1993 24pp · 80857 #413 1994 24pp · 80858 #414 1994 23pp
+        80859 #415 1994 24pp · 80860 #416 1994 24pp · 80861 #417 1994 24pp · 80862 #418 1994 24pp · 80863 #419 1994 24pp · 80864 #420 1994 24pp · 80865 #421 1994 24pp · 80866 #422 1994 24pp
+        80867 #423 1994 23pp · 80868 #424 1994 24pp · 80869 #425 1995 40pp · 80870 #426 1995 24pp · 80871 #427 1995 23pp · 80872 #428 1995 24pp · 80873 #429 1995 24pp · 80874 #430 1995 24pp
+        80875 #431 1995 24pp · 80876 #432 1995 22pp · 80877 #433 1995 24pp · 80878 #434 1995 24pp · 80879 #435 1995 24pp · 80880 #436 1995 24pp · 80881 #437 1996 22pp · 80882 #438 1996 22pp
+        80883 #439 1996 24pp · 80884 #440 1996 24pp · 80885 #441 1996 24pp · 80886 #442 1996 24pp · 80887 #443 1996 23pp · 80888 #444 1996 23pp · 80889 #445 1996 23pp · 80890 #446 1996 20pp
+        80891 #447 1996 22pp · 80892 #448 1996 23pp · 80893 #449 1997 23pp · 80894 #450 1997 39pp · 80895 #451 1997 22pp · 80896 #452 1997 22pp · 80897 #453 1997 21pp · 80898 #454 1997 21pp
+        80899 #455 1997 24pp · 80900 #456 1997 23pp · 80901 #457 1997 24pp · 80902 #458 1997 23pp · 80903 #459 1997 22pp · 80904 #460 1998 23pp · 80905 #461 1998 24pp · 80906 #462 1998 22pp
+        80907 #463 1998 22pp · 80908 #464 1998 21pp · 80909 #465 1998 25pp · 80910 #466 1998 20pp · 80911 #467 1998 17pp · 80912 #468 1998 24pp · 80913 #469 1998 24pp · 80914 #470 1998 24pp
+        80915 #471 1998 23pp · 80916 #472 1999 23pp · 80917 #473 1999 23pp · 80918 #474 1999 40pp
+   G4 "The Incredible Hulk" in Marvel\_Hulk\03 The Incredible Hulk v1 (1968) — 1 file(s), numbers 108, pp 22-22; cv per-file 2406x1; gcd per-file 1866x1; key 'The Incredible Hulk v1 (1968)'
+      [80919] The Incredible Hulk 108 (1968) (Digital) (F) (TheArchivist-Empire).cbr (22pp)
+   G5 "Incredible Hulk -1 (1997) (Digital) (Shadowcat-Empire)" in Marvel\_Hulk\03 The Incredible Hulk v1 (1968)\Annuals and Specials — 1 file(s), pp 24-24; cv per-file 2406x1; key 'The Incredible Hulk v1 (1968)'
+      [80921] Incredible Hulk -1 (1997) (Digital) (Shadowcat-Empire).cbz (24pp)
+   G6 "Incredible Hulk Annual" in Marvel\_Hulk\03 The Incredible Hulk v1 (1968)\Annuals and Specials — 13 file(s), numbers 1, 5-8, 10-11, 13-15, 18-20, pp 35-58; cv per-file 2860x13; gcd per-file 2348x12, 1865x1; key 'The Incredible Hulk v1 (1968)'
+      e.g. Incredible Hulk Annual 001 (1976) (Digital) (Shadowcat-Empire).cbz
+        80922 #1 1976 54pp · 80923 #5 1976 37pp · 80924 #6 1977 35pp · 80925 #7 1978 37pp · 80926 #8 1979 36pp · 80928 #10 1981 40pp · 80929 #11 1982 39pp · 80930 #13 1984 39pp
+        80931 #14 1985 42pp · 80932 #15 1986 41pp · 80935 #18 1992 55pp · 80936 #19 1993 53pp · 80937 #20 1994 58pp
+   G7 "Incredible Hulk" in Marvel\_Hulk\03 The Incredible Hulk v1 (1968)\Annuals and Specials\Ink Editions — 6 file(s), numbers 314-319, pp 22-24; cv per-file 2406x6; key 'The Incredible Hulk v1 (1968)'
+      e.g. Incredible Hulk 314 (1985) b&w (Bchry-DCP).cbz
+        80939 #314 1985 23pp · 80940 #315 1986 23pp · 80941 #316 1986 24pp · 80942 #317 1986 22pp · 80943 #318 1986 22pp · 80944 #319 1986 23pp
+   G8 "Incredible Hulk Annual" in Marvel\_Hulk\03 The Incredible Hulk v1 (1968)\Annuals and Specials\Ink Editions — 1 file(s), numbers 7, pp 36-36; cv per-file 2860x1; gcd per-file 2348x1; key 'The Incredible Hulk v1 (1968)'
+      [80945] Incredible Hulk Annual 007 (1978) b&w (Bchry-DCP).cbz (36pp)
+   G9 "The Incredible Hulk Omnibus" in Marvel\_Hulk\_Omnibus Editions — 2 file(s), 2 COL, pp 785-830; cv per-file 34246x2; gcd per-file 79894x2; key 'The Incredible Hulk'
+      [81357] COL The Incredible Hulk Omnibus Book 01 (2022) (Digital) (Kileko-Empire).cbz (785pp)
+         own record cv 34246 / gcd s79894 "The Incredible Hulk Omnibus" (issue 1194694) COLLECTS: gcd=1443 Tales to Astonish (1959) #59-101 · gcd=1515 The Incredible Hulk (1962) #1-6 · gcd=1810 Marvel Super-Heroes (1967) #25-27, #32-56 · gcd=1686 Marvel Collectors' Item Classics (1965) #3-16
+      [81358] COL The Incredible Hulk Omnibus Book 02 (2024) (Digital) (Kileko-Empire).cbz (830pp)
+         own record cv 34246 / gcd s79894 "The Incredible Hulk Omnibus" (issue 2580075) COLLECTS: gcd=1866 The Incredible Hulk (1968) #103-134 · gcd=1865 Incredible Hulk [King Size Special] (1968) #1
+   G10 "Incredible Hulk" in Marvel\_Marvel Cosmic\Guardians of the Galaxy\Rocket Raccoon — 1 file(s), numbers 271, pp 24-24; cv per-file 2406x1; key 'The Incredible Hulk v1 (1968)'
+      [82861] 002 Incredible Hulk v2 #271.cbz (24pp)
+   G11 "Incredible Hulk" in Marvel\_X-Men\_X-Men Complete Chronology V2\0005 Beast — 1 file(s), numbers 161, pp 21-21; cv per-file 2406x1; key 'The Incredible Hulk v1 (1968)'
+      [86613] 007 Incredible Hulk 161 (1973) (Digital) (AnPymGold-Empire).cbz (21pp)
+   G12 "Incredible Hulk" in Marvel\_X-Men\_X-Men Complete Chronology V2\0006 Various Cameos — 2 file(s), numbers 150, 172, pp 21-22; cv per-file 2406x2; key 'The Incredible Hulk v1 (1968)'
+      [86623] 008 Incredible Hulk 150 (1972) (Digital) (AnPymGold - Empire).cbz (22pp)
+      [86631] 016 Incredible Hulk 172 (1974) (Digital) (AnPymGold - Empire).cbz (21pp)
+   G13 "Incredible Hulk" in Marvel\_X-Men\_X-Men Complete Chronology V2\0007 Enter The Wolverine — 3 file(s), numbers 180-182, pp 18-19; cv per-file 2406x3; key 'The Incredible Hulk v1 (1968)'
+      [86640] 001 Incredible Hulk 180 (1974) (Digital) (AnPymGold - Empire).cbz (19pp)
+      [86641] 002 Incredible Hulk 181 (1974) (Digital) (AnPymGold - Empire).cbz (19pp)
+      [86642] 003 Incredible Hulk 182 (1974) (Digital) (AnPymGold - Empire).cbz (18pp)
+   G14 "Incredible Hulk" in Marvel\_X-Men\_X-Men Complete Chronology V2\0048 Secret Wars II — 1 file(s), numbers 313, pp 24-24; cv per-file 2406x1; key 'The Incredible Hulk v1 (1968)'
+      [87038] 035 Incredible Hulk 313 (1985) (Digital) (TheArchivist-Empire).cbr (24pp)
+   G15 "Incredible Hulk" in Marvel\_X-Men\_X-Men Complete Chronology V2\0069 Untitled — 2 file(s), numbers 336-337, pp 23-24; cv per-file 2406x2; key 'The Incredible Hulk v1 (1968)'
+      [87166] 008 Incredible Hulk 336 (1987) (Digital) (AnPymGold - Empire).cbz (23pp)
+      [87167] 009 Incredible Hulk 337 (1987) (Digital) (AnPymGold - Empire).cbz (24pp)
+   G16 "Incredible Hulk" in Marvel\_X-Men\_X-Men Complete Chronology V2\0075 The Sword is Drawn — 1 file(s), numbers 340, pp 24-24; cv per-file 2406x1; key 'The Incredible Hulk v1 (1968)'
+      [87219] 005 Incredible Hulk 340 (1988) (Digital) (AnPymGold - Empire).cbz (24pp)
+   G17 "Incredible Hulk" in Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance — 1 file(s), numbers 363, pp 24-24; cv per-file 2406x1; key 'The Incredible Hulk v1 (1968)'
+      [87488] 023 Incredible Hulk v1 363 (1989) (Digital-HD) (Monafekk-Empire).cbr (24pp)
+   G18 "Incredible Hulk" in Marvel\_X-Men\_X-Men Complete Chronology V2\0155 War and Pieces — 3 file(s), numbers 390-392, pp 23-24; cv per-file 2406x3; key 'The Incredible Hulk v1 (1968)'
+      [87764] 001 Incredible Hulk v1 390 (1992) (Digital) (Monafekk-Empire).cbr (23pp)
+      [87765] 002 Incredible Hulk v1 391 (1992) (Digital) (Monafekk-Empire).cbr (24pp)
+      [87767] 004 Incredible Hulk v1 392 (1992) (Digital) (Monafekk-Empire).cbr (24pp)
+   G19 "The Incredible Hulk" in Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught — 1 file(s), numbers 445, pp 23-23; cv per-file 2406x1; gcd per-file 1866x1; key 'The Incredible Hulk'
+      [88428] 018 The Incredible Hulk 445 (1996) (digital) (Minutemen-Bluntman).cbr (23pp)
+   G20 "Incredible Hulk" in Marvel\_X-Men\_X-Men Complete Chronology V2\0322 War — 4 file(s), numbers 454-457, pp 20-23; cv per-file 2406x4; key 'The Incredible Hulk v1 (1968)'
+      e.g. 001 Incredible Hulk 454 (1997) (Digital) (AnPymGold - Empire).cbz
+        88592 #454 1997 20pp · 88593 #455 1997 23pp · 88594 #456 1997 22pp · 88595 #457 1997 23pp
+   G21 "Incredible Hulk" in _Marvel Major Event Chronology (digital)\1973.09 - The Avengers-Defenders War\Extra\Formation of the Defenders — 1 file(s), numbers 126, pp 21-21; cv per-file 2406x1; key 'The Incredible Hulk v1 (1968)'
+      [117999] 03 Incredible Hulk 126 (1970) (Digital) (AnPymGold - Empire).cbz (21pp)
+   G22 "Incredible Hulk" in _Marvel Major Event Chronology (digital)\1989.12 - Acts of Vengeance\Acts of Vengeance - Marvel Universe — 1 file(s), numbers 363, pp 24-24; cv per-file 2406x1; key 'The Incredible Hulk v1 (1968)'
+      [116428] Incredible Hulk 363 (1989) (Digital) (Monafekk-Empire).cbr (24pp)
+   G23 "Incredible Hulk" in _Marvel Major Event Chronology (digital)\1992.12 - Incredible Hulk - Future Imperfect\Extras — 2 file(s), numbers 460-461, pp 23-23; cv per-file 2406x2; key 'The Incredible Hulk v1 (1968)'
+      [116450] Incredible Hulk 460 (1998) (Digital) (AnPymGold-Empire).cbz (23pp)
+      [116451] Incredible Hulk 461 (1998) (Digital) (AnPymGold - Empire).cbz (23pp)
+   G24 "Incredible Hulk" in _Marvel Major Event Chronology (digital)\2014.11 - X-Men - Death of Wolverine\Extras — 2 file(s), numbers 180-181, pp 19-20; cv per-file 2406x2; key 'The Incredible Hulk v1 (1968)'
+      [118052] Incredible Hulk 180 (1974) (Digital) (AnPymGold-Empire).cbz (19pp)
+      [118053] Incredible Hulk 181 (1974) (Digital) (Monafekk-Empire).cbr (20pp)
+
+== S34388 The Incredible Hulk Annual  [split]  4 files / 0 collections  decided in R-151 (S)
+   decided: S 34388 cv=2860 gcd=2348 0.9 | The Incredible Hulk Annual: CV 2860 (Marvel 1968, 20 = King-Size Special #1-4 + Annual #5-20) and GCD 2348 (Marvel 1976-1994, 16 = #5-20; GCD keeps #1-4 as King Size Special 1865) agree on publisher and the #5-20 run; our Annual #9 / #16 / #17 (ComicInfo Series "The Incredible Hulk Annual", Volume 1968, Count 20, Web 20663 / 32839 = CV issues #9 / #16) sit inside, and S18826's fourteen annual files join here; 0.9 for X-Man / Hulk '98, a one-shot split below
+   F 34388 split-needed | item 85791 ("X-Man and The Incredible Hulk Annual 001 (1998)" 41pp, folder X-Man v1 (1995)\Annuals and Specials) is the one-shot X-Man / Hulk '98 (CV 28192 issue 173329 / GCD 6048 row 61206, Marvel 1998, 1 issue each), stored by no shelf -> new key "X-Man / Hulk '98 (1998)" seeded cv=28192 gcd=6048
+   nearby: S18826 "The Incredible Hulk" 425f [named S18826 in the decision's R/N lines — S cv=2406 gcd=1866 (R-151 0.9)] keys: "The Incredible Hulk" | "The Incredible Hulk v1 (1968)"
+   nearby: S22213 "X-Man / Hulk '98" 1f [shares cv=28192, shares gcd=6048 — S cv=28192 gcd=6048 (C-055 0.95)] keys: "X-Man and Hulk Annual"
+   nearby: S103880 "Incredible Hulk Annual (2024)" 1f [title — S cv=159483 gcd=214854 (R-087 0.95)] keys: "Incredible Hulk Annual (2024)"
+   keys now: "The Incredible Hulk Annual" x3 · "X-Man and The Incredible Hulk Annual" x1
+   groups (title x folder): 2
+   G1 "Incredible Hulk Annual" in Marvel\_Hulk\03 The Incredible Hulk v1 (1968)\Annuals and Specials — 3 file(s), numbers 9, 16-17, pp 35-60; cv per-file 2860x3; gcd per-file 2348x3; key 'The Incredible Hulk Annual'
+      [80927] Incredible Hulk Annual 009 (1980) (digital) (Marika-Empire).cbz (35pp)
+      [80933] Incredible Hulk Annual 016 (1990) (digital) (Marika-Empire).cbz (58pp)
+      [80934] Incredible Hulk Annual 017 (1991) (digital) (Marika-Empire).cbz (60pp)
+   G2 "X-Man and The Incredible Hulk Annual" in Marvel\_X-Men\X-Man v1 (1995)\Annuals and Specials — 1 file(s), numbers 1, pp 41-41; cv per-file 28192x1; gcd per-file 6048x1; key 'X-Man and The Incredible Hulk Annual'
+      [85791] X-Man and The Incredible Hulk Annual 001 (1998) (Digital-Empire).cbz (41pp)
+
+== S64928 Hulk  [split]  52 files / 8 collections  decided in R-151 (S)
+   decided: S 64928 cv=20291 gcd=28683 0.9 | Hulk (2008-2012): CV 20291 (Marvel 2008, 58, cached) and GCD 28683 (Marvel 2008-2012, 58) agree on publisher, span and count; our ladder #1-6, #13, #25-57 + #30.1 (folder "06 Hulk v2 (2008)", per-file CV 20291 on 46 files) sits inside, the six trades Vol. 01-06 (GCD TPB line 73891 #1-6, one Vol. 06 twice) and Jeph Loeb's Complete Collection Book 02 (GCD 174230 #2 collects s28683 #4, #13-24) are this run's own editions; 0.9 for the misfiled Ultimate Hulk Annual split below
+   F 64928 split-needed | item 97267 ("Ultimate Hulk Annual 01 (2009)" 31pp, folder Marvel\_Ultimate Comics\_Ultimate Annuals) is the one-shot Ultimate Hulk Annual (CV 25407 issue 149972 / GCD 33366 row 560234, Marvel 2008, 1 issue each), a different comic stored by no shelf (lookup --who-stores cv=25407: 0 rows) -> new key "Ultimate Hulk Annual (2008)" seeded cv=25407 gcd=33366
+   N 64928 CV 20291 now has its CvVolume row (C-046's needs-fetch is done). GCD keeps twin TPB series for this run's trades - 73891 (6 rows) and 73934 (6) - plus 2011-2012 premiere HCs (226622 Hulk No More 344pp, 172156 World War Hulks 264pp); page counts put our rips on 73891
+   N 81198 also collects Hulk (2008) #4 (outside the #13-24 stretch) and Fall of the Hulks: Gamma #1
+   nearby: S101456 "Wolverine" 95f [shares gcd=11723 (collected by item 81067) — S cv=10809 gcd=11723 (R-053 0.95)] keys: "Wolverine v3 (2003)" | "Wolverine: The Death of Wolverine"
+   nearby: S11363 "Marvel Adventures: Fantastic Four" 51f [shares gcd=13997 (collected by item 81067) — S cv=18095 gcd=13997 (R-137 0.9)] keys: "Fantastic Four Giant-Size Adventures" | "Marvel Adventures Fantastic Four"
+   nearby: S94860 "Incredible Hulk" 6f [shares gcd=38633 (collected by item 81069) — S cv=24715 gcd=38633 (R-047 0.95)] keys: "The Incredible Hulk v1 (2009)"
+   nearby: S9075 "Hulk: Fall of the Hulks" 1f [shares cv=36383 — S cv=36383 (R-071 0.9)] keys: "Hulk - Fall of the Hulks"
+   nearby: S9102 "Hulk by Jeph Loeb" 1f [shares cv=69216, shares gcd=174230 — S cv=69216 gcd=174230 (D-014 0.9)] keys: "Hulk by Jeph Loeb: The Complete Collection"
+   nearby: S10404 "King-Size Hulk" 1f [shares gcd=30923 (collected by item 81068) — S cv=21721 gcd=30923 (A-032 0.95)] keys: "King-Size Hulk"
+   nearby: S97666 "Hulk" 4f [title — S cv=73100 gcd=80197 (R-089 0.95)] keys: "Hulk v3 (2013)" · S64929 "Hulk" 3f [title — S cv=140213 gcd=178445 (C-045 0.9)] keys: "Hulk (2022)"
+   nearby: S9069 "Hulk" 1f [title — S cv=30110 gcd=74066 (R-089 0.9)] keys: "Hulk" · S94635 "Hulk v1 (1998)" 1f [title — S gcd=178327 (B-056 0.9)] keys: "Hulk v1 (1998)"
+   nearby: S103681 "Hulk (1999)" 1f [title — S cv=6779 gcd=7292 (R-047 0.95)] keys: "Hulk (1999)"
+   nearby: S18826 "The Incredible Hulk" 425f [title+1 — S cv=2406 gcd=1866 (R-151 0.9)] keys: "The Incredible Hulk" | "The Incredible Hulk v1 (1968)"
+   nearby: S94719 "Incredible Hulk" 91f [title+1 — S cv=6558 gcd=7053 (R-151 0.9)] keys: "The Incredible Hulk v2 (1999)" · S9087 "Hulk Comic" 75f [title+1 — S cv=37309 gcd=30582 (B-056 1.0)] keys: "Hulk Comic"
+   nearby: S94838 "Incredible Hulk v4 (2023)" 62f [title+1 — S cv=151522 gcd=201474 (R-132 0.9)] keys: "Incredible Hulk v4 (2023)"
+   nearby: S18815 "The Immortal Hulk" 20f [title+1 — S cv=111425 gcd=134262 (C-045 0.9)] keys: "Immortal Hulk" | "The Immortal Hulk"
+   nearby: S99760 "She-Hulk" 19f [title+1 — S cv=18293 gcd=15104 (R-043 0.95)] keys: "She-Hulk v2 (2005)"
+   nearby: S9099 "Wolverine/Hulk" 11f [title+1 — S cv=18569 gcd=10551 (C-045 0.95)] keys: "Hulk Wolverine" | "Wolverine and Hulk" · (+18 more by title)
+   keys now: "Hulk v2 (2008)" x40 · "Hulk (2008)" x12
+   groups (title x folder): 8
+   G1 "Hulk" in Marvel\_Hulk\06 Hulk v2 (2008) — 34 file(s), numbers 25-57, pp 22-36; cv per-file 20291x34; gcd per-file 28683x34; key 'Hulk v2 (2008)'
+      e.g. Hulk 025 (2010) (Digital) (Zone-Empire).cbr
+        81033 #25 2010 34pp · 81034 #26 2010 36pp · 81035 #27 2011 35pp · 81036 #28 2011 33pp · 81037 #29 2011 34pp · 81038 #30 2011 33pp · 81040 #31 2011 33pp · 81041 #32 2011 27pp
+        81042 #33 2011 24pp · 81043 #34 2011 26pp · 81044 #35 2011 23pp · 81045 #36 2011 24pp · 81046 #37 2011 23pp · 81047 #38 2011 22pp · 81048 #39 2011 23pp · 81049 #40 2011 24pp
+        81050 #41 2011 23pp · 81051 #42 2011 24pp · 81052 #43 2011 24pp · 81053 #44 2012 23pp · 81054 #45 2012 23pp · 81055 #46 2012 23pp · 81056 #47 2012 22pp · 81057 #48 2012 23pp
+        81058 #49 2012 25pp · 81059 #50 2012 34pp · 81060 #51 2012 24pp · 81061 #52 2012 24pp · 81062 #53 2012 22pp · 81063 #54 2012 22pp · 81064 #55 2012 22pp · 81065 #56 2012 22pp
+        81066 #57 2012 23pp
+      [81039] Hulk 030.1 (2011) (Digital) (Zone-Empire).cbr (25pp)
+   G2 "Hulk" in Marvel\_Hulk\06 Hulk v2 (2008)\Trades — 6 file(s), 6 COL, pp 107-165; cv per-file 36381x1, 31878x1, 36382x1; gcd per-file 73891x6; key 'Hulk v2 (2008)'
+      [81068] COL Hulk Vol. 02 - Red & Green (2009) (digital) (Minutemen-Slayer).cbr (165pp)
+         own record cv 36381 / gcd s73891 "Hulk" (issue 1106633) COLLECTS: gcd=28683 Hulk (2008) #7-9 · gcd=30923 King-Size Hulk (2008) #1 · gcd=73934 Hulk (2008) #2
+      [81069] COL Hulk Vol. 03 - Hulk No More (2010) (digital) (Minutemen-Slayer).cbr (138pp)
+         own record cv 31878 / gcd s73891 "Hulk" (issue 1106634) COLLECTS: gcd=28683 Hulk (2008) #10-13 · gcd=38633 Incredible Hulk (2009) #600 · gcd=73934 Hulk (2008) #3
+      [81070] COL Hulk Vol. 04 - Hulk vs. X-Force (2010) (digital) (Minutemen-Slayer).cbr (118pp)
+         own record cv 36382 / gcd s73891 "Hulk" (issue 1106635) COLLECTS: gcd=28683 Hulk (2008) #14-18 · gcd=73934 Hulk (2008) #4
+      [81071] COL Hulk Vol. 05 - Fall of the Hulks (2010) (digital) (Minutemen-Slayer).cbr (115pp)
+         own record cv 36383 / gcd s73891 "Hulk" (issue 1106636) COLLECTS: gcd=28683 Hulk (2008) #19-21 · gcd=73934 Hulk (2008) #5 · gcd=41109 Fall of the Hulks: Gamma (2010) #1
+      [81072] COL Hulk Vol. 06 - World War Hulks (2010) (digital) (Minutemen-Thoth).cbz (107pp)
+         own record cv 36342 / gcd s73891 "Hulk" (issue 1106637) COLLECTS: gcd=28683 Hulk (2008) #22-24 · gcd=73934 Hulk (2008) #6
+      [81067] COL Hulk vol. 01 - Red Hulk (2009) (digital) (Minutemen-Faessla).cbz (128pp)
+         own record cv 36380 / gcd s73891 "Hulk" (issue 1106632) COLLECTS: gcd=28683 Hulk (2008) #1-6 · gcd=86771 Wizard: The Comics Magazine (1991) #198 · gcd=11723 Wolverine (2003) #50 · gcd=13997 Marvel Adventures Fantastic Four (2005) #37
+   G3 "Hulk by Jeph Loeb - The Complete Collection" in Marvel\_Hulk\_Minis, OGNs and Trades\Hulk by Jeph Loeb - The Complete Collection (2019) — 1 file(s), 1 COL, pp 375-375; cv per-file 69216x1; gcd per-file 174230x1; key 'Hulk (2008)'
+      [81198] COL Hulk by Jeph Loeb - The Complete Collection Book 02 (2019) (Digital) (EJGriffin-Empire).cbz (375pp)
+         own record cv 69216 / gcd s174230 "Hulk by Jeph Loeb: The Complete Collection" (issue 2246195) COLLECTS: gcd=28683 Hulk (2008) #4, #13-24 · gcd=41109 Fall of the Hulks: Gamma (2010) #1
+   G4 "Ultimate Hulk Annual" in Marvel\_Ultimate Comics\_Ultimate Annuals — 1 file(s), numbers 1, pp 31-31; cv per-file 25407x1; gcd per-file 33366x1; key 'Hulk (2008)'
+      [97267] Ultimate Hulk Annual 01 (2009) (Empire-DangerZone).cbr (31pp)
+   G5 "Hulk" in _Marvel Major Event Chronology (digital)\2007.08 - World War Hulk\03 World War Hulk Aftersmash\Hulk — 6 file(s), numbers 1-6, pp 20-24; cv per-file 20291x6; gcd per-file 28683x6; key 'Hulk (2008)'
+      e.g. Hulk 001 (2008) (Digital) (Zone-Empire).cbr
+        116894 #1 2008 22pp · 116895 #2 2008 20pp · 116896 #3 2008 22pp · 116897 #4 2008 21pp · 116898 #5 2008 22pp · 116899 #6 2008 24pp
+   G6 "Hulk" in _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Dark Reign - One Shots and Singles — 1 file(s), numbers 13, pp 24-24; cv per-file 20291x1; gcd per-file 28683x1; key 'Hulk (2008)'
+      [117049] Hulk 013 (2009) (Digital) (Zone-Empire).cbr (24pp)
+   G7 "Hulk" in _Marvel Major Event Chronology (digital)\2010.05 - World War Hulks — 1 file(s), 1 COL, pp 107-107; cv per-file 36342x1; gcd per-file 73891x1; key 'Hulk (2008)'
+      [117367] COL Hulk Vol. 06 - World War Hulks (2010) (digital) (Minutemen-Thoth).cbz (107pp)
+         own record cv 36342 / gcd s73891 "Hulk" (issue 1106637) COLLECTS: gcd=28683 Hulk (2008) #22-24 · gcd=73934 Hulk (2008) #6
+   G8 "Hulk" in _Marvel Major Event Chronology (digital)\2011.03 - Fear Itself\02 Tie-ins\Hulk — 2 file(s), numbers 37-38, pp 22-23; cv per-file 20291x2; gcd per-file 28683x2; key 'Hulk (2008)'
+      [117502] Hulk 037 (2011) (Digital) (Zone-Empire).cbr (23pp)
+      [117503] Hulk 038 (2011) (Digital) (Zone-Empire).cbr (22pp)
+
+== S6502 Fantastic Four Epic Collection: The Dream Is Dead  [split]  1 files / 1 collections  decided in R-151 (S)
+   decided: S 6502 cv=- gcd=79136 0.9 | volume 19 "The Dream Is Dead" of the Fantastic Four Epic Collection LINE: GCD 79136 #19 row 2509762 (468pp, 2023-03-22, ISBN 978-1-302-95112-2) is our 465pp book (ComicInfo Series "Fantastic Four Epic Collection: The Dream Is Dead"); CV 149043 is only its count-1 book volume (issue 979317), so the line has no CV id (L-392)
+   F 6502 wrong-cv-link | the stored CV 149043 "Fantastic Four Epic Collection: The Dream is Dead" is the Vol. 19 book's own count-1 volume, not the line; it moves to the I line
+   F 6502 split-needed | item 79807 -> join S6495 on its ParsedKey "Fantastic Four Epic Collection" (S6495's S line, R-149, is the same GCD 79136 line with cv=-; L-377 / L-392); the shelf empties by the join; replaces C-044's merge-with chain
+   N 79807 also collects Fantastic Four Annual (1963) #22 (GCD 1572) and the Dr. Strange and Dr. Doom: Triumph and Torment graphic novel (GCD 14535)
+   named: S6495 Fantastic Four Epic Collection  15 files  keys: "Fantastic Four Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S64669 "Fantastic Four" 459f [shares gcd=1482 (collected by item 79807) — S cv=2045 gcd=1482 (R-149 0.9)] keys: "Fantastic Four" | "Fantastic Four (1961)" | "Fantastic Four by John Byrne Omnibus" | "Fantastic Four v1 (1961)"
+   nearby: S103758 "Fantastic Four Annual" 30f [shares gcd=1572 (N line) — S cv=2129 gcd=1572 (R-049 0.95)] keys: "Fantastic Four Annual (1963)"
+   nearby: S5637 "Doctor Strange & Doctor Doom: Triumph and Torment" 2f [shares gcd=14535 (N line) — S cv=23227 gcd=14535 (B-055 0.9)] keys: "Doctor Strange & Doctor Doom: Triumph and Torment" | "Doctor Strange and Doctor Doom - Triumph and Torment"
+   nearby: S6503 "Fantastic Four Epic Collection: The More Things Change..." 1f [shares gcd=79136 — S gcd=79136 (R-151 0.9)] keys: "Fantastic Four Epic Collection: The More Things Change..."
+   nearby: S6504 "Fantastic Four Epic Collection: The Name Is Doom" 1f [shares gcd=79136 — S gcd=79136 (R-151 0.9)] keys: "Fantastic Four Epic Collection: The Name Is Doom"
+   nearby: S6505 "Fantastic Four Epic Collection: The New Fantastic Four" 1f [shares gcd=79136 — S gcd=79136 (R-151 0.9)] keys: "Fantastic Four Epic Collection: The New Fantastic Four"
+   keys now: "Fantastic Four Epic Collection: The Dream Is Dead" x1
+   groups (title x folder): 1
+   G1 "Fantastic Four Epic Collection" in Marvel\_Fantastic Four\Fantastic Four Epic Collections — 1 file(s), 1 COL, pp 465-465; cv per-file 149043x1; gcd per-file 79136x1; key 'Fantastic Four Epic Collection: The Dream Is Dead'
+      [79807] COL Fantastic Four Epic Collection Vol. 19 - The Dream Is Dead (2023) (Digital) (Kileko-Empire).cbz (465pp)
+         own record cv 149043 / gcd s79136 "Fantastic Four Epic Collection" (issue 2509762) COLLECTS: gcd=1482 Fantastic Four (1961) #321-333 · gcd=14535 Dr. Strange and Dr. Doom: Triumph and Torment [Marvel Graphic Novel] (1989) (unnumbered) · gcd=1572 Fantastic Four Annual (1963) #22
+
+== S6503 Fantastic Four Epic Collection: The More Things Change...  [split]  1 files / 1 collections  decided in R-151 (S)
+   decided: S 6503 cv=- gcd=79136 0.9 | volume 18 "The More Things Change..." of the Fantastic Four Epic Collection LINE: GCD 79136 #18 row 1978753 (476pp, 2019-06-19, ISBN 978-1-302-91846-0) is our 467pp book; CV 119753 is only its count-1 book volume (issue 711946), so the line has no CV id (L-392)
+   F 6503 wrong-cv-link | the stored CV 119753 "Fantastic Four Epic Collection: The More Things Change..." is the Vol. 18 book's own count-1 volume, not the line; it moves to the I line
+   F 6503 split-needed | item 79806 -> join S6495 on its ParsedKey "Fantastic Four Epic Collection" (S6495's S line, R-149, is the same GCD 79136 line with cv=-; L-377 / L-392); the shelf empties by the join; replaces C-044's merge-with chain; checker anchor only (S6495 is outside this batch): the S6502-S6505 group meets as one, so this line also reads 'join S6502' - S6502's item goes to S6495 too, nothing lands on S6502
+   N 79806 also collects Fantastic Four Annual (1963) #21, The Incredible Hulk (1968) #350 and Marvel Graphic Novel: The Big Change
+   named: S6495 Fantastic Four Epic Collection  15 files  keys: "Fantastic Four Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S6502 Fantastic Four Epic Collection: The Dream Is Dead  1 files  keys: "Fantastic Four Epic Collection: The Dream Is Dead"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S6505 Fantastic Four Epic Collection: The New Fantastic Four  1 files  keys: "Fantastic Four Epic Collection: The New Fantastic Four"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S64669 "Fantastic Four" 459f [shares gcd=1482 (collected by item 79806) — S cv=2045 gcd=1482 (R-149 0.9)] keys: "Fantastic Four" | "Fantastic Four (1961)" | "Fantastic Four by John Byrne Omnibus" | "Fantastic Four v1 (1961)"
+   nearby: S18826 "The Incredible Hulk" 425f [shares gcd=1866 (collected by item 79806) — S cv=2406 gcd=1866 (R-151 0.9)] keys: "The Incredible Hulk" | "The Incredible Hulk v1 (1968)"
+   nearby: S103758 "Fantastic Four Annual" 30f [shares gcd=1572 (collected by item 79806) — S cv=2129 gcd=1572 (R-049 0.95)] keys: "Fantastic Four Annual (1963)"
+   nearby: S6504 "Fantastic Four Epic Collection: The Name Is Doom" 1f [shares gcd=79136 — S gcd=79136 (R-151 0.9)] keys: "Fantastic Four Epic Collection: The Name Is Doom"
+   keys now: "Fantastic Four Epic Collection: The More Things Change..." x1
+   groups (title x folder): 1
+   G1 "Fantastic Four Epic Collection" in Marvel\_Fantastic Four\Fantastic Four Epic Collections — 1 file(s), 1 COL, pp 467-467; cv per-file 119753x1; gcd per-file 79136x1; key 'Fantastic Four Epic Collection: The More Things Change...'
+      [79806] COL Fantastic Four Epic Collection Vol. 18 - The More Things Change (2019) (F) (digital-Empire).cbz (467pp)
+         own record cv 119753 / gcd s79136 "Fantastic Four Epic Collection" (issue 1978753) COLLECTS: gcd=1482 Fantastic Four (1961) #308-320 · gcd=22322 Marvel Graphic Novel: The Big Change (1987) (unnumbered) · gcd=1866 The Incredible Hulk (1968) #350 · gcd=1572 Fantastic Four Annual (1963) #21
+
+== S6504 Fantastic Four Epic Collection: The Name Is Doom  [split]  1 files / 1 collections  decided in R-151 (S)
+   decided: S 6504 cv=- gcd=79136 0.9 | volume 05 "The Name Is Doom" of the Fantastic Four Epic Collection LINE: GCD 79136 #5 row 2123267 (508pp, 2020-06-24, ISBN 978-1-302-92203-0) is our 504pp book; CV 126609 is only its count-1 book volume (issue 756654), so the line has no CV id (L-392)
+   F 6504 wrong-cv-link | the stored CV 126609 "Fantastic Four Epic Collection: The Name Is Doom" is the Vol. 05 book's own count-1 volume, not the line; it moves to the I line
+   F 6504 split-needed | item 79799 -> join S6495 on its ParsedKey "Fantastic Four Epic Collection" (S6495's S line, R-149, is the same GCD 79136 line with cv=-; L-377 / L-392); the shelf empties by the join; replaces C-044's merge-with chain; checker anchor only (S6495 is outside this batch): the S6502-S6505 group meets as one, so this line also reads 'join S6502' - S6502's item goes to S6495 too, nothing lands on S6502
+   N 79799 also collects Fantastic Four Annual (1963) #6 and Not Brand Echh #6-7
+   named: S6495 Fantastic Four Epic Collection  15 files  keys: "Fantastic Four Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S6502 Fantastic Four Epic Collection: The Dream Is Dead  1 files  keys: "Fantastic Four Epic Collection: The Dream Is Dead"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S6505 Fantastic Four Epic Collection: The New Fantastic Four  1 files  keys: "Fantastic Four Epic Collection: The New Fantastic Four"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S64669 "Fantastic Four" 459f [shares gcd=1482 (collected by item 79799) — S cv=2045 gcd=1482 (R-149 0.9)] keys: "Fantastic Four" | "Fantastic Four (1961)" | "Fantastic Four by John Byrne Omnibus" | "Fantastic Four v1 (1961)"
+   nearby: S103758 "Fantastic Four Annual" 30f [shares gcd=1572 (collected by item 79799) — S cv=2129 gcd=1572 (R-049 0.95)] keys: "Fantastic Four Annual (1963)"
+   nearby: S13066 "Not Brand Echh" 14f [shares gcd=1811 (collected by item 79799) — S cv=2354 gcd=1811 (A-022 0.9)] keys: "Not Brand Echh"
+   nearby: S6503 "Fantastic Four Epic Collection: The More Things Change..." 1f [shares gcd=79136 — S gcd=79136 (R-151 0.9)] keys: "Fantastic Four Epic Collection: The More Things Change..."
+   keys now: "Fantastic Four Epic Collection: The Name Is Doom" x1
+   groups (title x folder): 1
+   G1 "Fantastic Four Epic Collection" in Marvel\_Fantastic Four\Fantastic Four Epic Collections — 1 file(s), 1 COL, pp 504-504; cv per-file 126609x1; gcd per-file 79136x1; key 'Fantastic Four Epic Collection: The Name Is Doom'
+      [79799] COL Fantastic Four Epic Collection Vol. 05 - The Name is Doom (2020) (Digital) (Zone-Empire).cbr (504pp)
+         own record cv 126609 / gcd s79136 "Fantastic Four Epic Collection" (issue 2123267) COLLECTS: gcd=1482 Fantastic Four (1961) #68-87 · gcd=1811 Not Brand Echh (1967) #6-7 · gcd=1572 Fantastic Four Annual (1963) #6 · gcd=61146 Marvel Masterworks: The Fantastic Four (2009) #8-9
+
+== S6505 Fantastic Four Epic Collection: The New Fantastic Four  [split]  1 files / 1 collections  decided in R-151 (S)
+   decided: S 6505 cv=- gcd=79136 0.9 | volume 21 "The New Fantastic Four" of the Fantastic Four Epic Collection LINE: GCD 79136 #21 row 1820505 (508pp, 2018-06-27, ISBN 978-1-302-91137-9) is our 495pp book; CV 111826 is only its count-1 book volume (issue 675139, also stamped per-file on five S6495 books), so the line has no CV id (L-392)
+   F 6505 wrong-cv-link | the stored CV 111826 "Fantastic Four Epic Collection: The New Fantastic Four" is the Vol. 21 book's own count-1 volume, not the line; it moves to the I line
+   F 6505 split-needed | item 79809 -> join S6495 on its ParsedKey "Fantastic Four Epic Collection" (S6495's S line, R-149, is the same GCD 79136 line with cv=-; L-377 / L-392); the shelf empties by the join; replaces C-044's merge-with chain; checker anchor only (S6495 is outside this batch): the S6502-S6505 group meets as one, so this line also reads 'join S6502' - S6502's item goes to S6495 too, nothing lands on S6502
+   N 79809 also collects Fantastic Four Annual (1963) #24, Fantastic Four: Monsters Unleashed (1992) and Marvel Holiday Special (1991) #1; CV 38728 "Fantastic Four: The New Fantastic Four" (2008) is an older, different trade
+   named: S6495 Fantastic Four Epic Collection  15 files  keys: "Fantastic Four Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S6502 Fantastic Four Epic Collection: The Dream Is Dead  1 files  keys: "Fantastic Four Epic Collection: The Dream Is Dead"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S64669 "Fantastic Four" 459f [shares gcd=1482 (collected by item 79809) — S cv=2045 gcd=1482 (R-149 0.9)] keys: "Fantastic Four" | "Fantastic Four (1961)" | "Fantastic Four by John Byrne Omnibus" | "Fantastic Four v1 (1961)"
+   nearby: S103758 "Fantastic Four Annual" 30f [shares gcd=1572 (collected by item 79809) — S cv=2129 gcd=1572 (R-049 0.95)] keys: "Fantastic Four Annual (1963)"
+   nearby: S6503 "Fantastic Four Epic Collection: The More Things Change..." 1f [shares gcd=79136 — S gcd=79136 (R-151 0.9)] keys: "Fantastic Four Epic Collection: The More Things Change..."
+   nearby: S6504 "Fantastic Four Epic Collection: The Name Is Doom" 1f [shares gcd=79136 — S gcd=79136 (R-151 0.9)] keys: "Fantastic Four Epic Collection: The Name Is Doom"
+   keys now: "Fantastic Four Epic Collection: The New Fantastic Four" x1
+   groups (title x folder): 1
+   G1 "Fantastic Four Epic Collection" in Marvel\_Fantastic Four\Fantastic Four Epic Collections — 1 file(s), 1 COL, pp 495-495; cv per-file 111826x1; gcd per-file 79136x1; key 'Fantastic Four Epic Collection: The New Fantastic Four'
+      [79809] COL Fantastic Four Epic Collection Vol. 21 - The New Fantastic Four (2018) (Digital) (Asgard-Empire).cbr (495pp)
+         own record cv 111826 / gcd s79136 "Fantastic Four Epic Collection" (issue 1820505) COLLECTS: gcd=1482 Fantastic Four (1961) #347-361 · gcd=1572 Fantastic Four Annual (1963) #24 · gcd=10581 Fantastic Four: Monsters Unleashed (1992) (unnumbered) · gcd=20144 Marvel Holiday Special (1991) #1
+
+== S735 All-New Guardians of the Galaxy  [split]  4 files / 3 collections  decided in R-151 (S)
+   decided: S 735 cv=101158 gcd=113811 0.9 | All-New Guardians of the Galaxy (2017): CV 101158 (Marvel 2017, 12, cached #1-12) and GCD 113811 (Marvel 2017, 12) agree on publisher, year and count; our Vol. 01-02 trades collect #1-6 / #7-12 (GCD 118812 TPB line #1-2) and the 2017 Annual is its own count-1 record; 0.9 for the Annual and for Vol. 03 Infinity Quest, which collects Guardians of the Galaxy (2018) #146-150 - another run with its own shelf, split below
+   F 735 split-needed | item 80311 ("All-New Guardians of the Galaxy Vol. 03 - Infinity Quest (2018)" 129pp, GCD 118812 #3 row 1790980 collects s118041 Guardians of the Galaxy (2018) #146-150) is a trade of the legacy-numbered Guardians of the Galaxy #146-150 (CV 105759 / GCD 118041), the run S94745 stores (its S line R-071 cv=105759 gcd=118041, the five issues 118355-118359) -> join S94745 on its key "All-New Guardians of the Galaxy Vol. 3 - Infinity Quest (2017)" (a subtitle-keyed shelf storing the run, L-393 / L-368)
+   F 735 partial-rip | item 80309 "Vol. 01 - Communication Breakdown" is 86pp against GCD 118812 #1's 148pp for six issues - flag #1 (arithmetic-odd) is right
+   named: S94745 All-New Guardians of the Galaxy Vol. 3 - Infinity Quest (2017)  5 files  keys: "All-New Guardians of the Galaxy Vol. 3 - Infinity Quest (2017)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "All-New Guardians of the Galaxy" x4
+   groups (title x folder): 2
+   G1 "All-New Guardians of the Galaxy" in Marvel\_Guardians of the Galaxy\07 All-New Guardians of the Galaxy v1 (2017) — 3 file(s), 3 COL, pp 86-146; cv per-file 106274x1, 107128x1, 109178x1; gcd per-file 118812x3; key 'All-New Guardians of the Galaxy'
+      [80309] COL All-New Guardians of the Galaxy Vol. 01 - Communication Breakdown (2017) (Digital) (F) (Zone-Empire).cbr (86pp)
+         own record cv 106274 / gcd s118812 "All-New Guardians of the Galaxy" (issue 1761081) COLLECTS: gcd=113811 All-New Guardians of the Galaxy (2017) #1-2, #4, #6, #8, #10 · gcd=113915 Free Comic Book Day 2017 (All-New Guardians of the Galaxy) (2017) #1
+      [80310] COL All-New Guardians of the Galaxy Vol. 02 - Riders In The Sky (2018) (Digital) (Kileko-Empire).cbr (146pp)
+         own record cv 107128 / gcd s118812 "All-New Guardians of the Galaxy" (issue 1769733) COLLECTS: gcd=113811 All-New Guardians of the Galaxy (2017) #3, #5, #7, #9, #11-12
+      [80311] COL All-New Guardians of the Galaxy Vol. 03 - Infinity Quest (2018) (Digital) (Kileko-Empire).cbr (129pp)
+         own record cv 109178 / gcd s118812 "All-New Guardians of the Galaxy" (issue 1790980) COLLECTS: gcd=118041 Guardians of the Galaxy (2018) #146-150
+   G2 "All-New Guardians of the Galaxy Annual" in Marvel\_Guardians of the Galaxy\07 All-New Guardians of the Galaxy v1 (2017)\Annuals and Specials — 1 file(s), numbers 1, pp 32-32; cv per-file 102442x1; gcd per-file 115140x1; key 'All-New Guardians of the Galaxy'
+      [81939] All-New Guardians of the Galaxy Annual 001 (2017) (Digital) (Zone-Empire).cbr (32pp)
+
+== S9386 Incredible Hulk Epic Collection 09: Kill Or Be Killed  [split]  1 files / 1 collections  decided in R-151 (S)
+   decided: S 9386 cv=- gcd=87446 0.9 | volume 09 "Kill or Be Killed" of the Incredible Hulk Epic Collection LINE: GCD 87446 #9 row 2648970 (524pp, 2024-07-31, ISBN 978-1-302-95536-6) is our 519pp Marika rip (ComicInfo Series "Incredible Hulk Epic Collection 09: Kill Or Be Killed", Volume 2024); CV 159149 is only its count-1 book volume (issue 1065678), so the line has no CV id (L-392)
+   F 9386 wrong-cv-link | the stored CV 159149 "The Incredible Hulk Epic Collection: Kill or Be Killed" is the Vol. 09 book's own count-1 volume, not the line; it moves to the I line
+   F 9386 split-needed | item 81157 -> join S9385 on its ParsedKey "Incredible Hulk Epic Collection" (S9385's S line above is the same GCD 87446 line, cv=-; L-377 / L-392); the shelf empties by the join; replaces C-045's merge-with=9387
+   N 81157 also collects Incredible Hulk Annual #7-9, Captain America #230 and Marvel Treasury Edition #20, #24
+   named: S9385 Incredible Hulk Epic Collection  9 files  keys: "Incredible Hulk Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S95955 "Captain America" 475f [shares gcd=1860 (collected by item 81157) — S cv=2400 gcd=1860 (C-042 0.95)] keys: "Captain America" | "Captain America v1 (1968)"
+   nearby: S18826 "The Incredible Hulk" 425f [shares gcd=1866 (collected by item 81157) — S cv=2406 gcd=1866 (R-151 0.9)] keys: "The Incredible Hulk" | "The Incredible Hulk v1 (1968)"
+   nearby: S34388 "The Incredible Hulk Annual" 4f [shares gcd=2348 (collected by item 81157) — S cv=2860 gcd=2348 (R-151 0.9)] keys: "The Incredible Hulk Annual" | "X-Man and The Incredible Hulk Annual"
+   nearby: S11628 "Marvel Treasury Edition" 3f [shares gcd=2180 (collected by item 81157) — S cv=2694 gcd=2180 (C-039 0.9)] keys: "Marvel Treasury Edition"
+   nearby: S9387 "Incredible Hulk Epic Collection 15: Ground Zero" 1f [shares gcd=87446 — S gcd=87446 (R-151 0.9)] keys: "Incredible Hulk Epic Collection 15: Ground Zero"
+   nearby: S9388 "Incredible Hulk Epic Collection: And Now... The Wolverine" 1f [shares gcd=87446 — S gcd=87446 (R-151 0.9)] keys: "Incredible Hulk Epic Collection: And Now... The Wolverine"
+   nearby: S9389 "Incredible Hulk Epic Collection: Crossroads" 1f [shares gcd=87446 — S gcd=87446 (R-151 0.9)] keys: "Incredible Hulk Epic Collection: Crossroads"
+   nearby: S9390 "Incredible Hulk Epic Collection: Going Gray" 1f [shares gcd=87446 — S cv=132382 gcd=87446 (C-045 0.9)] keys: "Incredible Hulk Epic Collection: Going Gray"
+   nearby: S9391 "Incredible Hulk Epic Collection: The Curing of Dr. Banner" 1f [shares gcd=87446 — S cv=154304 gcd=87446 (C-045 0.9)] keys: "Incredible Hulk Epic Collection: The Curing Of Dr. Banner"
+   nearby: S9392 "Incredible Hulk Epic Collection: The Lone and Level Sands" 1f [shares gcd=87446 — S cv=149297 gcd=87446 (C-045 0.9)] keys: "Incredible Hulk Epic Collection: The Lone And Level Sands"
+   nearby: S9393 "Incredible Hulk Epic Collection: Who Will Judge The Hulk?" 1f [shares gcd=87446 — S cv=133098 gcd=87446 (C-045 0.9)] keys: "Incredible Hulk Epic Collection: Who Will Judge The Hulk?"
+   keys now: "Incredible Hulk Epic Collection 09: Kill Or Be Killed" x1
+   groups (title x folder): 1
+   G1 "Incredible Hulk Epic Collection" in Marvel\_Hulk\_Incredible Hulk Epic Collection — 1 file(s), 1 COL, pp 519-519; cv per-file 159149x1; gcd per-file 87446x1; key 'Incredible Hulk Epic Collection 09: Kill Or Be Killed'
+      [81157] COL Incredible Hulk Epic Collection Vol. 09 - Kill or Be Killed (2024) (digital) (Marika-Empire).cbz (519pp)
+         own record cv 159149 / gcd s87446 "Incredible Hulk Epic Collection" (issue 2648970) COLLECTS: gcd=1866 The Incredible Hulk (1968) #227-244 · gcd=2348 The Incredible Hulk Annual (1976) #7-9 · gcd=2180 Marvel Treasury Edition (1974) #20, #24 · gcd=1860 Captain America (1968) #230
+
+== S9387 Incredible Hulk Epic Collection 15: Ground Zero  [split]  1 files / 1 collections  decided in R-151 (S)
+   decided: S 9387 cv=- gcd=87446 0.9 | volume 15 "Ground Zero" of the Incredible Hulk Epic Collection LINE: ComicInfo Web 1067472 on the Marika rip IS CV 159363's issue 1067472 "Volume 15", and GCD 87446 #15 row 2648885 (468pp, ISBN 978-1-302-95632-5) is our 459pp book; CV 159363 is only the book's count-1 volume, so the line has no CV id (L-392)
+   F 9387 wrong-cv-link | the stored CV 159363 "Incredible Hulk Epic Collection: Ground Zero" is the Vol. 15 book's own count-1 volume, not the line; it moves to the I line
+   F 9387 split-needed | item 81160 -> join S9385 on its ParsedKey "Incredible Hulk Epic Collection" (S9385's S line above is the same GCD 87446 line, cv=-; L-377 / L-392); the shelf empties by the join; replaces C-045's merge-with=9388
+   named: S9385 Incredible Hulk Epic Collection  9 files  keys: "Incredible Hulk Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S18826 "The Incredible Hulk" 425f [shares gcd=1866 (collected by item 81160) — S cv=2406 gcd=1866 (R-151 0.9)] keys: "The Incredible Hulk" | "The Incredible Hulk v1 (1968)"
+   nearby: S11370 "Marvel Age" 39f [shares gcd=69795 (collected by item 81160) — S cv=19176 gcd=69795 (R-137 0.9)] keys: "Marvel Age" | "Marvel Age Annual"
+   nearby: S9386 "Incredible Hulk Epic Collection 09: Kill Or Be Killed" 1f [shares gcd=87446 — S gcd=87446 (R-151 0.9)] keys: "Incredible Hulk Epic Collection 09: Kill Or Be Killed"
+   nearby: S9388 "Incredible Hulk Epic Collection: And Now... The Wolverine" 1f [shares gcd=87446 — S gcd=87446 (R-151 0.9)] keys: "Incredible Hulk Epic Collection: And Now... The Wolverine"
+   nearby: S9389 "Incredible Hulk Epic Collection: Crossroads" 1f [shares gcd=87446 — S gcd=87446 (R-151 0.9)] keys: "Incredible Hulk Epic Collection: Crossroads"
+   nearby: S9390 "Incredible Hulk Epic Collection: Going Gray" 1f [shares gcd=87446 — S cv=132382 gcd=87446 (C-045 0.9)] keys: "Incredible Hulk Epic Collection: Going Gray"
+   nearby: S9391 "Incredible Hulk Epic Collection: The Curing of Dr. Banner" 1f [shares gcd=87446 — S cv=154304 gcd=87446 (C-045 0.9)] keys: "Incredible Hulk Epic Collection: The Curing Of Dr. Banner"
+   nearby: S9392 "Incredible Hulk Epic Collection: The Lone and Level Sands" 1f [shares gcd=87446 — S cv=149297 gcd=87446 (C-045 0.9)] keys: "Incredible Hulk Epic Collection: The Lone And Level Sands"
+   nearby: S9393 "Incredible Hulk Epic Collection: Who Will Judge The Hulk?" 1f [shares gcd=87446 — S cv=133098 gcd=87446 (C-045 0.9)] keys: "Incredible Hulk Epic Collection: Who Will Judge The Hulk?"
+   keys now: "Incredible Hulk Epic Collection 15: Ground Zero" x1
+   groups (title x folder): 1
+   G1 "Incredible Hulk Epic Collection" in Marvel\_Hulk\_Incredible Hulk Epic Collection — 1 file(s), 1 COL, pp 459-459; cv per-file 159363x1; gcd per-file 87446x1; key 'Incredible Hulk Epic Collection 15: Ground Zero'
+      [81160] COL Incredible Hulk Epic Collection Vol. 15 - Ground Zero 001 (2024) (digital) (Marika-Empire).cbz (459pp)
+         own record cv 159363 / gcd s87446 "Incredible Hulk Epic Collection" (issue 2648885) COLLECTS: gcd=1866 The Incredible Hulk (1968) #331-346 · gcd=22322 Marvel Graphic Novel: The Big Change (1987) (unnumbered) · gcd=74368 Marvel Age Annual (1985) #3 · gcd=69795 Marvel Age (1983) #51
+
+== S9388 Incredible Hulk Epic Collection: And Now... The Wolverine  [split]  1 files / 1 collections  decided in R-151 (S)
+   decided: S 9388 cv=- gcd=87446 0.9 | volume 07 "And Now... The Wolverine" of the Incredible Hulk Epic Collection LINE: GCD 87446 #7 row 2440585 (476pp, ISBN 978-1-302-93360-9) is our 471pp book; CV 146073 is only its count-1 book volume (issue 955129), so the line has no CV id (L-392)
+   F 9388 wrong-cv-link | the stored CV 146073 "Incredible Hulk Epic Collection: And Now... The Wolverine" is the Vol. 07 book's own count-1 volume, not the line; it moves to the I line
+   F 9388 split-needed | item 81155 -> join S9385 on its ParsedKey "Incredible Hulk Epic Collection" (S9385's S line above is the same GCD 87446 line, cv=-; L-377 / L-392); the shelf empties by the join; replaces C-045's merge-with=9389
+   named: S9385 Incredible Hulk Epic Collection  9 files  keys: "Incredible Hulk Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S18826 "The Incredible Hulk" 425f [shares gcd=1866 (collected by item 81155) — S cv=2406 gcd=1866 (R-151 0.9)] keys: "The Incredible Hulk" | "The Incredible Hulk v1 (1968)"
+   nearby: S11628 "Marvel Treasury Edition" 3f [shares gcd=2180 (collected by item 81155) — S cv=2694 gcd=2180 (C-039 0.9)] keys: "Marvel Treasury Edition"
+   nearby: S9386 "Incredible Hulk Epic Collection 09: Kill Or Be Killed" 1f [shares gcd=87446 — S gcd=87446 (R-151 0.9)] keys: "Incredible Hulk Epic Collection 09: Kill Or Be Killed"
+   nearby: S9387 "Incredible Hulk Epic Collection 15: Ground Zero" 1f [shares gcd=87446 — S gcd=87446 (R-151 0.9)] keys: "Incredible Hulk Epic Collection 15: Ground Zero"
+   nearby: S9389 "Incredible Hulk Epic Collection: Crossroads" 1f [shares gcd=87446 — S gcd=87446 (R-151 0.9)] keys: "Incredible Hulk Epic Collection: Crossroads"
+   nearby: S9390 "Incredible Hulk Epic Collection: Going Gray" 1f [shares gcd=87446 — S cv=132382 gcd=87446 (C-045 0.9)] keys: "Incredible Hulk Epic Collection: Going Gray"
+   nearby: S9391 "Incredible Hulk Epic Collection: The Curing of Dr. Banner" 1f [shares gcd=87446 — S cv=154304 gcd=87446 (C-045 0.9)] keys: "Incredible Hulk Epic Collection: The Curing Of Dr. Banner"
+   nearby: S9392 "Incredible Hulk Epic Collection: The Lone and Level Sands" 1f [shares gcd=87446 — S cv=149297 gcd=87446 (C-045 0.9)] keys: "Incredible Hulk Epic Collection: The Lone And Level Sands"
+   nearby: S9393 "Incredible Hulk Epic Collection: Who Will Judge The Hulk?" 1f [shares gcd=87446 — S cv=133098 gcd=87446 (C-045 0.9)] keys: "Incredible Hulk Epic Collection: Who Will Judge The Hulk?"
+   keys now: "Incredible Hulk Epic Collection: And Now... The Wolverine" x1
+   groups (title x folder): 1
+   G1 "Incredible Hulk Epic Collection" in Marvel\_Hulk\_Incredible Hulk Epic Collection — 1 file(s), 1 COL, pp 471-471; cv per-file 146073x1; gcd per-file 87446x1; key 'Incredible Hulk Epic Collection: And Now... The Wolverine'
+      [81155] COL Incredible Hulk Epic Collection Vol. 07 - And Now... The Wolverine (2022) (Digital) (Kileko-Empire).cbz (471pp)
+         own record cv 146073 / gcd s87446 "Incredible Hulk Epic Collection" (issue 2440585) COLLECTS: gcd=1866 The Incredible Hulk (1968) #179-200 · gcd=2180 Marvel Treasury Edition (1974) #5 · gcd=9823 Wolverine Battles the Incredible Hulk (1989) #1 · gcd=158698 FOOM Magazine (1973) #8, #11
+
+== S9389 Incredible Hulk Epic Collection: Crossroads  [split]  1 files / 1 collections  decided in R-151 (S)
+   decided: S 9389 cv=- gcd=87446 0.9 | volume 13 "Crossroads" of the Incredible Hulk Epic Collection LINE: GCD 87446 #13 row 2399184 (492pp, ISBN 978-1-302-93449-1) is our 479pp book; CV 144791 is only its count-1 book volume (issue 944342, also stamped per-file on five S9385 books), so the line has no CV id (L-392)
+   F 9389 wrong-cv-link | the stored CV 144791 "Incredible Hulk Epic Collection: Crossroads" is the Vol. 13 book's own count-1 volume, not the line; it moves to the I line
+   F 9389 split-needed | item 81158 -> join S9385 on its ParsedKey "Incredible Hulk Epic Collection" (S9385's S line above is the same GCD 87446 line, cv=-; L-377 / L-392); the shelf empties by the join; replaces C-045's merge-with=9390
+   named: S9385 Incredible Hulk Epic Collection  9 files  keys: "Incredible Hulk Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S18826 "The Incredible Hulk" 425f [shares gcd=1866 (collected by item 81158) — S cv=2406 gcd=1866 (R-151 0.9)] keys: "The Incredible Hulk" | "The Incredible Hulk v1 (1968)"
+   nearby: S790 "Alpha Flight" 251f [shares gcd=2737 (collected by item 81158) — S cv=3217 gcd=2737 (C-046 0.95)] keys: "Alpha Flight" | "Alpha Flight (1983)" | "Alpha Flight Classic (1983)" | "Alpha Flight by Greg Pak & Fred Van Lente (1983)" (+1 more: lookup.py --shelf 790)
+   nearby: S11410 "Marvel Fanfare" 58f [shares gcd=2657 (collected by item 81158) — S cv=3143 gcd=2657 (R-140 0.95)] keys: "Marvel Fanfare"
+   nearby: S34388 "The Incredible Hulk Annual" 4f [shares gcd=2348 (collected by item 81158) — S cv=2860 gcd=2348 (R-151 0.9)] keys: "The Incredible Hulk Annual" | "X-Man and The Incredible Hulk Annual"
+   nearby: S9386 "Incredible Hulk Epic Collection 09: Kill Or Be Killed" 1f [shares gcd=87446 — S gcd=87446 (R-151 0.9)] keys: "Incredible Hulk Epic Collection 09: Kill Or Be Killed"
+   nearby: S9387 "Incredible Hulk Epic Collection 15: Ground Zero" 1f [shares gcd=87446 — S gcd=87446 (R-151 0.9)] keys: "Incredible Hulk Epic Collection 15: Ground Zero"
+   nearby: S9388 "Incredible Hulk Epic Collection: And Now... The Wolverine" 1f [shares gcd=87446 — S gcd=87446 (R-151 0.9)] keys: "Incredible Hulk Epic Collection: And Now... The Wolverine"
+   nearby: S9390 "Incredible Hulk Epic Collection: Going Gray" 1f [shares gcd=87446 — S cv=132382 gcd=87446 (C-045 0.9)] keys: "Incredible Hulk Epic Collection: Going Gray"
+   nearby: S9391 "Incredible Hulk Epic Collection: The Curing of Dr. Banner" 1f [shares gcd=87446 — S cv=154304 gcd=87446 (C-045 0.9)] keys: "Incredible Hulk Epic Collection: The Curing Of Dr. Banner"
+   nearby: S9392 "Incredible Hulk Epic Collection: The Lone and Level Sands" 1f [shares gcd=87446 — S cv=149297 gcd=87446 (C-045 0.9)] keys: "Incredible Hulk Epic Collection: The Lone And Level Sands"
+   nearby: S9393 "Incredible Hulk Epic Collection: Who Will Judge The Hulk?" 1f [shares gcd=87446 — S cv=133098 gcd=87446 (C-045 0.9)] keys: "Incredible Hulk Epic Collection: Who Will Judge The Hulk?"
+   keys now: "Incredible Hulk Epic Collection: Crossroads" x1
+   groups (title x folder): 1
+   G1 "Incredible Hulk Epic Collection" in Marvel\_Hulk\_Incredible Hulk Epic Collection — 1 file(s), 1 COL, pp 479-479; cv per-file 144791x1; gcd per-file 87446x1; key 'Incredible Hulk Epic Collection: Crossroads'
+      [81158] COL Incredible Hulk Epic Collection Vol. 13 - Crossroads (2022) (Digital-Empire).cbr (479pp)
+         own record cv 144791 / gcd s87446 "Incredible Hulk Epic Collection" (issue 2399184) COLLECTS: gcd=1866 The Incredible Hulk (1968) #297-313 · gcd=2657 Marvel Fanfare (1982) #20, #22 · gcd=2737 Alpha Flight (1983) #29 · gcd=2348 The Incredible Hulk Annual (1976) #13
