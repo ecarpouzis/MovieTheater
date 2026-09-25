@@ -1,0 +1,1028 @@
+## Conventions for this batch (23 shown of 144 matched; 415 in LEDGER.md; 24 shelf/shelves: pub:marvel ×22 · kind:collected-line ×22 · kind:trade-only ×22 · kind:new ×7 · folder:vn-year ×2 · pub:dc ×2 · folder:events ×1 · folder:sequel-subfolder ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-029] (22 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
+- On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
+  collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
+[L-031] (22 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (22 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (22 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (22 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (22 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-119] (22 shelf/shelves) pub:marvel
+- GCD filing quirks that recovered legs: drop "Comics" from a title, "and" for "&", "Digest" appended, reversed
+  or reordered name lists ("Deadpool / Amazing Spider-Man / Hulk: Identity Wars").
+[L-130] (22 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-132] (22 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-196] (22 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (22 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (22 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-297] (22 shelf/shelves) pass:item pub:marvel
+- ComicVine's issue-number field follows LEGACY print numbering (Amazing Spider-Man 2015 v4 #792-801 under CV
+  85076 / GCD 92892) — a `C` range in the 790s is still that volume.
+[L-298] (22 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-306] (22 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (22 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (22 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-313] (22 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-327] (22 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (22 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+[L-329] (22 shelf/shelves) kind:collected-line pub:dc pub:marvel
+- DC/Marvel trade lines often store a GCD row that belongs to a FOREIGN or other edition (Urban Comics' French GL
+  2011, a German GL 2023 Vol. 1) — check the stored row's series before using its roll-up. GCD carries twin HC/SC
+  series for most 2006-2016 DC/Marvel trades (77116/77117, 77936/77937) → cap those I lines at 0.9. CV keeps count-1
+  "Title: Subtitle" volumes per trade before ~2016, numbered TPB-line volumes after (R-054).
+[L-331] (22 shelf/shelves) pub:marvel
+- Amazing Spider-Man: CV 2127 keeps #1-441 AND #500-700 as one volume; GCD splits 1570 (#1-441) from 11288 (1999
+  #1-58 + #500-700) — a #500+ trade on the 1963 shelf needs a C with gcd=11288. Detective Comics: GCD 60830 spans the
+  New 52 #0-52 AND Rebirth #934+ (CV splits 42594 / 91098); a GCD series goes on the S line of the run its
+  numbering STARTS with (lead ruling, waves 45/46).
+[L-332] (22 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection one-rule (lead, wave 44): each Epic book is its OWN shelf; its S line carries the book's own
+  count-1 CV volume and `gcd=-`; the line's GCD series (74602 ASM, 74592 Iron Man) goes on the book's I line with
+  its ISBN; C lines name the runs reprinted. `lookup.py "<Line> Epic Collection" --contains` lists every volume.
+
++121 more matched entries not shown: L-345, L-357, L-389, L-391, L-392, L-397, L-398, L-400, L-401, L-403, L-405, L-406, L-407, L-408, L-409, L-410, L-414, L-415, L-127, L-136, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-014, L-013, L-043, L-050, L-064, L-072, L-085, L-088, L-089, L-095, L-096, L-101, L-118, L-125, L-157, L-159, L-163, L-177, L-193, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-310, L-341, L-346, L-347, L-016, L-032, L-113, L-114, L-082, L-093, L-211, L-222, L-237, L-364, L-387, L-388, L-124, L-191, L-272, L-281, L-011, L-015, L-040, L-051, L-052, L-059, L-172, L-174, L-187, L-195, L-198, L-199, L-210, L-212, L-214, L-245, L-299, L-343, L-348, L-363, L-365, L-366, L-367, L-368, L-369, L-370, L-372, L-393, L-175, L-290, L-123, L-128, L-150, L-181, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S103847 Amazing Spider-Man Epic Collection: Assassin Nation (2019)  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 103847 cv=- gcd=74602 0.9 | volume 19 "Assassin Nation" of the ASM Epic Collection LINE: GCD 74602 #19 row 1964905 (484pp, ISBN 978-1-302-91811-8, notes ASM 1963 #311-325 + Annual #23) is our 481pp book; CV 119132 is only its count-1 book volume (issue 709196, on the I line)
+   F 103847 wrong-cv-link | the stored CV 119132 "Amazing Spider-Man Epic Collection: Assassin Nation" is the Vol. 19 book's own count-1 volume, not the line; it belongs on the I line
+   F 103847 split-needed | item 95810 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95810) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S11410 "Marvel Fanfare" 58f [shares gcd=2657 (collected by item 95810) — S cv=3143 gcd=2657 (R-140 0.95)] keys: "Marvel Fanfare"
+   nearby: S42165 "The Amazing Spider-Man Annual" 41f [shares gcd=1635 (collected by item 95810) — S cv=2189 gcd=1635 (R-161 1.0)] keys: "The Amazing Spider-Man Annual"
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 481-481; cv per-file 119132x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: Assassin Nation (2019)'
+      [95810] COL Amazing Spider-Man Epic Collection Vol. 19 - Assassin Nation (2019) (Digital) (Zone-Empire).cbr (481pp)
+         own record cv 119132 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1964905) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #311-325 · gcd=1635 The Amazing Spider-Man Annual (1964) #23 · gcd=28497 Marvel Graphic Novel: The Amazing Spider-Man "Parallel Lives" (1989) (unnumbered) · gcd=2657 Marvel Fanfare (1982) #41, #45, #50
+
+== S103848 Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 103848 cv=- gcd=74602 0.9 | volume 10 "Big Apple Battleground" of the ASM Epic Collection LINE: GCD 74602 #10 row 2633948 (524pp, ISBN 978-1-302-95526-7, notes ASM 1963 #165-185 + Annual #11 + Nova #12) is our 519pp book; CV 158331 is only its count-1 book volume (issue 1057258, on the I line)
+   F 103848 wrong-cv-link | the stored CV 158331 "The Amazing Spider-Man Epic Collection: Big Apple Battleground" is the Vol. 10 book's own count-1 volume, not the line; it belongs on the I line
+   F 103848 split-needed | item 95806 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95806) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S42165 "The Amazing Spider-Man Annual" 41f [shares gcd=1635 (collected by item 95806) — S cv=2189 gcd=1635 (R-161 1.0)] keys: "The Amazing Spider-Man Annual"
+   nearby: S11628 "Marvel Treasury Edition" 3f [shares gcd=2180 (collected by item 95806) — S cv=2694 gcd=2180 (C-039 0.9)] keys: "Marvel Treasury Edition"
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 519-519; cv per-file 158331x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)'
+      [95806] COL Amazing Spider-Man Epic Collection Vol. 10 - Big Apple Battleground (2024) (Digital) (Shan-Empire).cbz (519pp)
+         own record cv 158331 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 2633948) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #165-185 · gcd=158698 FOOM Magazine (1973) #17-18, #22 · gcd=1635 The Amazing Spider-Man Annual (1964) #11-12 · gcd=2180 Marvel Treasury Edition (1974) #14
+
+== S103849 Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 103849 cv=- gcd=74602 0.9 | volume 15 "Ghosts of the Past" of the ASM Epic Collection LINE: GCD 74602 #15 row 1181282 (476pp, ISBN 978-0-7851-8916-9, roll-up ASM 1963 #259-272 + Annual #18-19 + Web #1, #6) is our 473pp book; CV 74202 is only its count-1 book volume (issue 453652, on the I line)
+   F 103849 wrong-cv-link | the stored CV 74202 "The Amazing Spider-Man Epic Collection: Ghosts of the Past" is the Vol. 15 book's own count-1 volume, not the line; it belongs on the I line
+   F 103849 split-needed | item 95807 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   N 95807 the book also reprints Web of Spider-Man (1985) #6 (GCD row 1181282's roll-up), a second stretch of the same run beside #1 (R-029: the larger/first stretch is the C line)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95807) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S66237 "Web of Spider-Man" 154f [shares gcd=3059 (collected by item 95807) — S cv=3519 gcd=3059 (R-180 0.9)] keys: "Web Of Spider-Man" | "Web of Spider-Man (1985)" | "Web of Spider-Man Super Special" | "Web of Spider-Man v1 (1985)" (+1 more: lookup.py --shelf 66237)
+   nearby: S11602 "Marvel Tales Starring Spider-Man" 75f [shares gcd=1747 (collected by item 95807) — S cv=2293 gcd=1747 (R-140 0.9)] keys: "Marvel Tales Featuring Spider-Man" | "Marvel Tales Starring Spider-Man" | "Marvel Tales v2 (1964)"
+   nearby: S42165 "The Amazing Spider-Man Annual" 41f [shares gcd=1635 (collected by item 95807) — S cv=2189 gcd=1635 (R-161 1.0)] keys: "The Amazing Spider-Man Annual"
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 473-473; cv per-file 74202x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)'
+      [95807] COL Amazing Spider-Man Epic Collection Vol. 15 - Ghosts of the Past (2014) (Digital) (Zone-Empire).cbr (473pp)
+         own record cv 74202 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1181282) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #259-272 · gcd=1747 Marvel Tales (1966) #273-282 · gcd=3059 Web of Spider-Man (1985) #1, #6 · gcd=1635 The Amazing Spider-Man Annual (1964) #18-19
+
+== S103850 Amazing Spider-Man Epic Collection: Great Responsibility (2016)  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 103850 cv=- gcd=74602 0.9 | volume 02 "Great Responsibility" of the ASM Epic Collection LINE: GCD 74602 #2 row 1660431 (508pp, ISBN 978-0-7851-9581-8, notes ASM 1963 #18-38 + Annual #2) is our 494pp book; CV 97134 is only its count-1 book volume (issue 570027, on the I line)
+   F 103850 wrong-cv-link | the stored CV 97134 "Amazing Spider-Man Epic Collection: Great Responsibility" is the Vol. 02 book's own count-1 volume, not the line; it belongs on the I line
+   F 103850 split-needed | item 95798 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95798) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S42165 "The Amazing Spider-Man Annual" 41f [shares gcd=1635 (collected by item 95798) — S cv=2189 gcd=1635 (R-161 1.0)] keys: "The Amazing Spider-Man Annual"
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 494-494; cv per-file 97134x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: Great Responsibility (2016)'
+      [95798] COL Amazing Spider-Man Epic Collection Vol. 02 - Great Responsibility (2016) (Digital) (Shadowcat-Empire).cbz (494pp)
+         own record cv 97134 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1660431) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #18-38 · gcd=1635 The Amazing Spider-Man Annual (1964) #2 · gcd=52975 Marvel Masterworks: The Amazing Spider-Man (2009) #1-4
+
+== S103851 Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 103851 cv=- gcd=74602 0.9 | volume 17 "Kraven's Last Hunt" of the ASM Epic Collection LINE: GCD 74602 #17 row 1710057 (500pp, ISBN 978-1-302-90705-1, roll-up ASM 1963 #289-294 + Web #29-32) is our 497pp book; CV 101919 is only its count-1 book volume (issue 599856, on the I line)
+   F 103851 wrong-cv-link | the stored CV 101919 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt" is the Vol. 17 book's own count-1 volume, not the line; it belongs on the I line
+   F 103851 split-needed | item 95808 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95808) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S66237 "Web of Spider-Man" 154f [shares gcd=3059 (collected by item 95808) — S cv=3519 gcd=3059 (R-180 0.9)] keys: "Web Of Spider-Man" | "Web of Spider-Man (1985)" | "Web of Spider-Man Super Special" | "Web of Spider-Man v1 (1985)" (+1 more: lookup.py --shelf 66237)
+   nearby: S11370 "Marvel Age" 39f [shares gcd=69795 (collected by item 95808) — S cv=19176 gcd=69795 (R-137 0.9)] keys: "Marvel Age" | "Marvel Age Annual"
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 497-497; cv per-file 101919x1; gcd per-file 74602x1; key "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+      [95808] COL Amazing Spider-Man Epic Collection Vol. 17 - Kraven's Last Hunt (2017) (Digital) (Zone-Empire).cbr (497pp)
+         own record cv 101919 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1710057) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #289-294 · gcd=3059 Web of Spider-Man (1985) #29-32 · gcd=69795 Marvel Age (1983) #54 · gcd=46980 The Amazing Spider-Man: The Wedding (1991) (unnumbered)
+
+== S103852 Amazing Spider-Man Epic Collection: Lifetheft (2021)  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 103852 cv=- gcd=74602 0.9 | volume 26 "Lifetheft" of the ASM Epic Collection LINE: GCD 74602 #26 row 2273650 (492pp, ISBN 978-1-302-93069-1, roll-up ASM 1963 #381-393) is our 482pp book; CV 142111 is only its count-1 book volume (issue 914401, on the I line)
+   F 103852 wrong-cv-link | the stored CV 142111 "Amazing Spider-Man Epic Collection: Lifetheft" is the Vol. 26 book's own count-1 volume, not the line; it belongs on the I line
+   F 103852 split-needed | item 95817 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95817) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S66237 "Web of Spider-Man" 154f [shares gcd=3059 (collected by item 95817) — S cv=3519 gcd=3059 (R-180 0.9)] keys: "Web Of Spider-Man" | "Web of Spider-Man (1985)" | "Web of Spider-Man Super Special" | "Web of Spider-Man v1 (1985)" (+1 more: lookup.py --shelf 66237)
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: Lifetheft (2021)" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 482-482; cv per-file 142111x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: Lifetheft (2021)'
+      [95817] COL Amazing Spider-Man Epic Collection Vol. 26 - Lifetheft (2021) (Digital-Empire).cbr (482pp)
+         own record cv 142111 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 2273650) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #381-393 · gcd=175761 The Amazing Spider-Man 30th Anniversary Poster Magazine (1992) #1 · gcd=54499 The Amazing Spider-Man Ashcan Edition (1994) (unnumbered) · gcd=3059 Web of Spider-Man (1985) #112
+
+== S103853 Amazing Spider-Man Epic Collection: Spider-Man No More (2018)  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 103853 cv=- gcd=74602 0.9 | volume 03 "Spider-Man No More" of the ASM Epic Collection LINE: GCD 74602 #3 row 1808311 (404pp, ISBN 978-1-302-91023-5, notes ASM 1963 #39-52 + Annual #3-4) is our 397pp book; CV 110903 is only its count-1 book volume (issue 670105, on the I line)
+   F 103853 wrong-cv-link | the stored CV 110903 "Amazing Spider-Man Epic Collection: Spider-Man No More" is the Vol. 03 book's own count-1 volume, not the line; it belongs on the I line
+   F 103853 split-needed | item 95799 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95799) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S42165 "The Amazing Spider-Man Annual" 41f [shares gcd=1635 (collected by item 95799) — S cv=2189 gcd=1635 (R-161 1.0)] keys: "The Amazing Spider-Man Annual"
+   nearby: S13066 "Not Brand Echh" 14f [shares gcd=1811 (collected by item 95799) — S cv=2354 gcd=1811 (A-022 0.9)] keys: "Not Brand Echh"
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 397-397; cv per-file 110903x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: Spider-Man No More (2018)'
+      [95799] COL Amazing Spider-Man Epic Collection Vol. 03 - Spider-Man No More (2018) (Digital) (Zone-Empire).cbr (397pp)
+         own record cv 110903 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1808311) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #39-52 · gcd=1635 The Amazing Spider-Man Annual (1964) #3-4 · gcd=1811 Not Brand Echh (1967) #2 · gcd=52975 Marvel Masterworks: The Amazing Spider-Man (2009) #5
+
+== S103854 Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 103854 cv=- gcd=74602 0.9 | volume 06 "The Death of Captain Stacy" of the ASM Epic Collection LINE: GCD 74602 #6 row 2268841 (444pp, ISBN 978-1-302-92908-4, roll-up ASM 1963 #86-104) is our 438pp book; CV 139777 is only its count-1 book volume (issue 890995, on the I line)
+   F 103854 wrong-cv-link | the stored CV 139777 "The Amazing Spider-Man Epic Collection: The Death of Captain Stacy" is the Vol. 06 book's own count-1 volume, not the line; it belongs on the I line
+   F 103854 split-needed | item 95802 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95802) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 438-438; cv per-file 139777x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)'
+      [95802] COL Amazing Spider-Man Epic Collection Vol. 06 - The Death of Captain Stacy (2021) (Digital-Empire).cbr (438pp)
+         own record cv 139777 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 2268841) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #86-104
+
+== S103855 Amazing Spider-Man Epic Collection: The Goblin Lives (2019)  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 103855 cv=- gcd=74602 0.9 | volume 04 "The Goblin Lives" of the ASM Epic Collection LINE: GCD 74602 #4 row 1978761 (500pp, ISBN 978-1-302-91780-7, notes ASM 1963 #53-67 + Spectacular Spider-Man 1968 #1-2) is our 495pp book; CV 119744 is only its count-1 book volume (issue 711938, on the I line)
+   F 103855 wrong-cv-link | the stored CV 119744 "Amazing Spider-Man Epic Collection: The Goblin Lives" is the Vol. 04 book's own count-1 volume, not the line; it belongs on the I line
+   F 103855 split-needed | item 95800 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95800) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S13066 "Not Brand Echh" 14f [shares gcd=1811 (collected by item 95800) — S cv=2354 gcd=1811 (A-022 0.9)] keys: "Not Brand Echh"
+   nearby: S11597 "Marvel Super-Heroes" 9f [shares gcd=1810 (collected by item 95800) — S cv=2353 gcd=1810 (R-046 0.95)] keys: "Marvel Super-Heroes" | "Marvel Super-Heroes v1 (1967)"
+   nearby: S19656 "The Spectacular Spider-Man Magazine" 2f [shares gcd=1873 (collected by item 95800) — S cv=27251 gcd=1873 (B-059 0.95)] keys: "The Spectacular Spider-Man Magazine"
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 495-495; cv per-file 119744x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: The Goblin Lives (2019)'
+      [95800] COL Amazing Spider-Man Epic Collection Vol. 04 - The Goblin Lives (2019) (Digital) (Zone-Empire).cbr (495pp)
+         own record cv 119744 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1978761) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #53-67 · gcd=1873 The Spectacular Spider-Man (1968) #1-2 · gcd=1811 Not Brand Echh (1967) #6, #11 · gcd=1810 Marvel Super-Heroes (1967) #14
+
+== S103856 Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 103856 cv=- gcd=74602 0.9 | volume 07 "The Goblin's Last Stand" of the ASM Epic Collection LINE: GCD 74602 #7 row 1696226 (452pp, ISBN 978-1-302-90407-4, roll-up ASM 1963 #105-123 + Annual #9) is our 448pp book; CV 101161 is only its count-1 book volume (issue 594105, on the I line)
+   F 103856 wrong-cv-link | the stored CV 101161 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand" is the Vol. 07 book's own count-1 volume, not the line; it belongs on the I line
+   F 103856 split-needed | item 95803 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95803) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S42165 "The Amazing Spider-Man Annual" 41f [shares gcd=1635 (collected by item 95803) — S cv=2189 gcd=1635 (R-161 1.0)] keys: "The Amazing Spider-Man Annual"
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 448-448; cv per-file 101161x1; gcd per-file 74602x1; key "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+      [95803] COL Amazing Spider-Man Epic Collection Vol. 07 - The Goblin's Last Stand (2017) (Digital) (Shadowcat-Empire).cbz (448pp)
+         own record cv 101161 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1696226) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #105-123 · gcd=66209 Spider-Man: The Death of Gwen Stacy (1999) (unnumbered) · gcd=1635 The Amazing Spider-Man Annual (1964) #9 · gcd=27784 Spider-Man: Death of the Stacys (2007) (unnumbered)
+
+== S104210 Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 104210 cv=- gcd=74602 0.9 | volume 28 "Web of Life, Web of Death" of the ASM Epic Collection LINE: GCD 74602 #28 row 2673333 (476pp, ISBN 978-1-302-96008-7, roll-up ASM 1963 #397-399 + Spectacular #220-222 + Web #120-123 + Funeral for an Octopus #1-3) is our 475pp book; ComicInfo Web 1076686 is CV 160910's issue, the book's count-1 volume (I line); flag #526 is already Dismissed
+   F 104210 wrong-cv-link | the stored CV 160910 "The Amazing Spider-Man Epic Collection: Web of Life, Web of Death" is the Vol. 28 book's own count-1 volume, not the line; it belongs on the I line
+   F 104210 split-needed | item 95819 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95819) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S19654 "The Spectacular Spider-Man" 261f [shares gcd=2359 (collected by item 95819) — S cv=2870 gcd=2359 (R-163 0.95)] keys: "Peter Parker, The Spectacular Spider-Man" | "Peter Parker, the Spectacular Spider-Man" | "The Spectacular Spider-Man" | "The Spectacular Spider-Man cvv2870"
+   nearby: S66237 "Web of Spider-Man" 154f [shares gcd=3059 (collected by item 95819) — S cv=3519 gcd=3059 (R-180 0.9)] keys: "Web Of Spider-Man" | "Web of Spider-Man (1985)" | "Web of Spider-Man Super Special" | "Web of Spider-Man v1 (1985)" (+1 more: lookup.py --shelf 66237)
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   keys now: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 475-475; cv per-file 160910x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)'
+      [95819] COL Amazing Spider-Man Epic Collection Vol. 28 - Web of Life, Web of Death 001 (2025) (digital) (Marika-Empire).cbz (475pp)
+         own record cv 160910 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 2673333) COLLECTS: gcd=3059 Web of Spider-Man (1985) #120-123 · gcd=18327 Spider-Man: Funeral for an Octopus (1995) #1-3 · gcd=2359 The Spectacular Spider-Man (1976) #220-222 · gcd=1570 The Amazing Spider-Man (1963) #397-399
+
+== S17909 Adventures of Superman  [split]  206 files / 0 collections  decided in R-182 (S)
+   decided: S 17909 cv=3778 gcd=3345 0.9 | Adventures of Superman (1987): CV 3778 (DC 1987, 228, cached #0-649, per-file 199/206) = GCD 3345 (DC 1987-2006, 230, per-file 172/206); its monthly issues continue Superman (1939)'s numbering (#424 follows #423) and join that run's shelf; the Annual #1-5 stay here
+   F 17909 split-needed | items 15564, 16846, 16938, 16943, 17094, 17095, 17096, 17097, 17098, 17099, 17100, 17101, 17103, 17104, 17105, 17106, 17107, 17108, 17158, 17160, 17196, 17197, 17198, 17199, 17200, 17201, 17418, 18041, 71948, 71949, 71950, 71951, 71952, 71953, 71954, 71955, 71956, 71957, 71958, 71959, 71960, 71961, 71962, 71963, 71964, 71965, 71966, 71967, 71968, 71969, 71970, 71971, 71972, 71973, 71974, 71975, 71976, 71977, 71978, 71979, 71980, 71981, 71982, 71983, 71984, 71985, 71986, 72001, 72002, 72003, 72004, 72005, 72006, 72007, 72008, 72009, 72010, 72011, 72012, 72013, 72014, 72015, 72016, 72017, 72018, 72019, 72020, 72021, 72022, 72023, 72024, 72025, 72026, 72027, 72028, 72029, 72030, 72031, 72032, 72033, 72034, 72035, 72036, 72037, 72038, 72039, 72040, 72041, 72042, 72043, 72044, 72045, 72046, 72047, 72048, 72049, 72050, 72051, 72052, 72053, 72054, 72055, 72056, 72057, 72058, 72059, 72060, 72061, 72062, 72063, 72064, 72065, 72066, 72067, 72068, 72069, 72070, 72071, 72072, 72073, 72074, 72075, 72076, 72077, 72078, 72079, 72080, 72081, 72082, 72083, 72084, 72085, 72086, 72087, 72088, 72089, 72090, 72091, 72092, 72093, 72094, 72095, 72096, 72097, 72098, 72099, 72100, 72101, 72102, 72103, 72104, 72105, 72106, 72107, 72108, 72109, 72110, 72111, 72112, 72113, 72114, 72115, 72116, 72117, 72118, 72119, 72120, 72121, 72122, 72123, 72124, 72125, 72126, 72127, 72128, 72129, 72130, 72131, 72132, 74071 -> join S65813 on its ParsedKey "Superman (1939)" - Adventures of Superman #0, #424-649 and #1,000,000 continue Superman #1-423 (L-212 / L-372); S65813's ladder (1-415, 650-714) holds none of these numbers
+   N 17909 after the join this shelf holds only Adventures of Superman Annual #1-5 (items 15611, 72133-72137) under a stored cv 3778 that names the monthly run - re-key it as the annual series at its next revisit (L-369: a shelf that IS an annual series gets its own key); until then a new Adventures of Superman rip resolves here by cv 3778, not onto S65813
+   named: S65813 Superman  333 files  keys: "Superman (1939)" | "Superman 005F" | "Superman v1 (1939)" | "Superman v1 (2006)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S103782 "Adventures of Superman v2 (2013)" 47f [title — S cv=60518 (R-062 0.9)] keys: "Adventures of Superman v2 (2013)"
+   nearby: S4176 "Convergence Adventures of Superman" 2f [title+1 — S cv=81463 gcd=88472 (A-007 0.95)] keys: "Convergence - Adventures Of Superman" | "Convergence - Adventures of Superman"
+   keys now: "Adventures of Superman" x183 · "The Adventures of Superman" x22 · "Aftermath Adventures of Superman" x1
+   groups (title x folder): 32
+   G1 "Adventures of Superman 473  Rings of Fire" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\039 The Road Back — 1 file(s), numbers 473, pp 26-26; cv per-file 3778x1; key 'The Adventures of Superman'
+      [15564] 04 Adventures of Superman 473  Rings of Fire.cbz (26pp)
+   G2 "Adventures of Superman Annual 04  In Blackest Night" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\046 No More Mister Nice Guy! — 1 file(s), pp 55-55; cv per-file 3777x1; gcd per-file 3344x1; key 'The Adventures of Superman'
+      [15611] 08 Adventures of Superman Annual 04  In Blackest Night.cbz (55pp)
+   G3 "The Adventures of Superman" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\12 Final Night\The Final Night Reading Order — 1 file(s), numbers 540, pp 24-24; cv per-file 3778x1; key 'The Adventures of Superman'
+      [16846] 007 The Adventures of Superman, 1996-09-00 (_540) (digital) (Glorith-Novus-HD).cbz (24pp)
+   G4 "Adventures of Superman" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\21 Superman - Emperor Joker — 2 file(s), numbers 582-583, pp 24-24; cv per-file 3778x2; key 'Adventures of Superman'
+      [16938] 02 Adventures of Superman # 582.cbz (24pp)
+      [16943] 07 Adventures of Superman #583.cbz (24pp)
+   G5 "Adventures_of_Superman_625" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\40 Superman - Unconventional Warfare — 1 file(s), numbers 625, pp 8-8; cv per-file 3778x1; key 'Adventures of Superman'
+      [17094] Adventures_of_Superman_625.cbr (8pp)
+   G6 "Adventures_of_Superman_626" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\40 Superman - Unconventional Warfare — 1 file(s), numbers 626, pp 8-8; cv per-file 3778x1; key 'Adventures of Superman'
+      [17095] Adventures_of_Superman_626.cbr (8pp)
+   G7 "Adventures_of_Superman_627" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\40 Superman - Unconventional Warfare — 1 file(s), numbers 627, pp 25-25; cv per-file 3778x1; key 'Adventures of Superman'
+      [17096] Adventures_of_Superman_627.cbr (25pp)
+   G8 "Adventures_of_Superman_628" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\40 Superman - Unconventional Warfare — 1 file(s), numbers 628, pp 24-24; cv per-file 3778x1; key 'Adventures of Superman'
+      [17097] Adventures_of_Superman_628.cbr (24pp)
+   G9 "Adventures_of_Superman_629" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\40 Superman - Unconventional Warfare — 1 file(s), numbers 629, pp 25-25; cv per-file 3778x1; key 'Adventures of Superman'
+      [17098] Adventures_of_Superman_629.cbr (25pp)
+   G10 "Adventures_of_Superman_630" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\40 Superman - Unconventional Warfare — 1 file(s), numbers 630, pp 23-23; cv per-file 3778x1; key 'Adventures of Superman'
+      [17099] Adventures_of_Superman_630.cbr (23pp)
+   G11 "Adventures_of_Superman_631" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\40 Superman - Unconventional Warfare — 1 file(s), numbers 631, pp 24-24; cv per-file 3778x1; key 'Adventures of Superman'
+      [17100] Adventures_of_Superman_631.cbz (24pp)
+   G12 "Adventures_of_Superman_632" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\40 Superman - Unconventional Warfare — 1 file(s), numbers 632, pp 23-23; cv per-file 3778x1; key 'Adventures of Superman'
+      [17101] Adventures_of_Superman_632.cbr (23pp)
+   G13 "Adventures_of_Superman_633" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\41 Superman - That Healing Touch — 1 file(s), numbers 633, pp 24-24; cv per-file 3778x1; key 'Adventures of Superman'
+      [17103] Adventures_of_Superman_633.cbr (24pp)
+   G14 "Adventures_of_Superman_634" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\41 Superman - That Healing Touch — 1 file(s), numbers 634, pp 25-25; cv per-file 3778x1; key 'Adventures of Superman'
+      [17104] Adventures_of_Superman_634.cbr (25pp)
+   G15 "Adventures_of_Superman_635" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\41 Superman - That Healing Touch — 1 file(s), numbers 635, pp 23-23; cv per-file 3778x1; key 'Adventures of Superman'
+      [17105] Adventures_of_Superman_635.cbr (23pp)
+   G16 "Adventures_of_Superman_636" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\41 Superman - That Healing Touch — 1 file(s), numbers 636, pp 25-25; cv per-file 3778x1; key 'Adventures of Superman'
+      [17106] Adventures_of_Superman_636.cbr (25pp)
+   G17 "Adventures_of_Superman_637" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\41 Superman - That Healing Touch — 1 file(s), numbers 637, pp 24-24; cv per-file 3778x1; key 'Adventures of Superman'
+      [17107] Adventures_of_Superman_637.cbr (24pp)
+   G18 "Adventures_of_Superman_638" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\41 Superman - That Healing Touch — 1 file(s), numbers 638, pp 22-22; cv per-file 3778x1; key 'Adventures of Superman'
+      [17108] Adventures_of_Superman_638.cbr (22pp)
+   G19 "Adventures_of_Superman_642" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\47 Superman - Sacrifice (After OMAC project 3) — 1 file(s), numbers 642, pp 19-19; cv per-file 3778x1; key 'Adventures of Superman'
+      [17158] 03 Adventures_of_Superman_642.cbr (19pp)
+   G20 "Aftermath Adventures_of_Superman_643" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\47 Superman - Sacrifice (After OMAC project 3) — 1 file(s), numbers 643, pp 24-24; key 'Aftermath Adventures of Superman'
+      [17160] Aftermath Adventures_of_Superman_643.cbr (24pp)
+   G21 "Adventures_of_Superman_640" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\52 Superman - Ruin Revealed — 1 file(s), numbers 640, pp 19-19; cv per-file 3778x1; key 'Adventures of Superman'
+      [17196] Adventures_of_Superman_640.cbz (19pp)
+   G22 "Adventures_of_Superman_641" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\52 Superman - Ruin Revealed — 1 file(s), numbers 641, pp 25-25; cv per-file 3778x1; key 'Adventures of Superman'
+      [17197] Adventures_of_Superman_641.cbz (25pp)
+   G23 "Adventures_of_Superman_644" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\52 Superman - Ruin Revealed — 1 file(s), numbers 644, pp 23-23; cv per-file 3778x1; key 'Adventures of Superman'
+      [17198] Adventures_of_Superman_644.cbr (23pp)
+   G24 "Adventures_of_Superman_645" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\52 Superman - Ruin Revealed — 1 file(s), numbers 645, pp 23-23; cv per-file 3778x1; key 'Adventures of Superman'
+      [17199] Adventures_of_Superman_645.cbr (23pp)
+   G25 "Adventures_of_Superman_646" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\52 Superman - Ruin Revealed — 1 file(s), numbers 646, pp 24-24; cv per-file 3778x1; key 'Adventures of Superman'
+      [17200] Adventures_of_Superman_646.cbr (24pp)
+   G26 "Adventures_of_Superman_647" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\52 Superman - Ruin Revealed — 1 file(s), numbers 647, pp 23-23; cv per-file 3778x1; key 'Adventures of Superman'
+      [17201] Adventures_of_Superman_647.cbr (23pp)
+   G27 "Adventures_of_Superman_649__final" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\09 Superman - Infinite Crisis — 1 file(s), numbers 649, pp 22-22; cv per-file 3778x1; key 'Adventures of Superman'
+      [17418] 03 Adventures_of_Superman_649__final_.cbz (22pp)
+   G28 "The Adventures of Superman (1998-11) 1000000 (hybrid) (DreamGirl-Novus-HD)" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) — 1 file(s), pp 25-25; cv per-file 3778x1; key 'The Adventures of Superman'
+      [18041] 26 The Adventures of Superman (1998-11) 1000000 (hybrid) (DreamGirl-Novus-HD).cbz (25pp)
+   G29 "Adventures of Superman" in DC\_Superman\_Completed Series\04 The Adventures of Superman (1987) — 170 file(s), numbers 424-444, 451-579, 584-598, 608-609, 611, 639, 642, pp 13-66; cv per-file 3778x170; gcd per-file 3345x170; key 'The Adventures of Superman' | 'Adventures of Superman'
+      e.g. Adventures of Superman 424 (1986) (digital) (Glorith-Novus-HD).cbz
+        71948 #424 1986 25pp key="The Adventures of Superman" · 71949 #425 1986 25pp key="The Adventures of Superman" · 71950 #426 1987 24pp key="The Adventures of Superman"
+        71951 #427 1987 23pp key="The Adventures of Superman" · 71952 #428 1987 22pp · 71953 #429 1987 22pp · 71954 #430 1987 23pp · 71955 #431 1987 22pp · 71956 #432 1987 23pp
+        71957 #433 1987 23pp · 71958 #434 1987 23pp · 71959 #435 1987 23pp · 71960 #436 1988 23pp · 71961 #437 1988 22pp · 71962 #438 1988 23pp · 71963 #439 1988 24pp · 71964 #440 1988 22pp
+        71965 #441 1988 26pp key="The Adventures of Superman" · 71966 #442 1988 23pp · 71967 #443 1988 30pp · 71968 #444 1988 13pp · 71969 #451 1989 23pp · 71970 #452 1989 23pp
+        71971 #453 1989 22pp · 71972 #454 1989 23pp · 71973 #455 1989 23pp · 71974 #456 1989 22pp · 71975 #457 1989 23pp · 71976 #458 1989 23pp · 71977 #459 1989 23pp · 71978 #460 1989 23pp
+        71979 #461 1989 21pp · 71980 #462 1990 23pp · 71981 #463 1990 25pp key="The Adventures of Superman" · 71982 #464 1990 23pp · 71983 #465 1990 23pp · 71984 #466 1990 23pp
+        71985 #467 1990 23pp · 71986 #468 1990 31pp · 72001 #469 1990 22pp · 72002 #470 1990 22pp · 72003 #471 1990 23pp · 72004 #472 1990 24pp key="The Adventures of Superman"
+        72005 #473 1990 23pp · 72006 #474 1991 23pp · 72007 #475 1991 22pp · 72008 #476 1991 23pp · 72009 #477 1991 23pp · 72010 #478 1991 23pp · 72011 #479 1991 22pp · 72012 #480 1991 38pp
+        72013 #481 1991 23pp · 72014 #482 1991 23pp · 72015 #483 1991 23pp · 72016 #484 1991 23pp · 72017 #485 1991 23pp · 72018 #486 1992 23pp · 72019 #487 1992 23pp · 72020 #488 1992 22pp
+        72021 #489 1992 23pp · 72022 #490 1992 23pp · 72023 #491 1992 22pp · 72024 #492 1992 23pp · 72025 #493 1992 22pp · 72026 #494 1992 23pp · 72027 #495 1992 22pp
+        72028 #496 1992 26pp key="The Adventures of Superman" · 72029 #497 1992 25pp key="The Adventures of Superman" · 72030 #498 1992 23pp key="The Adventures of Superman"
+        72031 #499 1992 24pp key="The Adventures of Superman" · 72032 #500 1993 66pp key="The Adventures of Superman" · 72033 #501 1993 25pp key="The Adventures of Superman"
+        72034 #502 1993 24pp key="The Adventures of Superman" · 72035 #503 1993 24pp key="The Adventures of Superman" · 72036 #504 1993 24pp key="The Adventures of Superman"
+        72037 #505 1993 24pp key="The Adventures of Superman" · 72038 #506 1993 23pp · 72039 #507 1993 23pp · 72040 #508 1994 22pp · 72041 #509 1994 22pp · 72042 #510 1994 23pp
+        72043 #511 1994 22pp · 72044 #512 1994 23pp · 72045 #513 1994 23pp · 72046 #514 1994 23pp · 72047 #515 1994 22pp · 72048 #516 1994 21pp · 72049 #517 1994 23pp · 72050 #518 1994 22pp
+        72051 #519 1995 23pp · 72052 #520 1995 23pp · 72053 #521 1995 23pp · 72054 #522 1995 21pp · 72055 #523 1995 23pp · 72056 #524 1995 23pp · 72057 #525 1995 23pp · 72058 #526 1995 23pp
+        72059 #527 1995 23pp · 72060 #528 1995 23pp · 72061 #529 1995 23pp · 72062 #530 1995 23pp · 72063 #531 1996 23pp · 72064 #532 1996 23pp · 72065 #533 1996 23pp · 72066 #534 1996 23pp
+        72067 #535 1996 23pp · 72068 #536 1996 23pp · 72069 #537 1996 22pp · 72070 #538 1996 23pp · 72071 #539 1996 23pp · 72072 #540 1996 23pp · 72073 #541 1996 22pp · 72074 #542 1997 23pp
+        72075 #543 1997 23pp · 72076 #544 1997 23pp · 72077 #545 1997 23pp · 72078 #546 1997 23pp · 72079 #547 1997 22pp · 72080 #548 1997 23pp · 72081 #549 1997 22pp · 72082 #550 1997 39pp
+        72083 #551 1997 22pp · 72084 #552 1997 23pp · 72085 #553 1997 23pp · 72086 #554 1998 23pp · 72087 #555 1998 23pp · 72088 #556 1998 23pp · 72089 #557 1998 22pp · 72090 #558 1998 23pp
+        72091 #559 1998 23pp · 72092 #560 1998 23pp · 72093 #561 1998 23pp · 72094 #562 1998 23pp · 72095 #563 1998 22pp · 72096 #564 1999 23pp · 72097 #565 1999 23pp · 72098 #566 1999 23pp
+        72099 #567 1999 22pp · 72100 #568 1999 22pp · 72101 #569 1999 23pp · 72102 #570 1999 22pp · 72103 #571 1999 22pp · 72104 #572 1999 23pp · 72105 #573 1999 23pp · 72106 #574 2000 23pp
+        72107 #575 2000 23pp · 72108 #576 2000 22pp · 72109 #577 2000 23pp · 72110 #578 2000 22pp · 72111 #579 2000 23pp · 72112 #584 2000 23pp · 72113 #585 2000 23pp · 72114 #586 2001 22pp
+        72115 #587 2001 22pp · 72116 #588 2001 23pp · 72117 #589 2001 23pp · 72118 #590 2001 23pp · 72119 #591 2001 23pp · 72120 #592 2001 23pp · 72121 #593 2001 24pp · 72122 #594 2001 22pp
+        72123 #595 2001 23pp · 72124 #596 2001 23pp · 72125 #597 2001 23pp · 72126 #598 2002 23pp · 72127 #608 2002 23pp · 72128 #609 2002 21pp
+        72129 #611 2003 23pp key="The Adventures of Superman" · 72130 #639 2005 22pp · 72131 #642 2005 20pp
+   G30 "Adventures of Superman" in DC\_Superman\_Completed Series\04 The Adventures of Superman (1987)\Annuals and Specials — 1 file(s), numbers 0, pp 23-23; cv per-file 3778x1; gcd per-file 3345x1; key 'Adventures of Superman'
+      [72132] Adventures of Superman 000 (1994) (Digital) (Shadowcat-Empire).cbz (23pp)
+   G31 "Adventures of Superman Annual" in DC\_Superman\_Completed Series\04 The Adventures of Superman (1987)\Annuals and Specials — 5 file(s), numbers 1-5, pp 39-56; cv per-file 3777x5; gcd per-file 3344x5; key 'Adventures of Superman'
+      e.g. Adventures of Superman Annual 001 (1987) (Digital) (Shadowcat-Empire).cbz
+        72133 #1 1987 39pp · 72134 #2 1990 54pp · 72135 #3 1991 56pp · 72136 #4 1992 55pp · 72137 #5 1993 55pp
+   G32 "Adventures of Superman" in DC\_The Flash\_Completed Seres\04 The Flash v2 (1987)\Flash v2 Specials\Crossovers — 1 file(s), numbers 463, pp 25-25; cv per-file 3778x1; gcd per-file 3345x1; key 'Adventures of Superman'
+      [74071] Adventures of Superman #463.cbr (25pp)
+
+== S872 Amazing Spider-Man Epic Collection: Cosmic Adventures  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 872 cv=- gcd=74602 0.9 | volume 20 "Cosmic Adventures" of the ASM Epic Collection LINE: GCD 74602 #20 row 1115971 (508pp, ISBN 978-0-7851-8789-9, roll-up ASM 1963 #326-333 + Spectacular #158-160 + Annual #24) is our 501pp book; CV 69427 is only its count-1 book volume (issue 434071, on the I line)
+   F 872 wrong-cv-link | the stored CV 69427 "Spider-Man Epic Collection: Cosmic Adventures" is the Vol. 20 book's own count-1 volume, not the line; it belongs on the I line
+   F 872 split-needed | item 95811 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95811) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S19654 "The Spectacular Spider-Man" 261f [shares gcd=2359 (collected by item 95811) — S cv=2870 gcd=2359 (R-163 0.95)] keys: "Peter Parker, The Spectacular Spider-Man" | "Peter Parker, the Spectacular Spider-Man" | "The Spectacular Spider-Man" | "The Spectacular Spider-Man cvv2870"
+   nearby: S42165 "The Amazing Spider-Man Annual" 41f [shares gcd=1635 (collected by item 95811) — S cv=2189 gcd=1635 (R-161 1.0)] keys: "The Amazing Spider-Man Annual"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: Cosmic Adventures" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 501-501; cv per-file 69427x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: Cosmic Adventures'
+      [95811] COL Amazing Spider-Man Epic Collection Vol. 20 - Cosmic Adventures (2014) (F) (Digital) (Shadowcat-Empire).cbz (501pp)
+         own record cv 69427 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1115971) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #326-333 · gcd=2359 The Spectacular Spider-Man (1976) #158-160 · gcd=1635 The Amazing Spider-Man Annual (1964) #24 · gcd=3060 Web of Spider-Man Annual (1985) #6
+
+== S873 Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 873 cv=- gcd=74602 0.9 | volume 24 "Invasion of the Spider-Slayers" of the ASM Epic Collection LINE: GCD 74602 #24 row 2473084 (428pp, ISBN 978-1-302-94832-0, roll-up ASM 1963 #368-377 + Annual #27) is our 423pp book; CV 147274 is only its count-1 book volume (issue 964071, on the I line)
+   F 873 wrong-cv-link | the stored CV 147274 "Amazing Spider-Man Epic Collection: Invasion of the Spider-Slayers" is the Vol. 24 book's own count-1 volume, not the line; it belongs on the I line
+   F 873 split-needed | item 95815 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95815) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S42165 "The Amazing Spider-Man Annual" 41f [shares gcd=1635 (collected by item 95815) — S cv=2189 gcd=1635 (R-161 1.0)] keys: "The Amazing Spider-Man Annual"
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S16196 "Spider-Man/Dr. Strange: "The Way to Dusty Death"" 1f [shares gcd=4478 (collected by item 95815) — S cv=31408 gcd=4478 (B-059 0.95)] keys: "Spider-Man/Doctor Strange: The Way To Dusty Death"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 423-423; cv per-file 147274x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers'
+      [95815] COL Amazing Spider-Man Epic Collection Vol. 24 - Invasion of the Spider-Slayers (2022) (Digital-Empire).cbr (423pp)
+         own record cv 147274 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 2473084) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #368-377 · gcd=1635 The Amazing Spider-Man Annual (1964) #27 · gcd=4478 Spider-Man / Dr. Strange: The Way to Dusty Death (1992) (unnumbered) · gcd=31621 Spider-Man: Invasion of the Spider-Slayers (1995) (unnumbered)
+
+== S874 Amazing Spider-Man Epic Collection: Man-Wolf At Midnight  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 874 cv=- gcd=74602 0.9 | volume 08 "Man-Wolf at Midnight" of the ASM Epic Collection LINE: GCD 74602 #8 row 2418485 (420pp, ISBN 978-1-302-93350-0, roll-up ASM 1963 #124-142) is our 414pp book; CV 144798 is only its count-1 book volume (issue 944335, on the I line)
+   F 874 wrong-cv-link | the stored CV 144798 "Amazing Spider-Man Epic Collection: Man-Wolf at Midnight" is the Vol. 08 book's own count-1 volume, not the line; it belongs on the I line
+   F 874 split-needed | item 95804 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95804) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 414-414; cv per-file 144798x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: Man-Wolf At Midnight'
+      [95804] COL Amazing Spider-Man Epic Collection Vol. 08 - Man-Wolf At Midnight (2022) (Digital) (Kileko-Empire).cbz (414pp)
+         own record cv 144798 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 2418485) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #124-142 · gcd=2173 Giant-Size Super-Heroes Featuring Spider-Man (1974) #1
+
+== S875 Amazing Spider-Man Epic Collection: Maximum Carnage  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 875 cv=- gcd=74602 0.9 | volume 25 "Maximum Carnage" of the ASM Epic Collection LINE: GCD 74602 #25 row 2219553 (436pp, ISBN 978-1-302-92190-3, roll-up the 14-part crossover incl. ASM 1963 #378-380) is our 419pp book; CV 124287 is only its count-1 book volume (issue 733873, on the I line)
+   F 875 wrong-cv-link | the stored CV 124287 "The Amazing Spider-Man Epic Collection: Maximum Carnage" is the Vol. 25 book's own count-1 volume, not the line; it belongs on the I line
+   F 875 split-needed | item 95816 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95816) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S19654 "The Spectacular Spider-Man" 261f [shares gcd=2359 (collected by item 95816) — S cv=2870 gcd=2359 (R-163 0.95)] keys: "Peter Parker, The Spectacular Spider-Man" | "Peter Parker, the Spectacular Spider-Man" | "The Spectacular Spider-Man" | "The Spectacular Spider-Man cvv2870"
+   nearby: S66237 "Web of Spider-Man" 154f [shares gcd=3059 (collected by item 95816) — S cv=3519 gcd=3059 (R-180 0.9)] keys: "Web Of Spider-Man" | "Web of Spider-Man (1985)" | "Web of Spider-Man Super Special" | "Web of Spider-Man v1 (1985)" (+1 more: lookup.py --shelf 66237)
+   nearby: S99972 "Spider-Man" 66f [shares gcd=4049 (collected by item 95816) — S cv=4421 gcd=4049 (R-050 1.0)] keys: "Spider-Man v1 (1990)"
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: Maximum Carnage" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 419-419; cv per-file 124287x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: Maximum Carnage'
+      [95816] COL Amazing Spider-Man Epic Collection Vol. 25 - Maximum Carnage (2020) (Digital) (Zone-Empire).cbr (419pp)
+         own record cv 124287 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 2219553) COLLECTS: gcd=2359 The Spectacular Spider-Man (1976) #201-203 · gcd=4049 Spider-Man (1990) #35-37 · gcd=3059 Web of Spider-Man (1985) #101-103 · gcd=1570 The Amazing Spider-Man (1963) #378-380
+
+== S876 Amazing Spider-Man Epic Collection: Return of the Sinister Six  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 876 cv=- gcd=74602 0.9 | volume 21 "Return of the Sinister Six" of the ASM Epic Collection LINE: GCD 74602 #21 row 1536981 (508pp, ISBN 978-0-7851-9691-4, roll-up ASM 1963 #334-350) is our 501pp book; CV 87931 is only its count-1 book volume (issue 514432, on the I line)
+   F 876 wrong-cv-link | the stored CV 87931 "The Amazing Spider-Man Epic Collection: Return of the Sinister Six" is the Vol. 21 book's own count-1 volume, not the line; it belongs on the I line
+   F 876 split-needed | item 95812 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95812) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S858 "Spider-Man: Sinister Six" 1f [shares gcd=74077 (collected by item 95812) — S cv=29734 gcd=74077 (B-059 0.95)] keys: "Amazing Spider-Man - Sinister Six"
+   nearby: S860 "Spider-Man: Spirits of the Earth" 1f [shares gcd=25818 (collected by item 95812) — S cv=37819 gcd=25818 (B-059 0.95)] keys: "Amazing Spider-Man - Spirits of the Earth"
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: Return of the Sinister Six" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 501-501; cv per-file 87931x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: Return of the Sinister Six'
+      [95812] COL Amazing Spider-Man Epic Collection Vol. 21 - Return of the Sinister Six (2016) (F) (Digital) (Shadowcat-Empire).cbz (501pp)
+         own record cv 87931 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1536981) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #334-350 · gcd=25818 Spider-Man: Spirits of the Earth (1990) (unnumbered) · gcd=74077 Spider-Man: Sinister Six (2009) (unnumbered) · gcd=31384 Spider-Man: Venom Returns (1993) (unnumbered)
+
+== S877 Amazing Spider-Man Epic Collection: Round Robin  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 877 cv=- gcd=74602 0.9 | volume 22 "Round Robin" of the ASM Epic Collection LINE: GCD 74602 #22 row 1252529 (492pp, ISBN 978-0-7851-9268-8, roll-up ASM 1963 #351-360 + Annual #25) is our 475pp book; CV 80960 is only its count-1 book volume (issue 483670, on the I line)
+   F 877 wrong-cv-link | the stored CV 80960 "Amazing Spider-Man Epic Collection: Round Robin" is the Vol. 22 book's own count-1 volume, not the line; it belongs on the I line
+   F 877 split-needed | item 95813 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95813) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S42165 "The Amazing Spider-Man Annual" 41f [shares gcd=1635 (collected by item 95813) — S cv=2189 gcd=1635 (R-161 1.0)] keys: "The Amazing Spider-Man Annual"
+   nearby: S34224 "The Spectacular Spider-Man Annual" 16f [shares gcd=2518 (collected by item 95813) — S cv=3012 gcd=2518 (R-163 1.0)] keys: "Peter Parker, The Spectacular Spider-Man Annual" | "Spectacular Spider-Man Annual"
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: Round Robin" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 475-475; cv per-file 80960x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: Round Robin'
+      [95813] COL Amazing Spider-Man Epic Collection Vol. 22 - Round Robin (2015) (F) (Digital) (Shadowcat-Empire).cbz (475pp)
+         own record cv 80960 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1252529) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #351-360 · gcd=1635 The Amazing Spider-Man Annual (1964) #25 · gcd=3060 Web of Spider-Man Annual (1985) #7 · gcd=2518 The Spectacular Spider-Man Annual (1979) #11
+
+== S878 Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 878 cv=- gcd=74602 0.9 | volume 09 "Spider-Man or Spider-Clone?" of the ASM Epic Collection LINE: GCD 74602 #9 row 2557633 (468pp, ISBN 978-1-302-94874-0, notes ASM 1963 #143-164 + Annual #10) is our 465pp book; CV 152561 is only its count-1 book volume (issue 1003987, on the I line)
+   F 878 wrong-cv-link | the stored CV 152561 "Amazing Spider-Man Epic Collection: Spider-Man or Spider-Clone?" is the Vol. 09 book's own count-1 volume, not the line; it belongs on the I line
+   F 878 split-needed | item 95805 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95805) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S42165 "The Amazing Spider-Man Annual" 41f [shares gcd=1635 (collected by item 95805) — S cv=2189 gcd=1635 (R-161 1.0)] keys: "The Amazing Spider-Man Annual"
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 465-465; cv per-file 152561x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?'
+      [95805] COL Amazing Spider-Man Epic Collection Vol. 09 - Spider-Man or Spider-Clone (2023) (Digital-Empire).cbr (465pp)
+         own record cv 152561 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 2557633) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #143-164 · gcd=2261 Marvel Special Edition Featuring The Spectacular Spider-Man (1975) #1 · gcd=1635 The Amazing Spider-Man Annual (1964) #10 · gcd=13528 The Official Marvel Index to the Amazing Spider-Man (1985) #1
+
+== S879 Amazing Spider-Man Epic Collection: The Clone Saga  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 879 cv=- gcd=74602 0.9 | volume 27 "The Clone Saga" of the ASM Epic Collection LINE: GCD 74602 #27 row 2599963 (460pp, ISBN 978-1-302-95366-9, notes the Clone Saga crossover incl. ASM 1963 #394-396) is our 447pp book; CV 156184 is only its count-1 book volume (issue 1041189, on the I line)
+   F 879 wrong-cv-link | the stored CV 156184 "Amazing Spider-Man Epic Collection: the Clone Saga" is the Vol. 27 book's own count-1 volume, not the line; it belongs on the I line
+   F 879 split-needed | item 95818 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95818) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S19654 "The Spectacular Spider-Man" 261f [shares gcd=2359 (collected by item 95818) — S cv=2870 gcd=2359 (R-163 0.95)] keys: "Peter Parker, The Spectacular Spider-Man" | "Peter Parker, the Spectacular Spider-Man" | "The Spectacular Spider-Man" | "The Spectacular Spider-Man cvv2870"
+   nearby: S66237 "Web of Spider-Man" 154f [shares gcd=3059 (collected by item 95818) — S cv=3519 gcd=3059 (R-180 0.9)] keys: "Web Of Spider-Man" | "Web of Spider-Man (1985)" | "Web of Spider-Man Super Special" | "Web of Spider-Man v1 (1985)" (+1 more: lookup.py --shelf 66237)
+   nearby: S99972 "Spider-Man" 66f [shares gcd=4049 (collected by item 95818) — S cv=4421 gcd=4049 (R-050 1.0)] keys: "Spider-Man v1 (1990)"
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: The Clone Saga" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 447-447; cv per-file 156184x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: The Clone Saga'
+      [95818] COL Amazing Spider-Man Epic Collection Vol. 27 - The Clone Saga (2024) (Digital) (dekabro-Empire).cbz (447pp)
+         own record cv 156184 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 2599963) COLLECTS: gcd=3059 Web of Spider-Man (1985) #114-119 · gcd=2359 The Spectacular Spider-Man (1976) #215-219 · gcd=4049 Spider-Man (1990) #48-53 · gcd=1570 The Amazing Spider-Man (1963) #391, #393-396
+
+== S880 Amazing Spider-Man Epic Collection: The Hero Killers  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 880 cv=- gcd=74602 0.9 | volume 23 "The Hero Killers" of the ASM Epic Collection LINE: GCD 74602 #23 row 2481448 (484pp, ISBN 978-1-302-95104-7, roll-up ASM 1963 #361-367 + Annual #26) is our 474pp book; CV 147630 is only its count-1 book volume (issue 966014, on the I line)
+   F 880 wrong-cv-link | the stored CV 147630 "Amazing Spider-Man Epic Collection: The Hero Killers" is the Vol. 23 book's own count-1 volume, not the line; it belongs on the I line
+   F 880 split-needed | item 95814 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95814) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S42165 "The Amazing Spider-Man Annual" 41f [shares gcd=1635 (collected by item 95814) — S cv=2189 gcd=1635 (R-161 1.0)] keys: "The Amazing Spider-Man Annual"
+   nearby: S11370 "Marvel Age" 39f [shares gcd=69795 (collected by item 95814) — S cv=19176 gcd=69795 (R-137 0.9)] keys: "Marvel Age" | "Marvel Age Annual"
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S17933 "The Amazing Spider-Man: Soul of the Hunter" 1f [shares gcd=17721 (collected by item 95814) — S cv=29270 gcd=17721 (C-051 1.0)] keys: "The Amazing Spider-Man - Soul of the Hunter"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: The Hero Killers" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 474-474; cv per-file 147630x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: The Hero Killers'
+      [95814] COL Amazing Spider-Man Epic Collection Vol. 23 - The Hero Killers (2023) (Digital-Empire).cbz (474pp)
+         own record cv 147630 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 2481448) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #361-367 · gcd=69795 Marvel Age (1983) #114 · gcd=1635 The Amazing Spider-Man Annual (1964) #26 · gcd=17721 The Amazing Spider-Man: Soul of the Hunter (1992) (unnumbered)
+
+== S881 Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 881 cv=- gcd=74602 0.9 | volume 05 "The Secret of the Petrified Tablet" of the ASM Epic Collection LINE: GCD 74602 #5 row 2078831 (468pp, ISBN 978-1-302-92196-5, notes ASM 1963 #68-85 + Annual #5) is our 463pp book; CV 124993 is only its count-1 book volume (issue 737189, on the I line); flag #110 is already Dismissed
+   F 881 wrong-cv-link | the stored CV 124993 "Amazing Spider-Man Epic Collection: The Secret of the Petrified Tablet" is the Vol. 05 book's own count-1 volume, not the line; it belongs on the I line
+   F 881 split-needed | item 95801 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95801) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S42165 "The Amazing Spider-Man Annual" 41f [shares gcd=1635 (collected by item 95801) — S cv=2189 gcd=1635 (R-161 1.0)] keys: "The Amazing Spider-Man Annual"
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S882 "Amazing Spider-Man Epic Collection: Venom" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Venom"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 463-463; cv per-file 124993x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet'
+      [95801] COL Amazing Spider-Man Epic Collection Vol. 05 - The Secret of the Petrified Tablet (2020) (Digital) (Zone-Empire).cbr (463pp)
+         own record cv 124993 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 2078831) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #68-85 · gcd=1635 The Amazing Spider-Man Annual (1964) #5-6 · gcd=52975 Marvel Masterworks: The Amazing Spider-Man (2009) #8
+
+== S882 Amazing Spider-Man Epic Collection: Venom  [split]  1 files / 1 collections  decided in R-181 (S)
+   decided: S 882 cv=- gcd=74602 0.9 | volume 18 "Venom" of the ASM Epic Collection LINE: GCD 74602 #18 row 1841575 (508pp, ISBN 978-1-302-91142-3, notes ASM 1963 #295-310 + Annual #22) is our 507pp book; CV 113053 is only its count-1 book volume (issue 682647, on the I line)
+   F 882 wrong-cv-link | the stored CV 113053 "Amazing Spider-Man Epic Collection: Venom" is the Vol. 18 book's own count-1 volume, not the line; it belongs on the I line
+   F 882 split-needed | item 95809 -> join S871 on its ParsedKey "Amazing Spider-Man Epic Collection" - S871's S line is the same GCD 74602 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-405)
+   named: S871 Amazing Spider-Man Epic Collection  1 files  keys: "Amazing Spider-Man Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 774f [shares gcd=1570 (collected by item 95809) — S cv=2127 gcd=1570 (R-161 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+3 more: lookup.py --shelf 4752)
+   nearby: S19654 "The Spectacular Spider-Man" 261f [shares gcd=2359 (collected by item 95809) — S cv=2870 gcd=2359 (R-163 0.95)] keys: "Peter Parker, The Spectacular Spider-Man" | "Peter Parker, the Spectacular Spider-Man" | "The Spectacular Spider-Man" | "The Spectacular Spider-Man cvv2870"
+   nearby: S66237 "Web of Spider-Man" 154f [shares gcd=3059 (collected by item 95809) — S cv=3519 gcd=3059 (R-180 0.9)] keys: "Web Of Spider-Man" | "Web of Spider-Man (1985)" | "Web of Spider-Man Super Special" | "Web of Spider-Man v1 (1985)" (+1 more: lookup.py --shelf 66237)
+   nearby: S42165 "The Amazing Spider-Man Annual" 41f [shares gcd=1635 (collected by item 95809) — S cv=2189 gcd=1635 (R-161 1.0)] keys: "The Amazing Spider-Man Annual"
+   nearby: S872 "Amazing Spider-Man Epic Collection: Cosmic Adventures" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Cosmic Adventures"
+   nearby: S873 "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Invasion Of The Spider-Slayers"
+   nearby: S874 "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Man-Wolf At Midnight"
+   nearby: S875 "Amazing Spider-Man Epic Collection: Maximum Carnage" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Maximum Carnage"
+   nearby: S876 "Amazing Spider-Man Epic Collection: Return of the Sinister Six" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Return of the Sinister Six"
+   nearby: S877 "Amazing Spider-Man Epic Collection: Round Robin" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Round Robin"
+   nearby: S878 "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man Or Spider-Clone?"
+   nearby: S879 "Amazing Spider-Man Epic Collection: The Clone Saga" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Clone Saga"
+   nearby: S880 "Amazing Spider-Man Epic Collection: The Hero Killers" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Hero Killers"
+   nearby: S881 "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Secret Of The Petrified Tablet"
+   nearby: S103847 "Amazing Spider-Man Epic Collection: Assassin Nation (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Assassin Nation (2019)"
+   nearby: S103848 "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Big Apple Battleground (2024)"
+   nearby: S103849 "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Ghosts of the Past (2014)"
+   nearby: S103850 "Amazing Spider-Man Epic Collection: Great Responsibility (2016)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Great Responsibility (2016)"
+   nearby: S103851 "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Kraven's Last Hunt (2017)"
+   nearby: S103852 "Amazing Spider-Man Epic Collection: Lifetheft (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Lifetheft (2021)"
+   nearby: S103853 "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Spider-Man No More (2018)"
+   nearby: S103854 "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Death of Captain Stacy (2021)"
+   nearby: S103855 "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin Lives (2019)"
+   nearby: S103856 "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: The Goblin's Last Stand (2017)"
+   nearby: S104210 "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)" 1f [shares gcd=74602 — S gcd=74602 (R-181 0.9)] keys: "Amazing Spider-Man Epic Collection: Web of Life, Web of Death (2025)"
+   keys now: "Amazing Spider-Man Epic Collection: Venom" x1
+   groups (title x folder): 1
+   G1 "Amazing Spider-Man Epic Collection" in Marvel\_Spider-Man\__Spider-Man Epic Collections\Amazing Spider-Man Epic Collection (2014) — 1 file(s), 1 COL, pp 507-507; cv per-file 113053x1; gcd per-file 74602x1; key 'Amazing Spider-Man Epic Collection: Venom'
+      [95809] COL Amazing Spider-Man Epic Collection Vol. 18 - Venom (2018) (Digital) (Kileko-Empire).cbr (507pp)
+         own record cv 113053 / gcd s74602 "Amazing Spider-Man Epic Collection" (issue 1841575) COLLECTS: gcd=1570 The Amazing Spider-Man (1963) #295-310 · gcd=1635 The Amazing Spider-Man Annual (1964) #22 · gcd=2359 The Spectacular Spider-Man (1976) #133 · gcd=3059 Web of Spider-Man (1985) #33
+
+== S95613 Black Orchid  [split]  4 files / 0 collections  decided in R-181 (S)
+   decided: S 95613 cv=3982 gcd=3573 0.9 | Black Orchid (DC 1988-1989, "(of 03)"): CV 3982 (DC 1988, 3 cached #1-3) and GCD 3573 (DC 1988-1989 limited series, 3) agree on publisher, year and count, and our "Black Orchid 01-03 (of 03) (1988-1989)" 51pp each fill the ladder 1-3 (ComicInfo Volume 1988 x3); 0.9 for the Annual rip 113040 that joins S64317 below
+   F 95613 split-needed | item 113040 -> join S64317 on its ParsedKey "Black Orchid (1993)" - "02. Black Orchid Annual 01.cbz" 58pp (Vertigo\Sandman and Death (1989)\The Children's Crusade, per-file CV 21254 / GCD 4632) is a second rip of the Black Orchid Annual (DC 1993, 1), the cv S64317 stores (lookup --shelf 64317: key "Black Orchid (1993)" linked cv=21254 gcd=4632), P-078's target
+   N 95613 the per-file GCD 18165 on 2 files is Juniorpress's Dutch "Black Orchid" (1989-1990, 3) - a foreign stamp, not a leg; the 1988 issues' key "Black Orchid v1 (1993)" is the folder name, not a 1993 run (the 1993 ongoing is S95614, CV 4952 / GCD 4631)
+   named: S64317 Black Orchid Annual  1 files  keys: "Black Orchid (1993)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S95614 "Black Orchid" 22f [shares cv=4952 (N line), shares gcd=4631 (N line), named S95614 in the decision's R/N lines — S cv=4952 gcd=4631 (R-180 0.95)] keys: "Black Orchid v2 (1993)"
+   keys now: "Black Orchid v1 (1993)" x3 · "Black Orchid (1988)" x1
+   groups (title x folder): 2
+   G1 "Black Orchid" in Vertigo\Black Orchid\Black Orchid v1 (1993) — 3 file(s), numbers 1-3, pp 51-51; cv per-file 3982x3; gcd per-file 18165x2, 3573x1; key 'Black Orchid v1 (1993)'
+      [112337] Black Orchid 01 (of 03) (1988) (digital) (Mr Norrell-Empire).cbr (51pp)
+      [112338] Black Orchid 02 (of 03) (1989) (digital) (Mr Norrell-Empire).cbr (51pp)
+      [112339] Black Orchid 03 (of 03) (1989) (digital) (Mr Norrell-Empire).cbr (51pp)
+   G2 "Black Orchid Annual" in Vertigo\Sandman and Death (1989)\The Children's Crusade — 1 file(s), numbers 1, pp 58-58; cv per-file 21254x1; gcd per-file 4632x1; key 'Black Orchid (1988)'
+      [113040] 02. Black Orchid Annual 01.cbz (58pp)
