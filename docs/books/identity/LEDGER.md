@@ -2015,3 +2015,10 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Insider (1987)`: the magazine has no CV or GCD record. S100014 (Star Wars 2020) merged into the EMPTY S65726 (key
   "Star Wars", cv 123860): later joins naming S100014 must target S65726 — and the bare key "Star Wars" normalizes like
   the 1977 shelf's, so check the join lands (L-375/L-376).
+[L-387] pub:marvel pub:dark-horse sig:split
+- P-052 / R-133 (waves 126-127, lead-approved): "the largest run STAYS" yields to the STORED cv — when the run that holds
+  the shelf's stored cv is the smaller one, keep it and move the larger RECORD-LESS run out (Star Wars S16641: the 1977 run
+  on CV 2914 stays, 208 Star Wars Insider files leave to "Star Wars Insider (1987)"); a new shelf seeded with the parent's
+  cv would collide with its canonical cv. The key normalizer keeps the year: a key differing only by year is new; respell
+  only when the exact spelling is a ParsedKey, alias or SeriesKeyLink. A split seed can be a book's own count-1 record —
+  re-check against L-124 when the book sits alone in a run's folder (The Other Side 2017 -> DC mini CV 19537 / GCD 21941).

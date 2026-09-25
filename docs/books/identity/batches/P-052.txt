@@ -1,0 +1,575 @@
+## Conventions for this batch (29 shown of 155 matched; 386 in LEDGER.md; 11 shelf/shelves: pub:marvel ×10 · folder:variant-covers ×9 · folder:vn-year ×8 · pub:idw ×5 · pub:star-wars ×4 · kind:foreign ×4 · folder:sequel-subfolder ×4 · folder:events ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-028] (9 shelf/shelves) folder:variant-covers pub:marvel
+- Marvel `\Variant Covers` 1pp packs (always of #1) are the whole of every ratio 1.2–2.0 on modern Marvel shelves.
+[L-036] (9 shelf/shelves) folder:skottie folder:variant-covers pub:marvel
+- A shelf that is ONLY 1pp variant covers (Skottie Young) still identifies its comic → run ids + `F partial-rip`.
+[L-173] (9 shelf/shelves) folder:skottie folder:variant-covers pub:marvel sig:collision
+- `Marvel\__Skottie Young Covers` holds a 1pp variant shelf for nearly every 2015 Secret Wars mini, each already linked
+  to that mini's volume — the commonest stored-link collision on Secret Wars shelves (merge-with when it is the mini).
+[L-319] (9 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-060] (8 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (8 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-242] (7 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-130] (6 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-174] (6 shelf/shelves) pub:marvel sig:legacy-stamp sig:stamp
+- A legacy-renumbered run is its own volume in both legs (Captain Marvel #125-129 = CV 105506 / GCD 117972; GotG
+  #146-150 = GCD 118041); the per-file matcher reaches the 1960s/1990s namesake by issue number every time.
+[L-357] (6 shelf/shelves) pub:image pub:marvel sig:probe
+- Marvel (R-086): CV mints one volume per creator "Book" line (Ms. Marvel Book 1-5 = CV 83966 / GCD 91839); "Trial of
+  Venom" = Spider-Man Special Edition #1; Deadpool #900 is Deadpool Team-Up #900 on GCD (40644) though CV puts it in
+  Deadpool 2008; Osborn Journal is filed under a bracketed alternate title. Image / Millarworld: CV 65439 "American
+  Jesus" and 85113 "Jupiter's Circle" are the trade LINES (issues named "Book One/Two"), not the minis — their conflated
+  flags are stale (L-318); Dark Horse's 2024 Millarworld reissues are a NEW GCD line beside the Image originals (Magic
+  Order 213614) — match by the file's year. A packet's "years a-b" can come from per-file stamps (read filenames). In a
+  `lookup.py --batch` file a multi-word name must be QUOTED or only its first word is probed.
+[L-124] (8 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-191] (8 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-272] (8 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-281] (8 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-119] (5 shelf/shelves) pub:marvel
+- GCD filing quirks that recovered legs: drop "Comics" from a title, "and" for "&", "Digest" appended, reversed
+  or reordered name lists ("Deadpool / Amazing Spider-Man / Hulk: Identity Wars").
+[L-127] (5 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-136] (5 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-298] (5 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (5 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-027] (4 shelf/shelves) kind:foreign pub:marvel
+- Foreign-language stored links are a cluster (Berserk → Glénat's French volume while our 41 books are Dark
+  Horse's; The Marvels → Panini España; Avengers → Panini Verlag): the English pair is in the rip/dump every time.
+[L-104] (4 shelf/shelves) kind:manga pub:dark-horse pub:marvel pub:star-wars sig:probe
+- Star Wars manga needs BOTH spellings: ComicVine files Dark Horse's 1999 adaptations as "Manga Star Wars:
+  <Film>", GCD as "Star Wars: … — Manga"; neither probe finds the other.
+[L-106] (4 shelf/shelves) pub:marvel pub:star-wars sig:trade-link
+- The count-1-trade-as-stored-link artefact runs at Marvel too (14 Star Wars shelves in one batch); a collected
+  series whose count equals exactly our two books is the matches-our-holdings trap.
+[L-109] (4 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-111] (4 shelf/shelves) pub:marvel pub:star-wars sig:trade-link
+- Star Wars "Marvel Edition" digital trades (Kileko/Zone/Shan-Empire): both providers mint a same-title count-1
+  record the year the trade shipped beside the 4-6 issue run; the stored link is the trade on 36 of 150 shelves.
+[L-112] (4 shelf/shelves) pub:dark-horse pub:marvel pub:star-wars sig:trade-link
+- Episodes IV/V film adaptations have no series record of their own (they sit INSIDE Star Wars 1977); the 2015
+  collected record carries them with an `N`. Episodes I/II/III/VI take the Dark Horse / 1983 Marvel original.
+[L-187] (4 shelf/shelves) pub:marvel sig:trade-link
+- A plain "<Title>" 2015 count-4/5 CV/GCD record IS the Secret Wars Warzones mini; the "<Title>: Warzones!" /
+  "Battleworld" count-1 records are the 2016+ collected repackagings — the mini's record wins, the trade goes on `I`.
+[L-265] (4 shelf/shelves) kind:foreign pub:delcourt pub:europe-comics pub:marvel
+- Delcourt / Soleil English-digital shelves pair the English CV volume with the French GCD original at 0.9 (the
+  Europe Comics shape) — except when GCD's same-name row is an unrelated book (Spin Angels → Marvel's GCD 53252).
+[L-291] (6 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-324] (4 shelf/shelves) folder:vn-year kind:foreign kind:manga kind:trade-only pub:marvel sig:collision sig:probe sig:trade-link tier:D
+- TIER D (D-013..D-015) — LEAD RULING confirming the reader's tie-break for a single trade alone in a `<Title> vN
+  (<year>)` run folder: (a) both legs hold a multi-volume line coextensive with the shelf → the LINE at 0.9, the run
+  on N; (b) otherwise the RUN, with `F merge-with` into the run's landed shelf (a lone trade is an edition of its
+  run, never a second comic); (c) otherwise the book's own count-1 record. One published work shipped as separate
+  printed objects is indexed that way by GCD (Building Stories: 14 lettered rows vs CV's one volume — 0.9 by
+  construction). An album title can be an ISSUE row no series probe reaches (Asterix Miscellany #29 / #31 / #33 of
+  the Hodder line) — search `gcd_issue.title` / `cv_iss.name`. Spellings that hide records: superscripts (Alien³),
+  periods (N.H.K.), an apostrophe year ("Cable '99" = "Cable 1999"), a doubled letter, an "∞" issue number, a literal
+  translation of a Japanese title. ComicVine carries Japanese originals GCD lacks — probe the Japanese title before
+  conceding a scanlation shelf. Marvel renumbers sub-series into one volume (Ultimate Comics Avengers 1/2/3 = #1-18).
+
++126 more matched entries not shown: L-327, L-379, L-064, L-085, L-101, L-274, L-288, L-293, L-310, L-034, L-113, L-169, L-302, L-343, L-371, L-378, L-097, L-164, L-193, L-252, L-290, L-352, L-354, L-123, L-016, L-032, L-065, L-077, L-084, L-099, L-114, L-175, L-194, L-262, L-306, L-311, L-323, L-330, L-345, L-054, L-135, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-014, L-029, L-031, L-033, L-076, L-080, L-115, L-117, L-128, L-132, L-133, L-139, L-142, L-181, L-196, L-228, L-234, L-295, L-296, L-297, L-307, L-308, L-321, L-325, L-328, L-329, L-331, L-332, L-336, L-374, L-376, L-381, L-382, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-098, L-100, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-276, L-277, L-278, L-280, L-283, L-284, L-292, L-294, L-304, L-341, L-344, L-346, L-347, L-150 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S16549 Star Wars: Jango Fett  [split]  18 files / 0 collections  decided in R-132 (S)
+   decided: S 16549 cv=157309 gcd=209971 0.9 | CV 157309 "Star Wars: Jango Fett" (Marvel 2024, 4: "Trail of Lost Hope" Parts 1-4, 2024-05 … 08) and GCD 209971 (Marvel 2024, limited, 4) agree; our 1pp variant packs of #1-4 and the 112pp "Jango Fett - Trail Of Lost Hope (2025)" (its own trade) sit on it; 0.9 because one Dark Horse 2002 one-shot is a different comic (split below)
+   F 16549 split-needed | item 105923 "Star Wars - Jango Fett (Marvel Edition) (2002)" 59pp is Dark Horse's 2002 one-shot (CV 20769 issue 124541 / GCD 17855 row 291722), not the 2024 mini -> new key "Star Wars: Jango Fett (2002)"; no shelf stores either id (--who-stores cv=20769: 0 Series rows)
+   keys now: "Star Wars - Jango Fett" x18
+   groups (title x folder): 3
+   G1 "Star Wars - Jango Fett - Trail Of Lost Hope (2025) (Digital) (Kileko-Empire)" in Marvel-IDW Star Wars\_Completed Series and Minis\Jango Fett (2024) — 1 file(s), pp 112-112; cv per-file 162235x1; gcd per-file 220362x1; key 'Star Wars - Jango Fett'
+      [103931] Star Wars - Jango Fett - Trail Of Lost Hope (2025) (Digital) (Kileko-Empire).cbz (112pp)
+   G2 "Star Wars - Jango Fett" in Marvel-IDW Star Wars\_Completed Series and Minis\Jango Fett (2024)\Variant Covers — 16 file(s), numbers 1-4, pp 1-1; cv per-file 20769x16; gcd per-file 209971x16; key 'Star Wars - Jango Fett'
+      e.g. Star Wars - Jango Fett 001 (2024) (1-in-100 Derrick Chew Virgin Variant) (Digital) (MikeNY76-Empire).cbz
+        103932 #1 2024 1pp · 103933 #1 2024 1pp · 103934 #1 2024 1pp · 103935 #1 2024 1pp · 103936 #1 2024 1pp · 103938 #2 2024 1pp · 103939 #2 2024 1pp · 103940 #3 2024 1pp · 103941 #3 2024 1pp
+        103942 #4 2024 1pp · 103943 #4 2024 1pp · 103944 #4 2024 1pp · 103945 #4 2024 1pp · 103946 #4 2024 1pp · 103947 #4 2024 1pp
+      [103937] Star Wars - Jango Fett 001 (2024) Movie Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+   G3 "Star Wars - Jango Fett (Marvel Edition) (2002) (Digital) (Kileko-Empire)" in Marvel-IDW Star Wars\_Star Wars - Dark Horse Reprints\Star Wars - Jango Fett (2002) — 1 file(s), pp 59-59; cv per-file 20769x1; gcd per-file 17855x1; key 'Star Wars - Jango Fett'
+      [105923] Star Wars - Jango Fett (Marvel Edition) (2002) (Digital) (Kileko-Empire).cbr (59pp)
+
+== S16641 Star Wars  [split]  230 files / 16 collections  decided in R-132 (R)
+   decided: R 16641 | the shelf is four comics under the 1977 Marvel run's stored ids (CV 2914 / GCD 2406): (a) 207 "Star Wars Insider 023-229 (1994-2024)" magazine issues + "Star Wars Insider - 2021 Special Edition" (the Lucasfilm/Titan fan magazine) — no record in either catalog ("Star Wars Insider" / "Insider" --contains: no CV or GCD series); (b) eleven "COL The Best of Star Wars Insider Vol. 01-11 (2016-2019)" books (Titan) — no record either; (c) the 1977 Marvel run's own strays: "Star Wars 038 (1980) b&w", "Star Wars Annual 003 (1983)", "Star Wars 108 (2019)", two "#1 Facsimile Edition" rips, which ARE CV 2914 / GCD 2406; (d) strays of other shelves' runs — the 2020 run's Vol. 03 / v04 trades (duplicates of S100014's), three Dark Horse omnibuses, a 2015 Skottie Young #1 variant. The Insider magazine outnumbers everything, so no record fits the shelf and the stored 1977 ids name 7 of its 230 files
+   F 16641 split-needed | proposed runs: (1) Star Wars Insider #23-229 + 2021 Special Edition (207 + 1 files) — keep as the largest, no record, needs-web; (2) The Best of Star Wars Insider items 104640-104650 -> new key "The Best of Star Wars Insider (2016)", no record; (3) the 1977 Marvel run's files 104173, 104174, 104175, 104172, 83086 -> a "Star Wars v1 (1977)" shelf with CV 2914 / GCD 2406 (the old S100012 key merged here, so a new key); (4) items 104127, 104048 (Star Wars 2020 Vol. 03 / Vol. 04) -> join S100014; (5) item 52020 (Star Wars 2015 #1 Skottie Young variant) -> join the Star Wars (2015) shelf S100013; (6) Dark Horse omnibuses 104366, 104367 -> new key "Star Wars Omnibus: Dark Times (2013)" (CV 70516 / GCD 78286), item 105927 -> new key "Star Wars Omnibus: Quinlan Vos - Jedi in Darkness (2010)" (CV 37306 / GCD 60328)
+   F 16641 needs-web | Star Wars Insider (Fan Club / Paragon / Titan, 1987-) and The Best of Star Wars Insider (Titan 2016-2019): neither ComicVine nor GCD in our copies indexes the magazine — which record, if any, should the 208 files carry?
+   N 16641 the older S line's F merge-with=100012 is moot — S100012 is already merged into this shelf; the stored GCD rows on 104048 (2444812 = Doctor Aphra Vol. 4), 104366 (1791935 = Last Jedi: Storms of Crait) and 104367 (1816629 = Darth Vader 2017 #2) are stamps from other books, so those "GCD says" lines are void
+   N 105927 the omnibus also collects Star Wars (Dark Horse 1998, GCD 12187) #19-26 — a second stretch, not widened across #27-31; the judged #19-34 on this book is wrong across the gap
+   named: S100012 (not a file-holding shelf today)
+   named: S100014 (not a file-holding shelf today)
+   named: S100013 Star Wars v2 (2015)  13 files  keys: "Star Wars v2 (2015)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65726 "Star Wars" 67f [shares stored cv=123860] keys: "Star Wars (2020)" | "Star Wars v3 (2020)" · S65725 "Star Wars" 4f [title — S cv=55553 gcd=70876 (B-049 0.95)] keys: "Star Wars (2013)"
+   nearby: S34452 "The Star Wars" 1f [title — S cv=67024 gcd=76383 (R-132 0.95)] keys: "Star Wars" | "The Star Wars"
+   nearby: S16497 "Star Wars: Ahsoka" 37f [title+1 — S cv=158785 gcd=213589 (R-132 0.95)] keys: "Star Wars - Ahsoka"
+   nearby: S16625 "Star Wars Adventures" 14f [title+1] keys: "Star Wars Adventures" | "Star Wars Adventures v1 (2018)"
+   nearby: S16626 "Star Wars Adventures" 14f [title+1 — S cv=130972 gcd=164705 (B-049 0.95)] keys: "Star Wars Adventures (2020-)"
+   nearby: S16547 "Star Wars: Inquisitors" 13f [title+1 — S cv=158697 gcd=213217 (C-035 0.95)] keys: "Star Wars - Inquisitors"
+   nearby: S16538 "Star Wars: Ewoks" 11f [title+1 — S cv=160315 gcd=215774 (C-035 0.95)] keys: "Star Wars - Ewoks"
+   nearby: S16645 "Star Wars Legends Epic Collection: Legacy" 7f [title+1 — S cv=94451 gcd=108923 (A-020 0.95)] keys: "Star Wars - Legacy" | "Star Wars Legends Epic Collection: Legacy"
+   nearby: S16561 "Star Wars: Legacy" 4f [title+1 — S cv=59185 gcd=72921 (B-049 0.9)] keys: "Star Wars - Legacy II - Empire of One" | "Star Wars - Legacy II - Outcasts of the Broken Ring" | "Star Wars - Legacy II - Prisoner of the Floating World" | "Star Wars - Legacy II - Wanted - Ania Solo"
+   nearby: S3937 "Classic Star Wars" 3f [title+1 — S cv=4861 gcd=4529 (B-049 0.95)] keys: "Classic Star Wars"
+   nearby: S16511 "Star Wars Omnibus: Clone Wars" 3f [title+1 — S cv=51619 gcd=68162 (D-013 0.95)] keys: "Star Wars - Clone Wars - The Enemy On All Sides" | "Star Wars - Clone Wars - The Republic Falls" | "Star Wars - Clone Wars - The Republic Goes To War"
+   nearby: S16554 "Star Wars - Kanan" 3f [title+1 — S cv=81088 gcd=88034 (R-132 0.95)] keys: "Kanan - The Last Padawan" | "Star Wars - Kanan" · (+16 more by title)
+   keys now: "Star Wars Insider" x208 · "The Best of Star Wars Insider" x11 · "Star Wars (1977)" x7 · "Star Wars v1 (1977)" x4
+   groups (title x folder): 13
+   G1 "Star Wars" in Marvel-IDW Star Wars\_Completed Series and Minis\Star Wars - Crimson Reign (2022) — 1 file(s), 1 COL, pp 156-156; cv per-file 145385x1; gcd per-file 174003x1; key 'Star Wars (1977)'
+      [104048] COL Star Wars v04 - Crimson Reign (2022) (Digital) (Kileko-Empire).cbz (156pp)
+         own record cv 145385 / gcd s174003 "Star Wars" (issue 2429923) COLLECTS: gcd=154267 Star Wars (2020) #19-25
+   G2 "Star Wars" in Marvel-IDW Star Wars\_Completed Series and Minis\Star Wars - War of the Bounty Hunters (2021) — 1 file(s), 1 COL, pp 159-159; cv per-file 141607x1; gcd per-file 174003x1; key 'Star Wars (1977)'
+      [104127] COL 03 Star Wars Vol. 03 - War of the Bounty Hunters (2022) (Digital) (Kileko-Empire).cbz (159pp)
+         own record cv 141607 / gcd s174003 "Star Wars" (issue 2294192) COLLECTS: gcd=154267 Star Wars (2020) #12-18
+   G3 "Star Wars" in Marvel-IDW Star Wars\_Completed Series and Minis\Star Wars v1 (1977) — 1 file(s), numbers 108, pp 48-48; cv per-file 2914x1; gcd per-file 146179x1; key 'Star Wars v1 (1977)'
+      [104175] Star Wars 108 (2019) (Digital) (F) (Kileko-Empire).cbz (48pp)
+   G4 "Star Wars" in Marvel-IDW Star Wars\_Completed Series and Minis\Star Wars v1 (1977)\Annuals and Specials — 1 file(s), numbers 38, pp 18-18; cv per-file 2914x1; gcd per-file 2406x1; key 'Star Wars v1 (1977)'
+      [104173] Star Wars 038 (1980) b&w (Bchry-DCP).cbz (18pp)
+   G5 "Star Wars - Facsimile Edition" in Marvel-IDW Star Wars\_Completed Series and Minis\Star Wars v1 (1977)\Annuals and Specials — 1 file(s), numbers 1, pp 36-36; cv per-file 123860x1; gcd per-file 154267x1; key 'Star Wars v1 (1977)'
+      [104172] Star Wars - Facsimile Edition 001 (2020) (Digital) (Kileko-Empire).cbz (36pp)
+   G6 "Star Wars Annual" in Marvel-IDW Star Wars\_Completed Series and Minis\Star Wars v1 (1977)\Annuals and Specials — 1 file(s), numbers 3, pp 41-41; cv per-file 2914x1; gcd per-file 29144x1; key 'Star Wars v1 (1977)'
+      [104174] Star Wars Annual 003 (1983) (Digital) (Zone-Empire).cbr (41pp)
+   G7 "Star Wars Omnibus" in Marvel-IDW Star Wars\_Star Wars - Dark Horse Reprints\Star Wars - Dark Times — 2 file(s), 2 COL, pp 345-466; cv per-file 70516x2; gcd per-file 78286x2; key 'Star Wars (1977)'
+      [104366] COL Star Wars Omnibus Vol. 32 - Dark Times Vol. 01 (2015) (Digital-HD, Marvel Edition) (Minutemen-DuckWalker).cbr (345pp)
+         own record cv 70516 / gcd s78286 "Star Wars Omnibus: Dark Times" (issue 1172175) COLLECTS: gcd=19003 Star Wars: Dark Times (2006) #1-12 · gcd=16330 Star Wars: Republic (2002) #79-80 · gcd=38782 Star Wars: Dark Times - Blue Harvest (2009) #0  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [104367] COL Star Wars Omnibus Vol. 35 - Dark Times Vol. 02 (2015) (Digital-HD, Marvel Edition) (Minutemen-DuckWalker).cbr (466pp)
+         own record cv 70516 / gcd s78286 "Star Wars Omnibus: Dark Times" (issue 1204903) COLLECTS: gcd=71823 Star Wars: Dark Times - Fire Carrier (2013) #1-5 · gcd=75492 Star Wars: Dark Times - A Spark Remains (2013) #1-5 · gcd=60367 Star Wars: Dark Times - Out of the Wilderness (2011) #1-5 · gcd=19003 Star Wars: Dark Times (2006) #13-17  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+   G8 "Star Wars Omnibus" in Marvel-IDW Star Wars\_Star Wars - Dark Horse Reprints\Star Wars - Quinlan Vos - Jedi in Darkness — 1 file(s), 1 COL, pp 509-509; cv per-file 37306x1; gcd per-file 60328x1; key 'Star Wars (1977)'
+      [105927] COL Star Wars Omnibus Vol. 15 - Quinlan Vos - Jedi in Darkness (2010, 2015 Marvel Edition) (digital) (Minutemen-Faessla).cbz (509pp)
+         own record cv 37306 / gcd s60328 "Star Wars Omnibus: Quinlan Vos - Jedi in Darkness" (issue 866188) COLLECTS: gcd=12187 Star Wars (1998) #19-26, #32-45
+   G9 "Star Wars Insider" in Marvel-IDW Star Wars\_Star Wars Insider (1987) — 207 file(s), numbers 23-229, pp 52-132; cv per-file 2914x207; gcd per-file 75951x43, 221572x15, 42051x2; key 'Star Wars Insider'
+      e.g. Star Wars Insider 023 (1994) (M-A).cbz
+        104431 #23 1994 52pp · 104432 #24 1995 67pp · 104433 #25 1995 77pp · 104434 #26 1995 77pp · 104435 #27 1995 82pp · 104436 #28 1996 65pp · 104437 #29 1996 59pp · 104438 #30 1996 69pp
+        104439 #31 1996 73pp · 104440 #32 1997 89pp · 104441 #33 1997 84pp · 104442 #34 1997 81pp · 104443 #35 1997 93pp · 104444 #36 1998 77pp · 104445 #37 1998 90pp · 104446 #38 1998 89pp
+        104447 #39 1998 85pp · 104448 #40 1998 89pp · 104449 #41 1998 93pp · 104450 #42 1999 85pp · 104451 #43 1999 85pp · 104452 #44 1999 77pp · 104453 #45 1999 91pp · 104454 #46 1999 86pp
+        104455 #47 1999 87pp · 104456 #48 2000 87pp · 104457 #49 2000 89pp · 104458 #50 2000 85pp · 104459 #51 2000 85pp · 104460 #52 2000 77pp · 104461 #53 2001 77pp · 104462 #54 2001 97pp
+        104463 #55 2001 77pp · 104464 #56 2001 77pp · 104465 #57 2002 76pp · 104466 #58 2002 79pp · 104467 #59 2002 100pp · 104468 #60 2002 132pp · 104469 #61 2002 100pp · 104470 #62 2002 101pp
+        104471 #63 2002 101pp · 104472 #64 2002 108pp · 104473 #65 2003 101pp · 104474 #66 2003 101pp · 104475 #67 2003 104pp · 104476 #68 2003 93pp · 104477 #69 2003 85pp · 104478 #70 2003 83pp
+        104479 #71 2003 84pp · 104480 #72 2003 89pp · 104481 #73 2004 92pp · 104482 #74 2004 91pp · 104483 #75 2004 100pp · 104484 #76 2004 100pp · 104485 #77 2004 100pp · 104486 #78 2004 100pp
+        104487 #79 2005 100pp · 104488 #80 2005 84pp · 104489 #81 2005 101pp · 104490 #82 2005 100pp · 104491 #83 2005 100pp · 104492 #84 2005 100pp · 104493 #85 2006 100pp · 104494 #86 2006 84pp
+        104495 #87 2006 84pp · 104496 #88 2006 84pp · 104497 #89 2006 84pp · 104498 #90 2006 84pp · 104499 #91 2007 84pp · 104500 #92 2007 87pp · 104502 #94 2007 100pp · 104503 #95 2007 86pp
+        104504 #96 2007 76pp · 104505 #97 2007 84pp · 104506 #98 2008 84pp · 104507 #99 2008 84pp · 104508 #100 2008 101pp · 104509 #101 2008 85pp · 104510 #102 2008 85pp · 104511 #103 2008 60pp
+        104512 #104 2008 72pp · 104513 #105 2008 59pp · 104514 #106 2009 60pp · 104515 #107 2009 63pp · 104516 #108 2009 64pp · 104517 #109 2009 75pp · 104518 #110 2009 79pp · 104519 #111 2009 67pp
+        104520 #112 2009 84pp · 104521 #113 2009 100pp · 104522 #114 2010 84pp · 104523 #115 2010 84pp · 104524 #116 2010 100pp · 104525 #117 2010 85pp · 104526 #118 2010 85pp
+        104527 #119 2010 104pp · 104528 #120 2010 85pp · 104529 #121 2010 85pp · 104530 #122 2011 101pp · 104531 #123 2011 85pp · 104532 #124 2011 85pp · 104533 #125 2011 101pp
+        104534 #126 2011 84pp · 104535 #127 2011 101pp · 104536 #128 2011 85pp · 104537 #129 2011 85pp · 104538 #130 2012 100pp · 104539 #131 2012 101pp · 104540 #132 2012 84pp
+        104541 #133 2012 85pp · 104542 #134 2012 100pp · 104543 #135 2012 ?pp · 104544 #136 2012 116pp · 104545 #137 2012 85pp · 104546 #138 2013 84pp · 104547 #139 2013 84pp
+        104548 #140 2013 100pp · 104549 #141 2013 84pp · 104550 #142 2013 84pp · 104551 #143 2013 100pp · 104552 #144 2013 100pp · 104553 #145 2013 84pp · 104554 #146 2014 84pp
+        104555 #147 2014 84pp · 104556 #148 2014 100pp · 104557 #149 2014 84pp · 104558 #150 2014 100pp · 104559 #151 2014 84pp · 104560 #152 2014 100pp · 104561 #153 2014 84pp
+        104562 #154 2014 84pp · 104563 #155 2015 82pp · 104564 #156 2015 83pp · 104565 #157 2015 100pp · 104566 #158 2015 86pp · 104567 #159 2015 85pp · 104568 #160 2015 100pp
+        104569 #161 2015 84pp · 104570 #162 2016 100pp · 104571 #163 2016 84pp · 104572 #164 2016 84pp · 104573 #165 2016 100pp · 104574 #166 2016 84pp · 104575 #167 2016 84pp
+        104576 #168 2016 100pp · 104577 #169 2016 84pp · 104578 #170 2017 99pp · 104579 #171 2017 84pp · 104580 #172 2017 100pp · 104581 #173 2017 84pp · 104582 #174 2017 84pp
+        104583 #175 2017 100pp · 104584 #176 2017 84pp · 104585 #177 2017 84pp · 104586 #178 2018 100pp · 104587 #179 2018 84pp · 104588 #180 2018 84pp · 104589 #181 2018 100pp
+        104590 #182 2018 69pp · 104591 #183 2018 66pp · 104592 #184 2018 82pp · 104593 #185 2018 73pp · 104594 #186 2019 82pp · 104595 #187 2019 84pp · 104596 #188 2019 84pp
+        104597 #189 2019 100pp · 104598 #190 2019 84pp · 104599 #191 2019 100pp · 104600 #192 2019 84pp · 104601 #193 2019 99pp · 104602 #194 2020 100pp · 104603 #195 2020 69pp
+        104604 #196 2020 66pp · 104605 #197 2020 82pp · 104606 #198 2020 84pp · 104607 #199 2020 84pp · 104608 #200 2021 100pp · 104609 #201 2021 84pp · 104610 #202 2021 100pp
+        104611 #203 2021 84pp · 104612 #204 2021 84pp · 104613 #205 2021 84pp · 104614 #206 2021 100pp · 104615 #207 2021 84pp · 104616 #208 2022 84pp · 104617 #209 2022 84pp
+        104618 #210 2022 100pp · 104619 #211 2022 84pp · 104620 #212 2022 84pp · 104621 #213 2022 84pp · 104622 #214 2022 100pp · 104623 #215 2022 84pp · 104624 #216 2023 84pp
+        104625 #217 2023 100pp · 104626 #218 2023 84pp · 104627 #219 2023 84pp · 104628 #220 2023 84pp · 104629 #221 2023 100pp · 104630 #222 2023 84pp · 104631 #223 2024 84pp
+        104632 #224 2024 65pp · 104633 #225 2024 82pp · 104634 #226 2024 71pp · 104635 #227 2024 75pp · 104636 #228 2024 66pp · 104637 #229 2024 68pp
+      [104501] Star Wars Insider 093 (2007) UK veriosn, replace me.cbr (73pp)
+   G10 "Star Wars Insider - 2021 Special Edition (2020) (Digital) (Kileko-Empire)" in Marvel-IDW Star Wars\_Star Wars Insider (1987)\Trades — 1 file(s), numbers 2021, pp 148-148; cv per-file 2914x1; key 'Star Wars Insider'
+      [104638] Star Wars Insider - 2021 Special Edition (2020) (Digital) (Kileko-Empire).cbz (148pp)
+   G11 "The Best of Star Wars Insider" in Marvel-IDW Star Wars\_Star Wars Insider (1987)\Trades — 11 file(s), 11 COL, pp 178-179; cv per-file 2914x11; key 'The Best of Star Wars Insider'
+      [104640] COL The Best of Star Wars Insider Vol. 01 (2016) (Digital) (Kileko-Empire).cbr (179pp)
+      [104641] COL The Best of Star Wars Insider Vol. 02 (2016) (Digital) (Kileko-Empire).cbr (179pp)
+      [104642] COL The Best of Star Wars Insider Vol. 03 (2016) (Digital) (Kileko-Empire).cbr (178pp)
+      [104643] COL The Best of Star Wars Insider Vol. 04 (2016) (Digital) (Kileko-Empire).cbr (178pp)
+      [104644] COL The Best of Star Wars Insider Vol. 05 - Lords of the Sith (2017) (Digital) (Kileko-Empire).cbr (178pp)
+      [104645] COL The Best of Star Wars Insider Vol. 06 - Heroes of the Force (2017) (Digital) (Kileko-Empire).cbr (178pp)
+      [104646] COL The Best of Star Wars Insider Vol. 07 - Icons of the Galaxy (2018) (Digital) (Kileko-Empire).cbr (178pp)
+      [104647] COL The Best of Star Wars Insider Vol. 08 - The Saga Begins (2019) (Digital) (Kileko-Empire).cbr (179pp)
+      [104648] COL The Best of Star Wars Insider Vol. 09 - The Original Trilogy (2019) (Kileko-Empire) - 2021-04-30 update.cbz (178pp)
+      [104649] COL The Best of Star Wars Insider Vol. 10 - Rogues, Scoundrels and Bounty Hunters (2019) (Kileko-Empire).cbz (178pp)
+      [104650] COL The Best of Star Wars Insider Vol. 11 - Aliens, Creatures & Droids (2019) (Digital) (Kileko-Empire).cbz (178pp)
+   G12 "Star Wars" in Marvel\_Marvel Facsimile Editions — 1 file(s), numbers 1, pp 36-36; cv per-file 2914x1; gcd per-file 2406x1; key 'Star Wars (1977)'
+      [83086] Star Wars 001 - Facsimile Edition (1977) (Digital) (Shadowcat-Empire).cbz (36pp)
+   G13 "Star Wars" in Marvel\__Skottie Young Covers — 1 file(s), numbers 1, pp 1-1; cv per-file 2914x1; gcd per-file 85861x1; key 'Star Wars (1977)'
+      [52020] Star Wars 001 (2015) (digital) (Skottie Young variant) (Minutemen-Mastodon).cbz (1pp)
+
+== S16728 Star Wars: The High Republic  [split]  27 files / 2 collections  decided in R-132 (S)
+   decided: S 16728 cv=154553 gcd=205173 0.9 | CV 154553 "Star Wars: The High Republic" (Marvel 2024, 10: Children of the Storm #1-5, The Hunted #6-10) and GCD 205173 "... [Phase III]" (Marvel, 10 rows #1 2023-11-08 … #10 2024-08-07) agree; the 24 1pp variants of #1-9 in "Phase III (2024)\Variant Covers" carry 2023-2024 dates that match GCD's cover dates (#1-2 are 2023), and the two trades are its own; 0.9 for the Dark Horse Echoes of Fear #4 (split below)
+   F 16728 split-needed | item 103906 "Star Wars - The High Republic Adventures Phase III - Echoes of Fear 004 (2025)" 29pp is Dark Horse's Echoes of Fear #4 (CV 159631 / GCD 214699) -> join S16730, which stores cv=159631 gcd=214699 and holds #2-3
+   named: S16730 Star Wars: The High Republic Adventures--Echoes of Fear  2 files  keys: "Star Wars: The High Republic Adventures--Echoes of Fear"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S16591 "Star Wars: The Acolyte Kelnacca" 5f [shares gcd=214900 (collected by item 104074) — S cv=159609 gcd=214900 (C-035 0.95)] keys: "Star Wars - The Acolyte - Kelnacca"
+   nearby: S16597 "Star Wars: The High Republic" 4f [shares cv=133079 — S cv=133079 gcd=168398 (R-045 0.95)] keys: "Star Wars - The High Republic" | "Star Wars: The High Republic Phase I - Light Of The Jedi Omnibus"
+   nearby: S16736 "Star Wars: The High Republic" 3f [shares gcd=190281 — S cv=145478 gcd=190281 (B-048 0.9)] keys: "Star Wars - The High Republic Phase II" | "Star Wars: The High Republic Phase II - Quest Of The Jedi Omnibus"
+   nearby: S16573 "Star Wars: Revelations" 1f [shares gcd=206958 (collected by item 104073) — S cv=155511 gcd=206958 (B-048 0.95)] keys: "Star Wars - Revelations"
+   nearby: S16724 "Star Wars: The High Republic Adventures (Phase III)" 12f [title+1 — S cv=155169 gcd=206363 (C-035 0.9)] keys: "Star Wars: The High Republic Adventures Phase III"
+   nearby: S16601 "Star Wars: The High Republic Adventures" 5f [title+1 — S cv=146622 gcd=193213 (C-035 0.9)] keys: "Star Wars - The High Republic Adventures"
+   nearby: S16599 "Star Wars: The High Republic: The Blade" 1f [title+1 — S cv=147135 gcd=194233 (B-048 0.95)] keys: "Star Wars - The High Republic - The Blade"
+   keys now: "Star Wars: The High Republic Phase III" x25 · "Star Wars: The High Republic Adventures Phase III--Echoes of Fear" x1 · "Star Wars: The High Republic Phase III  - The Hunted" x1
+   groups (title x folder): 3
+   G1 "Star Wars - The High Republic Adventures Phase III - Echoes of Fear" in Marvel-IDW Star Wars\Star Wars - The High Republic Adventures - Echoes of Fear (2024) — 1 file(s), numbers 4, pp 29-29; cv per-file 154553x1; gcd per-file 214699x1; key 'Star Wars: The High Republic Adventures Phase III--Echoes of Fear'
+      [103906] Star Wars - The High Republic Adventures Phase III - Echoes of Fear 004 (2025) (Digital) (Kileko-Empire).cbz (29pp)
+   G2 "Star Wars - The High Republic - Phase III" in Marvel-IDW Star Wars\_Completed Series and Minis\Star Wars - The High Republic\Star Wars - The High Republic - Phase III (2024) — 2 file(s), 2 COL, pp 140-142; cv per-file 158517x2; gcd per-file 212980x2; key 'Star Wars: The High Republic Phase III' | 'Star Wars: The High Republic Phase III  - The Hunted'
+      [104073] COL Star Wars - The High Republic - Phase III Vol. 01 - Children of the Storm (2024) (Digital) (Kileko-Empire).cbz (140pp)
+         own record cv 158517 / gcd s212980 "Star Wars: The High Republic Phase III" (issue 2636711) COLLECTS: gcd=205173 Star Wars: The High Republic [Phase III] (2024) #1-5 · gcd=206958 Star Wars: Revelations (2024) #1
+      [104074] COL Star Wars - The High Republic - Phase III Vol. 02 - The Hunted (2024) (Digital) (Kileko-Empire).cbz (142pp)  key="Star Wars: The High Republic Phase III  - The Hunted"
+         own record cv 158517 / gcd s212980 "Star Wars: The High Republic Phase III" (issue 2679190) COLLECTS: gcd=205173 Star Wars: The High Republic [Phase III] (2024) #6-10 · gcd=214900 Star Wars: The Acolyte - Kelnacca (2024) #1
+   G3 "Star Wars - The High Republic" in Marvel-IDW Star Wars\_Completed Series and Minis\Star Wars - The High Republic\Star Wars - The High Republic - Phase III (2024)\Variant Covers — 24 file(s), numbers 1-9, pp 1-1; cv per-file 133079x24; gcd per-file 190281x22, 203817x2; key 'Star Wars: The High Republic Phase III'
+      e.g. Star Wars - The High Republic 001 (2023) (Annie Wu Variant) (Digital) (MikeNY76-Empire).cbz
+        104075 #1 2023 1pp · 104077 #2 2023 1pp · 104079 #3 2024 1pp · 104081 #4 2023 1pp · 104082 #4 2024 1pp · 104083 #4 2024 1pp · 104086 #6 2023 1pp · 104088 #6 2024 1pp · 104089 #7 2024 1pp
+        118024 #7 2024 1pp · 104090 #7 2024 1pp · 118025 #7 2024 1pp · 104091 #8 2024 1pp · 118026 #8 2024 1pp · 104092 #8 2024 1pp · 104093 #8 2024 1pp · 104094 #9 2023 1pp · 104095 #9 2023 1pp
+      [104076] Star Wars - The High Republic 001 (2023) Annie Wu Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [104078] Star Wars - The High Republic 002 (2023) Rod Reis Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [104080] Star Wars - The High Republic 003 (2024) Annie Wu Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [104084] Star Wars - The High Republic 004 (2024) Rod Reis Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [104085] Star Wars - The High Republic 005 (2023) Nauck Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [104087] Star Wars - The High Republic 006 (2023) Reis Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+
+== S20987 Vengeance of the Moon Knight  [split]  21 files / 2 collections  decided in R-132 (S)
+   decided: S 20987 cv=27914 gcd=39600 0.9 | CV 27914 "Vengeance of the Moon Knight" (Marvel 2009, cached #1-10) = GCD 39600 (Marvel 2009-2010, 10): our issue files #1-5, #8-10, the 2009-dated cover packs of #1-2 and the two trades (GCD rows 1998311 / 1998312 roll up #1-6 / #7-10) sit in it; 0.9 for one 2024-run issue (split below)
+   F 20987 split-needed | item 118632 "02 Vengeance of the Moon Knight 005 (2024)" 29pp (Blood Hunt prelude folder) is the 2024 ongoing's #5 (CV 155872 / GCD 207528) -> join S94731, which stores cv=155872 gcd=207528
+   named: S94731 Vengeance of the Moon Knight v1 (2024)  21 files  keys: "Vengeance of the Moon Knight v1 (2024)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Vengeance of the Moon Knight v1 (2009)" x12 · "Vengeance of the Moon Knight" x9
+   groups (title x folder): 5
+   G1 "Vengeance of the Moon Knight" in Marvel\#MARVEL CURRENT ONGOING TITLES\Vengeance of the Moon Knight v1 (2024)\Variant Covers — 10 file(s), numbers 1-2, pp 1-4; cv per-file 27914x10; gcd per-file 39600x10; key 'Vengeance of the Moon Knight v1 (2009)'
+      e.g. Vengeance of the Moon Knight 001 (2009) (2nd Printing Variant) (Cover Only) (ScanDog).cbr
+        48836 #1 2009 1pp · 48837 #1 2009 4pp · 48838 #1 2009 1pp · 48842 #1 2009 1pp · 48843 #1 2009 1pp · 48844 #1 2009 1pp · 48845 #2 2009 1pp · 48846 #2 2009 2pp · 48847 #2 2009 1pp
+        48848 #2 2009 1pp
+   G2 "Vengeance of the Moon Knight" in Marvel\_Moon Knight\08 Vengeance of the Moon Knight v1 (2009) — 2 file(s), 2 COL, pp 119-149; cv per-file 34479x1, 37491x1; gcd per-file 148980x2; key 'Vengeance of the Moon Knight v1 (2009)'
+      [83710] COL Vengeance of the Moon Knight Vol. 01 - Shock and Awe (2010) (Digital) (Zone-Empire).cbr (149pp)
+         own record cv 34479 / gcd s148980 "Vengeance of the Moon Knight" (issue 1998311) COLLECTS: gcd=39600 Vengeance of the Moon Knight (2009) #1-6
+      [83711] COL Vengeance of the Moon Knight Vol. 02 - Killed - Not Dead (2016) (Digital-Empire).cbr (119pp)
+         own record cv 37491 / gcd s148980 "Vengeance of the Moon Knight" (issue 1998312) COLLECTS: gcd=39600 Vengeance of the Moon Knight (2009) #7-10
+   G3 "Vengeance of the Moon Knight" in _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Vengeance of Moon Knight — 5 file(s), numbers 1-5, pp 26-27; cv per-file 27914x5; gcd per-file 39600x5; key 'Vengeance of the Moon Knight'
+      e.g. Vengeance of the Moon Knight 001 (2009) (Digital) (Zone-Empire).cbr
+        117132 #1 2009 27pp · 117133 #2 2009 26pp · 117134 #3 2010 26pp · 117135 #4 2010 26pp · 117136 #5 2010 26pp
+   G4 "Vengeance of the Moon Knight" in _Marvel Major Event Chronology (digital)\2010.04 - The Heroic Age\The Heroic Age - Moon Knight — 3 file(s), numbers 8-10, pp 26-40; cv per-file 27914x3; gcd per-file 39600x3; key 'Vengeance of the Moon Knight'
+      [117345] Vengeance of the Moon Knight 008 (2010) (Digtial) (Zone-Empire).cbr (26pp)
+      [117346] Vengeance of the Moon Knight 009 (2010) (Digtial) (Zone-Empire).cbr (40pp)
+      [117347] Vengeance of the Moon Knight 010 (2010) (Digtial) (Zone-Empire).cbr (26pp)
+   G5 "Vengeance of the Moon Knight" in _Marvel Major Event Chronology (digital)\2024.05 - Blood Hunt\00 Prelude — 1 file(s), numbers 5, pp 29-29; cv per-file 27914x1; gcd per-file 207528x1; key 'Vengeance of the Moon Knight'
+      [118632] 02 Vengeance of the Moon Knight 005 (2024) (Digital) (Shan-Empire).cbz (29pp)
+
+== S22969 Your Name.  [split]  4 files / 4 collections  decided in R-132 (R)
+   decided: R 22969 | two co-equal Yen Press manga, two books each: "your name. v01/v02 (2017)" = CV 102227 "Your Name." (Yen 2017, 3) / GCD 118677 (Yen 2017-2018, 3) and, in the subfolder "your name. - Another Side-Earthbound (2018)", "your name. Another Side - Earthbound v01/v02 (2018-2019)" = CV 115716 (Yen 2018, 2) / GCD 136839 (Yen 2018-2019, 2); the stored CV 102227 on the whole shelf hands the side story the main manga's identity (2:2 is a co-equal run, not residue)
+   F 22969 split-needed | Another Side: Earthbound items 42251, 42252 -> new key "your name. Another Side: Earthbound (2018)" with CV 115716 / GCD 136839; the kept half (42253, 42254) is CV 102227 / GCD 118677
+   keys now: "your name." x4
+   groups (title x folder): 2
+   G1 "your name." in Manga\your name. (2017) — 2 file(s), 2 COL, pp 155-173; cv per-file 102227x2; gcd per-file 118677x2; key 'your name.'
+      [42253] COL your name. v01 (2017) (Digital-SD) (danke-Empire).cbz (173pp)
+      [42254] COL your name. v02 (2017) (Digital-SD) (danke-Empire).cbz (155pp)
+   G2 "your name. Another Side - Earthbound" in Manga\your name. (2017)\your name. - Another Side-Earthbound (2018) — 2 file(s), 2 COL, pp 177-187; cv per-file 115716x2; gcd per-file 136839x2; key 'your name.'
+      [42251] COL your name. Another Side - Earthbound v01 (2018) (Digital-SD) (Shadowcat-Empire).cbz (177pp)
+      [42252] COL your name. Another Side - Earthbound v02 (2019) (Digital) (XRA-Empire).cbz (187pp)
+
+== S65588 Scarlet Witch  [split]  56 files / 3 collections  decided in R-132 (R)
+   decided: R 65588 | two runs plus a trade line: the 2024 ongoing (issue files #1-9 and 44 1pp variants of #1-7 in "Scarlet Witch v4 (2024)" = CV 158459 / GCD 212973, per-file 53/56) and three Steve Orlando trades from other folders — Vol. 01 The Last Door and Vol. 02 Magnum Opus in "03 Scarlet Witch v3 (2023)" (collecting Scarlet Witch 2023 #1-10, CV 147226 / GCD 194915) and Vol. 03 in "04 Scarlet Witch & Quicksilver v1 (2024)" (collecting that 2024 mini #1-4, CV 156874 / GCD 208973); two whole trades of a different run are a co-equal run (Secret Six ruling), and the stored GCD 203412 "Scarlet Witch by Steve Orlando" is the trade LINE, not the 2024 run
+   F 65588 split-needed | items 93245, 93246 -> new key "Scarlet Witch v3 (2023)" (CV 147226 / GCD 194915; no shelf stores either); item 93967 -> new key "Scarlet Witch & Quicksilver (2024)" (CV 156874 / GCD 208973; no shelf stores either); the kept half is the 2024 run, CV 158459 / GCD 212973
+   nearby: S103744 "X-Men by Lee & Kirby Omnibus (2009)" 198f [shares gcd=1576 (collected by item 93967) — S cv=2133 gcd=1576 (R-054 0.95)] keys: "X-Men by Lee & Kirby Omnibus (2009)"
+   nearby: S15136 "Scarlet Witch" 5f [title — S cv=86552 gcd=94723 (C-049 0.9)] keys: "Scarlet Witch (2015)" | "Scarlet Witch by James Robinson: The Complete Collection" | "Scarlet Witch v2 (2016)"
+   nearby: S65586 "Scarlet Witch" 4f [title — S cv=5323 gcd=5039 (A-025 0.95)] keys: "Scarlet Witch (1994)"
+   keys now: "Scarlet Witch (2024)" x56
+   groups (title x folder): 4
+   G1 "Scarlet Witch" in Marvel\#MARVEL CURRENT ONGOING TITLES\Scarlet Witch v4 (2024) — 9 file(s), numbers 1-9, pp 23-34; cv per-file 158459x9; gcd per-file 212973x9; key 'Scarlet Witch (2024)'
+      e.g. Scarlet Witch 001 (2024) (Digital) (Shan-Empire).cbz
+        48313 #1 2024 34pp · 48314 #2 2024 24pp · 48315 #3 2024 25pp · 48316 #4 2024 23pp · 48317 #5 2024 24pp · 48318 #6 2025 25pp · 48319 #7 2025 23pp · 48320 #8 2025 25pp · 48321 #9 2025 23pp
+   G2 "Scarlet Witch" in Marvel\#MARVEL CURRENT ONGOING TITLES\Scarlet Witch v4 (2024)\Variant Covers — 44 file(s), numbers 1-7, pp 1-1; cv per-file 158459x44; gcd per-file 212973x44; key 'Scarlet Witch (2024)'
+      e.g. Scarlet Witch 001 (2024) (1-in-100 Jenny Frison Virgin Variant) (Digital) (MikeNY76-Empire).cbz
+        48322 #1 2024 1pp · 48323 #1 2024 1pp · 48324 #1 2024 1pp · 48325 #1 2024 1pp · 48326 #1 2024 1pp · 48327 #1 2024 1pp · 48328 #1 2024 1pp · 48329 #1 2024 1pp · 48330 #1 2024 1pp
+        48332 #1 2024 1pp · 48333 #1 2024 1pp · 48334 #1 2024 1pp · 48335 #1 2024 1pp · 48336 #1 2024 1pp · 48337 #1 2024 1pp · 48338 #1 2024 1pp · 48339 #1 2024 1pp · 48340 #1 2024 1pp
+        48341 #1 2024 1pp · 48342 #1 2024 1pp · 48343 #1 2024 1pp · 48344 #1 2024 1pp · 48345 #1 2024 1pp · 48346 #1 2024 1pp · 48347 #2 2024 1pp · 48348 #2 2024 1pp · 48349 #2 2024 1pp
+        48350 #3 2024 1pp · 48351 #3 2024 1pp · 48352 #3 2024 1pp · 48353 #3 2024 1pp · 48354 #4 2024 1pp · 48355 #4 2024 1pp · 48356 #5 2024 1pp · 48357 #5 2024 1pp · 48358 #6 2024 1pp
+        48359 #6 2024 1pp · 48360 #6 2024 1pp · 48361 #6 2024 1pp · 48362 #6 2024 1pp · 48363 #6 2024 1pp · 48364 #7 2024 1pp · 48365 #7 2024 1pp · 48366 #7 2024 1pp
+   G3 "Scarlet Witch by Steve Orlando" in Marvel\_Scarlet Witch\03 Scarlet Witch v3 (2023) — 2 file(s), 2 COL, pp 124-163; cv per-file 153268x1, 156679x1; gcd per-file 203412x2; key 'Scarlet Witch (2024)'
+      [93245] COL Scarlet Witch by Steve Orlando Vol. 01 - The Last Door (2023) (Digital-Empire).cbr (163pp)
+         own record cv 153268 / gcd s203412 "Scarlet Witch by Steve Orlando" (issue 2564757) COLLECTS: gcd=194915 Scarlet Witch (2023) #1-5 · gcd=201497 Scarlet Witch Annual (2023) #1
+      [93246] COL Scarlet Witch by Steve Orlando Vol. 02 - Magnum Opus (2024) (Digital) (Shan-Empire).cbz (124pp)
+         own record cv 156679 / gcd s203412 "Scarlet Witch by Steve Orlando" (issue 2606380) COLLECTS: gcd=194915 Scarlet Witch (2023) #6-10
+   G4 "Scarlet Witch by Steve Orlando" in Marvel\_Scarlet Witch\04 Scarlet Witch & Quicksilver v1 (2024) — 1 file(s), 1 COL, pp 127-127; cv per-file 160348x1; gcd per-file 203412x1; key 'Scarlet Witch (2024)'
+      [93967] COL Scarlet Witch by Steve Orlando Vol. 03 - Scarlet Witch & Quicksilver (2024) (Digital) (Shan-Empire).cbz (127pp)
+         own record cv 160348 / gcd s203412 "Scarlet Witch by Steve Orlando" (issue 2666352) COLLECTS: gcd=208973 Scarlet Witch & Quicksilver (2024) #1-4 · gcd=1576 The X-Men (1963) #4
+
+== S65741 Star Wars: Doctor Aphra  [split]  9 files / 9 collections  decided in R-132 (S)
+   decided: S 65741 cv=96284 gcd=110055 0.95 | the 2016 run's own books: Vol. 01 Aphra … Vol. 07 A Rogue's End (GCD 115048 #1-7 rolling up Doctor Aphra (2017) #1-40) and Omnibus Book 01 (GCD 174292 #1, reprinting #1-40) = CV 96284 "Star Wars: Doctor Aphra" (Marvel 2016, 40) = GCD 110055 "Doctor Aphra" (Marvel 2017-2020, 40), which agree on publisher and count; Omnibus Book 02 is the 2020 run's and leaves below, so nothing else remains
+   F 65741 split-needed | item 103811 "COL Doctor Aphra Omnibus Book 02 (2023)" 561pp collects Star Wars: Doctor Aphra (2020) #1-25 (GCD 174292 #2 row 2564717 roll-up s159999 #1-25) -> join S16693, which stores that run's CV 126644 (edition of the 2020 run, L-380)
+   N 65741 label-ambiguous flag #437 (item 103805): right — 104130/103805 and 103806/104047 are duplicate rips of the 2020 run's Vol. 3-4, which already live on S16693 (P-007)
+   N 103810 the omnibus's other reprints are single issues: Darth Vader (2015) #8, #21, #25 and Star Wars (2015, GCD 85861) #13, #19, #31-32 — not widened across the gaps
+   named: S16693 Star Wars: Doctor Aphra  8 files  keys: "Doctor Aphra v2 (2020)" | "Star Wars: Doctor Aphra (2020)" | "Star Wars: Doctor Aphra (2020-)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S4980 "Darth Vader" 5f [shares gcd=86508 (collected by item 103810) — S cv=79990 gcd=86508 (C-035 0.9)] keys: "Darth Vader" | "Darth Vader v1 (2015)"
+   keys now: "Star Wars: Doctor Aphra (2016)" x5 · "Doctor Aphra v1 (2017)" x3 · "Doctor Aphra" x1
+   groups (title x folder): 2
+   G1 "Doctor Aphra" in Marvel-IDW Star Wars\Doctor Aphra\Doctor Aphra v1 (2017) — 7 file(s), 7 COL, pp 109-161; cv per-file 102281x1, 108542x1, 112204x1; gcd per-file 115048x7; key 'Doctor Aphra v1 (2017)' | 'Star Wars: Doctor Aphra (2016)'
+      [103796] COL Doctor Aphra Vol. 01 - Aphra (2017) (Digital) (Kileko-Empire).cbr (155pp)  key="Doctor Aphra v1 (2017)"
+         own record cv 102281 / gcd s115048 "Star Wars: Doctor Aphra" (issue 1717317) COLLECTS: gcd=110055 Doctor Aphra (2017) #1-6
+      [103797] COL Doctor Aphra Vol. 02 - Doctor Aphra and the Enormous Profit (2018) (Digital) (Kileko-Empire).cbr (144pp)  key="Doctor Aphra v1 (2017)"
+         own record cv 108542 / gcd s115048 "Star Wars: Doctor Aphra" (issue 1780687) COLLECTS: gcd=110055 Doctor Aphra (2017) #9-13 · gcd=116041 Star Wars Doctor Aphra Annual (2017) #1
+      [103798] COL Doctor Aphra Vol. 03 - Remastered (2018) (Digital) (Kileko-Empire).cbr (126pp)  key="Doctor Aphra v1 (2017)"
+         own record cv 112204 / gcd s115048 "Star Wars: Doctor Aphra" (issue 1824057) COLLECTS: gcd=110055 Doctor Aphra (2017) #14-19
+      [103799] COL Doctor Aphra Vol. 04 - The Catastrophe Con (2019) (Digital) (Kileko-Empire).cbr (140pp)
+         own record cv 116385 / gcd s115048 "Star Wars: Doctor Aphra" (issue 1891107) COLLECTS: gcd=110055 Doctor Aphra (2017) #20-25
+      [103800] COL Doctor Aphra Vol. 05 - Worst Among Equals (2019) (Digital) (Kileko-Empire).cbz (161pp)
+         own record cv 119879 / gcd s115048 "Star Wars: Doctor Aphra" (issue 1980730) COLLECTS: gcd=110055 Doctor Aphra (2017) #26-31 · gcd=116041 Star Wars Doctor Aphra Annual (2017) #2
+      [103801] COL Doctor Aphra Vol. 06 - Unspeakable Rebel Superweapon (2019) (Digital) (Kileko-Empire).cbz (109pp)
+         own record cv 123416 / gcd s115048 "Star Wars: Doctor Aphra" (issue 2067214) COLLECTS: gcd=110055 Doctor Aphra (2017) #32-36
+      [103802] COL Doctor Aphra Vol. 07 - A Rogue's End (2020) (Digital) (Kileko-Empire).cbz (138pp)
+         own record cv 125000 / gcd s115048 "Star Wars: Doctor Aphra" (issue 2267557) COLLECTS: gcd=110055 Doctor Aphra (2017) #37-40 · gcd=116041 Star Wars Doctor Aphra Annual (2017) #3 · gcd=153715 Star Wars: Empire Ascendant (2020) #1
+   G2 "Doctor Aphra Omnibus" in Marvel-IDW Star Wars\Doctor Aphra\_Omnibus Editions — 2 file(s), 2 COL, pp 561-1222; cv per-file 134434x2; gcd per-file 174292x2; key 'Star Wars: Doctor Aphra (2016)' | 'Doctor Aphra'
+      [103810] COL Doctor Aphra Omnibus Book 01 (2023) (Digital) (F) (Kileko-Empire).cbz (1222pp)
+         own record cv 134434 / gcd s174292 "Star Wars: Doctor Aphra Omnibus" (issue 2246662) COLLECTS: gcd=110055 Doctor Aphra (2017) #1-40 · gcd=86508 Darth Vader (2015) #3-4, #8, #21, #25 · gcd=85861 Star Wars (2015) #13, #19, #31-32 · gcd=116041 Star Wars Doctor Aphra Annual (2017) #1-3
+      [103811] COL Doctor Aphra Omnibus Book 02 (2023) (Digital) (Kileko-Empire).cbz (561pp)  key="Doctor Aphra"
+         own record cv 134434 / gcd s174292 "Star Wars: Doctor Aphra Omnibus" (issue 2564717) COLLECTS: gcd=159999 Star Wars: Doctor Aphra (2020) #1-25
+
+== S7542 Giant-Size X-Men  [split]  16 files / 1 collections  decided in R-132 (S)
+   decided: S 7542 cv=2763 gcd=2249 0.9 | the original Giant-Size X-Men: CV 2763 (Marvel, 4: #1 1975-05, #2 1975-12, #3 2005-04, #4 2005-09) keeps the 1975 issues and their 2005 continuation in one volume; GCD splits by era, and the chain's first record 2249 (Marvel 1975, #1-2, 68pp each) stands (L-369); our #1 (three rips, 37-38pp), #2 (two rips), #3 (2005, 78pp) and two X-Men Chronology fragments of #3-4 sit in it; 0.9 for the 2024 one-shot (split below) and the 2019 facsimile of #1
+   F 7542 split-needed | items 47814 ("05 Giant-Size X-Men 001 (2024)" 42pp) and 47833, 47834, 47835, 47836, 47837, 47838 (its 1pp variants, folder Giant-Sized 50th Anniversary (2024)) are the 2024 one-shot, CV 158070 issue 1054379 (= the ComicInfo Web id) / GCD 211959 row 2629080 -> new key "Giant-Size X-Men (2024)"; no shelf stores either id
+   N 7542 GCD 19899 "Giant-Size X-Men" (Marvel 2005-2006, #3-4) is this run's second era; the fragments 86648 ("004 Giant Sized X-Men #03" 10pp) and 86651 ("007 Giant Sized X-Men 4" 11pp) are chronology excerpts of #3 and #4, not whole issues
+   nearby: S3940 "Classic X-Men" 44f [shares gcd=3176 — S cv=3626 gcd=3176 (C-054 0.95)] keys: "Classic X-Men"
+   nearby: S35314 "X-Men Giant-Size" 1f [title — S cv=40207 gcd=58656 (R-037 0.95)] keys: "Giant-Size X-Men by Jonathan Hickman" | "X-Men Giant-Size"
+   nearby: S7517 "Giant-Size Astonishing X-Men" 1f [title+1 — S cv=21710 gcd=30925 (A-027 0.95)] keys: "Giant-Size Astonishing X-Men"
+   nearby: S7544 "Giant-Size X-Men: Thunderbird" 1f [title+1 — S cv=142761 gcd=184875 (B-049 0.95)] keys: "Giant-Size X-Men - Thunderbird"
+   nearby: S22367 "X-Men Forever Giant Size" 1f [title+1 — S cv=33569 gcd=49509 (B-062 0.95)] keys: "X-Men Forever Giant-Size"
+   nearby: S102954 "Giant-Size X-Men: Fantomex" 1f [title+1 — S cv=129245 gcd=162665 (R-037 0.95)] keys: "Giant-Size X-Men: Fantomex"
+   nearby: S102956 "Giant-Size X-Men: Magneto" 1f [title+1 — S cv=128617 gcd=161921 (R-037 0.95)] keys: "Giant-Size X-Men: Magneto"
+   nearby: S102957 "Giant-Size X-Men: Nightcrawler" 1f [title+1 — S cv=126014 gcd=158359 (R-037 0.95)] keys: "Giant-Size X-Men: Nightcrawler (2020)"
+   nearby: S102958 "Giant-Size X-Men: Storm" 1f [title+1 — S cv=130395 gcd=164004 (R-037 0.95)] keys: "Giant-Size X-Men: Storm"
+   keys now: "Giant-Size X-Men" x14 · "Giant Sized X-Men" x2
+   groups (title x folder): 7
+   G1 "Giant-Size X-Men" in Marvel\#MARVEL CURRENT ONGOING TITLES\Giant-Sized 50th Anniversary (2024) — 1 file(s), numbers 1, pp 42-42; cv per-file 2763x1; gcd per-file 211959x1; key 'Giant-Size X-Men'
+      [47814] 05 Giant-Size X-Men 001 (2024) (digital) (Marika-Empire).cbz (42pp)
+   G2 "Giant-Size X-Men" in Marvel\#MARVEL CURRENT ONGOING TITLES\Giant-Sized 50th Anniversary (2024)\Variant Covers — 6 file(s), numbers 1, pp 1-1; cv per-file 2763x6; gcd per-file 211959x6; key 'Giant-Size X-Men'
+      e.g. Giant-Size X-Men 001 (2024) (1-in-25 Phil Noto Variant) (Digital) (MikeNY76-Empire).cbz
+        47833 #1 2024 1pp · 47834 #1 2024 1pp · 47835 #1 2024 1pp · 47836 #1 2024 1pp · 47837 #1 2024 1pp · 47838 #1 2024 1pp
+   G3 "Giant-Size X-Men" in Marvel\_Marvel Facsimile Editions — 1 file(s), 1 COL, pp 68-68; cv per-file 120237x1; gcd per-file 148832x1; key 'Giant-Size X-Men'
+      [83049] COL Giant-Size X-Men 001 - Facsimile Edition (2019) (Digital) (Shadowcat-Empire).cbz (68pp)
+         own record cv 120237 / gcd s148832 "Giant-Size X-Men No.1 Facsimile Edition" (issue 1997300) COLLECTS: gcd=2249 Giant-Size X-Men (1975) #1
+   G4 "Giant-Size X-Men" in Marvel\_X-Men\Uncanny X-Men\02 Giant Size X-Men v1 (1975) — 3 file(s), numbers 1-3, pp 37-78; cv per-file 2763x3; gcd per-file 211959x1, 2249x1, 19899x1; key 'Giant-Size X-Men'
+      [84923] Giant-Size X-Men 001 (1975) (Digital) (Pirate-Empire).cbr (37pp)
+      [84924] Giant-Size X-Men 002 (1975) (Brent-NW).cbr (52pp)
+      [84925] Giant-Size X-Men 003 (2005) (Penancex-DCP).cbr (78pp)
+   G5 "Giant Sized X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0008 Second Genesis — 2 file(s), numbers 3-4, pp 10-11; gcd per-file 3176x2; key 'Giant Sized X-Men'
+      [86648] 004 Giant Sized X-Men #03.cbr (10pp)
+      [86651] 007 Giant Sized X-Men 4.cbr (11pp)
+   G6 "Giant-Size X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0008 Second Genesis — 2 file(s), numbers 1-2, pp 38-55; cv per-file 2763x2; gcd per-file 2249x2; key 'Giant-Size X-Men'
+      [86645] 001 Giant-Size X-Men 001 (1975) (digital) (Minutemen-Syl3ntBob).cbz (38pp)
+      [86646] 002 Giant-Size X-Men 002 (1975) (digital) (Bchry-DCP).cbz (55pp)
+   G7 "Giant-Size X-Men" in _Marvel Major Event Chronology (digital)\2001.01 - X-Men - Dream's End\Extras — 1 file(s), numbers 1, pp 38-38; cv per-file 2763x1; gcd per-file 2249x1; key 'Giant-Size X-Men'
+      [116539] Giant-Size X-Men 001 (1975) (Digital) (Nahga-Empire).cbr (38pp)
+
+== S95053 The Amazing Spider-Man  [split]  165 files / 4 collections  decided in R-132 (S)
+   decided: S 95053 cv=142577 gcd=184161 0.9 | The Amazing Spider-Man (Marvel 2022-2025) = CV 142577 (72) and GCD 184161 (72), agreeing on publisher, start year and count: issue files #55-66 + 65.Deaths, #10 and #14, the Gang War #37-44 chronology rips, ~120 1pp variant covers of #1-66 and Zeb Wells Vol. 08-11 (GCD rows 2611324-2679026 of the Zeb Wells trade line) all sit in it; 0.9 for the 2024 Annual (47151, 48606 + three 1pp variants) and six covers of the 2018 run (split below)
+   F 95053 split-needed | items 47157, 47158, 47159, 47160 ("Amazing Spider-Man 001 Adam Hughes ComicSketchArt Variant A-D (2018)") and 47164, 47165 ("Amazing Spider-Man 011/012 (2019) Conan vs. Marvel Heroes Variant") are 1pp covers of the 2018 run -> join S95051, which stores cv=112161 gcd=126774
+   named: S95051 The Amazing Spider-Man  31 files  keys: "Amazing Spider-Man v5 (2018)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 814f [shares cv=2127 — S cv=2127 gcd=1570 (R-058 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+2 more: lookup.py --shelf 4752)
+   nearby: S67060 "Free Comic Book Day 2024: Ultimate Universe/Spider-Man" 3f [shares gcd=211747 (collected by item 47148) — S cv=158037 gcd=211747 (R-042 0.95)] keys: "Free Comic Book Day 2024 - Ultimate Universe - Spider-Man"
+   nearby: S846 "The Amazing Spider-Man: Gang War: First Strike" 1f [shares gcd=206357 (collected by item 47147) — S cv=154930 gcd=206357 (A-033 0.95)] keys: "Amazing Spider-Man - Gang War First Strike"
+   nearby: S103846 "The Amazing Spider-Man v2 (1999)" 46f [title — S cv=78701 gcd=11288 (R-079 0.95)] keys: "The Amazing Spider-Man v2 (1999)"
+   nearby: S95052 "The Amazing Spider-Man" 14f [title — S cv=73420 gcd=80405 (R-053 0.9)] keys: "Amazing Spider-Man.1 - Learning to Crawl" | "Amazing Spider-man v3 (2014)"
+   nearby: S34339 "The Amazing Spider-Man" 13f [title] keys: "Amazing Spider-Man" | "The Amazing Spider-Man"
+   nearby: S103529 "Amazing Spider-Man v4 (2015)" 11f [title — S cv=85076 gcd=92892 (R-053 0.95)] keys: "Amazing Spider-Man v4 (2015)"
+   nearby: S897 "The Amazing Spider-Man by Wells and Romita Jr." 7f [title — S cv=149382 gcd=190094 (C-035 0.9)] keys: "Amazing Spider-Man by Wells & Romita Jr." | "Amazing Spider-Man by Zeb Wells"
+   nearby: S42165 "The Amazing Spider-Man Annual" 3f [title — S cv=2189 gcd=1635 (R-089 1.0)] keys: "The Amazing Spider-Man Annual"
+   nearby: S64135 "Amazing Spider-Man (2021)" 1f [title — S cv=150410 gcd=188477 (R-089 1.0)] keys: "Amazing Spider-Man (2021)"
+   nearby: S103519 "The Amazing Spider-Man '97 (1997)" 1f [title — S cv=60438 gcd=20854 (R-044 0.95)] keys: "The Amazing Spider-Man '97 (1997)"
+   nearby: S863 "Amazing Spider-Man: Worldwide" 10f [title+1 — S cv=89345 gcd=99294 (B-059 0.9)] keys: "Amazing Spider-Man - Worldwide"
+   nearby: S883 "Amazing Spider-Man Family" 8f [title+1 — S cv=22669 gcd=31600 (A-025 0.95)] keys: "Amazing Spider-Man Family"
+   nearby: S842 "Amazing Spider-Man: Beyond" 5f [title+1 — S cv=142077 gcd=180479 (A-025 0.9)] keys: "Amazing Spider-Man - Beyond" | "The Amazing Spider-Man Beyond"
+   nearby: S864 "Amazing Spider-Man 2099 Companion" 2f [title+1 — S cv=128891 gcd=176129 (B-059 0.95)] keys: "Amazing Spider-Man 2099 Companion" · (+6 more by title)
+   keys now: "Amazing Spider-man v6 (2022)" x165
+   groups (title x folder): 15
+   G1 "Amazing Spider-Man" in Marvel\#MARVEL CURRENT ONGOING TITLES\Amazing Spider-man v6 (2022) — 12 file(s), numbers 55-66, pp 24-60; cv per-file 2127x12; gcd per-file 172683x12; key 'Amazing Spider-man v6 (2022)'
+      e.g. Amazing Spider-Man 055 (2024) (Digital) (Shan-Empire).cbz
+        47126 #55 2024 26pp · 47127 #56 2024 60pp · 47128 #57 2024 29pp · 47129 #58 2024 24pp · 47130 #59 2024 27pp · 47131 #60 2024 56pp · 47132 #61 2025 27pp · 47133 #62 2025 25pp
+        47134 #63 2025 26pp · 47135 #64 2025 26pp · 47136 #65 2025 24pp · 47138 #66 2025 26pp
+   G2 "Amazing Spider-Man 065.Deaths (2025) (Digital) (Shan-Empire)" in Marvel\#MARVEL CURRENT ONGOING TITLES\Amazing Spider-man v6 (2022) — 1 file(s), numbers 65, pp 22-22; cv per-file 2127x1; gcd per-file 172683x1; key 'Amazing Spider-man v6 (2022)'
+      [47137] Amazing Spider-Man 065.Deaths (2025) (Digital) (Shan-Empire).cbz (22pp)
+   G3 "Amazing Spider-Man by Zeb Wells" in Marvel\#MARVEL CURRENT ONGOING TITLES\Amazing Spider-man v6 (2022) — 4 file(s), 4 COL, pp 138-175; cv per-file 150443x4; gcd per-file 200583x4; key 'Amazing Spider-man v6 (2022)'
+      [47146] COL Amazing Spider-Man by Zeb Wells Vol. 08 - Spider-Man's First Hunt (2024) (Digital) (Shan-Empire).cbz (159pp)
+         own record cv 150443 / gcd s200583 "Amazing Spider-Man by Zeb Wells" (issue 2611324) COLLECTS: gcd=184161 The Amazing Spider-Man (2022) (unnumbered)
+      [47147] COL Amazing Spider-Man by Zeb Wells Vol. 09 - Gang War (2024) (Digital) (Shan-Empire).cbz (175pp)
+         own record cv 150443 / gcd s200583 "Amazing Spider-Man by Zeb Wells" (issue 2632498) COLLECTS: gcd=184161 The Amazing Spider-Man (2022) (unnumbered) · gcd=206357 Amazing Spider-Man: Gang War First Strike (2024) #1
+      [47148] COL Amazing Spider-Man by Zeb Wells Vol. 10 - Breathe (2024) (Digital) (Shan-Empire).cbz (138pp)
+         own record cv 150443 / gcd s200583 "Amazing Spider-Man by Zeb Wells" (issue 2652204) COLLECTS: gcd=184161 The Amazing Spider-Man (2022) (unnumbered) · gcd=210101 Web of Spider-Man (2024) #1 · gcd=211747 Free Comic Book Day 2024: Ultimate Universe / Spider-Man (2024) (unnumbered)
+      [47149] COL Amazing Spider-Man by Zeb Wells Vol. 11 - Going Green (2024) (Digital) (Shan-Empire).cbz (157pp)
+         own record cv 150443 / gcd s200583 "Amazing Spider-Man by Zeb Wells" (issue 2679026) COLLECTS: gcd=184161 The Amazing Spider-Man (2022) (unnumbered)
+   G4 "Amazing Spider-Man Annual" in Marvel\#MARVEL CURRENT ONGOING TITLES\Amazing Spider-man v6 (2022)\Annuals and Specials — 1 file(s), numbers 1, pp 29-29; cv per-file 158693x1; gcd per-file 213441x1; key 'Amazing Spider-man v6 (2022)'
+      [47151] Amazing Spider-Man Annual 001 (2024) (Digital) (Shan-Empire).cbz (29pp)
+   G5 "Amazing Spider-Man" in Marvel\#MARVEL CURRENT ONGOING TITLES\Amazing Spider-man v6 (2022)\Variant Covers — 129 file(s), numbers 1-2, 6, 11-12, 23, 30-31, 34-35, 37-41, 45, 47, 49-66, pp 1-1; cv per-file 2127x122, 152139x7; gcd per-file 172683x112, 172199x6, 126774x1; key 'Amazing Spider-man v6 (2022)'
+      e.g. Amazing Spider-Man 001 (2022) (InHyuk Lee Variant) (Digital) (MikeNY76-Empire).cbz
+        47153 #1 2022 1pp · 47154 #1 2022 1pp · 47155 #1 2022 1pp · 47156 #1 2022 1pp · 47161 #2 2022 1pp · 47162 #6 2022 1pp · 47163 #6 2022 1pp · 47180 #49 2024 1pp · 47181 #49 2024 1pp
+        47182 #49 2024 1pp · 47183 #49 2024 1pp · 47184 #50 2024 1pp · 47185 #50 2024 1pp · 47186 #50 2024 1pp · 47187 #50 2024 1pp · 47188 #50 2024 1pp · 47189 #50 2024 1pp · 47190 #50 2024 1pp
+        47191 #51 2024 1pp · 47192 #51 2024 1pp · 47193 #51 2024 1pp · 47194 #51 2024 1pp · 47195 #51 2024 1pp · 47196 #51 2024 1pp · 47197 #51 2024 1pp · 47198 #51 2024 1pp · 47199 #51 2024 1pp
+        47200 #51 2024 1pp · 47201 #51 2024 1pp · 47202 #52 2024 1pp · 47203 #52 2024 1pp · 47204 #52 2024 1pp · 47205 #52 2024 1pp · 47206 #52 2024 1pp · 47207 #52 2024 1pp · 47208 #52 2024 1pp
+        47209 #52 2024 1pp · 47210 #52 2024 1pp · 47211 #52 2024 1pp · 47212 #52 2024 1pp · 47213 #52 2024 1pp · 47214 #53 2024 1pp · 47215 #53 2024 1pp · 47216 #53 2024 1pp · 47217 #53 2024 1pp
+        47218 #53 2024 1pp · 47219 #53 2024 1pp · 47220 #54 2024 1pp · 47221 #54 2024 1pp · 47222 #54 2024 1pp · 47223 #54 2024 1pp · 47224 #54 2024 1pp · 47225 #54 2024 1pp · 47226 #55 2024 1pp
+        47227 #55 2024 1pp · 47228 #55 2024 1pp · 47229 #55 2024 1pp · 47230 #56 2024 1pp · 47231 #56 2024 1pp · 47232 #56 2024 1pp · 47233 #56 2024 1pp · 47234 #56 2024 1pp · 47235 #57 2024 1pp
+        47236 #57 2024 1pp · 47237 #57 2024 1pp · 47238 #57 2024 1pp · 47239 #57 2024 1pp · 47240 #58 2024 1pp · 47241 #58 2024 1pp · 47242 #58 2024 1pp · 47243 #58 2024 1pp · 47244 #58 2024 1pp
+        47245 #59 2024 1pp · 47246 #59 2024 1pp · 47247 #59 2024 1pp · 47248 #59 2024 1pp · 47249 #60 2024 1pp · 47250 #60 2024 1pp · 47251 #60 2024 1pp · 47252 #60 2024 1pp · 47253 #60 2024 1pp
+        47254 #60 2024 1pp · 47255 #61 2024 1pp · 47256 #61 2024 1pp · 47257 #61 2024 1pp · 47258 #61 2024 1pp · 47259 #61 2024 1pp · 47260 #61 2024 1pp · 47261 #61 2025 1pp · 47262 #61 2025 1pp
+        47263 #62 2024 1pp · 47264 #62 2024 1pp · 47265 #62 2024 1pp · 47266 #62 2024 1pp · 47267 #62 2024 1pp · 47268 #63 2024 1pp · 47269 #63 2024 1pp · 47270 #63 2024 1pp · 47271 #63 2024 1pp
+        47272 #63 2024 1pp · 47273 #64 2024 1pp · 47274 #64 2024 1pp · 47275 #64 2024 1pp · 47276 #64 2024 1pp · 47277 #65 2025 1pp · 47278 #65 2025 1pp · 47279 #65 2025 1pp · 47280 #65 2025 1pp
+        47281 #65 2025 1pp · 47282 #65 2025 1pp · 47283 #66 2025 1pp · 47284 #66 2025 1pp · 47285 #66 2025 1pp
+      [47164] Amazing Spider-Man 011 (2019) Giuseppe Camuncoli Conan vs. Marvel Heroes Variant (PeteThePIPster-Novus).cbz (1pp)
+      [47165] Amazing Spider-Man 012 (2019) Mark Bagley Conan vs. Marvel Heroes Variant (PeteThePIPster-Novus).cbz (1pp)
+      [47166] Amazing Spider-Man 023 (2023) Chris Bachalo Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47167] Amazing Spider-Man 030 (2023) Mike Vosburg Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47168] Amazing Spider-Man 031 (2023) Jim Cheung Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47169] Amazing Spider-Man 034 (2023) Dave Johnson Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47170] Amazing Spider-Man 035 (2023) Tony Daniel Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47171] Amazing Spider-Man 037 (2023) Arthur Adams Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47172] Amazing Spider-Man 038 (2023) Dike Ruan Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47173] Amazing Spider-Man 038 (2023) Steve Skroce Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47174] Amazing Spider-Man 039 (2023) Lee Garbett Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47175] Amazing Spider-Man 040 (2023) Joey Vazquez Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47176] Amazing Spider-Man 041 (2024) Lorenzo Pastrovicchio Disney What If Black And White Vari Ant (2024) (Digital) (MikeNY76).cbz (1pp)
+      [47177] Amazing Spider-Man 045 (2024) Vitale Mangiatordi Disney What If Black And White Varian T (Digital) (MikeNY76).cbz (1pp)
+      [47178] Amazing Spider-Man 045 (2024) Vitale Mangiatordi Disney What If Variant (Digital) (MikeNY76).cbz (1pp)
+      [47179] Amazing Spider-Man 047 (2024) Greg Land Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+   G6 "Amazing Spider-Man 001 Adam Hughes ComicSketchArt Variant A (2018)(cover only)(Digital)(PeteThePIPster-Novus)" in Marvel\#MARVEL CURRENT ONGOING TITLES\Amazing Spider-man v6 (2022)\Variant Covers — 1 file(s), numbers 1, pp 1-1; cv per-file 110451x1; key 'Amazing Spider-man v6 (2022)'
+      [47157] Amazing Spider-Man 001 Adam Hughes ComicSketchArt Variant A (2018)(cover only)(Digital)(PeteThePIPster-Novus).cbz (1pp)
+   G7 "Amazing Spider-Man 001 Adam Hughes ComicSketchArt Variant B (2018)(cover only)(Digital)(PeteThePIPster-Novus)" in Marvel\#MARVEL CURRENT ONGOING TITLES\Amazing Spider-man v6 (2022)\Variant Covers — 1 file(s), numbers 1, pp 1-1; cv per-file 110451x1; key 'Amazing Spider-man v6 (2022)'
+      [47158] Amazing Spider-Man 001 Adam Hughes ComicSketchArt Variant B (2018)(cover only)(Digital)(PeteThePIPster-Novus).cbz (1pp)
+   G8 "Amazing Spider-Man 001 Adam Hughes ComicSketchArt Variant C (2018)(cover only)(Digital)(PeteThePIPster-Novus)" in Marvel\#MARVEL CURRENT ONGOING TITLES\Amazing Spider-man v6 (2022)\Variant Covers — 1 file(s), numbers 1, pp 1-1; cv per-file 110451x1; key 'Amazing Spider-man v6 (2022)'
+      [47159] Amazing Spider-Man 001 Adam Hughes ComicSketchArt Variant C (2018)(cover only)(Digital)(PeteThePIPster-Novus).cbz (1pp)
+   G9 "Amazing Spider-Man 001 Adam Hughes ComicSketchArt Variant D (2018)(cover only)(Digital)(PeteThePIPster-Novus)" in Marvel\#MARVEL CURRENT ONGOING TITLES\Amazing Spider-man v6 (2022)\Variant Covers — 1 file(s), numbers 1, pp 1-1; cv per-file 110451x1; key 'Amazing Spider-man v6 (2022)'
+      [47160] Amazing Spider-Man 001 Adam Hughes ComicSketchArt Variant D (2018)(cover only)(Digital)(PeteThePIPster-Novus).cbz (1pp)
+   G10 "Amazing Spider-Man Annual" in Marvel\#MARVEL CURRENT ONGOING TITLES\Amazing Spider-man v6 (2022)\Variant Covers — 3 file(s), numbers 1, pp 1-1; cv per-file 2127x3; gcd per-file 230346x3; key 'Amazing Spider-man v6 (2022)'
+      [47286] Amazing Spider-Man Annual 001 (2024) (Mike Mckone Infinity Watch Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47287] Amazing Spider-Man Annual 001 (2024) (R.B. Silva Design Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47288] Amazing Spider-Man Annual 001 (2024) (Ron Lim Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   G11 "Amazing Spider-Man Annual" in Marvel\#MARVEL CURRENT ONGOING TITLES\The Infinity Watch v1 (2024) — 1 file(s), numbers 1, pp 29-29; cv per-file 158693x1; gcd per-file 213441x1; key 'Amazing Spider-man v6 (2022)'
+      [48606] 02 Amazing Spider-Man Annual 001 (2024) (Digital) (Shan-Empire).cbz (29pp)
+   G12 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2022.07 - A.X.E. - Judgement Day\02 Tie-ins — 1 file(s), numbers 10, pp 26-26; cv per-file 152139x1; gcd per-file 172683x1; key 'Amazing Spider-man v6 (2022)'
+      [118574] Amazing Spider-Man 010 (2022) (Digital) (Zone-Empire).cbr (26pp)
+   G13 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2022.12 - Spider-Man Dark Web\Spinning Into Dark Web — 1 file(s), numbers 14, pp 35-35; cv per-file 2127x1; gcd per-file 172683x1; key 'Amazing Spider-man v6 (2022)'
+      [118594] Amazing Spider-Man 014 (2023) (Digital) (Zone-Empire).cbr (35pp)
+   G14 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2023.11 - Gang War\01 Gang War - First Strike — 2 file(s), numbers 37-38, pp 25-25; cv per-file 2127x2; gcd per-file 172683x2; key 'Amazing Spider-man v6 (2022)'
+      [118597] 01 Amazing Spider-Man 037 (2024) (Digital-HD) (Shan-Empire).cbz (25pp)
+      [118598] 02 Amazing Spider-Man 038 (2024) (Digital-HD) (Shan-Empire).cbz (25pp)
+   G15 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2023.11 - Gang War\02 Gang War — 6 file(s), numbers 39-44, pp 23-36; cv per-file 2127x6; gcd per-file 172683x6; key 'Amazing Spider-man v6 (2022)'
+      e.g. 01 Amazing Spider-Man 039 (2024) (Digital) (Shan-Empire).cbz
+        118603 #39 2024 36pp · 118607 #40 2024 25pp · 118612 #41 2024 23pp · 118615 #42 2024 23pp · 118620 #43 2024 23pp · 118625 #44 2024 27pp
+
+== S95229 Avengers  [split]  66 files / 3 collections  decided in R-132 (S)
+   decided: S 95229 cv=150431 gcd=200634 0.9 | the 2023 Jed MacKay ongoing: CV 150431 "Avengers" (Marvel 2023, 34) and GCD 200634 (Marvel 2023-2026, 36) agree on publisher and start year; our issue files #17-23, 1pp variants of #1-22 and "Avengers by Jed Mackay Vol. 01-03" (GCD 207599 rows rolling up 200634) sit inside both; 0.9 for the Annuals (2023 Zone rip + 2024 with five variants) and one 2018-run cover (split below). The older line's needs-web is answered by `lookup.py "Avengers" --year 2023`
+   F 95229 split-needed | item 47342 "Avengers 011 (2018) (Conan vs. Marvel Heroes variant ONLY)" 1pp is a cover of the 2018 Jason Aaron run -> join S1649, which stores cv=110496 ("Avengers v8 (2018)")
+   named: S1649 Avengers  14 files  keys: "Avengers by Jason Aaron" | "Avengers v8 (2018)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64185 "The Avengers" 517f [shares cv=2128 — S cv=2128 gcd=1571 (C-046 0.9)] keys: "Avengers" | "Avengers (1963)" | "Avengers v1 (1963)" | "The Avengers"
+   nearby: S20226 "Timeless" 2f [shares gcd=180073 (collected by item 47328) — S cv=140623 gcd=180073 (R-087 0.95)] keys: "Timeless (2021)"
+   nearby: S64189 "Avengers by Jed Mackay" 1f [shares cv=156019, shares gcd=207599 — S cv=156019 gcd=207599 (A-033 0.9)] keys: "Avengers (2024)"
+   nearby: S95221 "Avengers" 20f [title — S cv=95402 gcd=108745 (B-053 0.95)] keys: "Avengers v1 (2017)" | "Avengers v6 (2016)"
+   nearby: S95222 "Avengers" 13f [title — S cv=6742 gcd=7252 (C-041 0.95)] keys: "Avengers v2 (1996)" · S95223 "Avengers" 12f [title — S cv=7084 gcd=7636 (R-043 0.95)] keys: "Avengers v3 (1998)"
+   nearby: S64187 "Avengers" 7f [title — S cv=54428 gcd=70263 (R-057 0.95)] keys: "Avengers (2020)" | "Avengers v5 (2013)"
+   nearby: S1612 "The Avengers Annual" 1f [title — S cv=2350 gcd=1807 (C-054 0.9)] keys: "Avengers King Size Annual"
+   nearby: S12792 "New Avengers" 74f [title+1 — S cv=11497 gcd=12464 (C-046 0.9)] keys: "New Avengers" | "New Avengers - Letters Home" | "New Avengers - Transformers" | "New Avengers v1 (2005)"
+   nearby: S20672 "Uncanny Avengers" 55f [title+1 — S cv=52880 gcd=69005 (C-064 0.9)] keys: "Uncanny Avengers" | "Uncanny Avengers - Unity" | "Uncanny Avengers 008AU" | "Uncanny Avengers Annual" (+1 more: lookup.py --shelf 20672)
+   nearby: S12038 "The Mighty Avengers" 26f [title+1 — S cv=18239 gcd=22524 (R-047 0.95)] keys: "Mighty Avengers" | "The Mighty Avengers"
+   nearby: S95218 "Avengers Spotlight" 24f [title+1 — S cv=4218 gcd=3829 (B-053 0.95)] keys: "Avengers Spotlight" | "Avengers Spotlight v1 (1987)"
+   nearby: S1568 "Avengers Academy" 22f [title+1 — S cv=33633 gcd=49641 (C-064 0.9)] keys: "Avengers Academy" | "Avengers Academy: Arcade - Death Game" | "Avengers Academy: The Complete Collection"
+   nearby: S103713 "Mighty Avengers v2 (2013)" 22f [title+1 — S cv=67223 gcd=76468 (R-047 0.95)] keys: "Mighty Avengers v2 (2013)"
+   nearby: S15232 "Secret Avengers" 21f [title+1 — S cv=33350 gcd=49024 (C-046 0.9)] keys: "Fear Itself: Secret Avengers" | "Secret Avengers" | "Secret Avengers v1 (2010)" · (+45 more by title)
+   keys now: "Avengers v9 (2023)" x66
+   groups (title x folder): 5
+   G1 "Avengers" in Marvel\#MARVEL CURRENT ONGOING TITLES\Avengers v9 (2023) — 7 file(s), numbers 17-23, pp 23-28; cv per-file 2128x5, 168358x2; gcd per-file 208667x7; key 'Avengers v9 (2023)'
+      e.g. Avengers 017 (2024) (Digital) (Shan-Empire).cbz
+        47321 #17 2024 28pp · 47322 #18 2024 24pp · 47323 #19 2024 24pp · 47324 #20 2024 25pp · 47325 #21 2025 24pp · 47326 #22 2025 23pp · 47327 #23 2025 24pp
+   G2 "Avengers by Jed Mackay" in Marvel\#MARVEL CURRENT ONGOING TITLES\Avengers v9 (2023) — 3 file(s), 3 COL, pp 115-192; cv per-file 156019x3; gcd per-file 207599x3; key 'Avengers v9 (2023)'
+      [47328] COL Avengers by Jed Mackay Vol. 01 - The Impossible City (2024) (Digital) (Shan-Empire).cbz (192pp)
+         own record cv 156019 / gcd s207599 "Avengers by Jed MacKay" (issue 2599701) COLLECTS: gcd=200634 Avengers (2023) #1, #5 · gcd=180073 Timeless (2022) #1
+      [47329] COL Avengers by Jed Mackay Vol. 02 - Twilight Dreaming (2024) (Digital) (Shan-Empire).cbz (115pp)
+         own record cv 156019 / gcd s207599 "Avengers by Jed MacKay" (issue 2641188) COLLECTS: gcd=200634 Avengers (2023) (unnumbered)
+      [47330] COL Avengers by Jed Mackay Vol. 03 - Blood Hunt (2025) (Digital) (Shan-Empire).cbz (122pp)
+         own record cv 156019 / gcd s207599 "Avengers by Jed MacKay" (issue 2683717) COLLECTS: gcd=200634 Avengers (2023) (unnumbered)
+   G3 "Avengers Annual" in Marvel\#MARVEL CURRENT ONGOING TITLES\Avengers v9 (2023)\Annuals and Specials — 2 file(s), numbers 1, pp 27-28; cv per-file 2128x2; gcd per-file 200634x1, 208667x1; key 'Avengers v9 (2023)'
+      [47319] Avengers Annual 001 (2023) (Digital) (Zone-Empire).cbr (27pp)
+      [47320] Avengers Annual 001 (2024) (Digital) (Shan-Empire).cbz (28pp)
+   G4 "Avengers" in Marvel\#MARVEL CURRENT ONGOING TITLES\Avengers v9 (2023)\Variant Covers — 49 file(s), numbers 2, 5-11, 14-22, pp 1-1; cv per-file 2128x46, 168358x3; gcd per-file 208667x46, 200634x2, 136376x1; key 'Avengers v9 (2023)'
+      e.g. Avengers 005 (2023) (Ben Harvey Variant) (Digital) (MikeNY76-Empire).cbz
+        47333 #5 2023 1pp · 47336 #7 2023 1pp · 47338 #8 2023 1pp · 47340 #9 2024 1pp · 47341 #10 2024 1pp · 47342 #11 2018 1pp · 47343 #11 2024 1pp · 47344 #14 2024 1pp · 47345 #14 2024 1pp
+        47346 #14 2024 1pp · 47347 #14 2024 1pp · 47348 #15 2024 1pp · 47350 #15 2024 1pp · 47351 #15 2024 1pp · 47352 #15 2024 1pp · 47353 #15 2024 1pp · 47354 #16 2024 1pp · 47355 #16 2024 1pp
+        47356 #16 2024 1pp · 47357 #17 2024 1pp · 47358 #17 2024 1pp · 47359 #17 2024 1pp · 47360 #17 2024 1pp · 47361 #17 2024 1pp · 47362 #17 2024 1pp · 47363 #17 2024 1pp · 47364 #17 2024 1pp
+        47365 #18 2024 1pp · 47366 #18 2024 1pp · 47367 #18 2024 1pp · 47368 #18 2024 1pp · 47369 #18 2024 1pp · 47370 #19 2024 1pp · 47371 #19 2024 1pp · 47372 #20 2024 1pp · 47373 #20 2024 1pp
+        47374 #20 2024 1pp · 47375 #20 2024 1pp · 47376 #21 2024 1pp · 47377 #21 2024 1pp · 47378 #22 2025 1pp · 47379 #22 2025 1pp · 47380 #22 2025 1pp
+      [47331] Avengers 002 (2023) George Perez Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47332] Avengers 002 (2023) Paolo Rivera Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47334] Avengers 005 (2023) Ben Harvey Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47335] Avengers 006 (2023) Joshua Swaby Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47337] Avengers 007 (2023) Cory Smith Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47339] Avengers 008 (2023) Insignia Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+   G5 "Avengers Annual" in Marvel\#MARVEL CURRENT ONGOING TITLES\Avengers v9 (2023)\Variant Covers — 5 file(s), numbers 1, pp 1-1; cv per-file 2128x5; gcd per-file 208667x5; key 'Avengers v9 (2023)'
+      e.g. Avengers Annual 001 (2024) (Mike McKone Infinity Watch Variant) (Digital) (MikeNY76-Empire).cbz
+        47381 #1 2024 1pp · 47382 #1 2024 1pp · 47383 #1 2024 1pp · 47384 #1 2024 1pp · 47385 #1 2024 1pp
+
+== S96257 Daredevil  [split]  60 files / 2 collections  decided in R-132 (S)
+   decided: S 96257 cv=153465 gcd=204057 0.9 | the Saladin Ahmed run: CV 153465 "Daredevil" (Marvel 2023, 25) and GCD 204057 (Marvel 2023-2025, 25, #1 2023-09-13) agree on publisher, start year and count; our issue files #11-17, 1pp variants of #1-17 dated 2023-2025 and "Daredevil Vol. 01-02" (GCD 211328 "Daredevil by Saladin Ahmed") sit in it; the stored GCD 207588 is Panini France's edition; 0.9 because sixteen covers belong to the 2022 Zdarsky run (split below)
+   F 96257 split-needed | items 47531, 47532, 47533, 47535, 47536, 47538, 47539, 47541, 47543, 47546 (Daredevil #1-6 dated 2022) and 47551, 47556, 47560, 47563, 47568, 47571 (#9-14 dated 2023 — the 2022 run's #9-14 ran 2023-03 … 08, the 2023 run's #9-14 ran 2024) are 1pp covers of Daredevil (2022), CV 144027 / GCD 187163 -> join S64503, which stores cv=144027
+   named: S64503 Daredevil  3 files  keys: "Daredevil (2022)" | "Daredevil v7 (2022)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64501 "Daredevil" 433f [shares cv=2190 — S cv=2190 gcd=1636 (C-046 0.9)] keys: "Daredevil (1964)" | "Daredevil -1" | "Daredevil v1 (1964)"
+   nearby: S7520 "Giant-Size Daredevil" 5f [shares gcd=212972 (collected by item 47530) — S cv=158450 gcd=212972 (C-036 0.95)] keys: "Giant-Size Daredevil"
+   nearby: S96254 "Daredevil" 44f [title — S cv=6209 gcd=6026 (C-043 0.9)] keys: "Daredevil - Shadowland" | "Daredevil v2 (1998)" · S4784 "Daredevil" 14f [title — S gcd=6026 (C-064 0.9)] keys: "Daredevil"
+   nearby: S64504 "Daredevil" 12f [title — S cv=116964 gcd=139716 (R-024 0.9)] keys: "Daredevil (2023)" | "Daredevil by Chip Zdarsky" | "Daredevil v6 (2019)"
+   nearby: S4843 "Daredevil" 8f [title — S cv=86343 gcd=94624 (A-023 0.95)] keys: "Daredevil: Back In Black" | "Daredevil: Back in Black"
+   nearby: S64502 "Daredevil" 6f [title — S cv=72417 gcd=79658 (C-043 0.9)] keys: "Daredevil (2014)" | "Daredevil by Mark Waid and Chris Samnee"
+   nearby: S4821 "Daredevil Noir" 4f [title+1 — S cv=26164 gcd=35697 (A-023 0.95)] keys: "Daredevil Noir" · S4846 "Daredevil: Ninja" 3f [title+1 — S cv=9540 gcd=10343 (A-023 0.95)] keys: "Daredevil: Ninja"
+   nearby: S4787 "Daredevil & Echo" 1f [title+1 — S cv=150603 gcd=200813 (B-055 0.95)] keys: "Daredevil & Echo" · S4793 "Daredevil: Father" 1f [title+1 — S cv=21096 gcd=11904 (B-055 0.95)] keys: "Daredevil - Father"
+   nearby: S4799 "Daredevil: Redemption" 1f [title+1 — S cv=12001 gcd=13026 (B-055 0.95)] keys: "Daredevil - Redemption"
+   nearby: S4805 "Daredevil: Yellow" 1f [title+1 — S cv=7513 gcd=8113 (B-055 0.95)] keys: "Daredevil - Yellow"
+   nearby: S4817 "Daredevil Legends" 1f [title+1 — S cv=21190 gcd=31870 (A-023 0.9)] keys: "Daredevil Legends: Typhoid Mary" · (+1 more by title)
+   keys now: "Daredevil v8 (2023)" x60
+   groups (title x folder): 2
+   G1 "Daredevil" in Marvel\#MARVEL CURRENT ONGOING TITLES\Daredevil v8 (2023) — 9 file(s), 2 COL, numbers 11-17, pp 23-184; cv per-file 153465x4, 2190x3, 157723x2; gcd per-file 211328x2; key 'Daredevil v8 (2023)'
+      e.g. Daredevil 011 (2024) (Digital) (Shan-Empire).cbz
+        47522 #11 2024 24pp · 47523 #12 2024 27pp · 47524 #13 2024 23pp · 47525 #14 2024 23pp · 47526 #15 2025 24pp · 47527 #16 2025 23pp · 47528 #17 2025 25pp
+      [47529] COL Daredevil Vol. 01 - Hell Breaks Loose (2024) (Digital) (Shan-Empire).cbz (136pp)
+         own record cv 157723 / gcd s211328 "Daredevil by Saladin Ahmed" (issue 2625175) COLLECTS: gcd=204057 Daredevil (2023) (unnumbered)
+      [47530] COL Daredevil Vol. 02 - Hell To Pay (2024) (Digital) (Shan-Empire).cbz (184pp)
+         own record cv 157723 / gcd s211328 "Daredevil by Saladin Ahmed" (issue 2655838) COLLECTS: gcd=204057 Daredevil (2023) (unnumbered) · gcd=212972 Giant-Size Daredevil (2024) #1
+   G2 "Daredevil" in Marvel\#MARVEL CURRENT ONGOING TITLES\Daredevil v8 (2023)\Variant Covers — 51 file(s), numbers 1-17, pp 1-1; cv per-file 153465x29, 2190x22; gcd per-file 207588x10, 186522x3, 220168x2; key 'Daredevil v8 (2023)'
+      e.g. Daredevil 001 (2022) (Dan Panosian Variant) (Digital) (MikeNY76-Empire).cbz
+        47531 #1 2022 1pp · 47532 #1 2022 1pp · 47533 #1 2022 1pp · 47534 #1 2023 1pp · 47535 #2 2022 1pp · 47536 #2 2022 1pp · 47537 #2 2023 1pp · 47538 #3 2022 1pp · 47539 #3 2022 1pp
+        47540 #3 2023 1pp · 47541 #4 2022 1pp · 47542 #4 2023 1pp · 47544 #5 2024 1pp · 47545 #5 2024 1pp · 47546 #6 2022 1pp · 47547 #7 2024 1pp · 47548 #7 2024 1pp · 47549 #8 2024 1pp
+        47550 #8 2024 1pp · 47551 #9 2023 1pp · 47552 #9 2024 1pp · 47553 #9 2024 1pp · 47554 #9 2024 1pp · 47555 #9 2024 1pp · 47556 #10 2023 1pp · 47557 #10 2024 1pp · 47558 #10 2024 1pp
+        47559 #10 2024 1pp · 47560 #11 2023 1pp · 47561 #11 2024 1pp · 47562 #11 2024 1pp · 47563 #12 2023 1pp · 47564 #12 2024 1pp · 47565 #12 2024 1pp · 47566 #12 2024 1pp · 47567 #12 2024 1pp
+        47568 #13 2023 1pp · 47569 #13 2024 1pp · 47570 #13 2024 1pp · 47572 #14 2024 1pp · 47573 #14 2024 1pp · 47574 #15 2024 1pp · 47575 #15 2024 1pp · 47576 #15 2024 1pp · 47577 #16 2024 1pp
+        47578 #16 2024 1pp · 47579 #16 2024 1pp · 47580 #17 2025 1pp · 47581 #17 2025 1pp
+      [47543] Daredevil 005 (2022) Checchetto Design Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [47571] Daredevil 014 (2023) Leinil Yu Variant (Digital) (MikeNY76-Empire).cbz (1pp)

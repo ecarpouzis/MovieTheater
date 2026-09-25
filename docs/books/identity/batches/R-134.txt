@@ -1,0 +1,1096 @@
+## Conventions for this batch (25 shown of 136 matched; 386 in LEDGER.md; 30 shelf/shelves: pub:marvel ×30 · folder:vn-year ×18 · kind:new ×15 · kind:digital ×11 · folder:variant-covers ×10 · kind:collected-line ×7 · folder:sequel-subfolder ×6 · kind:foreign ×6)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (30 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (30 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (30 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-136] (21 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-306] (20 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-060] (18 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (18 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-127] (15 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-345] (14 shelf/shelves) pub:marvel sig:probe
+- Marvel on GCD (R-069): "&" for "and" (Infinity Gauntlet, Gods & Gladiators, Rise & Fall); runs filed under an imprint
+  or shortened name ("Punisher MAX: …", "Ant-Man and Wasp Prelude", "Spider-Man: Spider's Shadow") — a trade's
+  `--collects` roll-up names the run's GCD id fastest; a special's name carries its cover year ("Punisher: X-Mas Special
+  2006"). Masterworks lines HAVE a CV line volume with "Volume N" issues (23402 ASM, 35197 FF, 35188 Sub-Mariner, 59106
+  ToS, 23450 TtA) → the line is the S (it spans several titles), one I per book; GCD keeps separate series for second
+  printings (FF 61146, ASM 52975) — match by year. Digital-first runs (Daughters of the Dragon 2018, Back to Basics,
+  Long Live the King, Purple Daughter) have no GCD series: provider-missing is right.
+[L-371] (14 shelf/shelves) pub:marvel sig:split
+- A split F line's "new key" can already be a LIVE shelf's key (a trade-only shelf of the same run, e.g. Superboy v6
+  (2011) = S100132's key) — check `nearby:` / `lookup.py --shelf` and write it as an explicit join. Stored GCD rows on
+  Marvel 2022+ trades can be the PANINI FRANCE edition — `--collects` on the English row confirms the right one.
+  Digital rips of Marvel trades run ~88-92% of GCD's printed page count — a usable per-book fit when the filename year is
+  the digital release date (R-111).
+[L-133] (13 shelf/shelves) pub:marvel sig:probe
+- GCD splits a compound word ComicVine joins: "X-Men: Clan Destine" (5570) is invisible to a "ClanDestine" probe,
+  and 32535 "ClanDestine vs. The X-Men" is the collected edition, not the mini.
+[L-343] (13 shelf/shelves) pub:dark-horse pub:idw pub:marvel sig:probe
+- More GCD name shapes (R-067): Dark Horse High Republic Adventures inserts "(Phase III)" and uses a comma form
+  ("…Adventures, The Nameless Terror"); IDW / Disney / Marvel Illustrated drop a leading "The" or "A Graphic Novel";
+  Marvel's Dark Tower strips punctuation ("Drawing of Three"). GCD indexes NO Marvel Infinity Comics (gcd=- stands).
+  An Image-style deluxe / "Complete" edition of ONE run merges into the run shelf (Department of Truth).
+[L-124] (18 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-191] (18 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-272] (18 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-281] (18 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-319] (12 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-357] (12 shelf/shelves) pub:image pub:marvel sig:probe
+- Marvel (R-086): CV mints one volume per creator "Book" line (Ms. Marvel Book 1-5 = CV 83966 / GCD 91839); "Trial of
+  Venom" = Spider-Man Special Edition #1; Deadpool #900 is Deadpool Team-Up #900 on GCD (40644) though CV puts it in
+  Deadpool 2008; Osborn Journal is filed under a bracketed alternate title. Image / Millarworld: CV 65439 "American
+  Jesus" and 85113 "Jupiter's Circle" are the trade LINES (issues named "Book One/Two"), not the minis — their conflated
+  flags are stale (L-318); Dark Horse's 2024 Millarworld reissues are a NEW GCD line beside the Image originals (Magic
+  Order 213614) — match by the file's year. A packet's "years a-b" can come from per-file stamps (read filenames). In a
+  `lookup.py --batch` file a multi-word name must be QUOTED or only its first word is probed.
+[L-035] (11 shelf/shelves) kind:digital pub:marvel sig:probe
+- Marvel Digital Comics Unlimited exclusives (8–12pp `(MDCE)` webrips, Infinite Comics 56–104pp): ComicVine
+  indexes them, GCD does not → `gcd=-` + `F provider-missing`; the page count is the identifier.
+[L-110] (11 shelf/shelves) kind:digital pub:marvel sig:probe
+- Marvel Infinity Comics are a TOTAL GCD hole (~115 shelves): ComicVine indexes every serial as its own volume,
+  GCD indexes none, and every GCD hit is the PRINT comic of a similar name, years off. `gcd=-` +
+  `provider-missing` at 0.9 is the honest shape; probing harder buys nothing.
+[L-122] (11 shelf/shelves) kind:digital pub:marvel sig:probe
+- Marvel "Saga" primers (7-11pp) and "Update '89" (filed by both providers as plain "The Official Handbook of the
+  Marvel Universe" 1989) are GCD holes like the Infinite Comics.
+[L-130] (11 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-141] (11 shelf/shelves) kind:digital pub:marvel sig:legacy-stamp sig:probe
+- Marvel Infinite Comics / Digital Comics Unlimited / Legacy Primer Pages / Marvel Universe cartoon serials are a complete
+  GCD hole (14 shelves took `gcd=-`); GCD's only hits are the PRINT repackaging at a different count.
+[L-298] (11 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (11 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+
++111 more matched entries not shown: L-028, L-030, L-036, L-151, L-160, L-173, L-174, L-242, L-324, L-193, L-296, L-058, L-283, L-291, L-014, L-031, L-076, L-109, L-115, L-117, L-132, L-196, L-295, L-307, L-308, L-327, L-328, L-329, L-332, L-027, L-034, L-169, L-265, L-379, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-016, L-032, L-113, L-114, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-097, L-175, L-252, L-274, L-288, L-290, L-293, L-316, L-352, L-354, L-064, L-085, L-101, L-310, L-123, L-194, L-330, L-029, L-065, L-099, L-262, L-119, L-128, L-181, L-297, L-331, L-336, L-150, L-171, L-172 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S21029 Venom  [tier B]   keys: Venom by Al Ewing & Ram V  years 2021-2023  4 files / 4 collections
+   folders: [4] Marvel\#MARVEL CURRENT ONGOING TITLES\Venom v5 (2022)
+   files:   [48929] COL Venom by Al Ewing & Ram V Vol. 01 - Recursion (2022) (Digital) (Kileko-Empire).cbz (134pp)
+            [48930] COL Venom by Al Ewing & Ram V Vol. 02 - Deviation (2022) (Digital) (Kileko-Empire).cbz (109pp)
+            [48931] COL Venom by Al Ewing Vol. 03 - Dark Web (2023) (Digital) (Shan-Empire).cbz (138pp) | [48932] COL Venom by Al Ewing Vol. 04 - Illumination (2023) (Digital-Empire).cbr (102pp)
+   ours:    judged item 48929 #1-5 conf 0.8; judged item 48930 #6-10 conf 0.85; judged item 48931 #11-15 conf 0.7; judged item 48932 #16-20 conf 0.8; ComicInfo Series: "Venom by Al Ewing & Ram V"x4; ComicInfo Publisher: "Marvel"x4
+   CV linked:      vol 140084 "Venom" 2021 Marvel 39 issues; cached #1-39 (39); yearΔ 0; ratio 0/39; 4 of 4 judged fit
+   CV per-file (v1): vol 147779 "Venom by Al Ewing & Ram V" 2022 Marvel 4 on 4/4 files
+   CV candidates:  (= linked) · 147358 "X-Men Red by Al Ewing" 2022 Marvel 4 s69 · 139162 "S.W.O.R.D. By Al Ewing" 2021 Marvel 2 s65 · 137624 "Ultimates By Al Ewing: The Complete Collection" 2021 Marvel 1 issue 871799 s51 · 131208 "Guardians of the Galaxy by Al Ewing: Then It's Us" 2020 Marvel 1 issue 810761 s48 · 143982 "Guardians of the Galaxy by Al Ewing: We're Super Heroes" 2021 Marvel 1 issue 935174 s48 · 156678 "Venom by Al Ewing" 2024 Marvel 4 s45   (v1 search)
+   CV local rip:   (= linked) · 159985 "Venom" 2022 Panini Brasil 3 · 141958 "Venom" 2019 Panini Verlag 8 · 159984 "Venom" 2019 Panini Brasil 20 · 110770 "Venom" 2018 Marvel 35 · 112780 "Venom" 2018 Panini Verlag 2   (rip lookup)
+   GCD dump:       177713 "Venom" 2021-2025 Marvel [] 39 · 219827 "Venom" [fr] 2021-2021 Panini France [] 1 · 194330 "Venom" [fr] 2022-2024 Panini France [] 6 · 196382 "Venom" [pt-br] 2022-? Panini Brasil [] 6 · 220893 "Venom" [en-gb] 2022-? Panini UK [] 2 · 225778 "Venom" [es-mx] 2020-2020 Editorial Televisa [] 1   (dump lookup)
+
+== S20988 Venom  [tier C] · 7 named, the minority on >= 2 files or >= 10%  keys: Venom  years 2017-2024  92 files / 14 collections
+   flags: #673 overlap-in-series [Dismissed] item 97321 — several Venom ladders each contribute a Vol. 01 numbered from #1
+   folders: [55] Marvel\#MARVEL CURRENT ONGOING TITLES\Venom v5 (2022)\Variant Covers · [8] Marvel\#MARVEL CURRENT ONGOING TITLES\Venom v5 (2022) · [8] Marvel\_Venom\28 Venom v3-v1 (2017) · [7] Marvel\_Venom\_Venom Epic Collections · [4] _Marvel Major Event Chronology (digital)\2020.11 - King in Black\02 Tie-ins\Venom · [2] _Marvel Major Event Chronology (digital)\2017.06 - Venomverse-Venomized\03 Poison-X · [2] _Marvel Major Event Chronology (digital)\2024.05 - Blood Hunt\02 Tie-ins · [2] _Marvel Major Event Chronology (digital)\2024.05 - Blood Hunt\Variant Covers · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\Venom v5 (2022)\Annuals and Specials · [1] Marvel\_Venom\28 Venom v3-v1 (2017)\Variant Covers · [1] Marvel\__Skottie Young Covers · [1] _Marvel Major Event Chronology (digital)\2022.12 - Spider-Man Dark Web\Spinning Into Dark Web
+   files:   [49970] Venom Annual 001 (2023) (Digital) (Zone-Empire).cbr (29pp) | [48867] Venom 001 (2021) (Black Blank Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48868] Venom 001 (2021) (Chris Bachalo Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48869] Venom 001 (2021) (InHyuk Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48870] Venom 001 (2021) (John Romita Jr. Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48871] Venom 001 (2021) (Peach Momoko Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48872] Venom 002 (2021) (1-in-25 Yu Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48873] Venom 002 (2021) (McGuinness Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48874] Venom 003 (2021) (1-in-25 Meyers Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48875] Venom 005 (2022) (Walmart Hitch Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48876] Venom 006 (2022) (Bagley Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48877] Venom 006 (2022) (Simmonds Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48878] Venom 007 (2022) (Magno Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48879] Venom 008 (2022) (1-in-25 Segovia Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48880] Venom 009 (2022) (Hotz Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48881] Venom 010 (2022) (Siqueira Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48882] Venom 011 (2022) (Dave Rapoza Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48883] Venom 012 (2022) (Stegman Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48884] Venom 013 (2022) (Hitch Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48885] Venom 015 (2023) (Klein Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48886] Venom 017 (2023) (Panosian Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48887] Venom 017 (2023) Panosian Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48888] Venom 018 (2023) (Medina Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48889] Venom 019 (2023) Philip Tan Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48890] Venom 022 (2023) (Vosburg Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48891] Venom 023 (2023) (Insignia Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48892] Venom 023 (2023) Jim Cheung Variant (Digital) (MikeNY76-Empire).cbz (1pp) | [48893] Venom 023 (2023) Ryan Brown Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48894] Venom 027 (2023) (Lobos Variant B) (Digital) (MikeNY76-Empire).cbz (1pp) | [48895] Venom 027 (2024) (2nd Printing CAFU Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48896] Venom 030 (2024) (Philip Tan Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48897] Venom 031 (2024) Skan Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48898] Venom 032 (2021) (Stegman Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48899] Venom 032 (2024) (Rose Besch Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48900] Venom 033 (2021) (Mike Mayhew Studio Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48901] Venom 033 (2024) (Joshua Swaby Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48903] Venom 033 (2024) (Juan Ferreyra Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48904] Venom 034 (2024) (1-in-25 Mahmud Asrar Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48905] Venom 034 (2024) (1-in-50 Skottie Young's Big Marvels Black & White Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48906] Venom 034 (2024) (Mahmud Asrar Variant) (Digital) (MikeNY76).cbz (1pp) | [48907] Venom 034 (2024) (Skottie Young's Big Marvel Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48908] Venom 034 (2024) (Skottie Young's Big Marvel Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48910] Venom 034 (2024) (Skottie Young's Big Marvels Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48911] Venom 035 (2024) (Iban Coello Deadpool Kills The Marvel Universe Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48912] Venom 035 (2024) (Mico Suayan Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48913] Venom 036 (2024) (David Yardin Marvel 85Th Anniversary Homage Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48914] Venom 036 (2024) (John Giang Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48915] Venom 036 (2024) (Rickie Yagawa Disco Dazzler Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48916] Venom 037 (2024) (Dave Wachter Godzilla Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48917] Venom 037 (2024) (Lucas Werneck Stormbreakers Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48918] Venom 038 (2024) (Carlos Magno Doom Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48919] Venom 038 (2024) (Gabriele Dell'otto Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48920] Venom 038 (2024) (Gabriele Dell'otto Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48921] Venom 039 (2024) (Carlos Gomez Foreshadow Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48922] Venom 039 (2024) (Derrick Chew Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48923] Venom 039 (2024) (Justin Mason Marvel Two-In-One Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48924] Venom 035 (2024) (Digital) (Shan-Empire).cbz (24pp)
+            [48925] Venom 036 (2024) (Digital) (Shan-Empire).cbz (23pp) | [48926] Venom 037 (2024) (Digital) (Kileko-Empire).cbz (23pp) | [48927] Venom 038 (2024) (Digital) (Shan-Empire).cbz (24pp)
+            [48928] Venom 039 (2025) (Digital) (Shan-Empire).cbz (25pp) | [48933] COL Venom by Al Ewing Vol. 05 - Predestination (2024) (Digital) (Shan-Empire).cbz (131pp)
+            [48934] COL Venom by Al Ewing Vol. 06 - Infiltration (2024) (Digital) (Shan-Empire).cbz (109pp)
+            [48935] COL Venom by Al Ewing Vol. 07 - Exsanguination (2024) (Digital) (Shan-Empire).cbz (130pp) | [97986] Venom 151 (2017) (Mary Jane Variant Cover) (Ghosts-Novus-HD).cbz (1pp)
+            [97317] Venom 159 (2018) (Digital) (Zone-Empire).cbr (24pp) | [97318] Venom 160 (2018) (Digital) (Zone-Empire).cbr (24pp) | [97319] Venom 162 (2018) (Digital) (Zone-Empire).cbr (23pp)
+            [97320] Venom 163 (2018) (Digital) (Zone-Empire).cbr (23pp) | [97321] COL Venom Vol. 01 - Homecoming (2017) (Digital) (Kileko-Empire).cbr (144pp)
+            [97322] COL Venom Vol. 02 - Land Before Crime (2017) (Digital) (F) (Kileko-Empire).cbz (117pp)
+            [97323] COL Venom Vol. 03 - Lethal Protector - Blood In The Water (2018) (Digital) (Kileko-Empire).cbr (126pp)
+            [97324] COL Venom Vol. 04 - The Nativity (2018) (Digital) (Kileko-Empire).cbr (137pp) | [97405] COL Venom Epic Collection Vol. 01 - Symbiosis (2021) (Digital) (Asgard-Empire).cbz (461pp)
+            [97406] COL Venom Epic Collection Vol. 02 - Lethal Protector (2022) (Digital) (Kileko-Empire).cbz (466pp)
+            [97407] COL Venom Epic Collection Vol. 04 - The Madness (2023) (Digital-Empire).cbz (473pp)
+            [97408] COL Venom Epic Collection Vol. 05 - Carnage Unleashed (2022) (Digital) (Shan-Empire).cbz (472pp)
+            [97409] COL Venom Modern Era Epic Collection Vol. 04 - Agent Venom (2023) (Digital-Empire).cbr (487pp)
+            [97410] COL Venom Modern Era Epic Collection Vol. 05 - The Savage Six (2024) (Digital) (dekabro-Empire).cbz (507pp)
+            [97411] COL Venom Modern Era Epic Collection Vol. 06 - Space Knight (2024) (Digital) (dekabro-Empire).cbz (429pp)
+            [52036] Venom 150 (2017) (Skottie Young Variant Cover) (Ghosts-Novus-HD).cbz (1pp) | [118332] 03 Venom 162 (2018) (Digital) (Zone-Empire).cbr (23pp)
+            [118334] 05 Venom 163 (2018) (Digital) (Zone-Empire).cbr (23pp) | [118507] Venom 031 (2021) (Digital) (Zone-Empire).cbr (21pp)
+            [118508] Venom 032 (2021) (Digital) (Zone-Empire).cbr (25pp) | [118509] Venom 033 (2021) (Digital) (Zone-Empire).cbr (22pp) | [118510] Venom 034 (2021) (Digital) (Zone-Empire).cbr (21pp)
+            [118595] Venom 013 (2023) (Digital) (Zone-Empire).cbr (23pp) | [118650] Venom 033 (2024) (Digital) (Shan-Empire).cbz (22pp) | [118651] Venom 034 (2024) (Digital) (Shan-Empire).cbz (23pp)
+            [118765] Venom 034 (2024) (Mahmud Asrar Variant) (Digital) (MikeNY76).cbz (1pp) | [118766] Venom 034 (2024) (Skottie Young's Big Marvel Variant) (Digital) (MikeNY76).cbz (1pp)
+   ours:    ladder 1-3, 5-13, 15, 17-19, 22-23, 27, 30-39, 150-151, 159-160, 162-163; 18 number(s) name more than one file: 1, 2, 6, 13, 17, 23, 27, 31, 32, 33, 34, 35; judged item 48933 #22-25 conf 0.9; judged item 48934 #26-30 conf 0.98; judged item 97323 #154-158 conf 0.98; ComicInfo Series: "Venom"x6, "Venom "x1, "Venom Annual"x1, "Venom Epic Collection: Symbiosis"x1; ComicInfo Volume: "2018"x4, "2023"x1; ComicInfo Publisher: "Marvel"x12, "Marvel Entertainment, Inc."x1
+   GCD says: [97321] gcd_reprint 1713929: s109553 Venom (2017) #1-6 [23 stories]
+             [97322] gcd_reprint 935184: s56418 Venom (2011) #1 [1 story]  |  ⚠ stored GCD row is another book: our vol 2 vs GCD #1; our subtitle 'Land Before Crime' vs GCD title 'Netz des Todes' — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+   CV linked:      vol 126627 "Venom" 2018 Panini Comics 71 issues; cached #1-73 (71); yearΔ 1; ratio 78/71 = 1.10; 2 of 3 judged fit
+   CV per-file (v1): vol 126627 "Venom" 2018 Panini Comics 71 on 77/92 files · vol 159985 "Venom" 2022 Panini Brasil 3 on 1/92 files
+   CV candidates:  153578 "Venom Marvel Pocketbook " 2007 Marvel UK/Panini UK 1 issue 1014634 s84 · 79842 "Marvel MegaMorphs - Venom" 2005 Marvel 1 issue 478524 s83 · 56679 "Marvel Milestones: Venom & Hercules" 2005 Marvel 1 issue 384402 s81 · 131210 "Marvel-Verse: Venom" 2020 Marvel 1 issue 810763 s34 · 116506 "Marvel Tales: Venom" 2019 Marvel 1 issue 697641 s33 · 130790 "Venom: Rex Marvel Select" 2020 Marvel 1 issue 805299 s32   (v1 search)
+   CV local rip:   (= linked) · 95845 "Venom" 2016 Marvel 22 · 110770 "Venom" 2018 Marvel 35 · 112780 "Venom" 2018 Panini Verlag 2 · 141957 "Venom" 2018 Panini Verlag 4 · 159983 "Venom" 2018 Panini Brasil 4   (rip lookup)
+   GCD per-file:   series 196382 "Venom" [pt-br] 2022-? Panini Brasil [série contínua] 6 on 8/92 files · series 109553 "Venom" 2017-2018 Marvel [was ongoing series] 22 on 8/92 files · series 221536 "Venom" [hu] 2023-? Kingpin [jelenleg is futó sorozat] 7 on 7/92 files · series 194330 "Venom" [fr] 2022-2024 Panini France [série continue terminée [was ongoing series]] 6 on 6/92 files; methods numx31 · page-rematchx2
+   GCD dump:       (= per-file) · 172378 "Venom" [es-mx] 2017-2019 Editorial Televisa [] 19 · 124196 "Venom" 2018-2021 Marvel [] 35 · 164921 "Venom" [pt-br] 2018-2019 Panini Brasil [] 4   (dump lookup)
+   bridges:        gcd 196382 -> LOCG 136980 "Venomnibus by Cates & Stegman HC" support 8 · gcd 109553 -> LOCG 136980 "Venomnibus by Cates & Stegman HC" support 2 · gcd 221536 -> LOCG 136980 "Venomnibus by Cates & Stegman HC" support 8
+
+== S21439 West Coast Avengers  [tier C] · gap 40  keys: West Coast Avengers  years 1985-1986  21 files / 0 collections
+   folders: [15] Marvel\#MARVEL CURRENT ONGOING TITLES\West Coast Avengers v5 (2025)\Variant Covers · [3] Marvel\#MARVEL CURRENT ONGOING TITLES\West Coast Avengers v5 (2025) · [1] Marvel\_Avengers\West Coast Avengers (1984)\03 Avengers West Coast v1 (1989)\Annuals and Specials · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0078 Evolutionary war · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0093 Atlantis Attacks
+   files:   [49045] West Coast Avengers 001 (2024) (Adam Hughes Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49046] West Coast Avengers 001 (2024) (Artgerm Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49047] West Coast Avengers 001 (2024) (Artgerm Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49048] West Coast Avengers 001 (2024) (Danny Kim Design Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49049] West Coast Avengers 001 (2024) (Danny Kim Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49050] West Coast Avengers 001 (2024) (Gerardo Sandoval Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49051] West Coast Avengers 001 (2024) (Jeehyung Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49052] West Coast Avengers 001 (2024) (Jeehyung Lee Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49053] West Coast Avengers 001 (2024) (Joshua Cassara Gallery Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49054] West Coast Avengers 001 (2024) (Ron Lim Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49055] West Coast Avengers 001 (2024) (Sean Galloway Saturday Morning Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49056] West Coast Avengers 001 (2025) (Adam Hughes 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49057] West Coast Avengers 002 (2024) (Annie Wu Windowshades Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49058] West Coast Avengers 002 (2024) (Federico Vicentini Stormbreakers Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49059] West Coast Avengers 002 (2024) (Ron Lim Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49060] West Coast Avengers 001 (2025) (Digital) (Shan-Empire).cbz (31pp)
+            [49061] West Coast Avengers 002 (2025) (Digital) (Shan-Empire).cbz (23pp) | [49062] West Coast Avengers 003 (2025) (Digital) (Shan-Empire).cbz (24pp)
+            [53216] Avengers West Coast Annual 007 (1992) (digital) (Marika-Empire).cbz (57pp) | [87242] 009 West Coast Avengers Annual 003 (1988) (Digital) (Shadowcat-Empire).cbz (47pp)
+            [87357] 012 West Coast Avengers Annual 004 (1989) (Digital) (Shadowcat-Empire).cbz (31pp)
+   ours:    ladder 1-4, 7; 3 number(s) name more than one file: 1, 2, 3; ComicInfo Series: "West Coast Avengers Annual"x1; ComicInfo Volume: "1989"x1; ComicInfo Count: "7"x1; ComicInfo Publisher: "Marvel Comics"x1; ComicInfo Web: "35151"x1
+   CV linked:      vol 161322 "West Coast Avengers" 2025 Marvel 10 issues; cached #1-10 (10); yearΔ 40; ratio 21/10 = 2.10; no judged range
+   CV per-file (v1): vol 3521 "West Coast Avengers" 1985 Marvel 46 on 21/21 files
+   CV local rip:   (= linked) · 3372 "West Coast Avengers" 1984 Marvel 4 · 112977 "West Coast Avengers" 2018 Marvel 10 · 165818 "West Coast Avengers" 2025 Marvel 1 issue 1122569   (rip lookup)
+   GCD per-file:   series 218108 "West Coast Avengers" 2025-2025 Marvel [was ongoing series] 10 on 18/21 files; methods numx18
+   GCD dump:       (= per-file) · 3061 "West Coast Avengers" 1985-1989 Marvel [] 47 · 2900 "West Coast Avengers" 1984-1984 Marvel [] 4 · 127975 "West Coast Avengers" 2018-2019 Marvel [] 10 · 140641 "West Coast Avengers" 2019-2019 Marvel [] 2 · 226086 "West Coast Avengers" 2025-? Marvel [] 2   (dump lookup)
+   bridges:        gcd 218108 -> LOCG 178319 "West Coast Avengers" support 18
+
+== S21821 Wolverine: Revenge  [tier C] · ratio 4.40  keys: Wolverine - Revenge  years 2024-2025  22 files / 0 collections
+   folders: [18] Marvel\#MARVEL CURRENT ONGOING TITLES\Wolverine - Revenge v1(2024)\Variant Covers · [4] Marvel\#MARVEL CURRENT ONGOING TITLES\Wolverine - Revenge v1(2024)
+   files:   [49120] Wolverine - Revenge 001 (2024) (Adam Kubert 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49121] Wolverine - Revenge 001 (2024) (Artgerm Wolverine Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49122] Wolverine - Revenge 001 (2024) (Artgerm Wolverine Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49123] Wolverine - Revenge 001 (2024) (David Nakayama Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49124] Wolverine - Revenge 001 (2024) (John Giang Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49125] Wolverine - Revenge 001 (2024) (Mark Brooks Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49126] Wolverine - Revenge 001 (2024) (Movie Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49127] Wolverine - Revenge 001 (2024) (Pablo Villalobos Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49128] Wolverine - Revenge 001 (2024) (Pablo Villalobos Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49129] Wolverine - Revenge 001 (2024) (Sean Galloway Saturday Morning Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49130] Wolverine - Revenge 001 (2024) (Takashi Okazaki Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49131] Wolverine - Revenge 002 (2024) (Alessandro Cappuccio Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49132] Wolverine - Revenge 002 (2024) (Rose Besch Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49133] Wolverine - Revenge 002 (2024) (Rose Besch Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49134] Wolverine - Revenge 002 (2024) (Stephen Platt Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49135] Wolverine - Revenge 003 (2024) (Andrei Bressan Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49136] Wolverine - Revenge 003 (2024) (Marco Mastrazzo Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49137] Wolverine - Revenge 003 (2024) (Ryan Stegman Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49138] Wolverine - Revenge 001 (2024) (digital) (Marika-Empire).cbz (29pp)
+            [49139] Wolverine - Revenge 002 (2024) (digital) (Marika-Empire).cbz (26pp) | [49140] Wolverine - Revenge 003 (2024) (digital) (Marika-Empire).cbz (28pp)
+            [49141] Wolverine - Revenge 004 (2025) (digital) (Marika-Empire).cbz (28pp)
+   ours:    ladder 1-4; 3 number(s) name more than one file: 1, 2, 3; ComicInfo Series: "Wolverine: Revenge"x4; ComicInfo Volume: "2024"x4; ComicInfo Publisher: "Marvel"x2, "Marvel Comics"x1; ComicInfo Web: "1067253"x1, "1075691"x1, "1091219"x1
+   CV linked:      vol 159327 "Wolverine: Revenge" 2024 Marvel ? issues; cached #1-5 (5); yearΔ 0; ratio 22/? = 4.40; no judged range; v1 per-file: same volume on 22/22 files
+   CV local rip:   (= linked) · 165189 "Wolverine: Revenge" 2025 Marvel 1 issue 1117041   (rip lookup)
+   GCD per-file:   series 214629 "Wolverine: Revenge" 2024-2025 Marvel [limited series] 5 on 22/22 files; methods numx22
+   GCD dump:       (= per-file) · 225091 "Wolverine: Revenge" 2025-2025 Marvel [] 1   (dump lookup)
+   bridges:        gcd 214629 -> LOCG 176439 "Wolverine: Revenge" support 22
+
+== S11280 Marauders  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Marauders  years 2019-2022  32 files / 0 collections
+   folders: [27] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2019.10.23 - Marauders v1 · [3] _Marvel Major Event Chronology (digital)\2020.09 - X of Swords · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2019.10.23 - Marauders v1\Annuals and Specials · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2021.04.28 - Hellfire Gala
+   files:   [49974] Marauders Annual 001 (2022) (Digital) (Zone-Empire).cbr (35pp)
+            Marauders 001 (2019) (Digital) (Zone-Empire).cbr … Marauders 007 (2020) (Digital) (Zone-Empire).cbr  (7 files, pp 27-38)
+            [49222] Marauders 008 (2020) (Digital) (F) (Zone-Empire).cbr (27pp)
+            Marauders 009 (2020) (Digital) (Zone-Empire).cbr … Marauders 027 (2022) (Digital) (Zone-Empire).cbr  (19 files, pp 25-39)
+            [49593] 01 Marauders 021 (2021) (Digital) (Zone-Empire).cbr (37pp) | [118458] 05 Marauders 013 (2020) (Digital) (Zone-Empire).cbr (39pp)
+            [118466] 13 Marauders 014 (2021) (Digital) (Zone-Empire).cbr (26pp) | [118467] 14 Marauders 015 (2021) (Digital) (Zone-Empire).cbr (27pp)
+   ours:    ladder 1-27; 5 number(s) name more than one file: 1, 13, 14, 15, 21; ComicInfo Series: "Marauders"x31, "Marauders Annual (2022)"x1; ComicInfo Volume: "2019"x28; ComicInfo Publisher: "Marvel"x32
+   CV linked:      vol 122218 "Marauders" 2019 Marvel 27 issues; cached #1-27 (27); yearΔ 0; ratio 32/27 = 1.19; no judged range; v1 per-file: same volume on 32/32 files
+   CV local rip:   (= linked) · 143436 "Marauders" 2020 Panini Comics 19 · 142135 "Marauders" 2022 Marvel 12 · 149050 "Marauders" 2022 Panini Comics 1 issue 979418   (rip lookup)
+   GCD per-file:   methods numx31 · round2-seriesx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 151261 "Marauders" 2019-2022 Marvel [was ongoing series] 27 on 29/32 files · series 163150 "Marauders" [de] 2020-? Panini Deutschland [] 4 on 3/32 files
+   GCD dump:       (= per-file) · 183757 "Marauders" 2022-2023 Marvel [] 12 · 190419 "Marauders" [fr] 2022-? Panini France [] 1   (dump lookup)
+   bridges:        gcd 151261 -> LOCG 143654 "Marauders" support 40 · gcd 163150 -> LOCG 143654 "Marauders" support 3
+
+== S6432 Fallen Angels  [tier A]   keys: Fallen Angels (2019) | Fallen Angels by Bryan Hill  years 2019-2020  7 files / 1 collections
+   folders: [6] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2019.11.13 - Fallen Angels v2 · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\Fallen Angels v2 (2020)
+   files:   [47997] COL Fallen Angels by Bryan Hill Vol. 01 (2020) (Digital) (Kileko-Empire).cbz (176pp)
+            Fallen Angels 001 (2020) (Digital) (Zone-Empire).cbr … Fallen Angels 006 (2020) (Digital) (Zone-Empire).cbr  (6 files, pp 26-38)
+   ours:    ladder 1-6; judged item 47997 #1-6 conf 0.8; ComicInfo Series: "Fallen Angels"x6, "Fallen Angels by Bryan Hill"x1; ComicInfo Volume: "2019"x6; ComicInfo Publisher: "Marvel"x7
+   CV linked:      vol 122814 "Fallen Angels" 2019 Marvel 6 issues; cached #1-6 (6); yearΔ 0; ratio 6/6 = 1.00; 1 of 1 judged fit
+   CV per-file (v1): vol 122814 "Fallen Angels" 2019 Marvel 6 on 6/7 files · vol 129902 "Fallen Angels by Bryan Hill" 2020 Marvel 1 issue 796440 on 1/7 files
+   CV candidates:  (= linked) · 3842 "Fallen Angels" 1987 Marvel 8 s72 · 42928 "X-Men: Fallen Angels" 2011 Marvel 1 issue 293163 s65 · 125296 "Marvel Sampler February 2020" 2020 Marvel 1 issue 738594 s45 · 123767 "Marvel 2020 Calendar" 2019 Marvel 1 issue 731667 s42 · 120462 "By Man & Angels" 2019 self published 3 s37 · 72298 "The Fallen" 2014 MonkeyBrain Comics 4 s33   (v1 search)
+   CV local rip:   (= linked) · 3842 "Fallen Angels" 1987 Marvel 8   (rip lookup)
+   GCD per-file:   series 152549 "Fallen Angels" 2020-2020 Marvel [was ongoing series] 6 on 6/7 files; methods numx6
+   GCD dump:       (= per-file) · 3414 "Fallen Angels" 1987-1987 Marvel [] 8 · 168548 "Fallen Angels by Bryan Hill" 2020-2020 Marvel [] 1   (dump lookup)
+   bridges:        gcd 152549 -> LOCG 102852 "Fallen Angels" support 6
+
+== S21885 Wolverine  [tier C] · 103 files  keys: Wolverine (2020-) | Wolverine by Benjamin Percy | Wolverine v7 (2020)  years 1989-2024  103 files / 9 collections
+   flags: #539 label-ambiguous [Pending] item 97916 — the gcd row on Vol. 01 is a Sabretooth War book
+   folders: [50] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2020.02.19 - Wolverine v7 · [39] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2020.02.19 - Wolverine v7\Variant Covers · [9] Marvel\_Wolverine\17 Wolverine v7 (2020) (Krakoa) · [2] _Marvel Major Event Chronology (digital)\2020.09 - X of Swords · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2021.04.28 - Hellfire Gala · [1] Marvel\_Wolverine\17 Wolverine v7 (2020) (Krakoa)\Annuals and Specials · [1] _Marvel Major Event Chronology (digital)\2022.07 - A.X.E. - Judgement Day\02 Tie-ins
+   files:   [49406] Wolverine 001 (2020) (Alex Ross Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49407] Wolverine 001 (2020) (JeeHyung Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49408] Wolverine 001 (2020) (Mike Mayhew Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49413] Wolverine 003 (2020) (Mico Suayan Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49414] Wolverine 007 (2020) (Nowlan Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49419] Wolverine 010 (2021) (1-in-50 David Finch Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49422] Wolverine 017 (2021) (1-in-25 Tony S. Daniel Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49423] Wolverine 018 (2021) (1-in-25 Greg Land Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49424] Wolverine 018 (2021) (Alex Maleev Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49425] Wolverine 019 (2021) (1-in-25 Erik M. Gist Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49426] Wolverine 025 (2022) (Nakayama Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49427] Wolverine 025 (2022) (Zullo Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49428] Wolverine 026 (2022) (Kev Walker Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49429] Wolverine 027 (2022) (Asrar Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49430] Wolverine 028 (2022) (Zircher Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49431] Wolverine 035 (2023) John Giang Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49432] Wolverine 037 (2023) (2nd Printing 1-in-25 Greg Capullo Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49433] Wolverine 037 (2023) (Capullo Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49434] Wolverine 037 (2023) Joshua Swaby Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49435] Wolverine 040 (2023) Arthur Adams Variant (Digital) (MikeNY76-Empire).cbz (1pp) | [49436] Wolverine 041 (2024) (Greg Capullo Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49437] Wolverine 042 (2024) Arthur Adams Variant (Digital) (MikeNY76-Empire).cbz (1pp) | [49438] Wolverine 042 (2024) Leinil Yu Virgin Variant (2024) (Digital) (MikeNY76).cbz (1pp)
+            [49439] Wolverine 042 (2024) Martin Coccolo Stormbreakers Variant (2024) (Digital) (MikeNY76).cbz (1pp)
+            [49440] Wolverine 042 (2024) Scott Williams Sabretooth Variant (2024) (Digital) (MikeNY76).cbz (1pp)
+            [49441] Wolverine 043 (2024) Jan Bazaldua Variant (Digital) (MikeNY76-Empire).cbz (1pp) | [49442] Wolverine 049 (2024) (David Nakayama Black Costume Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49443] Wolverine 049 (2024) (E.M. Gist Sabretooth Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49444] Wolverine 049 (2024) (Leinil Yu Adamantium Armor Design Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49445] Wolverine 049 (2024) (Leinil Yu Virgin Variant) (Digital) (MikeNY76).cbz (1pp) | [49446] Wolverine 049 (2024) (Mahmud Asrar Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49447] Wolverine 050 (2024) (Frank Miller Variant) (Digital) (MikeNY76).cbz (1pp) | [49448] Wolverine 050 (2024) (Frank Miller Virgin Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49449] Wolverine 050 (2024) (Greg Land Sabretooth Variant) (Digital) (MikeNY76).cbz (1pp) | [49450] Wolverine 050 (2024) (Jonas Scharf Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49451] Wolverine 050 (2024) (Justin Mason Snikt Variant) (Digital) (MikeNY76).cbz (1pp) | [49452] Wolverine 050 (2024) (Leinil Yu Virgin Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49453] Wolverine 050 (2024) (Marco Checchetto Variant) (Digital) (MikeNY76).cbz (1pp) | [49454] Wolverine 050 (2024) (Ryan Stegman Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49455] Wolverine 001 (2020) (Digital) (F) (Zone-Empire).cbr (67pp)
+            Wolverine 002 (2020) (Digital) (Zone-Empire).cbr … Wolverine 037 (2023) (Digital) (Zone-Empire).cbr  (36 files, pp 21-35)
+            [49492] Wolverine 038 (2023) (Digital-HD) (Marika-Empire).cbz (26pp) | [49493] Wolverine 039 (2024) (Digital-HD) (Marika-Empire).cbz (26pp)
+            [49494] Wolverine 040 (2024) (digital) (Marika-Empire).cbz (26pp) | [49495] Wolverine 041 (2024) (digital) (Marika-Empire).cbz (26pp)
+            [49496] Wolverine 042 (2024) (digital) (Marika-Empire).cbz (25pp) | [49497] Wolverine 043 (2024) (digital) (F) (Marika-Empire).cbz (24pp)
+            [49498] Wolverine 044 (2024) (digital) (Marika-Empire).cbz (26pp) | [49499] Wolverine 045 (2024) (digital) (Marika-Empire).cbz (26pp)
+            [49500] Wolverine 046 (2024) (digital) (Marika-Empire).cbz (26pp) | [49501] Wolverine 047 (2024) (digital) (Marika-Empire).cbz (26pp)
+            [49502] Wolverine 048 (2024) (digital) (Marika-Empire).cbz (26pp) | [49503] Wolverine 049 (2024) (digital) (Marika-Empire).cbz (26pp)
+            [49504] Wolverine 050 (2024) (digital) (Marika-Empire).cbz (55pp) | [49602] 10 Wolverine 013 (2021) (Digital) (Zone-Empire).cbr (26pp)
+            [97914] Wolverine Annual 001 (2019) (Digital) (Zone-Empire).cbr (34pp) | [97916] COL Wolverine by Benjamin Percy Vol. 01 (2021) (Digital) (Kileko-Empire).cbz (171pp)
+            [97917] COL Wolverine by Benjamin Percy Vol. 02 (2021) (Digital) (Kileko-Empire).cbz (140pp) | [97918] COL Wolverine by Benjamin Percy Vol. 03 (2022) (Digital) (Kileko-Empire).cbz (157pp)
+            [97919] COL Wolverine by Benjamin Percy Vol. 04 (2022) (Digital) (Kileko-Empire).cbz (168pp)
+            [98001] COL Wolverine by Benjamin Percy Vol. 05 (2023) (Digital) (EJGriffin-Empire).cbz (133pp)
+            [98002] COL Wolverine by Benjamin Percy Vol. 06 (2023) (Digital) (EJGriffin-Empire).cbz (136pp) | [98003] COL Wolverine by Benjamin Percy Vol. 07 (2024) (Digital) (Shan-Empire).cbz (120pp)
+            [98004] COL Wolverine by Benjamin Percy Vol. 08 - Sabretooth War Part 1 (2024) (Digital) (Shan-Empire).cbz (139pp)
+            [98005] COL Wolverine by Benjamin Percy Vol. 09 - Sabretooth War Part 2 (2024) (Digital) (EJGriffin-Empire).cbz (173pp)
+            [118456] 03 Wolverine 006 (2020) (Digital) (Zone-Empire).cbr (26pp) | [118469] 16 Wolverine 007 (2021) (Digital) (Zone-Empire).cbr (27pp)
+            [118584] Wolverine 025 (2022) (Digital) (Zone-Empire).cbr (34pp)
+   ours:    ladder 1-50; 21 number(s) name more than one file: 1, 3, 6, 7, 10, 13, 17, 18, 19, 25, 26, 27; ComicInfo Series: "Wolverine"x26, "Wolverine (2020-)"x19, "Wolverine by Benjamin Percy"x5, "Wolverine Annual"x1; ComicInfo Volume: "2020"x16, "2019"x1; ComicInfo Publisher: "Marvel"x37, "Marvel Comics"x11; ComicInfo Web: "1024060"x1, "1030799"x1, "1035971"x1, "1039590"x1
+   GCD says: [97916] gcd_reprint 2219527: s156317 Wolverine (2020) #1-5 [42 stories]
+             [97917] gcd_reprint 2258757: s156317 Wolverine (2020) #9 [31 stories]
+             [97918] gcd_reprint 2357691: s156317 Wolverine (2020) #14 [36 stories]
+             [97919] gcd_reprint 2465513: s156317 Wolverine (2020) #20-25 [39 stories]
+             [98001] gcd_reprint 2544655: s156317 Wolverine (2020) #26-30 [29 stories]
+             [98002] gcd_reprint 2573048: s156317 Wolverine (2020) #31-35 [34 stories]
+             [98003] gcd_reprint 2616794: s156317 Wolverine (2020) #37-40 [30 stories]
+             [98004] gcd_reprint 2636690: s156317 Wolverine (2020) #41-45 [28 stories]
+             [98005] gcd_reprint 2653684: s156317 Wolverine (2020) #46-50 [6 stories]
+   CV linked:      vol 125121 "Wolverine" 2020 Marvel 50 issues; cached #1-50 (50); yearΔ 31; ratio 94/50 = 1.88; no judged range
+   CV per-file (v1): vol 69993 "Wolverine" 1989 Panini Comics 445 on 74/103 files
+   CV candidates:  132138 "Wolverine by Benjamin Percy" 2020 Marvel ? s105 · 128897 "X-Force by Benjamin Percy" 2020 Marvel ? s74 · 123767 "Marvel 2020 Calendar" 2019 Marvel ? s58 · 144818 "Wolverine by Benjamin Percy" 2021 Marvel ? s50 · 87808 "Marvel Universe Deadpool & Wolverine" 2016 Marvel ? s49 · 114121 "Benjamin" 2011 Splitter ? s49   (v1 search)
+   CV local rip:   (= linked) · 4250 "Wolverine" 1988 Marvel 192 · 23055 "Wolverine" 1990 Marvel 1 issue 138925 · 127236 "Wolverine" 1990 JuniorPress BV 89 · 159867 "Wolverine" 1992 Abril 9 · 3157 "Wolverine" 1982 Marvel 4   (rip lookup)
+   GCD per-file:   methods numx71 · round2-folderx18 ⚠  (⚠ copies a folder neighbour's series — verify); series 156317 "Wolverine" 2020-2024 Marvel [was ongoing series] 50 on 87/103 files · series 151261 "Marauders" 2019-2022 Marvel [was ongoing series] 27 on 2/103 files
+   GCD dump:       28557 "Wolverine" [it] 1989-1994 Play Press [] 48 · 87061 "Wolverine" [in-id] 1989-? Misurind [] 12 · 3865 "Wolverine" 1988-2003 Marvel [] 190 · 18493 "Wolverine" [nl] 1990-2000 Juniorpress [] 89 · 131107 "Wolverine" [pt-br] 1988-1988 Editora Abril [] 1 · 9901 "Wolverine" 1987-1987 Marvel [] 1   (dump lookup)
+   bridges:        gcd 156317 -> LOCG 109740 "Wolverine" support 59 · gcd 151261 -> LOCG 143654 "Marauders" support 40
+
+== S22152 X-Corp  [tier A]   keys: X-Corp | X-Corp (2021-) | X-Corp by Tini Howard  years 2021-2021  6 files / 1 collections
+   folders: [5] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2021.05.12 - X-Corp v1 · [1] Marvel\_X-Men\X-Corp v1 (2021) (Krakoa)
+   files:   [49606] X-Corp 001 (2021) (Digital) (Zone-Empire).cbr (35pp) | [49607] X-Corp 002 (2021) (Digital) (Zone-Empire).cbr (25pp) | [49608] X-Corp 003 (2021) (Digital) (Zone-Empire).cbr (26pp)
+            [49609] X-Corp 004 (2021) (Digital) (Zone-Empire).cbr (25pp) | [49610] X-Corp 005 (2021) (Digital) (Zone-Empire).cbr (25pp)
+            [85994] COL X-Corp by Tini Howard Vol. 01 (2022) (Digital) (Kileko-Empire).cbz (148pp)
+   ours:    ladder 1-5; ComicInfo Series: "X-Corp (2021-)"x3, "X-Corp"x2, "X-Corp by Tini Howard"x1; ComicInfo Publisher: "Marvel"x6
+   CV linked:      vol 136025 "X-Corp" 2021 Marvel 5 issues; cached #1-5 (5); yearΔ 0; ratio 5/5 = 1.00; no judged range
+   CV per-file (v1): vol 140238 "X-Corp by Tini Howard" 2021 Marvel 1 issue 895765 on 3/6 files
+   CV candidates:  (= linked) · 138154 "Excalibur by Tini Howard" 2021 Marvel 2 s82 · 126520 "Excalibur by Tini Howard" 2020 Marvel 4 s74 · 107553 "2021" 2012 Soleil 2 s58 · 133902 "Marvel Masterworks: Howard the Duck" 2021 Marvel 2 s49 · 149621 "X-Corp" 2021 Panini Comics 1 issue 984671 s38 · 122815 "Marvel Sampler November 2019" 2019 Marvel 1 issue 727262 s33   (v1 search)
+   CV local rip:   (= linked) · 149621 "X-Corp" 2021 Panini Comics 1 issue 984671 · 138154 "Excalibur by Tini Howard" 2021 Marvel 2 (via CV candidate name "Excalibur by Tini Howard") · 126520 "Excalibur by Tini Howard" 2020 Marvel 4 (via CV candidate name "Excalibur by Tini Howard")   (rip lookup)
+   GCD per-file:   methods round2-folderx3 ⚠ · numx2  (⚠ copies a folder neighbour's series — verify); series 172830 "X-Corp" 2021-2021 Marvel [was ongoing] 5 on 5/6 files
+   GCD dump:       (= per-file) · 178100 "X-Corp by Tini Howard" 2021-? Marvel [] 1 · 174661 "Excalibur by Tini Howard" 2021-? Marvel [] 2 (via CV candidate name "Excalibur by Tini Howard") · 175481 "Excalibur by Tini Howard" 2020-2021 Marvel [] 4 (via CV candidate name "Excalibur by Tini Howard")   (dump lookup)
+   bridges:        gcd 172830 -> LOCG 150605 "X-Corp" support 6
+
+== S66353 X-Men  [tier C] · 4 number(s) x2+, 5 parsed key(s), ratio 1.71  keys: X-Men (2021) | X-Men (2021-) | X-Men (2024) | X-Men by Gerry Duggan | X-Men v6 (2021)  years 1997-2026  67 files / 7 collections
+   folders: [35] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2021.07.07 - X-Men v6 · [21] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2021.07.07 - X-Men v6\Variant Covers · [6] Marvel\_X-Men\X-Men\08 X-Men v6 (2021) (Krakoa) · [2] _Marvel Major Event Chronology (digital)\2022.07 - A.X.E. - Judgement Day\02 Tie-ins · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2019.10.16 - X-Men v5 · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2021.07.07 - X-Men v6\Annuals and Specials · [1] Marvel\_X-Men\X-Men\07 X-Men v5 (2019) (Krakoa)\Omnibus Edition
+   files:   [49195] X-Men 002 (2021) (digital) (Glorith-HD).cbz (27pp) | [49613] X-Men Annual 001 (2023B) (Digital) (Zone-Empire).cbr (28pp)
+            [49614] X-Men 001 (2021) (MegaCon Clayton Crain Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49615] X-Men 001 (2021) (Mike Mayhew Studio Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49616] X-Men 002 (2021) (JeeHyung Lee Webstore Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49617] X-Men 013 (2022) (Arthur Adams Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49618] X-Men 016 (2022) (NetEase Games Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49619] X-Men 022 (2023) Ario Anindito Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49620] X-Men 026 (2023) (Ariel Diaz Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [49621] X-Men 027 (2023) George Perez Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49622] X-Men 029 (2023) (Jacob Edgar X-Men 60th Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [49623] X-Men 034 (2024) Greg And Tim Hildebrandt Shadowcat Marvel Masterpieces III Variant (Digital) (MikeNY76).cbz (1pp)
+            [49624] X-Men 034 (2024) Phil Noto Black Costume Variant (Digital) (MikeNY76).cbz (1pp) | [49625] X-Men 034 (2024) Russell Dauterman Trading Card Variant (Digital) (MikeNY76).cbz (1pp)
+            [49626] X-Men 035 (2024) (Ben Harvey Variant) (Digital) (MikeNY76).cbz (1pp) | [49627] X-Men 035 (2024) (Betsy Cola Pride Allies Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49628] X-Men 035 (2024) (David Marquez Variant) (Digital) (MikeNY76).cbz (1pp) | [49629] X-Men 035 (2024) (David Marquez Virgin Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49630] X-Men 035 (2024) (Insignia Variant) (Digital) (MikeNY76).cbz (1pp) | [49631] X-Men 035 (2024) (Insignia Virgin Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49632] X-Men 035 (2024) (Russell Dauterman Trading Card Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49633] X-Men 035 (2024) (Scott Koblish Wraparound Connecting Variant) (Digital) (MikeNY76).cbz (1pp)
+            [49634] X-Men 035 (2024) (Skottie Young's Big Marvel Variant) (Digital) (MikeNY76).cbz (1pp)
+            X-Men 001 (2021) (Digital) (Zone-Empire).cbr … X-Men 026 (2023) (Digital) (Zone-Empire).cbr  (26 files, pp 24-45) | [49662] X-Men 027 (2023) (Digital-HD) (Marika-Empire).cbz (25pp)
+            [49663] X-Men 028 (2024) (Digital-HD) (Marika-Empire).cbz (25pp) | [49664] X-Men 029 (2024) (digital) (Marika-Empire).cbz (26pp)
+            [49665] X-Men 030 (2024) (digital) (Marika-Empire).cbz (24pp) | [49666] X-Men 031 (2024) (digital) (Marika-Empire).cbz (24pp)
+            [49667] X-Men 032 (2024) (digital) (Marika-Empire).cbz (24pp) | [49668] X-Men 033 (2024) (digital) (Marika-Empire).cbz (23pp)
+            [49669] X-Men 034 (2024) (digital) (Marika-Empire).cbz (25pp) | [49670] X-Men 035 (2024) (digital) (Marika-Empire).cbz (89pp)
+            [87990] COL X-Men by Jonathan Hickman Omnibus (2022) (Digital) (EJGriffin-Empire).cbz (680pp) | [86036] COL X-Men by Gerry Duggan Vol. 01 (2022) (Digital) (Kileko-Empire).cbz (180pp)
+            [86037] COL X-Men by Gerry Duggan Vol. 02 (2022) (Digital) (Kileko-Empire).cbz (172pp) | [86038] COL X-Men by Gerry Duggan Vol. 03 (2023) (Digital) (EJGriffin-Empire).cbz (206pp)
+            [86039] COL X-Men by Gerry Duggan Vol. 04 (2023) (Digital) (EJGriffin-Empire).cbz (170pp) | [86040] COL X-Men by Gerry Duggan Vol. 05 (2024) (Digital) (F) (EJGriffin-Empire).cbz (164pp)
+            [86041] COL X-Men by Gerry Duggan Vol. 06 (2024) (Digital) (EJGriffin-Empire).cbz (136pp) | [118591] X-Men 013 (2022) (Digital) (Zone-Empire).cbr (26pp)
+            [118592] X-Men 014 (2022) (Digital) (Zone-Empire).cbr (26pp)
+   ours:    ladder 1-35; 11 number(s) name more than one file: 1, 2, 13, 14, 16, 22, 26, 27, 29, 34, 35; ComicInfo Series: "X-Men"x21, "X-Men (2021-)"x7, "X-Men by Gerry Duggan"x2, "X-Men Annual"x1; ComicInfo Volume: "2021"x12, "2023"x1; ComicInfo Publisher: "Marvel"x22, "Marvel Comics"x8; ComicInfo Web: "1020544"x1, "1027605"x1, "1033214"x1, "1040949"x1
+   GCD says: [87990] gcd_reprint 2383445: s151123 X-Men (2019) #1-11, #16-21 [18 stories] · s154075 Incoming (2020) #1 [1 story] · s164004 Giant-Size X-Men: Storm (2020) #1 [1 story] · s162665 Giant-Size X-Men: Fantomex (2020) #1 [1 story]
+             [86036] gcd_reprint 2365081: s173727 X-Men (2021) #1-6 [53 stories]
+             [86037] gcd_reprint 2434717: s173727 X-Men (2021) #7-12 [44 stories]
+             [86038] gcd_reprint 2497407: s173727 X-Men (2021) #13-18 [7 stories]
+             [86039] gcd_reprint 2570953: s173727 X-Men (2021) #19-24 [6 stories]
+             [86040] gcd_reprint 2613079: s173727 X-Men (2021) #25-29 [6 stories]
+             [86041] gcd_reprint 2654641: s173727 X-Men (2021) #30-34 [29 stories]
+   CV linked:      vol 137402 "X-Men" 2021 Marvel 35 issues; cached #1-35 (35); yearΔ 24; ratio 60/35 = 1.71; no judged range
+   CV per-file (v1): vol 43640 "X-Men" 1997 Panini France 169 on 31/67 files · vol 137402 "X-Men" 2021 Marvel 35 on 12/67 files · vol 158814 "X-Men" 2024 Marvel 22 on 10/67 files
+   CV candidates:  126382 "Marauders by Gerry Duggan" 2020 Marvel 4 s86 · 138729 "Marauders By Gerry Duggan" 2021 Marvel 2 s82 · 132133 "Cable by Gerry Duggan" 2020 Marvel 2 s79 · 121419 "Infinity Wars by Gerry Duggan: The Complete Collection" 2019 Marvel 1 issue 719456 s70 · 113878 "Guardians of the Galaxy by Gerry Duggan Omnibus" 2018 Marvel 1 issue 686381 s69 · 141818 "X-Men By Gerry Duggan" 2022 Marvel 6 s58   (v1 search)
+   CV local rip:   (= linked) · 43669 "X-Men" 1997 Panini Verlag 48 · 45796 "X-Men" 1996 Planeta DeAgostini 105 · 43672 "X-Men" 2001 Panini Verlag 150 · 43634 "X-Men" 2002 Panini Brasil 143 · 46130 "X-Men" 1992 Planeta DeAgostini 40   (rip lookup)
+   GCD per-file:   methods numx42 · round2-folderx7 ⚠  (⚠ copies a folder neighbour's series — verify); series 173727 "X-Men" 2021-2024 Marvel [was ongoing series] 35 on 49/67 files
+   GCD dump:       33290 "X-Men" [de] 1997-2000 Panini Deutschland [] 48 · 38909 "X-Men" [fr] 1997-2011 Panini France [] 169 · 178806 "X-Men" [hr] 1997-1998 Slobodna Dalmacija [] 6 · 182418 "אקס-מן: X-Men" [iw-il] 1997-1999 Contact Point [] 23 · 10643 "X-Men" [sv-se] 1998-2006 Egmont [] 66 · 28279 "X-Men" 1998-1998 Marvel; Wizard [] 1   (dump lookup)
+
+== S22414 X-Men Unlimited Infinity Comic  [tier C] · 143 files  keys: X-Men Unlimited - Infinity Comic  years 2021-2024  143 files / 0 collections
+   folders: [142] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2021.09.09 - X-Men Unlimited - Infinity · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2022.01.20 - Life of Wolverine - Infinity Comic
+   files:   X-Men Unlimited - Infinity Comic 001 (2021) (Digital-Mobile) (Infinity-Empire).cbz … X-Men Unlimited - Infinity Comic 012 (2021) (Digital-Mobile) (Infinity-Empire).cbz  (12 files, pp 55-78)
+            [49683] X-Men Unlimited - Infinity Comic 013 (2021) (digital-mobile) (Empire).cbz (72pp) | [49684] X-Men Unlimited - Infinity Comic 014 (2021) (digital-mobile) (Empire).cbz (66pp)
+            [49685] X-Men Unlimited - Infinity Comic 015 (2021) (digital-mobile) (Empire).cbz (66pp) | [49686] X-Men Unlimited - Infinity Comic 016 (2022) (digital-mobile) (Empire).cbz (65pp)
+            [49687] X-Men Unlimited - Infinity Comic 017 (2022) (digital-mobile) (Empire).cbz (62pp) | [49688] X-Men Unlimited - Infinity Comic 018 (2022) (digital-mobile) (Empire).cbz (65pp)
+            [49689] X-Men Unlimited - Infinity Comic 019 (2022) (digital-mobile) (Empire).cbz (68pp) | [49690] X-Men Unlimited - Infinity Comic 020 (2022) (digital-mobile) (Empire).cbz (67pp)
+            [49691] X-Men Unlimited - Infinity Comic 021 (2022) (digital-mobile) (Empire).cbz (35pp) | [49692] X-Men Unlimited - Infinity Comic 022 (2022) (digital-mobile) (Empire).cbz (55pp)
+            [49693] X-Men Unlimited - Infinity Comic 023 (2022) (digital-mobile) (Empire).cbz (51pp) | [49694] X-Men Unlimited - Infinity Comic 024 (2022) (digital-mobile) (Empire).cbz (62pp)
+            [49695] X-Men Unlimited - Infinity Comic 025 (2022) (digital-mobile) (Empire).cbz (49pp) | [49696] X-Men Unlimited - Infinity Comic 026 (2022) (digital-mobile) (Empire).cbz (60pp)
+            [49697] X-Men Unlimited - Infinity Comic 027 (2022) (digital-mobile) (Empire).cbz (39pp) | [49698] X-Men Unlimited - Infinity Comic 028 (2022) (digital-mobile) (Empire).cbz (35pp)
+            [49699] X-Men Unlimited - Infinity Comic 029 (2022) (digital-mobile) (Empire).cbz (55pp) | [49700] X-Men Unlimited - Infinity Comic 030 (2022) (digital-mobile) (Empire).cbz (54pp)
+            [49701] X-Men Unlimited - Infinity Comic 031 (2022) (digital-mobile) (Empire).cbz (42pp) | [49702] X-Men Unlimited - Infinity Comic 032 (2022) (F) (digital-mobile-Empire).cbz (39pp)
+            [49703] X-Men Unlimited - Infinity Comic 033 (2022) (F) (digital-mobile-Empire).cbz (39pp) | [49704] X-Men Unlimited - Infinity Comic 034 (2022) (F) (digital-mobile-Empire).cbz (39pp)
+            [49705] X-Men Unlimited - Infinity Comic 035 (2022) (F) (digital-mobile-Empire).cbz (74pp) | [49706] X-Men Unlimited - Infinity Comic 036 (2022) (F) (digital-mobile-Empire).cbz (55pp)
+            [49707] X-Men Unlimited - Infinity Comic 037 (2022) (F) (digital-mobile-Empire).cbz (42pp) | [49708] X-Men Unlimited - Infinity Comic 038 (2022) (F) (digital-mobile-Empire).cbz (44pp)
+            [49709] X-Men Unlimited - Infinity Comic 039 (2022) (F) (digital-mobile-Empire).cbz (80pp) | [49710] X-Men Unlimited - Infinity Comic 040 (2022) (F) (digital-mobile-Empire).cbz (64pp)
+            [49711] X-Men Unlimited - Infinity Comic 041 (2022) (F) (digital-mobile-Empire).cbz (40pp) | [49712] X-Men Unlimited - Infinity Comic 042 (2022) (F) (digital-mobile-Empire).cbz (110pp)
+            [49713] X-Men Unlimited - Infinity Comic 043 (2022) (F) (digital-mobile-Empire).cbz (108pp) | [49714] X-Men Unlimited - Infinity Comic 044 (2022) (F) (digital-mobile-Empire).cbz (39pp)
+            [49715] X-Men Unlimited - Infinity Comic 045 (2022) (F) (digital-mobile-Empire).cbz (35pp) | [49716] X-Men Unlimited - Infinity Comic 046 (2022) (F) (digital-mobile-Empire).cbz (34pp)
+            [49717] X-Men Unlimited - Infinity Comic 047 (2022) (F) (digital-mobile-Empire).cbz (34pp) | [49718] X-Men Unlimited - Infinity Comic 048 (2022) (F) (digital-mobile-Empire).cbz (35pp)
+            [49719] X-Men Unlimited - Infinity Comic 049 (2022) (F) (digital-mobile-Empire).cbz (33pp) | [49720] X-Men Unlimited - Infinity Comic 050 (2022) (F) (digital-mobile-Empire).cbz (46pp)
+            [49721] X-Men Unlimited - Infinity Comic 051 (2022) (F) (digital-mobile-Empire).cbz (43pp) | [49722] X-Men Unlimited - Infinity Comic 052 (2022) (F) (digital-mobile-Empire).cbz (46pp)
+            [49723] X-Men Unlimited - Infinity Comic 053 (2022) (F) (digital-mobile-Empire).cbz (44pp) | [49724] X-Men Unlimited - Infinity Comic 054 (2022) (F) (digital-mobile-Empire).cbz (42pp)
+            [49725] X-Men Unlimited - Infinity Comic 055 (2022) (F) (digital-mobile-Empire).cbz (54pp) | [49726] X-Men Unlimited - Infinity Comic 056 (2022) (F) (digital-mobile-Empire).cbz (43pp)
+            [49727] X-Men Unlimited - Infinity Comic 057 (2022) (F) (digital-mobile-Empire).cbz (30pp) | [49728] X-Men Unlimited - Infinity Comic 058 (2022) (F) (digital-mobile-Empire).cbz (40pp)
+            [49729] X-Men Unlimited - Infinity Comic 059 (2022) (F) (digital-mobile-Empire).cbz (45pp) | [49730] X-Men Unlimited - Infinity Comic 060 (2022) (F) (digital-mobile-Empire).cbz (35pp)
+            [49731] X-Men Unlimited - Infinity Comic 061 (2022) (F) (digital-mobile-Empire).cbz (35pp) | [49732] X-Men Unlimited - Infinity Comic 062 (2022) (F) (digital-mobile-Empire).cbz (37pp)
+            [49733] X-Men Unlimited - Infinity Comic 063 (2022) (F) (digital-mobile-Empire).cbz (34pp) | [49734] X-Men Unlimited - Infinity Comic 064 (2022) (F) (digital-mobile-Empire).cbz (34pp)
+            [49735] X-Men Unlimited - Infinity Comic 065 (2022) (F) (digital-mobile-Empire).cbz (34pp) | [49736] X-Men Unlimited - Infinity Comic 066 (2022) (F) (digital-mobile-Empire).cbz (34pp)
+            [49737] X-Men Unlimited - Infinity Comic 067 (2022) (F) (digital-mobile-Empire).cbz (34pp) | [49738] X-Men Unlimited - Infinity Comic 068 (2023) (F) (digital-mobile-Empire).cbz (35pp)
+            [49739] X-Men Unlimited - Infinity Comic 069 (2023) (digital-mobile-Empire).cbz (34pp) | [49740] X-Men Unlimited - Infinity Comic 070 (2023) (digital-mobile-Empire).cbz (34pp)
+            [49741] X-Men Unlimited - Infinity Comic 071 (2023) (F) (digital-mobile-Empire).cbz (34pp)
+            X-Men Unlimited - Infinity Comic 072 (2023) (digital-mobile-Empire).cbz … X-Men Unlimited - Infinity Comic 078 (2023) (digital-mobile-Empire).cbz  (7 files, pp 34-49)
+            [49749] X-Men Unlimited - Infinity Comic 079 (2023) (F) (digital-mobile-Empire).cbz (35pp) | [49750] X-Men Unlimited - Infinity Comic 080 (2023) (digital-mobile-Empire).cbz (21pp)
+            [49751] X-Men Unlimited - Infinity Comic 081 (2023) (digital-mobile-Empire).cbz (20pp) | [49752] X-Men Unlimited - Infinity Comic 082 (2023) (digital-mobile-Empire).cbz (24pp)
+            [49753] X-Men Unlimited - Infinity Comic 083 (2023) (digital-mobile-Empire).cbz (19pp) | [49754] X-Men Unlimited - Infinity Comic 084 (2023) (digital-mobile-Empire).cbz (22pp)
+            [49755] X-Men Unlimited - Infinity Comic 085 (2023) (digital-mobile-Empire).cbz (20pp) | [49756] X-Men Unlimited - Infinity Comic 086 (2023) (digital-mobile-Empire).cbz (35pp)
+            [49757] X-Men Unlimited - Infinity Comic 087 (2023) (digital-mobile-Empire).cbz (34pp) | [49758] X-Men Unlimited - Infinity Comic 088 (2023) (digital-mobile-Empire).cbz (34pp)
+            [49759] X-Men Unlimited - Infinity Comic 089 (2023) (digital-mobile-Empire).cbz (34pp) | [49760] X-Men Unlimited - Infinity Comic 090 (2023) (digital-mobile-Empire).cbz (34pp)
+            [49761] X-Men Unlimited - Infinity Comic 091 (2023) (digital-mobile-Empire).cbz (35pp) | [49762] X-Men Unlimited - Infinity Comic 092 (2023) (digital-mobile-Empire).cbz (35pp)
+            [49763] X-Men Unlimited - Infinity Comic 093 (2023) (digital-mobile-Empire).cbz (35pp) | [49764] X-Men Unlimited - Infinity Comic 094 (2023) (digital-mobile-Empire).cbz (34pp)
+            [49765] X-Men Unlimited - Infinity Comic 095 (2023) (digital-mobile-Empire).cbz (41pp) | [49766] X-Men Unlimited - Infinity Comic 096 (2023) (digital-mobile-Empire).cbz (25pp)
+            [49767] X-Men Unlimited - Infinity Comic 097 (2023) (digital-mobile-Empire).cbz (28pp) | [49768] X-Men Unlimited - Infinity Comic 098 (2023) (digital-mobile-Empire).cbz (25pp)
+            [49769] X-Men Unlimited - Infinity Comic 099 (2023) (digital-mobile-Empire).cbz (29pp) | [49770] X-Men Unlimited - Infinity Comic 100 (2023) (digital-mobile-Empire).cbz (46pp)
+            [49771] X-Men Unlimited - Infinity Comic 101 (2023) (digital-mobile-Empire).cbz (50pp) | [49772] X-Men Unlimited - Infinity Comic 102 (2023) (digital-mobile-Empire).cbz (41pp)
+            [49773] X-Men Unlimited - Infinity Comic 103 (2023) (digital-mobile-Empire).cbz (36pp) | [49774] X-Men Unlimited - Infinity Comic 104 (2023) (digital-mobile-Empire).cbz (33pp)
+            [49775] X-Men Unlimited - Infinity Comic 105 (2023) (digital-mobile-Empire).cbz (42pp) | [49776] X-Men Unlimited - Infinity Comic 106 (2023) (digital-mobile-Empire).cbz (38pp)
+            [49777] X-Men Unlimited - Infinity Comic 107 (2023) (digital-mobile-Empire).cbz (39pp) | [49778] X-Men Unlimited - Infinity Comic 108 (2023) (digital-mobile-Empire).cbz (40pp)
+            [49779] X-Men Unlimited - Infinity Comic 109 (2023) (digital-mobile-Empire).cbz (32pp) | [49780] X-Men Unlimited - Infinity Comic 110 (2023) (digital-mobile-Empire).cbz (34pp)
+            [49781] X-Men Unlimited - Infinity Comic 111 (2023) (digital-mobile-Empire).cbz (37pp) | [49782] X-Men Unlimited - Infinity Comic 112 (2023) (digital-mobile-Empire).cbz (47pp)
+            [49783] X-Men Unlimited - Infinity Comic 113 (2023) (digital-mobile-Empire).cbz (44pp) | [49784] X-Men Unlimited - Infinity Comic 114 (2023) (digital-mobile-Empire).cbz (38pp)
+            [49785] X-Men Unlimited - Infinity Comic 115 (2023) (digital-mobile-Empire).cbz (48pp) | [49786] X-Men Unlimited - Infinity Comic 116 (2023) (digital-mobile-Empire).cbz (45pp)
+            [49787] X-Men Unlimited - Infinity Comic 117 (2023) (digital-mobile-Empire).cbz (50pp) | [49788] X-Men Unlimited - Infinity Comic 118 (2024) (digital-mobile-Empire).cbz (35pp)
+            [49789] X-Men Unlimited - Infinity Comic 119 (2024) (digital-mobile-Empire).cbz (34pp) | [49790] X-Men Unlimited - Infinity Comic 120 (2024) (digital-mobile-Empire).cbz (34pp)
+            [49791] X-Men Unlimited - Infinity Comic 121 (2024) (digital-mobile-Empire).cbz (37pp) | [49792] X-Men Unlimited - Infinity Comic 122 (2024) (digital-mobile-Empire).cbz (39pp)
+            [49793] X-Men Unlimited - Infinity Comic 123 (2024) (digital-mobile-Empire).cbz (36pp) | [49794] X-Men Unlimited - Infinity Comic 124 (2024) (digital-mobile-Empire).cbz (36pp)
+            [49795] X-Men Unlimited - Infinity Comic 125 (2024) (digital-mobile-Empire).cbz (37pp) | [49796] X-Men Unlimited - Infinity Comic 126 (2024) (digital-mobile-Empire).cbz (36pp)
+            [49797] X-Men Unlimited - Infinity Comic 127 (2024) (digital-mobile-Empire).cbz (37pp) | [49798] X-Men Unlimited - Infinity Comic 128 (2024) (digital-mobile-Empire).cbz (37pp)
+            [49799] X-Men Unlimited - Infinity Comic 129 (2024) (digital-mobile-Empire).cbz (35pp) | [49800] X-Men Unlimited - Infinity Comic 130 (2024) (digital-mobile-Empire).cbz (37pp)
+            [49801] X-Men Unlimited - Infinity Comic 131 (2024) (digital-mobile-Empire).cbz (37pp) | [49802] X-Men Unlimited - Infinity Comic 132 (2024) (digital-mobile-Empire).cbz (40pp)
+            [49803] X-Men Unlimited - Infinity Comic 133 (2024) (digital-mobile-Empire).cbz (39pp) | [49804] X-Men Unlimited - Infinity Comic 134 (2024) (digital-mobile-Empire).cbz (38pp)
+            [49805] X-Men Unlimited - Infinity Comic 135 (2024) (digital-mobile-Empire).cbz (37pp) | [49806] X-Men Unlimited - Infinity Comic 136 (2024) (digital-mobile-Empire).cbz (37pp)
+            [49807] X-Men Unlimited - Infinity Comic 137 (2024) (digital-mobile-Empire).cbz (39pp) | [49808] X-Men Unlimited - Infinity Comic 138 (2024) (digital-mobile-Empire).cbz (36pp)
+            [49809] X-Men Unlimited - Infinity Comic 139 (2024) (digital-mobile-Empire).cbz (36pp) | [49810] X-Men Unlimited - Infinity Comic 140 (2024) (digital-mobile-Empire).cbz (40pp)
+            [49811] X-Men Unlimited - Infinity Comic 141 (2024) (digital-mobile-Empire).cbz (37pp) | [49812] X-Men Unlimited - Infinity Comic 142 (2024) (digital-mobile-Empire).cbz (45pp)
+            [49823] X-Men Unlimited - Infinity Comic 083 (2023) (digital-mobile-Empire).cbz (19pp)
+   ours:    ladder 1-142; 1 number(s) name more than one file: 83
+   CV linked:      vol 139055 "X-Men Unlimited Infinity Comic" 2021 Marvel 142 issues; cached #1-142 (142); yearΔ 0; ratio 143/142 = 1.01; no judged range; v1 per-file: same volume on 143/143 files
+   CV candidates:  (= linked) · 10745 "X-Men Unlimited" 2004 Marvel 14 s77 · 5066 "X-Men Unlimited" 1993 Marvel 50 s77 · 169961 "X-Men Infinity Comic " 2026 Marvel 18 s30 · 144562 "Love Unlimited Infinity Comic" 2022 Marvel 72 s27 · 161396 "Astonishing X-Men Infinity Comic " 2024 Marvel 42 s22 · 147318 "Avengers Unlimited Infinity Comic" 2022 Marvel 65 s22   (v1 search)
+   CV local rip:   (= linked) · 10745 "X-Men Unlimited" 2004 Marvel 14 (via CV candidate name "X-Men Unlimited") · 5066 "X-Men Unlimited" 1993 Marvel 50 (via CV candidate name "X-Men Unlimited")   (rip lookup)
+   GCD dump:       11652 "X-Men Unlimited" 2004-2006 Marvel [] 14 (via CV candidate name "X-Men Unlimited") · 34009 "X-Men Unlimited" [es] 1997-2000 Planeta DeAgostini [] 13 (via CV candidate name "X-Men Unlimited") · 4754 "X-Men Unlimited" 1993-2003 Marvel [] 50 (via CV candidate name "X-Men Unlimited")   (dump lookup)
+
+== S12429 Ms. Marvel: The New Mutant  [tier B]   keys: Ms Marvel - The New Mutant | Ms. Marvel: The New Mutant  years 2024-2024  4 files / 4 collections
+   flags: #348 label-ambiguous [Pending] item 83768 — items 50011 and 83768 are duplicate copies of The New Mutant Vol. 02
+   folders: [1] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2023.08.30 - Ms Marvel - The New Mutant v1 · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2024.03.06 - Ms. Marvel - Mutant Menace v1 · [1] Marvel\_Ms. Marvel\07 Ms Marvel - The New Mutant v1 (2023) · [1] Marvel\_Ms. Marvel\08 Ms. Marvel - Mutant Menace v1 (2024)
+   files:   [49916] COL 02 Ms Marvel - The New Mutant (2024) (Digital) (Shan-Empire).cbz (121pp) | [50011] COL Ms. Marvel - The New Mutant Vol. 02 (2024) (Digital) (Kileko-Empire).cbz (115pp)
+            [83767] COL 02 Ms Marvel - The New Mutant (2024) (Digital) (Shan-Empire).cbz (121pp) | [83768] COL Ms. Marvel - The New Mutant Vol. 02 (2024) (Digital) (Kileko-Empire).cbz (115pp)
+   ours:    ComicInfo Series: "Ms. Marvel: The New Mutant "x2
+   GCD says: [83767] gcd_reprint 2673335: s209647 Ms. Marvel: Mutant Menace (2024) #1-4 [5 stories]
+             [83768] gcd_reprint 2673335: s209647 Ms. Marvel: Mutant Menace (2024) #1-4 [5 stories]
+   CV linked:      vol 157335 "Ms. Marvel: The New Mutant" 2024 Marvel 2 issues; cached #1-2 (2); yearΔ 0; ratio 0/2; no judged range; v1 per-file: same volume on 2/4 files
+   CV candidates:  (= linked) · 84173 "Ms. Marvel" 2015 Panini Verlag 1 issue 498591 s74 · 77643 "Marvel Masterworks: Ms. Marvel" 2014 Marvel 2 s71 · 104475 "Generations: Ms. Marvel & Ms. Marvel" 2017 Marvel 1 issue 622939 s61 · 153238 "Ms. Marvel: The New Mutant" 2023 Marvel 4 s58 · 92865 "100% Marvel. Ms. Marvel" 2015 Panini España 6 s44 · 153253 "Ms. Marvel: The New Mutant Infinity Comic " 2023 Marvel 4 s41   (v1 search)
+   CV local rip:   (= linked) · 153238 "Ms. Marvel: The New Mutant" 2023 Marvel 4 · 83966 "Ms. Marvel" 2015 Marvel 5 (via CV candidate name "Ms. Marvel") · 84173 "Ms. Marvel" 2015 Panini Verlag 1 issue 498591 (via CV candidate name "Ms. Marvel") · 86114 "Ms. Marvel" 2015 Marvel 38 (via CV candidate name "Ms. Marvel") · 71457 "Ms. Marvel" 2014 Marvel 19 (via CV candidate name "Ms. Marvel")   (rip lookup)
+   GCD dump:       203582 "Ms. Marvel: The New Mutant" 2023-2024 Marvel [] 4 · 210149 "Ms. Marvel: The New Mutant" 2023-2024 Marvel [] 2 · 186654 "Ms. Marvel" [no] 2022-? Outland [] 1 (via CV candidate name "Ms. Marvel") · 196066 "Ms. Marvel" [pt-br] 2021-2021 Panini Brasil [] 2 (via CV candidate name "Ms. Marvel") · 199287 "Ms. Marvel" [de] 2021-2021 Panini Deutschland [] 1 (via CV candidate name "Ms. Marvel") · 94124 "Ms. Marvel" 2016-2019 Marvel [] 38 (via CV candidate name "Ms. Marvel")   (dump lookup)
+
+== S102431 X-Men v7 (2024)  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: X-Men v7 (2024)  years 1997-1999  75 files / 0 collections
+   folders: [65] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men - From the Ashes (2024)\002 X-Men v7 (2024)\Variant Covers · [10] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men - From the Ashes (2024)\002 X-Men v7 (2024)
+   files:   [50055] X-Men 001 (2024) (Blank Cover Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50056] X-Men 001 (2024) (George Perez Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50057] X-Men 001 (2024) (J. Scott Campbell Psylocke Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50058] X-Men 001 (2024) (J. Scott Campbell Psylocke Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50059] X-Men 001 (2024) (John Tyler Christopher Ratio Virgin 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50060] X-Men 001 (2024) (John Tyler Christopher Virgin Negative Space Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50061] X-Men 001 (2024) (Logo Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50062] X-Men 001 (2024) (Peach Momoko Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50063] X-Men 001 (2024) (Ryan Stegman 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50064] X-Men 001 (2024) (Ryan Stegman 3rd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50065] X-Men 001 (2024) (Ryan Stegman Ratio Virgin 3rd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50066] X-Men 001 (2024) (Scott Koblish Wraparound Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50067] X-Men 001 (2024) (Skottie Young Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50068] X-Men 001 (2024) (Tony Daniel Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50069] X-Men 002 (2024) (David Nakayama Weapon X-Traction Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50070] X-Men 002 (2024) (J. Scott Campbell Magik Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50071] X-Men 002 (2024) (J. Scott Campbell Magik Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50072] X-Men 002 (2024) (J. Scott Campbell Ratio Virgin 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50073] X-Men 002 (2024) (Olivier Vatine Disco Dazzler Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50074] X-Men 002 (2024) (Ruairi Coleman Marvel Multiverse Rpg Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50075] X-Men 002 (2024) (Ryan Stegman 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50076] X-Men 002 (2024) (Taurin Clarke Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50077] X-Men 003 (2024) (Greg Land Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50078] X-Men 003 (2024) (J. Scott Campbell Rogue Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50079] X-Men 003 (2024) (J. Scott Campbell Rogue Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50080] X-Men 003 (2024) (Joelle Jones Marvel 85th Anniversary Homage Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50081] X-Men 003 (2024) (Mahmud Asrar Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50082] X-Men 004 (2024) (Chris Samnee Godzilla Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50083] X-Men 004 (2024) (Elena Casagrande Stormbreakers Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50084] X-Men 004 (2024) (J. Scott Campbell Emma Frost Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50085] X-Men 004 (2024) (J. Scott Campbell Emma Frost Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50086] X-Men 004 (2024) (Marc Aspinall Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50087] X-Men 005 (2024) (Alessandro Cappuccio Doom Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50088] X-Men 005 (2024) (Elizabeth Torque Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50089] X-Men 005 (2024) (J. Scott Campbell Jean Grey Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50090] X-Men 005 (2024) (J. Scott Campbell Jean Grey Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50091] X-Men 006 (2024) (Derrick Chew Magneto Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50092] X-Men 006 (2024) (Derrick Chew Magneto Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50093] X-Men 006 (2024) (Julian Totino Tedesco Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50094] X-Men 006 (2024) (Roge Antonio Doom Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50095] X-Men 007 (2024) (Afu Chan Marvel Fortnite Meowtooth Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50096] X-Men 007 (2024) (Cory Smith Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50097] X-Men 007 (2024) (Gleb Melnikov Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50098] X-Men 007 (2024) (Joelle Jones Psylocke Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50099] X-Men 007 (2024) (Joelle Jones Psylocke Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50100] X-Men 007 (2024) (Roge Antonio Marvel Two-In-One Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50101] X-Men 008 (2024) (Aka Temper Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50102] X-Men 008 (2024) (Aka Temper Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50103] X-Men 008 (2024) (Chris Giarrusso Crossover Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50104] X-Men 008 (2024) (Mayes C. Rubeo & Jonay Bacallado Marvel Studios Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50105] X-Men 009 (2024) (Bengus Marvel Vs Capcom Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50106] X-Men 009 (2024) (Chris Giarrusso Crossover Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50107] X-Men 009 (2024) (Miguel Mercado Cyclops Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50108] X-Men 009 (2024) (Miguel Mercado Cyclops Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50109] X-Men 035 (2024) (1-in-100 Insignia Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50110] X-Men 035 (2024) (1-in-200 David Marquez Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50111] X-Men 035 (2024) (1-in-25 Ben Harvey Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50112] X-Men 035 (2024) (1-in-50 Skottie Young's Big Marvels Black & White Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50113] X-Men 035 (2024) (Betsy Cola Pride Allies Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50114] X-Men 035 (2024) (David Marquez Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50115] X-Men 035 (2024) (Insignia Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50118] X-Men 035 (2024) (Skottie Young's Big Marvel Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50119] X-Men 035 (2024) (Skottie Young's Big Marvels Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50120] X-Men 035 (2024) (Unknown Comics Kaare Andrews Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50121] X-Men 035 (2024) (Unknown Comics Kaare Andrews Connecting Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50122] X-Men 001 (2024) (digital) (F) (Marika-Empire).cbz (37pp)
+            X-Men 002 (2024) (digital) (Marika-Empire).cbz … X-Men 010 (2025) (digital) (Marika-Empire).cbz  (9 files, pp 25-32)
+   ours:    ladder 1-10, 35; 10 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 35; ComicInfo Series: "X-Men"x10; ComicInfo Volume: "2024"x9, "158814"x1; ComicInfo Publisher: "Marvel"x7, "Marvel Comics"x3; ComicInfo Web: "1062857"x1, "1066713"x1, "1067992"x1, "1070144"x1
+   CV per-file (v1): vol 43640 "X-Men" 1997 Panini France 169 on 75/75 files
+   CV local rip:   (= per-file) · 43669 "X-Men" 1997 Panini Verlag 48 (via our own name without the filing suffix "X-Men") · 45796 "X-Men" 1996 Planeta DeAgostini 105 (via our own name without the filing suffix "X-Men") · 43672 "X-Men" 2001 Panini Verlag 150 (via our own name without the filing suffix "X-Men") · 43634 "X-Men" 2002 Panini Brasil 143 (via our own name without the filing suffix "X-Men") · 46130 "X-Men" 1992 Planeta DeAgostini 40 (via our own name without the filing suffix "X-Men")   (rip lookup)
+   GCD per-file:   series 223643 "X-Men" [fr] 2025-2026 Panini France [série continue terminée [was ongoing series]] 30 on 49/75 files · series 221940 "X-Men" [de] 2025-? Panini Deutschland [ongoing series] 4 on 15/75 files; methods numx64
+   GCD dump:       33290 "X-Men" [de] 1997-2000 Panini Deutschland [] 48 (via our own name without the filing suffix "X-Men") · 38909 "X-Men" [fr] 1997-2011 Panini France [] 169 (via our own name without the filing suffix "X-Men") · 178806 "X-Men" [hr] 1997-1998 Slobodna Dalmacija [] 6 (via our own name without the filing suffix "X-Men") · 182418 "אקס-מן: X-Men" [iw-il] 1997-1999 Contact Point [] 23 (via our own name without the filing suffix "X-Men") · 10643 "X-Men" [sv-se] 1998-2006 Egmont [] 66 (via our own name without the filing suffix "X-Men") · 28279 "X-Men" 1998-1998 Marvel; Wizard [] 1 (via our own name without the filing suffix "X-Men")   (dump lookup)
+
+== S102428 X-Force  [tier C] · ratio 4.00  keys: X-Force (2024) | X-Force v7 (2024)  years 2024-2025  41 files / 1 collections
+   folders: [33] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men - From the Ashes (2024)\005 X-Force v7 {2024)\Variant Covers · [7] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men - From the Ashes (2024)\005 X-Force v7 {2024) · [1] Marvel\_X-Men\_X-Men Non-event Omnibusses
+   files:   [50205] X-Force 001 (2024) (Chris Allen Stormbreakers Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50206] X-Force 001 (2024) (Clayton Crain Forge Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50207] X-Force 001 (2024) (Clayton Crain Forge Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50208] X-Force 001 (2024) (David Nakayama Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50209] X-Force 001 (2024) (David Nakayama Ratio Virgin 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50210] X-Force 001 (2024) (Logo Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50212] X-Force 001 (2024) (Skottie Young Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50213] X-Force 001 (2024) (Tony Daniel 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50214] X-Force 001 (2024) (Tony Daniel Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50215] X-Force 002 (2024) (Alan Quah Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50216] X-Force 002 (2024) (Clayton Crain Rachel Summers Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50217] X-Force 002 (2024) (Clayton Crain Rachel Summers Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50218] X-Force 002 (2024) (Mark Bagley Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50219] X-Force 002 (2024) (Phil Noto Disco Dazzler Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50220] X-Force 002 (2024) (Ruairi Coleman Marvel Multiverse RPG Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50221] X-Force 002 (2024) (Todd Harris Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50222] X-Force 003 (2024) (Bjorn Barends Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50223] X-Force 003 (2024) (Clayton Crain Surge Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50224] X-Force 003 (2024) (Clayton Crain Surge Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50225] X-Force 003 (2024) (Junggeun Yoon Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50226] X-Force 004 (2024) (Clayton Crain Tank Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50227] X-Force 004 (2024) (Clayton Crain Tank Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50228] X-Force 004 (2024) (Juan Ferreyra Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50229] X-Force 005 (2024) (Adam Pollina Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50230] X-Force 005 (2024) (Clayton Crain Betsy Braddock Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50231] X-Force 005 (2024) (Clayton Crain Betsy Braddock Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50232] X-Force 006 (2024) (Carlos Gomez Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50233] X-Force 006 (2024) (Jay Anacleto Sage Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50234] X-Force 006 (2024) (Jay Anacleto Sage Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50235] X-Force 007 (2025) (Marcus To Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50236] X-Force 007 (2025) (Saowee Betsy Braddock Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50237] X-Force 007 (2025) (Saowee Betsy Braddock Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50238] X-Force 007 (2025) (Trevor Von Eeden Fantastic Four Homage Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50239] X-Force 001 (2024) (F) (digital) (Marika-Empire).cbz (39pp)
+            X-Force 002 (2024) (digital) (Marika-Empire).cbz … X-Force 007 (2025) (digital) (Marika-Empire).cbz  (6 files, pp 26-28)
+            [92975] COL X-Force Omnibus Book 01 (2025) (Digital) (Kileko-Empire).cbz (780pp)
+   ours:    ladder 1-7; 7 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7; ComicInfo Series: "X-Force"x6, "X-Force cvv159110"x1, "X-Force Omnibus "x1; ComicInfo Volume: "2024"x7; ComicInfo Publisher: "Marvel"x4, "Marvel Comics"x2; ComicInfo Web: "1065072"x1, "1067991"x1, "1073278"x1, "1076642"x1
+   CV linked:      vol 159110 "X-Force" 2024 Marvel 10 issues; cached #1-10 (10); yearΔ 0; ratio 40/10 = 4.00; no judged range; v1 per-file: same volume on 40/41 files
+   CV local rip:   (= linked) · 122668 "X-Force" 2020 Marvel 50 · 125859 "X-Force" 2020 Panini Comics 48 · 123893 "X-Force" 2019 Panini España 55 · 125742 "X-Force" 2019 Panini Comics 2 · 116161 "X-Force" 2018 Marvel 10   (rip lookup)
+   GCD per-file:   series 161558 "X-Force" [de] 2020-2025 Panini Deutschland [was ongoing series] 9 on 5/41 files; methods numx5
+   GCD dump:       (= per-file) · 213756 "X-Force" 2024-2025 Marvel [] 10 · 234477 "X-Force" [de] 2026-? Panini Deutschland [] 1 · 151885 "X-Force" 2020-2024 Marvel [] 50 · 170655 "X-Force" [it] 2020-? Panini Comics [] 8 · 174550 "X-Force" [es] 2020-? Panini España [] 15   (dump lookup)
+   bridges:        gcd 161558 -> LOCG 109394 "X-Force" support 6
+
+== S102414 Uncanny X-Men  [tier C] · ratio 2.71  keys: Uncanny X-Men v6 (2024)  years 2024-2025  57 files / 0 collections
+   folders: [48] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men - From the Ashes (2024)\006 Uncanny X-Men v6 (2024)\Variant Covers · [9] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men - From the Ashes (2024)\006 Uncanny X-Men v6 (2024)
+   files:   Uncanny X-Men 001 (2024) (digital) (Marika-Empire).cbz … Uncanny X-Men 009 (2025) (digital) (Marika-Empire).cbz  (9 files, pp 26-40)
+            [50255] Uncanny X-Men 001 (2024) (Andy Kubert Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50256] Uncanny X-Men 001 (2024) (David Marquez Ratio 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50257] Uncanny X-Men 001 (2024) (David Marquez Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50258] Uncanny X-Men 001 (2024) (David Marquez Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50259] Uncanny X-Men 001 (2024) (Jim Lee Hidden Gem Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50260] Uncanny X-Men 001 (2024) (John Tyler Christopher Virgin Negative Space Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50261] Uncanny X-Men 001 (2024) (Leinil Yu Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50262] Uncanny X-Men 001 (2024) (Logo Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50263] Uncanny X-Men 001 (2024) (Luciano Vecchio Rogue Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50264] Uncanny X-Men 001 (2024) (Luciano Vecchio Rogue Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50265] Uncanny X-Men 001 (2024) (Mr. Garcin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50266] Uncanny X-Men 001 (2024) (Pablo Villalobos Disco Dazzler Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50267] Uncanny X-Men 001 (2024) (Ryan Stegman 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50268] Uncanny X-Men 001 (2024) (Scott Koblish Wraparound Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50269] Uncanny X-Men 001 (2024) (Stephen Segovia Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50270] Uncanny X-Men 002 (2024) (David Baldeon Godzilla Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50271] Uncanny X-Men 002 (2024) (Luciano Vecchio Gambit Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50272] Uncanny X-Men 002 (2024) (Luciano Vecchio Gambit Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50273] Uncanny X-Men 002 (2024) (Miguel Mercado Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50274] Uncanny X-Men 003 (2024) (Luciano Vecchio Jubilee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50275] Uncanny X-Men 003 (2024) (Luciano Vecchio Jubilee Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50276] Uncanny X-Men 003 (2024) (Mahmud Asrar Marvel Comics Presents Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50277] Uncanny X-Men 003 (2024) (Mahmud Asrar Ratio Virgin 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50278] Uncanny X-Men 003 (2024) (Michael Cho Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50279] Uncanny X-Men 003 (2024) (Ryan Stegman 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50280] Uncanny X-Men 004 (2024) (Jessica Fong Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50281] Uncanny X-Men 004 (2024) (Luciano Vecchio Nightcrawler Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50282] Uncanny X-Men 004 (2024) (Luciano Vecchio Nightcrawler Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50283] Uncanny X-Men 004 (2024) (Rod Reis Doom Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50284] Uncanny X-Men 004 (2024) (Taurin Clarke Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50285] Uncanny X-Men 005 (2024) (Javier Garron The Thing! Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50286] Uncanny X-Men 005 (2024) (Luciano Vecchio Wolverine Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50288] Uncanny X-Men 005 (2024) (Marcus To Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50289] Uncanny X-Men 005 (2024) (Yasmine Putri Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50290] Uncanny X-Men 006 (2024) (Adam Hughes Rogue Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50291] Uncanny X-Men 006 (2024) (Adam Hughes Rogue Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50292] Uncanny X-Men 006 (2024) (Logan Lubera Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50293] Uncanny X-Men 006 (2024) (Paco Medina Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50294] Uncanny X-Men 006 (2024) (Phil Noto Marvel Two-In-One Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50295] Uncanny X-Men 007 (2024) (Bengus Marvel Vs Capcom Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50296] Uncanny X-Men 007 (2024) (Chris Giarrusso Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50297] Uncanny X-Men 007 (2024) (Mark Brooks Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50298] Uncanny X-Men 007 (2024) (Mark Brooks Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50299] Uncanny X-Men 008 (2025) (Chris Giarrusso Crossover Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50300] Uncanny X-Men 008 (2025) (Miguel Mercado Gambit Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50301] Uncanny X-Men 008 (2025) (Miguel Mercado Gambit Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50302] Uncanny X-Men 008 (2025) (Nick Bradshaw Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50303] Uncanny X-Men 009 (2025) (David Lopez Fantastic Four Homage Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 1-9; 9 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9; ComicInfo Series: "Uncanny X-Men"x9; ComicInfo Volume: "2024"x9; ComicInfo Publisher: "Marvel"x7, "Marvel Comics"x1; ComicInfo Web: "1066308"x1, "1069421"x1, "1073893"x1, "1077648"x1
+   CV linked:      vol 159189 "Uncanny X-Men" 2024 Marvel 21 issues; cached #1-22 (22); yearΔ 0; ratio 57/21 = 2.71; no judged range
+   CV per-file (v1): vol 3092 "The Uncanny X-Men" 1981 Marvel 405 on 57/57 files
+   CV local rip:   (= linked) · 115285 "Uncanny X-Men" 2018 Marvel 22 · 87190 "Uncanny X-Men" 2016 Marvel 19 · 87825 "Uncanny X-Men" 2016 Marvel 2 · 57181 "Uncanny X-Men" 2013 Marvel 36 · 69323 "Uncanny X-Men" 2013 Panini Verlag 7   (rip lookup)
+   GCD per-file:   series 223355 "Uncanny X-Men" [de] 2025-? Panini Deutschland [] 3 on 28/57 files; methods numx28
+   GCD dump:       (= per-file) · 213198 "Uncanny X-Men" 2024-? Marvel [] 29 · 225961 "Uncanny X-Men" [en-gb] 2025-? Panini UK [] 1 · 133732 "Uncanny X-Men" 2019-2019 Marvel [] 22 · 149407 "Uncanny X-Men" [de] 2019-2019 Panini Deutschland [] 4 · 95480 "Uncanny X-Men" 2016-2017 Marvel [] 19   (dump lookup)
+   bridges:        gcd 223355 -> LOCG 174842 "Uncanny X-Men" support 21
+
+== S66336 X-Factor  [tier C] · gap 3  keys: X-Factor (2024)  years 2021-2025  35 files / 2 collections
+   folders: [27] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men - From the Ashes (2024)\007 X-Factor v5 (2024)\Variant Covers · [6] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men - From the Ashes (2024)\007 X-Factor v5 (2024) · [1] Marvel\_X-Men\X-Factor\04 X-Factor v3-v1 (2006)\Omnibus Editions · [1] Marvel\_X-Men\_X-Men Non-event Omnibusses
+   files:   [50304] X-Factor 001 (2024) (David Lopez Disco Dazzler Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50305] X-Factor 001 (2024) (Emanuela Lupacchino Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50306] X-Factor 001 (2024) (Greg Land Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50307] X-Factor 001 (2024) (Logo Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50308] X-Factor 001 (2024) (Luciano Vecchio Windowshades Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50309] X-Factor 001 (2024) (Mahmud Asrar Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50310] X-Factor 001 (2024) (Marcus To Havok Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50311] X-Factor 001 (2024) (Marcus To Havok Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50312] X-Factor 001 (2024) (Skottie Young Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50313] X-Factor 002 (2024) (Joshua Swaby Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50314] X-Factor 002 (2024) (Justin Mason Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50315] X-Factor 002 (2024) (Marcus To Frenzy Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50316] X-Factor 002 (2024) (Marcus To Frenzy Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50317] X-Factor 003 (2024) (Marcus To Pyro Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50318] X-Factor 003 (2024) (Marcus To Pyro Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50319] X-Factor 003 (2024) (Pete Woods Doom Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50320] X-Factor 003 (2024) (Russell Dauterman Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50321] X-Factor 004 (2024) (Anand Ramcheron Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50322] X-Factor 004 (2024) (Marcus To Cecilia Reyes Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50323] X-Factor 004 (2024) (Marcus To Cecilia Reyes Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50324] X-Factor 005 (2024) (C.F. Villa Stormbreakers Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50325] X-Factor 005 (2024) (Jenny Frison Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [50326] X-Factor 005 (2024) (Jenny Frison Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50327] X-Factor 005 (2024) (Marcus To Xyber Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50328] X-Factor 005 (2024) (Marcus To Xyber Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50329] X-Factor 006 (2025) (Rafael Albuquerque Fantastic Four Homage Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50330] X-Factor 006 (2025) (Rickie Yagawa Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            X-Factor 001 (2024) (digital) (Marika-Empire).cbz … X-Factor 006 (2025) (digital) (Marika-Empire).cbz  (6 files, pp 26-40)
+            [85996] COL X-Factor by Peter David Omnibus Book 01 (2023) (Digital) (EJGriffin-Empire).cbz (1093pp)
+            [92973] COL X-Factor by Peter David Omnibus v02 (2023) (Digital) (Kileko-Empire).cbz (1092pp)
+   ours:    ladder 1-6; 6 number(s) name more than one file: 1, 2, 3, 4, 5, 6; ComicInfo Series: "X-Factor"x5, "X-Factor cvv159244"x1; ComicInfo Volume: "2024"x6; ComicInfo Publisher: "Marvel"x5, "Marvel Comics"x1; ComicInfo Web: "1066712"x1, "1070143"x1, "1074686"x1, "1076641"x1
+   CV linked:      vol 159244 "X-Factor" 2024 Marvel 10 issues; cached #1-10 (10); yearΔ 3; ratio 33/10 = 3.30; no judged range; v1 per-file: same volume on 33/35 files
+   CV local rip:   (= linked) · 129097 "X-Factor" 2020 Marvel 10 · 150559 "X-Factor" 2020 Panini Comics 3 · 46699 "X-Factor" 2011 Panini España 10 · 18109 "X-Factor" 2006 Marvel 114 · 43532 "X-Factor" 2006 Panini España 53   (rip lookup)
+   GCD dump:       162354 "X-Factor" 2020-2021 Marvel [] 10 · 170656 "X-Factor" [it] 2020-? Panini Comics [] 2 · 214301 "X-Factor" 2024-2025 Marvel [] 10 · 35456 "X-Factor" 2007-2013 Marvel [] 21 · 16465 "X-Factor" 2006-2013 Marvel [] 114 · 34065 "X-Factor" [es] 2006-2011 Panini España [] 53   (dump lookup)
+
+== S10612 Laura Kinney: Wolverine  [tier A]   keys: Laura Kinney - Wolverine  years 2025-2026  12 files / 0 collections
+   folders: [10] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men - From the Ashes (2024)\016 Laura Kinney - Wolverine v1 (2025)\Variant Covers · [2] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men - From the Ashes (2024)\016 Laura Kinney - Wolverine v1 (2025)
+   files:   [50509] Laura Kinney - Wolverine 001 (2025) (digital) (Marika-Empire).cbz (31pp) | [50510] Laura Kinney - Wolverine 002 (2025) (digital) (Marika-Empire).cbz (27pp)
+            [50511] Laura Kinney - Wolverine 001 (2024) (J. Scott Campbell Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50512] Laura Kinney - Wolverine 001 (2024) (J. Scott Campbell Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50513] Laura Kinney - Wolverine 001 (2024) (Jay Anacleto Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50514] Laura Kinney - Wolverine 001 (2024) (Kael Ngu Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50515] Laura Kinney - Wolverine 001 (2024) (Leirix Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50516] Laura Kinney - Wolverine 001 (2024) (Logo Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50517] Laura Kinney - Wolverine 002 (2025) (Ema Lupacchino Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50518] Laura Kinney - Wolverine 002 (2025) (Pablo Villalobos Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50519] Laura Kinney - Wolverine 002 (2025) (Pablo Villalobos Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [50520] Laura Kinney - Wolverine 002 (2025) (Romy Jones Fantastic Four Homage Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 1-2; 2 number(s) name more than one file: 1, 2; ComicInfo Series: "Laura Kinney: Wolverine"x2; ComicInfo Volume: "2025"x1, "161612"x1; ComicInfo Publisher: "Marvel"x2; ComicInfo Web: "1081551"x1, "1090271"x1
+   CV linked:      vol 161612 "Laura Kinney: Wolverine" 2025 Marvel 10 issues; cached #1-10 (10); yearΔ 0; ratio 12/10 = 1.20; no judged range
+   CV per-file (v1): vol 166232 "Laura Kinney: Wolverine" 2025 Marvel 2 on 12/12 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 226764 "Laura Kinney: Wolverine" 2025-2025 Marvel [collected edition] 2 on 12/12 files; methods numx12
+   GCD dump:       (= per-file) · 217364 "Laura Kinney: Wolverine" 2025-2025 Marvel [] 10 · 234814 "Laura Kinney – Wolverine" [de] 2026-? Panini Deutschland [] 2   (dump lookup)
+   bridges:        gcd 226764 -> LOCG 178353 "Laura Kinney: Wolverine Vol. 2 – My So-Called Perfect Life TP" support 12
+
+== S776 Alligator Loki Infinity Comic  [tier B]   keys: Alligator Loki - Infinity Comic  years 2022-2025  44 files / 0 collections
+   folders: [44] Marvel\#MARVEL CURRENT ONGOING TITLES\_Infinity Comics\Alligator Loki - Infinity Comic (2022)
+   files:   Alligator Loki - Infinity Comic 001 (2022) (digital-mobile-Empire).cbz … Alligator Loki - Infinity Comic 016 (2022) (digital-mobile-Empire).cbz  (16 files, pp 17-33)
+            [50580] Alligator Loki - Infinity Comic 017 (2023) (F) (digital-mobile-Empire).cbz (30pp) | [50581] Alligator Loki - Infinity Comic 018 (2023) (digital-mobile-Empire).cbz (33pp)
+            [50582] Alligator Loki - Infinity Comic 019 (2023) (digital-mobile-Empire).cbz (31pp) | [50583] Alligator Loki - Infinity Comic 020 (2023) (digital-mobile-Empire).cbz (30pp)
+            [50584] Alligator Loki - Infinity Comic 021 (2023) (F) (digital-mobile-Empire).cbz (28pp)
+            Alligator Loki - Infinity Comic 022 (2023) (digital-mobile-Empire).cbz … Alligator Loki - Infinity Comic 044 (2025) (digital-mobile-Empire).cbz  (23 files, pp 20-32)
+   ours:    ladder 1-44
+   CV linked:      vol 141883 "Alligator Loki Infinity Comic" 2022 Marvel 48 issues; cached #1-48 (48); yearΔ 0; ratio 44/48 = 0.92; no judged range; v1 per-file: same volume on 44/44 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+
+== S1569 Avengers Academy: Marvel's Voices Infinity Comic  [tier B]   keys: Avengers Academy - Marvel’s Voices - Infinity Comic  years 2024-2025  31 files / 0 collections
+   folders: [31] Marvel\#MARVEL CURRENT ONGOING TITLES\_Infinity Comics\Avengers Academy - Marvel’s Voices - Infinity Comic (2024)
+   files:   [50657] Avengers Academy - Marvel’s Voices - Infinity Comic 000 (2024) (digital-mobile-Empire).cbz (1pp)
+            [50658] Avengers Academy - Marvel’s Voices - Infinity Comic 001 (2024) (digital-mobile-Empire).cbz (65pp)
+            [50659] Avengers Academy - Marvel’s Voices - Infinity Comic 002 (2024) (digital-mobile-Empire).cbz (74pp)
+            [50660] Avengers Academy - Marvel’s Voices - Infinity Comic 003 (2024) (digital-mobile-Empire).cbz (59pp)
+            [50661] Avengers Academy - Marvel’s Voices - Infinity Comic 004 (2024) (digital-mobile-Empire).cbz (59pp)
+            [50662] Avengers Academy - Marvel’s Voices - Infinity Comic 005 (2024) (digital-mobile-Empire).cbz (72pp)
+            [50663] Avengers Academy - Marvel’s Voices - Infinity Comic 006 (2024) (digital-mobile-Empire).cbz (85pp)
+            [50664] Avengers Academy - Marvel’s Voices - Infinity Comic 007 (2024) (digital-mobile-Empire).cbz (55pp)
+            [50665] Avengers Academy - Marvel’s Voices - Infinity Comic 008 (2024) (digital-mobile-Empire).cbz (65pp)
+            [50666] Avengers Academy - Marvel’s Voices - Infinity Comic 009 (2024) (digital-mobile-Empire).cbz (60pp)
+            [50667] Avengers Academy - Marvel’s Voices - Infinity Comic 010 (2024) (digital-mobile-Empire).cbz (64pp)
+            [50668] Avengers Academy - Marvel’s Voices - Infinity Comic 011 (2024) (digital-mobile-Empire).cbz (75pp)
+            [50669] Avengers Academy - Marvel’s Voices - Infinity Comic 012 (2024) (digital-mobile-Empire).cbz (45pp)
+            [50670] Avengers Academy - Marvel’s Voices - Infinity Comic 013 (2024) (digital-mobile-Empire).cbz (51pp)
+            [50671] Avengers Academy - Marvel’s Voices - Infinity Comic 014 (2024) (digital-mobile-Empire).cbz (56pp)
+            [50672] Avengers Academy - Marvel’s Voices - Infinity Comic 015 (2024) (digital-mobile-Empire).cbz (63pp)
+            [50673] Avengers Academy - Marvel’s Voices - Infinity Comic 016 (2024) (digital-mobile-Empire).cbz (65pp)
+            [50674] Avengers Academy - Marvel’s Voices - Infinity Comic 017 (2024) (digital-mobile-Empire).cbz (77pp)
+            [50675] Avengers Academy - Marvel’s Voices - Infinity Comic 018 (2024) (digital-mobile-Empire).cbz (95pp)
+            [50676] Avengers Academy - Marvel’s Voices - Infinity Comic 019 (2024) (digital-mobile-Empire).cbz (66pp)
+            [50677] Avengers Academy - Marvel’s Voices - Infinity Comic 020 (2024) (digital-mobile-Empire).cbz (73pp)
+            [50678] Avengers Academy - Marvel’s Voices - Infinity Comic 020.5 (2024) (digital-mobile-Empire).cbz (18pp)
+            Avengers Academy - Marvel’s Voices - Infinity Comic 021 (2024) (digital-mobile-Empire).cbz … Avengers Academy - Marvel’s Voices - Infinity Comic 029 (2025) (digital-mobile-Empire).cbz  (9 files, pp 61-77)
+   ours:    ladder 0-29; 1 number(s) name more than one file: 20
+   CV linked:      vol 158642 "Avengers Academy: Marvel's Voices Infinity Comic" 2024 Marvel ? issues; cached #1-60 (60); yearΔ 0; ratio 31/?; no judged range; v1 per-file: same volume on 31/31 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+
+== S1605 Avengers Forever - Infinity Comic   [tier B]   keys: Avengers Forever - Infinity Comic  years 2022-2022  4 files / 0 collections
+   folders: [4] Marvel\#MARVEL CURRENT ONGOING TITLES\_Infinity Comics\Avengers Forever - Infinity Comic (2022)
+   files:   [50698] Avengers Forever - Infinity Comic 001 (2022) (digital-mobile) (Empire).cbz (49pp) | [50699] Avengers Forever - Infinity Comic 002 (2022) (digital-mobile) (Empire).cbz (47pp)
+            [50700] Avengers Forever - Infinity Comic 003 (2022) (digital-mobile) (Empire).cbz (59pp) | [50701] Avengers Forever - Infinity Comic 004 (2022) (digital-mobile) (Empire).cbz (49pp)
+   ours:    ladder 1-4
+   CV linked:      vol 142067 "Avengers Forever - Infinity Comic " 2022 Marvel 4 issues; cached #1-4 (4); yearΔ 0; ratio 4/4 = 1.00; no judged range; v1 per-file: same volume on 4/4 files
+   CV candidates:  (= linked) · 140532 "Avengers Forever" 2021 Marvel 15 s85 · 28054 "Avengers Forever" 2009 Marvel 1 issue 172228 s81 · 11015 "Avengers: Forever" 1998 Marvel 12 s77 · 147318 "Avengers Unlimited Infinity Comic" 2022 Marvel 65 s74 · 141832 "Marvel Meow: Infinity Comic" 2022 Marvel 36 s58 · 154150 "Avengers United Infinity Comic" 2023 Marvel 63 s19   (v1 search)
+   CV local rip:   (= linked) · 140532 "Avengers Forever" 2021 Marvel 15 (via CV candidate name "Avengers Forever") · 28054 "Avengers Forever" 2009 Marvel 1 issue 172228 (via CV candidate name "Avengers Forever") · 11015 "Avengers Forever" 1998 Marvel 12 (via CV candidate name "Avengers Forever")   (rip lookup)
+   GCD dump:       180126 "Avengers Forever" 2022-2023 Marvel [] 15 (via CV candidate name "Avengers Forever") · 186122 "Avengers Forever" 2022-2022 Marvel [] 2 (via CV candidate name "Avengers Forever") · 205893 "Avengers Forever" [de] 2023-2024 Panini Deutschland [] 2 (via CV candidate name "Avengers Forever") · 205894 "Avengers Forever" [de] 2023-2024 Panini Deutschland [] 2 (via CV candidate name "Avengers Forever") · 130420 "Avengers Forever" 2018-2018 Marvel [] 1 (via CV candidate name "Avengers Forever") · 223797 "Avengers Forever" 2011-2011 Marvel [] 1 (via CV candidate name "Avengers Forever")   (dump lookup)
+
+== S1626 Avengers United Infinity Comic  [tier B]   keys: Avengers United - Infinity Comic  years 2023-2025  63 files / 0 collections
+   folders: [63] Marvel\#MARVEL CURRENT ONGOING TITLES\_Infinity Comics\Avengers United - Infinity Comic (2023)
+   files:   [50702] Avengers United - Infinity Comic 001 (2023) (digital-mobile-Empire).cbz (35pp) | [50703] Avengers United - Infinity Comic 002 (2023) (digital-mobile-Empire).cbz (35pp)
+            [50704] Avengers United - Infinity Comic 003 (2023) (digital-mobile-Empire).cbz (35pp) | [50705] Avengers United - Infinity Comic 004 (2023) (digital-mobile-Empire).cbz (35pp)
+            [50706] Avengers United - Infinity Comic 005 (2023) (digital-mobile-Empire).cbz (35pp) | [50707] Avengers United - Infinity Comic 006 (2023) (digital-mobile-Empire).cbz (35pp)
+            [50708] Avengers United - Infinity Comic 007 (2023) (digital-mobile-Empire).cbz (35pp) | [50709] Avengers United - Infinity Comic 008 (2023) (digital-mobile-Empire).cbz (35pp)
+            [50710] Avengers United - Infinity Comic 009 (2023) (digital-mobile-Empire).cbz (35pp) | [50711] Avengers United - Infinity Comic 010 (2023) (digital-mobile-Empire).cbz (35pp)
+            [50712] Avengers United - Infinity Comic 011 (2024) (digital-mobile-Empire).cbz (35pp) | [50713] Avengers United - Infinity Comic 012 (2024) (digital-mobile-Empire).cbz (23pp)
+            [50714] Avengers United - Infinity Comic 013 (2024) (digital-mobile-Empire).cbz (47pp) | [50715] Avengers United - Infinity Comic 014 (2024) (digital-mobile-Empire).cbz (35pp)
+            [50716] Avengers United - Infinity Comic 015 (2024) (digital-mobile-Empire).cbz (27pp) | [50717] Avengers United - Infinity Comic 016 (2024) (digital-mobile-Empire).cbz (35pp)
+            [50718] Avengers United - Infinity Comic 017 (2024) (digital-mobile-Empire).cbz (35pp) | [50719] Avengers United - Infinity Comic 018 (2024) (digital-mobile-Empire).cbz (35pp)
+            [50720] Avengers United - Infinity Comic 019 (2024) (digital-mobile-Empire).cbz (35pp) | [50721] Avengers United - Infinity Comic 020 (2024) (digital-mobile-Empire).cbz (35pp)
+            [50722] Avengers United - Infinity Comic 021 (2024) (digital-mobile-Empire).cbz (65pp) | [50723] Avengers United - Infinity Comic 022 (2024) (digital-mobile-Empire).cbz (65pp)
+            [50724] Avengers United - Infinity Comic 023 (2024) (digital-mobile-Empire).cbz (35pp) | [50725] Avengers United - Infinity Comic 024 (2024) (digital-mobile-Empire).cbz (65pp)
+            [50726] Avengers United - Infinity Comic 025 (2024) (digital-mobile-Empire).cbz (35pp) | [50727] Avengers United - Infinity Comic 026 (2024) (digital-mobile-Empire).cbz (50pp)
+            [50728] Avengers United - Infinity Comic 027 (2024) (digital-mobile-Empire).cbz (65pp) | [50729] Avengers United - Infinity Comic 028 (2024) (digital-mobile-Empire).cbz (65pp)
+            [50730] Avengers United - Infinity Comic 029 (2024) (digital-mobile-Empire).cbz (65pp) | [50731] Avengers United - Infinity Comic 030 (2024) (digital-mobile-Empire).cbz (65pp)
+            [50732] Avengers United - Infinity Comic 031 (2024) (digital-mobile-Empire).cbz (65pp) | [50733] Avengers United - Infinity Comic 032 (2024) (digital-mobile-Empire).cbz (65pp)
+            [50734] Avengers United - Infinity Comic 033 (2024) (digital-mobile-Empire).cbz (65pp) | [50735] Avengers United - Infinity Comic 034 (2024) (digital-mobile-Empire).cbz (65pp)
+            [50736] Avengers United - Infinity Comic 035 (2024) (digital-mobile-Empire).cbz (65pp) | [50737] Avengers United - Infinity Comic 036 (2024) (digital-mobile-Empire).cbz (49pp)
+            [50738] Avengers United - Infinity Comic 037 (2024) (digital-mobile-Empire).cbz (55pp) | [50739] Avengers United - Infinity Comic 038 (2024) (digital-mobile-Empire).cbz (45pp)
+            [50740] Avengers United - Infinity Comic 039 (2024) (digital-mobile-Empire).cbz (65pp) | [50741] Avengers United - Infinity Comic 040 (2024) (digital-mobile-Empire).cbz (65pp)
+            [50742] Avengers United - Infinity Comic 041 (2024) (digital-mobile-Empire).cbz (65pp) | [50743] Avengers United - Infinity Comic 042 (2024) (digital-mobile-Empire).cbz (44pp)
+            [50744] Avengers United - Infinity Comic 043 (2024) (digital-mobile-Empire).cbz (40pp) | [50745] Avengers United - Infinity Comic 044 (2024) (digital-mobile-Empire).cbz (65pp)
+            [50746] Avengers United - Infinity Comic 045 (2024) (digital-mobile-Empire).cbz (53pp) | [50747] Avengers United - Infinity Comic 046 (2024) (digital-mobile-Empire).cbz (41pp)
+            [50748] Avengers United - Infinity Comic 047 (2024) (digital-mobile-Empire).cbz (39pp) | [50749] Avengers United - Infinity Comic 048 (2024) (digital-mobile-Empire).cbz (37pp)
+            [50750] Avengers United - Infinity Comic 049 (2024) (digital-mobile-Empire).cbz (44pp) | [50751] Avengers United - Infinity Comic 050 (2024) (digital-mobile-Empire).cbz (35pp)
+            [50752] Avengers United - Infinity Comic 051 (2024) (digital-mobile-Empire).cbz (35pp) | [50753] Avengers United - Infinity Comic 052 (2024) (F) (digital-mobile-Empire).cbz (35pp)
+            Avengers United - Infinity Comic 053 (2024) (digital-mobile-Empire).cbz … Avengers United - Infinity Comic 063 (2024) (digital-mobile-Empire).cbz  (11 files, pp 43-57)
+   ours:    ladder 1-63
+   CV linked:      vol 154150 "Avengers United Infinity Comic" 2023 Marvel 63 issues; cached #1-63 (63); yearΔ 0; ratio 63/63 = 1.00; no judged range; v1 per-file: same volume on 63/63 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+
+== S1627 Avengers Unlimited Infinity Comic  [tier B]   keys: Avengers Unlimited - Infinity Comic  years 2022-2023  65 files / 0 collections
+   folders: [65] Marvel\#MARVEL CURRENT ONGOING TITLES\_Infinity Comics\Avengers Unlimited - Infinity Comic (2022)
+   files:   [50765] Avengers Unlimited - Infinity Comic 001 (2022) (digital-mobile-Empire).cbz (53pp) | [50766] Avengers Unlimited - Infinity Comic 002 (2022) (digital-mobile-Empire).cbz (44pp)
+            [50767] Avengers Unlimited - Infinity Comic 003 (2022) (digital-mobile-Empire).cbz (54pp) | [50768] Avengers Unlimited - Infinity Comic 004 (2022) (digital-mobile-Empire).cbz (51pp)
+            [50769] Avengers Unlimited - Infinity Comic 005 (2022) (digital-mobile-Empire).cbz (52pp) | [50770] Avengers Unlimited - Infinity Comic 006 (2022) (digital-mobile-Empire).cbz (54pp)
+            [50771] Avengers Unlimited - Infinity Comic 007 (2022) (digital-mobile-Empire).cbz (72pp) | [50772] Avengers Unlimited - Infinity Comic 008 (2022) (digital-mobile-Empire).cbz (77pp)
+            [50773] Avengers Unlimited - Infinity Comic 009 (2022) (digital-mobile-Empire).cbz (39pp) | [50774] Avengers Unlimited - Infinity Comic 010 (2022) (digital-mobile-Empire).cbz (81pp)
+            [50775] Avengers Unlimited - Infinity Comic 011 (2022) (digital-mobile-Empire).cbz (46pp) | [50776] Avengers Unlimited - Infinity Comic 012 (2022) (digital-mobile-Empire).cbz (60pp)
+            [50777] Avengers Unlimited - Infinity Comic 013 (2022) (digital-mobile-Empire).cbz (89pp) | [50778] Avengers Unlimited - Infinity Comic 014 (2022) (digital-mobile-Empire).cbz (57pp)
+            [50779] Avengers Unlimited - Infinity Comic 015 (2022) (digital-mobile-Empire).cbz (40pp) | [50780] Avengers Unlimited - Infinity Comic 016 (2022) (digital-mobile-Empire).cbz (52pp)
+            [50781] Avengers Unlimited - Infinity Comic 017 (2022) (digital-mobile-Empire).cbz (32pp) | [50782] Avengers Unlimited - Infinity Comic 018 (2022) (digital-mobile-Empire).cbz (45pp)
+            [50783] Avengers Unlimited - Infinity Comic 019 (2022) (digital-mobile-Empire).cbz (41pp) | [50784] Avengers Unlimited - Infinity Comic 020 (2022) (digital-mobile-Empire).cbz (38pp)
+            [50785] Avengers Unlimited - Infinity Comic 021 (2022) (digital-mobile-Empire).cbz (34pp) | [50786] Avengers Unlimited - Infinity Comic 022 (2022) (digital-mobile-Empire).cbz (34pp)
+            [50787] Avengers Unlimited - Infinity Comic 023 (2022) (digital-mobile-Empire).cbz (34pp) | [50788] Avengers Unlimited - Infinity Comic 024 (2022) (digital-mobile-Empire).cbz (34pp)
+            [50789] Avengers Unlimited - Infinity Comic 025 (2022) (digital-mobile-Empire).cbz (63pp) | [50790] Avengers Unlimited - Infinity Comic 026 (2022) (digital-mobile-Empire).cbz (23pp)
+            [50791] Avengers Unlimited - Infinity Comic 027 (2023) (digital-mobile-Empire).cbz (34pp) | [50792] Avengers Unlimited - Infinity Comic 028 (2023) (digital-mobile-Empire).cbz (35pp)
+            [50793] Avengers Unlimited - Infinity Comic 029 (2023) (digital-mobile-Empire).cbz (31pp) | [50794] Avengers Unlimited - Infinity Comic 030 (2023) (F) (digital-mobile-Empire).cbz (30pp)
+            Avengers Unlimited - Infinity Comic 031 (2023) (digital-mobile-Empire).cbz … Avengers Unlimited - Infinity Comic 037 (2023) (digital-mobile-Empire).cbz  (7 files, pp 30-38)
+            [50802] Avengers Unlimited - Infinity Comic 038 (2023) (F) (digital-mobile-Empire).cbz (34pp) | [50803] Avengers Unlimited - Infinity Comic 039 (2023) (digital-mobile-Empire).cbz (31pp)
+            [50804] Avengers Unlimited - Infinity Comic 040 (2023) (digital-mobile-Empire).cbz (36pp) | [50805] Avengers Unlimited - Infinity Comic 041 (2023) (digital-mobile-Empire).cbz (27pp)
+            [50806] Avengers Unlimited - Infinity Comic 042 (2023) (digital-mobile-Empire).cbz (34pp) | [50807] Avengers Unlimited - Infinity Comic 043 (2023) (digital-mobile-Empire).cbz (66pp)
+            [50808] Avengers Unlimited - Infinity Comic 044 (2023) (digital-mobile-Empire).cbz (60pp) | [50809] Avengers Unlimited - Infinity Comic 045 (2023) (digital-mobile-Empire).cbz (60pp)
+            [50810] Avengers Unlimited - Infinity Comic 046 (2023) (digital-mobile-Empire).cbz (57pp) | [50811] Avengers Unlimited - Infinity Comic 047 (2023) (digital-mobile-Empire).cbz (54pp)
+            [50812] Avengers Unlimited - Infinity Comic 048 (2023) (digital-mobile-Empire).cbz (57pp) | [50813] Avengers Unlimited - Infinity Comic 049 (2023) (digital-mobile-Empire).cbz (49pp)
+            [50814] Avengers Unlimited - Infinity Comic 050 (2023) (digital-mobile-Empire).cbz (54pp) | [50815] Avengers Unlimited - Infinity Comic 051 (2023) (digital-mobile-Empire).cbz (65pp)
+            [50816] Avengers Unlimited - Infinity Comic 052 (2023) (digital-mobile-Empire).cbz (35pp) | [50817] Avengers Unlimited - Infinity Comic 053 (2023) (digital-mobile-Empire).cbz (40pp)
+            [50818] Avengers Unlimited - Infinity Comic 054 (2023) (digital-mobile-Empire).cbz (35pp) | [50819] Avengers Unlimited - Infinity Comic 055 (2023) (digital-mobile-Empire).cbz (22pp)
+            [50820] Avengers Unlimited - Infinity Comic 056 (2023) (digital-mobile-Empire).cbz (24pp) | [50821] Avengers Unlimited - Infinity Comic 057 (2023) (digital-mobile-Empire).cbz (22pp)
+            [50822] Avengers Unlimited - Infinity Comic 058 (2023) (digital-mobile-Empire).cbz (28pp) | [50823] Avengers Unlimited - Infinity Comic 059 (2023) (digital-mobile-Empire).cbz (32pp)
+            [50824] Avengers Unlimited - Infinity Comic 063 (2023) (digital-mobile-Empire).cbz (30pp) | [50825] Avengers Unlimited - Infinity Comic 064 (2023) (digital-mobile-Empire).cbz (34pp)
+            [50826] Avengers Unlimited - Infinity Comic 065 (2023) (digital-mobile-Empire).cbz (35pp) | [50827] Avengers Unlimited Infinity Comic 060 (2023) (digital-mobile-Empire).cbz (65pp)
+            [50828] Avengers Unlimited Infinity Comic 061 (2023) (digital-mobile-Empire).cbz (65pp) | [50829] Avengers Unlimited Infinity Comic 062 (2023) (digital-mobile-Empire).cbz (65pp)
+   ours:    ladder 1-65
+   CV linked:      vol 147318 "Avengers Unlimited Infinity Comic" 2022 Marvel 65 issues; cached #1-65 (65); yearΔ 0; ratio 65/65 = 1.00; no judged range; v1 per-file: same volume on 65/65 files
+   CV candidates:  (= linked) · 144562 "Love Unlimited Infinity Comic" 2022 Marvel 72 s89 · 142336 "Spider-Verse Unlimited - Infinity Comic" 2022 Marvel 53 s89 · 139055 "X-Men Unlimited Infinity Comic" 2021 Marvel 142 s74 · 142067 "Avengers Forever - Infinity Comic " 2022 Marvel 4 s74 · 153351 "Spider-Man Unlimited Infinity Comic " 2023 Marvel 50 s34 · 154150 "Avengers United Infinity Comic" 2023 Marvel 63 s34   (v1 search)
+   CV local rip:   (= linked) · 142336 "Spider-Verse Unlimited - Infinity Comic" 2022 Marvel 53 (via CV candidate name "Spider-Verse Unlimited - Infinity Comic") · 144562 "Love Unlimited Infinity Comic" 2022 Marvel 72 (via CV candidate name "Love Unlimited Infinity Comic")   (rip lookup)
+
+== S9680 It's Jeff Infinity Comic  [tier B]   keys: It's Jeff - Infinity Comic  years 2021-2025  42 files / 0 collections
+   folders: [42] Marvel\#MARVEL CURRENT ONGOING TITLES\_Infinity Comics\It's Jeff - Infinity Comic (2021)
+   files:   It's Jeff - Infinity Comic 001 (2021) (Digital-Mobile) (Infinity-Empire).cbz … It's Jeff - Infinity Comic 012 (2021) (Digital-Mobile) (Infinity-Empire).cbz  (12 files, pp 20-30)
+            It's Jeff - Infinity Comic 013 (2022) (digital-mobile-Empire).cbz … It's Jeff - Infinity Comic 023 (2022) (digital-mobile-Empire).cbz  (11 files, pp 23-29)
+            [51058] It's Jeff - Infinity Comic 024 (2023) (F) (digital-mobile-Empire).cbz (28pp) | [51059] It's Jeff - Infinity Comic 025 (2023) (digital-mobile-Empire).cbz (20pp)
+            [51060] It's Jeff - Infinity Comic 026 (2023) (digital-mobile-Empire).cbz (21pp) | [51061] It's Jeff - Infinity Comic 027 (2023) (digital-mobile-Empire).cbz (19pp)
+            [51062] It's Jeff - Infinity Comic 028 (2023) (digital-mobile-Empire).cbz (21pp) | [51063] It's Jeff - Infinity Comic 029 (2023) (digital-mobile-Empire).cbz (52pp)
+            [51064] It's Jeff - Infinity Comic 030 (2023) (digital-mobile-Empire).cbz (24pp) | [51065] It's Jeff - Infinity Comic 031 (2024) (digital-mobile-Empire).cbz (28pp)
+            [51066] It's Jeff - Infinity Comic 032 (2024) (digital-mobile-Empire).cbz (32pp) | [51067] It's Jeff - Infinity Comic 033 (2024) (digital-mobile-Empire).cbz (30pp)
+            [51068] It's Jeff - Infinity Comic 034 (2024) (digital-mobile-Empire).cbz (24pp) | [51069] It's Jeff - Infinity Comic 035 (2024) (digital-mobile-Empire).cbz (24pp)
+            [51070] It's Jeff - Infinity Comic 036 (2024) (digital-mobile-Empire).cbz (27pp) | [51071] It's Jeff - Infinity Comic 037 (2024) (digital-mobile-Empire).cbz (22pp)
+            [51072] It's Jeff - Infinity Comic 038 (2024) (digital-mobile-Empire).cbz (19pp) | [51073] It's Jeff - Infinity Comic 039 (2024) (digital-mobile-Empire).cbz (23pp)
+            [51074] It's Jeff - Infinity Comic 040 (2024) (digital-mobile-Empire).cbz (20pp) | [51075] It's Jeff - Infinity Comic 041 (2024) (digital-mobile-Empire).cbz (17pp)
+            [51076] It's Jeff - Infinity Comic 042 (2024) (digital-mobile-Empire).cbz (18pp)
+   ours:    ladder 1-42
+   CV linked:      vol 139047 "It's Jeff Infinity Comic" 2021 Marvel 49 issues; cached #1-49 (49); yearΔ 0; ratio 42/49 = 0.86; no judged range; v1 per-file: same volume on 42/42 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+
+== S11006 Love Unlimited Infinity Comic  [tier B]   keys: Love Unlimited - Infinity Comic  years 2022-2023  72 files / 0 collections
+   folders: [72] Marvel\#MARVEL CURRENT ONGOING TITLES\_Infinity Comics\Love Unlimited - Infinity Comic (2022)
+   files:   [51114] Love Unlimited - Infinity Comic 001 (2022) (digital-mobile-Empire).cbz (55pp) | [51115] Love Unlimited - Infinity Comic 002 (2022) (digital-mobile-Empire).cbz (55pp)
+            [51116] Love Unlimited - Infinity Comic 003 (2022) (digital-mobile-Empire).cbz (55pp) | [51117] Love Unlimited - Infinity Comic 004 (2022) (digital-mobile-Empire).cbz (55pp)
+            [51118] Love Unlimited - Infinity Comic 005 (2022) (digital-mobile-Empire).cbz (65pp) | [51119] Love Unlimited - Infinity Comic 006 (2022) (digital-mobile-Empire).cbz (72pp)
+            [51120] Love Unlimited - Infinity Comic 007 (2022) (digital-mobile-Empire).cbz (38pp) | [51121] Love Unlimited - Infinity Comic 008 (2022) (digital-mobile-Empire).cbz (40pp)
+            [51122] Love Unlimited - Infinity Comic 009 (2022) (digital-mobile-Empire).cbz (45pp) | [51123] Love Unlimited - Infinity Comic 010 (2022) (digital-mobile-Empire).cbz (45pp)
+            [51124] Love Unlimited - Infinity Comic 011 (2022) (digital-mobile-Empire).cbz (45pp) | [51125] Love Unlimited - Infinity Comic 012 (2022) (digital-mobile-Empire).cbz (45pp)
+            [51126] Love Unlimited - Infinity Comic 013 (2022) (digital-mobile-Empire).cbz (39pp) | [51127] Love Unlimited - Infinity Comic 014 (2022) (digital-mobile-Empire).cbz (35pp)
+            [51128] Love Unlimited - Infinity Comic 015 (2022) (digital-mobile-Empire).cbz (34pp) | [51129] Love Unlimited - Infinity Comic 016 (2022) (digital-mobile-Empire).cbz (41pp)
+            [51130] Love Unlimited - Infinity Comic 017 (2022) (digital-mobile-Empire).cbz (36pp) | [51131] Love Unlimited - Infinity Comic 018 (2022) (digital-mobile-Empire).cbz (43pp)
+            [51132] Love Unlimited - Infinity Comic 019 (2022) (digital-mobile-Empire).cbz (52pp) | [51133] Love Unlimited - Infinity Comic 020 (2022) (digital-mobile-Empire).cbz (60pp)
+            [51134] Love Unlimited - Infinity Comic 021 (2022) (digital-mobile-Empire).cbz (65pp) | [51135] Love Unlimited - Infinity Comic 022 (2022) (digital-mobile-Empire).cbz (63pp)
+            [51136] Love Unlimited - Infinity Comic 023 (2022) (digital-mobile-Empire).cbz (61pp) | [51137] Love Unlimited - Infinity Comic 024 (2022) (digital-mobile-Empire).cbz (65pp)
+            [51138] Love Unlimited - Infinity Comic 025 (2022) (digital-mobile-Empire).cbz (35pp) | [51139] Love Unlimited - Infinity Comic 026 (2022) (digital-mobile-Empire).cbz (35pp)
+            [51140] Love Unlimited - Infinity Comic 027 (2022) (digital-mobile-Empire).cbz (35pp) | [51141] Love Unlimited - Infinity Comic 028 (2022) (digital-mobile-Empire).cbz (35pp)
+            [51142] Love Unlimited - Infinity Comic 029 (2022) (digital-mobile-Empire).cbz (35pp) | [51143] Love Unlimited - Infinity Comic 030 (2022) (digital-mobile-Empire).cbz (36pp)
+            [51144] Love Unlimited - Infinity Comic 031 (2023) (digital-mobile-Empire).cbz (25pp) | [51145] Love Unlimited - Infinity Comic 032 (2023) (digital-mobile-Empire).cbz (27pp)
+            [51146] Love Unlimited - Infinity Comic 033 (2023) (F) (digital-mobile-Empire).cbz (24pp) | [51147] Love Unlimited - Infinity Comic 034 (2023) (F) (digital-mobile-Empire).cbz (41pp)
+            [51148] Love Unlimited - Infinity Comic 035 (2023) (digital-mobile-Empire).cbz (25pp) | [51149] Love Unlimited - Infinity Comic 036 (2023) (digital-mobile-Empire).cbz (38pp)
+            [51150] Love Unlimited - Infinity Comic 037 (2023) (Digital-Empire).cbz (35pp) | [51151] Love Unlimited - Infinity Comic 038 (2023) (digital-mobile-Empire).cbz (35pp)
+            [51152] Love Unlimited - Infinity Comic 039 (2023) (digital-mobile-Empire).cbz (35pp) | [51153] Love Unlimited - Infinity Comic 040 (2023) (digital-mobile-Empire).cbz (35pp)
+            [51154] Love Unlimited - Infinity Comic 041 (2023) (digital-mobile-Empire).cbz (35pp) | [51155] Love Unlimited - Infinity Comic 042 (2023) (digital-mobile-Empire).cbz (35pp)
+            [51156] Love Unlimited - Infinity Comic 043 (2023) (digital-mobile-Empire).cbz (49pp) | [51157] Love Unlimited - Infinity Comic 044 (2023) (digital-mobile-Empire).cbz (53pp)
+            [51158] Love Unlimited - Infinity Comic 045 (2023) (digital-mobile-Empire).cbz (47pp) | [51159] Love Unlimited - Infinity Comic 046 (2023) (digital-mobile-Empire).cbz (53pp)
+            [51160] Love Unlimited - Infinity Comic 047 (2023) (digital-mobile-Empire).cbz (50pp) | [51161] Love Unlimited - Infinity Comic 048 (2023) (digital-mobile-Empire).cbz (57pp)
+            [51162] Love Unlimited - Infinity Comic 049 (2023) (digital-mobile-Empire).cbz (26pp) | [51163] Love Unlimited - Infinity Comic 050 (2023) (digital-mobile-Empire).cbz (34pp)
+            [51164] Love Unlimited - Infinity Comic 051 (2023) (digital-mobile-Empire).cbz (33pp) | [51165] Love Unlimited - Infinity Comic 052 (2023) (digital-mobile-Empire).cbz (22pp)
+            [51166] Love Unlimited - Infinity Comic 053 (2023) (digital-mobile-Empire).cbz (31pp) | [51167] Love Unlimited - Infinity Comic 054 (2023) (digital-mobile-Empire).cbz (26pp)
+            [51168] Love Unlimited - Infinity Comic 055 (2023) (digital-mobile-Empire).cbz (34pp) | [51169] Love Unlimited - Infinity Comic 056 (2023) (digital-mobile-Empire).cbz (33pp)
+            [51170] Love Unlimited - Infinity Comic 057 (2023) (digital-mobile-Empire).cbz (35pp) | [51171] Love Unlimited - Infinity Comic 058 (2023) (digital-mobile-Empire).cbz (36pp)
+            [51172] Love Unlimited - Infinity Comic 059 (2023) (digital-mobile-Empire).cbz (36pp) | [51173] Love Unlimited - Infinity Comic 060 (2023) (digital-mobile-Empire).cbz (45pp)
+            [51174] Love Unlimited - Infinity Comic 061 (2023) (digital-mobile-Empire).cbz (38pp) | [51175] Love Unlimited - Infinity Comic 062 (2023) (digital-mobile-Empire).cbz (44pp)
+            [51176] Love Unlimited - Infinity Comic 063 (2023) (digital-mobile-Empire).cbz (49pp) | [51177] Love Unlimited - Infinity Comic 064 (2023) (digital-mobile-Empire).cbz (41pp)
+            [51178] Love Unlimited - Infinity Comic 065 (2023) (digital-mobile-Empire).cbz (44pp) | [51179] Love Unlimited - Infinity Comic 066 (2023) (digital-mobile-Empire).cbz (50pp)
+            [51180] Love Unlimited - Infinity Comic 067 (2023) (digital-mobile-Empire).cbz (35pp) | [51181] Love Unlimited - Infinity Comic 068 (2023) (digital-mobile-Empire).cbz (35pp)
+            [51182] Love Unlimited - Infinity Comic 069 (2023) (digital-mobile-Empire).cbz (35pp) | [51183] Love Unlimited Infinity Comic 070 (2023) (digital-mobile-Empire).cbz (35pp)
+            [51184] Love Unlimited Infinity Comic 071 (2023) (digital-mobile-Empire).cbz (35pp) | [51185] Love Unlimited Infinity Comic 072 (2023) (digital-mobile-Empire).cbz (35pp)
+   ours:    ladder 1-72
+   CV linked:      vol 144562 "Love Unlimited Infinity Comic" 2022 Marvel 72 issues; cached #1-72 (72); yearΔ 0; ratio 72/72 = 1.00; no judged range; v1 per-file: same volume on 72/72 files
+   CV candidates:  (= linked) · 147318 "Avengers Unlimited Infinity Comic" 2022 Marvel 65 s89 · 142336 "Spider-Verse Unlimited - Infinity Comic" 2022 Marvel 53 s82 · 139055 "X-Men Unlimited Infinity Comic" 2021 Marvel 142 s79 · 141832 "Marvel Meow: Infinity Comic" 2022 Marvel 36 s66 · 153351 "Spider-Man Unlimited Infinity Comic " 2023 Marvel 50 s27 · 151276 "Edge of Venomverse Unlimited Infinity Comic" 2023 Marvel 12 s17   (v1 search)
+   CV local rip:   (= linked) · 142336 "Spider-Verse Unlimited - Infinity Comic" 2022 Marvel 53 (via CV candidate name "Spider-Verse Unlimited - Infinity Comic") · 147318 "Avengers Unlimited Infinity Comic" 2022 Marvel 65 (via CV candidate name "Avengers Unlimited Infinity Comic")   (rip lookup)
+
+== S11524 Marvel Meow: Infinity Comic  [tier B]   keys: Marvel Meow - Infinity Comic  years 2022-2024  24 files / 0 collections
+   folders: [24] Marvel\#MARVEL CURRENT ONGOING TITLES\_Infinity Comics\Marvel Meow - Infinity Comic (2022)
+   files:   [51190] Marvel Meow - Infinity Comic 001 (2022) (digital-mobile) (Empire).cbz (12pp) | [51191] Marvel Meow - Infinity Comic 002 (2022) (digital-mobile) (Empire).cbz (12pp)
+            [51192] Marvel Meow - Infinity Comic 003 (2022) (digital-mobile) (Empire).cbz (10pp) | [51193] Marvel Meow - Infinity Comic 004 (2022) (digital-mobile) (Empire).cbz (10pp)
+            Marvel Meow - Infinity Comic 005 (2022) (digital-mobile-Empire).cbz … Marvel Meow - Infinity Comic 024 (2024) (digital-mobile-Empire).cbz  (17 files, pp 11-19)
+            [51211] Marvel Meow Infinity Comic 016 (2023) (digital-mobile-Empire).cbz (16pp) | [51212] Marvel Meow Infinity Comic 017 (2023) (digital-mobile-Empire).cbz (13pp)
+            [51213] Marvel Meow Infinity Comic 018 (2023) (digital-mobile-Empire).cbz (15pp)
+   ours:    ladder 1-24
+   CV linked:      vol 141832 "Marvel Meow: Infinity Comic" 2022 Marvel 36 issues; cached #1-36 (36); yearΔ 0; ratio 24/36 = 0.67; no judged range; v1 per-file: same volume on 24/24 files
+   CV candidates:  (= linked) · 141871 "Marvel Fairy Tales Infinity Comic" 2022 Marvel 4 s73 · 139050 "Ms. Marvel Infinity Comic Primer" 2021 Marvel 1 issue 885194 s70 · 139044 "Captain Marvel Infinity Comic Primer" 2021 Marvel 1 issue 885182 s70 · 139554 "Marvel Meow" 2021 Viz 1 issue 889351 s67 · 154980 "Marvel Mutts Infinity Comic " 2023 Marvel 24 s34 · 149244 "Marvel Meow and Pizza Dog Infinity Comic" 2023 Marvel 4 s32   (v1 search)
+   CV local rip:   (= linked) · 141871 "Marvel Fairy Tales Infinity Comic" 2022 Marvel 4 (via CV candidate name "Marvel Fairy Tales Infinity Comic") · 139050 "Ms. Marvel Infinity Comic Primer" 2021 Marvel 1 issue 885194 (via CV candidate name "Ms. Marvel Infinity Comic Primer")   (rip lookup)
+
+== S11723 Marvel's Voices Infinity Comic  [tier C] · 104 files  keys: Marvel Voices - Iceman - Infinity Comic | Marvel's Voices - Infinity Comic  years 2022-2024  104 files / 0 collections
+   folders: [100] Marvel\#MARVEL CURRENT ONGOING TITLES\_Infinity Comics\Marvel's Voices - Infinity Comic (2022) · [4] Marvel\#MARVEL CURRENT ONGOING TITLES\Marvel's Voices (2020)\Marvel Voices - Iceman - Infinity Comic (2022)
+   files:   [48106] Marvel Voices - Iceman - Infinity Comic 001 (2022) (digital) (MidnightRider).cbz (76pp)
+            [48107] Marvel Voices - Iceman - Infinity Comic 002 (2022) (digital) (MidnightRider).cbz (80pp)
+            [48108] Marvel Voices - Iceman - Infinity Comic 003 (2022) (digital) (MidnightRider).cbz (82pp)
+            [48109] Marvel Voices - Iceman - Infinity Comic 004 (2022) (digital) (MidnightRider).cbz (85pp) | [51236] Marvel's Voices - Infinity Comic 001 (2022) (digital-mobile-Empire).cbz (74pp)
+            [51237] Marvel's Voices - Infinity Comic 002 (2022) (digital-mobile-Empire).cbz (76pp) | [51238] Marvel's Voices - Infinity Comic 003 (2022) (digital-mobile-Empire).cbz (81pp)
+            [51239] Marvel's Voices - Infinity Comic 004 (2022) (digital-mobile-Empire).cbz (85pp) | [51240] Marvel's Voices - Infinity Comic 005 (2022) (digital-mobile-Empire).cbz (55pp)
+            [51241] Marvel's Voices - Infinity Comic 006 (2022) (digital-mobile-Empire).cbz (65pp) | [51242] Marvel's Voices - Infinity Comic 007 (2022) (digital-mobile-Empire).cbz (58pp)
+            [51243] Marvel's Voices - Infinity Comic 008 (2022) (digital-mobile-Empire).cbz (43pp) | [51244] Marvel's Voices - Infinity Comic 009 (2022) (digital-mobile-Empire).cbz (57pp)
+            [51245] Marvel's Voices - Infinity Comic 010 (2022) (digital-mobile-Empire).cbz (61pp) | [51246] Marvel's Voices - Infinity Comic 011 (2022) (digital-mobile-Empire).cbz (65pp)
+            [51247] Marvel's Voices - Infinity Comic 012 (2022) (digital-mobile-Empire).cbz (25pp) | [51248] Marvel's Voices - Infinity Comic 013 (2022) (digital-mobile-Empire).cbz (27pp)
+            [51249] Marvel's Voices - Infinity Comic 014 (2022) (digital-mobile-Empire).cbz (30pp) | [51250] Marvel's Voices - Infinity Comic 015 (2022) (digital-mobile-Empire).cbz (33pp)
+            [51251] Marvel's Voices - Infinity Comic 016 (2022) (digital-mobile-Empire).cbz (35pp) | [51252] Marvel's Voices - Infinity Comic 017 (2022) (digital-mobile-Empire).cbz (36pp)
+            [51253] Marvel's Voices - Infinity Comic 018 (2022) (digital-mobile-Empire).cbz (64pp) | [51254] Marvel's Voices - Infinity Comic 019 (2022) (digital-mobile-Empire).cbz (48pp)
+            [51255] Marvel's Voices - Infinity Comic 020 (2022) (digital-mobile-Empire).cbz (29pp) | [51256] Marvel's Voices - Infinity Comic 021 (2022) (digital-mobile-Empire).cbz (44pp)
+            [51257] Marvel's Voices - Infinity Comic 022 (2022) (digital-mobile-Empire).cbz (47pp) | [51258] Marvel's Voices - Infinity Comic 023 (2022) (digital-mobile-Empire).cbz (56pp)
+            [51259] Marvel's Voices - Infinity Comic 024 (2022) (digital-mobile-Empire).cbz (48pp) | [51260] Marvel's Voices - Infinity Comic 025 (2022) (digital-mobile-Empire).cbz (49pp)
+            [51261] Marvel's Voices - Infinity Comic 026 (2022) (digital-mobile-Empire).cbz (55pp) | [51262] Marvel's Voices - Infinity Comic 027 (2022) (digital-mobile-Empire).cbz (46pp)
+            [51263] Marvel's Voices - Infinity Comic 028 (2022) (digital-mobile-Empire).cbz (47pp) | [51264] Marvel's Voices - Infinity Comic 029 (2022) (digital-mobile-Empire).cbz (53pp)
+            [51265] Marvel's Voices - Infinity Comic 030 (2022) (digital-mobile-Empire).cbz (46pp) | [51266] Marvel's Voices - Infinity Comic 031 (2022) (digital-mobile-Empire).cbz (55pp)
+            [51267] Marvel's Voices - Infinity Comic 032 (2023) (digital-mobile-Empire).cbz (49pp) | [51268] Marvel's Voices - Infinity Comic 033 (2023) (digital-mobile-Empire).cbz (65pp)
+            [51269] Marvel's Voices - Infinity Comic 034 (2023) (digital-mobile-Empire).cbz (44pp) | [51270] Marvel's Voices - Infinity Comic 035 (2023) (digital-mobile-Empire).cbz (56pp)
+            [51271] Marvel's Voices - Infinity Comic 036 (2023) (digital-mobile-Empire).cbz (59pp) | [51272] Marvel's Voices - Infinity Comic 037 (2023) (F) (digital-mobile-Empire).cbz (50pp)
+            [51273] Marvel's Voices - Infinity Comic 038 (2023) (digital-mobile-Empire).cbz (60pp) | [51274] Marvel's Voices - Infinity Comic 039 (2023) (digital-mobile-Empire).cbz (100pp)
+            [51275] Marvel's Voices - Infinity Comic 040 (2023) (digital-mobile-Empire).cbz (81pp) | [51276] Marvel's Voices - Infinity Comic 041 (2023) (digital-mobile-Empire).cbz (71pp)
+            [51277] Marvel's Voices - Infinity Comic 042 (2023) (digital-mobile-Empire).cbz (79pp) | [51278] Marvel's Voices - Infinity Comic 043 (2023) (digital-mobile-Empire).cbz (105pp)
+            [51279] Marvel's Voices - Infinity Comic 044 (2023) (digital-mobile-Empire).cbz (39pp) | [51280] Marvel's Voices - Infinity Comic 045 (2023) (F) (digital-mobile-Empire).cbz (38pp)
+            [51281] Marvel's Voices - Infinity Comic 046 (2023) (digital-mobile-Empire).cbz (44pp) | [51282] Marvel's Voices - Infinity Comic 047 (2023) (digital-mobile-Empire).cbz (21pp)
+            [51283] Marvel's Voices - Infinity Comic 048 (2023) (digital-mobile-Empire).cbz (29pp) | [51284] Marvel's Voices - Infinity Comic 049 (2023) (digital-mobile-Empire).cbz (37pp)
+            [51285] Marvel's Voices - Infinity Comic 050 (2023) (digital-mobile-Empire).cbz (63pp) | [51286] Marvel's Voices - Infinity Comic 051 (2023) (digital-mobile-Empire).cbz (37pp)
+            [51287] Marvel's Voices - Infinity Comic 052 (2023) (digital-mobile-Empire).cbz (37pp) | [51288] Marvel's Voices - Infinity Comic 053 (2023) (digital-mobile-Empire).cbz (42pp)
+            [51289] Marvel's Voices - Infinity Comic 054 (2023) (digital-mobile-Empire).cbz (43pp) | [51290] Marvel's Voices - Infinity Comic 055 (2023) (digital-mobile-Empire).cbz (43pp)
+            [51291] Marvel's Voices - Infinity Comic 056 (2023) (digital-mobile-Empire).cbz (50pp) | [51292] Marvel's Voices - Infinity Comic 057 (2023) (digital-mobile-Empire).cbz (71pp)
+            [51293] Marvel's Voices - Infinity Comic 058 (2023) (digital-mobile-Empire).cbz (68pp) | [51294] Marvel's Voices - Infinity Comic 059 (2023) (digital-mobile-Empire).cbz (64pp)
+            [51295] Marvel's Voices - Infinity Comic 060 (2023) (digital-mobile-Empire).cbz (47pp) | [51296] Marvel's Voices - Infinity Comic 061 (2023) (digital-mobile-Empire).cbz (65pp)
+            [51297] Marvel's Voices - Infinity Comic 062 (2023) (digital-mobile-Empire).cbz (39pp) | [51298] Marvel's Voices - Infinity Comic 063 (2023) (digital-mobile-Empire).cbz (48pp)
+            [51299] Marvel's Voices - Infinity Comic 064 (2023) (digital-mobile-Empire).cbz (35pp) | [51300] Marvel's Voices - Infinity Comic 065 (2023) (digital-mobile-Empire).cbz (33pp)
+            [51301] Marvel's Voices - Infinity Comic 066 (2023) (digital-mobile-Empire).cbz (35pp) | [51302] Marvel's Voices - Infinity Comic 067 (2023) (digital-mobile-Empire).cbz (34pp)
+            [51303] Marvel's Voices - Infinity Comic 068 (2023) (digital-mobile-Empire).cbz (39pp) | [51304] Marvel's Voices - Infinity Comic 069 (2023) (digital-mobile-Empire).cbz (33pp)
+            [51305] Marvel's Voices - Infinity Comic 070 (2023) (digital-mobile-Empire).cbz (46pp) | [51306] Marvel's Voices - Infinity Comic 071 (2023) (digital-mobile-Empire).cbz (46pp)
+            [51307] Marvel's Voices - Infinity Comic 072 (2023) (digital-mobile-Empire).cbz (41pp) | [51308] Marvel's Voices - Infinity Comic 073 (2023) (digital-mobile-Empire).cbz (42pp)
+            [51309] Marvel's Voices - Infinity Comic 074 (2023) (digital-mobile-Empire).cbz (45pp) | [51310] Marvel's Voices - Infinity Comic 075 (2023) (digital-mobile-Empire).cbz (34pp)
+            [51311] Marvel's Voices - Infinity Comic 076 (2023) (digital-mobile-Empire).cbz (58pp) | [51312] Marvel's Voices - Infinity Comic 077 (2023) (digital-mobile-Empire).cbz (57pp)
+            [51313] Marvel's Voices - Infinity Comic 078 (2023) (digital-mobile-Empire).cbz (32pp) | [51314] Marvel's Voices - Infinity Comic 079 (2023) (digital-mobile-Empire).cbz (34pp)
+            [51315] Marvel's Voices - Infinity Comic 080 (2023) (digital-mobile-Empire).cbz (58pp) | [51316] Marvel's Voices - Infinity Comic 081 (2023) (digital-mobile-Empire).cbz (48pp)
+            [51317] Marvel's Voices - Infinity Comic 082 (2024) (digital-mobile-Empire).cbz (36pp) | [51318] Marvel's Voices - Infinity Comic 083 (2024) (digital-mobile-Empire).cbz (38pp)
+            [51319] Marvel's Voices - Infinity Comic 084 (2024) (digital-mobile-Empire).cbz (47pp) | [51320] Marvel's Voices - Infinity Comic 085 (2024) (digital-mobile-Empire).cbz (59pp)
+            [51321] Marvel's Voices - Infinity Comic 086 (2024) (digital-mobile-Empire).cbz (61pp) | [51322] Marvel's Voices - Infinity Comic 087 (2024) (digital-mobile-Empire).cbz (65pp)
+            [51323] Marvel's Voices - Infinity Comic 088 (2024) (digital-mobile-Empire).cbz (65pp) | [51324] Marvel's Voices - Infinity Comic 089 (2024) (digital-mobile-Empire).cbz (62pp)
+            [51325] Marvel's Voices - Infinity Comic 090 (2024) (digital-mobile-Empire).cbz (61pp) | [51326] Marvel's Voices - Infinity Comic 091 (2024) (digital-mobile-Empire).cbz (54pp)
+            [51327] Marvel's Voices - Infinity Comic 092 (2024) (digital-mobile-Empire).cbz (49pp) | [51328] Marvel's Voices - Infinity Comic 093 (2024) (digital-mobile-Empire).cbz (48pp)
+            [51329] Marvel's Voices - Infinity Comic 094 (2024) (digital-mobile-Empire).cbz (48pp) | [51330] Marvel's Voices - Infinity Comic 095 (2024) (digital-mobile-Empire).cbz (61pp)
+            [51331] Marvel's Voices - Infinity Comic 096 (2024) (digital-mobile-Empire).cbz (55pp) | [51332] Marvel's Voices - Infinity Comic 097 (2024) (digital-mobile-Empire).cbz (58pp)
+            [51333] Marvel's Voices - Infinity Comic 098 (2024) (digital-mobile-Empire).cbz (50pp) | [51334] Marvel's Voices - Infinity Comic 099 (2024) (digital-mobile-Empire).cbz (49pp)
+            [51335] Marvel's Voices - Infinity Comic 100 (2024) (digital-mobile-Empire).cbz (70pp)
+   ours:    ladder 1-100; 4 number(s) name more than one file: 1, 2, 3, 4
+   CV linked:      vol 144359 "Marvel's Voices Infinity Comic" 2022 Marvel 100 issues; cached #1-100 (100); yearΔ 0; ratio 104/100 = 1.04; no judged range; v1 per-file: same volume on 100/104 files
+   CV candidates:  (= linked) · 125120 "Marvel's Voices" 2020 Marvel 1 issue 737760 s82 · 142842 "Free Comic Book Day 2022: Marvel's Voices" 2022 Marvel 1 issue 922406 s71 · 132129 "Marvel's Voices: Indigenous Voices" 2020 Marvel 1 issue 819121 s57 · 134052 "Marvel's Voices: Legacy" 2021 Marvel 1 issue 830030 s56 · 137050 "Marvel's Voices: Pride" 2021 Marvel 1 issue 863930 s56 · 158642 "Avengers Academy: Marvel's Voices Infinity Comic" 2024 Marvel 60 s41   (v1 search)
+   CV local rip:   (= linked) · 125120 "Marvel's Voices" 2020 Marvel 1 issue 737760 (via CV candidate name "Marvel's Voices") · 142842 "Free Comic Book Day 2022: Marvel's Voices" 2022 Marvel 1 issue 922406 (via CV candidate name "Free Comic Book Day 2022: Marvel's Voices") · 132129 "Marvel's Voices: Indigenous Voices" 2020 Marvel 1 issue 819121 (via CV candidate name "Marvel's Voices: Indigenous Voices")   (rip lookup)
+   GCD dump:       156336 "Marvel's Voices" 2020-2020 Marvel [] 2 (via CV candidate name "Marvel's Voices") · 184687 "Free Comic Book Day 2022: Marvel's Voices" 2022-2022 Marvel [] 1 (via CV candidate name "Free Comic Book Day 2022: Marvel's Voices") · 166706 "Marvel's Voices: Indigenous Voices" 2021-2021 Marvel [] 1 (via CV candidate name "Marvel's Voices: Indigenous Voices")   (dump lookup)
+
+== S16164 Spider-Man Unlimited Infinity Comic  [tier B]   keys: Spider-Man Unlimited - Infinity Comic  years 2023-2024  50 files / 0 collections
+   folders: [50] Marvel\#MARVEL CURRENT ONGOING TITLES\_Infinity Comics\Spider-Man Unlimited Infinity Comic (2023)
+   files:   [51476] Spider-Man Unlimited - Infinity Comic 001 (2023) (digital-mobile-Empire).cbz (31pp) | [51477] Spider-Man Unlimited - Infinity Comic 002 (2023) (digital-mobile-Empire).cbz (51pp)
+            [51478] Spider-Man Unlimited - Infinity Comic 003 (2023) (digital-mobile-Empire).cbz (78pp) | [51479] Spider-Man Unlimited - Infinity Comic 004 (2023) (digital-mobile-Empire).cbz (50pp)
+            [51480] Spider-Man Unlimited - Infinity Comic 005 (2023) (digital-mobile-Empire).cbz (45pp) | [51481] Spider-Man Unlimited - Infinity Comic 006 (2023) (digital-mobile-Empire).cbz (66pp)
+            [51482] Spider-Man Unlimited - Infinity Comic 007 (2023) (digital-mobile-Empire).cbz (61pp) | [51483] Spider-Man Unlimited - Infinity Comic 008 (2023) (digital-mobile-Empire).cbz (158pp)
+            [51484] Spider-Man Unlimited - Infinity Comic 009 (2023) (digital-mobile-Empire).cbz (141pp) | [51485] Spider-Man Unlimited - Infinity Comic 010 (2023) (digital-mobile-Empire).cbz (140pp)
+            [51486] Spider-Man Unlimited - Infinity Comic 011 (2023) (digital-mobile-Empire).cbz (69pp) | [51487] Spider-Man Unlimited - Infinity Comic 012 (2023) (digital-mobile-Empire).cbz (57pp)
+            [51488] Spider-Man Unlimited - Infinity Comic 013 (2023) (digital-mobile-Empire).cbz (48pp) | [51489] Spider-Man Unlimited - Infinity Comic 014 (2023) (digital-mobile-Empire).cbz (50pp)
+            [51490] Spider-Man Unlimited - Infinity Comic 015 (2023) (digital-mobile-Empire).cbz (44pp) | [51491] Spider-Man Unlimited - Infinity Comic 016 (2024) (digital-mobile-Empire).cbz (45pp)
+            [51492] Spider-Man Unlimited - Infinity Comic 017 (2024) (digital-mobile-Empire).cbz (49pp) | [51493] Spider-Man Unlimited - Infinity Comic 018 (2024) (digital-mobile-Empire).cbz (48pp)
+            [51494] Spider-Man Unlimited - Infinity Comic 019 (2024) (digital-mobile-Empire).cbz (21pp) | [51495] Spider-Man Unlimited - Infinity Comic 020 (2024) (digital-mobile-Empire).cbz (23pp)
+            [51496] Spider-Man Unlimited - Infinity Comic 021 (2024) (digital-mobile-Empire).cbz (22pp) | [51497] Spider-Man Unlimited - Infinity Comic 022 (2024) (digital-mobile-Empire).cbz (23pp)
+            [51498] Spider-Man Unlimited - Infinity Comic 023 (2024) (digital-mobile-Empire).cbz (21pp) | [51499] Spider-Man Unlimited - Infinity Comic 024 (2024) (digital-mobile-Empire).cbz (25pp)
+            [51500] Spider-Man Unlimited - Infinity Comic 025 (2024) (digital-mobile-Empire).cbz (51pp) | [51501] Spider-Man Unlimited - Infinity Comic 026 (2024) (digital-mobile-Empire).cbz (49pp)
+            [51502] Spider-Man Unlimited - Infinity Comic 027 (2024) (digital-mobile-Empire).cbz (47pp) | [51503] Spider-Man Unlimited - Infinity Comic 028 (2024) (digital-mobile-Empire).cbz (47pp)
+            [51504] Spider-Man Unlimited - Infinity Comic 029 (2024) (digital-mobile-Empire).cbz (42pp) | [51505] Spider-Man Unlimited - Infinity Comic 030 (2024) (digital-mobile-Empire).cbz (46pp)
+            [51506] Spider-Man Unlimited - Infinity Comic 031 (2024) (digital-mobile-Empire).cbz (25pp) | [51507] Spider-Man Unlimited - Infinity Comic 032 (2024) (digital-mobile-Empire).cbz (25pp)
+            [51508] Spider-Man Unlimited - Infinity Comic 033 (2024) (digital-mobile-Empire).cbz (23pp) | [51509] Spider-Man Unlimited - Infinity Comic 034 (2024) (digital-mobile-Empire).cbz (26pp)
+            [51510] Spider-Man Unlimited - Infinity Comic 035 (2024) (digital-mobile-Empire).cbz (31pp) | [51511] Spider-Man Unlimited - Infinity Comic 036 (2024) (digital-mobile-Empire).cbz (26pp)
+            [51512] Spider-Man Unlimited - Infinity Comic 037 (2024) (digital-mobile-Empire).cbz (45pp) | [51513] Spider-Man Unlimited - Infinity Comic 038 (2024) (digital-mobile-Empire).cbz (41pp)
+            [51514] Spider-Man Unlimited - Infinity Comic 039 (2024) (digital-mobile-Empire).cbz (50pp) | [51515] Spider-Man Unlimited - Infinity Comic 041 (2024) (digital-mobile-Empire).cbz (55pp)
+            [51516] Spider-Man Unlimited - Infinity Comic 042 (2024) (digital-mobile-Empire).cbz (51pp) | [51517] Spider-Man Unlimited - Infinity Comic 043 (2024) (digital-mobile-Empire).cbz (35pp)
+            [51518] Spider-Man Unlimited - Infinity Comic 044 (2024) (digital-mobile-Empire).cbz (33pp) | [51519] Spider-Man Unlimited - Infinity Comic 045 (2024) (digital-mobile-Empire).cbz (41pp)
+            [51520] Spider-Man Unlimited - Infinity Comic 046 (2024) (digital-mobile-Empire).cbz (41pp) | [51521] Spider-Man Unlimited - Infinity Comic 047 (2024) (digital-mobile-Empire).cbz (41pp)
+            [51522] Spider-Man Unlimited - Infinity Comic 048 (2024) (digital-mobile-Empire).cbz (45pp) | [51523] Spider-Man Unlimited - Infinity Comic 049 (2024) (digital-mobile-Empire).cbz (52pp)
+            [51524] Spider-Man Unlimited - Infinity Comic 050 (2024) (digital-mobile-Empire).cbz (65pp) | [51525] Spider-Man Unlimited Infinity Comic 040 (2024) (digital-mobile-Empire).cbz (55pp)
+   ours:    ladder 1-50
+   CV linked:      vol 153351 "Spider-Man Unlimited Infinity Comic" 2023 Marvel ? issues; cached #1-50 (50); yearΔ 0; ratio 50/?; no judged range; v1 per-file: same volume on 50/50 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+
+== S16257 Spider-Verse Unlimited - Infinity Comic  [tier B]   keys: Spider-Verse Unlimited - Infinity Comic  years 2022-2023  53 files / 0 collections
+   folders: [53] Marvel\#MARVEL CURRENT ONGOING TITLES\_Infinity Comics\Spider-Verse Unlimited - Infinity Comic (2022)
+   files:   [51526] Spider-Verse Unlimited - Infinity Comic 001 (2022) (digital-mobile-Empire).cbz (32pp)
+            [51527] Spider-Verse Unlimited - Infinity Comic 002 (2022) (digital-mobile-Empire).cbz (98pp)
+            [51528] Spider-Verse Unlimited - Infinity Comic 003 (2022) (digital-mobile-Empire).cbz (87pp)
+            [51529] Spider-Verse Unlimited - Infinity Comic 004 (2022) (digital-mobile-Empire).cbz (86pp)
+            [51530] Spider-Verse Unlimited - Infinity Comic 005 (2022) (digital-mobile-Empire).cbz (95pp)
+            [51531] Spider-Verse Unlimited - Infinity Comic 006 (2022) (digital-mobile-Empire).cbz (80pp)
+            [51532] Spider-Verse Unlimited - Infinity Comic 007 (2022) (digital-mobile-Empire).cbz (44pp)
+            [51533] Spider-Verse Unlimited - Infinity Comic 008 (2022) (digital-mobile-Empire).cbz (50pp)
+            [51534] Spider-Verse Unlimited - Infinity Comic 009 (2022) (digital-mobile-Empire).cbz (41pp)
+            [51535] Spider-Verse Unlimited - Infinity Comic 010 (2022) (digital-mobile-Empire).cbz (25pp)
+            [51536] Spider-Verse Unlimited - Infinity Comic 011 (2022) (digital-mobile-Empire).cbz (37pp)
+            [51537] Spider-Verse Unlimited - Infinity Comic 012 (2022) (digital-mobile-Empire).cbz (37pp)
+            [51538] Spider-Verse Unlimited - Infinity Comic 013 (2022) (digital-mobile-Empire).cbz (36pp)
+            [51539] Spider-Verse Unlimited - Infinity Comic 014 (2022) (digital-mobile-Empire).cbz (48pp)
+            [51540] Spider-Verse Unlimited - Infinity Comic 015 (2022) (digital-mobile-Empire).cbz (57pp)
+            [51541] Spider-Verse Unlimited - Infinity Comic 016 (2022) (digital-mobile-Empire).cbz (45pp)
+            [51542] Spider-Verse Unlimited - Infinity Comic 017 (2022) (digital-mobile-Empire).cbz (47pp)
+            [51543] Spider-Verse Unlimited - Infinity Comic 018 (2022) (digital-mobile-Empire).cbz (47pp)
+            [51544] Spider-Verse Unlimited - Infinity Comic 019 (2022) (digital-mobile-Empire).cbz (53pp)
+            [51545] Spider-Verse Unlimited - Infinity Comic 020 (2022) (digital-mobile-Empire).cbz (49pp)
+            [51546] Spider-Verse Unlimited - Infinity Comic 021 (2022) (digital-mobile-Empire).cbz (32pp)
+            [51547] Spider-Verse Unlimited - Infinity Comic 022 (2022) (digital-mobile-Empire).cbz (48pp)
+            [51548] Spider-Verse Unlimited - Infinity Comic 023 (2022) (digital-mobile-Empire).cbz (68pp)
+            [51549] Spider-Verse Unlimited - Infinity Comic 024 (2022) (digital-mobile-Empire).cbz (71pp)
+            [51550] Spider-Verse Unlimited - Infinity Comic 025 (2022) (digital-mobile-Empire).cbz (60pp)
+            [51551] Spider-Verse Unlimited - Infinity Comic 026 (2022) (digital-mobile-Empire).cbz (50pp)
+            [51552] Spider-Verse Unlimited - Infinity Comic 027 (2022) (digital-mobile-Empire).cbz (47pp)
+            [51553] Spider-Verse Unlimited - Infinity Comic 028 (2022) (digital-mobile-Empire).cbz (54pp)
+            [51554] Spider-Verse Unlimited - Infinity Comic 029 (2022) (digital-mobile-Empire).cbz (58pp)
+            [51555] Spider-Verse Unlimited - Infinity Comic 030 (2022) (digital-mobile-Empire).cbz (57pp)
+            [51556] Spider-Verse Unlimited - Infinity Comic 031 (2023) (digital-mobile-Empire).cbz (18pp)
+            [51557] Spider-Verse Unlimited - Infinity Comic 032 (2023) (digital-mobile-Empire).cbz (48pp)
+            [51558] Spider-Verse Unlimited - Infinity Comic 033 (2023) (F) (digital-mobile-Empire).cbz (45pp)
+            [51559] Spider-Verse Unlimited - Infinity Comic 034 (2023) (F) (digital-mobile-Empire).cbz (50pp)
+            [51560] Spider-Verse Unlimited - Infinity Comic 035 (2023) (digital-mobile-Empire).cbz (48pp)
+            [51561] Spider-Verse Unlimited - Infinity Comic 036 (2023) (digital-mobile-Empire).cbz (52pp)
+            [51562] Spider-Verse Unlimited - Infinity Comic 037 (2023) (digital-mobile-Empire).cbz (52pp)
+            [51563] Spider-Verse Unlimited - Infinity Comic 038 (2023) (digital-mobile-Empire).cbz (20pp)
+            [51564] Spider-Verse Unlimited - Infinity Comic 039 (2023) (digital-mobile-Empire).cbz (28pp)
+            [51565] Spider-Verse Unlimited - Infinity Comic 040 (2023) (digital-mobile-Empire).cbz (25pp)
+            [51566] Spider-Verse Unlimited - Infinity Comic 041 (2023) (digital-mobile-Empire).cbz (52pp)
+            [51567] Spider-Verse Unlimited - Infinity Comic 042 (2023) (F) (digital-mobile-Empire).cbz (53pp)
+            Spider-Verse Unlimited - Infinity Comic 043 (2023) (digital-mobile-Empire).cbz … Spider-Verse Unlimited - Infinity Comic 053 (2023) (digital-mobile-Empire).cbz  (11 files, pp 43-80)
+   ours:    ladder 1-53
+   CV linked:      vol 142336 "Spider-Verse Unlimited - Infinity Comic" 2022 Marvel 53 issues; cached #1-53 (53); yearΔ 0; ratio 53/53 = 1.00; no judged range; v1 per-file: same volume on 53/53 files
+   CV candidates:  (= linked) · 147318 "Avengers Unlimited Infinity Comic" 2022 Marvel 65 s89 · 144562 "Love Unlimited Infinity Comic" 2022 Marvel 72 s82 · 82108 "Spider-Verse" 2015 Marvel 5 s65 · 78047 "Spider-Verse" 2014 Marvel 2 s65 · 81681 "Spider-Verse" 2015 Marvel 1 issue 487443 s65 · 153351 "Spider-Man Unlimited Infinity Comic " 2023 Marvel 50 s34   (v1 search)
+   CV local rip:   (= linked) · 144562 "Love Unlimited Infinity Comic" 2022 Marvel 72 (via CV candidate name "Love Unlimited Infinity Comic") · 147318 "Avengers Unlimited Infinity Comic" 2022 Marvel 65 (via CV candidate name "Avengers Unlimited Infinity Comic")   (rip lookup)
+
+== S536 Agents of Atlas  [tier B]   keys: Agents of Atlas  years 2009-2009  3 files / 3 collections
+   flags: #117 duplicate-edition [Pending] item 117942 — #1-5 is claimed by this item and by 98247 — two editions of one block · #146 label-ambiguous [Pending] item 117942 — identical file name and page count to item 98247 - a duplicate copy of the same edition
+   folders: [2] Marvel\Agents of Atlas\Agents of Atlas v2 (2009) · [1] _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Agents of Atlas
+   files:   [98247] COL Agents of Atlas Vol. 01 - Dark Reign (2009) (Digital) (Shadowcat-Empire).cbz (207pp)
+            [98248] COL Agents of Atlas Vol. 02 - Turf Wars (2010) (Digital) (Shadowcat-Empire).cbz (158pp)
+            [117942] COL Agents of Atlas Vol. 01 - Dark Reign (2009) (Digital) (Shadowcat-Empire).cbz (207pp)
+   ours:    judged item 98247 #1-5 conf 0.75; judged item 117942 #1-5 conf 0.75; judged item 98248 #6-11 conf 0.85
+   CV linked:      vol 25641 "Agents of Atlas" 2009 Marvel 12 issues; cached #0-11 (12); yearΔ 0; ratio 0/12; 3 of 3 judged fit; v1 per-file: same volume on 2/3 files
+   CV candidates:  (= linked) · 18400 "Agents of Atlas" 2006 Marvel 6 s109 · 31741 "Agents of Atlas" 2009 Marvel 1 issue 198978 s108 · 30822 "Agents of Atlas: Dark Reign" 2009 Marvel 1 issue 190502 s91 · 120533 "Agents of Atlas" 2019 Marvel 5 s58 · 110492 "Agents of Atlas: The Complete Collection" 2018 Marvel 2 s40 · 34407 "Agents of Atlas: Vs." 2010 Marvel 1 issue 224540 s37   (v1 search)
+   CV local rip:   (= linked) · 31741 "Agents of Atlas" 2009 Marvel 1 issue 198978 · 18400 "Agents of Atlas" 2006 Marvel 6 · 120533 "Agents of Atlas" 2019 Marvel 5   (rip lookup)
+   GCD dump:       33433 "Agents of Atlas" 2009-2009 Marvel [] 11 · 232817 "Agents of Atlas" 2009-2009 Marvel [] 1 · 25228 "Agents of Atlas" 2007-2007 Marvel [] 1 · 18920 "Agents of Atlas" 2006-2007 Marvel [] 6 · 149471 "Agents of Atlas" 2019-2020 Marvel [] 5   (dump lookup)
+
+== S3306 Crazy Magazine  [tier A]   keys: CRAZY Magazine | CRAZY Magazine Super Special  years 1973-1983  95 files / 15 collections
+   flags: #205 label-ambiguous [Pending] item 98573 — all 94 "collections" of Crazy Magazine are 26-85 pp magazine issues
+   folders: [95] Marvel\CRAZY Magazine v1 (1973)
+   files:   [98572] CRAZY Magazine Super Special v1 001.cbr (101pp) | CRAZY Magazine v1 001.cbr … CRAZY Magazine v1 029.cbr  (29 files, pp 44-54) | [98602] COL CRAZY Magazine v1 030.cbr (82pp)
+            CRAZY Magazine v1 031.cbr … CRAZY Magazine v1 036.cbr  (6 files, pp 48-51) | [98609] COL CRAZY Magazine v1 037.cbr (81pp) | [98610] CRAZY Magazine v1 038.cbr (50pp)
+            [98611] CRAZY Magazine v1 039.cbr (50pp) | [98612] CRAZY Magazine v1 040.cbr (50pp) | [98613] CRAZY Magazine v1 041.cbr (52pp) | [98614] COL CRAZY Magazine v1 042.cbr (84pp)
+            CRAZY Magazine v1 043.cbr … CRAZY Magazine v1 048.cbr  (6 files, pp 50-52) | [98621] COL CRAZY Magazine v1 049.cbr (84pp) | [98622] CRAZY Magazine v1 050.cbr (52pp)
+            [98623] CRAZY Magazine v1 051.cbr (50pp) | [98624] COL CRAZY Magazine v1 052.cbr (82pp) | [98625] CRAZY Magazine v1 053.cbr (50pp) | [98626] CRAZY Magazine v1 054.cbr (50pp)
+            [98627] COL CRAZY Magazine v1 055.cbr (85pp) | [98628] CRAZY Magazine v1 056.cbr (53pp) | [98629] CRAZY Magazine v1 057.cbr (52pp) | [98630] COL CRAZY Magazine v1 058.cbr (79pp)
+            [98631] CRAZY Magazine v1 059.cbr (26pp) | [98632] CRAZY Magazine v1 060.cbr (53pp) | [98633] CRAZY Magazine v1 061.cbr (42pp) | [98634] CRAZY Magazine v1 062.cbr (52pp)
+            [98635] CRAZY Magazine v1 063.cbr (28pp) | [98636] COL CRAZY Magazine v1 064.cbr (82pp) | [98637] CRAZY Magazine v1 065.cbr (52pp) | [98638] CRAZY Magazine v1 066.cbr (51pp)
+            [98639] COL CRAZY Magazine v1 067.cbr (84pp) | [98640] CRAZY Magazine v1 068.cbr (50pp) | [98641] CRAZY Magazine v1 069.cbr (52pp) | [98642] CRAZY Magazine v1 070.cbr (44pp)
+            [98643] CRAZY Magazine v1 071.cbr (52pp) | [98644] CRAZY Magazine v1 072.cbr (52pp) | [98645] COL CRAZY Magazine v1 073.cbr (85pp) | [98646] CRAZY Magazine v1 074.cbr (52pp)
+            [98647] CRAZY Magazine v1 075.cbr (52pp) | [98648] COL CRAZY Magazine v1 076.cbr (84pp) | [98649] CRAZY Magazine v1 077.cbr (26pp) | [98650] CRAZY Magazine v1 078.cbr (52pp)
+            [98651] CRAZY Magazine v1 079.cbr (42pp) | [98652] CRAZY Magazine v1 080.cbr (52pp) | [98653] CRAZY Magazine v1 081.cbr (52pp) | [98654] COL CRAZY Magazine v1 082.cbr (84pp)
+            [98655] CRAZY Magazine v1 083.cbr (53pp) | [98656] CRAZY Magazine v1 084.cbr (53pp) | [98657] CRAZY Magazine v1 085.cbr (42pp) | [98658] CRAZY Magazine v1 086.cbr (53pp)
+            [98659] CRAZY Magazine v1 087.cbr (26pp) | [98660] CRAZY Magazine v1 088.cbr (43pp) | [98661] CRAZY Magazine v1 089.cbr (53pp) | [98662] CRAZY Magazine v1 090.cbr (53pp)
+            [98663] COL CRAZY Magazine v1 091.cbr (85pp) | [98664] COL CRAZY Magazine v1 092.cbr (69pp) | [98665] COL CRAZY Magazine v1 093.cbr (69pp) | [98666] CRAZY Magazine v1 094.cbr (34pp)
+   ours:    ladder 1-29, 31-36, 38-41, 43-48, 50-51, 53-54, 56-57, 59-63, 65-66, 68-72, 74-75, 77-81, 83-90, 94; 1 number(s) name more than one file: 1
+   GCD says: [98602] gcd_reprint 353346: s23588 Crazy Magazine (1973) #15-20, #22-23 [22 stories]  |  ⚠ stored GCD row is another book: our vol 1 vs GCD #30 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [98609] gcd_reprint 353353: s23588 Crazy Magazine (1973) #16-17, #19-20, #22, #24-25, #27-29, #31-33 [24 stories]  |  ⚠ stored GCD row is another book: our vol 1 vs GCD #37 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [98614] gcd_reprint 353358: s23588 Crazy Magazine (1973) #25-27, #29, #31-34, #36, #38 [24 stories]  |  ⚠ stored GCD row is another book: our vol 1 vs GCD #42 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [98621] gcd_reprint 353365: s23588 Crazy Magazine (1973) #27-28, #33, #36, #38-41, #43-44 [25 stories]  |  ⚠ stored GCD row is another book: our vol 1 vs GCD #49 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [98624] gcd_reprint 353368: s23588 Crazy Magazine (1973) #41, #44-48 [26 stories]  |  ⚠ stored GCD row is another book: our vol 1 vs GCD #52 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [98627] gcd_reprint 353371: s23588 Crazy Magazine (1973) #41, #43-44, #46-48, #50-51, #53 [29 stories]  |  ⚠ stored GCD row is another book: our vol 1 vs GCD #55 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [98630] gcd notes 353374 (#58 of Crazy Magazine): of Crazy #1  |  gcd_reprint 353374: s23588 Crazy Magazine (1973) #15-16, #18, #20-24, #27, #29, #31-32, #34, #38-41, #43, #45-48, #50, #54 [37 stories] · s2115 Crazy (1973) #1 [5 stories]  |  ⚠ stored GCD row is another book: our vol 1 vs GCD #58 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [98636] gcd_reprint 353380: s23588 Crazy Magazine (1973) #2-7, #10, #14, #29, #32 [13 stories]  |  ⚠ stored GCD row is another book: our vol 1 vs GCD #64 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [98639] gcd_reprint 353383: s23588 Crazy Magazine (1973) #1-2, #4, #6-10, #12-13 [17 stories]  |  ⚠ stored GCD row is another book: our vol 1 vs GCD #67 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [98645] gcd_reprint 353389: s23588 Crazy Magazine (1973) #2, #7, #9, #13, #15, #17, #39, #53-54, #56 [15 stories] · s824 Strange Tales (1951) #89 [1 story]  |  ⚠ stored GCD row is another book: our vol 1 vs GCD #73 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [98648] gcd_reprint 353392: s23588 Crazy Magazine (1973) #9, #11, #14, #16-17, #24, #28, #34, #42, #50 [12 stories] · s903 Uncanny Tales (1952) #9 [1 story] · s896 Journey into Mystery (1952) #63 [1 story] · s1443 Tales to Astonish (1959) #10 [1 story]  |  ⚠ stored GCD row is another book: our vol 1 vs GCD #76 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [98654] gcd_reprint 353398: s2159 Arrgh! (1974) #3 [1 story] · s978 Crazy (1953) #6 [1 story] · s1570 The Amazing Spider-Man (1963) #8 [1 story]  |  ⚠ stored GCD row is another book: our vol 1 vs GCD #82 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [98663] gcd_reprint 353407: s23588 Crazy Magazine (1973) #63, #65-66, #72, #85 [7 stories] · s1120 Black Knight (1955) #1 [1 story]  |  ⚠ stored GCD row is another book: our vol 1 vs GCD #91 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+   CV linked:      vol 23630 "Crazy Magazine" 1973 Marvel 94 issues; cached #1-94 (94); yearΔ 0; ratio 80/94 = 0.85; no judged range; v1 per-file: same volume on 80/95 files
+   CV candidates:  (= linked) · 2631 "Crazy" 1973 Marvel 3 s70 · 51553 "This Magazine Is Crazy" 1957 Charlton 7 s65 · 1574 "Crazy" 1953 Marvel 7 s61 · 119827 "Crazy Super Special " 1975 Marvel 1 issue 712172 s45 · 32526 "Crazy Magazine Super Special" 1975 Marvel 1 issue 206579 s33 · 19762 "Nightmare 1973 Winter-Special" 1973 Skywald 1 issue 118700 s30   (v1 search)
+   CV local rip:   (= linked) · 32526 "Crazy Magazine Super Special" 1975 Marvel 1 issue 206579 · 2631 "Crazy" 1973 Marvel 3 (via CV candidate name "Crazy") · 1574 "Crazy" 1953 Marvel 7 (via CV candidate name "Crazy") · 122066 "Crazy" 2019 Marvel 1 issue 723112 (via CV candidate name "Crazy") · 124289 "Crazy" 2020 Marvel 1 issue 733876 (via CV candidate name "Crazy")   (rip lookup)
+   GCD per-file:   series 23588 "Crazy Magazine" 1973-1983 Marvel [was ongoing series] 94 on 21/95 files; methods numx21
+   GCD dump:       (= per-file) · 36087 "Crazy magazine" [sv-se] 1983-1983 Peter Bengtsson [] 1 · 2115 "Crazy" 1973-1973 Marvel [] 3 (via CV candidate name "Crazy") · 20512 "Crazy" [nl] 1982-1983 Juniorpress [] 4 (via CV candidate name "Crazy") · 978 "Crazy" 1953-1954 Marvel [] 7 (via CV candidate name "Crazy") · 151142 "Crazy" 2019-2019 Marvel [] 1 (via CV candidate name "Crazy")   (dump lookup)
+   bridges:        gcd 23588 -> LOCG 140372 "Crazy Magazine" support 94
+
+== S5235 Death's Head  [tier C] · 9 number(s) x2+, 2 parsed key(s), ratio 2.20  keys: Death's Head | Death's Head and The Punisher  years 1988-1989  22 files / 0 collections
+   folders: [10] Marvel\Death's Head\1. Death's Head (FPA) · [9] Marvel\Death's Head\Death's Head v1 (1988) · [2] Marvel\Death's Head\3. Death's Head (3.0) · [1] Marvel\Death's Head\2. Death's Head (Minion)
+   files:   018 - Death's Head v1 #01.cbr … 030 - Death's Head v1 #10.cbr  (10 files, pp 23-23) | [98944] 115 - Death's Head & The Punisher (unpublished, unfinished, lo-res).cbr (22pp)
+            [98945] 116 - Death's Head 3.0.cbr (113pp) | [98948] 119 - Death's Head (Marvel Universe entries).cbr (4pp)
+            Death's Head 001 (1988) (Digital) (Shadowcat-Empire).cbz … Death's Head 010 (1989) (Digital) (Shadowcat-Empire).cbz  (9 files, pp 23-25)
+   ours:    ladder 0-10, 115, 119; 9 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 9, 10; ComicInfo Series: "Death's Head"x9; ComicInfo Volume: "1988"x9; ComicInfo Publisher: "Marvel"x9
+   CV linked:      vol 20540 "Death's Head" 1988 Marvel UK/Panini UK 10 issues; cached #1-10 (10); yearΔ 0; ratio 22/10 = 2.20; no judged range; v1 per-file: same volume on 22/22 files
+   CV candidates:  (= linked) · 57992 "Death's Head" 2007 Marvel UK/Panini UK 2 s78 · 120394 "Death's Head" 2019 Marvel 4 s73 · 62263 "Life and Times of Death's Head" 1990 Marvel UK/Panini UK 1 issue 406676 s63 · 123716 "Death's Head: Clone Drive" 2019 Marvel 1 issue 731532 s52 · 71611 "Revolutionary War: Death's Head II" 2014 Marvel 1 issue 445181 s51 · 20552 "The Incomplete Death's Head" 1993 Marvel UK/Panini UK 12 s50   (v1 search)
+   CV local rip:   (= linked) · 57992 "Death's Head" 2007 Marvel UK/Panini UK 2 · 120394 "Death's Head" 2019 Marvel 4   (rip lookup)
+   GCD per-file:   series 3685 "Death's Head" [en-gb] 1988-1989 Marvel UK [was ongoing series] 10 on 9/22 files; methods numx9
+   GCD dump:       (= per-file) · 126198 "Death's Head" 1987-? Crystal Publications [] 1 · 162149 "Death's Head" [en-gb] 2006-2007 Marvel [] 2 · 149320 "Death's Head" 2019-2019 Marvel [] 4   (dump lookup)
+   bridges:        gcd 3685 -> LOCG 118434 "Death's Head" support 19

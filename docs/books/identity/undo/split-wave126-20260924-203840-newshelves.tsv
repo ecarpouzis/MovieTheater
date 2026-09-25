@@ -1,0 +1,31 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S104120	Star Wars: Jango Fett (2002)	run={"cv": 20769, "gcd": 17855}	P-052.jsonl	new	pair=16549
+S104116	Star Wars Insider (1987)	run=-	P-052.jsonl	new	pair=16641
+S104122	The Best of Star Wars Insider (2016)	run=-	P-052.jsonl	new	pair=16641
+S65726	Star Wars (2020)	run={"cv": 123860, "gcd": 154267}	P-052.jsonl	new	pair=16641
+S104117	Star Wars Omnibus: Dark Times (2013)	run={"cv": 70516, "gcd": 78286}	P-052.jsonl	new	pair=16641
+S104118	Star Wars Omnibus: Quinlan Vos - Jedi in Darkness (2010)	run={"cv": 37306, "gcd": 60328}	P-052.jsonl	new	pair=16641
+S16730	Star Wars: The High Republic Adventures--Echoes of Fear	run=-	P-052.jsonl	new	pair=16728
+S94731	Vengeance of the Moon Knight v1 (2024)	run=-	P-052.jsonl	new	pair=20987
+S104124	your name. Another Side: Earthbound (2018)	run={"cv": 115716, "gcd": 136839}	P-052.jsonl	new	pair=22969
+S99681	Scarlet Witch v3 (2023)	run={"cv": 147226, "gcd": 194915}	P-052.jsonl	new	pair=65588
+S104114	Scarlet Witch & Quicksilver (2024)	run={"cv": 156874, "gcd": 208973}	P-052.jsonl	new	pair=65588
+S16693	Star Wars: Doctor Aphra (2020)	run=-	P-052.jsonl	new	pair=65741
+S104113	Giant-Size X-Men (2024)	run={"cv": 158070, "gcd": 211959}	P-052.jsonl	new	pair=7542
+S95051	Amazing Spider-Man v5 (2018)	run=-	P-052.jsonl	new	pair=95053
+S1649	Avengers v8 (2018)	run=-	P-052.jsonl	new	pair=95229
+S64503	Daredevil v7 (2022)	run=-	P-052.jsonl	new	pair=96257
+S16549	moved out -> S104120 "Star Wars: Jango Fett (2002)"	run=-	P-052.jsonl	kept	pair=16549	moved_cv=20769
+S16641	moved out -> S104116 "Star Wars Insider (1987)"; S104122 "The Best of Star Wars Insider (2016)"; S65726 "Star Wars (2020)"; S104117 "Star Wars Omnibus: Dark Times (2013)"; S104118 "Star Wars Omnibus: Quinlan Vos - Jedi in Darkness (2010)"	run=-	P-052.jsonl	kept	pair=16641	moved_cv=123860,70516,37306	pending_join=100013
+S16728	moved out -> S16730 "Star Wars: The High Republic Adventures--Echoes of Fear"	run=-	P-052.jsonl	kept	pair=16728
+S20987	moved out -> S94731 "Vengeance of the Moon Knight v1 (2024)"	run=-	P-052.jsonl	kept	pair=20987
+S22969	moved out -> S104124 "your name. Another Side: Earthbound (2018)"	run=-	P-052.jsonl	kept	pair=22969	moved_cv=115716
+S65588	moved out -> S99681 "Scarlet Witch v3 (2023)"; S104114 "Scarlet Witch & Quicksilver (2024)"	run=-	P-052.jsonl	kept	pair=65588	moved_cv=147226,156874
+S65741	moved out -> S16693 "Star Wars: Doctor Aphra (2020)"	run=-	P-052.jsonl	kept	pair=65741
+S7542	moved out -> S104113 "Giant-Size X-Men (2024)"	run=-	P-052.jsonl	kept	pair=7542	moved_cv=158070
+S95053	moved out -> S95051 "Amazing Spider-Man v5 (2018)"	run=-	P-052.jsonl	kept	pair=95053
+S95229	moved out -> S1649 "Avengers v8 (2018)"	run=-	P-052.jsonl	kept	pair=95229
+S96257	moved out -> S64503 "Daredevil v7 (2022)"	run=-	P-052.jsonl	kept	pair=96257
