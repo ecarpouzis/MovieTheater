@@ -1,0 +1,711 @@
+## Conventions for this batch (21 shown of 154 matched; 396 in LEDGER.md; 27 shelf/shelves: pub:marvel ×27 · kind:collected-line ×21 · kind:trade-only ×20 · folder:vn-year ×9 · folder:sequel-subfolder ×9 · kind:new ×7 · folder:events ×5 · folder:variant-covers ×4)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (27 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (27 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (27 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-127] (23 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-136] (23 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-306] (22 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-031] (21 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (21 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (21 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (21 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (21 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-132] (21 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-196] (21 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (21 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (21 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-298] (21 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-307] (21 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (21 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-313] (21 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-327] (21 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (21 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+
++133 more matched entries not shown: L-329, L-332, L-389, L-392, L-029, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-395, L-030, L-060, L-116, L-151, L-160, L-193, L-014, L-113, L-388, L-016, L-032, L-114, L-064, L-085, L-101, L-124, L-191, L-281, L-310, L-130, L-174, L-242, L-319, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-272, L-290, L-391, L-034, L-169, L-371, L-387, L-175, L-028, L-036, L-121, L-129, L-173, L-324, L-343, L-390, L-393, L-396, L-123, L-187, L-345, L-007, L-217, L-065, L-099, L-194, L-262, L-330, L-106, L-111, L-112, L-119, L-133, L-172, L-312, L-357, L-128, L-150, L-181, L-336, L-027, L-077, L-137, L-138, L-265, L-297, L-311, L-315, L-316, L-379, L-054, L-097, L-252, L-274, L-288, L-293, L-352, L-354, L-041, L-192 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S5142 Deadpool & Wolverine WWIII  [tier C] · ratio 8.00  keys: Deadpool and Wolverine - WWIII  years 2024-2024  25 files / 0 collections
+   folders: [24] Marvel\_Deadpool\_Trades, minis and one-Shots\Deadpool & Wolverine - WWIII v1 (2024)\Variant Covers · [1] Marvel\_Deadpool\_Trades, minis and one-Shots\Deadpool & Wolverine - WWIII v1 (2024)
+   files:   [78559] Deadpool & Wolverine - WWIII (2024) (Digital) (Kileko-Empire).cbz (98pp)
+            [78560] Deadpool & Wolverine - WWIII 001 (2024) (1-in-25 InHyuk Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [78561] Deadpool & Wolverine - WWIII 001 (2024) (2nd Printing 1-in-25 Rob Liefeld Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [78562] Deadpool & Wolverine - WWIII 001 (2024) (Adam Kubert 2nd Printing Variant) (Digital) (MikeNY76).cbz (1pp)
+            [78563] Deadpool & Wolverine - WWIII 001 (2024) (Gabriele Dell'Otto Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [78564] Deadpool & Wolverine - WWIII 001 (2024) (Mike Zeck Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [78565] Deadpool & Wolverine - WWIII 001 (2024) (Rob Liefeld Ratio Virgin 2nd Printing Variant) (Digital) (MikeNY76).cbz (1pp)
+            [78566] Deadpool & Wolverine - WWIII 001 (2024) (Rob Liefeld Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [78567] Deadpool & Wolverine - WWIII 001 (2024) (Todd Nauck Window Shades Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [78568] Deadpool & Wolverine - WWIII 001 (2024) Gabriele Dell'otto Variant (Digital) (MikeNY76).cbz (1pp)
+            [78569] Deadpool & Wolverine - WWIII 001 (2024) Gabriele Dell'otto Virgin Variant (Digital) (MikeNY76).cbz (1pp)
+            [78570] Deadpool & Wolverine - WWIII 001 (2024) Inhyuk Lee Variant (Digital) (MikeNY76).cbz (1pp)
+            [78571] Deadpool & Wolverine - WWIII 001 (2024) Rob Liefeld Variant (Digital) (MikeNY76).cbz (1pp)
+            [78572] Deadpool & Wolverine - WWIII 001 (2024) Todd Nauck Windowshades Variant (Digital) (MikeNY76).cbz (1pp)
+            [78573] Deadpool & Wolverine - WWIII 002 (2024) (1-in-25 Salvador Larroca Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [78574] Deadpool & Wolverine - WWIII 002 (2024) (Adam Kubert 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [78575] Deadpool & Wolverine - WWIII 002 (2024) (Jan Bazaldua Stormbreakers Variant) (Digital) (MikeNY76).cbz (1pp)
+            [78576] Deadpool & Wolverine - WWIII 002 (2024) (Jan Bazaldua Stormbreakers Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [78577] Deadpool & Wolverine - WWIII 002 (2024) (Salvador Larroca Ratio Virgin 2nd Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [78578] Deadpool & Wolverine - WWIII 002 (2024) (Salvador Larroca Variant) (Digital) (MikeNY76).cbz (1pp)
+            [78579] Deadpool & Wolverine - WWIII 002 (2024) (Unknown Comics Tyler Kirkham Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [78580] Deadpool & Wolverine - WWIII 002 (2024) (Unknown Comics Tyler Kirkham Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [78581] Deadpool & Wolverine - WWIII 003 (2024) (Leinil Yu Deadpool Kills The Marvel Universe Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [78582] Deadpool & Wolverine - WWIII 003 (2024) (Lucas Werneck Stormbreakers Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [78583] Deadpool & Wolverine - WWIII 003 (2024) (Movie Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 1-3; 3 number(s) name more than one file: 1, 2, 3; ComicInfo Series: "Deadpool & Wolverine: WWIII"x1
+   CV linked:      vol 157940 "Deadpool & Wolverine WWIII" 2024 Marvel 3 issues; cached #1-3 (3); yearΔ 0; ratio 24/3 = 8.00; no judged range; v1 per-file: same volume on 24/25 files
+   CV candidates:  (= linked) · 160228 "Deadpool & Wolverine: WWIII" 2024 Marvel 1 issue 1072421 s105 · 152315 "Wolverine & Deadpool" 2019 Marvel UK/Panini UK 11 s84 · 152438 "Deadpool and Wolverine " 2023 Marvel UK/Panini UK 5 s82 · 36793 "Wolverine and Deadpool" 2010 Marvel UK/Panini UK 58 s81 · 36794 "Wolverine and Deadpool" 2004 Marvel UK/Panini UK 68 s79 · 131742 "Marvel-Verse: Deadpool and Wolverine" 2020 Marvel 1 issue 816761 s70   (v1 search)
+   CV local rip:   (= linked) · 160228 "Deadpool & Wolverine: WWIII" 2024 Marvel 1 issue 1072421 · 152315 "Wolverine & Deadpool" 2019 Marvel UK/Panini UK 11 (via CV candidate name "Wolverine & Deadpool") · 108209 "Wolverine & Deadpool" 2018 Marvel UK/Panini UK 11 (via CV candidate name "Wolverine & Deadpool") · 94888 "Wolverine & Deadpool" 2016 Marvel UK/Panini UK 14 (via CV candidate name "Wolverine & Deadpool") · 83871 "Wolverine/Deadpool" 2013 Panini Verlag 25 (via CV candidate name "Wolverine & Deadpool")   (rip lookup)
+   GCD dump:       211709 "Deadpool & Wolverine: WWIII" 2024-2024 Marvel [] 3 · 215847 "Deadpool & Wolverine: WWIII" 2024-2024 Marvel [] 1 · 217622 "Deadpool & Wolverine: WWIII" [de] 2024-2024 Panini Deutschland [] 1 · 76443 "Wolverine / Deadpool" [de] 2013-2015 Panini Deutschland [] 25 (via CV candidate name "Wolverine & Deadpool")   (dump lookup)
+
+== S64562 The Defenders  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Defenders (1972) | Defenders v1 (1972) | Defenders-v1-026 | Defenders-v1-027 | Defenders-v1-028 | Defenders-v1-029  years 1972-1981  100 files / 0 collections
+   folders: [90] Marvel\_Defenders\Defenders v1 (1972) · [4] Marvel\_Marvel Cosmic\Guardians of the Galaxy\Misc · [3] _Marvel Major Event Chronology (digital)\2011.03 - Fear Itself\03 Shattered Heroes\The Defenders · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0006 Various Cameos · [1] Marvel\_Defenders\Defenders v1 (1972)\Annuals and Specials
+   files:   [78642] Defenders Annual 001 (1972) (Digital) (Shadowcat-Empire).cbz (36pp)
+            Defenders 001 (1972) (Digital) (AnHeroGold-Empire).cbz … Defenders 014 (1974) (Digital) (AnHeroGold-Empire).cbz  (13 files, pp 19-21)
+            [78661] Defenders 015 (1974) (Digital) (Shadowcat-Empire).cbz (19pp) | [78662] Defenders 016 (1974) (Digital) (Shadowcat-Empire).cbz (19pp)
+            Defenders 017 (1974) (Digital) (AnHeroGold-Empire).cbz … Defenders 030 (1975) (Digital) (AnHeroGold-Empire).cbz  (14 files, pp 18-19)
+            Defenders 031 (1976) (Digital) (Shadowcat-Empire).cbz … Defenders 046 (1977) (Digital) (Shadowcat-Empire).cbz  (16 files, pp 17-19)
+            [78693] Defenders 047 (1977) (Digital) (AnHeroGold-Empire).cbz (18pp) | [78694] Defenders 048 (1977) (Digital) (AnHeroGold-Empire).cbz (17pp)
+            [78695] Defenders 049 (1977) (Digital) (AnHeroGold-Empire).cbz (18pp) | [78696] Defenders 050 (1977) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            Defenders 051 (1977) (Digital) (Shadowcat-Empire).cbz … Defenders 061 (1978) (Digital) (Shadowcat-Empire).cbz  (11 files, pp 17-19)
+            [78708] Defenders 062 (1978) (Digital) (AnHeroGold-Empire).cbz (18pp) | [78709] Defenders 063 (1978) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [78710] Defenders 064 (1978) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            Defenders 065 (1978) (Digital) (Shadowcat-Empire).cbz … Defenders 091 (1981) (Digital) (Shadowcat-Empire).cbz  (27 files, pp 17-23) | [82844] Defenders-v1-026.cbr (19pp)
+            [82845] Defenders-v1-027.cbr (20pp) | [82846] Defenders-v1-028.cbr (19pp) | [82847] Defenders-v1-029.cbr (19pp) | [86637] 022 Defenders 015 (1974) (Digital) (AnPymGold-Empire).cbz (19pp)
+            [86638] 023 Defenders 016 (1974) (Digital) (AnPymGold-Empire).cbz (19pp) | [117593] Defenders 001 (2012) (digital-Empire).cbz (23pp)
+            [117594] Defenders 002 (2012) (digital-Empire).cbz (23pp) | [117595] Defenders 003 (2012) (digital-Empire).cbz (23pp)
+   ours:    ladder 1-5, 7-91; 9 number(s) name more than one file: 1, 2, 3, 15, 16, 26, 27, 28, 29; ComicInfo Series: "Defenders"x30; ComicInfo Volume: "1972"x30; ComicInfo Publisher: "Marvel"x30
+   CV linked:      vol 2569 "The Defenders" 1972 Marvel 152 issues; cached #1-152 (152); yearΔ 0; ratio 100/152 = 0.66; no judged range; v1 per-file: same volume on 96/100 files
+   CV candidates:  (= linked) · 32407 "Marvel Adventures Hulk: Defenders" 2008 Marvel 1 issue 204049 s30 · 41366 "Defenders: From the Marvel Vault" 2011 Marvel 1 issue 279508 s30 · 35092 "Marvel Masterworks: Defenders" 2008 Marvel 9 s15 · 44363 "Defenders" 2012 Marvel 12 s15 · 21661 "Defenders" 2005 Marvel 5 s15 · 102109 "The Defenders" 2017 Marvel 10 s15   (v1 search)
+   CV local rip:   (= linked) · 37663 "The Defenders" 1962 Dell 2 · 6645 "Defenders" 2001 Marvel 12 · 21661 "Defenders" 2005 Marvel 5 · 44363 "Defenders" 2012 Marvel 12 · 61283 "Defenders" 2012 Panini Verlag 2   (rip lookup)
+   GCD per-file:   methods round2-seriesx12 ⚠ · numx3  (⚠ copies a folder neighbour's series — verify); series 7145 "Defenders" 2001-2002 Marvel [was ongoing series] 12 on 12/100 files · series 62406 "Defenders" 2012-2013 Marvel [was ongoing series] 12 on 3/100 files
+   GCD dump:       (= per-file) · 2048 "The Defenders" 1972-1986 Marvel [] 152 · 71035 "The Defenders" [en-au] 1977-? Yaffa / Page [] 6 · 1494 "The Defenders" 1962-1963 Dell [] 2 · 72385 "The Defenders" [en-au] 1984-1986 Federal [] 9 · 17724 "Defenders" 2005-2006 Marvel [] 5   (dump lookup)
+   bridges:        gcd 7145 -> LOCG 113630 "The Defenders" support 24 · gcd 62406 -> LOCG 113630 "The Defenders" support 3
+
+== S94588 The Defenders  [tier C] · gap 45  keys: Defenders v5 (2017)  years 1972-1972  2 files / 2 collections
+   folders: [2] Marvel\_Defenders\Defenders v5 (2017)
+   files:   [78753] COL Defenders Vol. 01 - Diamonds are Forever (2017) (Digital) (F) (Zone-Empire).cbr (120pp)
+            [78754] COL Defenders Vol. 02 - Kingpins of New York (2018) (Digital) (F) (Zone-Empire).cbr (109pp)
+   ours:    ComicInfo Series: "Defenders"x2; ComicInfo Publisher: "Marvel"x2
+   GCD says: [78753] gcd_reprint 1766129: s114844 Defenders (2017) #1-5 [6 stories] · s113915 Free Comic Book Day 2017 (All-New Guardians of the Galaxy) (2017) #1 [1 story]
+             [78754] gcd_reprint 1815887: s114844 Defenders (2017) #6-10 [6 stories]
+   CV linked:      vol 102109 "The Defenders" 2017 Marvel 10 issues; cached #1-10 (10); yearΔ 45; ratio 0/10; no judged range
+   CV per-file (v1): vol 2569 "The Defenders" 1972 Marvel 152 on 2/2 files
+   CV local rip:   (= linked) · 37663 "The Defenders" 1962 Dell 2 · 6645 "Defenders" 2001 Marvel 12 · 21661 "Defenders" 2005 Marvel 5 · 44363 "Defenders" 2012 Marvel 12 · 61283 "Defenders" 2012 Panini Verlag 2   (rip lookup)
+   GCD dump:       2048 "The Defenders" 1972-1986 Marvel [] 152 · 71035 "The Defenders" [en-au] 1977-? Yaffa / Page [] 6 · 1494 "The Defenders" 1962-1963 Dell [] 2 · 72385 "The Defenders" [en-au] 1984-1986 Federal [] 9 · 7145 "Defenders" 2001-2002 Marvel [] 12 · 17724 "Defenders" 2005-2006 Marvel [] 5   (dump lookup)
+
+== S5305 Defenders Epic Collection: The Six-Fingered Hand Saga  [tier B]   keys: Defenders Epic Collection  years 2016-2019  4 files / 4 collections
+   folders: [4] Marvel\_Defenders\_Defenders Epic Collections
+   files:   [78785] COL Defenders Epic Collection Vol. 06 - The Six-Fingered Hand Saga (2016) (Digital) (danke-Empire).cbz (476pp)
+            [78786] COL Defenders Epic Collection Vol. 07 - Ashes, Ashes (2017) (Digital) (danke-Empire).cbz (437pp)
+            [78787] COL Defenders Epic Collection Vol. 08 - The New Defenders (2018) (Digital) (Zone-Empire).cbr (495pp)
+            [78788] COL Defenders Epic Collection Vol. 09 - The End of All Songs (2019) (Digital) (Zone-Empire).cbr (487pp)
+   ours:    ComicInfo Series: "Defenders Epic Collection"x2; ComicInfo Publisher: "Marvel"x2
+   GCD says: [78785] gcd_reprint 1623796: s2048 The Defenders (1972) #92-109 [37 stories] · s2056 Marvel Team-Up (1972) #101 [3 stories] · s1860 Captain America (1968) #268 [2 stories]
+             [78786] gcd_reprint 1730405: s2048 The Defenders (1972) #110-125 [36 stories] · s1807 The Avengers Annual (1967) #11 [2 stories]
+             [78787] gcd_reprint 1836098: s2048 The Defenders (1972) #126-137 [29 stories] · s2860 Beauty and the Beast (1984) #1-4 [8 stories] · s2873 Iceman (1984) #1-4 [8 stories] · s69795 Marvel Age (1983) #10, #22 [4 stories]
+             [78788] gcd notes 2105311 (#9 of Defenders Epic Collection): The Defenders (Marvel, 1972 series) #138-152; Gargoyle (Marvel, 1985 series) #1-4  |  gcd_reprint 2105311: s2048 The Defenders (1972) #138-152 [32 stories] · s3020 Gargoyle (1985) #1-4 [4 stories]
+   CV linked:      vol 93423 "Defenders Epic Collection: The Six-Fingered Hand Saga" 2016 Marvel 1 issues issue 546194; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 4/4 files
+   CV candidates:  (= linked) · 103812 "Defenders Epic Collection: Ashes, Ashes..." 2017 Marvel 1 issue 617839 s76 · 112801 "Defenders Epic Collection: The New Defenders" 2018 Marvel 1 issue 679989 s75 · 158646 "Defenders Epic Collection: Enter - The Headmen" 2024 Marvel 1 issue 1061549 s75 · 163210 "The Defenders Epic Collection: World Gone Sane" 2025 Marvel 1 issue 1101847 s74 · 147058 "Defenders Epic Collection: The Day of the Defenders" 2022 Marvel 1 issue 962312 s73 · 123717 "Defenders Epic Collection: The End of All Songs" 2019 Marvel 1 issue 731533 s73   (v1 search)
+   CV local rip:   (= linked) · 103812 "Defenders Epic Collection: Ashes, Ashes..." 2017 Marvel 1 issue 617839 (via CV candidate name "Defenders Epic Collection: Ashes, Ashes...") · 112801 "Defenders Epic Collection: The New Defenders" 2018 Marvel 1 issue 679989 (via CV candidate name "Defenders Epic Collection: The New Defenders") · 158646 "Defenders Epic Collection: Enter - The Headmen" 2024 Marvel 1 issue 1061549 (via CV candidate name "Defenders Epic Collection: Enter - The Headmen")   (rip lookup)
+   GCD dump:       106500 "Defenders Epic Collection" 2016-? Marvel [] 7   (dump lookup)
+
+== S5306 Defenders Epic Collection: Enter - The Headmen  [tier B]   keys: Defenders Epic Collection 02: Enter: The Headmen  years 2024-2024  1 files / 1 collections
+   folders: [1] Marvel\_Defenders\_Defenders Epic Collections
+   files:   [78784] COL Defenders Epic Collection Vol. 02 - Enter - The Headmen (2024) (digital) (Marika-Empire).cbz (461pp)
+   ours:    ComicInfo Series: "Defenders Epic Collection 02: Enter: The Headmen"x1; ComicInfo Volume: "2024"x1; ComicInfo Publisher: "Marvel Comics"x1
+   GCD says: [78784] gcd notes 2638133 (#2 of Defenders Epic Collection): The Defenders (Marvel, 1972 series) #12-25; Giant-Size Defenders (Marvel, 1974 series) #1-4; Marvel Two-In-One (Marvel, 1974 series) #6-7; Weird Wonder Tales (Marvel, 1973 series) #7  |  gcd_reprint 2638133: s2048 The Defenders (1972) #12-25 [29 stories] · s2167 Giant-Size Defenders (1974) #1-4 [17 stories] · s2135 Weird Wonder Tales (1973) #7 [4 stories] · s2182 Marvel Two-in-One (1974) #6-7 [4 stories]
+   CV linked:      vol 158646 "Defenders Epic Collection: Enter - The Headmen" 2024 Marvel 1 issues issue 1061549; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 112801 "Defenders Epic Collection: The New Defenders" 2018 Marvel 1 issue 679989 s63 · 93423 "Defenders Epic Collection: The Six-Fingered Hand Saga" 2016 Marvel 1 issue 546194 s61 · 163210 "The Defenders Epic Collection: World Gone Sane" 2025 Marvel 1 issue 1101847 s61 · 147058 "Defenders Epic Collection: The Day of the Defenders" 2022 Marvel 1 issue 962312 s60 · 123717 "Defenders Epic Collection: The End of All Songs" 2019 Marvel 1 issue 731533 s60 · 103812 "Defenders Epic Collection: Ashes, Ashes..." 2017 Marvel 1 issue 617839 s54   (v1 search)
+   CV local rip:   (= linked) · 112801 "Defenders Epic Collection: The New Defenders" 2018 Marvel 1 issue 679989 (via CV candidate name "Defenders Epic Collection: The New Defenders") · 93423 "Defenders Epic Collection: The Six-Fingered Hand Saga" 2016 Marvel 1 issue 546194 (via CV candidate name "Defenders Epic Collection: The Six-Fingered Hand Saga")   (rip lookup)
+
+== S5307 Defenders Epic Collection: The Day of the Defenders  [tier B]   keys: Defenders Epic Collection: The Day Of The Defenders  years 2022-2022  1 files / 1 collections
+   folders: [1] Marvel\_Defenders\_Defenders Epic Collections
+   files:   [78783] COL Defenders Epic Collection Vol. 01 - The Day Of The Defenders (2023) (Digital-Empire).cbz (487pp)
+   ours:    ComicInfo Series: "Defenders Epic Collection: The Day Of The Defenders"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [78783] gcd_reprint 2468432: s2048 The Defenders (1972) #1-11 [29 stories] · s1571 The Avengers (1963) #115-118 [10 stories] · s1991 Marvel Feature (1971) #1-3 [8 stories] · s1874 Sub-Mariner (1968) #22, #34-35 [6 stories]
+   CV linked:      vol 147058 "Defenders Epic Collection: The Day of the Defenders" 2022 Marvel 1 issues issue 962312; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 27546 "Day of the Defenders" 2001 Marvel 1 issue 168073 s85 · 102109 "The Defenders" 2017 Marvel 10 s70 · 112801 "Defenders Epic Collection: The New Defenders" 2018 Marvel 1 issue 679989 s66 · 37663 "The Defenders" 1962 Dell 2 s63 · 158646 "Defenders Epic Collection: Enter - The Headmen" 2024 Marvel 1 issue 1061549 s58 · 44363 "Defenders" 2012 Marvel 12 s55   (v1 search)
+   CV local rip:   (= linked) · 138207 "Defenders" 2021 Marvel 5 (via CV candidate name "The Defenders") · 102109 "The Defenders" 2017 Marvel 10 (via CV candidate name "The Defenders") · 44363 "Defenders" 2012 Marvel 12 (via CV candidate name "The Defenders") · 61283 "Defenders" 2012 Panini Verlag 2 (via CV candidate name "The Defenders") · 21661 "Defenders" 2005 Marvel 5 (via CV candidate name "The Defenders")   (rip lookup)
+   GCD dump:       175108 "Defenders" 2021-2022 Marvel [] 5 (via CV candidate name "The Defenders") · 119221 "Defenders" 2018-2018 Marvel [] 2 (via CV candidate name "The Defenders") · 120615 "The Defenders" [es-mx] 2018-? Editorial Televisa [] 10 (via CV candidate name "The Defenders") · 123288 "Defenders" [de] 2018-2018 Panini Deutschland [] 2 (via CV candidate name "The Defenders") · 219463 "Defenders" [fr] 2018-2018 Panini France [] 2 (via CV candidate name "The Defenders") · 114844 "Defenders" 2017-2018 Marvel [] 10 (via CV candidate name "The Defenders")   (dump lookup)
+
+== S64590 Doctor Strange  [tier C] · 5 named, the minority on >= 2 files or >= 10%  keys: Doctor Strange (1974) | Doctor Strange v2 (1974)  years 1974-1987  93 files / 0 collections
+   folders: [80] Marvel\_Doctor Strange\02 Doctor Strange v2 (1974) · [4] _Marvel Major Event Chronology (digital)\2017.04 - Secret Empire\02 Tie-ins\Doctor Strange · [4] _Marvel Major Event Chronology (digital)\2024.05 - Blood Hunt\Variant Covers · [3] _Marvel Major Event Chronology (digital)\2024.05 - Blood Hunt\02 Tie-ins · [1] Marvel\Monsters Unleashed\Monsters Unleashed v1 (2017)\Dot MU Tie-ins · [1] Marvel\_Doctor Strange\02 Doctor Strange v2 (1974)\Annuals and Specials
+   files:   [101938] Doctor Strange 001.MU (2017) (Digital) (Zone-Empire).cbr (34pp) | [79973] Doctor Strange Annual 001 (1974) (Digital) (Shadowcat-Empire).cbz (36pp)
+            [78806] Doctor Strange 001 (1974) (Digital) (Shadowcat-Empire).cbz (19pp) | [78807] Doctor Strange 002 (1974) (Digital-Empire).cbr (18pp)
+            [78808] Doctor Strange 003 (1974) (Digital-Empire).cbr (19pp) | [78809] Doctor Strange 004 (1974) (Digital-Empire).cbr (19pp)
+            [78810] Doctor Strange 005 (1974) (Digital) (AnHeroGold-Empire).cbz (18pp) | [78811] Doctor Strange 006 (1975) (Digital-Empire).cbr (18pp)
+            [78812] Doctor Strange 007 (1975) (Digital-Empire).cbr (19pp) | [78813] Doctor Strange 008 (1975) (Digital-Empire).cbr (19pp)
+            [78814] Doctor Strange 009 (1975) (Digital-Empire).cbr (19pp) | [78815] Doctor Strange 010 (1975) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [78816] Doctor Strange 011 (1975) (Digital) (Shadowcat-Empire).cbz (19pp) | [78817] Doctor Strange 012 (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [78818] Doctor Strange 013 (1976) (Digital) (Shadowcat-Empire).cbz (18pp) | [78819] Doctor Strange 014 (1976) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            Doctor Strange 015 (1976) (Digital) (Shadowcat-Empire).cbz … Doctor Strange 046 (1981) (Digital) (Shadowcat-Empire).cbz  (32 files, pp 17-24)
+            Doctor Strange 047 (1981) (digital) (Marika-Empire).cbz … Doctor Strange 052 (1982) (digital) (Marika-Empire).cbz  (6 files, pp 23-24)
+            [78858] Doctor Strange 053 (1982) (Digital) (Shadowcat-Empire).cbz (23pp) | [78859] Doctor Strange 054 (1982) (digital) (Marika-Empire).cbz (24pp)
+            [78860] Doctor Strange 055 (1982) (digital) (Marika-Empire).cbz (23pp) | [78861] Doctor Strange 056 (1982) (digital) (Marika-Empire).cbz (24pp)
+            [78862] Doctor Strange 057 (1983) (Digital) (AnHeroGold-Empire).cbz (23pp) | [78863] Doctor Strange 058 (1983) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [78864] Doctor Strange 059 (1983) (Digital) (AnHeroGold-Empire).cbz (23pp) | [78865] Doctor Strange 060 (1983) (Digital) (Zone-Empire).cbr (24pp)
+            [78866] Doctor Strange 061 (1983) (Digital) (AnHeroGold-Empire).cbz (23pp) | [78867] Doctor Strange 062 (1983) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            [78868] Doctor Strange 063 (1984) (Digital) (Shadowcat-Empire).cbz (23pp) | [78869] Doctor Strange 064 (1984) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [78870] Doctor Strange 065 (1984) (Digital) (Shadowcat-Empire).cbz (24pp) | [78871] Doctor Strange 066 (1984) (Digital) (Shadowcat-Empire).cbz (23pp)
+            Doctor Strange 068 (1984) (Digital) (AnHeroGold-Empire).cbz … Doctor Strange 081 (1987) (Digital) (AnHeroGold-Empire).cbz  (14 files, pp 22-23)
+            [118308] Doctor Strange 021 (2017) (Digital) (BlackManta-Empire).cbr (22pp) | [118309] Doctor Strange 022 (2017) (Digital) (BlackManta-Empire).cbr (25pp)
+            [118310] Doctor Strange 023 (2017) (Digital) (Zone-Empire).cbr (22pp) | [118311] Doctor Strange 024 (2017) (Digital) (Zone-Empire).cbr (23pp)
+            [118643] Doctor Strange 015 (2024) (Digital) (Shan-Empire).cbz (23pp) | [118644] Doctor Strange 016 (2024) (Digital) (Shan-Empire).cbz (24pp)
+            [118645] Doctor Strange 017 (2024) (Digital) (Shan-Empire).cbz (24pp) | [118730] Doctor Strange 015 (2024) (Alex Ross Blood Soaked 2nd Printing Variant) (Digital) (MikeNY76).cbz (1pp)
+            [118731] Doctor Strange 016 (2024) (Martin Coccolo Stormbreakers Variant) (Digital) (MikeNY76).cbz (1pp)
+            [118732] Doctor Strange 016 (2024) (Skottie Young's Big Marvel Variant) (Digital) (MikeNY76).cbz (1pp)
+            [118733] Doctor Strange 016 (2024) (Skottie Young's Big Marvel Virgin Black And White Variant) (Digital) (MikeNY76).cbz (1pp)
+   ours:    ladder 1-66, 68-81; 8 number(s) name more than one file: 1, 15, 16, 17, 21, 22, 23, 24; ComicInfo Series: "Doctor Strange"x14; ComicInfo Volume: "1974"x14; ComicInfo Publisher: "Marvel"x5; ComicInfo Web: "21297"x1, "21438"x1, "21591"x1, "21727"x1
+   CV linked:      vol 2676 "Doctor Strange" 1974 Marvel 81 issues; cached #1-81 (81); yearΔ 0; ratio 93/81 = 1.15; no judged range; v1 per-file: same volume on 93/93 files
+   CV local rip:   (= linked) · 116921 "Doctor Strange " 1975 Newton Comics 2 · 2403 "Doctor Strange" 1968 Marvel 15 · 85094 "Doctor Strange" 2015 Marvel 37 · 150556 "Doctor Strange" 2016 Panini Comics 63 · 102003 "Doctor Strange" 2017 Kodansha 1 issue 600146   (rip lookup)
+   GCD per-file:   methods numx82 · round2-seriesx4 ⚠  (⚠ copies a folder neighbour's series — verify); series 2162 "Doctor Strange" 1974-1987 Marvel [was ongoing series] 81 on 77/93 files · series 75264 "Doctor Strange" [en-au] 1975-1976 Newton Comics [Was ongoing series] 10 on 4/93 files · series 92881 "Doctor Strange" 2015-2018 Marvel [was ongoing series] 37 on 3/93 files · series 119031 "Doctor Strange" 2017-2018 Marvel [collected edition] 2 on 1/93 files
+   GCD dump:       (= per-file) · 106525 "Doctor Strange" [en-au] 1977-1981 Yaffa / Page [] 7 · 1863 "Doctor Strange" 1968-1969 Marvel [] 15 · 13324 "Doctor Strange" 1999-1999 Marvel [] 4   (dump lookup)
+   bridges:        gcd 2162 -> LOCG 112655 "Doctor Strange" support 77 · gcd 75264 -> LOCG 112655 "Doctor Strange" support 4 · gcd 92881 -> LOCG 112655 "Doctor Strange" support 3
+
+== S96494 Doctor Strange  [tier A]   keys: Doctor Strange v4 (2015)  years 2015-2017  5 files / 5 collections
+   folders: [5] Marvel\_Doctor Strange\05 Doctor Strange v4 (2015)
+   files:   [78982] COL Doctor Strange Vol. 01 - The Way of the Weird (2016) (Digital) (BroadCast-Empire).cbz (126pp)
+            [78983] COL Doctor Strange Vol. 02 - The Last Days of Magic (2016) (Digital) (Zone-Empire).cbr (162pp)
+            [78984] COL Doctor Strange Vol. 03 - Blood In The Aether (2017) (Digital) (BroadCast-Empire).cbz (144pp)
+            [78985] COL Doctor Strange Vol. 04 - Mr. Misery (2017) (Digital) (Asgard-Empire).cbr (140pp)
+            [78986] COL Doctor Strange Vol. 05 - Secret Empire (2018) (Digital) (F) (Shadowcat-Empire).cbz (140pp)
+   ours:    judged item 78982 #1-5 conf 0.97; judged item 78983 #6-10 conf 0.97; judged item 78984 #11-16 conf 0.97; judged item 78985 #17-20 conf 0.82; judged item 78986 #21-26 conf 0.97; ComicInfo Series: "Doctor Strange"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [78982] gcd_reprint 1562783: s92881 Doctor Strange (2015) #1-5 [22 stories]
+             [78983] gcd_reprint 1676294: s92881 Doctor Strange (2015) #6-10 [16 stories] · s100623 Doctor Strange: Last Days of Magic (2016) #1 [8 stories]
+             [78984] gcd_reprint 1676300: s92881 Doctor Strange (2015) #11-16 [18 stories]
+             [78985] gcd_reprint 1735452: s92881 Doctor Strange (2015) #17-20 [5 stories] · s105145 Doctor Strange Annual (2016) #1 [1 story]
+             [78986] gcd_reprint 1657584: s92881 Doctor Strange (2015) #1-5 [5 stories] · s100622 Doctor Strange (2016) #1 [1 story]  |  ⚠ stored GCD row is another book: our vol 5 vs GCD #1; our subtitle 'Secret Empire' vs GCD title 'The Way of the Weird' — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+   CV linked:      vol 85094 "Doctor Strange" 2015 Marvel 37 issues; cached #1-390 (37); yearΔ 0; ratio 0/37; 5 of 5 judged fit
+   CV per-file (v1): vol 2676 "Doctor Strange" 1974 Marvel 81 on 4/5 files
+   CV local rip:   (= linked) · 150556 "Doctor Strange" 2016 Panini Comics 63 · 102003 "Doctor Strange" 2017 Kodansha 1 issue 600146 · 106673 "Doctor Strange" 2017 Marvel 2 · 111415 "Doctor Strange" 2018 Marvel 20 · 148962 "Doctor Strange" 2023 Marvel 18   (rip lookup)
+   GCD per-file:   series 110053 "Doctor Strange" 2016-2018 ? [] 5 on 1/5 files; methods page-rematchx1
+   GCD dump:       (= per-file) · 92881 "Doctor Strange" 2015-2018 Marvel [] 37 · 133069 "Doctor Strange" [en-gb] 2015-? Panini UK [] ? · 100622 "Doctor Strange" 2016-2017 Marvel [] 4 · 107716 "Doctor Strange" [de] 2016-2019 Panini Deutschland [] 8 · 108583 "Doctor Strange" [en-gb] 2016-? Panini UK [] 2   (dump lookup)
+
+== S5642 Doctor Strange  [tier B]   keys: Doctor Strange by Mark Waid  years 2018-2020  4 files / 4 collections
+   folders: [4] Marvel\_Doctor Strange\08 Doctor Strange v5 (2018)
+   files:   [78996] COL Doctor Strange by Mark Waid Vol. 01 - Across the Universe (2018) (Digital) (Zone-Empire).cbr (112pp)
+            [78997] COL Doctor Strange by Mark Waid Vol. 02 - Remittance (2019) (Digital) (Zone-Empire).cbr (151pp)
+            [78998] COL Doctor Strange by Mark Waid Vol. 03 - Herald (2019) (Digital) (Zone-Empire).cbr (135pp)
+            [78999] COL Doctor Strange by Mark Waid Vol. 04 - The Choice (2020) (Digital) (Zone-Empire).cbr (107pp)
+   ours:    ComicInfo Series: "Doctor Strange by Mark Waid"x4; ComicInfo Publisher: "Marvel"x4
+   CV linked:      vol 111415 "Doctor Strange" 2018 Marvel 20 issues; cached #1-20 (20); yearΔ 0; ratio 0/20; no judged range
+   CV per-file (v1): vol 115727 "Doctor Strange by Mark Waid: Across The Universe" 2018 Marvel 1 issue 694124 on 4/4 files
+   CV candidates:  (= linked) · 57482 "Daredevil by Mark Waid" 2013 Marvel 5 s76 · 38934 "Fantastic Four by Mark Waid" 2004 Marvel 3 s72 · 99293 "Daredevil by Mark Waid Omnibus" 2017 Marvel 2 s69 · 45530 "Daredevil by Mark Waid" 2012 Marvel 7 s68 · 155525 "Doctor Strange By Mark Waid" 2023 Marvel 2 s58 · 96287 "Flash by Mark Waid" 2016 DC Comics 8 s55   (v1 search)
+   CV local rip:   (= linked) · 102003 "Doctor Strange" 2017 Kodansha 1 issue 600146 · 106673 "Doctor Strange" 2017 Marvel 2 · 150556 "Doctor Strange" 2016 Panini Comics 63 · 85094 "Doctor Strange" 2015 Marvel 37 · 148962 "Doctor Strange" 2023 Marvel 18   (rip lookup)
+   GCD dump:       125730 "Doctor Strange" 2018-2019 Marvel [] 20 · 119031 "Doctor Strange" 2017-2018 Marvel [] 2 · 141573 "Doctor Strange" [es-mx] 2019-? Editorial Televisa [] 7 · 148819 "Doctor Strange" [de] 2019-2021 Panini Deutschland [] 5 · 165477 "ドクター・ストレンジ  [Doctor Strange]" [ja-jp] 2017-2017 講談社 [Kōdansha] [] 1 · 181777 "Doctor Strange" [fr] 2019-2021 Panini France [] 4   (dump lookup)
+
+== S5628 Doctor Strange Epic Collection  [tier B]   keys: Doctor Strange Epic Collection  years 2017-2024  6 files / 6 collections
+   folders: [6] Marvel\_Doctor Strange\_Doctor Strange Epic Collections
+   files:   [79045] COL Doctor Strange Epic Collection Vol. 01 - Master of the Mystic Arts (2018) (Digital) (Zone-Empire).cbr (397pp)
+            [79046] COL Doctor Strange Epic Collection Vol. 02 - I, Dormammu (2024) (Digital) (Shan-Empire).cbz (495pp)
+            [79049] COL Doctor Strange Epic Collection Vol. 05 - The Reality War (2022) (Digital-Empire).cbr (504pp)
+            [79050] COL Doctor Strange Epic Collection Vol. 08 - Triumph and Torment (2019) (Digital-Empire).cbr (484pp)
+            [79053] COL Doctor Strange Epic Collection Vol. 11 - Nightmare on Bleecker Street (2023) (Digital) (Shan-Empire).cbz (480pp)
+            [79054] COL Doctor Strange Epic Collection Vol. 13 - Afterlife (2017) (Digital) (danke-Empire).cbz (482pp)
+   ours:    judged item 79050 #1-13 conf 0.7; judged item 79049 #29-51 conf 0.8; judged item 79054 #76-90 conf 0.8; judged item 79045 #110-146 conf 0.8; judged item 79046 #147-168 conf 0.85; ComicInfo Series: "Doctor Strange Epic Collection"x2; ComicInfo Publisher: "Marvel"x2
+   GCD says: [79045] gcd_reprint 1858736: s824 Strange Tales (1951) #110-111, #114-146 [72 stories] · s2866 Doctor Strange Classics Starring Doctor Strange (1984) #1-4 [6 stories] · s1686 Marvel Collectors' Item Classics (1965) #10 [2 stories] · s59467 Marvel Masterworks: Doctor Strange (2010) #1-2 [2 stories]
+             [79046] gcd notes 2595214 (#2 of Doctor Strange Epic Collection): the Doctor Strange stories from Strange Tales (Marvel, 1951 series) #147-168; Doctor Strange (Marvel, 1968 series) #169-179; The Avengers (Marvel, 1963 series) #61; Not Brand Echh! (Marvel, 1967 series) #13  |  gcd_reprint 2595214: s824 Strange Tales (1951) #147-168 [44 stories] · s1863 Doctor Strange (1968) #169-179 [22 stories] · s1811 Not Brand Echh (1967) #13 [2 stories] · s1571 The Avengers (1963) #61 [2 stories]
+             [79049] gcd_reprint 2357688: s2162 Doctor Strange (1974) #29-51 [48 stories] · s2045 Chamber of Chills (1972) #3-4 [2 stories] · s2511 Man-Thing (1979) #4 [2 stories] · s2048 The Defenders (1972) #53 [1 story]
+             [79050] gcd notes 2091119 (#8 of Doctor Strange Epic Collection): Doctor Strange, Sorcerer Supreme (Marvel, 1988 series) #1-13  |  gcd_reprint 2091119: s3645 Doctor Strange, Sorcerer Supreme (1988) #1-13 [58 stories] · s69795 Marvel Age (1983) #66, #75, #78, #82 [8 stories] · s79873 Dr. Strange and Dr. Doom: Triumph and Torment [Marvel Graphic Novel] (1989) (unnumbered) [5 stories] · s3850 The Official Handbook of the Marvel Universe (1989) #8 [2 stories]
+             [79053] gcd_reprint 2494222: s3645 Doctor Strange, Sorcerer Supreme (1988) #48-61 [49 stories] · s4032 Marvel Super-Heroes (1990) #12, #14 [12 stories] · s4448 Doctor Strange, Sorcerer Supreme Annual (1992) #3 [6 stories] · s3654 Marvel Comics Presents (1988) #146 [4 stories]
+             [79054] gcd_reprint 1741369: s3645 Doctor Strange, Sorcerer Supreme (1988) #76-90 [41 stories] · s5792 Doctor Strange: What Is It That Disturbs You, Stephen? (1997) #1 [4 stories] · s12125 Strange Tales (1994) #1 [2 stories]
+   CV per-file (v1): vol 104784 "Doctor Strange Epic Collection: Afterlife" 2017 Marvel 1 issue 626281 on 1/6 files
+   CV candidates:  (= per-file) · 144899 "Doctor Strange Epic Collection: Infinity War" 2022 Marvel 1 issue 945891 s73 · 156018 "Doctor Strange Epic Collection: I, Dormammu " 2024 Marvel 1 issue 1040078 s73 · 122194 "Doctor Strange Epic Collection: Triumph and Torment" 2019 Marvel 1 issue 723756 s72 · 142793 "Doctor Strange Epic Collection: The Reality War" 2022 Marvel 1 issue 921430 s72 · 95006 "Doctor Strange Epic Collection: A Separate Reality" 2016 Marvel 1 issue 553957 s72 · 133481 "Doctor Strange Epic Collection: Alone Against Eternity" 2021 Marvel 1 issue 826677 s72   (v1 search)
+   CV local rip:   (= per-file) · 144899 "Doctor Strange Epic Collection: Infinity War" 2022 Marvel 1 issue 945891 (via CV candidate name "Doctor Strange Epic Collection: Infinity War") · 156018 "Doctor Strange Epic Collection: I, Dormammu " 2024 Marvel 1 issue 1040078 (via CV candidate name "Doctor Strange Epic Collection: I, Dormammu ")   (rip lookup)
+   GCD dump:       108389 "Doctor Strange Epic Collection" 2016-? Marvel [] 11 · 203718 "Doctor Strange [Epic collection]" [fr] 2023-? Panini France [] 1   (dump lookup)
+
+== S5629 Doctor Strange Epic Collection: A Separate Reality  [tier B]   keys: Doctor Strange Epic Collection: A Separate Reality  years 2016-2016  1 files / 1 collections
+   folders: [1] Marvel\_Doctor Strange\_Doctor Strange Epic Collections
+   files:   [79047] COL Doctor Strange Epic Collection Vol. 03 - A Separate Reality (2016) (Digital) (F) (Asgard-Empire).cbz (461pp)
+   ours:    ComicInfo Series: "Doctor Strange Epic Collection: A Separate Reality"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [79047] gcd_reprint 1639526: s2055 Marvel Premiere (1972) #3-14 [24 stories] · s2162 Doctor Strange (1974) #1-5 [11 stories] · s1863 Doctor Strange (1968) #180-183 [9 stories] · s2180 Marvel Treasury Edition (1974) #6 [4 stories]
+   CV linked:      vol 95006 "Doctor Strange Epic Collection: A Separate Reality" 2016 Marvel 1 issues issue 553957; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 38669 "Doctor Strange: A Separate Reality" 2002 Marvel 1 issue 259444 s85 · 142793 "Doctor Strange Epic Collection: The Reality War" 2022 Marvel 1 issue 921430 s70 · 104784 "Doctor Strange Epic Collection: Afterlife" 2017 Marvel 1 issue 626281 s63 · 144899 "Doctor Strange Epic Collection: Infinity War" 2022 Marvel 1 issue 945891 s62 · 156018 "Doctor Strange Epic Collection: I, Dormammu " 2024 Marvel 1 issue 1040078 s62 · 122194 "Doctor Strange Epic Collection: Triumph and Torment" 2019 Marvel 1 issue 723756 s61   (v1 search)
+   CV local rip:   (= linked) · 142793 "Doctor Strange Epic Collection: The Reality War" 2022 Marvel 1 issue 921430 (via CV candidate name "Doctor Strange Epic Collection: The Reality War") · 38669 "Doctor Strange: A Separate Reality" 2002 Marvel 1 issue 259444 (via CV candidate name "Doctor Strange: A Separate Reality")   (rip lookup)
+   GCD dump:       73373 "Doctor Strange: A Separate Reality" 2002-2002 Marvel [] 1 (via CV candidate name "Doctor Strange: A Separate Reality")   (dump lookup)
+
+== S5630 Doctor Strange Epic Collection: Alone Against Eternity  [tier B]   keys: Doctor Strange Epic Collection: Alone Against Eternity  years 2021-2021  1 files / 1 collections
+   folders: [1] Marvel\_Doctor Strange\_Doctor Strange Epic Collections
+   files:   [79048] COL Doctor Strange Epic Collection Vol. 04 - Alone Against Eternity (2021) (Digital) (Relic-Empire).cbz (483pp)
+   ours:    ComicInfo Series: "Doctor Strange Epic Collection: Alone Against Eternity"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [79048] gcd notes 2197311 (#4 of Doctor Strange Epic Collection): Doctor Strange (Marvel, 1974 series) #6-28; Dr. Strange Annual (Marvel, 1976 series) #1; Tomb of Dracula (Marvel, 1972 series) #44  |  gcd_reprint 2197311: s2162 Doctor Strange (1974) #6-28 [46 stories] · s2128 Strange Tales (1973) #182-188 [7 stories] · s2345 Dr. Strange Annual (1976) #1 [2 stories] · s2063 Tomb of Dracula (1972) #44 [2 stories]
+   CV linked:      vol 133481 "Doctor Strange Epic Collection: Alone Against Eternity" 2021 Marvel 1 issues issue 826677; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 104784 "Doctor Strange Epic Collection: Afterlife" 2017 Marvel 1 issue 626281 s63 · 144899 "Doctor Strange Epic Collection: Infinity War" 2022 Marvel 1 issue 945891 s62 · 156018 "Doctor Strange Epic Collection: I, Dormammu " 2024 Marvel 1 issue 1040078 s62 · 122194 "Doctor Strange Epic Collection: Triumph and Torment" 2019 Marvel 1 issue 723756 s61 · 142793 "Doctor Strange Epic Collection: The Reality War" 2022 Marvel 1 issue 921430 s61 · 95006 "Doctor Strange Epic Collection: A Separate Reality" 2016 Marvel 1 issue 553957 s61   (v1 search)
+   CV local rip:   (= linked) · 144899 "Doctor Strange Epic Collection: Infinity War" 2022 Marvel 1 issue 945891 (via CV candidate name "Doctor Strange Epic Collection: Infinity War") · 104784 "Doctor Strange Epic Collection: Afterlife" 2017 Marvel 1 issue 626281 (via CV candidate name "Doctor Strange Epic Collection: Afterlife")   (rip lookup)
+
+== S5631 Doctor Strange Epic Collection: Infinity War  [tier B]   keys: Doctor Strange Epic Collection: Infinity War  years 2022-2022  1 files / 1 collections
+   folders: [1] Marvel\_Doctor Strange\_Doctor Strange Epic Collections
+   files:   [79052] COL Doctor Strange Epic Collection Vol. 10 - Infinity War (2022) (Digital-Empire).cbr (470pp)
+   ours:    ComicInfo Series: "Doctor Strange Epic Collection: Infinity War"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [79052] gcd_reprint 2426198: s3645 Doctor Strange, Sorcerer Supreme (1988) #34-47 [48 stories] · s4448 Doctor Strange, Sorcerer Supreme Annual (1992) #2 [8 stories] · s4478 Spider-Man / Dr. Strange: The Way to Dusty Death (1992) (unnumbered) [3 stories] · s3433 Silver Surfer (1987) #67 [3 stories]
+   CV linked:      vol 144899 "Doctor Strange Epic Collection: Infinity War" 2022 Marvel 1 issues issue 945891; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 142793 "Doctor Strange Epic Collection: The Reality War" 2022 Marvel 1 issue 921430 s78 · 104784 "Doctor Strange Epic Collection: Afterlife" 2017 Marvel 1 issue 626281 s69 · 156018 "Doctor Strange Epic Collection: I, Dormammu " 2024 Marvel 1 issue 1040078 s68 · 122194 "Doctor Strange Epic Collection: Triumph and Torment" 2019 Marvel 1 issue 723756 s67 · 95006 "Doctor Strange Epic Collection: A Separate Reality" 2016 Marvel 1 issue 553957 s67 · 133481 "Doctor Strange Epic Collection: Alone Against Eternity" 2021 Marvel 1 issue 826677 s67   (v1 search)
+   CV local rip:   (= linked) · 142793 "Doctor Strange Epic Collection: The Reality War" 2022 Marvel 1 issue 921430 (via CV candidate name "Doctor Strange Epic Collection: The Reality War") · 104784 "Doctor Strange Epic Collection: Afterlife" 2017 Marvel 1 issue 626281 (via CV candidate name "Doctor Strange Epic Collection: Afterlife")   (rip lookup)
+
+== S5632 Doctor Strange Epic Collection: The Vampiric Verses  [tier B]   keys: Doctor Strange Epic Collection: The Vampiric Verses  years 2021-2021  1 files / 1 collections
+   folders: [1] Marvel\_Doctor Strange\_Doctor Strange Epic Collections
+   files:   [79051] COL Doctor Strange Epic Collection Vol. 09 - The Vampiric Verses (2021) (Digital-Empire).cbr (490pp)
+   ours:    ComicInfo Series: "Doctor Strange Epic Collection: The Vampiric Verses"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [79051] gcd_reprint 2258755: s3645 Doctor Strange, Sorcerer Supreme (1988) #13-33 [54 stories] · s4025 Ghost Rider (1990) #12 [2 stories] · s115252 Doctor Strange: Sorcerer Supreme Omnibus (2017) #1 [1 story] · s9891 Doctor Strange / Ghost Rider Special (1991) #1 [1 story]
+   CV linked:      vol 138724 "Doctor Strange Epic Collection: The Vampiric Verses" 2021 Marvel 1 issues issue 883355; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 142793 "Doctor Strange Epic Collection: The Reality War" 2022 Marvel 1 issue 921430 s70 · 114415 "Doctor Strange Epic Collection: Master of the Mystic Arts" 2018 Marvel 1 issue 689042 s68 · 104784 "Doctor Strange Epic Collection: Afterlife" 2017 Marvel 1 issue 626281 s63 · 144899 "Doctor Strange Epic Collection: Infinity War" 2022 Marvel 1 issue 945891 s62 · 156018 "Doctor Strange Epic Collection: I, Dormammu " 2024 Marvel 1 issue 1040078 s62 · 122194 "Doctor Strange Epic Collection: Triumph and Torment" 2019 Marvel 1 issue 723756 s61   (v1 search)
+   CV local rip:   (= linked) · 142793 "Doctor Strange Epic Collection: The Reality War" 2022 Marvel 1 issue 921430 (via CV candidate name "Doctor Strange Epic Collection: The Reality War") · 114415 "Doctor Strange Epic Collection: Master of the Mystic Arts" 2018 Marvel 1 issue 689042 (via CV candidate name "Doctor Strange Epic Collection: Master of the Mystic Arts")   (rip lookup)
+
+== S18841 The Infinity War  [tier B]   keys: The Infinity War  years 1992-2022  3 files / 3 collections
+   flags: #474 label-ambiguous [Pending] item 116449 — items 79071 and 116449 are duplicate copies of The Infinity War TPB
+   folders: [1] Marvel\_Doctor Strange\_Trades, Minis and One-shots · [1] _Marvel Major Event Chronology (digital)\1992.06 - The Infinity War\Omnibus Edition · [1] _Marvel Major Event Chronology (digital)\1992.06 - The Infinity War
+   files:   [79071] COL The Infinity War (digital TPB) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (?pp) | [117872] COL The Infinity War Omnibus (2022) (hd-webrip) (JTR).cbz (1308pp)
+            [116449] COL The Infinity War (digital TPB) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (375pp)
+   GCD says: [79071] gcd_reprint 1098958: s4458 The Infinity War (1992) #1-6 [13 stories] · s4483 Warlock and the Infinity Watch (1992) #7-10 [8 stories] · s3654 Marvel Comics Presents (1988) #108-111 [4 stories] · s4710 Marvel Holiday Special (1992) (unnumbered) [1 story]
+             [117872] gcd notes 1943853 (#[nn] of Infinity War Omnibus): The Infinity War (Marvel, 1992 series) #1-6; Fantastic Four (Marvel, 1961 series) #366-370; Spider-Man (Marvel, 1990 series) #24; Deathlok (Marvel, 1991 series) #16; Daredevil (Marvel, 1964 series) #310; Warlock and the Infinity Watch (Marv  |  gcd_reprint 1943853: s3645 Doctor Strange, Sorcerer Supreme (1988) #42-47 [6 stories] · s4458 The Infinity War (1992) #1-6 [6 stories] · s1482 Fantastic Four (1961) #366-370 [5 stories] · s3654 Marvel Comics Presents (1988) #108-111 [4 stories]
+             [116449] gcd_reprint 1098958: s4458 The Infinity War (1992) #1-6 [13 stories] · s4483 Warlock and the Infinity Watch (1992) #7-10 [8 stories] · s3654 Marvel Comics Presents (1988) #108-111 [4 stories] · s4710 Marvel Holiday Special (1992) (unnumbered) [1 story]
+   CV linked:      vol 4795 "The Infinity War" 1992 Marvel 6 issues; cached #1-6 (6); yearΔ 0; ratio 0/6; no judged range
+   CV candidates:  (= linked) · 118131 "The Infinity War Omnibus" 2019 Marvel 1 issue 705476 s77 · 85293 "The Infinity War Aftermath" 2015 Marvel 1 issue 502863 s77 · 110228 "True Believers: The Infinity War" 2018 Marvel 1 issue 667662 s76 · 30366 "Infinity War" 2006 Marvel 1 issue 187116 s73 · 127555 "De Infinity War" 1993 JuniorPress BV 3 s54 · 44216 "Infinity War #1, A Marvel Comics Preview" 1992 Marvel 1 issue 304148 s53   (v1 search)
+   CV local rip:   (= linked) · 30366 "Infinity War" 2006 Marvel 1 issue 187116 · 85293 "The Infinity War Aftermath" 2015 Marvel 1 issue 502863 (via CV candidate name "The Infinity War Aftermath") · 118131 "The Infinity War Omnibus" 2019 Marvel 1 issue 705476 (via CV candidate name "The Infinity War Omnibus")   (rip lookup)
+   GCD dump:       4458 "The Infinity War" 1992-1992 Marvel [] 6 · 73388 "Infinity War" 2006-2006 Marvel [] 1 · 225632 "Infinity War" [fr] 2018-2018 Panini France [] 1 · 93073 "Infinity War Aftermath" 2015-2015 Marvel [] 1 (via CV candidate name "The Infinity War Aftermath") · 143486 "Infinity War Omnibus" 2019-2019 Marvel [] 1 (via CV candidate name "The Infinity War Omnibus")   (dump lookup)
+
+== S96743 Eternals  [tier C] · gap 44  keys: Eternals v5 (2021)  years 1977-2023  6 files / 3 collections
+   folders: [3] Marvel\_Eternals\Eternals v5 (2021) · [3] _Marvel Major Event Chronology (digital)\2022.07 - A.X.E. - Judgement Day\00 Judgement Day Is Coming
+   files:   [79145] COL Eternals Vol. 00 - A History Written In Blood (2023) (Digital) (EJGriffin-Empire).cbz (113pp)
+            [79146] COL Eternals Vol. 01 - Only Death Is Eternal (2021) (Digital-Empire).cbr (154pp) | [79147] COL Eternals Vol. 02 - Hail Thanos (2022) (Digital) (EJGriffin-Empire).cbz (152pp)
+            [118559] 01 Eternals 010 (2022) (Digital) (Zone-Empire).cbr (26pp) | [118560] 02 Eternals 011 (2022) (Digital) (Zone-Empire).cbr (26pp)
+            [118561] 03 Eternals 012 (2022) (Digital) (Zone-Empire).cbr (26pp)
+   ours:    ladder 10-12; judged item 79146 #1-6 conf 0.85; judged item 79147 #7-12 conf 0.85; judged item 79145 #24-28 conf 0.95
+   GCD says: [79145] gcd_reprint 2499549: s2410 What If? (1977) #24-28 [5 stories] · s176211 Eternals: Thanos Rises (2021) #1 [2 stories] · s182932 Eternals: The Heretic (2022) #1 [1 story] · s177114 Eternals: Celestia (2021) #1 [1 story]
+             [79146] gcd_reprint 2258785: s168396 Eternals (2021) #1-6 [7 stories]
+             [79147] gcd_reprint 2426196: s168396 Eternals (2021) #7-12 [7 stories]
+   CV linked:      vol 133080 "Eternals" 2021 Marvel 12 issues; cached #1-12 (12); yearΔ 44; ratio 3/12 = 0.25; 2 of 3 judged fit
+   CV per-file (v1): vol 2858 "The Eternals" 1976 Marvel 19 on 3/6 files
+   CV local rip:   (= linked) · 3480 "Eternals" 1985 Marvel 12 · 18203 "Eternals" 2006 Marvel 7 · 40496 "Eternals" 2007 Marvel 1 issue 272887 · 21937 "Eternals" 2008 Marvel 9   (rip lookup)
+   GCD per-file:   series 168396 "Eternals" 2021-2022 Marvel [ongoing series] 12 on 3/6 files; methods numx3
+   GCD dump:       (= per-file) · 7039 "The Eternals" [en-au] 1977-? Yaffa / Page [] 7 · 2346 "The Eternals" 1976-1978 Marvel [] 19 · 3016 "Eternals" 1985-1986 Marvel [] 12 · 18442 "Eternals" 2006-2007 Marvel [] 7 · 31809 "Eternals" 2008-2008 Marvel [] 9   (dump lookup)
+   bridges:        gcd 168396 -> LOCG 117114 "The Eternals" support 4
+
+== S64669 Fantastic Four  [tier C] · 547 files  keys: Fantastic Four | Fantastic Four (1961) | Fantastic Four v1 (1961)  years 1961-2021  547 files / 8 collections
+   flags: #239 label-ambiguous [Pending] item 98865 — Fantastic Four v1 338 is a single issue, not a collection
+   folders: [416] Marvel\_Fantastic Four\01 Fantastic Four v1 (1961) · [28] Marvel\_Fantastic Four\00 Annuals and Specials · [13] _Marvel Major Event Chronology (digital)\2003.05 - Fantastic Four - Unthinkable\Extras · [7] _Marvel Major Event Chronology (digital)\2007.06 - The Initiative\Fantastic Four · [6] Marvel\_Fantastic Four\01 Fantastic Four v1 (1961)\Omnibus Editions · [6] _Marvel Major Event Chronology (digital)\2003.05 - Fantastic Four - Unthinkable\03 Authoritative Action · [5] _Marvel Major Event Chronology (digital)\2003.05 - Fantastic Four - Unthinkable\01 Unthinkable · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0728 Civil War - Phase Two · [4] _Marvel Major Event Chronology (digital)\2010.04 - The Heroic Age\The Heoric Age - Fanastic Four · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0006 Various Cameos · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0719 Civil War - Phase One · [3] _Marvel Major Event Chronology (digital)\1966.03 - Fantastic Four - The Galactus Trilogy · [3] _Marvel Major Event Chronology (digital)\1989.12 - Acts of Vengeance\Acts of Vengeance - Marvel Universe · [3] _Marvel Major Event Chronology (digital)\2004.09 - Avengers Disassembled\03 Tie-ins\Fantastic Four · [3] _Marvel Major Event Chronology (digital)\2009.02 - Ultimatum (Ultimate)\02 Ultimatum · [3] _Marvel Major Event Chronology (digital)\2014.04 - Original Sin\02 Tie-ins\Fantastic Four · [3] _Marvel Major Event Chronology (digital)\2020.03 - Empyre\02 Tie-ins\Fantastic Four v6 · [2] Marvel\_Fantastic Four\_Trades, Minis and One-shots · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0087 Inferno After Effects · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught · [2] _Marvel Major Event Chronology (digital)\1971.06 - Avengers - The Kree-Skrull War\Extra · [2] _Marvel Major Event Chronology (digital)\2022.07 - A.X.E. - Judgement Day\02 Tie-ins · [1] Marvel\Death's Head\1. Death's Head (FPA) · [1] Marvel\_Fantastic Four\06 Hickman's Fantastic Four (2009)\Complete Collection · [1] Marvel\_Marvel Facsimile Editions · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0001 X-Men · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0026 Alpha Flight · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0048 Secret Wars II · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0070 The Horsemen of Apocalypse · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0078 Evolutionary war · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0093 Atlantis Attacks · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0122 The Days of Future Present · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0244 Unnamed · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0288 Onslaught Preview · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0723 Civil War - X-Men · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0991 Clandestine · [1] Marvel\__Skottie Young Covers · [1] _Marvel Major Event Chronology (digital)\1966.03 - Fantastic Four - The Galactus Trilogy\Extra · [1] _Marvel Major Event Chronology (digital)\1968.02 - Daredevil-Dr Doom Swap · [1] _Marvel Major Event Chronology (digital)\1980.01 - X-Men - The Dark Phoenix Saga\Extras\Fantastic Four - Avengers - Like a Phoenix (1986) · [1] _Marvel Major Event Chronology (digital)\2003.05 - Fantastic Four - Unthinkable\02 Fifth Wheel · [1] _Marvel Major Event Chronology (digital)\2010.07 - Shadowland\Extras · [1] _Marvel Major Event Chronology (digital)\2019.03 - War of the Realms\02 Tie-ins\Fantastic Four
+   files:   [98865] 032 - Fantastic Four v1 338.cbz (23pp) | [79152] Fantastic Four Annual 001 (1963) (Digital) (Asgard-Empire).cbr (58pp)
+            [79153] Fantastic Four Annual 002 (1964) (digital) (Minutemen-InnerDemons).cbr (49pp) | [79154] Fantastic Four Annual 003 (1965) (Digital) (Asgard-Empire).cbr (24pp)
+            [79155] Fantastic Four Annual 004 (1966) (digital) (Minutemen-InnerDemons).cbr (20pp) | [79156] Fantastic Four Annual 005 (1967) (Digital) (Shadowcat-Empire).cbz (55pp)
+            [79157] Fantastic Four Annual 006 (1968) (Digital) (AnHeroGold-Empire).cbz (48pp) | [79158] Fantastic Four Annual 007 (1969) (Digital) (Shadowcat-Empire).cbz (54pp)
+            [79159] Fantastic Four Annual 012 (1977) (Digital) (TLK-EMPIRE-HD).cbr (36pp) | [79160] Fantastic Four Annual 013 (1978) (Digital) (AnHeroGold-Empire).cbz (35pp)
+            [79161] Fantastic Four Annual 014 (1979) (Digital) (AnPymGold-Empire).cbz (35pp) | [79162] Fantastic Four Annual 015 (1980) (Digital) (Shadowcat-Empire).cbz (37pp)
+            [79163] Fantastic Four Annual 016 (1981) (Digital) (Shadowcat-Empire).cbz (39pp) | [79164] Fantastic Four Annual 017 (1983) (Digital) (Shadowcat-Empire).cbz (39pp)
+            [79165] Fantastic Four Annual 018 (1984) (Digital) (Shadowcat-Empire).cbz (40pp) | [79166] Fantastic Four Annual 019 (1985) (Digital) (TLK-EMPIRE-HD).cbr (42pp)
+            [79167] Fantastic Four Annual 020 (1987) (Digital) (Shadowcat-Empire).cbz (41pp) | [79168] Fantastic Four Annual 021 (1988) (digital) (Marika-Empire).cbz (58pp)
+            [79169] Fantastic Four Annual 022 (1989) (digital) (Marika-Empire).cbz (58pp) | [79170] Fantastic Four Annual 023 (1990) (Digital) (Shadowcat-Empire).cbz (57pp)
+            [79171] Fantastic Four Annual 024 (1991) (digital) (Marika-Empire).cbz (61pp) | [79172] Fantastic Four Annual 025 (1992) (Digital) (Shadowcat-Empire).cbz (56pp)
+            [79173] Fantastic Four Annual 026 (1993) (digital).cbz (55pp) | [79175] Fantastic Four Annual 028 (1998) (Digital) (Shadowcat-Empire).cbz (42pp)
+            [79176] Fantastic Four Annual 029 (1999) (Digital) (Shadowcat-Empire).cbz (37pp) | [79177] Fantastic Four Annual 030 (2000) (Digital) (Shadowcat-Empire).cbz (38pp)
+            [79178] Fantastic Four Annual 031 (2001) (Digital) (Shadowcat-Empire).cbz (35pp) | [79179] Fantastic Four Annual 032 (2010) (Digital) (Shadowcat-Empire).cbz (45pp)
+            [79180] Fantastic Four Annual 033 (2012) (Digital) (AnHeroGold-Empire).cbz (39pp)
+            Fantastic Four 001 (1961) (Digital) (Asgard-Empire).cbr … Fantastic Four 020 (1963) (Digital) (Asgard-Empire).cbr  (20 files, pp 22-26)
+            [79208] Fantastic Four 021 (1963) (digital) (Minutemen-InnerDemons).cbr (23pp) | [79209] Fantastic Four 022 (1964) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            [79210] Fantastic Four 023 (1964) (digital) (Minutemen-InnerDemons).cbr (24pp) | [79211] Fantastic Four 024 (1964) (digital) (Minutemen-InnerDemons).cbr (24pp)
+            [79212] Fantastic Four 025 (1964) (Digital) (Asgard-Empire).cbr (23pp) | [79213] Fantastic Four 026 (1964) (Digital) (Asgard-Empire).cbr (24pp)
+            Fantastic Four 027 (1964) (digital) (Minutemen-InnerDemons).cbr … Fantastic Four 040 (1965) (digital) (Minutemen-InnerDemons).cbr  (14 files, pp 21-24)
+            Fantastic Four 041 (1965) (Digital) (Asgard-Empire).cbr … Fantastic Four 050 (1966) (Digital) (Asgard-Empire).cbr  (10 files, pp 21-21)
+            [79238] Fantastic Four 051 (1966) (digital) (Minutemen-InnerDemons).cbr (23pp) | [79239] Fantastic Four 052 (1966) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [79240] Fantastic Four 053 (1966) (Digital) (Shadowcat-Empire).cbz (24pp) | [79241] Fantastic Four 054 (1966) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [79242] Fantastic Four 055 (1966) (Digital) (Shadowcat-Empire).cbz (24pp) | [79243] Fantastic Four 056 (1966) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [79244] Fantastic Four 057 (1966) (digital) (Minutemen-InnerDemons).cbr (23pp) | [79245] Fantastic Four 058 (1967) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            [79246] Fantastic Four 059 (1967) (digital) (Minutemen-InnerDemons).cbr (23pp) | [79247] Fantastic Four 060 (1967) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            Fantastic Four 061 (1967) (Digital) (TLK-EMPIRE-HD).cbr … Fantastic Four 151 (1974) (Digital) (TLK-EMPIRE-HD).cbr  (91 files, pp 19-36)
+            [79339] Fantastic Four 152 (1974) (Digital) (AnHeroGold-Empire).cbz (18pp) | [79340] Fantastic Four 153 (1974) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79341] Fantastic Four 154 (1975) (Digital) (TLK-EMPIRE-HD).cbr (21pp) | [79342] Fantastic Four 155 (1975) (Digital) (TLK-EMPIRE-HD).cbr (17pp)
+            [79343] Fantastic Four 156 (1975) (Digital) (TLK-EMPIRE-HD).cbr (20pp) | [79344] Fantastic Four 157 (1975) (Digital) (TLK-EMPIRE-HD).cbr (21pp)
+            [79345] Fantastic Four 158 (1975) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79346] Fantastic Four 159 (1975) (Digital) (TLK-EMPIRE-HD).cbr (20pp)
+            [79347] Fantastic Four 160 (1975) (Digital) (TLK-EMPIRE-HD).cbr (20pp) | [79348] Fantastic Four 161 (1975) (Digital) (TLK-EMPIRE-HD).cbr (20pp)
+            [79349] Fantastic Four 162 (1975) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79350] Fantastic Four 163 (1975) (Digital) (TLK-EMPIRE-HD).cbr (20pp)
+            [79351] Fantastic Four 164 (1975) (Digital) (TLK-EMPIRE-HD).cbr (20pp) | [79352] Fantastic Four 165 (1975) (Digital) (TLK-EMPIRE-HD).cbr (20pp)
+            [79353] Fantastic Four 166 (1976) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79354] Fantastic Four 167 (1976) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79355] Fantastic Four 168 (1976) (Digital) (TLK-EMPIRE-HD).cbr (20pp) | [79356] Fantastic Four 169 (1976) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79357] Fantastic Four 170 (1976) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79358] Fantastic Four 171 (1976) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79359] Fantastic Four 172 (1976) (Digital) (TLK-EMPIRE-HD).cbr (17pp) | [79360] Fantastic Four 173 (1976) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79361] Fantastic Four 174 (1976) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79362] Fantastic Four 175 (1976) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79363] Fantastic Four 176 (1976) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79364] Fantastic Four 177 (1976) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79365] Fantastic Four 178 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79366] Fantastic Four 179 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79367] Fantastic Four 180 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79368] Fantastic Four 181 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79369] Fantastic Four 182 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79370] Fantastic Four 183 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79371] Fantastic Four 184 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79372] Fantastic Four 185 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79373] Fantastic Four 186 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79374] Fantastic Four 187 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79375] Fantastic Four 188 (1977) (Digital) (TLK-EMPIRE-HD).cbr (20pp) | [79376] Fantastic Four 189 (1977) (Digital) (TLK-EMPIRE-HD).cbr (21pp)
+            [79377] Fantastic Four 190 (1978) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79378] Fantastic Four 191 (1978) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79379] Fantastic Four 192 (1978) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79380] Fantastic Four 193 (1978) (Digital) (TLK-EMPIRE-HD).cbr (20pp)
+            [79381] Fantastic Four 194 (1978) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79382] Fantastic Four 195 (1978) (Digital) (TLK-EMPIRE-HD).cbr (20pp)
+            [79383] Fantastic Four 196 (1978) (Digital) (TLK-EMPIRE-HD).cbr (20pp) | [79384] Fantastic Four 197 (1978) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79385] Fantastic Four 198 (1978) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79386] Fantastic Four 199 (1978) (Digital) (TLK-EMPIRE-HD).cbr (20pp)
+            [79387] Fantastic Four 200 (1978) (Digital) (TLK-EMPIRE-HD).cbr (36pp) | [79388] Fantastic Four 201 (1978) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79389] Fantastic Four 202 (1979) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79390] Fantastic Four 203 (1979) (Digital) (TLK-EMPIRE-HD).cbr (20pp)
+            [79391] Fantastic Four 204 (1979) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79392] Fantastic Four 205 (1979) (Digital) (TLK-EMPIRE-HD).cbr (18pp)
+            [79393] Fantastic Four 206 (1979) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79394] Fantastic Four 207 (1979) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79395] Fantastic Four 208 (1979) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79396] Fantastic Four 209 (1979) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79397] Fantastic Four 210 (1979) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79398] Fantastic Four 211 (1979) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79399] Fantastic Four 212 (1979) (Digital) (TLK-EMPIRE-HD).cbr (17pp) | [79400] Fantastic Four 213 (1979) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79401] Fantastic Four 214 (1980) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79402] Fantastic Four 215 (1980) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79403] Fantastic Four 216 (1980) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79404] Fantastic Four 217 (1980) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79405] Fantastic Four 218 (1980) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79406] Fantastic Four 219 (1980) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79407] Fantastic Four 220 (1980) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79408] Fantastic Four 221 (1980) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79409] Fantastic Four 222 (1980) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79410] Fantastic Four 223 (1980) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [79411] Fantastic Four 224 (1980) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [79412] Fantastic Four 225 (1980) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79413] Fantastic Four 226 (1981) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79414] Fantastic Four 227 (1981) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79415] Fantastic Four 228 (1981) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79416] Fantastic Four 229 (1981) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79417] Fantastic Four 230 (1981) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79418] Fantastic Four 231 (1981) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79419] Fantastic Four 232 (1981) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79420] Fantastic Four 233 (1981) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79421] Fantastic Four 234 (1981) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79422] Fantastic Four 235 (1981) (Digital) (TLK-EMPIRE-HD).cbr (23pp)
+            [79423] Fantastic Four 236 (1981) (Digital) (TLK-EMPIRE-HD).cbr (56pp) | [79424] Fantastic Four 237 (1981) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [79425] Fantastic Four 238 (1982) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79426] Fantastic Four 239 (1982) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79427] Fantastic Four 240 (1982) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79428] Fantastic Four 241 (1982) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79429] Fantastic Four 242 (1982) (Digital) (TLK-EMPIRE-HD).cbr (23pp) | [79430] Fantastic Four 243 (1982) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79431] Fantastic Four 244 (1982) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79432] Fantastic Four 245 (1982) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79433] Fantastic Four 246 (1982) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79434] Fantastic Four 247 (1982) (Digital) (TLK-EMPIRE-HD).cbr (23pp)
+            [79435] Fantastic Four 248 (1982) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79436] Fantastic Four 249 (1982) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79437] Fantastic Four 250 (1983) (Digital) (TLK-EMPIRE-HD).cbr (40pp) | [79438] Fantastic Four 251 (1983) (Digital) (TLK-EMPIRE-HD).cbr (23pp)
+            [79439] Fantastic Four 252 (1983) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79440] Fantastic Four 253 (1983) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79441] Fantastic Four 254 (1983) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79442] Fantastic Four 255 (1983) (Digital) (TLK-EMPIRE-HD).cbr (23pp)
+            [79443] Fantastic Four 256 (1983) (Digital) (TLK-EMPIRE-HD).cbr (23pp) | [79444] Fantastic Four 257 (1983) (Digital) (TLK-EMPIRE-HD).cbr (23pp)
+            [79445] Fantastic Four 258 (1983) (Digital) (TLK-EMPIRE-HD).cbr (23pp) | [79446] Fantastic Four 259 (1983) (Digital) (TLK-EMPIRE-HD).cbr (23pp)
+            [79447] Fantastic Four 260 (1983) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79448] Fantastic Four 261 (1983) (Digital) (TLK-EMPIRE-HD).cbr (23pp)
+            [79449] Fantastic Four 262 (1984) (Digital) (TLK-EMPIRE-HD).cbr (23pp) | [79450] Fantastic Four 263 (1984) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79451] Fantastic Four 264 (1984) (Digital) (TLK-EMPIRE-HD).cbr (23pp) | [79452] Fantastic Four 265 (1984) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79453] Fantastic Four 266 (1984) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79454] Fantastic Four 267 (1984) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79455] Fantastic Four 268 (1984) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79456] Fantastic Four 269 (1984) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79457] Fantastic Four 270 (1984) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79458] Fantastic Four 271 (1984) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79459] Fantastic Four 272 (1984) (Digital) (TLK-EMPIRE-HD).cbr (23pp) | [79460] Fantastic Four 273 (1984) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79461] Fantastic Four 274 (1985) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79462] Fantastic Four 275 (1985) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79463] Fantastic Four 276 (1985) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79464] Fantastic Four 277 (1985) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79465] Fantastic Four 278 (1985) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79466] Fantastic Four 279 (1985) (Digital) (TLK-EMPIRE-HD).cbr (23pp)
+            [79467] Fantastic Four 280 (1985) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79468] Fantastic Four 281 (1985) (Digital) (TLK-EMPIRE-HD).cbr (23pp)
+            [79469] Fantastic Four 282 (1985) (Digital) (TLK-EMPIRE-HD).cbr (25pp) | [79470] Fantastic Four 283 (1985) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79471] Fantastic Four 284 (1985) (Digital) (TLK-EMPIRE-HD).cbr (23pp) | [79472] Fantastic Four 285 (1985) (Digital) (TLK-EMPIRE-HD).cbr (23pp)
+            [79473] Fantastic Four 286 (1986) (Digital) (TLK-EMPIRE-HD).cbr (32pp) | [79474] Fantastic Four 287 (1986) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79475] Fantastic Four 288 (1986) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79476] Fantastic Four 289 (1986) (Digital) (TLK-EMPIRE-HD).cbr (25pp)
+            [79477] Fantastic Four 290 (1986) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79478] Fantastic Four 291 (1986) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79479] Fantastic Four 292 (1986) (Digital) (TLK-EMPIRE-HD).cbr (24pp) | [79480] Fantastic Four 293 (1986) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79481] Fantastic Four 294 (1986) (Digital) (TLK-EMPIRE-HD).cbr (23pp) | [79482] Fantastic Four 295 (1986) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [79483] Fantastic Four 296 (1986) (Digital) (TLK-EMPIRE-HD).cbr (68pp) | [79484] Fantastic Four 297 (1986) (Digital) (TLK-EMPIRE-HD).cbr (25pp)
+            [79485] Fantastic Four 298 (1987) (Digital) (TLK-EMPIRE-HD).cbr (25pp) | [79486] Fantastic Four 299 (1987) (Digital) (TLK-EMPIRE-HD).cbr (25pp)
+            Fantastic Four 300 (1987) (Digital) (Shadowcat-Empire).cbz … Fantastic Four 311 (1988) (Digital) (Shadowcat-Empire).cbz  (12 files, pp 23-25)
+            [79499] Fantastic Four 312 (1988) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            Fantastic Four 313 (1988) (Digital) (Shadowcat-Empire).cbz … Fantastic Four 319 (1988) (Digital) (Shadowcat-Empire).cbz  (7 files, pp 23-40)
+            [79507] Fantastic Four 320 (1988) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            Fantastic Four 321 (1988) (Digital) (Shadowcat-Empire).cbz … Fantastic Four 346 (1990) (Digital) (Shadowcat-Empire).cbz  (26 files, pp 22-25)
+            [79534] Fantastic Four 347 (1990) (Digital) (AnHeroGold-Empire).cbz (24pp) | [79535] Fantastic Four 348 (1991) (Digital) (AnHeroGold-Empire).cbz (24pp)
+            [79536] Fantastic Four 349 (1991) (Digital) (AnHeroGold-Empire).cbz (25pp)
+            Fantastic Four 350 (1991) (Digital) (Shadowcat-Empire).cbz … Fantastic Four 357 (1991) (Digital) (Shadowcat-Empire).cbz  (8 files, pp 22-39)
+            [79545] Fantastic Four 358 (1991) (digital) (Marika-Empire).cbz (69pp)
+            Fantastic Four 359 (1991) (Digital) (Shadowcat-Empire).cbz … Fantastic Four 399 (1995) (Digital) (Shadowcat-Empire).cbz  (41 files, pp 21-39)
+            [79587] Fantastic Four 400 (1995) (Digital) (AnHeroGold-Empire).cbz (51pp) | [79588] Fantastic Four 401 (1995) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [79589] Fantastic Four 402 (1995) (Digital) (Shadowcat-Empire).cbz (22pp)
+            Fantastic Four 403 (1995) (Digital) (AnHeroGold-Empire).cbz … Fantastic Four 414 (1996) (Digital) (AnHeroGold-Empire).cbz  (12 files, pp 22-24)
+            [79602] Fantastic Four 415 (1996) (Digital) (Minutemen-Bluntman).cbr (26pp) | [79603] Fantastic Four 416 (1996) (Digital) (Shadowcat-Empire).cbz (33pp)
+            [79607] COL Fantastic Four Omnibus Book 01 (2018, 3rd edition) (Digital-Empire).cbr (839pp) | [79608] COL Fantastic Four Omnibus Book 02 (2021, 3rd edition) (Digital-Empire).cbr (825pp)
+            [79609] COL Fantastic Four Omnibus Book 03 (2021, 2nd edition) (Digital-Empire).cbr (945pp) | [79610] COL Fantastic Four Omnibus Book 04 (2021) (Digital-Empire).cbr (809pp)
+            [79604] COL Fantastic Four by J. Michael Straczynski (2016) (Digital-HD) (Shan-Empire).cbz (145pp)
+            [79606] COL Fantastic Four by John Byrne Omnibus Book 02 (2023) (digital) (JTR).cbz (1208pp)
+            [79740] COL Fantastic Four by Jonathan Hickman - The Complete Collection Book 02 (2019) (Digital) (F) (EJGriffin-Empire).cbz (416pp)
+            [80018] Fantastic Four 416 (1996) (digital) (Marika-Empire).cbz (41pp) | [80019] COL Fantastic Four by J, Michael Straczynski (2006) (Digital).cbz (145pp)
+            [83045] Fantastic Four 001 - Facsimile Edition (1961) (Digital) (Shadowcat-Empire).cbz (52pp) | [86496] 029 Fantastic Four 028 (1964) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            [86618] 003 Fantastic Four 102 (1970) (Digital) (AnPymGold-Empire).cbz (21pp) | [86619] 004 Fantastic Four 103 (1970) (Digital) (AnPymGold-Empire).cbz (21pp)
+            [86620] 005 Fantastic Four 104 (1970) (Digital) (AnPymGold-Empire).cbz (21pp) | [86887] 004 Fantastic Four 260 (1983) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [87044] 041 Fantastic Four 286 (1986) (Digital) (AnPymGold - Empire).cbz (31pp) | [87186] 010 Fantastic Four 312 (1988) (Digital) (AnPymGold - Empire).cbz (23pp)
+            [87239] 006 Fantastic Four Annual 021 (1988) (Digital) (Shadowcat-Empire).cbz (37pp) | [87314] Fantastic Four 322 (1989) (Digital) (AnPymGold-Empire).cbz (23pp)
+            [87315] Fantastic Four 323 (1989) (Digital) (AnPymGold-Empire).cbz (23pp) | [87359] 014 Fantastic Four Annual 022 (1989) (Digital) (Shadowcat-Empire).cbz (31pp)
+            [87477] 012 Fantastic Four 334 (1989) (Digital) (AnPymGold - Empire).cbz (23pp) | [87501] 036 Fantastic Four 335 (1989) (Digital) (AnPymGold - Empire).cbz (24pp)
+            [87524] 059 Fantastic Four 336 (1990) (Digital) (AnPymGold - Empire).cbz (23pp) | [87592] 001 Fantastic Four Annual 23 (1990) (Minutemen-Bluntman).cbr (58pp)
+            [88173] 001 Fantastic Four 395 (1994) (Digital) (AnPymGold - Empire).cbz (23pp) | [88406] 014 Fantastic Four 414 (1996) (Digital) (AnPymGold - Empire).cbz (23pp)
+            [88420] 010 Fantastic Four 415 (1996) (digital) (Minutemen-Bluntman).cbr (26pp) | [88434] 024 Fantastic Four 416 (1996) (digital) (Minutemen-Bluntman).cbr (34pp)
+            [90461] 002 Fantastic Four 536 (2006) (digital-hd) (Kleio-Empire).cbz (23pp) | [90462] 003 Fantastic Four 537 (2006) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            [90479] 020 Fantastic Four 538 (2006) (digital) (Minutemen-InnerDemons).cbr (24pp) | [90515] 017 Fantastic Four 539 (2006) (digital) (Minutemen-InnerDemons).cbr (24pp)
+            [90556] 011 Fantastic Four 540 (2006) (Digital) (AnPymGold-Empire).cbz (23pp) | [90575] 030 Fantastic Four 541 (2006) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            [90589] 044 Fantastic Four 542 (2007) (Digital) (AnPymGold-Empire).cbz (23pp) | [90595] 050 Fantastic Four 543 (2007) (digital) (Minutemen-InnerDemons).cbr (54pp)
+            [92156] 001 Fantastic Four Annual 033 (2012) (Digital) (AnHeroGold-Empire).cbz (39pp) | [51947] Fantastic Four 01 (2013) (Skottie Young Variant Cover) (Ghosts-Novus-HD).cbz (1pp)
+            [117862] Fantastic Four 001 (1961) (Digital) (TLK-EMPIRE-HD).cbr (27pp) | [116258] Fantastic Four 048 (1966) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [116259] Fantastic Four 049 (1966) (Digital) (TLK-EMPIRE-HD).cbr (22pp) | [116260] Fantastic Four 050 (1966) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [116265] 03 Fantastic Four 073 (1968) (Digital) (AnPymGold-Empire).cbz (21pp) | [116267] Fantastic Four 002 (1962) (Digital) (TLK-EMPIRE-HD).cbr (27pp)
+            [116268] Fantastic Four 065 (1967) (Digital) (AnPymGold-Empire).cbz (21pp) | [116353] 02 Fantastic Four 286 (1986) (Digital) (TLK-EMPIRE-HD).cbr (32pp)
+            [116425] Fantastic Four 334 (1989) (Digital) (Shadowcat-Empire).cbz (23pp) | [116426] Fantastic Four 335 (1989) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [116427] Fantastic Four 336 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+            Fantastic Four 067 (2003) (Digital) (AnHeroGold-Empire).cbz … Fantastic Four 508 (2004) (Digital) (AnHeroGold-Empire).cbz  (12 files, pp 21-38)
+            [116587] Fantastic Four 005 (1962) (Digital) (TLK-EMPIRE-HD).cbr (25pp) | [116588] Fantastic Four 015 (1999) (Digital) (AnPymGold-Empire).cbz (22pp)
+            [116589] Fantastic Four 021 (1999) (Digital) (AnPymGold-Empire).cbz (23pp) | [116590] Fantastic Four 022 (1999) (Digital) (AnPymGold-Empire).cbz (24pp)
+            [116591] Fantastic Four 023 (1999) (Digital) (AnPymGold-Empire).cbz (22pp) | [116592] Fantastic Four 049 (2002) (Digital) (AnPymGold-Empire).cbz (21pp)
+            [116593] Fantastic Four 054 (2002) (Digital) (AnHeroGold-Empire).cbz (24pp) | [116594] Fantastic Four 094 (1970) (Digital) (AnPymGold-Empire).cbz (21pp)
+            [116595] Fantastic Four 244 (1982) (Digital) (AnPymGold - Empire).cbz (23pp) | [116596] Fantastic Four 245 (1982) (Digital) (AnPymGold - Empire).cbz (23pp)
+            [116597] Fantastic Four 413 (1996) (Digital) (AnPymGold - Empire).cbz (23pp) | [116598] Fantastic Four 414 (1996) (Digital) (AnPymGold - Empire).cbz (23pp)
+            [116599] Fantastic Four Annual 006 (1968) (Digital) (AnPymGold - Empire).cbz (49pp) | [116614] Fantastic Four 517 (2004) (Digital) (AnPymGold-Empire).cbz (20pp)
+            [116615] Fantastic Four 518 (2004) (Digital) (AnPymGold-Empire).cbz (22pp) | [116616] Fantastic Four 519 (2004) (Digital) (AnPymGold-Empire).cbz (22pp)
+            Fantastic Four 544 (2007) (Digital) (Shadowcat-Empire).cbz … Fantastic Four 550 (2007) (Digital) (Shadowcat-Empire).cbz  (7 files, pp 24-25)
+            [117181] 06 Ultimate Fantastic Four 058 (2009) (digital) (Minutemen-PhD).cbr (24pp) | [117183] 08 Ultimate Fantastic Four 059 (2009) (digital) (Minutemen-PhD).cbr (23pp)
+            [117187] 12 Ultimate Fantastic Four 060 (2009) (digital) (Minutemen-PhD).cbr (25pp) | [117326] Fantastic Four 579 (2010) (Digital) (Monafekk-Empire) (Ok).cbz (25pp)
+            [117327] Fantastic Four 580 (2010) (Digital-HD) (Monafekk-Empire).cbr (25pp) | [117328] Fantastic Four 581 (2010) (Digital-HD) (Monafekk-Empire).cbr (25pp)
+            [117329] Fantastic Four 582 (2010) (Digital-HD) (Monafekk-Empire).cbr (28pp) | [117412] Fantastic Four 052 (1966) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [117782] 025 - Fantastic Four 006 (2014) (Digital) (Zone-Empire).cbr (19pp) | [117783] 026 - Fantastic Four 007 (2014) (Digital) (Zone-Empire).cbr (21pp)
+            [117784] 027 - Fantastic Four 008 (2014) (Digital) (Zone-Empire).cbr (22pp)
+            Fantastic Four 010 (2019) (Digital) (Zone-Empire).cbr … Fantastic Four 048 (2022) (Digital) (Zone-Empire).cbr  (6 files, pp 22-26)
+   ours:    ladder 1-416, 500, 502-508, 517-519, 536-550, 579-582; 62 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 13, 14; ComicInfo Series: "Fantastic Four"x14, "Fantastic Four Annual"x7, "Fantastic Four Omnibus"x4, "Fantastic Four Annual 1998"x1; ComicInfo Volume: "1998"x7, "1961"x6, "1963"x4, "2018"x4; ComicInfo Count: "33"x4, "416"x2; ComicInfo Publisher: "Marvel"x24, "Marvel Comics"x5; ComicInfo Web: "29064"x1, "30691"x1, "33705"x1, "50681"x1
+   GCD says: [79608] gcd notes 2250963 (#2 of Fantastic Four Omnibus): Fantastic Four (Marvel, 1961 series) #31-60; Fantastic Four Annual (Marvel, 1963 series) #2-4; a Fantastic Four parody from Not Brand Echh (Marvel, 1967 series) #1
+             [79609] gcd_reprint 2260723: s14052 Fantastic Four Omnibus (2005) #3 [1 story]
+             [79610] gcd_reprint 2260762: s1482 Fantastic Four (1961) #94-125 [108 stories] · s27869 Fantastic Four: The Lost Adventure (2008) #1 [1 story]
+             [79604] gcd_reprint 351576: s11218 Fantastic Four (1998) #527-532 [14 stories]
+             [79606] gcd_reprint 1166038: s1482 Fantastic Four (1961) #1, #261-295, #358 [78 stories] · s2559 Epic Illustrated (1980) #25-34 [13 stories] · s3036 The Official Handbook of the Marvel Universe (1985) #1-2, #4, #6, #8, #10-13 [12 stories] · s2758 The Official Handbook of the Marvel Universe (1983) #1, #4, #7-10, #14 [11 stories]
+   CV linked:      vol 2045 "Fantastic Four" 1961 Marvel 416 issues; cached #1-416 (416); yearΔ 0; ratio 539/416 = 1.30; no judged range
+   CV per-file (v1): vol 2045 "Fantastic Four" 1961 Marvel 416 on 536/547 files · vol 127411 "Fantastic Four" 1979 JuniorPress BV 36 on 2/547 files · vol 53526 "Fantastic Four" 1982 Marvel UK/Panini UK 29 on 1/547 files · vol 42343 "Fantastic Four" 1999 Panini France 22 on 1/547 files
+   CV local rip:   (= linked) · 40093 "The Fantastic Four" 1979 Simon and Schuster 1 issue 269831 · 34468 "Fantastic Four" 1981 Marvel 1 issue 224966 · 84326 "Fantastic Four" 1981 Marvel 1 issue 499181   (rip lookup)
+   GCD per-file:   methods numx493 · round2-seriesx16 ⚠ · fulldump-rematchx8 · page-rematchx1  (⚠ copies a folder neighbour's series — verify); series 1482 "Fantastic Four" 1961-1996 Marvel [was ongoing series] 416 on 465/547 files · series 11218 "Fantastic Four" 1998-2011 Marvel [was ongoing series] 160 on 35/547 files · series 20524 "Fantastic Four" [nl] 1979-1982 Juniorpress [was doorlopend] 36 on 3/547 files · series 118193 "Fantastic Four" [en-ph] 1978-1978 National Book Store [was ongoing series] 6 on 3/547 files
+   GCD dump:       (= per-file) · 31439 "The Fantastic Four" 1966-1966 Lancer Books [] 1 · 21499 "Fantastic Four" [en-au] 1974-1976 Newton Comics [] 15 · 182301 "Fantastic Four" [en-ph] 1974-1975 Goodwill Bookstore [] 2 · 182249 "Fantastic Four" [en-za] 1976-1976 Republican Press [] 3   (dump lookup)
+   bridges:        gcd 1482 -> LOCG 112139 "Fantastic Four" support 533 · gcd 11218 -> LOCG 102891 "Fantastic Four" support 95 · gcd 20524 -> LOCG 112139 "Fantastic Four" support 5
+
+== S94595 Fantastic Four  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Fantastic Four v1 (2003) | Fantastic Four v3 (1998)  years 1965-2009  98 files / 0 collections
+   folders: [72] Marvel\_Fantastic Four\04 Fantastic Four v1 (2003) · [26] Marvel\_Fantastic Four\03 Fantastic Four v3 (1998)
+   files:   [79613] Fantastic Four 045 (2001) (Digital) (AnHeroGold-Empire).cbz (22pp) | [79614] Fantastic Four 046 (2001) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [79615] Fantastic Four 047 (2001) (Digital) (AnHeroGold-Empire).cbz (22pp) | [79616] Fantastic Four 048 (2001) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [79617] Fantastic Four 049 (2002) (Digital) (AnHeroGold-Empire).cbz (21pp) | [79618] Fantastic Four 050 (2002) (Digital) (AnHeroGold-Empire).cbz (53pp)
+            [79619] Fantastic Four 051 (2002) (Digital) (AnHeroGold-Empire).cbz (24pp) | [79620] Fantastic Four 052 (2002) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [79621] Fantastic Four 053 (2002) (Digital) (AnHeroGold-Empire).cbz (23pp) | [79622] Fantastic Four 054 (2002) (Digital) (AnHeroGold-Empire).cbz (24pp)
+            [79623] Fantastic Four 055 (2002) (Digital) (Shadowcat-Empire).cbz (23pp) | [79624] Fantastic Four 056 (2002) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [79625] Fantastic Four 057 (2002) (Digital) (Shadowcat-Empire).cbz (21pp) | [79626] Fantastic Four 058 (2002) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [79627] Fantastic Four 059 (2002) (Digital) (Shadowcat-Empire).cbz (23pp)
+            Fantastic Four 060 (2002) (Digital) (AnPymGold-Empire).cbz … Fantastic Four 066 (2003) (Digital) (AnPymGold-Empire).cbz  (7 files, pp 21-23)
+            Fantastic Four 067 (2003) (Digital) (AnHeroGold-Empire).cbz … Fantastic Four 513 (2004) (Digital) (AnHeroGold-Empire).cbz  (18 files, pp 21-38)
+            Fantastic Four 514 (2004) (digital-hd-Empire).cbr … Fantastic Four 526 (2005) (digital-hd-Empire).cbr  (13 files, pp 21-24)
+            Fantastic Four 527 (2005) (Digital) (Shadowcat-Empire).cbz … Fantastic Four 532 (2005) (Digital) (Shadowcat-Empire).cbz  (6 files, pp 22-24)
+            [79675] Fantastic Four 533 (2006) (Digital) (AnPymGold-Empire).cbz (23pp) | [79676] Fantastic Four 534 (2006) (Digital) (AnPymGold-Empire).cbz (23pp)
+            [79677] Fantastic Four 535 (2006) (Digital) (AnPymGold-Empire).cbz (24pp) | [79678] Fantastic Four 536 (2006) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            [79679] Fantastic Four 537 (2006) (digital) (Minutemen-InnerDemons).cbr (23pp) | [79680] Fantastic Four 538 (2006) (digital) (Minutemen-InnerDemons).cbr (24pp)
+            [79681] Fantastic Four 539 (2006) (digital) (Minutemen-InnerDemons).cbr (24pp) | [79682] Fantastic Four 540 (2006) (digital) (Minutemen-InnerDemons).cbr (24pp)
+            [79683] Fantastic Four 541 (2006) (digital) (Minutemen-InnerDemons).cbr (23pp) | [79684] Fantastic Four 542 (2007) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            [79685] Fantastic Four 543 (2007) (digital) (Minutemen-InnerDemons).cbr (54pp)
+            Fantastic Four 544 (2007) (Digital) (Shadowcat-Empire).cbz … Fantastic Four 553 (2008) (Digital) (Shadowcat-Empire).cbz  (10 files, pp 22-25)
+            [79696] Fantastic Four 554 (2008) (digital) (Minutemen-InnerDemons).cbr (21pp) | [79697] Fantastic Four 555 (2008) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            [79698] Fantastic Four 556 (2008) (digital) (Minutemen-InnerDemons).cbr (22pp) | [79699] Fantastic Four 557 (2008) (digital) (Minutemen-InnerDemons).cbr (22pp)
+            [79700] Fantastic Four 558 (2008) (digital) (Minutemen-InnerDemons).cbr (22pp) | [79701] Fantastic Four 559 (2008) (digital) (Minutemen-InnerDemons).cbr (21pp)
+            [79702] Fantastic Four 560 (2008) (digital) (Minutemen-InnerDemons).cbr (21pp) | [79703] Fantastic Four 561 (2009) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            [79704] Fantastic Four 562 (2009) (digital) (Minutemen-InnerDemons).cbr (21pp) | [79705] Fantastic Four 563 (2009) (digital) (Minutemen-InnerDemons).cbr (24pp)
+            [79706] Fantastic Four 564 (2009) (digital) (Minutemen-InnerDemons).cbr (27pp) | [79707] Fantastic Four 565 (2009) (digital) (Minutemen-InnerDemons).cbr (26pp)
+            [79708] Fantastic Four 566 (2009) (digital) (Minutemen-InnerDemons).cbr (21pp) | [79709] Fantastic Four 567 (2009) (digital) (Minutemen-InnerDemons).cbr (18pp)
+            [79710] Fantastic Four 568 (2009) (digital) (Minutemen-InnerDemons).cbr (25pp) | [79711] Fantastic Four 569 (2009) (digital) (Minutemen-InnerDemons).cbr (37pp)
+            [79712] Fantastic Four 570 (2009) (Digital) (AnHeroGold-Empire).cbz (24pp) | [79713] Fantastic Four 571 (2009) (Digital) (AnHeroGold-Empire).cbz (23pp)
+   ours:    ladder 45-70, 500-571; ComicInfo Series: "Fantastic Four"x21; ComicInfo Volume: "1998"x21; ComicInfo Publisher: "Marvel"x21
+   CV linked:      vol 6211 "Fantastic Four" 1998 Marvel 173 issues; cached #1-611 (173); yearΔ 33; ratio 98/173 = 0.57; no judged range
+   CV per-file (v1): vol 2045 "Fantastic Four" 1961 Marvel 416 on 98/98 files
+   CV local rip:   (= linked) · 40093 "The Fantastic Four" 1979 Simon and Schuster 1 issue 269831 · 127411 "Fantastic Four" 1979 JuniorPress BV 36 · 34468 "Fantastic Four" 1981 Marvel 1 issue 224966 · 84326 "Fantastic Four" 1981 Marvel 1 issue 499181 · 53526 "Fantastic Four" 1982 Marvel UK/Panini UK 29   (rip lookup)
+   GCD per-file:   methods numx63 · round2-seriesx26 ⚠ · fulldump-rematchx9  (⚠ copies a folder neighbour's series — verify); series 11218 "Fantastic Four" 1998-2011 Marvel [was ongoing series] 160 on 72/98 files · series 1482 "Fantastic Four" 1961-1996 Marvel [was ongoing series] 416 on 26/98 files
+   GCD dump:       (= per-file) · 31439 "The Fantastic Four" 1966-1966 Lancer Books [] 1 · 13160 "Fantastic Four" [fr-ca] 1968-1984 Editions Héritage [] 115 · 21499 "Fantastic Four" [en-au] 1974-1976 Newton Comics [] 15 · 182301 "Fantastic Four" [en-ph] 1974-1975 Goodwill Bookstore [] 2 · 182249 "Fantastic Four" [en-za] 1976-1976 Republican Press [] 3   (dump lookup)
+   bridges:        gcd 11218 -> LOCG 102891 "Fantastic Four" support 95 · gcd 1482 -> LOCG 112139 "Fantastic Four" support 533
+
+== S6490 Fantastic Four By Jonathan Hickman  [tier B]   keys: Fantastic Four By Jonathan Hickman  years 2010-2022  9 files / 9 collections
+   flags: #240 label-ambiguous [Pending] item 79743 — items 79882/79743 and 79883/79744 are duplicate copies of Omnibus Books 01 and 02
+   folders: [6] Marvel\_Fantastic Four\06 Hickman's Fantastic Four (2009) · [2] Marvel\_Fantastic Four\_Omnibus Editions · [1] Marvel\_Fantastic Four\06 Hickman's Fantastic Four (2009)\Omnibus Editions
+   files:   [79729] COL 02 Fantastic Four By Jonathan Hickman Vol. 01 (2010) (Digital) (F) (Asgard-Empire).cbz (130pp)
+            [79730] COL 03 Fantastic Four By Jonathan Hickman Vol. 02 (2011) (Digital) (F2) (Asgard-Empire).cbz (105pp)
+            [79731] COL 04 Fantastic Four By Jonathan Hickman Vol. 03 (2011) (Digital) (F) (Asgard-Empire).cbr (106pp)
+            [79732] COL 05 Fantastic Four By Jonathan Hickman Vol. 04 (2011) (Digital) (F) (Asgard-Empire).cbr (168pp)
+            [79735] COL 08 Fantastic Four By Jonathan Hickman Vol. 05 (2013) (Digital) (F) (Asgard-Empire).cbz (198pp)
+            [79737] COL 10 Fantastic Four By Jonathan Hickman Vol. 06 (2013) (Digital) (F) (Asgard-Empire).cbz (181pp)
+            [79743] COL Fantastic Four By Jonathan Hickman Omnibus Book 01 (2022) (digital).cbz (736pp)
+            [79882] COL Fantastic Four by Jonathan Hickman Omnibus Book 01 (2022) (Digital) (Kileko-Empire).cbz (736pp)
+            [79883] COL Fantastic Four by Jonathan Hickman Omnibus Book 02 (2022) (Digital) (Kileko-Empire).cbz (783pp)
+   ours:    ComicInfo Series: "Fantastic Four By Jonathan Hickman"x6, "Fantastic Four by Jonathan Hickman Omnibus "x2; ComicInfo Publisher: "Marvel"x6, "Marvel Entertainment, Inc."x2
+   GCD says: [79729] gcd notes 900724 (#1 of Fantastic Four by Jonathan Hickman): *Fantastic Four* (Marvel, 1998 series) #570-574  |  gcd_reprint 900724: s11218 Fantastic Four (1998) #570-574 [5 stories] · s156184 Fantastic Four by Jonathan Hickman (2010) #1 [1 story]
+             [79730] gcd notes 900725 (#2 of Fantastic Four by Jonathan Hickman): *Fantastic Four* (Marvel, 1998 series) #575-578  |  gcd_reprint 900725: s11218 Fantastic Four (1998) #575-578 [4 stories] · s156184 Fantastic Four by Jonathan Hickman (2010) #2 [1 story]
+             [79731] gcd_reprint 900726: s11218 Fantastic Four (1998) #579-582 [14 stories] · s156184 Fantastic Four by Jonathan Hickman (2010) #3 [1 story]
+             [79732] gcd_reprint 900727: s11218 Fantastic Four (1998) #583-588 [6 stories] · s156184 Fantastic Four by Jonathan Hickman (2010) #4 [1 story]
+             [79735] gcd_reprint 1041888: s62349 Fantastic Four (2012) #600-604 [5 stories] · s156184 Fantastic Four by Jonathan Hickman (2010) #5 [1 story]
+             [79737] gcd_reprint 1095150: s62349 Fantastic Four (2012) #605, #605.1, #606-611 [8 stories] · s156184 Fantastic Four by Jonathan Hickman (2010) #6 [1 story]
+             [79743] gcd_reprint 1172528: s11218 Fantastic Four (1998) #570-588 [20 stories] · s56740 FF (2011) #1-5 [5 stories] · s34456 Dark Reign: Fantastic Four (2009) #1-5 [5 stories] · s36144 Dark Reign: The Cabal (2009) #1 [1 story]
+             [79882] gcd_reprint 1172528: s11218 Fantastic Four (1998) #570-588 [20 stories] · s56740 FF (2011) #1-5 [5 stories] · s34456 Dark Reign: Fantastic Four (2009) #1-5 [5 stories] · s36144 Dark Reign: The Cabal (2009) #1 [1 story]
+             [79883] gcd_reprint 2275237: s56740 FF (2011) #6-23 [18 stories] · s62349 Fantastic Four (2012) #600-605, #605.1, #606-611 [14 stories]
+   CV linked:      vol 32296 "Fantastic Four By Jonathan Hickman" 2010 Marvel 6 issues; cached #1-6 (6); yearΔ 0; ratio 0/6; no judged range; v1 per-file: same volume on 2/9 files
+   CV candidates:  (= linked) · 67987 "Fantastic Four by Jonathan Hickman Omnibus" 2013 Marvel ? s34 · 112949 "Fantastic Four by Jonathan Hickman: The Complete Collection" 2018 Marvel ? s32 · 42957 "FF by Jonathan Hickman" 2011 Marvel ? s10 · 81279 "Avengers By Jonathan Hickman" 2015 Marvel ? s10 · 126299 "X-Men by Jonathan Hickman" 2020 Marvel ? s10 · 126041 "New Mutants by Jonathan Hickman" 2020 Marvel ? s9   (v1 search)
+   CV local rip:   (= linked) · 67987 "Fantastic Four by Jonathan Hickman Omnibus" 2013 Marvel 2 (via CV candidate name "Fantastic Four by Jonathan Hickman Omnibus") · 112949 "Fantastic Four by Jonathan Hickman: The Complete Collection" 2018 Marvel 4 (via CV candidate name "Fantastic Four by Jonathan Hickman: The Complete Collection")   (rip lookup)
+   GCD dump:       62442 "Fantastic Four by Jonathan Hickman" 2010-2013 Marvel [] 6 · 156184 "Fantastic Four by Jonathan Hickman" 2010-2012 Marvel [] 6 · 78377 "Fantastic Four by Jonathan Hickman Omnibus" 2013-2014 Marvel [] 2 (via CV candidate name "Fantastic Four by Jonathan Hickman Omnibus") · 127952 "Fantastic Four by Jonathan Hickman: The Complete Collection" 2018-? Marvel [] 4 (via CV candidate name "Fantastic Four by Jonathan Hickman: The Complete Collection")   (dump lookup)
+
+== S6365 FF  [tier C] · 6 number(s) x2+, 1 parsed key(s), ratio 1.50  keys: FF  years 2011-2013  24 files / 0 collections
+   folders: [16] Marvel\_Fantastic Four\07 Matt Fraction's Fantastic Four (2013)\FF (2013) · [6] Marvel\_Ultimate Comics\Ultimate Fantastic Four (2004)\02 Ultimate FF (2014) · [1] Marvel\_Fantastic Four\_Trades, Minis and One-shots · [1] Marvel\__Skottie Young Covers
+   files:   [79761] FF 001 (2013) (Digital) (Zone-Empire).cbr (25pp) | [79762] FF 002 (2013) (digital-TheGroup).cbr (24pp) | [79763] FF 003 (2013) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [79764] FF 004 (2013) (digital-TheGroup).cbr (24pp) | [79765] FF 005 (2013) (digital-TheGroup).cbr (24pp) | [79766] FF 006 (2013) (digital-Empire).cbr (24pp)
+            FF 007 (2013) (Digital) (Zone-Empire).cbr … FF 015 (2014) (Digital) (Zone-Empire).cbr  (9 files, pp 24-25) | [79776] FF 016 (2014) (Zone-Empire).cbr (34pp)
+            [80021] FF 50 Fantastic Years 001 (2010) (Digital) (Shadowcat-Empire).cbz (69pp) | [97078] Ultimate FF 001 (2014) (digital-Empire).cbr (22pp)
+            [97079] Ultimate FF 002 (2014) (digital-Empire).cbr (21pp) | [97080] Ultimate FF 003 (2014) (digital-Empire).cbr (21pp)
+            [97081] Ultimate FF 004 (2014) (digital) (SpaceBarUser-Empire).cbr (20pp) | [97082] Ultimate FF 005 (2014) (digital) (CompetentRipper-Empire).cbr (20pp)
+            [97083] Ultimate FF 006 (2014) (digital) (CompetentRipper-Empire).cbr (20pp) | [51949] FF 001 (2013) (Skottie Young 'Baby' Variant) (Cover ONLY) (ScanDog+ArtNet).cbz (1pp)
+   ours:    ladder 1-16; 6 number(s) name more than one file: 1, 2, 3, 4, 5, 6; ComicInfo Series: "FF"x1; ComicInfo Volume: "2012"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 54295 "FF" 2013 Marvel 16 issues; cached #1-16 (16); yearΔ 2; ratio 24/16 = 1.50; no judged range
+   CV per-file (v1): vol 39453 "FF" 2011 Marvel 23 on 23/24 files · vol 54295 "FF" 2013 Marvel 16 on 1/24 files
+   CV local rip:   (= linked) · 62829 "FF" 2012 Panini Verlag 5   (rip lookup)
+   GCD per-file:   series 70167 "FF" 2013-2014 Marvel [was ongoing series] 16 on 22/24 files · series 56740 "FF" 2011-2012 Marvel [was ongoing series] 23 on 1/24 files · series 73921 "FF" 2013-2014 Marvel [collected edition] 2 on 1/24 files; methods numx24
+   GCD dump:       (= per-file) · 63074 "FF" [de] 2012-2013 Panini Deutschland [] 5   (dump lookup)
+
+== S6495 Fantastic Four Epic Collection  [tier B]   keys: Fantastic Four Epic Collection  years 2014-2024  9 files / 9 collections
+   folders: [9] Marvel\_Fantastic Four\Fantastic Four Epic Collections
+   files:   [79795] COL Fantastic Four Epic Collection Vol. 01 - The World's Greatest Comic Magazine (2014) (Digital) (Kileko-Empire).cbz (439pp)
+            [79796] COL Fantastic Four Epic Collection Vol. 02 - The Master Plan of Doctor Doom (2017) (Digital-Empire).cbr (448pp)
+            [79797] COL Fantastic Four Epic Collection Vol. 03 - The Coming of Galactus (2018) (Digital) (Zone-Empire).cbr (450pp)
+            [79798] COL Fantastic Four Epic Collection Vol. 04 - The Mystery of the Black Panther (2019) (Digital) (Zone-Empire).cbr (448pp)
+            [79805] COL Fantastic Four Epic Collection Vol. 17 - All in the Family (2014) (Digital) (Zone-Empire).cbr (488pp)
+            [79808] COL Fantastic Four Epic Collection Vol. 20 - Into the Timestream (2014) (Digital) (Zone-Empire).cbr (517pp)
+            [79810] COL Fantastic Four Epic Collection Vol. 22 - This Flame, This Fury (2022) (Digital-Empire).cbr (489pp)
+            [79811] COL Fantastic Four Epic Collection Vol. 23 - Nobody Gets Out Alive (2022) (Digital-Empire).cbr (491pp)
+            [79812] COL Fantastic Four Epic Collection Vol. 24 - Atlantis Rising (2024) (Digital) (Shan-Empire).cbz (467pp)
+   ours:    judged item 79795 #1-18 conf 0.9; judged item 79796 #19-32 conf 0.9; judged item 79797 #33-51 conf 0.9; judged item 79798 #52-67 conf 0.9; judged item 79805 #296-307 conf 0.9; judged item 79810 #362-376 conf 0.9; judged item 79811 #377-392 conf 0.9; judged item 79812 #393-402 conf 0.9; ComicInfo Series: "Fantastic Four Epic Collection"x6; ComicInfo Publisher: "Marvel"x6
+   GCD says: [79795] gcd_reprint 1205396: s1482 Fantastic Four (1961) #1-18 [89 stories]
+             [79796] gcd_reprint 1718663: s1572 Fantastic Four Annual (1963) #1-2 [30 stories] · s1482 Fantastic Four (1961) #19-32 [29 stories] · s61146 Marvel Masterworks: The Fantastic Four (2009) #1-4 [4 stories]
+             [79797] gcd_reprint 1830981: s1482 Fantastic Four (1961) #33-51 [60 stories] · s1572 Fantastic Four Annual (1963) #3 [4 stories] · s61146 Marvel Masterworks: The Fantastic Four (2009) #5-6 [2 stories]
+             [79798] gcd notes 2015196 (#4 of Fantastic Four Epic Collection): Fantastic Four (Marvel, 1961 series) #52-67; Fantastic Four Annual (Marvel, 1963 series) #4-5; Not Brand Echh (Marvel, 1967 series) #1, #5  |  gcd_reprint 2015196: s1482 Fantastic Four (1961) #52-67 [17 stories] · s1811 Not Brand Echh (1967) #1, #5 [2 stories] · s1572 Fantastic Four Annual (1963) #4-5 [2 stories]
+             [79805] gcd_reprint 1180517: s1482 Fantastic Four (1961) #296-307 [13 stories] · s3415 Fantastic Four vs. X-Men (1987) #1-4 [4 stories] · s1572 Fantastic Four Annual (1963) #20 [4 stories]
+             [79808] gcd_reprint 1180518: s1482 Fantastic Four (1961) #334-346 [27 stories] · s1572 Fantastic Four Annual (1963) #23 [5 stories] · s69795 Marvel Age (1983) #80, #91 [4 stories] · s1951 X-Men Annual (1970) #14 [2 stories]
+             [79810] gcd_reprint 2275039: s1482 Fantastic Four (1961) #362-376 [16 stories] · s1572 Fantastic Four Annual (1963) #25-26 [2 stories] · s4433 The Adventures of the Thing (1992) #3 [1 story]
+             [79811] gcd_reprint 2372321: s1482 Fantastic Four (1961) #377-392 [17 stories] · s4034 Namor, the Sub-Mariner (1990) #47-48 [2 stories] · s40640 Fantastic Four Ashcan (1994) (unnumbered) [1 story] · s1572 Fantastic Four Annual (1963) #27 [1 story]
+             [79812] gcd_reprint 2616793: s1482 Fantastic Four (1961) #393-402 [30 stories] · s7795 Fantastic Four: Atlantis Rising Collectors' Preview (1995) #1 [12 stories] · s5008 Fantastic Force (1994) #7-9 [6 stories] · s7796 Fantastic Four: Atlantis Rising (1995) #1-2 [4 stories]
+   CV per-file (v1): vol 111826 "Fantastic Four Epic Collection: The New Fantastic Four" 2018 Marvel 1 issue 675139 on 5/9 files
+   CV candidates:  (= per-file) · 82103 "Fantastic Four Epic Collection: Strange Days" 2015 Marvel 1 issue 489318 s73 · 157337 "Fantastic Four Epic Collection: Atlantis Rising" 2024 Marvel 1 issue 1048848 s73 · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 s72 · 162643 "Fantastic Four Epic Collection Four No More Marvel " 2025 Marvel 1 issue 1097890 s71 · 70951 "Fantastic Four Epic Collection: All In the Family" 2014 Marvel 1 issue 442431 s71 · 76010 "Fantastic Four Epic Collection: Into the Time Stream" 2014 Marvel 1 issue 460713 s71   (v1 search)
+   CV local rip:   (= per-file) · 82103 "Fantastic Four Epic Collection: Strange Days" 2015 Marvel 1 issue 489318 (via CV candidate name "Fantastic Four Epic Collection: Strange Days") · 157337 "Fantastic Four Epic Collection: Atlantis Rising" 2024 Marvel 1 issue 1048848 (via CV candidate name "Fantastic Four Epic Collection: Atlantis Rising") · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 (via CV candidate name "Ultimate Fantastic Four Epic Collection: The Fantastic")   (rip lookup)
+   GCD dump:       79136 "Fantastic Four Epic Collection" 2014-? Marvel [] 22   (dump lookup)
+
+== S6496 Fantastic Four Epic Collection: Counter-Earth Must Die  [tier B]   keys: Fantastic Four Epic Collection 10: Counter-Earth Must Die  years 2024-2024  1 files / 1 collections
+   folders: [1] Marvel\_Fantastic Four\Fantastic Four Epic Collections
+   files:   [79804] COL Fantastic Four Epic Collection Vol. 10 - Counter-Earth Must Die (2024) (digital) (Marika-Empire).cbz (512pp)
+   ours:    ComicInfo Series: "Fantastic Four Epic Collection 10: Counter-Earth Must Die"x1; ComicInfo Volume: "2024"x1; ComicInfo Publisher: "Marvel"x1; ComicInfo Web: "1071859"x1
+   GCD says: [79804] gcd_reprint 2658825: s1482 Fantastic Four (1961) #168-191 [26 stories] · s2180 Marvel Treasury Edition (1974) #11 [3 stories] · s2353 Marvel Two-in-One Annual (1976) #1 [1 story] · s2182 Marvel Two-in-One (1974) #20 [1 story]
+   CV linked:      vol 160126 "Fantastic Four Epic Collection: Counter-Earth Must Die" 2024 Marvel 1 issues issue 1071859; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 111826 "Fantastic Four Epic Collection: The New Fantastic Four" 2018 Marvel 1 issue 675139 s60 · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 s58 · 82103 "Fantastic Four Epic Collection: Strange Days" 2015 Marvel 1 issue 489318 s58 · 108731 "Daredevil Epic Collection: Mike Murdock Must Die!" 2018 Marvel 1 issue 660013 s57 · 105534 "Incredible Hulk Epic Collection: The Hulk Must Die" 2017 Marvel 1 issue 632497 s56 · 162643 "Fantastic Four Epic Collection Four No More Marvel " 2025 Marvel 1 issue 1097890 s56   (v1 search)
+   CV local rip:   (= linked) · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 (via CV candidate name "Ultimate Fantastic Four Epic Collection: The Fantastic") · 111826 "Fantastic Four Epic Collection: The New Fantastic Four" 2018 Marvel 1 issue 675139 (via CV candidate name "Fantastic Four Epic Collection: The New Fantastic Four")   (rip lookup)
+
+== S6497 Fantastic Four Epic Collection: Annihilus Revealed  [tier B]   keys: Fantastic Four Epic Collection: Annihilus Revealed  years 2022-2022  1 files / 1 collections
+   folders: [1] Marvel\_Fantastic Four\Fantastic Four Epic Collections
+   files:   [79802] COL Fantastic Four Epic Collection Vol. 08 - Annihilus Revealed (2022) (Digital-Empire).cbr (498pp)
+   ours:    ComicInfo Series: "Fantastic Four Epic Collection: Annihilus Revealed"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [79802] gcd_reprint 2428300: s1482 Fantastic Four (1961) #1, #73, #126-146 [48 stories] · s158698 FOOM Magazine (1973) #1, #4-5 [15 stories] · s2174 Giant-Size Super-Stars (1974) #1 [4 stories] · s1988 Creatures on the Loose (1971) #29 [1 story]
+   CV linked:      vol 144900 "Fantastic Four Epic Collection: Annihilus Revealed" 2022 Marvel 1 issues issue 945892; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 82103 "Fantastic Four Epic Collection: Strange Days" 2015 Marvel 1 issue 489318 s68 · 157337 "Fantastic Four Epic Collection: Atlantis Rising" 2024 Marvel 1 issue 1048848 s68 · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 s67 · 111826 "Fantastic Four Epic Collection: The New Fantastic Four" 2018 Marvel 1 issue 675139 s66 · 162643 "Fantastic Four Epic Collection Four No More Marvel " 2025 Marvel 1 issue 1097890 s66 · 70951 "Fantastic Four Epic Collection: All In the Family" 2014 Marvel 1 issue 442431 s66   (v1 search)
+   CV local rip:   (= linked) · 157337 "Fantastic Four Epic Collection: Atlantis Rising" 2024 Marvel 1 issue 1048848 (via CV candidate name "Fantastic Four Epic Collection: Atlantis Rising") · 82103 "Fantastic Four Epic Collection: Strange Days" 2015 Marvel 1 issue 489318 (via CV candidate name "Fantastic Four Epic Collection: Strange Days")   (rip lookup)
+
+== S6498 Fantastic Four Epic Collection: At War With Atlantis  [tier B]   keys: Fantastic Four Epic Collection: At War With Atlantis  years 2020-2020  1 files / 1 collections
+   folders: [1] Marvel\_Fantastic Four\Fantastic Four Epic Collections
+   files:   [79800] COL Fantastic Four Epic Collection Vol. 06 - At War With Atlantis (2020) (Digital) (Zone-Empire).cbr (408pp)
+   ours:    ComicInfo Series: "Fantastic Four Epic Collection: At War With Atlantis"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [79800] gcd notes 2164079 (#6 of Fantastic Four Epic Collection): Fantastic Four (Marvel, 1961 series) #88-104; Fantastic Four: The Lost Adventure (Marvel, 2008 series) #1  |  gcd_reprint 2164079: s1482 Fantastic Four (1961) #88-104 [34 stories] · s27869 Fantastic Four: The Lost Adventure (2008) #1 [3 stories] · s1572 Fantastic Four Annual (1963) #7 [2 stories]
+   CV linked:      vol 131537 "Fantastic Four Epic Collection: At War With Atlantis" 2020 Marvel 1 issues issue 814968; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 105277 "At War with War" 2017 Seven Stories Press 1 issue 630390 s70 · 157337 "Fantastic Four Epic Collection: Atlantis Rising" 2024 Marvel 1 issue 1048848 s66 · 111826 "Fantastic Four Epic Collection: The New Fantastic Four" 2018 Marvel 1 issue 675139 s60 · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 s58 · 162643 "Fantastic Four Epic Collection Four No More Marvel " 2025 Marvel 1 issue 1097890 s56 · 70951 "Fantastic Four Epic Collection: All In the Family" 2014 Marvel 1 issue 442431 s56   (v1 search)
+   CV local rip:   (= linked) · 105277 "At War with War" 2017 Seven Stories Press 1 issue 630390 (via CV candidate name "At War with War") · 157337 "Fantastic Four Epic Collection: Atlantis Rising" 2024 Marvel 1 issue 1048848 (via CV candidate name "Fantastic Four Epic Collection: Atlantis Rising")   (rip lookup)
+
+== S6499 Fantastic Four Epic Collection: Battle of the Behemoths  [tier B]   keys: Fantastic Four Epic Collection: Battle Of The Behemoths  years 2021-2021  1 files / 1 collections
+   folders: [1] Marvel\_Fantastic Four\Fantastic Four Epic Collections
+   files:   [79801] COL Fantastic Four Epic Collection Vol. 07 - Battle of the Behemoths (2021) (Digital-Empire).cbr (472pp)
+   ours:    ComicInfo Series: "Fantastic Four Epic Collection: Battle Of The Behemoths"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [79801] gcd_reprint 2257108: s1482 Fantastic Four (1961) #105-125 [22 stories]
+   CV linked:      vol 138613 "Fantastic Four Epic Collection: Battle of the Behemoths" 2021 Marvel 1 issues issue 882695; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 112582 "Fantastic Four Epic Collection: The Coming of Galactus" 2018 Marvel 1 issue 678533 s73 · 120815 "Fantastic Four Epic Collection: The Mystery of the Black Panther" 2019 Marvel 1 issue 716956 s71 · 111826 "Fantastic Four Epic Collection: The New Fantastic Four" 2018 Marvel 1 issue 675139 s65 · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 s65 · 70951 "Fantastic Four Epic Collection: All In the Family" 2014 Marvel 1 issue 442431 s64 · 76010 "Fantastic Four Epic Collection: Into the Time Stream" 2014 Marvel 1 issue 460713 s64   (v1 search)
+   CV local rip:   (= linked) · 120815 "Fantastic Four Epic Collection: The Mystery of the Black Panther" 2019 Marvel 1 issue 716956 (via CV candidate name "Fantastic Four Epic Collection: The Mystery of the Black Panther") · 112582 "Fantastic Four Epic Collection: The Coming of Galactus" 2018 Marvel 1 issue 678533 (via CV candidate name "Fantastic Four Epic Collection: The Coming of Galactus")   (rip lookup)
+
+== S6500 Fantastic Four Epic Collection: Strange Days  [tier B]   keys: Fantastic Four Epic Collection: Strange Days  years 2015-2015  1 files / 1 collections
+   folders: [1] Marvel\_Fantastic Four\Fantastic Four Epic Collections
+   files:   [79813] COL Fantastic Four Epic Collection Vol. 25 - Strange Days (2015) (F) (Digital-Empire).cbr (450pp)
+   ours:    judged item 79813 #347-358 conf 0.9; ComicInfo Series: "Fantastic Four Epic Collection: Strange Days"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [79813] gcd_reprint 1309965: s1482 Fantastic Four (1961) #403-416 [16 stories] · s9784 Fantastic Four: The Legend (1996) #1 [1 story] · s15183 Tales of the Marvel Universe (1997) #1 [1 story] · s10769 Onslaught: Marvel (1996) #1 [1 story]
+   CV linked:      vol 82103 "Fantastic Four Epic Collection: Strange Days" 2015 Marvel 1 issues issue 489318; cached #1-1 (1); yearΔ 0; ratio 0/1; 0 of 1 judged fit; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 157337 "Fantastic Four Epic Collection: Atlantis Rising" 2024 Marvel 1 issue 1048848 s68 · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 s67 · 111826 "Fantastic Four Epic Collection: The New Fantastic Four" 2018 Marvel 1 issue 675139 s66 · 162643 "Fantastic Four Epic Collection Four No More Marvel " 2025 Marvel 1 issue 1097890 s66 · 70951 "Fantastic Four Epic Collection: All In the Family" 2014 Marvel 1 issue 442431 s66 · 76010 "Fantastic Four Epic Collection: Into the Time Stream" 2014 Marvel 1 issue 460713 s66   (v1 search)
+   CV local rip:   (= linked) · 157337 "Fantastic Four Epic Collection: Atlantis Rising" 2024 Marvel 1 issue 1048848 (via CV candidate name "Fantastic Four Epic Collection: Atlantis Rising") · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 (via CV candidate name "Ultimate Fantastic Four Epic Collection: The Fantastic")   (rip lookup)
+
+== S6501 Fantastic Four Epic Collection: The Crusader Syndrome   [tier B]   keys: Fantastic Four Epic Collection: The Crusader Syndrome  years 2023-2023  1 files / 1 collections
+   folders: [1] Marvel\_Fantastic Four\Fantastic Four Epic Collections
+   files:   [79803] COL Fantastic Four Epic Collection Vol. 09 - The Crusader Syndrome (2023) (Digital-Empire).cbr (512pp)
+   ours:    ComicInfo Series: "Fantastic Four Epic Collection: The Crusader Syndrome"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [79803] gcd notes 2564754 (#9 of Fantastic Four Epic Collection): Fantastic Four (Marvel, 1961 series) #147-167; Giant-Size Fantastic Four (Marvel, 1974 series) #2-4; The Avengers (Marvel, 1963 series) #127  |  gcd_reprint 2564754: s1482 Fantastic Four (1961) #147-167 [43 stories] · s2169 Giant-Size Fantastic Four (1974) #2-6 [8 stories] · s2180 Marvel Treasury Edition (1974) #2 [5 stories] · s158698 FOOM Magazine (1973) #8-10 [3 stories]
+   CV linked:      vol 153272 "Fantastic Four Epic Collection: The Crusader Syndrome " 2023 Marvel 1 issues issue 1011152; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 s70 · 111826 "Fantastic Four Epic Collection: The New Fantastic Four" 2018 Marvel 1 issue 675139 s69 · 70951 "Fantastic Four Epic Collection: All In the Family" 2014 Marvel 1 issue 442431 s69 · 76010 "Fantastic Four Epic Collection: Into the Time Stream" 2014 Marvel 1 issue 460713 s69 · 112582 "Fantastic Four Epic Collection: The Coming of Galactus" 2018 Marvel 1 issue 678533 s69 · 120815 "Fantastic Four Epic Collection: The Mystery of the Black Panther" 2019 Marvel 1 issue 716956 s67   (v1 search)
+   CV local rip:   (= linked) · 165130 "Ultimate Fantastic Four Epic Collection: The Fantastic" 2025 Marvel 1 issue 1116602 (via CV candidate name "Ultimate Fantastic Four Epic Collection: The Fantastic") · 111826 "Fantastic Four Epic Collection: The New Fantastic Four" 2018 Marvel 1 issue 675139 (via CV candidate name "Fantastic Four Epic Collection: The New Fantastic Four")   (rip lookup)

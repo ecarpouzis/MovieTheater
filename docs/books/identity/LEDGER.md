@@ -2104,3 +2104,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   #219 then #226-233) — state the larger stretch, the rest on an N. ORDERING: when an R- file both MERGES shelf A into B
   (shared cv) and splits books off A, the merge lands first and the split's F lines die with A — the next revisit of B
   must restate them as B's own split-needed (S4784 -> S96254, wave 144).
+[L-397] pub:marvel sig:split kind:collected-line
+- Waves 145-146: FF 1961 shelf: the Major Event and Complete Chronology folders re-file the 1998 run by event name with
+  CV 2045 stamped by number; the 1998 run's #1-70 carry legacy numbers in GCD ("#67 (496)"). DS Epic Collection judged
+  ranges are real ranges in named runs (Strange Tales, DS 1968 / 1974, Sorcerer Supreme) — C lines apply; the item
+  pass's "cumulative, no C" notes were wrong. FF Epic Vol. 25's judged #347-358 is wrong: GCD gives #403-416. An R that
+  splits an omnibus line off a run shelf can arm the omnibus over the run's trades on an unjudged span (Hickman FF
+  Omnibus Book 01, provider #570-574): write a containment decision file, and it must then decide EVERY edition on the
+  shelf (pass2) — restate existing Curated ranges as S lines, `u` the rest (containment/decisions/S6490.txt).
