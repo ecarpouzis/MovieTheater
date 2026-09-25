@@ -1,0 +1,251 @@
+## Conventions for this batch (29 shown of 106 matched; 413 in LEDGER.md; 7 shelf/shelves: folder:events ×3 · kind:collected-line ×3 · kind:trade-only ×3 · kind:strip ×2 · pub:marvel ×2 · folder:sequel-subfolder ×2 · kind:golden-age ×1 · pub:gold-key-dell ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-164] (4 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-281] (4 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-034] (2 shelf/shelves) folder:events pub:marvel sig:round2
+- `_X-Men Complete Chronology` / `_Marvel Major Event Chronology` folders re-file the same books a second and
+  third time — every ratio 2.00 there, never a second run. Crossover blocks get handed one member's series by
+  `round2-folder` (four Age of Apocalypse shelves → "X-Man", a 76-issue hull).
+[L-135] (3 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-169] (2 shelf/shelves) folder:events pub:marvel sig:trade-link
+- `_Marvel Major Event Chronology (digital)` is one folder per tie-in holding that tie-in's collected edition: the
+  count-1-trade-as-stored-link artefact runs at 86 of 202 shelves there, the highest rate in any single folder.
+[L-175] (3 shelf/shelves) folder:bucket folder:events pass:item
+- In the chronology folders the RUN rule stands over the bucket rule: `S` = the numbered run, the tie-in's collected
+  record goes on the `I` line (B-072/073, ~90 shelves); the book's own record is the S only where no numbered run exists.
+[L-186] (3 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-191] (3 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-193] (6 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-242] (2 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-244] (3 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (3 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (3 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+[L-248] (3 shelf/shelves) kind:collected-line
+- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
+  the sibling's landed S is evidence for the weak per-file matches on the others.
+[L-251] (3 shelf/shelves) kind:collected-line
+- Deluxe / Yearbook / Omnibus editions of the shelf's own ongoing with NO judged range get an `N` naming the
+  relationship, never an invented `C` range (the range is containment's to read).
+[L-258] (3 shelf/shelves) kind:collected-line sig:stamp
+- A degenerate packet block can stamp ONE GCD issue id onto every book of a shelf (Green Arrow S97350, six eras of
+  collected lines) — resolve only by each series' full issue list matched by title, never by the stamp.
+[L-269] (3 shelf/shelves) kind:collected-line kind:trade-only
+- An omnibus bundling several minis gets one `C` per mini at that mini's full range; an anthology TPB ("… and
+  Others") is not a numbered run and gets an `N`, not a forced `C`.
+[L-275] (3 shelf/shelves) kind:collected-line pass:item sig:probe sig:trade-link
+- A count-1/2/3 trade record the shelf's `N` called absent is often in the catalogs under a spelling the packet
+  never probed ("The Adventures of …", "Complete Collection", "Deluxe") — probe before writing no-record.
+[L-279] (3 shelf/shelves) kind:collected-line
+- Blade of the Immortal (S23118) is the canonical "line + run" shape: GCD's 31 collected-edition rows are the `I`
+  identities (cv=- — ComicVine mints only the floppy volume), and the floppy run CV 9069 is what every `C` names,
+  ranges #0-206 ascending across the 31 books. A single-leg shelf's books inherit the shelf's 0.9, never more.
+[L-282] (3 shelf/shelves) kind:collected-line
+- A `gcd=-` / dump-only shelf's books inherit the shelf's 0.9 (Cells at Work! Lady, Dragon Head); an exact edition
+  can exist on GCD alone and be absent from ComicVine entirely (Cat Shit One Omnibus GCD 186621 → 0.9, cv=-).
+[L-285] (3 shelf/shelves) kind:collected-line pass:item sig:stamp
+- ITEM PASS (X-031..X-033): JoJo's Bizarre Adventure part-shelves are double-stamped — per-file CV is the whole-saga
+  hardcover omnibus volume (165667, one issue per PART) and per-file GCD the umbrella whole-saga series (27115) by
+  raw issue number; both wrong for all 37 books. Parts 1-3 have no CV softcover record (cv=-); Parts 4-5 do.
+[L-286] (3 shelf/shelves) kind:collected-line sig:probe
+- A shelf-level "no record" `N` can be wrong for an English product too (Innocent Omnibus: CV 157999 / GCD 206125
+  under "Innocent Omnibus") — probe the edition's own name before inheriting the shelf's gap.
+[L-287] (3 shelf/shelves) kind:collected-line pass:item
+- A series can be wrong on BOTH legs at once (Hunter x Hunter, Inuyashiki, Kakegurui Twin): the header pool by
+  ordinal is the only source; an omnibus with no dedicated record on either leg is `N no-record`, never a mapping.
+[L-289] (3 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-291] (3 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-309] (3 shelf/shelves) kind:collected-line pass:item sig:probe
+- A collected line's own issue rows carry the trade's SUBTITLE as the issue title, so once one book of a line is
+  identified, `--issues <volume>` or `gcd_issue WHERE series_id=?` resolves the whole Vol. 01-N run in one query —
+  "own container id not probed" is never a valid no-record.
+[L-314] (3 shelf/shelves) kind:collected-line pass:item
+- `cvref.normName` drops "the / a / an / of / and" everywhere, not just leading articles — a word-preserving
+  normalizer misses ~90% of exact matches; replicate cvref's tokenizer when matching titles by script. A bare
+  trailing-number fallback (trade "01" → run issue #1) is safe only for mislabeled single-issue files, never for
+  "Vol." / "Book" / dash-subtitled titles (it matched an 824pp omnibus to issue #1). One CV issue id reused across
+  two differently titled books on a shelf is a sign of two eras, not one book. A digital "Collection Book NN"
+  bundle is a different catalog shape from a "Vol. NN" trade and is often uncatalogued — honest no-record.
+[L-319] (2 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-388] (2 shelf/shelves) pub:marvel sig:split
+- R-134 (wave 128, lead ruling): RESIDUE vs co-equal — two or more whole trades of another run are a co-equal run (R +
+  split-needed) only when that run has NO shelf of its own; when its run or line already has a shelf, they are misfiled
+  books: S + `F split-needed | items -> join S<home>` (L-368; X-Factor 2024 S66336's two Peter David omnibuses -> S22172).
+  `#MARVEL CURRENT ONGOING TITLES`: Marika / MikeNY76 ComicInfo Web ids and "cvv<id>" Series strings name the stored CV
+  volume (1.0 evidence). From the Ashes "Variant Covers" folders hold the PREVIOUS run's finale covers (X-Men v6 #35 in
+  the v7 folder). "_X-Men Complete Chronology V2\NNNN <event>" annuals are event-chapter excerpts = partial rips. A
+  ripper's "Omnibus Book 01" in a run's folder can be that run's first omnibus, not the line's Vol. 1 (page count decides).
+  CV mints one count-1 volume per Venom by Ewing trade; GCD keeps two lines (183532 Vols 1-4, 208820 Vols 5-8).
+
++77 more matched entries not shown: L-391, L-399, L-403, L-013, L-014, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-165, L-177, L-204, L-253, L-264, L-267, L-273, L-290, L-292, L-294, L-341, L-346, L-347, L-008, L-028, L-036, L-047, L-049, L-052, L-064, L-075, L-085, L-101, L-106, L-111, L-112, L-113, L-119, L-127, L-130, L-136, L-167, L-173, L-174, L-187, L-188, L-211, L-222, L-228, L-249, L-310, L-364, L-378, L-381, L-387, L-389, L-393, L-395, L-404, L-016, L-032, L-114, L-124, L-194, L-272, L-330, L-065, L-099, L-123, L-262 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S12702 Nancy and Sluggo  [split]  24 files / 0 collections  decided in R-179 (R)
+   decided: R 12702 | two numberings share this shelf: the St. John -> Dell -> Gold Key chain #121-192 (St. John 1955-1957 CV 30941 / GCD 13207 #121-145; Dell 1960-1962 CV 2019 / GCD 1454; Gold Key 1962-1963 GCD 1532) = 19 files #122-191, the largest; and United Feature's "Nancy and Sluggo" #16-23 (1949-1954; CV 31814 count 8 / GCD 19423 "Nancy-Sluggo" rows #16 1949 ... #23 1954) = five files #17-22 - a whole second run numbered from a different predecessor, with no shelf (who-stores cv=31814: 0 rows)
+   F 12702 split-needed | the #121+ chain stays (store St. John CV 30941 / GCD 13207, the widest era, L-378); items 114186-114190 "Nancy and Sluggo 017-022 (United Feature 1950-1953)" 37pp -> new key "Nancy and Sluggo (1949)" (CV 31814 / GCD 19423)
+   N 12702 kept run: cv=30941 gcd=13207 (St. John 1955-1957, #121-145); the Dell #174 and Gold Key #188 / #191 files continue the same numbering (CV 2019 / GCD 1454 Dell, GCD 1532 Western) - one publisher-change chain (L-378)
+   nearby: S12703 "Nancy and Sluggo Traveltime" 1f [title+1 — S cv=31507 gcd=1303 (A-031 0.95)] keys: "Nancy and Sluggo Traveltime"
+   keys now: "Nancy and Sluggo" x24
+   groups (title x folder): 3
+   G1 "Nancy and Sluggo" in Webcomics and Strips\Nancy & Fritzi Ritz by Ernie Bushmiller — 22 file(s), numbers 17-19, 21-22, 122, 124-128, 130-131, 134, 136-139, 143-144, 188, 191, pp 36-72; cv per-file 30941x22; gcd per-file 13207x10; key 'Nancy and Sluggo'
+      e.g. Nancy and Sluggo 017 (United Feature 1950) (c2c) (Titansfan Scans-DMiles Edits).cbz
+        114186 #17 1950 37pp · 114187 #18 1951 37pp · 114188 #19 1952 37pp · 114189 #21 1953 37pp · 114190 #22 1953 37pp · 114191 #122 1955 37pp · 114192 #124 1955 36pp · 114193 #125 1955 37pp
+        114194 #126 1955 36pp · 114195 #127 1955 36pp · 114196 #128 1955 72pp · 114197 #130 1956 36pp · 114198 #131 1956 37pp · 114200 #134 1955 36pp · 114201 #136 1956 37pp · 114202 #137 1956 37pp
+        114203 #138 1956 37pp · 114204 #139 1955 36pp · 114205 #143 1957 37pp · 114206 #144 1957 36pp · 114210 #191 36pp
+      [114208] Nancy and Sluggo 188 (c2c) [Gold Key 1962] (Sooth-Uup) fixed-300dpi.cbr (36pp)
+   G2 "Nancy and Sluggo 133 1956 jodyanimator" in Webcomics and Strips\Nancy & Fritzi Ritz by Ernie Bushmiller — 1 file(s), pp 37-37; cv per-file 30941x1; key 'Nancy and Sluggo'
+      [114199] Nancy and Sluggo 133 1956 jodyanimator.cbz (37pp)
+   G3 "Nancy and Sluggo 174 [Dell] (1960) (c2c)" in Webcomics and Strips\Nancy & Fritzi Ritz by Ernie Bushmiller — 1 file(s), numbers 174, pp 36-36; cv per-file 30941x1; gcd per-file 1454x1; key 'Nancy and Sluggo'
+      [114207] Nancy and Sluggo 174 [Dell] (1960) (c2c).cbr (36pp)
+
+== S1309 Ultimate Comics Armor Wars  [split]  5 files / 0 collections  decided in R-179 (S)
+   decided: S 1309 cv=28008 gcd=39856 0.9 | four of the five files are "Ultimate Armor Wars 01-04 (of 04)" dated 2009-2010, which is CV 28008 "Ultimate Comics Armor Wars" (2009, 4) and GCD 39856 "Ultimate Armor Wars" (2009-2010, limited series, 4) - two legs on the same four-issue mini, our ladder 1-4 filling it; 0.9 while the 2015 Armor Wars cover sits here - it joins its shelf below
+   F 1309 split-needed | item 51930 "Armor Wars 001 (2015) (Skottie Young variant)" 1pp is a cover of Marvel's 2015 Armor Wars (CV 82340 / GCD 89858), the run S1310 stores -> join S1310 on its key "Armor Wars - Warzones!" (L-368)
+   N 1309 A-032's F wrong-cv-link (stored CV 82340) is spent - the shelf now stores 28008
+   named: S1310 Armor Wars  1 files  keys: "Armor Wars - Warzones!"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Armor Wars" x5
+   groups (title x folder): 2
+   G1 "Armor Wars" in Marvel\__Skottie Young Covers — 1 file(s), numbers 1, pp 1-1; cv per-file 82340x1; gcd per-file 89858x1; key 'Armor Wars'
+      [51930] Armor Wars 001 (2015) (digital) (Skottie Young variant) (Minutemen-Mastodon) (1).cbz (1pp)
+   G2 "Ultimate Armor Wars" in _Marvel Major Event Chronology (digital)\2009.09 - Ultimate Armor Wars — 4 file(s), numbers 1-4, pp 25-26; cv per-file 82340x4; key 'Armor Wars'
+      e.g. Ultimate Armor Wars 01 (of 04) (2009) (Digital-HD) (Zone-Empire).cbr
+        117262 #1 2009 26pp · 117263 #2 2009 26pp · 117264 #3 2010 25pp · 117265 #4 2010 25pp
+
+== S14768 Robyn Hood  [split]  9 files / 8 collections  decided in R-179 (S)
+   decided: S 14768 cv=76553 gcd=82408 0.9 | Robyn Hood (Zenescope 2014-2016, 20): CV 76553 (20) and GCD 82408 (20) are the run whose trade line Vol. 01-04 (Riot Girls ... Uprising) our eight books are - two rips of each; 0.9 while the Van Helsing crossover sits here - it joins its shelf below
+   F 14768 split-needed | item 116000 "Van Helsing vs. Robyn Hood (2018)" 117pp is the trade of Van Helsing vs. Robyn Hood (Zenescope 2018, 4; CV 107519 / GCD 120229), the run S20965 stores (it holds a 120pp rip of the same trade) -> join S20965 on its key "Van Helsing vs Robyn Hood" (L-368)
+   named: S20965 Van Helsing vs. Robyn Hood  1 files  keys: "Van Helsing vs Robyn Hood"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S8040 "Grimm Fairy Tales presents Robyn Hood" 1f [title — S cv=52691 gcd=68935 (R-036 0.95)] keys: "Grimm Fairy Tales - Robyn Hood" | "Grimm Fairy Tales Presents - Robyn Hood"
+   nearby: S14771 "Robyn Hood: Tarot One-Shot" 1f [title+1 — S cv=102479 gcd=115233 (D-020 0.95)] keys: "Robyn Hood Tarot"
+   nearby: S102960 "Grimm Fairy Tales Presents Robyn Hood: Legend (2014)" 1f [title+1 — S cv=72429 gcd=79677 (R-036 0.95)] keys: "Grimm Fairy Tales Presents Robyn Hood: Legend (2014)"
+   nearby: S102961 "Grimm Fairy Tales Presents Robyn Hood: Wanted (2013)" 1f [title+1 — S cv=60929 gcd=74362 (R-036 0.95)] keys: "Grimm Fairy Tales Presents Robyn Hood: Wanted (2013)"
+   keys now: "Robyn Hood" x9
+   groups (title x folder): 3
+   G1 "Grimm Fairy Tales Presents - Robyn Hood" in Zenescope\Grimm Fairy Tales - Robyn Hood (2012)\04 Robyn Hood (2015) — 4 file(s), 4 COL, pp 162-183; cv per-file 80317x1, 83999x1, 86782x1; gcd per-file 126425x4; key 'Robyn Hood'
+      [115929] COL Grimm Fairy Tales Presents - Robyn Hood Vol. 01 - Riot Girls (2015) (digital) (Minutemen-Slayer).cbr (179pp)
+      [115930] COL Grimm Fairy Tales Presents - Robyn Hood Vol. 02 - Monsters in the Dark(2015) (Digital) (DR & Quinch-Empire).cbr (176pp)
+      [115931] COL Grimm Fairy Tales Presents - Robyn Hood Vol. 03 - Attitude Adjustment (2015) (Digital) (DR & Quinch-Empire).cbr (162pp)
+      [115932] COL Grimm Fairy Tales Presents - Robyn Hood Vol. 04 - Uprising (2016) (Digital) (DR Quinch-Empire).cbr (183pp)
+   G2 "Van Helsing vs. Robyn Hood (2018) (Digital) (DR & Quinch-Empire)" in Zenescope\Grimm Fairy Tales - Van Helsing (2014)\06 Van Helsing Vs. Robyn Hood (2018) — 1 file(s), pp 117-117; cv per-file 113093x1; key 'Robyn Hood'
+      [116000] Van Helsing vs. Robyn Hood (2018) (Digital) (DR & Quinch-Empire).cbr (117pp)
+   G3 "Robyn Hood" in Zenescope\Robyn Hood — 4 file(s), 4 COL, pp 160-188; cv per-file 80317x1, 83999x1, 86782x1; gcd per-file 126425x4; key 'Robyn Hood'
+      [116175] COL Robyn Hood vol1 - Riot Girls.cbz (171pp)
+      [116176] COL Robyn Hood vol2 - Monsters in the Dark.cbz (174pp)
+      [116177] COL Robyn Hood vol3 - Attitude Adjustment.cbz (160pp)
+      [116178] COL Robyn Hood vol4 - Uprising.cbz (188pp)
+
+== S14855 Rugrats  [split]  10 files / 2 collections  decided in R-179 (R)
+   decided: R 14855 | two things share this shelf: eight yearly Rugrats newspaper-strip webrip compilations "Rugrats (2012) ... (2024) (DCP Webrips)" 282-366pp, which neither provider indexes (the largest part), and two Boom! trades "COL Rugrats Vol. 01 / 02 (2018)" that collect Boom's Rugrats (2017-2018, 8; CV 105351 / GCD 117635) #1-8 - two whole trades of a run with its own record and no shelf (who-stores cv=105351: 0 rows), a co-equal run
+   F 14855 split-needed | the strip compilations stay; items 10657 / 10658 "COL Rugrats Vol. 01 / 02 (2018)" 113 / 109pp -> new key "Rugrats (2017)" (CV 105351 / GCD 117635; their folder is Boom Studios, Rugrats (2017))
+   F 14855 wrong-cv-link | the stored CV 110934 "Rugrats" (Boom 2018, 2) is the two-volume TPB line, on a shelf whose majority is strip webrips; the per-file CV 42884 (Marvel UK 1996) is a British magazine
+   F 14855 provider-missing | the Rugrats strip (2012-2024 yearly webrips) has no record in either catalogue (L-318 / L-164)
+   keys now: "Rugrats" x10
+   groups (title x folder): 9
+   G1 "Rugrats" in Boom Studios\Rugrats (2017) — 2 file(s), 2 COL, pp 109-113; cv per-file 110934x2; gcd per-file 124593x2; key 'Rugrats'
+      [10657] COL Rugrats Vol. 01 (2018) (digital) (Salem-Empire).cbr (113pp)
+      [10658] COL Rugrats Vol. 02 (2018) (digital) (Salem-Empire).cbr (109pp)
+   G2 "Rugrats (2012) (DCP Digital)" in Webcomics and Strips\Rugrats (2012) — 1 file(s), pp 366-366; cv per-file 42884x1; key 'Rugrats'
+      [114323] Rugrats (2012) (DCP Digital).cbr (366pp)
+   G3 "Rugrats (2013) (DCP Webrips)" in Webcomics and Strips\Rugrats (2012) — 1 file(s), pp 365-365; cv per-file 42884x1; key 'Rugrats'
+      [114324] Rugrats (2013) (DCP Webrips).cbr (365pp)
+   G4 "Rugrats (2014) (DCP Webrips)" in Webcomics and Strips\Rugrats (2012) — 1 file(s), pp 364-364; cv per-file 42884x1; key 'Rugrats'
+      [114325] Rugrats (2014) (DCP Webrips).cbr (364pp)
+   G5 "Rugrats (2015) (DCP Webrips)" in Webcomics and Strips\Rugrats (2012) — 1 file(s), pp 365-365; cv per-file 42884x1; key 'Rugrats'
+      [114326] Rugrats (2015) (DCP Webrips).cbr (365pp)
+   G6 "Rugrats (2016) (DCP Webrips)" in Webcomics and Strips\Rugrats (2012) — 1 file(s), pp 282-282; cv per-file 42884x1; key 'Rugrats'
+      [114327] Rugrats (2016) (DCP Webrips).cbr (282pp)
+   G7 "Rugrats (2022) (DCP Webrips)" in Webcomics and Strips\Rugrats (2012) — 1 file(s), pp 365-365; cv per-file 42884x1; key 'Rugrats'
+      [114328] Rugrats (2022) (DCP Webrips).cbr (365pp)
+   G8 "Rugrats (2023) (DCP Webrips)" in Webcomics and Strips\Rugrats (2012) — 1 file(s), pp 365-365; cv per-file 42884x1; key 'Rugrats'
+      [114329] Rugrats (2023) (DCP Webrips).cbr (365pp)
+   G9 "Rugrats (2024) (DCP Webrips)" in Webcomics and Strips\Rugrats (2012) — 1 file(s), pp 366-366; cv per-file 42884x1; key 'Rugrats'
+      [114330] Rugrats (2024) (DCP Webrips).cbr (366pp)
+
+== S15597 Siege  [split]  4 files / 0 collections  decided in R-179 (S)
+   decided: S 15597 cv=30904 gcd=41474 0.9 | "01 Siege (2011)" 165pp is the collection of the 2010 Siege event: CV 30904 / GCD 41474 "Siege" (Marvel 2010, 4) - the run it reprints (L-109); 0.9 while three tie-in collections share the shelf: two join their runs' shelves below, and Siege: Battlefield stays as residue
+   F 15597 split-needed | item 117277 "Siege - Dark Avengers (2011)" 111pp collects Dark Avengers (Marvel 2009-2010; CV 25512 / GCD 33502) #13-16 + Annual #1 (GCD 78750's notes) -> join S4861 on its key "Dark Avengers"; item 117282 "Siege - Thor (2010)" 151pp is the Thor (2007) run's Siege trade (CV 35345 / GCD 73279) -> join S94807 on its key "Thor v1 (2009)" (L-368)
+   N 15597 residue kept: item 117276 "Siege - Battlefield (2010)" 122pp is the Siege: Battlefield collection of one-shots (CV 35579 / GCD 62461), whose runs have no shelf; R-015's F wrong-cv-link (83322) is spent - the shelf now stores 30904
+   named: S4861 Dark Avengers  12 files  keys: "Dark Avengers"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S94807 Thor v1 (2009)  13 files  keys: "Thor By J. Michael Straczynski" | "Thor by J. Michael Straczynski" | "Thor by Straczynski & Gillen Omnibus (2024)" | "Thor v1 (2009)" | "Thor v3 (2007)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S15598 "Siege" 1f [title — S cv=83322 gcd=90757 (R-015 0.9)] keys: "Siege - Battleworld" · S15601 "Siege Prelude" 1f [title+1 — S cv=30960 gcd=232801 (B-072 0.95)] keys: "Siege Prelude"
+   nearby: S15603 "Siege: Embedded" 1f [title+1 — S cv=30906 gcd=42393 (B-072 0.95)] keys: "Siege: Embedded" · S15605 "Siege: Thunderbolts" 1f [title+1 — S cv=35589 gcd=71144 (B-072 0.9)] keys: "Siege: Thunderbolts"
+   nearby: S18920 "The Last Siege" 1f [title+1 — S cv=111144 gcd=125408 (B-041 0.95)] keys: "The Last Siege"
+   keys now: "Siege" x4
+   groups (title x folder): 4
+   G1 "Siege (2011) (Digital-HD) (Asgard-Empire)" in _Marvel Major Event Chronology (digital)\2009.12 - Siege\01 Seige — 1 file(s), numbers 1, pp 165-165; cv per-file 35041x1; gcd per-file 208283x1; key 'Siege'
+      [117272] 01 Siege (2011) (Digital-HD) (Asgard-Empire).cbr (165pp)
+   G2 "Siege - Battlefield (2010) (Digital) (Kileko-Empire)" in _Marvel Major Event Chronology (digital)\2009.12 - Siege\02 Tie-ins — 1 file(s), pp 122-122; cv per-file 35579x1; gcd per-file 62461x1; key 'Siege'
+      [117276] Siege - Battlefield (2010) (Digital) (Kileko-Empire).cbr (122pp)
+   G3 "Siege - Dark Avengers (2011) (Digital) (F) (Asgard-Empire)" in _Marvel Major Event Chronology (digital)\2009.12 - Siege\02 Tie-ins — 1 file(s), pp 111-111; cv per-file 35591x1; gcd per-file 59716x1; key 'Siege'
+      [117277] Siege - Dark Avengers (2011) (Digital) (F) (Asgard-Empire).cbz (111pp)
+   G4 "Siege - Thor (2010) (Digital) (Kileko-Empire)" in _Marvel Major Event Chronology (digital)\2009.12 - Siege\02 Tie-ins — 1 file(s), pp 151-151; cv per-file 35345x1; gcd per-file 73279x1; key 'Siege'
+      [117282] Siege - Thor (2010) (Digital) (Kileko-Empire).cbr (151pp)
+
+== S1590 Avengers Epic Collection - The Avengers-Defenders War  [split]  1 files / 1 collections  decided in R-179 (S)
+   decided: S 1590 cv=- gcd=74603 0.9 | Avengers Epic Collection is ONE line shelf (L-409): our 446pp "COL Avengers Epic Collection - The Avengers-Defenders War (2018)" is GCD 74603 "Avengers Epic Collection" #7 row 1799099 (notes: Avengers #115-128, Giant-Size Avengers #1, Defenders #9-11 ...), the line S1589 stores (cv=-, gcd=74603) and whose Vol. 07 item 53297 is a second rip of this book
+   F 1590 split-needed | item 116307 "COL Avengers Epic Collection - The Avengers-Defenders War (2018)" -> join S1589 on its key "Avengers Epic Collection" (L-392 / L-405 / L-409)
+   F 1590 wrong-cv-link | the stored CV 109747 "Avengers Epic Collection: The Avengers/Defenders War" (2018, 1) is the book's own record - it goes on the I line
+   named: S1589 Avengers Epic Collection  22 files  keys: "Avengers Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S64669 "Fantastic Four" 459f [shares gcd=1482 (collected by item 116307) — S cv=2045 gcd=1482 (R-152 0.9)] keys: "Fantastic Four" | "Fantastic Four (1961)" | "Fantastic Four by John Byrne Omnibus" | "Fantastic Four v1 (1961)"
+   nearby: S64185 "The Avengers" 426f [shares gcd=1571 (collected by item 116307) — S cv=2128 gcd=1571 (R-142 0.95)] keys: "Avengers" | "Avengers (1963)" | "The Avengers"
+   nearby: S64562 "The Defenders" 97f [shares gcd=2048 (collected by item 116307) — S cv=2569 gcd=2048 (R-152 0.9)] keys: "Defenders (1972)" | "Defenders v1 (1972)" | "Defenders-v1-026" | "Defenders-v1-027" (+2 more: lookup.py --shelf 64562)
+   keys now: "Avengers Epic Collection - The Avengers-Defenders War" x1
+   groups (title x folder): 1
+   G1 "Avengers Epic Collection - The Avengers-Defenders War (2018) (digital) (Minutemen-Thoth)" in _Marvel Major Event Chronology (digital)\1973.09 - The Avengers-Defenders War — 1 file(s), 1 COL, pp 446-446; cv per-file 109747x1; gcd per-file 74603x1; key 'Avengers Epic Collection - The Avengers-Defenders War'
+      [116307] COL Avengers Epic Collection - The Avengers-Defenders War (2018) (digital) (Minutemen-Thoth).cbz (446pp)
+         own record cv 109747 / gcd s74603 "Avengers Epic Collection" (issue 1799099) COLLECTS: gcd=1571 The Avengers (1963) #115-128 · gcd=2048 The Defenders (1972) #8-11 · gcd=158698 FOOM Magazine (1973) #3, #5-7 · gcd=1482 Fantastic Four (1961) #150
+
+== S95614 Black Orchid  [split]  23 files / 0 collections  decided in R-179 (S)
+   decided: S 95614 cv=4952 gcd=4631 0.9 | Black Orchid (DC 1993-1995, 22): CV 4952 (22 cached #1-22) and GCD 4631 (22) agree and equal our "Black Orchid 001 (1993)" ... "022 (1995)" 24-27pp; 0.9 while the 1993 Annual sits here - it joins its own shelf below
+   F 95614 split-needed | item 112362 "Black Orchid Annual 01 (1993)" 58pp is Black Orchid Annual (DC 1993, 1; CV 21254 / GCD 4632), the cv the EMPTY S64317 stores -> join S64317 on its key "Black Orchid (1993)" (L-391 / L-368)
+   named: S64317 (not a file-holding shelf today)
+   nearby: S95613 "Black Orchid" 4f [title — S cv=3982 gcd=3573 (C-062 0.95)] keys: "Black Orchid (1988)" | "Black Orchid v1 (1993)"
+   keys now: "Black Orchid v2 (1993)" x23
+   groups (title x folder): 2
+   G1 "Black Orchid" in Vertigo\Black Orchid\Black Orchid v2 (1993) — 22 file(s), numbers 1-22, pp 24-27; cv per-file 4952x22; gcd per-file 4631x22; key 'Black Orchid v2 (1993)'
+      e.g. Black Orchid 001 (1993) (digital-Empire).cbz
+        112340 #1 1993 25pp · 112341 #2 1993 25pp · 112342 #3 1993 25pp · 112343 #4 1993 25pp · 112344 #5 1994 25pp · 112345 #6 1994 25pp · 112346 #7 1994 25pp · 112347 #8 1994 25pp
+        112348 #9 1994 26pp · 112349 #10 1994 25pp · 112350 #11 1994 25pp · 112351 #12 1994 25pp · 112352 #13 1994 24pp · 112353 #14 1994 25pp · 112354 #15 1994 25pp · 112355 #16 1994 25pp
+        112356 #17 1995 25pp · 112357 #18 1995 25pp · 112358 #19 1995 25pp · 112359 #20 1995 25pp · 112360 #21 1995 25pp · 112361 #22 1995 27pp
+   G2 "Black Orchid Annual" in Vertigo\Black Orchid\Black Orchid v2 (1993) — 1 file(s), numbers 1, pp 58-58; cv per-file 21254x1; gcd per-file 4632x1; key 'Black Orchid v2 (1993)'
+      [112362] Black Orchid Annual 01 (1993) (digital-Empire).cbz (58pp)
