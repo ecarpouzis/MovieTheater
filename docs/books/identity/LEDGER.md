@@ -2006,3 +2006,12 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   folders are fan scanlations of a webcomic original with no record (Onepunch-Man S23759 = ONE's webcomic, not Murata's
   CV 74851). Del Rey -> Kodansha USA lines (Nodame, Yozakura, Suzuka): CV keeps one volume, GCD holds only the Random
   House era (L-100 / L-381). Pika's French CV volumes (To Your Eternity 166488) masquerade as the line — check language.
+[L-386] pub:marvel pub:dark-horse kind:manga
+- R-132 (wave 125): Marvel `#MARVEL CURRENT ONGOING TITLES\<Title> vN (year)\Variant Covers` folders collect OTHER runs'
+  covers by title alone (2018 ASM, 2022 Daredevil, 2018 Avengers) — the filename date against GCD cover dates decides the
+  run; move them by split-lane join. Marvel "<Title> by <Creator>" trade lines (GCD 173399, 200583, 207599, 211328, 201989,
+  220651, 203412) were stored as shelves' GCD legs by earlier readers — the run's own GCD series is a different id. GCD
+  files Viz VIZBIG as "InuYasha (Vizbig Edition)" (44427) — probe with `--contains`. `Marvel-IDW Star Wars\_Star Wars
+  Insider (1987)`: the magazine has no CV or GCD record. S100014 (Star Wars 2020) merged into the EMPTY S65726 (key
+  "Star Wars", cv 123860): later joins naming S100014 must target S65726 — and the bare key "Star Wars" normalizes like
+  the 1977 shelf's, so check the join lands (L-375/L-376).
