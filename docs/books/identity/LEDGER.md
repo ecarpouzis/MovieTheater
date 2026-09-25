@@ -2076,3 +2076,12 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   lone "001 (YYYY) Skottie Young" file belongs to. At a retitle, GCD and CV can split at different issues (GCD keeps WCA
   #47 on 3061, CV starts AWC at #47). Marvel arc minis (Ultimate Avengers 1-3): both legs number one continuous series
   (#1-18) while rips restart at 01 per arc — issue files need I lines or they resolve to the wrong issue.
+[L-394] pub:marvel kind:golden-age sig:split
+- Waves 139-140: Marika ComicInfo Web ids on Marvel UK rips (Knights of Pendragon, Captain Britain) are ComicVine ISSUE
+  ids; GCD's 11 for Knights of Pendragon v2 is incomplete indexing (#1-4 missing), not a shorter run. GCD splits Cloak and
+  Dagger at the #14 retitle (3656 / 14574) while CV 4060 keeps #1-19 — one run (L-390). Golden-age chronology tags
+  "(cronology #00143)" are read as issue numbers — only I lines fix them. Coates Captain America GCD rows from X-058 were
+  Panini Deutschland (series 142421). Winter Soldier: GCD 68861 is the trade line, the run is 63067. Epic Collection
+  per-book shelves: when the natural line anchor (plain key) is outside the batch, anchor on a line shelf inside it and
+  queue the rest (Conan Chronicles EC -> S4094; S4092 / S4096 owe the same join). Joining stray covers onto a shelf of
+  unjudged trades arms them again (S20673 The Resistance) -> `u` line + wave_fix; read that range next.

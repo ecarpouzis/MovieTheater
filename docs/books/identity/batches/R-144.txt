@@ -1,0 +1,803 @@
+## Conventions for this batch (21 shown of 168 matched; 393 in LEDGER.md; 40 shelf/shelves: pub:marvel ×40 · kind:collected-line ×29 · kind:trade-only ×24 · folder:vn-year ×18 · folder:sequel-subfolder ×11 · folder:events ×6 · kind:foreign ×4 · folder:bucket ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (40 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (40 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (40 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-136] (37 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-127] (36 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-298] (32 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (32 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-306] (30 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-031] (29 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (29 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (29 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (29 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (29 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-132] (29 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-174] (29 shelf/shelves) pub:marvel sig:legacy-stamp sig:stamp
+- A legacy-renumbered run is its own volume in both legs (Captain Marvel #125-129 = CV 105506 / GCD 117972; GotG
+  #146-150 = GCD 118041); the per-file matcher reaches the 1960s/1990s namesake by issue number every time.
+[L-196] (29 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (29 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (29 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-307] (29 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (29 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-327] (29 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+
++147 more matched entries not shown: L-328, L-329, L-332, L-392, L-389, L-029, L-291, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-060, L-116, L-130, L-030, L-151, L-160, L-113, L-124, L-191, L-281, L-193, L-016, L-032, L-114, L-242, L-272, L-064, L-085, L-101, L-310, L-388, L-014, L-319, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-290, L-324, L-371, L-391, L-034, L-169, L-175, L-345, L-387, L-390, L-393, L-027, L-065, L-099, L-123, L-187, L-194, L-262, L-265, L-330, L-379, L-121, L-129, L-133, L-343, L-097, L-252, L-274, L-288, L-293, L-352, L-354, L-007, L-028, L-036, L-139, L-173, L-217, L-228, L-234, L-340, L-128, L-181, L-336, L-150, L-020, L-069, L-093, L-106, L-111, L-112, L-138, L-152, L-158, L-168, L-188, L-219, L-233, L-238, L-243, L-270, L-297, L-312, L-315, L-350, L-357, L-359, L-361, L-373, L-377, L-383, L-054, L-041, L-192 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S95617 Black Panther  [tier A]   keys: Black Panther (2005) | Black Panther v4 (2005)  years 2005-2009  29 files / 8 collections
+   flags: #183 label-ambiguous [Pending] item 116970 — Black Panther v4 039 and v4 040 are 2 pp cover-only files, not collections
+   folders: [8] Marvel\_Black Panther\05 Black Panther v4 (2005) · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0722 Bride of the Panther · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0728 Civil War - Phase Two · [5] _Marvel Major Event Chronology (digital)\2007.06 - The Initiative\Black Panther · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0683 Wild Kingdom · [2] _Marvel Major Event Chronology (digital)\2008.06 - Secret Invasion\03 Tie-ins\_Variant Covers · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0679 House of M · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0723 Civil War - X-Men
+   files:   [53588] COL Black Panther Vol. 01 - Who is Black Panther (2006) (digital) (Minutemen-Faessla).cbz (143pp)
+            [53589] COL Black Panther Vol. 02 - Bad Mutha (2006) (digital) (Minutemen-Faessla).cbz (102pp)
+            [53590] COL Black Panther Vol. 03 - The Bride (2006) (digital) (Minutemen-Faessla).cbz (141pp)
+            [53591] COL Black Panther Vol. 04 - Civil War (2007) (digital) (Minutemen-Faessla).cbz (179pp)
+            [53592] COL Black Panther Vol. 05 - Four the Hard Way (2007) (digital) (Minutemen-Faessla).cbz (126pp)
+            [53593] COL Black Panther Vol. 06 - Little Green Men (2008) (digital) (Minutemen-Faessla).cbz (100pp)
+            [53594] COL Black Panther Vol. 07 - Back to Africa (2008) (digital) (Minutemen-Faessla).cbz (133pp)
+            [53595] COL Black Panther Vol. 08 - Secret Invasion (2009) (digital) (Minutemen-Faessla).cbz (72pp) | [90245] 006 Black Panther 007 (2005) (Digital) (Zone-Empire).cbr (24pp)
+            [90305] 002 Black Panther 008 (2005) (Digital) (Zone-Empire).cbr (25pp) | [90307] 004 Black Panther 009 (2005) (Digital) (Zone-Empire).cbr (24pp)
+            [90494] 002 002 Black Panther 014 (2006) (Digital) (Zone-Empire).cbr (25pp) | [90495] 003 003 Black Panther 015 (2006) (Digital) (Zone-Empire).cbr (25pp)
+            [90496] 004 004 Black Panther 016 (2006) (Digital) (Zone-Empire).cbr (27pp) | [90497] 005 005 Black Panther 017 (2006) (Digital) (Zone-Empire).cbr (25pp)
+            [90498] 006 006 Black Panther 018 (2006) (digital-Empire).cbr (40pp) | [90506] 008 Black Panther 018 (2006) (digital-Empire).cbr (40pp)
+            [90560] 015 Black Panther 021 (2006) (Digital) (Zone-Empire).cbr (26pp) | [90570] 025 Black Panther 022 (2007) (digital-Empire).cbr (25pp)
+            [90571] 026 Black Panther 023 (2007) (digital-Empire).cbr (26pp) | [90588] 043 Black Panther 024 (2007) (digital-Empire).cbr (25pp)
+            [90592] 047 Black Panther 025 (2007) (digital-Empire).cbr (25pp) | [116788] Black Panther 026 (2007) (Digital) (Zone-Empire).cbr (26pp)
+            [116789] Black Panther 027 (2007) (Digital) (Zone-Empire).cbr (26pp) | [116790] Black Panther 028 (2007) (Digital) (Zone-Empire).cbr (25pp)
+            [116791] Black Panther 029 (2007) (Digital) (Zone-Empire).cbr (26pp) | [116792] Black Panther 030 (2007) (Digital) (Zone-Empire).cbr (25pp)
+            [116970] Black Panther v4 039 (2008) (2nd Printing Jefte Palo Variant Cover ONLY).cbr (2pp) | [116971] Black Panther v4 040 (2008) (2nd Printing Jefte Palo Variant COVER ONLY).cbr (2pp)
+   ours:    ladder 7-9, 14-18, 21-30, 39-40; 1 number(s) name more than one file: 18; judged item 53588 #1-6 conf 0.97; judged item 53589 #10-13 conf 0.97; judged item 53590 #14-18 conf 0.97; judged item 53591 #19-25 conf 0.97; judged item 53592 #26-30 conf 0.97; judged item 53593 #31-34 conf 0.97; judged item 53594 #35-38 conf 0.97
+   GCD says: [53588] gcd_reprint 1070675: s12471 Black Panther (2005) #1-6 [12 stories] · s180016 Black Panther: Who Is the Black Panther (2005) (unnumbered) [1 story]
+             [53589] gcd notes 1142602 (#[nn] of Black Panther: Bad Mutha): Black Panther (Marvel, 2005 series) #10-13
+             [53590] gcd notes 1142603 (#[nn] of Black Panther: The Bride): Black Panther (Marvel, 2005 series) #14-18  |  gcd_reprint 1142603: s12471 Black Panther (2005) #14-18 [14 stories]
+             [53591] gcd notes 1142604 (#[nn] of Black Panther: Civil War): Black Panther (Marvel, 2005 series) #19-25  |  gcd_reprint 1142604: s12471 Black Panther (2005) #24 [1 story]
+             [53592] gcd notes 1142605 (#[nn] of Black Panther: Four the Hard Way): Black Panther (Marvel, 2005 series) #26-30
+             [53594] gcd notes 2000678 (#7 of Black Panther): Black Panther (Marvel, 2018 series) #7-12  |  gcd_reprint 2000678: s124623 Black Panther (2018) #7-8 [18 stories]  |  ⚠ stored GCD row is another book: our subtitle 'Back to Africa' vs GCD title 'The Intergalactic Empire of Wakanda Part Two'; GCD row 2019, our file (2008) — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [53595] gcd notes 1595970 (#[nn] of Black Panther: The Deadliest of the Species): Black Panther (Marvel, 2009 series) #1-6  |  gcd_reprint 1595970: s33758 Black Panther (2009) #1-6 [8 stories]
+   CV linked:      vol 11502 "Black Panther" 2005 Marvel 41 issues; cached #1-41 (41); yearΔ 0; ratio 21/41 = 0.51; 7 of 7 judged fit
+   CV per-file (v1): vol 11502 "Black Panther" 2005 Marvel 41 on 26/29 files · vol 25638 "Black Panther" 2009 Marvel 12 on 1/29 files
+   CV local rip:   (= linked) · 53306 "Black Panther" 2000 Panini Verlag 2 · 6496 "Black Panther" 1998 Marvel 62 · 89350 "Black Panther" 2016 Marvel 25 · 119952 "Black Panther" 2016 Panini Verlag 1 issue 712675   (rip lookup)
+   GCD per-file:   series 12471 "Black Panther" 2005-2008 Marvel [was ongoing series] 41 on 21/29 files · series 6989 "Black Panther" 1998-2003 Marvel [was ongoing series] 62 on 1/29 files; methods numx21 · page-rematchx1
+   GCD dump:       (= per-file) · 33758 "Black Panther" 2009-2010 Marvel [] 12 · 102259 "Black Panther" [de] 2000-2000 Panini Deutschland [] 2 · 99295 "Black Panther" 2016-2018 Marvel [] 25 · 102270 "Black Panther" [de] 2016-? Panini Deutschland [] 1   (dump lookup)
+   bridges:        gcd 12471 -> LOCG 101257 "Black Panther" support 26 · gcd 6989 -> LOCG 101257 "Black Panther" support 2
+
+== S2741 Black Panther  [tier C] · gap 9  keys: Black Panther  years 2009-2020  5 files / 4 collections
+   flags: #573 overlap-in-series [Dismissed] item 76067 — "Who Is The Black Panther" (2005) and Coates Vol. 06 both carry a curated #1-6
+   folders: [3] Marvel\_Black Panther\09 Black Panther (by Ta-Nahisi Coates) v6-v1-v7 (2018) · [1] Marvel\_Black Panther\_Trades, Minis & One-shots · [1] _Marvel Major Event Chronology (digital)\2018.04 - The Return of Wolverine\00 End Credit Scenes
+   files:   [53620] COL Black Panther Vol. 06 - The Intergalactic Empire of Wakanda Part 1 (2019) (Digital) (Zone-Empire).cbr (145pp)
+            [53621] COL Black Panther Vol. 07 - The Intergalactic Empire of Wakanda Part 2 (2019) (digital) (Zone-Empire).cbr (137pp)
+            [53622] COL Black Panther Vol. 08 - The Intergalactic Empire of Wakanda Part 3 (2020) (digital) (Zone-Empire).cbr (138pp)
+            [76067] COL Black Panther - Who Is The Black Panther (2009) (Digital TPB) (F) (Kileko-Empire).cbz (197pp) | [118378] 06 Black Panther 170 (2018) (Digital) (Zone-Empire).cbr (28pp)
+   ours:    ladder 170; ComicInfo Series: "Black Panther"x3, "Black Panther Book 8: The Intergalactic Empire Of Wakanda Part Three"x1; ComicInfo Publisher: "Marvel"x4
+   GCD says: [53620] gcd_reprint 1908791: s124623 Black Panther (2018) #1, #3-5 [23 stories]
+             [53621] gcd notes 2000678 (#7 of Black Panther): Black Panther (Marvel, 2018 series) #7-12  |  gcd_reprint 2000678: s124623 Black Panther (2018) #7-8 [18 stories]
+             [53622] gcd_reprint 2132269: s124623 Black Panther (2018) (unnumbered) [18 stories]
+             [76067] gcd_reprint 2295519: s12471 Black Panther (2005) #1-6 [7 stories] · s1482 Fantastic Four (1961) #52-53 [2 stories]
+   CV linked:      vol 111034 "Black Panther" 2018 Marvel 25 issues; cached #1-25 (25); yearΔ 9; ratio 1/25 = 0.04; no judged range
+   CV per-file (v1): vol 11502 "Black Panther" 2005 Marvel 41 on 2/5 files
+   CV local rip:   (= linked) · 25638 "Black Panther" 2009 Marvel 12 · 89350 "Black Panther" 2016 Marvel 25 · 119952 "Black Panther" 2016 Panini Verlag 1 issue 712675 · 119953 "Black Panther" 2017 Panini Verlag 5 · 53306 "Black Panther" 2000 Panini Verlag 2   (rip lookup)
+   GCD per-file:   series 99295 "Black Panther" 2016-2018 Marvel [was ongoing series] 25 on 1/5 files; methods numx1
+   GCD dump:       (= per-file) · 33758 "Black Panther" 2009-2010 Marvel [] 12 · 12471 "Black Panther" 2005-2008 Marvel [] 41 · 102270 "Black Panther" [de] 2016-? Panini Deutschland [] 1 · 105777 "Black Panther" 2016-2021 Marvel [] 9 · 198786 "Black Panther" [de] 2016-2016 Panini Deutschland [] 1   (dump lookup)
+   bridges:        gcd 99295 -> LOCG 101257 "Black Panther" support 23
+
+== S34708 Black Panther: The Intergalactic Empire of Wakanda Part Four  [tier B]   keys: Black Panther Book 9: The Intergalactic Empire Of Wakanda Part Four  years 2021-2021  1 files / 1 collections
+   folders: [1] Marvel\_Black Panther\09 Black Panther (by Ta-Nahisi Coates) v6-v1-v7 (2018)
+   files:   [53623] COL Black Panther Vol. 09 - The Intergalactic Empire of Wakanda Part 4 (2021) (digital) (Zone-Empire).cbr (175pp)
+   ours:    ComicInfo Series: "Black Panther Book 9: The Intergalactic Empire Of Wakanda Part Four"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [53623] gcd_reprint 2238344: s124623 Black Panther (2018) (unnumbered) [36 stories]
+   CV linked:      vol 137502 "Black Panther: The Intergalactic Empire of Wakanda Part Four" 2021 Marvel 1 issues issue 869588; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 102105 "Black Panther: World of Wakanda" 2017 Marvel 1 issue 601788 s74 · 116697 "Black Panther: The Intergalactic Empire of Wakanda Part One" 2019 Marvel 1 issue 698598 s32 · 149767 "Black Panther: The Intergalactic Empire of Wakanda Part Two" 2022 Marvel 1 issue 985608 s32 · 120303 "Black Panther: The Intergalactic Empire of Wakanda Part Two" 2019 Marvel 1 issue 714441 s32 · 124132 "Black Panther: The Intergalactic Empire of Wakanda Part Three" 2020 Marvel 1 issue 732929 s32 · 131738 "Black Panther: The Intergalactic Empire of Wakanda Part One" 2020 Marvel 1 issue 816735 s32   (v1 search)
+   CV local rip:   (= linked) · 131738 "Black Panther: The Intergalactic Empire of Wakanda Part One" 2020 Marvel 1 issue 816735 (via CV candidate name "Black Panther: The Intergalactic Empire of Wakanda Part One") · 116697 "Black Panther: The Intergalactic Empire of Wakanda Part One" 2019 Marvel 1 issue 698598 (via CV candidate name "Black Panther: The Intergalactic Empire of Wakanda Part One") · 102105 "Black Panther: World of Wakanda" 2017 Marvel 1 issue 601788 (via CV candidate name "Black Panther: World of Wakanda") · 95579 "Black Panther: World of Wakanda" 2016 Marvel 6 (via CV candidate name "Black Panther: World of Wakanda")   (rip lookup)
+   GCD dump:       109022 "Black Panther: World of Wakanda" 2017-2017 Marvel [] 6 (via CV candidate name "Black Panther: World of Wakanda") · 114842 "Black Panther: World of Wakanda" 2017-2017 Marvel [] 1 (via CV candidate name "Black Panther: World of Wakanda")   (dump lookup)
+
+== S95620 Black Panther v9 (2023)  [tier C] · gap 15  keys: Black Panther v9 (2023)  years 2006-2023  9 files / 2 collections
+   folders: [7] Marvel\_Black Panther\12 Black Panther v9 (2023)\Variant Covers · [2] Marvel\_Black Panther\12 Black Panther v9 (2023)
+   files:   [53632] COL Black Panther by Eve L. Ewing Vol. 01 - Reign At Dusk (2024) (Digital) (Shan-Empire).cbz (120pp)
+            [53633] COL Black Panther by Eve L. Ewing Vol. 02 - Reign at Dusk (2024) (Digital) (Shan-Empire).cbz (111pp)
+            [53634] Black Panther 013 (2023) (1-in-25 Scalera Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [53635] Black Panther 013 (2023) (Medina Classic Homage Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [53636] Black Panther 014 (2023) (No Prize Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [53637] Black Panther 014 (2023) (Romero Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [53638] Black Panther 014 (2023) (Yu Planet Of The Apes Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [53639] Black Panther 015 (2023) (Lashley Infinity Saga Phase 3 Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [53640] Black Panther 015 (2023) (Peralta Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 13-15; 3 number(s) name more than one file: 13, 14, 15; judged item 53632 #1-5 conf 0.97; judged item 53633 #6-10 conf 0.97; ComicInfo Series: "Black Panther"x1; ComicInfo Publisher: "Marvel"x1
+   CV per-file (v1): vol 11502 "Black Panther" 2005 Marvel 41 on 7/9 files
+   CV local rip:   (= per-file) · 25638 "Black Panther" 2009 Marvel 12 (via our own name without the filing suffix "Black Panther") · 53306 "Black Panther" 2000 Panini Verlag 2 (via our own name without the filing suffix "Black Panther") · 6496 "Black Panther" 1998 Marvel 62 (via our own name without the filing suffix "Black Panther") · 89350 "Black Panther" 2016 Marvel 25 (via our own name without the filing suffix "Black Panther") · 119952 "Black Panther" 2016 Panini Verlag 1 issue 712675 (via our own name without the filing suffix "Black Panther")   (rip lookup)
+   GCD per-file:   series 178418 "Black Panther" 2021-2023 Marvel [ongoing series] 15 on 5/9 files; methods numx5
+   GCD dump:       12471 "Black Panther" 2005-2008 Marvel [] 41 (via our own name without the filing suffix "Black Panther") · 33758 "Black Panther" 2009-2010 Marvel [] 12 (via our own name without the filing suffix "Black Panther") · 102259 "Black Panther" [de] 2000-2000 Panini Deutschland [] 2 (via our own name without the filing suffix "Black Panther") · 6989 "Black Panther" 1998-2003 Marvel [] 62 (via our own name without the filing suffix "Black Panther") · 99295 "Black Panther" 2016-2018 Marvel [] 25 (via our own name without the filing suffix "Black Panther") · 102270 "Black Panther" [de] 2016-? Panini Deutschland [] 1 (via our own name without the filing suffix "Black Panther")   (dump lookup)
+   bridges:        gcd 178418 -> LOCG 101257 "Black Panther" support 5
+
+== S2755 Black Panther Epic Collection: Panther's Rage  [tier B]   keys: Black Panther Epic Collection  years 2016-2019  2 files / 2 collections
+   folders: [2] Marvel\_Black Panther\Black Panther Epic Collections
+   files:   [53641] COL Black Panther Epic Collection Vol. 01 - Panther's Rage (2016) (Digtial) (Zone-Empire).cbr (361pp)
+            [53642] COL Black Panther Epic Collection Vol. 02 - Revenge of the Black Panther (2019) (Digital) (Zone-Empire).cbr (454pp)
+   ours:    ComicInfo Series: "Black Panther Epic Collection"x2; ComicInfo Publisher: "Marvel"x2
+   CV linked:      vol 94409 "Black Panther Epic Collection: Panther's Rage" 2016 Marvel 1 issues issue 551295; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 2/2 files
+   CV candidates:  (= linked) · 134427 "Black Panther Epic Collection: Panther's Prey" 2021 Marvel 1 issue 837518 s81 · 117199 "Black Panther Epic Collection: Revenge of the Black Panther" 2019 Marvel 1 issue 701303 s78 · 120815 "Fantastic Four Epic Collection: The Mystery of the Black Panther" 2019 Marvel 1 issue 716956 s77 · 119953 "Black Panther" 2017 Panini Verlag 5 s58 · 124689 "Marvel-Verse: Black Panther" 2020 Marvel 1 issue 735590 s52 · 59098 "Marvel Masterworks: Black Panther" 2010 Marvel 3 s51   (v1 search)
+   CV local rip:   (= linked) · 117199 "Black Panther Epic Collection: Revenge of the Black Panther" 2019 Marvel 1 issue 701303 (via CV candidate name "Black Panther Epic Collection: Revenge of the Black Panther") · 134427 "Black Panther Epic Collection: Panther's Prey" 2021 Marvel 1 issue 837518 (via CV candidate name "Black Panther Epic Collection: Panther's Prey")   (rip lookup)
+   GCD dump:       108630 "Black Panther Epic Collection" 2016-2016 Marvel [] 3   (dump lookup)
+
+== S2756 Black Panther Epic Collection: Panther's Prey  [tier B]   keys: Black Panther Epic Collection: Panther's Prey  years 2021-2021  1 files / 1 collections
+   folders: [1] Marvel\_Black Panther\Black Panther Epic Collections
+   files:   [53643] COL Black Panther Epic Collection Vol. 03 - Panther's Prey (2021) (Digital-Empire).cbr (499pp)
+   ours:    ComicInfo Series: "Black Panther Epic Collection: Panther's Prey"x1; ComicInfo Publisher: "MAX"x1
+   GCD says: [53643] gcd notes 2212390 (#3 of Black Panther Epic Collection): Black Panther: Panther's Prey (Marvel, 1991 series) #1-4; Marvel Comics Presents (Marvel, 1988 series) #13-37; Solo Avengers (Marvel, 1987 series) #19; Marvel Super-Heroes (Marvel, 1990 series) #1; Marvel Fanfare (Marvel, 1982 series) #60;   |  gcd_reprint 2212390: s4230 Black Panther: Panther's Prey (1991) #1-4 [55 stories] · s3654 Marvel Comics Presents (1988) #13-37, #148 [52 stories] · s2657 Marvel Fanfare (1982) #45, #60 [4 stories] · s119599 Black Panther: Panther's Quest (2018) (unnumbered) [2 stories]
+   CV linked:      vol 134427 "Black Panther Epic Collection: Panther's Prey" 2021 Marvel 1 issues issue 837518; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 94409 "Black Panther Epic Collection: Panther's Rage" 2016 Marvel 1 issue 551295 s64 · 28441 "Black Panther: Panther's Prey" 1991 Marvel 4 s58 · 4045 "Black Panther" 1988 Marvel 4 s58 · 119953 "Black Panther" 2017 Panini Verlag 5 s55 · 6496 "Black Panther" 1998 Marvel 62 s55 · 111034 "Black Panther" 2018 Marvel 25 s55   (v1 search)
+   CV local rip:   (= linked) · 94409 "Black Panther Epic Collection: Panther's Rage" 2016 Marvel 1 issue 551295 (via CV candidate name "Black Panther Epic Collection: Panther's Rage") · 28441 "Black Panther: Panther's Prey" 1991 Marvel 4 (via CV candidate name "Black Panther: Panther's Prey")   (rip lookup)
+   GCD dump:       4230 "Black Panther: Panther's Prey" 1991-1991 Marvel [] 4 (via CV candidate name "Black Panther: Panther's Prey")   (dump lookup)
+
+== S2772 Black Panther: The Deadliest of the Species  [tier B]   keys: Black Panther: Shuri - Deadliest of the Species  years 2009-2009  1 files / 1 collections
+   folders: [1] Marvel\_Black Panther\Shuri
+   files:   [53644] COL Black Panther - Shuri - Deadliest of the Species (2015) (Digital) (Zone-Empire).cbr (139pp)
+   ours:    ComicInfo Series: "Black Panther: Shuri - Deadliest of the Species"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [53644] gcd notes 1595970 (#[nn] of Black Panther: The Deadliest of the Species): Black Panther (Marvel, 2009 series) #1-6  |  gcd_reprint 1595970: s33758 Black Panther (2009) #1-6 [8 stories]
+   CV linked:      vol 31980 "Black Panther: The Deadliest of the Species" 2009 Marvel 1 issues issue 200658; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 147404 "Black Panther: The Saga Of Shuri And T'Challa" 2022 Marvel 1 issue 967586 s69 · 118530 "Shuri: The Search For Black Panther" 2019 Marvel 1 issue 706959 s62 · 124689 "Marvel-Verse: Black Panther" 2020 Marvel 1 issue 735590 s56 · 121240 "Marvel Tales: Black Panther" 2019 Marvel 1 issue 718760 s50 · 43086 "Aliens/Predator: Deadliest Of The Species" 1996 Dark Horse Comics 1 issue 293989 s48 · 59098 "Marvel Masterworks: Black Panther" 2010 Marvel 3 s38   (v1 search)
+   CV local rip:   (= linked) · 118530 "Shuri: The Search For Black Panther" 2019 Marvel 1 issue 706959 (via CV candidate name "Shuri: The Search For Black Panther") · 147404 "Black Panther: The Saga Of Shuri And T'Challa" 2022 Marvel 1 issue 967586 (via CV candidate name "Black Panther: The Saga Of Shuri And T'Challa")   (rip lookup)
+   GCD dump:       103773 "Black Panther: The Deadliest of the Species" 2009-2009 Marvel [] 1 · 103774 "Black Panther: The Deadliest of the Species" 2009-2009 Marvel [] 1 · 188220 "Black Panther: The Saga of Shuri and T'Challa" 2022-2022 Marvel [] 1 (via CV candidate name "Black Panther: The Saga Of Shuri And T'Challa")   (dump lookup)
+
+== S3406 Black Panther/Captain America: Flags of Our Fathers  [tier A]   keys: Captain America - Black Panther - Flags of Our Fathers  years 2010-2010  4 files / 0 collections
+   folders: [4] Marvel\_Black Panther\_Trades, Minis & One-shots\Black Panther & Captain America - Flags of Our Fathers
+   files:   [53654] Captain America - Black Panther - Flags of Our Fathers 01 (of 04) (2010) (digital) (Knight Ripper-Empire).cbr (23pp)
+            [53655] Captain America - Black Panther - Flags of Our Fathers 02 (of 04) (2010) (digital) (Knight Ripper-Empire).cbr (25pp)
+            [53656] Captain America - Black Panther - Flags of Our Fathers 03 (of 04) (2010) (digital) (Knight Ripper-Empire).cbr (25pp)
+            [53657] Captain America - Black Panther - Flags of Our Fathers 04 (of 04) (2010) (digital) (Knight Ripper-Empire).cbr (24pp)
+   ours:    ladder 1-4
+   CV linked:      vol 32444 "Black Panther/Captain America: Flags of Our Fathers" 2010 Marvel 4 issues; cached #1-4 (4); yearΔ 0; ratio 4/4 = 1.00; no judged range
+   CV per-file (v1): vol 36229 "Captain America/Black Panther: Flags of Our Fathers" 2010 Marvel 1 issue 238982 on 4/4 files
+   CV candidates:  (= linked) · 171881 "Captain America/Black Panther: Flags of Our Fathers" 2010 Marvel 2 s67 · 59098 "Marvel Masterworks: Black Panther" 2010 Marvel 3 s50 · 124689 "Marvel-Verse: Black Panther" 2020 Marvel 1 issue 735590 s44 · 57284 "Captain America & Black Widow" 2013 Marvel 1 issue 386448 s42 · 121240 "Marvel Tales: Black Panther" 2019 Marvel 1 issue 718760 s38 · 118104 "Marvel Action: Black Panther" 2019 IDW Publishing 6 s28   (v1 search); the local rip found nothing else
+   GCD per-file:   series 48387 "Captain America / Black Panther: Flags of Our Fathers" 2010-2010 Marvel [limited series] 4 on 4/4 files; methods numx4
+   GCD dump:       (= per-file) · 59700 "Captain America / Black Panther: Flags of Our Fathers" 2010-2010 Marvel [] 1 · 132887 "Captain America / Black Panther: Flags of Our Fathers" 2018-2018 Marvel [] 1   (dump lookup)
+
+== S3450 Captain America Comics  [tier A]   keys: Captain America Comics  years 1941-1954  49 files / 0 collections
+   folders: [46] Marvel\_Captain America\01 Captain America Comics v1 (1941) · [2] Marvel\_Captain America\01 Captain America Comics v1 (1941)\Annuals and Specials · [1] _Marvel Major Event Chronology (digital)\1973.11 - Captain America & Falcon - Secret Empire\Extra
+   files:   [76718] Captain America Comics 004 (Timely) (Jun 1941) (c2c) (SuperMack+Mark Bowen fills).cbz (69pp)
+            [76719] Captain America Comics 017 (1942) (c2c) (chums scans and fills, Mark Bowen additional fills).cbz (68pp)
+            [76720] Captain America Comics 001 (1941) (Digital) (Cypher-Empire).cbr (67pp) | [76721] Captain America Comics 001 (1941-03) (Timely) (c2c) (Superscan).cbz (69pp)
+            [76722] Captain America Comics 002 (1941) (Digital) (AnPymGold-Empire).cbz (66pp) | [76723] Captain America Comics 003 (1941) (Digital) (AnPymGold-Empire).cbz (64pp)
+            [76724] Captain America Comics 004 (1941) (Digital) (AnPymGold-Empire).cbz (65pp) | [76725] Captain America Comics 005 (1941) (Digital) (AnPymGold-Empire).cbz (66pp)
+            [76726] Captain America Comics 006 (Timely 1941) (rangerhouse-movielover-Novus).cbz (69pp)
+            Captain America Comics 007 (1941) (Digital) (AnPymGold-Empire).cbz … Captain America Comics 013 (1942) (Digital) (AnPymGold-Empire).cbz  (7 files, pp 64-67)
+            [76734] Captain America Comics 013 (1942) (Timely) (c2c) (Mark Bowen scans & edits).cbz (69pp) | [76735] Captain America Comics 014 (1942) (Digital) (AnPymGold-Empire).cbz (66pp)
+            [76736] Captain America Comics 015 (1942) (Digital) (AnPymGold-Empire).cbz (66pp) | [76737] Captain America Comics 016 (1942) (Digital) (AnPymGold-Empire).cbz (65pp)
+            [76738] Captain America Comics 017 (1942) (c2c) (chums scans and fills, Mark Bowen additional fills).cbz (68pp)
+            [76739] Captain America Comics 019 (Timely, 1942) (c2c paper) (Pmack scans, Mark Bowen fills).cbz (68pp)
+            [76740] Captain America Comics 020 (paper+2fiche)(rangerhouse-movielover-Novus).cbz (69pp) | [76741] Captain America Comics 021 [Timely1942][17fiche] -rangerhouse+Yoc.cbz (69pp)
+            [76742] Captain America Comics 022 (golden age) (only one story).cbz (16pp) | [76743] Captain America Comics 023 (1943) (cronology #00143).cbr (68pp)
+            [76744] Captain America Comics 025 (Timely.1943) (c2c) (ifc.fiche) (chums).cbr (68pp) | [76745] Captain America Comics 025 (Timely.1943) (c2c.new.ifc) (chums).cbr (68pp)
+            [76746] Captain America Comics 030 (Timely.1943) (c2c) (ifc.fiche) (chums).cbr (60pp) | [76747] Captain America Comics 032 (Timely.1943) (c2c) (4.fiche) (chums).cbr (59pp)
+            [76748] Captain America Comics 035 (Timely, 1944) (c2c paper) (chums scans, Mark Bowen fills).cbz (60pp)
+            [76749] Captain America Comics 035 (Timely.1944) (c2c) (ifc.ibc.pg57.Fische) (chums).cbz (?pp) | [76750] Captain America Comics 037 (1944) (cronology #00251).cbr (54pp)
+            [76751] Captain America Comics 043 (1944) (cronology #00309).cbr (52pp) | [76752] Captain America Comics 045 [Timely1945][2 cf upgraded]-49pg-no ads.cbz (49pp)
+            [76753] Captain America Comics 047 (Timely.1945) (c2c) (2.photos.1.fiche) (chums).cbr (52pp) | [76754] Captain America Comics 050 (Timely.1945) (c2c) (chums).cbr (52pp)
+            [76755] Captain America Comics 054 (Timely.1946) (rescan) (chums).cbr (52pp) | [76756] Captain America Comics 055 (Timely.1946) (5.fiche) (chums).cbr (52pp)
+            [76757] Captain America Comics 057 (Timely.1946) (c2c paper, 1 page reconstructed) (chums scans and fills, Mark Bowen additional fills).cbz (52pp)
+            [76758] Captain America Comics 059 missing pages (1946) (Nodge).cbr (2pp) | [76759] Captain America Comics 061 (Timely.1947) (5.fiche) (chums).cbr (52pp)
+            [76760] Captain America Comics 063 (Timely.1947) INC 35pgs [-ifc] (chums).cbr (35pp) | [76761] Captain America Comics 064 [Timely1947](c2c)(chums).cbr (52pp)
+            [76762] Captain America Comics 072 (Timely.1949) (c2c) (chums).cbr (36pp) | [76763] Captain America Comics 076 (1954) (Digital) (AnPymGold-Empire).cbz (26pp)
+            [76764] Captain America Comics 077 (1954) (Digital) (AnPymGold-Empire).cbz (26pp) | [76765] Captain America Comics 078 (1954) (Digital) (AnPymGold-Empire).cbz (26pp)
+            [116318] Captain America Comics 001 (1941) (Digital) (Cypher-Empire).cbr (67pp)
+   ours:    ladder 1-17, 19-22, 25, 30, 32, 35, 45, 47, 50, 54-55, 57, 59, 61, 63-64, 72, 76-78, 143, 251, 309; 6 number(s) name more than one file: 1, 4, 13, 17, 25, 35
+   CV linked:      vol 1628 "Captain America Comics" 1941 Marvel 73 issues; cached #1-73 (73); yearΔ 0; ratio 49/73 = 0.67; no judged range; v1 per-file: same volume on 49/49 files
+   CV local rip:   (= linked) · 50923 "Captain America Comics" 1942 Marvel 1 issue 347984   (rip lookup)
+   GCD per-file:   series 237 "Captain America Comics" 1941-1949 Marvel [was ongoing series] 73 on 33/49 files; methods numx33
+   GCD dump:       (= per-file) · 59152 "Captain America Comics" [en-ca] 1942-1942 Marvel [] 1 · 18401 "Captain America Comics" [en-ca] 1948-1950 Superior [] 10   (dump lookup)
+   bridges:        gcd 237 -> LOCG 119409 "Captain America Comics" support 43
+
+== S95961 Captain America  [tier B]   keys: Captain America v7 (2013)  years 2013-2014  5 files / 5 collections
+   folders: [5] Marvel\_Captain America\12 Captain America v7 (2013)
+   files:   [77257] COL Captain America Vol. 01 - Castaway in Dimension Z - Book 01 (2013) (Digital) (F) (BroadCast-Empire).cbz (123pp)
+            [77258] COL Captain America Vol. 02 - Castaway in Dimension Z - Book 02 (2013) (Digital) (F) (BlackManta-Empire).cbz (120pp)
+            [77259] COL Captain America Vol. 03 - Loose Nuke (2014) (Digital) (F) (BlackManta-Empire).cbz (121pp)
+            [77260] COL Captain America Vol. 04 - The Iron Nail (2014) (Digital) (F) (BroadCast-Empire).cbz (132pp)
+            [77261] COL Captain America Vol. 05 - The Tomorrow Soldier (2014) (Digital) (F) (BroadCast-Empire).cbz (125pp)
+   ours:    judged item 77257 #1-5 conf 0.97; judged item 77258 #6-10 conf 0.97; judged item 77259 #11-15 conf 0.97; judged item 77260 #16-21 conf 0.97; judged item 77261 #22-25 conf 0.97; ComicInfo Series: "Captain America"x5; ComicInfo Publisher: "Marvel"x5
+   CV linked:      vol 54110 "Captain America" 2013 Marvel 25 issues; cached #1-25 (25); yearΔ 0; ratio 0/25; 5 of 5 judged fit
+   CV per-file (v1): vol 2400 "Captain America" 1968 Marvel 355 on 5/5 files
+   CV local rip:   (= linked) · 61231 "Captain America" 2012 Panini Verlag 4 · 41245 "Captain America" 2011 Marvel 19 · 66539 "Captain America" 2009 Editorial Televisa 23 · 103427 "Captain America" 2017 Marvel 11 · 41993 "Captain America" 2008 Panini Verlag 9   (rip lookup)
+   GCD dump:       68655 "Captain America" 2013-2014 Marvel [] 25 · 73857 "Captain America" 2013-2015 Marvel [] 5 · 64852 "Captain America" [de] 2012-2013 Panini Deutschland [] 4 · 78164 "Captain America" 2014-2015 Marvel [] 5 · 181360 "Captain America" [es-pe] 2014-? Perú21 [] 6 · 59241 "Captain America" 2011-2012 Marvel [] 19   (dump lookup)
+
+== S3419 Captain America: Sam Wilson  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Captain America - Sam Wilson  years 2015-2017  26 files / 7 collections
+   flags: #127 duplicate-edition [Pending] item 118884 — #1-6 is claimed by this item and by 77265 — two editions of one block · #128 duplicate-edition [Pending] item 118885 — #18-24 is claimed by this item and by 77269 — two editions of one block · #194 label-ambiguous [Pending] item 118884 — items 77265/118884 and 77269/118885 are two rips each of vols 1 and 5
+   folders: [8] Marvel\_Captain America\14-15 Nick Spencer's Captain America (2015)\14 Captain America - Sam Wilson v1 (2015) · [5] _Marvel Major Event Chronology (digital)\2017.04 - Secret Empire\00 Prelude\04 Sam Wilson - Civil War II · [4] _Marvel Major Event Chronology (digital)\2016.06 - Civil War II\02 Tie-Ins\Captain America - Sam Wilson · [4] _Marvel Major Event Chronology (digital)\2017.04 - Secret Empire\00 Prelude\06 Sam Wilson - #TakeBackTheShield · [3] _Marvel Major Event Chronology (digital)\2017.04 - Secret Empire\01 Secret Empire · [1] _Marvel Major Event Chronology (digital)\2017.04 - Secret Empire\00 Prelude\01 Sam Wilson - Not My Captain America · [1] _Marvel Major Event Chronology (digital)\2017.04 - Secret Empire\00 Prelude\09 Sam Wilson - End of the Line
+   files:   [77262] Captain America - Sam Wilson 022 (2017) (Digital) (Zone-Empire).cbr (23pp) | [77263] Captain America - Sam Wilson 023 (2017) (Digital) (Zone-Empire).cbr (23pp)
+            [77264] Captain America - Sam Wilson 024 (2017) (Digital) (Zone-Empire).cbr (23pp)
+            [77265] COL Captain America - Sam Wilson Vol. 01 - Not My Captain America (2016) (Digital) (F) (Zone-Empire).cbr (131pp)
+            [77266] COL Captain America - Sam Wilson Vol. 02 - Standoff (2016) (Digital) (F) (Zone-Empire).cbr (162pp)
+            [77267] COL Captain America - Sam Wilson Vol. 03 - Civil War II (2016) (Digital) (F) (Zone-Empire).cbr (110pp)
+            [77268] COL Captain America - Sam Wilson Vol. 04 - #TAKEBACKTHESHIELD (2017) (Digital) (F) (Zone-Empire).cbr (136pp)
+            [77269] COL Captain America - Sam Wilson Vol. 05 - End of the Line (2017) (Digital) (F) (Zone-Empire).cbr (112pp)
+            [118185] Captain America - Sam Wilson 010 (2016) (Digital) (Zone-Empire).cbr (23pp) | [118186] Captain America - Sam Wilson 011 (2016) (Digital) (Zone-Empire).cbr (24pp)
+            [118187] Captain America - Sam Wilson 012 (2016) (Digital) (Zone-Empire).cbr (24pp) | [118188] Captain America - Sam Wilson 013 (2016) (Digital) (Zone-Empire).cbr (22pp)
+            [118884] COL Captain America - Sam Wilson Vol. 01 - Not My Captain America (2016) (Digital) (Zone-Empire).cbr (131pp)
+            Captain America - Sam Wilson 009 (2016) (Digital) (Zone-Empire).cbr … Captain America - Sam Wilson 017 (2017) (Digital) (Zone-Empire).cbr  (9 files, pp 22-28)
+            [118885] COL Captain America - Sam Wilson Vol. 05 - End of the Line (2017) (digital) (Minutemen-Slayer).cbr (119pp)
+            [118282] 06 Captain America - Sam Wilson 022 (2017) (Digital) (Zone-Empire).cbr (23pp) | [118285] 09 Captain America - Sam Wilson 023 (2017) (Digital) (Zone-Empire).cbr (23pp)
+            [118291] 15 Captain America - Sam Wilson 024 (2017) (Digital) (Zone-Empire).cbr (23pp)
+   ours:    ladder 9-17, 22-24; 7 number(s) name more than one file: 10, 11, 12, 13, 22, 23, 24; judged item 77265 #1-6 conf 0.7; judged item 118884 #1-6 conf 0.65; judged item 77266 #7-8 conf 0.7; judged item 77267 #9-13 conf 0.9; judged item 77268 #14-17 conf 0.85; judged item 77269 #18-24 conf 0.65; judged item 118885 #18-24 conf 0.6; ComicInfo Series: "Captain America: Sam Wilson"x4; ComicInfo Publisher: "Marvel"x4
+   GCD says: [77265] gcd_reprint 1559066: s93153 Captain America: Sam Wilson (2015) #1-6 [7 stories]
+             [77266] gcd_reprint 1628470: s93153 Captain America: Sam Wilson (2015) #7-8 [16 stories] · s100620 Avengers Standoff: Assault on Pleasant Hill Omega (2016) #1 [5 stories] · s98360 Avengers Standoff: Assault on Pleasant Hill Alpha (2016) (unnumbered) [5 stories]
+             [77267] gcd_reprint 1665052: s93153 Captain America: Sam Wilson (2015) #9-13 [6 stories]
+             [77268] gcd_reprint 1692393: s93153 Captain America: Sam Wilson (2015) #14-17 [5 stories] · s1860 Captain America (1968) #344 [1 story]
+             [77269] gcd_reprint 1727033: s93153 Captain America: Sam Wilson (2015) #18-21 [11 stories] · s1571 The Avengers (1963) #326 [2 stories] · s102626 Captain America: Steve Rogers (2016) #16 [1 story]
+             [118884] gcd_reprint 1559066: s93153 Captain America: Sam Wilson (2015) #1-6 [7 stories]
+             [118885] gcd_reprint 1727033: s93153 Captain America: Sam Wilson (2015) #18-21 [11 stories] · s1571 The Avengers (1963) #326 [2 stories] · s102626 Captain America: Steve Rogers (2016) #16 [1 story]
+   CV linked:      vol 85274 "Captain America: Sam Wilson" 2015 Marvel 24 issues; cached #1-24 (24); yearΔ 0; ratio 19/24 = 0.79; 7 of 7 judged fit; v1 per-file: same volume on 26/26 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 93153 "Captain America: Sam Wilson" 2015-2017 Marvel [was ongoing series] 24 on 14/26 files · series 164985 "Captain America: Sam Wilson" [es-mx] 2016-2017 Editorial Televisa [fue serie mensual en curso] 11 on 5/26 files; methods numx19
+   GCD dump:       (= per-file) · 100278 "Captain America: Sam Wilson" 2016-2017 Marvel [] 5   (dump lookup)
+   bridges:        gcd 93153 -> LOCG 119116 "Captain America: Sam Wilson" support 14 · gcd 164985 -> LOCG 119116 "Captain America: Sam Wilson" support 6
+
+== S3403 Captain America by Waid & Samnee: Home of the Brave  [tier B]   keys: Captain America (Book 01) by Waid & Samnee: Home Of The Brave  years 2018-2018  1 files / 1 collections
+   folders: [1] Marvel\_Captain America\17 Captain America v1 (2018)
+   files:   [77277] COL Captain America Vol. 01 - Home of the Brave (2018) (Digital) (Zone-Empire).cbr (150pp)
+   ours:    judged item 77277 #695-700 conf 0.85; ComicInfo Series: "Captain America (Book 01) by Waid & Samnee: Home Of The Brave"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [77277] gcd_reprint 1814753: s115901 Captain America (2017) #695-700 [7 stories]
+   CV linked:      vol 111409 "Captain America by Waid & Samnee: Home of the Brave" 2018 Marvel 1 issues issue 672279; cached #1-1 (1); yearΔ 0; ratio 0/1; 0 of 1 judged fit
+   CV candidates:  (= linked) · 32344 "Captain America Poster Book" 2009 Marvel 1 issue 203573 s69 · 113061 "Captain America by Mark Waid: Promised Land" 2018 Marvel 1 issue 682648 s67 · 106671 "Captain America by Mark Waid, Ron Garney & Andy Kubert Omnibus" 2017 Marvel 1 issue 644502 s61 · 106886 "Little Book of Captain America" 2017 Taschen 1 issue 646270 s59 · 32149 "Marvel Spotlight Captain America" 2009 Marvel 1 issue 201646 s59 · 35207 "Marvel Masterworks: Captain America" 2003 Marvel 17 s42   (v1 search)
+   CV local rip:   (= linked) · 113061 "Captain America by Mark Waid: Promised Land" 2018 Marvel 1 issue 682648 (via CV candidate name "Captain America by Mark Waid: Promised Land") · 32344 "Captain America Poster Book" 2009 Marvel 1 issue 203573 (via CV candidate name "Captain America Poster Book")   (rip lookup)
+   GCD dump:       125726 "Captain America by Waid and Samnee: Home of the Brave" 2018-2018 Marvel [] 1 (via our own name without the filing suffix "Captain America by Waid and Samnee: Home of the Brave") · 128406 "Captain America by Mark Waid: Promised Land" 2018-2018 Marvel [] 1 (via CV candidate name "Captain America by Mark Waid: Promised Land")   (dump lookup)
+
+== S95963 Captain America  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: Captain America By Ta-Nehisi Coates | Captain America by Ta-Nehisi Coates | Captain America v9 (2018)  years 1963-2022  8 files / 7 collections
+   flags: #575 overlap-in-series [Dismissed] item 77285 — eight separate runs each contribute a Vol. 01 with a curated range starting at #1
+   folders: [5] Marvel\_Captain America\18 Captain America v9 (2018) · [1] Marvel\_Captain America\18 Captain America v9 (2018)\Annuals and Specials · [1] Marvel\_Captain America\18 Captain America v9 (2018)\Deluxe Editions · [1] Marvel\_Captain America\18 Captain America v9 (2018)\Omnibus Edition
+   files:   [77283] Captain America Annual 001 (2018) (Digital) (Zone-Empire).cbr (35pp) | [77285] COL Captain America Vol. 01 - Winter in America (2019) (Digital) (Zone-Empire).cbr (153pp)
+            [77286] COL Captain America Vol. 02 - Captain of Nothing (2019) (Digital) (Zone-Empire).cbr (136pp)
+            [77287] COL Captain America Vol. 03 - The Legend of Steve (2020) (Digital) (Zone-Empire).cbr (154pp)
+            [77288] COL Captain America Vol. 04 - All Die Young (2021) (Digital) (EJGriffin-Empire).cbz (144pp)
+            [77289] COL Captain America Vol. 05 - All Die Young - Part Two (2022) (Digital) (EJGriffin-Empire).cbz (115pp)
+            [77964] COL Captain America by Ta-Nehisi Coates Book 01 (2020) (Digital) (Zone-Empire).cbr (288pp)
+            [77965] COL Captain America By Ta-Nehisi Coates Omnibus (2023) (hd-webrip) (JTR).cbz (689pp)
+   ours:    ladder 1; ComicInfo Series: "Captain America"x2, "Captain America by Ta-Nehisi Coates"x1, "Captain America by Ta-Nehisi Coates Vol. 1 Collection"x1; ComicInfo Publisher: "Marvel"x4
+   GCD says: [77286] gcd_reprint 2032753: s126578 Captain America (2018) (unnumbered) [1 story]  |  ⚠ stored GCD row is another book: our subtitle 'Captain of Nothing' vs GCD title 'Unter Anklage' — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+             [77287] gcd_reprint 2217702: s126578 Captain America (2018) (unnumbered) [23 stories]
+             [77964] gcd_reprint 2158247: s126578 Captain America (2018) #1-2, #6-8 [42 stories] · s124155 Free Comic Book Day 2018 (Avengers / Captain America) (2018) #1 [2 stories]
+   CV linked:      vol 112027 "Captain America" 2018 Marvel 30 issues; cached #1-30 (30); yearΔ 55; ratio 1/30 = 0.03; no judged range
+   CV per-file (v1): vol 2400 "Captain America" 1968 Marvel 355 on 5/8 files
+   CV candidates:  32149 "Marvel Spotlight Captain America" 2009 Marvel 1 issue 201646 s61 · 126037 "Captain America by Ta-Nehisi Coates" 2020 Marvel 2 s58 · 152563 "Captain America by Ta-Nehisi Coates Omnibus" 2023 Marvel 1 issue 1003982 s49 · 133731 "Captain America by Ta-Nehisi Coates: All Die Young" 2021 Marvel 1 issue 828294 s47 · 126038 "Captain America by Ta-Nehisi Coates: The Legend of Steve" 2020 Marvel 1 issue 743820 s46 · 138723 "Captain America By Ta-Nehisi Coates: All Die Young Part Two" 2021 Marvel 1 issue 883354 s45   (v1 search)
+   CV local rip:   (= linked) · 98973 "Captain America" 1954 Marvel 3 · 47367 "Captain America" 1981 Marvel UK/Panini UK 59 · 5776 "Captain America" 1996 Marvel 13 · 6206 "Captain America" 1998 Marvel 50 · 41992 "Captain America" 1999 Panini Verlag 13   (rip lookup)
+   GCD per-file:   series 140628 "Captain America" 2019-2019 Marvel [collected edition] 2 on 1/8 files · series 171913 "Captain America by Ta-Nehisi Coates" 2020-2021 Marvel [collected editions] 3 on 1/8 files · series 165402 "Captain America by Ta-Nehisi Coates" 2019-? Marvel [collected edition] 2 on 1/8 files; methods numx3
+   GCD dump:       1860 "Captain America" 1968-1996 Marvel [] 355 · 1037 "Captain America" 1954-1954 Marvel [] 3 · 23042 "Captain America" [en-gb] 1954-1954 L. Miller & Son [] 2 · 93897 "Captain America" [en-au] 1954-1954 Horwitz [] 2 · 149588 "Captain America" [en-ph] 1974-1975 Goodwill Bookstore [] 2 · 89039 "Captain America" [en-au] 1975-1976 Newton Comics [] 4   (dump lookup)
+   bridges:        gcd 140628 -> LOCG 125811 "Captain America" support 1 · gcd 171913 -> LOCG 137110 "Captain America by Ta-Nehisi Coates Vol. 1 HC" support 2 · gcd 165402 -> LOCG 137110 "Captain America by Ta-Nehisi Coates Vol. 1 HC" support 1
+
+== S3420 Captain America: Sentinel of Liberty  [tier C] · gap 24  keys: Captain America - Sentinel of Liberty  years 1998-2023  10 files / 2 collections
+   folders: [8] Marvel\_Captain America\20 Captain America - Sentinel of Liberty v2 (2022) · [1] Marvel\_Captain America\_Omnibus Editions · [1] Marvel\_Captain America\_Trades, Minis and One-shots\Captain America - Sentinel of Libery v1 (1998)
+   files:   Captain America - Sentinel of Liberty 001 (2022) (Digital) (Zone-Empire).cbr … Captain America - Sentinel of Liberty 011 (2023) (Digital) (Zone-Empire).cbr  (7 files, pp 21-32)
+            [77305] COL Captain America - Sentinel of Liberty Vol, 02 - The Invader (2023) (Digital-Empire).cbr (129pp)
+            [77348] COL Captain America - Sentinel of Liberty Book 01 - Revolution (2023) (Digital-Empire).cbr (169pp)
+            [77976] Captain America - Sentinel of Liberty (2018) (Digital-Empire).cbz (343pp)
+   ours:    ladder 1-6, 11; judged item 77348 #1-6 conf 0.95; judged item 77976 #1-12 conf 0.95; judged item 77305 #7-11 conf 0.95; ComicInfo Series: "Captain America: Sentinel Of Liberty"x1, "Captain America: Sentinel of Liberty"x1; ComicInfo Publisher: "Marvel"x2
+   GCD says: [77305] gcd_reprint 2559513: s185536 Captain America: Sentinel of Liberty (2022) #7-11 [22 stories] · s192945 Captain America and the Winter Soldier Special (2023) #1 [4 stories]
+             [77348] gcd_reprint 2494898: s185536 Captain America: Sentinel of Liberty (2022) #1-6 [26 stories] · s184244 Captain America (2022) #0 [8 stories]
+   CV linked:      vol 143632 "Captain America: Sentinel of Liberty" 2022 Marvel 13 issues; cached #1-13 (13); yearΔ 24; ratio 7/13 = 0.54; 3 of 3 judged fit
+   CV per-file (v1): vol 19381 "Captain America: Sentinel of Liberty" 1998 Marvel ? on 7/10 files
+   CV candidates:  (= linked) · 50816 "Captain America: Sentinel of Liberty Rough Cut" 1998 Marvel ? s88 · 40077 "Captain America: Sentinel of Liberty" 1979 Simon and Schuster ? s81 · 39489 "Captain America: Sentinel of Liberty" 2011 Marvel ? s50 · 148888 "Captain America: Sentinel of Liberty" 2023 Marvel ? s50 · 129192 "Marvel-Verse: Captain America" 2020 Marvel ? s1 · 120133 "Marvel Tales: Captain America" 2019 Marvel ? s0   (v1 search)
+   CV local rip:   (= linked) · 39489 "Captain America: Sentinel of Liberty" 2011 Marvel 1 issue 266800 · 40077 "Captain America: Sentinel of Liberty" 1979 Simon and Schuster 1 issue 269778 · 148888 "Captain America: Sentinel of Liberty" 2023 Marvel 2 · 50816 "Captain America: Sentinel of Liberty Rough Cut" 1998 Marvel 1 issue 347507 (via CV candidate name "Captain America: Sentinel of Liberty Rough Cut")   (rip lookup)
+   GCD per-file:   series 185536 "Captain America: Sentinel of Liberty" 2022-2023 Marvel [was ongoing series] 13 on 7/10 files; methods numx7
+   GCD dump:       (= per-file) · 13268 "Captain America: Sentinel of Liberty" 1998-1999 Marvel [] 12 · 73825 "Captain America: Sentinel of Liberty" 2011-2011 Marvel [] 1 · 25989 "Captain America Sentinel of Liberty" 1979-1979 Simon and Schuster [] 1 · 137581 "Captain America Sentinel of Liberty" 1979-1979 Simon and Schuster [] 1 · 196837 "Captain America: Sentinel of Liberty" 2022-? Marvel [] 2   (dump lookup)
+   bridges:        gcd 185536 -> LOCG 101512 "Captain America: Sentinel of Liberty" support 7
+
+== S21718 Winter Soldier  [tier B]   keys: Winter Soldier  years 2012-2012  4 files / 4 collections
+   flags: #535 label-ambiguous [Pending] item 77309 — the cv row on Vol. 01 is a German Megaband edition
+   folders: [4] Marvel\_Captain America\Bucky Barnes - The Winter Soldier\01 Winter Soldier (2012)
+   files:   [77309] COL Winter Soldier Vol. 01 - The Longest Winter (2012) (digital) (Minutemen-Slayer).cbr (141pp)
+            [77310] COL Winter Soldier Vol. 02 - Broken Arrow (2012) (digital) (Minutemen-Slayer).cbr (95pp)
+            [77311] COL Winter Soldier Vol. 03 - Black Widow Hunt (2013) (Digital) (Asgard-Empire).cbr (115pp)
+            [77312] COL Winter Soldier Vol. 04 - Electric Ghost (2013) (Digital) (Asgard-Empire).cbr (111pp)
+   ours:    judged item 77309 #1-5 conf 0.9; judged item 77310 #6-9 conf 0.9; judged item 77311 #10-14 conf 0.9
+   GCD says: [77309] gcd_reprint 1012609: s63067 Winter Soldier (2012) #1-5 [15 stories] · s61922 Fear Itself: Captain America (2012) #7.1 [3 stories]
+             [77310] gcd notes 1041887 (#2 of Winter Soldier): Winter Soldier (Marvel, 2012 series) #6-9  |  gcd_reprint 1041887: s63067 Winter Soldier (2012) #6-9 [9 stories]
+             [77311] gcd_reprint 1041892: s63067 Winter Soldier (2012) #10-14 [11 stories]
+             [77312] gcd_reprint 1133398: s63067 Winter Soldier (2012) #15-19 [16 stories]
+   CV linked:      vol 45518 "Winter Soldier" 2012 Marvel 19 issues; cached #1-19 (19); yearΔ 0; ratio 0/19; 3 of 3 judged fit; v1 per-file: same volume on 1/4 files
+   CV candidates:  (= linked) · 59297 "Winter Soldier: Broken Arrow" 2012 Marvel 1 issue 395045 s91 · 27158 "Captain America: Winter Soldier" 2006 Marvel 2 s91 · 59296 "Winter Soldier: The Longest Winter" 2012 Marvel 1 issue 395044 s90 · 18125 "Winter Soldier:  Winter Kills" 2007 Marvel 1 issue 106186 s87 · 115772 "Winter Soldier" 2018 Marvel 5 s65 · 125300 "Falcon & Winter Soldier" 2020 Marvel 5 s48   (v1 search)
+   CV local rip:   (= linked) · 115772 "Winter Soldier" 2018 Marvel 5 · 59297 "Winter Soldier: Broken Arrow" 2012 Marvel 1 issue 395045 (via CV candidate name "Winter Soldier: Broken Arrow") · 27158 "Captain America: Winter Soldier" 2006 Marvel 2 (via CV candidate name "Captain America: Winter Soldier")   (rip lookup)
+   GCD dump:       63067 "Winter Soldier" 2012-2013 Marvel [] 19 · 68861 "Winter Soldier" 2012-2013 Marvel [] 4 · 135109 "Winter Soldier" 2019-2019 Marvel [] 5 · 185994 "Captain America: Winter Soldier" 2014-2014 Marvel [] 1 (via CV candidate name "Captain America: Winter Soldier") · 32665 "Captain America: Winter Soldier" 2006-2006 Marvel [] 2 (via CV candidate name "Captain America: Winter Soldier") · 32664 "Captain America: Winter Soldier" 2005-2006 Marvel [] 2 (via CV candidate name "Captain America: Winter Soldier")   (dump lookup)
+
+== S3453 Captain America Epic Collection  [tier D]   keys: Captain America Epic Collection  years 2014-2024  9 files / 9 collections
+   folders: [9] Marvel\_Captain America\_Captain America Epic Collections
+   files:   [77325] COL Captain America Epic Collection Vol. 01 - Captain America Lives Again (2014) (Digital-Empire).cbr (487pp)
+            [77326] COL Captain America Epic Collection Vol. 02 - The Coming of... The Falcon (2016) (Digital) (Zone-Empire).cbr (479pp)
+            [77328] COL Captain America Epic Collection Vol. 04 - Hero or Hoax (2018) (Digital) (Zone-Empire).cbr (474pp)
+            [77329] COL Captain America Epic Collection Vol. 05 - The Secret Empire (2023) (Digital) (Shan-Empire).cbz (413pp)
+            [77334] COL Captain America Epic Collection Vol. 13 - Justice is Served (2017) (Digital) (Zone-Empire).cbr (512pp)
+            [77336] COL Captain America Epic Collection Vol. 15 - The Bloodstone Hunt (2018) (Digital) (Zone-Empire).cbr (495pp)
+            [77338] COL Captain America Epic Collection Vol. 17 - The Superia Stratagem (2019) (Digital) (Zone-Empire).cbr (468pp)
+            [77342] COL Captain America Epic Collection Vol. 21 - Twilight's Last Gleaming (2024) (Digital) (Shan-Empire).cbz (448pp)
+            [77343] COL Captain America Epic Collection Vol. 22 - Man Without A Country (2016) (Digital) (Shan-Empire).cbz (424pp)
+   ours:    judged item 77325 #58-96 conf 0.85; judged item 77326 #100-119 conf 0.85; judged item 77328 #139-159 conf 0.85; judged item 77329 #160-179 conf 0.9; judged item 77334 #318-332 conf 0.85; judged item 77336 #351-371 conf 0.85; judged item 77338 #387-397 conf 0.85; judged item 77342 #431-443 conf 0.85; judged item 77343 #444-454 conf 0.85; ComicInfo Series: "Captain America Epic Collection"x5; ComicInfo Publisher: "Marvel"x5
+   GCD says: [77325] gcd_reprint 1207730: s1442 Tales of Suspense (1959) #58-96 [40 stories] · s824 Strange Tales (1951) #114 [2 stories] · s1571 The Avengers (1963) #4 [1 story]
+             [77326] gcd_reprint 1624217: s1860 Captain America (1968) #100-119 [21 stories] · s1442 Tales of Suspense (1959) #97-99 [6 stories]
+             [77328] gcd_reprint 1824061: s1860 Captain America (1968) #139-159 [25 stories]
+             [77329] gcd notes 2549672 (#5 of Captain America Epic Collection): Captain America #160-179  |  gcd_reprint 2549672: s1860 Captain America (1968) #160-179 [41 stories] · s158698 FOOM Magazine (1973) #8 [8 stories]
+             [77334] gcd_reprint 1688933: s1860 Captain America (1968) #318-332 [30 stories] · s2657 Marvel Fanfare (1982) #29, #31-32 [5 stories] · s1570 The Amazing Spider-Man (1963) #276, #278 [3 stories] · s1986 Captain America Annual (1971) #8 [2 stories]
+             [77336] gcd_reprint 1801106: s1860 Captain America (1968) #351-371 [58 stories] · s69795 Marvel Age (1983) #78, #82, #84 [3 stories] · s2657 Marvel Fanfare (1982) #45, #52 [2 stories] · s49295 Captain America: The Bloodstone Hunt (1993) (unnumbered) [1 story]
+             [77338] gcd notes 1938904 (#17 of Captain America Epic Collection): Captain America (Marvel, 1968 series) #387-397; The Adventures of Captain America (Marvel, 1991 series) #1-4  |  gcd_reprint 1938904: s1860 Captain America (1968) #387-397 [12 stories] · s4222 Adventures of Captain America (1991) #1-4 [4 stories]
+             [77342] gcd_reprint 2606379: s1860 Captain America (1968) #431-443 [28 stories] · s1571 The Avengers (1963) #386-388 [10 stories] · s12130 Tales of Suspense (1995) #1 [8 stories] · s186077 Captain America Collectors' Preview (1995) #1 [7 stories]
+             [77343] gcd_reprint 1555176: s1860 Captain America (1968) #444-454 [22 stories] · s1571 The Avengers (1963) #396 [2 stories] · s1867 Iron Man (1968) #326 [2 stories] · s1749 Thor (1966) #496 [2 stories]
+   CV candidates:  138272 "Captain America Epic Collection: The Captain" 2021 Marvel 1 issue 879513 s73 · 165258 "Captain America Epic Collection: The Swine" 2025 Marvel 1 issue 1117731 s73 · 169807 "Captain America Epic Collection: American Nightmare" 2025 Marvel 1 issue 1150968 s73 · 125815 "Captain America Epic Collection: Blood and Glory" 2020 Marvel 1 issue 742421 s72 · 144786 "Captain America Epic Collection: Arena of Death" 2021 Marvel 1 issue 944348 s72 · 71799 "Captain America Epic Collection: Dawn's Early Light" 2014 Marvel 1 issue 445811 s72   (v1 search)
+   CV local rip:   138272 "Captain America Epic Collection: The Captain" 2021 Marvel 1 issue 879513 (via CV candidate name "Captain America Epic Collection: The Captain") · 165258 "Captain America Epic Collection: The Swine" 2025 Marvel 1 issue 1117731 (via CV candidate name "Captain America Epic Collection: The Swine") · 169807 "Captain America Epic Collection: American Nightmare" 2025 Marvel 1 issue 1150968 (via CV candidate name "Captain America Epic Collection: American Nightmare")   (rip lookup)
+   GCD dump:       79135 "Captain America Epic Collection" 2014-? Marvel [] 22   (dump lookup)
+
+== S3454 Captain America Epic Collection: Arena of Death  [tier B]   keys: Captain America Epic Collection: Arena Of Death  years 2021-2022  1 files / 1 collections
+   folders: [1] Marvel\_Captain America\_Captain America Epic Collections
+   files:   [77340] COL Captain America Epic Collection Vol. 19 - Arena of Death (2022) (Digital-Empire).cbr (483pp)
+   ours:    ComicInfo Series: "Captain America Epic Collection: Arena Of Death"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [77340] gcd notes 2372073 (#19 of Captain America Epic Collection): Captain America (Marvel, 1968 series) #411-419; Captain America Annual (Marvel, 1971 series) #11-12; Ghost Rider/Captain America: Fear (Marvel, 1992 series), U.S. Agent (Marvel, 1993 series) #1-4; Silver Sable and the Wild Pack (Marvel, 199  |  gcd_reprint 2372073: s1860 Captain America (1968) #411-419 [19 stories] · s1986 Captain America Annual (1971) #11-12 [19 stories] · s13759 U.S.Agent (1993) #1-4 [8 stories] · s69795 Marvel Age (1983) #123-124, #126 [3 stories]
+   CV linked:      vol 144786 "Captain America Epic Collection: Arena of Death" 2021 Marvel 1 issues issue 944348; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 57164 "The Death of Captain America Complete Collection" 2013 Marvel 1 issue 386075 s70 · 94262 "Captain America Epic Collection: The Coming of... The Falcon" 2016 Marvel 1 issue 550348 s68 · 138272 "Captain America Epic Collection: The Captain" 2021 Marvel 1 issue 879513 s63 · 165258 "Captain America Epic Collection: The Swine" 2025 Marvel 1 issue 1117731 s62 · 169807 "Captain America Epic Collection: American Nightmare" 2025 Marvel 1 issue 1150968 s62 · 125815 "Captain America Epic Collection: Blood and Glory" 2020 Marvel 1 issue 742421 s61   (v1 search)
+   CV local rip:   (= linked) · 94262 "Captain America Epic Collection: The Coming of... The Falcon" 2016 Marvel 1 issue 550348 (via CV candidate name "Captain America Epic Collection: The Coming of... The Falcon") · 57164 "The Death of Captain America Complete Collection" 2013 Marvel 1 issue 386075 (via CV candidate name "The Death of Captain America Complete Collection")   (rip lookup)
+
+== S3455 Captain America Epic Collection: Blood and Glory  [tier B]   keys: Captain America Epic Collection: Blood And Glory  years 2020-2020  1 files / 1 collections
+   folders: [1] Marvel\_Captain America\_Captain America Epic Collections
+   files:   [77339] COL Captain America Epic Collection Vol. 18 - Blood and Glory (2020) (Digital) (Zone-Empire).cbr (490pp)
+   ours:    ComicInfo Series: "Captain America Epic Collection: Blood And Glory"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [77339] gcd notes 2099392 (#18 of Captain America Epic Collection): Captain America (Marvel, 1968 series) #398-410; Blood and Glory [Punisher / Captain America] (Marvel, 1992 series) #1-3  |  gcd_reprint 2099392: s1860 Captain America (1968) #398-410 [14 stories] · s4437 Blood and Glory [Punisher / Captain America] (1992) #1-3 [3 stories]
+   CV linked:      vol 125815 "Captain America Epic Collection: Blood and Glory" 2020 Marvel 1 issues issue 742421; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 138272 "Captain America Epic Collection: The Captain" 2021 Marvel 1 issue 879513 s63 · 87986 "Blood & Glory" 2016 CrankLeft 2 s63 · 165258 "Captain America Epic Collection: The Swine" 2025 Marvel 1 issue 1117731 s62 · 169807 "Captain America Epic Collection: American Nightmare" 2025 Marvel 1 issue 1150968 s62 · 144786 "Captain America Epic Collection: Arena of Death" 2021 Marvel 1 issue 944348 s61 · 78439 "Captain America Epic Collection: Captain America Lives Again" 2014 Marvel 1 issue 471586 s60   (v1 search)
+   CV local rip:   (= linked) · 138272 "Captain America Epic Collection: The Captain" 2021 Marvel 1 issue 879513 (via CV candidate name "Captain America Epic Collection: The Captain") · 87986 "Blood & Glory" 2016 CrankLeft 2 (via CV candidate name "Blood & Glory")   (rip lookup)
+
+== S3456 Captain America Epic Collection: Bucky Reborn  [tier B]   keys: Captain America Epic Collection: Bucky Reborn  years 2017-2017  1 files / 1 collections
+   folders: [1] Marvel\_Captain America\_Captain America Epic Collections
+   files:   [77327] COL Captain America Epic Collection Vol. 03 - Bucky Reborn (2017) (Digital) (Kileko-Empire).cbz (401pp)
+   ours:    ComicInfo Series: "Captain America Epic Collection: Bucky Reborn"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [77327] gcd notes 1720098 (#3 of Captain America Epic Collection): Captain America (Marvel, 1968 series) #120-138  |  gcd_reprint 1720098: s1860 Captain America (1968) #120-138 [39 stories] · s1986 Captain America Annual (1971) #1 [1 story]
+   CV linked:      vol 102578 "Captain America Epic Collection: Bucky Reborn" 2017 Marvel 1 issues issue 606620; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 155773 "Captain America: Reborn" 2010 Marvel UK/Panini UK 1 issue 1038589 s85 · 26966 "Captain America: Reborn" 2010 Marvel 3 s73 · 138272 "Captain America Epic Collection: The Captain" 2021 Marvel 1 issue 879513 s68 · 165258 "Captain America Epic Collection: The Swine" 2025 Marvel 1 issue 1117731 s68 · 28088 "Heroes Reborn: Captain America" 2006 Marvel 1 issue 172442 s60 · 43013 "Captain America: Reborn MGC" 2011 Marvel 1 issue 293551 s60   (v1 search)
+   CV local rip:   (= linked) · 32188 "Captain America: Reborn" 2010 Marvel 1 issue 202003 (via CV candidate name "Captain America: Reborn") · 155773 "Captain America: Reborn" 2010 Marvel UK/Panini UK 1 issue 1038589 (via CV candidate name "Captain America: Reborn") · 26966 "Captain America: Reborn" 2009 Marvel 6 (via CV candidate name "Captain America: Reborn")   (rip lookup)
+   GCD dump:       73854 "Captain America: Reborn" 2010-2010 Marvel [] 1 (via CV candidate name "Captain America: Reborn") · 73855 "Captain America: Reborn" 2010-2010 Marvel [] 1 (via CV candidate name "Captain America: Reborn") · 37907 "Captain America: Reborn" 2009-2010 Marvel [] 6 (via CV candidate name "Captain America: Reborn")   (dump lookup)
+
+== S3457 Captain America Epic Collection: Dawn's Early Light  [tier B]   keys: Captain America Epic Collection: Dawn's Early Light  years 2014-2014  1 files / 1 collections
+   folders: [1] Marvel\_Captain America\_Captain America Epic Collections
+   files:   [77330] COL Captain America Epic Collection Vol. 09 - Dawn's Early Light (2014) (Digital) (Zone-Empire).cbr (488pp)
+   ours:    ComicInfo Series: "Captain America Epic Collection: Dawn's Early Light"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [77330] gcd_reprint 1180514: s1860 Captain America (1968) #247-266 [51 stories] · s1986 Captain America Annual (1971) #5 [3 stories] · s31804 Captain America [War and Remembrance] (1990) (unnumbered) [3 stories] · s1811 Not Brand Echh (1967) #11-12 [2 stories]
+   CV linked:      vol 71799 "Captain America Epic Collection: Dawn's Early Light" 2014 Marvel 1 issues issue 445811; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 138272 "Captain America Epic Collection: The Captain" 2021 Marvel 1 issue 879513 s63 · 165258 "Captain America Epic Collection: The Swine" 2025 Marvel 1 issue 1117731 s62 · 169807 "Captain America Epic Collection: American Nightmare" 2025 Marvel 1 issue 1150968 s62 · 125815 "Captain America Epic Collection: Blood and Glory" 2020 Marvel 1 issue 742421 s61 · 144786 "Captain America Epic Collection: Arena of Death" 2021 Marvel 1 issue 944348 s61 · 76582 "Captain America Epic Collection: Society of Serpents" 2014 Marvel 1 issue 463084 s61   (v1 search)
+   CV local rip:   (= linked) · 138272 "Captain America Epic Collection: The Captain" 2021 Marvel 1 issue 879513 (via CV candidate name "Captain America Epic Collection: The Captain") · 165258 "Captain America Epic Collection: The Swine" 2025 Marvel 1 issue 1117731 (via CV candidate name "Captain America Epic Collection: The Swine")   (rip lookup)
+
+== S3458 Captain America Epic Collection: Fighting Chance  [tier B]   keys: Captain America Epic Collection: Fighting Chance  years 2023-2023  1 files / 1 collections
+   folders: [1] Marvel\_Captain America\_Captain America Epic Collections
+   files:   [77341] COL Captain America Epic Collection Vol. 20 - Fighting Chance (2023) (Digital-Empire).cbr (491pp)
+   ours:    ComicInfo Series: "Captain America Epic Collection: Fighting Chance"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [77341] gcd_reprint 2527832: s1860 Captain America (1968) #420-430 [29 stories] · s1986 Captain America Annual (1971) #13 [7 stories] · s4466 Nomad (1992) #18-19 [5 stories] · s12779 Captain America / Nick Fury: Blood Truce (1995) (unnumbered) [3 stories]
+   CV linked:      vol 150186 "Captain America Epic Collection: Fighting Chance" 2023 Marvel 1 issues issue 988154; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 30382 "Captain America: Fighting Chance: Acceptance" 2009 Marvel 1 issue 187200 s69 · 30380 "Captain America: Fighting Chance: Denial" 2009 Marvel 1 issue 187198 s69 · 138272 "Captain America Epic Collection: The Captain" 2021 Marvel 1 issue 879513 s68 · 165258 "Captain America Epic Collection: The Swine" 2025 Marvel 1 issue 1117731 s68 · 125815 "Captain America Epic Collection: Blood and Glory" 2020 Marvel 1 issue 742421 s67 · 78439 "Captain America Epic Collection: Captain America Lives Again" 2014 Marvel 1 issue 471586 s66   (v1 search)
+   CV local rip:   (= linked) · 30380 "Captain America: Fighting Chance: Denial" 2009 Marvel 1 issue 187198 (via CV candidate name "Captain America: Fighting Chance: Denial") · 30382 "Captain America: Fighting Chance: Acceptance" 2009 Marvel 1 issue 187200 (via CV candidate name "Captain America: Fighting Chance: Acceptance")   (rip lookup)
+   GCD dump:       73792 "Captain America: Fighting Chance - Denial" 2009-2009 Marvel [] 1 (via CV candidate name "Captain America: Fighting Chance: Denial") · 73793 "Captain America: Fighting Chance - Acceptance" 2009-2009 Marvel [] 1 (via CV candidate name "Captain America: Fighting Chance: Acceptance")   (dump lookup)
+
+== S3459 Captain America Epic Collection: Monsters and Men  [tier B]   keys: Captain America Epic Collection: Monsters And Men  years 2020-2020  1 files / 1 collections
+   folders: [1] Marvel\_Captain America\_Captain America Epic Collections
+   files:   [77331] COL Captain America Epic Collection Vol. 10 - Monsters and Men (2020) (Digital) (Zone-Empire).cbr (506pp)
+   ours:    ComicInfo Series: "Captain America Epic Collection: Monsters And Men"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [77331] gcd notes 2156477 (#10 of Captain America Epic Collection): Captain America (Marvel, 1968 series) #267-285; Captain America Annual (Marvel, 1971 series) #6; The Defenders (Marvel, 1972 series) #106  |  gcd_reprint 2156477: s1860 Captain America (1968) #267-285 [20 stories] · s2048 The Defenders (1972) #106 [1 story] · s1986 Captain America Annual (1971) #6 [1 story]
+   CV linked:      vol 131207 "Captain America Epic Collection: Monsters and Men" 2020 Marvel 1 issues issue 810758; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 125815 "Captain America Epic Collection: Blood and Glory" 2020 Marvel 1 issue 742421 s70 · 138272 "Captain America Epic Collection: The Captain" 2021 Marvel 1 issue 879513 s63 · 165258 "Captain America Epic Collection: The Swine" 2025 Marvel 1 issue 1117731 s62 · 169807 "Captain America Epic Collection: American Nightmare" 2025 Marvel 1 issue 1150968 s62 · 144786 "Captain America Epic Collection: Arena of Death" 2021 Marvel 1 issue 944348 s61 · 71799 "Captain America Epic Collection: Dawn's Early Light" 2014 Marvel 1 issue 445811 s61   (v1 search)
+   CV local rip:   (= linked) · 125815 "Captain America Epic Collection: Blood and Glory" 2020 Marvel 1 issue 742421 (via CV candidate name "Captain America Epic Collection: Blood and Glory") · 138272 "Captain America Epic Collection: The Captain" 2021 Marvel 1 issue 879513 (via CV candidate name "Captain America Epic Collection: The Captain")   (rip lookup)
+
+== S3460 Captain America Epic Collection: Society of Serpents  [tier B]   keys: Captain America Epic Collection: Society of Serpents  years 2014-2014  1 files / 1 collections
+   folders: [1] Marvel\_Captain America\_Captain America Epic Collections
+   files:   [77333] COL Captain America Epic Collection Vol. 12 - Society of Serpents (2014) (Digital) (Zone-Empire).cbr (413pp)
+   ours:    ComicInfo Series: "Captain America Epic Collection: Society of Serpents"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [77333] gcd_reprint 1201114: s1860 Captain America (1968) #302-317 [20 stories] · s2657 Marvel Fanfare (1982) #18 [1 story]
+   CV linked:      vol 76582 "Captain America Epic Collection: Society of Serpents" 2014 Marvel 1 issues issue 463084; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 144786 "Captain America Epic Collection: Arena of Death" 2021 Marvel 1 issue 944348 s70 · 94262 "Captain America Epic Collection: The Coming of... The Falcon" 2016 Marvel 1 issue 550348 s68 · 138272 "Captain America Epic Collection: The Captain" 2021 Marvel 1 issue 879513 s63 · 165258 "Captain America Epic Collection: The Swine" 2025 Marvel 1 issue 1117731 s62 · 169807 "Captain America Epic Collection: American Nightmare" 2025 Marvel 1 issue 1150968 s62 · 125815 "Captain America Epic Collection: Blood and Glory" 2020 Marvel 1 issue 742421 s61   (v1 search)
+   CV local rip:   (= linked) · 94262 "Captain America Epic Collection: The Coming of... The Falcon" 2016 Marvel 1 issue 550348 (via CV candidate name "Captain America Epic Collection: The Coming of... The Falcon") · 144786 "Captain America Epic Collection: Arena of Death" 2021 Marvel 1 issue 944348 (via CV candidate name "Captain America Epic Collection: Arena of Death")   (rip lookup)
+
+== S3461 Captain America Epic Collection: Streets of Poison  [tier B]   keys: Captain America Epic Collection: Streets of Poison  years 2015-2015  1 files / 1 collections
+   folders: [1] Marvel\_Captain America\_Captain America Epic Collections
+   files:   [77337] COL Captain America Epic Collection Vol. 16 - Streets of Poison (2015) (Digital) (Kileko-Empire).cbz (493pp)
+   ours:    ComicInfo Series: "Captain America Epic Collection: Streets of Poison"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [77337] gcd notes 1309966 (#16 of Captain America Epic Collection): Captain America (Marvel, 1968 series) #372-386; Captain America Annual (Marvel, 1971 series) #9-10  |  gcd_reprint 1309966: s1860 Captain America (1968) #372-386 [48 stories] · s1986 Captain America Annual (1971) #9-10 [15 stories] · s69795 Marvel Age (1983) #95 [3 stories] · s69130 Marvel: The Year in Review (1989) #2 [2 stories]
+   CV linked:      vol 82670 "Captain America Epic Collection: Streets of Poison" 2015 Marvel 1 issues issue 492213; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 25340 "Captain America: Streets Of Poison" 1994 Marvel 1 issue 149558 s85 · 144786 "Captain America Epic Collection: Arena of Death" 2021 Marvel 1 issue 944348 s70 · 94262 "Captain America Epic Collection: The Coming of... The Falcon" 2016 Marvel 1 issue 550348 s68 · 138272 "Captain America Epic Collection: The Captain" 2021 Marvel 1 issue 879513 s63 · 165258 "Captain America Epic Collection: The Swine" 2025 Marvel 1 issue 1117731 s62 · 169807 "Captain America Epic Collection: American Nightmare" 2025 Marvel 1 issue 1150968 s62   (v1 search)
+   CV local rip:   (= linked) · 144786 "Captain America Epic Collection: Arena of Death" 2021 Marvel 1 issue 944348 (via CV candidate name "Captain America Epic Collection: Arena of Death") · 25340 "Captain America: Streets Of Poison" 1994 Marvel 1 issue 149558 (via CV candidate name "Captain America: Streets Of Poison")   (rip lookup)
+   GCD dump:       37657 "Captain America: Streets of Poison" 1994-1994 Marvel [] 1 (via CV candidate name "Captain America: Streets Of Poison")   (dump lookup)
+
+== S3462 Captain America Epic Collection: Sturm Und Drang  [tier B]   keys: Captain America Epic Collection: Sturm Und Drang  years 2022-2022  1 files / 1 collections
+   folders: [1] Marvel\_Captain America\_Captain America Epic Collections
+   files:   [77332] COL Captain America Epic Collection Vol. 11 - Sturm und Drang (2022) (Digital-Empire).cbr (514pp)
+   ours:    ComicInfo Series: "Captain America Epic Collection: Sturm Und Drang"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [77332] gcd notes 2424268 (#11 of Captain America Epic Collection): Captain America (Marvel, 1968 series) #286-301; Captain America Annual (Marvel, 1971 series) #7; Falcon (Marvel, 1983 series) #1-4  |  gcd_reprint 2424268: s1860 Captain America (1968) #286-301 [35 stories] · s2743 Falcon (1983) #1-4 [10 stories] · s2758 The Official Handbook of the Marvel Universe (1983) #2, #4, #9, #15 [6 stories] · s73788 Captain America: Death of the Red Skull (2012) (unnumbered) [2 stories]
+   CV linked:      vol 144781 "Captain America Epic Collection: Sturm Und Drang" 2022 Marvel 1 issues issue 944332; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 138272 "Captain America Epic Collection: The Captain" 2021 Marvel 1 issue 879513 s63 · 165258 "Captain America Epic Collection: The Swine" 2025 Marvel 1 issue 1117731 s62 · 169807 "Captain America Epic Collection: American Nightmare" 2025 Marvel 1 issue 1150968 s62 · 125815 "Captain America Epic Collection: Blood and Glory" 2020 Marvel 1 issue 742421 s61 · 144786 "Captain America Epic Collection: Arena of Death" 2021 Marvel 1 issue 944348 s61 · 71799 "Captain America Epic Collection: Dawn's Early Light" 2014 Marvel 1 issue 445811 s61   (v1 search)
+   CV local rip:   (= linked) · 138272 "Captain America Epic Collection: The Captain" 2021 Marvel 1 issue 879513 (via CV candidate name "Captain America Epic Collection: The Captain") · 165258 "Captain America Epic Collection: The Swine" 2025 Marvel 1 issue 1117731 (via CV candidate name "Captain America Epic Collection: The Swine")   (rip lookup)
+
+== S3463 Captain America Epic Collection: The Captain  [tier B]   keys: Captain America Epic Collection: The Captain  years 2021-2021  1 files / 1 collections
+   folders: [1] Marvel\_Captain America\_Captain America Epic Collections
+   files:   [77335] COL Captain America Epic Collection Vol. 14 - The Captain (2021) (Digital-Empire).cbr (499pp)
+   ours:    ComicInfo Series: "Captain America Epic Collection: The Captain"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [77335] gcd_reprint 2253646: s1860 Captain America (1968) #333-350 [55 stories] · s1867 Iron Man (1968) #228 [3 stories] · s69795 Marvel Age (1983) #57 [2 stories] · s2657 Marvel Fanfare (1982) #41 [1 story]
+   CV linked:      vol 138272 "Captain America Epic Collection: The Captain" 2021 Marvel 1 issues issue 879513; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 165258 "Captain America Epic Collection: The Swine" 2025 Marvel 1 issue 1117731 s79 · 78439 "Captain America Epic Collection: Captain America Lives Again" 2014 Marvel 1 issue 471586 s77 · 40166 "Captain America: The Legacy of Captain America" 2011 Marvel 1 issue 270097 s67 · 40203 "Captain America: The Trial of Captain America" 2011 Marvel 1 issue 270394 s67 · 108934 "Captain America: The Adventures of Captain America" 2018 Marvel 1 issue 661143 s67 · 120133 "Marvel Tales: Captain America" 2019 Marvel 1 issue 713510 s50   (v1 search)
+   CV local rip:   (= linked) · 165258 "Captain America Epic Collection: The Swine" 2025 Marvel 1 issue 1117731 (via CV candidate name "Captain America Epic Collection: The Swine") · 78439 "Captain America Epic Collection: Captain America Lives Again" 2014 Marvel 1 issue 471586 (via CV candidate name "Captain America Epic Collection: Captain America Lives Again")   (rip lookup)
+
+== S3516 Captain Britain  [tier C] · 2 number(s) x2+, 2 parsed key(s), ratio 1.08  keys: Captain Britain | Captain Britain (1976)  years 1976-1977  44 files / 2 collections
+   folders: [39] Marvel\_Captain Britain\Captain Britain v1 (1976) · [2] Marvel\Chamber of Chills (1972)\Captain Britain\Captain Britain v1 (1976) · [1] Marvel\_Captain Britain\Captain Britain v1 (1976)\Annuals and Specials · [1] Marvel\_Captain Britain\Captain Britain v1 (1976)\Omnibus Edition · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0075 The Sword is Drawn
+   files:   [98505] Captain Britain 001 (1976) (Digital) (Shadowcat-Empire).cbz (25pp) | [98506] Captain Britain 002 (1976) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [77441] Captain Britain Annual 1978 (c2c) (Mal32-Gambit).cbz (62pp) | [77443] Captain Britain 001 (1976) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [77444] Captain Britain 002 (1976) (Digital) (Shadowcat-Empire).cbz (25pp)
+            Captain Britain 003 original material only (1976) (digital) (Marika-Empire).cbz … Captain Britain 039 original material only (1977) (digital) (Marika-Empire).cbz  (37 files, pp 9-10)
+            [77980] COL Captain Britain Omnibus (2022) (Digital) (danke-Empire).cbz (1347pp) | [87217] COL 003 Captain Britain TPB.cbz (196pp)
+   ours:    ladder 1-39, 1978; 2 number(s) name more than one file: 1, 2; judged item 77980 #1-39 conf 0.93; ComicInfo Series: "Captain Britain"x37; ComicInfo Volume: "1976"x37; ComicInfo Count: "39"x37; ComicInfo Publisher: "Marvel Comics"x37; ComicInfo Web: "127490"x1, "127491"x1, "127492"x1, "127493"x1
+   GCD says: [77980] gcd_reprint 2386191: s30582 Hulk Comic (1979) #1-46 [93 stories] · s2371 Captain Britain (1976) #1-39 [85 stories] · s2407 Super Spider-Man (1976) #231-253 [40 stories] · s5309 X-Men Archives Featuring Captain Britain (1995) #1-7 [39 stories]
+             [87217] gcd_reprint 215589: s2680 The Daredevils (1982) #1-11 [11 stories] · s2753 The Mighty World of Marvel (1982) #7-13 [7 stories] · s5309 X-Men Archives Featuring Captain Britain (1995) #2-7 [6 stories] · s2601 Marvel Superheroes [Marvel Super-Heroes] (1979) #387-388 [2 stories]
+   CV linked:      vol 20687 "Captain Britain" 1976 Marvel UK/Panini UK 39 issues; cached #1-39 (39); yearΔ 0; ratio 42/39 = 1.08; 1 of 1 judged fit; v1 per-file: same volume on 42/44 files
+   CV local rip:   (= linked) · 19753 "Captain Britain" 1985 Marvel UK/Panini UK 14 · 20170 "Captain Britain" 1988 Marvel UK/Panini UK 1 issue 120320 · 22653 "Captain Britain" 2002 Marvel 1 issue 135888   (rip lookup)
+   GCD per-file:   series 2371 "Captain Britain" [en-gb] 1976-1977 Marvel UK [] 39 on 41/44 files; methods numx41
+   GCD dump:       (= per-file) · 169950 "Captain Britain" [fr] 1980-1980 Arédit-Artima [] 1 · 3069 "Captain Britain" [en-gb] 1985-1986 Marvel UK [] 14 · 15098 "Captain Britain" [en-gb] 1988-1988 Marvel UK [] 1 · 12098 "Captain Britain" 2002-2002 Marvel [] 1 · 185262 "Captain Britain" [en-gb] 2007-? Panini UK [] 6   (dump lookup)
+   bridges:        gcd 2371 -> LOCG 123800 "Captain Britain" support 41
+
+== S10467 Knights of Pendragon  [tier C] · 3 number(s) x2+, 2 parsed key(s), ratio 0.89  keys: Knights of Pendragon | Knights of Pendragon v1 (1990)  years 1990-1991  16 files / 0 collections
+   flags: #308 label-ambiguous [Pending] item 98924 — Knights Of Pendragon V2 013-015 are single issues, not collections
+   folders: [13] Marvel\_Captain Britain\Knights of Pendragon v1 (1990) · [3] Marvel\Death's Head\2. Death's Head (Minion)
+   files:   [98924] 095 - Knights Of Pendragon V2 013.cbr (20pp) | [98925] 096 - Knights Of Pendragon V2 014.cbr (21pp) | [98926] 097 - Knights Of Pendragon V2 015.cbr (22pp)
+            Knights of Pendragon 001 (1990) (digital) (Marika-Empire).cbz … Knights of Pendragon 018 (1991) (digital) (Marika-Empire).cbz  (13 files, pp 24-24)
+   ours:    ladder 1-6, 11, 13-18; 3 number(s) name more than one file: 13, 14, 15; ComicInfo Series: "Knights of Pendragon"x13; ComicInfo Volume: "1990"x13; ComicInfo Publisher: "Marvel UK/Panini UK"x13; ComicInfo Web: "93503"x1, "93504"x1, "93505"x1, "93506"x1
+   CV linked:      vol 4402 "Knights of Pendragon" 1990 Marvel UK/Panini UK 18 issues; cached #1-18 (18); yearΔ 0; ratio 16/18 = 0.89; no judged range; v1 per-file: same volume on 16/16 files
+   CV local rip:   (= linked) · 21071 "Knights of Pendragon" 1992 Marvel UK/Panini UK 15   (rip lookup)
+   GCD dump:       4030 "The Knights of Pendragon" [en-gb] 1990-1991 Marvel UK [] 18 · 12253 "Knights of Pendragon" [en-gb] 1992-1993 Marvel UK [] 11   (dump lookup)
+
+== S98108 Knights of Pendragon  [tier A]   keys: Knights of Pendragon v2 (1992)  years 1991-1991  8 files / 0 collections
+   folders: [8] Marvel\_Captain Britain\Knights of Pendragon v2 (1992)
+   files:   Knights of Pendragon 007 (1993) (digital) (Marika-Empire).cbz … Knights of Pendragon 015 (1993) (digital) (Marika-Empire).cbz  (8 files, pp 22-24)
+   ours:    ladder 7-10, 12-15; ComicInfo Series: "Knights of Pendragon"x8; ComicInfo Volume: "1992"x8; ComicInfo Publisher: "Marvel UK/Panini UK"x8; ComicInfo Web: "126368"x1, "126384"x1, "126386"x1, "126387"x1
+   CV linked:      vol 21071 "Knights of Pendragon" 1992 Marvel UK/Panini UK 15 issues; cached #1-15 (15); yearΔ 1; ratio 8/15 = 0.53; no judged range
+   CV per-file (v1): vol 4402 "Knights of Pendragon" 1990 Marvel UK/Panini UK 18 on 8/8 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 12253 "Knights of Pendragon" [en-gb] 1992-1993 Marvel UK [was ongoing series] 11 on 8/8 files; methods numx8
+   GCD dump:       (= per-file) · 4030 "The Knights of Pendragon" [en-gb] 1990-1991 Marvel UK [] 18   (dump lookup)
+   bridges:        gcd 12253 -> LOCG 117873 "Knights of Pendragon" support 24
+
+== S94574 Carnage  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Carnage v3 (2022)  years 2022-2023  4 files / 2 collections
+   flags: #576 overlap-in-series [Dismissed] item 77711 — three Carnage runs each contribute a Vol. 01 that gcd numbers from #1
+   folders: [4] Marvel\_Carnage\Carnage v3 (2022)
+   files:   [77709] Carnage 013 (2023) (Digital) (Zone-Empire).cbr (22pp) | [77710] Carnage 014 (2023) (Digital) (Zone-Empire).cbr (22pp)
+            [77711] COL Carnage Vol. 01 - In The Court Of Crimson (2022) (Digital) (Kileko-Empire).cbz (153pp) | [77712] COL Carnage Vol. 02 - Carnage In Hell (2023) (Digital-Empire).cbz (150pp)
+   ours:    ladder 13-14; judged item 77711 #1-5 conf 0.98; judged item 77712 #6-12 conf 0.98; ComicInfo Series: "Carnage"x4; ComicInfo Publisher: "Marvel"x4
+   CV linked:      vol 141919 "Carnage" 2022 Marvel 14 issues; cached #1-14 (14); yearΔ 0; ratio 2/14 = 0.14; 2 of 2 judged fit
+   CV per-file (v1): vol 36240 "Carnage" 2010 Marvel ? on 2/4 files
+   CV local rip:   (= linked) · 154836 "Carnage" 2024 Marvel 8 · 85938 "Carnage" 2015 Marvel 16 · 86432 "Carnage" 1987 Eternity 1 issue 507341   (rip lookup)
+   GCD per-file:   series 182878 "Carnage" 2022-2023 Marvel [was ongoing series] 14 on 2/4 files · series 220682 "Carnage" [fr] 2023-2023 Panini France [série continue terminée [was ongoing series]] 2 on 2/4 files; methods numx4
+   GCD dump:       (= per-file) · 193048 "Carnage" 2022-? Marvel [] 2 · 193965 "Carnage" [de] 2022-2023 Panini Deutschland [] 2 · 209927 "Carnage" [es-mx] 2023-? Editorial Panini México [] ? · 220889 "Carnage" [en-gb] 2023-? Panini UK [] 1   (dump lookup)
+   bridges:        gcd 182878 -> LOCG 154917 "Carnage" support 9 · gcd 220682 -> LOCG 101558 "Carnage" support 2
+
+== S19174 The Mutant Misadventures of Cloak and Dagger  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Cloak and Dagger v3 (1988) | Mutant Misadventures Of Cloak and Dagger | The Mutant Misadventures Of Cloak And Dagger | The Mutant Misadventures of Cloak and Dagger  years 1986-1991  21 files / 0 collections
+   folders: [19] Marvel\_Cloak and Dagger\Cloak and Dagger v3 (1988) · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance
+   files:   [77733] Cloak and Dagger 001 (1988) (Digital) (Shadowcat-Empire).cbz (23pp) | [77734] Cloak and Dagger 002 (1988) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [77735] Cloak and Dagger 003 (1989) (Digital) (Shadowcat-Empire).cbz (23pp) | [77736] Cloak and Dagger 004 (1989) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [77737] Cloak and Dagger 005 (1989) (Digital) (Shadowcat-Empire).cbz (25pp) | [77738] Cloak and Dagger 006 (1989) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [77739] Cloak and Dagger 007 (1989) (Digital) (Shadowcat-Empire).cbz (25pp) | [77740] Cloak and Dagger 008 (1989) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77741] Cloak and Dagger 009 (1989) (Digital) (Shadowcat-Empire).cbz (39pp) | [77742] Cloak and Dagger 010 (1990) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [77743] Cloak and Dagger 011 (1990) (Digital) (Shadowcat-Empire).cbz (23pp) | [77744] Cloak and Dagger 012 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [77745] Cloak and Dagger 013 (1990) (Digital) (Shadowcat-Empire).cbz (22pp) | [77746] Cloak and Dagger 014 (1990) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [77747] Cloak and Dagger 015 (1990) (Digital) (Shadowcat-Empire).cbz (23pp) | [77748] Cloak and Dagger 016 (1991) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [77749] Cloak and Dagger 017 (1991) (Digital) (Shadowcat-Empire).cbz (23pp) | [77750] Cloak and Dagger 018 (1991) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [77751] Cloak and Dagger 019 (1991) (Digital) (Shadowcat-Empire).cbz (39pp) | [87468] 003 The Mutant Misadventures Of Cloak And Dagger #08.cbr (27pp)
+            [87492] 027 The Mutant Misadventures Of Cloak And Dagger #09.cbr (40pp)
+   ours:    ladder 1-19; 2 number(s) name more than one file: 8, 9; ComicInfo Series: "Mutant Misadventures Of Cloak and Dagger"x8, "Cloak and Dagger"x5, "The Mutant Misadventures of Cloak and Dagger"x3; ComicInfo Volume: "1988"x16; ComicInfo Publisher: "Marvel"x16
+   CV linked:      vol 4060 "The Mutant Misadventures of Cloak and Dagger" 1988 Marvel 19 issues; cached #1-19 (19); yearΔ 2; ratio 21/19 = 1.11; no judged range
+   CV per-file (v1): vol 4060 "The Mutant Misadventures of Cloak and Dagger" 1988 Marvel 19 on 13/21 files · vol 3475 "Cloak and Dagger" 1985 Marvel 11 on 8/21 files
+   CV candidates:  (= linked) · 3219 "Cloak and Dagger" 1983 Marvel 4 s89 · 19430 "Cloak and Dagger" 1952 Ziff-Davis 1 issue 116401 s57 · 127483 "Cloak en Dagger" 1987 JuniorPress BV 12 s46 · 111450 "Cloak and Dagger" 2018 Marvel 6 s45 · 112372 "Cloak and Dagger" 2018 Marvel 3 s33 · 32266 "Cloak and Dagger" 2010 Marvel 1 issue 202483 s30   (v1 search)
+   CV local rip:   (= linked) · 3219 "Cloak and Dagger" 1983 Marvel 4 (via the parsed key without the filing suffix "Cloak and Dagger") · 32266 "Cloak and Dagger" 2010 Marvel 1 issue 202483 (via the parsed key without the filing suffix "Cloak and Dagger") · 111450 "Cloak and Dagger" 2018 Marvel 6 (via the parsed key without the filing suffix "Cloak and Dagger") · 112372 "Cloak and Dagger" 2018 Marvel 3 (via the parsed key without the filing suffix "Cloak and Dagger")   (rip lookup)
+   GCD per-file:   methods numx9 · round2-seriesx8 ⚠  (⚠ copies a folder neighbour's series — verify); series 3656 "The Mutant Misadventures of Cloak and Dagger" 1988-1990 Marvel [was ongoing series] 13 on 11/21 files · series 14574 "Cloak and Dagger" 1990-1991 Marvel [was ongoing series] 6 on 6/21 files
+   GCD dump:       (= per-file) · 3011 "Cloak and Dagger" 1985-1987 Marvel [] 11 (via the parsed key without the filing suffix "Cloak and Dagger") · 107819 "Cloak and Dagger" [en-au] 1984-1984 Federal [] 1 (via the parsed key without the filing suffix "Cloak and Dagger") · 2739 "Cloak and Dagger" 1983-1984 Marvel [] 4 (via the parsed key without the filing suffix "Cloak and Dagger") · 46026 "Cloak and Dagger" 2010-2010 Marvel [] 1 (via the parsed key without the filing suffix "Cloak and Dagger")   (dump lookup)
+   bridges:        gcd 3656 -> LOCG 112474 "The Mutant Misadventures of Cloak and Dagger" support 13
+
+== S96118 Conan the Barbarian  [tier C] · 219 files  keys: Conan the Barbarian v1 (1970)  years 1970-2023  219 files / 5 collections
+   flags: #701 provider-disagrees [Pending] item 78063 — the cv row on Epic Collection Vol. 05 is a Conan Omnibus book · #712 span-retracted [Pending] item 78063 — the audit withdrew the range the pass had written: the cv row that gave #116-149 is a Cona
+   folders: [213] Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970) · [5] Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970)\Trades & Epic Collections · [1] Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Conan the Barbarian v1 (1970)\Annuals and Specials
+   files:   [77753] Conan The Barbarian - Facsimile Edition 001 (2022) (Digital) (Shadowcat-Empire).cbz (36pp)
+            Conan The Barbarian 001 [Marvel Edition] (1970) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz … Conan The Barbarian 013 [Marvel Edition] (1972) [Marvel Edition] (Digital) [Marvel Edition] (Shadowcat-Empire).cbz  (13 files, pp 21-37)
+            [77818] Conan The Barbarian 052 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77819] Conan The Barbarian 053 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77820] Conan The Barbarian 054 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77821] Conan The Barbarian 055 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77822] Conan The Barbarian 056 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77823] Conan The Barbarian 057 [Marvel Edition] (1975) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77824] Conan The Barbarian 058 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77825] Conan The Barbarian 059 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77826] Conan The Barbarian 060 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77827] Conan The Barbarian 061 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77828] Conan The Barbarian 062 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77829] Conan The Barbarian 063 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77830] Conan The Barbarian 064 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77831] Conan The Barbarian 065 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77832] Conan The Barbarian 066 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77833] Conan The Barbarian 067 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77834] Conan The Barbarian 068 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77835] Conan The Barbarian 069 [Marvel Edition] (1976) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77836] Conan The Barbarian 070 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77837] Conan The Barbarian 071 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77838] Conan The Barbarian 072 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77839] Conan The Barbarian 073 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77840] Conan The Barbarian 074 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77841] Conan The Barbarian 075 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77842] Conan The Barbarian 076 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77843] Conan The Barbarian 077 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77844] Conan The Barbarian 078 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77845] Conan The Barbarian 079 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77846] Conan The Barbarian 080 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77847] Conan The Barbarian 081 [Marvel Edition] (1977) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77848] Conan The Barbarian 082 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77849] Conan The Barbarian 083 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77850] Conan The Barbarian 084 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77851] Conan The Barbarian 085 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [77852] Conan The Barbarian 086 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77853] Conan The Barbarian 087 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77854] Conan The Barbarian 088 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77855] Conan The Barbarian 089 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77856] Conan The Barbarian 090 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77857] Conan The Barbarian 091 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77858] Conan The Barbarian 092 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77859] Conan The Barbarian 093 [Marvel Edition] (1978) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77860] Conan The Barbarian 094 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77861] Conan The Barbarian 095 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77862] Conan The Barbarian 096 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77863] Conan The Barbarian 097 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77864] Conan The Barbarian 098 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77865] Conan The Barbarian 099 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77866] Conan The Barbarian 100 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (35pp)
+            [77867] Conan The Barbarian 101 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77868] Conan The Barbarian 102 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77869] Conan The Barbarian 103 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77870] Conan The Barbarian 104 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77871] Conan The Barbarian 105 [Marvel Edition] (1979) (Digital) (Shadowcat-Empire).cbz (18pp)
+            [77872] Conan The Barbarian 106 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77873] Conan The Barbarian 107 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77874] Conan The Barbarian 108 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77875] Conan The Barbarian 109 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77876] Conan The Barbarian 110 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77877] Conan The Barbarian 111 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77878] Conan The Barbarian 112 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77879] Conan The Barbarian 113 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77880] Conan The Barbarian 114 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [77881] Conan The Barbarian 115 [Marvel Edition] (1980) (Digital) (Shadowcat-Empire).cbz (37pp)
+            Conan The Barbarian 116 (1980) (Digital) (Shadowcat-Empire).cbz … Conan The Barbarian 170 (1986) (Digital) (Shadowcat-Empire).cbz  (41 files, pp 22-25)
+            [78017] Conan The Barbarian 171 1986) (Digital) (Shadowcat-Empire).cbz (24pp)
+            Conan The Barbarian 172 (1985) (Digital) (Shadowcat-Empire).cbz … Conan The Barbarian 213 (1989) (Digital) (Shadowcat-Empire).cbz  (42 files, pp 22-40)
+            Conan the Barbarian 014 (1972) (Digital) [Marvel Edition] (Shadowcat-Empire).cbz … Conan the Barbarian 021 (1972) (Digital) [Marvel Edition] (Shadowcat-Empire).cbz  (8 files, pp 14-23)
+            [77788] Conan the Barbarian 022 (1973) [Marvel Edition] (c2c) (Teach-Woodman).cbr (37pp)
+            Conan the Barbarian 023 (1973) (Digital) [Marvel Edition] (Shadowcat-Empire).cbz … Conan the Barbarian 051 (1975) (Digital) [Marvel Edition] (Shadowcat-Empire).cbz  (29 files, pp 11-22)
+            Conan the Barbarian 136 (1982) (Digital) (Shadowcat-Empire).cbz … Conan the Barbarian 149 (1983) (Digital) (Shadowcat-Empire).cbz  (14 files, pp 23-24)
+            [118017] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 01 - The Coming of Conan (2020) (Digital) (Bean-Empire).cbz (326pp)
+            [78061] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 02 - Hawks From The Sea (2021) (Digital) (Bean-Empire).cbz (267pp)
+            [118018] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 03 - The Curse of the Golden Skull (2021) (Digital) (Bean-Empire).cbz (324pp)
+            [78062] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 04 - Queen of the Black Coast (2021) (Digital-Empire).cbr (345pp)
+            [78063] COL Conan the Barbarian - The Original Marvel Years Epic Collection Vol. 05 - Of Once and Future Kings (2022) (Digital-Empire).cbr (348pp)
+   ours:    ladder 1-213; 1 number(s) name more than one file: 1; judged item 78061 #14-26 conf 0.85; judged item 118018 #27-42 conf 0.85; judged item 78062 #43-59 conf 0.85; ComicInfo Series: "Conan The Barbarian"x213, "Conan The Barbarian Epic Collection: The Original Marvel Years - Hawks From The Sea"x1, "Conan The Barbarian Epic Collection: The Original Marvel Years - Of Once And Future Kings"x1, "Conan The Barbarian Epic Collection: The Original Marvel Years - The Coming Of Conan"x1; ComicInfo Volume: "1970"x213; ComicInfo Publisher: "Marvel"x217
+   GCD says: [118017] gcd notes 2145960 (#1 of Conan the Barbarian: The Original Marvel Years Epic Collection): Conan the Barbarian (Marvel, 1970 series) #1-13; Chamber of Darkness (Marvel 1969 series) #4  |  gcd_reprint 2145960: s1939 Conan the Barbarian (1970) #1-13 [29 stories] · s4999 Conan Classic (1994) #1-11 [13 stories] · s25052 Conan (1978) (unnumbered) [6 stories] · s1907 Chamber of Darkness (1969) #4 [2 stories]
+             [78061] gcd notes 2212921 (#2 of Conan the Barbarian: The Original Marvel Years Epic Collection): Conan the Barbarian (Marvel, 1970 series) #14-26  |  gcd_reprint 2212921: s1939 Conan the Barbarian (1970) #14-26 [14 stories]
+             [118018] gcd_reprint 2248636: s1939 Conan the Barbarian (1970) #27-42 [17 stories] · s2114 Conan Annual (1973) #1 [1 story]
+             [78062] gcd_reprint 2282302: s1939 Conan the Barbarian (1970) #43-59 [35 stories] · s2180 Marvel Treasury Edition (1974) #4, #19 [4 stories] · s2187 The Savage Sword of Conan (1974) #1 [2 stories] · s2165 Giant-Size Conan (1974) #5 [1 story]
+             [78063] gcd notes 2383420 (#5 of Conan the Barbarian: The Original Marvel Years Epic Collection): Conan the Barbarian (Marvel, 1970 series) #60-71; Conan the Barbarian Annual (Marvel, 1973 series) #2-3; e Mists! (Peter Pan, 1976 series) #PR-31, and material from F.O.O.M. (Marvel, 1973 series) #14  |  gcd_reprint 2383420: s1939 Conan the Barbarian (1970) #60-71 [25 stories] · s2114 Conan Annual (1973) #2-3 [7 stories] · s16305 Conan the Barbarian: The Crawler in the Mists! [Book and Record Set] (1976) (unnumbered) [3 stories] · s2187 The Savage Sword of Conan (1974) #16, #40 [2 stories]
+   CV linked:      vol 2471 "Conan the Barbarian" 1970 Marvel 275 issues; cached #1-275 (275); yearΔ 0; ratio 214/275 = 0.78; 3 of 3 judged fit
+   CV per-file (v1): vol 2471 "Conan the Barbarian" 1970 Marvel 275 on 216/219 files · vol 152857 "Conan the Barbarian" 2023 Titan Comics 31 on 2/219 files · vol 116245 "Conan the Barbarian" 2019 Marvel 25 on 1/219 files
+   CV local rip:   (= linked) · 114988 "Conan the Barbarian" 1975 Newton Comics 11 · 115117 "Conan the Barbarian " 1977 Yaffa / Page 11 · 136319 "Conan the Barbarian" 1993 Moria 4 · 22947 "Conan the Barbarian" 1997 Marvel 3 · 115185 "Conan the Barbarian " 2003 Gotham Entertainment Group 1 issue 691727   (rip lookup)
+   GCD per-file:   methods numx150 · round2-seriesx64 ⚠  (⚠ copies a folder neighbour's series — verify); series 1939 "Conan the Barbarian" 1970-1994 Marvel [was ongoing series] 275 on 213/219 files · series 202916 "Conan: The Barbarian" [en-gb] 2023-? Titan [ongoing series] 30 on 1/219 files
+   GCD dump:       (= per-file) · 71496 "Conan the Barbarian" [en-au] 1975-1976 Newton Comics [] 12 · 71544 "Conan the Barbarian" [en-au] 1977-1981 Yaffa / Page [] 11 · 181731 "寇能勇士傳 [Conan the Barbarian]" [zh-tw] 1977-1977 ROC Comics Group [] 2 · 154863 "Κόναν ο Βάρβαρος [Conan the Barbarian]" [el-gr] 1978-1978 Kabanas Hellas [] 4 · 71500 "Conan the Barbarian" [en-au] 1984-1986 Federal [] 11   (dump lookup)
+   bridges:        gcd 1939 -> LOCG 114733 "Conan the Barbarian" support 213 · gcd 202916 -> LOCG 114733 "Conan the Barbarian" support 16
+
+== S94686 The Savage Sword of Conan  [tier C] · 128 files  keys: Savage Sword of Conan v1 (1974)  years 1974-2022  128 files / 26 collections
+   flags: #488 label-ambiguous [Pending] item 22521 — items 22520 and 22521 are duplicate copies of Vol. 09
+   folders: [101] Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Savage Sword of Conan v1 (1974) · [23] EC Comics & Others Archives (Dark Horse)\Conan (1970)\1974 - The Savage Sword of Conan (Marvel Reprints) · [3] Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Savage Sword of Conan v1 (1974)\Omnibus Editions · [1] Marvel\_Conan the Barbarian\Conan the Barbarian (1970 Marvel)\Savage Sword of Conan v1 (1974)\Annuals and Specials
+   files:   [22512] COL The Savage Sword of Conan Vol. 01 (2007) (digital) (Son of Ultron II-Empire).cbr (543pp)
+            [22513] COL The Savage Sword of Conan Vol. 02 (2008) (digital) (Son of Ultron II-Empire).cbr (546pp)
+            [22514] COL The Savage Sword of Conan Vol. 03 (2008) (digital) (Son of Ultron-Empire).cbr (528pp)
+            [22515] COL The Savage Sword of Conan Vol. 04 (2008) (digital) (Son of Ultron-Empire).cbr (542pp)
+            [22516] COL The Savage Sword of Conan Vol. 05 (2009) (digital) (Son of Ultron II-Empire).cbr (541pp)
+            [22517] COL The Savage Sword of Conan Vol. 06 (2009) (digital) (Son of Ultron-Empire).cbr (545pp)
+            [22518] COL The Savage Sword of Conan Vol. 07 (2010) (Digital) (Minutemen-Endriago).cbz (559pp)
+            [22519] COL The Savage Sword of Conan Vol. 08 (2010) (digital) (Son of Ultron-Empire).cbr (529pp)
+            [22520] COL The Savage Sword of Conan Vol. 09 (2011) (digital) (Minutemen-Endriago).cbz (518pp)
+            [22521] COL The Savage Sword of Conan Vol. 09 (2011) (digital) (Son of Ultron-Empire).cbr (520pp)
+            [22522] COL The Savage Sword of Conan Vol. 10 (2011) (digital) (Minutemen-Endriago).cbz (517pp)
+            [22523] COL The Savage Sword of Conan Vol. 11 (2012) (digital) (Son of Ultron-Empire).cbr (528pp)
+            [22524] COL The Savage Sword of Conan Vol. 12 (2012) (digital) (Minutemen-Endriago).cbz (523pp)
+            [22525] COL The Savage Sword of Conan Vol. 13 (2013) (Digital) (Minutemen-Endriago).cbz (509pp) | [22526] COL The Savage Sword of Conan Vol. 14 (2013) (Digital) (Bean-Empire).cbz (527pp)
+            [22527] COL The Savage Sword of Conan Vol. 15 (2013) (Digital) (Minutemen-Endriago).cbz (527pp) | [22528] COL The Savage Sword of Conan Vol. 16 (2014) (Digital) (Bean-Empire).cbz (526pp)
+            [22529] COL The Savage Sword of Conan Vol. 17 (2014) (Digital) (Bean-Empire).cbz (526pp) | [22530] COL The Savage Sword of Conan Vol. 18 (2015) (Digital) (Bean-Empire).cbz (560pp)
+            [22531] COL The Savage Sword of Conan Vol. 19 (2015) (Digital) (Bean-Empire).cbz (561pp) | [22532] COL The Savage Sword of Conan Vol. 20 (2015) (Digital) (Bean-Empire).cbz (570pp)
+            [22533] COL The Savage Sword of Conan Vol. 21 (2016) (Digital) (Bean-Empire).cbz (590pp) | [22534] COL The Savage Sword of Conan Vol. 22 (2016) (Digital) (Bean-Empire).cbz (506pp)
+            [79932] Savage Sword of Conan Special 001 (1975) (Digital) (Shadowcat-Empire).cbz (31pp)
+            [78090] COL Savage Sword of Conan - The Original Marvel Years Omnibus Book 04 (2021) (Digital) (Mephisto-Empire).cbr (942pp)
+            [78091] COL Savage Sword of Conan - The Original Marvel Years Omnibus Book v05 (2021) (Digital) (Mephisto-Empire).cbr (738pp)
+            [78092] COL Savage Sword of Conan - The Original Marvel Years Omnibus Book v06 (2022) (Digital) (Mephisto-Empire).cbr (957pp)
+            Savage Sword Of Conan 062 (1981) (Digital) (Shadowcat-Empire).cbz … Savage Sword Of Conan 067 (1981) (Digital) (Shadowcat-Empire).cbz  (6 files, pp 54-65)
+            [78160] Savage Sword Of Conan 068 1981) (Digital) (Shadowcat-Empire).cbz (53pp)
+            Savage Sword Of Conan 069 (1981) (Digital) (Shadowcat-Empire).cbz … Savage Sword Of Conan 101 (1984) (Digital) (Shadowcat-Empire).cbz  (33 files, pp 43-64)
+            [78093] Savage Sword of Conan 001 (1974) (Digital) (Shadowcat-Empire).cbz (40pp) | [78094] Savage Sword of Conan 002 (1974) (Digital) (Shadowcat-Empire).cbz (45pp)
+            [78095] Savage Sword of Conan 003 (1974) (Digital) (Shadowcat-Empire).cbz (47pp) | [78096] Savage Sword of Conan 004 (1975) (Digital) (Shadowcat-Empire).cbz (51pp)
+            [78097] Savage Sword of Conan 005 (1975) (Digital) (Shadowcat-Empire).cbz (65pp) | [78098] Savage Sword of Conan 006 (1975) (Digital) (Shadowcat-Empire).cbz (67pp)
+            [78099] Savage Sword of Conan 007 (1975) (Digital) (Shadowcat-Empire).cbz (67pp) | [78100] Savage Sword of Conan 008 (1975) (Digital) (Shadowcat-Empire).cbz (60pp)
+            [78101] Savage Sword of Conan 009 (1975) (Digital) (Shadowcat-Empire).cbz (26pp) | [78102] Savage Sword of Conan 010 (1976) (Digital) (Shadowcat-Empire).cbz (71pp)
+            [78103] Savage Sword of Conan 011 (1976) (Digital) (Shadowcat-Empire).cbz (61pp) | [78104] Savage Sword of Conan 012 (1976) (Digital) (Shadowcat-Empire).cbz (69pp)
+            [78105] Savage Sword of Conan 013 (1976) (c2c).cbr (74pp)
+            Savage Sword of Conan 014 (1976) (Digital) (Shadowcat-Empire).cbz … Savage Sword of Conan 061 (1981) (Digital) (Shadowcat-Empire).cbz  (48 files, pp 32-63)
+   ours:    ladder 1-101; 1 number(s) name more than one file: 1; ComicInfo Series: "Savage Sword Of Conan"x100, "Savage Sword Of Conan Special"x1; ComicInfo Volume: "1974"x88, "1975"x1; ComicInfo Publisher: "Marvel"x101
+   GCD says: [22512] gcd_reprint 404983: s2187 The Savage Sword of Conan (1974) #1-10 [45 stories] · s1995 Savage Tales (1971) #1-5 [12 stories] · s1939 Conan the Barbarian (1970) #12, #16 [2 stories]
+             [22513] gcd_reprint 524515: s2187 The Savage Sword of Conan (1974) #11-24 [63 stories]
+             [22514] gcd_reprint 535990: s2187 The Savage Sword of Conan (1974) #28 [1 story]
+             [22515] gcd notes 553239 (#4 of Savage Sword of Conan): Conan stories originally published in The Savage Sword of Conan (Marvel, 1974 series) #37-48; (February 1979 - January 1980). Marvel's original error in dating #37  |  gcd_reprint 553239: s2187 The Savage Sword of Conan (1974) #37-48 [37 stories]
+             [22516] gcd_reprint 640196: s2187 The Savage Sword of Conan (1974) #50 [1 story]
+             [22517] gcd notes 673255 (#6 of Savage Sword of Conan):  stories from 1981 originally published in The Savage Sword of Conan (Marvel, 1974 series) #61-71  |  gcd_reprint 673255: s2187 The Savage Sword of Conan (1974) #65, #67 [3 stories]
+             [22518] gcd notes 752689 (#7 of Savage Sword of Conan): Conan stories originally published in The Savage Sword of Conan (Marvel, 1974 series) #72-84  |  gcd_reprint 752689: s2187 The Savage Sword of Conan (1974) #81, #83 [5 stories]
+             [22519] gcd_reprint 802862: s2187 The Savage Sword of Conan (1974) #90 [1 story]
+             [22520] gcd_reprint 802863: s2187 The Savage Sword of Conan (1974) #102 [1 story]
+             [22521] gcd_reprint 802863: s2187 The Savage Sword of Conan (1974) #102 [1 story]
+             [22522] gcd notes 874956 (#10 of Savage Sword of Conan): Conan stories originally published in The Savage Sword of Conan (Marvel, 1974 series) #103-111  |  gcd_reprint 874956: s2187 The Savage Sword of Conan (1974) #107 [1 story]
+             [22523] gcd_reprint 943183: s2187 The Savage Sword of Conan (1974) #117 [1 story]
+             [22524] gcd notes 1032819 (#12 of Savage Sword of Conan):  stories from 1986 originally published in The Savage Sword of Conan (Marvel, 1974 series) #121-130  |  gcd_reprint 1032819: s2187 The Savage Sword of Conan (1974) #126 [1 story]
+             [22525] gcd_reprint 1098876: s2187 The Savage Sword of Conan (1974) #131-140 [30 stories]
+             [22526] gcd notes 1137708 (#14 of Savage Sword of Conan): Conan stories originally published in The Savage Sword of Conan (Marvel, 1974 series) #141-150  |  gcd_reprint 1137708: s2187 The Savage Sword of Conan (1974) #149 [1 story]
+             [22527] gcd notes 1170883 (#15 of Savage Sword of Conan): Conan stories originally published in The Savage Sword of Conan (Marvel, 1974 series) #151-160  |  gcd_reprint 1170883: s2187 The Savage Sword of Conan (1974) #151-160 [33 stories]
+             [22528] gcd notes 1207255 (#16 of Savage Sword of Conan): Conan stories originally published in The Savage Sword of Conan (Marvel, 1974 series) #161-170  |  gcd_reprint 1207255: s2187 The Savage Sword of Conan (1974) #168 [1 story]
+             [22529] gcd notes 1253451 (#17 of Savage Sword of Conan): Conan stories originally published in The Savage Sword of Conan (Marvel, 1974 series) #171-180  |  gcd_reprint 1253451: s2187 The Savage Sword of Conan (1974) #171-180 [36 stories]
+             [22530] gcd notes 1338485 (#18 of Savage Sword of Conan): Conan stories originally published in The Savage Sword of Conan (Marvel, 1974 series) #181-190  |  gcd_reprint 1338485: s2187 The Savage Sword of Conan (1974) #183 [1 story]
+             [22531] gcd notes 1376045 (#19 of Savage Sword of Conan): Conan stories originally published in The Savage Sword of Conan (Marvel, 1974 series) #191-201  |  gcd_reprint 1376045: s2187 The Savage Sword of Conan (1974) #200 [1 story]
+             … 6 more book(s) with GCD notes (`python gcdnotes.py --issue <id>`)
+   CV linked:      vol 2701 "The Savage Sword of Conan" 1974 Marvel 235 issues; cached #1-235 (235); yearΔ 0; ratio 102/235 = 0.43; no judged range
+   CV per-file (v1): vol 2701 "The Savage Sword of Conan" 1974 Marvel 235 on 88/128 files · vol 47760 "Savage Sword of Conan" 1977 Marvel UK/Panini UK 93 on 13/128 files
+   CV local rip:   (= linked) · 20391 "The Savage Sword of Conan" 1975 Marvel UK/Panini UK 18 · 21975 "The Savage Sword of Conan" 2007 Dark Horse Comics 22 · 120279 "The Savage Sword Of Conan " 2017 Hachette 4 · 117080 "The Savage Sword of Conan" 2019 Marvel 12   (rip lookup)
+   GCD per-file:   methods numx16 · round2-seriesx4 ⚠  (⚠ copies a folder neighbour's series — verify); series 79162 "Savage Sword of Conan" [en-gb] 1975-1975 Marvel UK [Was ongoing series] 18 on 16/128 files · series 28720 "Savage Sword of Conan" 2007-2016 Dark Horse [collected editions] 22 on 4/128 files
+   GCD dump:       (= per-file) · 2187 "The Savage Sword of Conan" 1974-1995 Marvel [] 235 · 44805 "The Savage Sword of Conan" [en-gb] 1977-1985 Marvel UK [] 93 · 140323 "Savage Sword of Conan" 2019-2020 Marvel [] 12 · 150308 "Savage Sword of Conan" [de] 2019-2020 Panini Deutschland [] 2   (dump lookup)
+   bridges:        gcd 79162 -> LOCG 100153 "The Savage Sword of Conan" support 17 · gcd 28720 -> LOCG 100153 "The Savage Sword of Conan" support 31 · gcd 28720 -> OL /works/OL21019529W "None" isbnSupport 34
+
+== S4093 Conan Chronicles Epic Collection: Horrors Beneath the Stones  [tier B]   keys: Conan Chronicles Epic Collection: Horrors Beneath The Stones  years 2020-2020  1 files / 1 collections
+   folders: [1] Marvel\_Conan the Barbarian\Conan the Barbarian (2004 Dark Horse Reprints)\Conan (Dark Horse) Epic Collections
+   files:   [78204] COL Conan Chronicles Epic Collection Vol. 05 - Horrors Beneath the Stones (2020) (Digital) (Bean-Empire).cbz (419pp)
+   ours:    ComicInfo Series: "Conan Chronicles Epic Collection: Horrors Beneath The Stones"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [78204] gcd notes 2164561 (#5 of Conan Chronicles Epic Collection): Conan: Road of Kings (Dark Horse, 2010 series) #1-12; Conan the Barbarian (Dark Horse, 2012 series) #1-6  |  gcd_reprint 2164561: s54155 Conan: Road of Kings (2010) (unnumbered) [13 stories] · s63224 Conan the Barbarian (2012) (unnumbered) [6 stories]
+   CV linked:      vol 130784 "Conan Chronicles Epic Collection: Horrors Beneath the Stones" 2020 Marvel 1 issues issue 805268; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 133357 "Conan Chronicles Epic Collection: The Song of Bêlit" 2021 Marvel 1 issue 825512 s64 · 118120 "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" 2019 Marvel 1 issue 705469 s64 · 116963 "Conan Chronicles Epic Collection: Out of the Darksome Hills" 2019 Marvel 1 issue 700134 s63 · 123866 "Conan Chronicles Epic Collection: The Battle of Shamla Pass" 2020 Marvel 1 issue 731987 s63 · 121733 "Conan Chronicles Epic Collection: Return To Cimmeria" 2019 Marvel 1 issue 721167 s57 · 144406 "Conan Chronicles Epic Collection: Shadows Over Kush" 2022 Marvel 1 issue 941968 s57   (v1 search)
+   CV local rip:   (= linked) · 118120 "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" 2019 Marvel 1 issue 705469 (via CV candidate name "Conan Chronicles Epic Collection: The Heart of Yag-Kosha") · 133357 "Conan Chronicles Epic Collection: The Song of Bêlit" 2021 Marvel 1 issue 825512 (via CV candidate name "Conan Chronicles Epic Collection: The Song of Bêlit")   (rip lookup)
+
+== S4094 Conan Chronicles Epic Collection: Out of the Darksome Hills  [tier B]   keys: Conan Chronicles Epic Collection: Out Of The Darksome Hills  years 2019-2019  1 files / 1 collections
+   folders: [1] Marvel\_Conan the Barbarian\Conan the Barbarian (2004 Dark Horse Reprints)\Conan (Dark Horse) Epic Collections
+   files:   [78200] COL Conan Chronicles Epic Collection Vol. 01 - Out of the Darksome Hills (2019) (Digital) (Bean-Empire).cbz (487pp)
+   ours:    ComicInfo Series: "Conan Chronicles Epic Collection: Out Of The Darksome Hills"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [78200] gcd notes 1918506 (#1 of Conan Chronicles Epic Collection): Conan: The Legend (Dark Horse, 2003 series) #0; Conan (Dark Horse, 2004 series) #1-19  |  gcd_reprint 1918506: s11511 Conan (2004) #1-19 [42 stories] · s87096 Conan (2005) #0-3 [8 stories] · s11510 Conan: The Legend (2003) #0 [4 stories] · s42717 Conan (2005) #1, #3 [2 stories]
+   CV linked:      vol 116963 "Conan Chronicles Epic Collection: Out of the Darksome Hills" 2019 Marvel 1 issues issue 700134; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 133357 "Conan Chronicles Epic Collection: The Song of Bêlit" 2021 Marvel 1 issue 825512 s68 · 118120 "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" 2019 Marvel 1 issue 705469 s68 · 123866 "Conan Chronicles Epic Collection: The Battle of Shamla Pass" 2020 Marvel 1 issue 731987 s67 · 130784 "Conan Chronicles Epic Collection: Horrors Beneath the Stones" 2020 Marvel 1 issue 805268 s60 · 25491 "The Chronicles of Conan" 2003 Dark Horse Comics 34 s55 · 129254 "Conan the Barbarian Epic Collection: The Original Marvel Years: The Coming of Conan" 2020 Marvel 1 issue 787812 s55   (v1 search)
+   CV local rip:   (= linked) · 118120 "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" 2019 Marvel 1 issue 705469 (via CV candidate name "Conan Chronicles Epic Collection: The Heart of Yag-Kosha") · 133357 "Conan Chronicles Epic Collection: The Song of Bêlit" 2021 Marvel 1 issue 825512 (via CV candidate name "Conan Chronicles Epic Collection: The Song of Bêlit")   (rip lookup)
+
+== S4095 Conan Chronicles Epic Collection: Return To Cimmeria  [tier B]   keys: Conan Chronicles Epic Collection: Return To Cimmeria  years 2019-2019  1 files / 1 collections
+   folders: [1] Marvel\_Conan the Barbarian\Conan the Barbarian (2004 Dark Horse Reprints)\Conan (Dark Horse) Epic Collections
+   files:   [78202] COL Conan Chronicles Epic Collection Vol. 03 - Return to Cimmeria (2019) (Digital) (Bean-Empire).cbz (494pp)
+   ours:    ComicInfo Series: "Conan Chronicles Epic Collection: Return To Cimmeria"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [78202] gcd notes 2019810 (#3 of Conan Chronicles Epic Collection): Conan (Dark Horse, 2004 series) #40-50; Conan the Cimmerian (Dark Horse, 2008 series) #0-7  |  gcd_reprint 2019810: s11511 Conan (2004) #40-50 [11 stories] · s31174 Conan the Cimmerian (2008) #0 [9 stories]
+   CV linked:      vol 121733 "Conan Chronicles Epic Collection: Return To Cimmeria" 2019 Marvel 1 issues issue 721167; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 33573 "Conan: Cimmeria" 2009 Dark Horse Comics 1 issue 217926 s70 · 144406 "Conan Chronicles Epic Collection: Shadows Over Kush" 2022 Marvel 1 issue 941968 s61 · 144977 "King Conan Chronicles Epic Collection: Phantoms and Phoenixes" 2022 Marvel 1 issue 946495 s60 · 130784 "Conan Chronicles Epic Collection: Horrors Beneath the Stones" 2020 Marvel 1 issue 805268 s60 · 133357 "Conan Chronicles Epic Collection: The Song of Bêlit" 2021 Marvel 1 issue 825512 s60 · 118120 "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" 2019 Marvel 1 issue 705469 s60   (v1 search)
+   CV local rip:   (= linked) · 144406 "Conan Chronicles Epic Collection: Shadows Over Kush" 2022 Marvel 1 issue 941968 (via CV candidate name "Conan Chronicles Epic Collection: Shadows Over Kush") · 33573 "Conan: Cimmeria" 2009 Dark Horse Comics 1 issue 217926 (via CV candidate name "Conan: Cimmeria")   (rip lookup)
+
+== S4097 Conan Chronicles Epic Collection: The Battle of Shamla Pass  [tier B]   keys: Conan Chronicles Epic Collection: The Battle Of Shamla Pass  years 2020-2020  1 files / 1 collections
+   folders: [1] Marvel\_Conan the Barbarian\Conan the Barbarian (2004 Dark Horse Reprints)\Conan (Dark Horse) Epic Collections
+   files:   [78203] COL Conan Chronicles Epic Collection Vol. 04 - The Battle of Shamla Pass (2020) (Digital) (Bean-Empire).cbz (449pp)
+   ours:    ComicInfo Series: "Conan Chronicles Epic Collection: The Battle Of Shamla Pass"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [78203] gcd notes 2059018 (#4 of Conan Chronicles Epic Collection): Conan the Cimmerian (Dark Horse, 2008 series) #8-25  |  gcd_reprint 2059018: s31174 Conan the Cimmerian (2008) (unnumbered) [19 stories]
+   CV linked:      vol 123866 "Conan Chronicles Epic Collection: The Battle of Shamla Pass" 2020 Marvel 1 issues issue 731987; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 133357 "Conan Chronicles Epic Collection: The Song of Bêlit" 2021 Marvel 1 issue 825512 s68 · 118120 "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" 2019 Marvel 1 issue 705469 s68 · 116963 "Conan Chronicles Epic Collection: Out of the Darksome Hills" 2019 Marvel 1 issue 700134 s67 · 130784 "Conan Chronicles Epic Collection: Horrors Beneath the Stones" 2020 Marvel 1 issue 805268 s60 · 25491 "The Chronicles of Conan" 2003 Dark Horse Comics 34 s55 · 121733 "Conan Chronicles Epic Collection: Return To Cimmeria" 2019 Marvel 1 issue 721167 s53   (v1 search)
+   CV local rip:   (= linked) · 118120 "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" 2019 Marvel 1 issue 705469 (via CV candidate name "Conan Chronicles Epic Collection: The Heart of Yag-Kosha") · 133357 "Conan Chronicles Epic Collection: The Song of Bêlit" 2021 Marvel 1 issue 825512 (via CV candidate name "Conan Chronicles Epic Collection: The Song of Bêlit")   (rip lookup)
+
+== S4098 Conan Chronicles Epic Collection: The Heart of Yag-Kosha  [tier B]   keys: Conan Chronicles Epic Collection: The Heart of Yag-Kosha  years 2019-2019  1 files / 1 collections
+   folders: [1] Marvel\_Conan the Barbarian\Conan the Barbarian (2004 Dark Horse Reprints)\Conan (Dark Horse) Epic Collections
+   files:   [78201] COL Conan Chronicles Epic Collection Vol. 02 - The Heart of Yag-Kosha (2019) (Digital) (Bean-Empire).cbz (495pp)
+   ours:    ComicInfo Series: "Conan Chronicles Epic Collection: The Heart of Yag-Kosha"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [78201] gcd notes 1944114 (#2 of Conan Chronicles Epic Collection): Conan (Dark Horse, 2004 series) #20-39  |  gcd_reprint 1944114: s11511 Conan (2004) #20-39 [21 stories]
+   CV linked:      vol 118120 "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" 2019 Marvel 1 issues issue 705469; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 133357 "Conan Chronicles Epic Collection: The Song of Bêlit" 2021 Marvel 1 issue 825512 s73 · 116963 "Conan Chronicles Epic Collection: Out of the Darksome Hills" 2019 Marvel 1 issue 700134 s72 · 123866 "Conan Chronicles Epic Collection: The Battle of Shamla Pass" 2020 Marvel 1 issue 731987 s72 · 130784 "Conan Chronicles Epic Collection: Horrors Beneath the Stones" 2020 Marvel 1 issue 805268 s64 · 104463 "Daredevil Epic Collection: Heart of Darkness" 2017 Marvel 1 issue 622936 s58 · 121733 "Conan Chronicles Epic Collection: Return To Cimmeria" 2019 Marvel 1 issue 721167 s57   (v1 search)
+   CV local rip:   (= linked) · 116963 "Conan Chronicles Epic Collection: Out of the Darksome Hills" 2019 Marvel 1 issue 700134 (via CV candidate name "Conan Chronicles Epic Collection: Out of the Darksome Hills") · 133357 "Conan Chronicles Epic Collection: The Song of Bêlit" 2021 Marvel 1 issue 825512 (via CV candidate name "Conan Chronicles Epic Collection: The Song of Bêlit")   (rip lookup)
+
+== S4099 Conan Chronicles Epic Collection: The Song of Bêlit  [tier B]   keys: Conan Chronicles Epic Collection: The Song Of Belit  years 2021-2021  1 files / 1 collections
+   folders: [1] Marvel\_Conan the Barbarian\Conan the Barbarian (2004 Dark Horse Reprints)\Conan (Dark Horse) Epic Collections
+   files:   [78205] COL Conan Chronicles Epic Collection Vol. 06 - The Song of Belit (2021) (Digital) (Bean-Empire).cbz (435pp)
+   ours:    ComicInfo Series: "Conan Chronicles Epic Collection: The Song Of Belit"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [78205] gcd notes 2195880 (#6 of Conan Chronicles Epic Collection): Conan the Barbarian (Dark Horse, 2012 series) #7-25  |  gcd_reprint 2195880: s63224 Conan the Barbarian (2012) (unnumbered) [20 stories]
+   CV linked:      vol 133357 "Conan Chronicles Epic Collection: The Song of Bêlit" 2021 Marvel 1 issues issue 825512; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 118120 "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" 2019 Marvel 1 issue 705469 s73 · 116963 "Conan Chronicles Epic Collection: Out of the Darksome Hills" 2019 Marvel 1 issue 700134 s72 · 123866 "Conan Chronicles Epic Collection: The Battle of Shamla Pass" 2020 Marvel 1 issue 731987 s72 · 130784 "Conan Chronicles Epic Collection: Horrors Beneath the Stones" 2020 Marvel 1 issue 805268 s64 · 121733 "Conan Chronicles Epic Collection: Return To Cimmeria" 2019 Marvel 1 issue 721167 s57 · 144406 "Conan Chronicles Epic Collection: Shadows Over Kush" 2022 Marvel 1 issue 941968 s57   (v1 search)
+   CV local rip:   (= linked) · 116963 "Conan Chronicles Epic Collection: Out of the Darksome Hills" 2019 Marvel 1 issue 700134 (via CV candidate name "Conan Chronicles Epic Collection: Out of the Darksome Hills") · 118120 "Conan Chronicles Epic Collection: The Heart of Yag-Kosha" 2019 Marvel 1 issue 705469 (via CV candidate name "Conan Chronicles Epic Collection: The Heart of Yag-Kosha")   (rip lookup)
+
+== S15102 The Savage Sword of Conan  [tier C] · gap 43  keys: Savage Sword Of Conan: The Cult Of Koga Thun | Savage Sword Of Conan: The Cult Of Koga Thun (Black And White) | Savage Sword of Conan v2 (2019)  years 1976-2020  4 files / 2 collections
+   flags: #663 overlap-in-series [Dismissed] item 78351 — the 2019 relaunch restarts at #1 over the reprint ladders
+   folders: [3] Marvel\_Conan the Barbarian\Conan the Barbarian (2019 Marvel)\Savage Sword of Conan v2 (2019) · [1] Marvel\_Conan the Barbarian\Conan the Barbarian (2019 Marvel)\Savage Sword of Conan v2 (2019)\Trades
+   files:   [78349] Savage Sword of Conan 012 (2020) (Digital) (Mephisto-Empire).cbr (28pp)
+            [78350] COL Savage Sword of Conan Vol. 01 - The Cult of Koga Thun (2019) (digital) (NeverAngel-Empire).cbr (128pp)
+            [78351] COL Savage Sword of Conan Vol. 02 - Conan The Gambler (2020) (Digital) (Mephisto-Empire).cbr (136pp)
+            [79939] Savage Sword of Conan - The Cult of Koga Thun (Black and White Edition) (2019) (Digital) (Bean-Empire).cbz (128pp)
+   ours:    ladder 12; judged item 79939 #1-5 conf 0.9; ComicInfo Series: "Savage Sword Of Conan: The Cult Of Koga Thun"x1, "Savage Sword Of Conan: The Cult Of Koga Thun (Black And White)"x1; ComicInfo Publisher: "Marvel"x2
+   GCD says: [78351] gcd_reprint 2270117: s140323 Savage Sword of Conan (2019) (unnumbered) [7 stories]
+   CV linked:      vol 117080 "The Savage Sword of Conan" 2019 Marvel 12 issues; cached #1-12 (12); yearΔ 43; ratio 1/12 = 0.08; 1 of 1 judged fit
+   CV per-file (v1): vol 2701 "The Savage Sword of Conan" 1974 Marvel 235 on 1/4 files · vol 120321 "Savage Sword of Conan: The Cult of Koga Thun" 2019 Marvel 1 issue 714445 on 1/4 files
+   CV candidates:  (= linked) · 120335 "Savage Sword of Conan: The Cult of Koga Thun Black & White Edition" 2019 Marvel 1 issue 714446 s101 · 133719 "Savage Sword of Conan" 2019 Panini Verlag 2 s78 · 47760 "Savage Sword of Conan" 1977 Marvel UK/Panini UK 93 s72 · 30357 "Savage Sword of Conan Special" 1975 Marvel 1 issue 187089 s64 · 21975 "The Savage Sword of Conan" 2007 Dark Horse Comics 22 s63 · 133866 "The Savage Sword of Conan the Barbarian" 1974 Yaffa / Page 4 s39   (v1 search)
+   CV local rip:   (= linked) · 20391 "The Savage Sword of Conan" 1975 Marvel UK/Panini UK 18 · 47760 "Savage Sword of Conan" 1977 Marvel UK/Panini UK 93 · 21975 "The Savage Sword of Conan" 2007 Dark Horse Comics 22 · 120279 "The Savage Sword Of Conan " 2017 Hachette 4   (rip lookup)
+   GCD per-file:   methods round2-seriesx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 28720 "Savage Sword of Conan" 2007-2016 Dark Horse [collected editions] 22 on 1/4 files
+   GCD dump:       (= per-file) · 44805 "The Savage Sword of Conan" [en-gb] 1977-1985 Marvel UK [] 93 · 79162 "Savage Sword of Conan" [en-gb] 1975-1975 Marvel UK [] 18 · 2187 "The Savage Sword of Conan" 1974-1995 Marvel [] 235 · 140323 "Savage Sword of Conan" 2019-2020 Marvel [] 12 · 150308 "Savage Sword of Conan" [de] 2019-2020 Panini Deutschland [] 2   (dump lookup)
+   bridges:        gcd 28720 -> LOCG 100153 "The Savage Sword of Conan" support 31 · gcd 28720 -> OL /works/OL21019529W "None" isbnSupport 34
