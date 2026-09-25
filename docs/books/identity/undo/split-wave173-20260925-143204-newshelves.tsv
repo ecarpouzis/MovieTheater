@@ -1,0 +1,28 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S104239	Magneto v1 (1996)	run={"cv": 7196, "gcd": 7756}	P-075.jsonl	new	pair=11209
+S104238	Magneto (2011)	run={"cv": 38622, "gcd": 55241}	P-075.jsonl	new	pair=11209
+S94816	Uncanny X-Force v2 (2013)	run=-	P-075.jsonl	new	pair=20686
+S22196	X-Force-Champions Annual	run=-	P-075.jsonl	new	pair=22193
+S22349	X-Men Epic Collection	run=-	P-075.jsonl	new	pair=22355
+S94683	Punisher v10 (2014)	run=-	P-075.jsonl	new	pair=34431
+S94684	Punisher v11 (2016)	run=-	P-075.jsonl	new	pair=34431
+S97095	Gambit v1 (1993)	run=-	P-075.jsonl	new	pair=64745
+S65353	Nightcrawler (2004)	run=-	P-075.jsonl	new	pair=65354
+S104243	Rogue (1995)	run={"cv": 7193, "gcd": 7751}	P-075.jsonl	new	pair=65548
+S22365	X-Men Forever 2	run=-	P-075.jsonl	new	pair=66372
+S101518	X-Men Unlimited v2 (2004)	run=-	P-075.jsonl	new	pair=66376
+S7350	Generation X Epic Collection: Back To School	run=-	P-075.jsonl	new	pair=7349
+S104236	Amazing X-Men (1995)	run={"cv": 5535, "gcd": 5273}	P-075.jsonl	new	pair=912
+S11209	moved out -> S104239 "Magneto v1 (1996)"; S104238 "Magneto (2011)"	run=-	P-075.jsonl	kept	pair=11209	moved_cv=7196,38622
+S20686	moved out -> S94816 "Uncanny X-Force v2 (2013)"	run=-	P-075.jsonl	kept	pair=20686
+S22193	moved out -> S22196 "X-Force-Champions Annual"	run=-	P-075.jsonl	kept	pair=22193
+S34431	moved out -> S94683 "Punisher v10 (2014)"; S94684 "Punisher v11 (2016)"	run=-	P-075.jsonl	kept	pair=34431
+S64745	moved out -> S97095 "Gambit v1 (1993)"	run=-	P-075.jsonl	kept	pair=64745
+S65354	moved out -> S65353 "Nightcrawler (2004)"	run=-	P-075.jsonl	kept	pair=65354
+S65548	moved out -> S104243 "Rogue (1995)"	run=-	P-075.jsonl	kept	pair=65548	moved_cv=7193
+S66372	moved out -> S22365 "X-Men Forever 2"	run=-	P-075.jsonl	kept	pair=66372
+S66376	moved out -> S101518 "X-Men Unlimited v2 (2004)"	run=-	P-075.jsonl	kept	pair=66376
+S912	moved out -> S104236 "Amazing X-Men (1995)"	run=-	P-075.jsonl	kept	pair=912	moved_cv=5535

@@ -1,0 +1,759 @@
+## Conventions for this batch (18 shown of 169 matched; 410 in LEDGER.md; 18 shelf/shelves: pub:marvel ×18 · folder:events ×10 · folder:vn-year ×9 · kind:collected-line ×8 · kind:trade-only ×8 · folder:sequel-subfolder ×5 · folder:variant-covers ×3 · folder:skottie ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (18 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-133] (18 shelf/shelves) pub:marvel sig:probe
+- GCD splits a compound word ComicVine joins: "X-Men: Clan Destine" (5570) is invisible to a "ClanDestine" probe,
+  and 32535 "ClanDestine vs. The X-Men" is the collected edition, not the mini.
+[L-136] (18 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-142] (18 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-388] (18 shelf/shelves) pub:marvel sig:split
+- R-134 (wave 128, lead ruling): RESIDUE vs co-equal — two or more whole trades of another run are a co-equal run (R +
+  split-needed) only when that run has NO shelf of its own; when its run or line already has a shelf, they are misfiled
+  books: S + `F split-needed | items -> join S<home>` (L-368; X-Factor 2024 S66336's two Peter David omnibuses -> S22172).
+  `#MARVEL CURRENT ONGOING TITLES`: Marika / MikeNY76 ComicInfo Web ids and "cvv<id>" Series strings name the stored CV
+  volume (1.0 evidence). From the Ashes "Variant Covers" folders hold the PREVIOUS run's finale covers (X-Men v6 #35 in
+  the v7 folder). "_X-Men Complete Chronology V2\NNNN <event>" annuals are event-chapter excerpts = partial rips. A
+  ripper's "Omnibus Book 01" in a run's folder can be that run's first omnibus, not the line's Vol. 1 (page count decides).
+  CV mints one count-1 volume per Venom by Ewing trade; GCD keeps two lines (183532 Vols 1-4, 208820 Vols 5-8).
+[L-389] (16 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-053 / R-135 (waves 129-130): a run's issues never JOIN a creator-trade-keyed shelf ("Venom by Al Ewing & Ram V",
+  S21029, four trades) — keep them and meet through the SHARED cv at the next revisit (S20988 cv=140084 + merge-with=21029).
+  Marvel's 2019-2020 "Star Wars #1 facsimile" is "Star Wars No 1 Facsimile Edition" (CV 123267 / GCD 153348): probe the
+  "No N" form. Star Wars Insider and Titan's "Best of" books have no CV / GCD record: R + provider-missing, never the 1977
+  comic's stamp. The Dark Horse Star Wars Omnibus umbrella number (Vol. 32 / 35) raises a false "stored GCD row is another
+  book" warning against the sub-line's #1 / #2 — page counts and ISBNs decide. An Epic Collection / omnibus line spanning
+  several minis keeps its own GCD-line key in a split.
+[L-127] (13 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-034] (10 shelf/shelves) folder:events pub:marvel sig:round2
+- `_X-Men Complete Chronology` / `_Marvel Major Event Chronology` folders re-file the same books a second and
+  third time — every ratio 2.00 there, never a second run. Crossover blocks get handed one member's series by
+  `round2-folder` (four Age of Apocalypse shelves → "X-Man", a 76-issue hull).
+[L-169] (10 shelf/shelves) folder:events pub:marvel sig:trade-link
+- `_Marvel Major Event Chronology (digital)` is one folder per tie-in holding that tie-in's collected edition: the
+  count-1-trade-as-stored-link artefact runs at 86 of 202 shelves there, the highest rate in any single folder.
+[L-298] (10 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (10 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-319] (10 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-343] (10 shelf/shelves) pub:dark-horse pub:idw pub:marvel sig:probe
+- More GCD name shapes (R-067): Dark Horse High Republic Adventures inserts "(Phase III)" and uses a comma form
+  ("…Adventures, The Nameless Terror"); IDW / Disney / Marvel Illustrated drop a leading "The" or "A Graphic Novel";
+  Marvel's Dark Tower strips punctuation ("Drawing of Three"). GCD indexes NO Marvel Infinity Comics (gcd=- stands).
+  An Image-style deluxe / "Complete" edition of ONE run merges into the run shelf (Department of Truth).
+[L-391] (10 shelf/shelves) pub:marvel sig:split
+- Lead rulings (waves 133-134): annuals on a monthly's shelf are residue ONLY while they have no home — when an annual
+  series has its own shelf (Avengers Annual S1612, CV 2350 / GCD 1807), they JOIN it (refines L-369). L-369's first-record
+  rule needs the chain's OPENING issues on the shelf: Rawhide Kid S14413 holds only the 1960+ era, so it stores the 1960
+  records. A TPB line spanning two runs keeps its own identity (Spider-Man 2099 GCD 86779 Vols 1-7 over the 2014 and 2015
+  runs; L-109/L-318). Star Brand: CV splits the retitle (3652 #1-10 / 51406 #11-19), GCD 3204 keeps #1-19 — store 3652
+  (L-369). Humorama Zip: CV numbers by cover month (#196403); "v14 07" = January 1968. Time Runs Out: GCD 89288 = the
+  2015 HC rows, 92245 = the TPB rows; CV 79464 follows the HC dates. Chronology `NNN Avengers` refiles of v1 issues are
+  second rips; later-volume files were folded onto the v1 shelf by bare title — split by year.
+[L-395] (10 shelf/shelves) pub:marvel sig:split sig:stamp
+- Waves 141-142: Marvel RELAUNCH shelves carry the legacy volume's CV issue ids BY NUMBER (Daredevil 1998 -> 2190,
+  Deadpool 2008 / 2012 -> 6000) — compare each file's linked issue number to its filename and correct with I lines.
+  Daredevil by Mark Waid Vol. 01 at 272pp is the HC line (CV 57482 / GCD 79153), not the TPB line (45530 / 64482). GCD
+  numbers Daredevil 1998's legacy issues "#22 (402)"; a file "115 (495)" is #115. GCD files Daredevil Annual #5 (1989) as
+  "#4 [5]". Creator lines reprinting ONE run give way to the run (Miller/Janson -> 1964 run, To Heaven Through Hell ->
+  2019 run) — the standing run-vs-line ruling supersedes L-115 / L-196's 0.9 practice. A dismissed conflated flag does not
+  stop the RESIDUE ruling: two whole books of another record with no shelf -> R + split-needed (Deadpool Classic
+  Companion). An R- file that restates a shelf a pending P- batch splits MUST repeat its F split-needed (L-370 halt,
+  S95620 in R-145).
+[L-399] (10 shelf/shelves) folder:events pub:marvel sig:split
+- Waves 149-150: Marvel chronology folders — "Ghost Rider v2 NNN" / "(1992)" follows CV's VOLUME ordinal (1990 = Vol. 2),
+  not our folder vN (1973 = v2); check the file's year against the shelf's run. An FF annual that looks recordless can
+  sit under its exact slash title ("Fantastic Four / Fantastic 4 '98", CV 138969 / GCD 7723). GCD splits FF Annual #32-33
+  into a separate 2010-2012 series (67080) while CV keeps them on 2129. A Marvel TPB volume continuing a run's trade
+  numbering after a relaunch that keeps legacy numbering ("Ghost Rider Vol. 05: Final Vengeance", GCD 191541 #5) joins the
+  run's shelf. L-389 blocks only a run's ISSUES from a creator-trade shelf: that creator line's own books join it
+  (Doctor Strange by Mark Waid Books 01-02 -> S5642). C lines on a containment-refused book stand (identity-level).
+[L-403] (10 shelf/shelves) pub:marvel sig:split
+- CORRECTS L-402's annual routing (waves 157-158): ASM Annual #40 goes to the 2014 run's shelf (CV 78715 = that run's
+  annual) and #41-42 to the 2015 run's (CV 95808) — not "the 1999 / 2014 runs" as L-402 says; the records decide.
+  Trade lines reprinting ONE run give way even when an older entry kept them (ASM Worldwide -> the 2015 run S103529,
+  L-031 superseded; Spencer -> the 2018 run S95051): their books are often also filed as "Dan Slott / Spencer Vol. NN"
+  rips on the run shelf. C/B-era "provider-missing" / "no record" claims need re-probing (Punisher 2009 = CV 25370 via
+  --year; Silver Surfer #14 facsimile under "No. 14"; Spider-Man J digests by GCD subtitle). GCD Moon Knight Omnibus
+  roll-ups exist after all — Book 01 = #1-20 (Book 02 starts at #21). Annual shelves missed by earlier readers:
+  Punisher Annual S34434 (cv 4064), Spectacular Spider-Man Annual S34224 (cv 3012).
+[L-060] (9 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+
++151 more matched entries not shown: L-116, L-296, L-371, L-393, L-029, L-031, L-076, L-109, L-115, L-117, L-132, L-196, L-295, L-306, L-307, L-308, L-327, L-328, L-329, L-332, L-378, L-387, L-390, L-392, L-396, L-397, L-398, L-400, L-401, L-402, L-405, L-406, L-407, L-408, L-409, L-410, L-175, L-281, L-291, L-124, L-191, L-272, L-289, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-309, L-314, L-064, L-085, L-101, L-113, L-242, L-345, L-310, L-016, L-032, L-114, L-130, L-174, L-193, L-290, L-028, L-036, L-172, L-173, L-324, L-404, L-013, L-014, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-128, L-157, L-159, L-163, L-177, L-181, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-336, L-341, L-346, L-347, L-027, L-265, L-274, L-288, L-293, L-379, L-065, L-097, L-099, L-123, L-194, L-252, L-262, L-330, L-352, L-354, L-104, L-119, L-121, L-129, L-170, L-187, L-297, L-303, L-331, L-356, L-386, L-007, L-098, L-100, L-217, L-276, L-277, L-278, L-280, L-283, L-284, L-304, L-344, L-074, L-083, L-250 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S11209 Magneto  [split]  34 files / 4 collections  decided in R-173 (R)
+   decided: R 11209 | two co-equal runs and a one-shot share this shelf: Magneto (Marvel 2014-2015, 21; CV 72111 / GCD 79393) - issues 001-021 (21-23pp) with Chronology second rips of #9-12 and its four trades (GCD 91092 rows); Magneto (Marvel 1996-1997, 4-issue miniseries; CV 7196 / GCD 7756) - "Magneto 01-04 (of 04) (1996)" 35-36pp, the whole mini, which no shelf stores (lookup --who-stores cv=7196: 0 Series rows; key "Magneto (1996)" owned by no Series); and the Magneto (2011) one-shot (CV 38622 / GCD 55241); a whole second mini is a co-equal run (L-368 / L-388), so C-057's "named not merged" S cannot stand
+   F 11209 split-needed | Magneto (2014, CV 72111 / GCD 79393) stays with its issues and four trades; items 88489 / 88490 / 88491 / 88492 -> new key "Magneto (1996)" (CV 7196 issues 106972 / 51334-51336, GCD 7756 rows 125713 / 68914-68916; "(of 04) (1996)" on every file); item 91707 "001 Magneto 001 (2011)" 25pp -> new key "Magneto (2011)" (one-shot, CV 38622 issue 259182 / GCD 55241 row 873617)
+   N 11209 C-057's F provider-missing is spent - GCD holds the four trades as series 91092 (rows 1444106 / 1444107 / 1444105 / 1473939)
+   nearby: S11210 "Magneto" 9f [title — S cv=152652 gcd=202911 (A-026 0.95)] keys: "Magneto (2023)" | "Magneto - Magneto Was Right"
+   nearby: S11212 "Magneto Rex" 5f [title+1 — S cv=20474 gcd=10770 (C-056 0.95)] keys: "Magneto Rex"
+   keys now: "Magneto (2014)" x29 · "Magneto (1996)" x4 · "Magneto" x1
+   groups (title x folder): 11
+   G1 "Magneto" in Marvel\_X-Men\Magneto\Magneto v3 (2014) — 4 file(s), 4 COL, pp 110-134; cv per-file 77330x1, 79619x1, 83584x1; gcd per-file 91092x4; key 'Magneto (2014)'
+      [84697] COL Magneto Vol. 01 - Infamous (2014) (digital) (Minutemen-Excelsior).cbz (131pp)
+         own record cv 77330 / gcd s91092 "Magneto" (issue 1444106) COLLECTS: gcd=79393 Magneto (2014) #1-6
+      [84698] COL Magneto Vol. 02 - Reversals (2015) (digital) (Minutemen-Excelsior).cbz (133pp)
+         own record cv 79619 / gcd s91092 "Magneto" (issue 1444107) COLLECTS: gcd=79393 Magneto (2014) #7-12
+      [84699] COL Magneto Vol. 03 - Shadow Games (2015) (digital) (Minutemen-Excelsior).cbz (110pp)
+         own record cv 83584 / gcd s91092 "Magneto" (issue 1444105) COLLECTS: gcd=79393 Magneto (2014) #13-17
+      [84700] COL Magneto Vol. 04 - Last Days (2015) (digital) (Minutemen-Excelsior).cbz (134pp)
+         own record cv 85298 / gcd s91092 "Magneto" (issue 1473939) COLLECTS: gcd=79393 Magneto (2014) #18-21
+   G2 "Magneto" in Marvel\_X-Men\_X-Men Complete Chronology V2\0301 Magneto — 4 file(s), numbers 1-4, pp 35-36; cv per-file 7196x4; gcd per-file 7756x4; key 'Magneto (1996)'
+      e.g. 001 Magneto 01 (of 04) (1996) (C2C) (Gird).cbr
+        88489 #1 1996 35pp · 88490 #2 1996 35pp · 88491 #3 1996 35pp · 88492 #4 1996 36pp
+   G3 "Magneto" in Marvel\_X-Men\_X-Men Complete Chronology V2\0909 First Class — 1 file(s), numbers 1, pp 25-25; cv per-file 38622x1; gcd per-file 55241x1; key 'Magneto'
+      [91707] 001 Magneto 001 (2011) (Digital) (Cypher-Empire).cbr (25pp)
+   G4 "Magneto" in Marvel\_X-Men\_X-Men Complete Chronology V2\1084 Infamous — 6 file(s), numbers 1-6, pp 22-23; cv per-file 72111x6; gcd per-file 79393x6; key 'Magneto (2014)'
+      e.g. 001 Magneto 001 (2014) (Digital) (Zone-Empire).cbr
+        92631 #1 2014 22pp · 92632 #2 2014 23pp · 92633 #3 2014 22pp · 92634 #4 2014 22pp · 92635 #5 2014 22pp · 92636 #6 2014 22pp
+   G5 "Magneto" in Marvel\_X-Men\_X-Men Complete Chronology V2\1105 Untitled — 2 file(s), numbers 7-8, pp 23-23; cv per-file 72111x2; gcd per-file 79393x2; key 'Magneto (2014)'
+      [92748] 001 Magneto 007 (2014) (Digital) (Zone-Empire).cbr (23pp)
+      [92749] 002 Magneto 008 (2014) (Digital) (Zone-Empire).cbr (23pp)
+   G6 "Magneto" in Marvel\_X-Men\_X-Men Complete Chronology V2\1106 March to AXIS — 2 file(s), numbers 9-10, pp 23-23; cv per-file 72111x2; gcd per-file 79393x2; key 'Magneto (2014)'
+      [92751] 002 Magneto 009 (2014) (Digital) (Zone-Empire).cbr (23pp)
+      [92753] 004 Magneto 010 (2014) (Digital) (Zone-Empire).cbr (23pp)
+   G7 "Magneto" in Marvel\_X-Men\_X-Men Complete Chronology V2\1113 Reversals — 2 file(s), numbers 11-12, pp 22-22; cv per-file 72111x2; gcd per-file 79393x2; key 'Magneto (2014)'
+      [92784] 001 Magneto 011 (2014) (Digital) (Zone-Empire).cbr (22pp)
+      [92785] 002 Magneto 012 (2014) (Digital) (Zone-Empire).cbr (22pp)
+   G8 "Magneto" in Marvel\_X-Men\_X-Men Complete Chronology V2\1128 Shadow Games — 5 file(s), numbers 13-17, pp 21-23; cv per-file 72111x5; gcd per-file 79393x5; key 'Magneto (2014)'
+      e.g. 001 Magneto 013 (2015) (Digital) (Zone-Empire).cbr
+        92878 #13 2015 21pp · 92879 #14 2015 22pp · 92880 #15 2015 23pp · 92881 #16 2015 23pp · 92882 #17 2015 23pp
+   G9 "Magneto" in Marvel\_X-Men\_X-Men Complete Chronology V2\1141 Magneto - Last Days — 4 file(s), numbers 18-21, pp 21-23; cv per-file 72111x4; gcd per-file 79393x4; key 'Magneto (2014)'
+      e.g. Magneto 018 (2015) (Digital) (Zone-Empire).cbr
+        92949 #18 2015 22pp · 92950 #19 2015 22pp · 92951 #20 2015 23pp · 92952 #21 2015 21pp
+   G10 "Magneto" in _Marvel Major Event Chronology (digital)\2014.10 - AXIS\00 Prelude - March to AXIS — 2 file(s), numbers 9-10, pp 23-23; cv per-file 72111x2; gcd per-file 79393x2; key 'Magneto (2014)'
+      [117814] 008 - Magneto 009 (2014) (Digital) (Zone-Empire).cbr (23pp)
+      [117815] 009 - Magneto 010 (2014) (Digital) (Zone-Empire).cbr (23pp)
+   G11 "Magneto" in _Marvel Major Event Chronology (digital)\2014.10 - AXIS\02 Tie-ins\Magneto — 2 file(s), numbers 11-12, pp 22-22; cv per-file 72111x2; gcd per-file 79393x2; key 'Magneto (2014)'
+      [118028] Magneto 011 (2014) (Digital) (Zone-Empire).cbr (22pp)
+      [118029] Magneto 012 (2014) (Digital) (Zone-Empire).cbr (22pp)
+
+== S20686 Uncanny X-Force  [split]  63 files / 7 collections  decided in R-173 (S)
+   decided: S 20686 cv=35835 gcd=52634 0.9 | Uncanny X-Force (Marvel 2010-2013, #1-35 incl. #5.1 / #19.1): CV 35835 (2010, 37 cached) and GCD 52634 (Marvel 2010-2013, 37; per-file on 38/63) agree on publisher, span and count; our ladder 1-35 and the run's own seven trades (GCD roll-ups s52634 #1-4 ... #30-35) are one run; 0.9 for the 2013 relaunch's 17 issues and its #1 variant cover, split below
+   F 20686 split-needed | items 92324-92328, 92404-92410, 92512-92514, 92613, 92615 ("Uncanny X-Force 001-017 (2013-2014)" 19-23pp, 17 files, per-file GCD 71285) and 52035 "Uncanny X-Force 001 (2013) (Skottie Young 'Baby' Variant)" 1pp are Uncanny X-Force (Marvel 2013-2014, 17; CV 56119 / GCD 71285), which S94816 stores with its three trades (lookup --who-stores cv=56119) -> join S94816 on its ParsedKey "Uncanny X-Force v2 (2013)" (L-368 / L-388)
+   N 20686 the packet's "stored GCD row is another book" warnings on 85771 / 85772 are false: GCD 217436 numbers the Final Execution sub-line Book 1 / 2 (#1 / #2), which are our Vol. 06 / 07 - the roll-ups s52634 #25-29 and #30-35 are those books'
+   named: S94816 Uncanny X-Force  3 files  keys: "Uncanny X-Force v2 (2013)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S1409 "Astonishing Tales" 46f [shares gcd=1938 (collected by item 85767) — S cv=2470 gcd=1938 (C-038 0.95)] keys: "Astonishing Tales" | "Astonishing Tales (1970)"
+   nearby: S21824 "Wolverine: The Road to Hell" 2f [shares gcd=52123 (collected by item 85766) — S cv=35279 gcd=52123 (C-057 0.95)] keys: "Wolverine - Road To Hell"
+   keys now: "Uncanny X-Force" x56 · "Uncanny X-Force v1 (2010)" x7
+   groups (title x folder): 13
+   G1 "Uncanny X-Force" in Marvel\_X-Men\X-Force\06 Uncanny X-Force v1 (2010) — 7 file(s), 7 COL, pp 103-152; cv per-file 53665x2, 40452x1, 41619x1; gcd per-file 63044x3, 217436x2, 226630x1; key 'Uncanny X-Force v1 (2010)'
+      [85766] COL Uncanny X-Force Vol. 01 - Apocalypse Solution (2011) (Digital) (F) (Zone-Empire).cbr (105pp)
+         own record cv 40452 / gcd s63044 "Uncanny X-Force" (issue 911481) COLLECTS: gcd=52634 Uncanny X-Force (2010) #1-4 · gcd=52123 Wolverine: The Road to Hell (2010) #1 · gcd=225975 Uncanny X-Force: The Apocalypse Solution (2011) (unnumbered) · gcd=106321 All-New Wolverine Saga (2010) (unnumbered)
+      [85767] COL Uncanny X-Force Vol. 02 - Deathlok Nation (2011) (Digital) (F) (Zone-Empire).cbr (103pp)
+         own record cv 41619 / gcd s226630 "Uncanny X-Force: Deathlok Nation" (issue 2762005) COLLECTS: gcd=52634 Uncanny X-Force (2010) #5, #5.1, #6-7 · gcd=1938 Astonishing Tales (1970) #25
+      [85768] COL Uncanny X-Force Vol. 03 - Dark Angel Saga Book 1 (2012) (Digital) (F) (Zone-Empire).cbr (138pp)
+         own record cv 44153 / gcd s63044 "Uncanny X-Force" (issue 944823) COLLECTS: gcd=52634 Uncanny X-Force (2010) #8-13 · gcd=220812 Uncanny X-Force: The Dark Angel Saga (2011) #1
+      [85769] COL Uncanny X-Force Vol. 04 - Dark Angel Saga Book 2 (2012) (Digital) (F) (Zone-Empire).cbr (136pp)
+         own record cv 46564 / gcd s63044 "Uncanny X-Force" (issue 944824) COLLECTS: gcd=52634 Uncanny X-Force (2010) #14-19 · gcd=220812 Uncanny X-Force: The Dark Angel Saga (2011) #2
+      [85770] COL Uncanny X-Force Vol. 05 - Otherworld (2012) (Digital) (F) (Zone-Empire).cbr (130pp)
+         own record cv 49802 / gcd s219165 "Uncanny X-Force: Otherworld" (issue 2690830) COLLECTS: gcd=52634 Uncanny X-Force (2010) #19.1, #20-24
+      [85771] COL Uncanny X-Force Vol. 06 - Final Execution Book 1 (2012) (Digital) (F) (Zone-Empire).cbr (105pp)
+         own record cv 53665 / gcd s217436 "Uncanny X-Force: Final Execution" (issue 2675179) COLLECTS: gcd=52634 Uncanny X-Force (2010) #25-29  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [85772] COL Uncanny X-Force Vol. 07 - Final Execution Book 2 (2013) (Digital) (F) (Zone-Empire).cbr (152pp)
+         own record cv 53665 / gcd s217436 "Uncanny X-Force: Final Execution" (issue 2682559) COLLECTS: gcd=52634 Uncanny X-Force (2010) #30-35 · gcd=52109 Deadpool (2010) #1000 · gcd=31066 Wolverine: Dangerous Games (2008) #1  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+   G2 "Uncanny X-Force" in Marvel\_X-Men\_X-Men Complete Chronology V2\0890 The Apocalypse Solution — 4 file(s), numbers 1-4, pp 23-32; cv per-file 35835x4; gcd per-file 52634x4; key 'Uncanny X-Force'
+      e.g. 001 Uncanny X-Force 001 (2010) (digital) (Minutemen-PhD).cbr
+        91601 #1 2010 32pp · 91602 #2 2011 25pp · 91603 #3 2011 25pp · 91604 #4 2011 23pp
+   G3 "Uncanny X-Force" in Marvel\_X-Men\_X-Men Complete Chronology V2\0898 Deathlok Nation — 4 file(s), numbers 5-7, pp 24-25; cv per-file 35835x4; gcd per-file 52634x4; key 'Uncanny X-Force'
+      [91655] 001 Uncanny X-Force 005 (2011) (digital) (Minutemen-PhD).cbr (24pp)
+      [91656] 002 Uncanny X-Force 005.1 (2011) (digital) (Minutemen-PhD).cbr (24pp)
+      [91657] 003 Uncanny X-Force 006 (2011) (digital) (Minutemen-PhD).cbr (25pp)
+      [91658] 004 Uncanny X-Force 007 (2011) (digital) (Minutemen-PhD).cbr (24pp)
+   G4 "Uncanny X-Force" in Marvel\_X-Men\_X-Men Complete Chronology V2\0921 Unintended Consequences — 3 file(s), numbers 8-10, pp 24-25; cv per-file 35835x3; gcd per-file 52634x3; key 'Uncanny X-Force'
+      [91760] 001 Uncanny X-Force 008 (2011) (digital) (Minutemen-PhD).cbr (24pp)
+      [91761] 002 Uncanny X-Force 009 (2011) (digital) (Minutemen-PhD).cbr (25pp)
+      [91762] 003 Uncanny X-Force 010 (2011) (digital) (Minutemen-PhD).cbr (25pp)
+   G5 "Uncanny X-Force" in Marvel\_X-Men\_X-Men Complete Chronology V2\0934 The Dark Angel Saga — 8 file(s), numbers 11-18, pp 21-24; cv per-file 35835x8; gcd per-file 52634x8; key 'Uncanny X-Force'
+      e.g. 001 Uncanny X-Force 011 (2011) (digital) (Minutemen-PhD).cbr
+        91843 #11 2011 23pp · 91844 #12 2011 23pp · 91845 #13 2011 24pp · 91846 #14 2011 22pp · 91847 #15 2011 21pp · 91848 #16 2011 22pp · 91849 #17 2012 21pp · 91850 #18 2012 24pp
+   G6 "Uncanny X-Force" in Marvel\_X-Men\_X-Men Complete Chronology V2\0965 Otherworld — 6 file(s), numbers 19-23, pp 20-24; cv per-file 35835x6; gcd per-file 52634x6; key 'Uncanny X-Force'
+      e.g. 001 Uncanny X-Force 019 (2012) (digital) (Minutemen-PhD).cbr
+        91979 #19 2012 24pp · 91981 #20 2012 20pp · 91982 #21 2012 23pp · 91983 #22 2012 23pp · 91984 #23 2012 23pp
+      [91980] 002 Uncanny X-Force 019.1 (2012) (digital) (Minutemen-PhD).cbr (23pp)
+   G7 "Uncanny X-Force" in Marvel\_X-Men\_X-Men Complete Chronology V2\1002 Final Execution — 12 file(s), numbers 24-35, pp 21-39; cv per-file 35835x12; gcd per-file 52634x12; key 'Uncanny X-Force'
+      e.g. 001 Uncanny X-Force 024 (2012) (digital) (Minutemen-PhD).cbr
+        92195 #24 2012 21pp · 92196 #25 2012 39pp · 92197 #26 2012 23pp · 92198 #27 2012 22pp · 92199 #28 2012 24pp · 92200 #29 2012 21pp · 92201 #30 2012 21pp · 92202 #31 2012 24pp
+        92203 #32 2012 22pp · 92204 #33 2013 23pp · 92205 #34 2013 25pp · 92206 #35 2013 21pp
+   G8 "Uncanny X-Force" in Marvel\_X-Men\_X-Men Complete Chronology V2\1027 Let It Bleed — 5 file(s), numbers 1-5, pp 20-23; cv per-file 35835x5; gcd per-file 71285x5; key 'Uncanny X-Force'
+      e.g. 001 Uncanny X-Force 001 (2013) (digital) (Minutemen-PhD).cbr
+        92324 #1 2013 20pp · 92325 #2 2013 23pp · 92326 #3 2013 22pp · 92327 #4 2013 23pp · 92328 #5 2013 23pp
+   G9 "Uncanny X-Force" in Marvel\_X-Men\_X-Men Complete Chronology V2\1042 And Then There Were Three — 7 file(s), numbers 6-12, pp 19-23; cv per-file 35835x7; gcd per-file 71285x7; key 'Uncanny X-Force'
+      e.g. 001 Uncanny X-Force 006 (2013) (digital) (Minutemen-PhD).cbr
+        92404 #6 2013 23pp · 92405 #7 2013 22pp · 92406 #8 2013 21pp · 92407 #9 2013 22pp · 92408 #10 2013 19pp · 92409 #11 2013 22pp · 92410 #12 2013 23pp
+   G10 "Uncanny X-Force" in Marvel\_X-Men\_X-Men Complete Chronology V2\1062 Untitled — 3 file(s), numbers 13-15, pp 23-23; cv per-file 35835x3; gcd per-file 71285x3; key 'Uncanny X-Force'
+      [92512] 001 Uncanny X-Force 013 (2013) (digital) (Minutemen-Spaztastic).cbr (23pp)
+      [92513] 002 Uncanny X-Force 014 (2014) (digital) (Minutemen-Spaztastic).cbr (23pp)
+      [92514] 003 Uncanny X-Force 015 (2014) (digital) (Minutemen-Spaztastic).cbr (23pp)
+   G11 "Uncanny X-Force" in Marvel\_X-Men\_X-Men Complete Chronology V2\1080 Vendetta — 2 file(s), numbers 16-17, pp 23-23; cv per-file 35835x2; gcd per-file 71285x2; key 'Uncanny X-Force'
+      [92613] 002 Uncanny X-Force 016 (2014) (digital) (Minutemen-Spaztastic).cbr (23pp)
+      [92615] 004 Uncanny X-Force 017 (2014) (digital) (Minutemen-Spaztastic).cbr (23pp)
+   G12 "Uncanny X-Force" in Marvel\__Skottie Young Covers — 1 file(s), numbers 1, pp 1-1; cv per-file 35835x1; gcd per-file 71285x1; key 'Uncanny X-Force'
+      [52035] Uncanny X-Force 001 (2013) (Skottie Young 'Baby' Variant) (Cover ONLY) (ScanDog+ArtNet).cbz (1pp)
+   G13 "Uncanny X-Force" in _Marvel Major Event Chronology (digital)\2011.07 - X-Men - Schism - Regenesis\03 Regenesis\Team Gold (Wolverine) — 1 file(s), numbers 19, pp 24-24; cv per-file 35835x1; gcd per-file 52634x1; key 'Uncanny X-Force'
+      [117652] Uncanny X-Force 019 (2012) (Digital) (Zone-Empire).cbr (24pp)
+
+== S22193 X-Force Annual  [split]  8 files / 0 collections  decided in R-173 (S)
+   decided: S 22193 cv=4822 gcd=4487 0.9 | X-Force Annual (Marvel 1992-1994, 3): CV 4822 (1992, 3 cached) and GCD 4487 (Marvel 1992-1994, 3) agree; our #1-3 (87806 57pp, 88008 52pp, 88142 53pp) fill the ladder; 0.9 for annuals of other records - X-Force '99 (85700 and 89017, two rips) and X-Force Annual 2009 (91337 and 117295, two rips), neither with a shelf - and the X-Force / Champions '98 annual split below
+   F 22193 split-needed | item 88913 "002 X-Force & Champions Annual 1998" 36pp (barcode 0759606047093) is X-Force / Champions '98 (CV 34173 / GCD 10859), which S22196 stores (lookup --who-stores cv=34173) -> join S22196 on its ParsedKey "X-Force-Champions Annual" (L-391)
+   F 22193 wrong-cv-link | the per-file CV 4604 (X-Force 1991) on 6/8 files is the monthly's volume stamped on its annuals; GCD's per-file 63091 / 47188 / 120044 picks are a trade line and foreign editions; the stored 4822 / 4487 are right
+   named: S22196 X-Force / Champions '98  1 files  keys: "X-Force-Champions Annual"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S22176 "X-Force" 191f [shares cv=4604 — S cv=4604 gcd=4253 (C-056 0.95)] keys: "Counter X: X-Force - Rage War (1991)" | "X-Force" | "X-Force (1991)" | "X-Force - Flashback -1" (+2 more: lookup.py --shelf 22176)
+   nearby: S22183 "X-Force / Cable '96" 2f [title+1 — S cv=20138 (B-061 0.9)] keys: "X-Force / Cable Annual '96" | "X-Force and Cable Annual"
+   nearby: S22179 "X-Force / Cable '95" 1f [title+1 — S cv=20136 (R-173 0.9)] keys: "X-Force - Cable Annual"
+   keys now: "X-Force Annual" x7 · "X-Force and Champions Annual" x1
+   groups (title x folder): 8
+   G1 "X-Force '99 Annual" in Marvel\_X-Men\X-Force\01 X-Force v1 (1991)\Annuals and Specials — 1 file(s), numbers 1, pp 41-41; cv per-file 22686x1; gcd per-file 29881x1; key 'X-Force Annual'
+      [85700] X-Force '99 Annual 001 (1999) (digital) (Marika-Empire).cbz (41pp)
+   G2 "X-Force Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0162 Shattershot - The Fall of Mojo — 1 file(s), numbers 1, pp 57-57; cv per-file 4604x1; key 'X-Force Annual'
+      [87806] 004 X-Force Annual #01.cbr (57pp)
+   G3 "X-Force Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0202 Fatal Attractions — 1 file(s), numbers 2, pp 52-52; cv per-file 4604x1; gcd per-file 47188x1; key 'X-Force Annual'
+      [88008] 004 X-Force Annual 002 (1993) (Digital) (AnHeroGold-Empire).cbz (52pp)
+   G4 "X-Force Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0236 Untitled — 1 file(s), numbers 3, pp 53-53; cv per-file 40737x1; gcd per-file 120044x1; key 'X-Force Annual'
+      [88142] 004 X-Force Annual 003 (1994) (Digital) (Shadowcat-Empire).cbz (53pp)
+   G5 "X-Force & Champions Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0387 Unnamed — 1 file(s), numbers 1998, pp 36-36; cv per-file 34173x1; gcd per-file 10859x1; key 'X-Force and Champions Annual'
+      [88913] 002 X-Force & Champions Annual 1998.cbz (36pp)
+   G6 "X-Force Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0410 Artifcats and Apocrypha — 1 file(s), numbers 1999, pp 40-40; cv per-file 22686x1; gcd per-file 29881x1; key 'X-Force Annual'
+      [89017] 003 X-Force Annual 1999.cbr (40pp)
+   G7 "X-Force Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0845 X-Necrosha — 1 file(s), numbers 1, pp 37-37; cv per-file 30173x1; gcd per-file 39998x1; key 'X-Force Annual'
+      [91337] 014 X-Force Annual 001 (2009) (Digital) (Zone-Empire).cbr (37pp)
+   G8 "X-Force Annual" in _Marvel Major Event Chronology (digital)\2009.12 - X-Men - Necrosha — 1 file(s), numbers 1, pp 37-37; cv per-file 30173x1; gcd per-file 39998x1; key 'X-Force Annual'
+      [117295] 06 X-Force Annual 001 (2009) (Digital) (Zone-Empire).cbr (37pp)
+
+== S22355 X-Men Epic Collection: It’s Always Darkest Before The Dawn  [split]  1 files / 1 collections  decided in R-173 (S)
+   decided: S 22355 cv=- gcd=82692 0.9 | volume 04 "It's Always Darkest Before the Dawn" of the X-Men Epic Collection LINE: GCD 82692 #4 row 1997340 (516pp, ISBN 978-1-302-91603-9, roll-up X-Men 1963 #67-76 + Amazing Adventures #11-17) is our 513pp book; CV 120262 is only its count-1 book volume (issue 713945, on the I line)
+   F 22355 wrong-cv-link | the stored CV 120262 "X-Men Epic Collection: It's Always Darkest Before the Dawn" is the Vol. 04 book's own count-1 volume, not the line; it belongs on the I line
+   F 22355 split-needed | item 86435 -> join S22349 on its ParsedKey "X-Men Epic Collection" - S22349's S line is the same GCD 82692 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-409); C-054's merge-with=22356 is obsolete
+   N 86435 Vol. 04 also reprints scattered guest issues (Incredible Hulk 1968 #150 / #161 / #172 / #180-182, Captain America 1968 #172-175, X-Men Annual 1970 #1-2 and others) per GCD row 1997340 - not stated as C ranges across their gaps
+   named: S22349 X-Men Epic Collection  11 files  keys: "X-Men Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S95955 "Captain America" 475f [shares gcd=1860 (collected by item 86435) — S cv=2400 gcd=1860 (C-042 0.95)] keys: "Captain America" | "Captain America v1 (1968)"
+   nearby: S18826 "The Incredible Hulk" 409f [shares gcd=1866 (collected by item 86435) — S cv=2406 gcd=1866 (R-153 0.9)] keys: "The Incredible Hulk" | "The Incredible Hulk v1 (1968)"
+   nearby: S103744 "X-Men by Lee & Kirby Omnibus (2009)" 198f [shares gcd=1576 (collected by item 86435) — S cv=2133 gcd=1576 (R-054 0.95)] keys: "X-Men by Lee & Kirby Omnibus (2009)"
+   nearby: S95044 "Amazing Adventures" 45f [shares gcd=1937 (collected by item 86435) — S cv=2469 gcd=1937 (R-041 0.95)] keys: "Amazing Adventures v2 (1970)"
+   nearby: S22356 "X-Men Epic Collection: Legacies" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: Legacies"
+   nearby: S22357 "X-Men Epic Collection: Proteus" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: Proteus"
+   nearby: S22359 "X-Men Epic Collection: The Fate Of The Phoenix" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Fate Of The Phoenix"
+   nearby: S22360 "X-Men Epic Collection: The Gift" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Gift"
+   nearby: S22361 "X-Men Epic Collection: The Sentinels Live" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Sentinels Live"
+   nearby: S22362 "X-Men Epic Collection: The X-Cutioner's Song" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The X-Cutioner's Song"
+   keys now: "X-Men Epic Collection: It’s Always Darkest Before The Dawn" x1
+   groups (title x folder): 1
+   G1 "X-Men Epic Collection" in Marvel\_X-Men\_X-Book Epic Collections\X-Men Epic Collection — 1 file(s), 1 COL, pp 513-513; cv per-file 120262x1; gcd per-file 82692x1; key 'X-Men Epic Collection: It’s Always Darkest Before The Dawn'
+      [86435] COL X-Men Epic Collection Vol. 04 - It’s Always Darkest Before The Dawn (2019) (Digital) (Kileko-Empire).cbz (513pp)
+         own record cv 120262 / gcd s82692 "X-Men Epic Collection" (issue 1997340) COLLECTS: gcd=1576 The X-Men (1963) #67-76 · gcd=1937 Amazing Adventures (1970) #11-17 · gcd=1866 The Incredible Hulk (1968) #150, #161, #172, #180-182 · gcd=1860 Captain America (1968) #172-175
+
+== S22356 X-Men Epic Collection: Legacies  [split]  1 files / 1 collections  decided in R-173 (S)
+   decided: S 22356 cv=- gcd=82692 0.9 | volume 22 "Legacies" of the X-Men Epic Collection LINE: GCD 82692 #22 row 2515596 (492pp, ISBN 978-1-302-95111-5, roll-up X-Men 1991 #17-23 + Uncanny #297-300 + X-Men Unlimited #1) is our 466pp book; CV 149294 is only its count-1 book volume (issue 981295, on the I line)
+   F 22356 wrong-cv-link | the stored CV 149294 "X-Men Epic Collection: Legacies" is the Vol. 22 book's own count-1 volume, not the line; it belongs on the I line
+   F 22356 split-needed | item 86447 -> join S22349 on its ParsedKey "X-Men Epic Collection" - S22349's S line is the same GCD 82692 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-409); C-054's merge-with=22357 is obsolete
+   named: S22349 X-Men Epic Collection  11 files  keys: "X-Men Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S6791 "The Uncanny X-Men" 839f [shares gcd=2605 (collected by item 86447) — S cv=3092 gcd=2605 (R-056 0.95)] keys: "Flashback - Uncanny X-Men -1" | "The Uncanny X-Men" | "The Uncanny X-Men -001" | "Uncanny X-Men" (+1 more: lookup.py --shelf 6791)
+   nearby: S66349 "X-Men" 242f [shares gcd=4254 (collected by item 86447) — S cv=4605 gcd=4254 (R-172 0.9)] keys: "Flashback - X-Men -1" | "X-Men" | "X-Men (1996)" | "X-Men (1997)" (+2 more: lookup.py --shelf 66349)
+   nearby: S66376 "X-Men Unlimited" 97f [shares gcd=4754 (collected by item 86447) — S cv=5066 gcd=4754 (R-172 0.9)] keys: "X-Men Unlimited (1993)" | "X-Men Unlimited v1 (1993)"
+   nearby: S34458 "The Uncanny X-Men Annual" 6f [shares gcd=11669 (collected by item 86447) — S cv=10757 gcd=11669 (R-046 0.95)] keys: "The Uncanny X-Men Annual"
+   nearby: S22355 "X-Men Epic Collection: It’s Always Darkest Before The Dawn" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: It’s Always Darkest Before The Dawn"
+   nearby: S22357 "X-Men Epic Collection: Proteus" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: Proteus"
+   nearby: S22359 "X-Men Epic Collection: The Fate Of The Phoenix" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Fate Of The Phoenix"
+   nearby: S22360 "X-Men Epic Collection: The Gift" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Gift"
+   nearby: S22361 "X-Men Epic Collection: The Sentinels Live" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Sentinels Live"
+   nearby: S22362 "X-Men Epic Collection: The X-Cutioner's Song" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The X-Cutioner's Song"
+   keys now: "X-Men Epic Collection: Legacies" x1
+   groups (title x folder): 1
+   G1 "X-Men Epic Collection" in Marvel\_X-Men\_X-Book Epic Collections\X-Men Epic Collection — 1 file(s), 1 COL, pp 466-466; cv per-file 149294x1; gcd per-file 82692x1; key 'X-Men Epic Collection: Legacies'
+      [86447] COL X-Men Epic Collection Vol. 22 - Legacies (2023) (Digital-HD) (F) (Kileko-Empire).cbz (466pp)
+         own record cv 149294 / gcd s82692 "X-Men Epic Collection" (issue 2515596) COLLECTS: gcd=4254 X-Men (1991) #17-23 · gcd=2605 The Uncanny X-Men (1981) #297-300 · gcd=4754 X-Men Unlimited (1993) #1 · gcd=11669 The Uncanny X-Men Annual (1992) #17
+
+== S22357 X-Men Epic Collection: Proteus  [split]  1 files / 1 collections  decided in R-173 (S)
+   decided: S 22357 cv=- gcd=82692 0.9 | volume 06 "Proteus" of the X-Men Epic Collection LINE: GCD 82692 #6 row 2150378 (444pp, ISBN 978-1-302-92252-8, notes X-Men 1963 #111-128) is our 423pp book; CV 129905 is only its count-1 book volume (issue 796464, on the I line)
+   F 22357 wrong-cv-link | the stored CV 129905 "X-Men Epic Collection: Proteus" is the Vol. 06 book's own count-1 volume, not the line; it belongs on the I line
+   F 22357 split-needed | item 86437 -> join S22349 on its ParsedKey "X-Men Epic Collection" - S22349's S line is the same GCD 82692 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-409); C-054's merge-with=22358 is obsolete
+   named: S22349 X-Men Epic Collection  11 files  keys: "X-Men Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S103744 "X-Men by Lee & Kirby Omnibus (2009)" 198f [shares gcd=1576 (collected by item 86437) — S cv=2133 gcd=1576 (R-054 0.95)] keys: "X-Men by Lee & Kirby Omnibus (2009)"
+   nearby: S47159 "Marvel Team-Up" 196f [shares gcd=2056 (collected by item 86437) — S cv=2576 gcd=2056 (C-046 0.95)] keys: "Marvel Masterworks - Marvel Team-Up" | "Marvel Masterworks - Marvel Team-Up (1972)" | "Marvel Team-Up" | "Marvel Team-Up (1972)" (+8 more: lookup.py --shelf 47159)
+   nearby: S36216 "Uncanny X-men Annual" 25f [shares gcd=1951 (collected by item 86437) — S cv=22988 gcd=1951 (R-046 1.0)] keys: "Uncanny X-Men Annual" | "Uncanny X-men Annual" | "X-Men (1989)" | "X-Men v1 (1963)"
+   nearby: S34388 "The Incredible Hulk Annual" 17f [shares gcd=2348 (collected by item 86437) — S cv=2860 gcd=2348 (R-153 0.9)] keys: "The Incredible Hulk Annual"
+   nearby: S22355 "X-Men Epic Collection: It’s Always Darkest Before The Dawn" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: It’s Always Darkest Before The Dawn"
+   nearby: S22356 "X-Men Epic Collection: Legacies" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: Legacies"
+   nearby: S22359 "X-Men Epic Collection: The Fate Of The Phoenix" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Fate Of The Phoenix"
+   nearby: S22360 "X-Men Epic Collection: The Gift" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Gift"
+   nearby: S22361 "X-Men Epic Collection: The Sentinels Live" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Sentinels Live"
+   nearby: S22362 "X-Men Epic Collection: The X-Cutioner's Song" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The X-Cutioner's Song"
+   keys now: "X-Men Epic Collection: Proteus" x1
+   groups (title x folder): 1
+   G1 "X-Men Epic Collection" in Marvel\_X-Men\_X-Book Epic Collections\X-Men Epic Collection — 1 file(s), 1 COL, pp 423-423; cv per-file 129905x1; gcd per-file 82692x1; key 'X-Men Epic Collection: Proteus'
+      [86437] COL X-Men Epic Collection Vol. 06 - Proteus (2020) (Digital) (Kileko-Empire).cbz (423pp)
+         own record cv 129905 / gcd s82692 "X-Men Epic Collection" (issue 2150378) COLLECTS: gcd=1576 The X-Men (1963) #111-128 · gcd=2056 Marvel Team-Up (1972) #89 · gcd=2348 The Incredible Hulk Annual (1976) #7 · gcd=1951 X-Men Annual (1970) #3
+
+== S22359 X-Men Epic Collection: The Fate Of The Phoenix  [split]  1 files / 1 collections  decided in R-173 (S)
+   decided: S 22359 cv=- gcd=82692 0.9 | volume 07 "The Fate of the Phoenix" of the X-Men Epic Collection LINE: GCD 82692 #7 row 2211197 (484pp, ISBN 978-1-302-92253-5, notes X-Men 1963 #129-141 + Uncanny #142-143) is our 446pp book; CV 134230 is only its count-1 book volume (issue 832898, on the I line)
+   F 22359 wrong-cv-link | the stored CV 134230 "X-Men Epic Collection: The Fate of the Phoenix" is the Vol. 07 book's own count-1 volume, not the line; it belongs on the I line
+   F 22359 split-needed | item 86438 -> join S22349 on its ParsedKey "X-Men Epic Collection" - S22349's S line is the same GCD 82692 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-409); C-054's merge-with=22361 is obsolete
+   named: S22349 X-Men Epic Collection  11 files  keys: "X-Men Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S6791 "The Uncanny X-Men" 839f [shares gcd=2605 (collected by item 86438) — S cv=3092 gcd=2605 (R-056 0.95)] keys: "Flashback - Uncanny X-Men -1" | "The Uncanny X-Men" | "The Uncanny X-Men -001" | "Uncanny X-Men" (+1 more: lookup.py --shelf 6791)
+   nearby: S103744 "X-Men by Lee & Kirby Omnibus (2009)" 198f [shares gcd=1576 (collected by item 86438) — S cv=2133 gcd=1576 (R-054 0.95)] keys: "X-Men by Lee & Kirby Omnibus (2009)"
+   nearby: S22355 "X-Men Epic Collection: It’s Always Darkest Before The Dawn" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: It’s Always Darkest Before The Dawn"
+   nearby: S22356 "X-Men Epic Collection: Legacies" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: Legacies"
+   nearby: S22357 "X-Men Epic Collection: Proteus" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: Proteus"
+   nearby: S22360 "X-Men Epic Collection: The Gift" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Gift"
+   nearby: S22361 "X-Men Epic Collection: The Sentinels Live" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Sentinels Live"
+   nearby: S22362 "X-Men Epic Collection: The X-Cutioner's Song" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The X-Cutioner's Song"
+   keys now: "X-Men Epic Collection: The Fate Of The Phoenix" x1
+   groups (title x folder): 1
+   G1 "X-Men Epic Collection" in Marvel\_X-Men\_X-Book Epic Collections\X-Men Epic Collection — 1 file(s), 1 COL, pp 446-446; cv per-file 134230x1; gcd per-file 82692x1; key 'X-Men Epic Collection: The Fate Of The Phoenix'
+      [86438] COL X-Men Epic Collection Vol. 07 - The Fate of the Phoenix (2021) (Digital) (Kileko-Empire).cbz (446pp)
+         own record cv 134230 / gcd s82692 "X-Men Epic Collection" (issue 2211197) COLLECTS: gcd=1576 The X-Men (1963) #129-141 · gcd=2885 Phoenix (1984) #1 · gcd=11229 Essential X-Men (1996) #1-3 · gcd=2605 The Uncanny X-Men (1981) #142-143
+
+== S22360 X-Men Epic Collection: The Gift  [split]  1 files / 1 collections  decided in R-173 (S)
+   decided: S 22360 cv=- gcd=82692 0.9 | volume 12 "The Gift" of the X-Men Epic Collection LINE: GCD 82692 #12 row 1339631 (516pp, ISBN 978-0-7851-9217-6, roll-up Uncanny X-Men #189-198 + Nightcrawler 1985 #1-4) is our 506pp book; CV 87522 is only its count-1 book volume (issue 511937, on the I line)
+   F 22360 wrong-cv-link | the stored CV 87522 "X-Men Epic Collection: The Gift" is the Vol. 12 book's own count-1 volume, not the line; it belongs on the I line
+   F 22360 split-needed | item 86442 -> join S22349 on its ParsedKey "X-Men Epic Collection" - S22349's S line is the same GCD 82692 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-409); A-026's merge-with=22352 is obsolete
+   named: S22349 X-Men Epic Collection  11 files  keys: "X-Men Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S6791 "The Uncanny X-Men" 839f [shares gcd=2605 (collected by item 86442) — S cv=3092 gcd=2605 (R-056 0.95)] keys: "Flashback - Uncanny X-Men -1" | "The Uncanny X-Men" | "The Uncanny X-Men -001" | "Uncanny X-Men" (+1 more: lookup.py --shelf 6791)
+   nearby: S36216 "Uncanny X-men Annual" 25f [shares gcd=1951 (collected by item 86442) — S cv=22988 gcd=1951 (R-046 1.0)] keys: "Uncanny X-Men Annual" | "Uncanny X-men Annual" | "X-Men (1989)" | "X-Men v1 (1963)"
+   nearby: S65351 "Nightcrawler" 8f [shares gcd=3035 (collected by item 86442) — S cv=18835 gcd=3035 (C-053 0.95)] keys: "Nightcrawler (1985)"
+   nearby: S22355 "X-Men Epic Collection: It’s Always Darkest Before The Dawn" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: It’s Always Darkest Before The Dawn"
+   nearby: S22356 "X-Men Epic Collection: Legacies" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: Legacies"
+   nearby: S22357 "X-Men Epic Collection: Proteus" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: Proteus"
+   nearby: S22359 "X-Men Epic Collection: The Fate Of The Phoenix" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Fate Of The Phoenix"
+   nearby: S22361 "X-Men Epic Collection: The Sentinels Live" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Sentinels Live"
+   nearby: S22362 "X-Men Epic Collection: The X-Cutioner's Song" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The X-Cutioner's Song"
+   keys now: "X-Men Epic Collection: The Gift" x1
+   groups (title x folder): 1
+   G1 "X-Men Epic Collection" in Marvel\_X-Men\_X-Book Epic Collections\X-Men Epic Collection — 1 file(s), 1 COL, pp 506-506; cv per-file 87522x1; gcd per-file 82692x1; key 'X-Men Epic Collection: The Gift'
+      [86442] COL X-Men Epic Collection Vol. 12 - The Gift (2015) (Digital) (F) (Kileko-Empire).cbr (506pp)
+         own record cv 87522 / gcd s82692 "X-Men Epic Collection" (issue 1339631) COLLECTS: gcd=2605 The Uncanny X-Men (1981) #189-198 · gcd=3035 Nightcrawler (1985) #1-4 · gcd=3062 X-Men / Alpha Flight (1985) #1-2 · gcd=1951 X-Men Annual (1970) #8
+
+== S22361 X-Men Epic Collection: The Sentinels Live  [split]  1 files / 1 collections  decided in R-173 (S)
+   decided: S 22361 cv=- gcd=82692 0.9 | volume 03 "The Sentinels Live" of the X-Men Epic Collection LINE: GCD 82692 #3 row 1872603 (516pp, ISBN 978-1-302-91275-8, roll-up X-Men 1963 #46-66) is our 502pp book; CV 115289 is only its count-1 book volume (issue 692092, on the I line)
+   F 22361 wrong-cv-link | the stored CV 115289 "X-Men Epic Collection: The Sentinels Live" is the Vol. 03 book's own count-1 volume, not the line; it belongs on the I line
+   F 22361 split-needed | item 86434 -> join S22349 on its ParsedKey "X-Men Epic Collection" - S22349's S line is the same GCD 82692 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-409); C-054's merge-with=22362 is obsolete
+   named: S22349 X-Men Epic Collection  11 files  keys: "X-Men Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S103744 "X-Men by Lee & Kirby Omnibus (2009)" 198f [shares gcd=1576 (collected by item 86434) — S cv=2133 gcd=1576 (R-054 0.95)] keys: "X-Men by Lee & Kirby Omnibus (2009)"
+   nearby: S11602 "Marvel Tales Starring Spider-Man" 75f [shares gcd=1747 (collected by item 86434) — S cv=2293 gcd=1747 (R-140 0.9)] keys: "Marvel Tales Featuring Spider-Man" | "Marvel Tales Starring Spider-Man" | "Marvel Tales v2 (1964)"
+   nearby: S35648 "Ka-Zar" 8f [shares gcd=1943 (collected by item 86434) — S cv=2475 gcd=1943 (C-048 0.9)] keys: "Ka-Zar (1970)" | "Ka-Zar v1 (1970)" | "Marvel Masterworks - Ka-Zar"
+   nearby: S22355 "X-Men Epic Collection: It’s Always Darkest Before The Dawn" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: It’s Always Darkest Before The Dawn"
+   nearby: S22356 "X-Men Epic Collection: Legacies" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: Legacies"
+   nearby: S22357 "X-Men Epic Collection: Proteus" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: Proteus"
+   nearby: S22359 "X-Men Epic Collection: The Fate Of The Phoenix" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Fate Of The Phoenix"
+   nearby: S22360 "X-Men Epic Collection: The Gift" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Gift"
+   nearby: S22362 "X-Men Epic Collection: The X-Cutioner's Song" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The X-Cutioner's Song"
+   keys now: "X-Men Epic Collection: The Sentinels Live" x1
+   groups (title x folder): 1
+   G1 "X-Men Epic Collection" in Marvel\_X-Men\_X-Book Epic Collections\X-Men Epic Collection — 1 file(s), 1 COL, pp 502-502; cv per-file 115289x1; gcd per-file 82692x1; key 'X-Men Epic Collection: The Sentinels Live'
+      [86434] COL X-Men Epic Collection Vol. 03 - The Sentinels Live (2019) (digital-Empire).cbr (502pp)
+         own record cv 115289 / gcd s82692 "X-Men Epic Collection" (issue 1872603) COLLECTS: gcd=1576 The X-Men (1963) #46-66 · gcd=1943 Ka-Zar (1970) #2-3 · gcd=1747 Marvel Tales (1966) #30
+
+== S22362 X-Men Epic Collection: The X-Cutioner's Song  [split]  1 files / 1 collections  decided in R-173 (S)
+   decided: S 22362 cv=- gcd=82692 0.9 | volume 21 "The X-Cutioner's Song" of the X-Men Epic Collection LINE: GCD 82692 #21 row 2465512 (524pp, ISBN 978-1-302-94828-3, roll-up X-Men 1991 #10-16 + Uncanny #289-296 + X-Force #16-18 + X-Factor #84-86) is our 503pp book; CV 146947 is only its count-1 book volume (issue 961463, on the I line)
+   F 22362 wrong-cv-link | the stored CV 146947 "X-Men Epic Collection: The X-Cutioner's Song" is the Vol. 21 book's own count-1 volume, not the line; it belongs on the I line
+   F 22362 split-needed | item 86446 -> join S22349 on its ParsedKey "X-Men Epic Collection" - S22349's S line is the same GCD 82692 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-409); C-054's merge-with=22349 is obsolete
+   named: S22349 X-Men Epic Collection  11 files  keys: "X-Men Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S6791 "The Uncanny X-Men" 839f [shares gcd=2605 (collected by item 86446) — S cv=3092 gcd=2605 (R-056 0.95)] keys: "Flashback - Uncanny X-Men -1" | "The Uncanny X-Men" | "The Uncanny X-Men -001" | "Uncanny X-Men" (+1 more: lookup.py --shelf 6791)
+   nearby: S66333 "X-Factor" 300f [shares gcd=3209 (collected by item 86446) — S cv=3657 gcd=3209 (R-172 0.95)] keys: "X-Factor (1986)" | "X-Factor - Flashbback - -001"
+   nearby: S66349 "X-Men" 242f [shares gcd=4254 (collected by item 86446) — S cv=4605 gcd=4254 (R-172 0.9)] keys: "Flashback - X-Men -1" | "X-Men" | "X-Men (1996)" | "X-Men (1997)" (+2 more: lookup.py --shelf 66349)
+   nearby: S22176 "X-Force" 191f [shares gcd=4253 (collected by item 86446) — S cv=4604 gcd=4253 (C-056 0.95)] keys: "Counter X: X-Force - Rage War (1991)" | "X-Force" | "X-Force (1991)" | "X-Force - Flashback -1" (+2 more: lookup.py --shelf 22176)
+   nearby: S22355 "X-Men Epic Collection: It’s Always Darkest Before The Dawn" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: It’s Always Darkest Before The Dawn"
+   nearby: S22356 "X-Men Epic Collection: Legacies" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: Legacies"
+   nearby: S22357 "X-Men Epic Collection: Proteus" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: Proteus"
+   nearby: S22359 "X-Men Epic Collection: The Fate Of The Phoenix" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Fate Of The Phoenix"
+   nearby: S22360 "X-Men Epic Collection: The Gift" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Gift"
+   nearby: S22361 "X-Men Epic Collection: The Sentinels Live" 1f [shares gcd=82692 — S gcd=82692 (R-173 0.9)] keys: "X-Men Epic Collection: The Sentinels Live"
+   keys now: "X-Men Epic Collection: The X-Cutioner's Song" x1
+   groups (title x folder): 1
+   G1 "X-Men Epic Collection" in Marvel\_X-Men\_X-Book Epic Collections\X-Men Epic Collection — 1 file(s), 1 COL, pp 503-503; cv per-file 146947x1; gcd per-file 82692x1; key "X-Men Epic Collection: The X-Cutioner's Song"
+      [86446] COL X-Men Epic Collection Vol. 21 - The X-Cutioner's Song (2022) (Digital-HD) (F) (Kileko-Empire).cbz (503pp)
+         own record cv 146947 / gcd s82692 "X-Men Epic Collection" (issue 2465512) COLLECTS: gcd=4254 X-Men (1991) #10-16 · gcd=2605 The Uncanny X-Men (1981) #289-296 · gcd=4253 X-Force (1991) #16-18 · gcd=3209 X-Factor (1986) #84-86
+
+== S34431 The Punisher  [split]  5 files / 0 collections  decided in R-173 (S)
+   decided: S 34431 cv=9133 gcd=9867 0.9 | The Punisher (Marvel 2001-2004, 37): CV 9133 (2001, 37 cached) and GCD 9867 (Marvel 2001-2004, 37) agree on publisher, span and count and cover our "The Punisher 016 / 017 (2002)" (24pp, Chronology slot 0529); 0.9 for three books of other runs - the Punisher 2099 (2004) one-shot and two Skottie Young covers of later Punisher runs, split below
+   F 34431 split-needed | item 52026 "The Punisher 01 (2014) (Skottie Young Variant Cover)" 1pp is #1 of The Punisher (Marvel 2014-2015; CV 71435 / GCD 78896), which S94683 stores -> join S94683 on its ParsedKey "Punisher v10 (2014)"; item 52027 "The Punisher 01 (2016) (Skottie Young Variant Cover)" 1pp is #1 of The Punisher (Marvel 2016-2018; CV 90118 / GCD 100917), which S94684 stores -> join S94684 on its ParsedKey "Punisher v11 (2016)" (L-368 / L-388)
+   F 34431 misfiled | item 53934 "Punisher 2099 (2004)" 24pp is the Punisher 2099 one-shot (CV 28118 / GCD 62122) of the Marvel 2099 line, not The Punisher (2001); no shelf stores it (lookup --who-stores cv=28118)
+   named: S94683 The Punisher  3 files  keys: "Punisher v10 (2014)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S94684 The Punisher  4 files  keys: "Punisher v11 (2016)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65458 "The Punisher" 106f [title — S cv=3855 gcd=3431 (R-163 0.95)] keys: "Punisher (1987)" | "Punisher v02 (1987)" | "The Punisher (1987)"
+   nearby: S99393 "Punisher" 23f [title — S cv=18328 gcd=13738 (R-159 0.95)] keys: "Punisher v03 (1995)" · S94790 "Punisher v08 (2009)" 14f [title — S cv=25370 gcd=33759 (R-159 0.95)] keys: "Punisher v08 (2009)"
+   nearby: S65459 "Punisher: Year One" 6f [title — S cv=25891 gcd=17969 (R-086 0.9)] keys: "Punisher (1995)" · S66039 "The Punisher" 3f [title — S cv=112965 gcd=127969 (R-035 0.95)] keys: "The Punisher (2018)"
+   nearby: S14194 "Punisher" 2f [title — S cv=141843 gcd=182714 (B-058 0.95)] keys: "Punisher - The King of Killers"
+   nearby: S14200 "The Punisher" 2f [title — S cv=41758 gcd=60377 (R-156 0.95)] keys: "Punisher By Greg Rucka" · S19402 "The Punisher" 1f [title — S cv=3649 gcd=3201 (D-014 0.9)] keys: "The Punisher - Circle of Blood"
+   nearby: S94805 "The Punisher Annual" 1f [title — S cv=120239 gcd=148835 (C-040 0.95)] keys: "The Punisher v12 (2018)"
+   nearby: S34434 "The Punisher Annual" 9f [title+1 — S cv=4064 gcd=3660 (R-163 1.0)] keys: "The Punisher Annual"
+   nearby: S14210 "Punisher MAX: The Complete Collection" 7f [title+1 — S cv=87448 gcd=95740 (R-156 0.9)] keys: "Punisher Max" | "Punisher Max: The Complete Collection"
+   nearby: S29480 "Wolverine/Punisher" 6f [title+1 — S cv=10810 gcd=11724 (R-039 0.95)] keys: "Wolverine/Punisher" · (+6 more by title)
+   keys now: "The Punisher" x4 · "Punisher" x1
+   groups (title x folder): 3
+   G1 "Punisher" in Marvel\_2099 Marvel\Punisher 2099 v2 (2004) — 1 file(s), numbers 2099, pp 24-24; cv per-file 28118x1; gcd per-file 62122x1; key 'Punisher'
+      [53934] Punisher 2099 (Digital) (2004) (Shadowcat-Empire).cbz (24pp)
+   G2 "The Punisher" in Marvel\_X-Men\_X-Men Complete Chronology V2\0529 Vertical Challenge — 2 file(s), numbers 16-17, pp 24-24; cv per-file 9133x2; gcd per-file 9867x2; key 'The Punisher'
+      [89584] 001 The Punisher 016 (2002) (Digital) (Zone-Empire).cbr (24pp)
+      [89585] 002 The Punisher 017 (2002) (Digital) (Zone-Empire).cbr (24pp)
+   G3 "The Punisher" in Marvel\__Skottie Young Covers — 2 file(s), numbers 1, pp 1-1; cv per-file 71435x1, 90118x1; gcd per-file 78896x1, 100917x1; key 'The Punisher'
+      [52026] The Punisher 01 (2014) (Skottie Young Variant Cover) (Ghosts-Novus-HD).cbz (1pp)
+      [52027] The Punisher 01 (2016) (Skottie Young Variant Cover) (Ghosts-Novus-HD).cbz (1pp)
+
+== S64745 Gambit  [split]  31 files / 0 collections  decided in R-173 (S)
+   decided: S 64745 cv=9111 gcd=9844 0.9 | Gambit (Marvel 1999-2001, #1/2 + #1-25): CV 9111 (1999, 26 cached) and GCD 9844 (Marvel 1999-2001, 25; per-file on 27/31) agree on publisher, span and count; ComicInfo Web 66913 = CV 9111 #25; our ladder 1-25 is the run; 0.9 for Gambit Annual '99 (89030) and Gambit 2000 (89176), annuals of the monthly (L-369), and three 1993-mini issues split below
+   F 64745 split-needed | items 88027 / 88028 / 88029 "Gambit (02 / 03 / 04 of 04) (1994)" 22-24pp are #2-4 of the 1993-1994 Gambit mini (CV 5011 / GCD 4695), which S97095 stores with its #1 (lookup --who-stores cv=5011) -> join S97095 on its ParsedKey "Gambit v1 (1993)" (C-055's S7162 merged into S97095; L-368 / L-388)
+   N 64745 flag #249 label-ambiguous (item 89296 "Gambit v2 024") is a label question: it is a single issue, #24 of this run - answered here, no stale-flag (L-367); Gambit Annual '99 (89030) has no record under that name in our data
+   named: S97095 Gambit  5 files  keys: "Gambit" | "Gambit v1 (1993)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S7162 (not a file-holding shelf today)
+   nearby: S64746 "Gambit" 24f [title — S cv=11880 gcd=12891 (C-053 0.95)] keys: "Gambit (2004)" · S64747 "Gambit" 17f [title — S cv=51107 gcd=67759 (A-028 0.95)] keys: "Gambit (2012)"
+   nearby: S64744 "Gambit" 7f [title — S cv=11879 gcd=12890 (C-052 0.95)] keys: "Gambit (1997)" · S7163 "Gambit" 1f [title — S cv=144205 gcd=187798 (B-061 0.95)] keys: "Gambit - Thick as Thieves"
+   nearby: S7167 "Gambit & Bishop" 6f [title+1 — S cv=10906 gcd=11826 (A-026 0.95)] keys: "Gambit and Bishop - Sons of the Atom"
+   nearby: S7166 "Gambit Classic" 2f [title+1 — S cv=27134 gcd=63087 (A-026 0.9)] keys: "Gambit Classic"
+   nearby: S14805 "Rogue & Gambit" 1f [title+1 — S cv=107513 gcd=119847 (B-061 0.95)] keys: "Rogue & Gambit: Ring Of Fire"
+   nearby: S14810 "Rogue & Gambit" 1f [title+1 — S cv=148664 gcd=197358 (B-050 0.95)] keys: "Rogue and Gambit - Power Play"
+   keys now: "Gambit (1999)" x31
+   groups (title x folder): 18
+   G1 "Gambit (02 of 04) (1994) (Digital) (AnPymGold-Empire)" in Marvel\_X-Men\_X-Men Complete Chronology V2\0206 The Tithing Time — 1 file(s), numbers 2, pp 22-22; cv per-file 9111x1; gcd per-file 4695x1; key 'Gambit (1999)'
+      [88027] 002 Gambit (02 of 04) (1994) (Digital) (AnPymGold-Empire).cbr (22pp)
+   G2 "Gambit (03 of 04) (1994) (Digital) (AnPymGold-Empire)" in Marvel\_X-Men\_X-Men Complete Chronology V2\0206 The Tithing Time — 1 file(s), numbers 3, pp 23-23; cv per-file 9111x1; gcd per-file 4695x1; key 'Gambit (1999)'
+      [88028] 003 Gambit (03 of 04) (1994) (Digital) (AnPymGold-Empire).cbr (23pp)
+   G3 "Gambit (04 of 04) (1994) (Digital) (AnPymGold-Empire)" in Marvel\_X-Men\_X-Men Complete Chronology V2\0206 The Tithing Time — 1 file(s), numbers 4, pp 24-24; cv per-file 9111x1; gcd per-file 4695x1; key 'Gambit (1999)'
+      [88029] 004 Gambit (04 of 04) (1994) (Digital) (AnPymGold-Empire).cbr (24pp)
+   G4 "Gambit" in Marvel\_X-Men\_X-Men Complete Chronology V2\0389 The Man of Steal — 6 file(s), numbers 1-5, pp 21-39; cv per-file 9111x6; gcd per-file 9844x5, 17466x1; key 'Gambit (1999)'
+      e.g. 002 Gambit 001 (1999) (Digital) (AnHeroGold-Empire).cbz
+        88924 #1 1999 39pp · 88925 #2 1999 23pp · 88926 #3 1999 25pp · 88927 #4 1999 22pp · 88928 #5 1999 24pp
+      [88923] 001 Gambit 0.5 (1999) (Digital) (AnHeroGold-Empire).cbz (21pp)
+   G5 "Gambit" in Marvel\_X-Men\_X-Men Complete Chronology V2\0405 Pig Pen — 2 file(s), numbers 6-7, pp 22-23; cv per-file 9111x2; gcd per-file 9844x2; key 'Gambit (1999)'
+      [88998] 001 Gambit 006 (1999) (Digital) (AnHeroGold-Empire).cbz (22pp)
+      [88999] 002 Gambit 007 (1999) (Digital) (AnHeroGold-Empire).cbz (23pp)
+   G6 "Gambit Annual '99 (1999) (Digital) (AnHeroGold-Empire)" in Marvel\_X-Men\_X-Men Complete Chronology V2\0413 Untitled — 1 file(s), numbers 1, pp 41-41; cv per-file 9111x1; gcd per-file 9844x1; key 'Gambit (1999)'
+      [89030] 001 Gambit Annual '99 (1999) (Digital) (AnHeroGold-Empire).cbz (41pp)
+   G7 "Gambit" in Marvel\_X-Men\_X-Men Complete Chronology V2\0414 Shattering — 2 file(s), numbers 8-9, pp 23-24; cv per-file 9111x2; gcd per-file 9844x2; key 'Gambit (1999)'
+      [89033] 001 Gambit 008 (1999) (Digital) (AnHeroGold-Empire).cbz (23pp)
+      [89034] 002 Gambit 009 (1999) (Digital) (AnHeroGold-Empire).cbz (24pp)
+   G8 "Gambit" in Marvel\_X-Men\_X-Men Complete Chronology V2\0425 Unnamed — 1 file(s), numbers 10, pp 21-21; cv per-file 9111x1; gcd per-file 9844x1; key 'Gambit (1999)'
+      [89081] 006 Gambit 010 (1999) (Digital) (AnHeroGold-Empire).cbz (21pp)
+   G9 "Gambit" in Marvel\_X-Men\_X-Men Complete Chronology V2\0430 Sunset Dawn — 3 file(s), numbers 12-14, pp 25-40; cv per-file 9111x3; gcd per-file 9844x3; key 'Gambit (1999)'
+      [89107] 001 Gambit 012 (2000) (Digital) (Shadowcat-Empire).cbz (40pp)
+      [89108] 002 Gambit 013 (2000) (Steam-DCP).cbr (26pp)
+      [89109] 003 Gambit 014 (2000) (Steam-DCP).cbr (25pp)
+   G10 "Gambit" in Marvel\_X-Men\_X-Men Complete Chronology V2\0434 Falling Forward — 1 file(s), numbers 11, pp 21-21; cv per-file 9111x1; gcd per-file 9844x1; key 'Gambit (1999)'
+      [89123] 003 Gambit 011 (1999) (Digital) (AnHeroGold-Empire).cbz (21pp)
+   G11 "Gambit" in Marvel\_X-Men\_X-Men Complete Chronology V2\0435 Untitled — 2 file(s), numbers 15-16, pp 26-26; cv per-file 9111x2; gcd per-file 9844x2; key 'Gambit (1999)'
+      [89124] 001 Gambit 015 (2000) (Steam-DCP).cbr (26pp)
+      [89131] 008 Gambit 016 (Both Covers) (2000) (Steam-DCP).cbr (26pp)
+   G12 "Gambit" in Marvel\_X-Men\_X-Men Complete Chronology V2\0444 The Assassination Game — 3 file(s), numbers 17-19, pp 26-26; cv per-file 9111x3; gcd per-file 9844x3; key 'Gambit (1999)'
+      [89173] 001 Gambit 017 (2000) (Steam-DCP).cbr (26pp)
+      [89174] 002 Gambit 018 (2000) (Steam-DCP).cbr (26pp)
+      [89175] 003 Gambit 019 (2000) (Steam-DCP).cbr (26pp)
+   G13 "Gambit Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0444 The Assassination Game — 1 file(s), numbers 4, pp 40-40; cv per-file 60498x1; gcd per-file 16419x1; key 'Gambit (1999)'
+      [89176] 004 Gambit Annual 2000 (2000) (Steam-DCP).cbr (40pp)
+   G14 "Gambit" in Marvel\_X-Men\_X-Men Complete Chronology V2\0452 Murder Ballads — 1 file(s), numbers 20, pp 25-25; cv per-file 9111x1; gcd per-file 9844x1; key 'Gambit (1999)'
+      [89213] 005 Gambit 020 (2000) (Steam-DCP).cbr (25pp)
+   G15 "Gambit" in Marvel\_X-Men\_X-Men Complete Chronology V2\0454 A Sheep in Wolf's Clothing — 2 file(s), numbers 21-22, pp 24-26; cv per-file 9111x2; gcd per-file 9844x2; key 'Gambit (1999)'
+      [89217] 001 Gambit 021 (2000) (Steam-DCP).cbr (26pp)
+      [89218] 002 Gambit 022 (2000) (Steam-DCP).cbr (24pp)
+   G16 "Gambit" in Marvel\_X-Men\_X-Men Complete Chronology V2\0463 Maximum Security — 1 file(s), numbers 23, pp 23-23; cv per-file 9111x1; gcd per-file 9844x1; key 'Gambit (1999)'
+      [89270] 017 Gambit 023 (2000) (Digital) (AnHeroGold-Empire).cbz (23pp)
+   G17 "Gambit" in Marvel\_X-Men\_X-Men Complete Chronology V2\0468 Untitled — 1 file(s), numbers 24, pp 25-25; cv per-file 9111x1; key 'Gambit (1999)'
+      [89296] 003 Gambit v2 024.cbr (25pp)
+   G18 "Gambit" in Marvel\_X-Men\_X-Men Complete Chronology V2\0472 Unnamed — 1 file(s), numbers 25, pp 40-40; cv per-file 9111x1; gcd per-file 9844x1; key 'Gambit (1999)'
+      [89313] 001 Gambit 025 (2000) (digital) (Glorith-HD).cbz (40pp)
+
+== S65354 Nightcrawler  [split]  18 files / 3 collections  decided in R-173 (S)
+   decided: S 65354 cv=72934 gcd=80107 0.9 | Nightcrawler (Marvel 2014-2015, 12): CV 72934 (2014, 12 cached) and GCD 80107 (Marvel 2014-2015, 12; per-file on 14/18) agree on publisher, span and count; our "Nightcrawler v4 001-012" ladder and the run's own two trades (GCD 89549 rows) are one run; 0.9 for two books of the 2004 Nightcrawler run split below
+   F 65354 split-needed | items 84845 "COL Nightcrawler Vol. 02 - The Winding Way (2006)" 142pp and 90220 "006 Nightcrawler 012 (2006)" 22pp belong to Nightcrawler (Marvel 2004-2006, 12; CV 18700 / GCD 17805), which S65353 stores with #1-11 and its Vol. 01 trade (lookup --who-stores cv=18700) -> join S65353 on its ParsedKey "Nightcrawler (2004)" (L-368 / L-388)
+   N 65354 flag #357 label-ambiguous (item 92687) is a label question: "Nightcrawler v4 001-012" are single issues of this run - answered here, no stale-flag (L-367); C-057's F needs-fetch cv=72934 is spent (CV 72934 is cached)
+   named: S65353 Nightcrawler  12 files  keys: "Nightcrawler (2004)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S65351 "Nightcrawler" 8f [title — S cv=18835 gcd=3035 (C-053 0.95)] keys: "Nightcrawler (1985)" · S65352 "Nightcrawler" 7f [title — S cv=9467 gcd=10259 (C-053 0.95)] keys: "Nightcrawler (2002)"
+   keys now: "Nightcrawler (2014)" x18
+   groups (title x folder): 6
+   G1 "Nightcrawler" in Marvel\_X-Men\Nightcrawler\Nightcrawler v3 (2004) — 1 file(s), 1 COL, pp 142-142; cv per-file 30285x1; key 'Nightcrawler (2014)'
+      [84845] COL Nightcrawler Vol. 02 - The Winding Way (2006) (Digital) (Kileko-Empire).cbr (142pp)
+   G2 "Nightcrawler" in Marvel\_X-Men\Nightcrawler\Nightcrawler v4 (2014) — 2 file(s), 2 COL, pp 123-126; cv per-file 78137x1, 82250x1; gcd per-file 89549x2; key 'Nightcrawler (2014)'
+      [84846] COL Nightcrawler Vol. 01 - Homecoming (2014) (Digital) (Kileko-Empire).cbr (123pp)
+         own record cv 78137 / gcd s89549 "Nightcrawler" (issue 1371447) COLLECTS: gcd=80107 Nightcrawler (2014) #1-6
+      [84847] COL Nightcrawler Vol. 02 - Reborn (2015) (Digital) (Kileko-Empire).cbr (126pp)
+         own record cv 82250 / gcd s89549 "Nightcrawler" (issue 1374274) COLLECTS: gcd=80107 Nightcrawler (2014) #7-12
+   G3 "Nightcrawler" in Marvel\_X-Men\_X-Men Complete Chronology V2\0674 The Winding Way — 1 file(s), numbers 12, pp 22-22; cv per-file 72934x1; gcd per-file 17805x1; key 'Nightcrawler (2014)'
+      [90220] 006 Nightcrawler 012 (2006) (digital) (Minutemen-Slayer).cbr (22pp)
+   G4 "Nightcrawler" in Marvel\_X-Men\_X-Men Complete Chronology V2\1094 Homecoming — 6 file(s), numbers 1-6, pp 19-23; cv per-file 72934x6; gcd per-file 80107x6; key 'Nightcrawler (2014)'
+      e.g. 001 Nightcrawler v4 001 (2014) (Digital) (Zone-Empire).cbr
+        92687 #1 2014 21pp · 92688 #2 2014 20pp · 92689 #3 2014 23pp · 92690 #4 2014 20pp · 92691 #5 2014 19pp · 92692 #6 2014 22pp
+   G5 "Nightcrawler" in Marvel\_X-Men\_X-Men Complete Chronology V2\1126 Reborn — 6 file(s), numbers 7-12, pp 19-22; cv per-file 72934x6; gcd per-file 80107x6; key 'Nightcrawler (2014)'
+      e.g. 001 Nightcrawler v4 007 (2014) (Digital) (Zone-Empire).cbr
+        92866 #7 2014 19pp · 92867 #8 2015 22pp · 92868 #9 2015 22pp · 92869 #10 2015 22pp · 92870 #11 2015 21pp · 92871 #12 2015 22pp
+   G6 "Nightcrawler" in _Marvel Major Event Chronology (digital)\2014.11 - X-Men - Death of Wolverine\02 Tie-ins\Marvel Universe — 2 file(s), numbers 7-8, pp 19-22; cv per-file 72934x2; gcd per-file 80107x2; key 'Nightcrawler (2014)'
+      [118044] Nightcrawler 007 (2014) (Digital) (Zone-Empire).cbr (19pp)
+      [118045] Nightcrawler 008 (2015) (Digital) (Zone-Empire).cbr (22pp)
+
+== S65548 Rogue  [split]  21 files / 1 collections  decided in R-173 (R)
+   decided: R 65548 | two co-equal runs share this shelf: Rogue (Marvel 2004-2005, 12; CV 19612 / GCD 18855) - our 12 AnPymGold issues 001-012 (22-23pp) and its own "Rogue - The Complete Collection (2015)" 275pp - and Rogue (Marvel 1995, 4-issue limited series; CV 7193 / GCD 7751) - two whole rips of #1-4 ("Rogue 01-04 (of 4) (1995)" Zone 23-25pp and "002-005 Rogue 001-004 (1995)" AnHeroGold 22-24pp), 8 files; the 1995 mini has no shelf (lookup --who-stores cv=7193: 0 Series rows), so it is a co-equal run, not residue (L-368 / L-388), and C-056's "named not merged" S cannot stand
+   F 65548 split-needed | Rogue (2004, CV 19612 / GCD 18855) stays with its 12 issues and the Complete Collection; items 84851 / 84852 / 84853 / 84854 and 88169 / 88170 / 88171 / 88172 -> new key "Rogue (1995)" (CV 7193 issues 66410 / 51329 / 51330 / 51331, GCD 7751 rows 85480 / 68902-68904; filenames "(of 4) (1995)" and year 1995 on every file)
+   N 102429 neither residue annual has a shelf (lookup --who-stores cv=60463 and cv=18169: 0 Series rows), so they stay named, not split; the other yearly X-Men annuals ('95-'98, 2000) sit as residue on S66349
+   N 65548 C-056's F provider-missing (no GCD row for the Complete Collection) stands as a note: GCD holds no Rogue Complete Collection row in our data
+   nearby: S66349 "X-Men" 242f [named S66349 in the decision's R/N lines — S cv=4605 gcd=4254 (R-172 0.9)] keys: "Flashback - X-Men -1" | "X-Men" | "X-Men (1996)" | "X-Men (1997)" (+2 more: lookup.py --shelf 66349)
+   nearby: S14811 "Rogue: The Complete Collection" 1f [shares cv=83976 — S cv=83976 gcd=91825 (B-061 0.95)] keys: "Rogue: The Complete Collection"
+   nearby: S65547 "Rogue" 8f [title — S cv=21823 gcd=10599 (C-053 0.95)] keys: "Rogue (2001)" · S14809 "Rogue Sun" 14f [title+1 — S cv=141789 gcd=182277 (C-032 0.9)] keys: "Rogue Sun"
+   nearby: S693 "Aliens: Rogue" 4f [title+1 — S cv=21127 gcd=15782 (B-053 0.95)] keys: "Aliens: Rogue" · S14808 "Rogue State" 2f [title+1 — S cv=146792 gcd=193232 (A-004 0.95)] keys: "Rogue State"
+   nearby: S14805 "Rogue & Gambit" 1f [title+1 — S cv=107513 gcd=119847 (B-061 0.95)] keys: "Rogue & Gambit: Ring Of Fire"
+   nearby: S14807 "Rogue Planet" 1f [title+1 — S cv=127405 gcd=160568 (B-065 0.95)] keys: "Rogue Planet"
+   nearby: S14810 "Rogue & Gambit" 1f [title+1 — S cv=148664 gcd=197358 (B-050 0.95)] keys: "Rogue and Gambit - Power Play"
+   keys now: "Rogue (2004)" x20 · "Rogue" x1
+   groups (title x folder): 5
+   G1 "Rogue - The Complete Collection (2015) (Digital-HD) (Kileko-Empire)" in Marvel\Rogue (2012) — 1 file(s), 1 COL, pp 275-275; cv per-file 83976x1; key 'Rogue'
+      [102429] COL Rogue - The Complete Collection (2015) (Digital-HD) (Kileko-Empire).cbr (275pp)
+   G2 "Rogue" in Marvel\_X-Men\Rogue\Rogue v1 (1995) — 4 file(s), numbers 1-4, pp 23-25; cv per-file 19612x4; gcd per-file 7751x4; key 'Rogue (2004)'
+      e.g. Rogue 01 (of 4) (1995) (Digital) (Zone-Empire).cbr
+        84851 #1 1995 25pp · 84852 #2 1995 25pp · 84853 #3 1995 25pp · 84854 #4 1995 23pp
+   G3 "Rogue" in Marvel\_X-Men\_X-Men Complete Chronology V2\0243 Rogue — 4 file(s), numbers 1-4, pp 22-24; cv per-file 19612x4; gcd per-file 7751x4; key 'Rogue (2004)'
+      e.g. 002 Rogue 001 (1995) (Digital) (AnHeroGold-Empire).cbz
+        88169 #1 1995 24pp · 88170 #2 1995 24pp · 88171 #3 1995 24pp · 88172 #4 1995 22pp
+   G4 "Rogue" in Marvel\_X-Men\_X-Men Complete Chronology V2\0621 Going Rogue — 6 file(s), numbers 1-6, pp 22-23; cv per-file 19612x6; gcd per-file 18855x6; key 'Rogue (2004)'
+      e.g. 001 Rogue 001 (2004) (Digital) (AnPymGold-Empire).cbz
+        89986 #1 2004 22pp · 89987 #2 2004 23pp · 89988 #3 2004 23pp · 89989 #4 2004 23pp · 89990 #5 2005 23pp · 89991 #6 2005 22pp
+   G5 "Rogue" in Marvel\_X-Men\_X-Men Complete Chronology V2\0655 Forget Me Not — 6 file(s), numbers 7-12, pp 22-23; cv per-file 19612x6; gcd per-file 18855x6; key 'Rogue (2004)'
+      e.g. 001 Rogue 007 (2005) (Digital) (AnPymGold-Empire).cbz
+        90135 #7 2005 22pp · 90136 #8 2005 23pp · 90137 #9 2005 23pp · 90138 #10 2005 22pp · 90139 #11 2005 23pp · 90140 #12 2005 22pp
+
+== S66372 X-Men Forever  [split]  47 files / 5 collections  decided in R-173 (S)
+   decided: S 66372 cv=26670 gcd=37856 0.9 | X-Men Forever (Marvel 2009-2010, 24): CV 26670 (2009, 24 cached) and GCD 37856 (Marvel 2009-2010, 24; per-file on 35/47) agree on publisher, span and count; our ladder 1-24 and the run's own five trades (GCD 63122 rows, notes #1-5 ... #21-24) are one run; 0.9 for X-Men Forever Alpha (91213) and X-Men Forever Annual #1 (91481), one-shots with their own records, and the sixteen sequel issues split below
+   F 66372 split-needed | items 91522-91526, 91577-91581, 91659-91664 ("X-Men Forever 2 001-016 (2010-2011)", 24-26pp, 16 files) are X-Men Forever 2 (Marvel 2010-2011, 16; CV 33670 / GCD 49795), which S22365 stores with its three trades (lookup --who-stores cv=33670) -> join S22365 on its ParsedKey "X-Men Forever 2" (L-368 / L-388)
+   N 66372 C-057's F needs-fetch cv=26670 and F provider-missing are spent - CV 26670 is cached (24 issues) and GCD holds the five trades as series 63122; GCD's per-file 90303 (Panini España, 10 files) is a foreign stamp
+   named: S22365 X-Men Forever 2  3 files  keys: "X-Men Forever 2"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S22367 "X-Men Forever Giant Size" 1f [shares gcd=49509 (collected by item 86204) — S cv=33569 gcd=49509 (B-062 0.95)] keys: "X-Men Forever Giant-Size"
+   nearby: S66373 "X-Men Forever" 9f [title — S cv=157312 gcd=210102 (C-037 0.95)] keys: "X-Men Forever (2024)" · S66371 "X-Men Forever" 6f [title — S cv=9197 gcd=9951 (A-026 0.95)] keys: "X-Men Forever (2001)"
+   keys now: "X-Men Forever (2009)" x47
+   groups (title x folder): 11
+   G1 "X-Men Forever" in Marvel\_X-Men\X-Men Forever\X-Men Forever v1 (2009) — 5 file(s), 5 COL, pp 122-154; cv per-file 30385x1, 37000x1, 37003x1; gcd per-file 63122x5; key 'X-Men Forever (2009)'
+      [86200] COL X-Men Forever Vol. 1 - Picking Up Where We Left Off (2009) (Digital) (AnHeroGold-Empire).cbz (128pp)
+         own record cv 30385 / gcd s63122 "X-Men Forever" (issue 912162) COLLECTS: gcd=37856 X-Men Forever (2009) #1-5
+      [86201] COL X-Men Forever Vol. 2 - The Secret History of the Sentinels (2010) (Digital) (AnHeroGold-Empire).cbz (122pp)
+         own record cv 37000 / gcd s63122 "X-Men Forever" (issue 912163) COLLECTS: gcd=37856 X-Men Forever (2009) #6-10
+      [86202] COL X-Men Forever Vol. 3 - Come To Mother... Russia! (2010) (Digital) (AnHeroGold-Empire).cbz (126pp)
+         own record cv 37003 / gcd s63122 "X-Men Forever" (issue 912164) COLLECTS: gcd=37856 X-Men Forever (2009) #11-15
+      [86203] COL X-Men Forever Vol. 4 - Devil in a White Dress (2010) (Digital) (AnHeroGold-Empire).cbz (154pp)
+         own record cv 37004 / gcd s63122 "X-Men Forever" (issue 912165) COLLECTS: gcd=37856 X-Men Forever (2009) #16-20 · gcd=48224 X-Men Forever Annual (2010) #1
+      [86204] COL X-Men Forever Vol. 5 - Once More... Into the Breach (2010) (Digital) (AnHeroGold-Empire).cbz (151pp)
+         own record cv 36377 / gcd s63122 "X-Men Forever" (issue 912166) COLLECTS: gcd=37856 X-Men Forever (2009) #21-24 · gcd=49509 X-Men Forever Giant-Size (2010) #1
+   G2 "X-Men Forever" in Marvel\_X-Men\_X-Men Complete Chronology V2\0825 Picking Up Where We Left Off — 5 file(s), numbers 1-5, pp 25-25; cv per-file 26670x5; gcd per-file 37856x5; key 'X-Men Forever (2009)'
+      e.g. 002 X-Men Forever 001 (2009) (Digital) (AnHeroGold-Empire).cbz
+        91214 #1 2009 25pp · 91215 #2 2009 25pp · 91216 #3 2009 25pp · 91217 #4 2009 25pp · 91218 #5 2009 25pp
+   G3 "X-Men Forever (Alpha cover) (2009-Marvel) 97p (c2c) (Kritter-DCP)" in Marvel\_X-Men\_X-Men Complete Chronology V2\0825 Picking Up Where We Left Off — 1 file(s), numbers 1, pp 97-97; cv per-file 26432x1; gcd per-file 37093x1; key 'X-Men Forever (2009)'
+      [91213] 001 X-Men Forever (Alpha cover) (2009-Marvel) 97p (c2c) (Kritter-DCP).cbr (97pp)
+   G4 "X-Men Forever" in Marvel\_X-Men\_X-Men Complete Chronology V2\0837 Secret History of the Sentinels — 5 file(s), numbers 6-10, pp 23-25; cv per-file 26670x5; gcd per-file 37856x5; key 'X-Men Forever (2009)'
+      e.g. 001 X-Men Forever 006 (2009) (Digital) (AnHeroGold-Empire).cbz
+        91278 #6 2009 23pp · 91279 #7 2009 24pp · 91280 #8 2009 24pp · 91281 #9 2009 25pp · 91282 #10 2009 23pp
+   G5 "X-Men Forever" in Marvel\_X-Men\_X-Men Complete Chronology V2\0851 Come to Mother... Russia! — 5 file(s), numbers 11-15, pp 23-25; cv per-file 26670x5; gcd per-file 37856x5; key 'X-Men Forever (2009)'
+      e.g. 001 X-Men Forever 011 (2010) (Digital) (AnHeroGold-Empire).cbz
+        91368 #11 2010 25pp · 91369 #12 2010 23pp · 91370 #13 2010 25pp · 91371 #14 2010 25pp · 91372 #15 2010 25pp
+   G6 "X-Men Forever" in Marvel\_X-Men\_X-Men Complete Chronology V2\0857 Devil in a White Dress — 5 file(s), numbers 16-20, pp 24-25; cv per-file 26670x5; gcd per-file 37856x5; key 'X-Men Forever (2009)'
+      e.g. 001 X-Men Forever 016 (2010) (F) (Digital) (AnPymGold - Empire).cbz
+        91398 #16 2010 24pp · 91399 #17 2010 24pp · 91400 #18 2010 25pp · 91401 #19 2010 24pp · 91402 #20 2010 24pp
+   G7 "X-Men Forever" in Marvel\_X-Men\_X-Men Complete Chronology V2\0869 Once More Into the Breach — 4 file(s), numbers 21-24, pp 23-25; cv per-file 26670x4; gcd per-file 37856x4; key 'X-Men Forever (2009)'
+      e.g. 001 X-Men Forever 021 (2010) (Digital) (AnPymGold - Empire).cbz
+        91477 #21 2010 25pp · 91478 #22 2010 24pp · 91479 #23 2010 23pp · 91480 #24 2010 24pp
+   G8 "X-Men Forever Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0869 Once More Into the Breach — 1 file(s), numbers 1, pp 29-29; cv per-file 32678x1; gcd per-file 48224x1; key 'X-Men Forever (2009)'
+      [91481] 005 X-Men Forever Annual 001 (2010) (Digital) (1920) (Cypher-Empire).cbr (29pp)
+   G9 "X-Men Forever 2" in Marvel\_X-Men\_X-Men Complete Chronology V2\0875 Back in Action — 5 file(s), numbers 1-5, pp 26-26; cv per-file 26670x5; gcd per-file 90303x5; key 'X-Men Forever (2009)'
+      e.g. 001 X-Men Forever 2 001 (2010) (Minutemen-MegaFiji).cbr
+        91522 #1 2010 26pp · 91523 #2 2010 26pp · 91524 #3 2010 26pp · 91525 #4 2010 26pp · 91526 #5 2010 26pp
+   G10 "X-Men Forever 2" in Marvel\_X-Men\_X-Men Complete Chronology V2\0885 Scream a  Little Scream — 5 file(s), numbers 6-10, pp 26-26; cv per-file 26670x5; gcd per-file 37856x5; key 'X-Men Forever (2009)'
+      e.g. 001 X-Men Forever 2 006 (2010) (Minutemen-MegaFiji).cbr
+        91577 #6 2010 26pp · 91578 #7 2010 26pp · 91579 #8 2010 26pp · 91580 #9 2010 26pp · 91581 #10 2010 26pp
+   G11 "X-Men Forever 2" in Marvel\_X-Men\_X-Men Complete Chronology V2\0899 Perfect World — 6 file(s), numbers 11-16, pp 24-26; cv per-file 26670x6; gcd per-file 37856x6; key 'X-Men Forever (2009)'
+      e.g. 001 X-Men Forever 2 011 (2011) (Minutemen-MegaFiji).cbr
+        91659 #11 2011 24pp · 91660 #12 2011 25pp · 91661 #13 2011 26pp · 91662 #14 2011 25pp · 91663 #15 2011 26pp · 91664 #16 2011 25pp
+
+== S66376 X-Men Unlimited  [split]  97 files / 0 collections  decided in R-172 (S)
+   decided: S 66376 cv=5066 gcd=4754 0.9 | X-Men Unlimited (Marvel 1993-2003, 50 issues): CV 5066 (1993, 50 cached #1-50) and GCD 4754 (Marvel 1993-2003, 50; per-file on 67/97) agree on publisher, span and count; ComicInfo Volume "1993" x33, Count "50" x20, Web 45305 / 38812 = CV 5066 #20 / #4; our ladder 1-50 at 36-67pp is the run, the doubles are Complete Chronology second rips plus the five 1993-run strays P-074 joined in; 0.9 for four 2004-run issues split below
+   F 66376 split-needed | items 89965 "006 X-Men Unlimited 003 (2004)" 25pp and 90315 / 90347 / 90455 "X-Men Unlimited 012 / 013 / 014 (2006)" 23 / 21 / 23pp (AnPymGold rips, per-file GCD 11652) are #3 and #12-14 of X-Men Unlimited (2004-2006, CV 10745 / GCD 11652, 21-27pp issues; the 1993 run's issues are 36-67pp) -> join S101518 on its ParsedKey "X-Men Unlimited v2 (2004)" (S101518 stores cv=10745 per lookup --who-stores cv=10745; L-368 / L-388)
+   N 66376 flag #551 label-ambiguous (item 88513 "007 X-Men Unlimited v1 013.cbr" 56pp) is a label question, not conflation: it is a single issue, a second rip of the 1993 run's #13 beside 86332 - answered here, no stale-flag (L-367)
+   N 66376 item 88013 "004 X-Men Unlimited 003 (2004)" 54pp is mislabelled by year: 54pp is the 1993 run's prestige size (the 2004 run's #3 is 25pp, 86365 / 89965) and it is the only 1993 #3 we hold, so it stays; its per-file GCD 11652 stamp is wrong, as are those on 88305 / 88325 / 88366 (52-55pp 1993-run issues)
+   named: S101518 X-Men Unlimited  15 files  keys: "X-Men Unlimited (2004)" | "X-Men Unlimited v2 (2004)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S22416 "X-Men Unlimited: X-Men Green" 2f [title+1 — S cv=144596 gcd=188457 (A-020 0.95)] keys: "X-Men Unlimited - X-Men Green"
+   nearby: S22415 "X-Men Unlimited: Latitude" 1f [title+1 — S cv=142054 gcd=184617 (B-049 0.95)] keys: "X-Men Unlimited - Latitude"
+   keys now: "X-Men Unlimited (1993)" x56 · "X-Men Unlimited v1 (1993)" x41
+   groups (title x folder): 47
+   G1 "X-Men Unlimited" in Marvel\_X-Men\X-Men Unlimited\X-Men Unlimited v1 (1993) — 41 file(s), numbers 1-2, 4-10, 12-14, 17, 19-20, 23, 26, 29-50, pp 23-56; cv per-file 5066x41; gcd per-file 4754x34; key 'X-Men Unlimited v1 (1993)'
+      e.g. X-Men Unlimited 001 (1993) (Digital) (Meganubis-Empire).cbz
+        86322 #1 1993 56pp · 86323 #2 1993 55pp · 86324 #4 1994 54pp · 86325 #5 1994 51pp · 86326 #6 1994 54pp · 86327 #7 1994 52pp · 86328 #8 1995 52pp · 86329 #9 1995 50pp · 86330 #10 1996 55pp
+        86331 #12 1996 45pp · 86332 #13 1996 53pp · 86333 #14 1997 36pp · 86334 #17 1997 36pp · 86335 #19 1998 38pp · 86336 #20 1998 41pp · 86337 #23 1999 38pp · 86338 #26 2000 25pp
+        86339 #29 2000 38pp · 86340 #30 1993 41pp · 86341 #31 1993 41pp · 86342 #32 1993 40pp · 86343 #33 1993 40pp · 86344 #34 1993 38pp · 86345 #34 2002 39pp · 86346 #35 1993 40pp
+        86347 #35 2002 40pp · 86348 #36 1993 41pp · 86349 #37 2002 41pp · 86350 #38 2002 23pp · 86351 #39 2003 43pp · 86352 #40 2003 41pp · 86353 #41 2003 44pp · 86354 #42 2003 42pp
+        86355 #43 2003 28pp · 86356 #44 2003 23pp · 86357 #45 2003 25pp · 86358 #46 2003 29pp · 86359 #47 2003 25pp · 86360 #48 2003 30pp · 86361 #49 2003 27pp · 86362 #50 2003 28pp
+   G2 "X-Men Unlimited" in Marvel\_X-Men\X-Men Unlimited\X-Men Unlimited v2 (2004) — 2 file(s), numbers 27-28, pp 38-39; cv per-file 5066x2; gcd per-file 4754x2; key 'X-Men Unlimited (1993)'
+      [86374] X-Men Unlimited 027 (2000) (Digital) (Shadowcat-Empire).cbz (39pp)
+      [86375] X-Men Unlimited 028 (2000) (Digital) (Shadowcat-Empire).cbz (38pp)
+   G3 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0189 Untitled — 1 file(s), numbers 1, pp 56-56; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [87942] 003 X-Men Unlimited 001 (1993) (Digital) (Meganubis-Empire).cbz (56pp)
+   G4 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0193 The Return of Magneto — 1 file(s), numbers 2, pp 55-55; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [87959] 005 X-Men Unlimited 002 (1993) (Digital) (Meganubis-Empire).cbz (55pp)
+   G5 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0203 Untitled — 1 file(s), numbers 3, pp 54-54; cv per-file 5066x1; gcd per-file 11652x1; key 'X-Men Unlimited (1993)'
+      [88013] 004 X-Men Unlimited 003 (2004) (Digital) (AnHeroGold-Empire).cbz (54pp)
+   G6 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0222 Hope and D'Spayre — 1 file(s), numbers 4, pp 54-54; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [88089] 001 X-Men Unlimited 004 (1994) (digital) (Glorith-HD).cbz (54pp)
+   G7 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0225 Untitled — 1 file(s), numbers 5, pp 52-52; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [88102] 001 X-Men Unlimited 005 (1994) (digital) (Glorith-HD).cbz (52pp)
+   G8 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0236 Untitled — 1 file(s), numbers 6, pp 55-55; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [88144] 006 X-Men Unlimited 006 (1994) (digital) (Glorith-HD).cbz (55pp)
+   G9 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0239 The Nature of the Beast — 1 file(s), numbers 7, pp 53-53; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [88153] 003 X-Men Unlimited 007 (1994) (digital) (Glorith-HD).cbz (53pp)
+   G10 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0263 Untitled — 1 file(s), numbers 8, pp 52-52; cv per-file 10745x1; gcd per-file 11652x1; key 'X-Men Unlimited (1993)'
+      [88305] 003 X-Men Unlimited 008 (2005) (Digital) (AnHeroGold-Empire).cbz (52pp)
+   G11 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0268 Untitled — 1 file(s), numbers 9, pp 50-50; cv per-file 10745x1; gcd per-file 11652x1; key 'X-Men Unlimited (1993)'
+      [88325] 006 X-Men Unlimited 009 (2005) (Digital) (AnHeroGold-Empire).cbz (50pp)
+   G12 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0279 Untitled — 1 file(s), numbers 10, pp 55-55; cv per-file 10745x1; gcd per-file 11652x1; key 'X-Men Unlimited (1993)'
+      [88366] 002 X-Men Unlimited 010 (2005) (Digital) (AnHeroGold-Empire).cbz (55pp)
+   G13 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0288 Onslaught Preview — 1 file(s), numbers 11, pp 67-67; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [88405] 013 X-Men Unlimited 011 (1996) (c2c) (Minutemen-Gird).cbr (67pp)
+   G14 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught — 1 file(s), numbers 12, pp 67-67; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [88440] 030 X-Men Unlimited 012 (1996) (c2c) (Minutemen-Gird).cbr (67pp)
+   G15 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0305 Untitled — 1 file(s), numbers 13, pp 56-56; cv per-file 5066x1; key 'X-Men Unlimited (1993)'
+      [88513] 007 X-Men Unlimited v1 013.cbr (56pp)
+   G16 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0309 Untitled — 1 file(s), numbers 14, pp 51-51; cv per-file 5066x1; key 'X-Men Unlimited (1993)'
+      [88537] 004 X-Men Unlimited #14 (1993) (C2C) (MinuteMen-Gird).cbr (51pp)
+   G17 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0311 Untitled — 1 file(s), numbers 15, pp 49-49; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [88549] 005 X-Men Unlimited 015 (1997) (c2c) (Minutemen-Gird).cbr (49pp)
+   G18 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0329 Zero Tolerance — 1 file(s), numbers 16, pp 38-38; cv per-file 5066x1; key 'X-Men Unlimited (1993)'
+      [88639] 008 X-Men Unlimited #016.cbz (38pp)
+   G19 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0336 Untitled — 1 file(s), numbers 17, pp 37-37; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [88691] 006 X-Men Unlimited 017 (1997) (digital) (Glorith-HD).cbz (37pp)
+   G20 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0347 Untitled — 1 file(s), numbers 18, pp 40-40; cv per-file 5066x1; key 'X-Men Unlimited (1993)'
+      [88740] 001 X-Men Unlimited #018.cbz (40pp)
+   G21 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0357 Untitled — 1 file(s), numbers 19, pp 41-41; cv per-file 5066x1; key 'X-Men Unlimited (1993)'
+      [88791] 004 X-Men Unlimited v1 019.cbr (41pp)
+   G22 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0365 PayBack — 1 file(s), numbers 20, pp 41-41; cv per-file 5066x1; key 'X-Men Unlimited (1993)'
+      [88828] 005 X-Men Unlimited #020.cbr (41pp)
+   G23 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0374 Untitled — 1 file(s), numbers 21, pp 41-41; cv per-file 5066x1; key 'X-Men Unlimited (1993)'
+      [88865] 005 X-Men Unlimited #021.cbr (41pp)
+   G24 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0384 The Hunt for Xavier — 1 file(s), numbers 22, pp 40-40; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [88904] 007 X-Men Unlimited 022 (1999) (Digital) (AnHeroGold-Empire).cbz (40pp)
+   G25 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0399 Unnamed — 1 file(s), numbers 23, pp 38-38; cv per-file 5066x1; key 'X-Men Unlimited (1993)'
+      [88982] 004 X-Men Unlimited #023.cbr (38pp)
+   G26 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0400 Untitlted — 1 file(s), numbers 24, pp 40-40; cv per-file 5066x1; key 'X-Men Unlimited (1993)'
+      [88985] 003 X-Men Unlimited #024.cbr (40pp)
+   G27 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0425 Unnamed — 1 file(s), numbers 25, pp 39-39; cv per-file 5066x1; key 'X-Men Unlimited (1993)'
+      [89078] 003 X-Men Unlimited #025.cbz (39pp)
+   G28 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0433 Ages of Apocalypse — 1 file(s), numbers 26, pp 25-25; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [89118] 003 X-Men Unlimited 026 (2000) (Digital) (AnPymGold-Empire).cbz (25pp)
+   G29 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0445 Untitled — 1 file(s), numbers 28, pp 39-39; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [89178] 002 X-Men Unlimited, 2000-07-00 (#28) (digital) (Glorith-HD).cbz (39pp)
+   G30 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0452 Murder Ballads — 1 file(s), numbers 27, pp 40-40; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [89214] 006 X-Men Unlimited, 2000-04-00 (#27) (digital) (Glorith-HD).cbz (40pp)
+   G31 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0463 Maximum Security — 1 file(s), numbers 29, pp 38-38; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [89272] 019 X-Men Unlimited 029 (2000) (Digital) (AnHeroGold-Empire).cbz (38pp)
+   G32 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0468 Untitled — 1 file(s), numbers 33, pp 52-52; cv per-file 5066x1; key 'X-Men Unlimited (1993)'
+      [89298] 005 X-Men Unlimited v1 033.cbr (52pp)
+   G33 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0472 Unnamed — 2 file(s), numbers 30-31, pp 53-53; cv per-file 5066x2; gcd per-file 4754x2; key 'X-Men Unlimited (1993)'
+      [89316] 004 X-Men Unlimited 030 (2001) (c2c) (Minutemen-Gird).cbr (53pp)
+      [89317] 005 X-Men Unlimited v1 031 (2001) (c2c) (Minutemen-Gird).cbr (53pp)
+   G34 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0483 Countdown — 1 file(s), numbers 32, pp 53-53; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [89367] 005 X-Men Unlimited 032 (2001) (c2c) (Minutemen-Gird).cbr (53pp)
+   G35 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0499 Lacuna — 1 file(s), numbers 34, pp 40-40; cv per-file 5066x1; key 'X-Men Unlimited (1993)'
+      [89446] 003 X-Men Unlimited v1 034.cbr (40pp)
+   G36 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0517 Unnamed — 2 file(s), numbers 35-36, pp 41-46; cv per-file 5066x2; key 'X-Men Unlimited (1993)'
+      [89533] 001 X-Men Unlimited v1 #035.cbr (41pp)
+      [89534] 002 X-Men Unlimited v1 036.cbr (46pp)
+   G37 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0524 New Worlds — 1 file(s), numbers 37, pp 44-44; cv per-file 5066x1; key 'X-Men Unlimited (1993)'
+      [89565] 004 X-Men Unlimited v1 037 (1993) (FBScan).cbr (44pp)
+   G38 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0535 Hated and Feared — 4 file(s), numbers 39-42, pp 42-45; cv per-file 5066x4; gcd per-file 4754x4; key 'X-Men Unlimited (1993)'
+      e.g. 001 X-Men Unlimited 039 (2003).cbz
+        89610 #39 2003 44pp · 89611 #40 2002 42pp · 89612 #41 2003 45pp · 89613 #42 2003 43pp
+   G39 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0536 Untitled — 2 file(s), numbers 43-44, pp 24-29; cv per-file 5066x2; gcd per-file 4754x2; key 'X-Men Unlimited (1993)'
+      [89618] 005 X-Men Unlimited 043 (2003) (digital) (Glorith-HD).cbz (29pp)
+      [89620] 007 X-Men Unlimited 044 (2003) (digital) (Glorith-HD).cbz (24pp)
+   G40 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0540 6 Hours — 1 file(s), numbers 38, pp 23-23; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [89635] 005 X-Men Unlimited v1 038 (2002) (FBScan).cbr (23pp)
+   G41 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0545 Rebels, Freaks & Prophets — 1 file(s), numbers 45, pp 26-26; cv per-file 5066x1; gcd per-file 4754x1; key 'X-Men Unlimited (1993)'
+      [89656] 003 X-Men Unlimited 045 (2003) (digital) (Glorith-HD).cbz (26pp)
+   G42 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0566 Unnamed — 3 file(s), numbers 46-48, pp 26-31; cv per-file 5066x3; gcd per-file 4754x3; key 'X-Men Unlimited (1993)'
+      [89737] 001 X-Men Unlimited 046 (2003) (digital) (Glorith-HD).cbz (30pp)
+      [89738] 002 X-Men Unlimited 047 (2003) (digital) (Glorith-HD).cbz (26pp)
+      [89739] 003 X-Men Unlimited 048 (2003) (digital) (Glorith-HD).cbz (31pp)
+   G43 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0570 Untitled — 2 file(s), numbers 49-50, pp 28-29; cv per-file 5066x2; gcd per-file 4754x2; key 'X-Men Unlimited (1993)'
+      [89757] 002 X-Men Unlimited 049 (2003) (digital) (Glorith-HD).cbz (28pp)
+      [89758] 003 X-Men Unlimited 050 (2003) (digital) (Glorith-HD).cbz (29pp)
+   G44 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0616 Unnatural — 1 file(s), numbers 3, pp 25-25; cv per-file 5066x1; gcd per-file 11652x1; key 'X-Men Unlimited (1993)'
+      [89965] 006 X-Men Unlimited 003 (2004) (Digital) (AnPymGold-Empire).cbz (25pp)
+   G45 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0685 Untitled — 1 file(s), numbers 12, pp 23-23; cv per-file 5066x1; gcd per-file 11652x1; key 'X-Men Unlimited (1993)'
+      [90315] 002 X-Men Unlimited 012 (2006) (Digital) (AnPymGold-Empire).cbz (23pp)
+   G46 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0692 The Longest Night — 1 file(s), numbers 13, pp 21-21; cv per-file 5066x1; gcd per-file 11652x1; key 'X-Men Unlimited (1993)'
+      [90347] 007 X-Men Unlimited 013 (2006) (Digital) (AnPymGold-Empire).cbz (21pp)
+   G47 "X-Men Unlimited" in Marvel\_X-Men\_X-Men Complete Chronology V2\0716 The First Foursaken — 1 file(s), numbers 14, pp 23-23; cv per-file 5066x1; gcd per-file 11652x1; key 'X-Men Unlimited (1993)'
+      [90455] 004 X-Men Unlimited 014 (2006) (Digital) (AnPymGold-Empire).cbz (23pp)
+
+== S7349 Generation X Epic Collection 04: Pride and Penance  [split]  1 files / 1 collections  decided in R-172 (S)
+   decided: S 7349 cv=- gcd=174151 0.9 | volume 04 "Pride and Penance" of the Generation X Epic Collection LINE: GCD 174151 #4 row 2658826 (500pp, ISBN 978-1-302-95652-3, 2024-09-25; roll-up Generation X 1994 #33-47) is our 491pp book; ComicInfo Web 1071814 is the issue of CV 160113, the book's own count-1 volume (on the I line), not the line
+   F 7349 wrong-cv-link | the stored CV 160113 "Generation X Epic Collection: Pride and Penance" is the Vol. 04 book's own count-1 volume, not the line; it belongs on the I line
+   F 7349 split-needed | item 86411 -> join S7350 on its ParsedKey "Generation X Epic Collection: Back To School" - S7350's S line is the same GCD 174151 line with cv=-; the one-book shelf empties by the join (L-377 / L-392 / L-409)
+   named: S7350 Generation X Epic Collection: Back To School  3 files  keys: "Generation X Epic Collection: Back To School"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S7339 "Generation X" 156f [shares gcd=5012 (collected by item 86411) — S cv=5300 gcd=5012 (R-166 0.9)] keys: "Counter X - Generation X - Four Days" | "Generation X" | "Generation X - Flashback -1" | "Generation X - Underground" (+6 more: lookup.py --shelf 7339)
+   nearby: S66376 "X-Men Unlimited" 97f [shares gcd=4754 (collected by item 86411) — S cv=5066 gcd=4754 (R-172 0.9)] keys: "X-Men Unlimited (1993)" | "X-Men Unlimited v1 (1993)"
+   keys now: "Generation X Epic Collection 04: Pride and Penance" x1
+   groups (title x folder): 1
+   G1 "Generation X Epic Collection" in Marvel\_X-Men\_X-Book Epic Collections\Generation X Epic Collection — 1 file(s), 1 COL, pp 491-491; cv per-file 160113x1; gcd per-file 174151x1; key 'Generation X Epic Collection 04: Pride and Penance'
+      [86411] COL Generation X Epic Collection Vol. 04 - Pride and Penance (2024) (digital) (Marika-Empire).cbz (491pp)
+         own record cv 160113 / gcd s174151 "Generation X Epic Collection" (issue 2658826) COLLECTS: gcd=5012 Generation X (1994) #33-47 · gcd=16501 Generation X Holiday Special (1999) #1 · gcd=4754 X-Men Unlimited (1993) #20 · gcd=10255 Generation X / Dracula '98 (1998) (unnumbered)
+
+== S912 Amazing X-Men  [split]  29 files / 3 collections  decided in R-173 (R)
+   decided: R 912 | two co-equal runs share this shelf: Amazing X-Men (Marvel 2014-2015, 19; CV 68919 / GCD 77507) - issues 001-019 (21-25pp), the 2014 Annual #1 and its three trades (GCD 90300 rows) - and Amazing X-Men (Marvel 1995, the Age of Apocalypse 4-issue mini; CV 5535 / GCD 5273) - "Amazing X-Men 01-04 (of 04) (1995)" 21-23pp, the whole mini, which no shelf stores (lookup --who-stores cv=5535: 0 Series rows); a whole second mini is a co-equal run (L-368 / L-388), so C-057's "named not merged" S cannot stand
+   F 912 split-needed | Amazing X-Men (2014, CV 68919 / GCD 77507) stays with its issues, Annual #1 (GCD 81118) and three trades; items 88211 / 88214 / 88225 / 88238 -> new key "Amazing X-Men (1995)" (CV 5535 issues 40581 / 105543 / 40844 / 40967, GCD 5273 rows 56733 / 56892 / 57036 / 57181; "(of 04) (1995)" on every file)
+   N 912 C-057's F needs-fetch cv=68919 is spent - CV 68919 now has a row with #1-19 cached
+   keys now: "Amazing X-Men" x29
+   groups (title x folder): 8
+   G1 "Amazing X-Men" in Marvel\_X-Men\Amazing X-Men\Amazing X-Men v2 (2014) — 3 file(s), 3 COL, pp 132-175; cv per-file 75009x1, 79073x1, 68919x1; gcd per-file 90300x3; key 'Amazing X-Men'
+      [84252] COL Amazing X-Men Vol. 01 - The Quest For Nightcrawler (2014) (Digital) (Kileko-Empire).cbr (138pp)
+         own record cv 75009 / gcd s90300 "Amazing X-Men" (issue 1429073) COLLECTS: gcd=77507 Amazing X-Men (2014) #1-6
+      [84253] COL Amazing X-Men Vol. 02 - World War Wendigo (2014) (Digital) (Kileko-Empire).cbr (132pp)
+         own record cv 79073 / gcd s90300 "Amazing X-Men" (issue 1429074) COLLECTS: gcd=77507 Amazing X-Men (2014) #7-12
+      [84254] COL Amazing X-Men Vol. 03 - Once and Future Juggernaut (2015) (Digital) (F2) (Kileko-Empire).cbz (175pp)
+         own record cv 68919 / gcd s90300 "Amazing X-Men" (issue 1429075) COLLECTS: gcd=77507 Amazing X-Men (2014) #13-19 · gcd=81118 Amazing X-Men Annual (2014) #1
+   G2 "Amazing X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\0247 After Xavier - The Age of Apocolypse — 4 file(s), numbers 1-4, pp 21-23; cv per-file 68919x4; gcd per-file 5273x4; key 'Amazing X-Men'
+      e.g. 016 Amazing X-Men 01 (of 04) (1995) (digital) (Minutemen-Faessla).cbz
+        88211 #1 1995 21pp · 88214 #2 1995 23pp · 88225 #3 1995 23pp · 88238 #4 1995 23pp
+   G3 "Amazing X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\1071 The Quest for Nightcrawler — 6 file(s), numbers 1-6, pp 21-25; cv per-file 68919x6; gcd per-file 77507x6; key 'Amazing X-Men'
+      e.g. 001 Amazing X-Men 001 (2014) (digital) (Minutemen-Spaztastic).cbr
+        92557 #1 2014 25pp · 92558 #2 2014 22pp · 92559 #3 2014 22pp · 92560 #4 2014 23pp · 92561 #5 2014 21pp · 92562 #6 2014 22pp
+   G4 "Amazing X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\1120 World War Wendigo — 6 file(s), numbers 7-12, pp 21-22; cv per-file 68919x6; gcd per-file 77507x6; key 'Amazing X-Men'
+      e.g. 001 Amazing X-Men 007 (2014) (digital) (Minutemen-Spaztastic).cbr
+        92830 #7 2014 22pp · 92832 #8 2014 22pp · 92833 #9 2014 21pp · 92834 #10 2014 22pp · 92835 #11 2014 21pp · 92836 #12 2014 21pp
+   G5 "Amazing X-Men Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\1120 World War Wendigo — 1 file(s), numbers 1, pp 26-26; cv per-file 68919x1; gcd per-file 77507x1; key 'Amazing X-Men'
+      [92831] 002 Amazing X-Men Annual 01 (2014) (digital) (Minutemen-Spaztastic).cbr (26pp)
+   G6 "Amazing X-Men" in Marvel\_X-Men\_X-Men Complete Chronology V2\1129 The Once and Future Juggernaut — 7 file(s), numbers 13-19, pp 21-22; cv per-file 68919x7; gcd per-file 77507x7; key 'Amazing X-Men'
+      e.g. 001 Amazing X-Men 013 (2015) (digital) (Minutemen-Spaztastic).cbr
+        92883 #13 2015 22pp · 92884 #14 2015 22pp · 92885 #15 2015 22pp · 92886 #16 2015 21pp · 92887 #17 2015 21pp · 92888 #18 2015 22pp · 92889 #19 2015 22pp
+   G7 "Amazing X-Men" in Marvel\__Skottie Young Covers — 1 file(s), numbers 1, pp 1-1; cv per-file 68919x1; gcd per-file 77507x1; key 'Amazing X-Men'
+      [51926] Amazing X-Men 001 (2014) (Skottie Young Baby Variant) (Cover ONLY) (NN).cbr (1pp)
+   G8 "Amazing X-Men" in _Marvel Major Event Chronology (digital)\2014.10 - AXIS\02 Tie-ins\X-Men — 1 file(s), numbers 14, pp 23-23; cv per-file 68919x1; gcd per-file 77507x1; key 'Amazing X-Men'
+      [118033] Amazing X-Men 014 (2015) (Digital) (Zone-Empire).cbr (23pp)
