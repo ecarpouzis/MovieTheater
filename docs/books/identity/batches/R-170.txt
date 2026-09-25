@@ -1,0 +1,169 @@
+## Conventions for this batch (22 shown of 119 matched; 408 in LEDGER.md; 3 shelf/shelves: pub:marvel ×3 · kind:collected-line ×2 · kind:trade-only ×2 · folder:events ×1 · folder:sequel-subfolder ×1 · folder:vn-year ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (3 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-136] (3 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-142] (3 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (3 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-029] (2 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
+- On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
+  collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
+[L-031] (2 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (2 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (2 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (2 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (2 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-127] (2 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-132] (2 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-133] (2 shelf/shelves) pub:marvel sig:probe
+- GCD splits a compound word ComicVine joins: "X-Men: Clan Destine" (5570) is invisible to a "ClanDestine" probe,
+  and 32535 "ClanDestine vs. The X-Men" is the collected edition, not the mini.
+[L-196] (2 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (2 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (2 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-298] (2 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-306] (2 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (2 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (2 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-313] (2 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-327] (2 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+
++97 more matched entries not shown: L-328, L-329, L-332, L-343, L-388, L-392, L-397, L-398, L-400, L-401, L-405, L-406, L-407, L-408, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-281, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-030, L-034, L-060, L-113, L-116, L-130, L-151, L-160, L-169, L-174, L-193, L-242, L-319, L-324, L-345, L-389, L-391, L-395, L-399, L-013, L-014, L-016, L-032, L-043, L-050, L-064, L-072, L-085, L-088, L-089, L-095, L-096, L-101, L-114, L-118, L-124, L-125, L-157, L-159, L-163, L-175, L-177, L-191, L-204, L-253, L-264, L-267, L-272, L-273, L-290, L-292, L-294, L-310, L-341, L-346, L-347, L-065, L-099, L-123, L-194, L-262, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S22139 X-23: The Complete Collection  [tier B]   keys: X-23: The Complete Collection  years 2016-2016  2 files / 2 collections
+   split run: "X-23: The Complete Collection" run={"cv": 92585, "gcd": 104522} (new shelf from P-072) — seed the S line from these ids, then verify them
+   folders: [2] Marvel\_X-Men\X-23 (2004)
+   files:   [85482] COL 01 X-23 - The Complete Collection Vol. 01 (2016) (Digital) (Zone-Empire).cbr (454pp)
+            [85484] COL 03 X-23 - The Complete Collection v02 (2019) (Digital) (Kileko-Empire).cbz (459pp)
+   ours:    ComicInfo Series: "X-23: The Complete Collection"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [85482] gcd notes 1605886 (#1 of X-23: The Complete Collection): X-23 (Marvel, 2005 series) #1-6; X-23: Target X (Marvel, 2007 series) #1-6; Captain Universe / X-23 (Marvel, 2006 series) #1; X-23 (Marvel, 2010 series) #1; (May 2010); X-23 (Marvel, 2010 series) #1-3; (November 2010); and material from X-M  |  gcd_reprint 1605886: s12327 X-23 (2005) #1-6 [7 stories] · s21307 X-23: Target X (2007) #1-6 [6 stories] · s52376 X-23 (2010) #1-3 [3 stories] · s53167 X-Men: To Serve and Protect (2011) #2 [1 story]
+             [85484] gcd notes 1655283 (#2 of X-23: The Complete Collection): X-23 (Marvel 2010 series) #4-21; Daken: Dark Wolverine (Marvel 2010 series) #8-9; All-New Wolverine Saga (Marvel 2010 series) #1; Wolverine: The Road to Hell (Marvel 2010 series) #1  |  gcd_reprint 1655283: s52376 X-23 (2010) #4-21 [19 stories] · s52123 Wolverine: The Road to Hell (2010) #1 [2 stories] · s52299 Daken: Dark Wolverine (2010) #8-9 [2 stories] · s106321 All-New Wolverine Saga (2010) (unnumbered) [1 story]
+   CV linked:      vol 92585 "X-23: The Complete Collection" 2016 Marvel 2 issues; cached #1-2 (2); yearΔ 0; ratio 0/2; no judged range
+   CV candidates:  (= linked) · 32044 "X-23" 2010 Marvel 1 issue 201027 s30 · 35496 "X-23" 2010 Marvel 21 s15 · 18176 "X-23" 2005 Marvel 6 s15 · 112212 "X-23" 2018 Marvel 12 s15 · 125787 "X-23" 2019 Panini Comics 2 s8 · 126158 "X-23" 2019 Panini Verlag 2 s8   (v1 search)
+   CV local rip:   (= linked) · 112212 "X-23" 2018 Marvel 12 (via CV candidate name "X-23") · 125787 "X-23" 2019 Panini Comics 2 (via CV candidate name "X-23") · 126158 "X-23" 2019 Panini Verlag 2 (via CV candidate name "X-23") · 32044 "X-23" 2010 Marvel 1 issue 201027 (via CV candidate name "X-23") · 35496 "X-23" 2010 Marvel 21 (via CV candidate name "X-23")   (rip lookup)
+   GCD dump:       104522 "X-23: The Complete Collection" 2016-2016 Marvel [] 2 · 126773 "X-23" 2018-2019 Marvel [] 12 (via CV candidate name "X-23") · 137218 "X-23" 2018-2019 Marvel [] 2 (via CV candidate name "X-23") · 147506 "X-23" [de] 2019-? Panini Deutschland [] 2 (via CV candidate name "X-23") · 63099 "X-23" 2011-2012 Marvel [] 3 (via CV candidate name "X-23") · 63121 "X-23" 2011-2012 Marvel [] 3 (via CV candidate name "X-23")   (dump lookup)
+
+== S102434 X-23  [tier A]   keys: X-23 v1 (2005)  years 2005-2011  6 files / 0 collections
+   split: the KEPT half of the P-072 split — moved out -> S22139 "X-23: The Complete Collection"; re-identify what stayed
+   folders: [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0654 Guess Who's Back In Town
+   files:   001 X-23 001 (2005) (Digital) (Zone-Empire) (Ok).cbr … 006 X-23 006 (2005) (Digital) (Zone-Empire) (Ok).cbr  (6 files, pp 23-25)
+   ours:    ladder 1-6
+   CV linked:      vol 18176 "X-23" 2005 Marvel 6 issues; cached #1-6 (6); yearΔ 0; ratio 6/6 = 1.00; no judged range
+   CV per-file (v1): vol 35496 "X-23" 2010 Marvel 21 on 6/6 files
+   CV local rip:   (= linked) · 43531 "X-23" 2006 Panini España 3 · 32044 "X-23" 2010 Marvel 1 issue 201027 · 112212 "X-23" 2018 Marvel 12 · 125787 "X-23" 2019 Panini Comics 2   (rip lookup)
+   GCD per-file:   series 12327 "X-23" 2005-2005 Marvel [was ongoing series] 6 on 6/6 files; methods numx6
+   GCD dump:       (= per-file) · 36445 "X-23" [es] 2006-2008 Panini España [] 2 · 169676 "X-23" [pt-br] 2006-2006 Panini Brasil [] 3 · 45314 "X-23" 2010-2010 Marvel [] 1 · 52376 "X-23" 2010-2012 Marvel [] 21 · 63099 "X-23" 2011-2012 Marvel [] 3   (dump lookup)
+   bridges:        gcd 12327 -> LOCG 100127 "X-23" support 6
+
+== S21852 Wolverine Epic Collection  [tier D]   keys: Wolverine Epic Collection  years 2014-2024  10 files / 10 collections
+   split run: "Wolverine Epic Collection" run={"gcd": 80971} (new shelf from P-072) — seed the S line from these ids, then verify them
+   folders: [10] Marvel\_Wolverine\02 Wolverine v2 (1988)\Trades
+   files:   [97645] COL Wolverine Epic Collection Vol. 01 - Madripoor Nights (2014) (Digital) (F) (AnHeroGold-Empire).cbz (495pp)
+            [97646] COL Wolverine Epic Collection Vol. 02 - Back to Basics (2019) (Digital) (Zone-Empire).cbr (466pp)
+            [97647] COL Wolverine Epic Collection Vol. 03 - Blood and Claws (2021) (Digital-Empire).cbr (446pp)
+            [97648] COL Wolverine Epic Collection Vol. 06 - Inner Fury (2020) (Digital) (Kileko-Empire).cbz (460pp)
+            [97649] COL Wolverine Epic Collection Vol. 07 - To The Bone (2023) (Digital) (Kileko-Empire).cbz (436pp)
+            [97650] COL Wolverine Epic Collection Vol. 08 - The Dying Game (2015) (Digital) (F) (Kileko-Empire).cbz (434pp)
+            [97651] COL Wolverine Epic Collection Vol. 09 - Tooth And Claw (2022) (Digital) (Kileko-Empire).cbz (466pp)
+            [97653] COL Wolverine Epic Collection Vol. 12 - Shadow of Apocalypse (2017) (Digital) (Kileko-Empire).cbr (487pp)
+            [97654] COL Wolverine Epic Collection Vol. 13 - Blood Debt (2018) (Digital) (Kileko-Empire).cbr (469pp)
+            [97655] COL Wolverine Epic Collection Vol. 14 - The Return Of Weapon X (2024) (Digital) (Kileko-Empire).cbz (425pp)
+   ours:    ComicInfo Series: "Wolverine Epic Collection"x2, "Wolverine Epic Collection: Blood And Claws"x1, "Wolverine Epic Collection: Inner Fury"x1, "Wolverine Epic Collection: To The Bone"x1; ComicInfo Publisher: "Marvel"x8
+   GCD says: [97645] gcd_reprint 1208198: s3865 Wolverine (1988) #1-16 [17 stories] · s3654 Marvel Comics Presents (1988) #1-10 [10 stories] · s74368 Marvel Age Annual (1985) #4 [1 story]
+             [97646] gcd notes 1932201 (#2 of Wolverine Epic Collection): Wolverine (Marvel, 1988 series) #17-30  |  gcd_reprint 1932201: s3865 Wolverine (1988) #17-30 [31 stories] · s7741 Wolverine: The Jungle Adventure (1990) (unnumbered) [4 stories] · s14536 Wolverine, Nick Fury: The Scorpio Connection (1989) (unnumbered) [4 stories] · s69795 Marvel Age (1983) #79-80, #84, #92 [4 stories]
+             [97647] gcd_reprint 2238352: s3865 Wolverine (1988) #31-44 [29 stories] · s28501 Wolverine: Bloody Choices (1991) (unnumbered) [2 stories] · s7742 Wolverine Annual 2 - Bloodlust (1990) #2 [2 stories]
+             [97648] gcd notes 2116112 (#6 of Wolverine Epic Collection): Wolverine (Marvel, 1988 series) #69-75; eries), Wolverine: Global Jeopardy (Marvel, 1993 series), Sabretooth (Marvel, 1993 series) #1-4; X-Men (Marvel, 1991 series) #25  |  gcd_reprint 2116112: s3865 Wolverine (1988) #69-75 [8 stories] · s4727 Sabretooth (1993) #1-4 [4 stories] · s4254 X-Men (1991) #25 [1 story] · s9942 Wolverine: Global Jeopardy (1993) #1 [1 story]
+             [97649] gcd notes 2546675 (#7 of Wolverine Epic Collection): Wolverine (Marvel, 1988 series) #76-86; Cable (Marvel 1993 series) #16  |  gcd_reprint 2546675: s3865 Wolverine (1988) #76-86 [26 stories] · s16225 Scorpio Rising [Wolverine & Nick Fury] (1994) (unnumbered) [5 stories] · s18444 Wolverine: Evilution (1994) (unnumbered) [5 stories] · s16873 Ghost Rider, Wolverine, Punisher: The Dark Design (1994) (unnumbered) [3 stories]
+             [97650] gcd_reprint 1339630: s3865 Wolverine (1988) #87-100 [16 stories] · s11245 Wolverine '95 (1995) #1 [3 stories] · s9943 Wolverine: Knight of Terra (1995) #1 [1 story]
+             [97651] gcd_reprint 2421280: s3865 Wolverine (1988) #101-109 [18 stories] · s11964 Venom: Tooth and Claw (1996) #1-3 [7 stories] · s40645 Wolverine Special (1996) #102.5 [4 stories] · s7736 Logan: Shadow Society (1996) (unnumbered) [3 stories]
+             [97653] gcd_reprint 1671875: s3865 Wolverine (1988) #133-149 [35 stories] · s7292 Hulk (1999) #8 [2 stories] · s10623 Wolverine / Cable (1999) #1 [2 stories]
+             [97654] gcd_reprint 1796388: s3865 Wolverine (1988) #150-158 [34 stories] · s9926 Wolverine: The Origin (2001) #1-6 [30 stories] · s72280 Wolverine: The Origin (2002) (unnumbered) [4 stories] · s9824 Wolverine 1999 (1999) (unnumbered) [4 stories]
+             [97655] gcd_reprint 2617434: s3865 Wolverine (1988) #159-172 [44 stories] · s11777 Wolverine 2001 (2001) (unnumbered) [4 stories] · s86771 Wizard: The Comics Magazine (1991) #115, #117, #130 [3 stories] · s11776 Wolverine 2000 (2000) (unnumbered) [3 stories]
+   CV candidates:  125689 "Wolverine Epic Collection: Inner Fury" 2020 Marvel ? s33 · 78816 "Wolverine Epic Collection: Madripoor Nights" 2014 Marvel ? s33 · 109464 "Wolverine Epic Collection: Blood Debt" 2018 Marvel ? s33 · 151521 "Wolverine Epic Collection: To the Bone" 2023 Marvel ? s32 · 86412 "Wolverine Epic Collection: The Dying Game" 2015 Marvel ? s32 · 98540 "Wolverine Epic Collection: Shadow of Apocalypse" 2017 Marvel ? s32   (v1 search)
+   CV local rip:   78816 "Wolverine Epic Collection: Madripoor Nights" 2014 Marvel 1 issue 473228 (via CV candidate name "Wolverine Epic Collection: Madripoor Nights") · 109464 "Wolverine Epic Collection: Blood Debt" 2018 Marvel 1 issue 664316 (via CV candidate name "Wolverine Epic Collection: Blood Debt") · 125689 "Wolverine Epic Collection: Inner Fury" 2020 Marvel 1 issue 740894 (via CV candidate name "Wolverine Epic Collection: Inner Fury")   (rip lookup)
+   GCD dump:       80971 "Wolverine Epic Collection" 2014-? Marvel [] 11   (dump lookup)

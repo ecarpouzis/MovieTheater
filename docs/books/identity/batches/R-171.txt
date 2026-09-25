@@ -1,0 +1,286 @@
+## Conventions for this batch (22 shown of 96 matched; 408 in LEDGER.md; 15 shelf/shelves: kind:trade-only ×15 · kind:collected-line ×15 · pub:marvel ×15 · kind:new ×6)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-029] (15 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
+- On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
+  collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
+[L-031] (15 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-033] (15 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-076] (15 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (15 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (15 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (15 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-132] (15 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-133] (15 shelf/shelves) pub:marvel sig:probe
+- GCD splits a compound word ComicVine joins: "X-Men: Clan Destine" (5570) is invisible to a "ClanDestine" probe,
+  and 32535 "ClanDestine vs. The X-Men" is the collected edition, not the mini.
+[L-136] (15 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-142] (15 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-196] (15 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (15 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (15 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-298] (15 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-306] (15 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (15 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (15 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-313] (15 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-327] (15 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (15 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+[L-329] (15 shelf/shelves) kind:collected-line pub:dc pub:marvel
+- DC/Marvel trade lines often store a GCD row that belongs to a FOREIGN or other edition (Urban Comics' French GL
+  2011, a German GL 2023 Vol. 1) — check the stored row's series before using its roll-up. GCD carries twin HC/SC
+  series for most 2006-2016 DC/Marvel trades (77116/77117, 77936/77937) → cap those I lines at 0.9. CV keeps count-1
+  "Title: Subtitle" volumes per trade before ~2016, numbered TPB-line volumes after (R-054).
+
++74 more matched entries not shown: L-332, L-378, L-388, L-389, L-392, L-397, L-398, L-400, L-401, L-405, L-406, L-407, L-408, L-127, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-014, L-030, L-064, L-085, L-101, L-151, L-160, L-310, L-016, L-032, L-113, L-114, L-123, L-150, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-193, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-331 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S22165 X-Factor Epic Collection: All-New, All-Different X-Factor  [tier B]   keys: X-Factor Epic Collection: All-New, All-Different X-Factor  years 2018-2018  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\X-Factor Epic Collection
+   files:   [86423] COL X-Factor Epic Collection Vol. 07 - All-New, All-Different X-Factor (2019) (Digital) (Kileko-Empire) (1).cbz (452pp)
+   ours:    ComicInfo Series: "X-Factor Epic Collection: All-New, All-Different X-Factor"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86423] gcd_reprint 1876455: s3209 X-Factor (1986) #71-83 [29 stories] · s3210 X-Factor Annual (1986) #7 [8 stories] · s1866 The Incredible Hulk (1968) #390-392 [6 stories] · s69665 X-Factor Visionaries: Peter David (2005) #1-3 [3 stories]
+   CV linked:      vol 115597 "X-Factor Epic Collection: All-New, All-Different X-Factor" 2018 Marvel 1 issues issue 693476; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 70703 "All-New X-Factor" 2014 Marvel 20 s70 · 144797 "X-Factor Epic Collection: Afterlives" 2022 Marvel 1 issue 944336 s60 · 80959 "All-New X-Factor: AXIS" 2015 Marvel 1 issue 483669 s56 · 18109 "X-Factor" 2006 Marvel 114 s55 · 129097 "X-Factor" 2020 Marvel 10 s55 · 75008 "All-New X-Factor: Not Brand X" 2014 Marvel 1 issue 456824 s47   (v1 search)
+   CV local rip:   (= linked) · 70703 "All-New X-Factor" 2014 Marvel 20 (via CV candidate name "All-New X-Factor") · 144797 "X-Factor Epic Collection: Afterlives" 2022 Marvel 1 issue 944336 (via CV candidate name "X-Factor Epic Collection: Afterlives")   (rip lookup)
+   GCD dump:       78388 "All-New X-Factor" 2014-2015 Marvel [] 20 (via CV candidate name "All-New X-Factor") · 87582 "All-New X-Factor" 2014-2015 Marvel [] 3 (via CV candidate name "All-New X-Factor")   (dump lookup)
+
+== S22166 X-Factor Epic Collection: Angel of Death  [tier C] · by 4  keys: X-Factor Epic Collection: Angel Of Death  years 2021-2021  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\X-Factor Epic Collection
+   files:   [86421] COL X-Factor Epic Collection Vol. 03 - Angel of Death (2021) (Digital-Empire).cbr (480pp)
+   ours:    ComicInfo Series: "X-Factor Epic Collection: Angel Of Death"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86421] gcd notes 2219353 (#3 of X-Factor Epic Collection): X-Factor (Marvel, 1986 series) #21-36; X-Factor Annual (Marvel, 1986 series) #3; Power Pack (Marvel, 1984 series) #35  |  gcd_reprint 2219353: s3209 X-Factor (1986) #21-36 [33 stories] · s3210 X-Factor Annual (1986) #3 [8 stories] · s2886 Power Pack (1984) #35 [2 stories]
+   CV linked:      vol 135614 "X-Factor Epic Collection: Angel of Death" 2021 Marvel 1 issues issue 845179; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 144797 "X-Factor Epic Collection: Afterlives" 2022 Marvel 1 issue 944336 s60 · 122824 "X-Factor Epic Collection: X-aminations" 2019 Marvel 1 issue 727279 s60 · 153031 "X-Factor Epic Collection: Judgement War" 2023 Marvel 1 issue 1009041 s58 · 162509 "X-Factor Epic Collection: Wreaking Havok" 2025 Marvel 1 issue 1096665 s58 · 115597 "X-Factor Epic Collection: All-New, All-Different X-Factor" 2018 Marvel 1 issue 693476 s57 · 99273 "X-Factor Epic Collection: Genesis & Apocalypse" 2017 Marvel 1 issue 583734 s57   (v1 search)
+   CV local rip:   (= linked) · 144797 "X-Factor Epic Collection: Afterlives" 2022 Marvel 1 issue 944336 (via CV candidate name "X-Factor Epic Collection: Afterlives") · 122824 "X-Factor Epic Collection: X-aminations" 2019 Marvel 1 issue 727279 (via CV candidate name "X-Factor Epic Collection: X-aminations")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112457 "X-Factor Epic Collection" 2017-? Marvel [collected edition] 7 on 1/1 files; the dump names no other series
+   bridges:        gcd 112457 -> LOCG 130094 "X-Factor Epic Collection: All-New, All-Different X-Factor TP" support 5 · gcd 112457 -> OL /works/OL21123316W "None" isbnSupport 7
+
+== S22167 X-Factor Epic Collection: Judgement War  [tier C] · by 6  keys: X-Factor Epic Collection: Judgement War  years 2023-2023  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\X-Factor Epic Collection
+   files:   [86422] COL X-Factor Epic Collection Vol. 04 - Judgement War (2023) (Digital-Empire).cbr (489pp)
+   ours:    ComicInfo Series: "X-Factor Epic Collection: Judgement War"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86422] gcd_reprint 2561681: s3209 X-Factor (1986) #37-50 [15 stories] · s2605 The Uncanny X-Men (1981) #242-243 [2 stories] · s3210 X-Factor Annual (1986) #4 [1 story]
+   CV linked:      vol 153031 "X-Factor Epic Collection: Judgement War" 2023 Marvel 1 issues issue 1009041; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 144797 "X-Factor Epic Collection: Afterlives" 2022 Marvel 1 issue 944336 s65 · 122824 "X-Factor Epic Collection: X-aminations" 2019 Marvel 1 issue 727279 s65 · 162509 "X-Factor Epic Collection: Wreaking Havok" 2025 Marvel 1 issue 1096665 s64 · 115597 "X-Factor Epic Collection: All-New, All-Different X-Factor" 2018 Marvel 1 issue 693476 s63 · 99273 "X-Factor Epic Collection: Genesis & Apocalypse" 2017 Marvel 1 issue 583734 s63 · 135614 "X-Factor Epic Collection: Angel of Death" 2021 Marvel 1 issue 845179 s63   (v1 search)
+   CV local rip:   (= linked) · 144797 "X-Factor Epic Collection: Afterlives" 2022 Marvel 1 issue 944336 (via CV candidate name "X-Factor Epic Collection: Afterlives") · 122824 "X-Factor Epic Collection: X-aminations" 2019 Marvel 1 issue 727279 (via CV candidate name "X-Factor Epic Collection: X-aminations")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112457 "X-Factor Epic Collection" 2017-? Marvel [collected edition] 7 on 1/1 files; the dump names no other series
+   bridges:        gcd 112457 -> LOCG 130094 "X-Factor Epic Collection: All-New, All-Different X-Factor TP" support 5 · gcd 112457 -> OL /works/OL21123316W "None" isbnSupport 7
+
+== S22168 X-Factor Epic Collection: X-aminations  [tier C] · by 2  keys: X-Factor Epic Collection: X-aminations  years 2019-2019  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\X-Factor Epic Collection
+   files:   [86424] COL X-Factor Epic Collection Vol. 08 - X-aminations (2020) (Digital) (Kileko-Empire).cbz (478pp)
+   ours:    ComicInfo Series: "X-Factor Epic Collection: X-aminations"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86424] gcd notes 2102083 (#8 of X-Factor Epic Collection): X-Factor (Marvel, 1986 series) #84-100; X-Factor Annual (Marvel, 1986 series) #8  |  gcd_reprint 2102083: s3209 X-Factor (1986) #84-100 [48 stories] · s3210 X-Factor Annual (1986) #8 [8 stories] · s69665 X-Factor Visionaries: Peter David (2005) #4 [2 stories] · s49868 X-Cutioner's Song (1994) (unnumbered) [1 story]
+   CV linked:      vol 122824 "X-Factor Epic Collection: X-aminations" 2019 Marvel 1 issues issue 727279; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 144797 "X-Factor Epic Collection: Afterlives" 2022 Marvel 1 issue 944336 s74 · 153031 "X-Factor Epic Collection: Judgement War" 2023 Marvel 1 issue 1009041 s73 · 162509 "X-Factor Epic Collection: Wreaking Havok" 2025 Marvel 1 issue 1096665 s73 · 115597 "X-Factor Epic Collection: All-New, All-Different X-Factor" 2018 Marvel 1 issue 693476 s72 · 99273 "X-Factor Epic Collection: Genesis & Apocalypse" 2017 Marvel 1 issue 583734 s72 · 135614 "X-Factor Epic Collection: Angel of Death" 2021 Marvel 1 issue 845179 s72   (v1 search)
+   CV local rip:   (= linked) · 144797 "X-Factor Epic Collection: Afterlives" 2022 Marvel 1 issue 944336 (via CV candidate name "X-Factor Epic Collection: Afterlives") · 153031 "X-Factor Epic Collection: Judgement War" 2023 Marvel 1 issue 1009041 (via CV candidate name "X-Factor Epic Collection: Judgement War")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112457 "X-Factor Epic Collection" 2017-? Marvel [collected edition] 7 on 1/1 files; the dump names no other series
+   bridges:        gcd 112457 -> LOCG 130094 "X-Factor Epic Collection: All-New, All-Different X-Factor TP" support 5 · gcd 112457 -> OL /works/OL21123316W "None" isbnSupport 7
+
+== S22185 X-Force Epic Collection: Under The Gun  [tier B]   keys: X-Force Epic Collection  years 2017-2017  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\X-Force Epic Collection
+   files:   [86427] COL X-Force Epic Collection Vol. 01 - Under The Gun (2017) (digital) (Minutemen-Excelsior).cbz (463pp)
+   GCD says: [86427] gcd_reprint 1683134: s4253 X-Force (1991) #1-15 [46 stories] · s180722 X-Force Omnibus (2013) #1 [25 stories] · s4487 X-Force Annual (1992) #1 [9 stories] · s69130 Marvel: The Year in Review (1989) #3 [5 stories]
+   CV linked:      vol 100100 "X-Force Epic Collection: Under The Gun" 2017 Marvel 1 issues issue 588581; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 123418 "X-Force Epic Collection: X-Cutioner's Song" 2019 Marvel 1 issue 730359 s88 · 142447 "X-Force Epic Collection: Zero Tolerance" 2022 Marvel 1 issue 918640 s88 · 151266 "X-Force Epic Collection: Armageddon Now" 2023 Marvel 1 issue 994542 s88 · 162508 "X-Force Epic Collection: Toy Soldiers " 2025 Marvel 1 issue 1096680 s88 · 155355 "X-Force Epic Collection: Assault on Graymalkin " 2023 Marvel 1 issue 1034559 s87 · 55357 "Marvel Deluxe : X-Force" 2013 Panini France 1 issue 376973 s33   (v1 search)
+   CV local rip:   (= linked) · 123418 "X-Force Epic Collection: X-Cutioner's Song" 2019 Marvel 1 issue 730359 (via CV candidate name "X-Force Epic Collection: X-Cutioner's Song") · 142447 "X-Force Epic Collection: Zero Tolerance" 2022 Marvel 1 issue 918640 (via CV candidate name "X-Force Epic Collection: Zero Tolerance") · 151266 "X-Force Epic Collection: Armageddon Now" 2023 Marvel 1 issue 994542 (via CV candidate name "X-Force Epic Collection: Armageddon Now")   (rip lookup)
+   GCD dump:       112917 "X-Force Epic Collection" 2017-? Marvel [] 6   (dump lookup)
+
+== S22186 X-Force Epic Collection: Armageddon Now  [tier C] · by 6  keys: X-Force Epic Collection: Armageddon Now  years 2023-2023  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\X-Force Epic Collection
+   files:   [86431] COL X-Force Epic Collection Vol. 08 - Armageddon Now (2023) (Digital) (Kileko-Empire).cbz (470pp)
+   ours:    ComicInfo Series: "X-Force Epic Collection: Armageddon Now"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86431] gcd_reprint 2544656: s4253 X-Force (1991) #85-100 [17 stories] · s29881 X-Force 1999 (1999) (unnumbered) [1 story] · s10859 X-Force / Champions '98 (1998) (unnumbered) [1 story]
+   CV linked:      vol 151266 "X-Force Epic Collection: Armageddon Now" 2023 Marvel 1 issues issue 994542; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 28051 "Armageddon Now" 2008 Image 1 issue 172209 s70 · 123418 "X-Force Epic Collection: X-Cutioner's Song" 2019 Marvel 1 issue 730359 s64 · 142447 "X-Force Epic Collection: Zero Tolerance" 2022 Marvel 1 issue 918640 s64 · 162508 "X-Force Epic Collection: Toy Soldiers " 2025 Marvel 1 issue 1096680 s64 · 100100 "X-Force Epic Collection: Under The Gun" 2017 Marvel 1 issue 588581 s63 · 155355 "X-Force Epic Collection: Assault on Graymalkin " 2023 Marvel 1 issue 1034559 s63   (v1 search)
+   CV local rip:   (= linked) · 28051 "Armageddon Now" 2008 Image 1 issue 172209 (via CV candidate name "Armageddon Now") · 123418 "X-Force Epic Collection: X-Cutioner's Song" 2019 Marvel 1 issue 730359 (via CV candidate name "X-Force Epic Collection: X-Cutioner's Song")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112917 "X-Force Epic Collection" 2017-? Marvel [collected edition] 6 on 1/1 files; the dump names no other series
+   bridges:        gcd 112917 -> LOCG 130173 "X-Force Epic Collection: Zero Tolerance TP" support 4 · gcd 112917 -> OL /works/OL20210146W "None" isbnSupport 5
+
+== S22187 X-Force Epic Collection: Assault on Graymalkin   [tier C] · by 6  keys: X-Force Epic Collection: Assault On Graymalkin  years 2023-2023  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\X-Force Epic Collection
+   files:   [86429] COL X-Force Epic Collection Vol. 03 - Assault on Graymalkin (2023) (Digital-Empire).cbr (479pp)
+   ours:    ComicInfo Series: "X-Force Epic Collection: Assault On Graymalkin"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86429] gcd notes 2589396 (#3 of X-Force Epic Collection): X-Force (Marvel, 1991 series) #20-26; X-Force Annual (Marvel, 1992 series) #2; Cable (Marvel, 1993 series) #1-4; Deadpool: The Circle Chase (Marvel, 1993 series) #1-4; Nomad (Marvel, 1992 series) #20  |  gcd_reprint 2589396: s4253 X-Force (1991) #20-26 [16 stories] · s4686 Deadpool: The Circle Chase (1993) #1-4 [9 stories] · s4675 Cable (1993) #1-4 [9 stories] · s4487 X-Force Annual (1992) #2 [7 stories]
+   CV linked:      vol 155355 "X-Force Epic Collection: Assault on Graymalkin " 2023 Marvel 1 issues issue 1034559; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 43843 "X-Force: Assault on Graymalkin" 2011 Marvel 1 issue 301212 s85 · 123418 "X-Force Epic Collection: X-Cutioner's Song" 2019 Marvel 1 issue 730359 s58 · 142447 "X-Force Epic Collection: Zero Tolerance" 2022 Marvel 1 issue 918640 s58 · 151266 "X-Force Epic Collection: Armageddon Now" 2023 Marvel 1 issue 994542 s58 · 162508 "X-Force Epic Collection: Toy Soldiers " 2025 Marvel 1 issue 1096680 s58 · 100100 "X-Force Epic Collection: Under The Gun" 2017 Marvel 1 issue 588581 s57   (v1 search)
+   CV local rip:   (= linked) · 123418 "X-Force Epic Collection: X-Cutioner's Song" 2019 Marvel 1 issue 730359 (via CV candidate name "X-Force Epic Collection: X-Cutioner's Song") · 43843 "X-Force: Assault on Graymalkin" 2011 Marvel 1 issue 301212 (via CV candidate name "X-Force: Assault on Graymalkin")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112917 "X-Force Epic Collection" 2017-? Marvel [collected edition] 6 on 1/1 files
+   GCD dump:       74102 "X-Force: Assault on Graymalkin" 2011-2011 Marvel [] 1 (via CV candidate name "X-Force: Assault on Graymalkin")   (dump lookup)
+   bridges:        gcd 112917 -> LOCG 130173 "X-Force Epic Collection: Zero Tolerance TP" support 4 · gcd 112917 -> OL /works/OL20210146W "None" isbnSupport 5
+
+== S22188 X-Force Epic Collection: X-Cutioner's Song  [tier C] · by 2  keys: X-Force Epic Collection: X-Cutioner's Song  years 2019-2019  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\X-Force Epic Collection
+   files:   [86428] COL X-Force Epic Collection Vol. 02 - X-Cutioner's Song (2019) (Digital) (Kileko-Empire).cbz (475pp)
+   ours:    ComicInfo Series: "X-Force Epic Collection: X-Cutioner's Song"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86428] gcd notes 2056442 (#2 of X-Force Epic Collection): Cable: Blood and Metal (Marvel, 1992 series) #1-2; Uncanny X-Men (Marvel, 1981 series) #294-296; X-Factor (Marvel, 1986 series) #84-86; X-Men (Marvel, 1991 series) #14-16; X-Force (Marvel, 1991 series) #16-19; Stryfe's Strike File (Marvel,   |  gcd_reprint 2056442: s4253 X-Force (1991) #16-19 [14 stories] · s2605 The Uncanny X-Men (1981) #294-296 [14 stories] · s4254 X-Men (1991) #14-16 [12 stories] · s3209 X-Factor (1986) #84-86 [12 stories]
+   CV linked:      vol 123418 "X-Force Epic Collection: X-Cutioner's Song" 2019 Marvel 1 issues issue 730359; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 146947 "X-Men Epic Collection: The X-Cutioner's Song" 2022 Marvel 1 issue 961463 s76 · 142447 "X-Force Epic Collection: Zero Tolerance" 2022 Marvel 1 issue 918640 s64 · 151266 "X-Force Epic Collection: Armageddon Now" 2023 Marvel 1 issue 994542 s64 · 100100 "X-Force Epic Collection: Under The Gun" 2017 Marvel 1 issue 588581 s63 · 155355 "X-Force Epic Collection: Assault on Graymalkin " 2023 Marvel 1 issue 1034559 s63 · 49862 "X-Men: X-Cutioner's Song" 2011 Marvel 1 issue 342196 s56   (v1 search)
+   CV local rip:   (= linked) · 142447 "X-Force Epic Collection: Zero Tolerance" 2022 Marvel 1 issue 918640 (via CV candidate name "X-Force Epic Collection: Zero Tolerance") · 146947 "X-Men Epic Collection: The X-Cutioner's Song" 2022 Marvel 1 issue 961463 (via CV candidate name "X-Men Epic Collection: The X-Cutioner's Song")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112917 "X-Force Epic Collection" 2017-? Marvel [collected edition] 6 on 1/1 files; the dump names no other series
+   bridges:        gcd 112917 -> LOCG 130173 "X-Force Epic Collection: Zero Tolerance TP" support 4 · gcd 112917 -> OL /works/OL20210146W "None" isbnSupport 5
+
+== S22189 X-Force Epic Collection: Zero Tolerance  [tier C] · by 5  keys: X-Force Epic Collection: Zero Tolerance  years 2022-2022  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\X-Force Epic Collection
+   files:   [86430] COL X-Force Epic Collection Vol. 07 - Zero Tolerance (2022) (Digital) (Kileko-Empire).cbz (489pp)
+   ours:    ComicInfo Series: "X-Force Epic Collection: Zero Tolerance"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86430] gcd_reprint 2390603: s4253 X-Force (1991) #66-84 [21 stories]
+   CV linked:      vol 142447 "X-Force Epic Collection: Zero Tolerance" 2022 Marvel 1 issues issue 918640; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 123418 "X-Force Epic Collection: X-Cutioner's Song" 2019 Marvel 1 issue 730359 s64 · 151266 "X-Force Epic Collection: Armageddon Now" 2023 Marvel 1 issue 994542 s64 · 162508 "X-Force Epic Collection: Toy Soldiers " 2025 Marvel 1 issue 1096680 s64 · 100100 "X-Force Epic Collection: Under The Gun" 2017 Marvel 1 issue 588581 s63 · 155355 "X-Force Epic Collection: Assault on Graymalkin " 2023 Marvel 1 issue 1034559 s63 · 22208 "Zero Tolerance" 1990 First 4 s58   (v1 search)
+   CV local rip:   (= linked) · 151266 "X-Force Epic Collection: Armageddon Now" 2023 Marvel 1 issue 994542 (via CV candidate name "X-Force Epic Collection: Armageddon Now") · 123418 "X-Force Epic Collection: X-Cutioner's Song" 2019 Marvel 1 issue 730359 (via CV candidate name "X-Force Epic Collection: X-Cutioner's Song")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 112917 "X-Force Epic Collection" 2017-? Marvel [collected edition] 6 on 1/1 files; the dump names no other series
+   bridges:        gcd 112917 -> LOCG 130173 "X-Force Epic Collection: Zero Tolerance TP" support 4 · gcd 112917 -> OL /works/OL20210146W "None" isbnSupport 5
+
+== S22349 X-Men Epic Collection  [tier C] · gap 2  keys: X-Men Epic Collection  years 2016-2024  4 files / 4 collections
+   folders: [4] Marvel\_X-Men\_X-Book Epic Collections\X-Men Epic Collection
+   files:   [86433] COL X-Men Epic Collection Vol. 02 - Lonely Are The Hunted (2016) (Digital) (Kileko-Empire).cbr (521pp)
+            [86436] COL X-Men Epic Collection Vol. 05 - Second Genesis (2017) (Digital) (Kileko-Empire).cbr (508pp)
+            [86444] COL X-Men Epic Collection Vol. 19 - Mutant Genesis (2018) (Digital) (Kileko-Empire).cbr (437pp)
+            [86448] COL X-Men Epic Collection Vol. 23 - Fatal Attractions (2024) (Digital) (Shan-Empire).cbz (477pp)
+   GCD says: [86433] gcd notes 1657241 (#2 of X-Men Epic Collection): *X-Men* (Marvel, 1963 series) #24-45; *Avengers* (Marvel, 1963 series) #53; *Not Brand Echh* (Marvel, 1967 series) #8, #10  |  gcd_reprint 1657241: s1576 The X-Men (1963) #24-45 [53 stories] · s1811 Not Brand Echh (1967) #8, #10 [4 stories] · s1571 The Avengers (1963) #53 [2 stories]
+             [86436] gcd notes 1687216 (#5 of X-Men Epic Collection): Giant-Size X-Men (Marvel, 1975 series) #1; The X-Men (Marvel, 1963 series) #94-110; Iron Fist (Marvel, 1975 series) #14-15; Marvel Team-Up (Marvel, 1972 series) #53, #69-70; Marvel Team-Up Annual (Marvel, 1976 series) #1  |  gcd_reprint 1687216: s1576 The X-Men (1963) #94-110 [35 stories] · s2056 Marvel Team-Up (1972) #53, #69-70 [6 stories] · s2252 Iron Fist (1975) #14-15 [4 stories] · s2249 Giant-Size X-Men (1975) #1-2 [3 stories]
+             [86444] gcd_reprint 1762533: s3209 X-Factor (1986) #65-70 [18 stories] · s4254 X-Men (1991) #2-3 [16 stories] · s2605 The Uncanny X-Men (1981) #278-280 [6 stories] · s69795 Marvel Age (1983) #104 [5 stories]
+             [86448] gcd_reprint 2625770: s2605 The Uncanny X-Men (1981) #301-306 [6 stories] · s4695 Gambit (1993) #1-4 [4 stories] · s4254 X-Men (1991) #24-25 [3 stories] · s34221 X-Men: Survival Guide to the Mansion (1993) (unnumbered) [1 story]
+   CV candidates:  170243 "X-Men Epic Collection: Lifedeath" 2026 Marvel 1 issue 1153323 s77 · 129905 "X-Men Epic Collection: Proteus" 2020 Marvel 1 issue 796464 s77 · 149294 "X-Men Epic Collection: Legacies" 2023 Marvel 1 issue 981295 s77 · 87522 "X-Men Epic Collection: The Gift" 2015 Marvel 1 issue 511937 s76 · 167715 "X-Men Epic Collection: Wounded Wolf" 2025 Marvel 1 issue 1138501 s76 · 100394 "X-Men Epic Collection: Second Genesis" 2017 Marvel 1 issue 589841 s76   (v1 search)
+   CV local rip:   129905 "X-Men Epic Collection: Proteus" 2020 Marvel 1 issue 796464 (via CV candidate name "X-Men Epic Collection: Proteus") · 149294 "X-Men Epic Collection: Legacies" 2023 Marvel 1 issue 981295 (via CV candidate name "X-Men Epic Collection: Legacies") · 170243 "X-Men Epic Collection: Lifedeath" 2026 Marvel 1 issue 1153323 (via CV candidate name "X-Men Epic Collection: Lifedeath")   (rip lookup)
+   GCD per-file:   series 82692 "X-Men Epic Collection" 2014-? Marvel [collected edition] 19 on 4/4 files; methods numx4; the dump names no other series
+   bridges:        gcd 82692 -> LOCG 121291 "X-Men Epic Collection: Legacies TP" support 17 · gcd 82692 -> OL /works/OL21156473W "None" isbnSupport 17
+
+== S22350 X-Men Epic Collection: God Loves, Man Kills  [tier C] · by 10  keys: X-Men Epic Collection 10: God Loves, Man Kills  years 2024-2024  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\X-Men Epic Collection
+   files:   [86441] COL X-Men Epic Collection Vol. 10 - God Loves, Man Kills 001 (2025) (digital) (Marika-Empire).cbz (495pp)
+   ours:    ComicInfo Series: "X-Men Epic Collection 10: God Loves, Man Kills"x1; ComicInfo Volume: "2025"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86441] gcd notes 1251195 (#1 of X-Men Epic Collection): The X-Men (Marvel, 1963 series) #1-23  |  gcd_reprint 1251195: s1576 The X-Men (1963) #1-23 [50 stories]  |  ⚠ stored GCD row is another book: our vol 10 vs GCD #1; our subtitle 'God Loves, Man Kills 001' vs GCD title 'Children of the Atom' — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+   CV linked:      vol 161794 "X-Men Epic Collection: God Loves, Man Kills" 2024 Marvel 1 issues issue 1086748; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 30069 "X-Men: God Loves, Man Kills" 2007 Marvel 1 issue 185247 s85 · 32138 "X-Men: God Loves, Man Kills" 2003 Marvel 1 issue 201549 s85 · 34126 "X-Treme X-Men: God Loves, Man Kills" 2003 Marvel 1 issue 222696 s66 · 132641 "X-Men: God Loves, Man Kills Extended Cut" 2020 Marvel 1 issue 821526 s65 · 170243 "X-Men Epic Collection: Lifedeath" 2026 Marvel 1 issue 1153323 s60 · 129905 "X-Men Epic Collection: Proteus" 2020 Marvel 1 issue 796464 s60   (v1 search)
+   CV local rip:   (= linked) · 30069 "X-Men: God Loves, Man Kills" 2007 Marvel 1 issue 185247 (via CV candidate name "X-Men: God Loves, Man Kills") · 32138 "X-Men: God Loves, Man Kills" 2003 Marvel 1 issue 201549 (via CV candidate name "X-Men: God Loves, Man Kills")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 82692 "X-Men Epic Collection" 2014-? Marvel [collected edition] 19 on 1/1 files
+   GCD dump:       227839 "X-Men: God Loves, Man Kills" 2011-2011 Marvel [] 1 (via CV candidate name "X-Men: God Loves, Man Kills") · 27783 "X-Men: God Loves, Man Kills" 2007-2007 Marvel [] 1 (via CV candidate name "X-Men: God Loves, Man Kills") · 27030 "X-Men: God Loves, Man Kills" 1994-1994 Marvel [] 1 (via CV candidate name "X-Men: God Loves, Man Kills")   (dump lookup)
+   bridges:        gcd 82692 -> LOCG 121291 "X-Men Epic Collection: Legacies TP" support 17 · gcd 82692 -> OL /works/OL21156473W "None" isbnSupport 17
+
+== S22351 X-Men Epic Collection: Bishop's Crossing  [tier C] · by 8  keys: X-Men Epic Collection: Bishop's Crossing  years 2022-2022  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\X-Men Epic Collection
+   files:   [86445] COL X-Men Epic Collection Vol. 20 - Bishop's Crossing (2022) (Digital) (Kileko-Empire).cbz (486pp)
+   ours:    ComicInfo Series: "X-Men Epic Collection: Bishop's Crossing"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86445] gcd_reprint 2382027: s2605 The Uncanny X-Men (1981) #281-288 [18 stories] · s11656 The X-Men Annual (1992) #1 [15 stories] · s4254 X-Men (1991) #4-9 [12 stories] · s11669 The Uncanny X-Men Annual (1992) #16 [10 stories]
+   CV linked:      vol 142082 "X-Men Epic Collection: Bishop's Crossing" 2022 Marvel 1 issues issue 913701; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 52926 "X-Men: Bishop's Crossing" 2012 Marvel 1 issue 361083 s85 · 170243 "X-Men Epic Collection: Lifedeath" 2026 Marvel 1 issue 1153323 s65 · 129905 "X-Men Epic Collection: Proteus" 2020 Marvel 1 issue 796464 s65 · 149294 "X-Men Epic Collection: Legacies" 2023 Marvel 1 issue 981295 s65 · 87522 "X-Men Epic Collection: The Gift" 2015 Marvel 1 issue 511937 s64 · 150441 "Iron Man Epic Collection: The Crossing" 2023 Marvel 1 issue 989798 s63   (v1 search)
+   CV local rip:   (= linked) · 170243 "X-Men Epic Collection: Lifedeath" 2026 Marvel 1 issue 1153323 (via CV candidate name "X-Men Epic Collection: Lifedeath") · 52926 "X-Men: Bishop's Crossing" 2012 Marvel 1 issue 361083 (via CV candidate name "X-Men: Bishop's Crossing")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 82692 "X-Men Epic Collection" 2014-? Marvel [collected edition] 19 on 1/1 files
+   GCD dump:       109554 "X-Men: Bishop's Crossing" 2016-2016 Marvel [] 1 (via CV candidate name "X-Men: Bishop's Crossing") · 73382 "X-Men: Bishop's Crossing" 2012-2012 Marvel [] 1 (via CV candidate name "X-Men: Bishop's Crossing")   (dump lookup)
+   bridges:        gcd 82692 -> LOCG 121291 "X-Men Epic Collection: Legacies TP" support 17 · gcd 82692 -> OL /works/OL21156473W "None" isbnSupport 17
+
+== S22352 X-Men Epic Collection: Children of the Atom  [tier B]   keys: X-Men Epic Collection: Children Of The Atom  years 2014-2014  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\X-Men Epic Collection
+   files:   [86432] COL X-Men Epic Collection Vol. 01 - Children Of The Atom (2019) (Digital) (Kileko-Empire).cbz (523pp)
+   ours:    ComicInfo Series: "X-Men Epic Collection: Children Of The Atom"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86432] gcd notes 1251195 (#1 of X-Men Epic Collection): The X-Men (Marvel, 1963 series) #1-23  |  gcd_reprint 1251195: s1576 The X-Men (1963) #1-23 [50 stories]
+   CV linked:      vol 79108 "X-Men Epic Collection: Children of the Atom" 2014 Marvel 1 issues issue 474847; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 137991 "X-Men: Children of the Atom" 2001 Marvel 1 issue 876199 s85 · 22607 "X-Men: Children of the Atom" 1999 Marvel 6 s70 · 87522 "X-Men Epic Collection: The Gift" 2015 Marvel 1 issue 511937 s63 · 30239 "X-Men: Day of the Atom" 2005 Marvel 1 issue 186417 s63 · 70827 "X-Men: Battle of the Atom" 2014 Marvel 1 issue 441870 s63 · 170243 "X-Men Epic Collection: Lifedeath" 2026 Marvel 1 issue 1153323 s60   (v1 search)
+   CV local rip:   (= linked) · 137991 "X-Men: Children of the Atom" 2001 Marvel 1 issue 876199 (via CV candidate name "X-Men: Children of the Atom") · 22607 "X-Men: Children of the Atom" 1999 Marvel 6 (via CV candidate name "X-Men: Children of the Atom")   (rip lookup)
+   GCD dump:       177820 "X-Men: Children of the Atom" 2019-2019 Marvel [] 9 (via CV candidate name "X-Men: Children of the Atom") · 79923 "X-Men: Children of the Atom" 2005-2005 Marvel [] 1 (via CV candidate name "X-Men: Children of the Atom") · 33030 "X-Men: Children of the Atom" 2001-2001 Marvel [] 1 (via CV candidate name "X-Men: Children of the Atom") · 9947 "X-Men: Children of the Atom" 1999-2000 Marvel [] 6 (via CV candidate name "X-Men: Children of the Atom")   (dump lookup)
+
+== S22353 X-Men Epic Collection: Dissolution & Rebirth  [tier C] · by 5  keys: X-Men Epic Collection: Dissolution & Rebirth  years 2019-2019  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\X-Men Epic Collection
+   files:   [86443] COL X-Men Epic Collection Vol. 17 - Dissolution & Rebirth (2019) (Digital) (Kileko-Empire).cbz (484pp)
+   ours:    ComicInfo Series: "X-Men Epic Collection: Dissolution & Rebirth"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86443] gcd notes 2009558 (#17 of X-Men Epic Collection): The Uncanny X-Men (Marvel, 1981 series) #248-267  |  gcd_reprint 2009558: s2605 The Uncanny X-Men (1981) #248-267 [32 stories]
+   CV linked:      vol 120673 "X-Men Epic Collection: Dissolution & Rebirth" 2019 Marvel 1 issues issue 716381; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 170243 "X-Men Epic Collection: Lifedeath" 2026 Marvel 1 issue 1153323 s60 · 129905 "X-Men Epic Collection: Proteus" 2020 Marvel 1 issue 796464 s60 · 149294 "X-Men Epic Collection: Legacies" 2023 Marvel 1 issue 981295 s60 · 87522 "X-Men Epic Collection: The Gift" 2015 Marvel 1 issue 511937 s58 · 167715 "X-Men Epic Collection: Wounded Wolf" 2025 Marvel 1 issue 1138501 s58 · 100394 "X-Men Epic Collection: Second Genesis" 2017 Marvel 1 issue 589841 s58   (v1 search)
+   CV local rip:   (= linked) · 129905 "X-Men Epic Collection: Proteus" 2020 Marvel 1 issue 796464 (via CV candidate name "X-Men Epic Collection: Proteus") · 170243 "X-Men Epic Collection: Lifedeath" 2026 Marvel 1 issue 1153323 (via CV candidate name "X-Men Epic Collection: Lifedeath")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 82692 "X-Men Epic Collection" 2014-? Marvel [collected edition] 19 on 1/1 files; the dump names no other series
+   bridges:        gcd 82692 -> LOCG 121291 "X-Men Epic Collection: Legacies TP" support 17 · gcd 82692 -> OL /works/OL21156473W "None" isbnSupport 17
+
+== S22354 X-Men Epic Collection: I, Magneto  [tier C] · by 7  keys: X-Men Epic Collection: I, Magneto  years 2021-2021  1 files / 1 collections
+   folders: [1] Marvel\_X-Men\_X-Book Epic Collections\X-Men Epic Collection
+   files:   [86439] COL X-Men Epic Collection Vol. 08 - I, Magneto (2022) (Digital) (Kileko-Empire).cbz (471pp)
+   ours:    ComicInfo Series: "X-Men Epic Collection: I, Magneto"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [86439] gcd_reprint 2277482: s2605 The Uncanny X-Men (1981) #144-153 [21 stories] · s2657 Marvel Fanfare (1982) #1-4 [12 stories] · s2595 Bizarre Adventures (1981) #27 [10 stories] · s1951 X-Men Annual (1970) #5 [2 stories]
+   CV linked:      vol 140248 "X-Men Epic Collection: I, Magneto" 2021 Marvel 1 issues issue 895781; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 170243 "X-Men Epic Collection: Lifedeath" 2026 Marvel 1 issue 1153323 s65 · 129905 "X-Men Epic Collection: Proteus" 2020 Marvel 1 issue 796464 s65 · 87522 "X-Men Epic Collection: The Gift" 2015 Marvel 1 issue 511937 s64 · 21069 "X-Men: Magneto War" 1999 Marvel 1 issue 126243 s56 · 114104 "X-Men: Black - Magneto" 2018 Marvel 1 issue 687031 s56 · 141831 "X-Men: The Trial of Magneto" 2022 Marvel 1 issue 910534 s51   (v1 search)
+   CV local rip:   (= linked) · 129905 "X-Men Epic Collection: Proteus" 2020 Marvel 1 issue 796464 (via CV candidate name "X-Men Epic Collection: Proteus") · 170243 "X-Men Epic Collection: Lifedeath" 2026 Marvel 1 issue 1153323 (via CV candidate name "X-Men Epic Collection: Lifedeath")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 82692 "X-Men Epic Collection" 2014-? Marvel [collected edition] 19 on 1/1 files; the dump names no other series
+   bridges:        gcd 82692 -> LOCG 121291 "X-Men Epic Collection: Legacies TP" support 17 · gcd 82692 -> OL /works/OL21156473W "None" isbnSupport 17
