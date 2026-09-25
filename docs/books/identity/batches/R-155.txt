@@ -1,0 +1,368 @@
+## Conventions for this batch (23 shown of 144 matched; 400 in LEDGER.md; 13 shelf/shelves: pub:marvel ×13 · folder:sequel-subfolder ×11 · folder:vn-year ×10 · folder:events ×5 · kind:trade-only ×4 · kind:collected-line ×4 · kind:foreign ×2 · kind:new ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (13 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (13 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (13 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-136] (11 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-060] (10 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (10 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-127] (10 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-191] (11 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-281] (11 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-290] (11 shelf/shelves) folder:sequel-subfolder pass:item sig:stamp
+- A spin-off filed in its own subfolder on the parent's shelf gets the PARENT's v01 ids stamped by the per-file
+  matcher (Rent-a-(Really Shy!)-Girlfriend on Rent-A-Girlfriend) — `N no-record` (or the shelf note), never the
+  parent's record; it is a misfiling for the lead.
+[L-124] (10 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-272] (10 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-130] (6 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-298] (6 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (6 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-388] (6 shelf/shelves) pub:marvel sig:split
+- R-134 (wave 128, lead ruling): RESIDUE vs co-equal — two or more whole trades of another run are a co-equal run (R +
+  split-needed) only when that run has NO shelf of its own; when its run or line already has a shelf, they are misfiled
+  books: S + `F split-needed | items -> join S<home>` (L-368; X-Factor 2024 S66336's two Peter David omnibuses -> S22172).
+  `#MARVEL CURRENT ONGOING TITLES`: Marika / MikeNY76 ComicInfo Web ids and "cvv<id>" Series strings name the stored CV
+  volume (1.0 evidence). From the Ashes "Variant Covers" folders hold the PREVIOUS run's finale covers (X-Men v6 #35 in
+  the v7 folder). "_X-Men Complete Chronology V2\NNNN <event>" annuals are event-chapter excerpts = partial rips. A
+  ripper's "Omnibus Book 01" in a run's folder can be that run's first omnibus, not the line's Vol. 1 (page count decides).
+  CV mints one count-1 volume per Venom by Ewing trade; GCD keeps two lines (183532 Vols 1-4, 208820 Vols 5-8).
+[L-034] (5 shelf/shelves) folder:events pub:marvel sig:round2
+- `_X-Men Complete Chronology` / `_Marvel Major Event Chronology` folders re-file the same books a second and
+  third time — every ratio 2.00 there, never a second run. Crossover blocks get handed one member's series by
+  `round2-folder` (four Age of Apocalypse shelves → "X-Man", a 76-issue hull).
+[L-169] (5 shelf/shelves) folder:events pub:marvel sig:trade-link
+- `_Marvel Major Event Chronology (digital)` is one folder per tie-in holding that tie-in's collected edition: the
+  count-1-trade-as-stored-link artefact runs at 86 of 202 shelves there, the highest rate in any single folder.
+[L-174] (5 shelf/shelves) pub:marvel sig:legacy-stamp sig:stamp
+- A legacy-renumbered run is its own volume in both legs (Captain Marvel #125-129 = CV 105506 / GCD 117972; GotG
+  #146-150 = GCD 118041); the per-file matcher reaches the 1960s/1990s namesake by issue number every time.
+[L-242] (5 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-306] (5 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-319] (5 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-391] (5 shelf/shelves) pub:marvel sig:split
+- Lead rulings (waves 133-134): annuals on a monthly's shelf are residue ONLY while they have no home — when an annual
+  series has its own shelf (Avengers Annual S1612, CV 2350 / GCD 1807), they JOIN it (refines L-369). L-369's first-record
+  rule needs the chain's OPENING issues on the shelf: Rawhide Kid S14413 holds only the 1960+ era, so it stores the 1960
+  records. A TPB line spanning two runs keeps its own identity (Spider-Man 2099 GCD 86779 Vols 1-7 over the 2014 and 2015
+  runs; L-109/L-318). Star Brand: CV splits the retitle (3652 #1-10 / 51406 #11-19), GCD 3204 keeps #1-19 — store 3652
+  (L-369). Humorama Zip: CV numbers by cover month (#196403); "v14 07" = January 1968. Time Runs Out: GCD 89288 = the
+  2015 HC rows, 92245 = the TPB rows; CV 79464 follows the HC dates. Chronology `NNN Avengers` refiles of v1 issues are
+  second rips; later-volume files were folded onto the v1 shelf by bare title — split by year.
+
++121 more matched entries not shown: L-399, L-030, L-151, L-160, L-029, L-031, L-076, L-109, L-115, L-117, L-132, L-196, L-291, L-295, L-296, L-307, L-308, L-324, L-327, L-328, L-329, L-332, L-345, L-392, L-395, L-397, L-398, L-400, L-193, L-016, L-032, L-064, L-085, L-101, L-113, L-114, L-175, L-310, L-133, L-343, L-371, L-390, L-014, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-027, L-265, L-357, L-379, L-389, L-194, L-330, L-065, L-097, L-099, L-123, L-252, L-262, L-274, L-288, L-293, L-352, L-354, L-028, L-036, L-119, L-121, L-129, L-172, L-173, L-315, L-387, L-393, L-396, L-007, L-217, L-128, L-150, L-181, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S5642 Doctor Strange  [tier B]   keys: Doctor Strange by Mark Waid  years 2018-2024  6 files / 6 collections
+   split run: "Doctor Strange by Mark Waid" run=- (new shelf from P-064) — seed the S line from these ids, then verify them
+   folders: [4] Marvel\_Doctor Strange\08 Doctor Strange v5 (2018) · [2] Marvel\_Doctor Strange\08 Doctor Strange v5 (2018)\Deluxe Editions
+   files:   [78994] COL Doctor Strange by Mark Waid Book 01 (2023) (Digital-Empire).cbr (256pp) | [78995] COL Doctor Strange by Mark Waid Book 02 (2024) (Digital-Empire).cbr (365pp)
+            [78996] COL Doctor Strange by Mark Waid Vol. 01 - Across the Universe (2018) (Digital) (Zone-Empire).cbr (112pp)
+            [78997] COL Doctor Strange by Mark Waid Vol. 02 - Remittance (2019) (Digital) (Zone-Empire).cbr (151pp)
+            [78998] COL Doctor Strange by Mark Waid Vol. 03 - Herald (2019) (Digital) (Zone-Empire).cbr (135pp)
+            [78999] COL Doctor Strange by Mark Waid Vol. 04 - The Choice (2020) (Digital) (Zone-Empire).cbr (107pp)
+   ours:    ComicInfo Series: "Doctor Strange by Mark Waid"x4; ComicInfo Publisher: "Marvel"x4
+   GCD says: [78994] gcd_reprint 2589919: s125730 Doctor Strange (2018) #1-11 [12 stories]
+             [78995] gcd_reprint 2649065: s125730 Doctor Strange (2018) #12-20 [9 stories] · s153707 Dr. Strange (2020) #1-3 [6 stories] · s151455 Doctor Strange Annual (2019) #1 [2 stories]
+             [78996] gcd notes 1955785 (#1 of Doctor Strange by Mark Waid): Doctor Strange (Marvel, 2018 Series) #1-5  |  gcd_reprint 1955785: s125730 Doctor Strange (2018) #1-5 [15 stories]
+             [78997] gcd notes 1955789 (#2 of Doctor Strange by Mark Waid): Doctor Strange (Marvel, 2018 series) #6-11  |  gcd_reprint 1955789: s125730 Doctor Strange (2018) #6-11 [7 stories]
+             [78998] gcd notes 2131060 (#3 of Doctor Strange by Mark Waid): Doctor Strange (Marvel, 2018 series) #12-17  |  gcd_reprint 2131060: s125730 Doctor Strange (2018) #12-17 [15 stories]
+             [78999] gcd notes 2131143 (#4 of Doctor Strange by Mark Waid): Doctor Strange (2018) #18-20; Doctor Strange Annual (Marvel, 2019 series) #1  |  gcd_reprint 2131143: s125730 Doctor Strange (2018) #18-20 [11 stories] · s151455 Doctor Strange Annual (2019) #1 [5 stories]
+   CV linked:      vol 111415 "Doctor Strange" 2018 Marvel 20 issues; cached #1-20 (20); yearΔ 0; ratio 0/20; no judged range
+   CV candidates:  115727 "Doctor Strange by Mark Waid: Across The Universe" 2018 Marvel 1 issue 694124 s90 · 57482 "Daredevil by Mark Waid" 2013 Marvel 5 s76 · 38934 "Fantastic Four by Mark Waid" 2004 Marvel 3 s72 · 99293 "Daredevil by Mark Waid Omnibus" 2017 Marvel 2 s69 · 45530 "Daredevil by Mark Waid" 2012 Marvel 7 s68 · 155525 "Doctor Strange By Mark Waid" 2023 Marvel 2 s58   (v1 search)
+   CV local rip:   (= linked) · 102003 "Doctor Strange" 2017 Kodansha 1 issue 600146 · 106673 "Doctor Strange" 2017 Marvel 2 · 150556 "Doctor Strange" 2016 Panini Comics 63 · 85094 "Doctor Strange" 2015 Marvel 37 · 148962 "Doctor Strange" 2023 Marvel 18   (rip lookup)
+   GCD dump:       125730 "Doctor Strange" 2018-2019 Marvel [] 20 · 119031 "Doctor Strange" 2017-2018 Marvel [] 2 · 141573 "Doctor Strange" [es-mx] 2019-? Editorial Televisa [] 7 · 148819 "Doctor Strange" [de] 2019-2021 Panini Deutschland [] 5 · 165477 "ドクター・ストレンジ  [Doctor Strange]" [ja-jp] 2017-2017 講談社 [Kōdansha] [] 1 · 181777 "Doctor Strange" [fr] 2019-2021 Panini France [] 4   (dump lookup)
+
+== S64591 Doctor Strange  [tier C] · gap 48  keys: Doctor Strange (2023) | Doctor Strange By Jed Mackay | Doctor Strange by Jed Mackay | Doctor Strange v6 (2023)  years 1975-2024  38 files / 3 collections
+   split: the KEPT half of the P-064 split — moved out -> S5642 "Doctor Strange by Mark Waid"; re-identify what stayed
+   folders: [28] Marvel\_Doctor Strange\14 Doctor Strange v6 (2023)\Variant Covers · [4] _Marvel Major Event Chronology (digital)\2024.05 - Blood Hunt\Variant Covers · [3] Marvel\_Doctor Strange\14 Doctor Strange v6 (2023) · [3] _Marvel Major Event Chronology (digital)\2024.05 - Blood Hunt\02 Tie-ins
+   files:   [79012] COL Doctor Strange By Jed Mackay Vol. 03 - Blood Hunt (2025) (Digital) (EricJGriffin-Empire).cbz (179pp)
+            [79010] COL Doctor Strange by Jed MacKay Vol. 01 - The Life of Doctor Strange (2023) (Digital-Empire).cbr (137pp)
+            [79011] COL Doctor Strange by Jed MacKay Vol. 02 - The War-Hound of the Vishanti (2024) (Digital) (Shan-Empire).cbz (116pp)
+            [79013] Doctor Strange 002 (2023) (Maleev Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [79015] Doctor Strange 003 (2023) Ryan Stegman Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [79016] Doctor Strange 005 (2023) Leinil Yu Variant (Digital) (MikeNY76-Empire).cbz (1pp) | [79017] Doctor Strange 007 (2023) (Greg Land Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [79018] Doctor Strange 007 (2023) Greg Land Variant (Digital) (MikeNY76-Empire).cbz (1pp) | [79019] Doctor Strange 008 (2023) Pete Woods Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [79020] Doctor Strange 009 (2023) (Phil Noto Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [79021] Doctor Strange 009 (2023) David Mack Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [79022] Doctor Strange 009 (2023) Phil Noto Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [79023] Doctor Strange 010 (2023) (1-in-25 Emilio Laiso Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [79024] Doctor Strange 011 (2024) (1-in-25 Meghan Hetrick Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [79025] Doctor Strange 012 (2024) (1-in-25 Paco Medina Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [79026] Doctor Strange 012 (2024) Paco Medina Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [79027] Doctor Strange 013 (2024) (1-in-25 Nicoletta Baldari Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [79028] Doctor Strange 014 (2024) (1-in-25 David Marquez Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [79029] Doctor Strange 014 (2024) (Mahmud Asrar Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [79030] Doctor Strange 014 (2024) Mahmud Asrar Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [79031] Doctor Strange 015 (2024) (Alex Ross Blood Soaked 2nd Printing Variant) (Digital) (MikeNY76).cbz (1pp)
+            [79032] Doctor Strange 015 (2024) (Ken Lashley Black Costume Variant) (Digital) (MikeNY76).cbz (1pp)
+            [79033] Doctor Strange 015 (2024) (Lee Garbett Variant) (Digital) (MikeNY76).cbz (1pp) | [79034] Doctor Strange 015 (2024) (Lee Garbett Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [79035] Doctor Strange 016 (2024) (Martin Coccolo Stormbreakers Variant) (Digital) (MikeNY76).cbz (1pp)
+            [79036] Doctor Strange 016 (2024) (Skottie Young's Big Marvel Variant) (Digital) (MikeNY76).cbz (1pp)
+            [79037] Doctor Strange 016 (2024) (Skottie Young's Big Marvel Virgin Black And White Variant) (Digital) (MikeNY76).cbz (1pp)
+            [79038] Doctor Strange 017 (2024) (Giuseppe Camuncoli Deadpool Kills The Marvel Universe Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [79039] Doctor Strange 017 (2024) (Lee Garbett Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [79040] Doctor Strange 018 (2024) (Lee Garbett Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [79041] Doctor Strange 018 (2024) (Marguerite Sauvage Disco Dazzler Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [118643] Doctor Strange 015 (2024) (Digital) (Shan-Empire).cbz (23pp)
+            [118644] Doctor Strange 016 (2024) (Digital) (Shan-Empire).cbz (24pp) | [118645] Doctor Strange 017 (2024) (Digital) (Shan-Empire).cbz (24pp)
+            [118730] Doctor Strange 015 (2024) (Alex Ross Blood Soaked 2nd Printing Variant) (Digital) (MikeNY76).cbz (1pp)
+            [118731] Doctor Strange 016 (2024) (Martin Coccolo Stormbreakers Variant) (Digital) (MikeNY76).cbz (1pp)
+            [118732] Doctor Strange 016 (2024) (Skottie Young's Big Marvel Variant) (Digital) (MikeNY76).cbz (1pp)
+            [118733] Doctor Strange 016 (2024) (Skottie Young's Big Marvel Virgin Black And White Variant) (Digital) (MikeNY76).cbz (1pp)
+   ours:    ladder 2-3, 5, 7-18; 8 number(s) name more than one file: 7, 9, 12, 14, 15, 16, 17, 18; ComicInfo Series: "Doctor Strange by Jed Mackay"x1, "Doctor Strange By Jed Mackay"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [79012] gcd_reprint 2681869: s197924 Doctor Strange (2023) (unnumbered) [9 stories]
+             [79010] gcd_reprint 2571090: s197924 Doctor Strange (2023) (unnumbered) [6 stories]
+             [79011] gcd_reprint 2616791: s197924 Doctor Strange (2023) (unnumbered) [6 stories]
+   CV linked:      vol 148962 "Doctor Strange" 2023 Marvel 18 issues; cached #1-18 (18); yearΔ 48; ratio 35/18 = 1.94; no judged range
+   CV per-file (v1): vol 2676 "Doctor Strange" 1974 Marvel 81 on 18/38 files · vol 148962 "Doctor Strange" 2023 Marvel 18 on 10/38 files
+   CV candidates:  153916 "Doctor Strange by Jed Mackay" 2023 Marvel 3 s108 · 152319 "Black Cat by Jed MacKay Omnibus " 2023 Marvel 1 issue 1002175 s78 · 122816 "Marvel Tales: Doctor Strange" 2019 Marvel 1 issue 727263 s63 · 94439 "Marvel Universe Doctor Strange" 2016 Marvel 1 issue 551308 s62 · 153552 "Doctor Strange Marvel Pocketbook " 2015 Marvel UK/Panini UK 1 issue 1014599 s62 · 167238 "Doctor Strange by Jed MacKay Omnibus" 2025 Marvel 1 issue 1135518 s49   (v1 search)
+   CV local rip:   (= linked) · 116921 "Doctor Strange " 1975 Newton Comics 2 · 2403 "Doctor Strange" 1968 Marvel 15 · 85094 "Doctor Strange" 2015 Marvel 37 · 150556 "Doctor Strange" 2016 Panini Comics 63 · 102003 "Doctor Strange" 2017 Kodansha 1 issue 600146   (rip lookup)
+   GCD per-file:   series 206421 "Doctor Strange" [de] 2023-2025 Panini Deutschland [was ongoing series] 3 on 2/38 files; methods numx2
+   GCD dump:       75264 "Doctor Strange" [en-au] 1975-1976 Newton Comics [] 10 · 2162 "Doctor Strange" 1974-1987 Marvel [] 81 · 106525 "Doctor Strange" [en-au] 1977-1981 Yaffa / Page [] 7 · 1863 "Doctor Strange" 1968-1969 Marvel [] 15 · 13324 "Doctor Strange" 1999-1999 Marvel [] 4 · 92881 "Doctor Strange" 2015-2018 Marvel [] 37   (dump lookup)
+   bridges:        gcd 206421 -> LOCG 112655 "Doctor Strange" support 5
+
+== S102623 Ghost Rider Epic Collection (2022)  [tier D]   keys: Ghost Rider Epic Collection (2022)  years 2022-2024  2 files / 2 collections
+   split run: "Ghost Rider Epic Collection (2022)" run=- (new shelf from P-064) — seed the S line from these ids, then verify them
+   folders: [2] Marvel\_Ghost Rider\_Epic Collections
+   files:   [80256] COL Ghost Rider Epic Collection Vol. 01 - Hell on Wheels (2022) (Digital-Empire).cbr (425pp)
+            [80257] COL Ghost Rider Epic Collection Vol. 02 - The Salvation Run 001 (2024) (digital) (Marika-Empire).cbz (405pp)
+   ours:    ComicInfo Series: "Ghost Rider Epic Collection v02: The Salvation Run"x1
+   GCD says: [80256] gcd_reprint 2399209: s2120 Ghost Rider (1973) #1-11 [22 stories] · s15643 The Original Ghost Rider (1992) #1-18 [18 stories] · s1992 Marvel Spotlight (1971) #5-12 [16 stories] · s1747 Marvel Tales (1966) #254 [4 stories]
+             [80257] gcd_reprint 2670693: s2120 Ghost Rider (1973) #12-28 [18 stories] · s1747 Marvel Tales (1966) #255 [2 stories] · s2055 Marvel Premiere (1972) #28 [1 story] · s2056 Marvel Team-Up (1972) #58 [1 story]
+   GCD dump:       184834 "Ghost Rider Epic Collection" 2022-? Marvel [] 3 (via our own name without the filing suffix "Ghost Rider Epic Collection")   (dump lookup)
+
+== S94603 Ghost Rider  [tier C] · ratio 0.05  keys: Ghost Rider v10 (2022)  years 2022-2024  6 files / 5 collections
+   split run: "Ghost Rider v10 (2022)" run=- (new shelf from P-064) — seed the S line from these ids, then verify them
+   folders: [5] Marvel\_Ghost Rider\12 Ghost Rider v10 (2022) · [1] Marvel\_Ghost Rider\13 Ghost Rider - Final Vengeance v1 (2024)
+   files:   [80226] Ghost Rider 017 (2023) (Digital) (Zone-Empire).cbr (25pp) | [80227] COL Ghost Rider v01 - Unchained (2022) (Digital-Empire).cbz (142pp)
+            [80228] COL Ghost Rider v02- Shadow Country (2023) (Digital-Empire).cbz (159pp) | [80229] COL Ghost Rider v03 - Dragged Out Of Hell (2023) (Digital) (Shan-Empire).cbz (135pp)
+            [80230] COL Ghost Rider v04 - Rite of Passage (2024) (Digital) (Shan-Empire).cbz (132pp) | [80231] COL Ghost Rider Vol. 05 - Final Vengeance (2024) (Digital-Empire).cbr (147pp)
+   ours:    ladder 17; ComicInfo Series: "Ghost Rider"x4; ComicInfo Volume: "2022"x1; ComicInfo Publisher: "Marvel"x4
+   GCD says: [80227] gcd_reprint 2444815: s182068 Ghost Rider (2022) (unnumbered) [6 stories]
+             [80228] gcd_reprint 2515597: s182068 Ghost Rider (2022) (unnumbered) [6 stories] · s188322 Ghost Rider: Vengeance Forever (2022) #1 [1 story]
+             [80229] gcd_reprint 2584825: s182068 Ghost Rider (2022) (unnumbered) [7 stories]
+             [80230] gcd_reprint 2617431: s182068 Ghost Rider (2022) (unnumbered) [5 stories] · s204766 Ghost Rider Annual (2023) #1 [1 story]
+             [80231] gcd_reprint 2673994: s209876 Ghost Rider: Final Vengeance (2024) (unnumbered) [7 stories]
+   CV linked:      vol 141707 "Ghost Rider" 2022 Marvel 21 issues; cached #1-21 (21); yearΔ 0; ratio 1/21 = 0.05; no judged range
+   CV local rip:   (= linked) · 121736 "Ghost Rider" 2019 Marvel 7 · 96138 "Ghost Rider" 2016 Marvel 5 · 40536 "Ghost Rider" 2011 Marvel 10 · 42393 "Ghost Rider" 2007 Panini Verlag 6 · 105882 "Ghost Rider" 2007 Panini Verlag 2   (rip lookup)
+   GCD dump:       182068 "Ghost Rider" 2022-2024 Marvel [] 21 · 191541 "Ghost Rider" 2022-2024 Marvel [] 5 · 205999 "Ghost Rider" [fr] 2023-2024 Panini France [] 4 · 162633 "Ghost Rider" [de] 2020-? Panini Deutschland [] 2 · 176041 "Ghost Rider" 2020-2020 Marvel [] 2 · 150725 "Ghost Rider" 2019-2020 Marvel [] 7   (dump lookup)
+
+== S97144 Ghost Rider  [tier C] · gap 31  keys: Ghost Rider by Daniel Way: The Complete Collection | Ghost Rider v6 (2006)  years 1975-2017  22 files / 4 collections
+   split run: "Ghost Rider v6 (2006)" run=- (new shelf from P-064) — seed the S line from these ids, then verify them
+   flags: #251 label-ambiguous [Pending] item 80193 — the Ghost Rider v6 and v2 items are single issues, not collections
+   folders: [16] Marvel\_Ghost Rider\07 Ghost Rider v6 (2006) · [4] Marvel\_Ghost Rider\07 Ghost Rider v6 (2006)\_Trades · [2] _Marvel Major Event Chronology (digital)\2007.08 - World War Hulk\02 Tie-ins\World War Hulk - Marvel Universe
+   files:   Ghost Rider v6 020 (2008) (Digital-HD) (Monafekk-Empire).cbz … Ghost Rider v6 035 (2009) (Digital-HD) (Monafekk-Empire).cbz  (16 files, pp 23-36)
+            [80210] COL Ghost Rider Vol. 01 - Vicious Cycle (2007) (Digital) (Kileko-Empire).cbr (127pp)
+            [80211] COL Ghost Rider Vol. 02 - The Life and Death of Johnny Blaze (2007) (digital) (Minutemen-Excelsior).cbz (160pp)
+            [80212] COL Ghost Rider Vol. 03 - Apocalypse Soon (2008) (digital) (Minutemen-Excelsior).cbz (84pp)
+            [80209] COL Ghost Rider by Daniel Way - The Complete Collection (2017) (Digital) (Zone-Empire).cbr (442pp) | [116883] Ghost Rider 012 (2007) (digital) (Minutemen-InnerDemons).cbr (24pp)
+            [116884] Ghost Rider 013 (2007) (digital) (Minutemen-InnerDemons).cbr (22pp)
+   ours:    ladder 12-13, 20-35; judged item 80210 #1-5 conf 0.97; judged item 80211 #6-11 conf 0.87; judged item 80212 #12-13 conf 0.97; ComicInfo Series: "Ghost Rider by Daniel Way: The Complete Collection"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [80210] gcd_reprint 799449: s18651 Ghost Rider (2006) #1-5 [14 stories]
+             [80209] gcd_reprint 2459840: s18651 Ghost Rider (2006) #1-19 [20 stories]
+   CV linked:      vol 18138 "Ghost Rider" 2006 Marvel 35 issues; cached #1-35 (35); yearΔ 31; ratio 18/35 = 0.51; 3 of 3 judged fit
+   CV per-file (v1): vol 2636 "Ghost Rider" 1973 Marvel 81 on 2/22 files · vol 45138 "Ghost Rider by Daniel Way Ultimate Collection" 2012 Marvel 1 issue 311041 on 1/22 files
+   CV candidates:  (= linked) · 48680 "Marvel Spotlight: Ghost Rider" 2006 Marvel 1 issue 334708 s65 · 108582 "Deadpool By Daniel Way: The Complete Collection" 2018 Marvel 2 s27 · 136158 "Ghost Rider: Robbie Reyes: The Complete Collection" 2021 Marvel 1 issue 851630 s25 · 98110 "Wolverine by Daniel Way: The Complete Collection" 2017 Marvel 4 s22 · 65431 "Deadpool By Daniel Way: The Complete Collection" 2013 Marvel 4 s22 · 41202 "Deadpool by Daniel Way" 2011 Marvel 1 issue 278170 s20   (v1 search)
+   CV local rip:   (= linked) · 2352 "Ghost Rider" 1967 Marvel 7 · 4397 "Ghost Rider" 1990 Marvel 94 · 11183 "Ghost Rider" 2001 Marvel 7 · 18217 "Ghost Rider" 2005 Marvel 6   (rip lookup)
+   GCD per-file:   series 18651 "Ghost Rider" 2006-2009 Marvel [was ongoing series] 35 on 2/22 files; methods numx2
+   GCD dump:       2120 "Ghost Rider" 1973-1983 Marvel [] 81 · 80329 "Ghost Rider" [en-au] 1977-1980 Yaffa / Page [] 10 · 1809 "The Ghost Rider" 1967-1967 Marvel [] 7 · 72141 "Ghost Rider" [en-au] 1984-1985 Federal [] 6 · 4025 "Ghost Rider" 1990-1998 Marvel [] 94 · 165518 "Ghost Rider" [fr] 1991-1993 Semic S.A. [] 15   (dump lookup)
+   bridges:        gcd 18651 -> LOCG 111651 "Ghost Rider" support 18
+
+== S64768 Ghost Rider  [tier C] · 2 number(s) x2+, 2 parsed key(s), ratio 0.36  keys: Ghost Rider (1990) | Ghost Rider v3 (1990)  years 1976-1998  34 files / 0 collections
+   split run: "Ghost Rider v3 (1990)" run=- (new shelf from P-064) — seed the S line from these ids, then verify them
+   flags: #253 label-ambiguous [Pending] item 87345 — Ghost Rider v2 009 is a single issue, not a collection
+   folders: [28] Marvel\_Ghost Rider\03 Ghost Rider v3 (1990) · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0161 Blood Feud · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0264 Brood Feud · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0092 Untitled
+   files:   [80151] Ghost Rider 001 (1990) (digital) (Marika-Empire).cbz (48pp) | [80152] Ghost Rider 002 (1990) (digital) (Marika-Empire).cbz (24pp)
+            [80153] Ghost Rider 003 (1990) (digital) (Marika-Empire).cbz (23pp) | [80154] Ghost Rider 004 (1990) (digital) (Marika-Empire).cbz (24pp)
+            [80155] Ghost Rider 005 (1990) (digital) (Marika-Empire).cbz (24pp) | [80156] Ghost Rider 006 (1990) (digital) (Marika-Empire).cbz (24pp)
+            [80157] Ghost Rider 007 (1990) (digital) (Marika-Empire).cbz (24pp) | [80158] Ghost Rider 008 (1990) (digital) (Marika-Empire).cbz (24pp)
+            [80159] Ghost Rider 009 (1991) (digital) (Marika-Empire).cbz (24pp) | [80160] Ghost Rider 010 (1991) (digital) (Marika-Empire).cbz (23pp)
+            [80161] Ghost Rider 011 (1991) (digital) (Marika-Empire).cbz (23pp) | [80162] Ghost Rider 012 (1991) (digital) (Marika-Empire).cbz (22pp)
+            [80163] Ghost Rider 013 (1991) (digital) (Marika-Empire).cbz (23pp) | [80164] Ghost Rider 014 (1991) (digital) (Marika-Empire).cbz (24pp)
+            [80165] Ghost Rider 015 (1991) (digital) (Marika-Empire).cbz (21pp) | [80166] Ghost Rider 016 (1991) (digital) (Marika-Empire).cbz (23pp)
+            [80167] Ghost Rider 017 (1991) (digital) (Marika-Empire).cbz (23pp) | [80168] Ghost Rider 018 (1991) (digital) (Marika-Empire).cbz (24pp)
+            [80169] Ghost Rider 019 (1991) (digital) (Marika-Empire).cbz (24pp) | [80170] Ghost Rider 020 (1991) (digital) (Marika-Empire).cbz (24pp)
+            [80171] Ghost Rider 021 (1992) (digital) (Marika-Empire).cbz (24pp) | [80172] Ghost Rider 022 (1992) (digital) (Marika-Empire).cbz (24pp)
+            [80173] Ghost Rider 023 (1992) (digital) (Marika-Empire).cbz (24pp) | [80174] Ghost Rider 024 (1992) (digital) (Marika-Empire).cbz (22pp)
+            [80175] Ghost Rider 026 (1992) (Digital) (Shadowcat-Empire).cbz (23pp) | [80177] Ghost Rider 028 (1992) (Digital) (Shadowcat-Empire).cbz (26pp)
+            [80178] Ghost Rider 031 (1992) (digital) (Marika-Empire).cbz (26pp) | [80179] Ghost Rider 093 (1998) (Digital) (Shadowcat-Empire).cbz (40pp)
+            [87345] 010 Ghost Rider v2 009 (1991) (Digital) (Monafekk-Empire).cbz (24pp) | [87798] 002 Ghost Rider 026 (1992) (digital) (Minutemen-Phantasm).cbr (23pp)
+            [87800] 004 Ghost Rider 027 (1992) (digital) (Minutemen-Phantasm).cbr (22pp) | [87802] 006 Ghost Rider v2 #29.cbr (23pp) | [88307] 001 Ghost Rider v2 067.cbr (33pp)
+            [88308] 002 Ghost Rider v2 068.cbr (33pp)
+   ours:    ladder 1-24, 26-29, 31, 67-68, 93; 2 number(s) name more than one file: 9, 26; ComicInfo Series: "Ghost Rider"x27; ComicInfo Volume: "1990"x26, "4397"x1; ComicInfo Count: "93"x20; ComicInfo Publisher: "Marvel Comics"x18, "Marvel"x9; ComicInfo Web: "66417"x1, "66418"x1, "66419"x1, "66420"x1
+   CV linked:      vol 4397 "Ghost Rider" 1990 Marvel 94 issues; cached #1-93 (94); yearΔ 14; ratio 34/94 = 0.36; no judged range
+   CV per-file (v1): vol 4397 "Ghost Rider" 1990 Marvel 94 on 21/34 files · vol 2636 "Ghost Rider" 1973 Marvel 81 on 13/34 files
+   CV local rip:   (= linked) · 2352 "Ghost Rider" 1967 Marvel 7 · 11183 "Ghost Rider" 2001 Marvel 7 · 18217 "Ghost Rider" 2005 Marvel 6 · 18138 "Ghost Rider" 2006 Marvel 35   (rip lookup)
+   GCD per-file:   series 4025 "Ghost Rider" 1990-1998 Marvel [was ongoing series] 94 on 31/34 files; methods numx31
+   GCD dump:       (= per-file) · 80329 "Ghost Rider" [en-au] 1977-1980 Yaffa / Page [] 10 · 2120 "Ghost Rider" 1973-1983 Marvel [] 81 · 72141 "Ghost Rider" [en-au] 1984-1985 Federal [] 6 · 1809 "The Ghost Rider" 1967-1967 Marvel [] 7 · 165518 "Ghost Rider" [fr] 1991-1993 Semic S.A. [] 15   (dump lookup)
+   bridges:        gcd 4025 -> LOCG 111651 "Ghost Rider" support 30
+
+== S104187 Ghost Rider (2011)  [tier B]   keys: Ghost Rider (2011)  years 1974-1974  1 files / 1 collections
+   split run: "Ghost Rider (2011)" run={"cv": 40536, "gcd": 59194} (new shelf from P-064) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\_Ghost Rider\08 Ghost Rider v7 (2011)
+   files:   [80213] COL Ghost Rider - The Complete Series by Rob Williams (2012) (Digital) (Zone-Empire).cbr (229pp)
+   ours:    ComicInfo Series: "Ghost Rider: The Complete Series by Rob Williams"x1; ComicInfo Publisher: "Marvel"x1
+   GCD says: [80213] gcd_reprint 2709786: s59194 Ghost Rider (2011) #0.1, #1-9 [11 stories]
+   CV per-file (v1): vol 2636 "Ghost Rider" 1973 Marvel 81 on 1/1 files
+   CV local rip:   (= per-file) · 2352 "Ghost Rider" 1967 Marvel 7 (via our own name without the filing suffix "Ghost Rider") · 4397 "Ghost Rider" 1990 Marvel 94 (via our own name without the filing suffix "Ghost Rider") · 11183 "Ghost Rider" 2001 Marvel 7 (via our own name without the filing suffix "Ghost Rider") · 18217 "Ghost Rider" 2005 Marvel 6 (via our own name without the filing suffix "Ghost Rider") · 18138 "Ghost Rider" 2006 Marvel 35 (via our own name without the filing suffix "Ghost Rider")   (rip lookup)
+   GCD dump:       2120 "Ghost Rider" 1973-1983 Marvel [] 81 (via our own name without the filing suffix "Ghost Rider") · 80329 "Ghost Rider" [en-au] 1977-1980 Yaffa / Page [] 10 (via our own name without the filing suffix "Ghost Rider") · 1809 "The Ghost Rider" 1967-1967 Marvel [] 7 (via our own name without the filing suffix "Ghost Rider") · 72141 "Ghost Rider" [en-au] 1984-1985 Federal [] 6 (via our own name without the filing suffix "Ghost Rider") · 4025 "Ghost Rider" 1990-1998 Marvel [] 94 (via our own name without the filing suffix "Ghost Rider") · 165518 "Ghost Rider" [fr] 1991-1993 Semic S.A. [] 15 (via our own name without the filing suffix "Ghost Rider")   (dump lookup)
+
+== S104191 Spirits of Ghost Rider: Mother of Demons (2020)  [tier D]   keys: Spirits of Ghost Rider: Mother of Demons (2020)  years 2020-2020  1 files / 0 collections
+   split run: "Spirits of Ghost Rider: Mother of Demons (2020)" run={"cv": 124990, "gcd": 156133} (new shelf from P-064) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\_Ghost Rider\11 Ghost Rider v9 (2019)\Annuals and Specials
+   files:   [80223] Spirits of Ghost Rider - Mother of Demons 001 (2020) (Digital) (Zone-Empire).cbr (33pp)
+   ours:    ladder 1; ComicInfo Series: "Spirits of Ghost Rider: Mother of Demons"x1; ComicInfo Publisher: "Marvel"x1
+   CV local rip:   124990 "Spirits of Ghost Rider: Mother of Demons" 2020 Marvel 1 issue 737167 (via our own name without the filing suffix "Spirits of Ghost Rider: Mother of Demons")   (rip lookup)
+   GCD dump:       156133 "Spirits of Ghost Rider: Mother of Demons" 2020-2020 Marvel [] 1 (via our own name without the filing suffix "Spirits of Ghost Rider: Mother of Demons")   (dump lookup)
+
+== S64767 Ghost Rider  [tier A]   keys: Ghost Rider (1973) | Ghost Rider v2 (1973)  years 1973-2024  82 files / 0 collections
+   split: the KEPT half of the P-064 split — moved out -> S102623 "Ghost Rider Epic Collection (2022)"; S94603 "Ghost Rider v10 (2022)"; S97144 "Ghost Rider v6 (2006)"; S64768 "Ghost Rider v3 (1990)"; S104187 "Ghost Rider (2011)"; S104191 "Spirits of Ghost Rider: Mother of Demons (2020)"; re-identify what stayed
+   folders: [82] Marvel\_Ghost Rider\02 Ghost Rider v2 (1973)
+   files:   [80069] Ghost Rider 001 (1973) (Digital) (Shadowcat-Empire).cbz (20pp) | [80070] Ghost Rider 002 (1973) (Digital) (Shadowcat-Empire).cbz (20pp)
+            [80071] Ghost Rider 003 (1973) (Digital) (Relic-Empire).cbz (20pp) | [80072] Ghost Rider 004 (1974) (Digital) (Relic-Empire).cbz (20pp)
+            [80073] Ghost Rider 005 (1974) (Digital) (Relic-Empire).cbz (19pp) | [80074] Ghost Rider 006 (1974) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [80075] Ghost Rider 007 (1974) (Digital) (Shadowcat-Empire).cbz (21pp) | [80076] Ghost Rider 008 (1974) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [80077] Ghost Rider 009 (1974) (Digital) (Shadowcat-Empire).cbz (20pp) | [80078] Ghost Rider 010 (1975) (c2c) (edits) (Blastaar-DCP).cbr (36pp)
+            Ghost Rider 011 (1975) (Digital) (Shadowcat-Empire).cbz … Ghost Rider 016 (1976) (Digital) (Shadowcat-Empire).cbz  (6 files, pp 18-20)
+            [80084] Ghost Rider 016 (1976) (c2c) (edits) (Blastaar-DCP).cbr (36pp)
+            Ghost Rider 017 (1976) (Digital) (Shadowcat-Empire).cbz … Ghost Rider 034 (1979) (Digital) (Shadowcat-Empire).cbz  (18 files, pp 18-19)
+            [80104] Ghost Rider 035 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp) | Ghost Rider 036 (1979) (Digital-Empire).cbz … Ghost Rider 049 (1980) (Digital-Empire).cbz  (14 files, pp 18-18)
+            [80119] Ghost Rider 050 (1980) (Digital) (Shadowcat-Empire).cbz (40pp) | [80120] Ghost Rider 051 (1980) (Digital-Empire).cbz (23pp)
+            [80121] Ghost Rider 052 (1981) (Digital-Empire).cbz (23pp) | [80122] Ghost Rider 053 (1981) (Digital-Empire).cbz (23pp) | [80123] Ghost Rider 054 (1981) (Digital-Empire).cbz (23pp)
+            [80124] Ghost Rider 055 (1981) (digital).cbz (23pp) | Ghost Rider 056 (1981) (Digital-Empire).cbz … Ghost Rider 062 (1981) (Digital-Empire).cbz  (7 files, pp 23-23)
+            Ghost Rider 063 (1981) (digital) (Marika-Empire).cbz … Ghost Rider 073 (1982) (digital) (Marika-Empire).cbz  (11 files, pp 23-24)
+            [80143] Ghost Rider 074 (1982) (c2c) (edits) (Blasty-DCP).cbr (36pp) | [80144] Ghost Rider 075 (1982) (c2c) (edits) (Blasty-DCP).cbr (35pp)
+            [80145] Ghost Rider 076 (1983) (c2c) (edits) (Blasty-DCP).cbr (35pp) | [80146] Ghost Rider 077 (1983) (c2c) (edits) (Blasty-DCP).cbr (36pp)
+            [80147] Ghost Rider 078 (1983) (c2c) (edits) (Blasty-DCP).cbr (36pp) | [80148] Ghost Rider 079 (1983) (c2c) (FB-DCP).cbr (36pp)
+            [80149] Ghost Rider 080 (1983) (c2c) (edits) (Blasty-DCP).cbr (36pp) | [80150] Ghost Rider 081 (1983) (c2c) (edits) (Blasty-DCP).cbr (36pp)
+   ours:    ladder 1-81; 1 number(s) name more than one file: 16; ComicInfo Series: "Ghost Rider"x41; ComicInfo Volume: "1973"x41; ComicInfo Count: "81"x11; ComicInfo Publisher: "Marvel"x40, "Marvel Comics"x1; ComicInfo Web: "21730"x1, "21857"x1, "21930"x1, "22008"x1
+   CV linked:      vol 2636 "Ghost Rider" 1973 Marvel 81 issues; cached #1-81 (81); yearΔ 0; ratio 82/81 = 1.01; no judged range
+   CV per-file (v1): vol 2636 "Ghost Rider" 1973 Marvel 81 on 78/82 files · vol 121736 "Ghost Rider" 2019 Marvel 7 on 3/82 files · vol 141707 "Ghost Rider" 2022 Marvel 21 on 1/82 files
+   CV local rip:   (= linked) · 2352 "Ghost Rider" 1967 Marvel 7 · 4397 "Ghost Rider" 1990 Marvel 94 · 11183 "Ghost Rider" 2001 Marvel 7 · 18217 "Ghost Rider" 2005 Marvel 6 · 18138 "Ghost Rider" 2006 Marvel 35   (rip lookup)
+   GCD per-file:   methods numx66 · round2-seriesx13 ⚠  (⚠ copies a folder neighbour's series — verify); series 2120 "Ghost Rider" 1973-1983 Marvel [was ongoing series] 81 on 79/82 files
+   GCD dump:       (= per-file) · 80329 "Ghost Rider" [en-au] 1977-1980 Yaffa / Page [] 10 · 1809 "The Ghost Rider" 1967-1967 Marvel [] 7 · 72141 "Ghost Rider" [en-au] 1984-1985 Federal [] 6 · 4025 "Ghost Rider" 1990-1998 Marvel [] 94 · 165518 "Ghost Rider" [fr] 1991-1993 Semic S.A. [] 15   (dump lookup)
+   bridges:        gcd 2120 -> LOCG 111651 "Ghost Rider" support 90
+
+== S20338 Tony Stark: Iron Man  [tier C] · gap 5  keys: Iron Man: The Ultron Agenda | Tony Stark: Iron Man | Ultron 01AU  years 2013-2020  5 files / 4 collections
+   folders: [3] Marvel\_Iron Man\14 Tony Stark - Iron Man (2018) · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\1031 Age of Ultron · [1] _Marvel Major Event Chronology (digital)\2019.03 - War of the Realms\02 Tie-ins\Tony Stark - Iron Man
+   files:   [82020] COL Tony Stark Iron Man Vol. 01 - Self-Made Man (2019) (Digital) (DrDoom-Empire).cbz (132pp)
+            [82021] COL Tony Stark Iron Man Vol. 02 - Stark Realities (2019) (Digital) (Zone-Empire).cbr (126pp)
+            [82022] COL Tony Stark Iron Man Vol. 03 - The Ultron Agenda (2020) (Digital) (Zone-Empire).cbr (107pp) | [92353] 009 Ultron 01AU (2013) (Digital) (Zone-Empire).cbr (24pp)
+            [118912] COL Tony Stark - Iron Man v03 - War of the Realms (2019) (Digital) (Zone-Empire).cbr (113pp)
+   ours:    ladder 9; ComicInfo Series: "Tony Stark: Iron Man"x2, "Iron Man: The Ultron Agenda"x1; ComicInfo Publisher: "Marvel"x3
+   GCD says: [82022] gcd_reprint 2267782: s126073 Tony Stark: Iron Man (2018) (unnumbered) [6 stories]
+   CV linked:      vol 111704 "Tony Stark: Iron Man" 2018 Marvel 19 issues; cached #1-19 (19); yearΔ 5; ratio 1/19 = 0.05; no judged range; v1 per-file: same volume on 3/5 files
+   CV candidates:  (= linked) · 66113 "Iron Man: The Secret Origin of Tony Stark" 2013 Marvel 2 s90 · 156212 "Iron Man: The Secret Origin of Tony Stark" 2013 Marvel UK/Panini UK 2 s90 · 112320 "Invincible Iron Man: The Search For Tony Stark" 2018 Marvel 1 issue 677281 s89 · 111719 "Tony Stark: Iron Man: The Many Armors of Iron Man" 2018 Marvel 1 issue 674140 s87 · 49505 "Ultron" 2013 Marvel 1 issue 396434 s81 · 126521 "Iron Man: The Ultron Agenda" 2020 Marvel 1 issue 751965 s65   (v1 search)
+   CV local rip:   (= linked) · 126521 "Iron Man: The Ultron Agenda" 2020 Marvel 1 issue 751965 · 66113 "Iron Man: The Secret Origin of Tony Stark" 2013 Marvel 2 (via CV candidate name "Iron Man: The Secret Origin of Tony Stark") · 156212 "Iron Man: The Secret Origin of Tony Stark" 2013 Marvel UK/Panini UK 2 (via CV candidate name "Iron Man: The Secret Origin of Tony Stark")   (rip lookup)
+   GCD dump:       126073 "Tony Stark: Iron Man" 2018-2020 Marvel [] 19 · 136756 "Tony Stark: Iron Man" 2018-2019 Marvel [] 3 · 139246 "Tony Stark - Iron Man" [de] 2019-? Panini Deutschland [] 4 · 141574 "Tony Stark Iron Man" [es-mx] 2019-? Editorial Televisa [] 6 · 174274 "Tony Stark: Iron Man" [es] 2019-2020 Panini España [] 14 · 176779 "Iron Man: The Ultron Agenda" 2020-2020 Marvel [] 1   (dump lookup)
+
+== S102965 Iron Fist  [tier C] · ratio 0.13  keys: Iron Fist (1975)  years 1975-2015  3 files / 1 collections
+   folders: [1] Marvel\_Iron Fist\01 Iron Fist v1 (1975) · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0009 Phoenix Rising · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0010 The Phoenix Saga
+   files:   [81993] COL Iron Fist Epic Collection Vol. 01 - The Fury of Iron Fist (2015) (digital) (Minutemen-Slayer).cbr (527pp)
+            [86677] 015 Iron Fist 014 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp) | [86688] 011 Iron Fist 015 (1977) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+   ours:    ladder 14-15
+   GCD says: [81993] gcd_reprint 1310227: s2252 Iron Fist (1975) #1-15 [30 stories] · s2055 Marvel Premiere (1972) #15-25 [23 stories] · s2056 Marvel Team-Up (1972) #63-64 [4 stories]
+   CV linked:      vol 2766 "Iron Fist" 1975 Marvel 15 issues; cached #1-15 (5); yearΔ 0; ratio 2/15 = 0.13; no judged range; v1 per-file: same volume on 2/3 files
+   CV local rip:   (= linked) · 22401 "Iron Fist" 1996 Marvel 2 · 6214 "Iron Fist" 1998 Marvel 3 · 23561 "Iron Fist" 2004 Marvel 6 · 100082 "Iron Fist" 2017 Marvel 15 · 114112 "Iron Fist" 2018 Marvel 3   (rip lookup)
+   GCD per-file:   series 2252 "Iron Fist" 1975-1977 Marvel [Was Ongoing Series] 15 on 2/3 files; methods numx2
+   GCD dump:       (= per-file) · 71971 "Iron Fist" [en-au] 1978-1978 Yaffa / Page [] 6 · 118191 "Iron Fist" [en-ph] 1978-1978 National Book Store [] 4 · 15728 "Iron Fist" 1996-1996 Marvel [] 2 · 6033 "Iron Fist" 1998-1998 Marvel [] 3 · 15729 "Iron Fist" 2004-2004 Marvel [] 6   (dump lookup)
+   bridges:        gcd 2252 -> LOCG 112485 "Iron Fist" support 2
+
+== S11478 Marvel Masterworks - Golden Age Marvel Comics  [tier B]   keys: Marvel Masterworks - Golden Age Marvel Comics  years 2004-2012  7 files / 7 collections
+   flags: #329 label-ambiguous [Pending] item 83309 — vols 1-5 are each held twice (83304/83309 ... 83308/83313)
+   folders: [5] Marvel\_Marvel Masterworks\Marvel Comics (1939) · [2] Marvel\_Marvel Masterworks\Marvel Mystery Comics (1939)
+   files:   [83304] COL Marvel Masterworks - Golden Age Marvel Comics Vol. 01 (2004) (Digital) (Kileko-Empire).cbr (286pp)
+            [83305] COL Marvel Masterworks - Golden Age Marvel Comics Vol. 02 (2013) (Digital) (Shadowcat-Empire).cbz (278pp)
+            [83306] COL Marvel Masterworks - Golden Age Marvel Comics Vol. 03 (2008) (Digital) (Shadowcat-Empire).cbz (270pp)
+            [83307] COL Marvel Masterworks - Golden Age Marvel Comics Vol. 04 (2006) (Digital) (Kileko-Empire).cbr (277pp)
+            [83308] COL Marvel Masterworks - Golden Age Marvel Comics Vol. 05 (2008) (Digital) (Kileko-Empire).cbr (280pp)
+            [83314] COL Marvel Masterworks - Golden Age Marvel Comics Vol. 06 (2011) (Digital) (Zone-Empire).cbr (277pp)
+            [83315] COL Marvel Masterworks - Golden Age Marvel Comics Vol. 07 (2012) (Digital) (Zone-Empire).cbr (279pp)
+   ours:    judged item 83304 #1-1 conf 0.95; judged item 83305 #5-8 conf 0.95; judged item 83306 #9-12 conf 0.95; judged item 83307 #13-16 conf 0.95; judged item 83308 #17-20 conf 0.95; judged item 83314 #21-24 conf 0.95; judged item 83315 #25-28 conf 0.95
+   GCD says: [83304] gcd notes 278140 (#1 of Marvel Masterworks: Golden Age Marvel Comics): Marvel Comics (Marvel, 1939 Series) #1; Marvel Mystery Comics (Marvel, 1939 Series) #2-4  |  gcd_reprint 278140: s137 Marvel Mystery Comics (1939) #2-4 [29 stories] · s136 Marvel Comics (1939) #1 [10 stories]
+             [83305] gcd_reprint 1171044: s137 Marvel Mystery Comics (1939) #5-8 [37 stories] · s17373 Marvel Masterworks: Golden Age Marvel Comics (2004) #2 [1 story]
+             [83306] gcd notes 543429 (#3 of Marvel Masterworks: Golden Age Marvel Comics): Marvel Mystery Comics (Marvel, 1939 series) #9-12; sley Wong (interiors), Michael Kelleher (covers).
+Art reconstruction: Pacific Rim Graphics #9, #11; Dale Crain #10, #12  |  gcd_reprint 543429: s137 Marvel Mystery Comics (1939) #9-12 [42 stories]
+             [83307] gcd notes 643449 (#4 of Marvel Masterworks: Golden Age Marvel Comics): *Marvel Mystery Comics* (Marvel, 1939 series) #13-16  |  gcd_reprint 643449: s137 Marvel Mystery Comics (1939) #13-16 [43 stories]
+             [83308] gcd notes 783358 (#5 of Marvel Masterworks: Golden Age Marvel Comics): *Marvel Mystery Comics* (Marvel, 1939 series) #17-20  |  gcd_reprint 783358: s137 Marvel Mystery Comics (1939) #17-20 [50 stories]
+             [83314] gcd notes 880753 (#6 of Marvel Masterworks: Golden Age Marvel Comics): *Marvel Mystery Comics* (Marvel, 1939 series) #21-24  |  gcd_reprint 880753: s137 Marvel Mystery Comics (1939) #21-24 [49 stories]
+             [83315] gcd notes 968145 (#7 of Marvel Masterworks: Golden Age Marvel Comics): Marvel Mystery Comics (Marvel, 1939 Series) #25-28  |  gcd_reprint 968145: s137 Marvel Mystery Comics (1939) #25-28 [50 stories]
+   CV linked:      vol 35187 "Marvel Masterworks: Golden Age Marvel Comics" 2004 Marvel 7 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); cached #1-7 (7); yearΔ ?; ratio 0/?; 2 of 7 judged fit
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       17373 "Marvel Masterworks: Golden Age Marvel Comics" 2004-2012 Marvel [] 7 · 74965 "Marvel Masterworks: Golden Age Marvel Comics" 2011-2013 Marvel [] 2   (dump lookup)
+
+== S64771 Ghost Rider  [tier C] · ratio 0.14  keys: Ghost Rider (2019) | Ghost Rider v7 (2011) | Ghost Rider v9 (2019)  years 2019-2020  4 files / 3 collections
+   flags: #252 label-ambiguous [Pending] item 80224 — items 80224 and 80214 are duplicate copies of Vol. 01 - The King of Hell
+   folders: [2] Marvel\_Ghost Rider\11 Ghost Rider v9 (2019) · [1] Marvel\_Ghost Rider\08 Ghost Rider v7 (2011) · [1] Marvel\_Ghost Rider\11 Ghost Rider v9 (2019)\Annuals and Specials
+   files:   [80214] COL Ghost Rider v01 - The King of Hell (2020) (Digital) (Zone-Empire).cbr (143pp) | [80222] Ghost Rider - Director's Cut 001 (2019) (Digital) (F) (Zone-Empire).cbr (139pp)
+            [80224] COL Ghost Rider Vol. 01 - The King of Hell (2020) (Digital) (Zone-Empire).cbr (143pp)
+            [80225] COL Ghost Rider Vol. 02 - Hearts Of Darkness II (2020) (Digital) (Shan-Empire).cbz (137pp)
+   ours:    ladder 1; ComicInfo Series: "Ghost Rider"x4; ComicInfo Volume: "2019"x1; ComicInfo Publisher: "Marvel"x4
+   GCD says: [80214] gcd_reprint 2262166: s150725 Ghost Rider (2019) (unnumbered) [5 stories] · s154075 Incoming (2020) #1 [1 story] · s148760 Absolute Carnage: Symbiote of Vengeance (2019) #1 [1 story] · s137838 Marvel Comics Presents (2019) #6 [1 story]
+             [80224] gcd_reprint 2262166: s150725 Ghost Rider (2019) (unnumbered) [5 stories] · s154075 Incoming (2020) #1 [1 story] · s148760 Absolute Carnage: Symbiote of Vengeance (2019) #1 [1 story] · s137838 Marvel Comics Presents (2019) #6 [1 story]
+             [80225] gcd_reprint 2262167: s150725 Ghost Rider (2019) (unnumbered) [4 stories] · s153345 Ghost Rider 2099 (2020) #1 [1 story] · s156133 Spirits of Ghost Rider: Mother of Demons (2020) #1 [1 story]
+   CV linked:      vol 121736 "Ghost Rider" 2019 Marvel 7 issues; cached #1-7 (7); yearΔ 0; ratio 1/7 = 0.14; no judged range; v1 per-file: same volume on 1/4 files
+   CV local rip:   (= linked) · 96138 "Ghost Rider" 2016 Marvel 5 · 141707 "Ghost Rider" 2022 Marvel 21 · 40536 "Ghost Rider" 2011 Marvel 10 · 42393 "Ghost Rider" 2007 Panini Verlag 6 · 105882 "Ghost Rider" 2007 Panini Verlag 2   (rip lookup)
+   GCD per-file:   series 162633 "Ghost Rider" [de] 2020-? Panini Deutschland [] 2 on 1/4 files; methods numx1
+   GCD dump:       (= per-file) · 150725 "Ghost Rider" 2019-2020 Marvel [] 7 · 176041 "Ghost Rider" 2020-2020 Marvel [] 2 · 109699 "Ghost Rider" 2017-2017 Marvel [] 5 · 182068 "Ghost Rider" 2022-2024 Marvel [] 21 · 191541 "Ghost Rider" 2022-2024 Marvel [] 5   (dump lookup)
+   bridges:        gcd 162633 -> LOCG 111651 "Ghost Rider" support 2

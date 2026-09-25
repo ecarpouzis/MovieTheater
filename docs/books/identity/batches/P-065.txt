@@ -1,0 +1,347 @@
+## Conventions for this batch (21 shown of 142 matched; 400 in LEDGER.md; 8 shelf/shelves: pub:marvel ×8 · kind:collected-line ×5 · folder:sequel-subfolder ×4 · kind:trade-only ×4 · folder:vn-year ×3 · folder:variant-covers ×2 · folder:events ×2 · kind:new ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-127] (7 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-136] (7 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-298] (6 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (6 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-031] (5 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-076] (5 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (5 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (5 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (5 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-132] (5 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-196] (5 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-295] (5 shelf/shelves) kind:collected-line pass:item pub:marvel sig:gcd-notes sig:probe sig:round2 sig:stamp
+- ITEM PASS (X-049..X-051, Marvel trades): a per-file pick flagged round2-folder / title-only / page-rematch is
+  "check it", not "reject it" — several were right on independent verification (Han Solo & Chewbacca cv 146853,
+  Darkhold gcd 1851609, Machine Man). An `identity-read` per-file id can still be a duplicate across two books
+  (Doctor Strange Epic Vol. 01 and 13 both cv 626281) → 0.7. Fifteen "no record" shelf notes were resolvable under
+  another spelling ("Complete Collection", "Omnibus (2022)", the creator-named line) — re-probe before conceding.
+[L-296] (5 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-306] (5 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-307] (5 shelf/shelves) kind:collected-line pass:item pub:marvel sig:collision sig:comicinfo sig:legacy-stamp sig:probe sig:stamp
+- C-040..C-042 (Marvel hero teams): the wrong-relaunch trap at franchise scale — CV 2128 / 2400 / 11492 / 2401 (the
+  1960s-2004 Avengers / Captain America / Black Widow / Captain Marvel) stamped on 20+ relaunch shelves' trades; a
+  bare-title `lookup.py --year <folder year>` recovered the true volume every time. Epic Collection lines: CV mints
+  a volume per book, GCD keeps one series for the line → the singleton shelves share the line's gcd and merge. On an
+  `S` line `gcd=` is a SERIES id; on an `I` line an ISSUE id — citing an Epic volume's issue on the S is the commonest
+  typo. GCD can split one continuously numbered run at a mid-run retitle with no era change (Cloak & Dagger 1988-91:
+  3656 / 14574) — majority per-file match, name both. A file's ComicInfo Web id decides a same-title collision
+  (Avengers Infinity 2000 mini vs Hickman's 2013 "Infinity" HC).
+[L-308] (5 shelf/shelves) kind:collected-line pub:marvel sig:collision sig:comicinfo sig:stamp
+- C-043..C-045 (Marvel D-I): a DEGENERATE stamp can cover ~470 files across several unrelated shelves (CV 150441
+  "Iron Man Epic Collection: The Crossing" on S9575 and S97887-97891) — any id shared by hundreds of files of
+  different titles is the stamp, never a leg. Epic Collection singleton shelves need explicit `F merge-with` chains
+  between the siblings that share the line's GCD id (the checker enforces the merge). A ComicInfo Web id equal to a
+  CV issue id is a 1.0 on any ripper.
+[L-327] (5 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:marvel pub:star-wars sig:barcode sig:probe sig:round2 sig:stamp
+- ITEM ROUND 2 (X-056..X-058): on a shelf whose S is a collected LINE, the book's `C` run is usually a DIFFERENT id
+  from the S (the line's counts match the TPB count, not the floppy run) — probe for the run (Star Wars 2015 line →
+  run CV 79398 / GCD 85861; Amazing Spider-Man 2022 → CV 142577 / GCD 184161; Incredible Hulk 2023 → CV 151522 / GCD
+  201474). The packet's "linked cv A/B" is issue A in volume B — when B equals the shelf's own volume it is usually
+  the book's genuine record. A degenerate pick reused identically across many books of one shelf is a stamp;
+  round2-folder is right about as often as wrong here — right when the S clause already gives an exact ISBN/title.
+[L-328] (5 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:caliber pub:marvel sig:probe sig:stamp
+- ITEM ROUND 2 (X-059..X-061, Marvel): a shelf whose S pairs a floppy run (cv=) with a TPB line (gcd=) on ONE line
+  needs the `C` to name the run's OWN GCD floppy series — never restate the TPB line's id as the run. GCD's
+  `[Omnibus]`-bracketed title hides a record from an exact probe with the plain word (Asterix, 8 books). When the
+  packet gives no per-file picks at all (What If…? v2) or only a stamped wrong id (Deadworld), the filename's own
+  issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
+  resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
+  not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+[L-329] (5 shelf/shelves) kind:collected-line pub:dc pub:marvel
+- DC/Marvel trade lines often store a GCD row that belongs to a FOREIGN or other edition (Urban Comics' French GL
+  2011, a German GL 2023 Vol. 1) — check the stored row's series before using its roll-up. GCD carries twin HC/SC
+  series for most 2006-2016 DC/Marvel trades (77116/77117, 77936/77937) → cap those I lines at 0.9. CV keeps count-1
+  "Title: Subtitle" volumes per trade before ~2016, numbered TPB-line volumes after (R-054).
+[L-332] (5 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection one-rule (lead, wave 44): each Epic book is its OWN shelf; its S line carries the book's own
+  count-1 CV volume and `gcd=-`; the line's GCD series (74602 ASM, 74592 Iron Man) goes on the book's I line with
+  its ISBN; C lines name the runs reprinted. `lookup.py "<Line> Epic Collection" --contains` lists every volume.
+[L-389] (5 shelf/shelves) pub:dark-horse pub:marvel sig:split
+- P-053 / R-135 (waves 129-130): a run's issues never JOIN a creator-trade-keyed shelf ("Venom by Al Ewing & Ram V",
+  S21029, four trades) — keep them and meet through the SHARED cv at the next revisit (S20988 cv=140084 + merge-with=21029).
+  Marvel's 2019-2020 "Star Wars #1 facsimile" is "Star Wars No 1 Facsimile Edition" (CV 123267 / GCD 153348): probe the
+  "No N" form. Star Wars Insider and Titan's "Best of" books have no CV / GCD record: R + provider-missing, never the 1977
+  comic's stamp. The Dark Horse Star Wars Omnibus umbrella number (Vol. 32 / 35) raises a false "stored GCD row is another
+  book" warning against the sub-line's #1 / #2 — page counts and ISBNs decide. An Epic Collection / omnibus line spanning
+  several minis keeps its own GCD-line key in a split.
+
++121 more matched entries not shown: L-392, L-397, L-400, L-029, L-119, L-130, L-291, L-398, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-060, L-116, L-142, L-174, L-242, L-319, L-388, L-390, L-395, L-064, L-085, L-101, L-113, L-191, L-281, L-290, L-310, L-016, L-032, L-114, L-193, L-028, L-034, L-036, L-124, L-169, L-173, L-265, L-272, L-297, L-387, L-391, L-399, L-014, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-175, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-009, L-024, L-027, L-033, L-065, L-068, L-099, L-102, L-123, L-133, L-194, L-262, L-316, L-324, L-330, L-339, L-343, L-345, L-357, L-371, L-378, L-379, L-393, L-396, L-097, L-252, L-274, L-288, L-293, L-352, L-354, L-128, L-150, L-181, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S18845 The Invincible Iron Man  [split]  45 files / 3 collections  decided in R-154 (S)
+   decided: S 18845 cv=146873 gcd=194084 0.95 | Invincible Iron Man (Marvel 2022-2024, Duggan): CV 146873 (2022, 20, cached #1-20) and GCD 194084 (2023-2024, 20, legacy #651-670) agree on publisher, span and count; our three "Invincible Iron Man by Gerry Duggan" Vol. 01-03 trades (GCD 203055 rows roll up s194084) are the run's own editions, and the 41 1pp MikeNY76 variant covers of #1-20 are residue that costs nothing; one 1pp cover of the 2008 run is split below
+   F 18845 split-needed | item 82061 ("Invincible Iron Man 019 (Shs Variant) (2009)" 1pp) is a variant cover of Invincible Iron Man (2008) #19 (CV 21487 / GCD 30723), the run S9539 stores (stored cv=21487, S line C-064) -> join S9539 on its key "Invincible Iron Man" (L-368)
+   N 18845 C-045's F provider-missing is resolved: GCD 194084 is the run (20 rows #1-20 = legacy #651-670). Per-file CV 21487 on 34 of 45 files and GCD 30723 on 21 are the 2008 run's number stamps
+   named: S9539 Invincible Iron Man  58 files  keys: "Invincible Iron Man" | "Invincible Iron Man v1 (2008)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S94637 "Invincible Iron Man v2 (2015)" 6f [title — S gcd=99297 (C-045 0.9)] keys: "Invincible Iron Man v2 (2015)"
+   nearby: S65979 "Invincible Iron Man Omnibus" 3f [title — S cv=27514 gcd=66422 (B-057 0.95)] keys: "The Invincible Iron Man (2008)"
+   keys now: "Invincible Iron Man v5 (2023)" x37 · "The Invincible Iron Man (2022)" x7 · "The Invincible Iron Man 002i (2022)" x1
+   groups (title x folder): 4
+   G1 "Invincible Iron Man by Gerry Duggan" in Marvel\_Iron Man\17 Invincible Iron Man v5 (2023) — 3 file(s), 3 COL, pp 151-194; cv per-file 152901x3; gcd per-file 203055x3; key 'Invincible Iron Man v5 (2023)'
+      [82027] COL Invincible Iron Man by Gerry Duggan Vol. 01 - Demon in the Armor (2023) (Digital-Empire).cbr (151pp)
+         own record cv 152901 / gcd s203055 "Invincible Iron Man by Gerry Duggan" (issue 2561360) COLLECTS: gcd=194084 Invincible Iron Man (2023) (unnumbered)
+      [82028] COL Invincible Iron Man by Gerry Duggan Vol. 02 - The Wedding of Tony Stark and Emma Frost (2024) (Digital) (Shan-Empire).cbz (154pp)
+         own record cv 152901 / gcd s203055 "Invincible Iron Man by Gerry Duggan" (issue 2611325) COLLECTS: gcd=194084 Invincible Iron Man (2023) (unnumbered)
+      [82029] COL Invincible Iron Man by Gerry Duggan Vol. 03 - Iron & Diamonds (2024) (Digital) (Shan-Empire).cbz (194pp)
+         own record cv 152901 / gcd s203055 "Invincible Iron Man by Gerry Duggan" (issue 2660934) COLLECTS: gcd=194084 Invincible Iron Man (2023) (unnumbered)
+   G2 "Invincible Iron Man" in Marvel\_Iron Man\17 Invincible Iron Man v5 (2023)\Variant Covers — 34 file(s), numbers 1, 3, 5-6, 8-20, pp 1-1; cv per-file 21487x34; gcd per-file 30723x14; key 'Invincible Iron Man v5 (2023)'
+      e.g. Invincible Iron Man 001 (2022) (1-in-100 Tao Ironheart Virgin Variant) (Digital) (MikeNY76-Empire).cbz
+        82030 #1 2022 1pp · 82031 #1 2022 1pp · 82032 #1 2022 1pp · 82033 #1 2022 1pp · 82034 #1 2022 1pp · 82035 #1 2022 1pp · 82036 #1 2022 1pp · 82037 #1 2022 1pp · 82055 #19 2024 1pp
+        82056 #19 2024 1pp · 82057 #19 2024 1pp · 82058 #19 2024 1pp · 82059 #19 2024 1pp · 82060 #19 2024 1pp · 82061 #19 2009 1pp · 82062 #20 2024 1pp · 82063 #20 2024 1pp
+      [82038] Invincible Iron Man 003 (2023) Layton Connecting Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [82039] Invincible Iron Man 005 (2023) Phil Noto Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [82040] Invincible Iron Man 006 (2023) Stephen Segovia Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [82041] Invincible Iron Man 008 (2023) Junggeun Yoon Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [82042] Invincible Iron Man 009 (2023) Bjorn Barends Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [82043] Invincible Iron Man 010 (2023) George Perez Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [82044] Invincible Iron Man 011 (2023) Adi Granov Homage Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [82045] Invincible Iron Man 012 (2023) Ken Lashley Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [82046] Invincible Iron Man 013 (2023) Emilio Laiso Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [82047] Invincible Iron Man 013 (2023) Ron Lim Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [82048] Invincible Iron Man 014 (2024) Mike Mayhew Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [82049] Invincible Iron Man 014 (2024) Skan Rom Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [82050] Invincible Iron Man 015 (2024) Dike Ruan Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [82051] Invincible Iron Man 016 (2024) John Giang Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [82052] Invincible Iron Man 017 (2024) Rafael Grassetti Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [82053] Invincible Iron Man 018 (2024) Pepe Larraz Design Variant (Digital) (MikeNY76).cbz (1pp)
+      [82054] Invincible Iron Man 018 (2024) Pete Woods Black Costume Variant (Digital) (MikeNY76).cbz (1pp)
+   G3 "The Invincible Iron Man" in Marvel\_Iron Man\17 Invincible Iron Man v5 (2023)\Variant Covers — 7 file(s), numbers 1, pp 1-1; cv per-file 146873x7; gcd per-file 30723x7; key 'The Invincible Iron Man (2022)'
+      e.g. The Invincible Iron Man 001 (2022) (1-in-25 Larraz Variant) (Digital) (MikeNY76-Empire).cbz
+        82065 #1 2022 1pp · 82066 #1 2022 1pp · 82067 #1 2022 1pp · 82068 #1 2022 1pp · 82069 #1 2022 1pp · 82070 #1 2022 1pp · 82071 #1 2022 1pp
+   G4 "The Invincible Iron Man 002i [Marvel] (2023) (Peach Momoko Variant) (Digital) (MikeNY76-Empire)" in Marvel\_Iron Man\17 Invincible Iron Man v5 (2023)\Variant Covers — 1 file(s), pp 1-1; cv per-file 146873x1; key 'The Invincible Iron Man 002i (2022)'
+      [82072] The Invincible Iron Man 002i [Marvel] (2023) (Peach Momoko Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+
+== S8138 Guardians of the Galaxy  [split]  41 files / 6 collections  decided in R-154 (S)
+   decided: S 8138 cv=57960 gcd=72411 0.9 | Guardians of the Galaxy (Marvel 2013-2015): CV 57960 (2013, 28, cached #0.1-27) and GCD 72411 (2013-2015, 28, per-file on 27) agree on publisher, span and count; our #0.1, #1-8, #11-13 (#11.NOW), #18-25, #27 (folders "Marvel Cosmic\Guardians of the Galaxy", "03 Guardians of the Galaxy v3 (2013)", the Trial of Jean Grey / Original Sin / Black Vortex chronologies) and the five trades Vol. 01-05 (GCD TPB line 78161 #1-5) are this run, the Skottie Young covers and chronology copies cost nothing; 0.9 for the Annual 001 (2015) and for eight books of other runs split below
+   F 8138 split-needed | items 82953, 82954 ("Guardians of the Galaxy 001 2008 (World'sFinest-DCP)" 32pp, "002 - 2008 (Minutemen-Zone)" 24pp) are Guardians of the Galaxy (2008) #1-2 (CV 21550 issues 130199 / 131463, GCD 30802 rows 528210 / 528211), the run S64851 stores (stored cv=21550, S97375 merged into it) -> join S64851 on its key "Guardians of the Galaxy v2 (2008)" (L-368)
+   F 8138 split-needed | item 81943 ("Guardians of the Galaxy by Abnett & Lanning Omnibus (2016)" 892pp = CV 90199 issue 529017 / GCD 100915 row 1565330, 944pp, collects s30802 #1-25 plus The Thanos Imperative and Annihilators) is the creator omnibus of the 2008 run (L-395 / L-399: a creator line's own book joins the run it reprints) -> join S64851 on its key "Guardians of the Galaxy v2 (2008)"
+   F 8138 split-needed | items 82949, 82950, 82951, 82952 ("Guardians of the Galaxy Annual #001-#004", 53-56pp) are Guardians of the Galaxy Annual (1991-1994; CV 4595 / GCD 4244, 4 issues each), the annual of the 1990 run; no Series stores cv=4595, so by L-391 they go with their run, S64850 (stored cv=4398, Guardians of the Galaxy 1990) -> join S64850 on its key "Guardians of the Galaxy (1990)"
+   N 8138 S97376 merged in (C-047's merge-with done). "Guardians of the Galaxy Annual 001 (2015)" (82843) is this run's own annual (CV 78716 issue 472907 "Homesick" / GCD 85114 row 1288714, Dec 2014) and stays as residue (L-391: no annual-series shelf). Per-file CV 4398 on 34 files is the 1990 run's number stamp
+   N 81943 also collects The Thanos Imperative (2010) #1-6, Annihilators (2011) #1-4 and Annihilators: Earthfall #1-4
+   named: S64851 Guardians of the Galaxy  80 files  keys: "Guardians of the Galaxy (2008)" | "Guardians of the Galaxy v2 (2008)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S97375 (not a file-holding shelf today)
+   named: S64850 Guardians of the Galaxy  68 files  keys: "Guardians of the Galaxy (1990)" | "Guardians of the Galaxy Classic - In The Year (1990)" | "Guardians of the Galaxy: Marvel Presents (1990)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S103846 "The Amazing Spider-Man v2 (1999)" 46f [shares gcd=11288 (collected by item 80300) — S cv=78701 gcd=11288 (R-079 0.95)] keys: "The Amazing Spider-Man v2 (1999)"
+   nearby: S19747 "The Thanos Imperative" 13f [shares gcd=49426 (collected by item 81943) — S cv=33509 gcd=49426 (C-047 0.95)] keys: "Thanos Imperative" | "The Thanos Imperative"
+   nearby: S95973 "Captain Marvel" 6f [shares gcd=67081 (collected by item 80300) — S cv=50575 gcd=67081 (R-043 0.95)] keys: "Captain Marvel v7 (2012)"
+   nearby: S1097 "Annihilators" 5f [shares gcd=56227 (collected by item 81943) — S cv=39231 gcd=56227 (A-024 0.95)] keys: "Annhilators" | "Annihilators"
+   nearby: S1098 "Annihilators: Earthfall" 5f [shares gcd=61189 (collected by item 81943) — S cv=43020 gcd=61189 (A-024 0.95)] keys: "Annihilators - Earthfall"
+   nearby: S8162 "Guardians of the Galaxy - New Guard" 8f [title — S cv=85290 gcd=93071 (R-070 0.9)] keys: "Guardians of the Galaxy - New Guard" | "Guardians of the Galaxy v4 (2015)"
+   nearby: S94617 "Guardians of the Galaxy v6 (2020)" 4f [title — S cv=124447 gcd=155084 (R-069 0.9)] keys: "Guardians of the Galaxy v6 (2020)"
+   nearby: S94618 "Guardians of the Galaxy" 3f [title — S cv=149391 gcd=199169 (R-016 0.95)] keys: "Guardians Of The Galaxy - Grootrise" | "Guardians of the Galaxy v7 (2023)"
+   nearby: S94616 "Guardians of the Galaxy v5 (2019)" 2f [title — S cv=116702 gcd=138278 (R-069 0.95)] keys: "Guardians of the Galaxy v5 (2019)"
+   nearby: S8158 "Guardians of the Galaxy - Guardians of Infinity" 1f [title+1 — S cv=86359 gcd=94625 (R-069 0.95)] keys: "Guardians of the Galaxy - Guardians of Infinity"
+   keys now: "Guardians of the Galaxy v3 (2013)" x32 · "Guardians Of The Galaxy" x6 · "Guardians of the Galaxy" x3
+   groups (title x folder): 14
+   G1 "Guardians of the Galaxy" in Marvel\_Guardians of the Galaxy\03 Guardians of the Galaxy v3 (2013) — 5 file(s), 5 COL, pp 116-140; cv per-file 66834x1, 71401x1, 78275x1; gcd per-file 78161x5; key 'Guardians of the Galaxy v3 (2013)'
+      [80297] COL Guardians of the Galaxy Vol. 01 - Cosmic Avengers (2013) (Digital) (F) (Zone-Empire).cbr (135pp)
+         own record cv 66834 / gcd s78161 "Guardians of the Galaxy" (issue 1171408) COLLECTS: gcd=72411 Guardians of the Galaxy (2013) #0.1, #1-3 · gcd=75809 Guardians of the Galaxy: Tomorrow's Avengers (2013) #1 · gcd=76287 Guardians of the Galaxy (2013) #1
+      [80298] COL Guardians of the Galaxy Vol. 02 - Angela (2014) (Digital) (Zone-Empire).cbr (140pp)
+         own record cv 71401 / gcd s78161 "Guardians of the Galaxy" (issue 1313824) COLLECTS: gcd=72411 Guardians of the Galaxy (2013) #4-10 · gcd=76287 Guardians of the Galaxy (2013) #2
+      [80300] COL Guardians of the Galaxy Vol. 03 - Guardians Disassembled (2014) (Digital) (F) (BroadCast-Empire).cbz (139pp)
+         own record cv 78275 / gcd s78161 "Guardians of the Galaxy" (issue 1438495) COLLECTS: gcd=72411 Guardians of the Galaxy (2013) #14-17 · gcd=67081 Captain Marvel (2012) #1 · gcd=80545 Free Comic Book Day 2014 (Guardians of the Galaxy) (2014) #1 · gcd=11288 The Amazing Spider-Man (1999) #654
+      [80301] COL Guardians of the Galaxy Vol. 04 - Original Sin (2015) (Digital) (F) (Zone-Empire).cbr (121pp)
+         own record cv 80814 / gcd s78161 "Guardians of the Galaxy" (issue 1499613) COLLECTS: gcd=72411 Guardians of the Galaxy (2013) #18-23 · gcd=76287 Guardians of the Galaxy (2013) #4
+      [80302] COL Guardians of the Galaxy Vol. 05 - Through the Looking Glass (2015) (Digital) (F) (BroadCast-Empire).cbr (116pp)
+         own record cv 84970 / gcd s78161 "Guardians of the Galaxy" (issue 1547677) COLLECTS: gcd=72411 Guardians of the Galaxy (2013) #24-27 · gcd=85114 Guardians of the Galaxy Annual (2015) #1 · gcd=76287 Guardians of the Galaxy (2013) #5
+   G2 "Guardians of the Galaxy by Abnett & Lanning Omnibus (2016) (Digital-Empire)" in Marvel\_Guardians of the Galaxy\_Omnibus Editions — 1 file(s), 1 COL, pp 892-892; cv per-file 90199x1; gcd per-file 100915x1; key 'Guardians of the Galaxy'
+      [81943] COL Guardians of the Galaxy by Abnett & Lanning Omnibus (2016) (Digital-Empire).cbr (892pp)
+         own record cv 90199 / gcd s100915 "Guardians of the Galaxy by Abnett & Lanning Omnibus" (issue 1565330) COLLECTS: gcd=30802 Guardians of the Galaxy (2008) #1-25 · gcd=49426 The Thanos Imperative (2010) #1-6 · gcd=61189 Annihilators: Earthfall (2011) #1-4 · gcd=56227 Annihilators (2011) #1-4
+   G3 "Guardians of the Galaxy" in Marvel\_Marvel Cosmic\Guardians of the Galaxy — 16 file(s), numbers 1, 3-8, 18-24, 27, pp 18-33; cv per-file 4398x16; gcd per-file 72411x16; key 'Guardians of the Galaxy v3 (2013)'
+      e.g. Guardians of the Galaxy 001 (2013) (Digital) (Zone-Empire).cbr
+        82828 #1 2013 22pp · 82829 #3 2013 21pp · 82830 #4 2013 23pp · 82831 #5 2013 19pp · 82832 #6 2013 19pp · 82833 #7 2013 20pp · 82834 #8 2013 22pp · 82835 #18 2014 18pp · 82836 #19 2014 21pp
+        82837 #20 2014 22pp · 82838 #21 2014 21pp · 82839 #22 2015 21pp · 82840 #23 2015 22pp · 82841 #24 2015 18pp · 82842 #27 2015 20pp
+      [82827] Guardians of the Galaxy 0.1 (2013) (Digital) (Zone-Empire).cbr (33pp)
+   G4 "Guardians of the Galaxy Annual" in Marvel\_Marvel Cosmic\Guardians of the Galaxy — 1 file(s), numbers 1, pp 33-33; cv per-file 78716x1; gcd per-file 85114x1; key 'Guardians Of The Galaxy'
+      [82843] Guardians of the Galaxy Annual 001 (2015) (Digital) (Zone-Empire).cbr (33pp)
+   G5 "Guardians of the Galaxy Annual" in Marvel\_Marvel Cosmic\Guardians of the Galaxy\Vol 1 — 4 file(s), numbers 1-4, pp 53-56; cv per-file 4595x4; gcd per-file 4244x4; key 'Guardians Of The Galaxy'
+      e.g. Guardians of the Galaxy Annual #001.cbz
+        82949 #1 54pp · 82950 #2 53pp · 82951 #3 55pp · 82952 #4 56pp
+   G6 "Guardians of the Galaxy" in Marvel\_Marvel Cosmic\Guardians of the Galaxy\Vol 2 — 1 file(s), numbers 2, pp 24-24; cv per-file 21550x1; gcd per-file 30802x1; key 'Guardians of the Galaxy'
+      [82954] Guardians of the Galaxy 002 - 2008 (Minutemen-Zone).cbr (24pp)
+   G7 "Guardians of the Galaxy 001 2008___World_sFinest-DCP" in Marvel\_Marvel Cosmic\Guardians of the Galaxy\Vol 2 — 1 file(s), pp 32-32; cv per-file 21550x1; gcd per-file 30802x1; key 'Guardians of the Galaxy'
+      [82953] Guardians of the Galaxy 001 2008___World_sFinest-DCP_.cbr (32pp)
+   G8 "Guardians of the Galaxy" in Marvel\_X-Men\_X-Men Complete Chronology V2\1081 The Trial of Jean Grey — 2 file(s), numbers 12-13, pp 15-19; cv per-file 4398x2; gcd per-file 72411x2; key 'Guardians of the Galaxy v3 (2013)'
+      [92619] 004 Guardians of the Galaxy 012 (2014) (digital) (Minutemen-PhD).cbr (19pp)
+      [92621] 006 Guardians of the Galaxy 013 (2014) (digital) (Minutemen-PhD).cbr (15pp)
+   G9 "Guardians of the Galaxy 011.NOW (2014) (digital) (Minutemen-PhD)" in Marvel\_X-Men\_X-Men Complete Chronology V2\1081 The Trial of Jean Grey — 1 file(s), numbers 11, pp 18-18; cv per-file 4398x1; gcd per-file 74471x1; key 'Guardians of the Galaxy v3 (2013)'
+      [92617] 002 Guardians of the Galaxy 011.NOW (2014) (digital) (Minutemen-PhD).cbr (18pp)
+   G10 "Guardians of the Galaxy" in Marvel\_X-Men\_X-Men Complete Chronology V2\1132 The Black Vortex — 2 file(s), numbers 24-25, pp 17-29; cv per-file 4398x2; gcd per-file 72411x2; key 'Guardians of the Galaxy v3 (2013)'
+      [92901] 002 Guardians of the Galaxy 024 (2015) (digital) (Minutemen-Spaztastic).cbr (17pp)
+      [92906] 007 Guardians of the Galaxy 025 (2015) (4 Covers) (digital) (Minutemen-Spaztastic).cbr (29pp)
+   G11 "Guardians Of The Galaxy" in Marvel\__Skottie Young Covers — 1 file(s), numbers 7, pp 1-1; cv per-file 57960x1; gcd per-file 72411x1; key 'Guardians Of The Galaxy'
+      [51954] Guardians Of The Galaxy 007 (2013) (Skottie Young Variant) (Cover ONLY) (NN).cbr (1pp)
+   G12 "Guardians of the Galaxy" in Marvel\__Skottie Young Covers — 1 file(s), numbers 5, pp 1-1; cv per-file 4398x1; gcd per-file 72411x1; key 'Guardians of the Galaxy v3 (2013)'
+      [51955] Guardians of the Galaxy 05 (2013) (Skottie Young Variant Cover) (Ghosts-Novus-HD).cbz (1pp)
+   G13 "Guardians of the Galaxy" in _Marvel Major Event Chronology (digital)\2014.04 - Original Sin\02 Tie-ins\Guardians of the Galaxy — 3 file(s), numbers 18-20, pp 18-22; cv per-file 4398x3; gcd per-file 72411x3; key 'Guardians of the Galaxy v3 (2013)'
+      [117785] 055 - Guardians of the Galaxy 018 (2014) (Zone-Empire).cbr (18pp)
+      [117786] 056 - Guardians of the Galaxy 019 (2014) (Digital) (Zone-Empire).cbr (21pp)
+      [117787] 057 - Guardians of the Galaxy 020 (2014) (Digital) (Zone-EMpire).cbr (22pp)
+   G14 "Guardians of the Galaxy" in _Marvel Major Event Chronology (digital)\2015.02 - The Black Vortex\Variant Covers — 2 file(s), numbers 24, pp 1-1; cv per-file 4398x2; gcd per-file 72411x2; key 'Guardians of the Galaxy v3 (2013)'
+      [118071] Guardians of the Galaxy 024 (2015) (Andrea Sorrentino Cosmically Enhanced Variant) (digital) (Minutemen-Fantomex).cbr (1pp)
+      [118072] Guardians of the Galaxy 024 (2015) (Phil Noto Variant) (digital) (Minutemen-Fantomex).cbr (1pp)
+
+== S9390 Incredible Hulk Epic Collection: Going Gray  [split]  1 files / 1 collections  decided in R-154 (S)
+   decided: S 9390 cv=- gcd=87446 0.9 | volume 14 "Going Gray" of the Incredible Hulk Epic Collection LINE: GCD 87446 #14 row 2180201 (516pp, 2020-12-02, ISBN 978-1-302-92676-2) is our 506pp book (ComicInfo Series "Incredible Hulk Epic Collection: Going Gray"); CV 132382 is only its count-1 book volume (issue 820056 "Volume 14"), so the line has no CV id (L-392)
+   F 9390 wrong-cv-link | the stored CV 132382 "Incredible Hulk Epic Collection: Going Gray" is the Vol. 14 book's own count-1 volume, not the line; it moves to the I line
+   F 9390 split-needed | item 81159 -> join S9385 on its ParsedKey "Incredible Hulk Epic Collection" (S9385's S line, R-151 / R-153, is the same GCD 87446 line with cv=-; L-377 / L-392); the shelf empties by the join; replaces C-045's merge-with=9391
+   N 81159 also collects Incredible Hulk Annual #14-15 (GCD 2348) and Marvel Fanfare #29
+   named: S9385 Incredible Hulk Epic Collection  13 files  keys: "Incredible Hulk Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S18826 "The Incredible Hulk" 409f [shares gcd=1866 (collected by item 81159) — S cv=2406 gcd=1866 (R-153 0.9)] keys: "The Incredible Hulk" | "The Incredible Hulk v1 (1968)"
+   nearby: S11410 "Marvel Fanfare" 58f [shares gcd=2657 (collected by item 81159) — S cv=3143 gcd=2657 (R-140 0.95)] keys: "Marvel Fanfare"
+   nearby: S34388 "The Incredible Hulk Annual" 17f [shares gcd=2348 (N line) — S cv=2860 gcd=2348 (R-153 0.9)] keys: "The Incredible Hulk Annual"
+   nearby: S9391 "Incredible Hulk Epic Collection: The Curing Of Dr. Banner" 1f [shares gcd=87446 — S gcd=87446 (R-154 0.9)] keys: "Incredible Hulk Epic Collection: The Curing Of Dr. Banner"
+   nearby: S9392 "Incredible Hulk Epic Collection: The Lone And Level Sands" 1f [shares gcd=87446 — S gcd=87446 (R-154 0.9)] keys: "Incredible Hulk Epic Collection: The Lone And Level Sands"
+   nearby: S9393 "Incredible Hulk Epic Collection: Who Will Judge The Hulk?" 1f [shares gcd=87446 — S gcd=87446 (R-154 0.9)] keys: "Incredible Hulk Epic Collection: Who Will Judge The Hulk?"
+   keys now: "Incredible Hulk Epic Collection: Going Gray" x1
+   groups (title x folder): 1
+   G1 "Incredible Hulk Epic Collection" in Marvel\_Hulk\_Incredible Hulk Epic Collection — 1 file(s), 1 COL, pp 506-506; cv per-file 132382x1; gcd per-file 87446x1; key 'Incredible Hulk Epic Collection: Going Gray'
+      [81159] COL Incredible Hulk Epic Collection Vol. 14 - Going Gray (2020) (Digital) (Zone-Empire).cbr (506pp)
+         own record cv 132382 / gcd s87446 "Incredible Hulk Epic Collection" (issue 2180201) COLLECTS: gcd=1866 The Incredible Hulk (1968) #314-330 · gcd=2348 The Incredible Hulk Annual (1976) #14-15 · gcd=2657 Marvel Fanfare (1982) #29
+
+== S9391 Incredible Hulk Epic Collection: The Curing Of Dr. Banner  [split]  1 files / 1 collections  decided in R-154 (S)
+   decided: S 9391 cv=- gcd=87446 0.9 | volume 08 "The Curing of Dr. Banner" of the Incredible Hulk Epic Collection LINE: GCD 87446 #8 row 2574451 (532pp, 2023-10-25, ISBN 978-1-302-94879-5) is our 526pp book; CV 154304 is only its count-1 book volume (issue 1026666 "Volume 8"), so the line has no CV id (L-392)
+   F 9391 wrong-cv-link | the stored CV 154304 "Incredible Hulk Epic Collection: The Curing of Dr. Banner" is the Vol. 08 book's own count-1 volume, not the line; it moves to the I line
+   F 9391 split-needed | item 81156 -> join S9385 on its ParsedKey "Incredible Hulk Epic Collection" (S9385's S line is the same GCD 87446 line with cv=-; L-377 / L-392); the shelf empties by the join; replaces C-045's merge-with=9392; checker anchor only: the S9390-S9393 group meets as one on S9385, so this line also reads 'join S9390' - nothing lands on S9390
+   N 81156 also collects Incredible Hulk Annual #6, Marvel Treasury Edition #17 and Marvel Comics Index pages
+   named: S9385 Incredible Hulk Epic Collection  13 files  keys: "Incredible Hulk Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S9390 Incredible Hulk Epic Collection: Going Gray  1 files  keys: "Incredible Hulk Epic Collection: Going Gray"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S9393 Incredible Hulk Epic Collection: Who Will Judge The Hulk?  1 files  keys: "Incredible Hulk Epic Collection: Who Will Judge The Hulk?"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S18826 "The Incredible Hulk" 409f [shares gcd=1866 (collected by item 81156) — S cv=2406 gcd=1866 (R-153 0.9)] keys: "The Incredible Hulk" | "The Incredible Hulk v1 (1968)"
+   nearby: S34388 "The Incredible Hulk Annual" 17f [shares gcd=2348 (collected by item 81156) — S cv=2860 gcd=2348 (R-153 0.9)] keys: "The Incredible Hulk Annual"
+   nearby: S11628 "Marvel Treasury Edition" 3f [shares gcd=2180 (collected by item 81156) — S cv=2694 gcd=2180 (C-039 0.9)] keys: "Marvel Treasury Edition"
+   nearby: S9392 "Incredible Hulk Epic Collection: The Lone And Level Sands" 1f [shares gcd=87446 — S gcd=87446 (R-154 0.9)] keys: "Incredible Hulk Epic Collection: The Lone And Level Sands"
+   keys now: "Incredible Hulk Epic Collection: The Curing Of Dr. Banner" x1
+   groups (title x folder): 1
+   G1 "Incredible Hulk Epic Collection" in Marvel\_Hulk\_Incredible Hulk Epic Collection — 1 file(s), 1 COL, pp 526-526; cv per-file 154304x1; gcd per-file 87446x1; key 'Incredible Hulk Epic Collection: The Curing Of Dr. Banner'
+      [81156] COL Incredible Hulk Epic Collection Vol. 08 - The Curing of Dr. Banner (2023) (Digital) (Kileko-Empire).cbz (526pp)
+         own record cv 154304 / gcd s87446 "Incredible Hulk Epic Collection" (issue 2574451) COLLECTS: gcd=1866 The Incredible Hulk (1968) #201-226 · gcd=140330 The Marvel Comics Index (1976) (unnumbered) · gcd=2180 Marvel Treasury Edition (1974) #17 · gcd=2348 The Incredible Hulk Annual (1976) #6
+
+== S9392 Incredible Hulk Epic Collection: The Lone And Level Sands  [split]  1 files / 1 collections  decided in R-154 (S)
+   decided: S 9392 cv=- gcd=87446 0.9 | volume 24 "The Lone and Level Sands" of the Incredible Hulk Epic Collection LINE: GCD 87446 #24 row 2518545 (468pp, 2023-04-19, ISBN 978-1-302-95106-1) is our 437pp book; CV 149297 is only its count-1 book volume (issue 981312 "Volume 24"), so the line has no CV id (L-392); the Archaia "The Lone and Level Sands" (CV 45236 / GCD 17989) is an unrelated book sharing the subtitle
+   F 9392 wrong-cv-link | the stored CV 149297 "Incredible Hulk Epic Collection: The Lone and Level Sands" is the Vol. 24 book's own count-1 volume, not the line; it moves to the I line
+   F 9392 split-needed | item 81165 -> join S9385 on its ParsedKey "Incredible Hulk Epic Collection" (S9385's S line is the same GCD 87446 line with cv=-; L-377 / L-392); the shelf empties by the join; replaces C-045's merge-with=9393; checker anchor only: the S9390-S9393 group meets as one on S9385, so this line also reads 'join S9390' - nothing lands on S9390
+   N 81165 also collects Hulk: Beauty and the Behemoth, X-Man / Hulk '98 and Hulk / Sub-Mariner '98
+   named: S9385 Incredible Hulk Epic Collection  13 files  keys: "Incredible Hulk Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S9390 Incredible Hulk Epic Collection: Going Gray  1 files  keys: "Incredible Hulk Epic Collection: Going Gray"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S9393 Incredible Hulk Epic Collection: Who Will Judge The Hulk?  1 files  keys: "Incredible Hulk Epic Collection: Who Will Judge The Hulk?"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S18826 "The Incredible Hulk" 409f [shares gcd=1866 (collected by item 81165) — S cv=2406 gcd=1866 (R-153 0.9)] keys: "The Incredible Hulk" | "The Incredible Hulk v1 (1968)"
+   nearby: S22213 "X-Man / Hulk '98" 2f [shares gcd=6048 (collected by item 81165) — S cv=28192 gcd=6048 (R-153 0.95)] keys: "X-Man and Hulk Annual"
+   nearby: S9391 "Incredible Hulk Epic Collection: The Curing Of Dr. Banner" 1f [shares gcd=87446 — S gcd=87446 (R-154 0.9)] keys: "Incredible Hulk Epic Collection: The Curing Of Dr. Banner"
+   nearby: S18831 "Hulk / Sub-Mariner '98" 1f [shares gcd=7452 (collected by item 81165) — S cv=60434 gcd=7452 (B-056 0.9)] keys: "The Incredible Hulk and Sub-Mariner Annual"
+   keys now: "Incredible Hulk Epic Collection: The Lone And Level Sands" x1
+   groups (title x folder): 1
+   G1 "Incredible Hulk Epic Collection" in Marvel\_Hulk\_Incredible Hulk Epic Collection — 1 file(s), 1 COL, pp 437-437; cv per-file 149297x1; gcd per-file 87446x1; key 'Incredible Hulk Epic Collection: The Lone And Level Sands'
+      [81165] COL Incredible Hulk Epic Collection Vol. 24 - The Lone and Level Sands (2023) (Digital-Empire).cbr (437pp)
+         own record cv 149297 / gcd s87446 "Incredible Hulk Epic Collection" (issue 2518545) COLLECTS: gcd=1866 The Incredible Hulk (1968) #460-474 · gcd=89958 Hulk: Beauty and the Behemoth (1998) (unnumbered) · gcd=6048 X-Man / Hulk '98 (1998) (unnumbered) · gcd=7452 Hulk / Sub-Mariner '98 (1998) (unnumbered)
+
+== S9393 Incredible Hulk Epic Collection: Who Will Judge The Hulk?  [split]  1 files / 1 collections  decided in R-154 (S)
+   decided: S 9393 cv=- gcd=87446 0.9 | volume 05 "Who Will Judge the Hulk?" of the Incredible Hulk Epic Collection LINE: GCD 87446 #5 row 2195882 (452pp, 2021-01-06, ISBN 978-1-302-92206-1) is our 448pp book; CV 133098 is only its count-1 book volume (issue 824085 "Volume 5"), so the line has no CV id (L-392)
+   F 9393 wrong-cv-link | the stored CV 133098 "Incredible Hulk Epic Collection: Who Will Judge The Hulk?" is the Vol. 05 book's own count-1 volume, not the line; it moves to the I line
+   F 9393 split-needed | item 81153 -> join S9385 on its ParsedKey "Incredible Hulk Epic Collection" (S9385's S line is the same GCD 87446 line with cv=-; L-377 / L-392); the shelf empties by the join; replaces C-045's merge-with=9386; checker anchor only: the S9390-S9393 group meets as one on S9385, so this line also reads 'join S9390' - nothing lands on S9390
+   N 81153 also collects Incredible Hulk King Size Special #3-4 (GCD 1865) and Avengers #88
+   named: S9385 Incredible Hulk Epic Collection  13 files  keys: "Incredible Hulk Epic Collection"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S9390 Incredible Hulk Epic Collection: Going Gray  1 files  keys: "Incredible Hulk Epic Collection: Going Gray"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64185 "The Avengers" 426f [shares gcd=1571 (collected by item 81153) — S cv=2128 gcd=1571 (R-142 0.95)] keys: "Avengers" | "Avengers (1963)" | "The Avengers"
+   nearby: S18826 "The Incredible Hulk" 409f [shares gcd=1866 (collected by item 81153) — S cv=2406 gcd=1866 (R-153 0.9)] keys: "The Incredible Hulk" | "The Incredible Hulk v1 (1968)"
+   nearby: S9391 "Incredible Hulk Epic Collection: The Curing Of Dr. Banner" 1f [shares gcd=87446 — S gcd=87446 (R-154 0.9)] keys: "Incredible Hulk Epic Collection: The Curing Of Dr. Banner"
+   nearby: S9392 "Incredible Hulk Epic Collection: The Lone And Level Sands" 1f [shares gcd=87446 — S gcd=87446 (R-154 0.9)] keys: "Incredible Hulk Epic Collection: The Lone And Level Sands"
+   keys now: "Incredible Hulk Epic Collection: Who Will Judge The Hulk?" x1
+   groups (title x folder): 1
+   G1 "Incredible Hulk Epic Collection" in Marvel\_Hulk\_Incredible Hulk Epic Collection — 1 file(s), 1 COL, pp 448-448; cv per-file 133098x1; gcd per-file 87446x1; key 'Incredible Hulk Epic Collection: Who Will Judge The Hulk?'
+      [81153] COL Incredible Hulk Epic Collection Vol. 05 - Who Will Judge The Hulk (2021) (Digital) (Zone-Empire).cbr (448pp)
+         own record cv 133098 / gcd s87446 "Incredible Hulk Epic Collection" (issue 2195882) COLLECTS: gcd=1866 The Incredible Hulk (1968) #138-156 · gcd=1865 Incredible Hulk [King Size Special] (1968) #3-4 · gcd=1571 The Avengers (1963) #88
+
+== S9460 Inhuman  [split]  8 files / 3 collections  decided in R-154 (S)
+   decided: S 9460 cv=72791 gcd=79908 0.9 | Inhuman (Marvel 2014-2015): CV 72791 (2014, 14, cached #1-14) and GCD 79908 (2014-2015, 14) agree on publisher, span and count; our #1 and #9-10 (chronology folders) and the three trades Vol. 01-03 (GCD TPB line 87743 rows 1335457 / 1335440 / 1443447 roll up s79908 #1-6, #7-11, #12-14; judged ranges 3 of 3 fit) are this run; 0.9 for Inhuman Special #1 (2015, its own record) and the misfiled Europe Comics album split below
+   F 9460 split-needed | item 23884 ("Inhuman (2021) (digital) (Mr Norrell-Empire)" 98pp, folder Europe Comics\Inhuman (2021)) is the Europe Comics album "Inhuman" (CV 133307 issue 825200, 2021, 1 issue; the Splitter German edition is CV 136284 / GCD 169571), an unrelated European book sharing only the title, stored by no shelf -> new key "Inhuman (2021)" seeded cv=133307 (replaces C-045's F misfiled)
+   N 9460 flag #290 (label-ambiguous, item 117830) is right: "Inhuman v1 009 / 010 (2014)" are single issues of this run
+   N 81373 also collects Inhuman Annual (2015) #1 (GCD 88996)
+   keys now: "Inhuman" x8
+   groups (title x folder): 5
+   G1 "Inhuman (2021) (digital) (Mr Norrell-Empire)" in Europe Comics\Inhuman (2021) — 1 file(s), pp 98-98; cv per-file 133307x1; key 'Inhuman'
+      [23884] Inhuman (2021) (digital) (Mr Norrell-Empire).cbr (98pp)
+   G2 "Inhuman" in Marvel\_Inhumans\04 Inhuman (2014) — 3 file(s), 3 COL, pp 97-132; cv per-file 78455x1, 80970x1, 83579x1; gcd per-file 87743x3; key 'Inhuman'
+      [81371] COL Inhuman Vol. 01 - Genesis (2015) (Digital) (F) (Kileko-Empire).cbr (132pp)
+         own record cv 78455 / gcd s87743 "Inhuman" (issue 1335457) COLLECTS: gcd=79908 Inhuman (2014) #1-6
+      [81372] COL Inhuman Vol. 02 - AXIS (2015) (Digital) (F) (Kileko-Empire).cbz (106pp)
+         own record cv 80970 / gcd s87743 "Inhuman" (issue 1335440) COLLECTS: gcd=79908 Inhuman (2014) #7-11
+      [81373] COL Inhuman Vol. 03 - Lineage (2015) (Digital) (F) (Kileko-Empire).cbz (97pp)
+         own record cv 83579 / gcd s87743 "Inhuman" (issue 1443447) COLLECTS: gcd=79908 Inhuman (2014) #12-14 · gcd=88996 Inhuman Annual (2015) #1
+   G3 "Inhuman Special" in Marvel\_Inhumans\06 Inhuman Error (2015) — 1 file(s), numbers 1, pp 32-32; cv per-file 81483x1; gcd per-file 88543x1; key 'Inhuman'
+      [81381] Inhuman Special 01 (2015) (digital) (Minutemen-Faessla).cbz (32pp)
+   G4 "Inhuman" in _Marvel Major Event Chronology (digital)\2013.11 - Inhumanity — 1 file(s), numbers 1, pp 26-26; cv per-file 72791x1; gcd per-file 79908x1; key 'Inhuman'
+      [117764] 22 Inhuman 001 (2014) (digital) (Son of Ultron-Empire).cbr (26pp)
+   G5 "Inhuman" in _Marvel Major Event Chronology (digital)\2014.10 - AXIS\02 Tie-ins\Inhuman — 2 file(s), numbers 9-10, pp 21-22; cv per-file 72791x2; gcd per-file 166208x2; key 'Inhuman'
+      [117830] 046 - Inhuman v1 009 (2014) (Digital) (HD) (Thornn-Empire).cbr (21pp)
+      [117831] 057 - Inhuman v1 010 (2014) (Digital) (HD) (Thornn-Empire).cbr (22pp)
+
+== S97886 Iron Fist  [split]  8 files / 2 collections  decided in R-154 (R)
+   decided: R 97886 | two runs share this shelf: (a) Iron Fist (2017-2018), CV 100082 / GCD 112909 (15 = #1-7 + legacy #73-80): our #78-80 (2018) and the trades Vol. 01 The Trial of the Seven Masters (GCD 116562 #1 row 1732377 rolls up s112909 #1-5) and Vol. 02 Sabretooth - Round Two (row 1793043, s112909 #6-7, #73-77), 5 files from S9560's merge; (b) "Iron Fist 001-003 (2018) (Digital Original)" 42-45pp in folder "07 Iron Fist v6 (2018)" - the Marvel Digital Original "Phantom Limb", CV 114112 "Iron Fist" (2018, 3 issues 687014 / 691383 / 694133, "Phantom Limb Chapters 1-6"), collected as GCD 136768 row 1889496 (collects "Iron Fist: Marvel Digital Original #1-3"); C-045's "our #1-3 sits inside" 100082 was wrong - those numbers are the Digital Original's, not the 2017 run's #1-3; three issues of another run with its own record are co-equal, so no identity until the split
+   F 97886 split-needed | items 81464, 81465, 81466 ("Iron Fist 001-003 (2018) (Digital Original)", 45 / 43 / 42pp) are Iron Fist: Marvel Digital Original #1-3 "Phantom Limb" (CV 114112, 3 issues; stored by no shelf, who-stores cv=114112: 0 rows) -> new key "Iron Fist: Phantom Limb (2018)" seeded cv=114112 (their current key "Iron Fist v6 (2018)" is the shelf's own ParsedKey, so a respell is needed, L-396); the 2017 run (5 files, cv=100082 gcd=112909) stays
+   N 97886 flag #607 (overlap-in-series) is already Dismissed; per-file CV 2766 (Iron Fist 1975) on six files is the legacy-number stamp and GCD 186728 is Panini France
+   nearby: S102965 "Iron Fist" 3f [shares cv=2766 — S cv=2766 gcd=2252 (R-036 0.95)] keys: "Iron Fist (1975)" · S9572 "Iron Fist" 1f [title — S cv=141631 gcd=182399 (B-057 0.95)] keys: "Iron Fist: The Shattered Sword"
+   nearby: S9566 "Iron Fist: Wolverine" 8f [title+1 — S cv=9115 gcd=9848 (B-062 0.95)] keys: "Iron Fist and Wolverine" | "Iron Fist-Wolverine"
+   keys now: "Iron Fist" x5 · "Iron Fist v6 (2018)" x3
+   groups (title x folder): 2
+   G1 "Iron Fist" in Marvel\_Iron Fist\06 Iron Fist v5-v1 (2017) — 5 file(s), 2 COL, numbers 78-80, pp 24-154; cv per-file 2766x3, 104061x1, 109322x1; gcd per-file 112909x3, 116562x2; key 'Iron Fist'
+      [81459] Iron Fist 078 (2018) (Digital) (Zone-Empire).cbr (24pp)
+      [81460] Iron Fist 079 (2018) (Digital) (Zone-Empire).cbr (24pp)
+      [81461] Iron Fist 080 (2018) (Digital) (Zone-Empire).cbr (25pp)
+      [81462] COL Iron Fist Vol. 01 - The Trial of the Seven Masters (2017) (Digital) (Zone-Empire).cbr (114pp)
+         own record cv 104061 / gcd s116562 "Iron Fist" (issue 1732377) COLLECTS: gcd=112909 Iron Fist (2017) #1-5
+      [81463] COL Iron Fist Vol. 02 - Sabretooth - Round Two (2018) (Digital) (Kileko-Empire).cbr (154pp)
+         own record cv 109322 / gcd s116562 "Iron Fist" (issue 1793043) COLLECTS: gcd=112909 Iron Fist (2017) #6-7, #73-77
+   G2 "Iron Fist" in Marvel\_Iron Fist\07 Iron Fist v6 (2018) — 3 file(s), numbers 1-3, pp 42-45; cv per-file 114112x3; gcd per-file 186728x2, 112909x1; key 'Iron Fist v6 (2018)'
+      [81464] Iron Fist 001 (2018) (Digital Original) (Zone-Empire).cbr (45pp)
+      [81465] Iron Fist 002 (2018) (Digital Original) (Zone-Empire).cbr (43pp)
+      [81466] Iron Fist 003 (2018) (Digital Original) (Zone-Empire).cbr (42pp)

@@ -2135,3 +2135,10 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   #7 "#52-67") — check the neighbouring volumes. Masterworks Golden Age / Invincible Iron Man paperback re-issues (GCD
   74965 / 78703) are what digital rips with a later filename year usually are. Tales-of-Suspense-foldered Masterworks
   shelves duplicate the line's own shelf (merge on the shared cv).
+[L-401] pub:marvel sig:split kind:collected-line
+- Waves 153-154: CV spells the 1989 Nick Fury as "Nick Fury, Agent of SHIELD" (no dots, CV 4232) — probe with the dots
+  dropped. Excluded duplicate items (IsExcluded=1) keep their SeriesId, so a flag can name items the packet does not
+  list (S11478 flag #329). The Slott / Allred Silver Surfer 5-book TPB line (GCD 84480) spans the 2014 and 2016 runs —
+  a line identity with cv=-. The Moon Knight Omnibus (CV 133100 / GCD 173035) has no contents note in our data — no C
+  line. A second rip parked in another run's folder can carry that folder's key ("Ghost Rider v7 (2011)" on S64771's
+  2019 Vol. 01) — a trap for later files parsed from the folder.
