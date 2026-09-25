@@ -1,0 +1,904 @@
+## Conventions for this batch (32 shown of 154 matched; 384 in LEDGER.md; 45 shelf/shelves: kind:manga ×45 · kind:collected-line ×34 · kind:trade-only ×34 · kind:new ×4 · folder:sequel-subfolder ×2 · pub:dark-horse ×2 · kind:strip ×1 · pub:trade-house ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-098] (45 shelf/shelves) kind:manga sig:probe
+- GCD hides English manga behind a LONGER title far more than a shorter one ("Oishinbo a la Carte", "Neon
+  Genesis Evangelion 3-in-1 Edition", "Fairy Tail S: Tales from Fairy Tail") and occasionally a typo ("Fairy Tale:
+  Fairy Girls"); the mirror exists too (no ComicVine Viz volume for JoJo Parts 1-3 while GCD has all six → `cv=-`).
+[L-100] (45 shelf/shelves) kind:manga
+- A publisher change mid-line (Vertical → Kodansha USA) splits the GCD leg while CV keeps one volume (Ajin, CITY,
+  Miss Nagatoro): one S line, the GCD row that holds the wider span, `N` naming the other.
+[L-274] (45 shelf/shelves) kind:foreign kind:manga pass:item sig:twin
+- ITEM PASS (X-019..X-021, manga): the per-file GCD pick reuses volume 1's title-only id across EVERY book of a
+  manga shelf whose header already lists N numbered rows (A Bride's Story 12/12, Ajin 17/17, Assassination Classroom
+  21/21) — match the header pool by ordinal, ignore the pick. Per-file CV lands on a foreign twin of the same
+  title even more often (Milky Way, Egmont Ehapa, Glénat, Panini España, Carlsen, Altraverse, the Shogakukan
+  original) — the shelf's identity is the ENGLISH edition; use the header's cv-issues pool.
+[L-276] (45 shelf/shelves) kind:manga
+- GCD splits one manga line into a second publisher-branded series for its LAST volumes (Ajin v17, APOSIMZ v07-09:
+  Vertical → Kodansha USA); `SELECT id, number, page_count, isbn, title FROM gcd_issue WHERE series_id=?` on the
+  dump recovers the rows the header pool lacks.
+[L-277] (45 shelf/shelves) kind:manga pass:item sig:stamp
+- ITEM PASS (X-022..X-024, manga): the reused per-file stamp is not always volume 1's id — it can jump to a new
+  wrong series partway through a shelf (Berserk: three wrong series across v02-v41; Bleach cycles four before
+  settling) — always re-derive from the header pool by `#N`, never from a plausible-looking pick.
+[L-278] (45 shelf/shelves) kind:manga
+- Two parallel rip sets of one manga (Berserk .cbz + .cbr) take IDENTICAL per-volume ids from the same ordinal pool.
+[L-280] (45 shelf/shelves) kind:manga pass:item sig:probe
+- ITEM PASS (X-025..X-027, manga): when GCD splits a line in two (an earlier series for v1-N, a later one
+  continuing: Blood on the Tracks 156521 / 171046, CITY 123267 / 172756, Nagatoro 152847 / 171408) the packet's
+  header pool shows only the shelf's STORED series — find the other with `lookup.py --contains` and pull its issues
+  with `gcd_issue WHERE series_id=?`.
+[L-283] (45 shelf/shelves) kind:digital kind:manga pass:item
+- A manga whose only catalog runs are indexed by tankōbon VOLUME cannot take a chapter-count `C` range (Dragon Ball
+  Full Color: judged #1-17 are chapters) — `N no-record`, never an invented mapping.
+[L-284] (45 shelf/shelves) kind:manga pass:item
+- ITEM PASS (X-028..X-030): a manga tankōbon line that GCD tags [Collected Editions] (Food Wars! GCD 95211) has no
+  chapter-indexed run in either catalog — the `C OWED` marker is satisfied by `N no chapter-run`, the Dragon Ball
+  Full Color ruling; the books ARE the run. Our single volumes against GCD's "two-in-one" record have no safe 1:1
+  mapping → `gcd=s<series>` (Erased 118174), never an invented pairing.
+[L-288] (45 shelf/shelves) kind:foreign kind:manga pass:item sig:stamp
+- ITEM PASS (X-034..X-036): the reused stamp can jump FOUR times over one shelf (My Hero Academia: 105138 → 204933
+  → 236032 → 228276 over 38 books, CV pinned on foreign 166768 throughout); a shelf can carry NO gcd pick at all
+  (Muhyo & Roji's ×18). The header ladder by ordinal is the only source on manga — no exceptions found in 400 books.
+[L-289] (45 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-293] (45 shelf/shelves) kind:foreign kind:manga pass:item sig:stamp
+- ITEM PASS (X-043..X-045, ~30 manga shelves): not one case where the per-file pick was right and the header pool
+  wrong. A foreign GCD leg that undershoots by one (Twin Star Exorcists, 26 vs 27) → the last book takes gcd=-;
+  a Vertical → Kodansha USA imprint split duplicate-stamps the later imprint's id onto the earlier book
+  (Weathering with You) — reject the duplicate, keep it on its own volume.
+[L-304] (45 shelf/shelves) kind:manga pass:item
+- On a 60-volume manga run the `I` lines map the shelf's own file order onto the CV/GCD issue-list order (ordinal);
+  that is the accepted precision at this scale — the item pass verified it held on 400+ books.
+[L-344] (45 shelf/shelves) kind:manga
+- Manga (Yen Press / Seven Seas / Kodansha / Viz): the fixed CV index now reaches the count-1 ENGLISH volumes that
+  D-012/D-013 called provider-missing; an English CV record replaces a third-territory GCD licence (a German / French
+  row) as the identity (R-067).
+[L-164] (35 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-291] (35 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-135] (34 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-186] (34 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-244] (34 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (34 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (34 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+[L-248] (34 shelf/shelves) kind:collected-line
+- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
+  the sibling's landed S is evidence for the weak per-file matches on the others.
+[L-251] (34 shelf/shelves) kind:collected-line
+- Deluxe / Yearbook / Omnibus editions of the shelf's own ongoing with NO judged range get an `N` naming the
+  relationship, never an invented `C` range (the range is containment's to read).
+[L-258] (34 shelf/shelves) kind:collected-line sig:stamp
+- A degenerate packet block can stamp ONE GCD issue id onto every book of a shelf (Green Arrow S97350, six eras of
+  collected lines) — resolve only by each series' full issue list matched by title, never by the stamp.
+[L-269] (34 shelf/shelves) kind:collected-line kind:trade-only
+- An omnibus bundling several minis gets one `C` per mini at that mini's full range; an anthology TPB ("… and
+  Others") is not a numbered run and gets an `N`, not a forced `C`.
+[L-275] (34 shelf/shelves) kind:collected-line pass:item sig:probe sig:trade-link
+- A count-1/2/3 trade record the shelf's `N` called absent is often in the catalogs under a spelling the packet
+  never probed ("The Adventures of …", "Complete Collection", "Deluxe") — probe before writing no-record.
+[L-279] (34 shelf/shelves) kind:collected-line
+- Blade of the Immortal (S23118) is the canonical "line + run" shape: GCD's 31 collected-edition rows are the `I`
+  identities (cv=- — ComicVine mints only the floppy volume), and the floppy run CV 9069 is what every `C` names,
+  ranges #0-206 ascending across the 31 books. A single-leg shelf's books inherit the shelf's 0.9, never more.
+[L-282] (34 shelf/shelves) kind:collected-line
+- A `gcd=-` / dump-only shelf's books inherit the shelf's 0.9 (Cells at Work! Lady, Dragon Head); an exact edition
+  can exist on GCD alone and be absent from ComicVine entirely (Cat Shit One Omnibus GCD 186621 → 0.9, cv=-).
+[L-285] (34 shelf/shelves) kind:collected-line pass:item sig:stamp
+- ITEM PASS (X-031..X-033): JoJo's Bizarre Adventure part-shelves are double-stamped — per-file CV is the whole-saga
+  hardcover omnibus volume (165667, one issue per PART) and per-file GCD the umbrella whole-saga series (27115) by
+  raw issue number; both wrong for all 37 books. Parts 1-3 have no CV softcover record (cv=-); Parts 4-5 do.
+[L-286] (34 shelf/shelves) kind:collected-line sig:probe
+- A shelf-level "no record" `N` can be wrong for an English product too (Innocent Omnibus: CV 157999 / GCD 206125
+  under "Innocent Omnibus") — probe the edition's own name before inheriting the shelf's gap.
+[L-287] (34 shelf/shelves) kind:collected-line pass:item
+- A series can be wrong on BOTH legs at once (Hunter x Hunter, Inuyashiki, Kakegurui Twin): the header pool by
+  ordinal is the only source; an omnibus with no dedicated record on either leg is `N no-record`, never a mapping.
+[L-309] (34 shelf/shelves) kind:collected-line pass:item sig:probe
+- A collected line's own issue rows carry the trade's SUBTITLE as the issue title, so once one book of a line is
+  identified, `--issues <volume>` or `gcd_issue WHERE series_id=?` resolves the whole Vol. 01-N run in one query —
+  "own container id not probed" is never a valid no-record.
+
++122 more matched entries not shown: L-314, L-030, L-151, L-160, L-013, L-014, L-043, L-050, L-064, L-072, L-085, L-088, L-089, L-095, L-096, L-101, L-118, L-125, L-157, L-159, L-163, L-177, L-193, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-310, L-341, L-346, L-347, L-113, L-029, L-194, L-330, L-376, L-383, L-065, L-099, L-123, L-262, L-020, L-023, L-087, L-104, L-105, L-139, L-188, L-219, L-228, L-233, L-234, L-243, L-302, L-355, L-373, L-374, L-377, L-380, L-382, L-191, L-290, L-016, L-026, L-031, L-032, L-033, L-047, L-076, L-106, L-109, L-111, L-112, L-114, L-115, L-117, L-119, L-126, L-130, L-132, L-140, L-142, L-143, L-174, L-187, L-196, L-241, L-242, L-295, L-296, L-297, L-298, L-306, L-307, L-308, L-313, L-322, L-323, L-325, L-327, L-328, L-329, L-332, L-356, L-378, L-384, L-074, L-083, L-097, L-165, L-250, L-252, L-352, L-354, L-041, L-128, L-181, L-192, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S13040 Nodame Cantabile  [tier B]   keys: Nodame Cantabile  years 2005-2017  25 files / 25 collections
+   folders: [25] Manga\Nodame Cantabile (2001)
+   files:   [43719] COL Nodame Cantabile v01 (2005) (Digital) (XRA-Empire).cbr (200pp) | [43720] COL Nodame Cantabile v02 (2005) (Digital) (XRA-Empire).cbr (201pp)
+            [43721] COL Nodame Cantabile v03 (2005) (Digital) (XRA-Empire).cbr (190pp) | [43722] COL Nodame Cantabile v04 (2006) (Digital) (XRA-Empire).cbr (202pp)
+            [43723] COL Nodame Cantabile v05 (2006) (Digital) (XRA-Empire).cbr (205pp) | [43724] COL Nodame Cantabile v06 (2006) (Digital) (XRA-Empire).cbr (206pp)
+            [43725] COL Nodame Cantabile v07 (2007) (Digital) (XRA-Empire).cbr (191pp) | [43726] COL Nodame Cantabile v08 (2007) (Digital) (XRA-Empire).cbr (199pp)
+            [43727] COL Nodame Cantabile v09 (2007) (Digital) (XRA-Empire).cbr (199pp) | [43728] COL Nodame Cantabile v10 (2007) (Digital) (XRA-Empire).cbr (220pp)
+            [43729] COL Nodame Cantabile v11 (2007) (Digital) (XRA-Empire).cbr (205pp) | [43730] COL Nodame Cantabile v12 (2008) (Digital) (XRA-Empire).cbr (205pp)
+            [43731] COL Nodame Cantabile v13 (2008) (Digital) (XRA-Empire).cbr (205pp) | [43732] COL Nodame Cantabile v14 (2008) (Digital) (XRA-Empire).cbr (206pp)
+            [43733] COL Nodame Cantabile v15 (2008) (Digital) (XRA-Empire).cbr (200pp) | [43734] COL Nodame Cantabile v16 (2009) (Digital) (XRA-Empire).cbr (205pp)
+            [43735] COL Nodame Cantabile v17 (2017) (Digital) (XRA-Empire).cbr (191pp) | [43736] COL Nodame Cantabile v18 (2017) (Digital) (XRA-Empire).cbr (177pp)
+            [43737] COL Nodame Cantabile v19 (2017) (Digital) (XRA-Empire).cbr (193pp) | [43738] COL Nodame Cantabile v20 (2017) (Digital) (XRA-Empire).cbr (189pp)
+            [43739] COL Nodame Cantabile v21 (2017) (Digital) (XRA-Empire).cbr (187pp) | [43740] COL Nodame Cantabile v22 (2017) (Digital) (XRA-Empire).cbr (192pp)
+            [43741] COL Nodame Cantabile v23 (2017) (Digital) (XRA-Empire).cbr (176pp) | [43742] COL Nodame Cantabile v24 (2017) (Digital) (XRA-Empire).cbr (176pp)
+            [43743] COL Nodame Cantabile v25 (2017) (Digital) (XRA-Empire).cbr (178pp)
+   ours:    judged item 43719 #1-6 conf 0.97; judged item 43720 #7-12 conf 0.97; judged item 43721 #13-18 conf 0.97; judged item 43722 #19-23 conf 0.97; judged item 43723 #24-28 conf 0.97; judged item 43724 #29-34 conf 0.97; judged item 43725 #35-40 conf 0.97; judged item 43726 #41-46 conf 0.97; judged item 43727 #47-52 conf 0.97; judged item 43728 #53-58 conf 0.97; judged item 43729 #59-64 conf 0.97; judged item 43730 #65-70 conf 0.97; judged item 43731 #71-76 conf 0.97; judged item 43732 #77-82 conf 0.97; judged item 43733 #83-88 conf 0.97; judged item 43734 #89-94 conf 0.97; judged item 43735 #95-100 conf 0.97; judged item 43736 #101-106 conf 0.97; judged item 43738 #113-118 conf 0.97; judged item 43739 #119-124 conf 0.97; judged item 43740 #125-130 conf 0.97; judged item 43741 #131-135 conf 0.97; ComicInfo Series: "Nodame Cantabile"x6; ComicInfo Publisher: "Kodansha Comics"x6
+   CV linked:      vol 39008 "Nodame Cantabile" 2005 Random House 25 issues; cached #1-25 (25); yearΔ 0; ratio 0/25; 5 of 22 judged fit
+   CV local rip:   (= linked) · 125202 "Nodame Cantabile" 2001 Kodansha 25 · 167919 "Nodame Cantabile" 2024 Pika Édition 9 · 151252 "Nodame Cantabile" ? Pika Édition 25   (rip lookup)
+   GCD dump:       85040 "Nodame Cantabile" 2005-2009 Random House [] 16 · 103973 "Nodame Cantabile" [fr] 2009-2018 Pika Édition [] 25   (dump lookup)
+   MU / External:  MU 69533011887 "Nodame Cantabile" 2001 Manga · MuSeriesLink 69533011887 status 1 conf 1.0
+
+== S13193 Ojojojo  [tier B]   keys: Ojojojo  years 2018-2018  2 files / 2 collections
+   folders: [2] Manga\Ojojojo (2012)
+   files:   [45145] COL Ojojojo v01 (2018) (Digital) (danke-Empire).cbz (117pp) | [45146] COL Ojojojo v02 (2018) (Digital) (danke-Empire).cbz (118pp)
+   ours:    judged item 45145 #1-15 conf 0.97; judged item 45146 #16-28 conf 0.97
+   CV linked:      vol 116028 "Ojojojo" 2018 Seven Seas Entertainment 2 issues; cached #1-2 (2); yearΔ 0; ratio 0/2; 1 of 2 judged fit
+   CV candidates:  (= linked) · 98602 "Ojojojo" 2013 Takeshobo 4 s43 · 116182 "Ojojojo" 2018 Seven Seas Entertainment 4 s43 · 48969 "Sonic The Hedgehog FCBD 2012" 2012 Archie Comics 1 issue 335955 s23 · 57875 "Steampunk Halloween 2012" 2012 Antarctic Press 1 issue 388267 s23 · 59855 "Transformers Generations 2012" 2012 Million Publishing 1 issue 397011 s23 · 44671 "Decision 2012: Michele Bachmann" 2011 Boom! Studios 1 issue 307482 s20   (v1 search)
+   CV local rip:   (= linked) · 116182 "Ojojojo" 2018 Seven Seas Entertainment 4 · 98602 "Ojojojo" 2013 Takeshobo 4   (rip lookup)
+   GCD dump:       136568 "Ojojojo" 2018-2019 Seven Seas Entertainment [] 2   (dump lookup)
+   MU / External:  MU 43361989543 "Ojojojo" 2012 Manga · MuSeriesLink 43361989543 status 1 conf 0.7692307692307693
+
+== S23759 Onepunch-man  [tier C] · 106 files  keys: Onepunch-Man  years 2012-2013  106 files / 0 collections
+   flags: #364 label-ambiguous [Pending] item 40452 — Onepunch-Man ch093-104 are single chapters, not collections
+   folders: [106] Manga\Onepunch-Man (Webcomic) (Batoto)
+   files:   Onepunch-Man ch001 (Webcomic) (Batoto).cbr … Onepunch-Man ch044 (Webcomic) (Batoto).cbr  (44 files, pp 15-16) | [40402] Onepunch-Man ch044.5 (Webcomic) (Batoto).cbr (12pp)
+            Onepunch-Man ch045 (Webcomic) (Batoto).cbr … Onepunch-Man ch092 (Webcomic) (Batoto).cbr  (48 files, pp 15-30) | [40451] Onepunch-Man ch092.1 (Webcomic) (Batoto).cbr (13pp)
+            [40452] Onepunch-Man ch093 (v3) (Webcomic) (Batoto).cbr (15pp) | [40453] Onepunch-Man ch094 (v4) (Webcomic) (Batoto).cbr (23pp)
+            [40454] Onepunch-Man ch095 (v4) (Webcomic) (Batoto).cbr (15pp) | [40455] Onepunch-Man ch096 (Webcomic) (Batoto).cbr (16pp) | [40456] Onepunch-Man ch097 (v2) (Webcomic) (Batoto).cbr (15pp)
+            [40457] Onepunch-Man ch098 (v2) (Webcomic) (Batoto).cbr (15pp) | [40458] Onepunch-Man ch099 (v3) (Webcomic) (Batoto).cbr (18pp)
+            [40459] Onepunch-Man ch100 (v3) (Webcomic) (Batoto).cbr (22pp) | [40460] Onepunch-Man ch101 (Webcomic) (Batoto).cbr (17pp) | [40461] Onepunch-Man ch102 (v4) (Webcomic) (Batoto).cbr (19pp)
+            [40462] Onepunch-Man ch103 (v3) (Webcomic) (Batoto).cbr (17pp) | [40463] Onepunch-Man ch104 (v2) (Webcomic) (Batoto).cbr (25pp)
+   ours:    ladder 1, 5
+   CV linked:      vol 74851 "Onepunch-man" 2012 Shueisha 36 issues; cached #1-35 (35); yearΔ 0; ratio 2/36 = 0.06; no judged range; v1 per-file: same volume on 106/106 files
+   CV candidates:  (= linked) · 140580 "One-Punch Man" 2016 Kurokawa 33 s3 · 96490 "One-Punch Man" 2016 Crunchyroll SA 29 s3 · 71856 "One-Punch Man" 2014 Viz 33 s3 · 151537 "One-Punch Man" 2017 Panini Brasil 1 issue 1087819 s0 · 153725 "One-Punch Man" 2017 Devir Portugal 1 issue 1087324 s0 · 148418 "One-Punch Man" 2015 Japonica Polonica Fantastica 8 s0   (v1 search)
+   CV local rip:   (= linked) · 71856 "One-Punch Man" 2014 Viz 31 (via CV candidate name "One-Punch Man") · 80402 "One-Punch Man" 2015 Jademan 1 issue 1037647 (via CV candidate name "One-Punch Man") · 148418 "One-Punch Man" 2015 Japonica Polonica Fantastica 8 (via CV candidate name "One-Punch Man") · 151777 "One Punch-Man" 2015 Editorial Ivrea 1 issue 1087925 (via CV candidate name "One-Punch Man") · 96490 "One-Punch Man" 2016 Crunchyroll SA 29 (via CV candidate name "One-Punch Man")   (rip lookup)
+   GCD dump:       91873 "One-Punch Man [ワンパンマン]" [ja-jp] 2012-? 集英社 [Shueisha] [] 36 (via CV candidate name "One-Punch Man") · 97438 "One-Punch Man" 2015-? Viz [] 33 (via CV candidate name "One-Punch Man") · 97437 "One-Punch Man" [fr] 2016-? Kurokawa [] 34 (via CV candidate name "One-Punch Man") · 107941 "One-Punch Man" [de-ch] 2016-2020 Kazé Manga [] 20 (via CV candidate name "One-Punch Man") · 171593 "One-Punch Man" [pt-br] 2016-? Panini Brasil [] 27 (via CV candidate name "One-Punch Man") · 209308 "One Punch-Man" [es] 2016-? Editorial Ivrea [] 14 (via CV candidate name "One-Punch Man")   (dump lookup)
+   MU / External:  MU 30535847369 "One Punch-Man" 2012 Manga · MuSeriesLink 30535847369 status 1 conf 1.0
+
+== S13455 Our Precious Conversations  [tier C] · ratio 2.57  keys: Our Precious Conversations  years 2017-2020  21 files / 3 collections
+   folders: [21] Manga\Our Precious Conversations (2015)
+   files:   Our Precious Conversations 017 (2017) (Digital) (danke-Empire).cbz … Our Precious Conversations 034 (2019) (Digital) (danke-Empire).cbz  (18 files, pp 26-34)
+            [40516] COL Our Precious Conversations v01 (2017) (Digital) (danke-Empire).cbz (163pp) | [40517] COL Our Precious Conversations v02 (2017) (Digital) (danke-Empire).cbz (162pp)
+            [40518] COL Our Precious Conversations v03 (2019) (Digital) (danke-Empire).cbz (170pp)
+   ours:    ladder 17-34; judged item 40516 #1-6 conf 0.97; judged item 40517 #7-11 conf 0.97; judged item 40518 #12-16 conf 0.97
+   CV linked:      vol 101464 "Our Precious Conversations" 2017 Kodansha Comics USA 7 issues; cached #1-7 (7); yearΔ 0; ratio 18/7 = 2.57; 2 of 3 judged fit; v1 per-file: same volume on 18/21 files
+   CV local rip:   (= linked) · 165312 "Our Precious Conversations" 2021 Crunchyroll SA 7   (rip lookup)
+   GCD dump:       172179 "Our Precious Conversations" [de-ch] 2021-2022 Crunchyroll [] 7   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.3296703296703297
+
+== S13638 Peach Girl  [tier B]   keys: Peach Girl  years 2004-2018  10 files / 10 collections
+   folders: [10] Manga\Peach Girl (1997)
+   files:   [41741] COL Peach Girl v01 (2018) (Digital) (danke-Empire).cbz (181pp) | [41742] COL Peach Girl v02 (2018) (Digital) (danke-Empire).cbz (171pp)
+            [41743] COL Peach Girl v03 (2018) (Digital) (danke-Empire).cbz (181pp) | [41744] COL Peach Girl v04 (2018) (Digital) (danke-Empire).cbz (181pp)
+            [41745] COL Peach Girl v05 (2018) (Digital) (danke-Empire).cbz (181pp) | [41746] COL Peach Girl v06 (2018) (Digital) (danke-Empire).cbz (174pp)
+            [41747] COL Peach Girl v07 (2018) (Digital) (danke-Empire).cbz (180pp) | [41748] COL Peach Girl v08 (2018) (Digital) (danke-Empire).cbz (171pp)
+            [41749] COL Peach Girl v09 (2018) (Digital) (danke-Empire).cbz (168pp) | [41750] COL Peach Girl v10 (2018) (Digital) (danke-Empire).cbz (172pp)
+   ours:    judged item 41741 #1-4 conf 0.97; judged item 41742 #5-8 conf 0.97; judged item 41743 #9-12 conf 0.97; judged item 41744 #13-16 conf 0.97; judged item 41745 #17-20 conf 0.97; judged item 41746 #21-24 conf 0.97; judged item 41747 #25-28 conf 0.97; judged item 41748 #29-32 conf 0.97; judged item 41749 #33-36 conf 0.97; judged item 41750 #37-40 conf 0.97
+   CV linked:      vol 26277 "Peach Girl" 2004 Kodansha Comics USA 18 issues; cached #1-18 (18); yearΔ 0; ratio 0/18; 5 of 10 judged fit
+   CV candidates:  (= linked) · 150236 "Peach Girl" 2002 Play Press ? s30 · 125203 "Peach Girl" 1998 Kodansha ? s30 · 136347 "Peach Girl" 2008 Algoritam Media ? s30 · 52467 "Peach Girl" 2003 Egmont Ehapa Verlag ? s30 · 99115 "Peach Girl [Shinsōban]" 2016 Kodansha ? s19 · 113398 "Peach Girl: Next" 2017 Kodansha ? s19   (v1 search)
+   CV local rip:   (= linked) · 52467 "Peach Girl" 2003 Egmont Ehapa Verlag 13 · 150236 "Peach Girl" 2002 Play Press 2 · 136347 "Peach Girl" 2008 Algoritam Media 18 · 125203 "Peach Girl" 1998 Kodansha 18   (rip lookup)
+   GCD dump:       53122 "Peach Girl" [de] 2003-2007 Egmont Ehapa [] 18 · 169522 "Peach Girl" [pt-br] 2003-2007 Panini Brasil [] 26 · 176166 "Peach Girl" [fr] 2002-2005 Panini France [] 18 · 83329 "Peach Girl" 2001-2003 Tokyopop [] 8   (dump lookup)
+   MU / External:  MU 31376358955 "Peach Girl" 1997 Manga · MuSeriesLink 31376358955 status 1 conf 0.7692307692307693
+
+== S14275 Queen Bee  [tier B]   keys: Queen Bee | Queen Bee!  years 2005-2019  2 files / 1 collections
+   folders: [1] Graphic Novels · [1] Manga\Queen Bee! (2018)
+   files:   [26150] Queen Bee (2005).cbr (115pp) | [45182] COL Queen Bee! v01 (2019) (Digital) (LuCaZ).cbz (165pp)
+   ours:    judged item 45182 #0-3 conf 0.97
+   CV linked:      vol 44732 "Queen Bee" 2005 Scholastic Book Services 1 issues issue 307833; cached #1-1 (1); yearΔ 0; ratio 0/1; 1 of 1 judged fit
+   CV candidates:  (= linked) · 121192 "Queen Bee!" 2019 Kodansha Comics USA 3 s78 · 65850 "King Bee" 1969 Apex Novelties 1 issue 419588 s46 · 81368 "Bee and Puppycat" 2015 Boom! Studios 3 s42 · 73912 "Bee and Puppycat" 2014 Boom! Studios 11 s39 · 149527 "Letter Bee" 2011 Panini Comics 5 s39 · 140462 "Letter Bee" 2009 Dargaud 20 s38   (v1 search)
+   CV local rip:   (= linked) · 121192 "Queen Bee!" 2019 Kodansha Comics USA 3 · 65850 "King Bee" 1969 Apex Novelties 1 issue 419588 (via CV candidate name "King Bee")   (rip lookup)
+   GCD dump:       50261 "Queen Bee" 2005-2005 Scholastic [] 1 · 52921 "King Bee" 1969-1969 Apex Novelties [] 1 (via CV candidate name "King Bee")   (dump lookup)
+   MU / External:  MU 52092493193 "Queen Bee" 2001 Manga · MuSeriesLink 52092493193 status 1 conf 0.7692307692307693
+
+== S14423 Real Girl  [tier B]   keys: Real Girl  years 2017-2018  12 files / 12 collections
+   folders: [12] Manga\Real Girl (2011)
+   files:   [41084] COL Real Girl v01 (2017) (Digital) (danke-Empire).cbz (161pp) | [41085] COL Real Girl v02 (2017) (Digital) (danke-Empire).cbz (160pp)
+            [41086] COL Real Girl v03 (2017) (Digital) (danke-Empire).cbz (164pp) | [41087] COL Real Girl v04 (2017) (Digital) (danke-Empire).cbz (160pp)
+            [41088] COL Real Girl v05 (2017) (Digital) (danke-Empire).cbz (160pp) | [41089] COL Real Girl v06 (2017) (Digital) (danke-Empire).cbz (166pp)
+            [41090] COL Real Girl v07 (2017) (Digital) (danke-Empire).cbz (160pp) | [41091] COL Real Girl v08 (2017) (Digital) (danke-Empire).cbz (159pp)
+            [41092] COL Real Girl v09 (2017) (Digital) (danke-Empire).cbz (160pp) | [41093] COL Real Girl v10 (2018) (Digital) (danke-Empire).cbz (160pp)
+            [41094] COL Real Girl v11 (2018) (Digital) (danke-Empire).cbz (159pp) | [41095] COL Real Girl v12 (2018) (Digital) (danke-Empire).cbz (166pp)
+   ours:    judged item 41084 #1-4 conf 0.95; judged item 41085 #5-8 conf 0.95; judged item 41086 #9-11 conf 0.95; judged item 41087 #12-15 conf 0.95; judged item 41088 #16-19 conf 0.95; judged item 41089 #20-23 conf 0.95; judged item 41090 #24-27 conf 0.95; judged item 41091 #28-31 conf 0.95; judged item 41092 #32-35 conf 0.95; judged item 41093 #36-39 conf 0.95; judged item 41094 #40-43 conf 0.95; judged item 41095 #44-46 conf 0.95
+   CV linked:      vol 101755 "Real Girl" 2017 Kodansha Comics USA 12 issues; cached #1-12 (12); yearΔ 0; ratio 0/12; 4 of 12 judged fit
+   CV local rip:   (= linked) · 38818 "Real Girl" 1990 Fantagraphics 9   (rip lookup)
+   GCD dump:       201416 "Real Girl" [fr] 2018-2020 Pika Édition [] 12 · 7816 "Real Girl" 1990-1997 Fantagraphics [] 9   (dump lookup)
+   MU / External:  MU 41107405601 "Real Girl" 2011 Manga · MuSeriesLink 41107405601 status 1 conf 0.7692307692307693
+
+== S14579 Rent-A-Girlfriend  [tier C] · ratio 0.15  keys: Rent-A-Girlfriend | Rent-a-Girlfriend  years 2020-2025  25 files / 20 collections
+   folders: [24] Manga\Rent-A-Girlfriend (2017) · [1] Manga\Rent-a-(Really Shy!)-Girlfriend (2020)
+   files:   [43797] COL Rent-A-Girlfriend v01 (2020) (Digital) (danke-Empire).cbz (203pp) | [43798] COL Rent-A-Girlfriend v02 (2020) (Digital) (danke-Empire).cbz (204pp)
+            [43792] Rent-a-Girlfriend 282 (2023) (Digital) (danke-Empire).cbz (22pp) | [43793] Rent-a-Girlfriend 283 (2023) (Digital) (danke-Empire).cbz (20pp)
+            [43794] Rent-a-Girlfriend 284 (2023) (Digital) (danke-Empire).cbz (22pp) | [43795] Rent-a-Girlfriend 285 (2023) (Digital) (danke-Empire).cbz (21pp)
+            [43796] Rent-a-Girlfriend 286 (2023) (Digital) (danke-Empire).cbz (21pp) | [43799] COL Rent-a-Girlfriend v03 (2020) (Digital) (danke-Empire).cbz (203pp)
+            [43800] COL Rent-a-Girlfriend v04 (2020) (Digital) (danke-Empire).cbz (196pp) | [43801] COL Rent-a-Girlfriend v05 (2021) (Digital) (danke-Empire).cbz (208pp)
+            [43802] COL Rent-a-Girlfriend v06 (2021) (Digital) (danke-Empire).cbz (205pp) | [43803] COL Rent-a-Girlfriend v07 (2021) (Digital) (danke-Empire).cbz (203pp)
+            [43804] COL Rent-a-Girlfriend v08 (2021) (Digital) (danke-Empire).cbz (205pp) | [43805] COL Rent-a-Girlfriend v09 (2021) (Digital) (danke-Empire).cbz (201pp)
+            [43806] COL Rent-a-Girlfriend v10 (2021) (Digital) (danke-Empire).cbz (208pp) | [43807] COL Rent-a-Girlfriend v11 (2022) (Digital) (danke-Empire).cbz (204pp)
+            [43808] COL Rent-a-Girlfriend v12 (2022) (Digital) (danke-Empire).cbz (203pp) | [43809] COL Rent-a-Girlfriend v13 (2022) (Digital) (danke-Empire).cbz (204pp)
+            [43810] COL Rent-a-Girlfriend v14 (2022) (Digital) (danke-Empire).cbz (202pp) | [43811] COL Rent-a-Girlfriend v15 (2022) (Digital) (danke-Empire).cbz (201pp)
+            [43812] COL Rent-a-Girlfriend v16 (2022) (Digital) (danke-Empire).cbz (199pp) | [43813] COL Rent-a-Girlfriend v17 (2023) (Digital) (danke-Empire).cbz (197pp)
+            [43814] COL Rent-a-Girlfriend v18 (2023) (Digital) (danke-Empire).cbz (197pp) | [43815] COL Rent-a-Girlfriend v19 (2023) (Digital) (danke-Empire).cbz (201pp)
+            [45186] COL Rent-a-(Really Shy!)-Girlfriend v01 (2021) (Digital) (danke-Empire).cbz (160pp)
+   ours:    ladder 282-286; judged item 43797 #1-5 conf 0.97; judged item 43798 #6-14 conf 0.97; judged item 43799 #15-23 conf 0.97; judged item 43800 #24-32 conf 0.97; judged item 43801 #33-41 conf 0.97; judged item 43802 #42-49 conf 0.97; judged item 43803 #50-58 conf 0.97; judged item 43804 #59-67 conf 0.97; judged item 43805 #68-76 conf 0.97; judged item 43806 #77-85 conf 0.97; judged item 43807 #86-94 conf 0.97; judged item 43808 #95-103 conf 0.97; judged item 43809 #104-112 conf 0.97; judged item 43810 #113-121 conf 0.97; judged item 43811 #122-130 conf 0.97; judged item 43812 #131-139 conf 0.97; judged item 43813 #140-148 conf 0.97; judged item 43814 #149-157 conf 0.97; judged item 43815 #158-166 conf 0.97
+   GCD says: [43797] gcd_reprint 2121322: s160400 彼女、お借りします [Kanojo, Okarishimasu /  Rent-A-Girlfriend] (2017) #1 [1 story]
+             [43805] gcd_reprint 2267475: s160400 彼女、お借りします [Kanojo, Okarishimasu /  Rent-A-Girlfriend] (2017) #9 [1 story]
+   CV linked:      vol 127630 "Rent-A-Girlfriend" 2020 Kodansha Comics USA 33 issues; cached #1-34 (34); yearΔ 0; ratio 5/33 = 0.15; 5 of 19 judged fit
+   CV per-file (v1): vol 161226 "Rent-a-Girlfriend" 2021 Editorial Ivrea 7 on 5/25 files
+   CV candidates:  (= linked) · 134467 "Rent-a-Girlfriend" 2021 Noeve Grafx 22 s35 · 108349 "My Girlfriend" 2017 Beaglee Inc. 2 s23 · 100674 "Domestic Girlfriend" 2017 Kodansha Comics USA 28 s15 · 70720 "Cosplay Girlfriend" 2014 Project-H 1 issue 441472 s14 · 140500 "Rent-A-(Really Shy!)-Girlfriend" 2021 Kodansha Comics USA 3 s0 · 135235 "Girlfriend, Girlfriend" 2021 Kodansha Comics USA 16 s0   (v1 search)
+   CV local rip:   (= linked) · 134467 "Rent-a-Girlfriend" 2021 Noeve Grafx 11   (rip lookup)
+   GCD dump:       160398 "Rent-A-Girlfriend" 2020-? Kodansha USA [] 36   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.4153846153846154
+
+== S14761 ROBOTxLASERBEAM  [tier B]   keys: Robot x Laserbeam  years 2020-2020  6 files / 6 collections
+   folders: [6] Manga\Robot x Laserbeam (2017)
+   files:   [43828] COL Robot x Laserbeam v01 (2020) (Digital) (danke-Empire).cbz (187pp) | [43829] COL Robot x Laserbeam v02 (2020) (Digital) (danke-Empire).cbz (189pp)
+            [43830] COL Robot x Laserbeam v03 (2020) (Digital) (danke-Empire).cbz (190pp) | [43831] COL Robot x Laserbeam v04 (2020) (Digital) (danke-Empire).cbz (188pp)
+            [43832] COL Robot x Laserbeam v06 (2020) (Digital) (danke-Empire).cbz (187pp) | [43833] COL Robot x Laserbeam v07 (2020) (Digital) (danke-Empire).cbz (200pp)
+   ours:    judged item 43828 #1-7 conf 0.97; judged item 43829 #8-16 conf 0.97; judged item 43830 #17-25 conf 0.97; judged item 43831 #26-34 conf 0.97; judged item 43832 #44-52 conf 0.97; judged item 43833 #53-62 conf 0.97
+   CV linked:      vol 130512 "ROBOTxLASERBEAM" 2020 Viz 7 issues; cached #1-7 (7); yearΔ 0; ratio 0/7; 1 of 6 judged fit
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   MU / External:  MU 34120892574 "Robot x Laserbeam" 2017 Manga · MuSeriesLink 34120892574 status 1 conf 0.6461538461538462
+
+== S15458 Shaman King  [tier B]   keys: Shaman King  years 2020-2020  35 files / 35 collections
+   folders: [35] Manga\Shaman King (1998)\01 Shaman King (1998)
+   files:   [43844] COL Shaman King v01 (2020) (Digital) (danke-Empire).cbz (204pp) | [43845] COL Shaman King v02 (2020) (Digital) (danke-Empire).cbz (190pp)
+            [43846] COL Shaman King v03 (2020) (Digital) (danke-Empire).cbz (186pp) | [43847] COL Shaman King v04 (2020) (Digital) (danke-Empire).cbz (189pp)
+            [43848] COL Shaman King v05 (2020) (Digital) (danke-Empire).cbz (196pp) | [43849] COL Shaman King v06 (2020) (Digital) (danke-Empire).cbz (195pp)
+            [43850] COL Shaman King v07 (2020) (Digital) (danke-Empire).cbz (186pp) | [43851] COL Shaman King v08 (2020) (Digital) (danke-Empire).cbz (196pp)
+            [43852] COL Shaman King v09 (2020) (Digital) (danke-Empire).cbz (197pp) | [43853] COL Shaman King v10 (2020) (Digital) (danke-Empire).cbz (194pp)
+            [43854] COL Shaman King v11 (2020) (Digital) (danke-Empire).cbz (183pp) | [43855] COL Shaman King v12 (2020) (Digital) (danke-Empire).cbz (177pp)
+            [43856] COL Shaman King v13 (2020) (Digital) (danke-Empire).cbz (193pp) | [43857] COL Shaman King v14 (2020) (Digital) (danke-Empire).cbz (186pp)
+            [43858] COL Shaman King v15 (2020) (Digital) (danke-Empire).cbz (180pp) | [43859] COL Shaman King v16 (2020) (Digital) (danke-Empire).cbz (197pp)
+            [43860] COL Shaman King v17 (2020) (Digital) (danke-Empire).cbz (192pp) | [43861] COL Shaman King v18 (2020) (Digital) (danke-Empire).cbz (183pp)
+            [43862] COL Shaman King v19 (2020) (Digital) (danke-Empire).cbz (184pp) | [43863] COL Shaman King v20 (2020) (Digital) (danke-Empire).cbz (188pp)
+            [43864] COL Shaman King v21 (2020) (Digital) (danke-Empire).cbz (181pp) | [43865] COL Shaman King v22 (2020) (Digital) (danke-Empire).cbz (179pp)
+            [43866] COL Shaman King v23 (2020) (Digital) (danke-Empire).cbz (175pp) | [43867] COL Shaman King v24 (2020) (Digital) (danke-Empire).cbz (192pp)
+            [43868] COL Shaman King v25 (2020) (Digital) (danke-Empire).cbz (179pp) | [43869] COL Shaman King v26 (2020) (Digital) (danke-Empire).cbz (193pp)
+            [43870] COL Shaman King v27 (2020) (Digital) (danke-Empire).cbz (195pp) | [43871] COL Shaman King v28 (2020) (Digital) (danke-Empire).cbz (195pp)
+            [43872] COL Shaman King v29 (2020) (Digital) (danke-Empire).cbz (180pp) | [43873] COL Shaman King v30 (2020) (Digital) (danke-Empire).cbz (188pp)
+            [43874] COL Shaman King v31 (2020) (Digital) (danke-Empire).cbz (203pp) | [43875] COL Shaman King v32 (2020) (Digital) (danke-Empire).cbz (198pp)
+            [43876] COL Shaman King v33 (2020) (Digital) (danke-Empire).cbz (181pp) | [43877] COL Shaman King v34 (2020) (Digital) (danke-Empire).cbz (202pp)
+            [43878] COL Shaman King v35 (2020) (Digital) (danke-Empire).cbz (142pp)
+   ours:    judged item 43844 #1-8 conf 0.96; judged item 43845 #9-17 conf 0.96; judged item 43846 #18-26 conf 0.96; judged item 43847 #27-35 conf 0.96; judged item 43848 #36-44 conf 0.96; judged item 43849 #45-53 conf 0.96; judged item 43850 #54-62 conf 0.96; judged item 43851 #63-71 conf 0.96; judged item 43852 #72-80 conf 0.96; judged item 43853 #81-89 conf 0.96; judged item 43854 #90-98 conf 0.96; judged item 43855 #99-107 conf 0.96; judged item 43856 #108-116 conf 0.96; judged item 43857 #117-125 conf 0.96; judged item 43858 #126-134 conf 0.96; judged item 43859 #135-143 conf 0.96; judged item 43860 #144-152 conf 0.96; judged item 43861 #153-161 conf 0.96; judged item 43862 #162-170 conf 0.96; judged item 43863 #171-179 conf 0.96; judged item 43864 #180-188 conf 0.96; judged item 43865 #189-197 conf 0.96; judged item 43866 #198-206 conf 0.96; judged item 43867 #207-215 conf 0.96; judged item 43868 #216-224 conf 0.96; judged item 43869 #225-233 conf 0.96; judged item 43870 #234-239 conf 0.96; judged item 43871 #240-248 conf 0.96; judged item 43872 #249-257 conf 0.96; judged item 43873 #258-267 conf 0.96; judged item 43874 #268-277 conf 0.96; judged item 43875 #278-287 conf 0.96; judged item 43876 #288-294 conf 0.96; judged item 43877 #295-299 conf 0.96
+   CV linked:      vol 128987 "Shaman King" 2020 Kodansha Comics USA 35 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV local rip:   (= linked) · 137881 "Shaman King" 2020 Tokyopop GmbH 35 · 148378 "Shaman King" 2021 Studio JG 1 issue 978930 · 166784 "Shaman King" 2021 JBC 11 · 110280 "Shaman King" 2018 Kodansha 35 · 60272 "Shaman King" 2004 Carlsen Verlag 32   (rip lookup)
+   GCD dump:       158583 "Shaman King" [de] 2020-2022 Tokyopop (de) [] 17 · 217892 "Shaman King" [fr] 2020-2022 Dargaud [] 17 · 33691 "Shaman King" [sv-se] 2007-? Bonnier Carlsen [] 13 · 37578 "Shaman King" [no] 2007-2008 Bladkompaniet / Schibsted [] 8 · 28998 "Shaman King" [nl-be] 2006-2012 Dargaud Benelux [] 28 · 141193 "Shaman King" [da-dk] 2005-2010 Carlsen [] 32   (dump lookup)
+   MU / External:  MU 14516254239 "Shaman King" 1998 Manga · MuSeriesLink 14516254239 status 1 conf 1.0
+
+== S15718 Sketchy  [tier D]   keys: Sketchy  years 2024-2024  4 files / 4 collections
+   folders: [4] Manga\Sketchy (2019)
+   files:   [45342] COL Sketchy v01 (2024) (Digital) (LuCaZ).cbz (202pp) | [45343] COL Sketchy v02 (2024) (Digital) (LuCaZ).cbz (203pp) | [45344] COL Sketchy v03 (2024) (Digital) (LuCaZ).cbz (204pp)
+            [45345] COL Sketchy v04 (2024) (Digital) (LuCaZ).cbz (201pp)
+   ours:    judged item 45342 #1-5 conf 0.97; judged item 45343 #6-10 conf 0.97; judged item 45344 #11-15 conf 0.97; judged item 45345 #16-20 conf 0.97
+   CV candidates:  120043 "TOKYOPOP Manga Magazine 2019" 2019 Tokyopop 1 issue 713002 s18 · 120993 "Manga" 2019 Unknown Publisher 1 issue 717709 s18 · 117354 "Aspen: The Year Ahead 2019" 2019 Aspen MLT 1 issue 701958 s18 · 121880 "Valiant 2019 Fall Preview" 2019 DMG/Valiant Entertainment 1 issue 721737 s18 · 118280 "Valiant Spring 2019 Preview" 2019 DMG/Valiant Entertainment 1 issue 705853 s18 · 118622 "Sonic the Hedgehog Annual 2019" 2019 IDW Publishing 1 issue 707387 s18   (v1 search)
+   CV local rip:   117354 "Aspen: The Year Ahead 2019" 2019 Aspen MLT 1 issue 701958 (via CV candidate name "Aspen: The Year Ahead 2019") · 120043 "TOKYOPOP Manga Magazine 2019" 2019 Tokyopop 1 issue 713002 (via CV candidate name "TOKYOPOP Manga Magazine 2019") · 120993 "Manga" 2019 Unknown Publisher 1 issue 717709 (via CV candidate name "Manga") · 130416 "the manga" ? ? 1 issue 804012 (via CV candidate name "Manga")   (rip lookup)
+   GCD dump:       211057 "Sketchy" 2024-2025 Kodansha USA [] 6 · 211056 "スケッチー [Sketchy]" [ja-jp] 2019-2023 講談社 [Kōdansha] [] 6 · 202716 "Manga" [fr] 2020-2020 Éditions de La Martinière [] 1 (via CV candidate name "Manga") · 206735 "Aspen: The Year Ahead 2019" 2019-2019 Aspen [] 1 (via CV candidate name "Aspen: The Year Ahead 2019") · 76102 "Manga" [en-jp] 1982-1982 Metro Scope [] 1 (via CV candidate name "Manga")   (dump lookup)
+   MU / External:  MU 2443729527 "Sketchy" 2019 Manga · MuSeriesLink 2443729527 status 1 conf 0.7692307692307693
+
+== S15755 Slam Dunk  [tier B]   keys: Slam Dunk  years 1990-1996  32 files / 31 collections
+   folders: [32] Manga\Slam Dunk (1990)
+   files:   [43917] Slam Dunk - 10 Days After.cbz (24pp) | [43918] COL Slam Dunk v01 (1991).cbz (193pp) | [43919] COL Slam Dunk v02 (1991).cbz (192pp) | [43920] COL Slam Dunk v03 (1991).cbz (176pp)
+            [43921] COL Slam Dunk v04 (1991).cbz (181pp) | [43922] COL Slam Dunk v05 (1991).cbz (176pp) | [43923] COL Slam Dunk v06 (1991).cbz (177pp) | [43924] COL Slam Dunk v07 (1992).cbz (177pp)
+            [43925] COL Slam Dunk v08 (1992).cbz (181pp) | [43926] COL Slam Dunk v09 (1992) [TMP].cbz (177pp) | [43927] COL Slam Dunk v10 (1992).cbz (180pp)
+            [43928] COL Slam Dunk v11 (1993).cbz (181pp) | [43929] COL Slam Dunk v12 (1993) [TMP].cbz (180pp) | [43930] COL Slam Dunk v13 (1993) [TMP].cbz (173pp)
+            [43931] COL Slam Dunk v14 (1993) [TMP].cbz (173pp) | [43932] COL Slam Dunk v15 (1993) [TMP].cbz (178pp) | [43933] COL Slam Dunk v16 (1993) [TMP].cbz (178pp)
+            [43934] COL Slam Dunk v17 (1994) [TMP].cbz (173pp) | [43935] COL Slam Dunk v18 (1994) [TMP].cbz (176pp) | [43936] COL Slam Dunk v19 (1994) [TMP].cbz (172pp)
+            [43937] COL Slam Dunk v20 (1994) [TMP].cbz (174pp) | [43938] COL Slam Dunk v21 (1994) [TMP].cbz (169pp) | [43939] COL Slam Dunk v22 (1994) [TMP].cbz (183pp)
+            [43940] COL Slam Dunk v23 (1995) [TMP].cbz (176pp) | [43941] COL Slam Dunk v24 (1995) [TMP].cbz (181pp) | [43942] COL Slam Dunk v25 (1995) [TMP].cbz (178pp)
+            [43943] COL Slam Dunk v26 (1995) [TMP].cbz (173pp) | [43944] COL Slam Dunk v27 (1996) [TMP].cbz (178pp) | [43945] COL Slam Dunk v28 (1996) [TMP].cbz (171pp)
+            [43946] COL Slam Dunk v29 (1996) [TMP].cbz (171pp) | [43947] COL Slam Dunk v30 (1996) [TMP].cbz (172pp) | [43948] COL Slam Dunk v31 (1996) [TMP].cbz (152pp)
+   ours:    judged item 43918 #1-9 conf 0.97; judged item 43919 #10-18 conf 0.97; judged item 43920 #19-26 conf 0.97; judged item 43921 #27-35 conf 0.97; judged item 43922 #36-44 conf 0.97; judged item 43923 #45-53 conf 0.97; judged item 43924 #54-62 conf 0.97; judged item 43925 #63-71 conf 0.97; judged item 43926 #72-80 conf 0.97; judged item 43928 #90-98 conf 0.97; judged item 43929 #99-107 conf 0.97; judged item 43930 #108-116 conf 0.97; judged item 43931 #117-125 conf 0.97; judged item 43932 #126-134 conf 0.97; judged item 43933 #135-143 conf 0.97; judged item 43934 #144-152 conf 0.97; judged item 43935 #153-161 conf 0.97; judged item 43936 #162-170 conf 0.97; judged item 43937 #171-179 conf 0.97; judged item 43938 #180-188 conf 0.97; judged item 43939 #189-197 conf 0.97; judged item 43940 #198-206 conf 0.97; judged item 43941 #207-215 conf 0.97; judged item 43942 #216-224 conf 0.97; judged item 43943 #225-233 conf 0.97; judged item 43944 #234-242 conf 0.97; judged item 43945 #243-251 conf 0.97; judged item 43946 #252-260 conf 0.97; judged item 43947 #261-269 conf 0.97; judged item 43948 #270-276 conf 0.97
+   GCD says: [43918] gcd_reprint 2732544: s83509 週刊少年ジャンプ [Shūkan Shōnen Janpu] [Weekly Shōnen Jump] (1968) (unnumbered) [1 story]
+   CV linked:      vol 57424 "Slam Dunk" 1991 Shueisha 31 issues; cached #1-31 (31); yearΔ 1; ratio 0/31; 4 of 30 judged fit; v1 per-file: same volume on 1/32 files
+   CV candidates:  (= linked) · 161943 "Slam Dunk" 2023 Editorial Ivrea ? s30 · 156243 "Slam Dunk" 2024 Dargaud ? s30 · 30975 "Slam Dunk" 2008 Viz ? s30 · 106143 "Slam Dunk" 1999 Dargaud ? s30 · 59584 "Slam Dunk Kings" 1992 Personality Comics ? s19 · 95746 "SLAM!" 2016 Boom! Studios ? s0   (v1 search)
+   CV local rip:   (= linked) · 106143 "Slam Dunk" 1999 Dargaud 1 issue 1049365 · 30975 "Slam Dunk" 2008 Viz 31 · 161943 "Slam Dunk" 2023 Editorial Ivrea 20 · 156243 "Slam Dunk" 2024 Dargaud 2   (rip lookup)
+   GCD dump:       223470 "SLAM DUNK [スラムダンク]" [ja-jp] 1991-1996 集英社 [Shueisha] [] 31 · 101410 "Slam Dunk" [de] 1999-1999 Panini Deutschland [] 2 · 132201 "Slam Dunk" [fr] 1999-2004 Dargaud [] 31 · 101411 "Slam Dunk" [de] 2002-2002 Panini Deutschland [] 8 · 47858 "Slam Dunk" 2008-2013 Viz [] 31 · 195083 "Slam Dunk" [pt-br] 2016-2020 Panini Brasil [] 24   (dump lookup)
+   MU / External:  MU 55665151734 "Slam Dunk" 1990 Manga · MuSeriesLink 55665151734 status 1 conf 1.0
+
+== S15949 Space Brothers  [tier C] · ratio 0.02  keys: Space Brothers  years 2015-2024  44 files / 43 collections
+   folders: [44] Manga\Space Brothers (2007)
+   files:   [42318] Space Brothers 413 (2024) (Digital) (danke-Empire).cbz (24pp) | [42319] COL Space Brothers v01 (2015) (Digital) (F) (danke-Empire).cbz (221pp)
+            [42320] COL Space Brothers v02 (2015) (Digital) (danke-Empire).cbz (219pp) | [42321] COL Space Brothers v03 (2015) (Digital) (danke-Empire).cbz (227pp)
+            [42322] COL Space Brothers v04 (2015) (Digital) (danke-Empire).cbz (220pp) | [42323] COL Space Brothers v05 (2015) (Digital) (danke-Empire).cbz (220pp)
+            [42324] COL Space Brothers v06 (2015) (Digital) (danke-Empire).cbz (222pp) | [42325] COL Space Brothers v07 (2015) (Digital) (danke-Empire).cbz (215pp)
+            [42326] COL Space Brothers v08 (2015) (Digital) (danke-Empire).cbz (218pp) | [42327] COL Space Brothers v09 (2015) (Digital) (danke-Empire).cbz (220pp)
+            [42328] COL Space Brothers v10 (2015) (Digital) (danke-Empire).cbz (238pp) | [42329] COL Space Brothers v11 (2016) (Digital) (danke-Empire).cbz (222pp)
+            [42330] COL Space Brothers v12 (2016) (Digital) (danke-Empire).cbz (221pp) | [42331] COL Space Brothers v13 (2016) (Digital) (danke-Empire).cbz (217pp)
+            [42332] COL Space Brothers v14 (2016) (Digital) (danke-Empire).cbz (218pp) | [42333] COL Space Brothers v15 (2016) (Digital) (danke-Empire).cbz (218pp)
+            [42334] COL Space Brothers v16 (2016) (Digital) (danke-Empire).cbz (221pp) | [42335] COL Space Brothers v17 (2016) (Digital) (danke-Empire).cbz (219pp)
+            [42336] COL Space Brothers v18 (2016) (Digital) (F) (danke-Empire).cbz (197pp) | [42337] COL Space Brothers v19 (2016) (Digital) (F) (danke-Empire).cbz (198pp)
+            [42338] COL Space Brothers v20 (2016) (Digital) (F) (danke-Empire).cbz (201pp) | [42339] COL Space Brothers v21 (2016) (Digital) (danke-Empire).cbz (200pp)
+            [42340] COL Space Brothers v22 (2016) (Digital) (danke-Empire).cbz (202pp) | [42341] COL Space Brothers v23 (2016) (Digital) (danke-Empire).cbz (206pp)
+            [42342] COL Space Brothers v24 (2016) (Digital) (danke-Empire).cbz (204pp) | [42343] COL Space Brothers v25 (2016) (Digital) (danke-Empire).cbz (201pp)
+            [42344] COL Space Brothers v26 (2016) (Digital) (danke-Empire).cbz (205pp) | [42345] COL Space Brothers v27 (2016) (Digital) (danke-Empire).cbz (207pp)
+            [42346] COL Space Brothers v28 (2016) (Digital) (danke-Empire).cbz (200pp) | [42347] COL Space Brothers v29 (2017) (Digital) (danke-Empire).cbz (201pp)
+            [42348] COL Space Brothers v30 (2017) (Digital) (danke-Empire).cbz (202pp) | [42349] COL Space Brothers v31 (2018) (Digital) (danke-Empire).cbz (202pp)
+            [42350] COL Space Brothers v32 (2018) (Digital) (danke-Empire).cbz (199pp) | [42351] COL Space Brothers v33 (2018) (Digital) (danke-Empire).cbz (201pp)
+            [42352] COL Space Brothers v34 (2020) (Digital) (danke-Empire).cbz (204pp) | [42353] COL Space Brothers v35 (2020) (Digital) (danke-Empire).cbz (204pp)
+            [42354] COL Space Brothers v36 (2020) (Digital) (danke-Empire).cbz (202pp) | [42355] COL Space Brothers v37 (2020) (Digital) (danke-Empire).cbz (203pp)
+            [42356] COL Space Brothers v38 (2020) (Digital) (danke-Empire).cbz (208pp) | [42357] COL Space Brothers v39 (2021) (Digital) (danke-Empire).cbz (208pp)
+            [42358] COL Space Brothers v40 (2022) (Digital) (SWId).cbz (204pp) | [42359] COL Space Brothers v41 (2022) (Digital) (SWId).cbz (202pp)
+            [42360] COL Space Brothers v42 (2023) (Digital) (SWId).cbz (206pp) | [42361] COL Space Brothers v43 (2024) (Digital) (SWId).cbz (201pp)
+   ours:    ladder 413; judged item 42319 #1-8 conf 0.97; judged item 42320 #9-18 conf 0.97; judged item 42321 #19-28 conf 0.97; judged item 42322 #29-38 conf 0.97; judged item 42323 #39-48 conf 0.97; judged item 42324 #49-58 conf 0.97; judged item 42325 #59-68 conf 0.97; judged item 42326 #69-78 conf 0.97; judged item 42327 #79-88 conf 0.97; judged item 42328 #89-99 conf 0.97; judged item 42329 #100-109 conf 0.97; judged item 42330 #110-119 conf 0.97; judged item 42331 #120-129 conf 0.97; judged item 42332 #130-139 conf 0.97; judged item 42333 #140-149 conf 0.97; judged item 42334 #150-159 conf 0.97; judged item 42335 #160-169 conf 0.97; judged item 42336 #170-178 conf 0.97; judged item 42337 #179-187 conf 0.97; judged item 42338 #188-196 conf 0.97; judged item 42339 #197-205 conf 0.97; judged item 42340 #206-214 conf 0.97; judged item 42341 #215-223 conf 0.97; judged item 42342 #224-232 conf 0.97; judged item 42343 #233-241 conf 0.97; judged item 42344 #242-250 conf 0.97; judged item 42345 #251-259 conf 0.97; judged item 42346 #260-268 conf 0.97; judged item 42347 #269-277 conf 0.97; judged item 42348 #278-286 conf 0.97; judged item 42349 #287-295 conf 0.97; judged item 42350 #296-304 conf 0.97; judged item 42351 #305-313 conf 0.97; judged item 42352 #314-322 conf 0.97; judged item 42353 #323-331 conf 0.97; judged item 42354 #332-340 conf 0.97; judged item 42355 #341-349 conf 0.97; judged item 42356 #350-358 conf 0.97; judged item 42357 #359-367 conf 0.97; judged item 42358 #368-376 conf 0.97; judged item 42359 #377-385 conf 0.97; judged item 42360 #386-394 conf 0.97; judged item 42361 #395-403 conf 0.97
+   CV linked:      vol 85812 "Space Brothers" 2015 Kodansha Comics USA 44 issues; cached #1-44 (44); yearΔ 0; ratio 1/44 = 0.02; 5 of 43 judged fit; v1 per-file: same volume on 1/44 files
+   CV candidates:  (= linked) · 22666 "7 Brothers" 2007 Virgin Comics ? s44 · 7426 "Brothers of the Spear" 1972 Western Publishing ? s27 · 21716 "Lady Death: Swimsuit 2007" 2007 Avatar Press ? s15 · 121149 "Brothers" 2019 Vaden Comics ? s0 · 119198 "Brothers" 2019 Tengri Comics ? s0 · 130416 "the manga" ? ? ? s0   (v1 search)
+   CV local rip:   (= linked) · 57147 "7 Brothers" 2012 Liquid Comics 2 (via CV candidate name "7 Brothers") · 44136 "Brothers of the Spear" 2011 Dark Horse Comics 3 (via CV candidate name "Brothers of the Spear") · 41624 "7 Brothers" 2008 Panini Verlag 1 issue 282788 (via CV candidate name "7 Brothers") · 22665 "7 Brothers" 2007 Virgin Comics 2 (via CV candidate name "7 Brothers") · 22666 "7 Brothers" 2007 Virgin Comics 5 (via CV candidate name "7 Brothers")   (rip lookup)
+   GCD dump:       104004 "Space Brothers" [fr] 2013-? Pika Édition [] 41 · 109685 "宇宙兄弟 [Space Brothers]" [ja-jp] 2008-? 講談社 [Kōdansha] [] 45 · 33283 "7 Brothers" [de] 2008-2008 Panini Deutschland [] 1 (via CV candidate name "7 Brothers") · 38926 "7 Brothers" [fr] 2008-? Panini France; Soleil [] 2 (via CV candidate name "7 Brothers") · 26450 "7 Brothers" 2007-2008 Virgin [] 5 (via CV candidate name "7 Brothers") · 20224 "7 Brothers" 2006-2007 Virgin [] 5 (via CV candidate name "7 Brothers")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.2937062937062937
+
+== S16571 Manga Star Wars: Return of the Jedi  [tier B]   keys: Star Wars - Return of the Jedi  years 1999-1999  5 files / 5 collections
+   flags: #433 label-ambiguous [Pending] item 105917 — Dawn of the Jedi Vol. 01 is filed under a Return of the Jedi Series
+   folders: [4] Manga\Star Wars\06 Star Wars - Return of the Jedi (2015) · [1] Marvel-IDW Star Wars\_Star Wars - Dark Horse Reprints\Star Wars - Dawn of the Jedi
+   files:   [45375] COL Star Wars - Return of the Jedi v1 (2015, Marvel Edition) (digital) (Galactic-Empire-HD).cbr (83pp)
+            [45376] COL Star Wars - Return of the Jedi v2 (2015, Marvel Edition) (digital) (Galactic-Empire-HD).cbr (88pp)
+            [45377] COL Star Wars - Return of the Jedi v3 (2015, Marvel Edition) (digital) (Galactic-Empire-HD).cbr (88pp)
+            [45378] COL Star Wars - Return of the Jedi v4 (2015, Marvel Edition) (digital) (Galactic-Empire-HD).cbr (75pp)
+            [105917] COL Star Wars - Dawn of the Jedi Vol. 01 - Force Storm (2012, DH Edition) (Digital-HD-Empire).cbr (121pp)
+   ours:    judged item 105917 #1-5 conf 0.9
+   GCD says: [45375] gcd_reprint 369958: s229246 スター・ウォーズ [Star Wars] (1997) #5 [1 story]
+             [45378] gcd_reprint 369961: s229246 スター・ウォーズ [Star Wars] (1997) #6 [1 story]
+   CV linked:      vol 28392 "Manga Star Wars: Return of the Jedi" 1999 Dark Horse Comics 4 issues; cached #1-4 (4); yearΔ 0; ratio 0/4; 1 of 1 judged fit
+   CV per-file (v1): vol 62244 "Star Wars: Return of the Jedi" 1983 Marvel 1 issue 576385 on 1/5 files
+   CV candidates:  (= linked) · 3243 "Star Wars: Return of the Jedi" 1983 Marvel 4 s92 · 62768 "Star Wars: Return of the Jedi" 2005 Tokyopop 1 issue 408125 s87 · 36999 "Star Wars: Return of the Jedi" 1997 Dark Horse Comics 1 issue 246740 s84 · 27302 "Star Wars: Infinities - Return of the Jedi" 2003 Dark Horse Comics 4 s82 · 5379 "Classic Star Wars: The Return of the Jedi" 1994 Dark Horse Comics 2 s71 · 27304 "Star Wars: Infinities - Return of the Jedi" 2004 Dark Horse Comics 1 issue 166415 s71   (v1 search)
+   CV local rip:   (= linked) · 36999 "Star Wars: Return of the Jedi" 1997 Dark Horse Comics 1 issue 246740 · 62768 "Star Wars: Return of the Jedi" 2005 Tokyopop 1 issue 408125 · 3243 "Star Wars: Return of the Jedi" 1983 Marvel 4   (rip lookup)
+   GCD dump:       209949 "Star Wars: Return of the Jedi" 2005-2005 Tokyopop [] 1 · 222794 "Star Wars: Return of the Jedi" 2006-2006 Dark Horse [] ? · 2765 "Star Wars: Return of the Jedi" 1983-1984 Marvel [] 4 · 93308 "Star Wars: Return of the Jedi" 1983-1983 Marvel [] 1 · 229252 "Star Wars: Return of the Jedi" [nl] 2015-2015 Dark Dragon Books [] 1   (dump lookup)
+   MU / External:  MU 73397639686 "Star Wars: Return of the Jedi" 1999 Manga · MuSeriesLink 73397639686 status 1 conf 0.7692307692307693
+
+== S17373 Suzuka  [tier C] · gap 12  keys: Suzuka  years 2004-2017  18 files / 18 collections
+   folders: [18] Manga\Suzuka (2004)
+   files:   [42128] COL Suzuka v01 (2016) (Digital) (LuCaZ).cbz (207pp) | [42129] COL Suzuka v02 (2016) (Digital) (LuCaZ).cbz (206pp) | [42130] COL Suzuka v03 (2016) (Digital) (LuCaZ).cbz (205pp)
+            [42131] COL Suzuka v04 (2016) (Digital) (LuCaZ).cbz (203pp) | [42132] COL Suzuka v05 (2016) (Digital) (LuCaZ).cbz (203pp) | [42133] COL Suzuka v06 (2016) (Digital) (LuCaZ).cbz (205pp)
+            [42134] COL Suzuka v07 (2016) (Digital) (LuCaZ).cbz (206pp) | [42135] COL Suzuka v08 (2016) (Digital) (LuCaZ).cbz (204pp) | [42136] COL Suzuka v09 (2016) (Digital) (LuCaZ).cbz (205pp)
+            [42137] COL Suzuka v10 (2016) (Digital) (LuCaZ).cbz (206pp) | [42138] COL Suzuka v11 (2016) (Digital) (LuCaZ).cbz (206pp) | [42139] COL Suzuka v12 (2016) (Digital) (LuCaZ).cbz (205pp)
+            [42140] COL Suzuka v13 (2016) (Digital) (LuCaZ).cbz (190pp) | [42141] COL Suzuka v14 (2016) (Digital) (LuCaZ).cbz (188pp) | [42142] COL Suzuka v15 (2016) (Digital) (LuCaZ).cbz (192pp)
+            [42143] COL Suzuka v16 (2017) (Digital) (LuCaZ).cbz (194pp) | [42144] COL Suzuka v17 (2017) (Digital) (LuCaZ).cbz (209pp) | [42145] COL Suzuka v18 (2017) (Digital) (LuCaZ).cbz (197pp)
+   ours:    judged item 42128 #0-4 conf 0.97; judged item 42129 #5-13 conf 0.97; judged item 42130 #14-22 conf 0.97; judged item 42131 #23-31 conf 0.97; judged item 42132 #32-40 conf 0.97; judged item 42133 #41-49 conf 0.97; judged item 42134 #50-59 conf 0.97; judged item 42135 #60-69 conf 0.97; judged item 42136 #70-78 conf 0.97; judged item 42137 #79-87 conf 0.97; judged item 42138 #88-96 conf 0.97; judged item 42139 #97-106 conf 0.97; judged item 42140 #107-116 conf 0.97; judged item 42141 #117-126 conf 0.97; judged item 42142 #127-136 conf 0.97; judged item 42143 #137-146 conf 0.97; judged item 42144 #147-156 conf 0.97; judged item 42145 #157-166 conf 0.97
+   CV linked:      vol 95853 "Suzuka" 2016 Kodansha Comics USA 6 issues; cached #13-18 (6); yearΔ 12; ratio 0/6; 2 of 18 judged fit
+   CV per-file (v1): vol 45091 "Suzuka" 2004 Kodansha 18 on 12/18 files
+   CV local rip:   (= linked) · 40482 "Suzuka" 2006 Random House 13 · 45092 "Suzuka" 2007 Pika Édition 18   (rip lookup)
+   GCD dump:       112565 "涼風 [Suzuka]" [ja-jp] 2004-2007 講談社 [Kōdansha] [] 18 · 47527 "Suzuka" 2006-2010 Random House [] 13 · 103984 "Suzuka" [fr] 2007-2010 Pika Édition [] 18   (dump lookup)
+   MU / External:  MU 7005558556 "Suzuka" 2003 Manga · MuSeriesLink 7005558556 status 1 conf 1.0
+
+== S17473 Toppu GP  [tier C] · ratio 4.06  keys: TOPPU GP  years 2016-2025  65 files / 0 collections
+   folders: [65] Manga\TOPPU GP (2016)
+   files:   TOPPU GP 001 (2016) (Digital) (danke).cbz … TOPPU GP 010 (2017) (Digital) (danke).cbz  (10 files, pp 25-28)
+            TOPPU GP 011 (2017) (Digital) (danke-Empire).cbz … TOPPU GP 066 (2021) (Digital) (danke-Empire).cbz  (55 files, pp 25-32)
+   ours:    ladder 1-59, 61-66
+   CV linked:      vol 95759 "Toppu GP" 2016 Kodansha 16 issues; cached #1-15 (15); yearΔ 0; ratio 65/16 = 4.06; no judged range; v1 per-file: same volume on 65/65 files
+   CV local rip:   (= linked) · 100675 "Toppu GP" 2017 Kodansha Comics USA 11   (rip lookup)
+   GCD per-file:   series 117892 "Toppu GP" 2017-? Kodansha USA [ongoing series] 14 on 2/65 files; methods numx2; the dump names no other series
+   bridges:        gcd 117892 -> LOCG 138258 "Toppu GP Vol. 4 TP" support 11 · gcd 117892 -> OL /works/OL19712081W "None" isbnSupport 11
+   MU / External:  MU 62851875421 "Toppu GP" 2016 Manga · MuSeriesLink 62851875421 status 1 conf 1.0
+
+== S17491 Munou na Nana  [tier C] · ratio 2.62  keys: Talentless Nana  years 2017-2024  40 files / 6 collections
+   folders: [40] Manga\Talentless Nana (2016)
+   files:   [45390] Talentless Nana 047 (2020) (Digital) (danke-Empire).cbz (33pp) | [45391] Talentless Nana 048 (2020) (Digital) (danke-Empire).cbz (31pp)
+            [45392] Talentless Nana 049 (2020) (Digital) (danke-Empire).cbz (34pp) | [45393] Talentless Nana 050 (2020) (Digital) (danke-Empire).cbz (28pp)
+            [45394] Talentless Nana 051 (2020) (Digital) (danke-Empire).cbz (32pp) | [45395] Talentless Nana 052 (2020) (Digital) (danke-Empire).cbz (40pp)
+            [45396] Talentless Nana 053 (2020) (Digital) (danke-Empire).cbz (34pp) | [45397] Talentless Nana 054 (2020) (Digital) (danke-Empire).cbz (21pp)
+            [45398] Talentless Nana 055 (2020) (Digital) (danke-Empire).cbz (29pp) | [45399] Talentless Nana 056 (2020) (Digital) (danke-Empire).cbz (26pp)
+            [45400] Talentless Nana 057 (2021) (Digital) (danke-Empire).cbz (25pp) | [45401] Talentless Nana 058 (2021) (Digital) (danke-Empire).cbz (40pp)
+            [45402] Talentless Nana 059 (2021) (Digital) (danke-Empire).cbz (40pp) | [45403] Talentless Nana 060 (2021) (Digital) (danke-Empire).cbz (38pp)
+            [45404] Talentless Nana 061 (2021) (Digital) (danke-Empire).cbz (26pp) | [45405] Talentless Nana 062 (2021) (Digital) (danke-Empire).cbz (38pp)
+            [45406] Talentless Nana 064 (2021) (Digital) (danke-Empire).cbz (45pp) | [45407] Talentless Nana 065 (2021) (Digital) (danke-Empire).cbz (37pp)
+            [45408] Talentless Nana 066 (2021) (Digital) (danke-Empire).cbz (42pp) | [45409] Talentless Nana 067 (2021) (Digital) (danke-Empire).cbz (44pp)
+            [45410] Talentless Nana 068 (2021) (Digital) (danke-Empire).cbz (43pp) | [45411] Talentless Nana 069 (2022) (Digital) (danke-Empire).cbz (23pp)
+            [45412] Talentless Nana 070 (2022) (Digital) (danke-Empire).cbz (40pp) | [45413] Talentless Nana 071 (2022) (Digital) (danke-Empire).cbz (40pp)
+            [45414] Talentless Nana 072 (2022) (Digital) (danke-Empire).cbz (38pp) | [45415] Talentless Nana 073 (2022) (Digital) (danke-Empire).cbz (33pp)
+            [45416] Talentless Nana 074 (2022) (Digital) (danke-Empire).cbz (33pp) | [45417] Talentless Nana 075 (2022) (Digital) (danke-Empire).cbz (38pp)
+            [45418] Talentless Nana 076 (2022) (Digital) (danke-Empire).cbz (27pp) | [45419] Talentless Nana 077 (2022) (Digital) (danke-Empire).cbz (38pp)
+            [45420] Talentless Nana 078 (2022) (Digital) (danke-Empire).cbz (44pp) | [45421] Talentless Nana 079 (2022) (Digital) (danke-Empire).cbz (28pp)
+            [45422] Talentless Nana 080 (2022) (Digital) (danke-Empire).cbz (42pp) | [45423] Talentless Nana 081 (2022) (Digital) (danke-Empire).cbz (24pp)
+            [45424] COL Talentless Nana v01 (2018) (Digital) (danke-Empire).cbz (229pp) | [45425] COL Talentless Nana v02 (2018) (Digital) (danke-Empire).cbz (243pp)
+            [45426] COL Talentless Nana v03 (2018) (Digital) (danke-Empire).cbz (293pp) | [45427] COL Talentless Nana v04 (2018) (Digital) (danke-Empire).cbz (324pp)
+            [45428] COL Talentless Nana v05 (2019) (Digital) (danke-Empire).cbz (322pp) | [45429] COL Talentless Nana v06 (2020) (Digital) (danke-Empire).cbz (323pp)
+   ours:    ladder 47-62, 64-81; judged item 45424 #1-4 conf 0.97; judged item 45425 #5-11 conf 0.97; judged item 45426 #12-19 conf 0.97; judged item 45427 #20-28 conf 0.97; judged item 45428 #29-37 conf 0.97; judged item 45429 #38-46 conf 0.97
+   CV linked:      vol 108038 "Munou na Nana" 2017 Square Enix 13 issues; cached #1-14 (14); yearΔ 0; ratio 34/13 = 2.62; 3 of 6 judged fit
+   CV per-file (v1): vol 165037 "Talentless Nana" ? Crunchyroll 1 issue 1116008 on 34/40 files
+   CV candidates:  (= linked) · 90920 "Nana" 2000 Shueisha ? s40 · 26500 "Nana" 2005 Viz ? s40 · 131657 "Ah! Nana" 1976 Les Humanoïdes Associés ? s29 · 98229 "Nana to Kaoru" 2008 Hakusensha ? s28 · 59447 "Nana & Kaoru: Fesselnde Liebe" 2010 Panini Verlag ? s26 · 98230 "Nana to Kaoru: Black Label" 2011 Hakusensha ? s26   (v1 search)
+   CV local rip:   (= linked) · 26500 "Nana" 2005 Viz 21 (via CV candidate name "Nana") · 90920 "Nana" 2000 Shueisha 21 (via CV candidate name "Nana")   (rip lookup)
+   GCD dump:       210081 "Nana" [es-mx] 2022-? Editorial Panini México [] 18 (via CV candidate name "Nana") · 227132 "Nana" [de] 2025-? Panini Deutschland [] 5 (via CV candidate name "Nana") · 228294 "Nana" [de] 2025-2025 Panini Deutschland [] 1 (via CV candidate name "Nana") · 36108 "Nana" [no] 2008-2009 Hjemmet / Egmont [] 8 (via CV candidate name "Nana") · 51941 "Nana" [sv-se] 2008-2010 Egmont [] 10 (via CV candidate name "Nana") · 149155 "Nana" [pt-br] 2008-? Editora JBC [] 21 (via CV candidate name "Nana")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.28846153846153844
+
+== S17858 That Blue Summer  [tier B]   keys: That Blue Summer  years 2020-2020  8 files / 8 collections
+   folders: [8] Manga\That Blue Summer (2013)
+   files:   [44034] COL That Blue Summer v01 (2020) (Digital) (danke-Empire).cbz (203pp) | [44035] COL That Blue Summer v02 (2020) (Digital) (danke-Empire).cbz (175pp)
+            [44036] COL That Blue Summer v03 (2020) (Digital) (danke-Empire).cbz (188pp) | [44037] COL That Blue Summer v04 (2020) (Digital) (danke-Empire).cbz (188pp)
+            [44038] COL That Blue Summer v05 (2020) (Digital) (danke-Empire).cbz (183pp) | [44039] COL That Blue Summer v06 (2020) (Digital) (danke-Empire).cbz (190pp)
+            [44040] COL That Blue Summer v07 (2020) (Digital) (danke-Empire).cbz (191pp) | [44041] COL That Blue Summer v08 (2020) (Digital) (danke-Empire).cbz (206pp)
+   ours:    judged item 44034 #1-4 conf 0.97; judged item 44035 #5-8 conf 0.97; judged item 44036 #9-13 conf 0.97; judged item 44037 #14-18 conf 0.97; judged item 44038 #19-23 conf 0.97; judged item 44039 #24-28 conf 0.97; judged item 44040 #29-33 conf 0.97; judged item 44041 #34-38 conf 0.97
+   CV linked:      vol 124084 "That Blue Summer" 2020 Kodansha Comics USA 8 issues; cached #1-8 (8); yearΔ 0; ratio 0/8; 2 of 8 judged fit
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   MU / External:  MuSeriesLink None status 3 conf 0.36923076923076925
+
+== S17863 Tensei Shitara Slime Datta Ken: Clayman Revenge  [tier C] · ratio 0.17  keys: That Time I Got Reincarnated as a Slime - Clayman's Revenge  years 2022-2025  1 files / 0 collections
+   folders: [1] Manga\That Time I got Reincarnated as a Slime (2015)\That Time I Got Reincarnated as a Slime - Clayman's Revenge (2020)
+   files:   [45997] That Time I Got Reincarnated as a Slime - Clayman's Revenge 027 (2024) (Digital) (danke-Empire).cbz (30pp)
+   ours:    ladder 27
+   CV linked:      vol 154704 "Tensei Shitara Slime Datta Ken: Clayman Revenge" 2022 Kodansha 6 issues; cached #1-7 (7); yearΔ 0; ratio 1/6 = 0.17; no judged range
+   CV per-file (v1): vol 103594 "That Time I Got Reincarnated As A Slime" 2017 Kodansha Comics USA 27 on 1/1 files
+   CV candidates:  (= linked) · 166755 "That Time I Got Reincarnated as a Slime" 2020 JBC 22 s15 · 130015 "That Time I Got Reincarnated (Again!) as a Workaholic Slime" 2020 Kodansha Comics USA 2 s14 · 115026 "Dragon Ball: That Time I Got Reincarnated As Yamcha!" 2018 Viz 1 issue 691222 s8 · 120382 "The Slime Diaries: That Time I Got Reincarnated As A Slime" 2019 Kodansha Comics USA 7 s5 · 131542 "That Time I Got Reincarnated as a Slime: Trinity in Tempest" 2020 Kodansha Comics USA 10 s5 · 128801 "That Time I Got Reincarnated as a Slime: The Ways of the Monster Nation" 2020 Yen Press 8 s2   (v1 search)
+   CV local rip:   (= linked) · 130015 "That Time I Got Reincarnated (Again!) as a Workaholic Slime" 2020 Kodansha Comics USA 2 (via CV candidate name "That Time I Got Reincarnated (Again!) as a Workaholic Slime") · 166755 "That Time I Got Reincarnated as a Slime" 2020 JBC 22 (via CV name "That Time I Got Reincarnated As A Slime")   (rip lookup)
+   GCD dump:       201041 "That Time I Got Reincarnated as a Slime" [pt-br] 2020-? Editora JBC [] 17 (via CV name "That Time I Got Reincarnated As A Slime") · 118146 "That Time I Got Reincarnated as a Slime" 2017-? Kodansha USA [] 29 (via CV name "That Time I Got Reincarnated As A Slime")   (dump lookup)
+   MU / External:  MU 45823035874 "Tensei Shitara Winning Eleven datta Ken" 2026 Manga · MuSeriesLink 45823035874 status 1 conf 0.5384615384615384
+
+== S18396 The Decagon House Murders  [tier B]   keys: The Decagon House Murders  years 2021-2021  3 files / 3 collections
+   folders: [3] Manga\The Decagon House Murders (2019)
+   files:   [45486] COL The Decagon House Murders v01 (2021) (Digital) (danke-Empire).cbz (186pp) | [45487] COL The Decagon House Murders v02 (2021) (Digital) (danke-Empire).cbz (159pp)
+            [45488] COL The Decagon House Murders v03 (2021) (Digital) (danke-Empire).cbz (157pp)
+   ours:    judged item 45486 #1-7 conf 0.97; judged item 45487 #8-13 conf 0.97; judged item 45488 #14-19 conf 0.97
+   GCD says: [45486] gcd_reprint 2203291: s76096 月刊アフタヌーン [Gekkan Afutanūn / Monthly Afternoon] (1986) (unnumbered) [4 stories]
+             [45487] gcd_reprint 2203292: s76096 月刊アフタヌーン [Gekkan Afutanūn / Monthly Afternoon] (1986) (unnumbered) [6 stories]
+             [45488] gcd_reprint 2211514: s76096 月刊アフタヌーン [Gekkan Afutanūn / Monthly Afternoon] (1986) (unnumbered) [6 stories]
+   CV linked:      vol 138320 "The Decagon House Murders" 2021 Kodansha Comics USA 5 issues; cached #1-5 (5); yearΔ 0; ratio 0/5; 1 of 3 judged fit
+   CV candidates:  (= linked) · 23530 "The Milkman Murders" 2004 Dark Horse Comics 4 s51 · 68410 "The Poe Murders" 2013 High School Heroes 2 s47 · 109943 "The Black Monday Murders" 2018 Image 1 issue 666829 s43 · 52443 "The Milkman Murders" 2012 Image 1 issue 358985 s42 · 68346 "The Mushroom Murders" 2013 Creators Edge Press 1 issue 428934 s42 · 79287 "Storyville: The Prostitute Murders" 2015 Caliber Comics 1 issue 475542 s42   (v1 search)
+   CV local rip:   (= linked) · 137025 "The Poe Murders" 2021 Dren Productions 1 issue 862893 (via CV candidate name "The Poe Murders") · 68410 "The Poe Murders" 2013 High School Heroes 2 (via CV candidate name "The Poe Murders") · 52443 "The Milkman Murders" 2012 Image 1 issue 358985 (via CV candidate name "The Milkman Murders") · 23530 "The Milkman Murders" 2004 Dark Horse Comics 4 (via CV candidate name "The Milkman Murders")   (rip lookup)
+   GCD dump:       200784 "The Poe Murders" 2023-2023 Dren Productions LLC [] 1 (via CV candidate name "The Poe Murders") · 78319 "The Milkman Murders" 2012-2012 Image [] 1 (via CV candidate name "The Milkman Murders") · 42984 "The Milkman Murders" 2005-2005 Dark Horse [] 1 (via CV candidate name "The Milkman Murders") · 12186 "The Milkman Murders" 2004-2004 Dark Horse [] 4 (via CV candidate name "The Milkman Murders")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.47928994082840237
+
+== S18454 The Drops of God  [tier B]   keys: Drops of God | The Drops of God  years 2019-2021  66 files / 66 collections
+   folders: [44] Manga\The Drops of God (2005) · [22] Manga\Drops of God (2011)
+   files:   [44503] COL Drops of God v01 (2019) (Digital) (danke-Empire).cbz (211pp) | [44504] COL Drops of God v02 (2019) (Digital) (danke-Empire).cbz (210pp)
+            [44505] COL Drops of God v03 (2019) (Digital) (danke-Empire).cbz (208pp) | [44506] COL Drops of God v04 (2019) (Digital) (danke-Empire).cbz (194pp)
+            [44507] COL Drops of God v05 (2019) (Digital) (danke-Empire).cbz (200pp) | [44508] COL Drops of God v06 (2019) (Digital) (danke-Empire).cbz (195pp)
+            [44509] COL Drops of God v07 (2019) (Digital) (danke-Empire).cbz (201pp) | [44510] COL Drops of God v08 (2019) (Digital) (danke-Empire).cbz (201pp)
+            [44511] COL Drops of God v09 (2019) (Digital) (danke-Empire).cbz (203pp) | [44512] COL Drops of God v10 (2019) (Digital) (danke-Empire).cbz (205pp)
+            [44513] COL Drops of God v11 (2019) (Digital) (danke-Empire).cbz (211pp) | [44514] COL Drops of God v12 (2020) (Digital) (danke-Empire).cbz (204pp)
+            [44515] COL Drops of God v13 (2020) (Digital) (danke-Empire).cbz (201pp) | [44516] COL Drops of God v14 (2020) (Digital) (danke-Empire).cbz (205pp)
+            [44517] COL Drops of God v15 (2020) (Digital) (danke-Empire).cbz (201pp) | [44518] COL Drops of God v16 (2020) (Digital) (danke-Empire).cbz (205pp)
+            [44519] COL Drops of God v17 (2020) (Digital) (danke-Empire).cbz (205pp) | [44520] COL Drops of God v18 (2020) (Digital) (danke-Empire).cbz (201pp)
+            [44521] COL Drops of God v19 (2020) (Digital) (danke-Empire).cbz (203pp) | [44522] COL Drops of God v20 (2020) (Digital) (danke-Empire).cbz (229pp)
+            [44523] COL Drops of God v21 (2020) (Digital) (danke-Empire).cbz (207pp) | [44524] COL Drops of God v22 (2020) (Digital) (danke-Empire).cbz (200pp)
+            [45489] COL The Drops of God v01 (2019) (Digital) (F) (LuCaZ).cbz (210pp) | [45490] COL The Drops of God v02 (2019) (Digital) (F) (LuCaZ).cbz (210pp)
+            [45491] COL The Drops of God v03 (2019) (Digital) (F) (LuCaZ).cbz (208pp) | [45492] COL The Drops of God v04 (2019) (Digital) (F) (LuCaZ).cbz (194pp)
+            [45493] COL The Drops of God v05 (2019) (Digital) (F) (LuCaZ).cbz (200pp) | [45494] COL The Drops of God v06 (2019) (Digital) (F) (LuCaZ).cbz (195pp)
+            [45495] COL The Drops of God v07 (2019) (Digital) (F) (LuCaZ).cbz (201pp) | [45496] COL The Drops of God v08 (2019) (Digital) (F) (LuCaZ).cbz (201pp)
+            [45497] COL The Drops of God v09 (2019) (Digital) (F) (LuCaZ).cbz (203pp) | [45498] COL The Drops of God v10 (2019) (Digital) (F) (LuCaZ).cbz (205pp)
+            [45499] COL The Drops of God v11 (2019) (Digital) (F) (LuCaZ).cbz (211pp) | [45500] COL The Drops of God v12 (2020) (Digital) (F) (LuCaZ).cbz (204pp)
+            [45501] COL The Drops of God v13 (2020) (Digital) (F) (LuCaZ).cbz (201pp) | [45502] COL The Drops of God v14 (2020) (Digital) (F) (LuCaZ).cbz (205pp)
+            [45503] COL The Drops of God v15 (2020) (Digital) (F) (LuCaZ).cbz (201pp) | [45504] COL The Drops of God v16 (2020) (Digital) (F) (LuCaZ).cbz (205pp)
+            [45505] COL The Drops of God v17 (2020) (Digital) (F) (LuCaZ).cbz (205pp) | [45506] COL The Drops of God v18 (2020) (Digital) (F) (LuCaZ).cbz (201pp)
+            [45507] COL The Drops of God v19 (2020) (Digital) (F) (LuCaZ).cbz (204pp) | [45508] COL The Drops of God v20 (2020) (Digital) (F) (LuCaZ).cbz (229pp)
+            [45509] COL The Drops of God v21 (2020) (Digital) (F) (LuCaZ).cbz (207pp) | [45510] COL The Drops of God v22 (2020) (Digital) (F) (LuCaZ).cbz (200pp)
+            [45511] COL The Drops of God v23 (2020) (Digital) (F) (LuCaZ).cbz (200pp) | [45512] COL The Drops of God v24 (2020) (Digital) (F) (LuCaZ).cbz (205pp)
+            [45513] COL The Drops of God v25 (2020) (Digital) (F) (LuCaZ).cbz (204pp) | [45514] COL The Drops of God v26 (2020) (Digital) (F) (LuCaZ).cbz (207pp)
+            [45515] COL The Drops of God v27 (2020) (Digital) (F) (LuCaZ).cbz (201pp) | [45516] COL The Drops of God v28 (2020) (Digital) (F) (LuCaZ).cbz (205pp)
+            [45517] COL The Drops of God v29 (2020) (Digital) (F) (LuCaZ).cbz (202pp) | [45518] COL The Drops of God v30 (2020) (Digital) (F) (LuCaZ).cbz (202pp)
+            [45519] COL The Drops of God v31 (2020) (Digital) (F) (LuCaZ).cbz (203pp) | [45520] COL The Drops of God v32 (2020) (Digital) (F) (LuCaZ).cbz (204pp)
+            [45521] COL The Drops of God v33 (2020) (Digital) (F) (LuCaZ).cbz (202pp) | [45522] COL The Drops of God v34 (2021) (Digital) (F) (LuCaZ).cbz (202pp)
+            [45523] COL The Drops of God v35 (2021) (Digital) (F) (LuCaZ).cbz (202pp) | [45524] COL The Drops of God v36 (2021) (Digital) (F) (LuCaZ).cbz (199pp)
+            [45525] COL The Drops of God v37 (2021) (Digital) (F) (LuCaZ).cbz (204pp) | [45526] COL The Drops of God v38 (2021) (Digital) (F) (LuCaZ).cbz (198pp)
+            [45527] COL The Drops of God v39 (2021) (Digital) (F) (LuCaZ).cbz (203pp) | [45528] COL The Drops of God v40 (2021) (Digital) (F) (LuCaZ).cbz (205pp)
+            [45529] COL The Drops of God v41 (2021) (Digital) (F) (LuCaZ).cbz (206pp) | [45530] COL The Drops of God v42 (2021) (Digital) (F) (LuCaZ).cbz (207pp)
+            [45531] COL The Drops of God v43 (2021) (Digital) (F) (LuCaZ).cbz (201pp) | [45532] COL The Drops of God v44 (2021) (Digital) (F) (LuCaZ).cbz (202pp)
+   ours:    judged item 45489 #1-8 conf 0.97; judged item 45490 #9-18 conf 0.97; judged item 45491 #19-28 conf 0.97; judged item 45492 #29-38 conf 0.97; judged item 45493 #39-48 conf 0.97; judged item 45494 #49-58 conf 0.97; judged item 45495 #59-68 conf 0.97; judged item 45496 #69-78 conf 0.97; judged item 45497 #79-88 conf 0.97; judged item 45498 #89-98 conf 0.97; judged item 45499 #99-108 conf 0.97; judged item 45500 #109-118 conf 0.97; judged item 45501 #119-128 conf 0.97; judged item 45502 #129-138 conf 0.97; judged item 45503 #139-148 conf 0.97; judged item 45504 #149-158 conf 0.97; judged item 45505 #159-168 conf 0.97; judged item 45506 #169-178 conf 0.97; judged item 45507 #179-188 conf 0.97; judged item 45508 #189-199 conf 0.97; judged item 45509 #200-209 conf 0.97; judged item 45510 #210-219 conf 0.97; judged item 45511 #220-229 conf 0.97; judged item 45512 #230-239 conf 0.97; judged item 45513 #240-249 conf 0.97; judged item 45514 #250-259 conf 0.97; judged item 45515 #260-269 conf 0.97; judged item 45516 #270-279 conf 0.97; judged item 45517 #280-289 conf 0.97; judged item 45518 #290-299 conf 0.97; judged item 45519 #300-309 conf 0.97; judged item 45520 #310-319 conf 0.97; judged item 45521 #320-329 conf 0.97; judged item 45522 #330-339 conf 0.97; judged item 45523 #340-349 conf 0.97; judged item 45524 #350-359 conf 0.97; judged item 45525 #360-369 conf 0.97; judged item 45526 #370-379 conf 0.97; judged item 45527 #380-389 conf 0.97; judged item 45528 #390-399 conf 0.97; judged item 45529 #400-409 conf 0.97; judged item 45530 #410-419 conf 0.97; judged item 45531 #420-429 conf 0.97; judged item 45532 #430-439 conf 0.97
+   CV linked:      vol 121962 "The Drops of God" 2019 Vertical Inc. 44 issues; cached #1-44 (44); yearΔ 0; ratio 0/44; 5 of 44 judged fit
+   CV candidates:  (= linked) · 44069 "The Drops of God" 2011 Vertical Inc. ? s30 · 74459 "The Drops of God: New World" 2012 Vertical Inc. ? s18 · 134855 "Daym Drops" ? ? ? s15 · 97230 "Hakoiri Drops" 2012 Houbunsha ? s0 · 143708 "Gokujō Drops" 2008 Ichijinsha ? s0 · 73448 "The Art of Osamu Tezuka: God of Manga" 2014 Harry N. Abrams ? s0   (v1 search)
+   CV local rip:   (= linked) · 44069 "The Drops of God" 2011 Vertical Inc. 4 · 74459 "The Drops of God: New World" 2012 Vertical Inc. 1 issue 372020 (via CV candidate name "The Drops of God: New World")   (rip lookup)
+   GCD dump:       229999 "The Drops of God" 2025-? Kodansha USA [] 4 · 62878 "The Drops of God" 2011-2012 Vertical [] 5   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.2692307692307692
+
+== S18676 The Girl From the Other Side: Siúil, a Rún  [tier B]   keys: The Girl From the Other Side - Siúil, a Rún | The Girl From the Other Side - Siúil, a Rún - Side Stories  years 2017-2022  13 files / 12 collections
+   folders: [12] Manga\The Girl From the Other Side - Siúil, a Rún (2015) · [1] Image\The Other Side (2006)
+   files:   [35318] The Other Side (Special Edition) (2017) (Digital) (Lo Pan).cbr (148pp) | [44053] COL The Girl From the Other Side - Siúil, a Rún v01 (2017) (Digital) (danke-Empire).cbz (179pp)
+            [44054] COL The Girl From the Other Side - Siúil, a Rún v02 (2017) (Digital) (danke-Empire).cbz (178pp)
+            [44055] COL The Girl From the Other Side - Siúil, a Rún v03 (2017) (Digital) (danke-Empire).cbz (180pp)
+            [44056] COL The Girl From the Other Side - Siúil, a Rún v04 (2018) (Digital) (danke-Empire).cbz (181pp)
+            [44057] COL The Girl From the Other Side - Siúil, a Rún v05 (2018) (Digital) (danke-Empire).cbz (179pp)
+            [44058] COL The Girl From the Other Side - Siúil, a Rún v06 (2019) (Digital) (danke-Empire).cbz (183pp)
+            [44059] COL The Girl From the Other Side - Siúil, a Rún v07 (2019) (Digital) (danke-Empire).cbz (182pp)
+            [44060] COL The Girl From the Other Side - Siúil, a Rún v08 (2020) (Digital) (danke-Empire).cbz (183pp)
+            [44061] COL The Girl From the Other Side - Siúil, a Rún v09 (2020) (Digital) (danke-Empire).cbz (189pp)
+            [44062] COL The Girl From the Other Side - Siúil, a Rún v10 (2021) (Digital) (danke-Empire).cbz (171pp)
+            [44063] COL The Girl From the Other Side - Siúil, a Rún v11 (2021) (Digital) (danke-Empire).cbz (178pp)
+            [44064] COL The Girl From the Other Side - Siúil, a Rún v12 - [dear.] Side Stories (2022) (Digital) (danke-Empire).cbz (168pp)
+   ours:    judged item 44053 #1-5 conf 0.97; judged item 44054 #6-10 conf 0.97; judged item 44055 #11-15 conf 0.97; judged item 44056 #16-20 conf 0.97; judged item 44057 #21-25 conf 0.97; judged item 44058 #26-30 conf 0.97; judged item 44059 #31-35 conf 0.97; judged item 44060 #36-40 conf 0.97; judged item 44061 #41-45 conf 0.97; judged item 44062 #46-49 conf 0.97; judged item 44063 #50-53 conf 0.97
+   CV linked:      vol 98314 "The Girl From the Other Side: Siúil, a Rún" 2017 Seven Seas Entertainment 12 issues; cached #1-12 (12); yearΔ 0; ratio 0/12; 3 of 11 judged fit; v1 per-file: same volume on 1/13 files
+   CV candidates:  (= linked) · 82442 "The Other Side" 2015 Mildfrenzy Comics 1 issue 491169 s85 · 33015 "The Other Side" 2007 DC Comics 1 issue 212650 s80 · 19537 "The Other Side" 2006 DC Comics 5 s64 · 80482 "The Other Side of the Wall" 2015 Lerner Publishing Group 1 issue 481695 s56 · 68085 "Illustrations from the Other Side" 1992 Caliber Comics 1 issue 428192 s52 · 23419 "Ghostbusters: The Other Side" 2008 IDW Publishing 4 s43   (v1 search)
+   CV local rip:   (= linked) · 82442 "The Other Side" 2015 Mildfrenzy Comics 1 issue 491169 (via CV candidate name "The Other Side") · 33015 "The Other Side" 2007 DC Comics 1 issue 212650 (via CV candidate name "The Other Side") · 19537 "The Other Side" 2006 DC Comics 5 (via CV candidate name "The Other Side")   (rip lookup)
+   GCD dump:       117946 "The Girl from the Other Side: Siúil A Rún" 2017-2022 Seven Seas Entertainment [] 12 · 226038 "The Other Side" 2017-2017 Image [] 1 (via CV candidate name "The Other Side") · 24919 "The Other Side" 2007-2007 DC [] 1 (via CV candidate name "The Other Side") · 21941 "The Other Side" 2006-2007 DC [] 5 (via CV candidate name "The Other Side")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.4326923076923077
+
+== S18917 The Last Saiyuki  [tier B]   keys: The Last Saiyuki  years 2020-2020  1 files / 1 collections
+   folders: [1] Manga\The Last Saiyuki (2019)
+   files:   [45555] COL The Last Saiyuki v01 (2020) (digital) (aKraa).cbz (186pp)
+   ours:    judged item 45555 #1-7 conf 0.97
+   CV linked:      vol 125270 "The Last Saiyuki" 2020 Viz 3 issues; cached #1-3 (3); yearΔ 0; ratio 0/3; 1 of 1 judged fit
+   CV candidates:  (= linked) · 66042 "Saiyuki" 2008 Angel Publishing 1 issue 420569 s64 · 52605 "Saiyuki" 2003 Carlsen Verlag 9 s47 · 33919 "Saiyuki" 2004 Tokyopop 9 s47 · 120043 "TOKYOPOP Manga Magazine 2019" 2019 Tokyopop 1 issue 713002 s30 · 171563 "Saiyuki" 2026 Penguin Random House Grupo Editorial 1 s15 · 147798 "Ramen Saiyūki" 2010 Shogakukan 11 s9   (v1 search)
+   CV local rip:   (= linked) · 125092 "Saiyuki" 2020 Kodansha Comics USA 4 (via CV candidate name "Saiyuki") · 66042 "Saiyuki" 2008 Angel Publishing 1 issue 420569 (via CV candidate name "Saiyuki") · 33919 "Saiyuki" 2004 Tokyopop 9 (via CV candidate name "Saiyuki") · 52605 "Saiyuki" 2003 Carlsen Verlag 9 (via CV candidate name "Saiyuki")   (rip lookup)
+   GCD dump:       126051 "Saiyuki" [pl] 2005-2008 Waneko [] ? (via CV candidate name "Saiyuki") · 75708 "Saiyuki" 2004-2005 Tokyopop [] 9 (via CV candidate name "Saiyuki") · 27470 "Saiyuki" [de] 2003-2005 Carlsen Comics [DE] [] 9 (via CV candidate name "Saiyuki")   (dump lookup)
+   MU / External:  MU 77082541367 "The Last Saiyuki" 2019 Manga · MuSeriesLink 77082541367 status 1 conf 1.0
+
+== S19575 The Seven Deadly Sins: Four Knights of the Apocalypse  [tier C] · ratio 4.33  keys: The Seven Deadly Sins - Four Knights of the Apocalypse  years 2021-2024  64 files / 12 collections
+   folders: [64] Manga\The Seven Deadly Sins (2014)\The Seven Deadly Sins - Four Knights of the Apocalypse (2021)
+   files:   [41498] The Seven Deadly Sins - Four Knights of the Apocalypse 105 (2023) (Digital) (danke-Empire).cbz (20pp)
+            [41499] The Seven Deadly Sins - Four Knights of the Apocalypse 106 (2023) (Digital) (danke-Empire).cbz (21pp)
+            [41500] The Seven Deadly Sins - Four Knights of the Apocalypse 107 (2023) (Digital) (danke-Empire).cbz (21pp)
+            [41501] The Seven Deadly Sins - Four Knights of the Apocalypse 107.5 (2023) (Digital) (danke-Empire).cbz (14pp)
+            The Seven Deadly Sins - Four Knights of the Apocalypse 108 (2023) (Digital) (danke-Empire).cbz … The Seven Deadly Sins - Four Knights of the Apocalypse 155 (2024) (Digital) (danke-Empire).cbz  (48 files, pp 15-24)
+            [41550] COL The Seven Deadly Sins - Four Knights of the Apocalypse v01 (2022) (Digital) (DeadMan).cbz (179pp)
+            [41551] COL The Seven Deadly Sins - Four Knights of the Apocalypse v02 (2022) (Digital) (DeadMan).cbz (188pp)
+            [41552] COL The Seven Deadly Sins - Four Knights of the Apocalypse v03 (2022) (Digital) (DeadMan).cbz (196pp)
+            [41553] COL The Seven Deadly Sins - Four Knights of the Apocalypse v04 (2022) (Digital) (DeadMan).cbz (182pp)
+            [41554] COL The Seven Deadly Sins - Four Knights of the Apocalypse v05 (2022) (Digital) (DeadMan).cbz (188pp)
+            [41555] COL The Seven Deadly Sins - Four Knights of the Apocalypse v06 (2022) (Digital) (DeadMan).cbz (185pp)
+            [41556] COL The Seven Deadly Sins - Four Knights of the Apocalypse v07 (2023) (Digital) (DeadMan).cbz (186pp)
+            [41557] COL The Seven Deadly Sins - Four Knights of the Apocalypse v08 (2023) (Digital) (DeadMan).cbz (187pp)
+            [41558] COL The Seven Deadly Sins - Four Knights of the Apocalypse v09 (2023) (Digital) (DeadMan).cbz (186pp)
+            [41559] COL The Seven Deadly Sins - Four Knights of the Apocalypse v10 (2023) (Digital) (DeadMan).cbz (190pp)
+            [41560] COL The Seven Deadly Sins - Four Knights of the Apocalypse v11 (2024) (Digital) (DeadMan).cbz (190pp)
+            [41561] COL The Seven Deadly Sins - Four Knights of the Apocalypse v12 (2024) (Digital) (DeadMan).cbz (189pp)
+   ours:    ladder 5, 105-155; judged item 41550 #1-5 conf 0.97; judged item 41551 #6-14 conf 0.97; judged item 41552 #15-23 conf 0.97; judged item 41553 #24-32 conf 0.97; judged item 41554 #33-41 conf 0.97; judged item 41555 #42-50 conf 0.97; judged item 41556 #51-59 conf 0.97; judged item 41557 #60-68 conf 0.97; judged item 41558 #69-77 conf 0.97; judged item 41559 #78-86 conf 0.97; judged item 41560 #87-95 conf 0.97; judged item 41561 #96-104 conf 0.97
+   CV linked:      vol 146819 "The Seven Deadly Sins: Four Knights of the Apocalypse" 2022 Kodansha Comics USA 12 issues; cached #1-12 (12); yearΔ 1; ratio 52/12 = 4.33; 2 of 12 judged fit; v1 per-file: same volume on 52/64 files
+   CV candidates:  (= linked) · 72607 "The Seven Deadly Sins" 2014 Kodansha Comics USA 41 s78 · 168734 "The Seven Deadly Sins" 2014 Norma Editorial 24 s73 · 40333 "Seven Deadly Sins" 1989 Knockabout 1 issue 271403 s59 · 96512 "Seven Deadly Sins" 2015 Carlsen Verlag 41 s23 · 166987 "The Seven Deadly Sins" 2015 JBC 41 s23 · 143789 "Seven Deadly Sins: Four Knights of the Apocalypse" 2022 Carlsen Verlag 12 s15   (v1 search)
+   CV local rip:   (= linked) · 143789 "Seven Deadly Sins: Four Knights of the Apocalypse" 2022 Carlsen Verlag 12 · 148392 "Seven Deadly Sins" 2019 Studio JG 1 issue 979098 (via CV candidate name "The Seven Deadly Sins") · 96512 "Seven Deadly Sins" 2015 Carlsen Verlag 41 (via CV candidate name "The Seven Deadly Sins") · 166987 "The Seven Deadly Sins" 2015 JBC 41 (via CV candidate name "The Seven Deadly Sins") · 72607 "The Seven Deadly Sins" 2014 Kodansha Comics USA 41 (via CV candidate name "The Seven Deadly Sins")   (rip lookup)
+   GCD per-file:   series 180634 "The Seven Deadly Sins: Four Knights of the Apocalypse" 2022-? Kodansha USA [ongoing series] 21 on 1/64 files; methods numx1
+   GCD dump:       (= per-file) · 185681 "Seven Deadly Sins - Four Knights of the Apocalypse" [de] 2022-? Carlsen Comics [DE] [] 16 · 234528 "Seven Deadly Sins: Four Knights of the Apocalypse" [de] 2026-2026 Carlsen Comics [DE] [] 1 · 201555 "Seven Deadly Sins" [pl] 2019-? Studio JG [] 22 (via CV candidate name "The Seven Deadly Sins") · 201574 "Seven Deadly Sins" [es-ar] 2018-? Editorial Ivrea [] 29 (via CV candidate name "The Seven Deadly Sins") · 201575 "The Seven Deadly Sins" [es-mx] 2017-2021 Editorial Panini México [] 41 (via CV candidate name "The Seven Deadly Sins")   (dump lookup)
+   bridges:        gcd 180634 -> LOCG 152572 "The Seven Deadly Sins: Four Knights of the Apocalypse Vol. 5 TP" support 13 · gcd 180634 -> OL /works/OL25322646W "None" isbnSupport 13
+   MU / External:  MuSeriesLink None status 3 conf 0.5034965034965034
+
+== S19970 The World is Dancing  [tier B]   keys: The World Is Dancing | The World is Dancing  years 2023-2024  5 files / 5 collections
+   folders: [5] Manga\The World Is Dancing (2021)
+   files:   [45609] COL The World Is Dancing v01 (2023) (Digital) (danke-Empire).cbz (188pp) | [45610] COL The World is Dancing v02 (2023) (Digital) (XRA-Empire).cbz (196pp)
+            [45611] COL The World is Dancing v03 (2023) (Digital) (XRA-Empire).cbz (197pp) | [45612] COL The World is Dancing v04 (2024) (Digital) (XRA-Empire).cbz (181pp)
+            [45613] COL The World is Dancing v05 (2024) (Digital) (XRA-Empire).cbz (195pp)
+   ours:    judged item 45609 #1-8 conf 0.97; ComicInfo Series: "The World is Dancing"x4; ComicInfo Publisher: "Kodansha Comics"x4
+   CV linked:      vol 154763 "The World is Dancing" 2023 Kodansha Comics USA 5 issues; cached #1-5 (5); yearΔ 0; ratio 0/5; 1 of 1 judged fit
+   CV candidates:  (= linked) · 151075 "World is Dancing" 2021 Kodansha 4 s73 · 105635 "Dancing!!" 2014 Shueisha 1 issue 633222 s65 · 138580 "The Dancing Plague" 2021 SelfMadeHero 1 issue 882582 s59 · 139098 "HELLO WORLD: The Manga" 2021 Seven Seas Entertainment 1 issue 885452 s58 · 127976 "Manga! Manga! The World of Japanese Comics" 1983 Kodansha International 1 issue 768546 s42 · 138395 "Life Is Strange FCBD, 2021" 2021 Titan Comics 1 issue 881271 s41   (v1 search)
+   CV local rip:   (= linked) · 151075 "World is Dancing" 2021 Kodansha 4 · 105635 "Dancing!!" 2014 Shueisha 1 issue 633222 (via CV candidate name "Dancing!!") · 137755 "The Dancing Plague" 2021 SelfMadeHero 1 issue 873258 (via CV candidate name "The Dancing Plague") · 138580 "The Dancing Plague" 2021 SelfMadeHero 1 issue 882582 (via CV candidate name "The Dancing Plague")   (rip lookup)
+   GCD dump:       107092 "Dancing" [de] 1989-1990 Bastei Verlag [] 15 (via CV candidate name "Dancing!!") · 175664 "The Dancing Plague" [en-gb] 2021-2021 SelfMadeHero [] 1 (via CV candidate name "The Dancing Plague")   (dump lookup)
+   MU / External:  MU 806845047 "The World Is Dancing" 2021 Manga · MuSeriesLink 806845047 status 1 conf 0.5934065934065934
+
+== S19991 The Writer and His Housekeeper  [tier B]   keys: The Writer and His Housekeeper  years 2020-2020  2 files / 2 collections
+   folders: [2] Manga\The Writer and His Housekeeper (2017)
+   files:   [45614] COL The Writer and His Housekeeper v01 (2020) (Digital) (danke-Empire).cbz (164pp) | [45615] COL The Writer and His Housekeeper v02 (2020) (Digital) (danke-Empire).cbz (170pp)
+   ours:    judged item 45614 #1-4 conf 0.97; judged item 45615 #5-8 conf 0.97
+   CV linked:      vol 131320 "The Writer and His Housekeeper" 2020 Kodansha Comics USA 3 issues; cached #1-3 (3); yearΔ 0; ratio 0/3; 1 of 2 judged fit
+   CV candidates:  (= linked) · 33068 "Sam and Twitch: The Writer" 2010 Image 4 s52 · 63889 "Sam and Twitch: The Writer" 2010 Image 1 issue 412250 s52 · 80433 "Ghost Writer" 2012 Mag Garden 2 s46 · 80801 "The Billionaire's Housekeeper Mistress" 2014 Harlequin Comics 1 issue 483060 s41 · 97166 "Ghost Writer" 2015 Kodansha 3 s40 · 84536 "Italian Boss, Housekeeper Bride" 2014 Harlequin Comics 1 issue 500195 s29   (v1 search)
+   CV local rip:   (= linked) · 97166 "Ghost Writer" 2015 Kodansha 3 (via CV candidate name "Ghost Writer") · 80433 "Ghost Writer" 2012 Mag Garden 2 (via CV candidate name "Ghost Writer") · 33068 "Sam and Twitch: The Writer" 2010 Image 4 (via CV candidate name "Sam and Twitch: The Writer") · 63889 "Sam and Twitch: The Writer" 2010 Image 1 issue 412250 (via CV candidate name "Sam and Twitch: The Writer")   (rip lookup)
+   GCD dump:       49880 "Sam and Twitch: The Writer" 2010-2010 Image [] 4 (via CV candidate name "Sam and Twitch: The Writer")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.502262443438914
+
+== S20275 To Your Eternity  [tier C] · 129 files  keys: To Your Eternity  years 2017-2021  129 files / 8 collections
+   folders: [129] Manga\To Your Eternity (2016)
+   files:   [41096] To Your Eternity 075 (2018) (Digital) (F) (danke-Empire).cbz (20pp) | [41097] To Your Eternity 076 (2018) (Digital) (danke-Empire).cbz (20pp)
+            [41098] To Your Eternity 077 (2018) (Digital) (danke-Empire).cbz (20pp) | [41099] To Your Eternity 078 (2018) (Digital) (danke-Empire).cbz (20pp)
+            [41100] To Your Eternity 079 (2018) (Digital) (danke-Empire).cbz (22pp) | [41101] To Your Eternity 080 (2018) (Digital) (danke-Empire).cbz (20pp)
+            [41102] To Your Eternity 081 (2018) (Digital) (danke-Empire).cbz (20pp) | [41103] To Your Eternity 082 (2018) (Digital) (danke-Empire).cbz (20pp)
+            [41104] To Your Eternity 083 (2018) (Digital) (danke-Empire).cbz (20pp) | [41105] To Your Eternity 084 (2018) (Digital) (danke-Empire).cbz (20pp)
+            [41106] To Your Eternity 085 (2018) (Digital) (danke-Empire).cbz (20pp) | [41107] To Your Eternity 086 (2018) (Digital) (danke-Empire).cbz (20pp)
+            [41108] To Your Eternity 087 (2018) (Digital) (danke-Empire).cbz (20pp) | [41109] To Your Eternity 088 (2019) (Digital) (danke-Empire).cbz (20pp)
+            [41110] To Your Eternity 089 (2019) (Digital) (danke-Empire).cbz (20pp) | [41111] To Your Eternity 090 (2019) (Digital) (danke-Empire).cbz (20pp)
+            [41112] To Your Eternity 091 (2019) (Digital) (danke-Empire).cbz (20pp) | [41113] To Your Eternity 092 (2019) (Digital) (danke-Empire).cbz (20pp)
+            [41114] To Your Eternity 093 (2019) (Digital) (danke-Empire).cbz (20pp) | [41115] To Your Eternity 094 (2019) (Digital) (danke-Empire).cbz (20pp)
+            [41116] To Your Eternity 095 (2019) (Digital) (danke-Empire).cbz (18pp) | [41117] To Your Eternity 096 (2019) (Digital) (danke-Empire).cbz (16pp)
+            [41118] To Your Eternity 097 (2019) (Digital) (danke-Empire).cbz (16pp) | [41119] To Your Eternity 098 (2019) (Digital) (danke-Empire).cbz (8pp)
+            [41120] To Your Eternity 098.2 (2019) (Digital) (danke-Empire).cbz (10pp)
+            To Your Eternity 099 (2019) (Digital) (danke-Empire).cbz … To Your Eternity 105 (2019) (Digital) (danke-Empire).cbz  (7 files, pp 12-18)
+            [41128] To Your Eternity 105.2 (2019) (Digital) (danke-Empire).cbz (12pp) | [41129] To Your Eternity 105.3 (2019) (Digital) (danke-Empire).cbz (12pp)
+            To Your Eternity 106 (2019) (Digital) (danke-Empire).cbz … To Your Eternity 112 (2019) (Digital) (danke-Empire).cbz  (7 files, pp 12-16)
+            [41137] To Your Eternity 112.2 (2019) (Digital) (danke-Empire).cbz (16pp) | [41138] To Your Eternity 113 (2019) (Digital) (danke-Empire).cbz (16pp)
+            [41139] To Your Eternity 114 (2019) (Digital) (danke-Empire).cbz (10pp) | [41140] To Your Eternity 114.2 (2019) (Digital) (danke-Empire).cbz (16pp)
+            [41141] To Your Eternity 115 (2019) (Digital) (danke-Empire).cbz (10pp) | [41142] To Your Eternity 115.2 (2019) (Digital) (danke-Empire).cbz (16pp)
+            [41143] To Your Eternity 116 (2019) (Digital) (danke-Empire).cbz (17pp) | [41144] To Your Eternity 117 (2020) (Digital) (danke-Empire).cbz (22pp)
+            [41145] To Your Eternity 118 (2020) (Digital) (danke-Empire).cbz (14pp) | [41146] To Your Eternity 118.2 (2020) (Digital) (danke-Empire).cbz (14pp)
+            [41147] To Your Eternity 119 (2020) (Digital) (danke-Empire).cbz (14pp) | [41148] To Your Eternity 119.2 (2020) (Digital) (danke-Empire).cbz (14pp)
+            [41149] To Your Eternity 120 (2020) (Digital) (danke-Empire).cbz (14pp) | [41150] To Your Eternity 120.2 (2020) (Digital) (danke-Empire).cbz (14pp)
+            [41151] To Your Eternity 121 (2020) (Digital) (danke-Empire).cbz (14pp) | [41152] To Your Eternity 121.2 (2020) (Digital) (danke-Empire).cbz (14pp)
+            [41153] To Your Eternity 122 (2020) (Digital) (danke-Empire).cbz (12pp) | [41154] To Your Eternity 122.2 (2020) (Digital) (danke-Empire).cbz (12pp)
+            [41155] To Your Eternity 123 (2020) (Digital) (danke-Empire).cbz (14pp) | [41156] To Your Eternity 123.2 (2020) (Digital) (danke-Empire).cbz (14pp)
+            [41157] To Your Eternity 124 (2020) (Digital) (danke-Empire).cbz (14pp) | [41158] To Your Eternity 124.2 (2020) (Digital) (danke-Empire).cbz (14pp)
+            [41159] To Your Eternity 125 (2020) (Digital) (danke-Empire).cbz (14pp) | [41160] To Your Eternity 125.2 (2020) (Digital) (danke-Empire).cbz (10pp)
+            [41161] To Your Eternity 126 (2020) (Digital) (danke-Empire).cbz (10pp) | [41162] To Your Eternity 126.2 (2020) (Digital) (danke-Empire).cbz (12pp)
+            [41163] To Your Eternity 127 (2020) (Digital) (danke-Empire).cbz (14pp) | [41164] To Your Eternity 127.2 (2020) (Digital) (danke-Empire).cbz (14pp)
+            [41165] To Your Eternity 128 (2020) (Digital) (danke-Empire).cbz (14pp) | [41166] To Your Eternity 128.1 (2020) (Digital) (danke-Empire).cbz (8pp)
+            [41167] To Your Eternity 128.3 (2020) (Digital) (danke-Empire).cbz (14pp) | [41168] To Your Eternity 129 (2020) (Digital) (danke-Empire).cbz (14pp)
+            [41169] To Your Eternity 129.1 (2020) (Digital) (danke-Empire).cbz (12pp) | [41170] To Your Eternity 130 (2020) (Digital) (danke-Empire).cbz (12pp)
+            [41171] To Your Eternity 130.1 (2020) (Digital) (danke-Empire).cbz (14pp) | [41172] To Your Eternity 131 (2020) (Digital) (danke-Empire).cbz (14pp)
+            [41173] To Your Eternity 131.1 (2020) (Digital) (danke-Empire).cbz (14pp) | [41174] To Your Eternity 132 (2020) (Digital) (danke-Empire).cbz (14pp)
+            [41175] To Your Eternity 133 (2020) (Digital) (danke-Empire).cbz (14pp) | [41176] To Your Eternity 133.2 (2020) (Digital) (danke-Empire).cbz (14pp)
+            [41177] To Your Eternity 133.3 (2020) (Digital) (danke-Empire).cbz (14pp) | [41178] To Your Eternity 134 (2020) (Digital) (danke-Empire).cbz (14pp)
+            [41179] To Your Eternity 134.2 (2020) (F) (Digital) (danke-Empire).cbz (14pp) | [41180] To Your Eternity 135 (2020) (F) (Digital) (danke-Empire).cbz (14pp)
+            [41181] To Your Eternity 135.2 (2021) (F) (Digital) (danke-Empire).cbz (14pp) | [41182] To Your Eternity 135.3 (2021) (Digital) (danke-Empire).cbz (14pp)
+            [41183] To Your Eternity 135.4 (2021) (Digital) (danke-Empire).cbz (14pp) | [41184] To Your Eternity 136 (2020) (Digital) (danke-Empire).cbz (14pp)
+            [41185] To Your Eternity 136 (2021) (Digital) (danke-Empire).cbz (14pp) | [41186] To Your Eternity 136.2 (2021) (F) (Digital) (danke-Empire).cbz (14pp)
+            [41187] To Your Eternity 137 (2021) (Digital) (danke-Empire).cbz (14pp) | [41188] To Your Eternity 137.2 (2021) (Digital) (danke-Empire).cbz (14pp)
+            [41189] To Your Eternity 138 (2021) (Digital) (danke-Empire).cbz (14pp) | [41190] To Your Eternity 138.2 (2021) (Digital) (danke-Empire).cbz (14pp)
+            [41191] To Your Eternity 139 (2021) (Digital) (danke-Empire).cbz (14pp) | [41192] To Your Eternity 139.2 (2021) (Digital) (danke-Empire).cbz (16pp)
+            [41193] To Your Eternity 140 (2021) (Digital) (danke-Empire).cbz (14pp) | [41194] To Your Eternity 140.2 (2021) (Digital) (danke-Empire).cbz (14pp)
+            [41195] To Your Eternity 141 (2021) (Digital) (danke-Empire).cbz (14pp) | [41196] To Your Eternity 141.2 (2021) (Digital) (danke-Empire).cbz (14pp)
+            [41197] To Your Eternity 143 (2021) (Digital) (danke-Empire).cbz (14pp) | [41198] To Your Eternity 143.2 (2021) (Digital) (danke-Empire).cbz (14pp)
+            [41199] To Your Eternity 144 (2021) (Digital) (danke-Empire).cbz (14pp) | [41200] To Your Eternity 144.2 (2021) (Digital) (danke-Empire).cbz (14pp)
+            [41201] To Your Eternity 145 (2021) (Digital) (danke-Empire).cbz (14pp) | [41202] To Your Eternity 145.2 (2021) (Digital) (danke-Empire).cbz (14pp)
+            [41203] To Your Eternity 146 (2021) (Digital) (danke-Empire).cbz (14pp) | [41204] To Your Eternity 146.2 (2021) (Digital) (danke-Empire).cbz (14pp)
+            [41205] To Your Eternity 147 (2021) (Digital) (danke-Empire).cbz (10pp) | [41206] To Your Eternity 147.2 (2021) (Digital) (danke-Empire).cbz (10pp)
+            [41207] To Your Eternity 148 (2021) (Digital) (danke-Empire).cbz (14pp) | [41208] To Your Eternity 148.2 (2021) (Digital) (danke-Empire).cbz (14pp)
+            [41209] To Your Eternity 149 (2021) (Digital) (danke-Empire).cbz (14pp) | [41210] To Your Eternity 149.2 (2021) (Digital) (danke-Empire).cbz (8pp)
+            [41211] To Your Eternity 149.3 (2021) (Digital) (danke-Empire).cbz (8pp) | [41212] To Your Eternity 150 (2021) (Digital) (danke-Empire).cbz (14pp)
+            [41213] To Your Eternity 150.2 (2021) (Digital) (danke-Empire).cbz (14pp) | [41214] To Your Eternity 151 (2021) (Digital) (danke-Empire).cbz (12pp)
+            [41215] To Your Eternity 151.2 (2021) (Digital) (danke-Empire).cbz (10pp) | [41216] To Your Eternity 151.3 (2021) (Digital) (danke-Empire).cbz (10pp)
+            [41217] COL To Your Eternity v01 (2017) (Digital) (danke-Empire).cbz (196pp) | [41218] COL To Your Eternity v02 (2017) (Digital) (danke-Empire).cbz (194pp)
+            [41219] COL To Your Eternity v03 (2018) (Digital) (danke-Empire).cbz (212pp) | [41220] COL To Your Eternity v04 (2018) (Digital) (danke-Empire).cbz (191pp)
+            [41221] COL To Your Eternity v05 (2018) (Digital) (danke-Empire).cbz (194pp) | [41222] COL To Your Eternity v06 (2018) (Digital) (danke-Empire).cbz (194pp)
+            [41223] COL To Your Eternity v07 (2018) (Digital) (danke-Empire).cbz (192pp) | [41224] COL To Your Eternity v08 (2018) (Digital) (danke-Empire).cbz (193pp)
+   ours:    ladder 1-4, 75-141, 143-151; 5 number(s) name more than one file: 1, 2, 3, 98, 136; judged item 41217 #1-4 conf 0.97; judged item 41218 #5-13 conf 0.97; judged item 41219 #14-24 conf 0.97; judged item 41220 #25-34 conf 0.97; judged item 41221 #35-44 conf 0.97; judged item 41222 #45-54 conf 0.97; judged item 41223 #55-64 conf 0.97; judged item 41224 #65-74 conf 0.97
+   CV linked:      vol 166488 "To Your Eternity" 2017 Pika Édition 23 issues; cached #1-23 (23); yearΔ 0; ratio 121/23 = 5.26; 3 of 8 judged fit; v1 per-file: same volume on 121/129 files
+   CV local rip:   (= linked) · 105727 "To Your Eternity" 2017 Kodansha Comics USA 22 · 148036 "To Your Eternity" 2017 Milky Way Ediciones 21   (rip lookup)
+   GCD per-file:   series 123451 "To Your Eternity" [de] 2018-? Egmont Ehapa [] 23 on 5/129 files; methods numx5
+   GCD dump:       (= per-file) · 119687 "To Your Eternity" 2017-? Kodansha USA [] 24 · 132994 "To your eternity" [fr] 2017-? Pika Édition [] 19 · 124374 "To Your Eternity" [de] 2018-2018 Egmont Ehapa [] 1   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.4230769230769231
+
+== S20276 To the Abandoned Sacred Beasts  [tier B]   keys: To the Abandoned Sacred Beasts  years 2016-2023  14 files / 14 collections
+   folders: [14] Manga\To the Abandoned Sacred Beasts (2014)
+   files:   [40172] COL To the Abandoned Sacred Beasts v01 (2016) (Digital) (danke-Empire).cbz (188pp) | [40173] COL To the Abandoned Sacred Beasts v02 (2016) (Digital) (danke-Empire).cbz (186pp)
+            [40174] COL To the Abandoned Sacred Beasts v03 (2017) (Digital) (danke-Empire).cbz (187pp) | [40175] COL To the Abandoned Sacred Beasts v04 (2017) (Digital) (danke-Empire).cbz (175pp)
+            [40176] COL To the Abandoned Sacred Beasts v05 (2017) (Digital) (danke-Empire).cbz (176pp) | [40177] COL To the Abandoned Sacred Beasts v06 (2018) (Digital) (danke-Empire).cbz (168pp)
+            [40178] COL To the Abandoned Sacred Beasts v07 (2018) (Digital) (danke-Empire).cbz (134pp) | [40179] COL To the Abandoned Sacred Beasts v08 (2019) (Digital) (danke-Empire).cbz (165pp)
+            [40180] COL To the Abandoned Sacred Beasts v09 (2019) (Digital) (danke-Empire).cbz (165pp) | [40181] COL To the Abandoned Sacred Beasts v10 (2020) (Digital) (danke-Empire).cbz (165pp)
+            [40182] COL To the Abandoned Sacred Beasts v11 (2021) (Digital) (danke-Empire).cbz (166pp) | [40183] COL To the Abandoned Sacred Beasts v12 (2021) (Digital) (danke-Empire).cbz (177pp)
+            [40184] COL To the Abandoned Sacred Beasts v13 (2022) (Digital) (danke-Empire).cbz (178pp) | [40185] COL To the Abandoned Sacred Beasts v14 (2023) (Digital) (danke-Empire).cbz (178pp)
+   ours:    judged item 40172 #1-5 conf 0.97; judged item 40173 #6-10 conf 0.97; judged item 40174 #11-16 conf 0.97; judged item 40175 #17-22 conf 0.97; judged item 40176 #23-28 conf 0.97; judged item 40177 #29-33 conf 0.97; judged item 40178 #34-37 conf 0.97; judged item 40179 #38-42 conf 0.97; judged item 40180 #43-47 conf 0.97; judged item 40181 #48-52 conf 0.97; judged item 40182 #53-59 conf 0.97; judged item 40183 #60-66 conf 0.97; judged item 40184 #67-72 conf 0.97; judged item 40185 #73-79 conf 0.97
+   CV linked:      vol 90506 "To the Abandoned Sacred Beasts" 2016 Vertical Inc. 15 issues; cached #1-15 (15); yearΔ 0; ratio 0/15; 3 of 14 judged fit
+   CV candidates:  (= linked) · 22744 "The Abandoned" 2006 Tokyopop ? s55 · 22743 "Abandoned" 2007 Desperado Publishing ? s40 · 74504 "Beasts!" 2007 Fantagraphics ? s40 · 153666 "To the Abandoned Sacred Beasts" 2017 Pika Édition ? s30 · 163432 "To the Abandoned Sacred Beasts" 2017 Carlsen Verlag ? s30 · 34342 "Abandoned Cars" 2008 Fantagraphics ? s20   (v1 search)
+   CV local rip:   (= linked) · 153666 "To the Abandoned Sacred Beasts" 2017 Pika Édition 15 · 163432 "To the Abandoned Sacred Beasts" 2017 Carlsen Verlag 15 · 22743 "Abandoned" 2007 Desperado Publishing 1 issue 136388 (via CV candidate name "The Abandoned") · 74504 "Beasts!" 2007 Fantagraphics 2 (via CV candidate name "Beasts!") · 22744 "The Abandoned" 2006 Tokyopop 1 issue 136389 (via CV candidate name "The Abandoned")   (rip lookup)
+   GCD dump:       108570 "To the Abandoned Sacred Beasts" 2016-2021 Vertical [] 11 · 113052 "To the Abandoned Sacred Beasts" [de] 2017-2024 Carlsen Comics [DE] [] 15 · 132993 "To the Abandoned Sacred Beasts" [fr] 2017-? Pika Édition [] 14 · 177319 "To the Abandoned Sacred Beasts" 2021-2024 Kodansha USA [] 4 · 128725 "Beasts!" 2008-2008 Fantagraphics [] 1 (via CV candidate name "Beasts!") · 210968 "Abandoned" 2007-2007 Desperado Publishing [] 1 (via CV candidate name "The Abandoned")   (dump lookup)
+   MU / External:  MU 68172676029 "The Palaces of the Twelve Sacred Beasts (Novel)" 2016 Novel · MuSeriesLink 68172676029 status 1 conf 0.5480769230769231
+
+== S20289 Tokyo Revengers  [tier B]   keys: Tokyo Revengers  years 2018-2023  31 files / 31 collections
+   folders: [31] Manga\Tokyo Revengers (2017)
+   files:   [44065] COL Tokyo Revengers v01 (2018) (F) (Digital) (danke-Empire).cbz (181pp) | [44066] COL Tokyo Revengers v02 (2018) (F) (Digital) (danke-Empire).cbz (192pp)
+            [44067] COL Tokyo Revengers v03 (2019) (F) (Digital) (danke-Empire).cbz (185pp) | [44068] COL Tokyo Revengers v04 (2019) (Digital) (danke-Empire).cbz (195pp)
+            [44069] COL Tokyo Revengers v05 (2019) (Digital) (danke-Empire).cbz (186pp) | [44070] COL Tokyo Revengers v06 (2019) (Digital) (danke-Empire).cbz (184pp)
+            [44071] COL Tokyo Revengers v07 (2019) (Digital) (danke-Empire).cbz (178pp) | [44072] COL Tokyo Revengers v08 (2019) (Digital) (danke-Empire).cbz (202pp)
+            [44073] COL Tokyo Revengers v09 (2019) (Digital) (danke-Empire).cbz (179pp) | [44074] COL Tokyo Revengers v10 (2019) (Digital) (danke-Empire).cbz (185pp)
+            [44075] COL Tokyo Revengers v11 (2019) (Digital) (danke-Empire).cbz (180pp) | [44076] COL Tokyo Revengers v12 (2019) (Digital) (danke-Empire).cbz (196pp)
+            [44077] COL Tokyo Revengers v13 (2019) (Digital) (danke-Empire).cbz (181pp) | [44078] COL Tokyo Revengers v14 (2020) (Digital) (danke-Empire).cbz (181pp)
+            [44079] COL Tokyo Revengers v15 (2020) (Digital) (danke-Empire).cbz (179pp) | [44080] COL Tokyo Revengers v16 (2020) (Digital) (danke-Empire).cbz (181pp)
+            [44081] COL Tokyo Revengers v17 (2020) (Digital) (danke-Empire).cbz (182pp) | [44082] COL Tokyo Revengers v18 (2020) (Digital) (danke-Empire).cbz (179pp)
+            [44083] COL Tokyo Revengers v19 (2021) (Digital) (danke-Empire).cbz (173pp) | [44084] COL Tokyo Revengers v20 (2021) (Digital) (danke-Empire).cbz (174pp)
+            [44085] COL Tokyo Revengers v21 (2021) (Digital) (danke-Empire).cbz (173pp) | [44086] COL Tokyo Revengers v22 (2021) (Digital) (danke-Empire).cbz (178pp)
+            [44087] COL Tokyo Revengers v23 (2021) (Digital) (danke-Empire).cbz (178pp) | [44088] COL Tokyo Revengers v24 (2022) (Digital) (danke-Empire).cbz (174pp)
+            [44089] COL Tokyo Revengers v25 (2022) (Digital) (danke-Empire).cbz (176pp) | [44090] COL Tokyo Revengers v26 (2022) (Digital) (danke-Empire).cbz (173pp)
+            [44091] COL Tokyo Revengers v27 (2022) (Digital) (danke-Empire).cbz (181pp) | [44092] COL Tokyo Revengers v28 (2022) (Digital) (danke-Empire).cbz (174pp)
+            [44093] COL Tokyo Revengers v29 (2023) (Digital) (danke-Empire).cbz (180pp) | [44094] COL Tokyo Revengers v30 (2023) (Digital) (danke-Empire).cbz (174pp)
+            [44095] COL Tokyo Revengers v31 (2023) (Digital) (danke-Empire).cbz (184pp)
+   ours:    judged item 44065 #1-5 conf 0.97; judged item 44066 #6-14 conf 0.97; judged item 44067 #15-23 conf 0.97; judged item 44068 #24-33 conf 0.97; judged item 44069 #34-42 conf 0.97; judged item 44070 #43-51 conf 0.97; judged item 44071 #52-60 conf 0.97; judged item 44072 #61-70 conf 0.97; judged item 44073 #71-79 conf 0.97; judged item 44074 #80-88 conf 0.97; judged item 44075 #89-97 conf 0.97; judged item 44076 #98-107 conf 0.97; judged item 44077 #108-116 conf 0.97; judged item 44078 #117-125 conf 0.97; judged item 44079 #126-134 conf 0.97; judged item 44080 #135-143 conf 0.97; judged item 44081 #144-152 conf 0.97; judged item 44082 #153-161 conf 0.97; judged item 44083 #162-170 conf 0.97; judged item 44084 #171-179 conf 0.97; judged item 44085 #180-188 conf 0.97; judged item 44086 #189-197 conf 0.97; judged item 44087 #198-206 conf 0.97; judged item 44088 #207-215 conf 0.97; judged item 44089 #216-224 conf 0.97; judged item 44090 #225-233 conf 0.97; judged item 44091 #234-242 conf 0.97; judged item 44092 #243-251 conf 0.97; judged item 44093 #252-260 conf 0.97; judged item 44094 #261-269 conf 0.97; judged item 44095 #270-278 conf 0.97
+   CV linked:      vol 114338 "Tokyo Revengers" 2018 Kodansha Comics USA 31 issues; cached #1-31 (31); yearΔ 0; ratio 0/31; 4 of 31 judged fit
+   CV candidates:  (= linked) · 152599 "Tokyo Revengers" ? Norma Editorial ? s65 · 147461 "Tokyo Revengers" 2019 Haksan ? s30 · 159472 "Tokyo Revengers" 2022 Carlsen Verlag ? s30 · 166763 "Tokyo Revengers" 2022 JBC ? s30 · 163523 "Tokyo Revengers" 2022 Carlsen Verlag ? s30 · 147479 "Tokyo Revengers" 2021 Norma Editorial ? s30   (v1 search)
+   CV local rip:   (= linked) · 147461 "Tokyo Revengers" 2019 Haksan 31 · 147479 "Tokyo Revengers" 2021 Norma Editorial 14 · 159472 "Tokyo Revengers" 2022 Carlsen Verlag 31 · 163523 "Tokyo Revengers" 2022 Carlsen Verlag 15 · 166763 "Tokyo Revengers" 2022 JBC 27   (rip lookup)
+   GCD dump:       187615 "東京卍リベンジャーズ [Tokyo Revengers]" [ja-jp] 2017-2023 講談社 [Kōdansha] [] 31 · 231601 "Tokyo Revengers" [fr] 2019-2024 Glénat [] 31 · 182893 "Tokyo Revengers" [de] 2022-2024 Carlsen Comics [DE] [] 15 · 187614 "Tokyo Revengers" 2022-2025 Seven Seas Entertainment [] 15 · 191827 "Tokyo Revengers" [es-mx] 2022-? Editorial Panini México [] 8 · 201042 "Tokyo Revengers" [pt-br] 2022-? Editora JBC [] 14   (dump lookup)
+   MU / External:  MU 22666849312 "Toukyou 卍 Revengers" 2017 Manga · MuSeriesLink 22666849312 status 1 conf 0.6503496503496503
+
+== S20333 Ashita no Joe  [tier C] · gap 2  keys: Tomorrow's Joe  years 1968-1973  20 files / 20 collections
+   folders: [20] Manga\Tomorrow's Joe (1968)
+   files:   [45627] COL Tomorrow's Joe v01.cbz (233pp) | [45628] COL Tomorrow's Joe v02.cbz (261pp) | [45629] COL Tomorrow's Joe v03.cbz (217pp) | [45630] COL Tomorrow's Joe v04.cbz (236pp)
+            [45631] COL Tomorrow's Joe v05.cbz (216pp) | [45632] COL Tomorrow's Joe v06.cbz (227pp) | [45633] COL Tomorrow's Joe v07.cbz (226pp) | [45634] COL Tomorrow's Joe v08.cbz (227pp)
+            [45635] COL Tomorrow's Joe v09.cbz (226pp) | [45636] COL Tomorrow's Joe v10.cbz (244pp) | [45637] COL Tomorrow's Joe v11.cbz (230pp) | [45638] COL Tomorrow's Joe v12.cbz (237pp)
+            [45639] COL Tomorrow's Joe v13.cbz (247pp) | [45640] COL Tomorrow's Joe v14.cbz (211pp) | [45641] COL Tomorrow's Joe v15.cbz (236pp) | [45642] COL Tomorrow's Joe v16.cbz (234pp)
+            [45643] COL Tomorrow's Joe v17.cbz (236pp) | [45644] COL Tomorrow's Joe v18.cbz (235pp) | [45645] COL Tomorrow's Joe v19.cbz (219pp) | [45646] COL Tomorrow's Joe v20.cbz (261pp)
+   ours:    judged item 45627 #1-10 conf 0.97; judged item 45628 #11-23 conf 0.97; judged item 45629 #24-34 conf 0.97
+   CV linked:      vol 90187 "Ashita no Joe" 1970 Kodansha 20 issues; cached #1-20 (20); yearΔ 2; ratio 0/20; 2 of 3 judged fit
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       219157 "あしたのジョー [Ashita no Joe]" [ja-jp] 1970-1973 講談社 [Kōdansha] [] 20 · 133697 "Ashita no Joe" [fr] 2010-2012 Glénat [] 13   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.4230769230769231
+
+== S20511 Tsuredure Children  [tier B]   keys: Tsuredure Children  years 2017-2019  1 files / 1 collections
+   folders: [1] Manga\Tsuredure Children
+   files:   [45658] COL Tsuredure Children v12 (2019) (Digital) (danke-Empire).cbz (151pp)
+   ours:    judged item 45658 #193-212 conf 0.97
+   CV linked:      vol 100950 "Tsuredure Children" 2017 Kodansha Comics USA 12 issues; cached #1-12 (12); yearΔ 0; ratio 0/12; 0 of 1 judged fit
+   CV candidates:  (= linked) · 120226 "Children" 2018 Square Enix 1 issue 1074193 s55 · 114472 "The Children" 2018 Europe Comics 1 issue 689260 s44 · 50493 "Night's Children" 1991 FantaCo Enterprises 4 s32 · 85316 "The Twilight Children" 2015 DC Comics 4 s31 · 149141 "Indigo Children" 2023 Image 6 s29 · 96635 "The Children Nowadays" 2016 Viz 8 s28   (v1 search)
+   CV local rip:   (= linked) · 114472 "The Children" 2018 Europe Comics 1 issue 689260 (via CV candidate name "Children") · 120226 "Children" 2018 Square Enix 1 issue 1074193 (via CV candidate name "Children")   (rip lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.4230769230769231
+
+== S20532 Twin Star Exorcists  [tier C] · ratio 0.44  keys: Twin Star Exorcists  years 2015-2025  42 files / 27 collections
+   folders: [42] Manga\Twin Star Exorcists (2013)
+   files:   Twin Star Exorcists 103 (2022) (Digital) (danke-Empire).cbz … Twin Star Exorcists 117 (2023) (Digital) (danke-Empire).cbz  (15 files, pp 37-45)
+            [41978] COL Twin Star Exorcists v01 (2015) (Digital) (F) (danke-Empire).cbz (197pp) | [41979] COL Twin Star Exorcists v02 (2015) (Digital) (F) (danke-Empire).cbz (196pp)
+            [41980] COL Twin Star Exorcists v03 (2016) (Digital) (F) (danke-Empire).cbz (186pp) | [41981] COL Twin Star Exorcists v04 (2016) (Digital) (F) (danke-Empire).cbz (184pp)
+            [41982] COL Twin Star Exorcists v05 (2016) (Digital) (F) (danke-Empire).cbz (197pp) | [41983] COL Twin Star Exorcists v06 (2016) (Digital) (F2) (danke-Empire).cbz (205pp)
+            [41984] COL Twin Star Exorcists v07 (2017) (Digital) (F2) (danke-Empire).cbz (180pp) | [41985] COL Twin Star Exorcists v08 (2017) (Digital) (F2) (danke-Empire).cbz (178pp)
+            [41986] COL Twin Star Exorcists v09 (2017) (Digital) (F2) (danke-Empire).cbz (191pp) | [41987] COL Twin Star Exorcists v10 (2017) (Digital) (F2) (danke-Empire).cbz (188pp)
+            [41988] COL Twin Star Exorcists v11 (2018) (Digital) (F) (danke-Empire).cbz (184pp) | [41989] COL Twin Star Exorcists v12 (2018) (Digital) (F) (danke-Empire).cbz (182pp)
+            [41990] COL Twin Star Exorcists v13 (2018) (Digital) (F) (danke-Empire).cbz (186pp) | [41991] COL Twin Star Exorcists v14 (2019) (Digital) (F) (danke-Empire).cbz (182pp)
+            [41992] COL Twin Star Exorcists v15 (2019) (Digital) (F) (danke-Empire).cbz (195pp) | [42001] COL Twin Star Exorcists v16 (2019) (Digital) (F) (danke-Empire).cbz (175pp)
+            [42002] COL Twin Star Exorcists v17 (2020) (Digital) (F) (danke-Empire).cbz (172pp) | [42003] COL Twin Star Exorcists v18 (2020) (Digital) (F) (danke-Empire).cbz (167pp)
+            [42004] COL Twin Star Exorcists v19 (2020) (Digital) (F) (danke-Empire).cbz (175pp) | [42005] COL Twin Star Exorcists v20 (2020) (Digital) (F) (danke-Empire).cbz (186pp)
+            [42006] COL Twin Star Exorcists v21 (2021) (Digital) (F) (danke-Empire).cbz (191pp) | [42007] COL Twin Star Exorcists v22 (2021) (Digital) (F) (danke-Empire).cbz (182pp)
+            [42008] COL Twin Star Exorcists v23 (2021) (Digital) (F) (danke-Empire).cbz (183pp) | [42009] COL Twin Star Exorcists v24 (2022) (Digital) (danke-Empire).cbz (175pp)
+            [42010] COL Twin Star Exorcists v25 (2022) (Digital) (danke-Empire).cbz (180pp) | [42011] COL Twin Star Exorcists v26 (2022) (Digital) (danke-Empire).cbz (181pp)
+            [42012] COL Twin Star Exorcists v27 (2023) (Digital) (danke-Empire).cbz (185pp)
+   ours:    ladder 103-117; judged item 41978 #1-3 conf 0.97; judged item 41979 #4-7 conf 0.97; judged item 41980 #8-11 conf 0.97; judged item 41981 #12-14 conf 0.97; judged item 41982 #15-18 conf 0.97; judged item 41983 #19-21 conf 0.97; judged item 41984 #22-25 conf 0.97; judged item 41985 #26-29 conf 0.97; judged item 41986 #30-33 conf 0.97; judged item 41987 #34-37 conf 0.97; judged item 41988 #38-40 conf 0.97; judged item 41989 #41-44 conf 0.97; judged item 41990 #45-48 conf 0.97; judged item 41991 #49-52 conf 0.97; judged item 41992 #53-56 conf 0.97; judged item 42001 #57-60 conf 0.97; judged item 42002 #61-64 conf 0.97; judged item 42003 #65-68 conf 0.97; judged item 42004 #69-72 conf 0.97; judged item 42005 #73-76 conf 0.97; judged item 42006 #77-79 conf 0.97; judged item 42007 #80-82 conf 0.97; judged item 42008 #83-86 conf 0.97; judged item 42009 #87-90 conf 0.97; judged item 42010 #91-94 conf 0.97; judged item 42011 #95-98 conf 0.97; judged item 42012 #99-102 conf 0.97
+   CV linked:      vol 83113 "Twin Star Exorcists" 2015 Viz 34 issues; cached #1-34 (34); yearΔ 0; ratio 15/34 = 0.44; 10 of 27 judged fit
+   CV per-file (v1): vol 96532 "Twin Star Exorcists" 2015 Crunchyroll SAS 15 on 15/42 files
+   CV candidates:  (= linked) · 104413 "Perfect Twin" 2001 Shueisha ? s20 · 101747 "Twin Star Exorcists: Onmyoji" 2016 Panini Verlag ? s19 · 144276 "Star Wars Manga" 2000 Magic Press ? s18 · 38538 "Star Trek: The Manga" 2006 Tokyopop ? s17 · 149170 "Twin" 2023 Europe Comics ? s0 · 154261 "Star Wars: The Mandalorian: The Manga" 2023 Viz ? s0   (v1 search)
+   CV local rip:   (= linked) · 104413 "Perfect Twin" 2001 Shueisha 5 (via CV candidate name "Perfect Twin")   (rip lookup)
+   GCD dump:       153475 "Twin Star Exorcists" [fr] 2015-2022 Kazé [] 26 · 191817 "Twin Star Exorcists" [es-mx] 2017-? Editorial Panini México [] 28   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.3296703296703297
+
+== S20818 Until Your Bones Rot  [tier B]   keys: Until Your Bones Rot  years 2017-2017  1 files / 1 collections
+   folders: [1] Manga\Until Your Bones Rot (2016)
+   files:   [42266] COL Until Your Bones Rot v01 (2017) (Digital) (danke-Empire).cbz (194pp)
+   ours:    judged item 42266 #1-11 conf 0.97
+   CV linked:      vol 105368 "Until Your Bones Rot" 2017 Kodansha Comics USA 7 issues; cached #1-7 (7); yearΔ 0; ratio 0/7; 1 of 1 judged fit
+   CV candidates:  (= linked) · 89756 "Root Rot" 2011 Koyama Press 1 issue 525987 s46 · 61891 "Bones" 1987 Malibu 4 s46 · 56244 "Wolverine: Rot" 2012 Marvel 1 issue 381789 s46 · 70967 "Dry Rot" 1994 Zolton Comics Group 1 issue 442484 s40 · 89022 "The Rot" 2016 Source Point Press 3 s38 · 76870 "Rot & Ruin" 2014 IDW Publishing 5 s25   (v1 search)
+   CV local rip:   (= linked) · 61891 "Bones" 1987 Malibu 4 (via CV candidate name "Bones") · 56244 "Wolverine: Rot" 2012 Marvel 1 issue 381789 (via CV candidate name "Wolverine: Rot") · 89756 "Root Rot" 2011 Koyama Press 1 issue 525987 (via CV candidate name "Root Rot")   (rip lookup)
+   GCD dump:       37952 "Bones" 1987-1987 Malibu [] 4 (via CV candidate name "Bones") · 217220 "Wolverine: Rot" 2013-2013 Marvel [] 1 (via CV candidate name "Wolverine: Rot") · 217409 "Wolverine: Rot" 2012-2012 Marvel [] 1 (via CV candidate name "Wolverine: Rot") · 85545 "Root Rot" [en-ca] 2011-2011 Koyama Press [] 1 (via CV candidate name "Root Rot")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.46153846153846156
+
+== S22962 Vagabond  [tier B]   keys: vagabond  years 2002-2010  37 files / 37 collections
+   folders: [37] Manga\Vagabond (2002)
+   files:   [42279] COL vagabond volume 001 (2002.viz.ch001-010) [tft].cbr (241pp) | [42280] COL vagabond volume 002 (2002.viz.ch011-021) [tft].cbr (235pp)
+            [42281] COL vagabond volume 003 (2002.viz.ch022-031) [tft].cbr (220pp) | [42282] COL vagabond volume 004 (2002.viz.ch032-040) [tft].cbr (203pp)
+            [42283] COL vagabond volume 005 (2003.viz.ch041-049) [m-s].cbr (192pp) | [42284] COL vagabond volume 006 (2003.viz.ch050-059) [m-s].cbr (192pp)
+            [42285] COL vagabond volume 007 (2003.viz.ch060-068) [m-s].cbr (179pp) | [42286] COL vagabond volume 008 (2003.viz.ch069-078) [m-s].cbr (198pp)
+            [42287] COL vagabond volume 009 (2004.viz.ch079-087) [m-s].cbr (192pp) | [42288] COL vagabond volume 010 (2004.viz.ch088-097) [m-s].cbr (197pp)
+            [42289] COL vagabond volume 011 (2004.viz.ch098-107) [m-s].cbr (200pp) | [42290] COL vagabond volume 012 (2004.viz.ch108-117) [m-s].cbr (206pp)
+            [42291] COL vagabond volume 013 (2004.viz.ch118-127) [m-s].cbr (197pp) | [42292] COL vagabond volume 014 (2004.viz.ch128-136) [m-s].cbr (201pp)
+            [42293] COL vagabond volume 015 (2004.viz.ch137-143) [m-s].cbr (198pp) | [42294] COL vagabond volume 016 (2004.viz.ch144-150) [m-s].cbr (183pp)
+            [42295] COL vagabond volume 017 (2004.viz.ch151-157) [m-s].cbr (178pp) | [42296] COL vagabond volume 018 (2004.viz.ch158-164) [m-s].cbr (187pp)
+            [42297] COL vagabond volume 019 (2005.viz.ch165-171) [m-s].cbr (180pp) | [42298] COL vagabond volume 020 (2005.viz.ch172-179) [m-s].cbr (201pp) | [42299] COL vagabond volume 021.cbr (?pp)
+            [42300] COL vagabond volume 022 (2006) (Scan).cbz (195pp) | [42301] COL vagabond volume 023 (2006) (Scan).cbz (205pp)
+            [42302] COL vagabond volume 024 (scanlation.ch207-215) [ko].cbr (175pp) | [42303] COL vagabond volume 025 (scanlation.ch216-224) [strays].cbr (182pp)
+            [42304] COL vagabond volume 026 (scanlation.ch225-233) [strays].cbr (169pp) | [42305] COL vagabond volume 027.cbr (194pp) | [42306] COL vagabond volume 028.cbr (177pp)
+            [42307] COL vagabond volume 029.cbz (177pp) | [42308] COL vagabond volume 030.cbz (183pp) | [42309] COL vagabond volume 031.cbr (203pp) | [42310] COL vagabond volume 032.cbr (140pp)
+            [42311] COL vagabond volume 033.cbr (180pp) | [42312] COL vagabond volume 034.cbz (213pp) | [42313] COL vagabond volume 035.cbr (222pp) | [42314] COL vagabond volume 036.cbr (200pp)
+            [42315] COL vagabond volume 037.cbz (198pp)
+   ours:    judged item 42279 #1-1 conf 0.97; judged item 42280 #11-11 conf 0.97; judged item 42281 #22-22 conf 0.97; judged item 42282 #32-32 conf 0.97; judged item 42283 #41-41 conf 0.97; judged item 42284 #50-50 conf 0.97; judged item 42285 #60-60 conf 0.97; judged item 42286 #69-69 conf 0.97; judged item 42287 #79-79 conf 0.97; judged item 42288 #88-88 conf 0.97; judged item 42289 #98-98 conf 0.97; judged item 42290 #108-108 conf 0.97; judged item 42291 #118-118 conf 0.97; judged item 42292 #128-128 conf 0.97; judged item 42293 #137-137 conf 0.97; judged item 42294 #144-144 conf 0.97; judged item 42295 #151-151 conf 0.97; judged item 42296 #158-158 conf 0.97; judged item 42297 #165-165 conf 0.97; judged item 42298 #172-172 conf 0.97; judged item 42299 #180-188 conf 0.97; judged item 42302 #207-207 conf 0.97; judged item 42303 #216-216 conf 0.97; judged item 42304 #225-225 conf 0.97; judged item 42306 #243-251 conf 0.97; judged item 42307 #252-252 conf 0.97; judged item 42308 #261-261 conf 0.97; judged item 42312 #297-297 conf 0.97; judged item 42313 #304-309 conf 0.97; judged item 42314 #310-315 conf 0.97; judged item 42315 #317-320 conf 0.97
+   GCD says: [42283] gcd_reprint 273361: s44585 Vagabond (2001) #11-13 [3 stories]
+   CV linked:      vol 38885 "Vagabond" 2002 Viz ? issues; cached #1-37 (37); yearΔ 0; ratio 0/?; 4 of 31 judged fit
+   CV local rip:   (= linked) · 87910 "Vagabond" 2002 Egmont Ehapa Verlag 32 · 96554 "Vagabond" 2002 Tonkam 37 · 161945 "Vagabond" 2003 Editorial Ivrea 37 · 23046 "Vagabond" 2000 Image 1 issue 138867 · 149524 "Vagabond" 2000 Panini Comics 53   (rip lookup)
+   GCD dump:       15639 "Vagabond" 2002-2015 Viz [] 37 · 53372 "Vagabond" [de] 2002-? Egmont Ehapa [] 37 · 44585 "Vagabond" 2001-2002 Viz [] 16 · 145346 "Vagabond" [fr] 2001-2014 Tonkam [] 37 · 195056 "Vagabond" [pt-br] 2001-2006 Conrad [] 44 · 77175 "Vagabond" 2000-2000 Image [] 1   (dump lookup)
+   MU / External:  MU 62774509478 "Vagabond" 1998 Manga · MuSeriesLink 62774509478 status 1 conf 0.7692307692307693
+
+== S21370 Weathering With You  [tier B]   keys: Weathering with You  years 2020-2021  3 files / 3 collections
+   folders: [3] Manga\Weathering with You (2020)
+   files:   [44129] COL Weathering with You v01 (2020) (Digital) (danke-Empire).cbz (196pp) | [44130] COL Weathering with You v02 (2021) (Digital) (danke-Empire).cbz (193pp)
+            [44131] COL Weathering with You v03 (2021) (Digital) (danke-Empire).cbz (192pp)
+   ours:    judged item 44129 #1-3 conf 0.97; judged item 44130 #4-8 conf 0.97; judged item 44131 #9-13 conf 0.97
+   CV linked:      vol 127933 "Weathering With You" 2020 Vertical Inc. 3 issues; cached #1-3 (3); yearΔ 0; ratio 0/3; 1 of 3 judged fit
+   CV candidates:  (= linked) · 146694 "Weathering With You" ? Sangatsu Manga 3 s100 · 123367 "Weathering With You" 2019 Yen Press 1 issue 730160 s90 · 46803 "Can't Win With You!" 2007 Digital Manga Publishing 3 s76 · 88858 "In Love with You" 2012 Egmont Ehapa Verlag 3 s63 · 77126 "I'm Coming With You!" 2014 Project-H 1 issue 466400 s51 · 38972 "Be With You" 2008 Viz 1 issue 261706 s50   (v1 search)
+   CV local rip:   (= linked) · 123367 "Weathering With You" 2019 Yen Press 1 issue 730160 · 146694 "Weathering With You" ? Sangatsu Manga 3   (rip lookup)
+   GCD dump:       158534 "Weathering With You" [de] 2020-2021 Egmont Ehapa [] 3 · 163597 "Weathering with You" 2020-2021 Vertical [] 2 · 153174 "Weathering With You" [de] 2019-2021 Egmont Ehapa [] 3 · 172207 "Weathering with You" 2021-2021 Kodansha USA [] 1 · 191812 "Weathering with You" [es-mx] 2021-2021 Editorial Panini México [] 3   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.5274725274725276
+
+== S22734 Yozakura Quartet  [tier B]   keys: Yozakura Quartet  years 2008-2022  26 files / 26 collections
+   folders: [26] Manga\Yozakura Quartet (2006)
+   files:   [42485] COL Yozakura Quartet v01 (2008) (Digital) (danke-Empire).cbz (224pp) | [42486] COL Yozakura Quartet v02 (2008) (Digital) (danke-Empire).cbz (218pp)
+            [42487] COL Yozakura Quartet v03 (2008) (Digital) (danke-Empire).cbz (238pp) | [42488] COL Yozakura Quartet v04 (2009) (Digital) (danke-Empire).cbz (218pp)
+            [42489] COL Yozakura Quartet v05 (2009) (Digital) (danke-Empire).cbz (202pp) | [42490] COL Yozakura Quartet v06 (2016) (Digital) (danke-Empire).cbz (242pp)
+            [42491] COL Yozakura Quartet v07 (2016) (Digital) (danke-Empire).cbz (226pp) | [42492] COL Yozakura Quartet v08 (2017) (Digital) (danke-Empire).cbz (193pp)
+            [42493] COL Yozakura Quartet v09 (2017) (Digital) (danke-Empire).cbz (234pp) | [42494] COL Yozakura Quartet v10 (2017) (Digital) (danke-Empire).cbz (218pp)
+            [42495] COL Yozakura Quartet v11 (2017) (Digital) (danke-Empire).cbz (266pp) | [42496] COL Yozakura Quartet v12 (2017) (Digital) (danke-Empire).cbz (230pp)
+            [42497] COL Yozakura Quartet v13 (2017) (Digital) (danke-Empire).cbz (242pp) | [42498] COL Yozakura Quartet v14 (2017) (Digital) (danke-Empire).cbz (210pp)
+            [42499] COL Yozakura Quartet v15 (2017) (Digital) (danke-Empire).cbz (234pp) | [42500] COL Yozakura Quartet v16 (2017) (Digital) (danke-Empire).cbz (282pp)
+            [42501] COL Yozakura Quartet v17 (2017) (Digital) (danke-Empire).cbz (218pp) | [42502] COL Yozakura Quartet v18 (2017) (Digital) (danke-Empire).cbz (226pp)
+            [42503] COL Yozakura Quartet v19 (2017) (Digital) (danke-Empire).cbz (258pp) | [42504] COL Yozakura Quartet v20 (2018) (Digital) (danke-Empire).cbz (258pp)
+            [42505] COL Yozakura Quartet v21 (2018) (Digital) (danke-Empire).cbz (234pp) | [42506] COL Yozakura Quartet v22 (2019) (Digital) (danke-Empire).cbz (214pp)
+            [42507] COL Yozakura Quartet v23 (2019) (Digital) (danke-Empire).cbz (242pp) | [42508] COL Yozakura Quartet v24 (2019) (Digital) (danke-Empire).cbz (226pp)
+            [42509] COL Yozakura Quartet v25 (2020) (Digital) (danke-Empire).cbz (194pp) | [42510] COL Yozakura Quartet v26 (2020) (Digital) (danke-Empire).cbz (208pp)
+   ours:    judged item 42485 #1-5 conf 0.97; judged item 42486 #6-11 conf 0.97; judged item 42487 #12-17 conf 0.97; judged item 42488 #18-22 conf 0.97; judged item 42489 #23-27 conf 0.97; judged item 42490 #28-33 conf 0.97; judged item 42491 #34-39 conf 0.97
+   CV linked:      vol 28075 "Yozakura Quartet" 2008 Kodansha Comics USA 32 issues; cached #1-33 (33); yearΔ 0; ratio 0/32; 6 of 7 judged fit
+   CV local rip:   (= linked) · 45323 "Yozakura Quartet" 2006 Kodansha 34   (rip lookup)
+   GCD dump:       137954 "Yozakura Quartet" 2008-2009 Random House [] 5 · 103996 "Yozakura Quartet" [fr] 2011-? Pika Édition [] 22   (dump lookup)
+   MU / External:  MU 54025510206 "Yozakura Quartet" 2006 Manga · MuSeriesLink 54025510206 status 1 conf 1.0
+
+== S3987 Clover  [tier B]   keys: Clover  years 2020-2020  1 files / 1 collections
+   folders: [1] Manga\_CLAMP\Clover by CLAMP (1997)
+   files:   [45999] COL Clover - Collector's Edition (2020) (Digital) (danke-Empire).cbz (487pp)
+   ours:    judged item 45999 #1-4 conf 0.97
+   CV linked:      vol 128289 "Clover" 2020 Kodansha Comics USA 1 issues issue 771810; cached #1-1 (1); yearΔ 0; ratio 0/1; 1 of 1 judged fit
+   CV candidates:  (= linked) · 35138 "Clover" 1997 Kodansha 1 issue 1112436 s105 · 42236 "Clover" 1997 Shueisha 24 s90 · 163887 "Clover" 2024 Norma Editorial 1 issue 1106528 s50 · 163888 "Clover" 2010 Glénat Spain 2 s43 · 35269 "Clover" 2001 Tokyopop 4 s38 · 90776 "Clover" 2002 Carlsen Verlag 4 s38   (v1 search)
+   CV local rip:   (= linked) · 163887 "Clover" 2024 Norma Editorial 1 issue 1106528 · 163888 "Clover" 2010 Glénat Spain 2 · 96878 "Clover" 2007 Akita Shoten 43 · 90776 "Clover" 2002 Carlsen Verlag 4 · 35269 "Clover" 2001 Tokyopop 4   (rip lookup)
+   GCD dump:       39981 "Clover" 2009-2009 Dark Horse [] 1 · 136495 "Clover" [fr] 2008-2010 12 Bis [] 9 · 163922 "Clover" [ja-jp] 2008-2008 講談社 [Kōdansha] [] 2 · 83624 "Clover" [de] 2002-2002 Carlsen Comics [DE] [] 4 · 20579 "Clover" 2001-2002 Tokyopop [] 4 · 163921 "Clover" [ja-jp] 1997-1998 講談社 [Kōdansha] [] 4   (dump lookup)
+   MU / External:  MU 42712594755 "Clover" 1997 Manga · MuSeriesLink 42712594755 status 1 conf 1.0
+
+== S101659 X  [tier B]   keys: X (1992)  years 2011-2013  6 files / 6 collections
+   folders: [6] Manga\_CLAMP\X (1992)
+   files:   [45836] COL X (3-in-1 Edition) v01 (2011) (Digital) (XRA-Empire).cbr (512pp) | [45837] COL X (3-in-1 Edition) v02 (2012) (Digital) (XRA-Empire).cbr (513pp)
+            [45838] COL X (3-in-1 Edition) v03 (2012) (Digital) (XRA-Empire).cbr (502pp) | [45839] COL X (3-in-1 Edition) v04 (2012) (Digital) (XRA-Empire).cbr (531pp)
+            [45840] COL X (3-in-1 Edition) v05 (2013) (Digital) (XRA-Empire).cbr (524pp) | [45841] COL X (3-in-1 Edition) v06 (2013) (Digital) (XRA-Empire).cbr (502pp)
+   ours:    judged item 45836 #1-3 conf 0.9; judged item 45837 #4-6 conf 0.9; judged item 45838 #7-9 conf 0.9; judged item 45839 #10-12 conf 0.9; judged item 45840 #13-15 conf 0.9; judged item 45841 #16-18 conf 0.9
+   GCD says: [45841] gcd notes 1458262 (#6 of X): ? #21; through #24  |  ⚠ RANGE CONTRADICTED by GCD notes (multi): judged #16-18, GCD says ? #21; through #24
+   CV linked:      vol 43890 "X" 2011 Viz 6 issues; cached #1-6 (6); yearΔ 0; ratio 0/6; 2 of 6 judged fit
+   CV local rip:   (= linked) · 45390 "X" 2010 Oog & Blik 1 issue 312843 · 93542 "X" 2012 Reprodukt 1 issue 546835 · 57406 "X" 2013 Dark Horse Comics 25 · 18506 "X" 2000 Tonkam 11 · 167050 "X" 2000 Japonica Polonica Fantastica 1 issue 1133605   (rip lookup)
+   GCD dump:       53200 "X" [nl] 2010-2010 Oog & Blik; De Bezige Bij [] 1 · 53911 "X" [nl] 2010-2010 Oog & Blik; De Bezige Bij [] 1 · 86935 "X" [de] 2012-2012 Reprodukt [] 1 · 74309 "X" 2013-2015 Dark Horse [] 25 · 78711 "X" 2014-2015 Dark Horse [] 6 · 195889 "X" [fr] 2008-2009 Tonkam [] 9   (dump lookup)
+
+== S11148 Mad Bull 34  [tier B]   keys: Mad Bull  years 1985-1988  9 files / 9 collections
+   folders: [9] Manga\_Kazuo Koike\Mad Bull 34
+   files:   [45927] COL Mad Bull 34 v01.cbz (221pp) | [45928] COL Mad Bull 34 v02.cbz (230pp) | [45929] COL Mad Bull 34 v03.cbz (212pp) | [45930] COL Mad Bull 34 v04.cbz (203pp)
+            [45931] COL Mad Bull 34 v05.cbz (201pp) | [45932] COL Mad Bull 34 v06.cbz (196pp) | [45933] COL Mad Bull 34 v07.cbz (195pp) | [45934] COL Mad Bull 34 v08.cbr (201pp)
+            [45935] COL Mad Bull 34 v09.cbr (210pp)
+   ours:    judged item 45932 #29-30 conf 0.97; judged item 45933 #31.1-31.2 conf 0.97
+   CV linked:      vol 104520 "Mad Bull 34" 1986 Shueisha 19 issues; cached #1-19 (19); yearΔ 1; ratio 0/19; 0 of 2 judged fit
+   CV candidates:  (= linked) · 116531 "Mad Bull 34" 2019 MediBang! ? s59 · 104198 "Mad Bull 2000" 1999 Shueisha ? s59 · 106056 "Bull" 1987 Kodansha ? s40 · 48167 "The Bull" 1986 Chick Publications ? s29 · 132558 "Web Bull" 2020 Shōnen Gahōsha ? s29 · 75684 "Big Bull" 1972 Impéria ? s29   (v1 search)
+   CV local rip:   (= linked) · 116531 "Mad Bull 34" 2019 MediBang! 1 issue 697450 · 104198 "Mad Bull 2000" 1999 Shueisha 7 (via CV candidate name "Mad Bull 2000")   (rip lookup)
+   MU / External:  MU 56754607059 "Mad Bull 34" 1985 Manga · MuSeriesLink 56754607059 status 1 conf 0.5769230769230769
+
+== S7465 Ghost in the Shell  [tier C] · gap 4  keys: Ghost In the Shell | Ghost in the Shell  years 1991-2010  4 files / 2 collections
+   folders: [2] Manga\_Masamune Shirow\Ghost in the Shell (1991) · [2] Manga\_Masamune Shirow\Ghost in the Shell (1991)\Extras
+   files:   [39853] COL 01 Ghost in the Shell v01 (2009) (digital-Empire).cbr (366pp) | [39855] COL 03 Ghost in the Shell v02 (2010) (Digital) (danke-Empire).cbz (287pp)
+            [39862] Ghost In the Shell (Wizard Supplement 1995) (RaptureStar).cbz (9pp) | [39864] Ghost in the Shell 0 - Covers.cbr (8pp)
+   GCD says: [39853] gcd_reprint 712187: s15569 Ghost in the Shell (1995) #1-8 [18 stories]
+   CV linked:      vol 19531 "Ghost in the Shell" 1995 Dark Horse Comics 8 issues; cached #1-8 (8); yearΔ 4; ratio 0/8; no judged range
+   CV per-file (v1): vol 111468 "Ghost in the Shell" 1995 Egmont Ehapa Verlag 3 on 3/4 files
+   CV candidates:  (= linked) · 21488 "Ghost in the Shell" 1995 Dark Horse Comics 1 issue 129661 s50 · 53079 "Ghost in the Shell" 1995 Dark Horse Comics 1 issue 129658 s50 · 70816 "Ghost in the Shell" 2001 Dino Comics 1 issue 441783 s50 · 94242 "Ghost in the Shell" 1996 Éditions Glénat 4 s38 · 167056 "Ghost in the Shell" 2002 Japonica Polonica Fantastica 3 s38 · 166985 "The Ghost in the Shell" 2016 JBC 1 issue 1132828 s34   (v1 search)
+   CV local rip:   (= linked) · 21488 "Ghost in the Shell" 1995 Dark Horse Comics 1 issue 129661 · 53079 "Ghost in the Shell" 1995 Dark Horse Comics 1 issue 129658 · 94242 "Ghost in the Shell" 1996 Éditions Glénat 4 · 70816 "Ghost in the Shell" 2001 Dino Comics 1 issue 441783   (rip lookup)
+   GCD dump:       15569 "Ghost in the Shell" 1995-1995 Dark Horse [] 8 · 42205 "Ghost in the Shell" 1995-1995 Dark Horse [] 1 · 81085 "Ghost in the Shell" 1995-1995 Dark Horse; Wizard [] 1 · 83858 "Ghost in the Shell" [de] 1995-1996 Egmont Ehapa [] 3 · 31297 "Ghost in the shell" [nl] 1996-2001 Arboris [] 8 · 58753 "Ghost in the shell" [da-nl] 1996-2001 Arboris [] 8   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.4008097165991903
+
+== S23093 Billy Bat  [tier B]   keys: Billy Bat  years 2008-2016  20 files / 20 collections
+   folders: [20] Manga\_Naoki Urasawa\Billy Bat (2008)
+   files:   [45987] COL Billy Bat v01 c01-09.cbz (204pp) | [45988] COL Billy Bat v02 c10-18.cbz (219pp) | [46001] COL Billy Bat v03 c19-27.cbz (235pp) | [46002] COL Billy Bat v04 c28-37.cbz (242pp)
+            [46003] COL Billy Bat v05 c38-45.cbz (202pp) | [46004] COL Billy Bat v06 c46-53.cbz (204pp) | [46005] COL Billy Bat v07 c54-61.cbz (206pp) | [46006] COL Billy Bat v08 c62-69.cbz (218pp)
+            [46007] COL Billy Bat v09 c70-77.cbz (200pp) | [46008] COL Billy Bat v10 c78-85.cbr (201pp) | [46009] COL Billy Bat v11 c86-94.cbr (201pp) | [46010] COL Billy Bat v12 c94-101.cbz (201pp)
+            [46011] COL Billy Bat v13 c102-110.cbz (226pp) | [46012] COL Billy Bat v14 c111-117.cbz (175pp) | [46013] COL Billy Bat v15 c118-125.cbz (200pp)
+            [46014] COL Billy Bat v16 c126-133.cbz (201pp) | [46015] COL Billy Bat v17 c134-141.cbz (199pp) | [46016] COL Billy Bat v18 c142-149.cbz (196pp)
+            [46017] COL Billy Bat v19 c150-157.cbz (201pp) | [46018] COL Billy Bat v20 c158-165.cbz (205pp)
+   ours:    judged item 46001 #19-19 conf 0.97; judged item 46002 #28-33 conf 0.97; judged item 46004 #46-46 conf 0.97; judged item 46005 #54-54 conf 0.97; judged item 46006 #62-62 conf 0.97; judged item 46008 #78-78 conf 0.97; judged item 46009 #86-86 conf 0.97; judged item 46010 #94-101 conf 0.97; judged item 46013 #118-125 conf 0.97; judged item 46014 #126-133 conf 0.97; judged item 46017 #150-150 conf 0.97
+   CV linked:      vol 45111 "Billy Bat" 2008 Kodansha 20 issues; cached #1-20 (20); yearΔ 0; ratio 0/20; 1 of 11 judged fit
+   CV candidates:  (= linked) · 96393 "Billy Bat" 2012 Carlsen Verlag 20 s50 · 148472 "Billy Sommerspesial / Billy Sommeralbum / Billy Sommer" 1998 Hjemmet 24 s49 · 75836 "Billy" 1995 Semic Press AB 1 issue 460104 s48 · 161547 "Billy Bat" 2011 GP Publishing 12 s43 · 130405 "Billy" 1971 Hjemmet 1013 s42 · 146821 "Billy " 1972 Romanforlaget 1 issue 959658 s42   (v1 search)
+   CV local rip:   (= linked) · 143188 "Billy Bat" 2011 Planeta DeAgostini 7 · 161547 "Billy Bat" 2011 GP Publishing 12 · 96393 "Billy Bat" 2012 Carlsen Verlag 20 · 148472 "Billy Sommerspesial / Billy Sommeralbum / Billy Sommer" 1998 Hjemmet 24 (via CV candidate name "Billy Sommerspesial / Billy Sommeralbum / Billy Sommer")   (rip lookup)
+   GCD dump:       69513 "Billy Bat" [es] 2011-2017 Planeta DeAgostini [] 20 · 70160 "Billy Bat" [de] 2012-2018 Carlsen Comics [DE] [] 20 · 104008 "Billy Bat" [fr] 2012-2017 Pika Édition [] 20 · 22197 "Billy Sommerspesial / Billy Sommeralbum / Billy Sommer" [no] 1998-? Hjemmet / Egmont [] 28 (via CV candidate name "Billy Sommerspesial / Billy Sommeralbum / Billy Sommer")   (dump lookup)
+   MU / External:  MU 38738382746 "Billy Bat" 2008 Manga · MuSeriesLink 38738382746 status 1 conf 1.0
+
+== S12298 Naoki Urasawa's Monster  [tier C] · gap 12  keys: Monster  years 1994-1995  16 files / 16 collections
+   folders: [16] Manga\_Naoki Urasawa\Monster (1994)
+   files:   [46028] COL Monster v01 (Two-in-One) (2014) (c2c) (Tr&Kl+XRA-Empire).cbz (437pp) | [46029] COL Monster v02 (Two-in-One) (2014) (c2c) (Tr&Kl+XRA-Empire).cbz (413pp)
+            [46030] COL Monster v05 [MS].cbz (228pp) | [46031] COL Monster v06 [MS].cbz (221pp) | [46032] COL Monster v07 [MS].cbz (217pp) | [46033] COL Monster v08 [MS].cbz (212pp)
+            [46034] COL Monster v09 [MS].cbz (211pp) | [46035] COL Monster v10 [MS].cbz (212pp) | [46036] COL Monster v11 [MS].cbz (212pp) | [46037] COL Monster v12 [MS].cbz (215pp)
+            [46038] COL Monster v13 [MS].cbz (223pp) | [46039] COL Monster v14 [MS].cbz (213pp) | [46040] COL Monster v15 [MS].cbz (214pp) | [46041] COL Monster v16 [MS].cbz (238pp)
+            [46042] COL Monster v17 [MS].cbz (235pp) | [46043] COL Monster v18 [MS].cbz (269pp)
+   ours:    judged item 46030 #33-41 conf 0.97; judged item 46031 #42-50 conf 0.97; judged item 46032 #51-59 conf 0.97; judged item 46033 #60-68 conf 0.97; judged item 46034 #69-77 conf 0.97; judged item 46035 #78-86 conf 0.97; judged item 46036 #87-95 conf 0.97; judged item 46037 #96-104 conf 0.97; judged item 46038 #105-113 conf 0.97; judged item 46039 #114-122 conf 0.97; judged item 46040 #123-131 conf 0.97; judged item 46041 #132-141 conf 0.97; judged item 46042 #142-151 conf 0.97; judged item 46043 #152-162 conf 0.97
+   CV linked:      vol 37363 "Naoki Urasawa's Monster" 2006 Viz 18 issues; cached #1-18 (18); yearΔ 12; ratio 0/18; 0 of 14 judged fit
+   CV per-file (v1): vol 101874 "Monster" 1995 Shogakukan 18 on 2/16 files
+   CV candidates:  147520 "Monster" ? Seoul Munhwasa ? s65 · 82643 "Monster × Monster" 2014 Shogakukan ? s19 · 151596 "The Monster Book of Manga: Boys" 2009 HarperCollins ? s15 · 43135 "Hero Illustrated 1994 Yearbook" 1994 Warrior Publications ? s15 · 35080 "Woodstock, 1969-1994" 1994 Marvel ? s15 · 151908 "Agent X9 jubileumsspesial 1994" 1994 Semic/Nordisk Forlag AS ? s15   (v1 search)
+   CV local rip:   (= linked) · 49520 "Naoki Urasawa's Monster" 2010 Larp Editores 4 · 59275 "Monster" 1997 SLG Publishing 1 issue 394958 · 89700 "Monster" 1999 Sherpa 1 issue 525695 · 138827 "Monster" 2001 Planeta DeAgostini 36   (rip lookup)
+   GCD dump:       16761 "Naoki Urasawa's Monster" 2006-2008 Viz [] 18 · 162193 "Monster" [ja-jp] 1995-2002 小学館 [Shogakukan] [] 18 · 45128 "Monster" 1997-1997 Slave Labor [] 1 · 173469 "Monster" [fr] 1991-1993 Soleil [] 5 · 33702 "Monster" [nl] 1999-1999 Sherpa [] 1 · 121527 "Monster" [fr] 1999-1999 Delcourt [] 1   (dump lookup)
+   MU / External:  MU 72274276213 "Monster" 1994 Manga · MuSeriesLink 72274276213 status 1 conf 1.0
+
+== S919 Ambassador Magma Omnibus  [tier B]   keys: Ambassador Magma  years 2018-2018  1 files / 1 collections
+   folders: [1] Manga\_Osamu Tezuka\Ambassador Magma (1965)
+   files:   [43986] COL Ambassador Magma Omnibus (2018) (Digital) (danke-Empire).cbz (607pp)
+   ours:    judged item 43986 #1-21 conf 0.97
+   CV linked:      vol 140092 "Ambassador Magma Omnibus" 2018 Digital Manga Publishing 1 issues issue 894230; cached #1-1 (1); yearΔ 0; ratio 0/1; 1 of 1 judged fit
+   CV candidates:  (= linked) · 144671 "Ambassador Magma" 2020 Edizioni BD 1 issue 943236 s50 · 126929 "Magma Extra" ? Thalos Editorial 2 s32 · 64135 "Spacemen 1965 Yearbook" 1965 Warren 1 issue 413298 s30 · 134398 "Magma Taishi" 2011 Kodansha 1 issue 937616 s4 · 126928 "Magma" 2008 Thalos Editorial 3 s3 · 130117 "Student Ambassador: The Missing Dragon" 2020 Iron Circus Comics 1 issue 797510 s1   (v1 search)
+   CV local rip:   (= linked) · 144671 "Ambassador Magma" 2020 Edizioni BD 1 issue 943236 · 126929 "Magma Extra" ? Thalos Editorial 2 (via CV candidate name "Magma Extra")   (rip lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.3986013986013986
+
+== S5947 Dust  [tier C] · ratio 0.17  keys: Dust  years 2023-2023  2 files / 1 collections
+   folders: [1] Manga\_Osamu Tezuka\Dust 8 (1972) · [1] Scout Comics (and Black Caravan)\Dust (2023)
+   files:   [43990] COL Dust 8 Omnibus (2018) (Digital) (danke-Empire).cbz (417pp) | [109899] Dust 001 (2023) (digital) (DrVink-DCP).cbz (25pp)
+   ours:    ladder 1; judged item 43990 #1-8 conf 0.97; ComicInfo Series: "Dust"x1; ComicInfo Publisher: "Scout Comics"x1; barcode item 43990 [{"type": "EAN13", "data": "9781569703700", "page": "tal Man
+   CV linked:      vol 155059 "Dust" 2023 Scout Comics 6 issues; cached #1-6 (6); yearΔ 0; ratio 1/6 = 0.17; 1 of 1 judged fit
+   CV candidates:  (= linked) · 51044 "Dust" 1973 Casa Editrice Dardo 1 issue 349010 s43 · 42221 "Dust" 2011 Semantink Publishing 1 issue 290417 s43 · 75604 "Dust" 2014 Stompbox13 1 issue 459372 s43 · 102703 "Dust to Dust" 2010 Shueisha 1 issue 607836 s26 · 161782 "Dust to Dust" 2024 Image 8 s21 · 157172 "Torpedo 1972" 2024 Ablaze 6 s0   (v1 search)
+   CV local rip:   (= linked) · 75604 "Dust" 2014 Stompbox13 1 issue 459372 · 42221 "Dust" 2011 Semantink Publishing 1 issue 290417 · 51044 "Dust" 1973 Casa Editrice Dardo 1 issue 349010   (rip lookup)
+   GCD dump:       201225 "Dust" 2023-2023 Scout Comics [] 6   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.36923076923076925
+
+== S22641 Yaketpachi's Maria  [tier B]   keys: Yaketpachi's Maria  years 2018-2018  1 files / 1 collections
+   folders: [1] Manga\_Osamu Tezuka\Yaketpachi's Maria (1970)
+   files:   [43995] COL Yaketpachi's Maria Omnibus (2018) (Digital) (danke-Empire).cbz (409pp)
+   ours:    judged item 43995 #1-12 conf 0.97; barcode item 43995 [{"type": "EAN13", "data": "9781569703809", "page": "tal Man
+   CV linked:      vol 140095 "Yaketpachi's Maria" 2018 Digital Manga Publishing 1 issues issue 894391; cached #1-1 (1); yearΔ 0; ratio 0/1; 1 of 1 judged fit
+   CV candidates:  (= linked) · 167176 "Maria" 2012 Dargaud 2 s8 · 24378 "Maria Makiling" 2019 Epik Studios 1 issue 962413 s4 · 101666 "Maria Dolare$" 2007 Kult Editionen 1 issue 597430 s4 · 121676 "Maria M." 2019 Fantagraphics 1 issue 720888 s4 · 68949 "Maria M." 2013 Fantagraphics 1 issue 432431 s4 · 111257 "Maria x Maria" 2018 ROLL 1 issue 671611 s3   (v1 search)
+   CV local rip:   (= linked) · 167176 "Maria" 2012 Dargaud 2 (via CV candidate name "Maria") · 24378 "Maria Makiling" 2019 Epik Studios 1 issue 962413 (via CV candidate name "Maria Makiling")   (rip lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.3296703296703297

@@ -1998,3 +1998,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   (judged ranges in CHAPTERS, catalogues in volumes) is not an identity fault — N line citing L-284. A split's "new"
   key already held by a one-run trade shelf (Transformers (2019) = S20376, IDW trade line GCD 155139) is a JOIN (L-371);
   re-read that shelf as the run afterwards.
+[L-385] kind:manga pub:dark-horse sig:stamp
+- R-129/R-130 (waves 121-122): GCD 78711 / 74309 "X" (Dark Horse 2013-2015) is Swierczynski's superhero comic, never
+  CLAMP's X — the Viz 3-in-1 is GCD 79049 (collects X/1999, GCD 31430). Kodansha USA's 2009-2010 "The Ghost in the
+  Shell" is ONE CV volume (46395) spanning GITS 1 and 2: MMI while GCD makes each count-1 (75025 / 75033). Seven Seas
+  Ojojojo has a single-volume CV record (116182) AND a 2-in-1 (116028) — page count decides. `(Webcomic) (Batoto)`
+  folders are fan scanlations of a webcomic original with no record (Onepunch-Man S23759 = ONE's webcomic, not Murata's
+  CV 74851). Del Rey -> Kodansha USA lines (Nodame, Yozakura, Suzuka): CV keeps one volume, GCD holds only the Random
+  House era (L-100 / L-381). Pika's French CV volumes (To Your Eternity 166488) masquerade as the line — check language.

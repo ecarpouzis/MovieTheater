@@ -1,0 +1,204 @@
+## Conventions for this batch (32 shown of 71 matched; 384 in LEDGER.md; 4 shelf/shelves: kind:manga ×4 · kind:trade-only ×3 · kind:collected-line ×3 · folder:sequel-subfolder ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-098] (4 shelf/shelves) kind:manga sig:probe
+- GCD hides English manga behind a LONGER title far more than a shorter one ("Oishinbo a la Carte", "Neon
+  Genesis Evangelion 3-in-1 Edition", "Fairy Tail S: Tales from Fairy Tail") and occasionally a typo ("Fairy Tale:
+  Fairy Girls"); the mirror exists too (no ComicVine Viz volume for JoJo Parts 1-3 while GCD has all six → `cv=-`).
+[L-100] (4 shelf/shelves) kind:manga
+- A publisher change mid-line (Vertical → Kodansha USA) splits the GCD leg while CV keeps one volume (Ajin, CITY,
+  Miss Nagatoro): one S line, the GCD row that holds the wider span, `N` naming the other.
+[L-274] (4 shelf/shelves) kind:foreign kind:manga pass:item sig:twin
+- ITEM PASS (X-019..X-021, manga): the per-file GCD pick reuses volume 1's title-only id across EVERY book of a
+  manga shelf whose header already lists N numbered rows (A Bride's Story 12/12, Ajin 17/17, Assassination Classroom
+  21/21) — match the header pool by ordinal, ignore the pick. Per-file CV lands on a foreign twin of the same
+  title even more often (Milky Way, Egmont Ehapa, Glénat, Panini España, Carlsen, Altraverse, the Shogakukan
+  original) — the shelf's identity is the ENGLISH edition; use the header's cv-issues pool.
+[L-276] (4 shelf/shelves) kind:manga
+- GCD splits one manga line into a second publisher-branded series for its LAST volumes (Ajin v17, APOSIMZ v07-09:
+  Vertical → Kodansha USA); `SELECT id, number, page_count, isbn, title FROM gcd_issue WHERE series_id=?` on the
+  dump recovers the rows the header pool lacks.
+[L-277] (4 shelf/shelves) kind:manga pass:item sig:stamp
+- ITEM PASS (X-022..X-024, manga): the reused per-file stamp is not always volume 1's id — it can jump to a new
+  wrong series partway through a shelf (Berserk: three wrong series across v02-v41; Bleach cycles four before
+  settling) — always re-derive from the header pool by `#N`, never from a plausible-looking pick.
+[L-278] (4 shelf/shelves) kind:manga
+- Two parallel rip sets of one manga (Berserk .cbz + .cbr) take IDENTICAL per-volume ids from the same ordinal pool.
+[L-280] (4 shelf/shelves) kind:manga pass:item sig:probe
+- ITEM PASS (X-025..X-027, manga): when GCD splits a line in two (an earlier series for v1-N, a later one
+  continuing: Blood on the Tracks 156521 / 171046, CITY 123267 / 172756, Nagatoro 152847 / 171408) the packet's
+  header pool shows only the shelf's STORED series — find the other with `lookup.py --contains` and pull its issues
+  with `gcd_issue WHERE series_id=?`.
+[L-283] (4 shelf/shelves) kind:digital kind:manga pass:item
+- A manga whose only catalog runs are indexed by tankōbon VOLUME cannot take a chapter-count `C` range (Dragon Ball
+  Full Color: judged #1-17 are chapters) — `N no-record`, never an invented mapping.
+[L-284] (4 shelf/shelves) kind:manga pass:item
+- ITEM PASS (X-028..X-030): a manga tankōbon line that GCD tags [Collected Editions] (Food Wars! GCD 95211) has no
+  chapter-indexed run in either catalog — the `C OWED` marker is satisfied by `N no chapter-run`, the Dragon Ball
+  Full Color ruling; the books ARE the run. Our single volumes against GCD's "two-in-one" record have no safe 1:1
+  mapping → `gcd=s<series>` (Erased 118174), never an invented pairing.
+[L-288] (4 shelf/shelves) kind:foreign kind:manga pass:item sig:stamp
+- ITEM PASS (X-034..X-036): the reused stamp can jump FOUR times over one shelf (My Hero Academia: 105138 → 204933
+  → 236032 → 228276 over 38 books, CV pinned on foreign 166768 throughout); a shelf can carry NO gcd pick at all
+  (Muhyo & Roji's ×18). The header ladder by ordinal is the only source on manga — no exceptions found in 400 books.
+[L-289] (4 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-293] (4 shelf/shelves) kind:foreign kind:manga pass:item sig:stamp
+- ITEM PASS (X-043..X-045, ~30 manga shelves): not one case where the per-file pick was right and the header pool
+  wrong. A foreign GCD leg that undershoots by one (Twin Star Exorcists, 26 vs 27) → the last book takes gcd=-;
+  a Vertical → Kodansha USA imprint split duplicate-stamps the later imprint's id onto the earlier book
+  (Weathering with You) — reject the duplicate, keep it on its own volume.
+[L-304] (4 shelf/shelves) kind:manga pass:item
+- On a 60-volume manga run the `I` lines map the shelf's own file order onto the CV/GCD issue-list order (ordinal);
+  that is the accepted precision at this scale — the item pass verified it held on 400+ books.
+[L-344] (4 shelf/shelves) kind:manga
+- Manga (Yen Press / Seven Seas / Kodansha / Viz): the fixed CV index now reaches the count-1 ENGLISH volumes that
+  D-012/D-013 called provider-missing; an English CV record replaces a third-territory GCD licence (a German / French
+  row) as the identity (R-067).
+[L-135] (3 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-164] (3 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (3 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-244] (3 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (3 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (3 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+[L-248] (3 shelf/shelves) kind:collected-line
+- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
+  the sibling's landed S is evidence for the weak per-file matches on the others.
+[L-251] (3 shelf/shelves) kind:collected-line
+- Deluxe / Yearbook / Omnibus editions of the shelf's own ongoing with NO judged range get an `N` naming the
+  relationship, never an invented `C` range (the range is containment's to read).
+[L-258] (3 shelf/shelves) kind:collected-line sig:stamp
+- A degenerate packet block can stamp ONE GCD issue id onto every book of a shelf (Green Arrow S97350, six eras of
+  collected lines) — resolve only by each series' full issue list matched by title, never by the stamp.
+[L-269] (3 shelf/shelves) kind:collected-line kind:trade-only
+- An omnibus bundling several minis gets one `C` per mini at that mini's full range; an anthology TPB ("… and
+  Others") is not a numbered run and gets an `N`, not a forced `C`.
+[L-275] (3 shelf/shelves) kind:collected-line pass:item sig:probe sig:trade-link
+- A count-1/2/3 trade record the shelf's `N` called absent is often in the catalogs under a spelling the packet
+  never probed ("The Adventures of …", "Complete Collection", "Deluxe") — probe before writing no-record.
+[L-279] (3 shelf/shelves) kind:collected-line
+- Blade of the Immortal (S23118) is the canonical "line + run" shape: GCD's 31 collected-edition rows are the `I`
+  identities (cv=- — ComicVine mints only the floppy volume), and the floppy run CV 9069 is what every `C` names,
+  ranges #0-206 ascending across the 31 books. A single-leg shelf's books inherit the shelf's 0.9, never more.
+[L-282] (3 shelf/shelves) kind:collected-line
+- A `gcd=-` / dump-only shelf's books inherit the shelf's 0.9 (Cells at Work! Lady, Dragon Head); an exact edition
+  can exist on GCD alone and be absent from ComicVine entirely (Cat Shit One Omnibus GCD 186621 → 0.9, cv=-).
+[L-285] (3 shelf/shelves) kind:collected-line pass:item sig:stamp
+- ITEM PASS (X-031..X-033): JoJo's Bizarre Adventure part-shelves are double-stamped — per-file CV is the whole-saga
+  hardcover omnibus volume (165667, one issue per PART) and per-file GCD the umbrella whole-saga series (27115) by
+  raw issue number; both wrong for all 37 books. Parts 1-3 have no CV softcover record (cv=-); Parts 4-5 do.
+[L-286] (3 shelf/shelves) kind:collected-line sig:probe
+- A shelf-level "no record" `N` can be wrong for an English product too (Innocent Omnibus: CV 157999 / GCD 206125
+  under "Innocent Omnibus") — probe the edition's own name before inheriting the shelf's gap.
+[L-287] (3 shelf/shelves) kind:collected-line pass:item
+- A series can be wrong on BOTH legs at once (Hunter x Hunter, Inuyashiki, Kakegurui Twin): the header pool by
+  ordinal is the only source; an omnibus with no dedicated record on either leg is `N no-record`, never a mapping.
+[L-291] (3 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-309] (3 shelf/shelves) kind:collected-line pass:item sig:probe
+- A collected line's own issue rows carry the trade's SUBTITLE as the issue title, so once one book of a line is
+  identified, `--issues <volume>` or `gcd_issue WHERE series_id=?` resolves the whole Vol. 01-N run in one query —
+  "own container id not probed" is never a valid no-record.
+
++39 more matched entries not shown: L-314, L-013, L-014, L-043, L-050, L-064, L-072, L-085, L-088, L-089, L-095, L-096, L-101, L-118, L-125, L-157, L-159, L-163, L-177, L-193, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-310, L-341, L-346, L-347, L-191, L-290, L-016, L-032, L-113, L-114, L-194, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S13015 No Longer Human  [split]  5 files / 5 collections  decided in R-128 (S)
+   decided: S 13015 cv=46482 gcd=91766 0.9 | Usamaru Furuya's adaptation: CV 46482 "No Longer Human" (Vertical 2011, 3) and GCD 91766 (Vertical 2011-2012, 3) agree on publisher, start year and count, items 43716-43718 are those three volumes, and item 43715 is the same work's 2022 Complete Edition (CV 145847 / GCD 193237, an edition on this shelf, L-380); 0.9 for Junji Ito's separate adaptation split below
+   F 13015 split-needed | item 43981 "COL No Longer Human Omnibus (2019)" 613pp (Manga\_Junji Ito\No Longer Human (2018)) -> new key "No Longer Human (2019)": Junji Ito's own adaptation, CV 123651 (Viz 2019, 1, issue 731270) = GCD 153693 row 2047999 (616pp, ISBN 978-1-9747-0709-6); --who-stores cv=123651 finds no shelf; restates B-045's F misfiled as L-368
+   N 13015 triage c: item 43981's judged #1-24 is the Junji Ito book's chapter range, which is why it does not fit Furuya's three-volume run — the split above
+   keys now: "No Longer Human" x5
+   groups (title x folder): 3
+   G1 "No Longer Human" in Manga\No Longer Human (Furuya) (2009) — 3 file(s), 3 COL, pp 169-213; cv per-file 46482x3; gcd per-file 91766x3; key 'No Longer Human'
+      [43716] COL No Longer Human v01 (2011) (KickTheKitty+XRA-Empire).cbz (169pp)
+      [43717] COL No Longer Human v02 (2011) (KickTheKitty+XRA-Empire).cbz (204pp)
+      [43718] COL No Longer Human v03 (2012) (KickTheKitty+XRA-Empire).cbz (213pp)
+   G2 "No Longer Human - Complete Edition (2022) (Digital) (XRA-Empire)" in Manga\No Longer Human (Furuya) (2009) — 1 file(s), 1 COL, pp 593-593; cv per-file 145847x1; gcd per-file 193237x1; key 'No Longer Human'
+      [43715] COL No Longer Human - Complete Edition (2022) (Digital) (XRA-Empire).cbz (593pp)
+         own record cv 145847 / gcd s193237 "No Longer Human Complete Edition" (issue 2466918) COLLECTS: gcd=194152 人間失格 [Ningen Shikkaku] (2009) #1-3
+   G3 "No Longer Human Omnibus (2019) (Digital) (danke-Empire)" in Manga\_Junji Ito\No Longer Human (2018) — 1 file(s), 1 COL, pp 613-613; cv per-file 123651x1; gcd per-file 153693x1; key 'No Longer Human'
+      [43981] COL No Longer Human Omnibus (2019) (Digital) (danke-Empire).cbz (613pp)
+         own record cv 123651 / gcd s153693 "No Longer Human" (issue 2047999) COLLECTS: gcd=161973 人間失格 [Ningen Shikkaku] (2017) #1-3
+
+== S28878 Is It Wrong To Try To Pick Up Girls In A Dungeon?  [split]  11 files / 10 collections  decided in R-128 (S)
+   decided: S 28878 cv=82075 gcd=94977 0.9 | CV 82075 "Is It Wrong To Try To Pick Up Girls In A Dungeon?" (Yen Press 2015, 10) and GCD 94977 (Yen Press 2015-2019, 10) agree on publisher, start year and count, and our ten COL v01-v10 (2015-2019) fill it exactly with ComicInfo Publisher "Yen Press" on three; 0.9 for the four-panel book split below
+   F 28878 split-needed | item 44873 "Is It Wrong to Try to Pick Up Girls in a Dungeon - Days of Goddess (2018)" 150pp -> new key "Is It Wrong to Try to Pick Up Girls in a Dungeon? Four-Panel Comic: Days of Goddess (2018)": CV 109299 (Yen Press 2018, 1, issue 663506) = GCD 123042 row 1793937 (ISBN 9780316480130), a separate one-volume four-panel collection; --who-stores cv=109299 finds no shelf; restates B-044's F misfiled as L-368
+   N 28878 triage c: the judged ranges #15-22 … #78-86 are chapter numbers; no chapter run (L-284)
+   nearby: S9652 "Is It Wrong to Try to Pick Up Girls in a Dungeon? II" 5f [title+1 — S cv=140495 gcd=178198 (B-044 0.95)] keys: "Is It Wrong to Try to Pick Up Girls in a Dungeon II"
+   keys now: "Is It Wrong to Try to Pick Up Girls in a Dungeon" x8 · "Is It Wrong to Try to Pick Up Girls in a Dungeon?" x3
+   groups (title x folder): 2
+   G1 "Is It Wrong to Try to Pick Up Girls in a Dungeon - Days of Goddess (2018) (Digital) (Shadowcat-Empire)" in Manga\Is It Wrong to Try to Pick Up Girls in a Dungeon — 1 file(s), pp 150-150; cv per-file 109299x1; gcd per-file 123042x1; key 'Is It Wrong to Try to Pick Up Girls in a Dungeon?'
+      [44873] Is It Wrong to Try to Pick Up Girls in a Dungeon - Days of Goddess (2018) (Digital) (Shadowcat-Empire).cbz (150pp)
+   G2 "Is It Wrong to Try to Pick Up Girls in a Dungeon" in Manga\Is It Wrong to Try to Pick Up Girls in a Dungeon\01 Is It Wrong to Try to Pick Up Girls in a Dungeon (2013) — 10 file(s), 10 COL, pp 154-184; cv per-file 82075x10; gcd per-file 94977x10; key 'Is It Wrong to Try to Pick Up Girls in a Dungeon?' | 'Is It Wrong to Try to Pick Up Girls in a Dungeon'
+      [44858] COL Is It Wrong to Try to Pick Up Girls in a Dungeon v01 (2015) (Digital) (Shadowcat-Empire).cbz (182pp)  key="Is It Wrong to Try to Pick Up Girls in a Dungeon?"
+      [44859] COL Is It Wrong to Try to Pick Up Girls in a Dungeon v02 (2015) (Digital) (Shadowcat-Empire).cbz (178pp)  key="Is It Wrong to Try to Pick Up Girls in a Dungeon?"
+      [44860] COL Is It Wrong to Try to Pick Up Girls in a Dungeon v03 (2015) (Digital) (LuCaZ).cbz (175pp)
+      [44861] COL Is It Wrong to Try to Pick Up Girls in a Dungeon v04 (2016) (Digital) (LuCaZ).cbz (166pp)
+      [44862] COL Is It Wrong to Try to Pick Up Girls in a Dungeon v05 (2016) (Digital) (LuCaZ).cbz (154pp)
+      [44863] COL Is It Wrong to Try to Pick Up Girls in a Dungeon v06 (2016) (Digital) (LuCaZ).cbz (171pp)
+      [44864] COL Is It Wrong to Try to Pick Up Girls in a Dungeon v07 (2017) (Digital) (LuCaZ).cbz (184pp)
+      [44865] COL Is It Wrong to Try to Pick Up Girls in a Dungeon v08 (2017) (Digital) (LuCaZ).cbz (164pp)
+      [44866] COL Is It Wrong to Try to Pick Up Girls in a Dungeon v09 (2018) (Digital) (LuCaZ).cbz (173pp)
+      [44867] COL Is It Wrong to Try to Pick Up Girls in a Dungeon v10 (2019) (Digital) (LuCaZ).cbz (176pp)
+
+== S5436 Devilman  [split]  7 files / 5 collections  decided in R-128 (S)
+   decided: S 5436 cv=39184 gcd=- 0.9 | Go Nagai's Devilman: CV 39184 "Devilman" (Kodansha 1972, 5) is our five COL v01-v05 (1972-1973, 187-252pp, c2c) by count and years, the ladder 1-5 being the volume ordinals; no GCD row holds the Kodansha tankobon (the 5-count rows are Dynamic Visions [fr-be] 226376, Black Box [fr] 226500 / 226522, Egmont [de] 212736); 0.9 for one leg and the two Verotik issues split below
+   F 5436 split-needed | items 42107-42108 "Devilman 001-002 (1995)" (38/39pp, subfolder "Shin Devilman (1995) (Verotik)") -> new key "Devilman (1995)": Verotik's English comic, CV 62479 (Verotik 1995, 3) = GCD 23151 (Verotik 1995-1996, 6, rows 46pp / 44pp); --who-stores cv=62479 finds no shelf; restates C-034's F misfiled as L-368
+   keys now: "Devilman" x7
+   groups (title x folder): 2
+   G1 "Devilman" in Manga\Devilman (1972) — 5 file(s), 5 COL, pp 187-252; cv per-file 39184x5; key 'Devilman'
+      [42102] COL Devilman v01 (1972) (c2c) (Nexgear).cbz (252pp)
+      [42103] COL Devilman v02 (1972) (c2c) (Nexgear).cbz (187pp)
+      [42104] COL Devilman v03 (1973) (c2c) (Anonymous K).cbz (225pp)
+      [42105] COL Devilman v04 (1973) (c2c) (Anonymous K).cbz (193pp)
+      [42106] COL Devilman v05 (1973) (c2c) (Chouette).cbz (193pp)
+   G2 "Devilman" in Manga\Devilman (1972)\Shin Devilman (1995) (Verotik) — 2 file(s), numbers 1-2, pp 38-39; cv per-file 62479x2; gcd per-file 23151x2; key 'Devilman'
+      [42107] Devilman 001 (1995) (2 Covers) (HALO-Talon-Novus-HD).cbr (38pp)
+      [42108] Devilman 002 (1995) (HALO-Talon-Novus-HD).cbr (39pp)
+
+== S7764 Golgo 13  [split]  15 files / 15 collections  decided in R-128 (R)
+   decided: R 7764 | two publications share the shelf: Viz's 2006-2008 thirteen-volume line (v01-v13, CV 38809 / GCD 16635, both Viz, 13, subtitles "Supergun" … "Flagburner" = our filenames) and two whole books of Lead Publishing's 1986-1987 English line — "Book 02 - Galinpero" and "Book 04 - The Ivory Connection" = GCD 161861 (Lead 1986-?, 4) #2 and #4 by title — a different publication with its own record; two whole trades of another run are a co-equal run (lead ruling on S15276), so the Viz identity cannot be stored until they move
+   F 7764 split-needed | items 43421 (Book 02 - Galinpero, 1986, 159pp) and 43422 (Book 04 - The Ivory Connection, 1987, 173pp) -> new key "Golgo 13 (1986)", GCD 161861 (Lead Publishing 1986-?, 4; rows 2126174 / 2126176); no CV volume holds this line (CV 62832 / GCD 14036 are Lead's 1989-1990 two-issue comic); --who-stores gcd=161861 finds no shelf. Viz's thirteen stay, CV 38809 / GCD 16635
+   N 7764 D-012's F partial-rip is restated as the split-needed line; triage c (judged #13-14 … #25-26) is the Viz volumes' two-chapter-per-book ranges, not an identity fault
+   nearby: S15276 "Secret Six" 6f [named S15276 in the decision's R/N lines — S cv=22841 gcd=31829 (R-105 0.9)] keys: "Secret Six"
+   nearby: S19390 "The Professional: Golgo 13" 3f [title+1 — S cv=6671 gcd=7176 (D-012 0.95)] keys: "The Professional - Golgo"
+   keys now: "Golgo" x15
+   groups (title x folder): 1
+   G1 "Golgo 13" in Manga\Golgo 13 (1968) — 15 file(s), 15 COL, pp 159-204; cv per-file 38809x13; gcd per-file 16635x13, 161861x2; key 'Golgo'
+      [43421] COL Golgo 13 Book 02 - Galinpero (1986) (Habanero-XRA9).cbr (159pp)
+      [43422] COL Golgo 13 Book 04 - The Ivory Connection (1987) (c2c).cbr (173pp)
+      [43423] COL Golgo 13 v01 - Supergun (2006) (Digital) (danke-Empire).cbz (175pp)
+      [43424] COL Golgo 13 v02 - Hydra (2006) (Digital) (danke-Empire).cbz (179pp)
+      [43425] COL Golgo 13 v03 - Power to the People (2006) (Digital) (danke-Empire).cbz (170pp)
+      [43426] COL Golgo 13 v04 - The Orbital Hit (2006) (Digital) (danke-Empire).cbz (204pp)
+      [43427] COL Golgo 13 v05 - Wiseguy (2006) (Digital) (danke-Empire).cbz (188pp)
+      [43428] COL Golgo 13 v06 - One Minute Past Midnight (2006) (Digital) (danke-Empire).cbz (173pp)
+      [43429] COL Golgo 13 v07 - Eye of God (2007) (Digital) (danke-Empire).cbz (175pp)
+      [43430] COL Golgo 13 v08 - Gravestone in Sicily (2007) (Digital) (danke-Empire).cbz (169pp)
+      [43431] COL Golgo 13 v09 - Headhunter (2007) (Digital) (danke-Empire).cbz (177pp)
+      [43432] COL Golgo 13 v10 - Wasteland (2007) (Digital) (danke-Empire).cbz (167pp)
+      [43433] COL Golgo 13 v11 - The Wrong Man (2007) (Digital) (danke-Empire).cbz (178pp)
+      [43434] COL Golgo 13 v12 - Shadow of Death (2007) (Digital) (danke-Empire).cbz (175pp)
+      [43435] COL Golgo 13 v13 - Flagburner (2008) (Digital) (danke-Empire).cbz (193pp)

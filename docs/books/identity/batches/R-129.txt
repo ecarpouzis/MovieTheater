@@ -1,0 +1,322 @@
+## Conventions for this batch (30 shown of 160 matched; 384 in LEDGER.md; 13 shelf/shelves: folder:sequel-subfolder ×7 · kind:collected-line ×7 · kind:trade-only ×7 · pub:dark-horse ×4 · pub:jinxworld ×4 · pub:dc ×3 · folder:vn-year ×3 · kind:manga ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-383] (5 shelf/shelves) kind:collected-line kind:manga pub:dark-horse pub:dc pub:fantagraphics pub:image
+- R-125/R-126 (waves 117-118): CV's own labels SWAP EC Artists' Library #7 and #8 (Sucker Bait "Vol. 8", Zero Hour
+  "Vol. 7") — match I lines by subtitle, not ordinal. Kodansha USA / Viz manga shelves stored on the JAPANESE CV line
+  (Blue Period 113349, Beast Children 121130): a same-title English-publisher CV volume dated with our files is the
+  edition — probe with `--contains` before accepting a stored link. DC 2018 "Powers" (CV 116809 / GCD 134252) and Dark
+  Horse 2022 "Powers" (146264 / 189386) are library lines spanning several runs (own identity); a single-run trade filed
+  there joins the run. Image Witchblade TPB sub-lines have CV per-line volumes but no GCD rows except Redemption (63620).
+[L-135] (7 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-164] (7 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (7 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-191] (7 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-244] (7 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (7 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (7 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+[L-248] (7 shelf/shelves) kind:collected-line
+- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
+  the sibling's landed S is evidence for the weak per-file matches on the others.
+[L-251] (7 shelf/shelves) kind:collected-line
+- Deluxe / Yearbook / Omnibus editions of the shelf's own ongoing with NO judged range get an `N` naming the
+  relationship, never an invented `C` range (the range is containment's to read).
+[L-258] (7 shelf/shelves) kind:collected-line sig:stamp
+- A degenerate packet block can stamp ONE GCD issue id onto every book of a shelf (Green Arrow S97350, six eras of
+  collected lines) — resolve only by each series' full issue list matched by title, never by the stamp.
+[L-269] (7 shelf/shelves) kind:collected-line kind:trade-only
+- An omnibus bundling several minis gets one `C` per mini at that mini's full range; an anthology TPB ("… and
+  Others") is not a numbered run and gets an `N`, not a forced `C`.
+[L-275] (7 shelf/shelves) kind:collected-line pass:item sig:probe sig:trade-link
+- A count-1/2/3 trade record the shelf's `N` called absent is often in the catalogs under a spelling the packet
+  never probed ("The Adventures of …", "Complete Collection", "Deluxe") — probe before writing no-record.
+[L-279] (7 shelf/shelves) kind:collected-line
+- Blade of the Immortal (S23118) is the canonical "line + run" shape: GCD's 31 collected-edition rows are the `I`
+  identities (cv=- — ComicVine mints only the floppy volume), and the floppy run CV 9069 is what every `C` names,
+  ranges #0-206 ascending across the 31 books. A single-leg shelf's books inherit the shelf's 0.9, never more.
+[L-282] (7 shelf/shelves) kind:collected-line
+- A `gcd=-` / dump-only shelf's books inherit the shelf's 0.9 (Cells at Work! Lady, Dragon Head); an exact edition
+  can exist on GCD alone and be absent from ComicVine entirely (Cat Shit One Omnibus GCD 186621 → 0.9, cv=-).
+[L-285] (7 shelf/shelves) kind:collected-line pass:item sig:stamp
+- ITEM PASS (X-031..X-033): JoJo's Bizarre Adventure part-shelves are double-stamped — per-file CV is the whole-saga
+  hardcover omnibus volume (165667, one issue per PART) and per-file GCD the umbrella whole-saga series (27115) by
+  raw issue number; both wrong for all 37 books. Parts 1-3 have no CV softcover record (cv=-); Parts 4-5 do.
+[L-286] (7 shelf/shelves) kind:collected-line sig:probe
+- A shelf-level "no record" `N` can be wrong for an English product too (Innocent Omnibus: CV 157999 / GCD 206125
+  under "Innocent Omnibus") — probe the edition's own name before inheriting the shelf's gap.
+[L-287] (7 shelf/shelves) kind:collected-line pass:item
+- A series can be wrong on BOTH legs at once (Hunter x Hunter, Inuyashiki, Kakegurui Twin): the header pool by
+  ordinal is the only source; an omnibus with no dedicated record on either leg is `N no-record`, never a mapping.
+[L-289] (7 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-290] (7 shelf/shelves) folder:sequel-subfolder pass:item sig:stamp
+- A spin-off filed in its own subfolder on the parent's shelf gets the PARENT's v01 ids stamped by the per-file
+  matcher (Rent-a-(Really Shy!)-Girlfriend on Rent-A-Girlfriend) — `N no-record` (or the shelf note), never the
+  parent's record; it is a misfiling for the lead.
+[L-291] (7 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-309] (7 shelf/shelves) kind:collected-line pass:item sig:probe
+- A collected line's own issue rows carry the trade's SUBTITLE as the issue title, so once one book of a line is
+  identified, `--issues <volume>` or `gcd_issue WHERE series_id=?` resolves the whole Vol. 01-N run in one query —
+  "own container id not probed" is never a valid no-record.
+[L-314] (7 shelf/shelves) kind:collected-line pass:item
+- `cvref.normName` drops "the / a / an / of / and" everywhere, not just leading articles — a word-preserving
+  normalizer misses ~90% of exact matches; replicate cvref's tokenizer when matching titles by script. A bare
+  trailing-number fallback (trade "01" → run issue #1) is safe only for mislabeled single-issue files, never for
+  "Vol." / "Book" / dash-subtitled titles (it matched an 824pp omnibus to issue #1). One CV issue id reused across
+  two differently titled books on a shelf is a sign of two eras, not one book. A digital "Collection Book NN"
+  bundle is a different catalog shape from a "Vol. NN" trade and is often uncatalogued — honest no-record.
+[L-030] (13 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-151] (13 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (13 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-029] (4 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
+- On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
+  collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
+[L-092] (4 shelf/shelves) pass:item pub:caliber pub:dark-horse pub:dc pub:image pub:jinxworld
+- Dark Horse / DC Jinxworld re-issues of Bendis's 1990s Caliber/Image books (Jinx, Torso, Goldfish, Powers) are
+  PRINTINGS: the S line takes the first edition both legs hold, the `I` line the Jinxworld printing.
+[L-193] (12 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-361] (4 shelf/shelves) pub:archie pub:boom pub:dark-horse
+- Archie holiday specials: GCD names each series by COVER year (on sale Dec Y = series Y+1) while CV uses the on-sale
+  year; page count separates them (24pp up to Dec 2019, 36pp from Dec 2020). Sabrina (2000) #1-37 and Sabrina the
+  Teenage Witch (2003) #38-104 are one continuous numbering, but BOTH catalogues cut at #37/#38 — two runs. Dark Horse /
+  Berger's Everything Vol. 2 collects "what would have been #6-10" (trade-only issues). Boom's Fence and Adventure Time
+  OGN lines: some trade-line volumes are OGNs — no issue range applies. A 2000 AD strip-collection's prog ranges are N
+  lines, never C lines onto the weekly (L-333, reaffirmed R-094) (R-095).
+
++130 more matched entries not shown: L-376, L-064, L-085, L-101, L-310, L-013, L-014, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-281, L-292, L-294, L-341, L-346, L-347, L-020, L-023, L-060, L-087, L-188, L-212, L-219, L-222, L-233, L-237, L-243, L-245, L-321, L-364, L-373, L-374, L-377, L-378, L-380, L-033, L-082, L-093, L-098, L-100, L-113, L-124, L-142, L-210, L-211, L-272, L-274, L-276, L-277, L-278, L-280, L-283, L-284, L-288, L-293, L-304, L-344, L-016, L-032, L-114, L-175, L-011, L-012, L-015, L-021, L-026, L-031, L-040, L-047, L-052, L-094, L-116, L-126, L-127, L-130, L-136, L-139, L-174, L-195, L-197, L-198, L-199, L-203, L-205, L-214, L-215, L-228, L-234, L-241, L-242, L-254, L-255, L-256, L-260, L-297, L-301, L-302, L-322, L-325, L-329, L-342, L-343, L-363, L-365, L-366, L-368, L-369, L-375, L-382, L-065, L-099, L-123, L-194, L-262, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S94682 Powers  [tier C] · gap 15  keys: Powers v5 (2015)  years 2000-2018  9 files / 1 collections
+   split run: "Powers v5 (2015)" run={"cv": 79571, "gcd": 85993} (new shelf from P-049) — seed the S line from these ids, then verify them
+   folders: [8] Icon\Powers (2000)\Powers v5 (2015) · [1] Jinxworld (Dark Horse)\Powers (2000)\05 Powers v4 (Icon) (2015)
+   files:   Powers 001 (2015) (Digital) (Zone-Empire).cbr … Powers 008 (2017) (Digital) (Zone-Empire).cbr  (8 files, pp 20-35)
+            [37635] COL Powers Vol. 01 - All the New Powers (2018) (Digital) (EJGriffin).cbz (154pp)
+   ours:    ladder 1-8; ComicInfo Series: "Powers"x1; ComicInfo Volume: "2015"x1; ComicInfo Publisher: "DC"x1
+   GCD says: [37635] gcd_reprint 1594770: s85993 Powers (2015) #1-6 [28 stories]
+   CV linked:      vol 79571 "Powers" 2015 Marvel 8 issues; cached #1-8 (8); yearΔ 15; ratio 8/8 = 1.00; no judged range
+   CV per-file (v1): vol 79571 "Powers" 2015 Marvel 8 on 7/9 files · vol 6472 "Powers" 2000 Image 38 on 1/9 files
+   CV local rip:   (= linked) · 18034 "Powers" 2004 Marvel 30 · 30045 "Powers" 2009 Marvel 11 · 61656 "Powers" 2012 Panini Verlag 2 · 116809 "Powers" 2018 DC Comics 7   (rip lookup)
+   GCD per-file:   series 85993 "Powers" 2015-2017 Marvel [was ongoing] 8 on 8/9 files; methods numx8
+   GCD dump:       6311 "Powers" 2000-2004 Image [] 37 · 16306 "Powers" 2000-2000 Image; Wizard [] 1 · 28829 "Powers" 2000-2003 Image [] 5 · 163082 "Powers" [fr] 2002-2004 Semic S.A. [] 3 · 181844 "Powers" [es] 2002-2005 Planeta DeAgostini [] 6 · 12071 "Powers" 2004-2008 Marvel [] 30   (dump lookup)
+   bridges:        gcd 85993 -> LOCG 105958 "Powers" support 8
+
+== S102126 Powers  [tier B]   keys: Powers (2018)  years 2018-2019  3 files / 3 collections
+   split: the KEPT half of the P-049 split — moved out -> S94682 "Powers v5 (2015)"; re-identify what stayed
+   folders: [2] Jinxworld (Dark Horse)\Powers (2000)\02 Powers v2 (Icon) (2004) · [1] Jinxworld (Dark Horse)\Powers (2000)\03 Powers v3 (Icon) (2009)
+   files:   [37633] COL Powers Book 04 (2019) (digital) (Son of Ultron-Empire).cbr (468pp) | [37634] COL Powers Book 05 (2019) (digital) (Son of Ultron-Empire).cbr (402pp)
+            [37957] COL Powers Book 06 (2019) (digital) (Son of Ultron-Empire).cbr (352pp)
+   ours:    ComicInfo Series: "Powers Book Four"x1, "Powers Book Five"x1, "Powers Book Six"x1; ComicInfo Publisher: "DC"x3
+   GCD says: [37633] gcd_reprint 1944588: s12071 Powers (2004) #1-18 [37 stories]
+             [37634] gcd_reprint 2011810: s12071 Powers (2004) #19-30 [25 stories] · s46140 Powers Annual 2008 (2008) #1 [2 stories]
+             [37957] gcd_reprint 2011841: s40632 Powers (2009) #1-11 [22 stories]
+   CV linked:      vol 116809 "Powers" 2018 DC Comics 7 issues; cached #1-7 (7); yearΔ 0; ratio 0/7; no judged range
+   CV local rip:   (= linked) · 79571 "Powers" 2015 Marvel 8 · 146264 "Powers" 2022 Dark Horse Comics 7 · 61656 "Powers" 2012 Panini Verlag 2 · 30045 "Powers" 2009 Marvel 11 · 18034 "Powers" 2004 Marvel 30   (rip lookup)
+   GCD dump:       134252 "Powers" 2018-2019 DC [] 7 · 103613 "Powers" 2016-2016 Marvel [] 1 · 85993 "Powers" 2015-2017 Marvel [] 8 · 189386 "Powers" 2022-? Dark Horse [] 7 · 101523 "Powers" [de] 2012-2012 Panini Deutschland [] 2 · 170516 "Powers" [pt-br] 2011-2011 Panini Brasil [] 1   (dump lookup)
+
+== S104099 Powers: The Best Ever (2022)  [tier D]   keys: Powers: The Best Ever (2022)  years 2022-2022  1 files / 1 collections
+   split run: "Powers: The Best Ever (2022)" run={"cv": 146257} (new shelf from P-049) — seed the S line from these ids, then verify them
+   folders: [1] Jinxworld (Dark Horse)\Powers (2000)\05 Powers v4 (Icon) (2015)
+   files:   [37636] COL Powers Vol. 02 - The Best Ever (2022) (digital) (Son of Ultron-Empire).cbr (238pp)
+   GCD says: [37636] gcd_reprint 2142090: s85993 Powers (2015) #1-4, #7-8 [8 stories] · s207021 Powers (2011) #7 [1 story] · s71998 Powers: Bureau (2013) #1 [1 story] · s12071 Powers (2004) #13 [1 story]
+   CV local rip:   146257 "Powers: The Best Ever " 2022 Dark Horse Comics 1 issue 955901 (via our own name without the filing suffix "Powers: The Best Ever") · 129994 "Powers: The Best Ever" 2020 DC Comics 1 issue 796932 (via our own name without the filing suffix "Powers: The Best Ever")   (rip lookup)
+   GCD dump:       163473 "Powers: The Best Ever" 2020-2020 DC [] 1 (via our own name without the filing suffix "Powers: The Best Ever")   (dump lookup)
+
+== S102127 Powers  [tier B]   keys: Powers (2022)  years 2022-2023  5 files / 5 collections
+   split: the KEPT half of the P-049 split — moved out -> S104099 "Powers: The Best Ever (2022)"; re-identify what stayed
+   folders: [5] Jinxworld (Dark Horse)\Powers (2000)\00 Dark Horse Reprints
+   files:   [37624] COL Powers v01 (2022) (digital) (Son of Ultron-Empire).cbr (416pp) | [37625] COL Powers v02 (2022) (digital) (Son of Ultron-Empire).cbr (410pp)
+            [37626] COL Powers v03 (2023) (digital) (Son of Ultron-Empire).cbr (417pp) | [37627] COL Powers v04 (2023) (digital) (Son of Ultron-Empire).cbr (494pp)
+            [37628] COL Powers v05 (2023) (digital) (Son of Ultron-Empire).cbr (403pp)
+   ours:    ComicInfo Series: "Powers"x3; ComicInfo Publisher: "Dark Horse"x3
+   CV linked:      vol 146264 "Powers" 2022 Dark Horse Comics 7 issues; cached #1-7 (7); yearΔ 0; ratio 0/7; no judged range
+   CV local rip:   (= linked) · 116809 "Powers" 2018 DC Comics 7 · 79571 "Powers" 2015 Marvel 8 · 61656 "Powers" 2012 Panini Verlag 2 · 30045 "Powers" 2009 Marvel 11 · 18034 "Powers" 2004 Marvel 30   (rip lookup)
+   GCD dump:       189386 "Powers" 2022-? Dark Horse [] 7 · 134252 "Powers" 2018-2019 DC [] 7 · 103613 "Powers" 2016-2016 Marvel [] 1 · 85993 "Powers" 2015-2017 Marvel [] 8 · 101523 "Powers" [de] 2012-2012 Panini Deutschland [] 2 · 170516 "Powers" [pt-br] 2011-2011 Panini Brasil [] 1   (dump lookup)
+
+== S20376 Transformers (2019)  [tier C] · gap 33  keys: Transformers (2019)  years 1986-2022  17 files / 4 collections
+   split run: "Transformers (2019)" run={"cv": 117551, "gcd": 142349} (new shelf from P-049) — seed the S line from these ids, then verify them
+   flags: #502 label-ambiguous [Pending] item 32594 — the cv row on Vol. 02 is a Transformers Classics book
+   folders: [17] IDW Hasbro\Transformers (IDW Chronology) (2005)\2016 - Phase Three\2019.03 - Transformers
+   files:   Transformers 019 (2020) (digital) (Knight Ripper-Empire).cbr … Transformers 043 (2022) (digital) (Knight Ripper-Empire).cbr  (13 files, pp 27-44)
+            [32593] COL Transformers Vol. 01 - The World in Your Eyes (2019) (digital) (Knight Ripper-Empire).cbr (290pp)
+            [32594] COL Transformers Vol. 02 - The Change in Their Nature (2020) (digital) (Knight Ripper-Empire).cbr (277pp)
+            [32595] COL Transformers Vol. 04 - Declaration Of War (2022) (digital) (Dr.Vink).cbz (305pp)
+            [32596] COL Transformers Vol. 05 - Horrors Near And Far (2022) (digital) (Dr.Vink).cbz (295pp)
+   ours:    ladder 19-24, 37-43; ComicInfo Series: "Transformers"x12, "Transformers (2019)"x2; ComicInfo Volume: "2019"x10; ComicInfo Publisher: "IDW"x14
+   GCD says: [32593] gcd notes 2058643 (#1 of Transformers): Transformers #1-12
+             [32595] gcd notes 2302273 (#4 of Transformers): Transformers #25-30; the Valentine's Day Special one-shot, and Transformers: Escape #1-5
+   CV per-file (v1): vol 3370 "The Transformers" 1984 Marvel 80 on 13/17 files
+   CV candidates:  (= per-file) · 163604 "Transformers" 1990 Meribérica-Líber 17 s47 · 130616 "Transformers" 1987 Atlantic Förlags AB 31 s46 · 145602 "Transformers: IDW Collection Phase Three" 2021 IDW Publishing 3 s9 · 92009 "The Transformers: The IDW Collection Compendium" 2016 IDW Publishing 1 issue 538441 s8 · 171174 "Transformers" 2024 Moztros Producciones 3 s8 · 53103 "Transformers: The IDW Collection" 2010 IDW Publishing 8 s5   (v1 search)
+   CV local rip:   (= per-file) · 130616 "Transformers" 1987 Atlantic Förlags AB 31 (via our own name without the filing suffix "Transformers") · 20559 "The Transformers" 1984 Marvel UK/Panini UK 333 (via our own name without the filing suffix "Transformers") · 163604 "Transformers" 1990 Meribérica-Líber 17 (via our own name without the filing suffix "Transformers") · 166262 "Transformers" 1991 TM-Semic 24 (via our own name without the filing suffix "Transformers") · 27885 "The Transformers" 2007 IDW Publishing 1 issue 170947 (via our own name without the filing suffix "Transformers")   (rip lookup)
+   GCD per-file:   series 142349 "Transformers" 2019-2022 IDW [Ongoing  Series] 43 on 13/17 files; methods numx13
+   GCD dump:       20487 "Transformers" [nl] 1986-1991 Juniorpress [] 32 (via our own name without the filing suffix "Transformers") · 8363 "Transformers" [sv-se] 1987-1991 Atlantic Förlags AB [] 43 (via our own name without the filing suffix "Transformers") · 8366 "Transformers" [sv-se] 1987-1987 Atlantic Förlags AB [] 1 (via our own name without the filing suffix "Transformers") · 48655 "Transformers" [no] 1987-1987 Gevion [] 7 (via our own name without the filing suffix "Transformers") · 57190 "Transformers" [fi] 1987-1991 Semic [] 25 (via our own name without the filing suffix "Transformers") · 62124 "Transformers" [pt-br] 1985-1986 RGE [] 12 (via our own name without the filing suffix "Transformers")   (dump lookup)
+   bridges:        gcd 142349 -> LOCG 114951 "The Transformers" support 15
+
+== S104100 The Transformers UK (1984)  [tier B]   keys: The Transformers UK (1984)  years 1984-1984  13 files / 0 collections
+   split run: "The Transformers UK (1984)" run={"cv": 20559, "gcd": 32544} (new shelf from P-049) — seed the S line from these ids, then verify them
+   folders: [13] Marvel\Death's Head\1. Death's Head (FPA)
+   files:   002 - Transformers (UK) 113.cbz … 014 - Transformers (UK) 151.cbz  (13 files)
+   ours:    ladder 113-114, 117-119, 133-134, 146-151
+   CV per-file (v1): vol 3370 "The Transformers" 1984 Marvel 80 on 13/13 files
+   CV local rip:   (= per-file) · 20559 "The Transformers" 1984 Marvel UK/Panini UK 333 (via CV name "The Transformers") · 130616 "Transformers" 1987 Atlantic Förlags AB 31 (via CV name "The Transformers") · 163604 "Transformers" 1990 Meribérica-Líber 17 (via CV name "The Transformers") · 166262 "Transformers" 1991 TM-Semic 24 (via CV name "The Transformers") · 27885 "The Transformers" 2007 IDW Publishing 1 issue 170947 (via CV name "The Transformers")   (rip lookup)
+   GCD dump:       2898 "The Transformers" 1984-1991 Marvel [] 80 (via CV name "The Transformers") · 32544 "The Transformers" [en-gb] 1984-1992 Marvel UK [] 332 (via CV name "The Transformers") · 141869 "The Transformers" [en-au] 1984-1984 Federal [] 1 (via CV name "The Transformers") · 62124 "Transformers" [pt-br] 1985-1986 RGE [] 12 (via CV name "The Transformers") · 79736 "Transformers" [es] 1985-1992 Planeta DeAgostini [] 69 (via CV name "The Transformers") · 20487 "Transformers" [nl] 1986-1991 Juniorpress [] 32 (via CV name "The Transformers")   (dump lookup)
+
+== S20373 Transformers  [tier C] · gap 39  keys: Transformers  years 1984-2024  56 files / 1 collections
+   split: the KEPT half of the P-049 split — moved out -> S20376 "Transformers (2019)"; S104100 "The Transformers UK (1984)"; re-identify what stayed
+   folders: [44] Image\Transformers (2023)\Variant Covers · [11] Image\Transformers (2023) · [1] Image\Transformers (2023)\Annuals and Specials
+   files:   [37944] Transformers 01 Fifth Printing (Filya Bratukhin cover b~n~w variant) (1349).cbz (1pp) | [37471] Transformers 007 (2024) (Digital) (Shan-Empire).cbz (31pp)
+            [37472] Transformers 008 (2024) (Digital) (Shan-Empire).cbz (31pp) | [37473] Transformers 009 (2024) (Digital) (Shan-Empire).cbz (31pp)
+            [37474] Transformers 010 (2024) (Digital) (Shan-Empire).cbz (30pp) | [37475] Transformers 011 (2024) (Digital) (Shan-Empire).cbz (29pp)
+            [37476] Transformers 012 (2024) (Digital-Empire).cbz (30pp) | [37477] Transformers 013 (2024) (Digital) (Shan-Empire).cbz (29pp)
+            [37478] Transformers 014 (2024) (Digital) (Shan-Empire).cbz (29pp) | [37479] Transformers 015 (2025) (Digital) (Shan-Empire).cbz (31pp)
+            [37480] Transformers 016 (2025) (Digital) (Shan-Empire).cbz (29pp) | [37481] COL Transformers Vol. 01 - Robots in Disguise (2024) (digital) (Knight Ripper-Empire).cbr (143pp)
+            [37482] Transformers 001 (2023) (1-in-10 Orlando Arocena Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37483] Transformers 001 (2023) (1-in-25 Cliff Chiang Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37484] Transformers 001 (2023) (1-in-50 Francis Manapul Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37485] Transformers 001 (2023) (Daniel Warren Johnson Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37486] Transformers 001 (2023) (Ryan Ottley Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [37487] Transformers 001 (2024) (GameStop Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37488] Transformers 001 Fifth Printing (Filya Bratukhin cover b~n~w variant) (1349).cbz (1pp)
+            [37489] Transformers 002 (2023) (1-in-10 Orlando Arocena Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37490] Transformers 002 (2023) (1-in-25 Bryan Hitch Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37491] Transformers 002 (2023) (1-in-50 Tom Reilly Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37492] Transformers 005 (2024) (1-in-50 Karl Kerschl Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37493] Transformers 005 (2024) (James Stokoe Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37494] Transformers 006 (2024) (1-in-25 Eric Canete Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37495] Transformers 006 (2024) (André Lima Araújo Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37496] Transformers 007 (2024) (Jorge Corona Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37497] Transformers 008 (2024) (1-in-25 Ethan Young Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37498] Transformers 008 (2024) (Second Printing Jason Howard Autobot Var) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37499] Transformers 009 (2024) (Jorge Corona Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37500] Transformers 011 (2024) (1-in-10 Karen S Darboe Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37501] Transformers 011 (2024) (1-in-25 Ludo Lullabi Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37502] Transformers 011 (2024) (1-in-50 Wes Craig Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37503] Transformers 011 (2024) (Jorge Corona & Mike Spicer Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37504] Transformers 012 (2024) (1-in-25 Chris Stevens Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37505] Transformers 012 (2024) (1-in-50 Cory Walker Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37506] Transformers 013 (2024) (1-in-10 Viktor Bogdanovic Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37507] Transformers 013 (2024) (1-in-100 Homare Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37508] Transformers 013 (2024) (1-in-25 Jorge Fornes Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37509] Transformers 013 (2024) (1-in-50 Francesco Mattina Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37510] Transformers 013 (2024) (Blank Sketch Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37511] Transformers 013 (2024) (Jorge Corona & Mike Spicer Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37512] Transformers 014 (2024) (1-in-10 Viktor Bogdanovic Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37513] Transformers 014 (2024) (1-in-25 Jorge Fornes Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37514] Transformers 014 (2024) (1-in-50 Derrick Chew Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37515] Transformers 014 (2024) (Jorge Corona & Mike Spicer Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37516] Transformers 015 (2024) (1-in-10 Karl Kerschl Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37517] Transformers 015 (2024) (1-in-100 Dustin Nguyen Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37518] Transformers 015 (2024) (1-in-25 Ej Su Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37519] Transformers 015 (2024) (1-in-50 Oliver Ono Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37520] Transformers 015 (2024) (Blank Sketch Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37521] Transformers 015 (2024) (Jorge Corona & Mike Spicer Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37522] Transformers 016 (2025) (1-in-10 Karl Kerschl Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37523] Transformers 016 (2025) (1-in-25 Manabu Yashiro Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37524] Transformers 016 (2025) (1-in-50 Homare Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [37525] Transformers 016 (2025) (Jorge Corona & Mike Spicer Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 1-2, 5-16; 13 number(s) name more than one file: 1, 2, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15; ComicInfo Series: "Transformers "x1
+   CV linked:      vol 153968 "Transformers" 2023 Image 26 issues; cached #1-28 (28); yearΔ 39; ratio 55/26 = 2.12; no judged range
+   CV per-file (v1): vol 3370 "The Transformers" 1984 Marvel 80 on 55/56 files
+   CV candidates:  (= linked) · 130616 "Transformers" 1987 Atlantic Förlags AB 31 s84 · 163604 "Transformers" 1990 Meribérica-Líber 17 s82 · 29903 "The Transformers" 2009 IDW Publishing 31 s37 · 171174 "Transformers" 2024 Moztros Producciones 3 s35 · 53103 "Transformers: The IDW Collection" 2010 IDW Publishing 8 s32 · 145602 "Transformers: IDW Collection Phase Three" 2021 IDW Publishing 3 s31   (v1 search)
+   CV local rip:   (= linked) · 20559 "The Transformers" 1984 Marvel UK/Panini UK 333 · 130616 "Transformers" 1987 Atlantic Förlags AB 31 · 163604 "Transformers" 1990 Meribérica-Líber 17 · 166262 "Transformers" 1991 TM-Semic 24 · 27885 "The Transformers" 2007 IDW Publishing 1 issue 170947   (rip lookup)
+   GCD per-file:   series 204233 "Transformers" 2023-? Image [ongoing series] 32 on 52/56 files · series 211992 "Transformers" 2024-? Image [collected edition] 5 on 1/56 files; methods numx53
+   GCD dump:       2898 "The Transformers" 1984-1991 Marvel [] 80 · 32544 "The Transformers" [en-gb] 1984-1992 Marvel UK [] 332 · 141869 "The Transformers" [en-au] 1984-1984 Federal [] 1 · 62124 "Transformers" [pt-br] 1985-1986 RGE [] 12 · 79736 "Transformers" [es] 1985-1992 Planeta DeAgostini [] 69 · 20487 "Transformers" [nl] 1986-1991 Juniorpress [] 32   (dump lookup)
+   bridges:        gcd 204233 -> LOCG 168170 "Transformers" support 52 · gcd 211992 -> LOCG 168170 "Transformers" support 4 · gcd 211992 -> OL /works/OL37566139W "None" isbnSupport 4
+
+== S104097 Battle Angel Alita: Holy Night and Other Stories (2018)  [tier D]   keys: Battle Angel Alita: Holy Night and Other Stories (2018)  years 2018-2018  1 files / 1 collections
+   split run: "Battle Angel Alita: Holy Night and Other Stories (2018)" run={"cv": 114858, "gcd": 134603} (new shelf from P-049) — seed the S line from these ids, then verify them
+   folders: [1] Manga\Battle Angel Alita\03 Battle Angel Alita - Mars Chronicle (2015)
+   files:   [40668] COL Battle Angel Alita - Holy Night and Other Stories (2018) (Digital) (danke-Empire).cbz (271pp)
+   CV local rip:   114858 "Battle Angel Alita: Holy Night & Other Stories" 2018 Kodansha Comics USA 1 issue 690421 (via our own name without the filing suffix "Battle Angel Alita: Holy Night & Other Stories")   (rip lookup)
+   GCD dump:       132517 "Battle Angel Alita: Holy Night and Other Stories" 2018-2018 Kodansha USA [] 1 (via our own name without the filing suffix "Battle Angel Alita: Holy Night and Other Stories") · 134603 "Battle Angel Alita: Holy Night and Other Stories" 2018-2018 Kodansha USA [] 1 (via our own name without the filing suffix "Battle Angel Alita: Holy Night and Other Stories")   (dump lookup)
+
+== S2306 Battle Angel Alita  [tier B]   keys: Battle Angel Alita  years 2017-2017  9 files / 9 collections
+   split: the KEPT half of the P-049 split — moved out -> S104097 "Battle Angel Alita: Holy Night and Other Stories (2018)"; re-identify what stayed
+   folders: [9] Manga\Battle Angel Alita\01 Battle Angel Alita (1990) (New Translation)
+   files:   [40650] COL Battle Angel Alita v01 (2018) (Digital) (XRA-Empire).cbz (224pp) | [40651] COL Battle Angel Alita v02 (2018) (Digital) (XRA-Empire).cbz (212pp)
+            [40652] COL Battle Angel Alita v03 (2018) (Digital) (XRA-Empire).cbz (208pp) | [40653] COL Battle Angel Alita v04 (2018) (Digital) (XRA-Empire).cbz (208pp)
+            [40654] COL Battle Angel Alita v05 (2018) (Digital) (XRA-Empire).cbz (210pp) | [40655] COL Battle Angel Alita v06 (2018) (Digital) (XRA-Empire).cbz (226pp)
+            [40656] COL Battle Angel Alita v07 (2018) (Digital) (XRA-Empire).cbz (230pp) | [40657] COL Battle Angel Alita v08 (2018) (Digital) (XRA-Empire).cbz (230pp)
+            [40658] COL Battle Angel Alita v09 (2018) (Digital) (XRA-Empire).cbz (260pp)
+   ours:    judged item 40655 #30-35 conf 0.97; judged item 40656 #36-41 conf 0.97; judged item 40657 #42-47 conf 0.97; ComicInfo Series: "Battle Angel Alita"x1, "Battle Angel Alita Volume 4"x1, "Battle Angel Alita Volume 5"x1, "Battle Angel Alita Volume 6"x1; ComicInfo Publisher: "Kodansha Comics"x7
+   CV linked:      vol 101680 "Battle Angel Alita" 2017 Kodansha Comics USA 9 issues; cached #1-9 (9); yearΔ 0; ratio 0/9; 0 of 3 judged fit
+   CV candidates:  (= linked) · 138128 "Battle Angel Alita" 2021 Kodansha Comics USA 6 s58 · 166953 "Battle Angel Alita" 2017 JBC 4 s50 · 23810 "Battle Angel Alita" 1993 Viz 2 s43 · 167061 "Battle Angel Alita" 2003 Japonica Polonica Fantastica 1 issue 1133648 s38 · 22392 "Battle Angel Alita" 2003 Viz 9 s38 · 22393 "Battle Angel Alita" 1995 Viz 9 s38   (v1 search)
+   CV local rip:   (= linked) · 166953 "Battle Angel Alita" 2017 JBC 4 · 138128 "Battle Angel Alita" 2021 Kodansha Comics USA 3 · 22392 "Battle Angel Alita" 2003 Viz 9 · 167061 "Battle Angel Alita" 2003 Japonica Polonica Fantastica 1 issue 1133648 · 22393 "Battle Angel Alita" 1995 Viz 9   (rip lookup)
+   GCD dump:       117981 "Battle Angel Alita" 2017-2017 Kodansha USA [] 1 · 148952 "Battle Angel Alita" [pt-br] 2017-2018 Editora JBC [] 4 · 124370 "Battle Angel Alita" [de] 2018-2018 Carlsen Comics [DE] [] 1 · 174743 "Battle Angel Alita" 2021-2022 Kodansha USA [] 6 · 41728 "Battle Angel Alita" [nl-be] 2007-2009 Glénat [] 9 · 44298 "Battle Angel Alita" 2003-2005 Viz [] 9   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.358974358974359
+
+== S104096 After the Rain (2021)  [tier D]   keys: After the Rain (2021)  years 2021-2021  1 files / 0 collections
+   split run: "After the Rain (2021)" run={"cv": 133043, "gcd": 169178} (new shelf from P-049) — seed the S line from these ids, then verify them
+   folders: [1] Graphic Novels\_Abrams ComicArts (& Amulet, Megascope, Surely)
+   files:   [26336] After the Rain (2021) (Digital) (XRA-Empire).cbz (134pp)
+   ours:    ComicInfo Series: "After the Rain"x1; ComicInfo Publisher: "Harry N. Abrams"x1
+   CV local rip:   133043 "After the Rain" 2021 Harry N. Abrams 1 issue 823814 (via our own name without the filing suffix "After the Rain") · 114031 "After the Rain" 2018 Vertical Inc. 5 (via our own name without the filing suffix "After the Rain") · 165873 "After the Rain" 2018 Altraverse 10 (via our own name without the filing suffix "After the Rain") · 50483 "After the Rain" 1999 NBM 1 issue 345818 (via our own name without the filing suffix "After the Rain")   (rip lookup)
+   GCD dump:       169178 "After the Rain" 2021-2021 Harry N. Abrams [] 1 (via our own name without the filing suffix "After the Rain") · 187370 "After the Rain" 2022-2022 Harry N. Abrams [] 1 (via our own name without the filing suffix "After the Rain") · 129961 "After the Rain" [de] 2018-2020 Altraverse [] 10 (via our own name without the filing suffix "After the Rain") · 130915 "After the Rain" 2018-2019 Vertical [] 5 (via our own name without the filing suffix "After the Rain") · 51389 "After the Rain" 1999-1999 NBM [] 1 (via our own name without the filing suffix "After the Rain")   (dump lookup)
+
+== S493 After the Rain  [tier B]   keys: After the Rain  years 2018-2019  5 files / 5 collections
+   split: the KEPT half of the P-049 split — moved out -> S104096 "After the Rain (2021)"; re-identify what stayed
+   folders: [5] Manga\After the Rain (2018)
+   files:   [46192] COL After the Rain Omnibus v01 (2018) (Digital) (danke-Empire).cbz (326pp) | [46193] COL After the Rain Omnibus v02 (2018) (Digital) (danke-Empire).cbz (327pp)
+            [46194] COL After the Rain Omnibus v03 (2019) (Digital) (danke-Empire).cbz (328pp) | [46195] COL After the Rain Omnibus v04 (2019) (Digital) (danke-Empire).cbz (328pp)
+            [46196] COL After the Rain Omnibus v05 (2019) (Digital) (danke-Empire).cbz (378pp)
+   ours:    judged item 46192 #1-16 conf 0.97; judged item 46193 #17-32 conf 0.97; judged item 46194 #33-48 conf 0.97; judged item 46195 #49-64 conf 0.97; judged item 46196 #65-82 conf 0.97
+   CV linked:      vol 114031 "After the Rain" 2018 Vertical Inc. 5 issues; cached #1-5 (5); yearΔ 0; ratio 0/5; 1 of 5 judged fit
+   CV candidates:  (= linked) · 165873 "After the Rain" 2018 Altraverse 10 s98 · 50483 "After the Rain" 1999 NBM 1 issue 345818 s81 · 44096 "Rain" 2011 TidalWave Productions 5 s65 · 99149 "Rain" 2009 Mag Garden 17 s52 · 58051 "Rain" 2013 Arcana Studio 1 issue 388824 s51 · 133043 "After the Rain" 2021 Harry N. Abrams 1 issue 823814 s50   (v1 search)
+   CV local rip:   (= linked) · 165873 "After the Rain" 2018 Altraverse 10 · 133043 "After the Rain" 2021 Harry N. Abrams 1 issue 823814 · 50483 "After the Rain" 1999 NBM 1 issue 345818   (rip lookup)
+   GCD dump:       129961 "After the Rain" [de] 2018-2020 Altraverse [] 10 · 130915 "After the Rain" 2018-2019 Vertical [] 5 · 169178 "After the Rain" 2021-2021 Harry N. Abrams [] 1 · 187370 "After the Rain" 2022-2022 Harry N. Abrams [] 1 · 51389 "After the Rain" 1999-1999 NBM [] 1   (dump lookup)
+   MU / External:  MU 30666103906 "After the Rain" 2010 Manga · MuSeriesLink 30666103906 status 1 conf 0.7692307692307693
+
+== S22790 Zero Hour: Crisis in Time  [tier A]   keys: Zero Hour | Zero Hour: Crisis in Time  years 1994-2014  12 files / 2 collections
+   folders: [5] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\064 Crisis in Time · [5] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\11 Zero Hour Crisis in Time · [1] DC\#DC Events\Zero Hour (1994) · [1] Fantagraphics\The EC Artists' Library (2012)
+   files:   [15705] 03 Zero Hour Crisis in Time 04  Zero Hour.cbz (25pp) | [15707] 05 Zero Hour Crisis in Time 03  Zero Hour.cbz (24pp) | [15708] 06 Zero Hour Crisis in Time 02  Zero Hour.cbz (24pp)
+            [15710] 08 Zero Hour Crisis in Time 01  Zero Hour.cbz (25pp) | [15711] 09 Zero Hour Crisis in Time 00  Zero Hour.cbz (32pp) | [16834] 07_Zero_Hour_04.cbr (25pp)
+            [16835] 12_Zero_Hour_03.cbr (23pp) | [16836] 17_Zero_Hour_02.cbr (24pp) | [16837] 26_Zero_Hour_01.cbr (27pp) | [16838] 33_Zero_Hour_00.cbr (31pp)
+            [19362] COL Zero Hour - Crisis in Time (1994) (digital) (Minutemen-Thoth).cbr (155pp)
+            [24983] COL The EC Artists' Library v08 - Zero Hour and Other Stories [Fantagraphics] (2014) (Digital) (Bean-Empire).cbz (169pp)
+   ours:    ladder 0-4, 12, 17, 26, 33; 1 number(s) name more than one file: 4; ComicInfo Series: "Zero Hour: Crisis in Time"x5; ComicInfo Publisher: "DC Comics"x5
+   GCD says: [19362] gcd_reprint 347326: s4983 Zero Hour: Crisis in Time (1994) #0-4 [5 stories]
+             [24983] gcd_reprint 1179284: s835 Weird Fantasy (1951) #11-16, #18-22 [11 stories] · s836 Weird Science (1951) #11-13, #15-18, #20-21 [9 stories] · s1065 Weird Science-Fantasy (1954) #27-28 [2 stories]
+   CV linked:      vol 5271 "Zero Hour: Crisis in Time" 1994 DC Comics ? issues; cached #0-4 (5); yearΔ 0; ratio 10/? = 2.00; no judged range; v1 per-file: same volume on 6/12 files
+   CV candidates:  (= linked) · 85090 "Convergence: Zero Hour" 2015 DC Comics 2 s77 · 73624 "Zero Hour" 1995 ? 1 issue 452158 s75 · 41044 "Zero Hour Ashcan" 1994 DC Comics 1 issue 276716 s74 · 101923 "Batman: Zero Hour" 2017 DC Comics 1 issue 599830 s74 · 111701 "Superman: Zero Hour" 2018 DC Comics 1 issue 674116 s74 · 41043 "Zero Hour Sampler 1994" 1994 DC Comics 1 issue 276715 s73   (v1 search)
+   CV local rip:   (= linked) · 38677 "Zero Hour: Crisis in Time" 2003 DC Comics 1 issue 259470 · 110544 "Zero Hour: Crisis In Time" 2018 DC Comics 1 issue 668766 · 73624 "Zero Hour" 1995 ? 1 issue 452158 · 85090 "Convergence: Zero Hour" 2015 DC Comics 2 (via CV candidate name "Convergence: Zero Hour")   (rip lookup)
+   GCD per-file:   series 4983 "Zero Hour: Crisis in Time" 1994-1994 DC [miniseries] 5 on 5/12 files; methods numx5
+   GCD dump:       (= per-file) · 22856 "Zero Hour: Crisis in Time" 1994-1994 DC [] 1 · 59436 "Zero Hour: Crisis in Time" 1994-1994 DC [] 1 · 145974 "Zero Hour: Crisis in Time" 2004-2004 DC [] 1 · 123958 "Zero Hour: Crisis in Time" 2018-2018 DC [] 1 · 21694 "Zero Hour" 1995-1995 Dog Soup Comics [] 1   (dump lookup)
+   bridges:        gcd 4983 -> LOCG 114520 "Zero Hour: Crisis in Time" support 6
+
+== S19114 The Mice Templar, Volume III: A Midwinter Night's Dream  [tier B]   keys: The Mice Templar - A Midwinter Night's Dream  years 2010-2012  1 files / 1 collections
+   folders: [1] Image\The Mice Templar
+   files:   [32959] COL 04 The Mice Templar v3 - A Midwinter Night's Dream (2012) (Digital) (BlurPixel-Empire).cbr (312pp)
+   CV linked:      vol 37969 "The Mice Templar, Volume III: A Midwinter Night's Dream" 2010 Image 9 issues; cached #0-8 (9); yearΔ 0; ratio 0/9; no judged range
+   CV candidates:  (= linked) · 53536 "The Mice Templar: A Midwinter Night's Dream" 2012 Image 1 issue 364157 s105 · 19036 "The Mice Templar" 2007 Image 6 s70 · 88026 "Night's Templar" 2016 Insane Comics 1 issue 514355 s70 · 95600 "The Mice Templar: Night's End" 2016 Image 1 issue 557395 s63 · 53569 "The Mice Templar: The Prophecy" 2008 Image 1 issue 364270 s62 · 26260 "The Mice Templar Sketchbook" 2009 Image 2 s53   (v1 search)
+   CV local rip:   (= linked) · 53536 "The Mice Templar: A Midwinter Night's Dream" 2012 Image 1 issue 364157 · 19036 "The Mice Templar" 2007 Image 6 (via CV candidate name "The Mice Templar")   (rip lookup)
+   GCD dump:       56842 "The Mice Templar, Volume III: A Midwinter Night's Dream" 2011-2012 Image [] 8 · 72973 "The Mice Templar" 2009-2016 Image [] 7 (via CV candidate name "The Mice Templar") · 26334 "The Mice Templar" 2007-2008 Image [] 6 (via CV candidate name "The Mice Templar")   (dump lookup)
