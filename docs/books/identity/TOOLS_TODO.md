@@ -195,3 +195,8 @@ The split lane can empty a one-file shelf onto a live join target (check_splits,
 **DONE 2026-09-24 (42 + 44b):** check_identity accepts a shared gcd when every shelf of the group joins, or is joined by, another member through `F <sid> split-needed | … join S<member>`.
 45. **`lookup.py --batch` passes only the FIRST WORD of a plain-name line** (R-123 reader, 2026-09-24): "Ghostbusters Get
 Real" was probed as "ghostbusters". `--issues` / `--gcd-issues` lines work. Fix the name-line parse (quote-aware or whole line).
+46. **DONE 09-26 — the C-statement completeness guard.** Nine revisit batches wrote "also collects …" C lines meaning
+to ADD, and apply_identity (which REPLACES an item's run rows) erased the own-run line an earlier batch had landed
+(gap-blocked-triage.md; repaired by X-063). check_identity now fails an UNLANDED batch whose C lines for a book omit a
+(leg, key) run the book's Curated span carries, unless `N <item> retract <leg>=<key> | why` names it. Landed batches are
+skipped (a later batch rewrote the rows they are judged against). Prose `N <sid> retract C-013's …` lines stay prose.

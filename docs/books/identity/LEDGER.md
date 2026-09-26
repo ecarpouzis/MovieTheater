@@ -2254,3 +2254,13 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   ANNUALS never ride a chain join (their #1-5 collide with the run's #1-5): they stay as the kept half and the shelf
   re-keys onto the annual's own records (S17909 -> Adventures of Superman Annual CV 3777 / GCD 3344). A join that moves a
   book another file's C lines describe halts check_identity --all at the NEXT wave: comment those lines `# [lead …]`.
+[L-417] ruling sig:gcd-notes
+- 09-26 (Eric took Fable's advice): a `C` statement is the WHOLE statement of what a book collects — apply_identity
+  REPLACES the item's run rows, and that stays (a merge could never retract a wrong run). check_identity now FAILS an
+  unlanded batch whose C lines for a book omit a run its Curated span carries today; restate that run on its own C line
+  (own run first), or say `N <item> retract <leg>=<key> | why` (TOOLS_TODO 46). "Also collects" is never written alone.
+  The book's own page outranks a GCD roll-up, but a gap in the page is READ, not assumed: Supergirl Vol. 02's contents
+  page skips #12 (its twelfth entry is the DCU Infinite Holiday Special) — GCD's #11, #13-22 was right, stored as the
+  hull #11-22 with 'SUPERGIRL 11, 13-22, …' quoted FIRST (SpanEvidence reads only the first quotation, and needs both
+  endpoints in it). Green Lantern (2011) #28 IS in Vol. 05 (cover p26): GCD omits it because it indexes the #28 flipbook
+  as its own series s236848 Green Lantern / Red Lanterns — a GCD hole at a flipbook number is an indexing artefact.

@@ -1,5 +1,7 @@
 # Containment decisions the import could not land (2026-09-25, after wave 192)
 
+> Triaged the same day in `gap-blocked-triage.md`: no import change needed — 20 are an identity-lane restatement (X-063), 21 are stale `S` lines on line shelves.
+
 `books-curated-spans-import` keeps ONE `CollectedEditionSpan(Source=Curated)` row per item and never overwrites a row
 whose ProviderRef lacks the `model:` prefix ("gold"). The identity pass stores its `C` lines — a trade's range **in
 another run's numbering**, with `CollectedEditionSpanRun` refs to that run — in that same slot as `identity:<batch>`.

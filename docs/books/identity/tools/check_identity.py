@@ -16,7 +16,8 @@ Grammar (PLAN §7-S, and SPAN_RUN_IDS.md for `C`):
                                     with that open conflated / overlap flag — TOOLS_TODO 37, landed via stale_flags.py)
     I <itemId> cv=<issueId>|- gcd=<issueId>|- isbn=<isbn>|- <conf> | <evidence>
     C <itemId> cv=<volumeId>|- gcd=<seriesId>|- [mu=] [barney=] [inducks=] [marvel=] #<a>-<b> <conf> | <evidence>
-    N <sid|itemId> <note>          (`N <itemId> no-record | why` is an item batch's refusal)
+    N <sid|itemId> <note>          (`N <itemId> no-record | why` is an item batch's refusal;
+                                    `N <itemId> retract <leg>=<key> | why` drops a run the book's span carries)
 
 An `X-NNN` batch is the ITEM pass (TOOLS_TODO 16): its `.ids` holds ITEM ids, its lines are only `I` / `C` /
 `N`, and its coverage contract is "every book in the batch has an `I` line or an explicit `N <item>
@@ -31,6 +32,7 @@ from collections import defaultdict
 import idbase
 
 MIN_EVIDENCE = 40
+CURATED = 3          # EditionSource.Curated, as apply_identity writes it
 
 
 class Checker:
@@ -52,6 +54,7 @@ class Checker:
                 "SELECT OldSeriesId, NewSeriesId FROM SeriesMerge ORDER BY MergedAt"):
             self.merged[old] = new
         self.all_series = {r[0] for r in self.con.execute("SELECT Id FROM Series")}
+        self.landed = landed_batches()
         # TOOLS_TODO 37: which open flag ids refuse an S on each shelf, and every flag's row, so a
         # `F <sid> stale-flag=<id>` claim can be checked against the flag it names
         self.conflated = defaultdict(set)
@@ -70,6 +73,17 @@ class Checker:
         # merge-with between two shelves that can never share a CV is seen before a wave carries it
         self.win_s_cv = {sid: _d[w]["cv"].get(sid) for sid, w in _w.items() if _d[w]["kinds"].get(sid) == "S"}
         self.win_s_file = {sid: os.path.splitext(os.path.basename(_w[sid]))[0] for sid in self.win_s_cv}
+
+    def curated_runs(self, iid):
+        """The (leg, key) runs the item's Curated span carries today — what `apply_identity` will DELETE before
+        it writes a `C` statement's rows."""
+        if getattr(self, "_runs", None) is None:
+            leg_of = {p: leg for leg, p in idbase.RUN_LEGS.items()}
+            self._runs = defaultdict(set)
+            for i, p, k in self.con.execute(
+                    f"SELECT ItemId, Provider, ProviderKey FROM CollectedEditionSpanRun WHERE Source = {CURATED}"):
+                self._runs[i].add((leg_of.get(p, f"provider{p}"), str(k)))
+        return self._runs.get(iid, set())
 
     def item_exists(self, iid):
         if self.items is None:
@@ -197,6 +211,7 @@ def parse(path, ck, errors):
     # (itemId, leg, key) -> line number. Since TOOLS_TODO 17 a book may carry SEVERAL `C` lines — one per
     # (leg, run) — so the thing that may not be said twice is a run, not an item.
     collected = {}
+    retracted = set()       # (itemId, leg, key) from `N <item> retract <leg>=<key> | why`
     c_shelves = []          # (loc, itemId, shelf) — checked against `want`/`decided` once the file is read
     i_items = set()         # every item this file gives an `I` line, for the item batch's coverage
     stale_claims = defaultdict(set)   # sid -> flag ids this file claims stale (TOOLS_TODO 37)
@@ -227,6 +242,24 @@ def parse(path, ck, errors):
                                   f"characters after '|' — what was looked for and where")
                 else:
                     out["no_record"].add(nid)
+            # `N <itemId> retract <leg>=<key> | why`: this book does NOT collect that run, and the run row an
+            # earlier batch stored for it is meant to go. The completeness rule below wants it said out loud.
+            # Only the STRUCTURED form counts — "N <sid> retract C-013's …" is older free prose and stays prose.
+            r_head, _, r_why = note.strip()[len("retract"):].partition("|")
+            r_ids = r_head.split()
+            if (note.strip().lower().startswith("retract ") and r_ids
+                    and re.fullmatch(r"[a-z]+=\S+", r_ids[0]) and r_ids[0].split("=", 1)[0] in idbase.RUN_LEGS):
+                if any(not re.fullmatch(r"[a-z]+=\S+", t) or t.split("=", 1)[0] not in idbase.RUN_LEGS
+                       for t in r_ids):
+                    errors.append(f"{loc}: N {nid} retract takes only '<leg>=<key>' tokens before '|', legs "
+                                  f"{', '.join(sorted(idbase.RUN_LEGS))}")
+                elif len(r_why.strip()) < MIN_EVIDENCE:
+                    errors.append(f"{loc}: N {nid} retract needs a reason of at least {MIN_EVIDENCE} "
+                                  f"characters after '|' — why the book does not collect that run")
+                else:
+                    for t in r_ids:
+                        leg, key = t.split("=", 1)
+                        retracted.add((nid, leg, key))
             continue
         if "|" not in rest:
             errors.append(f"{loc}: no '|' clause — every decision must say what agreed")
@@ -455,6 +488,24 @@ def parse(path, ck, errors):
                 f"(S{sid} in {sides[0][1]}, S{tgt} in {sides[1][1]}) and the resolve merges only on a shared CV. Move "
                 f"the books by the split lane instead: F {sid} split-needed naming S{tgt}, and a P- line joining its key "
                 f"with a lead-approved \"join\": [{tgt}] (R-043/R-046's S14555 -> S103376)")
+
+    # Completeness (lead ruling 09-26, TOOLS_TODO 46). A `C` statement is the WHOLE statement of what a book
+    # collects: apply_identity DELETES the item's run rows and writes only this file's. Readers kept writing
+    # "also collects …" lines meaning to ADD — nine times — and the apply erased the own-run line an earlier
+    # batch had landed (Captain Marvel Vol. 08 #37-41 became the annual's #1-1; gap-blocked-triage.md). So a
+    # batch that has not landed yet must restate every run the book's span carries today, or retract it by name.
+    # Landed files are skipped: they are judged against the rows they themselves replaced, and a later batch
+    # has since rewritten those rows. The apply's replace semantics stay — a merge could never retract a run.
+    if os.path.splitext(base)[0] not in ck.landed:
+        named = {(iid, leg, str(key)) for iid, ids, *_r in out["C"] for leg, key in ids.items()}
+        for iid in dict.fromkeys(i for i, *_r in out["C"]):
+            lost = sorted((leg, key) for leg, key in ck.curated_runs(iid)
+                          if (iid, leg, key) not in named and (iid, leg, key) not in retracted)
+            if lost:
+                errors.append(f"{base}: item {iid}'s C lines omit run(s) its span carries today "
+                              f"({', '.join(f'{l}={k}' for l, k in lost)}) — the apply REPLACES the book's run rows, "
+                              f"so restate each one on its own C line, or write "
+                              f"'N {iid} retract {lost[0][0]}={lost[0][1]} | why the book does not collect it'")
 
     # A `C` line belongs to the file that READ that book's shelf. Without this a batch could rewrite the
     # containment of a shelf nobody in this pass looked at — and a Curated span is what the file
