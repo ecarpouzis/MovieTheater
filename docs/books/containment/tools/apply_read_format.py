@@ -23,6 +23,10 @@ a bare number, and `ContainmentJob` keeps a file off the run's ladder by its rea
 Special / OneShot — so the Format is the one lever that says "this is not issue #1 of the run". A shelf
 row keeps the narrow population above; it is a rule over a run and stays that way.
 
+An optional `FormatRaw` column is written when a row fills it: the book modal shows the raw string before the
+enum, so a magazine issue whose ComicInfo said "Single Issue" keeps saying so until the raw label changes too
+(Eric 09-26: magazine runs read like a run, labelled as magazines). Empty = the raw label stays as it is.
+
 `python apply_read_format.py <sheet.csv> [--apply]`
 """
 import csv
@@ -57,6 +61,7 @@ for iid, sid in con.execute(f"SELECT i.Id, i.SeriesId FROM Item i WHERE i.Id IN 
 writes, refused = [], []
 for r in csv.DictReader(open(sheet, encoding="utf-8")):
     fmt = int(r["Format"])
+    raw = (r.get("FormatRaw") or "").strip() or None
     if r.get("ItemId"):
         ids, src = [int(r["ItemId"])], anyfile
     elif r.get("SeriesId"):
@@ -67,20 +72,20 @@ for r in csv.DictReader(open(sheet, encoding="utf-8")):
         if iid not in src or src[iid][2] == fmt:
             refused.append(iid)
             continue
-        writes.append((iid, src[iid][0], src[iid][1], src[iid][2], fmt))
+        writes.append((iid, src[iid][0], src[iid][1], src[iid][2], fmt, raw))
 
 print(f"{len(pop)} file(s) in the population; this sheet decides {len(writes)}")
 if refused:
     print(f"   {len(refused)} id(s) outside the population, skipped")
-for iid, fn, pages, was, want in writes[:12]:
-    print(f"   {iid:<8} {pages:>3}pp  Format {was} -> {want}   {fn[:60]}")
+for iid, fn, pages, was, want, raw in writes[:12]:
+    print(f"   {iid:<8} {pages:>3}pp  Format {was} -> {want}{f' (raw {raw!r})' if raw else ''}   {fn[:60]}")
 if len(writes) > 12:
     print(f"   ... and {len(writes) - 12} more")
 
 if not APPLY:
     print("\n(dry run - re-run with --apply)")
     raise SystemExit
-con.executemany("UPDATE ComicDetail SET Format = ?, FormatRaw = FormatRaw WHERE ItemId = ?",
-                [(w, i) for i, _, _, _, w in writes])
+con.executemany("UPDATE ComicDetail SET Format = ?, FormatRaw = coalesce(?, FormatRaw) WHERE ItemId = ?",
+                [(w, raw, i) for i, _, _, _, w, raw in writes])
 con.commit()
 print(f"\napplied: {len(writes)} row(s)")

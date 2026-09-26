@@ -2264,3 +2264,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   hull #11-22 with 'SUPERGIRL 11, 13-22, …' quoted FIRST (SpanEvidence reads only the first quotation, and needs both
   endpoints in it). Green Lantern (2011) #28 IS in Vol. 05 (cover p26): GCD omits it because it indexes the #28 flipbook
   as its own series s236848 Green Lantern / Red Lanterns — a GCD hole at a flipbook number is an indexing artefact.
+[L-418] ruling kind:magazine
+- 09-26 (Eric): a MAGAZINE run (Fangoria, Star Wars Insider, OZ, Wizard, Lucasfilm Fan Club Magazine, movie magazines) is
+  `F not-a-run` — no comic-catalog link is owed and the shelf leaves the open tier — but it must READ on the site like a
+  run: numbered issues in main-tier reading order, each issue file Format Magazine (12) with FormatRaw "Magazine" (the
+  modal shows the raw label first; apply_read_format.py takes an optional FormatRaw column). A catalog record for the
+  magazine itself, where one exists, still wins as an S. Collections of a magazine keep their collection format; a
+  special edition keeps Special. Comic strips / newspaper comics / comics shorts filed under a Magazines folder (DC's
+  MAD digital shorts) are NOT magazines. Prose novels and picture books are a separate question (not ruled).
