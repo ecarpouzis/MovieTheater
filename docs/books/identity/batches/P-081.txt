@@ -1,0 +1,365 @@
+## Conventions for this batch (24 shown of 161 matched; 419 in LEDGER.md; 5 shelf/shelves: folder:events ×4 · pub:marvel ×3 · folder:vn-year ×3 · pub:dc ×2 · pub:dark-horse ×1 · kind:archive ×1 · kind:foreign ×1 · folder:sequel-subfolder ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-281] (5 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-033] (3 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-034] (3 shelf/shelves) folder:events pub:marvel sig:round2
+- `_X-Men Complete Chronology` / `_Marvel Major Event Chronology` folders re-file the same books a second and
+  third time — every ratio 2.00 there, never a second run. Crossover blocks get handed one member's series by
+  `round2-folder` (four Age of Apocalypse shelves → "X-Man", a 76-issue hull).
+[L-127] (3 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-130] (3 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-133] (3 shelf/shelves) pub:marvel sig:probe
+- GCD splits a compound word ComicVine joins: "X-Men: Clan Destine" (5570) is invisible to a "ClanDestine" probe,
+  and 32535 "ClanDestine vs. The X-Men" is the collected edition, not the mini.
+[L-136] (3 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-142] (3 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-169] (3 shelf/shelves) folder:events pub:marvel sig:trade-link
+- `_Marvel Major Event Chronology (digital)` is one folder per tie-in holding that tie-in's collected edition: the
+  count-1-trade-as-stored-link artefact runs at 86 of 202 shelves there, the highest rate in any single folder.
+[L-174] (3 shelf/shelves) pub:marvel sig:legacy-stamp sig:stamp
+- A legacy-renumbered run is its own volume in both legs (Captain Marvel #125-129 = CV 105506 / GCD 117972; GotG
+  #146-150 = GCD 118041); the per-file matcher reaches the 1960s/1990s namesake by issue number every time.
+[L-242] (3 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-319] (3 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-343] (3 shelf/shelves) pub:dark-horse pub:idw pub:marvel sig:probe
+- More GCD name shapes (R-067): Dark Horse High Republic Adventures inserts "(Phase III)" and uses a comma form
+  ("…Adventures, The Nameless Terror"); IDW / Disney / Marvel Illustrated drop a leading "The" or "A Graphic Novel";
+  Marvel's Dark Tower strips punctuation ("Drawing of Three"). GCD indexes NO Marvel Infinity Comics (gcd=- stands).
+  An Image-style deluxe / "Complete" edition of ONE run merges into the run shelf (Department of Truth).
+[L-388] (3 shelf/shelves) pub:marvel sig:split
+- R-134 (wave 128, lead ruling): RESIDUE vs co-equal — two or more whole trades of another run are a co-equal run (R +
+  split-needed) only when that run has NO shelf of its own; when its run or line already has a shelf, they are misfiled
+  books: S + `F split-needed | items -> join S<home>` (L-368; X-Factor 2024 S66336's two Peter David omnibuses -> S22172).
+  `#MARVEL CURRENT ONGOING TITLES`: Marika / MikeNY76 ComicInfo Web ids and "cvv<id>" Series strings name the stored CV
+  volume (1.0 evidence). From the Ashes "Variant Covers" folders hold the PREVIOUS run's finale covers (X-Men v6 #35 in
+  the v7 folder). "_X-Men Complete Chronology V2\NNNN <event>" annuals are event-chapter excerpts = partial rips. A
+  ripper's "Omnibus Book 01" in a run's folder can be that run's first omnibus, not the line's Vol. 1 (page count decides).
+  CV mints one count-1 volume per Venom by Ewing trade; GCD keeps two lines (183532 Vols 1-4, 208820 Vols 5-8).
+[L-391] (3 shelf/shelves) pub:marvel sig:split
+- Lead rulings (waves 133-134): annuals on a monthly's shelf are residue ONLY while they have no home — when an annual
+  series has its own shelf (Avengers Annual S1612, CV 2350 / GCD 1807), they JOIN it (refines L-369). L-369's first-record
+  rule needs the chain's OPENING issues on the shelf: Rawhide Kid S14413 holds only the 1960+ era, so it stores the 1960
+  records. A TPB line spanning two runs keeps its own identity (Spider-Man 2099 GCD 86779 Vols 1-7 over the 2014 and 2015
+  runs; L-109/L-318). Star Brand: CV splits the retitle (3652 #1-10 / 51406 #11-19), GCD 3204 keeps #1-19 — store 3652
+  (L-369). Humorama Zip: CV numbers by cover month (#196403); "v14 07" = January 1968. Time Runs Out: GCD 89288 = the
+  2015 HC rows, 92245 = the TPB rows; CV 79464 follows the HC dates. Chronology `NNN Avengers` refiles of v1 issues are
+  second rips; later-volume files were folded onto the v1 shelf by bare title — split by year.
+[L-399] (3 shelf/shelves) folder:events pub:marvel sig:split
+- Waves 149-150: Marvel chronology folders — "Ghost Rider v2 NNN" / "(1992)" follows CV's VOLUME ordinal (1990 = Vol. 2),
+  not our folder vN (1973 = v2); check the file's year against the shelf's run. An FF annual that looks recordless can
+  sit under its exact slash title ("Fantastic Four / Fantastic 4 '98", CV 138969 / GCD 7723). GCD splits FF Annual #32-33
+  into a separate 2010-2012 series (67080) while CV keeps them on 2129. A Marvel TPB volume continuing a run's trade
+  numbering after a relaunch that keeps legacy numbering ("Ghost Rider Vol. 05: Final Vengeance", GCD 191541 #5) joins the
+  run's shelf. L-389 blocks only a run's ISSUES from a creator-trade shelf: that creator line's own books join it
+  (Doctor Strange by Mark Waid Books 01-02 -> S5642). C lines on a containment-refused book stand (identity-level).
+[L-402] (3 shelf/shelves) pub:marvel sig:split
+- Waves 155-156 (lead rulings): an annual shelf created AFTER a run's revisit strands the annuals on the run shelf —
+  grep `--who-stores` for the annual's cv at every revisit (ASM Annuals #1-39 -> S42165; #40 -> the 1999 run, #41-42 ->
+  the 2014 run). ASM Annuals #29-34 (1995-2001) go with the annual line although neither catalogue indexes them in CV
+  2189 / GCD 1635: Marvel resumed the legacy count at #35 (L-390). Ripper-split annuals ("Annual 1.1/1.2/1.3") are ONE book
+  cut in parts — each part gets the same issue I line. Run issues joining a shelf that holds the run's trades (Invincible
+  Iron Man 2015 #6-14 -> S94637) make that shelf the RUN: restate it on the run's records, trades on I lines. Halts this
+  round: a C line on an item a landed split moved (C-045 item 81993) -> comment it out; a second trade rip merged in
+  unflagged (One Moment in Time 94006) -> iscollection csv + `u` beside its sibling on S4752.
+[L-175] (4 shelf/shelves) folder:bucket folder:events pass:item
+- In the chronology folders the RUN rule stands over the bucket rule: `S` = the numbered run, the tie-in's collected
+  record goes on the `I` line (B-072/073, ~90 shelves); the book's own record is the S only where no numbered run exists.
+[L-060] (2 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (2 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-124] (3 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-172] (2 shelf/shelves) pub:marvel sig:probe
+- Marvel ships minis under a SHORTER title than the trade: AVX: VS / AVX: Consequences, "1872", "Years of Future Past",
+  "The Union", "Atlantis Attacks", "War of the Realms: Punisher" (no "The") — probe the abbreviation or the bare
+  title before writing provider-missing.
+[L-191] (3 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-272] (3 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+
++137 more matched entries not shown: L-364, L-371, L-378, L-387, L-389, L-390, L-393, L-395, L-396, L-403, L-064, L-085, L-101, L-193, L-310, L-016, L-032, L-113, L-114, L-164, L-291, L-011, L-014, L-015, L-027, L-028, L-031, L-036, L-040, L-051, L-077, L-082, L-093, L-106, L-111, L-112, L-119, L-173, L-187, L-194, L-195, L-197, L-198, L-199, L-203, L-205, L-210, L-211, L-212, L-214, L-215, L-228, L-237, L-254, L-255, L-260, L-265, L-297, L-298, L-311, L-313, L-324, L-329, L-330, L-345, L-348, L-363, L-365, L-366, L-368, L-369, L-372, L-373, L-377, L-379, L-383, L-404, L-413, L-013, L-043, L-050, L-054, L-065, L-072, L-088, L-089, L-095, L-096, L-097, L-099, L-118, L-123, L-125, L-128, L-135, L-157, L-159, L-163, L-177, L-181, L-186, L-204, L-244, L-246, L-247, L-248, L-251, L-252, L-253, L-258, L-262, L-264, L-267, L-269, L-273, L-274, L-275, L-279, L-282, L-285, L-286, L-287, L-288, L-289, L-290, L-292, L-293, L-294, L-309, L-314, L-336, L-341, L-346, L-347, L-352, L-354, L-150 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S14311 Rebels  [split]  4 files / 2 collections  decided in R-188 (S)
+   decided: S 14311 cv=81225 gcd=88261 0.95 | CV 81225 (2015 Dark Horse, 10 issues) and GCD dump's own-name match 88261 (2015-2016 Dark Horse, 10) agree; the two judged trade volumes fit inside the 10-issue run
+   F 14311 split-needed | items 16319, 16332 -> join S14306 on its key "R.E.B.E.L.S." — "28 REBELS 10" / "41 REBELS 11" sit in the Blackest Night reading-order folder (DC Events\...\144 Blackest Night): they are R.E.B.E.L.S. (DC 2009, CV 25833 #10 182942 "The Son & the Stars: Part One" / #11 186723), the Blackest Night tie-ins, not Dark Horse's Rebels
+   named: S14306 R.E.B.E.L.S.  29 files  keys: "R.E.B.E.L.S." | "R.E.B.E.L.S. (2009)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S7584 "Girl Rebels" 1f [title+1 — S cv=162653 (B-067 0.9)] keys: "Girl Rebels"
+   keys now: "REBELS" x2 · "Rebels" x2
+   groups (title x folder): 2
+   G1 "REBELS" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\144 Blackest Night — 2 file(s), numbers 10-11, pp 33-37; cv per-file 81225x2; key 'REBELS'
+      [16319] 28 REBELS 10.cbr (37pp)
+      [16332] 41 REBELS 11.cbr (33pp)
+   G2 "Rebels" in Dark Horse\Rebels (2015) — 2 file(s), 2 COL, pp 207-264; cv per-file 81225x2; gcd per-file 101001x1, 88261x1; key 'Rebels'
+      [13729] COL Rebels Vol. 01 - A Well-Regulated Militia (2016) (digital) (Son of Ultron-Empire).cbr (264pp)
+         own record cv 81225 / gcd s101001 "Rebels" (issue 1566646) COLLECTS: gcd=88261 Rebels (2015) #1-10
+      [13730] COL Rebels Vol. 02 - These Free and Independent States (2018) (digital) (Son of Ultron-Empire).cbr (207pp)
+
+== S790 Alpha Flight  [split]  251 files / 4 collections  decided in R-188 (S)
+   decided: S 790 cv=3217 gcd=2737 0.95 | CV 3217/GCD 2737 "Alpha Flight" 1983-1994 Marvel (130 issues) match 247/251 and 198/251 files across our #0-130 ladder; judged range confirms the Classic Vol.03 trade; residue = the Spanish co-edition (29346), the 2011 mini (58694, its own separate later run, minor), and the X-Men/Alpha Flight crossover (3062, minor)
+   F 790 split-needed | items 88909, 88910, 88911 -> join S792 on its key "Alpha Flight - In the Beginning -001" — "001 Alpha Flight v2 018-020 (1999)" are Alpha Flight (Marvel 1997-1999, CV 11291 / GCD 12237), the run S792 stores; on S790 they nest under Classic Vol. 02 / 03 (gap containment, Fable 09-25)
+   named: S792 Alpha Flight  26 files  keys: "Alpha Flight (1997)" | "Alpha Flight - In the Beginning -001" | "Alpha Flight v2 (1997)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S18826 "The Incredible Hulk" 409f [shares gcd=1866 (collected by item 52340) — S cv=2406 gcd=1866 (R-153 0.9)] keys: "The Incredible Hulk" | "The Incredible Hulk v1 (1968)"
+   nearby: S103744 "The X-Men" 198f [shares gcd=1576 (collected by item 52339) — S cv=2133 gcd=1576 (R-054 0.95)] keys: "X-Men by Lee & Kirby Omnibus (2009)"
+   nearby: S11410 "Marvel Fanfare" 58f [shares gcd=2657 (collected by item 52340) — S cv=3143 gcd=2657 (R-140 0.95)] keys: "Marvel Fanfare"
+   nearby: S15299 "Secret Wars II" 17f [shares gcd=3045 (collected by item 52340) — S cv=3506 gcd=3045 (C-055 0.95)] keys: "Secret Wars II"
+   nearby: S95039 "Alpha Flight" 4f [shares gcd=58694 (collected by item 52369) — S cv=40216 gcd=58694 (C-040 0.95)] keys: "Alpha Flight v4 (2011)"
+   nearby: S101685 "Alpha Flight" 14f [title — S cv=10818 gcd=11735 (C-056 0.95)] keys: "Alpha Flight (2004)"
+   nearby: S791 "Alpha Flight" 6f [title — S cv=153020 gcd=203293 (A-020 0.9)] keys: "Alpha Flight (2023)" | "Alpha Flight - Divided We Stand"
+   nearby: S22437 "X-Men/Alpha Flight" 3f [title — S cv=9191 gcd=9945 (A-026 0.9)] keys: "X-Men/Alpha Flight"
+   keys now: "Alpha Flight (1983)" x141 · "Alpha Flight v1 (1983)" x101 · "X-Men - Alpha Flight (1985)" x4 · "Alpha Flight Classic (1983)" x3 · "Alpha Flight by Greg Pak & Fred Van Lente (1983)" x1 · "Alpha Flight" x1
+   groups (title x folder): 44
+   G1 "Alpha Flight Special" in Marvel\_Alpha Flight\Alpha Flight Special (1991) — 4 file(s), numbers 1-4, pp 20-37; cv per-file 3217x4; key 'Alpha Flight (1983)'
+      e.g. Alpha Flight Special 01 (of 04) (1991).cbr
+        52233 #1 1991 23pp · 52234 #2 1991 20pp · 52235 #3 1991 24pp · 52236 #4 1991 37pp
+   G2 "Alpha Flight" in Marvel\_Alpha Flight\Alpha Flight v1 (1983) — 101 file(s), numbers 30-130, pp 22-52; cv per-file 3217x101; gcd per-file 2737x101; key 'Alpha Flight v1 (1983)'
+      e.g. Alpha Flight 030 (1986) (c2c) (MrWoodman).cbr
+        52237 #30 1986 36pp · 52238 #31 1986 36pp · 52239 #32 1986 36pp · 52240 #33 1986 23pp · 52241 #34 1986 22pp · 52242 #35 1986 36pp · 52243 #36 1986 36pp · 52244 #37 1986 36pp
+        52245 #38 1986 36pp · 52246 #39 1986 23pp · 52247 #40 1986 25pp · 52248 #41 1986 25pp · 52249 #42 1987 36pp · 52250 #43 1987 36pp · 52251 #44 1987 36pp · 52252 #45 1987 36pp
+        52253 #46 1987 36pp · 52254 #47 1987 36pp · 52255 #48 1987 36pp · 52256 #49 1987 36pp · 52257 #50 1987 52pp · 52258 #51 1987 35pp · 52259 #52 1987 24pp · 52260 #53 1987 24pp
+        52261 #54 1988 35pp · 52262 #55 1988 35pp · 52263 #56 1988 35pp · 52264 #57 1988 35pp · 52265 #58 1988 36pp · 52266 #59 1988 36pp · 52267 #60 1988 23pp · 52268 #61 1988 36pp
+        52269 #62 1988 31pp · 52270 #63 1988 32pp · 52271 #64 1988 30pp · 52272 #65 1988 30pp · 52273 #66 1989 31pp · 52274 #67 1989 28pp · 52275 #68 1989 29pp · 52276 #69 1989 29pp
+        52277 #70 1989 29pp · 52278 #71 1989 29pp · 52279 #72 1989 26pp · 52280 #73 1989 26pp · 52281 #74 1989 36pp · 52282 #75 1989 51pp · 52283 #76 1989 36pp · 52284 #77 1989 31pp
+        52285 #78 1989 24pp · 52286 #79 1989 24pp · 52287 #80 1990 24pp · 52288 #81 1990 25pp · 52289 #82 1990 36pp · 52290 #83 1990 25pp · 52291 #84 1990 24pp · 52292 #85 1990 24pp
+        52293 #86 1990 25pp · 52294 #87 1990 35pp · 52295 #88 1990 ?pp · 52296 #89 1990 24pp · 52297 #90 1990 27pp · 52298 #91 1991 35pp · 52299 #92 1991 35pp · 52300 #93 1991 36pp
+        52301 #94 1991 36pp · 52302 #95 1991 36pp · 52303 #96 1991 35pp · 52304 #97 1991 39pp · 52305 #98 1991 36pp · 52306 #99 1991 36pp · 52307 #100 1992 52pp · 52308 #101 1991 25pp
+        52309 #102 1991 35pp · 52310 #103 1991 23pp · 52311 #104 1992 34pp · 52312 #105 1992 25pp · 52313 #106 1992 23pp · 52314 #107 1992 24pp · 52315 #108 1992 24pp · 52316 #109 1992 27pp
+        52317 #110 1992 23pp · 52318 #111 1992 24pp · 52319 #112 1992 24pp · 52320 #113 1992 34pp · 52321 #114 1992 24pp · 52322 #115 1992 35pp · 52323 #116 1993 24pp · 52324 #117 1993 35pp
+        52325 #118 1993 26pp · 52326 #119 1993 26pp · 52327 #120 1993 36pp · 52328 #121 1993 26pp · 52329 #122 1993 25pp · 52330 #123 1993 25pp · 52331 #124 1993 23pp · 52332 #125 1993 23pp
+        52333 #126 1993 34pp · 52334 #127 1993 24pp · 52335 #128 1994 24pp · 52336 #129 1994 26pp · 52337 #130 1994 40pp
+   G3 "Alpha Flight Classic" in Marvel\_Alpha Flight\Alpha Flight v1 (1983)\Trades — 3 file(s), 3 COL, pp 199-301; cv per-file 3217x3; gcd per-file 24895x3; key 'Alpha Flight Classic (1983)'
+      [52338] COL Alpha Flight Classic Vol. 01 (2014) (Digital) (Kileko-Empire).cbz (199pp)
+         own record cv 3217 / gcd s24895 "Alpha Flight Classic" (issue 358876) COLLECTS: gcd=2737 Alpha Flight (1983) #1-8
+      [52339] COL Alpha Flight Classic Vol. 02 (2011) (Digital) (Kileko-Empire).cbr (295pp)
+         own record cv 3217 / gcd s24895 "Alpha Flight Classic" (issue 1031257) COLLECTS: gcd=2737 Alpha Flight (1983) #9-19 · gcd=1576 The X-Men (1963) #109
+      [52340] COL Alpha Flight Classic Vol. 03 (2012) (Digital) (AnHeroGold-Empire).cbz (301pp)
+         own record cv 3217 / gcd s24895 "Alpha Flight Classic" (issue 1031258) COLLECTS: gcd=2737 Alpha Flight (1983) #20-29 · gcd=3045 Secret Wars II (1985) #4 · gcd=1866 The Incredible Hulk (1968) #313 · gcd=2657 Marvel Fanfare (1982) #23
+   G4 "Alpha Flight by Greg Pak & Fred Van Lente" in Marvel\_Alpha Flight\Alpha Flight v4 (2011) — 1 file(s), 1 COL, pp 136-136; cv per-file 3217x1; gcd per-file 71858x1; key 'Alpha Flight by Greg Pak & Fred Van Lente (1983)'
+      [52369] COL Alpha Flight by Greg Pak & Fred Van Lente Vol. 01 (2016) (Digital) (Kileko-Empire).cbz (136pp)
+         own record cv 3217 / gcd s71858 "Alpha Flight by Greg Pak & Fred Van Lente" (issue 1071218) COLLECTS: gcd=58694 Alpha Flight (2011) #0.1, #1-4
+   G5 "Alpha Flight - Facsimile Edition" in Marvel\_Marvel Facsimile Editions — 1 file(s), numbers 1, pp 52-52; cv per-file 3217x1; key 'Alpha Flight (1983)'
+      [83008] Alpha Flight - Facsimile Edition 001 (2019) (Digital) (Shadowcat-Empire).cbz (52pp)
+   G6 "X-Men - Alpha Flight" in Marvel\_X-Men\X-Men - Alpha Flight (1986) — 2 file(s), numbers 1-2, pp 47-50; cv per-file 3522x2; gcd per-file 3062x2; key 'X-Men - Alpha Flight (1985)'
+      [86068] X-Men - Alpha Flight 001 (1985) (Digital) (AnHeroGold-Empire).cbz (47pp)
+      [86069] X-Men - Alpha Flight 002 (1986) (Digital) (AnHeroGold-Empire).cbz (50pp)
+   G7 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0026 Alpha Flight — 6 file(s), numbers 1-6, pp 22-40; cv per-file 3217x6; gcd per-file 2737x5, 72139x1; key 'Alpha Flight (1983)'
+      e.g. 001 Alpha Flight 001 (1983) (Digital) (TLK-EMPIRE-HD).cbr
+        86884 #1 1983 40pp · 86885 #2 1983 24pp · 86886 #3 1983 23pp · 86888 #4 1983 22pp · 86889 #5 1983 24pp · 86890 #6 1984 23pp
+   G8 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0030 Importance of Being Deadly — 5 file(s), numbers 7-11, pp 23-24; cv per-file 3217x5; gcd per-file 2737x3, 72139x2; key 'Alpha Flight (1983)'
+      e.g. 001 Alpha Flight 007 (1984) (Digital) (TLK-EMPIRE-HD).cbr
+        86908 #7 1984 24pp · 86909 #8 1984 24pp · 86910 #9 1984 23pp · 86911 #10 1984 23pp · 86912 #11 1984 23pp
+   G9 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0035 And One Shall Surely Die — 5 file(s), numbers 12-16, pp 23-39; cv per-file 3217x5; gcd per-file 2737x5; key 'Alpha Flight (1983)'
+      e.g. 001 Alpha Flight 012 (1984) (Digital) (TLK-EMPIRE-HD).cbr
+        86933 #12 1984 39pp · 86934 #13 1984 23pp · 86935 #14 1984 23pp · 86936 #15 1984 23pp · 86937 #16 1984 24pp
+   G10 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0036 Untitled — 1 file(s), numbers 17, pp 23-23; cv per-file 3217x1; gcd per-file 2737x1; key 'Alpha Flight (1983)'
+      [86945] 008 Alpha Flight 017 (1984) (Digital) (AnHeroGold-Empire).cbz (23pp)
+   G11 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0042 Untitled — 4 file(s), numbers 18-21, pp 22-23; cv per-file 3217x4; gcd per-file 29346x4; key 'Alpha Flight (1983)'
+      e.g. 001 Alpha Flight 018 (1985) (Digital) (AnHeroGold-Empire).cbz
+        86978 #18 1985 23pp · 86979 #19 1985 23pp · 86980 #20 1985 22pp · 86981 #21 1985 23pp
+   G12 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0046 Untitled — 6 file(s), numbers 22-27, pp 22-38; cv per-file 3217x6; gcd per-file 29346x6; key 'Alpha Flight (1983)'
+      e.g. 001 Alpha Flight 022 (1985) (Digital) (AnHeroGold-Empire).cbz
+        86994 #22 1985 23pp · 86995 #23 1985 23pp · 86996 #24 1985 38pp · 86997 #25 1985 23pp · 86998 #26 1985 22pp · 86999 #27 1985 22pp
+   G13 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0048 Secret Wars II — 7 file(s), numbers 28-34, pp 22-36; cv per-file 3217x7; gcd per-file 2737x5, 29346x2; key 'Alpha Flight (1983)'
+      e.g. 020 Alpha Flight 028 (1985) (Digital) (AnHeroGold-Empire).cbz
+        87023 #28 1985 24pp · 87039 #29 1985 22pp · 87040 #30 1986 36pp · 87041 #31 1986 36pp · 87042 #32 1986 36pp · 87051 #33 1986 23pp · 87052 #34 1986 22pp
+   G14 "X-Men-Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0051 X-Men & Alpha Flight — 2 file(s), numbers 1-2, pp 47-50; cv per-file 3522x2; gcd per-file 3062x2; key 'X-Men - Alpha Flight (1985)'
+      [87070] 001 X-Men-Alpha Flight 001 (1985) (digital) (Minutemen-FactorX).cbr (47pp)
+      [87071] 002 X-Men-Alpha Flight 002 (1985) (digital) (Minutemen-FactorX).cbr (50pp)
+   G15 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0052 Untitled — 6 file(s), numbers 35-40, pp 23-36; cv per-file 3217x6; gcd per-file 2737x6; key 'Alpha Flight (1983)'
+      e.g. 001 Alpha Flight 035 (1986) (MrWoodman).cbr
+        87073 #35 1986 36pp · 87074 #36 1986 36pp · 87075 #37 1986 36pp · 87076 #38 1986 36pp · 87077 #39 1986 23pp · 87079 #40 1986 35pp
+   G16 "Alpha Flight Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0052 Untitled — 1 file(s), numbers 1, pp 52-52; cv per-file 3217x1; gcd per-file 29346x1; key 'Alpha Flight (1983)'
+      [87080] 008 Alpha Flight Annual 001 (1986) (c2c) (MrWoodman).cbr (52pp)
+   G17 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0057 It's Not Easy Being Purple — 5 file(s), numbers 41-43, 45-46, pp 35-36; cv per-file 3217x5; gcd per-file 2737x5; key 'Alpha Flight (1983)'
+      e.g. 001 Alpha Flight 041 (1986) (FB-DCP) (C2C).CBR
+        87106 #41 1986 35pp · 87107 #42 1987 36pp · 87108 #43 1987 36pp · 87110 #45 1987 36pp · 87111 #46 1987 36pp
+   G18 "Alpha Flight Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0057 It's Not Easy Being Purple — 1 file(s), numbers 2, pp 41-41; cv per-file 3217x1; key 'Alpha Flight (1983)'
+      [87112] 007 Alpha Flight Annual 2 (1987).cbr (41pp)
+   G19 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0066 Madness — 5 file(s), numbers 47-48, 50-52, pp 24-52; cv per-file 3217x5; gcd per-file 2737x5; key 'Alpha Flight (1983)'
+      e.g. 001 Alpha Flight 047 (1987) (MrWoodman).cbr
+        87149 #47 1987 36pp · 87150 #48 1987 36pp · 87152 #50 1987 52pp · 87153 #51 1987 35pp · 87154 #52 1987 24pp
+   G20 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0069 Untitled — 1 file(s), numbers 53, pp 24-24; cv per-file 3217x1; key 'Alpha Flight (1983)'
+      [87168] 010 Alpha Flight 053.cbr (24pp)
+   G21 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0073 Goblyn — 7 file(s), numbers 54-60, pp 23-36; cv per-file 3217x7; gcd per-file 2737x7; key 'Alpha Flight (1983)'
+      e.g. 001 Alpha Flight 054 (1988) (MrWoodman).cbr
+        87201 #54 1988 35pp · 87202 #55 1988 35pp · 87203 #56 1988 35pp · 87204 #57 1988 35pp · 87205 #58 1988 36pp · 87206 #59 1988 36pp · 87207 #60 1988 23pp
+   G22 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0079 Inquisition — 6 file(s), numbers 61-66, pp 30-36; cv per-file 3217x6; gcd per-file 2737x6; key 'Alpha Flight (1983)'
+      e.g. 001 Alpha Flight 061 (1988) (MrWoodman).cbr
+        87248 #61 1988 36pp · 87249 #62 1988 31pp · 87250 #63 1988 32pp · 87251 #64 1988 30pp · 87252 #65 1988 30pp · 87253 #66 1989 31pp
+   G23 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0091 Wrath of the Dreamqueen — 4 file(s), numbers 67-70, pp 28-29; cv per-file 3217x4; gcd per-file 2737x4; key 'Alpha Flight (1983)'
+      e.g. 001 Alpha Flight 067 (1989).cbz
+        87332 #67 1989 28pp · 87333 #68 1989 29pp · 87334 #69 1989 29pp · 87335 #70 1989 29pp
+   G24 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0098 Untitled — 3 file(s), numbers 72-74, pp 26-36; cv per-file 3217x3; gcd per-file 2737x3; key 'Alpha Flight (1983)'
+      [87383] 002 Alpha Flight 072 (1989).cbz (26pp)
+      [87384] 003 Alpha Flight 073 (1989).cbz (26pp)
+      [87385] 004 Alpha Flight 074 (1989) (MrWoodman).cbr (36pp)
+   G25 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0109 Gamma Flight — 2 file(s), numbers 76, 78, pp 24-36; cv per-file 3217x2; gcd per-file 2737x2; key 'Alpha Flight (1983)'
+      [87458] 001 Alpha Flight 076 (1989) (MrWoodman).cbr (36pp)
+      [87460] 003 Alpha Flight 078 (1989).cbz (24pp)
+   G26 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance — 2 file(s), numbers 79-80, pp 24-24; cv per-file 3217x2; gcd per-file 2737x2; key 'Alpha Flight (1983)'
+      [87482] 017 Alpha Flight 079 (1989) (Digital) (Shadowcat-Empire).cbz (24pp)
+      [87490] 025 Alpha Flight 080 (1990) (Digital) (Shadowcat-Empire).cbz (24pp)
+   G27 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0112 The Quest for Northstar — 6 file(s), numbers 81-86, pp 24-36; cv per-file 3217x6; gcd per-file 2737x6; key 'Alpha Flight (1983)'
+      e.g. 001 Alpha Flight 081 (1990) (MrWoodman).cbr
+        87534 #81 1990 36pp · 87535 #82 1990 36pp · 87536 #83 1990 25pp · 87537 #84 1990 24pp · 87538 #85 1990 24pp · 87539 #86 1990 25pp
+   G28 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0124 Building Blocks — 3 file(s), numbers 87-88, 90, pp 27-35; cv per-file 3217x3; gcd per-file 2737x1; key 'Alpha Flight (1983)'
+      [87603] 001 Alpha Flight 087 (1990) (MrWoodman).cbr (35pp)
+      [87604] 002 Alpha Flight 088.cbr (?pp)
+      [87606] 004 Alpha Flight 090.cbr (27pp)
+   G29 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0132 Untitled — 6 file(s), numbers 91-96, pp 35-36; cv per-file 3217x6; gcd per-file 2737x6; key 'Alpha Flight (1983)'
+      e.g. 001 Alpha Flight 091 (1991) (MrWoodman).cbr
+        87644 #91 1991 35pp · 87645 #92 1991 35pp · 87646 #93 1991 36pp · 87647 #94 1991 36pp · 87648 #95 1991 36pp · 87649 #96 1991 35pp
+   G30 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0140 The Final Option — 4 file(s), numbers 97-100, pp 36-52; cv per-file 3217x4; gcd per-file 2737x4; key 'Alpha Flight (1983)'
+      e.g. 001 Alpha Flight 097 (1991) (MrWoodman).cbr
+        87686 #97 1991 39pp · 87687 #98 1991 36pp · 87688 #99 1991 36pp · 87689 #100 1992 52pp
+   G31 "Alpha Flight Special" in Marvel\_X-Men\_X-Men Complete Chronology V2\0140 The Final Option — 4 file(s), numbers 1-4, pp 20-37; cv per-file 3217x4; key 'Alpha Flight (1983)'
+      e.g. 005 Alpha Flight Special 01 (of 4) (1991).cbr
+        87690 #1 1991 23pp · 87691 #2 1991 20pp · 87692 #3 1991 24pp · 87693 #4 1991 37pp
+   G32 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0149 Untitled — 5 file(s), numbers 101-105, pp 25-38; cv per-file 3217x5; gcd per-file 2737x5; key 'Alpha Flight (1983)'
+      e.g. 001 Alpha Flight 101 (1991).cbr
+        87736 #101 1991 25pp · 87737 #102 1991 35pp · 87738 #103 1991 38pp · 87739 #104 1992 34pp · 87740 #105 1992 25pp
+   G33 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0157 World Tour '92 — 3 file(s), numbers 106, 108-109, pp 23-27; cv per-file 3217x3; gcd per-file 2737x3; key 'Alpha Flight (1983)'
+      [87772] 001 Alpha Flight 106 (1992) (Digital) (AnHeroGold-Empire).cbz (23pp)
+      [87774] 003 Alpha Flight 108 (1992).cbr (24pp)
+      [87775] 004 Alpha Flight 109 (1992).cbr (27pp)
+   G34 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0167 Bare Bones — 3 file(s), numbers 111-113, pp 25-34; cv per-file 3217x3; gcd per-file 2737x3; key 'Alpha Flight (1983)'
+      [87828] 002 Alpha Flight 111 (1992).cbr (25pp)
+      [87829] 003 Alpha Flight 112 (1992) (MrWoodman).cbr (34pp)
+      [87830] 004 Alpha Flight 113 (1992) (MrWoodman).cbr (34pp)
+   G35 "Alpha Flight Special" in Marvel\_X-Men\_X-Men Complete Chronology V2\0167 Bare Bones — 1 file(s), numbers 5, pp 39-39; cv per-file 3217x1; key 'Alpha Flight (1983)'
+      [87831] 005 Alpha Flight Special (1992).cbr (39pp)
+   G36 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0176 Extreme Prejudice — 4 file(s), numbers 114-117, pp 24-35; cv per-file 3217x4; gcd per-file 2737x4; key 'Alpha Flight (1983)'
+      e.g. 001 Alpha Flight 114 (1992) (MrWoodman).cbr
+        87876 #114 1992 32pp · 87877 #115 1992 35pp · 87878 #116 1993 24pp · 87879 #117 1993 35pp
+   G37 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0183 The Clampdown — 1 file(s), numbers 120, pp 26-26; cv per-file 3217x1; gcd per-file 2737x1; key 'Alpha Flight (1983)'
+      [87914] 003 Alpha Flight 120 (1993).cbz (26pp)
+   G38 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0191 The Holy Terror — 1 file(s), numbers 122, pp 25-25; cv per-file 3217x1; gcd per-file 2737x1; key 'Alpha Flight (1983)'
+      [87946] 002 Alpha Flight 122 (1993).cbz (25pp)
+   G39 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0201 Dead Reckoning — 3 file(s), numbers 125-127, pp 23-24; cv per-file 3217x3; gcd per-file 2737x3; key 'Alpha Flight (1983)'
+      [88002] 001 Alpha Flight 125 (1993).cbz (23pp)
+      [88003] 002 Alpha Flight 126 (1993).cbr (23pp)
+      [88004] 003 Alpha Flight 127 (1993).cbz (24pp)
+   G40 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0209 No Future — 1 file(s), numbers 128, pp 24-24; cv per-file 3217x1; gcd per-file 2737x1; key 'Alpha Flight (1983)'
+      [88037] 001 Alpha Flight 128 (1994).cbz (24pp)
+   G41 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0386 Alpha Omega — 3 file(s), numbers 18-20, pp 23-25; cv per-file 3217x3; gcd per-file 12237x2, 29368x1; key 'Alpha Flight (1983)'
+      [88909] 001 Alpha Flight v2 018 (1999) (NastyNat).cbr (24pp)
+      [88910] 002 Alpha Flight v2 019 (1999).cbr (23pp)
+      [88911] 003 Alpha Flight v2 020 (1999) (Zeus-TCR).cbr (25pp)
+   G42 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0924 Fear Itself — 5 file(s), numbers 0-4, pp 22-30; cv per-file 3217x5; gcd per-file 58694x4; key 'Alpha Flight' | 'Alpha Flight (1983)'
+      e.g. 010 Alpha Flight 01 (of 08) (2011) (digital-hd-Empire).cbr
+        91781 #1 2011 30pp · 91791 #2 2011 22pp · 91792 #3 2011 23pp · 91799 #4 2011 23pp
+      [91780] 009 Alpha Flight 000.1 (2011) (digital-hd-Empire).cbr (23pp)  key="Alpha Flight"
+   G43 "Alpha Flight" in Marvel\_X-Men\_X-Men Complete Chronology V2\0948 Flight vs Strike — 4 file(s), numbers 5-8, pp 23-24; cv per-file 3217x4; gcd per-file 58694x4; key 'Alpha Flight (1983)'
+      e.g. 001 Alpha Flight 05 (of 08) (2011) (digital-hd-Empire).cbr
+        91908 #5 2011 23pp · 91909 #6 2012 23pp · 91910 #7 2012 23pp · 91911 #8 2012 24pp
+   G44 "Alpha Flight" in _Marvel Major Event Chronology (digital)\2011.03 - Fear Itself\02 Tie-ins\Alpha Flight — 3 file(s), numbers 1-3, pp 22-30; cv per-file 3217x3; gcd per-file 58694x3; key 'Alpha Flight (1983)'
+      [117478] Alpha Flight 001 (2011) (digital-hd-Empire).cbr (30pp)
+      [117479] Alpha Flight 002 (2011) (digital-hd-Empire).cbr (22pp)
+      [117480] Alpha Flight 003 (2011) (digital-hd-Empire).cbr (23pp)
+
+== S65617 Sentinel  [split]  20 files / 3 collections  decided in R-188 (S)
+   decided: S 65617 cv=25511 gcd=15001 0.9 | dominant: 2003-2004 Sentinel 12-issue limited series, CV 25511/GCD 15001; the 2006 5-issue sequel moves to its own shelf (below)
+   F 65617 provider-missing | GCD holds no row for any of the three Sentinel trades
+   F 65617 split-needed | items 90336, 90337, 90338, 90339, 90340 -> new key "Sentinel v2 (2006)" — "Sentinel 001-005 (2006)" are the 2006 sequel mini (Marvel 2006, CV 21657 / GCD 25917, 5 issues; who-stores cv=21657 names no shelf), which nest under the 2003 run's trades while they share this shelf
+   keys now: "Sentinel (2003)" x15 · "Sentinel (2006)" x5
+   groups (title x folder): 5
+   G1 "Sentinel" in Marvel\_X-Men\Sentinel — 3 file(s), 3 COL, pp 119-145; cv per-file 37564x1, 37565x1, 37566x1; gcd per-file 15001x3; key 'Sentinel (2003)'
+      [84869] COL Sentinel Vol. 01 - Salvage (2004) (Digital) (Kileko-Empire).cbz (137pp)
+      [84870] COL Sentinel Vol. 02 - No Hero (2004) (Digital) (Kileko-Empire).cbz (145pp)
+      [84871] COL Sentinel Vol. 03 - Past Imperfect (2006) (Digital) (Kileko-Empire).cbz (119pp)
+   G2 "Sentinel" in Marvel\_X-Men\_X-Men Complete Chronology V2\0556 Salvage — 6 file(s), numbers 1-6, pp 23-23; cv per-file 25511x6; gcd per-file 15001x6; key 'Sentinel (2003)'
+      e.g. Sentinel 001 (2003) (Digital) (Shadowcat-Empire).cbz
+        89692 #1 2003 23pp · 89693 #2 2003 23pp · 89694 #3 2003 23pp · 89695 #4 2003 23pp · 89696 #5 2003 23pp · 89697 #6 2003 23pp
+   G3 "Sentinel" in Marvel\_X-Men\_X-Men Complete Chronology V2\0581 No Hero — 3 file(s), numbers 7-9, pp 23-24; cv per-file 25511x3; gcd per-file 15001x3; key 'Sentinel (2003)'
+      [89809] Sentinel 007 (2003) (Digital) (Shadowcat-Empire).cbz (23pp)
+      [89810] Sentinel 008 (2003) (Digital) (Shadowcat-Empire).cbz (24pp)
+      [89811] Sentinel 009 (2004) (Digital) (Shadowcat-Empire).cbz (24pp)
+   G4 "Sentinel" in Marvel\_X-Men\_X-Men Complete Chronology V2\0587 Awakening — 3 file(s), numbers 10-12, pp 23-24; cv per-file 25511x3; gcd per-file 15001x3; key 'Sentinel (2003)'
+      [89839] Sentinel 010 (2004) (Digital) (Shadowcat-Empire).cbz (24pp)
+      [89840] Sentinel 011 (2004) (Digital) (Shadowcat-Empire).cbz (23pp)
+      [89841] Sentinel 012 (2004) (Digital) (Shadowcat-Empire).cbz (24pp)
+   G5 "Sentinel" in Marvel\_X-Men\_X-Men Complete Chronology V2\0691 Past Imperfect — 5 file(s), numbers 1-5, pp 23-25; cv per-file 21657x5; gcd per-file 25917x5; key 'Sentinel (2006)'
+      e.g. Sentinel 001 (2006) (Digital) (Shadowcat-Empire).cbz
+        90336 #1 2006 24pp · 90337 #2 2006 23pp · 90338 #3 2006 24pp · 90339 #4 2006 24pp · 90340 #5 2006 25pp
+
+== S64466 Cyclops  [split]  16 files / 2 collections  decided in R-188 (S)
+   decided: S 64466 cv=73677 gcd=80564 0.9 | Cyclops (Marvel 2014-2015, 12): CV 73677 (2014, 12 cached) and GCD 80564 (Marvel 2014-2015, 12; per-file on 13/16) agree on publisher, span and count; our ladder 1-12 and the run's own two trades are one run
+   F 64466 split-needed | item 91710 -> new key "Cyclops (2011)" — "Cyclops v1 001 (2011)" is the 2011 one-shot (Marvel, CV 39519 / GCD 56850, 1 issue; who-stores cv=39519 names no shelf), which nests under the 2014 run's trade while it shares this shelf
+   nearby: S64465 "Cyclops" 8f [title — S cv=9461 gcd=10250 (C-052 0.95)] keys: "Cyclops (2001)"
+   keys now: "Cyclops (2014)" x16
+   groups (title x folder): 6
+   G1 "Cyclops" in Marvel\_X-Men\Cyclops\Cyclops v2 (2014) — 2 file(s), 2 COL, pp 102-147; cv per-file 78949x1, 82917x1; gcd per-file 90347x2; key 'Cyclops (2014)'
+      [84403] COL Cyclops Vol. 01 - Starstruck (2014) (Digital) (F) (Kileko-Empire).cbz (102pp)
+         own record cv 78949 / gcd s90347 "Cyclops" (issue 1430060) COLLECTS: gcd=80564 Cyclops (2014) #1-5
+      [84404] COL Cyclops Vol. 02 - A Pirate's Life For Me (2015) (Digital) (Fixed2) (Kileko-Empire).cbz (147pp)
+         own record cv 82917 / gcd s90347 "Cyclops" (issue 1430061) COLLECTS: gcd=80564 Cyclops (2014) #6-12
+   G2 "Cyclops" in Marvel\_X-Men\_X-Men Complete Chronology V2\0909 First Class — 1 file(s), numbers 1, pp 24-24; cv per-file 39519x1; gcd per-file 56850x1; key 'Cyclops (2014)'
+      [91710] 004 Cyclops v1 001 (2011) (Digital) (Cypher-Empire).cbr (24pp)
+   G3 "Cyclops" in Marvel\_X-Men\_X-Men Complete Chronology V2\1096 Starstruck — 5 file(s), numbers 1-5, pp 19-21; cv per-file 73677x5; gcd per-file 80564x5; key 'Cyclops (2014)'
+      e.g. 001 Cyclops 001 (2014) (digital) (Minutemen-InnerDemons).cbr
+        92696 #1 2014 20pp · 92697 #2 2014 19pp · 92698 #3 2014 19pp · 92699 #4 2014 20pp · 92700 #5 2014 21pp
+   G4 "Cyclops" in Marvel\_X-Men\_X-Men Complete Chronology V2\1121 A Pirates Life For Me — 6 file(s), numbers 6-11, pp 20-21; cv per-file 73677x6; gcd per-file 80564x6; key 'Cyclops (2014)'
+      e.g. 001 Cyclops 006 (2014) (digital) (Minutemen-InnerDemons).cbr
+        92837 #6 2014 20pp · 92838 #7 2015 21pp · 92839 #8 2015 21pp · 92840 #9 2015 21pp · 92841 #10 2015 21pp · 92842 #11 2015 21pp
+   G5 "Cyclops" in Marvel\_X-Men\_X-Men Complete Chronology V2\1132 The Black Vortex — 1 file(s), numbers 12, pp 23-23; cv per-file 73677x1; gcd per-file 80564x1; key 'Cyclops (2014)'
+      [92909] 010 Cyclops 012 (2015) (2 covers) (digital) (Minutemen-InnerDemons).cbr (23pp)
+   G6 "Cyclops" in _Marvel Major Event Chronology (digital)\2015.02 - The Black Vortex\Variant Covers — 1 file(s), numbers 12, pp 1-1; cv per-file 73677x1; gcd per-file 80564x1; key 'Cyclops (2014)'
+      [118070] Cyclops 012 (2015) (Andrea Sorrentino Cosmically Enhanced Variant) (digital) (Minutemen-Fantomex).cbr (1pp)
+
+== S4855 Supergirl  [split]  3 files / 3 collections  decided in R-188 (S)
+   decided: S 4855 cv=3113 gcd=2626 0.9 | run-wins: the two Daring New Adventures trades collect one run — GCD 104132 #1 1602268 collects The Daring New Adventures of Supergirl (1982) #1-12 and #2 1721598 collects #13 + Supergirl (1983) #14-23, which ComicVine keeps as ONE volume, CV 3113 "Supergirl" (DC 1982, 23); judged ranges #1-12 / #13-23 fit
+   F 4855 needs-fetch cv=3113 | CV 3113 has no CvVolume row
+   F 4855 wrong-cv-link | the stored CV 75250 "Adventures of Supergirl" 1980 Murray Comics (1) is an Australian reprint, not this run
+   F 4855 split-needed | item 19939 -> new key "Adventures of Supergirl (2016)" — "COL Adventures of Supergirl (2016)" 146pp is the 2016 TV tie-in trade (CV 94245 issue 550319 / GCD 106562 issue 1624168, 148pp), collecting the digital-first run CV 87590 / GCD 102053 — not Daring New Adventures (who-stores gcd=102053 names no shelf)
+   nearby: S94708 "Supergirl" 39f [title — S cv=5766 gcd=5530 (C-017 0.95)] keys: "SUPERGIRL #36 - HELL'S ANGELS, PART" | "SUPERGIRL #37 - HELL'S ANGELS, PART" | "Supergirl (1996)" | "Supergirl v4 (1996)"
+   nearby: S94709 "Supergirl" 37f [title — S cv=18012 gcd=14121 (R-045 0.95)] keys: "Supergirl v5 (2005)" · S94710 "Supergirl" 37f [title — S cv=42949 gcd=61070 (R-042 0.95)] keys: "Supergirl" | "Supergirl v6 (2011)"
+   nearby: S65805 "Supergirl" 10f [title] keys: "Supergirl (1972)" | "Supergirl v1 (1972)" · S94711 "Supergirl" 6f [title — S cv=93948 gcd=106158 (R-042 0.95)] keys: "Supergirl v7 (2016)"
+   nearby: S65806 "Supergirl" 4f [title — S cv=5263 gcd=4975 (A-011 0.95)] keys: "Supergirl (1994)" · S94712 "Supergirl v7.5 (2018)" 4f [title — S gcd=144393 (C-017 0.9)] keys: "Supergirl v7.5 (2018)"
+   nearby: S17148 "Supergirl Plus" 1f [title+1 — S cv=30430 gcd=5763 (A-011 0.95)] keys: "Supergirl Plus" · S17150 "Supergirl: Wings" 1f [title+1 — S cv=30433 gcd=24675 (B-013 0.95)] keys: "Supergirl Wings"
+   nearby: S103394 "Supergirl Special" 1f [title+1 — S cv=154377 gcd=205191 (R-042 0.95)] keys: "Supergirl Special (2023)"
+   keys now: "Daring New Adventures of Supergirl" x3
+   groups (title x folder): 2
+   G1 "Adventures of Supergirl (2016) (digital) (Son of Ultron-Empire)" in DC\#DC TV & Movie Tie-ins\The Adventures of Supergirl v1 (2016) — 1 file(s), 1 COL, pp 146-146; cv per-file 94245x1; gcd per-file 106562x1; key 'Daring New Adventures of Supergirl'
+      [19939] COL Adventures of Supergirl (2016) (digital) (Son of Ultron-Empire).cbr (146pp)
+         own record cv 94245 / gcd s106562 "Adventures of Supergirl" (issue 1624168) COLLECTS: gcd=102053 Adventures of Supergirl (2016) #1-6
+   G2 "Daring New Adventures of Supergirl" in DC\_Supergirl\Supergirl v2 (1982) — 2 file(s), 2 COL, pp 206-266; cv per-file 92177x2; gcd per-file 104132x2; key 'Daring New Adventures of Supergirl'
+      [70409] COL Daring New Adventures of Supergirl Vol. 01 (2016) (digital) (Son of Ultron-Empire).cbr (206pp)
+         own record cv 92177 / gcd s104132 "Daring New Adventures of Supergirl" (issue 1602268) COLLECTS: gcd=2626 The Daring New Adventures of Supergirl (1982) #1-12
+      [70410] COL Daring New Adventures of Supergirl Vol. 02 (2017) (digital) (Son of Ultron-Empire).cbr (266pp)
+         own record cv 92177 / gcd s104132 "Daring New Adventures of Supergirl" (issue 1721598) COLLECTS: gcd=2722 Supergirl (1983) #14-23 · gcd=2626 The Daring New Adventures of Supergirl (1982) #13

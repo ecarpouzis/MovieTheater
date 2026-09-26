@@ -2272,3 +2272,10 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   magazine itself, where one exists, still wins as an S. Collections of a magazine keep their collection format; a
   special edition keeps Special. Comic strips / newspaper comics / comics shorts filed under a Magazines folder (DC's
   MAD digital shorts) are NOT magazines. Prose novels and picture books are a separate question (not ruled).
+[L-419] ruling kind:foreign
+- 09-26 (Eric), SUPERSEDES L-321's lead ruling: a catalogued FOREIGN edition of the same work (a third-territory licence,
+  the original, any translation) stands in for our English copy as an applied identity at 0.9 — no longer a 0.7 review
+  link. The shelf keeps its ENGLISH name via books-series-override (DisplayNameOverride), exactly as the 09-26 renames
+  did, so the catalog link never shows a German / Japanese / Italian title. Same-WORK is still required: a title match
+  alone is not an edition (Abrams' original 'Devour' is not Aleta's Spanish 'Devour'), and a page-count contradiction
+  (a 36pp story vs a 62pp album) still refuses. R-187 applied it to the 12 shelves parked for this reason.

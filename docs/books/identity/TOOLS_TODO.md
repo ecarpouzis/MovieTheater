@@ -206,3 +206,8 @@ folded, leading article dropped, every non-alphanumeric removed) as a second exa
 catch it; a trial over the 603 open shelves found this one true miss and no false positives on full-title matches.
 Also: the web sweep (CV's own volume search over 160 blind refusals) found ~1 real miss per 75 — the local probes cover
 the catalogs well; the S.3 lane's yield is in the reader-written questions and in reading the files, not in re-searching.
+48. **next_batch --items names its batch from state.json's item list, not from the files on disk** (09-26). With lead-written
+X-063..X-066 on disk and not in state, it named its packet X-063 and OVERWROTE the landed batches/X-063.ids (restored from
+git; the stray packet parked, its 31 books written as X-067 and recorded in state by hand). Fix: take max(existing X-NNN
+in batches/ + decisions/, state) + 1, and refuse to write over an existing .ids. The same check belongs in every emitter
+mode (R-/P- names come from files already, which is why only --items bit).
