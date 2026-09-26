@@ -1,0 +1,17 @@
+# R-186 — S.3 web lane, third pass (lead, 2026-09-26): a scripted ComicVine volume-search sweep over the blind
+# provider-missing refusals (shelf name -> CV's own search, results filtered to title-match + year +-2), then every
+# candidate the readers had NOT already weighed was read out of our rip by id (lookup.py --id / --issues). Most hits
+# were the records the readers had already refused; the ones below are new. Probe gap found: a DOTTED title
+# ("A.L.I.E.E.E.N.") normalises to separate letters, so the name probe for "ALIEEEN" never met it (TOOLS_TODO 47).
+
+# --- S325 ALIEEEN (Lewis Trondheim, First Second 2006)
+S 325 cv=45859 gcd=- 0.9 | web: comicvine volume search "ALIEEEN" -> "A.L.I.E.E.E.N." Volume 2006 (1 issue) (First Second Books); rip CV 45859 "A.L.I.E.E.E.N." First Second Books 2006, 1 issue = our 101pp "ALIEEEN (2006) (First Second)", the English original the reader could not find because the record is spelled with dots; GCD 140499 is Gallimard's French edition, not this one
+F 325 provider-missing | GCD has no First Second (English) row, only the Gallimard and Kraken translations
+F 325 needs-fetch cv=45859 | named from the rip, no CvVolume row
+
+# --- S5375 Demons (Silver Sprocket 2020-2022): three books, each its own one-book record, no series record
+R 5375 | Silver Sprocket's three "Demons" books have NO series record on either leg, but each book is catalogued under its own title (web: comicvine volume search "Demons" 2020 -> "Demons: Bloodlust" 2022 Silver Sprocket; then read from the rip / dump): No Romance in Hell = CV 125099 / GCD 156370, To Earth and Back = CV 139373 / GCD 176746, Bloodlust = CV 146210. The shelf stays record-less; the books get their own I lines
+F 5375 wrong-cv-link | the stored CV 103577 "Demons" (Insane Comics 2016, 10) is a different comic from Silver Sprocket's 2020-2022 "Demons"
+I 109476 cv=737622 gcd=2073471 isbn=- 0.95 | "Demons 001 - No Romance in Hell (2020)" 24pp = CV 125099 "No Romance in Hell" (Silver Sprocket 2020) issue 737622 (2020-02-18, GN) = GCD 156370 same name, issue 2073471 — its own record
+I 109477 cv=887595 gcd=2267674 isbn=978-1-945509-74-2 0.95 | "Demons 002 - To Earth and Back (2021)" 56pp = CV 139373 "Demons: To Earth and Back" (Silver Sprocket 2021) issue 887595 (2021-09, GN) = GCD 176746 issue 2267674 (60pp, ISBN 978-1-945509-74-2)
+I 109478 cv=955608 gcd=- isbn=- 0.9 | "Demons 003 - Bloodlust (2022)" 120pp = CV 146210 "Demons: Bloodlust" (Silver Sprocket 2022) issue 955608 (2022-10-01); GCD has no Bloodlust row

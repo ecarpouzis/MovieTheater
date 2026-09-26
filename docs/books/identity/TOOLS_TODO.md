@@ -200,3 +200,9 @@ to ADD, and apply_identity (which REPLACES an item's run rows) erased the own-ru
 (gap-blocked-triage.md; repaired by X-063). check_identity now fails an UNLANDED batch whose C lines for a book omit a
 (leg, key) run the book's Curated span carries, unless `N <item> retract <leg>=<key> | why` names it. Landed batches are
 skipped (a later batch rewrote the rows they are judged against). Prose `N <sid> retract C-013's …` lines stay prose.
+47. **Name probes miss DOTTED and SPACED spellings** (web lane, 09-26). "ALIEEEN" never met CV 45859 "A.L.I.E.E.E.N.": the
+norm keeps the dots' word breaks, so the probe compares "alieeen" with "a l i e e e n". A squashed key (lowercase, accents
+folded, leading article dropped, every non-alphanumeric removed) as a second exact index in lookup.py / the packet would
+catch it; a trial over the 603 open shelves found this one true miss and no false positives on full-title matches.
+Also: the web sweep (CV's own volume search over 160 blind refusals) found ~1 real miss per 75 — the local probes cover
+the catalogs well; the S.3 lane's yield is in the reader-written questions and in reading the files, not in re-searching.
