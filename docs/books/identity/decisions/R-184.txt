@@ -1,0 +1,92 @@
+# R-184 — S.3 web lane, first pass (lead, 2026-09-26, Chrome). Each shelf here carried an F needs-web question or a
+# parked / refused identity the local probes could not settle. The web gave the EXACT title a record is filed under
+# (ComicVine volume search / volume + issue pages, DuckDuckGo); every id below was then read out of our own ComicVine
+# rip / GCD dump by that exact name (`lookup.py`), so no id is typed from a web page. Pattern worth keeping: IDW's
+# kids' line is filed singular on both catalogs ("Marvel Action Classic: Hulk"), which is why the plural probe missed.
+# Web citations: `web: <page> <what it says>`.
+
+# --- S12438 Ms. Marvel: Mutant Menace (2024)
+S 12438 cv=157125 gcd=209647 0.95 | web: comicvine.gamespot.com/search?i=volume "Ms. Marvel Mutant Menace" -> "Ms. Marvel: Mutant Menace" Volume 2024 (4 issues) (Marvel), href 4050-157125; our rip holds CV 157125 with 4 cached issues and GCD 209647 "Ms. Marvel: Mutant Menace" 2024 Marvel is 4 issues; our four files are #3-4 of it (2024), per-file GCD 209647 on 4/4
+F 12438 wrong-cv-link | the stored CV link (86114) is the 2015 "Ms. Marvel" legacy volume, not this 2024 "Mutant Menace" mini
+F 12438 needs-fetch cv=157125 | named from the rip, no CvVolume row
+
+# --- S11615 Marvel Tales: Silver Surfer (2020)
+S 11615 cv=125673 gcd=157273 0.95 | web: comicvine volume search "Marvel Tales Silver Surfer" -> "Marvel Tales: Silver Surfer" Volume 2020 (1 issue) (Marvel); rip CV 125673 "Marvel Tales: Silver Surfer" 2020 Marvel 1 issue = GCD 157273 same name 2020 one-shot; our one 80pp file is its #1 (2020)
+F 11615 wrong-cv-link | the stored CV link (87449) is the full 2016 Silver Surfer ongoing, not this one-shot reprint special
+F 11615 needs-fetch cv=125673 | named from the rip, no CvVolume row
+
+# --- S95078 Angel (BOOM! 2022)
+S 95078 cv=141562 gcd=180433 0.95 | our 8 files "Angel 001-008 (2022)" = CV 141562 "Angel " (Boom! Studios 2022, 8 issues; #1-8 cover-dated 2022-01..2022-08, lookup --issues) = GCD 180433 "Angel" 2022 Boom! Studios 8 issues; the rip stores the name with a trailing space, which is why the name probe missed it
+F 95078 needs-fetch cv=141562 | named from the rip, no CvVolume row
+
+# --- S95045 Amazing Fantasy (1995-1996) #16-18
+S 95045 cv=- gcd=5271 0.9 | GCD 5271 "Amazing Fantasy" 1995-1996 Marvel, 3 issues #16-18 (58090 / 58335 / 58573, 1995-10 .. 1996-01, 36pp) = our three files #16-18 (1995-1996, 32-33pp); ComicVine has NO own volume for this mini
+F 95045 wrong-cv-link | CV per-file (5533, 1962) and GCD per-file (16206, 2004-2006, round2-series) are both wrong-era stamps
+N 95045 needs-web answered: ComicVine files the 1995-96 #16-18 INSIDE the 1962 volume 5533 ("Amazing Fantasy", 4 issues: #15 1962-08, #16 1995-12, #17 1996-01, #18 1996-03; lookup --issues 5533). 5533 is S824's stored link, so cv stays '-' here — storing it would merge this 1995 mini into the 1962 shelf
+
+# --- S103482 Marvel Action Classics: Hulk (IDW 2019)
+S 103482 cv=120350 gcd=149200 0.95 | web: comicvine volume search "Marvel Action Classics" lists "Marvel Action Classic: Hulk" Volume 2019 (1 issue) (IDW Publishing) — filed SINGULAR; rip CV 120350 and GCD 149200 carry that exact name, IDW 2019, 1 issue; our one 46pp file "Marvel Action Classics - Hulk 001 (2019)" is it
+F 103482 needs-fetch cv=120350 | named from the rip, no CvVolume row
+
+# --- S11351 Marvel Action Classics: Spider-Man Two-In-One (IDW 2019-2021)
+S 11351 cv=119362 gcd=155252 0.95 | the same singular filing: rip CV 119362 "Marvel Action Classic: Spider-Man" IDW 2019, 4 issues (#1 2019-05, #2 2019-12, #3 2021-04, #4 2021-11) = GCD 155252 same name 2019-2021, 4 issues = our four 46pp files "Spider-Man Two-In-One 001-004 (2019-2021)", dates matching issue by issue
+F 11351 needs-fetch cv=119362 | named from the rip, no CvVolume row
+
+# --- S15842 Socrates (ComiXology Originals 2019)
+R 15842 | web: duckduckgo "Socrates" comixology originals -> Amazon / Goodreads: "Socrates (Comixology Originals)" by Francesco Barilli (translation of BeccoGiallo's Italian "Socrate", 2019) — NOT CV 118454 "POLIS: The Trial of Socrates", which is Big Things Productions' two-chapter digital series (#1 2019-04 "The Restoration", #2 2021-03 "The Gadfly"). Neither catalog holds Barilli's book under "Socrates" / "Socrate"
+F 15842 wrong-cv-link | the stored CV 118454 is POLIS: The Trial of Socrates (Big Things Productions), a different work
+F 15842 provider-missing | neither leg holds Barilli's Socrates / Socrate
+
+# --- S17477 Taarna Elements (Heavy Metal 2021)
+S 17477 cv=138698 gcd=- 0.9 | web: comicvine.gamespot.com/volume/4050-138698 "Taarna: The Cosmic Gardener" — "One shot. Note: Title per indica: Taarna Elements"; our one 36pp file's ComicInfo Series is "Taarna Elements" (2021, Heavy Metal); rip CV 138698 Heavy Metal 2021, 1 issue. GCD indexes no Cosmic Gardener / Elements row (the stored GCD 120469 is the 2018 Taarna mini)
+F 17477 needs-fetch cv=138698 | named from the rip, no CvVolume row
+F 17477 provider-missing | GCD has no Taarna Elements / Cosmic Gardener row
+
+# --- S22847 Zootrope (2012)
+S 22847 cv=71564 gcd=- 0.9 | web: comicvine.gamespot.com/zootrope-1/4000-444933 "Zoötrope takes you behind the scenes of a theater run by an eccentric troupe ... in two acts" = our 40pp file, read: title page "ZOÖTROPE / Andrea Tsurumi", a troupe's cast board (acrobats, costumes, stage manager), indicia "SVA's Illustration as Visual Essay MFA Program ... © 2012 Andrea Tsurumi" — the 2012 thesis printing of the book CV dates 2014-02 (self published, 1 issue)
+F 22847 provider-missing | GCD has no "Zootrope" / "Zoötrope" row in either spelling
+
+# --- S20255 "Titans Together 001 (2008)" = Titans (2008) #1
+S 20255 cv=21159 gcd=30370 0.9 | read: the file's cover is TITANS #1 "FIRST ISSUE JUNE '08", Winick / Churchill / Rapmund, cover lettered "TOGETHER!", and its story opens "The Fickle Hand, Part One" — it is Titans (DC 2008-2011, 38 issues; CV 21159 / GCD 30370) #1, a second rip filed as "Titans Together"; web: duckduckgo finds no 2008 "Titans Together" issue (only 2020's Titans: Titans Together)
+F 20255 merge-with=101051 | S101051 "Titans" holds the 2008 run (stored CV 21159, 34 files); one issue of a long run is a merge (L-320)
+F 20255 wrong-cv-link | stored CV 77244 / GCD 27427 is the 2007 Teen Titans Go! digest, not this issue
+
+# --- S66477 / S102669 the two 2005 Ultimate handbooks were stored CROSSED (read from the covers)
+S 66477 cv=65739 gcd=19350 0.95 | read: both "v01 001 / 002" covers (items 97050 / 97051) are lettered "THE OFFICIAL HANDBOOK OF THE ULTIMATE MARVEL UNIVERSE / ULTIMATE SPIDER-MAN / ULTIMATE FANTASTIC FOUR 2005" = CV 65739 "... The Fantastic Four & Spider-Man 2005" (Marvel 2005, 1 issue) = GCD 19350 "Official Handbook of the Ultimate Marvel Universe 2005: The Fantastic Four & Spider-Man"; R-086 had this shelf on the X-Men & Ultimates book
+S 102669 cv=65743 gcd=19351 0.95 | read: both "v02 001 / 002" covers (items 97052 / 97053) are lettered "ULTIMATE X-MEN / THE ULTIMATES 2005" = CV 65743 "... The Ultimates & X-Men 2005" (Marvel 2005, 1 issue) = GCD 19351 same name; R-086's release-order guess (FF & Spider-Man) was the other book
+
+# --- S32 1999 (Noah Van Sciver, Retrofit 2012)
+S 32 cv=76579 gcd=- 0.9 | read: the cover of our 37pp file is "1999 / Noah Van Sciver"; web: wowcool.com/products/1999 "32 page black and white digest ... Retrofit, 2012", Amazon Kindle B00H1HD44Y "Retrofit Comics / Big Planet Comics, 1 April 2012" — the one Retrofit "1999" (CV 76579, 1 issue, which CV dates 2014-08); the 2012 file date is the real release
+F 32 provider-missing | GCD has no Retrofit "1999" row
+F 32 needs-fetch cv=76579 | named from the rip, no CvVolume row
+
+# --- S7028 Frozen (Disney Press 2014 graphic novel)
+S 7028 cv=75484 gcd=- 0.9 | read: copyright page "Copyright © 2014 Disney Enterprises, Inc. ... Published by Disney Press ... ISBN 978-1-4847-2619-8", cover "Disney FROZEN — The Story of the Movie in Comics", 58pp; web: duckduckgo 9781484726198 -> OverDrive / Libby "Frozen Graphic Novel" (Disney), the Disney-published edition = CV 75484 "Frozen" (Disney, 1 issue 'GN'). Not Joe Books' 2015 "Frozen" (GCD 89067, 52pp) or its Cinestory (GCD 84777) — a different publisher's edition
+F 7028 provider-missing | GCD holds only Joe Books' Frozen editions, not the Disney Press one
+F 7028 needs-fetch cv=75484 | named from the rip, no CvVolume row
+
+# --- S14985 Salvage (AAM/Markosia 2018)
+S 14985 cv=107665 gcd=- 0.9 | read: the cover carries the Markosia seal, "DARK THINGS DWELL", credits Greene / Lynch / McClements / O'Neill — CV 107665 "Salvage" AAM/Markosia 2018, 1 issue 'GN' (2018-01-31); filed under a Boom folder by the ripper, it is not a Boom book (Rocket Salvage is a different 5-issue mini)
+F 14985 provider-missing | GCD has no Markosia Salvage row
+F 14985 needs-fetch cv=107665 | named from the rip, no CvVolume row
+
+# --- S103191 Mouse Guard FCBD (2014)
+S 103191 cv=73553 gcd=80542 0.9 | read: the file's cover is "FREE COMIC BOOK DAY / ARCHAIA Presents / MOUSE GUARD / LABYRINTH AND OTHER STORIES / A FREE COMIC BOOK DAY HARDCOVER ANTHOLOGY" with its "This book belongs to" endpaper = CV 73553 "Archaia Presents Mouse Guard, Labyrinth and Other Stories" (2014, 1) = GCD 80542 row 1204066 (2014-05-03, 56pp); our 21pp is its Mouse Guard portion, not the 2013 flip book or the 2010 Spring 1153
+F 103191 partial-rip | 21pp of the 56pp anthology: the Mouse Guard story only
+
+# --- S15964 Space Story (Fiona Ostby, West Margin Press 2022)
+S 15964 cv=- gcd=186540 0.9 | read: our 162pp file's indicia "© 2022 Fiona Ostby ... Published by West Margin Press ... ISBN 9781513128757 (paperback) | 9781513128764 (hardback) | 9781513128771 (ebook)" — our file is the ebook; web: publishersweekly.com/9781513128757 "West Margin, $16.99 trade paper (160p)", comics.org/series/186540 = the paperback one-shot (issue 2415362), comics.org/series/186538 = the hardcover twin (issue 2415360); the paperback is the reference edition. Our ComicInfo's "Ablaze" publisher is simply wrong
+F 15964 provider-missing | ComicVine has no "Space Story" volume
+N 15964 GCD indexes the book twice by binding (186538 hardcover / 186540 paperback, both bare rows); the ebook text is the paperback's
+
+# --- S13198 Old City Blues Vol. 01
+S 13198 cv=56305 gcd=61697 0.95 | CV 56305 "Old City Blues" (Archaia 2011, 1 issue 382339 'HC', 2011-07-20) and GCD 61697 (Archaia Studios Press 2011, issue 887626, 2011-07-20, 136pp, ISBN 978-1-936393-20-6) are the same book on the same day = our COL "Old City Blues Vol. 01" 129pp; the 4-issue 2013 mini (CV 67108) and its Vol. 2 (CV 69207) are the sibling's — needs-web answered, the Vol. 01 volume was there under the plain name
+
+# --- S12125 Milo Manara - Bolero
+S 12125 cv=144909 gcd=- 0.9 | web: comicvine.gamespot.com/bolero-1-bolero/4000-945526 "Bolero #1 released by Grifo Edizioni on November 1999"; amazon.it 8887070261 "Bolero — Milo Manara, Edizioni Di [Grifo], 1999, 48 pages, Italian"; grifoedizionidi.com lists Manara's Bolero portfolio — CV 144909 is Manara's Bolero, and our 38pp "Milo Manara - Bolero" is its interior (48pp print incl. covers)
+F 12125 provider-missing | GCD has no Grifo "Bolero" and no Manara "Bolero" row in any language
+
+# --- S2019 Batman - The Court of Owls (digital-mobile)
+R 2019 | needs-web answered: web: dcuniverseinfinite.com "Batman: The Court of Owls DC GO! Edition #32 ... Episode 32" — these twenty 2024-2025 files are DC's DC GO! vertical episodic reformat of the Court of Owls saga (Batman 2011), an edition neither catalog indexes ("DC Go" / "Go! Edition" --contains: none); no record to link, and episode numbers are not issue numbers
+F 2019 mobile-rip | every file is a vertical DC GO! Edition episode; no provider numbers it
+N 2019 identity for the record: "Batman: The Court of Owls DC GO! Edition" (DC 2024-2025, DC Universe Infinite), episodes 1-12 and 15-22 held
