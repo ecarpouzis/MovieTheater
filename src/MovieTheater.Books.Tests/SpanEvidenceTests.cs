@@ -110,5 +110,31 @@ namespace MovieTheater.Books.Tests
             Assert.True(SpanEvidence.SelfProving(note, 1, 5));
             Assert.Null(SpanEvidence.ExcludedIssues(note, 1, 5));
         }
+    
+
+        [Fact]
+        public void APointIssueThePageNamesIsQuotedAndDoesNotCountAgainstTheRange()
+        {
+            // The Flash Vol. 04 collects #20-25 and the Villains Month #23.2 — and not #23.1 or #23.3.
+            const string note = "copyright p3: 'THE FLASH 20-25, 23.2'";
+            var q = SpanEvidence.QuotedIssues(note)!;
+            Assert.Contains(23.2, q);
+            Assert.DoesNotContain(2d, q);
+            Assert.DoesNotContain(23.1, q);
+            Assert.True(SpanEvidence.SelfProving(note, 20, 25));
+            Assert.Null(SpanEvidence.ExcludedIssues(note, 20, 25));
+        }
+
+        [Fact]
+        public void AListOfPointIssuesIsNotReadAsARange()
+        {
+            // "23.1-23.4" used to parse as the range 1-23.
+            const string note = "back cover: 'Collecting SUPERMAN 23.1-23.4'";
+            var q = SpanEvidence.QuotedIssues(note)!;
+            Assert.Contains(23.1, q);
+            Assert.Contains(23.4, q);
+            Assert.DoesNotContain(1d, q);
+            Assert.DoesNotContain(22d, q);
+        }
     }
 }

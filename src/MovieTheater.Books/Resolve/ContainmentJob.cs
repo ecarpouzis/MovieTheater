@@ -50,6 +50,10 @@ namespace MovieTheater.Books.Resolve
             public double? ReadNumber;
             /// <summary>The parsed `ComicDetail.IssueNo`, when it is a number. The ladder's coordinate.</summary>
             public double? IssueNumber;
+            /// <summary>`ReadingOrderEntry.ReadTier` — <see cref="ReadingOrderParser.TierMain"/> unless the file is an
+            /// annual or a special / one-shot (by Format OR by the word in its name). An annual is numbered in its OWN
+            /// series — "Aquaman Annual #1-5" is not Aquaman #1-5 — so it never takes a place on the run's ladder.</summary>
+            public int ReadTier = ReadingOrderParser.TierMain;
             public double? SpanFromStart, SpanFromEnd;
             public EditionSource RangeSource = EditionSource.Cv;
             /// <summary>The winning span's note — the only place a NON-CONTIGUOUS range states its holes.</summary>
@@ -66,6 +70,8 @@ namespace MovieTheater.Books.Resolve
             public double? ProviderIssueNumber;
             /// <summary>The coordinates this container's own note DENIES; null when its range has no hole.</summary>
             public HashSet<double>? ExcludedCoords;
+            /// <summary>Every number this container's own quoted page NAMES; the only way a point issue gets in.</summary>
+            public HashSet<double>? QuotedCoords;
             /// <summary>`ComicDetail.IsCollection` — the flag the decision pass's coverage is built on (§14.13).</summary>
             public bool IsCollection;
             public TrackRole TrackRole = TrackRole.Primary;
@@ -208,6 +214,7 @@ SELECT i.Id,
     || coalesce(i.PageCount, 0) || char(31) || coalesce(cd.VolumeNo,'') || char(31)
     || coalesce(ro.ReadIndex,'') || char(31) || coalesce(ro.ReadDate,'') || char(31) || coalesce(ro.ReadNumber,'')
     || char(31) || coalesce(cd.IssueNo,'') || char(31) || coalesce(cd.IsCollection, 0)
+    || char(31) || coalesce(ro.ReadTier, 0)
 FROM Item i
 LEFT JOIN ComicDetail cd ON cd.ItemId = i.Id
 LEFT JOIN ReadingOrderEntry ro ON ro.ItemId = i.Id
@@ -229,6 +236,7 @@ ORDER BY i.Id"))
                     IssueNumber = p.Length > 8 && double.TryParse(p[8], NumberStyles.Float, CultureInfo.InvariantCulture, out var ino)
                         ? ino : null,
                     IsCollection = p.Length > 9 && p[9] == "1",
+                    ReadTier = p.Length > 10 && int.TryParse(p[10], out var tier) ? tier : ReadingOrderParser.TierMain,
                     FileRuns = fileRuns.TryGetValue((int)itemId, out var fr) ? fr : null,
                     ProviderIssueNumber = providerNumber.TryGetValue((int)itemId, out var pn) ? pn : null,
                 };
@@ -325,6 +333,14 @@ ORDER BY i.Id"))
                       && PageArithmetic.Flag(bb.PageCount, bb.SpanFromStart!.Value, bb.SpanFromEnd!.Value) != "thin"
                     : bb.RangeSource == EditionSource.Curated);
                 if (spanDefinesTheLadder) baseRange[i] = (bb.SpanFromStart!.Value, bb.SpanFromEnd!.Value);
+                // An annual or a special is numbered in its OWN series, so its number is not a coordinate on
+                // this run's ladder at all: "Aquaman Annual 001-005" sat under Book 01 (#0-8), "Iron Man
+                // Annual 001" under Vol. 01 - Big Iron, four Deathstroke annuals under Assassins. Seventy files
+                // nested this way and not one of them was in the book. The tier is the reading order's — set
+                // from Format, or from the word in the file name when the Format is wrong — so it is the one
+                // judgement of "is this an annual" the library already makes. Like a volume with no known
+                // range, such a file stays on the primary track and simply cannot be nested.
+                else if (bb.Level == CollectionLevel.Issue && OffTheLadder(bb)) baseRange[i] = (double.NaN, double.NaN);
                 else if (bb.Level == CollectionLevel.Issue) baseRange[i] = (num[i] ?? i + 1, num[i] ?? i + 1);
                 else if (bb.VolumeNo is int volumeOrdinal) baseRange[i] = (volumeOrdinal, volumeOrdinal);
                 else baseRange[i] = (double.NaN, double.NaN);
@@ -340,6 +356,8 @@ ORDER BY i.Id"))
                     // them. Same evidence the de-duplication reads, so the shelf and the file agree.
                     var excluded = SpanEvidence.ExcludedIssues(b.RangeNote, es, ee);
                     b.ExcludedCoords = excluded;
+                    var quoted = SpanEvidence.QuotedIssues(b.RangeNote);
+                    b.QuotedCoords = quoted;
                     int lo = int.MaxValue, hi = int.MinValue;
                     for (var i = 0; i < n; i++)
                     {
@@ -352,6 +370,7 @@ ORDER BY i.Id"))
                         var (clo, chi) = vs ?? (es, ee);
                         if (mine.Lo > chi || mine.Hi < clo) continue;
                         if (excluded != null && WhollyExcluded(mine, excluded)) continue;
+                        if (!PointIssueNamed(baseBooks[i], mine, quoted)) continue;
                         if (i < lo) lo = i;
                         if (i > hi) hi = i;
                     }
@@ -394,6 +413,7 @@ ORDER BY i.Id"))
                             // this range cannot measure does not widen the scatter it is judged by
                             if (!CoordAgainst(baseBooks[i], baseRange[i], b, shelfRuns, out var mine, out var vs))
                                 continue;
+                            if (!PointIssueNamed(baseBooks[i], mine, quoted)) continue;
                             var bucket = vs ?? (es, ee);
                             runsUsed.Add(bucket);
                             seen.Add((bucket.Lo, bucket.Hi, mine.Lo));
@@ -467,6 +487,13 @@ ORDER BY i.Id"))
                 }
                 Book? parent = null;
                 var own = coordOf.TryGetValue(b.ItemId, out var c) ? c : (double.NaN, double.NaN);
+                // An annual or a special has no coordinate on this ladder (see OffTheLadder), and a position
+                // window is not a range: it must not be swept in by sitting between two issues that are.
+                if (b.Level == CollectionLevel.Issue && b.TrackRole == TrackRole.Primary && OffTheLadder(b))
+                {
+                    b.ParentItemId = null;
+                    continue;
+                }
                 foreach (var p in containers)
                 {
                     if (p.Level <= b.Level || p.ItemId == b.ItemId) continue;
@@ -492,6 +519,9 @@ ORDER BY i.Id"))
                     // volumes between them nest inside a book that never printed them.
                     if (p.ExcludedCoords != null && !double.IsNaN(mine.Item1)
                         && WhollyExcluded(mine, p.ExcludedCoords)) continue;
+                    // …and the same question for a point issue the window happens to cover: #23.1 sits
+                    // between #23 and #24 in the reading order, and only the page can put it in the book.
+                    if (!double.IsNaN(mine.Item1) && !PointIssueNamed(b, mine, p.QuotedCoords)) continue;
                     // And the child's own coordinate has to be INSIDE the range the container claims. The
                     // test above is positional, and a position window is not a range: `Aquaman Vol. 01`
                     // collects #1-8, but the window that holds those eight also holds files numbered outside
@@ -698,6 +728,24 @@ ORDER BY i.Id"))
             b.SpanFromStart.HasValue && b.SpanFromEnd.HasValue
                 ? b.SpanFromEnd.Value - b.SpanFromStart.Value
                 : double.PositiveInfinity;
+
+        /// <summary>An annual or a special / one-shot: numbered in its own series, never a coordinate on the run's ladder.</summary>
+        internal static bool OffTheLadder(Book b) =>
+            b.ReadTier is ReadingOrderParser.TierAnnual or ReadingOrderParser.TierSpecial;
+
+        /// <summary>
+        /// A POINT issue (#23.1, #7.5) sits inside a whole-number range arithmetically and inside the book only
+        /// when the book says so. DC's Villains Month #23.1-23.4 were never in "Superman Vol. 04 - Psi War"
+        /// (#18-24), yet all three of ours nested there; The Flash's #23.2 IS in Vol. 04 (#20-25) and #23.1 /
+        /// #23.3 are not. So a fractional coordinate on an ISSUE file is measured against a container only when
+        /// the container's own quoted page names that exact number. A whole-number coordinate is unaffected.
+        /// </summary>
+        internal static bool PointIssueNamed(Book file, (double Lo, double Hi) coord, HashSet<double>? quoted)
+        {
+            if (file.Level != CollectionLevel.Issue) return true;
+            if (coord.Lo % 1 == 0 && coord.Hi % 1 == 0) return true;
+            return quoted != null && quoted.Contains(coord.Lo);
+        }
 
         /// <summary>Every whole number this base book occupies is one the container's own note denies.</summary>
         private static bool WhollyExcluded((double Lo, double Hi) range, HashSet<double> excluded)

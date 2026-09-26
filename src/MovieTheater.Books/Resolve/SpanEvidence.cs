@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace MovieTheater.Books.Resolve
@@ -23,9 +24,11 @@ namespace MovieTheater.Books.Resolve
             new("['‘“](.*?)['’”]", RegexOptions.Singleline | RegexOptions.Compiled);
         private static readonly Regex RxYear = new(@"\b(19|20)\d{2}\b", RegexOptions.Compiled);
         private static readonly Regex RxRange =
-            new(@"#?(\d{1,4})\s*(?:-|–|—|�|through|thru|to)\s*#?(\d{1,4})",
+            new(@"#?(?<![\d.])(\d{1,4})\s*(?:-|–|—|�|through|thru|to)\s*#?(\d{1,4})(?![\d.])",
                 RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static readonly Regex RxSingle = new(@"#?(?<![\d.])(\d{1,4})(?![\d.])", RegexOptions.Compiled);
+        // A point issue (#23.1, #7.5) is a number the page can name; the lookarounds keep "23.1-23.4" from
+        // reading as the range 1-23 and "23.2" from reading as a 23 and a 2.
+        private static readonly Regex RxSingle = new(@"#?(?<![\d.])(\d{1,4}(?:\.\d{1,2})?)(?![\d.])", RegexOptions.Compiled);
 
         /// <summary>The widest range a single quotation may name before it is treated as noise rather than a list.</summary>
         public const int MaxRangeWidth = 500;
@@ -50,7 +53,7 @@ namespace MovieTheater.Books.Resolve
                 for (var i = a; i <= b; i++) set.Add(i);
             }
             foreach (Match s in RxSingle.Matches(RxRange.Replace(text, " ")))
-                set.Add(double.Parse(s.Groups[1].Value));
+                set.Add(double.Parse(s.Groups[1].Value, CultureInfo.InvariantCulture));
 
             return set.Count == 0 ? null : set;
         }
@@ -96,7 +99,9 @@ namespace MovieTheater.Books.Resolve
         {
             var quoted = QuotedIssues(note);
             if (quoted == null || end < start) return false;
-            if (quoted.Count != (int)(end - start) + 1) return false;
+            // A point issue the page also names ("THE FLASH 20-25, 23.2") is not a whole number the range
+            // must account for; only the whole numbers are counted against the range's width.
+            if (quoted.Count(v => v % 1 == 0) != (int)(end - start) + 1) return false;
             for (var i = start; i <= end; i++)
                 if (!quoted.Contains(i)) return false;
             return true;

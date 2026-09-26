@@ -17,6 +17,12 @@ hand, one shelf per line.
 which is how a 79-issue run is recorded without transcribing 79 ids; the shelf line is only legitimate
 when the shelf was actually read as a run.
 
+An `ItemId` row may set ANY Format on any single-issue file, not only a trade Format on a small one: the
+containment gap turned up one-shots, specials and Villains Month rips stored as plain single issues with
+a bare number, and `ContainmentJob` keeps a file off the run's ladder by its reading tier — Annual /
+Special / OneShot — so the Format is the one lever that says "this is not issue #1 of the run". A shelf
+row keeps the narrow population above; it is a rule over a run and stays that way.
+
 `python apply_read_format.py <sheet.csv> [--apply]`
 """
 import csv
@@ -39,6 +45,11 @@ POP = """SELECT i.Id, i.FileName, coalesce(i.PageCount,0), cd.Format
          WHERE coalesce(i.IsExcluded,0) = 0 AND cd.IsCollection = 0
            AND cd.Format IN (1, 2, 3) AND coalesce(i.PageCount,0) BETWEEN 1 AND 59"""
 pop = {r[0]: (r[1], r[2], r[3]) for r in con.execute(POP)}
+# an ItemId row was read one file at a time: any single-issue file may take any Format
+ANY = """SELECT i.Id, i.FileName, coalesce(i.PageCount,0), cd.Format
+         FROM Item i JOIN ComicDetail cd ON cd.ItemId = i.Id
+         WHERE coalesce(i.IsExcluded,0) = 0 AND cd.IsCollection = 0"""
+anyfile = {r[0]: (r[1], r[2], r[3]) for r in con.execute(ANY)}
 by_shelf = {}
 for iid, sid in con.execute(f"SELECT i.Id, i.SeriesId FROM Item i WHERE i.Id IN (SELECT Id FROM ({POP}))"):
     by_shelf.setdefault(sid, []).append(iid)
@@ -47,16 +58,16 @@ writes, refused = [], []
 for r in csv.DictReader(open(sheet, encoding="utf-8")):
     fmt = int(r["Format"])
     if r.get("ItemId"):
-        ids = [int(r["ItemId"])]
+        ids, src = [int(r["ItemId"])], anyfile
     elif r.get("SeriesId"):
-        ids = by_shelf.get(int(r["SeriesId"]), [])
+        ids, src = by_shelf.get(int(r["SeriesId"]), []), pop
     else:
         continue
     for iid in ids:
-        if iid not in pop:
+        if iid not in src or src[iid][2] == fmt:
             refused.append(iid)
             continue
-        writes.append((iid, pop[iid][0], pop[iid][1], pop[iid][2], fmt))
+        writes.append((iid, src[iid][0], src[iid][1], src[iid][2], fmt))
 
 print(f"{len(pop)} file(s) in the population; this sheet decides {len(writes)}")
 if refused:

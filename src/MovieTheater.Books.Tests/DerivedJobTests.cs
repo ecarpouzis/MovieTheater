@@ -1030,5 +1030,65 @@ namespace MovieTheater.Books.Tests
             using var w = f.Hot();
             return string.Join(";", w.Pairs(sql).Select(p => p.Item1 + "=" + p.Item2));
         }
+    
+
+        [Fact]
+        public void AnAnnualOrASpecialNeverTakesAPlaceOnTheRunsLadder()
+        {
+            // Aquaman, as it stood live: "Aquaman Annual 001-005" carry the numbers 1-5 and sat inside Book 01
+            // (#0-8); Iron Man's two annuals inside Vol. 01, four Deathstroke annuals inside Assassins. An annual
+            // is numbered in its OWN series, so its number is not a coordinate on this run's ladder at all. The
+            // reading order already decides the tier (from Format, or from the word in the name), so it is the
+            // one judgement of "is this an annual" the library makes.
+            var books = new List<ContainmentJob.Book>();
+            for (var i = 1; i <= 6; i++)
+                books.Add(new ContainmentJob.Book { ItemId = i, SeriesId = 1, Level = CollectionLevel.Issue, ReadIndex = i, ReadNumber = i, IssueNumber = i, PageCount = 24 });
+            books.Add(new ContainmentJob.Book { ItemId = 50, SeriesId = 1, Level = CollectionLevel.Issue, ReadIndex = 7, ReadNumber = 1, IssueNumber = 1, PageCount = 40, ReadTier = ReadingOrderParser.TierAnnual });
+            books.Add(new ContainmentJob.Book { ItemId = 51, SeriesId = 1, Level = CollectionLevel.Issue, ReadIndex = 8, ReadNumber = 1, IssueNumber = 1, PageCount = 40, ReadTier = ReadingOrderParser.TierSpecial });
+            books.Add(new ContainmentJob.Book { ItemId = 101, SeriesId = 1, Level = CollectionLevel.Volume, PageCount = 150, SpanFromStart = 1, SpanFromEnd = 6, RangeSource = EditionSource.Curated });
+
+            ContainmentJob.BuildSeries(books);
+
+            var vol = books.Single(b => b.ItemId == 101);
+            Assert.Equal("#1-6", vol.SpanLabel);
+            Assert.Equal(6, vol.ContainsCount);
+            Assert.Null(books.Single(b => b.ItemId == 50).ParentItemId);
+            Assert.Null(books.Single(b => b.ItemId == 51).ParentItemId);
+            Assert.Equal(TrackRole.Primary, books.Single(b => b.ItemId == 50).TrackRole);
+        }
+
+        [Fact]
+        public void APointIssueNestsOnlyWhenTheBooksOwnPageNamesIt()
+        {
+            // The Flash, as it stands live: Vol. 04 (#20-25) holds #23.2 and not #23.1 or #23.3 — DC's Villains
+            // Month issues are collected elsewhere. Arithmetic puts all three inside 20-25; the book's own
+            // quoted page is what says which one is really there.
+            static List<ContainmentJob.Book> Shelf(string note)
+            {
+                var books = new List<ContainmentJob.Book>();
+                for (var i = 20; i <= 25; i++)
+                    books.Add(new ContainmentJob.Book { ItemId = i, SeriesId = 1, Level = CollectionLevel.Issue, ReadIndex = i, ReadNumber = i, IssueNumber = i, PageCount = 24 });
+                books.Add(new ContainmentJob.Book { ItemId = 231, SeriesId = 1, Level = CollectionLevel.Issue, ReadIndex = 40, ReadNumber = 23.1, IssueNumber = 23.1, PageCount = 24 });
+                books.Add(new ContainmentJob.Book { ItemId = 232, SeriesId = 1, Level = CollectionLevel.Issue, ReadIndex = 41, ReadNumber = 23.2, IssueNumber = 23.2, PageCount = 24 });
+                books.Add(new ContainmentJob.Book { ItemId = 233, SeriesId = 1, Level = CollectionLevel.Issue, ReadIndex = 42, ReadNumber = 23.3, IssueNumber = 23.3, PageCount = 24 });
+                books.Add(new ContainmentJob.Book { ItemId = 101, SeriesId = 1, Level = CollectionLevel.Volume, PageCount = 170, SpanFromStart = 20, SpanFromEnd = 25, RangeSource = EditionSource.Curated, RangeNote = note });
+                ContainmentJob.BuildSeries(books);
+                return books;
+            }
+
+            var named = Shelf("copyright p3: 'THE FLASH 20-25, 23.2'");
+            Assert.Equal(7, named.Single(b => b.ItemId == 101).ContainsCount);
+            Assert.Equal(101, named.Single(b => b.ItemId == 232).ParentItemId);
+            Assert.Null(named.Single(b => b.ItemId == 231).ParentItemId);
+            Assert.Null(named.Single(b => b.ItemId == 233).ParentItemId);
+
+            // Superman Vol. 04 - Psi War quotes 'SUPERMAN 18-24' and held all three of our 23.x files.
+            var unnamed = Shelf("copyright p3: 'THE FLASH 20-25'");
+            Assert.Equal(6, unnamed.Single(b => b.ItemId == 101).ContainsCount);
+            Assert.All(unnamed.Where(b => b.ItemId is 231 or 232 or 233), b => Assert.Null(b.ParentItemId));
+
+            // …and a whole-number file is measured exactly as before.
+            Assert.Equal(101, unnamed.Single(b => b.ItemId == 23).ParentItemId);
+        }
     }
 }
