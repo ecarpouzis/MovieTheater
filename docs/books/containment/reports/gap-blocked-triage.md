@@ -98,3 +98,16 @@ issues nested**: Superman 23.1 / 23.2 / 23.3 under Vol. 04 Psi War, whose copyri
 2. Say yes / no to the `check_identity` completeness guard.
 3. Say go on the containment code (commit + the rebuild) and on applying the two sheets.
 4. Optional: `u` lines for the 21 stale `S` lines on the line shelves.
+
+## Closed 2026-09-26
+
+- **X-063** landed (wave 193) after reading both flagged calls from the books: Supergirl Vol. 02 has no #12 (hull #11-22,
+  hole quoted), Green Lantern Vol. 05 has #28 (GCD indexes the flipbook as s236848). X-064 relinked the 50 issue files;
+  all 50 nest. The `check_identity` completeness guard is in (LEDGER L-417, TOOLS_TODO 46).
+- **Containment code + sheets** landed and rebuilt (c47f3c4d, 48414226, d9b1f8bd).
+- **The 21 stale S lines** (population 3 above) are RESTATED in each run's own numbering from the identity C lines —
+  Eric: restate, never `u` — each tagged `[restated 09-26 …]`; the finder now returns 0 and the import answers `Kept` on
+  the same range.
+- **Harley Quinn #63 / #65 stay flat — by design.** Shelf S94834 holds eleven trades and only two issue files (1pp
+  variant covers); with fewer than `ContainmentJob.RunFloor` (3) issues the trades ARE the shelf's base ladder, so no
+  container exists to nest them under. Changing that floor would move every trade-heavy shelf to save two cover images.
