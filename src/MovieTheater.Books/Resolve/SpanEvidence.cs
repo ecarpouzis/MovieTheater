@@ -24,11 +24,15 @@ namespace MovieTheater.Books.Resolve
             new("['‘“](.*?)['’”]", RegexOptions.Singleline | RegexOptions.Compiled);
         private static readonly Regex RxYear = new(@"\b(19|20)\d{2}\b", RegexOptions.Compiled);
         private static readonly Regex RxRange =
-            new(@"#?(?<![\d.])(\d{1,4})\s*(?:-|–|—|�|through|thru|to)\s*#?(\d{1,4})(?![\d.])",
+            new(@"#?(?<!\d|\d\.)(\d{1,4})\s*(?:-|–|—|�|through|thru|to)\s*#?(\d{1,4})(?!\d|\.\d)",
                 RegexOptions.IgnoreCase | RegexOptions.Compiled);
         // A point issue (#23.1, #7.5) is a number the page can name; the lookarounds keep "23.1-23.4" from
-        // reading as the range 1-23 and "23.2" from reading as a 23 and a 2.
-        private static readonly Regex RxSingle = new(@"#?(?<![\d.])(\d{1,4}(?:\.\d{1,2})?)(?![\d.])", RegexOptions.Compiled);
+        // reading as the range 1-23 and "23.2" from reading as a 23 and a 2. They refuse a DIGIT (or a digit
+        // after a point) on either side, never a bare full stop: indicia end in one ('THE FLASH 20-25, 23.2.',
+        // 'USAGI YOJIMBO issues #1-7.'), and refusing it dropped the range's end and the point issue with it.
+        // A whole number before a full stop stays unread, as it always was ('SUPERGIRL ANNUAL 2.').
+        private static readonly Regex RxSingle =
+            new(@"#?(?<![\d.])(\d{1,4}\.\d{1,2}(?!\d|\.\d)|\d{1,4}(?![\d.]))", RegexOptions.Compiled);
 
         /// <summary>The widest range a single quotation may name before it is treated as noise rather than a list.</summary>
         public const int MaxRangeWidth = 500;

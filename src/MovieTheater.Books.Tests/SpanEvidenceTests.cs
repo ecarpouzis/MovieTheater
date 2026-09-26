@@ -136,5 +136,27 @@ namespace MovieTheater.Books.Tests
             Assert.DoesNotContain(1d, q);
             Assert.DoesNotContain(22d, q);
         }
+
+        [Theory]
+        // The indicia's own full stop: Flash Vol. 04's note ends '23.2.', Usagi Yojimbo's '#1-7.'. A lookahead that
+        // refused any '.' read neither the range's end nor the point issue, and #23.2 fell out of its book.
+        [InlineData("indicia p003: 'Originally published in single magazine form as THE FLASH 20-25, 23.2.'", 20, 25, 23.2)]
+        [InlineData("indicia p003 (IDW): 'Originally published as USAGI YOJIMBO issues #1-7.'", 1, 7, double.NaN)]
+        public void AQuoteEndingInAFullStopStillReadsItsLastNumber(string note, double a, double b, double point)
+        {
+            var q = SpanEvidence.QuotedIssues(note)!;
+            for (var i = a; i <= b; i++) Assert.Contains(i, q);
+            if (!double.IsNaN(point)) Assert.Contains(point, q);
+            Assert.True(SpanEvidence.SelfProving(note, a, b));
+        }
+
+        [Fact]
+        public void AWholeNumberBeforeAFullStopIsStillNotRead()
+        {
+            // Unchanged on purpose: reading 'ANNUAL 2.' would flip SelfProving on notes that were proven.
+            const string note = "copyright p3: 'SUPERGIRL 10-20, SUPERGIRL ANNUAL 2. Copyright'";
+            Assert.DoesNotContain(2d, SpanEvidence.QuotedIssues(note)!);
+            Assert.True(SpanEvidence.SelfProving(note, 10, 20));
+        }
     }
 }
