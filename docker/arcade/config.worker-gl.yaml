@@ -1879,6 +1879,37 @@ emulator:
             # to RETROK_F1 — one token, no other change.
             scummvm_mapper_l3: "RETROK_F5"
             scummvm_mapper_r3: "RETROK_F7"
+        dos:
+          # DOS + Windows 3.x on DOSBox Pure (2026-09-30). Stock already ships this core key (lib, folder
+          # dos, roms zip/cue, kbMouseSupport, hid, saveStateFs "*.pure.zip"); these keys are deep-merged
+          # over it. Each game is ONE zip built by scripts/arcade-dos/build-dos-game.ps1: a whole C: drive
+          # (Windows 3.1 base + the game's install) whose root DOSBOX.BAT is DOSBox Pure's auto-start, so a
+          # room boots straight into the game. Windows games are the Windows SHELL, and the bat loops, so
+          # quitting the game restarts it instead of dropping to a DOS prompt nobody can type into.
+          lib: dosbox_pure_libretro
+          folder: dos
+          roms: ["zip"]
+          # Same encode rule as scummvm: an INTEGER factor capped by scaleMaxWidth, chosen per game from the
+          # frame the core renders — a 320x200 DOS game goes 6x (1920x1200), Windows' 640x480 goes 3x.
+          scale: 6
+          scaleMaxWidth: 1920
+          # A Windows desktop is silent most of the time; keep the opus stream fed (see scummvm).
+          audioSilenceFill: true
+          # REQUIRED: the worker only opens the "keyboard" and "mouse" DataChannels for a core that declares
+          # this (coordinatorhandlers.go). Stock sets it too; restated so nobody "tidies" it away — the site
+          # shim's MOUSE_SYSTEMS / KEYBOARD_SYSTEMS (cloudRetroClient.js) are dead without it.
+          kbMouseSupport: true
+          options:
+            # PINNED: the shim positions the cursor absolutely by sending (target - model) deltas and must
+            # know the gain exactly (MOUSE_GAIN.dos in cloudRetroClient.js). "1.0" is a token in this
+            # build's own option table (extracted from the DLL), so it is not silently ignored. The other
+            # half of the gain — Windows' own pointer acceleration — is switched off in the Win 3.1 base
+            # (WIN.INI MouseSpeed=0, build-dos-base.ps1).
+            dosbox_pure_mouse_speed_factor: "1.0"
+            # The Sound Blaster settings the Win 3.1 base's drivers were installed against (SYSTEM.INI
+            # [sndblst.drv] port=220 int=7, BLASTER in DOSBOX.BAT). These ARE the core defaults; pinned so a
+            # default change upstream cannot silently leave Windows talking to the wrong IRQ.
+            dosbox_pure_sblaster_conf: "A220 I7 D1 H5"
         cdi:
           # same_cdi (MAME's CD-i driver, stripped to a libretro core) — pure software, safe. Needs
           # cdimono1.zip both at the BIOS root AND under same_cdi/bios/ (the core's own lookup path).

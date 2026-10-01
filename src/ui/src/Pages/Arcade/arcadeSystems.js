@@ -10,7 +10,7 @@ export const SYSTEM_LABEL = {
   fds: "Famicom Disk System", neogeo: "Neo Geo", "3do": "3DO",
   cdi: "CD-i", coleco: "ColecoVision", intv: "Intellivision", vectrex: "Vectrex",
   o2em: "Odyssey²", channelf: "Channel F", arcadia: "Arcadia 2001",
-  pokemini: "Pokémon Mini", supervision: "Supervision", scummvm: "ScummVM",
+  pokemini: "Pokémon Mini", supervision: "Supervision", scummvm: "ScummVM", dos: "DOS & Windows 3.1",
   nds: "Nintendo DS", "3ds": "Nintendo 3DS",
   // Heavy lane (Moonlight-streamed, docs/arcade-heavy-lane-plan.md §7.1).
   switch: "Switch", ps3: "PlayStation 3", ps4: "PlayStation 4", wiiu: "Wii U", x360: "Xbox 360",
@@ -53,6 +53,8 @@ export const consoleTile = (system) => TILE_BY_SYSTEM[String(system || "").toLow
 //             every console here, so it lands at the very end of the shelf despite being one of the
 //             largest collections.
 //   scummvm — 1987, Maniac Mansion: the first SCUMM game, which is what the engine is named after.
+//   dos     — 1981, the IBM PC and MS-DOS 1.0. Unlike `pc` (the heavy lane's live, evergreen PC) this is the
+//             emulated vintage machine, so it takes a real date.
 // `pc` and `capture` are deliberately absent — see EVERGREEN_SYSTEMS below.
 export const SYSTEM_RELEASED = {
   switch: "2017-03-03", ps4: "2013-11-15", wiiu: "2012-11-18", "3ds": "2011-02-26",
@@ -68,7 +70,7 @@ export const SYSTEM_RELEASED = {
   lynx: "1989-09-01", gb: "1989-04-21", genesis: "1988-10-29",
   pce: "1987-10-30", scummvm: "1987-10-05", a7800: "1986-05-01",
   fds: "1986-02-21", sms: "1985-10-20", nes: "1983-07-15",
-  sg1000: "1983-07-15", vectrex: "1982-11-01", coleco: "1982-08-01",
+  sg1000: "1983-07-15", vectrex: "1982-11-01", coleco: "1982-08-01", dos: "1981-08-12",
   arcadia: "1982-05-01", intv: "1979-12-03",
   o2em: "1978-12-01", a2600: "1977-09-11", channelf: "1976-11-01",
   arcade: "1971-11-15",
@@ -107,7 +109,7 @@ export function byConsoleAge(a, b) {
 export const ART_SYSTEMS = new Set([
   "nes", "snes", "genesis", "gb", "gbc", "gba", "n64", "gc", "wii", "ps1", "ps2",
   "psp", "dc", "sms", "gg", "sg1000", "segacd", "sega32x", "pce", "ngpc", "wsc",
-  "a2600", "a7800", "lynx", "vb", "fds", "nds", "3ds",
+  "a2600", "a7800", "lynx", "vb", "fds", "nds", "3ds", "dos",
   // arcade/neogeo now resolve real titles → art via libretro (neogeo) or IGDB cover (arcade).
   "arcade", "neogeo",
 ]);

@@ -6,7 +6,62 @@ import {
   keyboardArrowsDriveDpad,
   encodePointer, systemUsesPointer,
   encodeMouseMove, encodeMouseButtons, systemUsesMouse,
+  mouseGainFor, systemUsesKeyboard, retroKeyFor, encodeKey, profileFor,
 } from "./cloudRetroClient";
+
+// DOS / Windows 3.x (DOSBox Pure, 2026-09-30): the first system with a REAL keyboard. Keyboard wire format
+// is the worker's KeyboardState.SetKey (nanoarch/input.go): exactly 7 bytes, BIG-ENDIAN,
+// [RETROK:u32][pressed:u8][mod:u16]. Any other length is dropped by the worker without a word.
+describe("encodeKey (keyboard channel wire format)", () => {
+  it("is 7 bytes: [key:u32 BE][pressed:u8][mod:u16 BE]", () => {
+    const dv = new DataView(encodeKey(0x0102, true, 0x0005));
+    expect(dv.byteLength).toBe(7);
+    expect(dv.getUint32(0, false)).toBe(0x0102);
+    expect(dv.getUint8(4)).toBe(1);
+    expect(dv.getUint16(5, false)).toBe(0x0005);
+    expect(new DataView(encodeKey(13, false, 0)).getUint8(4)).toBe(0);
+  });
+});
+
+describe("retroKeyFor (KeyboardEvent.code -> RETROK_*)", () => {
+  it("maps letters, digits and F-keys to libretro.h's values", () => {
+    expect(retroKeyFor("KeyA")).toBe(97);   // RETROK_a
+    expect(retroKeyFor("KeyZ")).toBe(122);  // RETROK_z
+    expect(retroKeyFor("Digit0")).toBe(48);
+    expect(retroKeyFor("Digit9")).toBe(57);
+    expect(retroKeyFor("F1")).toBe(282);
+    expect(retroKeyFor("F12")).toBe(293);
+  });
+  it("maps the keys a Windows game needs to drive dialogs", () => {
+    expect(retroKeyFor("Enter")).toBe(13);
+    expect(retroKeyFor("Escape")).toBe(27);
+    expect(retroKeyFor("Backspace")).toBe(8);
+    expect(retroKeyFor("Tab")).toBe(9);
+    expect(retroKeyFor("AltLeft")).toBe(308);
+    expect(retroKeyFor("ArrowLeft")).toBe(276);
+  });
+  it("returns 0 (not sent) for unknown codes", () => {
+    expect(retroKeyFor("Unidentified")).toBe(0);
+    expect(retroKeyFor("")).toBe(0);
+  });
+});
+
+describe("DOS input capabilities", () => {
+  it("dos takes the mouse AND a real keyboard; nothing else takes the keyboard", () => {
+    expect(systemUsesMouse("dos")).toBe(true);
+    expect(systemUsesKeyboard("dos")).toBe(true);
+    expect(systemUsesKeyboard("DOS")).toBe(true);
+    for (const s of ["scummvm", "snes", "n64", "nds", "", null, undefined])
+      expect(systemUsesKeyboard(s)).toBe(false);
+  });
+  it("the dos profile binds NO keys to the pad (a key must not also press a RetroPad button)", () => {
+    expect(Object.keys(profileFor("dos").keymap)).toHaveLength(0);
+  });
+  it("mouse gains match the options pinned in config.worker-gl.yaml", () => {
+    expect(mouseGainFor("scummvm")).toBe(1.25); // scummvm_mouse_speed
+    expect(mouseGainFor("dos")).toBe(1.0);      // dosbox_pure_mouse_speed_factor
+  });
+});
 
 // W10 touch pointer wire format. This is the CONTRACT with the worker (nanoarch PointerState.Set):
 // an 8-byte packet [tag:1=0xF0][ver:1=1][x:i16 LE][y:i16 LE][pressed:1][flags:1], length+tag

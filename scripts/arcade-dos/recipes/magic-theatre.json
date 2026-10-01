@@ -1,0 +1,19 @@
+{
+  "name": "Magic Theatre (1995)",
+  "notes": "Knowledge Adventure, Windows 3.1. Source = the IBM 3-Pack CD (MTHEATRE folder + SUPPORT). The EU Packard Bell disc has no English. Replays what the CD's InstallShield SETUP.INS does for the Magic Theatre option, minus the IBM PS/1 launcher (PS1CDROM): the program comes out of MTCD.KAL (an InstallShield 3 library, every entry stored), WinG goes into SYSTEM, and MTHEATRE.INI [CONTROL] gets the five paths. The CD half (libraries, help, effects) is copied to C:\\MTCD so no CD image is needed.",
+  "base": "win31",
+  "source": "ka-ibm-3pack",
+  "steps": [
+    { "op": "is3z", "from": "MTHEATRE/MTCD.KAL", "to": "KA/MTHEATRE" },
+    { "op": "copyDir", "from": "MTHEATRE", "to": "MTCD/MTHEATRE", "exclude": ["MTCD.KAL"] },
+    { "op": "copyFiles", "from": "SUPPORT", "to": "WINDOWS/SYSTEM",
+      "files": ["WING.DLL", "WING32.DLL", "WINGDE.DLL", "WINGDIB.DRV", "WINGPAL.WND", "DISPDLL.DLL"] },
+    { "op": "ini", "file": "WINDOWS/MTHEATRE.INI", "section": "CONTROL", "values": {
+        "MTPath": "C:\\KA\\MTHEATRE",
+        "LibPath": "C:\\MTCD\\MTHEATRE",
+        "MoviesPath": "C:\\KA\\MTHEATRE\\MOVIES",
+        "HelpPath": "C:\\MTCD\\MTHEATRE\\HELP",
+        "EffectsPath": "C:\\MTCD\\MTHEATRE\\EFFECTS" } }
+  ],
+  "launch": { "dir": "C:\\KA\\MTHEATRE", "program": "MT.EXE" }
+}

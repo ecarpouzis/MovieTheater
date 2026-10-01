@@ -356,6 +356,11 @@ namespace MovieTheater.Arcade
             // resources) matched to the core build. Gamepad-only: the core has its own built-in analog-
             // stick-to-cursor emulation (L/R = click), so this rides our existing RetroPad input untouched.
             new("scummvm",     new[] { "scummvm" },     new[] { ".scummvm" },   1),
+            // DOS / Windows 3.x (2026-09-30, DOSBox Pure): one .zip per game = a whole prepared C: drive
+            // (OS base + the game's install + an auto-start DOSBOX.BAT), built by scripts/arcade-dos/
+            // build-dos-game.ps1 from a recipe. Mouse + real keyboard via the worker's kbMouseSupport
+            // channels. One PC = one player.
+            new("dos",         new[] { "dos" },         new[] { ".zip" },       1),
         };
     }
 }

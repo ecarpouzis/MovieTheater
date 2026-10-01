@@ -77,6 +77,9 @@ namespace MovieTheater.Arcade
             ["pokemini"] = "Nintendo - Pokemon Mini",
             ["supervision"] = "Watara - Supervision",
             ["arcadia"] = "Emerson - Arcadia 2001",
+            // Added 2026-09-30 with the dos system. libretro's DOS repo covers DOS-era PC games; Windows 3.x
+            // titles mostly miss it and fall through to IGDB like any other repo miss.
+            ["dos"] = "DOS",
         };
 
         /// <summary>Repos whose default branch is <c>main</c>, not <c>master</c>. Everything else in

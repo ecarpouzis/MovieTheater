@@ -99,6 +99,17 @@ const PROFILES = {
     foldStickToDpad: true,
     hint: "Mouse recommended — point and click straight on the picture. M = ScummVM menu (save/load, options). Keyboard: arrows move the cursor, Q W = left/right click, Enter = Start.",
   },
+  // DOS / Windows 3.x (DOSBox Pure): a PC, so the keyboard is a KEYBOARD — every key goes to the core
+  // as a real keypress on the worker's "keyboard" channel (KEYBOARD_SYSTEMS), never folded into RetroPad
+  // bits. The keymap is therefore EMPTY: a key bound here would ALSO press a pad button, and DOSBox Pure
+  // maps pad buttons onto keys of its own (the "S types s-space" double-press seen in the local preview).
+  // A gamepad still works through DOSBox Pure's own pad→key/mouse mapping.
+  dos: {
+    gamepad: DEFAULT_GAMEPAD,
+    keymap: {},
+    foldStickToDpad: true,
+    hint: "Mouse and keyboard — point and click straight on the picture; right-click works too. Your keyboard types directly into the PC.",
+  },
   // N64: mupen64plus-next maps N64 A ← RetroPad **B** and N64 B ← RetroPad A (verified live in
   // Bomberman 64's menus: PAD.B confirms, PAD.A backs out — the earlier assumption here was
   // inverted, which put "back" on the bottom button and made every N64 menu feel broken). So the
@@ -732,8 +743,72 @@ export function systemUsesPointer(system) { return POINTER_SYSTEMS.has(String(sy
 // needs RETRO_DEVICE_MOUSE (relative deltas), which ScummVM applies unconditionally every poll — that's
 // MOUSE_SYSTEMS below, a completely separate wire path (stock CloudRetro's own worker-opened "mouse"
 // DataChannel, never wired into this shim before now).
-const MOUSE_SYSTEMS = new Set(["scummvm"]);
+// dos (2026-09-30): DOSBox Pure reads RETRO_DEVICE_MOUSE the same way — relative deltas, every poll — and
+// feeds them to the emulated PS/2 mouse that Windows 3.x's MOUSE.DRV reads. Same absolute-model path below,
+// with its own gain (MOUSE_GAIN).
+const MOUSE_SYSTEMS = new Set(["scummvm", "dos"]);
 export function systemUsesMouse(system) { return MOUSE_SYSTEMS.has(String(system || "").toLowerCase()); }
+
+// Wire units → core cursor pixels, per mouse system: the multiplier the CORE applies to a delta we send,
+// which the absolute model divides back out. Each MUST equal the option pinned in config.worker-gl.yaml.
+//   scummvm: scummvm_mouse_speed "1.25" — ScummVM's own source is `deltaAcc = x * mouse_speed`.
+//   dos:     dosbox_pure_mouse_speed_factor "1.0", with Windows' pointer acceleration switched off in the
+//            Win 3.1 base (WIN.INI MouseSpeed=0) so one mickey is one fixed step at any speed.
+export const MOUSE_GAIN = { scummvm: 1.25, dos: 1.0 };
+export function mouseGainFor(system) { return MOUSE_GAIN[String(system || "").toLowerCase()] ?? 1; }
+// Systems whose right/middle buttons mean something. ScummVM's UI is left-click only, so its right button
+// stays the browser's (and the context menu is suppressed either way); a PC has all three.
+const MOUSE_ALL_BUTTON_SYSTEMS = new Set(["dos"]);
+// Browser MouseEvent.button → the worker's mouse mask bits (bit0 left, bit1 right, bit2 middle) — the stock
+// client's b2r table (web/js/api.js).
+const BROWSER_BUTTON_BIT = { 0: 0x01, 1: 0x04, 2: 0x02 };
+
+// Systems that take a REAL KEYBOARD: every key goes out as a libretro keypress on the worker's "keyboard"
+// DataChannel (stock CloudRetro; opened only for a kbMouseSupport core) instead of being folded into
+// RetroPad bits. A PC game needs letters, Enter, Esc, Alt+F4 — no pad mapping can carry those.
+const KEYBOARD_SYSTEMS = new Set(["dos"]);
+export function systemUsesKeyboard(system) { return KEYBOARD_SYSTEMS.has(String(system || "").toLowerCase()); }
+// Keys the ROOM keeps for itself even when the keyboard is passed through: the input tape's record/mark.
+const ROOM_HOTKEYS = new Set(["F9", "F10"]);
+
+// KeyboardEvent.code → RETROK_* (libretro.h), the stock client's table (web/js/api.js) reduced to the codes
+// a browser actually reports. 0 = unmapped (not sent).
+const RETROK = (() => {
+  const m = {
+    Backspace: 8, Tab: 9, Enter: 13, Pause: 19, Escape: 27, Space: 32, Quote: 39, Comma: 44, Minus: 45,
+    Period: 46, Slash: 47, Semicolon: 59, Equal: 61, BracketLeft: 91, Backslash: 92, BracketRight: 93,
+    Backquote: 96, Delete: 127,
+    Numpad0: 256, Numpad1: 257, Numpad2: 258, Numpad3: 259, Numpad4: 260, Numpad5: 261, Numpad6: 262,
+    Numpad7: 263, Numpad8: 264, Numpad9: 265, NumpadDecimal: 266, NumpadDivide: 267, NumpadMultiply: 268,
+    NumpadSubtract: 269, NumpadAdd: 270, NumpadEnter: 271, NumpadEqual: 272,
+    ArrowUp: 273, ArrowDown: 274, ArrowRight: 275, ArrowLeft: 276, Insert: 277, Home: 278, End: 279,
+    PageUp: 280, PageDown: 281,
+    NumLock: 300, CapsLock: 301, ScrollLock: 302, ShiftRight: 303, ShiftLeft: 304, ControlRight: 305,
+    ControlLeft: 306, AltRight: 307, AltLeft: 308, MetaRight: 309, MetaLeft: 310,
+  };
+  for (let i = 0; i < 10; i++) m[`Digit${i}`] = 48 + i;
+  for (let i = 0; i < 26; i++) m[`Key${String.fromCharCode(65 + i)}`] = 97 + i;
+  for (let i = 1; i <= 15; i++) m[`F${i}`] = 281 + i;
+  return m;
+})();
+export function retroKeyFor(code) { return RETROK[code] || 0; }
+
+// Keyboard wire packet — matches the worker's KeyboardState.SetKey exactly (nanoarch/input.go), BIG-ENDIAN
+// like the mouse channel: [RETROK:u32][pressed:u8][mod:u16] (mod bits SHIFT 1, CTRL 2, ALT 4, META 8,
+// NUMLOCK 16, CAPSLOCK 32, SCROLLOCK 64).
+export function encodeKey(retroKey, pressed, mods) {
+  const buf = new ArrayBuffer(7);
+  const dv = new DataView(buf);
+  dv.setUint32(0, retroKey, false);
+  dv.setUint8(4, pressed ? 1 : 0);
+  dv.setUint16(5, mods & 0xffff, false);
+  return buf;
+}
+function keyMods(e) {
+  const st = (k) => { try { return e.getModifierState?.(k) ? 1 : 0; } catch { return 0; } };
+  return (e.shiftKey ? 0x01 : 0) | (e.ctrlKey ? 0x02 : 0) | (e.altKey ? 0x04 : 0) | (e.metaKey ? 0x08 : 0)
+    | (st("NumLock") ? 0x10 : 0) | (st("CapsLock") ? 0x20 : 0) | (st("ScrollLock") ? 0x40 : 0);
+}
 
 // FALLBACK ONLY. The core reads RETRO_DEVICE_MOUSE deltas in ITS OWN unscaled coordinate space (clamped
 // to getScreenWidth()/Height() — the real internal game resolution), while videoEl.videoWidth/Height is
@@ -908,6 +983,7 @@ export function createCloudRetroSession(descriptor, opts) {
   let dc = null;
   let discDc = null; // patch 0005: worker-created "disc" channel; the browser sends a target disc index
   let mouseDc = null; // stock CloudRetro's worker-created "mouse" channel (RETRO_DEVICE_MOUSE relative deltas)
+  let kbDc = null;    // ...and its "keyboard" channel (RETROK keypresses — KEYBOARD_SYSTEMS)
   let inputTimer = null;
   let closed = false;
   let gameStartSent = false; // t=104 goes out exactly once: from dc.onopen, or the slow fallback below
@@ -1079,6 +1155,7 @@ export function createCloudRetroSession(descriptor, opts) {
     return (e) => { apply(e); if (!replaySource) pumpInput(); };
   };
   const onKeyState = (down) => (e) => {
+    if (kbPassthrough) { onPassthroughKey(down, e); return; }
     const bit = keymap[e.code];
     if (bit !== undefined) {
       e.preventDefault();
@@ -1096,6 +1173,34 @@ export function createCloudRetroSession(descriptor, opts) {
   };
   const keyDown = onKey(true);
   const keyUp = onKey(false);
+
+  // ── Real keyboard (KEYBOARD_SYSTEMS — DOS/Windows) ────────────────────────────────────────────────
+  // Every key the page receives goes to the core as itself, on the worker's "keyboard" channel; nothing
+  // reaches the pad mask (the profile keymap is empty and this returns before the arrow/stick handling).
+  // Held keys are tracked so a focus loss can RELEASE them — the same stuck-key hazard as the pad mask
+  // (Alt-Tab eats the keyup), only worse here: a stuck Alt or Ctrl changes the meaning of every later key.
+  const kbPassthrough = !spectator && !inputOnly && systemUsesKeyboard(descriptor.system);
+  const kbHeld = new Map(); // code → RETROK, for the blur release
+  function kbSend(retroKey, pressed, mods) {
+    if (!kbDc || kbDc.readyState !== "open") return;
+    try { kbDc.send(encodeKey(retroKey, pressed, mods)); } catch { /* channel closing */ }
+  }
+  function onPassthroughKey(down, e) {
+    if (ROOM_HOTKEYS.has(e.key)) return; // the room page's own (input tape)
+    const t = e.target;
+    const tag = (t && t.tagName ? t.tagName : "").toUpperCase();
+    if (t && (t.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT")) return;
+    const rk = retroKeyFor(e.code);
+    if (!rk) return;
+    e.preventDefault(); // Backspace/Tab/space/F-keys/Alt are the PC's now, not the browser's
+    if (down && e.repeat) return; // the emulated PC does its own typematic repeat
+    if (down) kbHeld.set(e.code, rk); else kbHeld.delete(e.code);
+    kbSend(rk, down, keyMods(e));
+  }
+  function kbReleaseAll() {
+    for (const rk of kbHeld.values()) kbSend(rk, false, 0);
+    kbHeld.clear();
+  }
 
   // Pick which local pad drives our seat. Blind "first non-null" broke for Bluetooth pads
   // (DualSense): when the pad idle-sleeps and reconnects, Chrome can leave a PHANTOM entry at
@@ -1400,6 +1505,7 @@ export function createCloudRetroSession(descriptor, opts) {
   // if "unchanged" — self-heals any worker-side desync accrued while away) and forget the remembered
   // gamepad index so a pad Chrome re-enumerated while unfocused is re-adopted on its first input.
   const onWindowBlur = () => {
+    kbReleaseAll();
     keyMask.value = 0;
     lKeys.up = lKeys.down = lKeys.left = lKeys.right = false;
     rKeys.up = rKeys.down = rKeys.left = rKeys.right = false;
@@ -1481,6 +1587,9 @@ export function createCloudRetroSession(descriptor, opts) {
       } else if (ev.channel && ev.channel.label === "mouse") {
         mouseDc = ev.channel;
         mouseDc.binaryType = "arraybuffer";
+      } else if (ev.channel && ev.channel.label === "keyboard") {
+        kbDc = ev.channel; // KEYBOARD_SYSTEMS only use it; a kbMouseSupport core always opens it
+        kbDc.binaryType = "arraybuffer";
       }
     };
 
@@ -2212,7 +2321,9 @@ export function createCloudRetroSession(descriptor, opts) {
   // DLL: 0.05 0.15 0.35 0.45 1.25 1.75 ...) and libretro silently ignores an unknown option VALUE — a
   // wrong token would leave the core on its own default and skew every delta with nothing logged. It
   // is also exactly representable in binary floating point, so inverting it introduces no error.
-  const MOUSE_SPEED = 1.25;
+  // Per system since DOS joined (MOUSE_GAIN): scummvm stays exactly 1.25.
+  const MOUSE_SPEED = mouseGainFor(descriptor.system);
+  const mseAllButtons = MOUSE_ALL_BUTTON_SYSTEMS.has(String(descriptor.system || "").toLowerCase());
 
   // CSS-px → core-px gain: how many of the CORE's own coordinate units one pixel of real mouse travel
   // should be worth, so the ScummVM cursor keeps pace with the physical pointer instead of drifting at
@@ -2297,13 +2408,20 @@ export function createCloudRetroSession(descriptor, opts) {
     mseModelX += wx * MOUSE_SPEED;
     mseModelY += wy * MOUSE_SPEED;
   }
+  // The mask bit a browser button drives here, or 0 to leave it alone: left everywhere; right/middle only on
+  // MOUSE_ALL_BUTTON_SYSTEMS (ScummVM's UI is left-click only).
+  function mseBitFor(button) {
+    if (button === 0) return 0x01;
+    return mseAllButtons ? (BROWSER_BUTTON_BIT[button] || 0) : 0;
+  }
   function onMseDown(ev) {
-    if (ev.button !== 0) return; // left click only — right/middle unused by ScummVM's UI
+    const bit = mseBitFor(ev.button);
+    if (!bit) return;
     // Aim before firing. A click is the one moment where being a pixel out is the difference between
     // opening the door and walking into it, and pointer-down carries its own absolute coordinates.
     onMseMove(ev);
     mseFlush();
-    mseSendButtons(mseLastMask | 0x01);
+    mseSendButtons(mseLastMask | bit);
     ev.preventDefault();
   }
   function onMseMove(ev) {
@@ -2319,8 +2437,9 @@ export function createCloudRetroSession(descriptor, opts) {
     if (!mseRaf && typeof requestAnimationFrame === "function") mseRaf = requestAnimationFrame(mseFlush);
   }
   function onMseUp(ev) {
-    if (ev.button !== 0) return;
-    mseSendButtons(mseLastMask & ~0x01);
+    const bit = mseBitFor(ev.button);
+    if (!bit) return;
+    mseSendButtons(mseLastMask & ~bit);
   }
   function onMseEnter() {
     // Re-establish the origin on every entry. The model can only be wrong if something moved the
