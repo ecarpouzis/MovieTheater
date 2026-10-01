@@ -6,7 +6,7 @@ import {
   keyboardArrowsDriveDpad,
   encodePointer, systemUsesPointer,
   encodeMouseMove, encodeMouseButtons, systemUsesMouse,
-  mouseGainFor, systemUsesKeyboard, retroKeyFor, encodeKey, profileFor,
+  mouseGainFor, mouseMaxStepFor, systemUsesKeyboard, retroKeyFor, encodeKey, profileFor,
 } from "./cloudRetroClient";
 
 // DOS / Windows 3.x (DOSBox Pure, 2026-09-30): the first system with a REAL keyboard. Keyboard wire format
@@ -60,6 +60,13 @@ describe("DOS input capabilities", () => {
   it("mouse gains match the options pinned in config.worker-gl.yaml", () => {
     expect(mouseGainFor("scummvm")).toBe(1.25); // scummvm_mouse_speed
     expect(mouseGainFor("dos")).toBe(1.0);      // dosbox_pure_mouse_speed_factor
+  });
+  it("dos moves in bounded steps (DOSBox clips one PS/2 packet near 255); scummvm stays unbounded", () => {
+    // Measured live 2026-09-30: one-message calibration left every click ~(+80,+20) core px off; stepped,
+    // the cursor landed within 1 px of the pointer at five probe points.
+    expect(mouseMaxStepFor("dos")).toBeGreaterThan(0);
+    expect(mouseMaxStepFor("dos") * 2).toBeLessThan(255); // two steps sampled in one frame still fit
+    expect(mouseMaxStepFor("scummvm")).toBe(0);
   });
 });
 

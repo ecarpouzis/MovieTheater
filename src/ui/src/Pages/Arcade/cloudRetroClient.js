@@ -756,6 +756,20 @@ export function systemUsesMouse(system) { return MOUSE_SYSTEMS.has(String(system
 //            Win 3.1 base (WIN.INI MouseSpeed=0) so one mickey is one fixed step at any speed.
 export const MOUSE_GAIN = { scummvm: 1.25, dos: 1.0 };
 export function mouseGainFor(system) { return MOUSE_GAIN[String(system || "").toLowerCase()] ?? 1; }
+// The largest move one message may carry, per system (absent = unbounded). DOSBox turns relative motion
+// into PS/2 packets whose deltas are CLIPPED to about ±255 per packet, and it clamps its own position too, so
+// anything bigger is silently cut short and the absolute model is off by the remainder for good. Measured
+// live 2026-09-30 (dos-probe, Magic Theatre): the single-message corner slam left the cursor ~(+80,+20)
+// core px from where the model put it, and every click landed that far down-right (the guitar click opened
+// the film-strip panel beside it); the gain itself was exact (365 px moved for 365 asked, both axes).
+// So for dos the slam and every large move go out in steps of at most this many units, one step per
+// MOUSE_STEP_GAP_MS (>= one 70 Hz VGA frame) — two steps landing in one frame still stay under the clip.
+export const MOUSE_MAX_STEP = { dos: 100 };
+export function mouseMaxStepFor(system) { return MOUSE_MAX_STEP[String(system || "").toLowerCase()] || 0; }
+const MOUSE_STEP_GAP_MS = 15;
+// Between two queued button changes on a stepped system: comfortably over a frame, so a down and its up
+// can never be sampled in the same frame (which would be a click the game never sees).
+const MOUSE_BUTTON_GAP_MS = 40;
 // Systems whose right/middle buttons mean something. ScummVM's UI is left-click only, so its right button
 // stays the browser's (and the context menu is suppressed either way); a PC has all three.
 const MOUSE_ALL_BUTTON_SYSTEMS = new Set(["dos"]);
@@ -2324,6 +2338,10 @@ export function createCloudRetroSession(descriptor, opts) {
   // Per system since DOS joined (MOUSE_GAIN): scummvm stays exactly 1.25.
   const MOUSE_SPEED = mouseGainFor(descriptor.system);
   const mseAllButtons = MOUSE_ALL_BUTTON_SYSTEMS.has(String(descriptor.system || "").toLowerCase());
+  // Stepped delivery (MOUSE_MAX_STEP): the most wire units one message may carry, 0 = unbounded (scummvm).
+  const mseMaxStep = mouseMaxStepFor(descriptor.system);
+  let mseSlamLeft = 0;        // stepped calibration: wire units of corner-slam still to send
+  let mseStepNotBefore = 0;   // stepped: earliest time the next step may go out
 
   // CSS-px → core-px gain: how many of the CORE's own coordinate units one pixel of real mouse travel
   // should be worth, so the ScummVM cursor keeps pace with the physical pointer instead of drifting at
@@ -2366,6 +2384,15 @@ export function createCloudRetroSession(descriptor, opts) {
   // every move is absolute.
   function mseCalibrate(t) {
     const slam = Math.ceil((Math.max(t.w, t.h) * 2) / MOUSE_SPEED);
+    if (mseMaxStep) {
+      // Stepped (MOUSE_MAX_STEP): the slam goes out as one bounded step per frame from mseFlush, so it
+      // actually reaches the corner instead of being clipped at the first packet.
+      mseSlamLeft = slam;
+      mseModelX = 0;
+      mseModelY = 0;
+      mseCalibratingUntil = 0;
+      return;
+    }
     mseWrite(-slam, -slam);
     mseModelX = 0;
     mseModelY = 0;
@@ -2389,14 +2416,45 @@ export function createCloudRetroSession(descriptor, opts) {
   // we lose, they are steps toward the same answer.
   function mseFlush() {
     mseRaf = 0;
-    if (!msePending) return;
     const now = typeof performance !== "undefined" ? performance.now() : Date.now();
-    if (now < mseCalibratingUntil) {                // let the slam clamp before correcting off it
-      mseRaf = typeof requestAnimationFrame === "function" ? requestAnimationFrame(mseFlush) : 0;
+    const again = () => { if (!mseRaf) mseRaf = typeof requestAnimationFrame === "function" ? requestAnimationFrame(mseFlush) : 0; };
+    if (mseSlamLeft > 0) {                           // stepped calibration in progress (MOUSE_MAX_STEP)
+      if (now >= mseStepNotBefore) {
+        const s = Math.min(mseMaxStep, mseSlamLeft);
+        mseWrite(-s, -s);
+        mseSlamLeft -= s;
+        mseStepNotBefore = now + MOUSE_STEP_GAP_MS;
+        if (mseSlamLeft === 0) mseCalibratingUntil = now + 60;
+      }
+      again();
       return;
     }
+    if (!msePending) { mseDrainButtons(now, again); return; }
+    if (now < mseCalibratingUntil) {                // let the slam clamp before correcting off it
+      again();
+      return;
+    }
+    if (mseMaxStep && now < mseStepNotBefore) { again(); return; }
     msePending = false;
     if (mseModelX == null) return;
+    if (mseMaxStep) {
+      // Bounded step toward the target; the loop re-arms until the model arrives. Once it has, any click
+      // queued while the cursor was still travelling is released (mseDrainButtons).
+      let wx = Math.round((mseTargetX - mseModelX) / MOUSE_SPEED);
+      let wy = Math.round((mseTargetY - mseModelY) / MOUSE_SPEED);
+      wx = Math.max(-mseMaxStep, Math.min(mseMaxStep, wx));
+      wy = Math.max(-mseMaxStep, Math.min(mseMaxStep, wy));
+      if (wx || wy) {
+        mseWrite(wx, wy);
+        mseModelX += wx * MOUSE_SPEED;
+        mseModelY += wy * MOUSE_SPEED;
+        mseStepNotBefore = now + MOUSE_STEP_GAP_MS;
+        const left = Math.max(Math.abs(mseTargetX - mseModelX), Math.abs(mseTargetY - mseModelY));
+        if (left >= MOUSE_SPEED / 2) msePending = true;
+      }
+      again();
+      return;
+    }
     // Wire units are what the CORE will multiply by mouse_speed, so divide it out here. The model then
     // advances by what the core will ACTUALLY do with the rounded integer we sent (not by what we
     // wanted), so rounding can never accumulate — and the next event recomputes the target absolutely
@@ -2414,6 +2472,26 @@ export function createCloudRetroSession(descriptor, opts) {
     if (button === 0) return 0x01;
     return mseAllButtons ? (BROWSER_BUTTON_BIT[button] || 0) : 0;
   }
+  // A stepped cursor can still be travelling when the button goes down, so its button changes are QUEUED
+  // and released only once the model has arrived — one change per MOUSE_BUTTON_GAP_MS, because the core
+  // samples the button state once a frame and a down+up landing in the same frame is a click that never
+  // happened. mseWantMask is the mask the player is holding right now.
+  let mseWantMask = 0;
+  const mseButtonQueue = [];
+  let mseButtonNotBefore = 0;
+  function mseSettled() { return mseSlamLeft === 0 && !msePending && mseModelX != null; }
+  function mseSetButtons(mask) {
+    if (!mseMaxStep) { mseSendButtons(mask); return; }
+    mseButtonQueue.push(mask);
+    if (!mseRaf && typeof requestAnimationFrame === "function") mseRaf = requestAnimationFrame(mseFlush);
+  }
+  function mseDrainButtons(now, again) {
+    if (!mseButtonQueue.length || !mseSettled()) return;
+    if (now < mseButtonNotBefore || now < mseCalibratingUntil) { again(); return; }
+    mseSendButtons(mseButtonQueue.shift());
+    mseButtonNotBefore = now + MOUSE_BUTTON_GAP_MS;
+    if (mseButtonQueue.length) again();
+  }
   function onMseDown(ev) {
     const bit = mseBitFor(ev.button);
     if (!bit) return;
@@ -2421,7 +2499,8 @@ export function createCloudRetroSession(descriptor, opts) {
     // opening the door and walking into it, and pointer-down carries its own absolute coordinates.
     onMseMove(ev);
     mseFlush();
-    mseSendButtons(mseLastMask | bit);
+    mseWantMask |= bit;
+    mseSetButtons(mseWantMask);
     ev.preventDefault();
   }
   function onMseMove(ev) {
@@ -2439,7 +2518,8 @@ export function createCloudRetroSession(descriptor, opts) {
   function onMseUp(ev) {
     const bit = mseBitFor(ev.button);
     if (!bit) return;
-    mseSendButtons(mseLastMask & ~bit);
+    mseWantMask &= ~bit;
+    mseSetButtons(mseWantMask);
   }
   function onMseEnter() {
     // Re-establish the origin on every entry. The model can only be wrong if something moved the
@@ -2451,6 +2531,8 @@ export function createCloudRetroSession(descriptor, opts) {
   }
   function onMseLeave() {
     // Don't leave a click stuck down if the pointer wanders off the video mid-press.
+    mseWantMask = 0;
+    mseButtonQueue.length = 0;
     if (mseLastMask) mseSendButtons(0);
   }
   function onMseContextMenu(e) { e.preventDefault(); }
