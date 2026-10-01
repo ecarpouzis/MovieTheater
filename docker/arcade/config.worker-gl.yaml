@@ -1900,9 +1900,20 @@ emulator:
           folder: dos
           roms: ["zip"]
           # Same encode rule as scummvm: an INTEGER factor capped by scaleMaxWidth, chosen per game from the
-          # frame the core renders — a 320x200 DOS game goes 6x (1920x1200), Windows' 640x480 goes 3x.
+          # frame the core renders — a 320x200 DOS game goes 4x (1280x800), Windows' 640x480 goes 2x
+          # (1280x960, still nearest-sharp; 2x is the chroma floor for flat-colour content).
+          # ⚠ NOT 1920 (the first cut, 2026-09-30): Windows then encoded at 1920x1440 @70 fps, and the auto
+          # ceiling (magnified-2d 1.0 bpp) computed 166 Mbps, clamped to 40000. Eric's Firefox gets H.264
+          # (no power-efficient AV1 decode → the lobby picks h264) and decodes WebRTC H.264 in SOFTWARE;
+          # at that size and rate it fell behind — the cursor "moved VERY slowly" (the picture was late) and
+          # the video halted on a keyframe request every 1-2 s (worker: 26 `PLI honored` in one minute;
+          # every AV1/Chrome test room logged pli=0).
           scale: 6
-          scaleMaxWidth: 1920
+          scaleMaxWidth: 1280
+          # A Windows desktop is large flat fields that cost almost nothing to encode; the class default
+          # (magnified-2d 1.0 bpp) is sized for busy pixel art and would still clamp to 40 Mbps at 1280x960.
+          # 0.1 bpp at 1280x960x70 = ~8.6 Mbps ceiling; ABR still decides what is actually sent.
+          bppTarget: 0.1
           # A Windows desktop is silent most of the time; keep the opus stream fed (see scummvm).
           audioSilenceFill: true
           # REQUIRED: the worker only opens the "keyboard" and "mouse" DataChannels for a core that declares
