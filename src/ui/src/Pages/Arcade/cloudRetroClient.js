@@ -2429,32 +2429,14 @@ export function createCloudRetroSession(descriptor, opts) {
       again();
       return;
     }
-    if (!msePending) { mseDrainButtons(now, again); return; }
     if (now < mseCalibratingUntil) {                // let the slam clamp before correcting off it
       again();
       return;
     }
-    if (mseMaxStep && now < mseStepNotBefore) { again(); return; }
+    if (mseMaxStep) { mseFlushStepped(now, again); return; }
+    if (!msePending) return;
     msePending = false;
     if (mseModelX == null) return;
-    if (mseMaxStep) {
-      // Bounded step toward the target; the loop re-arms until the model arrives. Once it has, any click
-      // queued while the cursor was still travelling is released (mseDrainButtons).
-      let wx = Math.round((mseTargetX - mseModelX) / MOUSE_SPEED);
-      let wy = Math.round((mseTargetY - mseModelY) / MOUSE_SPEED);
-      wx = Math.max(-mseMaxStep, Math.min(mseMaxStep, wx));
-      wy = Math.max(-mseMaxStep, Math.min(mseMaxStep, wy));
-      if (wx || wy) {
-        mseWrite(wx, wy);
-        mseModelX += wx * MOUSE_SPEED;
-        mseModelY += wy * MOUSE_SPEED;
-        mseStepNotBefore = now + MOUSE_STEP_GAP_MS;
-        const left = Math.max(Math.abs(mseTargetX - mseModelX), Math.abs(mseTargetY - mseModelY));
-        if (left >= MOUSE_SPEED / 2) msePending = true;
-      }
-      again();
-      return;
-    }
     // Wire units are what the CORE will multiply by mouse_speed, so divide it out here. The model then
     // advances by what the core will ACTUALLY do with the rounded integer we sent (not by what we
     // wanted), so rounding can never accumulate — and the next event recomputes the target absolutely
@@ -2472,25 +2454,57 @@ export function createCloudRetroSession(descriptor, opts) {
     if (button === 0) return 0x01;
     return mseAllButtons ? (BROWSER_BUTTON_BIT[button] || 0) : 0;
   }
-  // A stepped cursor can still be travelling when the button goes down, so its button changes are QUEUED
-  // and released only once the model has arrived — one change per MOUSE_BUTTON_GAP_MS, because the core
-  // samples the button state once a frame and a down+up landing in the same frame is a click that never
-  // happened. mseWantMask is the mask the player is holding right now.
-  let mseWantMask = 0;
-  const mseButtonQueue = [];
+  // ── Stepped systems (MOUSE_MAX_STEP): ONE ordered queue of moves and button changes ─────────────
+  // A stepped cursor can still be travelling when a button changes, so the button must not go out early
+  // (the click would land short of where it was aimed) — but it must not wait for the hand to STOP either.
+  // The first version did exactly that ("queue the button until the cursor has settled"), and in a drawing
+  // program, where you press and DRAG, the press never arrived while the hand moved: Eric, 2026-10-01, "very,
+  // very laggy to the point of being almost unusable". So moves and buttons keep their ORDER: consecutive
+  // moves coalesce into one target, a button change waits only until the cursor has reached the position it
+  // was pressed at, and the moves after it (the drag) continue from there.
+  //   * one move step per MOUSE_STEP_GAP_MS (the per-frame clip — see MOUSE_MAX_STEP);
+  //   * consecutive button changes MOUSE_BUTTON_GAP_MS apart (a down+up sampled in one frame is a click the
+  //     game never sees);
+  //   * the first move after a button change waits one step gap, so the press is sampled AT its position
+  //     rather than one step further along the drag.
+  let mseWantMask = 0;        // what the player is holding right now
+  const mseQ = [];            // {k:"m", x, y} | {k:"b", mask}
   let mseButtonNotBefore = 0;
-  function mseSettled() { return mseSlamLeft === 0 && !msePending && mseModelX != null; }
+  function mseQueueMove(x, y) {
+    const last = mseQ[mseQ.length - 1];
+    if (last && last.k === "m") { last.x = x; last.y = y; } else mseQ.push({ k: "m", x, y });
+  }
   function mseSetButtons(mask) {
     if (!mseMaxStep) { mseSendButtons(mask); return; }
-    mseButtonQueue.push(mask);
+    mseQ.push({ k: "b", mask });
     if (!mseRaf && typeof requestAnimationFrame === "function") mseRaf = requestAnimationFrame(mseFlush);
   }
-  function mseDrainButtons(now, again) {
-    if (!mseButtonQueue.length || !mseSettled()) return;
-    if (now < mseButtonNotBefore || now < mseCalibratingUntil) { again(); return; }
-    mseSendButtons(mseButtonQueue.shift());
-    mseButtonNotBefore = now + MOUSE_BUTTON_GAP_MS;
-    if (mseButtonQueue.length) again();
+  function mseFlushStepped(now, again) {
+    if (mseModelX == null) return;                    // calibrates on the next move
+    while (mseQ.length) {
+      const h = mseQ[0];
+      if (h.k === "b") {
+        if (now < mseButtonNotBefore) { again(); return; }
+        mseSendButtons(h.mask);
+        mseQ.shift();
+        mseButtonNotBefore = now + MOUSE_BUTTON_GAP_MS;
+        mseStepNotBefore = Math.max(mseStepNotBefore, now + MOUSE_STEP_GAP_MS);
+        continue;
+      }
+      const dx = h.x - mseModelX, dy = h.y - mseModelY;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < MOUSE_SPEED / 2) { mseQ.shift(); continue; } // already there
+      if (now < mseStepNotBefore) { again(); return; }
+      const wx = Math.max(-mseMaxStep, Math.min(mseMaxStep, Math.round(dx / MOUSE_SPEED)));
+      const wy = Math.max(-mseMaxStep, Math.min(mseMaxStep, Math.round(dy / MOUSE_SPEED)));
+      if (!wx && !wy) { mseQ.shift(); continue; }
+      mseWrite(wx, wy);
+      mseModelX += wx * MOUSE_SPEED;
+      mseModelY += wy * MOUSE_SPEED;
+      mseStepNotBefore = now + MOUSE_STEP_GAP_MS;
+      if (Math.max(Math.abs(h.x - mseModelX), Math.abs(h.y - mseModelY)) < MOUSE_SPEED / 2) mseQ.shift();
+      again();
+      return;                                         // one step per frame
+    }
   }
   function onMseDown(ev) {
     const bit = mseBitFor(ev.button);
@@ -2512,7 +2526,12 @@ export function createCloudRetroSession(descriptor, opts) {
     mseTargetX = t.x;
     mseTargetY = t.y;
     msePending = true;
-    if (mseModelX == null) mseCalibrate(t);
+    if (mseModelX == null) {
+      // Re-calibrating: queued MOVES aimed at the old origin are meaningless now; button changes keep.
+      if (mseMaxStep) for (let i = mseQ.length - 1; i >= 0; i--) if (mseQ[i].k === "m") mseQ.splice(i, 1);
+      mseCalibrate(t);
+    }
+    if (mseMaxStep) mseQueueMove(t.x, t.y);
     if (!mseRaf && typeof requestAnimationFrame === "function") mseRaf = requestAnimationFrame(mseFlush);
   }
   function onMseUp(ev) {
@@ -2532,7 +2551,7 @@ export function createCloudRetroSession(descriptor, opts) {
   function onMseLeave() {
     // Don't leave a click stuck down if the pointer wanders off the video mid-press.
     mseWantMask = 0;
-    mseButtonQueue.length = 0;
+    if (mseMaxStep) { mseSetButtons(0); return; }     // in ORDER, after any press still queued
     if (mseLastMask) mseSendButtons(0);
   }
   function onMseContextMenu(e) { e.preventDefault(); }
