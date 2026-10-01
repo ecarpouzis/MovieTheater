@@ -216,6 +216,16 @@ emulator:
     # `*.s[0-9][0-9]` is ScummVM's own <target>.s## slot naming and is deliberately tighter than `*.s??`,
     # which would also match a stray `.srm`. Verified to match nothing else at either root today.
     scummvm: "save:*.s[0-9][0-9]"
+    # dos (DOSBox Pure, 2026-09-30): every write a DOS/Windows game makes to its C: drive (Magic Theatre's
+    # movies, a game's save files, Windows' own INI churn) lands in ONE overlay file per game,
+    # <game>.pure.zip, at the ROOT of legacy_save — verified on disk after a live Magic Theatre room:
+    #     D:\ArcadeStorage\worker-gl\libretro\legacy_save\Magic Theatre (1995).pure.zip
+    # Unvaulted, that file belonged to whichever WORKER the room landed on: every player on worker 1 shared
+    # one Magic Theatre disk, worker 2 had a different one, and a movie made yesterday could be "gone" today.
+    # As a card it is each player's own PC hard disk, the same model as a memory card. Same root as
+    # scummvm's slots, so a narrow glob for the same reason; `*.pure.zip` is DOSBox Pure's own suffix and
+    # matches nothing any other core writes.
+    dos:     "save:*.pure.zip"
 
   # Wii SD-card + ELF/DOL loader boot (Brawl mods: Project REX, Smash Bros Infinite — 2026-07-18). A
   # small number of Wii ROM hacks crash when baked onto a standalone disc because their own
