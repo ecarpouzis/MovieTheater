@@ -2805,7 +2805,7 @@ index d8c7324..7fa36ab 100644
  	AppVideoInfo struct {
  		W    int     `json:"w"`
 diff --git a/pkg/com/com.go b/pkg/com/com.go
-index 8b47562..444d962 100644
+index 8b47562..d6c2adb 100644
 --- a/pkg/com/com.go
 +++ b/pkg/com/com.go
 @@ -1,6 +1,10 @@
@@ -2820,7 +2820,15 @@ index 8b47562..444d962 100644
  
  type stringer interface {
  	comparable
-@@ -100,6 +104,16 @@ func (c *SocketClient[T, P, X, P2]) Send(t T, data any) ([]byte, error) {
+@@ -21,7 +25,6 @@ func NewNetMap[K stringer, T NetClient[K]]() NetMap[K, T] {
+ func (m *NetMap[K, T]) Add(client T) bool         { return m.Put(client.Id(), client) }
+ func (m *NetMap[K, T]) Empty() bool               { return m.Map.Len() == 0 }
+ func (m *NetMap[K, T]) Remove(client T)           { m.Map.Remove(client.Id()) }
+-func (m *NetMap[K, T]) RemoveL(client T) int      { return m.Map.RemoveL(client.Id()) }
+ func (m *NetMap[K, T]) Reset()                    { m.Map = Map[K, T]{m: make(map[K]T, 10)} }
+ func (m *NetMap[K, T]) RemoveDisconnect(client T) { client.Disconnect(); m.Remove(client) }
+ func (m *NetMap[K, T]) Find(id string) T {
+@@ -100,6 +103,16 @@ func (c *SocketClient[T, P, X, P2]) Send(t T, data any) ([]byte, error) {
  	return c.rpc.Call(c.sock.conn, rq)
  }
  
@@ -2837,6 +2845,66 @@ index 8b47562..444d962 100644
  // Notify just sends a message and goes further.
  func (c *SocketClient[T, P, X, P2]) Notify(t T, data any) {
  	c.log.Debug().Str(logger.DirectionField, logger.MarkOut).Msgf("%v", t)
+diff --git a/pkg/com/map.go b/pkg/com/map.go
+index ce2c5cd..36c7c80 100644
+--- a/pkg/com/map.go
++++ b/pkg/com/map.go
+@@ -92,14 +92,6 @@ func (m *Map[K, V]) Pop(key K) V {
+ 	return val
+ }
+ 
+-// RemoveL removes the key and returns the new length of the map.
+-func (m *Map[K, _]) RemoveL(key K) int {
+-	m.mu.Lock()
+-	defer m.mu.Unlock()
+-	delete(m.m, key)
+-	return len(m.m)
+-}
+-
+ // Clear empties the map.
+ func (m *Map[K, V]) Clear() {
+ 	m.mu.Lock()
+diff --git a/pkg/com/map_test.go b/pkg/com/map_test.go
+index 15af76c..252340c 100644
+--- a/pkg/com/map_test.go
++++ b/pkg/com/map_test.go
+@@ -53,6 +53,36 @@ func TestMap_Base(t *testing.T) {
+ 	}
+ }
+ 
++func TestMap_Remove(t *testing.T) {
++	m := Map[int, int]{m: make(map[int]int)}
++
++	m.Put(1, 10)
++	m.Put(2, 20)
++
++	if m.Len() == 0 {
++		t.Error("should not be empty after puts")
++	}
++
++	m.Remove(1)
++	if m.Len() == 0 {
++		t.Error("should not be empty, key 2 remains")
++	}
++	if m.Len() != 1 {
++		t.Errorf("expected len 1, got %v", m.Len())
++	}
++
++	m.Remove(2)
++	if m.Len() != 0 {
++		t.Error("should be empty after removing last key")
++	}
++
++	// Remove of non-existent key is a no-op.
++	m.Remove(99)
++	if m.Len() != 0 {
++		t.Error("should still be empty after no-op remove")
++	}
++}
++
+ func TestMap_Concurrency(t *testing.T) {
+ 	m := Map[int, int]{m: make(map[int]int)}
+ 	for i := range 100 {
 diff --git a/pkg/com/net.go b/pkg/com/net.go
 index 5b2e0f2..0b59f02 100644
 --- a/pkg/com/net.go
@@ -5031,7 +5099,7 @@ index 53c3a2d..e5db5d0 100644
  			zerolog.TimestampFieldName,
  			"pid",
 diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
-index 99e02b8..b089782 100644
+index 99e02b8..d9f39db 100644
 --- a/pkg/network/webrtc/factory.go
 +++ b/pkg/network/webrtc/factory.go
 @@ -3,19 +3,51 @@ package webrtc
@@ -5150,7 +5218,7 @@ index 99e02b8..b089782 100644
  	if conf.HasPortRange() {
  		if err = s.SetEphemeralUDPPortRange(conf.IcePorts.Min, conf.IcePorts.Max); err != nil {
  			return
-@@ -56,57 +138,313 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -56,57 +138,314 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	}
  	if conf.HasSinglePort() {
  		var l any
@@ -5241,6 +5309,7 @@ index 99e02b8..b089782 100644
  	s.EnableSCTPZeroChecksum(true)
 -	if len(conf.IpFilter) > 0 {
 -		s.SetIPFilter(func(i net.IP) (keep bool) {
++	s.EnableSctpSnap(true)
 +	// DTLS flight retransmit 1 s -> 100 ms (perf program P13, 2026-09-05). The client's [ttff] sub-marks put
 +	// ~1040 ms between ice-connected and pc-connected on a same-host room: the exact shape of one lost
 +	// handshake flight waiting out the RFC 6347 1 s initial RTO. Whichever side dropped the first flight
@@ -19207,7 +19276,7 @@ index 669862d..0d94ba5 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..a852f23 100644
+index 17f10fc..a96fd12 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 @@ -4,9 +4,11 @@ import (
@@ -19483,7 +19552,18 @@ index 17f10fc..a852f23 100644
  	},
  }
  
-@@ -150,8 +307,69 @@ func NewNano(localPath string) *Nanoarch {
+@@ -144,14 +301,80 @@ func init() { Nan0.reserved <- struct{}{} }
+ 
+ func NewNano(localPath string) *Nanoarch {
+ 	nano := &Nan0
++	// The previous room's strings are freed HERE, not in Shutdown: the frontend still reads the save and
++	// system dirs after Shutdown (the post-teardown card harvest that catches Dolphin/PCSX2's final card
++	// flush, and Close's DeleteSaveDir). Upstream #507 frees them in Shutdown, which would hand that
++	// harvest an empty path; keeping them alive until the next room starts fixes the same leak/UAF.
++	nano.freeCStrings()
+ 	nano.cSaveDirectory = C.CString(localPath + "/legacy_save")
+ 	nano.cSystemDirectory = C.CString(localPath + "/system")
+ 	nano.cUserName = C.CString("retro")
  	return nano
  }
  
@@ -19555,11 +19635,25 @@ index 17f10fc..a852f23 100644
  func (n *Nanoarch) VideoFramerate() float64          { return float64(n.sys.av.timing.fps) }
  func (n *Nanoarch) IsPortrait() bool                 { return 90 == n.Rot%180 }
  func (n *Nanoarch) KbMouseSupport() bool             { return n.meta.KbMouseSupport }
-@@ -162,6 +380,14 @@ func (n *Nanoarch) Close()                           { n.Stopped.Store(true); n.
+@@ -161,7 +384,27 @@ func (n *Nanoarch) WaitReady()                       { <-n.reserved }
+ func (n *Nanoarch) Close()                           { n.Stopped.Store(true); n.reserved <- struct{}{} }
  func (n *Nanoarch) SetLogger(log *logger.Logger)     { n.log = log }
  func (n *Nanoarch) SetVideoDebounce(t time.Duration) { n.limiter = NewLimit(t) }
- func (n *Nanoarch) SaveDir() string                  { return C.GoString(n.cSaveDirectory) }
-+func (n *Nanoarch) SystemDir() string                { return C.GoString(n.cSystemDirectory) }
+-func (n *Nanoarch) SaveDir() string                  { return C.GoString(n.cSaveDirectory) }
++// SaveDir/SystemDir read C strings that Shutdown frees (and nils): after a room closes, the teardown
++// still asks for the save dir (DeleteSaveDir), which used to read freed memory. Upstream #507.
++func (n *Nanoarch) SaveDir() string {
++	if n.cSaveDirectory == nil {
++		return ""
++	}
++	return C.GoString(n.cSaveDirectory)
++}
++func (n *Nanoarch) SystemDir() string {
++	if n.cSystemDirectory == nil {
++		return ""
++	}
++	return C.GoString(n.cSystemDirectory)
++}
 +
 +// SetRoomCheats stages one room's cheats for the next LoadGame, which consumes and clears them.
 +// Passing nils is meaningful: it wipes whatever the previous room on this worker staged.
@@ -19570,8 +19664,25 @@ index 17f10fc..a852f23 100644
  func (n *Nanoarch) SetSaveDirSuffix(sx string) {
  	dir := C.GoString(n.cSaveDirectory) + "/" + sx
  	err := os.CheckCreateDir(dir)
-@@ -184,29 +410,78 @@ func (n *Nanoarch) DeleteSaveDir() error {
+@@ -182,31 +425,95 @@ func (n *Nanoarch) DeleteSaveDir() error {
+ 	return os.RemoveAll(dir)
+ }
  
++func (n *Nanoarch) freeCStrings() {
++	if n.cUserName != nil {
++		C.free(unsafe.Pointer(n.cUserName))
++		n.cUserName = nil
++	}
++	if n.cSaveDirectory != nil {
++		C.free(unsafe.Pointer(n.cSaveDirectory))
++		n.cSaveDirectory = nil
++	}
++	if n.cSystemDirectory != nil {
++		C.free(unsafe.Pointer(n.cSystemDirectory))
++		n.cSystemDirectory = nil
++	}
++}
++
  func (n *Nanoarch) CoreLoad(meta Metadata) {
  	var err error
 +	// Per-room hardware-context override (see the field comment): consume + clear the staging.
@@ -19651,7 +19762,7 @@ index 17f10fc..a852f23 100644
  
  	corePath := meta.LibPath + meta.LibExt
  	coreLib, err = open(corePath)
-@@ -228,6 +503,8 @@ func (n *Nanoarch) CoreLoad(meta Metadata) {
+@@ -228,6 +535,8 @@ func (n *Nanoarch) CoreLoad(meta Metadata) {
  	retroReset = coreLib.load("retro_reset")
  	retroRun = coreLib.load("retro_run")
  	retroLoadGame = coreLib.load("retro_load_game")
@@ -19660,7 +19771,7 @@ index 17f10fc..a852f23 100644
  	retroUnloadGame = coreLib.load("retro_unload_game")
  	retroSerializeSize = coreLib.load("retro_serialize_size")
  	retroSerialize = coreLib.load("retro_serialize")
-@@ -284,9 +561,10 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -284,9 +593,10 @@ func (n *Nanoarch) LoadGame(path string) error {
  
  	n.log.Debug().Msgf("ROM - big: %v, size: %v", big, byteCountBinary(int64(game.size)))
  
@@ -19673,7 +19784,7 @@ index 17f10fc..a852f23 100644
  		if _, ok := n.options4rom[romName]; ok {
  			for k, v := range n.options4rom[romName] {
  				n.options[k] = v
-@@ -295,10 +573,64 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -295,10 +605,64 @@ func (n *Nanoarch) LoadGame(path string) error {
  		}
  	}
  
@@ -19738,7 +19849,7 @@ index 17f10fc..a852f23 100644
  	var av C.struct_retro_system_av_info
  	C.bridge_retro_get_system_av_info(retroGetSystemAVInfo, &av)
  	n.log.Info().Msgf("System A/V >>> %vx%v (%vx%v), [%vfps], AR [%v], audio [%vHz]",
-@@ -306,13 +638,52 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -306,13 +670,52 @@ func (n *Nanoarch) LoadGame(path string) error {
  		av.geometry.max_width, av.geometry.max_height,
  		av.timing.fps, av.geometry.aspect_ratio, av.timing.sample_rate,
  	)
@@ -19793,7 +19904,7 @@ index 17f10fc..a852f23 100644
  
  	Nan0.tickTime = time.Duration(float64(time.Second) / float64(n.sys.av.timing.fps))
  	if n.vfr {
-@@ -322,15 +693,55 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -322,15 +725,55 @@ func (n *Nanoarch) LoadGame(path string) error {
  	n.Stopped.Store(false)
  
  	if n.Video.gl.enabled {
@@ -19851,7 +19962,7 @@ index 17f10fc..a852f23 100644
  	}
  
  	// set default controller types on all ports
-@@ -339,8 +750,38 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -339,8 +782,38 @@ func (n *Nanoarch) LoadGame(path string) error {
  		C.bridge_retro_set_controller_port_device(retroSetControllerPortDevice, C.uint(i), C.RETRO_DEVICE_JOYPAD)
  	}
  
@@ -19892,7 +20003,7 @@ index 17f10fc..a852f23 100644
  		for _, device := range v {
  			C.bridge_retro_set_controller_port_device(retroSetControllerPortDevice, C.uint(k), C.unsigned(device))
  			n.log.Debug().Msgf("set custom port-device: %v:%v", k, device)
-@@ -361,6 +802,9 @@ func (n *Nanoarch) Shutdown() {
+@@ -361,6 +834,9 @@ func (n *Nanoarch) Shutdown() {
  			if n.Video.gl.enabled {
  				C.same_thread(C.deinit_video_cgo)
  			}
@@ -19902,7 +20013,7 @@ index 17f10fc..a852f23 100644
  			C.same_thread(C.same_thread_stop)
  		})
  	} else {
-@@ -381,6 +825,9 @@ func (n *Nanoarch) Shutdown() {
+@@ -381,6 +857,9 @@ func (n *Nanoarch) Shutdown() {
  				runtime.UnlockOSThread()
  			})
  		}
@@ -19912,7 +20023,18 @@ index 17f10fc..a852f23 100644
  	}
  
  	setRotation(0)
-@@ -406,11 +853,33 @@ func (n *Nanoarch) syncInputToCache() {
+@@ -391,9 +870,7 @@ func (n *Nanoarch) Shutdown() {
+ 	n.options = nil
+ 	n.options4rom = nil
+ 	Nan0.audioBuffCb = nil
+-	C.free(unsafe.Pointer(n.cUserName))
+-	C.free(unsafe.Pointer(n.cSaveDirectory))
+-	C.free(unsafe.Pointer(n.cSystemDirectory))
++	// C strings stay valid until the next NewNano (see there) — readers run after Shutdown.
+ }
+ 
+ func (n *Nanoarch) Reset() {
+@@ -406,11 +883,33 @@ func (n *Nanoarch) syncInputToCache() {
  		n.keyboard.SyncToCache()
  	}
  	n.mouse.SyncToCache()
@@ -19946,7 +20068,7 @@ index 17f10fc..a852f23 100644
  	if n.LibCo {
  		C.same_thread(retroRun)
  	} else {
-@@ -425,12 +894,52 @@ func (n *Nanoarch) Run() {
+@@ -425,12 +924,52 @@ func (n *Nanoarch) Run() {
  			runtime.UnlockOSThread()
  		}
  	}
@@ -20003,7 +20125,7 @@ index 17f10fc..a852f23 100644
  func (n *Nanoarch) InputKeyboard(_ int, data []byte) {
  	if n.keyboardCb == nil {
  		return
-@@ -512,13 +1021,47 @@ const (
+@@ -512,13 +1051,47 @@ const (
  )
  
  // SaveState returns emulator internal state.
@@ -20055,7 +20177,7 @@ index 17f10fc..a852f23 100644
  	} else {
  		rez = bool(C.bridge_retro_serialize(retroSerialize, unsafe.Pointer(&data[0]), size))
  	}
-@@ -536,11 +1079,37 @@ func RestoreSaveState(st State) error {
+@@ -536,11 +1109,37 @@ func RestoreSaveState(st State) error {
  		return errors.New("empty load state")
  	}
  
@@ -20094,7 +20216,7 @@ index 17f10fc..a852f23 100644
  	} else {
  		rez = bool(C.bridge_retro_unserialize(retroUnserialize, unsafe.Pointer(&st[0]), size))
  	}
-@@ -581,6 +1150,24 @@ func memoryData(id C.uint) unsafe.Pointer {
+@@ -581,6 +1180,24 @@ func memoryData(id C.uint) unsafe.Pointer {
  	return C.bridge_retro_get_memory_data(retroGetMemoryData, id)
  }
  
@@ -20119,7 +20241,7 @@ index 17f10fc..a852f23 100644
  // ptSaveRam return SRAM memory pointer if core supports it or nil.
  func ptSaveRAM() *mem {
  	ptr, size := memoryData(C.RETRO_MEMORY_SAVE_RAM), memorySize(C.RETRO_MEMORY_SAVE_RAM)
-@@ -613,6 +1200,8 @@ var (
+@@ -613,6 +1230,8 @@ var (
  	retroGetSystemInfo           unsafe.Pointer
  	retroInit                    unsafe.Pointer
  	retroLoadGame                unsafe.Pointer
@@ -20128,7 +20250,7 @@ index 17f10fc..a852f23 100644
  	retroReset                   unsafe.Pointer
  	retroRun                     unsafe.Pointer
  	retroSetAudioSample          unsafe.Pointer
-@@ -630,11 +1219,73 @@ var (
+@@ -630,11 +1249,73 @@ var (
  	retroUnserialize             unsafe.Pointer
  )
  
@@ -20202,7 +20324,7 @@ index 17f10fc..a852f23 100644
  
  	// some frames can be rendered slower or faster than internal 1/fps core tick
  	// so track actual frame render time for proper RTP packet timestamps
-@@ -643,7 +1294,9 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -643,7 +1324,9 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	// !to find docs on Libretro refresh sync and frame times
  	dt := Nan0.tickTime
  	// Update frame timing only when needed: VFR mode or audio buffer callback.
@@ -20213,7 +20335,7 @@ index 17f10fc..a852f23 100644
  		now := time.Now()
  		Nan0.lastFrameDelta = float64(now.Sub(Nan0.LastFrameTime))
  		Nan0.LastFrameTime = now
-@@ -658,6 +1311,49 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -658,6 +1341,49 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  		return
  	}
  
@@ -20263,7 +20385,7 @@ index 17f10fc..a852f23 100644
  	// calculate real frame width in pixels from packed data (realWidth >= width)
  	// some cores or games output zero pitch, i.e. N64 Mupen
  	bpp := Nan0.Video.PixFmt.BPP
-@@ -668,10 +1364,64 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -668,10 +1394,64 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	bytes := packed * height
  
  	var data_ []byte
@@ -20328,7 +20450,7 @@ index 17f10fc..a852f23 100644
  		// if Libretro renders frame with OpenGL context
  		data_ = graphics.ReadFramebuffer(bytes, width, height)
  	}
-@@ -680,7 +1430,245 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -680,7 +1460,245 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	// also we have an option of xN output frame magnification
  	// so, it may be rescaled
  
@@ -20575,7 +20697,7 @@ index 17f10fc..a852f23 100644
  }
  
  //export coreAudioSampleBatch
-@@ -688,6 +1676,18 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
+@@ -688,6 +1706,18 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
  	if Nan0.Stopped.Load() {
  		return frames
  	}
@@ -20594,7 +20716,7 @@ index 17f10fc..a852f23 100644
  	Nan0.Handlers.OnAudio(data, int(frames)<<1)
  
  	// Audio buffer status for the core (e.g. mGBA frameskip).
-@@ -708,6 +1708,7 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
+@@ -708,6 +1738,7 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
  			Nan0.audioDrift = -expectedNs * 4
  		}
  
@@ -20602,7 +20724,7 @@ index 17f10fc..a852f23 100644
  		C.call_audio_buffer_status(Nan0.audioBuffCb, true, C.unsigned(occupancy), C.bool(underrun))
  	}
  
-@@ -739,7 +1740,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
+@@ -739,7 +1770,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
  
  //export coreGetProcAddress
  func coreGetProcAddress(sym *C.char) C.retro_proc_address_t {
@@ -20617,7 +20739,7 @@ index 17f10fc..a852f23 100644
  }
  
  //export coreEnvironment
-@@ -748,9 +1755,43 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -748,9 +1785,43 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  	// see core_environment_cgo
  
  	switch cmd {
@@ -20661,7 +20783,7 @@ index 17f10fc..a852f23 100644
  		if isGeometryDifferent(av.geometry) {
  			geometryChange(av.geometry)
  		}
-@@ -788,6 +1829,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -788,6 +1859,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  	case C.RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
  		*(**C.char)(data) = Nan0.cSaveDirectory
  		return true
@@ -20674,7 +20796,7 @@ index 17f10fc..a852f23 100644
  	case C.RETRO_ENVIRONMENT_SET_MESSAGE:
  		// only with the Libretro debug mode
  		if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -797,12 +1844,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -797,12 +1874,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -20723,7 +20845,7 @@ index 17f10fc..a852f23 100644
  		if v, ok := Nan0.options[key]; ok {
  			// make Go strings null-terminated copies ;_;
  			Nan0.options[key] = v + "\x00"
-@@ -816,14 +1899,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -816,14 +1929,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -20818,7 +20940,7 @@ index 17f10fc..a852f23 100644
  	case C.RETRO_ENVIRONMENT_SET_CONTROLLER_INFO:
  		if Nan0.log.GetLevel() > logger.DebugLevel {
  			return false
-@@ -851,7 +2013,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -851,7 +2043,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		return true
  	case C.RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
  		Nan0.log.Debug().Msgf("Keyboard event callback was set")
@@ -20838,7 +20960,7 @@ index 17f10fc..a852f23 100644
  		return true
  	case C.RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK:
  		if data == nil {
-@@ -869,11 +2042,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -869,11 +2072,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		Nan0.log.Info().Uint("latency_ms", uint(latency)).Msg("audio latency requested")
  		return true
  	}
@@ -20870,7 +20992,7 @@ index 17f10fc..a852f23 100644
  	var context graphics.Context
  	switch Nan0.Video.hw.context_type {
  	case C.RETRO_HW_CONTEXT_NONE:
-@@ -911,6 +2104,25 @@ func initVideo() {
+@@ -911,6 +2134,25 @@ func initVideo() {
  		if err != nil {
  			panic(err)
  		}
@@ -20896,7 +21018,7 @@ index 17f10fc..a852f23 100644
  	})
  
  	if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -918,12 +2130,31 @@ func initVideo() {
+@@ -918,12 +2160,31 @@ func initVideo() {
  	}
  }
  
@@ -20928,7 +21050,7 @@ index 17f10fc..a852f23 100644
  		if err := Nan0.glCtx.Deinit(); err != nil {
  			Nan0.log.Error().Err(err).Msg("deinit fail")
  		}
-@@ -932,9 +2163,243 @@ func deinitVideo() {
+@@ -932,9 +2193,243 @@ func deinitVideo() {
  	Nan0.Video.gl.autoCtx = false
  	Nan0.hackSkipHwContextDestroy = false
  	Nan0.hackSkipSameThreadSave = false
@@ -21172,7 +21294,7 @@ index 17f10fc..a852f23 100644
  type limit struct {
  	d  time.Duration
  	t  *time.Timer
-@@ -958,6 +2423,11 @@ func (d *limit) push(f func()) {
+@@ -958,6 +2453,11 @@ func (d *limit) push(f func()) {
  func geometryChange(geom C.struct_retro_game_geometry) {
  	Nan0.limiter(func() {
  		old := Nan0.sys.av.geometry
@@ -21266,6 +21388,73 @@ index 2479d0c..2712c85 100644
 +bool nano_disk_set_index(unsigned index);
 +
  #endif
+diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch_test.go b/pkg/worker/caged/libretro/nanoarch/nanoarch_test.go
+index c92c89e..11b9f38 100644
+--- a/pkg/worker/caged/libretro/nanoarch/nanoarch_test.go
++++ b/pkg/worker/caged/libretro/nanoarch/nanoarch_test.go
+@@ -1,6 +1,7 @@
+ package nanoarch
+ 
+ import (
++	"os"
+ 	"sync/atomic"
+ 	"testing"
+ 	"time"
+@@ -20,3 +21,54 @@ func TestLimit(t *testing.T) {
+ 		t.Errorf("should be just 1")
+ 	}
+ }
++
++func TestSaveDirStateAfterRelease(t *testing.T) {
++	local := t.TempDir()
++	n := NewNano(local)
++
++	if n.cSaveDirectory == nil || n.cSystemDirectory == nil || n.cUserName == nil {
++		t.Fatal("should allocate the C strings")
++	}
++	saveDir := local + "/legacy_save"
++
++	if err := os.MkdirAll(saveDir, 0o755); err != nil {
++		t.Fatal(err)
++	}
++	if got := n.SaveDir(); got != saveDir {
++		t.Fatalf("SaveDir() = %q, want %q", got, saveDir)
++	}
++	if err := n.DeleteSaveDir(); err != nil {
++		t.Fatalf("DeleteSaveDir before release failed: %v", err)
++	}
++	if _, err := os.Stat(saveDir); !os.IsNotExist(err) {
++		t.Fatalf("save dir should have been removed, stat err = %v", err)
++	}
++
++	n.freeCStrings()
++
++	if n.cSaveDirectory != nil || n.cSystemDirectory != nil || n.cUserName != nil {
++		t.Fatal("freed C string fields must be cleared to nil")
++	}
++
++	if err := n.DeleteSaveDir(); err != nil {
++		t.Errorf("DeleteSaveDir after release should be a no-op, got %v", err)
++	}
++	if got := n.SaveDir(); got != "" {
++		t.Errorf("SaveDir() after release should be empty, got %q", got)
++	}
++}
++
++// A second room on the same worker gets fresh strings, and the previous room's stayed readable up to
++// that point (the post-Shutdown card harvest depends on it).
++func TestNewNanoReplacesStrings(t *testing.T) {
++	a, b := t.TempDir(), t.TempDir()
++	n := NewNano(a)
++	if got := n.SystemDir(); got != a+"/system" {
++		t.Fatalf("SystemDir() = %q, want %q", got, a+"/system")
++	}
++	n = NewNano(b)
++	if got := n.SaveDir(); got != b+"/legacy_save" {
++		t.Fatalf("SaveDir() after second NewNano = %q, want %q", got, b+"/legacy_save")
++	}
++	n.freeCStrings()
++}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
 new file mode 100644
 index 0000000..a2be4b8
@@ -96883,10 +97072,10 @@ index 0000000..81fe95c
 +	})
 +}
 diff --git a/pkg/worker/room/room.go b/pkg/worker/room/room.go
-index 9ff9576..3462a22 100644
+index 9ff9576..fa0706c 100644
 --- a/pkg/worker/room/room.go
 +++ b/pkg/worker/room/room.go
-@@ -1,171 +1,280 @@
+@@ -1,171 +1,291 @@
 -package room
 -
 -import (
@@ -97106,7 +97295,7 @@ index 9ff9576..3462a22 100644
 +	Add(T) bool
 +	Empty() bool
 +	Find(string) T
-+	RemoveL(T) int
++	Remove(T)
 +	// Reset used for proper cleanup of the resources if needed.
 +	Reset()
 +	Values() iter.Seq[T]
@@ -97290,21 +97479,28 @@ index 9ff9576..3462a22 100644
 +	return nil
 +}
 +
++// Remove and AddUser hold the router lock across the "last user left -> close" decision (upstream
++// 5b27963): stock checked the count and closed outside the lock, so a join landing in between could
++// attach to a room that was already being torn down.
 +func (r *Router[T]) Remove(user T) {
-+	if left := r.users.RemoveL(user); left == 0 {
-+		r.Close()
-+		r.SetRoom(nil) // !to remove
++	r.mu.Lock()
++	defer r.mu.Unlock()
++	r.users.Remove(user)
++	if r.users.Empty() {
++		r.close()
 +	}
 +}
 +
 +func (r *Router[T]) AddUser(user T) {
++	r.mu.Lock()
 +	r.users.Add(user)
++	r.mu.Unlock()
 +	// A freshly joined viewer needs a keyframe to start decoding; we run a long GOP to kill the
 +	// periodic-IDR audio hitch, so request one on join instead of waiting for the next periodic one.
 +	// The post-join keyframe window is armed when this peer's transport CONNECTS (OnPeerConnected), not
 +	// here: at AddUser the offer has just been built and the decoder is still ~1.2 s away.
 +}
-+func (r *Router[T]) Close()                   { r.mu.Lock(); r.room.Close(); r.room = nil; r.mu.Unlock() }
++func (r *Router[T]) Close()                   { r.mu.Lock(); r.close(); r.mu.Unlock() }
 +func (r *Router[T]) FindUser(uid string) T    { return r.users.Find(uid) }
 +func (r *Router[T]) Room() *Room[T]           { r.mu.Lock(); defer r.mu.Unlock(); return r.room }
 +func (r *Router[T]) SetRoom(room *Room[T])    { r.mu.Lock(); r.room = room; r.mu.Unlock() }
@@ -97312,15 +97508,19 @@ index 9ff9576..3462a22 100644
 +func (r *Router[T]) Users() SessionManager[T] { return r.users }
 +func (r *Router[T]) Reset() {
 +	r.mu.Lock()
-+	if r.room != nil {
-+		r.room.Close()
-+		r.room = nil
-+	}
++	r.close()
 +	for u := range r.users.Values() {
 +		u.Disconnect()
 +	}
 +	r.users.Reset()
 +	r.mu.Unlock()
++}
++
++func (r *Router[T]) close() {
++	if r.room != nil {
++		r.room.Close()
++		r.room = nil
++	}
 +}
 +
 +type AppSession struct {
@@ -97338,6 +97538,84 @@ index 9ff9576..3462a22 100644
 +func NewGameSession(id string, s Session) *GameSession {
 +	return &GameSession{AppSession: AppSession{uid: SessionKey(id), Session: s}}
 +}
+diff --git a/pkg/worker/room/router_test.go b/pkg/worker/room/router_test.go
+index 1c9858c..c9f7397 100644
+--- a/pkg/worker/room/router_test.go
++++ b/pkg/worker/room/router_test.go
+@@ -1,6 +1,7 @@
+ package room
+ 
+ import (
++	"sync"
+ 	"testing"
+ 	"time"
+ 
+@@ -77,6 +78,65 @@ func TestRouterReset(t *testing.T) {
+ 	}
+ }
+ 
++func TestRouterRemove(t *testing.T) {
++	router := newTestRouter()
++	router.room = &Room[*tSession]{}
++	u1 := &tSession{id: "u1"}
++	u2 := &tSession{id: "u2"}
++	router.AddUser(u1)
++	router.AddUser(u2)
++
++	closed := false
++	router.room.HandleClose = func() { closed = true }
++
++	router.Remove(u1)
++	if router.Users().Empty() {
++		t.Error("should have user u2")
++	}
++	if closed {
++		t.Error("room should not close while wiht users")
++	}
++
++	router.Remove(u2)
++	if !router.Users().Empty() {
++		t.Error("should be empty after last user removed")
++	}
++	if !closed {
++		t.Error("room should close when last user leaves")
++	}
++}
++
++func TestRouterRemove_Race(t *testing.T) {
++	router := newTestRouter()
++	router.room = &Room[*tSession]{}
++
++	var emptyAtClose bool
++	router.room.HandleClose = func() {
++		emptyAtClose = router.Users().Empty()
++	}
++
++	var wg sync.WaitGroup
++	n := 5
++	wg.Add(n)
++
++	for range n {
++		go func() {
++			defer wg.Done()
++			for range 100 {
++				u := &tSession{id: "u"}
++				router.AddUser(u)
++				router.Remove(u)
++			}
++		}()
++	}
++
++	wg.Wait()
++
++	if closed := router.Room() == nil; closed && !emptyAtClose {
++		t.Error("room closed while users still present")
++	}
++}
++
+ func newTestRouter() *Router[*tSession] {
+ 	u := com.NewNetMap[sKey, *tSession]()
+ 	return &Router[*tSession]{users: &u}
 diff --git a/pkg/worker/sentinel.go b/pkg/worker/sentinel.go
 new file mode 100644
 index 0000000..85249f5

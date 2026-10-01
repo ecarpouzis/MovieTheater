@@ -1702,22 +1702,53 @@ export function createCloudRetroSession(descriptor, opts) {
   let auxRemoteReady = false;
   const auxPendingCandidates = [];
 
+  // The aux PC is still WORKER-offered, so it had the main PC's pre-P13b stall: Pion offers actpass, Chrome
+  // answers active, Chrome's ClientHello lands before Pion's DTLS transport listens, and the audio waits out
+  // the 1 s RTO — audio joined ~1 s after video. Same cure, from the answering side: in browser-offer mode
+  // this browser answers a=setup:passive, so Pion (the offerer, actpass) becomes the DTLS client and sends
+  // its ClientHello once it is ready. If the browser refuses the munged answer, the stock one is used.
+  const auxStart = { t0: 0, iceMs: null };
+  function auxMark(name) {
+    if (!auxStart.t0) return;
+    const ms = Math.round(nowMs() - auxStart.t0);
+    if (name === "ice") { auxStart.iceMs = ms; return; }
+    try {
+      console.log(`[ttff] aux audio connected ${ms}ms after its offer (ice-connected ${auxStart.iceMs ?? "-"}, ` +
+        `dtls ${auxStart.passive ? "browser passive" : "browser active"})`);
+    } catch { /* observability only */ }
+    auxStart.t0 = 0;
+  }
+
   async function onAuxOffer(sdpString) {
     if (!apc) {
       apc = new RTCPeerConnection({ iceServers });
       apc.ontrack = onInboundTrack;
-      apc.onconnectionstatechange = () => { if (apc.connectionState === "connected") scheduleAudioJitterTiering(); };
+      apc.onconnectionstatechange = () => {
+        if (apc.connectionState === "connected") { auxMark("connected"); scheduleAudioJitterTiering(); }
+      };
+      apc.oniceconnectionstatechange = () => {
+        if (apc.iceConnectionState === "connected" || apc.iceConnectionState === "completed") auxMark("ice");
+      };
       apc.onicecandidate = (e) => {
         if (e.candidate) send(T.SIGNAL, { ice: "aux:" + JSON.stringify(e.candidate) });
       };
     }
+    auxStart.t0 = nowMs();
     await apc.setRemoteDescription(JSON.parse(sdpString));
     auxRemoteReady = true;
     while (auxPendingCandidates.length) {
       try { await apc.addIceCandidate(auxPendingCandidates.shift()); } catch (err) { onError && onError(err); }
     }
     const answer = await apc.createAnswer();
-    await apc.setLocalDescription(answer);
+    let passive = false;
+    if (BROWSER_OFFERS && /a=setup:active/.test(answer.sdp)) {
+      try {
+        await apc.setLocalDescription({ type: "answer", sdp: answer.sdp.replace(/a=setup:active/g, "a=setup:passive") });
+        passive = true;
+      } catch { /* browser rejected the munged role — fall through to the stock answer */ }
+    }
+    if (!passive) await apc.setLocalDescription(answer);
+    auxStart.passive = passive;
     send(T.SIGNAL, { sdp: "aux:" + JSON.stringify(apc.localDescription) });
   }
 
