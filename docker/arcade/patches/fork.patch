@@ -14107,10 +14107,10 @@ index f3553b1..85b3408 100644
 +func (c *Caged) Close()                           { c.Emulator.Close() }
 +func (c *Caged) IsSupported() error               { return c.base.IsSupported() }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..754f1cb 100644
+index 6974d59..8dda8fd 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,3361 @@
+@@ -1,578 +1,3368 @@
 -package libretro
 -
 -import (
@@ -15388,7 +15388,14 @@ index 6974d59..754f1cb 100644
 +func (f *Frontend) SetDisplayCap(hz float64) { f.dispCapHz.Store(math.Float64bits(hz)) }
 +
 +// SetDedup switches the duplicate-frame skip on/off live (the adaptive controller). Any goroutine.
-+func (f *Frontend) SetDedup(on bool) { f.dedupOn.Store(on) }
++// Switching it ON forces the next frame through: lastDelivHash is only kept while dedup is on, so it may name
++// a frame from an earlier episode — the forced delivery re-seeds it with what the viewer actually has.
++func (f *Frontend) SetDedup(on bool) {
++	if on && !f.dedupOn.Load() {
++		f.forceNext.Store(true)
++	}
++	f.dedupOn.Store(on)
++}
 +
 +// ForceNextFrame makes the next frame bypass the adaptive gate (a keyframe request). Any goroutine.
 +func (f *Frontend) ForceNextFrame() { f.forceNext.Store(true) }
@@ -96020,10 +96027,10 @@ index 0000000..923f87c
 +	}
 +}
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..17a710a 100644
+index 4a6171f..4609d60 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
-@@ -1,579 +1,1257 @@
+@@ -1,579 +1,1260 @@
 -package media
 -
 -import (
@@ -97447,7 +97454,10 @@ index 4a6171f..17a710a 100644
 +	g.mu.Lock()
 +	defer g.mu.Unlock()
 +
-+	if g.v == nil {
++	// A destroyed pipe stays destroyed: the adaptive scale rung (patch 0047) rebuilds from the ABR goroutine,
++	// which can tick in the same instant the room closes — rebuilding then would start an encoder pipeline
++	// nothing ever tears down (a leaked NVENC session on a free worker).
++	if g.v == nil || g.destroyed {
 +		return nil
 +	}
 +

@@ -924,7 +924,7 @@ it did not.
 ## 0047-viewer-driven-delivery (2026-10-01): rooms adapt to the slowest viewer's DECODER, live
 
 (No `0046` exists — numbered notes lapsed after 0045; the fork commits for this change already carry
-"patch 0047", so the number stands. Commits `c39ae3e`, `1bf3c20`, `6c8bff7`, `1bd1b35`.)
+"patch 0047", so the number stands. Commits `c39ae3e`, `1bf3c20`, `6c8bff7`, `1bd1b35`, `afe6549`.)
 
 **The failure.** DOS / Windows 3.1 rooms encode 640x480 at 3x nearest = **1920x1440 @ 70 fps**. Chrome
 (AV1, GPU decode) was fine. Eric's **Firefox** gets H.264 and decodes WebRTC H.264 in **software**: it
@@ -957,7 +957,8 @@ defaults OFF when absent):
   viewer that caused it is present** (decoder capacity is a property of the device — a timed climb just
   buys a second rebuild); 60 s after it leaves the room climbs back.
 - **Hardening for more rebuilds:** the rebuild closure is serialized; `gstreamer.go` `chMu` closes the
-  `ProcessVideo`-send vs `Reinit`-close race; the t=150 payload gains `SF` (float scale) — `S` stays an
+  `ProcessVideo`-send vs `Reinit`-close race; `Reinit` refuses a destroyed pipe (a scale step racing room
+  close would otherwise build an encoder nothing tears down); the t=150 payload gains `SF` (float scale) — `S` stays an
   int because the coordinator decodes it.
 
 **Why dedup is distress-only.** Measured on a DOS room with the pointer moving: cap alone held the
