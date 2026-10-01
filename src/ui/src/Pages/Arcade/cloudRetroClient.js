@@ -1548,10 +1548,16 @@ export function createCloudRetroSession(descriptor, opts) {
       // sdp marker is how the worker recognises them, and there is no relay field for it.
       pc.addTransceiver("video", { direction: "recvonly" });
       if (!AUDIO_PC) pc.addTransceiver("audio", { direction: "recvonly" });
-      pc.createOffer().then((offer) => pc.setLocalDescription(offer)).then(() => {
-        init.sdp = JSON.stringify(pc.localDescription);
+      // With the aux audio PC, its offer rides along in the same sdp JSON ("aux"), so the worker can
+      // ANSWER it (see createAuxOffer). A failed aux offer only costs the embedding: the worker then offers.
+      const auxOffer = AUDIO_PC ? createAuxOffer().catch(() => null) : Promise.resolve(null);
+      pc.createOffer().then((offer) => pc.setLocalDescription(offer)).then(() => auxOffer).then((aux) => {
+        const main = { type: pc.localDescription.type, sdp: pc.localDescription.sdp };
+        if (aux) main.aux = { type: aux.type, sdp: aux.sdp };
+        init.sdp = JSON.stringify(main);
         send(T.INIT_WEBRTC, init);
-      }).catch((err) => { onError && onError(err); });
+        releaseAuxIce();
+      }).catch((err) => { releaseAuxIce(); onError && onError(err); });
       return;
     }
     send(T.INIT_WEBRTC, init);
@@ -1702,54 +1708,92 @@ export function createCloudRetroSession(descriptor, opts) {
   let auxRemoteReady = false;
   const auxPendingCandidates = [];
 
-  // The aux PC is still WORKER-offered, so it had the main PC's pre-P13b stall: Pion offers actpass, Chrome
-  // answers active, Chrome's ClientHello lands before Pion's DTLS transport listens, and the audio waits out
-  // the 1 s RTO — audio joined ~1 s after video. Same cure, from the answering side: in browser-offer mode
-  // this browser answers a=setup:passive, so Pion (the offerer, actpass) becomes the DTLS client and sends
-  // its ClientHello once it is ready. If the browser refuses the munged answer, the stock one is used.
-  const auxStart = { t0: 0, iceMs: null };
+  // BROWSER-OFFERED aux PC (worker fork AnswerAux). Worker-offered, the aux PC kept the stall browser-offer
+  // mode removed from the main PC: Pion offered actpass, Chrome answered active, Chrome's ClientHello beat
+  // Pion's DTLS listener (1 s RTO), and Pion was ICE-controlling — measured 2026-09-30: aux ice-connected
+  // 799 ms + DTLS ~1000 ms after its offer, while the main PC connected in ~40 ms. (Munging our answer to
+  // a=setup:passive was tried first, 3da0fcae, and changed nothing.) So in browser-offer mode this browser
+  // offers the aux PC too, inside the INIT sdp JSON under "aux" (the coordinator relays that string
+  // untouched); the worker answers on the usual "aux-sdp:" envelope. An older worker ignores the key and
+  // still OFFERS — onAuxOffer rolls our offer back and answers it the old way.
+  const auxStart = { t0: 0, iceMs: null, mode: "worker-offered" };
   function auxMark(name) {
     if (!auxStart.t0) return;
     const ms = Math.round(nowMs() - auxStart.t0);
     if (name === "ice") { auxStart.iceMs = ms; return; }
     try {
-      console.log(`[ttff] aux audio connected ${ms}ms after its offer (ice-connected ${auxStart.iceMs ?? "-"}, ` +
-        `dtls ${auxStart.passive ? "browser passive" : "browser active"})`);
+      const sinceConnect = ttff.t0 ? Math.round(nowMs() - ttff.t0) : "-";
+      console.log(`[ttff] aux audio connected ${ms}ms after its offer (ice-connected ${auxStart.iceMs ?? "-"}, ${auxStart.mode}); ` +
+        `at ${sinceConnect}ms since connect vs video pc-connected ${ttff.marks["pc-connected"] ?? "-"}`);
     } catch { /* observability only */ }
     auxStart.t0 = 0;
   }
 
-  async function onAuxOffer(sdpString) {
-    if (!apc) {
-      apc = new RTCPeerConnection({ iceServers });
-      apc.ontrack = onInboundTrack;
-      apc.onconnectionstatechange = () => {
-        if (apc.connectionState === "connected") { auxMark("connected"); scheduleAudioJitterTiering(); }
-      };
-      apc.oniceconnectionstatechange = () => {
-        if (apc.iceConnectionState === "connected" || apc.iceConnectionState === "completed") auxMark("ice");
-      };
-      apc.onicecandidate = (e) => {
-        if (e.candidate) send(T.SIGNAL, { ice: "aux:" + JSON.stringify(e.candidate) });
-      };
-    }
+  function ensureAuxPc() {
+    if (apc) return apc;
+    apc = new RTCPeerConnection({ iceServers });
+    apc.ontrack = onInboundTrack;
+    apc.onconnectionstatechange = () => {
+      if (apc.connectionState === "connected") { auxMark("connected"); scheduleAudioJitterTiering(); }
+    };
+    apc.oniceconnectionstatechange = () => {
+      if (apc.iceConnectionState === "connected" || apc.iceConnectionState === "completed") auxMark("ice");
+    };
+    apc.onicecandidate = (e) => {
+      if (!e.candidate) return;
+      const msg = { ice: "aux:" + JSON.stringify(e.candidate) };
+      if (auxIceHeld) auxIceHeld.push(msg); else send(T.SIGNAL, msg);
+    };
+    return apc;
+  }
+
+  // A browser-offered aux PC starts gathering BEFORE the INIT that creates the worker's peer is sent, and a
+  // signal that reaches the worker before that peer exists is dropped (FindUser). Hold them until INIT is out.
+  let auxIceHeld = null;
+  function releaseAuxIce() {
+    const held = auxIceHeld || [];
+    auxIceHeld = null;
+    for (const msg of held) send(T.SIGNAL, msg);
+  }
+
+  // Browser-offer mode: build the aux offer that setupPeer embeds in INIT. Returns the local description.
+  async function createAuxOffer() {
+    auxIceHeld = auxIceHeld || [];
+    const a = ensureAuxPc();
+    a.addTransceiver("audio", { direction: "recvonly" });
+    await a.setLocalDescription(await a.createOffer());
     auxStart.t0 = nowMs();
-    await apc.setRemoteDescription(JSON.parse(sdpString));
+    auxStart.mode = "browser-offered";
+    return a.localDescription;
+  }
+
+  async function flushAuxCandidates() {
     auxRemoteReady = true;
     while (auxPendingCandidates.length) {
       try { await apc.addIceCandidate(auxPendingCandidates.shift()); } catch (err) { onError && onError(err); }
     }
-    const answer = await apc.createAnswer();
-    let passive = false;
-    if (BROWSER_OFFERS && /a=setup:active/.test(answer.sdp)) {
-      try {
-        await apc.setLocalDescription({ type: "answer", sdp: answer.sdp.replace(/a=setup:active/g, "a=setup:passive") });
-        passive = true;
-      } catch { /* browser rejected the munged role — fall through to the stock answer */ }
+  }
+
+  // "aux-sdp:" from the worker: its ANSWER to our aux offer (new worker), or its own OFFER (older worker,
+  // or a worker-offer session).
+  async function onAuxOffer(sdpString) {
+    const desc = JSON.parse(sdpString);
+    const a = ensureAuxPc();
+    if (desc.type === "answer") {
+      await a.setRemoteDescription(desc);
+      await flushAuxCandidates();
+      return;
     }
-    if (!passive) await apc.setLocalDescription(answer);
-    auxStart.passive = passive;
-    send(T.SIGNAL, { sdp: "aux:" + JSON.stringify(apc.localDescription) });
+    // The worker offered. If we had offered too (an older worker ignored our "aux"), drop ours first.
+    if (a.signalingState === "have-local-offer") {
+      await a.setLocalDescription({ type: "rollback" });
+      auxStart.mode = "worker-offered (our aux offer was ignored)";
+    }
+    if (!auxStart.t0) auxStart.t0 = nowMs();
+    await a.setRemoteDescription(desc);
+    await flushAuxCandidates();
+    await a.setLocalDescription(await a.createAnswer());
+    send(T.SIGNAL, { sdp: "aux:" + JSON.stringify(a.localDescription) });
   }
 
   async function addAuxCandidate(iceString) {

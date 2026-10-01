@@ -5098,6 +5098,51 @@ index 53c3a2d..e5db5d0 100644
  		PartsOrder: []string{
  			zerolog.TimestampFieldName,
  			"pid",
+diff --git a/pkg/network/webrtc/aux_test.go b/pkg/network/webrtc/aux_test.go
+new file mode 100644
+index 0000000..6e43bfa
+--- /dev/null
++++ b/pkg/network/webrtc/aux_test.go
+@@ -0,0 +1,39 @@
++package webrtc
++
++import (
++	"testing"
++
++	"github.com/pion/webrtc/v4"
++)
++
++func TestAuxOfferFromInit(t *testing.T) {
++	// A browser-offer client embeds its aux offer next to the main one.
++	withAux := `{"type":"offer","sdp":"v=0 main","aux":{"type":"offer","sdp":"v=0 aux"}}`
++	got := AuxOfferFromInit(withAux)
++	if got == "" {
++		t.Fatal("aux offer not found")
++	}
++	aux, err := fromJson[webrtc.SessionDescription](got)
++	if err != nil || aux.Type != webrtc.SDPTypeOffer || aux.SDP != "v=0 aux" {
++		t.Fatalf("aux = %+v, err %v", aux, err)
++	}
++
++	// The main offer still parses with the extra key present (what HandleSignal does with it).
++	main, err := fromJson[webrtc.SessionDescription](withAux)
++	if err != nil || main.SDP != "v=0 main" {
++		t.Fatalf("main = %+v, err %v", main, err)
++	}
++
++	// Older clients and the worker-offer markers: no aux offer -> the worker offers as before.
++	for _, sdp := range []string{
++		`{"type":"offer","sdp":"v=0 main"}`,
++		`{"type":"offer","sdp":"v=0","aux":{"type":"answer","sdp":"v=0"}}`, // only an OFFER counts
++		"audio-pc",
++		"input-only",
++		"",
++	} {
++		if got := AuxOfferFromInit(sdp); got != "" {
++			t.Errorf("AuxOfferFromInit(%q) = %q, want empty", sdp, got)
++		}
++	}
++}
 diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
 index 99e02b8..d9f39db 100644
 --- a/pkg/network/webrtc/factory.go
@@ -6256,7 +6301,7 @@ index 0000000..53b1fd8
 +	}
 +}
 diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
-index b342b6b..963a2bf 100644
+index b342b6b..51d556c 100644
 --- a/pkg/network/webrtc/webrtc.go
 +++ b/pkg/network/webrtc/webrtc.go
 @@ -4,11 +4,15 @@ import (
@@ -6495,7 +6540,7 @@ index b342b6b..963a2bf 100644
  	aCodec := "opus"
  	if err = p.InitMedia(vCodec, aCodec); err != nil {
  		return
-@@ -143,8 +304,41 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
+@@ -143,8 +304,93 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
  	return encoded, nil
  }
  
@@ -6520,6 +6565,58 @@ index b342b6b..963a2bf 100644
 +	return encoded, nil
 +}
 +
++// AuxOfferFromInit returns the aux audio PC's offer that a browser-offer client embeds in its INIT
++// offer JSON under "aux" ({"type":"offer","sdp":…,"aux":{"type":"offer","sdp":…}}), or "" when there
++// is none. Riding the existing sdp string means the coordinator relays it untouched (it drops INIT
++// fields it does not know), and the main-offer parse ignores the extra key, so an older worker simply
++// falls back to OfferAux.
++func AuxOfferFromInit(sdp string) string {
++	x, err := fromJson[struct {
++		Aux *webrtc.SessionDescription `json:"aux"`
++	}](sdp)
++	if err != nil || x.Aux == nil || x.Aux.Type != webrtc.SDPTypeOffer {
++		return ""
++	}
++	encoded, err := toJson(*x.Aux)
++	if err != nil {
++		return ""
++	}
++	return encoded
++}
++
++// AnswerAux answers a BROWSER-offered aux audio PC (perf program: aux audio stall). The worker-offered
++// aux PC (OfferAux) kept the stall browser-offer mode removed from the main PC: Pion offering means
++// Chrome is the DTLS client and its ClientHello beats our listener (1 s RTO), and Pion is ICE-controlling.
++// Measured 2026-09-30: aux ice 799 ms + DTLS ~1000 ms after its offer, while the browser-offered main PC
++// connected in ~40 ms. Answering instead makes us the DTLS client (webrtc.dtlsRole) on BOTH PCs.
++// The audio track's sendonly transceiver is already on p.ac (InitMedia), and matches the offer's
++// recvonly audio m-line.
++func (p *Peer) AnswerAux(offer string) (string, error) {
++	if p.ac == nil {
++		return "", nil
++	}
++	remote, err := fromJson[webrtc.SessionDescription](offer)
++	if err != nil {
++		return "", err
++	}
++	if err = p.ac.SetRemoteDescription(remote); err != nil {
++		return "", err
++	}
++	sdp, err := p.ac.CreateAnswer(&DefaultAnswerOptions)
++	if err != nil {
++		return "", err
++	}
++	if err = p.ac.SetLocalDescription(sdp); err != nil {
++		return "", err
++	}
++	encoded, err := toJson(sdp)
++	if err != nil {
++		return "", err
++	}
++	p.log.Debug().Msg("rtc [aux] [sdp] (local answer to a browser offer)")
++	return encoded, nil
++}
++
  func (p *Peer) HandleSignal(ice, sdp *string) error {
  	if ice != nil {
 +		// "aux:"-prefixed signals belong to the aux audio PC (patch 0020).
@@ -6537,7 +6634,7 @@ index b342b6b..963a2bf 100644
  		candidate, err := fromJson[webrtc.ICECandidateInit](*ice)
  		if err != nil {
  			return err
-@@ -153,6 +347,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
+@@ -153,6 +399,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
  		return p.c.AddICECandidate(candidate)
  	}
  	if sdp != nil {
@@ -6555,7 +6652,7 @@ index b342b6b..963a2bf 100644
  		answer, err := fromJson[webrtc.SessionDescription](*sdp)
  		if err != nil {
  			return err
-@@ -176,6 +381,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
+@@ -176,6 +433,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
  		mime = webrtc.MimeTypeVP8
  	case "video/vp9":
  		mime = webrtc.MimeTypeVP9
@@ -6569,7 +6666,7 @@ index b342b6b..963a2bf 100644
  	default:
  		return nil, fmt.Errorf("unsupported codec %s:%s", id, codec)
  	}
-@@ -221,17 +433,131 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
+@@ -221,17 +485,131 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
  }
  
  func (p *Peer) SendAudio(dat []byte, dur time.Duration) {
@@ -6596,7 +6693,7 @@ index b342b6b..963a2bf 100644
 -		p.log.Error().Err(err).Send()
 +	if p.inputOnly { // no video track (local co-op controller); nothing to send, and no sender goroutine
 +		return
- 	}
++	}
 +	p.startVideoSender()
 +
 +	select {
@@ -6619,8 +6716,8 @@ index b342b6b..963a2bf 100644
 +		p.vqStop = make(chan struct{})
 +		go p.videoSender()
 +	})
- }
- 
++}
++
 +// videoSender owns everything that costs TIME per peer — the temporal-SVC decision, the packet pacer's
 +// sleeps, and the RTP write itself — so none of it is charged to the media thread or to other peers.
 +// One goroutine per peer, so a peer's frames keep their order.
@@ -6690,9 +6787,9 @@ index b342b6b..963a2bf 100644
 +				}
 +			}
 +		}
-+	}
-+}
-+
+ 	}
+ }
+ 
 +// SetMaxTemporalLayer caps which temporal layers this peer is fed (0 = base only). Called by the ABR
 +// loop from its own goroutine.
 +func (p *Peer) SetMaxTemporalLayer(l int) { p.maxLayer.Store(int32(l)) }
@@ -6703,7 +6800,7 @@ index b342b6b..963a2bf 100644
  func (p *Peer) SendData(data []byte) { _ = p.d.Send(data) }
  
  func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) error) error {
-@@ -249,7 +575,47 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
+@@ -249,7 +627,47 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
  	return nil
  }
  
@@ -6751,7 +6848,7 @@ index b342b6b..963a2bf 100644
  	if p.c == nil {
  		return
  	}
-@@ -261,6 +627,15 @@ func (p *Peer) Disconnect() {
+@@ -261,6 +679,15 @@ func (p *Peer) Disconnect() {
  }
  
  func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
@@ -6767,7 +6864,7 @@ index b342b6b..963a2bf 100644
  	if p.v, err = newTrack("video", "video", vCodec); err != nil {
  		return err
  	}
-@@ -274,20 +649,48 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
+@@ -274,20 +701,48 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
  	if _, err = p.c.AddTransceiverFromTrack(p.v, sendOnly); err != nil {
  		return err
  	}
@@ -6819,7 +6916,7 @@ index b342b6b..963a2bf 100644
  			}
  		}()
  	}
-@@ -313,3 +716,227 @@ func toJson[T any](data T) (string, error) {
+@@ -313,3 +768,227 @@ func toJson[T any](data T) (string, error) {
  	}
  	return string(b), nil
  }
@@ -92534,10 +92631,10 @@ index 2840a0e..aa70436 100644
  			c.log.Warn().Msgf("unhandled packet type %v", x.T)
  		}
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..06a9dfe 100644
+index 6972cc7..5b3541a 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,789 @@
+@@ -1,310 +1,801 @@
 -package worker
 -
 -import (
@@ -92965,9 +93062,21 @@ index 6972cc7..06a9dfe 100644
 +	// The aux audio offer travels in the ice signal field ("aux-sdp:" envelope) — the coordinator
 +	// relays that string verbatim, and the browser buffers aux ICE until this lands. A failure here
 +	// costs only split audio (the room still runs video+input), so it doesn't abort the init.
++	// A browser-offer client may embed its OWN aux offer in the INIT sdp ("aux" key): answer that instead
++	// of offering, so the aux PC connects like the main one (see Peer.AnswerAux). Same envelope back.
 +	if splitAudio {
-+		if auxSdp, auxErr := peer.OfferAux(); auxErr != nil {
-+			c.log.Error().Err(auxErr).Str("peer", rq.Id).Msg("aux audio offer failed")
++		auxOffer := ""
++		if rq.Initiator {
++			auxOffer = webrtc.AuxOfferFromInit(rq.Sdp)
++		}
++		auxSdp, auxErr := "", error(nil)
++		if auxOffer != "" {
++			auxSdp, auxErr = peer.AnswerAux(auxOffer)
++		} else {
++			auxSdp, auxErr = peer.OfferAux()
++		}
++		if auxErr != nil {
++			c.log.Error().Err(auxErr).Str("peer", rq.Id).Bool("browserOffered", auxOffer != "").Msg("aux audio sdp failed")
 +		} else if auxSdp != "" {
 +			c.IceCandidate("aux-sdp:"+auxSdp, rq.Id)
 +		}
