@@ -861,6 +861,32 @@ export function encodePointer(x, y, pressed) {
   return buf;
 }
 
+// Viewer report (patch 0047, worker pkg/network/webrtc/viewer.go) — once a second this browser tells the
+// worker what ITS end of the stream looks like: the display's refresh rate (so the room never sends more
+// frames than any visible viewer can show — a 70 Hz DOS core on a 60 Hz screen sends 60) and how the decoder
+// copes (frames received vs decoded, drops, decode time — so a room whose viewer is drowning steps down, live,
+// instead of halting every few seconds: Eric's Firefox decoding H.264 in software, 2026-10-01).
+// Rides the SAME negotiated "data" channel as the pad frame, length+tag discriminated: 13 bytes, tag 0xF1,
+// LITTLE-ENDIAN like the pad/pointer packets. Values ×10 as u16; 0xFFFF = "this browser cannot measure it".
+//   [tag:1=0xF1][ver:1=1][flags:1 bit0=hidden][displayHz×10][recvFps×10][decodedFps×10][dropped][decodeMs×10]
+export function encodeViewerReport({ hidden, displayHz, recvFps, decodedFps, dropped, decodeMs }) {
+  const buf = new ArrayBuffer(13);
+  const dv = new DataView(buf);
+  const u16 = (off, v, scale) => {
+    const ok = v != null && Number.isFinite(v) && v >= 0;
+    dv.setUint16(off, ok ? Math.min(0xfffe, Math.round(v * scale)) : 0xffff, true);
+  };
+  dv.setUint8(0, 0xf1);
+  dv.setUint8(1, 1);
+  dv.setUint8(2, hidden ? 1 : 0);
+  u16(3, displayHz, 10);
+  u16(5, recvFps, 10);
+  u16(7, decodedFps, 10);
+  u16(9, dropped, 1);
+  u16(11, decodeMs, 10);
+  return buf;
+}
+
 // Relative-mouse wire packets (RETRO_DEVICE_MOUSE), on the worker's own dedicated "mouse" DataChannel —
 // this is STOCK CloudRetro's own protocol (pkg/worker/coordinatorhandlers.go `s.Channel("mouse", ...)`
 // → InputMouse → MouseState.ShiftPos/SetButtons), never previously wired into this shim.
@@ -1570,6 +1596,7 @@ export function createCloudRetroSession(descriptor, opts) {
       ttffMark("dc-open");
       status("connected");
       startInput();
+      startViewerReports();
       // The channel opening IS the transport being up — start the game now (perf program P2, 2026-09-05).
       // This used to be found by a 100 ms poll in connect(), which added up to 100 ms to every room start.
       if (!gameStartSent) startGame();
@@ -2156,11 +2183,83 @@ export function createCloudRetroSession(descriptor, opts) {
     }, 2000);
   }
 
+  // ── Viewer reports (patch 0047; encodeViewerReport has the why) ─────────────────────────────────
+  // A setInterval, NOT rAF: rAF stops in a hidden tab, and "this tab is hidden" is exactly what the worker
+  // must hear (a background tab drops frames before render and would otherwise read as a drowning decoder).
+  // The display rate comes from a short rAF burst taken only while visible; the last good value is kept.
+  // Spectators report too (they decode video); an input-only seat has no video and never reports.
+  let viewerTimer = null;
+  let viewerPrev = null;      // previous inbound-rtp video sample
+  let displayHz = null;       // last measured refresh rate (Hz), null until measured
+  let displayMeasuring = false;
+  let displayMeasuredAt = 0;
+  function measureDisplayHz() {
+    if (displayMeasuring || typeof requestAnimationFrame !== "function") return;
+    if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+    displayMeasuring = true;
+    const stamps = [];
+    const step = (t) => {
+      stamps.push(t);
+      if (stamps.length < 31) { requestAnimationFrame(step); return; }
+      displayMeasuring = false;
+      displayMeasuredAt = Date.now();
+      // Median frame interval: robust to one slow frame (GC, a busy main thread) in the burst.
+      const d = stamps.slice(1).map((v, i) => v - stamps[i]).sort((a, b) => a - b);
+      const mid = d[Math.floor(d.length / 2)];
+      if (mid > 2 && mid < 100) displayHz = 1000 / mid;
+    };
+    requestAnimationFrame(step);
+  }
+  async function sendViewerReport() {
+    if (closed || !dc || dc.readyState !== "open" || !pc || typeof pc.getStats !== "function") return;
+    const hidden = typeof document !== "undefined" && document.visibilityState !== "visible";
+    if (!hidden && (displayHz == null || Date.now() - displayMeasuredAt > 30_000)) measureDisplayHz();
+    let cur = null;
+    try {
+      const st = await pc.getStats();
+      st.forEach((r) => {
+        if (r.type === "inbound-rtp" && (r.kind === "video" || r.mediaType === "video")) cur = r;
+      });
+    } catch { return; }
+    if (!cur) return;
+    const prev = viewerPrev;
+    viewerPrev = { t: cur.timestamp, recv: cur.framesReceived, dec: cur.framesDecoded, drop: cur.framesDropped, dTime: cur.totalDecodeTime };
+    if (!prev || !(cur.timestamp > prev.t)) return; // need two samples for rates
+    const sec = (cur.timestamp - prev.t) / 1000;
+    const rate = (a, b) => (a != null && b != null && a >= b ? (a - b) / sec : null);
+    const decodedDelta = cur.framesDecoded != null && prev.dec != null ? cur.framesDecoded - prev.dec : null;
+    const decodeMs = cur.totalDecodeTime != null && prev.dTime != null && decodedDelta > 0
+      ? ((cur.totalDecodeTime - prev.dTime) * 1000) / decodedDelta : null;
+    const report = {
+      hidden,
+      displayHz,
+      recvFps: rate(cur.framesReceived, prev.recv),
+      decodedFps: rate(cur.framesDecoded, prev.dec),
+      dropped: cur.framesDropped != null && prev.drop != null ? Math.max(0, cur.framesDropped - prev.drop) : null,
+      decodeMs,
+    };
+    try { dc.send(encodeViewerReport(report)); } catch { /* channel closing */ }
+  }
+  function startViewerReports() {
+    if (inputOnly || viewerTimer) return;
+    // ⚠ Only to the main GL pool. A worker that predates patch 0047 does not intercept the 0xF1 packet and
+    // reads it as a PAD FRAME — its first bytes are pressed buttons (B, Select, Start …). The capture lane
+    // runs its own worker binary and is out of the adaptive scope, so it never gets one; the main pool's
+    // binary must be deployed BEFORE a site build carrying this ships (zone is always on the join URL).
+    if (strFromWsUrl(descriptor.wsUrl, "zone") !== "main") return;
+    viewerTimer = setInterval(sendViewerReport, 1000);
+  }
+  function stopViewerReports() {
+    if (viewerTimer) clearInterval(viewerTimer);
+    viewerTimer = null;
+  }
+
   function close() {
     if (closed) return;
     closed = true;
     status("closed");
     stopInput();
+    stopViewerReports();
     // Leaving the rVFC loop alive on a dead video element keeps a canvas readback running for a room
     // that no longer exists. A tape in progress is dropped, not saved: an unfinished tape whose room
     // vanished mid-recording has no anchor to replay against.

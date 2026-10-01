@@ -105,6 +105,39 @@ emulator:
   # one hitch per 5 min, crash-loss bound grows to 5 min. Autosave writes the CONTINUE slot (0); it
   # can never touch a player's Save, which lives in the reserved quicksave slot (SaveStore.QuickSlot).
   autosaveSec: 300
+  # VIEWER-DRIVEN DELIVERY (worker patch 0047, 2026-10-01; pkg/worker/adaptive.go). Each browser reports once
+  # a second (display refresh, frames received vs decoded, drops, hidden tab) on the input DataChannel; the
+  # worker also counts each viewer's PLIs. From that:
+  #   displayCap  — never deliver more frames than the fastest VISIBLE viewer's screen shows (DOS's 70 Hz VGA
+  #                 on 60 Hz screens sends 60). Only once every viewer has reported; never below core/2.
+  #   dedup       — while a viewer is in DECODER DISTRESS, skip a software frame identical to the last delivered
+  #                 one (and core NULL dups), 50 ms keepalive; a keyframe request or a new viewer forces the next
+  #                 frame through. Off again after 60 s clean. NOT always-on (dedupAlways: false) because it costs
+  #                 latency — measured on a DOS room with the pointer moving: cap alone kept the video jitter
+  #                 buffer at 8.6-10.6 ms; cap + dedup halved the frames but held it at 19-27 ms. (A 500 ms
+  #                 keepalive was worse: the buffer drifted to ~140 ms.)
+  #   Every skip at real-time speed CARRIES its duration into the next delivered frame, so the RTP clock keeps
+  #   wall pace — measured media/wall 0.9999-1.0007 under cap, dedup and both (fast-forward/run-ahead drops are
+  #   not real time and are not carried).
+  #   layerRung   — a viewer whose decoder is drowning drops to the lower temporal layer (half fps, that viewer
+  #                 only, no rebuild) — same-host/solo viewers included, unlike the bitrate logic.
+  #   scaleRung   — STRONG distress (a measured decode deficit, or PLIs from a same-host viewer) steps the
+  #                 room's server-side scale down a rung (3x -> 2x, 2x -> 1.5x …) with one pipeline rebuild;
+  #                 holds while that viewer is in the room, climbs back 60 s after it leaves. Room-wide.
+  #   zeroCopyScale — the scale rung on GL/Vulkan zero-copy rooms (n64, gc, ps2 …). PROVEN 2026-10-01 with a
+  #                 simulated drowning viewer: n64 2 -> 1.5 -> 1, gc 0.667 -> 0.5 -> 0.333, ps2 1 -> 0.75 -> 0.5,
+  #                 each a live Vulkan zero-copy pool rebuild with real content (luma/block-variance) after every
+  #                 step, no errors, clean teardown.
+  # Why: Eric's Firefox gets H.264 and decodes WebRTC H.264 in software; DOS at 1920x1440 @70 drowned it
+  # (cursor crawling, a halt every 1-2 s, 26 PLIs/min). A global smaller size regressed Chrome and was reverted.
+  # ROLLBACK: set any switch false + recycle; every switch defaults off when absent.
+  adaptive:
+    displayCap: true
+    dedup: true
+    layerRung: true
+    scaleRung: true
+    zeroCopyScale: true
+    dedupAlways: false
   storage: "D:/ArcadeStorage/saves"    # overridable via CLOUD_GAME_EMULATOR_STORAGE
 
   # (Wedge handling is NOT a tunable and deliberately has no knob here. A room closes when its last

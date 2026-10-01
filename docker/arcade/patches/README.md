@@ -920,3 +920,62 @@ on) and confirming the room survived: `New room` → `Received room response fro
 **17.8s** (well past the old 7s deadline), no `i/o timeout` in the coordinator log, `sawPlaying=true`,
 clean streaming. Same test against the pre-fix binary reliably killed the room at this boot time; post-fix
 it did not.
+
+## 0047-viewer-driven-delivery (2026-10-01): rooms adapt to the slowest viewer's DECODER, live
+
+(No `0046` exists — numbered notes lapsed after 0045; the fork commits for this change already carry
+"patch 0047", so the number stands. Commits `c39ae3e`, `1bf3c20`, `6c8bff7`, `1bd1b35`.)
+
+**The failure.** DOS / Windows 3.1 rooms encode 640x480 at 3x nearest = **1920x1440 @ 70 fps**. Chrome
+(AV1, GPU decode) was fine. Eric's **Firefox** gets H.264 and decodes WebRTC H.264 in **software**: it
+fell behind — the cursor "moved VERY slowly" (the picture was late) and the video halted on a keyframe
+request every 1-2 s (26 `PLI honored` in one minute; every Chrome room `pli=0`). A global 1280x960 cap
+fixed Firefox and regressed Chrome; it was reverted. Nothing on the worker could tell a drowning
+decoder from a lossy network, and nothing ever changed a room's resolution after boot.
+
+**What 0047 adds** (`pkg/worker/adaptive.go` is the brain; config `emulator.adaptive`, every switch
+defaults OFF when absent):
+- **Signals.** The browser shim sends a 13-byte `0xF1` *viewer report* once a second on the input
+  DataChannel (display Hz, frames received/decoded, drops, decode ms, a HIDDEN-tab flag; `0xFFFF` =
+  field absent) — intercepted in `webrtc.go` before input dispatch, no coordinator change. Each peer
+  also counts its RAW PLIs (before the 500 ms keyframe limiter, which made a storm read as ≤2/s).
+  Hidden tabs and input-only seats never vote.
+- **Display cap** (always on): never deliver more frames than the fastest visible viewer's screen
+  shows — phase-accumulator decimation in `Frontend.skipFrame`, before capture, so zero-copy cores get
+  it too. DOS 70 → 60 on 60 Hz screens. Reads the core's fps LIVE (DOSBox boots at 59.94 and switches
+  to 70 under Windows; the first build used the boot rate and never engaged).
+- **Duration carry** (the prerequisite): a skipped real-time frame's duration rides into the next
+  delivered frame (also through superseded zero-copy frames). Without it the RTP clock ran at 6/7 of
+  wall time under the cap. Measured media/wall 0.9999-1.0007.
+- **The ladder**, driven by distress. *Weak* (PLIs from a remote peer with no decode deficit — that is
+  packet loss, ABR owns it) may only take the **layer rung** (that peer drops to the lower temporal
+  layer, no rebuild — same-host/solo peers included, unlike the bitrate logic, which used to re-pin
+  them every tick). *Strong* (a measured decode deficit, or PLIs from a same-host peer) additionally
+  turns on **dedup** (skip identical software frames, 50 ms keepalive, forced frame after any keyframe
+  request) and steps the room's **scale** down one rung per ≥10 s via `SetScaleCap` + the
+  VideoChangeCb rebuild, committing the new ABR ceiling immediately. A scale rung **holds while the
+  viewer that caused it is present** (decoder capacity is a property of the device — a timed climb just
+  buys a second rebuild); 60 s after it leaves the room climbs back.
+- **Hardening for more rebuilds:** the rebuild closure is serialized; `gstreamer.go` `chMu` closes the
+  `ProcessVideo`-send vs `Reinit`-close race; the t=150 payload gains `SF` (float scale) — `S` stays an
+  int because the coordinator decodes it.
+
+**Why dedup is distress-only.** Measured on a DOS room with the pointer moving: cap alone held the
+video jitter buffer at 8.6-10.6 ms; cap + dedup halved the frames but held it at 19-27 ms. A 500 ms
+keepalive was worse (~140 ms drift). It costs latency, so it is a rung, not a default.
+
+**Verified 2026-10-01** (probes in the `test-roms` skill: `ladder-probe.mjs` fakes a decode deficit
+through a `getStats` override, `mixed-probe.mjs`, `timeline-probe.mjs`):
+- DOS drowning viewer: layer cap → scale 3 → 2 (1920x1440 → 1280x960) within ~5 s; held while present;
+  a hidden tab drove nothing.
+- Mixed room, healthy creator + drowning spectator: both went to 1280x960 (the accepted one-encoder
+  trade-off), held while the spectator stayed, climbed back to 1920x1440 60 s after it left; the
+  healthy viewer stayed `pli=0`.
+- Zero-copy rebuilds (`zeroCopyScale`): n64 2 → 1.5 → 1, gc 0.667 → 0.5 → 0.333, ps2 1 → 0.75 → 0.5,
+  each a live Vulkan pool rebuild with real content after every step, no errors.
+- Healthy controls (dos, snes, n64, gc, ps2): `scaleSteps=0`, full size, `pli=0`.
+- NOT verifiable from Ziggy: the live *weak* case (any local probe is same-host, which is strong by
+  design) — covered by `TestAdaptiveRoom_WeakDistressNeverRescales`.
+
+**Deploy-order hazard.** A pre-0047 worker reads a `0xF1` report as pad buttons. Deploy workers before
+the site shim. The shim only sends reports for `zone=main` and never from input-only seats.

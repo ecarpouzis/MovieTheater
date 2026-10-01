@@ -2704,7 +2704,7 @@ index e487b93..81030bc 100644
  	}
  )
 diff --git a/pkg/api/worker.go b/pkg/api/worker.go
-index d8c7324..7fa36ab 100644
+index d8c7324..94752c4 100644
 --- a/pkg/api/worker.go
 +++ b/pkg/api/worker.go
 @@ -9,16 +9,65 @@ type (
@@ -2778,7 +2778,7 @@ index d8c7324..7fa36ab 100644
  	}
  	GameInfo struct {
  		Alias  string `json:"alias"`
-@@ -51,8 +100,25 @@ type (
+@@ -51,14 +100,36 @@ type (
  		Id        string `json:"id"`
  		Initiator bool   `json:"initiator"`
  		Sdp       string `json:"sdp,omitempty"`
@@ -2804,6 +2804,17 @@ index d8c7324..7fa36ab 100644
  
  	AppVideoInfo struct {
  		W    int     `json:"w"`
+ 		H    int     `json:"h"`
+ 		A    float32 `json:"a"`
+ 		S    int     `json:"s"`
++		// SF is the exact scale (patch 0047: adaptive scale rungs are fractional — 1.5, 0.5). S stays an INT
++		// on purpose: this struct is decoded by the COORDINATOR on the game-start path, and an older
++		// coordinator decoding a float into `s int` would fail the whole room start. Unknown fields are
++		// ignored by every decoder, so SF is safe to add one-sided.
++		SF   float64 `json:"sf,omitempty"`
+ 		SM   string  `json:"sm,omitempty"`
+ 		Flip bool    `json:"flip"`
+ 		Rot  uint    `json:"rot"`
 diff --git a/pkg/com/com.go b/pkg/com/com.go
 index 8b47562..d6c2adb 100644
 --- a/pkg/com/com.go
@@ -3027,10 +3038,10 @@ index 0000000..d83f053
 +	}
 +}
 diff --git a/pkg/config/emulator.go b/pkg/config/emulator.go
-index baf701e..55ce2c8 100644
+index baf701e..9d401fd 100644
 --- a/pkg/config/emulator.go
 +++ b/pkg/config/emulator.go
-@@ -17,6 +17,53 @@ type Emulator struct {
+@@ -17,6 +17,88 @@ type Emulator struct {
  	AutosaveSec      int
  	SkipLateFrames   bool
  	LogDroppedFrames bool
@@ -3072,6 +3083,41 @@ index baf701e..55ce2c8 100644
 +	// mods (Project REX, Smash Bros Infinite) crash when baked onto a standalone disc because their
 +	// own file/config loader only reliably reads from a real SD card. See Frontend.seedWiiSdLoader.
 +	WiiSdLoader WiiSdLoaderConfig
++
++	// Adaptive: viewer-driven delivery (patch 0047). Every switch defaults OFF (zero value), so a config
++	// without this block behaves exactly as before; the live config turns them on.
++	Adaptive AdaptiveConfig
++}
++
++// AdaptiveConfig switches the parts of the viewer-driven delivery independently (all default off).
++//
++//   - DisplayCap: never deliver more frames than the fastest VISIBLE viewer's screen shows (a 70 Hz DOS
++//     core on 60 Hz screens sends 60). Viewers report their display rate once a second.
++//   - Dedup: skip a software frame identical to the last delivered one (and core dups), with a keepalive.
++//   - LayerRung: a viewer whose decoder is drowning drops to the lower temporal layer (half frame rate,
++//     per viewer, no rebuild) — even same-host/solo viewers, who are otherwise pinned to full rate.
++//   - ScaleRung: on STRONG distress (a measured decode deficit, or PLIs from a same-host viewer) the room
++//     steps its server-side scale down a rung and rebuilds the pipeline. Room-wide: one encoder per room.
++//   - ZeroCopyScale: the scale rung is also allowed on GL/Vulkan zero-copy rooms (n64, gc, ps2, …). OFF
++//     until each tier is proven: no zero-copy room had ever rebuilt for an OUTPUT-size change.
++type AdaptiveConfig struct {
++	DisplayCap    bool
++	Dedup         bool
++	LayerRung     bool
++	ScaleRung     bool
++	ZeroCopyScale bool
++	// DedupKeepaliveMs: a static screen still delivers a frame at least this often (default 50). MEASURED
++	// 2026-10-01: at 500 ms (2 fps on an idle Windows desktop) Chrome's video jitter estimator, starved of
++	// frames, drifted its buffer up to ~140 ms — added latency on every frame after a still period, i.e. a
++	// laggier cursor, the opposite of the point. The cap alone held 9-10 ms; 100 ms -> 18-24 ms at 9 fps idle;
++	// 50 ms -> 12-13 ms at 17.5 fps idle (the default).
++	DedupKeepaliveMs int
++	// DedupAlways: skip duplicates in EVERY room. Default false = Dedup only switches on while a viewer is in
++	// decoder distress (it is the ladder's cheapest rung). MEASURED 2026-10-01 on a DOS room with the pointer
++	// moving: the cap alone held the video jitter buffer at 8.6-10.6 ms; cap + dedup halved the frames but
++	// held it at 19-27 ms — 10-15 ms of added latency on exactly the cursor motion players feel. Halving the
++	// decode work only pays for a viewer whose decoder is drowning, so that is the only time it is on.
++	DedupAlways bool
 +}
 +
 +// WiiSdLoaderConfig points at the paired-asset store for Wii SD-loader ROM hacks.
@@ -3084,7 +3130,7 @@ index baf701e..55ce2c8 100644
  }
  
  type LibretroConfig struct {
-@@ -69,24 +116,159 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
+@@ -69,24 +151,163 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
  		errors.New("core mapping not found for " + runtime.GOOS + ":" + runtime.GOARCH)
  }
  
@@ -3248,10 +3294,14 @@ index baf701e..55ce2c8 100644
 +	// its content is PSX 3D, not a sprite sheet, so the pixel-art target over-provisions it. Set this
 +	// per core when a measurement disagrees with the class, and say what measured it.
 +	BppTarget float64
++	// ScaleFloor is the lowest scale the adaptive scale rung may step this core to (patch 0047). 0 = the
++	// default for its tier: 2 for a nearest magnify (the chroma floor — below 2x, 4:2:0 chroma sits under
++	// the pixel grid), 1 for a smooth magnify, and half the configured scale for a downscale (< 1).
++	ScaleFloor float64
  	MaxThreads      int
  	UniqueSaveDir   bool
  	UsesLibCo       bool
-@@ -128,6 +310,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
+@@ -128,6 +349,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
  	return found
  }
  
@@ -6300,8 +6350,122 @@ index 0000000..53b1fd8
 +		})
 +	}
 +}
+diff --git a/pkg/network/webrtc/viewer.go b/pkg/network/webrtc/viewer.go
+new file mode 100644
+index 0000000..29a6017
+--- /dev/null
++++ b/pkg/network/webrtc/viewer.go
+@@ -0,0 +1,108 @@
++package webrtc
++
++import (
++	"encoding/binary"
++	"time"
++)
++
++// ── Viewer reports (patch 0047) ────────────────────────────────────────────────────────────────────
++// Once a second each browser tells the worker what ITS end of the stream looks like: the display's refresh
++// rate, and how its decoder is coping (frames received vs decoded, drops, decode time). It rides the
++// input DataChannel straight to this peer — no coordinator hop, so no StartGameRequest-style field to keep
++// in step across three binaries — and is intercepted in the channel's onData wrapper before it could ever
++// reach input dispatch.
++//
++// Wire (13 bytes, little-endian like the pad/pointer packets on the same channel; length+tag discriminated
++// from the 10-byte pad frame and the 8-byte 0xF0 pointer packet):
++//
++//	[tag:1=0xF1][ver:1=1][flags:1][displayHz×10:u16][recvFps×10:u16][decodedFps×10:u16][dropped:u16][decodeMs×10:u16]
++//
++// flags bit0 = the page is HIDDEN (a background tab drops frames before render and would read as a drowning
++// decoder — such a viewer is excluded from every decision). A field the browser cannot measure is 0xFFFF.
++const (
++	ViewerReportTag = 0xF1
++	ViewerReportLen = 13
++	viewerAbsent    = 0xFFFF
++)
++
++// ViewerReport is one parsed report. Zero/false Has* fields mean the browser did not measure that value.
++type ViewerReport struct {
++	At                  time.Time
++	Hidden              bool
++	DisplayHz           float64
++	HasDisplay          bool
++	RecvFps, DecodedFps float64
++	HasFps              bool
++	Dropped             int
++	HasDropped          bool
++	DecodeMs            float64
++	HasDecodeMs         bool
++}
++
++// IsViewerReport says whether a DataChannel message is a viewer report (not input).
++func IsViewerReport(b []byte) bool { return len(b) == ViewerReportLen && b[0] == ViewerReportTag }
++
++// ParseViewerReport decodes a report; ok=false for anything that is not one (wrong length/tag/version).
++func ParseViewerReport(b []byte, at time.Time) (r ViewerReport, ok bool) {
++	if !IsViewerReport(b) || b[1] != 1 {
++		return r, false
++	}
++	u := func(off int) (float64, bool) {
++		v := binary.LittleEndian.Uint16(b[off:])
++		return float64(v), v != viewerAbsent
++	}
++	r.At = at
++	r.Hidden = b[2]&1 != 0
++	var v float64
++	if v, r.HasDisplay = u(3); r.HasDisplay {
++		r.DisplayHz = v / 10
++	}
++	recv, okR := u(5)
++	dec, okD := u(7)
++	if r.HasFps = okR && okD; r.HasFps {
++		r.RecvFps, r.DecodedFps = recv/10, dec/10
++	}
++	if v, r.HasDropped = u(9); r.HasDropped {
++		r.Dropped = int(v)
++	}
++	if v, r.HasDecodeMs = u(11); r.HasDecodeMs {
++		r.DecodeMs = v / 10
++	}
++	return r, true
++}
++
++// viewerReportTTL: a report older than this no longer describes the viewer (the tab may have died, the
++// timer been throttled) — the decisions treat that peer as not having reported.
++const viewerReportTTL = 3 * time.Second
++
++// Viewer returns this peer's latest report if it is fresh, and whether there was one.
++func (p *Peer) Viewer() (ViewerReport, bool) {
++	r := p.viewer.Load()
++	if r == nil || time.Since(r.At) > viewerReportTTL {
++		return ViewerReport{}, false
++	}
++	return *r, true
++}
++
++// LastViewer returns this peer's latest report however old it is, and whether it is still fresh. The
++// controller uses it for one thing Viewer cannot answer: "was this tab hidden when we last heard from it?" —
++// Chrome throttles timers in a long-hidden tab, so its reports go stale precisely while it is hidden, and a
++// stale report must not turn a hidden viewer back into a visible one.
++func (p *Peer) LastViewer() (r ViewerReport, fresh, ok bool) {
++	v := p.viewer.Load()
++	if v == nil {
++		return ViewerReport{}, false, false
++	}
++	return *v, time.Since(v.At) <= viewerReportTTL, true
++}
++
++// PliCount is the number of PLI/FIR requests this peer has sent, counted BEFORE the room-wide 500 ms
++// keyframe limiter (plikeyframe.go) — the limiter's own counter is process-global and caps a storm at ~2/s,
++// so it can neither size the storm nor name the peer.
++func (p *Peer) PliCount() int64 { return p.pliRecv.Load() }
++
++// InputOnly reports a local co-op controller seat: no video track, so not a viewer.
++func (p *Peer) InputOnly() bool { return p.inputOnly }
++
++// ReportCount is how many viewer reports this peer has sent (for the close summary).
++func (p *Peer) ReportCount() int64 { return p.reports.Load() }
 diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
-index b342b6b..51d556c 100644
+index b342b6b..9dd986f 100644
 --- a/pkg/network/webrtc/webrtc.go
 +++ b/pkg/network/webrtc/webrtc.go
 @@ -4,11 +4,15 @@ import (
@@ -6320,7 +6484,7 @@ index b342b6b..51d556c 100644
  	"github.com/pion/webrtc/v4"
  	"github.com/pion/webrtc/v4/pkg/media"
  )
-@@ -16,21 +20,140 @@ import (
+@@ -16,21 +20,145 @@ import (
  type Peer struct {
  	api *ApiFactory
  	c   *webrtc.PeerConnection
@@ -6372,6 +6536,11 @@ index b342b6b..51d556c 100644
 +	// so this doubles as the audit that every forced IDR carries the header a fresh decoder needs;
 +	// compare with the media pipe's "keyframes forced" line at room close).
 +	kfSeen atomic.Int64
++	// Patch 0047 (viewer-driven delivery): raw PLI/FIR count (before the room-wide limiter), the latest
++	// viewer report, and how many reports arrived. See viewer.go.
++	pliRecv atomic.Int64
++	viewer  atomic.Pointer[ViewerReport]
++	reports atomic.Int64
 +	// pendingNanos is the summed duration of the frames we dropped for this peer since its last sent
 +	// one. Pion's packetizer advances the RTP timestamp by each sample's Duration, so a skipped frame
 +	// whose time is not carried forward makes THIS peer's video clock run slow — the picture drifts
@@ -6461,7 +6630,7 @@ index b342b6b..51d556c 100644
  var DefaultDataChannelParams = webrtc.DataChannelInit{
  	ID:             new(uint16),
  	Negotiated:     new(true),
-@@ -45,23 +168,29 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
+@@ -45,23 +173,29 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
  			Str(logger.DirectionField, "").
  			Str(logger.ClientField, ""),
  	)
@@ -6494,7 +6663,7 @@ index b342b6b..51d556c 100644
  		return
  	}
  
-@@ -69,6 +198,9 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+@@ -69,6 +203,9 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
  		p.log.Debug().Str("state", pcs.String()).Msg("rtc [connection] state change")
  		if pcs == webrtc.PeerConnectionStateConnected {
  			p.log.Info().Str(logger.DirectionField, "rtc").Str(logger.ClientField, "").Msg("(connected)")
@@ -6504,7 +6673,7 @@ index b342b6b..51d556c 100644
  		}
  	})
  	p.c.OnICECandidate(func(ice *webrtc.ICECandidate) {
-@@ -96,6 +228,35 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+@@ -96,12 +233,50 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
  
  	p.c.OnDataChannel(func(ch *webrtc.DataChannel) { p.log.Debug().Msgf("rtc [chan] [%s] remote", ch.Label()) })
  
@@ -6540,7 +6709,22 @@ index b342b6b..51d556c 100644
  	aCodec := "opus"
  	if err = p.InitMedia(vCodec, aCodec); err != nil {
  		return
-@@ -143,8 +304,93 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
+ 	}
+ 
+ 	onData := func(data []byte) {
++		// A viewer report is not input: store it on the peer and stop (viewer.go). Spectators send these
++		// too — they decode video — and never reach input dispatch through this branch.
++		if IsViewerReport(data) {
++			if r, ok := ParseViewerReport(data, time.Now()); ok {
++				p.viewer.Store(&r)
++				p.reports.Add(1)
++			}
++			return
++		}
+ 		if len(data) != 0 && p.onMessage != nil {
+ 			p.onMessage(data)
+ 		}
+@@ -143,8 +318,93 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
  	return encoded, nil
  }
  
@@ -6634,7 +6818,7 @@ index b342b6b..51d556c 100644
  		candidate, err := fromJson[webrtc.ICECandidateInit](*ice)
  		if err != nil {
  			return err
-@@ -153,6 +399,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
+@@ -153,6 +413,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
  		return p.c.AddICECandidate(candidate)
  	}
  	if sdp != nil {
@@ -6652,7 +6836,7 @@ index b342b6b..51d556c 100644
  		answer, err := fromJson[webrtc.SessionDescription](*sdp)
  		if err != nil {
  			return err
-@@ -176,6 +433,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
+@@ -176,6 +447,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
  		mime = webrtc.MimeTypeVP8
  	case "video/vp9":
  		mime = webrtc.MimeTypeVP9
@@ -6666,7 +6850,7 @@ index b342b6b..51d556c 100644
  	default:
  		return nil, fmt.Errorf("unsupported codec %s:%s", id, codec)
  	}
-@@ -221,17 +485,131 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
+@@ -221,17 +499,131 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
  }
  
  func (p *Peer) SendAudio(dat []byte, dur time.Duration) {
@@ -6707,9 +6891,9 @@ index b342b6b..51d556c 100644
 +			p.vLogged.Store(n)
 +			p.log.Warn().Msgf("peer is behind: dropped %v video frames to keep the room's encoder free", n)
 +		}
-+	}
-+}
-+
+ 	}
+ }
+ 
 +func (p *Peer) startVideoSender() {
 +	p.vqOnce.Do(func() {
 +		p.vq = make(chan vFrame, vQueueDepth)
@@ -6787,9 +6971,9 @@ index b342b6b..51d556c 100644
 +				}
 +			}
 +		}
- 	}
- }
- 
++	}
++}
++
 +// SetMaxTemporalLayer caps which temporal layers this peer is fed (0 = base only). Called by the ABR
 +// loop from its own goroutine.
 +func (p *Peer) SetMaxTemporalLayer(l int) { p.maxLayer.Store(int32(l)) }
@@ -6800,7 +6984,7 @@ index b342b6b..51d556c 100644
  func (p *Peer) SendData(data []byte) { _ = p.d.Send(data) }
  
  func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) error) error {
-@@ -249,7 +627,47 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
+@@ -249,7 +641,47 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
  	return nil
  }
  
@@ -6848,7 +7032,7 @@ index b342b6b..51d556c 100644
  	if p.c == nil {
  		return
  	}
-@@ -261,6 +679,15 @@ func (p *Peer) Disconnect() {
+@@ -261,6 +693,15 @@ func (p *Peer) Disconnect() {
  }
  
  func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
@@ -6864,7 +7048,7 @@ index b342b6b..51d556c 100644
  	if p.v, err = newTrack("video", "video", vCodec); err != nil {
  		return err
  	}
-@@ -274,20 +701,48 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
+@@ -274,20 +715,49 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
  	if _, err = p.c.AddTransceiverFromTrack(p.v, sendOnly); err != nil {
  		return err
  	}
@@ -6908,6 +7092,7 @@ index b342b6b..51d556c 100644
 +				for _, pkt := range pkts {
 +					switch pkt.(type) {
 +					case *rtcp.PictureLossIndication, *rtcp.FullIntraRequest:
++						p.pliRecv.Add(1) // per peer, before the room-wide limiter (patch 0047)
 +						if n := requestKeyframeRateLimited(); n > 0 {
 +							p.log.Info().Msgf("video: PLI honored — forcing keyframe (%d this room)", n)
 +						}
@@ -6916,7 +7101,7 @@ index b342b6b..51d556c 100644
  			}
  		}()
  	}
-@@ -313,3 +768,227 @@ func toJson[T any](data T) (string, error) {
+@@ -313,3 +783,227 @@ func toJson[T any](data T) (string, error) {
  	}
  	return string(b), nil
  }
@@ -8189,10 +8374,10 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..164ee63
+index 0000000..735a43c
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,1089 @@
+@@ -0,0 +1,1135 @@
 +package worker
 +
 +import (
@@ -8378,6 +8563,9 @@ index 0000000..164ee63
 +	// older client. Observability only.
 +	DeviceId() string
 +	Username() string
++	// Patch 0047: per-viewer decoder signals (PLIs before the room-wide limiter, the viewer's own report,
++	// input-only seats) for the adaptive controller. See adaptive.go.
++	adaptivePeer
 +}
 +
 +// rttStat accumulates one peer's RTT samples so we can report mean and spread. OBSERVABILITY ONLY: no
@@ -8463,6 +8651,7 @@ index 0000000..164ee63
 +	sustainedKbps      int
 +	sameHost           bool
 +	rttMean, rttSd     float64
++	adaptive           string // patch 0047 per-peer fields (pli=, reports=, hiddenTicks=), preformatted
 +}
 +
 +const (
@@ -8711,7 +8900,7 @@ index 0000000..164ee63
 +// mirror + system are carried purely for the Phase-0 session-close link-stat row; both may be zero
 +// (mirror unconfigured) and the loop then behaves exactly as it did before instrumentation.
 +func startRoomAbr(log *logger.Logger, r *room.Room[*room.GameSession], m *media.GstMediaPipe, ceilFn func() int,
-+	mirror linkStatConfig, system string, warmKbps int) {
++	mirror linkStatConfig, system string, warmKbps int, ad *adaptiveCtl) {
 +	if ceilFn == nil || r == nil || m == nil {
 +		return
 +	}
@@ -8831,11 +9020,11 @@ index 0000000..164ee63
 +					"abr: summary room=%s system=%s open=%d ceil=%d codec=%s layers=%d ticks=%d "+
 +						"rampTicks=%s atCeilPct=%d cuts=%d cutsRamp=%d cutsSteady=%d "+
 +						"starves=%d starvesRamp=%d starvesSteady=%d congEpisodes=%d congMaxHoldTicks=%d "+
-+						"geomFlapsSuppressed=%d",
++						"geomFlapsSuppressed=%d%s",
 +					r.Id(), system, openKbps, ceilKbps, codec, layers, ticks,
 +					ramp, atCeilPct, cutsRamp+cutsSteady, cutsRamp, cutsSteady,
 +					starvesRamp+starvesSteady, starvesRamp, starvesSteady, congEpisodes, congMaxHold,
-+					geomFlapsSuppressed)
++					geomFlapsSuppressed, ad.summary())
 +
 +				// Snapshot each peer BY VALUE before dispatching anything: the peer objects and these
 +				// maps die with this goroutine the instant it returns.
@@ -8844,6 +9033,7 @@ index 0000000..164ee63
 +					sp := abrSummaryPeer{
 +						dev: st.dev, path: st.path, deviceId: st.deviceId, username: st.username,
 +						sustainedKbps: st.sustainedKbps, sameHost: st.path == "samehost",
++						adaptive: ad.peerSummary(p),
 +					}
 +					if s := rtt[p]; s != nil {
 +						sp.rttMean, sp.rttSd = s.mean, s.sd()
@@ -8852,8 +9042,8 @@ index 0000000..164ee63
 +				}
 +				for _, sp := range snap {
 +					log.Info().Msgf(
-+						"abr: summary-peer room=%s dev=%s path=%s sustained=%d rttMean=%.2fms rttSd=%.2fms device=%s user=%s",
-+						r.Id(), sp.dev, sp.path, sp.sustainedKbps, sp.rttMean, sp.rttSd, sp.deviceId, sp.username)
++						"abr: summary-peer room=%s dev=%s path=%s sustained=%d rttMean=%.2fms rttSd=%.2fms device=%s user=%s%s",
++						r.Id(), sp.dev, sp.path, sp.sustainedKbps, sp.rttMean, sp.rttSd, sp.deviceId, sp.username, sp.adaptive)
 +				}
 +
 +				// Mirror to the site — one row per NON-SAMEHOST peer. Same-host rows are deliberately
@@ -8890,6 +9080,32 @@ index 0000000..164ee63
 +				return
 +			}
 +			ticks++
++			// Viewer-driven delivery (patch 0047, adaptive.go): display cap, per-viewer layer cap, and at most
++			// one scale step. Runs FIRST so a scale step it takes is committed right here — the K-tick flap
++			// hysteresis below exists for geometry changes the CORE makes, not for a move the room made itself
++			// (waiting it out would leave a shrunken frame on the old, larger ceiling for 5 s).
++			if ad != nil {
++				var tps []adaptTickPeer
++				for u := range r.Users().Values() {
++					if p, ok := u.Session.(svcPeer); ok {
++						tps = append(tps, adaptTickPeer{p: p, sameHost: p.SameHostLink()})
++					}
++				}
++				if ad.tick(ticks, tps) {
++					if c := ceilFn(); c > 0 && c != ceilKbps {
++						_, why := autoCeilingKbps(m)
++						log.Info().Msgf("abr: ceiling %d -> %d kbps — %s (scale step, committed immediately)", ceilKbps, c, why)
++						ceilKbps = c
++						floor = min(abrFloorKbps, ceilKbps)
++						congKbps, congClear, congHold = 0, 0, 0
++						if cur > ceilKbps {
++							cur = ceilKbps
++							_ = m.SetVideoBitrate(cur)
++						}
++					}
++					pendCeil, pendCeilTicks = 0, 0
++				}
++			}
 +			// Re-read the ceiling: a mid-room geometry change moves it (see ceilFn). Widening it simply
 +			// gives the healthy branch somewhere to climb; narrowing it is enforced by the clamp below,
 +			// so a core that shrinks its frame cannot leave the room sending more than it should.
@@ -9046,7 +9262,16 @@ index 0000000..164ee63
 +				// estimate as starvation and dropped the CREATOR to layer 0 for ~8 s, and the bitrate path
 +				// cut the room. Nothing was congested. (Only a viewer on Ziggy itself ever sees this.)
 +				if solo || sameHost {
-+					if now := p.MaxTemporalLayer(); layers > 1 && now != layers-1 {
++					// ...UNLESS this viewer's DECODER is drowning (patch 0047). Full frame rate is the right call
++					// for a link; for a decoder that cannot keep up it is the problem itself — Eric's same-host
++					// Firefox was exactly this peer. The controller decides; this branch only obeys it.
++					if ad.layerCapped(p) && layers > 1 {
++						if now := p.MaxTemporalLayer(); now != 0 {
++							log.Info().Msgf("abr: peer layer %d -> 0 (decoder distress — %s)", now,
++								map[bool]string{true: "same-host peer", false: "solo room"}[sameHost])
++							p.SetMaxTemporalLayer(0)
++						}
++					} else if now := p.MaxTemporalLayer(); layers > 1 && now != layers-1 {
 +						log.Info().Msgf("abr: peer layer %d -> %d (%s — full frame rate, bitrate adapts instead)",
 +							now, layers-1, map[bool]string{true: "same-host peer", false: "solo room"}[sameHost])
 +						p.SetMaxTemporalLayer(layers - 1)
@@ -9065,6 +9290,12 @@ index 0000000..164ee63
 +
 +				now := p.MaxTemporalLayer()
 +				layer, starved := pickLayer(share, now, cur, est)
++				if ad.layerCapped(p) && layers > 1 && layer > 0 {
++					layer = 0 // decoder distress (patch 0047): the base layer whatever the link could carry
++					if now != 0 {
++						layerDown[p] = abrLayerDownTicks // the controller already confirmed it over several ticks
++					}
++				}
 +				if layers > 1 && layer != now {
 +					// A DROP must persist for abrLayerDownTicks before we act on it. We send unpaced on
 +					// purpose, so every encoded frame leaves as a microburst and GCC occasionally reads
@@ -9392,6 +9623,935 @@ index 0000000..a78e01a
 +	}
 +	if layer, _ := pickLayer(share, 0, send, 12500); layer != 1 {
 +		t.Errorf("layer = %d with headroom, want 1", layer)
++	}
++}
+diff --git a/pkg/worker/adaptive.go b/pkg/worker/adaptive.go
+new file mode 100644
+index 0000000..b85e0a1
+--- /dev/null
++++ b/pkg/worker/adaptive.go
+@@ -0,0 +1,482 @@
++package worker
++
++import (
++	"fmt"
++	"math"
++	"strconv"
++	"strings"
++
++	"github.com/giongto35/cloud-game/v3/pkg/config"
++	"github.com/giongto35/cloud-game/v3/pkg/logger"
++	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
++)
++
++// ── Viewer-driven delivery (patch 0047) ──────────────────────────────────────────────────────────────
++//
++// The room adapts what it SENDS to what its viewers can actually take, live:
++//
++//   - always on (no distress needed): never deliver more frames than the fastest visible viewer's screen
++//     shows (the display cap, frontend's gate), and skip duplicate frames (frontend's gate).
++//   - when a viewer's DECODER is drowning — measured 2026-10-01: Eric's Firefox decoding WebRTC H.264 in
++//     software at 1920x1440 @70 fell behind, the cursor "moved VERY slowly" and the picture halted on a
++//     keyframe request every 1-2 s (26 PLIs in a minute) — step the room down a ladder:
++//       1. LAYER rung: that viewer gets the lower temporal layer (half frame rate). Per viewer, no rebuild.
++//       2. SCALE rungs: the room's server-side scale steps down (3x -> 2x …), one pipeline rebuild each.
++//          Room-wide — one encoder per room — so it needs the STRONG signal, and it HOLDS while the viewer
++//          that caused it is in the room (decoder capacity belongs to the device, not the network: it will
++//          drown again at the old size).
++//
++// Distress comes in two strengths, because a PLI alone is ambiguous:
++//   - WEAK:   >= adaptPliWeak PLIs in adaptPliWindow ticks. PLIs also come from PACKET LOSS on a lossy
++//             remote link, where bitrate is the right lever and ABR already owns it — so weak distress
++//             may drive the layer rung only.
++//   - STRONG: the viewer's own report shows a decode deficit (decoded < adaptDecodeFrac of received) for
++//             adaptDeficitTicks ticks; or a weak PLI storm from a SAME-HOST viewer (no network to blame).
++//
++// A viewer is a peer with a video track (never input-only) whose latest report is not HIDDEN — a background
++// tab drops frames before render and would otherwise read as a drowning decoder.
++
++const (
++	adaptPliWindow    = 10   // ticks (s) the PLI count is taken over
++	adaptPliWeak      = 3    // PLIs in the window = weak distress
++	adaptDecodeFrac   = 0.85 // decoded/received below this = a decode deficit
++	adaptDeficitTicks = 3    // consecutive deficit ticks = strong distress
++	adaptMinRecvFps   = 5.0  // below this the fps ratio is noise (a static deduped screen)
++	adaptLayerClean   = 60   // clean ticks before a layer-capped viewer gets the full rate back
++	adaptLayerRepin   = 30   // distress within this many ticks of a restore pins the layer for the room
++	adaptRebuildGap   = 10   // minimum ticks between two scale rebuilds
++	adaptScaleClean   = 60   // clean ticks (no causer present, no strong distress) before a climb
++)
++
++// adaptiveApp is what the controller drives on the libretro frontend. The capture lane does not implement
++// it, so its rooms simply have no controller.
++type adaptiveApp interface {
++	BaseScale() (float64, string)
++	Scale() (float64, string)
++	SetScaleCap(s float64)
++	SetDisplayCap(hz float64)
++	SetDedup(on bool)
++	// FPS is the core's CURRENT frame rate. Read live every tick: a core can change it after the room
++	// starts — DOSBox Pure boots at 59.94 and switches to 70 when Windows sets its VGA mode, and a cap
++	// computed against the boot rate thinks a 60 Hz screen already sees every frame (it never engaged).
++	FPS() float64
++}
++
++// adaptivePeer is the slice of a WebRTC peer the controller reads (svcPeer embeds it).
++type adaptivePeer interface {
++	PliCount() int64
++	Viewer() (webrtc.ViewerReport, bool)
++	LastViewer() (r webrtc.ViewerReport, fresh, ok bool)
++	InputOnly() bool
++	ReportCount() int64
++}
++
++// adaptiveCtl is one room's controller. Created in HandleGameStart; owned by the ABR goroutine after that
++// (tick runs only there), so its state needs no locks.
++type adaptiveCtl struct {
++	cfg      config.AdaptiveConfig
++	app      adaptiveApp
++	rebuild  func() // the room's serialized VideoChangeCb body: re-reads Scale(), rebuilds, sends t=150
++	zeroCopy bool   // GL/Vulkan zero-copy room (scale rung only when cfg.ZeroCopyScale)
++	floor    float64
++	coreFps  float64
++	log      *logger.Logger
++
++	peers       map[adaptivePeer]*adaptPeerState
++	dispCap     float64
++	lastRebuild int
++	causers     map[adaptivePeer]bool // viewers that caused a scale rung (held while present)
++	scaleClean  int
++	dedupActive bool // the duplicate skip is on because of distress (not DedupAlways)
++	dedupClean  int
++	// summary
++	scaleSteps, heldTicks int
++	scaleMin              float64
++}
++
++type adaptPeerState struct {
++	pliHist     [adaptPliWindow + 1]int64 // ring of cumulative PLI counts, one per tick
++	histN       int
++	deficit     int // consecutive decode-deficit ticks
++	layerCapped bool
++	layerClean  int
++	restoredAt  int // tick the layer cap was last lifted (0 = never)
++	pinned      bool
++	hiddenTicks int
++	pliTotal    int64
++	sameHost    bool
++}
++
++func newAdaptiveCtl(cfg config.AdaptiveConfig, app adaptiveApp, rebuild func(), zeroCopy bool,
++	scaleFloor, coreFps float64, log *logger.Logger) *adaptiveCtl {
++	if app == nil || !(cfg.DisplayCap || cfg.Dedup || cfg.LayerRung || cfg.ScaleRung) {
++		return nil
++	}
++	s, _ := app.BaseScale()
++	return &adaptiveCtl{cfg: cfg, app: app, rebuild: rebuild, zeroCopy: zeroCopy, floor: scaleFloor,
++		coreFps: coreFps, log: log, peers: map[adaptivePeer]*adaptPeerState{}, causers: map[adaptivePeer]bool{},
++		scaleMin: s, lastRebuild: -adaptRebuildGap}
++}
++
++// distress classifies one viewer this tick (pure apart from st's counters). sameHost: no network between us.
++func (st *adaptPeerState) distress(pliNow int64, rep webrtc.ViewerReport, hasRep, sameHost bool) (weak, strong bool) {
++	// PLI window: cumulative count now minus the count adaptPliWindow ticks ago.
++	idx := st.histN % len(st.pliHist)
++	st.pliHist[idx] = pliNow
++	st.histN++
++	old := st.pliHist[st.histN%len(st.pliHist)]
++	if st.histN <= adaptPliWindow {
++		old = st.pliHist[0]
++	}
++	pliWin := pliNow - old
++	if hasRep && rep.HasFps && rep.RecvFps >= adaptMinRecvFps && rep.DecodedFps < rep.RecvFps*adaptDecodeFrac {
++		st.deficit++
++	} else {
++		st.deficit = 0
++	}
++	weak = pliWin >= adaptPliWeak
++	strong = st.deficit >= adaptDeficitTicks || (weak && sameHost)
++	return weak || strong, strong
++}
++
++// scaleRungs is the room's scale ladder from the top (base) down, never below floor (pure).
++//   - nearest magnify (base > 1): integer steps, floor 2 by default (below 2x, 4:2:0 chroma sits under the
++//     pixel grid — the reason every 2D core is >= 2x in the first place);
++//   - anything else (bilinear magnify, or a downscale): base, 0.75·base, 0.5·base, default floor 1 for a
++//     magnify and 0.5·base for a downscale.
++func scaleRungs(base float64, method string, floor float64) []float64 {
++	if base <= 0 {
++		return nil
++	}
++	nearest := method == "" || strings.Contains(strings.ToLower(method), "nearest")
++	if nearest && base > 1 {
++		if floor <= 0 {
++			floor = 2
++		}
++		out := []float64{base}
++		for k := math.Ceil(base) - 1; k >= floor && k >= 1; k-- {
++			if k < base {
++				out = append(out, k)
++			}
++		}
++		return out
++	}
++	if nearest && base <= 1 {
++		return []float64{base} // a nearest downscale aliases; never step it
++	}
++	if floor <= 0 {
++		floor = 1 // a smooth MAGNIFY steps down to native, never below it
++		if base <= 1 {
++			floor = base * 0.5 // native or a supersampling downscale (ps2/nds/3ds 1.0, gc 0.667, psp 0.5)
++		}
++	}
++	out := []float64{base}
++	for _, f := range []float64{0.75, 0.5} {
++		if s := base * f; s >= floor-1e-9 {
++			out = append(out, s)
++		}
++	}
++	return out
++}
++
++// nextRung returns the rung one step from cur in dir (-1 down, +1 up) and whether it exists (pure).
++func nextRung(rungs []float64, cur float64, dir int) (float64, bool) {
++	i := -1
++	for j, r := range rungs {
++		if math.Abs(r-cur) < 1e-6 {
++			i = j
++			break
++		}
++	}
++	if i < 0 { // cur is between rungs (base moved under a cap): snap to the first rung below/above it
++		for j, r := range rungs {
++			if r < cur {
++				if dir < 0 {
++					return r, true
++				}
++				if j > 0 {
++					return rungs[j-1], true
++				}
++				return 0, false
++			}
++		}
++		return 0, false
++	}
++	if j := i - dir; j >= 0 && j < len(rungs) { // rungs are top-down, so "down" is i+1
++		return rungs[j], true
++	}
++	return 0, false
++}
++
++// displayCapFor is the delivery cap for this tick (pure): the highest display rate among visible viewers,
++// but only once EVERY viewer has a fresh report (a viewer we have not heard from might be a 144 Hz screen),
++// never below half the core's own rate, and 0 (no cap) when it would not cut anything.
++func displayCapFor(visibleHz []float64, unreported int, coreFps float64) float64 {
++	if unreported > 0 || len(visibleHz) == 0 || coreFps <= 0 {
++		return 0
++	}
++	hz := 0.0
++	for _, v := range visibleHz {
++		hz = max(hz, v)
++	}
++	hz = max(hz, coreFps/2)
++	if hz >= coreFps-0.5 {
++		return 0
++	}
++	return hz
++}
++
++// adaptTick is the per-peer input to one controller tick.
++type adaptTickPeer struct {
++	p        adaptivePeer
++	sameHost bool
++}
++
++// tick runs once per ABR tick, BEFORE the ABR per-peer loop. It updates the display cap, decides which
++// viewers are layer-capped (layerCapped), and takes at most one scale step. It reports whether it rebuilt
++// the pipeline (the caller commits the new ceiling immediately — the K=5 flap hysteresis is for
++// core-caused geometry flaps, not for a move the room made itself).
++func (a *adaptiveCtl) tick(now int, peers []adaptTickPeer) (rebuilt bool) {
++	present := map[adaptivePeer]bool{}
++	var visibleHz []float64
++	unreported := 0
++	anyStrong, anyDistress := false, false
++	var strongPeers []adaptivePeer
++	for _, tp := range peers {
++		p := tp.p
++		if p.InputOnly() {
++			continue
++		}
++		present[p] = true
++		st := a.peers[p]
++		if st == nil {
++			st = &adaptPeerState{}
++			a.peers[p] = st
++		}
++		st.sameHost = tp.sameHost
++		st.pliTotal = p.PliCount()
++		rep, has := p.Viewer()
++		// Hidden if the latest report says so — fresh or not: a hidden tab's timer is throttled, so its reports
++		// go stale exactly while it is hidden. Only a fresh VISIBLE report brings it back.
++		last, fresh, any := p.LastViewer()
++		if (has && rep.Hidden) || (any && !fresh && last.Hidden) {
++			// Hidden: no vote on the cap, no distress. Keep the PLI history moving so a return to the tab
++			// does not read the whole hidden period's PLIs as one fresh burst.
++			st.hiddenTicks++
++			st.distress(st.pliTotal, webrtc.ViewerReport{}, false, false)
++			st.deficit = 0
++			continue
++		}
++		if !has {
++			unreported++
++		} else if rep.HasDisplay && rep.DisplayHz > 0 {
++			visibleHz = append(visibleHz, rep.DisplayHz)
++		} else {
++			unreported++ // reported, but cannot measure its display: treat as unknown (no cap)
++		}
++		weak, strong := st.distress(st.pliTotal, rep, has, tp.sameHost)
++		if weak {
++			anyDistress = true
++		}
++
++		// ── Layer rung (per viewer) ──
++		if a.cfg.LayerRung {
++			switch {
++			case weak && !st.layerCapped:
++				st.layerCapped, st.layerClean = true, 0
++				if st.restoredAt > 0 && now-st.restoredAt <= adaptLayerRepin {
++					st.pinned = true
++				}
++				a.log.Info().Msgf("abr: distress kind=%s dev=%s pli=%d/%ds decoded=%s hidden=false (rung: layer cap%s)",
++					map[bool]string{true: "strong", false: "weak"}[strong], peerDesc(p), st.pliWindow(), adaptPliWindow,
++					decodedPct(rep, has), map[bool]string{true: ", pinned for the room", false: ""}[st.pinned])
++			case weak:
++				st.layerClean = 0
++			case st.layerCapped && !st.pinned:
++				if st.layerClean++; st.layerClean >= adaptLayerClean {
++					st.layerCapped, st.restoredAt = false, now
++					a.log.Info().Msgf("abr: layer cap lifted dev=%s (%d s clean)", peerDesc(p), adaptLayerClean)
++				}
++			}
++		}
++		if strong {
++			anyStrong = true
++			strongPeers = append(strongPeers, p)
++		}
++	}
++	// ── Dedup rung (room-wide, the cheapest relief) ──
++	// Halves-or-better the frames a drowning decoder must chew through, at the cost of ~10-15 ms of jitter
++	// buffer for everyone (measured) — so only while somebody needs it.
++	if a.cfg.Dedup && !a.cfg.DedupAlways {
++		switch {
++		case anyDistress && !a.dedupActive:
++			a.dedupActive, a.dedupClean = true, 0
++			a.app.SetDedup(true)
++			a.log.Info().Msg("abr: dedup on (a viewer is in decoder distress — skip duplicate frames room-wide)")
++		case anyDistress:
++			a.dedupClean = 0
++		case a.dedupActive:
++			if a.dedupClean++; a.dedupClean >= adaptLayerClean && len(a.causers) == 0 {
++				a.dedupActive = false
++				a.app.SetDedup(false)
++				a.log.Info().Msgf("abr: dedup off (%d s with no viewer in distress)", adaptLayerClean)
++			}
++		}
++	}
++
++	// Forget peers that left (and their hold).
++	for p := range a.peers {
++		if !present[p] {
++			delete(a.peers, p)
++		}
++	}
++	for p := range a.causers {
++		if !present[p] {
++			delete(a.causers, p)
++			a.log.Info().Msgf("abr: scale hold released — the viewer that needed it left (dev=%s)", peerDesc(p))
++		}
++	}
++
++	// ── Display cap ──
++	if a.cfg.DisplayCap {
++		if f := a.app.FPS(); f > 0 {
++			a.coreFps = f
++		}
++		if c := displayCapFor(visibleHz, unreported, a.coreFps); c != a.dispCap {
++			a.dispCap = c
++			a.app.SetDisplayCap(c)
++			if c > 0 {
++				a.log.Info().Msgf("frame-gate: display cap %.0f Hz (core %.2f fps, %d visible viewer(s))", c, a.coreFps, len(visibleHz))
++			} else {
++				a.log.Info().Msgf("frame-gate: display cap off (core %.2f fps; unreported %d, visible %d)", a.coreFps, unreported, len(visibleHz))
++			}
++		}
++	}
++
++	// ── Scale rungs (room-wide) ──
++	if !a.cfg.ScaleRung || a.rebuild == nil || (a.zeroCopy && !a.cfg.ZeroCopyScale) {
++		return false
++	}
++	base, method := a.app.BaseScale()
++	cur, _ := a.app.Scale()
++	rungs := scaleRungs(base, method, a.floor)
++	switch {
++	case anyStrong && now-a.lastRebuild >= adaptRebuildGap:
++		a.scaleClean = 0
++		next, ok := nextRung(rungs, cur, -1)
++		if !ok {
++			return false // already at the floor: the layer rung is all that is left
++		}
++		for _, p := range strongPeers {
++			a.causers[p] = true
++		}
++		a.app.SetScaleCap(next)
++		a.rebuild()
++		a.lastRebuild, a.scaleSteps = now, a.scaleSteps+1
++		a.resetEvidence()
++		a.scaleMin = min(a.scaleMin, next)
++		a.log.Info().Msgf("abr: scale %.4g -> %.4g (strong distress from %s; floor %.4g, base %.4g, %s)",
++			cur, next, peerDesc(strongPeers[0]), rungs[len(rungs)-1], base, method)
++		return true
++	case anyStrong:
++		a.scaleClean = 0
++	case len(a.causers) > 0 && cur < base:
++		a.scaleClean = 0
++		a.heldTicks++
++		if a.heldTicks%60 == 1 {
++			for p := range a.causers {
++				a.log.Info().Msgf("abr: scale held at %.4g (viewer dev=%s that needed it is still here)", cur, peerDesc(p))
++				break
++			}
++		}
++	case cur < base:
++		if a.scaleClean++; a.scaleClean >= adaptScaleClean && now-a.lastRebuild >= adaptRebuildGap {
++			next, ok := nextRung(rungs, cur, +1)
++			if !ok || next >= base {
++				next = 0 // back at the top: no cap at all
++			}
++			a.app.SetScaleCap(next)
++			a.rebuild()
++			a.lastRebuild, a.scaleClean, a.scaleSteps = now, 0, a.scaleSteps+1
++			after, _ := a.app.Scale()
++			a.log.Info().Msgf("abr: scale %.4g -> %.4g (climb: %d s clean, no viewer holding it)", cur, after, adaptScaleClean)
++			return true
++		}
++	}
++	return false
++}
++
++// resetEvidence forgets every viewer's distress evidence after a scale step: the PLIs and the decode deficit
++// were measured against the OLD frame size, and carrying them would let a same-host viewer's pre-rebuild PLIs
++// drive a second step 10 s later. A further step needs fresh proof at the new size.
++func (a *adaptiveCtl) resetEvidence() {
++	for p, st := range a.peers {
++		c := p.PliCount()
++		for i := range st.pliHist {
++			st.pliHist[i] = c
++		}
++		st.deficit = 0
++	}
++}
++
++// layerCapped reports whether the controller wants this peer on the base temporal layer.
++func (a *adaptiveCtl) layerCapped(p svcPeer) bool {
++	if a == nil {
++		return false
++	}
++	ap, ok := p.(adaptivePeer)
++	if !ok {
++		return false
++	}
++	st := a.peers[ap]
++	return st != nil && st.layerCapped
++}
++
++func (st *adaptPeerState) pliWindow() int64 {
++	if st.histN == 0 {
++		return 0
++	}
++	last := st.pliHist[(st.histN-1)%len(st.pliHist)]
++	old := st.pliHist[st.histN%len(st.pliHist)]
++	if st.histN <= adaptPliWindow {
++		old = st.pliHist[0]
++	}
++	return last - old
++}
++
++func decodedPct(r webrtc.ViewerReport, has bool) string {
++	if !has || !r.HasFps || r.RecvFps <= 0 {
++		return "n/a"
++	}
++	return fmt.Sprintf("%.0f%%", 100*r.DecodedFps/r.RecvFps)
++}
++
++func peerDesc(p adaptivePeer) string {
++	if d, ok := p.(interface{ LinkDesc() string }); ok {
++		return d.LinkDesc()
++	}
++	return "?"
++}
++
++// summary is appended to the room's `abr: summary` line.
++func (a *adaptiveCtl) summary() string {
++	if a == nil {
++		return ""
++	}
++	return fmt.Sprintf(" scaleSteps=%d scaleMin=%.4g held=%d displayCap=%.0f", a.scaleSteps, a.scaleMin, a.heldTicks, a.dispCap)
++}
++
++// peerSummary is appended to a peer's `abr: summary-peer` line.
++func (a *adaptiveCtl) peerSummary(p svcPeer) string {
++	ap, ok := p.(adaptivePeer)
++	if !ok {
++		return ""
++	}
++	s := " pli=" + strconv.FormatInt(ap.PliCount(), 10) + " reports=" + strconv.FormatInt(ap.ReportCount(), 10)
++	if a != nil {
++		if st := a.peers[ap]; st != nil {
++			s += " hiddenTicks=" + strconv.Itoa(st.hiddenTicks)
++		}
++	}
++	return s
++}
+diff --git a/pkg/worker/adaptive_test.go b/pkg/worker/adaptive_test.go
+new file mode 100644
+index 0000000..9215376
+--- /dev/null
++++ b/pkg/worker/adaptive_test.go
+@@ -0,0 +1,435 @@
++package worker
++
++import (
++	"math"
++	"testing"
++	"time"
++
++	"github.com/giongto35/cloud-game/v3/pkg/config"
++	"github.com/giongto35/cloud-game/v3/pkg/logger"
++	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
++)
++
++func floatsEq(a, b []float64) bool {
++	if len(a) != len(b) {
++		return false
++	}
++	for i := range a {
++		if math.Abs(a[i]-b[i]) > 1e-9 {
++			return false
++		}
++	}
++	return true
++}
++
++func TestScaleRungs(t *testing.T) {
++	cases := []struct {
++		name        string
++		base, floor float64
++		method      string
++		want        []float64
++	}{
++		{"dos/scummvm 3x nearest", 3, 0, "", []float64{3, 2}}, // the proven 1920 -> 1280 rung
++		{"handheld 4x nearest", 4, 0, "nearest-neighbour", []float64{4, 3, 2}},
++		{"already at the chroma floor", 2, 0, "", []float64{2}},
++		{"nearest scale-1 never steps", 1, 0, "nearest-neighbour", []float64{1}},
++		{"n64 2x bilinear", 2, 0, "bilinear2", []float64{2, 1.5, 1}},
++		{"gc 0.6667 downscale", 0.6667, 0, "bilinear2", []float64{0.6667, 0.500025, 0.33335}},
++		{"ps2 1.0", 1, 0, "bilinear2", []float64{1, 0.75, 0.5}},
++		{"explicit floor stops early", 4, 3, "", []float64{4, 3}},
++	}
++	for _, c := range cases {
++		if got := scaleRungs(c.base, c.method, c.floor); !floatsEq(got, c.want) {
++			t.Errorf("%s: scaleRungs(%v,%q,%v) = %v, want %v", c.name, c.base, c.method, c.floor, got, c.want)
++		}
++	}
++}
++
++func TestNextRung(t *testing.T) {
++	r := []float64{4, 3, 2}
++	if n, ok := nextRung(r, 4, -1); !ok || n != 3 {
++		t.Errorf("down from 4: %v %v", n, ok)
++	}
++	if _, ok := nextRung(r, 2, -1); ok {
++		t.Error("no rung below the floor")
++	}
++	if n, ok := nextRung(r, 2, +1); !ok || n != 3 {
++		t.Errorf("up from 2: %v %v", n, ok)
++	}
++	if _, ok := nextRung(r, 4, +1); ok {
++		t.Error("no rung above the top")
++	}
++	// The base moved under a cap (ScummVM switched game resolution): snap to the next real rung.
++	if n, ok := nextRung([]float64{6, 5, 4, 3, 2}, 3.5, -1); !ok || n != 3 {
++		t.Errorf("between rungs, down: %v %v", n, ok)
++	}
++}
++
++func TestDisplayCapFor(t *testing.T) {
++	cases := []struct {
++		name       string
++		hz         []float64
++		unreported int
++		core       float64
++		want       float64
++	}{
++		{"DOS 70 on a 60 Hz screen", []float64{60}, 0, 70.0, 60},
++		{"fastest visible viewer wins", []float64{60, 144}, 0, 70.0, 0}, // 144 >= 70: nothing to cut
++		{"two 60 Hz screens", []float64{60, 59.9}, 0, 70.0, 60},
++		{"an unreported viewer blocks the cap", []float64{60}, 1, 70.0, 0},
++		{"nobody visible: no cap", nil, 0, 70.0, 0},
++		{"never below half the core rate", []float64{24}, 0, 70.0, 35},
++		{"60 Hz core on 60 Hz: nothing to cut", []float64{60}, 0, 60.0988, 0},
++	}
++	for _, c := range cases {
++		if got := displayCapFor(c.hz, c.unreported, c.core); math.Abs(got-c.want) > 1e-9 {
++			t.Errorf("%s: got %v want %v", c.name, got, c.want)
++		}
++	}
++}
++
++func TestDistressStrength(t *testing.T) {
++	rep := func(recv, dec float64) webrtc.ViewerReport {
++		return webrtc.ViewerReport{At: time.Now(), HasFps: true, RecvFps: recv, DecodedFps: dec}
++	}
++	// Weak: a PLI storm from a REMOTE viewer with no decode deficit — a lossy link, not a decoder.
++	st := &adaptPeerState{}
++	var weak, strong bool
++	for i := int64(0); i <= 10; i++ {
++		weak, strong = st.distress(i, rep(60, 60), true, false)
++	}
++	if !weak || strong {
++		t.Fatalf("remote PLI storm without deficit: weak=%v strong=%v, want weak only", weak, strong)
++	}
++	// The same storm from a SAME-HOST viewer is strong: there is no network to blame.
++	st = &adaptPeerState{}
++	for i := int64(0); i <= 10; i++ {
++		weak, strong = st.distress(i, webrtc.ViewerReport{}, false, true)
++	}
++	if !strong {
++		t.Fatal("same-host PLI storm must be strong")
++	}
++	// A decode deficit for 3 ticks is strong even with no PLIs.
++	st = &adaptPeerState{}
++	for i := 0; i < 3; i++ {
++		_, strong = st.distress(0, rep(60, 30), true, false)
++	}
++	if !strong {
++		t.Fatal("3 ticks decoding half of what arrives must be strong")
++	}
++	// A static, deduped screen receives ~2 fps: the ratio is noise there and must not count.
++	st = &adaptPeerState{}
++	for i := 0; i < 5; i++ {
++		weak, strong = st.distress(0, rep(2, 1), true, false)
++	}
++	if weak || strong {
++		t.Fatal("a near-idle stream is not distress")
++	}
++}
++
++// ── a simulated room ─────────────────────────────────────────────────────────────────────────────
++
++type fakeViewer struct {
++	pli       int64
++	rep       webrtc.ViewerReport
++	hasRep    bool
++	inputOnly bool
++	stale     bool // the report exists but is older than the TTL (a throttled hidden tab)
++}
++
++func (f *fakeViewer) PliCount() int64 { return f.pli }
++func (f *fakeViewer) Viewer() (webrtc.ViewerReport, bool) {
++	if f.stale {
++		return webrtc.ViewerReport{}, false
++	}
++	return f.rep, f.hasRep
++}
++func (f *fakeViewer) LastViewer() (webrtc.ViewerReport, bool, bool) {
++	return f.rep, f.hasRep && !f.stale, f.hasRep
++}
++func (f *fakeViewer) InputOnly() bool    { return f.inputOnly }
++func (f *fakeViewer) ReportCount() int64 { return 0 }
++func (f *fakeViewer) report(hz, recv, dec float64, hidden bool) {
++	f.hasRep = true
++	f.rep = webrtc.ViewerReport{At: time.Now(), Hidden: hidden, HasDisplay: hz > 0, DisplayHz: hz,
++		HasFps: recv > 0, RecvFps: recv, DecodedFps: dec}
++}
++
++type fakeApp struct {
++	base     float64
++	method   string
++	cap      float64
++	dispCap  float64
++	rebuilds int
++	fps      float64
++	dedup    bool
++}
++
++func (a *fakeApp) BaseScale() (float64, string) { return a.base, a.method }
++func (a *fakeApp) Scale() (float64, string) {
++	if a.cap > 0 && a.cap < a.base {
++		return a.cap, a.method
++	}
++	return a.base, a.method
++}
++func (a *fakeApp) SetScaleCap(s float64)    { a.cap = s }
++func (a *fakeApp) SetDisplayCap(hz float64) { a.dispCap = hz }
++func (a *fakeApp) SetDedup(on bool)         { a.dedup = on }
++func (a *fakeApp) FPS() float64 {
++	if a.fps > 0 {
++		return a.fps
++	}
++	return 70.0
++}
++
++func newTestCtl(app *fakeApp, cfg config.AdaptiveConfig, zeroCopy bool) *adaptiveCtl {
++	ctl := newAdaptiveCtl(cfg, app, func() { app.rebuilds++ }, zeroCopy, 0, 70.0, logger.NewConsole(false, "test", false))
++	return ctl
++}
++
++var allOn = config.AdaptiveConfig{DisplayCap: true, Dedup: true, LayerRung: true, ScaleRung: true}
++
++// Dedup is a DISTRESS rung, not always-on: measured, it costs every viewer 10-15 ms of jitter buffer while the
++// pointer moves, which only pays for a viewer whose decoder is drowning.
++func TestAdaptiveRoom_DedupOnlyUnderDistress(t *testing.T) {
++	app := &fakeApp{base: 3}
++	ctl := newTestCtl(app, allOn, false)
++	v := &fakeViewer{}
++	v.report(60, 70, 70, false)
++	peers := []adaptTickPeer{{p: v}}
++	now := 0
++	for i := 0; i < 5; i++ {
++		now++
++		ctl.tick(now, peers)
++	}
++	if app.dedup {
++		t.Fatal("a healthy room must not dedup")
++	}
++	for i := 0; i < 4; i++ { // a remote PLI storm: weak distress
++		now++
++		v.pli += 2
++		ctl.tick(now, peers)
++	}
++	if !app.dedup {
++		t.Fatal("distress must switch dedup on")
++	}
++	for i := 0; i < adaptLayerClean+adaptPliWindow+2; i++ {
++		now++
++		ctl.tick(now, peers)
++	}
++	if app.dedup {
++		t.Fatal("after a clean minute with nobody holding a step, dedup must switch off")
++	}
++}
++
++func TestAdaptiveRoom_DrowningFirefoxStepsDownAndHolds(t *testing.T) {
++	app := &fakeApp{base: 3}
++	ctl := newTestCtl(app, allOn, false)
++	ff := &fakeViewer{}
++	peers := []adaptTickPeer{{p: ff, sameHost: true}}
++	now := 0
++	tick := func() bool { now++; return ctl.tick(now, peers) }
++
++	// Healthy and reporting a 60 Hz screen: the cap engages, nothing else moves.
++	ff.report(60, 70, 70, false)
++	for i := 0; i < 5; i++ {
++		tick()
++	}
++	if app.dispCap != 60 || app.rebuilds != 0 || ctl.layerCapped(nil) {
++		t.Fatalf("healthy: dispCap=%v rebuilds=%d", app.dispCap, app.rebuilds)
++	}
++	// The decoder starts drowning: decoded 40 of 60.
++	ff.report(60, 60, 40, false)
++	stepped := false
++	for i := 0; i < 5 && !stepped; i++ {
++		stepped = tick()
++	}
++	if !stepped || app.cap != 2 || app.rebuilds != 1 {
++		t.Fatalf("strong distress must step 3 -> 2 once: stepped=%v cap=%v rebuilds=%d", stepped, app.cap, app.rebuilds)
++	}
++	if st := ctl.peers[ff]; st == nil || !st.layerCapped {
++		t.Fatal("the drowning viewer must also be layer-capped")
++	}
++	// It recovers at 2x — but it is still in the room, so the scale must HOLD (no climb, no flap).
++	ff.report(60, 60, 60, false)
++	for i := 0; i < 200; i++ {
++		tick()
++	}
++	if app.cap != 2 || app.rebuilds != 1 {
++		t.Fatalf("scale must hold while the causing viewer is present: cap=%v rebuilds=%d", app.cap, app.rebuilds)
++	}
++	// It leaves: after adaptScaleClean clean ticks the room climbs back to the top (no cap).
++	peers = nil
++	for i := 0; i < adaptScaleClean+2; i++ {
++		tick()
++	}
++	if app.cap != 0 || app.rebuilds != 2 {
++		t.Fatalf("after the viewer leaves the room must climb back: cap=%v rebuilds=%d", app.cap, app.rebuilds)
++	}
++}
++
++func TestAdaptiveRoom_WeakDistressNeverRescales(t *testing.T) {
++	app := &fakeApp{base: 3}
++	ctl := newTestCtl(app, allOn, false)
++	remote := &fakeViewer{}
++	remote.report(60, 60, 60, false) // decoding everything it gets: the PLIs are LOSS, not the decoder
++	peers := []adaptTickPeer{{p: remote, sameHost: false}}
++	for now := 1; now <= 40; now++ {
++		remote.pli += 1 // a PLI a second
++		ctl.tick(now, peers)
++	}
++	if app.rebuilds != 0 {
++		t.Fatalf("weak distress drove %d rebuild(s); it may only drive the layer rung", app.rebuilds)
++	}
++	if st := ctl.peers[remote]; st == nil || !st.layerCapped {
++		t.Fatal("weak distress should still layer-cap the viewer")
++	}
++}
++
++// The core's rate is read LIVE: DOSBox Pure boots at 59.94 and switches to 70 under Windows. A cap computed
++// from the boot rate never engaged (2026-10-01: every frame-gate line read displayCap=0Hz).
++func TestAdaptiveRoom_DisplayCapFollowsLiveCoreRate(t *testing.T) {
++	app := &fakeApp{base: 3, fps: 59.94}
++	ctl := newAdaptiveCtl(allOn, app, func() {}, false, 0, 59.94, logger.NewConsole(false, "test", false))
++	v := &fakeViewer{}
++	v.report(60, 60, 60, false)
++	peers := []adaptTickPeer{{p: v}}
++	ctl.tick(1, peers)
++	if app.dispCap != 0 {
++		t.Fatalf("59.94 fps core on a 60 Hz screen: nothing to cut, got cap %v", app.dispCap)
++	}
++	app.fps = 70.007 // Windows set its VGA mode
++	ctl.tick(2, peers)
++	if app.dispCap != 60 {
++		t.Fatalf("70 fps core on a 60 Hz screen must cap at 60, got %v", app.dispCap)
++	}
++}
++
++func TestAdaptiveRoom_HiddenAndInputOnlyExcluded(t *testing.T) {
++	app := &fakeApp{base: 3}
++	ctl := newTestCtl(app, allOn, false)
++	bg := &fakeViewer{}
++	bg.report(60, 60, 5, true) // a background tab: Chrome drops before render — not a drowning decoder
++	pad := &fakeViewer{inputOnly: true}
++	peers := []adaptTickPeer{{p: bg, sameHost: true}, {p: pad, sameHost: true}}
++	for now := 1; now <= 20; now++ {
++		bg.pli += 2
++		ctl.tick(now, peers)
++	}
++	if app.rebuilds != 0 {
++		t.Fatal("a hidden viewer must not drive a scale rung")
++	}
++	if app.dispCap != 0 {
++		t.Fatalf("a hidden viewer has no vote on the cap (and the input-only seat is not a viewer): cap=%v", app.dispCap)
++	}
++	// Back in the foreground: its vote counts again on the next report.
++	bg.report(60, 70, 70, false)
++	ctl.tick(21, peers)
++	if app.dispCap != 60 {
++		t.Fatalf("visible again: cap=%v want 60", app.dispCap)
++	}
++}
++
++// A hidden tab's timer is throttled, so its reports go STALE while it is hidden. A stale hidden report must
++// keep the viewer hidden — otherwise it reads as "never reported" and a same-host viewer's PLIs (a background
++// tab can produce them) would drive a scale step.
++func TestAdaptiveRoom_StaleHiddenStaysHidden(t *testing.T) {
++	app := &fakeApp{base: 3}
++	ctl := newTestCtl(app, allOn, false)
++	bg := &fakeViewer{}
++	bg.report(60, 60, 60, true)
++	bg.stale = true
++	for now := 1; now <= 30; now++ {
++		bg.pli += 2
++		ctl.tick(now, []adaptTickPeer{{p: bg, sameHost: true}})
++	}
++	if app.rebuilds != 0 {
++		t.Fatalf("a stale hidden viewer drove %d rebuild(s)", app.rebuilds)
++	}
++}
++
++// After a scale step the evidence resets: pre-rebuild PLIs must not drive a second step on their own.
++func TestAdaptiveRoom_EvidenceResetsAfterStep(t *testing.T) {
++	app := &fakeApp{base: 4}
++	ctl := newTestCtl(app, allOn, false)
++	v := &fakeViewer{}
++	v.report(60, 60, 60, false)
++	peers := []adaptTickPeer{{p: v, sameHost: true}}
++	now := 0
++	for i := 0; i < 4; i++ { // a same-host PLI storm: strong
++		now++
++		v.pli += 2
++		ctl.tick(now, peers)
++	}
++	if app.rebuilds != 1 {
++		t.Fatalf("storm should step once, rebuilds=%d", app.rebuilds)
++	}
++	for i := 0; i < 2*adaptRebuildGap; i++ { // quiet at the new size
++		now++
++		ctl.tick(now, peers)
++	}
++	if app.rebuilds != 1 || app.cap != 3 {
++		t.Fatalf("no fresh evidence: must stay at the first rung (rebuilds=%d cap=%v)", app.rebuilds, app.cap)
++	}
++}
++
++func TestAdaptiveRoom_ZeroCopyScaleGatedOff(t *testing.T) {
++	app := &fakeApp{base: 2, method: "bilinear2"}
++	ctl := newTestCtl(app, allOn, true) // a GL zero-copy room, ZeroCopyScale off
++	v := &fakeViewer{}
++	v.report(60, 60, 20, false)
++	for now := 1; now <= 20; now++ {
++		ctl.tick(now, []adaptTickPeer{{p: v}})
++	}
++	if app.rebuilds != 0 {
++		t.Fatal("zero-copy rooms must not rescale until ZeroCopyScale is proven and switched on")
++	}
++}
++
++func TestAdaptiveRoom_LayerRepinsWhenDistressReturns(t *testing.T) {
++	app := &fakeApp{base: 2}
++	ctl := newTestCtl(app, config.AdaptiveConfig{LayerRung: true}, false)
++	v := &fakeViewer{}
++	v.report(60, 60, 60, false)
++	peers := []adaptTickPeer{{p: v}}
++	now := 0
++	burst := func() {
++		for i := 0; i < 4; i++ {
++			now++
++			v.pli++
++			ctl.tick(now, peers)
++		}
++	}
++	burst()
++	st := ctl.peers[v]
++	if !st.layerCapped {
++		t.Fatal("weak distress should cap the layer")
++	}
++	for i := 0; i < adaptLayerClean+adaptPliWindow+1; i++ {
++		now++
++		ctl.tick(now, peers)
++	}
++	if st.layerCapped {
++		t.Fatal("clean for adaptLayerClean ticks: the cap should lift")
++	}
++	burst() // right after the restore
++	if !st.layerCapped || !st.pinned {
++		t.Fatalf("distress within %d ticks of a restore must pin the layer for the room (capped=%v pinned=%v)",
++			adaptLayerRepin, st.layerCapped, st.pinned)
++	}
++}
++
++func TestViewerReportParse(t *testing.T) {
++	b := []byte{0xF1, 1, 1, 0x58, 0x02, 0xBC, 0x02, 0xFF, 0xFF, 3, 0, 0x2C, 0x01}
++	r, ok := webrtc.ParseViewerReport(b, time.Now())
++	if !ok || !r.Hidden || r.DisplayHz != 60 || !r.HasDisplay || r.HasFps || r.Dropped != 3 || r.DecodeMs != 30 {
++		t.Fatalf("parse: ok=%v %+v", ok, r)
++	}
++	if _, ok := webrtc.ParseViewerReport(b[:12], time.Now()); ok {
++		t.Fatal("a 12-byte message is not a report")
++	}
++	pad := make([]byte, 10)
++	if webrtc.IsViewerReport(pad) {
++		t.Fatal("a pad frame is not a report")
 +	}
 +}
 diff --git a/pkg/worker/caged/app/app.go b/pkg/worker/caged/app/app.go
@@ -12947,10 +14107,10 @@ index f3553b1..85b3408 100644
 +func (c *Caged) Close()                           { c.Emulator.Close() }
 +func (c *Caged) IsSupported() error               { return c.base.IsSupported() }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..e87338f 100644
+index 6974d59..754f1cb 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,3207 @@
+@@ -1,578 +1,3361 @@
 -package libretro
 -
 -import (
@@ -13538,6 +14698,7 @@ index 6974d59..e87338f 100644
 +	"errors"
 +	"fmt"
 +	"io/fs"
++	"math"
 +	stdos "os"
 +	"path/filepath"
 +	"runtime"
@@ -13588,6 +14749,18 @@ index 6974d59..e87338f 100644
 +	// Scale returns set video scale factor and method
 +	Scale() (float64, string)
 +	Reset()
++
++	// ── Adaptive delivery (patch 0047), driven by the room's ABR loop ──
++	// BaseScale is Scale() before the live cap — the top of the scale ladder.
++	BaseScale() (float64, string)
++	// SetScaleCap caps Scale() (0 = none); the caller then rebuilds the pipeline.
++	SetScaleCap(s float64)
++	// SetDisplayCap caps the delivered frame rate (Hz, 0 = none).
++	SetDisplayCap(hz float64)
++	// ForceNextFrame makes the next frame bypass the adaptive gate (a keyframe request).
++	ForceNextFrame()
++	// SetDedup switches the duplicate-frame skip live (on under decoder distress).
++	SetDedup(on bool)
 +}
 +
 +type Frontend struct {
@@ -13690,6 +14863,32 @@ index 6974d59..e87338f 100644
 +	// largest INTEGER factor that still fits — integer being the point, since a fractional
 +	// nearest-neighbour ratio duplicates some rows more than others and shimmers.
 +	ScaleMaxWidth int
++
++	// ── Adaptive delivery (patch 0047: the viewer-driven frame gate + live scale cap) ─────────────
++	// scaleCap is a live CEILING on Scale(), set by the room's ABR loop when a viewer's decoder is
++	// drowning (0 = no cap). It lives HERE, not in the media pipe, because every pipeline rebuild —
++	// including the ones a core triggers itself with a geometry change (ScummVM, DOS mode switches) —
++	// re-reads Scale(); a cap kept anywhere else would be silently undone by the next one.
++	// Float64 bits (math.Float64bits) so it is one atomic word.
++	scaleCap atomic.Uint64
++	// dispCapHz is the delivery-rate cap: the highest display rate among the room's visible viewers, set by
++	// the ABR loop from their reports (0 = no cap). capAcc is the decimation phase accumulator (emulator
++	// thread): it keeps capHz/coreFps of the frames, EVENLY — a min-gap throttle like fast-forward's turns
++	// 70 -> 60 into 35 fps, because 14.3 ms frames never satisfy a 15 ms gap twice in a row.
++	dispCapHz atomic.Uint64
++	capAcc    float64
++	// Duplicate-frame skip (software frames + core dups). dedupOn is set once at core load from config;
++	// lastDelivHash/lastDelivNs are emulator-thread state; forceNext is set by a keyframe request (any
++	// goroutine) and makes the NEXT frame go out whatever the gate would say — on a static screen every frame
++	// is a duplicate, so without it a viewer's PLI would wait for the keepalive (and AV1 intra-refresh /
++	// the H.264 GOP count FRAMES, so a deduped static screen otherwise refreshes ~30x slower).
++	dedupOn       atomic.Bool // live: the adaptive controller switches it on under decoder distress
++	dedupKeepNs   int64
++	lastDelivHash uint64
++	lastDelivNs   int64
++	forceNext     atomic.Bool
++	// Counters for the 5 s gate log line (frame-gate:), emulator-thread writes, read by the same thread.
++	gateCapSkips, gateDupSkips, gateDelivered int
 +
 +	// ── Fast-forward / rewind (t=114/115) ────────────────────────────────────────────────────
 +	// ffOn/rwOn are written from the coordinator's command goroutine (SetFastForward/SetRewind)
@@ -14040,6 +15239,17 @@ index 6974d59..e87338f 100644
 +	f.storage.SetNonBlocking(conf.NonBlockingSave)
 +	f.scale = scale
 +	f.scaleM = conf.ScaleMethod
++	// Adaptive delivery state is per ROOM: a fresh core load starts uncapped, at full rate (patch 0047).
++	f.scaleCap.Store(0)
++	f.dispCapHz.Store(0)
++	f.forceNext.Store(false)
++	f.capAcc, f.lastDelivHash, f.lastDelivNs = 0, 0, 0
++	f.gateCapSkips, f.gateDupSkips, f.gateDelivered = 0, 0, 0
++	f.dedupOn.Store(f.conf.Adaptive.Dedup && f.conf.Adaptive.DedupAlways)
++	f.dedupKeepNs = dedupKeepaliveDefault
++	if ms := f.conf.Adaptive.DedupKeepaliveMs; ms > 0 {
++		f.dedupKeepNs = int64(ms) * int64(time.Millisecond)
++	}
 +	f.isGL = conf.IsGlAllowed
 +	f.nano.CoreLoad(meta)
 +	f.mu.Unlock()
@@ -14088,29 +15298,125 @@ index 6974d59..e87338f 100644
 +// frame AFTER capture leaks the pool slot the capture checked out: nothing but GStreamer freeing the
 +// wrapping buffer ever returns one. Holding fast-forward for half a second was enough to leak all
 +// eight and freeze the picture for the rest of the session. See coreVideoRefresh.
-+func (f *Frontend) skipFrame() bool {
++//
++// The verdict also says what happens to the skipped frame's TIME (see nanoarch.GateVerdict): real-time skips
++// (late frames, the display-rate cap, the duplicate skip) carry it into the next delivered frame so the RTP
++// clock keeps wall pace; non-real-time ones (run-ahead re-simulation, fast-forward thinning) drop it.
++func (f *Frontend) skipFrame(g nanoarch.GateFrame) nanoarch.GateVerdict {
 +	if f.raHidden {
-+		return true // a run-ahead re-simulation frame: never captured, never delivered (P8)
++		return nanoarch.GateDrop // a run-ahead re-simulation frame: never captured, never delivered (P8)
 +	}
 +	if f.conf.SkipLateFrames && f.skipVideo {
-+		return true
++		return nanoarch.GateCarry
 +	}
 +	// Fast-forward: the core renders up to ffRatio× the frames, but the encoder must keep seeing
 +	// ~native fps — every skipped frame is pure savings (the capture itself, NVENC load, bitrate,
 +	// client decode) and the player can't perceive frames that would exceed their display anyway.
 +	// Same-goroutine state: video_cb fires inside retro_run, on the emulator loop's thread.
++	// The adaptive gate below stands aside while fast-forwarding: this throttle already decides.
 +	if f.ffOn.Load() {
 +		minGap := int64(0)
 +		if fps := f.nano.VideoFramerate(); fps > 0 {
 +			minGap = int64(float64(time.Second) / fps * 0.9)
 +		}
 +		if now := os.Nanotime(); now-f.ffLastVideoNs < minGap {
-+			return true
++			return nanoarch.GateDrop
 +		} else {
 +			f.ffLastVideoNs = now
 +		}
++		return nanoarch.GateDeliver
 +	}
-+	return false
++	return f.adaptiveGate(g)
++}
++
++// dedupKeepaliveDefault: a static screen still sends a frame at least this often (config
++// adaptive.dedupKeepaliveMs overrides). Not just for joiners and lost packets: a starved receiver's jitter
++// estimator drifts its buffer up (measured ~140 ms at a 500 ms keepalive) — see config.AdaptiveConfig.
++// 50 ms measured best: idle DOS 17.5 fps (a quarter of 70), video jitter buffer 12-13 ms (cap alone 9-10;
++// 100 ms gave 9 fps but 18-24 ms).
++const dedupKeepaliveDefault = int64(50 * time.Millisecond)
++
++// adaptiveGate is the viewer-driven half of the delivery gate (patch 0047): the duplicate-frame skip and the
++// display-rate cap. Emulator thread.
++func (f *Frontend) adaptiveGate(g nanoarch.GateFrame) nanoarch.GateVerdict {
++	now := os.Nanotime()
++	if f.forceNext.CompareAndSwap(true, false) {
++		return f.gateDeliver(g, now, 0, false)
++	}
++	var h uint64
++	hashed := false
++	if f.dedupOn.Load() && now-f.lastDelivNs < f.dedupKeepNs {
++		switch {
++		case g.Dup:
++			f.gateDupSkips++
++			return nanoarch.GateCarry // a core dup IS the last frame
++		case g.Data != nil:
++			h, hashed = nanoarch.FastFrameHash(g), true
++			if h != 0 && h == f.lastDelivHash {
++				f.gateDupSkips++
++				return nanoarch.GateCarry
++			}
++		}
++	}
++	if capHz := math.Float64frombits(f.dispCapHz.Load()); capHz > 0 {
++		if fps := f.nano.VideoFramerate(); fps > capHz {
++			// Phase accumulator: keep capHz/fps of the frames, evenly spaced (6 of every 7 for 60 of 70).
++			f.capAcc += capHz / fps
++			if f.capAcc < 1 {
++				f.gateCapSkips++
++				return nanoarch.GateCarry
++			}
++			f.capAcc -= 1
++		}
++	}
++	return f.gateDeliver(g, now, h, hashed)
++}
++
++func (f *Frontend) gateDeliver(g nanoarch.GateFrame, now int64, h uint64, hashed bool) nanoarch.GateVerdict {
++	f.lastDelivNs = now
++	f.gateDelivered++
++	if f.dedupOn.Load() && g.Data != nil {
++		if !hashed {
++			h = nanoarch.FastFrameHash(g)
++		}
++		f.lastDelivHash = h
++	}
++	return nanoarch.GateDeliver
++}
++
++// SetDisplayCap sets the delivery-rate cap in Hz (0 = none). Any goroutine (the ABR loop).
++func (f *Frontend) SetDisplayCap(hz float64) { f.dispCapHz.Store(math.Float64bits(hz)) }
++
++// SetDedup switches the duplicate-frame skip on/off live (the adaptive controller). Any goroutine.
++func (f *Frontend) SetDedup(on bool) { f.dedupOn.Store(on) }
++
++// ForceNextFrame makes the next frame bypass the adaptive gate (a keyframe request). Any goroutine.
++func (f *Frontend) ForceNextFrame() { f.forceNext.Store(true) }
++
++// SetScaleCap caps Scale() live (0 = none); the caller then rebuilds the pipeline. Any goroutine.
++func (f *Frontend) SetScaleCap(s float64) { f.scaleCap.Store(math.Float64bits(s)) }
++
++// BaseScale is the scale the config + viewport pick, ignoring the live cap — the top of the ladder.
++func (f *Frontend) BaseScale() (float64, string) {
++	s := f.scale
++	if f.ScaleMaxWidth > 0 && s > 1 {
++		if w, _ := f.ViewportSize(); w > 0 {
++			k := int(s)
++			for k > 1 && w*k > f.ScaleMaxWidth {
++				k--
++			}
++			s = float64(k)
++		}
++	}
++	return s, f.scaleM
++}
++
++// GateStats returns and resets the gate counters since the last call (delivered, cap skips, dup skips).
++// Emulator thread (the pace-diag window).
++func (f *Frontend) GateStats() (delivered, capSkips, dupSkips int) {
++	delivered, capSkips, dupSkips = f.gateDelivered, f.gateCapSkips, f.gateDupSkips
++	f.gateDelivered, f.gateCapSkips, f.gateDupSkips = 0, 0, 0
++	return
 +}
 +
 +func (f *Frontend) handleVideo(data []byte, delta time.Duration, fi nanoarch.FrameInfo) {
@@ -14147,7 +15453,7 @@ index 6974d59..e87338f 100644
 +	videoPool.Put(fr)
 +}
 +
-+func (f *Frontend) handleDup() {
++func (f *Frontend) handleDup(dt time.Duration) {
 +	if lastFrame == nil || f.raHidden {
 +		return
 +	}
@@ -14165,7 +15471,14 @@ index 6974d59..e87338f 100644
 +	if lastFrame.Frame.Serial != 0 && !f.nano.ZcDupPin(lastFrame.Frame.Tex, lastFrame.Frame.Serial) {
 +		return
 +	}
-+	f.onVideo(*lastFrame)
++	// The re-presented frame stands for THIS tick (plus any time the gate carried), not the original's:
++	// for a fixed-rate core the two are equal, but after skipped frames or on a VFR core they are not, and
++	// the duration is the RTP timestamp step.
++	d := *lastFrame
++	if dt > 0 {
++		d.Duration = dt
++	}
++	f.onVideo(d)
 +}
 +
 +func (f *Frontend) Shutdown() {
@@ -14908,6 +16221,13 @@ index 6974d59..e87338f 100644
 +					float64(diagSumTickNs)/float64(max(diagTicks, 1))/1e6,
 +					100*float64(diagNoSleep)/float64(max(diagTicks, 1)),
 +					float64(deficitNs)/1e6, float64(diagMaxDeficitNs)/1e6, diagForgiven)
++				// frame-gate (patch 0047): what the adaptive gate did this window. Only when it did anything, so a
++				// room with no cap and nothing deduped stays exactly as quiet as before.
++				if deliv, capS, dupS := f.GateStats(); capS+dupS > 0 || math.Float64frombits(f.dispCapHz.Load()) > 0 {
++					f.log.Info().Msgf("frame-gate: delivered/s=%.1f capSkip/s=%.1f dupSkip/s=%.1f displayCap=%.0fHz scaleCap=%.4g",
++						float64(deliv)/winSec, float64(capS)/winSec, float64(dupS)/winSec,
++						math.Float64frombits(f.dispCapHz.Load()), math.Float64frombits(f.scaleCap.Load()))
++				}
 +				if f.runAheadArmed.Load() || f.raVerify {
 +					f.log.Info().Msgf("[runahead] rollbacks/s=%.1f hiddenMs/s=%.1f verify: checked=%d mismatch=%d picture: checked=%d differ=%d ring=%d/%d",
 +						float64(f.raRollbacks)/winSec, float64(f.raHiddenNs)/1e6/winSec, f.raChecked, f.raMismatch, f.raFrameChecked, f.raFrameDiff, len(f.raRing), f.runAhead)
@@ -15836,17 +17156,11 @@ index 6974d59..e87338f 100644
 +// the CURRENT frame's width — which is the whole point. A core that changes resolution between games
 +// (ScummVM) or mid-game re-picks its factor for free, and a core with no ScaleMaxWidth is untouched.
 +func (f *Frontend) Scale() (float64, string) {
-+	s := f.scale
-+	if f.ScaleMaxWidth > 0 && s > 1 {
-+		if w, _ := f.ViewportSize(); w > 0 {
-+			k := int(s)
-+			for k > 1 && w*k > f.ScaleMaxWidth {
-+				k--
-+			}
-+			s = float64(k)
-+		}
++	s, m := f.BaseScale()
++	if c := math.Float64frombits(f.scaleCap.Load()); c > 0 && c < s {
++		s = c
 +	}
-+	return s, f.scaleM
++	return s, m
 +}
 +func (f *Frontend) SetAudioCb(cb func(app.Audio)) { f.onAudio = cb }
 +func (f *Frontend) SetSessionId(name string)      { f.storage.SetMainSaveName(name) }
@@ -19373,12 +20687,14 @@ index 669862d..0d94ba5 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..a96fd12 100644
+index 17f10fc..09104f2 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-@@ -4,9 +4,11 @@ import (
+@@ -3,10 +3,13 @@ package nanoarch
+ import (
  	"errors"
  	"fmt"
++	"hash/maphash"
  	"maps"
 +	stdos "os"
  	"path/filepath"
@@ -19388,7 +20704,7 @@ index 17f10fc..a96fd12 100644
  	"strings"
  	"sync"
  	"sync/atomic"
-@@ -20,9 +22,55 @@ import (
+@@ -20,9 +23,55 @@ import (
  )
  
  /*
@@ -19444,7 +20760,7 @@ index 17f10fc..a96fd12 100644
  */
  import "C"
  
-@@ -37,19 +85,64 @@ type Nanoarch struct {
+@@ -37,19 +86,64 @@ type Nanoarch struct {
  
  	keyboard KeyboardState
  	mouse    MouseState
@@ -19515,7 +20831,7 @@ index 17f10fc..a96fd12 100644
  		av  C.struct_retro_system_av_info
  		i   C.struct_retro_system_info
  		api C.unsigned
-@@ -63,16 +156,56 @@ type Nanoarch struct {
+@@ -63,16 +157,56 @@ type Nanoarch struct {
  			enabled bool
  			autoCtx bool
  		}
@@ -19576,7 +20892,7 @@ index 17f10fc..a96fd12 100644
  
  	audioBuffCb    *C.struct_retro_audio_buffer_status_callback
  	lastFrameDelta float64 // most recent frame delta (ns)
-@@ -80,29 +213,52 @@ type Nanoarch struct {
+@@ -80,29 +214,113 @@ type Nanoarch struct {
  }
  
  type Handlers struct {
@@ -19585,17 +20901,78 @@ index 17f10fc..a96fd12 100644
 -	OnDup          func()
 +	OnAudio func(ptr unsafe.Pointer, frames int)
 +	OnVideo func(data []byte, delta time.Duration, fi FrameInfo)
-+	OnDup   func()
++	// OnDup re-presents the last delivered frame. dt is the duration the re-presented frame must carry
++	// (the tick it stands in for, plus any time carried from frames the gate skipped — see GateCarry).
++	OnDup func(dt time.Duration)
 +	// SkipFrame is asked, per real frame, whether this one will be delivered at all — BEFORE it is
 +	// captured. It exists because "drop it after capture" is not a valid option on the hardware
 +	// paths: capture CHECKS OUT a zero-copy pool slot that is returned only when GStreamer frees the
 +	// buffer wrapping it, so a frame the frontend discards downstream leaks its slot for good. See
 +	// coreVideoRefresh for the freeze that cost.
-+	SkipFrame      func() bool
++	SkipFrame      func(g GateFrame) GateVerdict
  	OnSystemAvInfo func()
 +	// OnRumble receives the core's rumble requests (port, effect 0=strong/1=weak, strength 0..65535).
 +	// Called on the emulator thread from inside retro_run; must be cheap and never block (P11).
 +	OnRumble func(port, effect, strength int)
++}
++
++// GateVerdict is the delivery gate's answer for one frame (Handlers.SkipFrame).
++type GateVerdict uint8
++
++const (
++	// GateDeliver: capture and deliver this frame (it carries any skipped time — see GateCarry).
++	GateDeliver GateVerdict = iota
++	// GateCarry: skip it, and add its duration to the NEXT delivered frame. For skips taken at real-time
++	// speed (the display-rate cap, duplicate-frame skip): the RTP timestamp step IS the delivered frame's
++	// duration, so dropping a skipped frame's time would advance the video clock slower than wall time
++	// while audio keeps real time — a growing A/V offset and jitter-buffer growth (70 -> 60 fps = 6/7 speed).
++	GateCarry
++	// GateDrop: skip it and discard its time. For frames that are not real time: run-ahead's hidden
++	// re-simulations, and fast-forward thinning (the core ticks ~4x faster than wall time there, so the
++	// nominal per-frame stamp of each frame that IS delivered already advances the clock at wall speed;
++	// carrying the thinned ticks would run the video clock at 4x).
++	GateDrop
++)
++
++// GateFrame describes the frame the gate is deciding on. Data is a view of core memory valid only for the
++// duration of the call (software frames only; nil for HW/zero-copy frames and for dups).
++type GateFrame struct {
++	Dup      bool // the core re-presented its last frame (video_cb with NULL data)
++	Data     []byte
++	RowBytes uint
++	Pitch    uint
++	Rows     uint
++}
++
++// FastFrameHash hashes a software framebuffer for duplicate detection: maphash over whole rows (~10x the
++// byte-at-a-time frameHash, which stays the run-ahead VERIFY hash). In-process comparison only — the seed
++// is per process, so the value means nothing across workers. Dimensions are mixed in, so a geometry change
++// is never "a duplicate".
++func FastFrameHash(g GateFrame) uint64 {
++	if len(g.Data) == 0 || g.Rows == 0 || g.RowBytes == 0 {
++		return 0
++	}
++	h := uint64(g.RowBytes)<<32 | uint64(g.Rows)
++	if g.Pitch == g.RowBytes {
++		return h ^ maphash.Bytes(fastHashSeed, g.Data[:g.RowBytes*g.Rows])
++	}
++	for y := uint(0); y < g.Rows; y++ {
++		off := y * g.Pitch
++		h = h*1099511628211 ^ maphash.Bytes(fastHashSeed, g.Data[off:off+g.RowBytes])
++	}
++	return h
++}
++
++var fastHashSeed = maphash.MakeSeed()
++
++// skippedVideo is the duration of the frames the delivery gate skipped with GateCarry since the last frame
++// that went out; the next delivered (or re-presented) frame carries it. Emulator thread only.
++var skippedVideo time.Duration
++
++// emitDup re-presents the last frame carrying dt plus any skipped time.
++func emitDup(dt time.Duration) {
++	Nan0.Handlers.OnDup(dt + skippedVideo)
++	skippedVideo = 0
  }
  
  type FrameInfo struct {
@@ -19635,7 +21012,7 @@ index 17f10fc..a96fd12 100644
  	CoreAspectRatio bool
  	KbMouseSupport  bool
  	LibExt          string
-@@ -132,9 +288,10 @@ var Nan0 = Nanoarch{
+@@ -132,9 +350,10 @@ var Nan0 = Nanoarch{
  	Stopped:  atomic.Bool{},
  	limiter:  func(fn func()) { fn() },
  	Handlers: Handlers{
@@ -19644,12 +21021,12 @@ index 17f10fc..a96fd12 100644
 -		OnDup:   func() {},
 +		OnAudio:   func(unsafe.Pointer, int) {},
 +		OnVideo:   func([]byte, time.Duration, FrameInfo) {},
-+		OnDup:     func() {},
-+		SkipFrame: func() bool { return false },
++		OnDup:     func(time.Duration) {},
++		SkipFrame: func(GateFrame) GateVerdict { return GateDeliver },
  	},
  }
  
-@@ -144,14 +301,80 @@ func init() { Nan0.reserved <- struct{}{} }
+@@ -144,14 +363,80 @@ func init() { Nan0.reserved <- struct{}{} }
  
  func NewNano(localPath string) *Nanoarch {
  	nano := &Nan0
@@ -19732,7 +21109,7 @@ index 17f10fc..a96fd12 100644
  func (n *Nanoarch) VideoFramerate() float64          { return float64(n.sys.av.timing.fps) }
  func (n *Nanoarch) IsPortrait() bool                 { return 90 == n.Rot%180 }
  func (n *Nanoarch) KbMouseSupport() bool             { return n.meta.KbMouseSupport }
-@@ -161,7 +384,27 @@ func (n *Nanoarch) WaitReady()                       { <-n.reserved }
+@@ -161,7 +446,27 @@ func (n *Nanoarch) WaitReady()                       { <-n.reserved }
  func (n *Nanoarch) Close()                           { n.Stopped.Store(true); n.reserved <- struct{}{} }
  func (n *Nanoarch) SetLogger(log *logger.Logger)     { n.log = log }
  func (n *Nanoarch) SetVideoDebounce(t time.Duration) { n.limiter = NewLimit(t) }
@@ -19761,7 +21138,7 @@ index 17f10fc..a96fd12 100644
  func (n *Nanoarch) SetSaveDirSuffix(sx string) {
  	dir := C.GoString(n.cSaveDirectory) + "/" + sx
  	err := os.CheckCreateDir(dir)
-@@ -182,31 +425,95 @@ func (n *Nanoarch) DeleteSaveDir() error {
+@@ -182,31 +487,95 @@ func (n *Nanoarch) DeleteSaveDir() error {
  	return os.RemoveAll(dir)
  }
  
@@ -19859,7 +21236,7 @@ index 17f10fc..a96fd12 100644
  
  	corePath := meta.LibPath + meta.LibExt
  	coreLib, err = open(corePath)
-@@ -228,6 +535,8 @@ func (n *Nanoarch) CoreLoad(meta Metadata) {
+@@ -228,6 +597,8 @@ func (n *Nanoarch) CoreLoad(meta Metadata) {
  	retroReset = coreLib.load("retro_reset")
  	retroRun = coreLib.load("retro_run")
  	retroLoadGame = coreLib.load("retro_load_game")
@@ -19868,7 +21245,7 @@ index 17f10fc..a96fd12 100644
  	retroUnloadGame = coreLib.load("retro_unload_game")
  	retroSerializeSize = coreLib.load("retro_serialize_size")
  	retroSerialize = coreLib.load("retro_serialize")
-@@ -284,9 +593,10 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -284,9 +655,10 @@ func (n *Nanoarch) LoadGame(path string) error {
  
  	n.log.Debug().Msgf("ROM - big: %v, size: %v", big, byteCountBinary(int64(game.size)))
  
@@ -19881,7 +21258,7 @@ index 17f10fc..a96fd12 100644
  		if _, ok := n.options4rom[romName]; ok {
  			for k, v := range n.options4rom[romName] {
  				n.options[k] = v
-@@ -295,10 +605,64 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -295,10 +667,64 @@ func (n *Nanoarch) LoadGame(path string) error {
  		}
  	}
  
@@ -19946,7 +21323,7 @@ index 17f10fc..a96fd12 100644
  	var av C.struct_retro_system_av_info
  	C.bridge_retro_get_system_av_info(retroGetSystemAVInfo, &av)
  	n.log.Info().Msgf("System A/V >>> %vx%v (%vx%v), [%vfps], AR [%v], audio [%vHz]",
-@@ -306,13 +670,52 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -306,13 +732,52 @@ func (n *Nanoarch) LoadGame(path string) error {
  		av.geometry.max_width, av.geometry.max_height,
  		av.timing.fps, av.geometry.aspect_ratio, av.timing.sample_rate,
  	)
@@ -20001,7 +21378,7 @@ index 17f10fc..a96fd12 100644
  
  	Nan0.tickTime = time.Duration(float64(time.Second) / float64(n.sys.av.timing.fps))
  	if n.vfr {
-@@ -322,15 +725,55 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -322,15 +787,55 @@ func (n *Nanoarch) LoadGame(path string) error {
  	n.Stopped.Store(false)
  
  	if n.Video.gl.enabled {
@@ -20059,7 +21436,7 @@ index 17f10fc..a96fd12 100644
  	}
  
  	// set default controller types on all ports
-@@ -339,8 +782,38 @@ func (n *Nanoarch) LoadGame(path string) error {
+@@ -339,8 +844,38 @@ func (n *Nanoarch) LoadGame(path string) error {
  		C.bridge_retro_set_controller_port_device(retroSetControllerPortDevice, C.uint(i), C.RETRO_DEVICE_JOYPAD)
  	}
  
@@ -20100,7 +21477,7 @@ index 17f10fc..a96fd12 100644
  		for _, device := range v {
  			C.bridge_retro_set_controller_port_device(retroSetControllerPortDevice, C.uint(k), C.unsigned(device))
  			n.log.Debug().Msgf("set custom port-device: %v:%v", k, device)
-@@ -361,6 +834,9 @@ func (n *Nanoarch) Shutdown() {
+@@ -361,6 +896,9 @@ func (n *Nanoarch) Shutdown() {
  			if n.Video.gl.enabled {
  				C.same_thread(C.deinit_video_cgo)
  			}
@@ -20110,7 +21487,7 @@ index 17f10fc..a96fd12 100644
  			C.same_thread(C.same_thread_stop)
  		})
  	} else {
-@@ -381,6 +857,9 @@ func (n *Nanoarch) Shutdown() {
+@@ -381,6 +919,9 @@ func (n *Nanoarch) Shutdown() {
  				runtime.UnlockOSThread()
  			})
  		}
@@ -20120,7 +21497,7 @@ index 17f10fc..a96fd12 100644
  	}
  
  	setRotation(0)
-@@ -391,9 +870,7 @@ func (n *Nanoarch) Shutdown() {
+@@ -391,9 +932,7 @@ func (n *Nanoarch) Shutdown() {
  	n.options = nil
  	n.options4rom = nil
  	Nan0.audioBuffCb = nil
@@ -20131,7 +21508,7 @@ index 17f10fc..a96fd12 100644
  }
  
  func (n *Nanoarch) Reset() {
-@@ -406,11 +883,33 @@ func (n *Nanoarch) syncInputToCache() {
+@@ -406,11 +945,33 @@ func (n *Nanoarch) syncInputToCache() {
  		n.keyboard.SyncToCache()
  	}
  	n.mouse.SyncToCache()
@@ -20165,7 +21542,7 @@ index 17f10fc..a96fd12 100644
  	if n.LibCo {
  		C.same_thread(retroRun)
  	} else {
-@@ -425,12 +924,52 @@ func (n *Nanoarch) Run() {
+@@ -425,12 +986,52 @@ func (n *Nanoarch) Run() {
  			runtime.UnlockOSThread()
  		}
  	}
@@ -20173,12 +21550,8 @@ index 17f10fc..a96fd12 100644
 +	// emulator thread, still inside Frontend.Tick — downstream sees the same frame on the same goroutine
 +	// it always did, only after retro_run has finished deciding what the frame is.
 +	n.flushPendingVideo()
- }
- 
--func (n *Nanoarch) IsSupported() error                  { return graphics.RGFWTryInit() }
--func (n *Nanoarch) IsGL() bool                          { return n.Video.gl.enabled }
--func (n *Nanoarch) IsStopped() bool                     { return n.Stopped.Load() }
--func (n *Nanoarch) InputRetropad(port int, data []byte) { n.retropad.SetInput(port, data) }
++}
++
 +func (n *Nanoarch) IsSupported() error { return graphics.RGFWTryInit() }
 +func (n *Nanoarch) IsGL() bool         { return n.Video.gl.enabled }
 +
@@ -20211,8 +21584,12 @@ index 17f10fc..a96fd12 100644
 +		return
 +	}
 +	n.retropad.SetInput(port, data)
-+}
-+
+ }
+ 
+-func (n *Nanoarch) IsSupported() error                  { return graphics.RGFWTryInit() }
+-func (n *Nanoarch) IsGL() bool                          { return n.Video.gl.enabled }
+-func (n *Nanoarch) IsStopped() bool                     { return n.Stopped.Load() }
+-func (n *Nanoarch) InputRetropad(port int, data []byte) { n.retropad.SetInput(port, data) }
 +// RequestDisk queues a multi-disc swap to image index i; applied on the emulator thread in Run (patch 0005).
 +func (n *Nanoarch) RequestDisk(i int) {
 +	if i >= 0 {
@@ -20222,7 +21599,7 @@ index 17f10fc..a96fd12 100644
  func (n *Nanoarch) InputKeyboard(_ int, data []byte) {
  	if n.keyboardCb == nil {
  		return
-@@ -512,13 +1051,47 @@ const (
+@@ -512,13 +1113,47 @@ const (
  )
  
  // SaveState returns emulator internal state.
@@ -20274,7 +21651,7 @@ index 17f10fc..a96fd12 100644
  	} else {
  		rez = bool(C.bridge_retro_serialize(retroSerialize, unsafe.Pointer(&data[0]), size))
  	}
-@@ -536,11 +1109,37 @@ func RestoreSaveState(st State) error {
+@@ -536,11 +1171,37 @@ func RestoreSaveState(st State) error {
  		return errors.New("empty load state")
  	}
  
@@ -20313,7 +21690,7 @@ index 17f10fc..a96fd12 100644
  	} else {
  		rez = bool(C.bridge_retro_unserialize(retroUnserialize, unsafe.Pointer(&st[0]), size))
  	}
-@@ -581,6 +1180,24 @@ func memoryData(id C.uint) unsafe.Pointer {
+@@ -581,6 +1242,24 @@ func memoryData(id C.uint) unsafe.Pointer {
  	return C.bridge_retro_get_memory_data(retroGetMemoryData, id)
  }
  
@@ -20338,7 +21715,7 @@ index 17f10fc..a96fd12 100644
  // ptSaveRam return SRAM memory pointer if core supports it or nil.
  func ptSaveRAM() *mem {
  	ptr, size := memoryData(C.RETRO_MEMORY_SAVE_RAM), memorySize(C.RETRO_MEMORY_SAVE_RAM)
-@@ -613,6 +1230,8 @@ var (
+@@ -613,6 +1292,8 @@ var (
  	retroGetSystemInfo           unsafe.Pointer
  	retroInit                    unsafe.Pointer
  	retroLoadGame                unsafe.Pointer
@@ -20347,7 +21724,7 @@ index 17f10fc..a96fd12 100644
  	retroReset                   unsafe.Pointer
  	retroRun                     unsafe.Pointer
  	retroSetAudioSample          unsafe.Pointer
-@@ -630,11 +1249,73 @@ var (
+@@ -630,11 +1311,73 @@ var (
  	retroUnserialize             unsafe.Pointer
  )
  
@@ -20415,13 +21792,13 @@ index 17f10fc..a96fd12 100644
 +		if vkDbgOn {
 +			vkDbg.vcbBroken++
 +		}
-+		Nan0.Handlers.OnDup()
++		emitDup(Nan0.tickTime)
 +		return
 +	}
  
  	// some frames can be rendered slower or faster than internal 1/fps core tick
  	// so track actual frame render time for proper RTP packet timestamps
-@@ -643,7 +1324,9 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -643,7 +1386,9 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	// !to find docs on Libretro refresh sync and frame times
  	dt := Nan0.tickTime
  	// Update frame timing only when needed: VFR mode or audio buffer callback.
@@ -20432,10 +21809,30 @@ index 17f10fc..a96fd12 100644
  		now := time.Now()
  		Nan0.lastFrameDelta = float64(now.Sub(Nan0.LastFrameTime))
  		Nan0.LastFrameTime = now
-@@ -658,6 +1341,49 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
- 		return
+@@ -652,11 +1397,84 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+ 		dt = time.Duration(Nan0.lastFrameDelta)
  	}
  
+-	// when the core returns a duplicate frame
++	// when the core returns a duplicate frame. It goes through the delivery gate too: a re-presented frame
++	// is by definition identical to the last one, so the duplicate-frame skip and the display-rate cap
++	// apply to it exactly as to a real frame (a core that NULL-dups a static screen at 60/s used to cost
++	// the viewer's decoder 60 identical frames a second).
+ 	if data == nil {
+-		Nan0.Handlers.OnDup()
++		switch Nan0.Handlers.SkipFrame(GateFrame{Dup: true}) {
++		case GateCarry:
++			if !hiddenRun.Load() {
++				skippedVideo += dt
++			}
++			return
++		case GateDrop:
++			return
++		}
++		emitDup(dt)
++		return
++	}
++
 +	// ── FRAME THINNING GATE (fast-forward; also the SkipLateFrames option) ────────────────────────
 +	// The frontend decides HERE whether this frame will be delivered — before it is captured, not
 +	// after. That ordering is the whole point, and it is not a micro-optimisation:
@@ -20468,7 +21865,17 @@ index 17f10fc..a96fd12 100644
 +			visibleFrameHash = h
 +		}
 +	}
-+	if Nan0.Handlers.SkipFrame() {
++	gate := GateFrame{}
++	if data != C.RETRO_HW_FRAME_BUFFER_VALID {
++		// A software frame: let the gate hash it for the duplicate-frame skip (it only does when that is on).
++		bpp := Nan0.Video.PixFmt.BPP
++		pitch := packed
++		if pitch == 0 {
++			pitch = width * bpp
++		}
++		gate = GateFrame{Data: unsafe.Slice((*byte)(data), pitch*height), RowBytes: width * bpp, Pitch: pitch, Rows: height}
++	}
++	if v := Nan0.Handlers.SkipFrame(gate); v != GateDeliver {
 +		// The libretro sync-index protocol is per-FRAME, not per-DELIVERED-frame: a core that keys
 +		// its per-frame resources off get_sync_index desyncs if the index stops advancing (see
 +		// nano_vk_zc_frame, which advances ahead of its own drop guards for exactly this reason).
@@ -20476,13 +21883,20 @@ index 17f10fc..a96fd12 100644
 +		if Nan0.Video.vk.enabled && data == C.RETRO_HW_FRAME_BUFFER_VALID {
 +			C.nano_vk_zc_skip()
 +		}
-+		return
-+	}
-+
++		if v == GateCarry && !hiddenRun.Load() {
++			skippedVideo += dt
++		}
+ 		return
+ 	}
++	// This frame goes out: it carries the time of every real-time frame the gate skipped before it, so the
++	// RTP clock (which advances by the delivered frames' durations) keeps wall-clock pace.
++	carried := skippedVideo
++	dt += carried
++	skippedVideo = 0
+ 
  	// calculate real frame width in pixels from packed data (realWidth >= width)
  	// some cores or games output zero pitch, i.e. N64 Mupen
- 	bpp := Nan0.Video.PixFmt.BPP
-@@ -668,10 +1394,64 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -668,10 +1486,64 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	bytes := packed * height
  
  	var data_ []byte
@@ -20499,7 +21913,7 @@ index 17f10fc..a96fd12 100644
 +		// down the SAME zc_push GLMemory path GL cores use (FrameInfo.Tex, Data nil).
 +		texID = uint32(C.nano_vk_zc_frame(C.uint(width), C.uint(height)))
 +		if texID == 0 {
-+			Nan0.Handlers.OnDup()
++			emitDup(dt)
 +			return
 +		}
 +		// DUP-PIN: tag this frame with its zc-slot generation (same cothread as the frame just above, so
@@ -20513,7 +21927,7 @@ index 17f10fc..a96fd12 100644
 +		var vkPitch C.uint
 +		p := C.nano_vk_readback(C.uint(width), C.uint(height), &vkPitch)
 +		if p == nil {
-+			Nan0.Handlers.OnDup()
++			emitDup(dt)
 +			return
 +		}
 +		packed = uint(vkPitch)
@@ -20541,13 +21955,13 @@ index 17f10fc..a96fd12 100644
 +			if hwFrameNoCtxOnce.CompareAndSwap(false, true) {
 +				Nan0.log.Error().Msg("core sent a HW frame but no GL context exists (software-armed room?) — dropping frames (fail-soft, no video); check the core's hw-acceleration option")
 +			}
-+			Nan0.Handlers.OnDup()
++			emitDup(dt)
 +			return
 +		}
  		// if Libretro renders frame with OpenGL context
  		data_ = graphics.ReadFramebuffer(bytes, width, height)
  	}
-@@ -680,7 +1460,245 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -680,7 +1552,251 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	// also we have an option of xN output frame magnification
  	// so, it may be rescaled
  
@@ -20594,8 +22008,13 @@ index 17f10fc..a96fd12 100644
 +				C.nano_vk_zc_release(C.uint(pendVideo.info.Tex))
 +			}
 +			videoCbCoalesced.Add(1)
++			// The superseded frame's OWN tick is dropped, as it always was (two vsyncs in one retro_run are one
++			// tick of wall time) — but the time it CARRIED from gate-skipped frames is wall time, and must pass
++			// to the frame that replaces it or the RTP clock loses it (patch 0047).
++			dt += pendVideo.carried
++			carried += pendVideo.carried
 +		}
-+		pendVideo = pendingVideo{valid: true, dt: dt, info: fi}
++		pendVideo = pendingVideo{valid: true, dt: dt, carried: carried, info: fi}
 +		return
 +	}
 +
@@ -20606,9 +22025,10 @@ index 17f10fc..a96fd12 100644
 +// note in video_cb). Emulator-thread only: video_cb runs inside retro_run, which Run() blocks on, so the
 +// two never overlap — the same serialisation every other Nan0 global here relies on.
 +type pendingVideo struct {
-+	valid bool
-+	dt    time.Duration
-+	info  FrameInfo
++	valid   bool
++	dt      time.Duration
++	carried time.Duration // the part of dt carried from gate-skipped frames (passed on if superseded)
++	info    FrameInfo
 +}
 +
 +var pendVideo pendingVideo
@@ -20794,7 +22214,7 @@ index 17f10fc..a96fd12 100644
  }
  
  //export coreAudioSampleBatch
-@@ -688,6 +1706,18 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
+@@ -688,6 +1804,18 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
  	if Nan0.Stopped.Load() {
  		return frames
  	}
@@ -20813,7 +22233,7 @@ index 17f10fc..a96fd12 100644
  	Nan0.Handlers.OnAudio(data, int(frames)<<1)
  
  	// Audio buffer status for the core (e.g. mGBA frameskip).
-@@ -708,6 +1738,7 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
+@@ -708,6 +1836,7 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
  			Nan0.audioDrift = -expectedNs * 4
  		}
  
@@ -20821,7 +22241,7 @@ index 17f10fc..a96fd12 100644
  		C.call_audio_buffer_status(Nan0.audioBuffCb, true, C.unsigned(occupancy), C.bool(underrun))
  	}
  
-@@ -739,7 +1770,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
+@@ -739,7 +1868,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
  
  //export coreGetProcAddress
  func coreGetProcAddress(sym *C.char) C.retro_proc_address_t {
@@ -20836,7 +22256,7 @@ index 17f10fc..a96fd12 100644
  }
  
  //export coreEnvironment
-@@ -748,9 +1785,43 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -748,9 +1883,43 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  	// see core_environment_cgo
  
  	switch cmd {
@@ -20880,7 +22300,7 @@ index 17f10fc..a96fd12 100644
  		if isGeometryDifferent(av.geometry) {
  			geometryChange(av.geometry)
  		}
-@@ -788,6 +1859,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -788,6 +1957,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  	case C.RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
  		*(**C.char)(data) = Nan0.cSaveDirectory
  		return true
@@ -20893,7 +22313,7 @@ index 17f10fc..a96fd12 100644
  	case C.RETRO_ENVIRONMENT_SET_MESSAGE:
  		// only with the Libretro debug mode
  		if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -797,12 +1874,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -797,12 +1972,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -20942,7 +22362,7 @@ index 17f10fc..a96fd12 100644
  		if v, ok := Nan0.options[key]; ok {
  			// make Go strings null-terminated copies ;_;
  			Nan0.options[key] = v + "\x00"
-@@ -816,14 +1929,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -816,14 +2027,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -21037,7 +22457,7 @@ index 17f10fc..a96fd12 100644
  	case C.RETRO_ENVIRONMENT_SET_CONTROLLER_INFO:
  		if Nan0.log.GetLevel() > logger.DebugLevel {
  			return false
-@@ -851,7 +2043,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -851,7 +2141,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		return true
  	case C.RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
  		Nan0.log.Debug().Msgf("Keyboard event callback was set")
@@ -21057,7 +22477,7 @@ index 17f10fc..a96fd12 100644
  		return true
  	case C.RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK:
  		if data == nil {
-@@ -869,11 +2072,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -869,11 +2170,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		Nan0.log.Info().Uint("latency_ms", uint(latency)).Msg("audio latency requested")
  		return true
  	}
@@ -21089,7 +22509,7 @@ index 17f10fc..a96fd12 100644
  	var context graphics.Context
  	switch Nan0.Video.hw.context_type {
  	case C.RETRO_HW_CONTEXT_NONE:
-@@ -911,6 +2134,25 @@ func initVideo() {
+@@ -911,6 +2232,25 @@ func initVideo() {
  		if err != nil {
  			panic(err)
  		}
@@ -21115,7 +22535,7 @@ index 17f10fc..a96fd12 100644
  	})
  
  	if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -918,12 +2160,31 @@ func initVideo() {
+@@ -918,12 +2258,31 @@ func initVideo() {
  	}
  }
  
@@ -21147,7 +22567,7 @@ index 17f10fc..a96fd12 100644
  		if err := Nan0.glCtx.Deinit(); err != nil {
  			Nan0.log.Error().Err(err).Msg("deinit fail")
  		}
-@@ -932,9 +2193,243 @@ func deinitVideo() {
+@@ -932,9 +2291,243 @@ func deinitVideo() {
  	Nan0.Video.gl.autoCtx = false
  	Nan0.hackSkipHwContextDestroy = false
  	Nan0.hackSkipSameThreadSave = false
@@ -21391,7 +22811,7 @@ index 17f10fc..a96fd12 100644
  type limit struct {
  	d  time.Duration
  	t  *time.Timer
-@@ -958,6 +2453,11 @@ func (d *limit) push(f func()) {
+@@ -958,6 +2551,11 @@ func (d *limit) push(f func()) {
  func geometryChange(geom C.struct_retro_game_geometry) {
  	Nan0.limiter(func() {
  		old := Nan0.sys.av.geometry
@@ -92631,10 +94051,10 @@ index 2840a0e..aa70436 100644
  			c.log.Warn().Msgf("unhandled packet type %v", x.T)
  		}
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..5b3541a 100644
+index 6972cc7..dc89981 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,801 @@
+@@ -1,310 +1,820 @@
 -package worker
 -
 -import (
@@ -92952,6 +94372,7 @@ index 6972cc7..5b3541a 100644
 +	"fmt"
 +	"os"
 +	"strings"
++	"sync"
 +	"time"
 +
 +	"github.com/giongto35/cloud-game/v3/pkg/api"
@@ -93141,6 +94562,9 @@ index 6972cc7..5b3541a 100644
 +			uid = games.GenerateRoomID(gameName)
 +		}
 +		game := games.GameMetadata(gameInfo)
++		// The room's serialized video rebuild (set in the libretro branch below; nil for the capture lane). The
++		// adaptive controller (patch 0047) drives it for scale steps.
++		var rebuildVideo func()
 +
 +		// Per-room CORE override (arcade render profiles): boot this game on an alternate core-key instead
 +		// of the one its system maps to — e.g. PS1 on pcsx_rearmed instead of the default Beetle. Applied
@@ -93448,7 +94872,13 @@ index 6972cc7..5b3541a 100644
 +				}
 +			})
 +
-+			app.VideoChangeCb(func() {
++			// The rebuild is SERIALIZED (patch 0047): a core geometry change (which already runs on its own
++			// goroutine — nanoarch `go OnSystemAvInfo()`) and an adaptive scale step from the ABR goroutine can
++			// now overlap, and both write m.VideoW/H/VideoScale unlocked while autoCeilingKbps reads them.
++			var videoMu sync.Mutex
++			rebuildVideo = func() {
++				videoMu.Lock()
++				defer videoMu.Unlock()
 +				app.ViewportRecalculate()
 +				m.VideoW, m.VideoH = app.ViewportSize()
 +				m.VideoScale, m.ScaleMethod = app.Scale()
@@ -93464,6 +94894,7 @@ index 6972cc7..5b3541a 100644
 +						H:    m.VideoH,
 +						A:    app.AspectRatio(),
 +						S:    int(m.VideoScale),
++						SF:   m.VideoScale,
 +						SM:   m.ScaleMethod,
 +						Flip: app.Flipped(),
 +						Rot:  app.Rotation(),
@@ -93472,7 +94903,8 @@ index 6972cc7..5b3541a 100644
 +					c.log.Error().Err(err).Msgf("wrap")
 +				}
 +				r.Send(data)
-+			})
++			}
++			app.VideoChangeCb(rebuildVideo)
 +
 +			w.log.Info().Msgf("Starting the game: %v", gameName)
 +			// Name the room in any crash report. A worker only ever runs one room, so this is the
@@ -93555,8 +94987,15 @@ index 6972cc7..5b3541a 100644
 +		if creator := room.WithWebRTC(user.Session); creator != nil {
 +			warmKbps = creator.WarmKbps()
 +		}
++		// Viewer-driven delivery (patch 0047, adaptive.go). Libretro rooms only: the capture lane's app has
++		// no live scale or frame gate (it does not implement adaptiveApp), so it gets no controller.
++		var ad *adaptiveCtl
++		if aa, ok := ap.(adaptiveApp); ok {
++			ad = newAdaptiveCtl(w.conf.Emulator.Adaptive, aa, rebuildVideo, m.GLZeroCopy,
++				coreConf.ScaleFloor, m.VideoFPS, w.log)
++		}
 +		startRoomAbr(w.log, r, m, ceilFn,
-+			linkStatConfig{baseURL: raCfg.MirrorURL, secret: raCfg.Secret}, game.System, warmKbps)
++			linkStatConfig{baseURL: raCfg.MirrorURL, secret: raCfg.Secret}, game.System, warmKbps, ad)
 +	}
 +
 +	needsKbMouse := r.App().KbMouseSupport()
@@ -94581,10 +96020,10 @@ index 0000000..923f87c
 +	}
 +}
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..ab0af7c 100644
+index 4a6171f..17a710a 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
-@@ -1,579 +1,1236 @@
+@@ -1,579 +1,1257 @@
 -package media
 -
 -import (
@@ -95452,6 +96891,12 @@ index 4a6171f..ab0af7c 100644
 +	videoDone chan struct{}
 +	reinit    atomic.Bool
 +	mu        sync.Mutex
++	// chMu guards videoCh against the close in Reinit/destroySync. ProcessVideo (emulator thread) used to
++	// check `reinit` and then send — a check-then-act window in which Reinit could close the channel and the
++	// send panic (a select with default STILL panics on a closed channel). Latent while rebuilds were rare;
++	// the adaptive scale rung (patch 0047) makes them a routine event. ProcessVideo takes it with TryRLock, so
++	// the emulator thread never waits on a rebuild — it drops that frame, exactly as the reinit flag intends.
++	chMu sync.RWMutex
 +
 +	log *logger.Logger
 +}
@@ -95741,9 +97186,11 @@ index 4a6171f..ab0af7c 100644
 +
 +	if g.videoCh != nil {
 +		g.v.stop()
++		g.chMu.Lock()
 +		close(g.videoCh)
-+		<-g.videoDone
 +		g.videoCh = nil
++		g.chMu.Unlock()
++		<-g.videoDone
 +	}
 +
 +	st, jn, pl := g.KeyframeStats()
@@ -95976,6 +97423,14 @@ index 4a6171f..ab0af7c 100644
 +
 +	g.onVideo = cb
 +
++	// See chMu: never wait on a rebuild from the emulator thread, and never send on a channel it closed.
++	if !g.chMu.TryRLock() {
++		return
++	}
++	defer g.chMu.RUnlock()
++	if g.videoCh == nil {
++		return
++	}
 +	select {
 +	case g.videoCh <- videoJob{data: data, w: w, h: h, stride: stride, dur: v.Duration}:
 +	default:
@@ -96002,10 +97457,15 @@ index 4a6171f..ab0af7c 100644
 +	// drop stale frames (for the new pipe)
 +	g.v.stale.Store(true)
 +
-+	// stop the video worker
++	// stop the video worker. chMu is held across the close AND the rebuild (initVideo assigns a new videoCh),
++	// so ProcessVideo can neither send on the closed channel nor read the field mid-swap; it drops frames
++	// (TryRLock fails) until the new pipeline is up.
++	g.chMu.Lock()
++	defer g.chMu.Unlock()
 +	if g.videoCh != nil {
 +		g.v.stop()
 +		close(g.videoCh)
++		g.videoCh = nil
 +		<-g.videoDone
 +	}
 +
@@ -97181,10 +98641,10 @@ index 0000000..81fe95c
 +	})
 +}
 diff --git a/pkg/worker/room/room.go b/pkg/worker/room/room.go
-index 9ff9576..fa0706c 100644
+index 9ff9576..30a6533 100644
 --- a/pkg/worker/room/room.go
 +++ b/pkg/worker/room/room.go
-@@ -1,171 +1,291 @@
+@@ -1,171 +1,302 @@
 -package room
 -
 -import (
@@ -97443,6 +98903,15 @@ index 9ff9576..fa0706c 100644
 +	return &Room[T]{id: id, app: app, users: um, media: media}
 +}
 +
++// forceNextFrame makes the app's next frame bypass the adaptive delivery gate (patch 0047). A keyframe can
++// only be encoded from a frame the encoder RECEIVES: on a static screen with the duplicate skip on, every
++// frame is a duplicate, so a PLI or a new viewer would otherwise wait for the gate's keepalive.
++func (r *Room[T]) forceNextFrame() {
++	if a, ok := r.app.(interface{ ForceNextFrame() }); ok {
++		a.ForceNextFrame()
++	}
++}
++
 +func (r *Room[T]) InitMedia() {
 +	// PLI/FIR -> keyframe (patch 0029): with an infinite GOP + intra-refresh there are no periodic
 +	// IDRs, so a viewer that loses the reference chain recovers ONLY by asking. Process-global like
@@ -97454,6 +98923,7 @@ index 9ff9576..fa0706c 100644
 +		if m := r.media; m != nil {
 +			m.RequestKeyframe()
 +		}
++		r.forceNextFrame()
 +	})
 +	// A viewer whose transport just came up gets the spaced post-join keyframes from NOW (the creator's
 +	// peer connects before the media pipe exists — its startup keyframes cover it).
@@ -97461,6 +98931,7 @@ index 9ff9576..fa0706c 100644
 +		if m := r.media; m != nil {
 +			m.RequestJoinKeyframes()
 +		}
++		r.forceNextFrame()
 +	})
 +	r.app.SetAudioCb(func(a app.Audio) {
 +		// AUDIO-RATE-RENEG: watch for a mid-session sample-rate change (a core issuing SET_SYSTEM_AV_INFO

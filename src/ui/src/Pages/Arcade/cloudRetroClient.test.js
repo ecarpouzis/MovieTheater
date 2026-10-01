@@ -7,7 +7,34 @@ import {
   encodePointer, systemUsesPointer,
   encodeMouseMove, encodeMouseButtons, systemUsesMouse,
   mouseGainFor, mouseMaxStepFor, systemUsesKeyboard, retroKeyFor, encodeKey, profileFor,
+  encodeViewerReport,
 } from "./cloudRetroClient";
+
+// Viewer report (patch 0047): the CONTRACT with the worker's webrtc.ParseViewerReport — 13 bytes, tag 0xF1,
+// version 1, little-endian, values x10, 0xFFFF = absent. A wrong length is not a report on the worker side,
+// it is a pad frame of the wrong size — silently ignored, and the room never adapts.
+describe("encodeViewerReport (viewer report wire format)", () => {
+  it("is 13 bytes: tag 0xF1, version 1, hidden flag, five LE u16 fields", () => {
+    const dv = new DataView(encodeViewerReport({ hidden: true, displayHz: 60, recvFps: 70, decodedFps: 41.5, dropped: 3, decodeMs: 12.3 }));
+    expect(dv.byteLength).toBe(13);
+    expect(dv.getUint8(0)).toBe(0xf1);
+    expect(dv.getUint8(1)).toBe(1);
+    expect(dv.getUint8(2)).toBe(1);
+    expect(dv.getUint16(3, true)).toBe(600);
+    expect(dv.getUint16(5, true)).toBe(700);
+    expect(dv.getUint16(7, true)).toBe(415);
+    expect(dv.getUint16(9, true)).toBe(3);
+    expect(dv.getUint16(11, true)).toBe(123);
+  });
+  it("sends 0xFFFF for what the browser cannot measure (older Firefox: no totalDecodeTime)", () => {
+    const dv = new DataView(encodeViewerReport({ hidden: false, displayHz: null, recvFps: 60, decodedFps: 60, dropped: undefined, decodeMs: NaN }));
+    expect(dv.getUint8(2)).toBe(0);
+    expect(dv.getUint16(3, true)).toBe(0xffff);
+    expect(dv.getUint16(9, true)).toBe(0xffff);
+    expect(dv.getUint16(11, true)).toBe(0xffff);
+    expect(dv.getUint16(5, true)).toBe(600);
+  });
+});
 
 // DOS / Windows 3.x (DOSBox Pure, 2026-09-30): the first system with a REAL keyboard. Keyboard wire format
 // is the worker's KeyboardState.SetKey (nanoarch/input.go): exactly 7 bytes, BIG-ENDIAN,
