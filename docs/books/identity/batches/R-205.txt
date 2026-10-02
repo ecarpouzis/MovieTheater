@@ -1,0 +1,196 @@
+## Conventions for this batch (33 shown of 85 matched; 419 in LEDGER.md; 12 shelf/shelves: kind:new ×11 · pub:idw ×4 · kind:trade-only ×3 · kind:collected-line ×3 · pub:small-press ×3 · folder:vn-year ×2 · folder:sequel-subfolder ×2 · pub:mad-cave ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-087] (5 shelf/shelves) pub:cinebook pub:idw pub:image sig:collision
+- The Cinebook shape (one GCD series, a CV volume per book) recurs inside IDW/Image (Godzilla Rivals, Obscure
+  Cities, MLP Annual, Cyberforce Origins, Hinges, Image+, Bloodstrike, X-Files specials): siblings take
+  `merge-with`; where CV has no series-level volume the S line is `cv=-`.
+[L-013] (12 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (12 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-030] (12 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-043] (12 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (12 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (12 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (12 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (12 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (12 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (12 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (12 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (12 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-151] (12 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-157] (12 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (12 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-160] (12 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-163] (12 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (12 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (12 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (12 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (12 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (12 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (12 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (12 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (12 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (12 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (12 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (12 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (12 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
+[L-378] (4 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+[L-046] (3 shelf/shelves) pub:action-lab pub:aftershock pub:small-press sig:probe
+- Small-press American floppies (Action Lab, Aftershock minis, Behemoth) are thin in GCD → `provider-missing` on
+  the GCD side is common and honest.
+[L-051] (3 shelf/shelves) pub:bongo pub:dc pub:small-press sig:probe
+- GCD spellings that hide a hit: Bongo's annual is plainly "Treehouse of Horror" (5435); Miller's 1983 series is
+  "Rōnin" (2721); Comico's Primer is "Primer" (14288). DC's Blackest Night revival issues sit in the ORIGINAL
+  series (Power of SHAZAM! 5246 runs 1995-2010).
+
++52 more matched entries not shown: L-055, L-139, L-140, L-148, L-271, L-323, L-090, L-135, L-164, L-186, L-191, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-124, L-272, L-281, L-290, L-006, L-045, L-064, L-085, L-094, L-101, L-176, L-178, L-184, L-185, L-302, L-310, L-333, L-374, L-376, L-382, L-016, L-032, L-113, L-114 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S104730 Lego Ninjago - Dark Island Trilogy  [tier D]   keys: Lego Ninjago - Dark Island Trilogy  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\Lego Ninjago (2022)\Lego Ninjago - Dark Island Trilogy (2026)
+   files:   [249201] Lego Ninjago - Dark Island Trilogy (2026) (digital) (Salem-Empire).cbr (144pp)
+   CV local rip:   92376 "LEGO Ninjago: Dark Island Trilogy" 2016 Little, Brown & Co. 3   (rip lookup)
+
+== S105035 Tales of the Teenage Mutant Ninja Turtles - Coastal Chaos  [tier D]   keys: Tales of the Teenage Mutant Ninja Turtles - Coastal Chaos  years 2026-2026  1 files / 0 collections
+   folders: [1] IDW Hasbro\Teenage Mutant Ninja Turtles Misc\Tales of the Teenage Mutant Ninja Turtles - Coastal Chaos v1 (2026)
+   files:   [249132] Tales of the Teenage Mutant Ninja Turtles - Coastal Chaos 001 (2026) (digital) (Raphael-Empire).cbr (29pp)
+   ours:    ladder 1
+
+== S105049 Teenage Mutant Ninja Turtles - The Ultimate B&W Collection  [tier D]   keys: Teenage Mutant Ninja Turtles - The Ultimate B&W Collection  years 2014-2016  6 files / 6 collections
+   folders: [6] IDW Hasbro\Teenage Mutant Ninja Turtles Misc\Teenage Mutant Ninja Turtles - The Ultimate B&W Collection (2014)
+   files:   [249134] COL Teenage Mutant Ninja Turtles - The Ultimate B&W Collection v01 (2014) (Digital) (danke).cbz (312pp)
+            [249135] COL Teenage Mutant Ninja Turtles - The Ultimate B&W Collection v02 (2014) (Digital) (danke).cbz (268pp)
+            [249136] COL Teenage Mutant Ninja Turtles - The Ultimate B&W Collection v03 (2014) (Digital) (danke).cbz (269pp)
+            [249137] COL Teenage Mutant Ninja Turtles - The Ultimate B&W Collection v04 (2014) (Digital) (danke).cbz (240pp)
+            [249138] COL Teenage Mutant Ninja Turtles - The Ultimate B&W Collection v05 (2014) (Digital) (danke).cbz (182pp)
+            [249139] COL Teenage Mutant Ninja Turtles - The Ultimate B&W Collection v06 (2016) (Digital) (danke).cbz (253pp)
+
+== S104528 Excommunicated  [tier D]   keys: Excommunicated  years 2026-2026  1 files / 1 collections
+   folders: [1] Vault\Excommunicated (2026)
+   files:   [248405] COL Excommunicated v01 (2026) (Vault) (digital) (Son of Ultron-Empire).cbr (119pp)
+   GCD dump:       237568 "Excommunicated" 2026-? Vault [] 1   (dump lookup)
+
+== S104324 Albion  [tier D]   keys: Albion  years 2026-2026  1 files / 0 collections
+   folders: [1] 2000AD\Albion
+   files:   [247029] Albion (2026) (digital) (Torquemada).cbz (164pp)
+   CV local rip:   66938 "Albion" 2007 DC Comics 1 issue 424188 · 18199 "Albion" 2005 DC Comics 6   (rip lookup)
+   GCD dump:       24796 "Albion" 2006-2006 DC [] 1 · 15368 "Albion" 2005-2006 DC [] 6   (dump lookup)
+
+== S104300 78 MPH  [tier D]   keys: 78 MPH  years 2025-2025  1 files / 0 collections
+   folders: [1] Alien Books\78 MPH (2025)
+   files:   [247045] 78 MPH (2025) (digital) (Son of Ultron-Empire).cbr (88pp)
+   ours:    ladder 78
+   GCD dump:       194560 "78 MPH" [en-ca] 2022-2022 Red 5 Comics, Ltd. [] 3   (dump lookup)
+
+== S105350 Zorro Classic Dell Reprint  [tier D]   keys: Zorro Classic Dell Reprint  years 2022-2022  1 files / 0 collections
+   folders: [1] American Mythology\Zorro\Zorro Classic Dell Reprint (2022)
+   files:   [246442] Zorro Classic Dell Reprint 008 (2022) (digital) (Son of Ultron-Empire).cbr (31pp)
+   ours:    ladder 8
+
+== S105105 The Horror of Godzilla  [tier D]   keys: The Horror of Godzilla  years 2026-2026  1 files / 0 collections
+   folders: [1] IDW\Godzilla\Godzilla (Kai-Sei Era)\The Horror of Godzilla (Kai-Sei Era) (2026)
+   files:   [249908] The Horror of Godzilla (Kai-Sei Era) 001 (2026) (digital) (Knight Ripper-Empire).cbr (33pp)
+   ours:    ladder 1
+
+== S104963 Sonic the Hedgehog - Knuckles Anniversary Special  [tier D]   keys: Sonic the Hedgehog - Knuckles Anniversary Special  years 2026-2026  2 files / 0 collections
+   folders: [1] IDW\Sonic The Hedgehog (2018) · [1] IDW\Sonic The Hedgehog\Knuckles
+   files:   [245837] Sonic the Hedgehog - Knuckles Anniversary Special (2026) (digital-Empire).cbr (52pp)
+            [249033] Sonic the Hedgehog - Knuckles Anniversary Special (2026) (digital-Empire).cbr (52pp)
+
+== S104550 Flash Gordon - The Movie Adaptation  [tier D]   keys: Flash Gordon - The Movie Adaptation  years 2026-2026  1 files / 0 collections
+   folders: [1] MadCave (and Maverick)\Flash Gordon (2024)\Annuals and Specials
+   files:   [249424] Flash Gordon - The Movie Adaptation (2026) (digital) (Son of Ultron-Empire).cbr (90pp)
+
+== S104633 Havana Split  [tier D]   keys: Havana Split  years 2026-2026  1 files / 1 collections
+   folders: [1] MadCave (and Maverick)\Havana Split (2026)
+   files:   [248022] COL Havana Split v01 - Welcome to Cuba (2026) (Graphic Novel) (Mad Cave Studios) (Digital) (LeDuch-DCP).cbz (169pp)
+   ours:    ComicInfo Series: "Havana Split"x1; ComicInfo Volume: "2026"x1; ComicInfo Publisher: "Mad Cave Studios"x1; ComicInfo Web: "1193052"x1
+
+== S11109 MAD Magazine  [tier D]   keys: MAD Magazine  years 2026-2026  2 files / 0 collections
+   folders: [2] Magazines\MAD Magazine\04 MAD Magazine v1 (2026)
+   files:   [249443] MAD Magazine 600 (2026) (digital) (Son of Ultron-Empire).cbr (56pp) | [249444] MAD Magazine 601 (2026) (digital) (Son of Ultron-Empire).cbr (54pp)
+   ours:    ladder 600-601
+   CV local rip:   109775 "MAD Magazine" 2018 DC Comics 46   (rip lookup)
+   GCD dump:       83558 "Mad Magazine" [en-au] 1978-2010 Horwitz [] 266   (dump lookup)
