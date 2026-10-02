@@ -185,6 +185,36 @@ describe("the engine", () => {
     URL.revokeObjectURL = () => {};
   });
 
+  // 2026-10-02: play() used to wait for start(), i.e. for the WHOLE look-ahead window (~11 MB on a
+  // FLAC) — seconds of silence on a phone for audio whose first second had long since arrived.
+  it("is ready to play after the first few seconds, long before the window is full", async () => {
+    const api = makeApi({});
+    const seen = [];
+    installFetch(seen, { total: 8_000_000 });
+    let bytesAtReady = null;
+    let startResolved = false;
+    const engine = engineWith({
+      api,
+      handlers: { onReady: () => { bytesAtReady = engine.inspect().appended.reduce((n, a) => n + a.bytesAppended, 0); } },
+    });
+    const started = engine.start({ queue, index: 0 }).then(() => { startResolved = true; });
+    await started;
+    expect(startResolved).toBe(true);
+    // One 256 KB chunk is ~8 s at the fake's rate — past READY_AHEAD_SEC — so ready fired on it.
+    expect(bytesAtReady).toBe(262144);
+    const total = engine.inspect().appended.reduce((n, a) => n + a.bytesAppended, 0);
+    expect(total).toBeGreaterThan(bytesAtReady * 10);
+  });
+
+  it("still fires ready exactly once when the whole queue is shorter than the threshold", async () => {
+    const api = makeApi({});
+    installFetch([], { total: 32000 });   // one second of audio
+    const onReady = vi.fn();
+    const engine = engineWith({ api, handlers: { onReady } });
+    await engine.start({ queue: [{ id: 1, durationSec: 1 }], index: 0 });
+    expect(onReady).toHaveBeenCalledTimes(1);
+  });
+
   it("appends the queue back to back into ONE buffer, so a boundary is not an event", async () => {
     const api = makeApi({});
     const seen = [];

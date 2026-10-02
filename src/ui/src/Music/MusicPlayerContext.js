@@ -1028,6 +1028,23 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     // the 2026-08-13 night died on a restart whose only real defect was an empty mint map.
     const carriedMints = engineRef.current?.exportMints() ?? null;
     destroyEngine();
+    // Press play as soon as the engine has a few seconds buffered — NOT when start() resolves, which
+    // is after the whole look-ahead window (up to the ~11.5 MB quota) has downloaded. Waiting for
+    // that was the "hit play on my phone and hear nothing for several seconds" (2026-10-02).
+    let begun = false;
+    const begin = () => {
+      if (begun || engineRef.current !== engine) return;
+      begun = true;
+      // `autoplay` is the intent from when this start was ORDERED; a paused element at this point
+      // with autoplay off is the !autoplay branch's business in the .then below.
+      if (!autoplay) return;
+      el.volume = volumeOf();
+      el.muted = false;
+      el.play().catch(() => {
+        if (document.hidden) resumeOnWakeRef.current = true;
+        setPlaying(false);
+      });
+    };
     const engine = createMseEngine({
       audio: el,
       quotaBytes: undefined,
@@ -1043,6 +1060,11 @@ export function MusicPlayerProvider({ children, enabled = true }) {
           const at = queueRef.current.findIndex((t) => t.id === trackId);
           return at >= 0 ? at : i;
         });
+      },
+      onReady: () => {
+        loadedTrackIdRef.current = track.id;
+        lastUrlRef.current = null;
+        begin();
       },
       onRung: (n, detail) => diagLog("mse:rung", { rung: n, ...(typeof detail === "object" ? detail : { detail }) }),
       // The queue-end guard (Phase 4): a stall on an ended stream at the end of the buffer IS the
@@ -1093,12 +1115,9 @@ export function MusicPlayerProvider({ children, enabled = true }) {
           if (el.paused) setPlaying(false);
           return;
         }
-        el.volume = volumeOf();
-        el.muted = false;
-        el.play().catch(() => {
-          if (document.hidden) resumeOnWakeRef.current = true;
-          setPlaying(false);
-        });
+        // Normally already done by onReady, seconds ago — and then this must NOT press play again:
+        // a listener who paused in between would be overruled.
+        begin();
       })
       .catch((e) => {
         // Superseded mid-setup: a second start assigned its own src over this engine's MediaSource,

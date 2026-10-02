@@ -36,6 +36,13 @@ export const TARGET_AHEAD_SEC = 180;
 /** What to keep behind the playhead. Everything older is evicted, which is what makes an hours-long
  *  queue cost the same as a short one. */
 export const KEEP_BEHIND_SEC = 20;
+/** How much audio must be in the buffer before the listener is allowed to hear it — the START
+ *  threshold, deliberately tiny next to TARGET_AHEAD_SEC. start() fills the whole window (up to the
+ *  ~11.5 MB quota) before it resolves, and pressing play only after THAT made the first note wait on
+ *  the full download: measured 2026-10-02, the gateway remuxes 11 MB in ~0.2 s, so every second of a
+ *  phone's "I hit play and heard nothing" was the phone pulling ~11 MB it did not need yet. The
+ *  window keeps filling behind the playhead exactly as before; only the moment of play() moves. */
+export const READY_AHEAD_SEC = 3;
 /** Bytes per append. Small enough that a QuotaExceeded costs one chunk, not a track. */
 export const APPEND_CHUNK_BYTES = 512 * 1024;
 /** How far the window must DRAIN before it is topped up again.
@@ -115,6 +122,9 @@ export function createMseEngine({
   onDeckNeeded = () => {},
   onStreamEnded = () => {},
   onStateChange = () => {},
+  // Fires ONCE per engine, the moment there is enough audio to start (READY_AHEAD_SEC), or when the
+  // initial pump ends having appended less than that (a short track). The caller presses play here.
+  onReady = () => {},
   now = () => Date.now(),
   isHidden = () => (typeof document !== "undefined" && document.visibilityState === "hidden"),
 } = {}) {
@@ -145,6 +155,14 @@ export function createMseEngine({
     endedNotified: false,
     currentTrackId: null,
     lastError: null,
+    readyFired: false,
+  };
+
+  const fireReady = () => {
+    if (state.readyFired || state.destroyed) return;
+    state.readyFired = true;
+    log("ready", { ahead: Math.round(aheadSec() * 10) / 10 });
+    try { onReady(); } catch { /* the caller's problem, never the pump's */ }
   };
 
   /** The element events that can mean "the buffer ran out at the end of an ended stream". Named
@@ -472,6 +490,7 @@ export function createMseEngine({
         const ok = await appendChunk(chunk);
         if (!ok) { stoppedShort = true; return false; }
         entry.bytesAppended += chunk.byteLength;
+        if (!state.readyFired && aheadSec() >= READY_AHEAD_SEC) fireReady();
         // Stop at the ceiling: past it the appends only evict each other, and every byte fetched is
         // a byte of somebody's battery.
         if (aheadSec() >= ceiling) { stoppedShort = true; return false; }
@@ -667,6 +686,9 @@ export function createMseEngine({
     QUEUE_END_EVENTS.forEach((name) => audio.addEventListener(name, checkQueueEndStall));
     await pump();
     if (state.destroyed) return null;
+    // A queue shorter than the threshold (or a first track handed to the decks) still gets its one
+    // ready — the same moment play() used to be pressed, so nothing is ever left waiting on it.
+    fireReady();
     log("started", { track: first?.id ?? null, lane: decision.treatment.lane, ahead: Math.round(aheadSec()) });
     return state.appended[0] || null;
   };
