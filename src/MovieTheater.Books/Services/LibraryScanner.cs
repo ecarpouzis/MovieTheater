@@ -344,7 +344,11 @@ namespace MovieTheater.Books.Services
                     // is re-read — that is what makes a re-scan of a settled library cheap.
                     if (unchanged && !isNew) continue;
 
-                    if (apply && !await IndexFileAsync(db, item, filePath, ext, root, rootPaths, ct)) failed++;
+                    // A CHANGED file at a known path is the same book with new bytes (a re-rip, an (F) fix copied
+                    // over it): its identity was curated after the first parse — split-lane keys, hand-read issue
+                    // numbers, format/collection reads — so the re-index refreshes the FILE facts and keeps the
+                    // ComicDetail row. A parse-rule change reaches existing items through books-reparse instead.
+                    if (apply && !await IndexFileAsync(db, item, filePath, ext, root, rootPaths, ct, keepIdentity: !isNew)) failed++;
                 }
                 if (apply) await db.SaveChangesAsync(ct);
             }
@@ -366,7 +370,7 @@ namespace MovieTheater.Books.Services
         /// an unreadable archive is RECORDED in <see cref="ItemState"/>, never thrown — one bad file must not
         /// stop a walk with 141k of them to do.
         /// </summary>
-        private async Task<bool> IndexFileAsync(BooksDb db, Item item, string filePath, string ext, LibraryRoot? root, IReadOnlyList<string> rootPaths, CancellationToken ct)
+        private async Task<bool> IndexFileAsync(BooksDb db, Item item, string filePath, string ext, LibraryRoot? root, IReadOnlyList<string> rootPaths, CancellationToken ct, bool keepIdentity = false)
         {
             var reader = readers.FirstOrDefault(r => r.CanHandle(ext));
             ArchiveMetadata? meta = null;
@@ -432,7 +436,7 @@ namespace MovieTheater.Books.Services
 
             if (item.Kind == ItemKind.Comic)
             {
-                await WriteComicRowsAsync(db, item, filePath, meta, rootPaths, ct);
+                await WriteComicRowsAsync(db, item, filePath, meta, rootPaths, ct, keepIdentity);
             }
             else
             {
@@ -449,7 +453,7 @@ namespace MovieTheater.Books.Services
             return !state.IsBroken;
         }
 
-        private async Task WriteComicRowsAsync(BooksDb db, Item item, string filePath, ArchiveMetadata? meta, IReadOnlyList<string> rootPaths, CancellationToken ct)
+        private async Task WriteComicRowsAsync(BooksDb db, Item item, string filePath, ArchiveMetadata? meta, IReadOnlyList<string> rootPaths, CancellationToken ct, bool keepIdentity = false)
         {
             if (meta != null)
             {
@@ -470,6 +474,9 @@ namespace MovieTheater.Books.Services
 
                 await RewriteComicInfoRowsAsync(db, item.Id, meta, ct);
             }
+
+            // keepIdentity: an existing item's ComicDetail is curated input (see FileBatchAsync) — leave it whole.
+            if (keepIdentity && await db.ComicDetails.AnyAsync(d => d.ItemId == item.Id, ct)) return;
 
             var parsed = ComicTitleParser.Parse(
                 Path.GetFileName(filePath), filePath,
@@ -648,6 +655,20 @@ namespace MovieTheater.Books.Services
             state.ExclusionReason = null;
             state.ExcludedAt = null;
             await Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Re-read one EXISTING item's file facts at its current <c>Item.Path</c> — page count, title, broken state,
+        /// the embedded ComicInfo and its credit/tag rows — keeping its curated <c>ComicDetail</c>. The relocation
+        /// verb calls it when an item moves onto a file whose bytes differ from the ones it was indexed from.
+        /// Returns false when the container would not open (recorded on <c>ItemState</c>, never thrown).
+        /// </summary>
+        public async Task<bool> RefreshFileFactsAsync(BooksDb db, Item item, CancellationToken ct = default)
+        {
+            var roots = await db.LibraryRoots.AsNoTracking().ToListAsync(ct);
+            var root = roots.FirstOrDefault(r => r.Id == item.RootId);
+            var ext = Path.GetExtension(item.Path).ToLowerInvariant();
+            return await IndexFileAsync(db, item, item.Path, ext, root, roots.Select(r => r.Path).ToList(), ct, keepIdentity: true);
         }
 
         // ── phase 4: aggregate ───────────────────────────────────────────────────────────────────────────

@@ -112,10 +112,15 @@ CHECKS = [
      SELECT l.ItemId, l.Provider, l.ProviderKey FROM ItemProviderLink l
      LEFT JOIN Item i ON i.Id = l.ItemId WHERE i.Id IS NULL""", False),
 
-    ("an identity-read ItemProviderLink on an excluded or missing item", """
+    # An item whose FILE went missing after it was read (a rescan marks a replaced book `missing`, never deletes it)
+    # keeps its links: they are the identity of a row kept precisely so a returning file is whole again, and the
+    # judged identity of the issues a collection replaced. Only an exclusion for any OTHER reason (a dedup loser,
+    # a hand exclusion) means the pass read an item it should not have. (2026-10-02 comics rescan.)
+    ("an identity-read ItemProviderLink on an excluded (not merely missing) or deleted item", """
      SELECT l.ItemId, l.Provider, l.ProviderKey FROM ItemProviderLink l
-     LEFT JOIN Item i ON i.Id = l.ItemId
-     WHERE l.Method = 'identity-read' AND (i.Id IS NULL OR coalesce(i.IsExcluded,0) = 1)""", False),
+     LEFT JOIN Item i ON i.Id = l.ItemId LEFT JOIN ItemState st ON st.ItemId = l.ItemId
+     WHERE l.Method = 'identity-read' AND (i.Id IS NULL OR (coalesce(i.IsExcluded,0) = 1
+           AND coalesce(st.ExclusionReason,'') <> 'missing'))""", False),
 
     ("a Series.TitleId pointing at a SeriesTitle that is not there", """
      SELECT s.Id, s.TitleId, s.Name FROM Series s

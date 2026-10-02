@@ -256,7 +256,10 @@ namespace MovieTheater.Books.Tests
             await using var after = f.Db();
             var reread = await after.Items.FirstAsync(i => i.Id == id);
             Assert.NotEqual(sizeBefore, reread.FileSize);
-            Assert.Equal("Rewritten", (await after.ComicDetails.FirstAsync(d => d.ItemId == id)).ParsedSeriesKey);
+            // The FILE is re-read (its ComicInfo lands in ComicEmbedded) but the existing item's ComicDetail is
+            // curated identity and is kept — a re-rip at a known path is the same book (see RelocationTests).
+            Assert.Equal("Rewritten", (await after.ComicEmbeddeds.FirstAsync(e => e.ItemId == id)).Series);
+            Assert.NotEqual("Rewritten", (await after.ComicDetails.FirstAsync(d => d.ItemId == id)).ParsedSeriesKey);
         }
 
         /// <summary>

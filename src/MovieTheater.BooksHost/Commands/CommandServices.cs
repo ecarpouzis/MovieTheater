@@ -38,6 +38,7 @@ namespace MovieTheater.BooksHost.Commands
             services.AddSingleton<ThumbnailService>();
             services.AddSingleton<ThumbnailJob>();
             services.AddSingleton<LibraryScanner>();
+            services.AddSingleton<RelocationService>();
             services.AddSingleton<CalibreImportService>();
             services.AddSingleton<DuplicateDetectionService>();
             services.AddSingleton<SignatureJob>();

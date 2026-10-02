@@ -48,6 +48,64 @@ namespace MovieTheater.Books.Tests
         }
 
         [Fact]
+        public void AParsedKeyNoShelfCarriesGetsItsOwnSeriesAndAnExcludedOneDoesNot()
+        {
+            using var f = Migrated();
+            // INPUT edit: a newly scanned file whose parse names a run no Series row carries, and an excluded file
+            // with another unseen key. Before the fix the first kept no shelf at all (Repoint skips keys with no alias).
+            using (var w = f.Hot(dryRun: false))
+            {
+                w.Begin();
+                w.Exec("UPDATE ComicDetail SET ParsedSeriesKey = 'Brand New Run (2026)' WHERE ItemId = 6");
+                w.Exec("UPDATE Item SET SeriesId = NULL WHERE Id = 6");   // a newly scanned file has no shelf yet
+                w.Exec("UPDATE ComicDetail SET ParsedSeriesKey = 'Ghost Run Nobody Holds' WHERE ItemId = (SELECT min(Id) FROM Item WHERE IsExcluded = 1)");
+                w.Commit();
+            }
+
+            Rebuild(f);
+
+            using (var hot = f.Hot())
+            {
+                Assert.Equal(1, hot.Scalar<long>("SELECT count(*) FROM Series WHERE ParsedKey = 'Brand New Run (2026)'"));
+                var sid = hot.Scalar<long>("SELECT Id FROM Series WHERE ParsedKey = 'Brand New Run (2026)'");
+                Assert.Equal(sid, hot.Scalar<long>("SELECT SeriesId FROM Item WHERE Id = 6"));
+                Assert.Equal("parsed:brand new run 2026", hot.Scalar<string>("SELECT CanonicalKey FROM Series WHERE Id = $id", ("$id", sid)));
+                Assert.Equal(0, hot.Scalar<long>("SELECT count(*) FROM Series WHERE ParsedKey = 'Ghost Run Nobody Holds'"));
+                Assert.Equal(0, SeriesResolver.Diff(hot).Total);
+            }
+
+            var once = Snapshot(f);
+            Rebuild(f);   // the shelf exists now: a second run creates nothing
+            Assert.Equal(once, Snapshot(f));
+        }
+
+        [Fact]
+        public void AStrandedKeyKeepsItsShelfAndANewFileWithThatKeyJoinsIt()
+        {
+            using var f = Migrated();
+            long shelf;
+            int newcomer;
+            // A key with NO alias whose item keeps the shelf it was given (how the identity pass's hand placements
+            // survive), and a newly scanned file with the same key that has no shelf yet.
+            using (var w = f.Hot(dryRun: false))
+            {
+                shelf = w.Scalar<long>("SELECT SeriesId FROM Item WHERE Id = 6");
+                newcomer = (int)w.Scalar<long>("SELECT min(Id) FROM Item WHERE Id <> 6 AND coalesce(IsExcluded,0) = 0 AND Id IN (SELECT ItemId FROM ComicDetail)");
+                w.Begin();
+                w.Exec("UPDATE ComicDetail SET ParsedSeriesKey = 'Stranded Run v1 (1963)' WHERE ItemId IN (6, $n)", ("$n", newcomer));
+                w.Exec("UPDATE Item SET SeriesId = NULL WHERE Id = $n", ("$n", newcomer));
+                w.Commit();
+            }
+
+            Rebuild(f);
+
+            using var hot = f.Hot();
+            Assert.Equal(0, hot.Scalar<long>("SELECT count(*) FROM Series WHERE ParsedKey = 'Stranded Run v1 (1963)'"));
+            Assert.Equal(shelf, hot.Scalar<long>("SELECT SeriesId FROM Item WHERE Id = 6"));
+            Assert.Equal(shelf, hot.Scalar<long>("SELECT SeriesId FROM Item WHERE Id = $n", ("$n", newcomer)));
+        }
+
+        [Fact]
         public void RunningItTwiceChangesNothingTheSecondTime()
         {
             using var f = Migrated();

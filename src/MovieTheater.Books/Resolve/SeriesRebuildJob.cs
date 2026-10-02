@@ -118,6 +118,20 @@ namespace MovieTheater.Books.Resolve
         {
             var r = SeriesResolver.Compute(hot);
 
+            // A parsed key that no Series row carries and that §4b cannot fold onto an existing survivor (same
+            // canonical / normalized key) is a NEW run — a file the scan indexed after the v1 migration made every
+            // row we have. Nothing else in v2 creates its shelf, so without this its items stay on no shelf at all
+            // (Repoint only touches items whose key has an alias): 2,539 of the 4,548 files a 2026-10-02 rescan
+            // added. Series is derived from ParsedSeriesKey, so the row is made here, from the input, and the
+            // computation re-run over it. Only keys on live comic items count — an excluded file's key does not
+            // conjure a shelf.
+            var created = CreateSeriesForNewKeys(hot, r.AliasMap);
+            if (created > 0)
+            {
+                log($"series: created {created} Series row(s) for parsed keys no shelf carried");
+                r = SeriesResolver.Compute(hot);
+            }
+
             // Park every canonical key first. CanonicalKey is UNIQUE, and a survivor routinely takes the key
             // another row currently holds, so writing them in place would trip the index on an ordering we do not
             // control. Merged-away rows keep their parked key until the finish phase deletes them.
@@ -138,6 +152,35 @@ namespace MovieTheater.Books.Resolve
 
             log($"series: {r.AliasMap.Count} parsed keys -> {r.Survivors.Count} canonical series ({r.MergeMap.Count} to merge away)");
             return (r.Survivors.Count, r.AliasMap.Count);
+        }
+
+        /// <summary>One `Series` row per live comic parsed key the alias map cannot place AND that no live item
+        /// already sits on a shelf with. The second condition is load-bearing: a key with no alias whose items DO hold
+        /// a shelf is a STRANDED key — Repoint never touches such an item, so it keeps the shelf the identity pass gave
+        /// it (the legacy Amazing Spider-Man runs on S4752, Usagi Yojimbo's trades, ~930 items in all). Giving such a
+        /// key a row would give it an alias, and the next Repoint would pull every one of those items off its curated
+        /// shelf — which the first version of this step did on 2026-10-02 (repaired by docs/books/rescan/tools/
+        /// stranded_repair.py). Ids are allocated as max + 1 (ids here are never database-generated); the canonical
+        /// key starts parked and is assigned by the identity write that follows, like every other survivor's.</summary>
+        public static int CreateSeriesForNewKeys(TargetWriter hot, IReadOnlyDictionary<string, int> aliasMap)
+        {
+            var keys = hot.Pairs(@"
+SELECT count(*), cd.ParsedSeriesKey FROM ComicDetail cd JOIN Item i ON i.Id = cd.ItemId
+WHERE coalesce(i.IsExcluded, 0) = 0 AND cd.ParsedSeriesKey IS NOT NULL AND cd.ParsedSeriesKey <> ''
+GROUP BY cd.ParsedSeriesKey
+HAVING sum(CASE WHEN i.SeriesId IS NULL THEN 0 ELSE 1 END) = 0")
+                .Select(p => p.Item2!)
+                .Where(k => !aliasMap.ContainsKey(k))
+                .OrderBy(k => k, StringComparer.Ordinal)
+                .ToList();
+            if (keys.Count == 0) return 0;
+            var next = hot.Scalar<long>("SELECT coalesce(max(Id), 0) FROM Series") + 1;
+            foreach (var key in keys)
+            {
+                hot.Upsert("Series", new { Id = next, CanonicalKey = TempKeyPrefix + next, ParsedKey = key, Name = key });
+                next++;
+            }
+            return keys.Count;
         }
 
         // ── phase 2: re-point ────────────────────────────────────────────────────────────────────────────
@@ -162,6 +205,22 @@ WHERE Id > $after AND Id <= $upto
   AND EXISTS (SELECT 1 FROM SeriesAlias a JOIN ComicDetail cd ON cd.ItemId = Item.Id WHERE a.ParsedKey = cd.ParsedSeriesKey)
   AND SeriesId IS NOT (
     SELECT a.SeriesId FROM SeriesAlias a JOIN ComicDetail cd ON cd.ItemId = Item.Id WHERE a.ParsedKey = cd.ParsedSeriesKey)",
+                ("$after", after), ("$upto", upto));
+
+            // A file on NO shelf whose key has no alias but is carried by items that DO sit on a shelf (a stranded
+            // key, see CreateSeriesForNewKeys) joins the shelf most of those items sit on — a new issue dropped into
+            // a run the identity pass placed by hand goes where its run is, not nowhere.
+            repointed += hot.Exec(@"
+UPDATE Item SET SeriesId = (
+    SELECT i2.SeriesId FROM ComicDetail cd JOIN ComicDetail cd2 ON cd2.ParsedSeriesKey = cd.ParsedSeriesKey
+    JOIN Item i2 ON i2.Id = cd2.ItemId
+    WHERE cd.ItemId = Item.Id AND i2.SeriesId IS NOT NULL AND coalesce(i2.IsExcluded, 0) = 0
+    GROUP BY i2.SeriesId ORDER BY count(*) DESC, i2.SeriesId LIMIT 1)
+WHERE Id > $after AND Id <= $upto AND SeriesId IS NULL
+  AND NOT EXISTS (SELECT 1 FROM SeriesAlias a JOIN ComicDetail cd ON cd.ItemId = Item.Id WHERE a.ParsedKey = cd.ParsedSeriesKey)
+  AND EXISTS (SELECT 1 FROM ComicDetail cd JOIN ComicDetail cd2 ON cd2.ParsedSeriesKey = cd.ParsedSeriesKey
+              JOIN Item i2 ON i2.Id = cd2.ItemId
+              WHERE cd.ItemId = Item.Id AND i2.SeriesId IS NOT NULL AND coalesce(i2.IsExcluded, 0) = 0)",
                 ("$after", after), ("$upto", upto));
             return upto;
         }
