@@ -73,6 +73,13 @@ LOCAL ComicVine rip), and the held trades' own judged spans in `CollectedEdition
     `books-curated-spans-import`. A book flagged `IsCollection=0` that now nests → `apply_read_iscollection.py`.
 18. Identity: `tools/undecided_sheet.py` → `next_batch.py --revisit-file` (R- batches; the counter now skips names
     already on disk) → readers (≤ 2 at a time, ~1,500 packet lines each) → `check_identity` → `wave_land.ps1`.
+18b. **The coverage gate — before ANY removal is reported lost.** `tools/removal_coverage.py --verdicts gone,contained?`
+    searches the WHOLE live library (not the new files) for collections that could hold each removed item — its
+    shelf, title tier, franchise, folder/parent folder, title stem, judged spans — and every candidate is READ
+    (`trade_probe.py`, the book's indicia / chapter covers via `pagegrab.py` + a contact sheet) before the verdict.
+    The first pass of this run skipped it and reported 72 lost files; 52 were held by collections already on the share
+    (corrected in `replaced.tsv`, the pre-fix copy kept as `replaced.before-coverage-fix.tsv`). `missing.tsv` lists only
+    what survives the gate.
 19. **Same title, different run.** A new run whose key matches an old run's title (Royals 2026 → Marvel's 2017 Royals,
     IDW Sonic trades → Archie's Sonic, Titan Conan → Marvel's Conan) lands on the old shelf. Four reads catch it,
     because none of them catches everything alone: `tools/year_drift.py` + `year_drift_packet.py` (the new book is outside
