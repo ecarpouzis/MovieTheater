@@ -73,6 +73,28 @@ LOCAL ComicVine rip), and the held trades' own judged spans in `CollectedEdition
     `books-curated-spans-import`. A book flagged `IsCollection=0` that now nests → `apply_read_iscollection.py`.
 18. Identity: `tools/undecided_sheet.py` → `next_batch.py --revisit-file` (R- batches; the counter now skips names
     already on disk) → readers (≤ 2 at a time, ~1,500 packet lines each) → `check_identity` → `wave_land.ps1`.
+19. **Same title, different run.** A new run whose key matches an old run's title (Royals 2026 → Marvel's 2017 Royals,
+    IDW Sonic trades → Archie's Sonic, Titan Conan → Marvel's Conan) lands on the old shelf. Four reads catch it,
+    because none of them catches everything alone: `tools/year_drift.py` + `year_drift_packet.py` (the new book is outside
+    the shelf's era), `tools/folder_drift.py` (its folder's older books sit on another shelf), `tools/publisher_drift.py`
+    (it sits under a publisher folder the shelf never used — the one that found the Sonic and Conan trades, whose
+    years fell inside the old run's span), `tools/number_clash.py` (it repeats an issue number the shelf already holds
+    from another era). Read every row: reissues, minis filed under a parent line and screenplays are NOT drift.
+    Fix = a split jsonl (`books-series-split --apply`; join an existing run by its LINKED key spelling), resolve,
+    `shelf_stability.py` (0 pre-existing items moved), `merge_refusals.py --from <snapshot of the pre-split backup>`
+    (the verb's own snapshot step runs only inside wave_land), an R- batch for the shelves it created, `wave_land.ps1`,
+    then `wave_fix.ps1` when check_decisions stops on origin lines (`retire_moved_lines` runs only there).
+    A new shelf whose cv= is a stored link on an EMPTY row needs `F <sid> merge-with=<row>`; a cv= another shelf holds
+    for the same comic is a merge-with too.
+20. Ranges for the rest: `tools/containment_priority.py` (which unranged collections sit on shelves with live issues) →
+    `tools/range_evidence.py` (stored links' collects clauses) → `tools/trade_probe.py` (the TRADE's own GCD/ComicVine
+    record found by title + volume number) and `tools/gcd_series_reprints.py` (a GCD collected series' reprint
+    roll-up) → a ranges TSV → `tools/apply_ranges.py --apply --spans-out` (a `u` becomes `S` in the shelf's decision
+    file; a shelf with no file gets a curated span line) → `books-curated-spans-import --apply` → `wave_fix.ps1`.
+    **Check the record's run against the shelf's run** before writing: Geiger Vol. 01 collects the 2021 series and sits
+    on the 2024 shelf; TMNT Color Classics trades collect the 2012 series, the shelf is the 2015 one; Classic G.I. Joe
+    reprints Marvel's 1982 run, the shelf is IDW's 2010 continuation — all refused. A record that disagrees with a
+    judged neighbour (Gunslinger Spawn Vol. 06 "#31-36" vs the judged Vol. 07 #31-35) is not written.
 
 ## Run of 2026-10-02 (numbers)
 
@@ -92,3 +114,13 @@ Containment: 172 owed lines (10 S, 162 u) + 15 for armed containers, 23 replaced
 Saga Vol. 11/12, 5 IsCollection flags; landing green (audit_containment 0, check_decisions 2,190/0, armed 0/0,
 overlap 0, audit_identity 0). Saga changed by design (floppies #49-54/#61-71 replaced by Vol. 09/11/12); WD identical.
 Identity: 969 new undecided shelves (2,624 files) → R-192..R-200.
+
+Same-title drift (step 19): split6 126 files (32 new runs + 6 joins of the real run), split7 the 2016 DC Space Ghost
+OGN off the Dynamite run, split8 56 files (Sonic/Conan/Flash Gordon trades and issues to their runs, Kai-Sei #1-5,
+Godzilla Library Book 04-06, The Beauty #1-2, four minis' stray issues, One Piece v106 colored, Star-Crossed and
+Silver off unrelated books), split9 The Harbinger (2021) #5-8 + Book 01 off the 1992 run; Spawn: Omega read as a
+collection. Identity waves 208 (R-202, 33 shelves, 2 merge-withs), 209 (R-203), 210 (R-204) — all gates green,
+0 pre-existing items moved, undecided 0. Ranges (step 20): 82 written (ranges-r1..r4: 38 into decision files, 44 as
+curated spans) from ComicInfo, ComicVine and GCD trade records; one wrong range (Geiger Vol. 01) caught and refused.
+New collections without a judged range: 692 → 611; on shelves with live numbered issues 253 → 172 (Spawn: Omega joined the count when read as a collection) — the remainder
+have no record that states their contents and stay refused until their pages are read.

@@ -1,0 +1,268 @@
+## Conventions for this batch (34 shown of 89 matched; 419 in LEDGER.md; 13 shelf/shelves: kind:collected-line ×6 · pub:dynamite ×6 · kind:trade-only ×6 · kind:new ×5 · folder:vn-year ×4 · pub:image ×2 · folder:sequel-subfolder ×2 · pub:valiant ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-229] (6 shelf/shelves) pub:disney pub:dynamite sig:collision
+- Same-run continuations split by a folder or a parsed-key token surface as cross-batch collisions → `merge-with`
+  after reading the partner (Disney Masters S21200→S5517, Red Sonja v5 S99463→S14482, Sheena S15521→S15518,
+  BSG Classic trade S2336 ↔ run S94559, Elvira #1 S6117 ↔ #2-5 S6116).
+[L-013] (13 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (13 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-030] (13 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-043] (13 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (13 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (13 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (13 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (13 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (13 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (13 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (13 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (13 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-151] (13 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-157] (13 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (13 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-160] (13 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-163] (13 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (13 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (13 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (13 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (13 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (13 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (13 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (13 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (13 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (13 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (13 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (13 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (13 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
+[L-135] (6 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-164] (6 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (6 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-244] (6 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+
++55 more matched entries not shown: L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-124, L-191, L-272, L-281, L-060, L-064, L-070, L-085, L-087, L-101, L-153, L-156, L-166, L-227, L-298, L-310, L-318, L-340, L-359, L-412, L-290, L-023, L-026, L-029, L-047, L-243, L-302, L-374, L-376, L-382, L-383, L-411, L-016, L-032, L-113, L-114, L-128, L-181, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S14480 Red Sonja  [tier B]   keys: Red Sonja | Red Sonja v1 (2005) | Red Sonja: She-Devil With A Sword | Red Sonja: She-Devil With a Sword  years 2005-2014  16 files / 16 collections
+   split run: "Red Sonja v1 (2005)" run={"cv": 18439, "gcd": 14205} (new shelf from P-082) — seed the S line from these ids, then verify them
+   folders: [13] Dynamite\Red Sonja\_Completed Series\Red Sonja v1 (2005) · [3] Dynamite\Red Sonja\Red Sonja - She-Devil with a Sword\Red Sonja - She-Devil With a Sword v1 (2006)
+   files:   [249852] COL Red Sonja - She-Devil With a Sword v01 (2006) (Digital) (F) (DR & Quinch-Empire).cbr (192pp)
+            [249853] COL Red Sonja - She-Devil With a Sword v02 - Arrowsmith (2007) (Digital) (F) (DR & Quinch-Empire).cbr (139pp)
+            [249854] COL Red Sonja - She-Devil With a Sword v03 - The Rise of Kulan Gath (2007) (Digital) (DR & Quinch-Empire).cbr (152pp)
+            [21433] COL Red Sonja Vol. 01 - She-Devil With a Sword (2006) (Digital) (DR & Quinch-Empire).cbr (192pp)
+            [21434] COL Red Sonja Vol. 02 - Arrowsmith (2007) (Digital) (DR & Quinch-Empire).cbr (139pp)
+            [21435] COL Red Sonja Vol. 03 - The Rise of Kulan Gath (2007) (Digital) (DR & Quinch-Empire).cbr (152pp)
+            [21436] COL Red Sonja Vol. 04 - Animals & More (2008) (Digital TPB) (TLK-EMPIRE-HD).cbr (156pp)
+            [21437] COL Red Sonja Vol. 05 - World on Fire (2008) (Digital) (DR & Quinch-Empire).cbr (137pp) | [21438] COL Red Sonja Vol. 06 - Death (2009) (Digital TPB) (TLK-EMPIRE-HD).cbr (139pp)
+            [21439] COL Red Sonja Vol. 07 - Born Again (2010) (Digital TPB) (TLK-EMPIRE-HD).cbr (171pp) | [21440] COL Red Sonja Vol. 08 - Blood Dynasty (2011) (Digital TPB) (TLK-EMPIRE-HD).cbr (231pp)
+            [21441] COL Red Sonja Vol. 09 - War Season (2011) (Digital TPB) (TLK-EMPIRE-HD).cbr (135pp)
+            [21442] COL Red Sonja Vol. 10 - Machines of Empire (2012) (Digital TPB) (TLK-EMPIRE-HD).cbr (158pp)
+            [21443] COL Red Sonja Vol. 11 - Echoes of War (2013) (Digital TPB) (TLK-EMPIRE-HD).cbr (160pp)
+            [21444] COL Red Sonja Vol. 12 - Swords Against The Jade Kingdom (2013) (Digital TPB) (TLK-EMPIRE-HD).cbr (152pp)
+            [21445] COL Red Sonja Vol. 13 - The Long March Home (2013) (Digital) (DR & Quinch-Empire).cbr (224pp)
+   ours:    ComicInfo Series: "Red Sonja: She-Devil With a Sword"x4, "Red Sonja: She-Devil With A Sword"x1; ComicInfo Publisher: "Dynamite Entertainment"x5
+   GCD says: [249852] gcd notes 1352441 (#1 of Red Sonja): ? [s14205] #0-6  |  gcd_reprint 1352441: s14205 Red Sonja (2005) #0-6 [45 stories]
+             [249853] gcd notes 1352442 (#2 of Red Sonja): ? [s14205] #8-12  |  gcd_reprint 1352442: s14205 Red Sonja (2005) #8-12 [31 stories]
+             [21433] gcd notes 1352441 (#1 of Red Sonja): ? [s14205] #0-6  |  gcd_reprint 1352441: s14205 Red Sonja (2005) #0-6 [45 stories]
+             [21434] gcd notes 1352442 (#2 of Red Sonja): ? [s14205] #8-12  |  gcd_reprint 1352442: s14205 Red Sonja (2005) #8-12 [31 stories]
+             [21435] gcd notes 1352443 (#3 of Red Sonja): ? [s14205] #13-18  |  gcd_reprint 1352443: s14205 Red Sonja (2005) #13-18 [35 stories]
+             [21436] gcd notes 1352444 (#4 of Red Sonja): ? [s14205] #19-24  |  gcd_reprint 1352444: s14205 Red Sonja (2005) #19 [1 story]
+             [21437] gcd notes 1352445 (#5 of Red Sonja): ? [s14205] #25-30  |  gcd_reprint 1352445: s14205 Red Sonja (2005) #26 [1 story]
+             [21438] gcd notes 1352446 (#6 of Red Sonja): ? [s14205] #30-34  |  gcd_reprint 1352446: s14205 Red Sonja (2005) #30 [1 story]
+             [21439] gcd notes 1352447 (#7 of Red Sonja): ? [s14205] #35-40  |  gcd_reprint 1352447: s14205 Red Sonja (2005) #37 [1 story]
+             [21440] gcd notes 1352448 (#8 of Red Sonja): ? [s14205] #41-49  |  gcd_reprint 1352448: s14205 Red Sonja (2005) #45 [1 story]
+             [21441] gcd notes 1352449 (#9 of Red Sonja): ? [s14205] #51-55  |  gcd_reprint 1352449: s14205 Red Sonja (2005) #51 [1 story]
+             [21442] gcd notes 1352450 (#10 of Red Sonja): ? [s14205] #56-60  |  gcd_reprint 1352450: s14205 Red Sonja (2005) #56 [1 story]
+             [21443] gcd notes 1352451 (#11 of Red Sonja): ? [s14205] #61-66  |  gcd_reprint 1352451: s14205 Red Sonja (2005) #61 [1 story]
+             [21444] gcd notes 1352452 (#12 of Red Sonja): ? [s14205] #67-72  |  gcd_reprint 1352452: s14205 Red Sonja (2005) #67 [1 story]
+             [21445] gcd notes 1352453 (#13 of Red Sonja): ? [s14205] #72-80  |  gcd_reprint 1352453: s14205 Red Sonja (2005) #75 [1 story]
+   CV linked:      vol 18439 "Red Sonja" 2005 Dynamite Entertainment ? issues; cached #0-80 (81); yearΔ 0; ratio 0/?; no judged range
+   CV candidates:  171780 "Red Sonja: She-Devil with a Sword" 2026 Dynamite Entertainment 1 s65 · 39671 "Red Sonja: She-Devil with a Sword" 2006 Dynamite Entertainment 13 s50 · 130999 "Shanna, The She-Devil" 2005 Marvel 1 issue 807667 s43 · 170823 "Red Sonja: Death and the Devil" ? Dynamite Entertainment 1 s41 · 31076 "Red Sonja: She-Devil With A Sword Omnibus" 2010 Dynamite Entertainment 5 s34 · 128008 "Red Sonja: Birth of the She-Devil" 2020 Dynamite Entertainment 1 issue 768647 s17   (v1 search)
+   CV local rip:   (= linked) · 42868 "Red Sonja" 2008 Panini Verlag 9 · 65387 "Red Sonja" 2013 Dynamite Entertainment 21 · 87337 "Red Sonja" 2016 Dynamite Entertainment 6 · 96671 "Red Sonja" 2016 Dynamite Entertainment 26 · 116986 "Red Sonja" 2019 Dynamite Entertainment 28   (rip lookup)
+   GCD dump:       14205 "Red Sonja" 2005-2013 Dynamite Entertainment [] 81 · 89044 "Red Sonja" 2006-2014 Dynamite Entertainment [] 13 · 75693 "Red Sonja" 2007-2010 Dynamite Entertainment [] 8 · 52852 "Red Sonja" [de] 2008-2012 Panini Deutschland [] 9 · 101502 "Red Sonja" [de] 2008-2010 Panini Deutschland [] 5 · 42469 "Red Sonja" [nl] 2010-2011 Dark Dragon Books [] 7   (dump lookup)
+
+== S104900 Red Sonja - She-Devil with a Sword  [tier D]   keys: Red Sonja - She-Devil with a Sword  years 2026-2026  5 files / 0 collections
+   split: the KEPT half of the P-082 split — moved out -> S14480 "Red Sonja v1 (2005)"; re-identify what stayed
+   folders: [5] Dynamite\Red Sonja\Red Sonja - She-Devil with a Sword\Red Sonja - She-Devil with a Sword v2 (2026)
+   files:   [249855] Red Sonja - She-Devil with a Sword 001 (2026) (5 covers) (digital) (The Seeker-Empire).cbr (32pp)
+            [249856] Red Sonja - She-Devil with a Sword 002 (2026) (5 covers) (digital) (The Seeker-Empire).cbr (31pp)
+            [249857] Red Sonja - She-Devil with a Sword 003 (2026) (5 covers) (digital) (The Seeker-Empire).cbr (31pp)
+            [249858] Red Sonja - She-Devil with a Sword 004 (2026) (5 covers) (digital) (The Seeker-Empire).cbr (29pp)
+            [249859] Red Sonja - She-Devil with a Sword 005 (2026) (5 covers) (digital) (The Seeker-Empire).cbr (30pp)
+   ours:    ladder 1-5
+   CV local rip:   39671 "Red Sonja: She-Devil with a Sword" 2006 Dynamite Entertainment 13   (rip lookup)
+   GCD dump:       236770 "Red Sonja: She-Devil with a Sword" 2026-? Dynamite Entertainment [] 1 · 50456 "Red Sonja: She-Devil with a Sword" [el-gr] 2010-2010 Helm Εκδόσεις [] 1   (dump lookup)
+
+== S104272 10 Thundercats X Silverhawks - Thunderhawks  [tier D]   keys: 10 Thundercats X Silverhawks - Thunderhawks  years 2026-2026  5 files / 0 collections
+   split run: "10 Thundercats X Silverhawks - Thunderhawks" run=- (new shelf from P-082) — seed the S line from these ids, then verify them
+   folders: [5] Dynamite\Thundercats\Thundercats X Silverhawks (2026)
+   files:   [248901] 04 Thundercats X Silverhawks - Thunderhawks 001 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (34pp)
+            [248904] 07 Thundercats X Silverhawks - Thunderhawks 002 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (25pp)
+            [248907] 10 Thundercats X Silverhawks - Thunderhawks 003 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (25pp)
+            [248910] 13 Thundercats X Silverhawks - Thunderhawks 004 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (30pp)
+            [248912] 16 Thundercats X Silverhawks - Thunderhawks 005 (2026) (Digital) (Shan-Empire).cbz (29pp)
+   ours:    ladder 3-5, 7; 1 number(s) name more than one file: 4
+
+== S104275 12 Mumm-Ra the Ever-Living  [tier D]   keys: 12 Mumm-Ra the Ever-Living  years 2026-2026  5 files / 0 collections
+   split run: "12 Mumm-Ra the Ever-Living" run=- (new shelf from P-082) — seed the S line from these ids, then verify them
+   folders: [5] Dynamite\Thundercats\Thundercats X Silverhawks (2026)
+   files:   [248900] 03 Mumm-Ra the Ever-Living 001 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (34pp) | [248903] 06 Mumm-Ra the Ever-Living 002 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (29pp)
+            [248906] 09 Mumm-Ra the Ever-Living 003 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (29pp)
+            [248909] 12 Mumm-Ra the Ever-Living 004 (2026) (5 Covers) (Digital) (SD) (Shan-Empire).cbz (29pp)
+            [248911] 15 Mumm-Ra the Ever-Living 005 (2026) (4 Covers) (Digital) (F) (Shan-Empire).cbz (28pp)
+   ours:    ladder 3-6, 9
+
+== S104274 11 ThunderCats x SilverHawks  [tier D]   keys: 11 ThunderCats x SilverHawks  years 2026-2026  4 files / 0 collections
+   split run: "11 ThunderCats x SilverHawks" run=- (new shelf from P-082) — seed the S line from these ids, then verify them
+   folders: [4] Dynamite\Thundercats\Thundercats X Silverhawks (2026)
+   files:   [248899] 02 ThunderCats X Silverhawks 001 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (42pp) | [248902] 05 ThunderCats x SilverHawks 002 (2026) (Digital) (Shan-Empire).cbz (25pp)
+            [248905] 08 ThunderCats x SilverHawks 003 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (30pp)
+            [248908] 11 ThunderCats x SilverHawks 004 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (29pp)
+   ours:    ladder 2, 4-5, 8
+
+== S105200 Thundercats X Silverhawks  [tier D]   keys: Thundercats X Silverhawks  years 2026-2026  1 files / 0 collections
+   split: the KEPT half of the P-082 split — moved out -> S104272 "10 Thundercats X Silverhawks - Thunderhawks"; S104275 "12 Mumm-Ra the Ever-Living"; S104274 "11 ThunderCats x SilverHawks"; re-identify what stayed
+   folders: [1] Dynamite\Thundercats\Thundercats X Silverhawks (2026)
+   files:   [248898] 01 Thundercats X Silverhawks - Road To War 001 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (41pp)
+   ours:    ladder 1
+   GCD dump:       234887 "ThunderCats x SilverHawks" 2026-? Dynamite Entertainment [] 2   (dump lookup)
+
+== S105387 Geeksville (1999)  [tier D]   keys: Geeksville (1999)  years 1999-1999  3 files / 0 collections
+   split run: "Geeksville (1999)" run={"cv": 35521, "gcd": 97268} (new shelf from P-082) — seed the S line from these ids, then verify them
+   folders: [3] Image\3 Geels + Geeksville\02 Geeksville v1 (1999) (3 Finger Prints)
+   files:   [249242] Geeksville 001 (1999) (3 Finger Prints) (c2c) (Ignatz-DCP).cbz (37pp) | [249243] Geeksville 002 (1999) (3 Finger Prints) (c2c) (YZ1).cbr (37pp)
+            [249244] Geeksville 003 (1999) (3 Finger Prints) (c2c) (F) (Ignatz-DCP).cbz (45pp)
+   ours:    ladder 1-3
+   CV local rip:   35521 "Geeksville" 1999 3 Finger Prints 3 (via our own name without the filing suffix "Geeksville") · 35522 "Geeksville" 2000 Image 7 (via our own name without the filing suffix "Geeksville")   (rip lookup)
+   GCD dump:       97268 "Geeksville" 1999-1999 3 Finger Prints [] 3 (via our own name without the filing suffix "Geeksville") · 46230 "Geeksville" 2000-2001 Image [] 7 (via our own name without the filing suffix "Geeksville")   (dump lookup)
+
+== S104580 Geeksville  [tier D]   keys: Geeksville  years 2000-2000  5 files / 5 collections
+   split: the KEPT half of the P-082 split — moved out -> S105387 "Geeksville (1999)"; re-identify what stayed
+   folders: [5] Image\3 Geels + Geeksville\03 Geeksville v2 (2000) (Image)
+   files:   [249245] COL Geeksville v2 000 (2000) (Image) (YZ1).cbr (37pp) | [249246] COL Geeksville v2 001 (2000) (c2c) [YZ1].cbr (36pp) | [249247] COL Geeksville v2 002 (2000) (c2c) [YZ1].cbr (36pp)
+            [249248] COL Geeksville v2 003 (2000) (c2c) (Pyramid).cbz (52pp) | [249249] COL Geeksville v2 004 (2000) (c2c) (Pyramid).cbz (36pp)
+   CV local rip:   35522 "Geeksville" 2000 Image 7 · 35521 "Geeksville" 1999 3 Finger Prints 3   (rip lookup)
+   GCD dump:       46230 "Geeksville" 2000-2001 Image [] 7 · 97268 "Geeksville" 1999-1999 3 Finger Prints [] 3   (dump lookup)
+
+== S104707 Knights of the Dinner Table - Everknights  [tier D]   keys: Knights of the Dinner Table - Everknights  years 2002-2004  19 files / 0 collections
+   split run: "Knights of the Dinner Table - Everknights" run=- (new shelf from P-082) — seed the S line from these ids, then verify them
+   folders: [19] Indies\Knights of the Dinner Table (1994)\Knights of the Dinner Table - Everknights (2002)
+   files:   [249380] Knights of the Dinner Table - Everknights -01 (2002) (digital) (Lusiphur-DCP).cbz (28pp)
+            [249381] Knights of the Dinner Table - Everknights -02 (2002) (digital) (Lusiphur-DCP).cbz (28pp)
+            [249382] Knights of the Dinner Table - Everknights -03 (2002) (digital) (Lusiphur-DCP).cbz (28pp)
+            [249383] Knights of the Dinner Table - Everknights -04 (2002) (digital) (Lusiphur-DCP).cbz (28pp)
+            [249384] Knights of the Dinner Table - Everknights -05 (2002) (digital) (Lusiphur-DCP).cbz (28pp)
+            Knights of the Dinner Table - Everknights 01 (2002) (digital) (Lusiphur-DCP).cbz … Knights of the Dinner Table - Everknights 14 (2004) (digital) (Lusiphur-DCP).cbz  (14 files, pp 28-32)
+   ours:    ladder 1-14; 5 number(s) name more than one file: 1, 2, 3, 4, 5
+   GCD dump:       18405 "Knights of the Dinner Table Everknights" 2002-2004 Kenzer and Company [] 14   (dump lookup)
+
+== S105390 Valiant Masters H.A.R.D. Corps (2014)  [tier D]   keys: Valiant Masters H.A.R.D. Corps (2014)  years 2014-2014  1 files / 1 collections
+   split run: "Valiant Masters H.A.R.D. Corps (2014)" run={"cv": 74114, "gcd": 114661} (new shelf from P-082) — seed the S line from these ids, then verify them
+   folders: [1] Valiant\Harbinger\Valiant Masters - Harbinger (2015)
+   files:   [249789] COL 02 Valiant Masters H.A.R.D. Corps v01 - Search and Destroy (2014) (digital) (Son of Ultron-Empire).cbr (214pp)
+   GCD says: [249789] gcd_reprint 1712334: s4491 The H.A.R.D. Corps (1992) #1-6 [13 stories] · s4492 Harbinger (1992) #10-11 [4 stories]
+   GCD dump:       114661 "Valiant Masters H.A.R.D. Corps" 2014-? Valiant Entertainment [] 1 (via our own name without the filing suffix "Valiant Masters H.A.R.D. Corps")   (dump lookup)
+
+== S105244 Valiant Masters - Harbinger  [tier D]   keys: Valiant Masters - Harbinger  years 2015-2015  1 files / 1 collections
+   split: the KEPT half of the P-082 split — moved out -> S105390 "Valiant Masters H.A.R.D. Corps (2014)"; re-identify what stayed
+   folders: [1] Valiant\Harbinger\Valiant Masters - Harbinger (2015)
+   files:   [249788] COL 01 Valiant Masters Harbinger v01 - Children of the Eighth Day (2015) (Digital) (F) (Zone-Empire).cbr (225pp)
+   GCD says: [249788] gcd_reprint 1712335: s4492 Harbinger (1992) #0-7 [17 stories]
+   GCD dump:       114630 "Valiant Masters Harbinger" 2015-? Valiant Entertainment [] 1   (dump lookup)
+
+== S105389 The Marvel Encyclopedia (2006)  [tier D]   keys: The Marvel Encyclopedia (2006)  years 2006-2009  2 files / 2 collections
+   split run: "The Marvel Encyclopedia (2006)" run={"cv": 33436} (new shelf from P-082) — seed the S line from these ids, then verify them
+   folders: [2] _Books on Comics
+   files:   [246972] COL The Marvel Comics Encyclopedia Vol. 01 (2006).cbr (345pp) | [246973] COL The Marvel Comics Encyclopedia Vol. 02 (2009) (bZc-DCP).cbr (363pp)
+   CV local rip:   18366 "Marvel Encyclopedia" 2002 Marvel 7 (via our own name without the filing suffix "The Marvel Encyclopedia")   (rip lookup)
+   GCD dump:       16023 "Marvel Encyclopedia" 2002-2005 Marvel [] 6 (via our own name without the filing suffix "The Marvel Encyclopedia")   (dump lookup)
+
+== S105123 The Marvel Comics Encyclopedia  [tier D]   keys: The Marvel Comics Encyclopedia  years 2003-2004  4 files / 4 collections
+   split: the KEPT half of the P-082 split — moved out -> S105389 "The Marvel Encyclopedia (2006)"; re-identify what stayed
+   folders: [4] _Books on Comics
+   files:   [246974] COL The Marvel Comics Encyclopedia Vol. 03 - Hulk.cbr (201pp) | [246975] COL The Marvel Comics Encyclopedia Vol. 04 - Spider-Man (2003).cbr (242pp)
+            [246976] COL The Marvel Comics Encyclopedia Vol. 05 - Marvel Knights (2004).cbr (243pp)
+            [246977] COL The Marvel Comics Encyclopedia Vol. 06 - Fantastic Four (c2c) (Mal32 & Aquila-DCP).cbr (243pp)

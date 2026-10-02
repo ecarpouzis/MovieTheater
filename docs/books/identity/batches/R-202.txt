@@ -1,0 +1,346 @@
+## Conventions for this batch (31 shown of 114 matched; 419 in LEDGER.md; 32 shelf/shelves: kind:new ×27 · folder:vn-year ×5 · pub:dynamite ×4 · pub:dark-horse ×4 · pub:image ×4 · kind:collected-line ×4 · kind:trade-only ×4 · kind:manga ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-013] (32 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (32 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-030] (32 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-043] (32 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (32 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (32 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (32 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (32 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (32 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (32 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (32 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (32 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-151] (32 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-157] (32 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (32 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-160] (32 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-163] (32 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (32 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (32 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (32 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (32 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (32 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (32 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (32 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (32 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (32 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (32 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (32 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (32 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
+[L-087] (7 shelf/shelves) pub:cinebook pub:idw pub:image sig:collision
+- The Cinebook shape (one GCD series, a CV volume per book) recurs inside IDW/Image (Godzilla Rivals, Obscure
+  Cities, MLP Annual, Cyberforce Origins, Hinges, Image+, Bloodstrike, X-Files specials): siblings take
+  `merge-with`; where CV has no series-level volume the S line is `cv=-`.
+[L-229] (4 shelf/shelves) pub:disney pub:dynamite sig:collision
+- Same-run continuations split by a folder or a parsed-key token surface as cross-batch collisions → `merge-with`
+  after reading the partner (Disney Masters S21200→S5517, Red Sonja v5 S99463→S14482, Sheena S15521→S15518,
+  BSG Classic trade S2336 ↔ run S94559, Elvira #1 S6117 ↔ #2-5 S6116).
+
++83 more matched entries not shown: L-321, L-323, L-124, L-191, L-272, L-281, L-289, L-378, L-064, L-085, L-101, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-291, L-309, L-310, L-314, L-016, L-032, L-113, L-114, L-098, L-100, L-152, L-158, L-168, L-227, L-231, L-274, L-276, L-277, L-278, L-280, L-283, L-284, L-288, L-293, L-304, L-344, L-359, L-009, L-023, L-024, L-046, L-049, L-051, L-055, L-056, L-068, L-079, L-081, L-090, L-102, L-120, L-139, L-140, L-148, L-156, L-228, L-243, L-265, L-271, L-335, L-339, L-340, L-361, L-362, L-374, L-290 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S105392 Arcadia (2025)  [tier D]   keys: Arcadia (2025)  years 2025-2026  5 files / 0 collections
+   folders: [5] Ignition\Arcadia (2025)
+   files:   [247320] Arcadia 001 (2025) (Digital) (DR & Quinch-Empire).cbr (34pp) | [247321] Arcadia 002 (2026) (Digital) (DR & Quinch-Empire).cbr (36pp)
+            [247322] Arcadia 003 (2026) (Digital) (DR & Quinch-Empire).cbr (36pp) | [247323] Arcadia 004 (2026) (Digital) (DR & Quinch-Empire).cbr (36pp)
+            [247324] Arcadia 005 (2026) (Digital) (DR & Quinch-Empire).cbr (34pp)
+   ours:    ladder 1-5
+   CV local rip:   169560 "Arcadia" 2025 Ignition Press 1 issue 1150192 (via our own name without the filing suffix "Arcadia") · 90094 "Arcadia" 2016 Boom! Studios 1 issue 528564 (via our own name without the filing suffix "Arcadia") · 81844 "Arcadia" 2015 Boom! Studios 8 (via our own name without the filing suffix "Arcadia") · 75772 "Arcadia" 2014 Webster Creative 1 issue 459877 (via our own name without the filing suffix "Arcadia")   (rip lookup)
+   GCD dump:       89152 "Arcadia" 2015-2016 Boom! Studios [] 8 (via our own name without the filing suffix "Arcadia") · 65485 "Arcadia" [es] 1996-? Planeta DeAgostini [] 1 (via our own name without the filing suffix "Arcadia")   (dump lookup)
+
+== S105393 Archie v3 (2026)  [tier D]   keys: Archie v3 (2026)  years 2026-2026  1 files / 0 collections
+   folders: [1] Archie\04 Archie v3 (2026) (Oni)
+   files:   [247051] Archie 001 (2026) (Forsythe-DCP).cbr (43pp)
+   ours:    ladder 1
+   CV local rip:   88725 "Archie" 2016 Archie Comics 6 (via our own name without the filing suffix "Archie") · 83121 "Archie" 2015 Archie Comics 47 (via our own name without the filing suffix "Archie") · 55522 "Archie" 1968 Jeunesse et Vacances 54 (via our own name without the filing suffix "Archie") · 9628 "Archie" 1960 Archie Comics 553 (via our own name without the filing suffix "Archie")   (rip lookup)
+   GCD dump:       98511 "Archie" 2016-2018 Archie [] 6 (via our own name without the filing suffix "Archie") · 90653 "Archie" 2015-2020 Archie [] 47 (via our own name without the filing suffix "Archie") · 47842 "Archie" [es-mx] 2006-? EditoPoster / Vanguardia Editores [] 40 (via our own name without the filing suffix "Archie") · 21900 "Archie" [no] 1982-1995 Semic [] 153 (via our own name without the filing suffix "Archie") · 120054 "Archie" [en-ca] 1978-1978 Editions Héritage [] 1 (via our own name without the filing suffix "Archie") · 107566 "Archie" [de] 1976-? Egmont Ehapa [] 1 (via our own name without the filing suffix "Archie")   (dump lookup)
+
+== S105394 Ben 10 (2026)  [tier D]   keys: Ben 10 (2026)  years 2026-2026  5 files / 0 collections
+   folders: [5] Dynamite\Ben 10 (2026)
+   files:   [247183] Ben 10 001 (2026) (Series) (Dynamite Entertainment) (Digital) (LeDuch).cbz (30pp) | [247184] Ben 10 002 (2026) (Series) (Dynamite Entertainment) (Digital) (LeDuch-DCP).cbz (30pp)
+            [247185] Ben 10 003 (2026) (Series) (Dynamite Entertainment) (Digital) (LeDuch-DCP).cbz (30pp) | [247186] Ben 10 004 (2026) (digital) (Pyrate-DCP).cbz (30pp)
+            [247187] Ben 10 005 (2026) (Series) (Dynamite Entertainment) (Digital) (LeDuch-DCP).cbz (30pp)
+   ours:    ladder 1-5; ComicInfo Series: "Ben 10"x4; ComicInfo Volume: "2026"x4; ComicInfo Publisher: "Dynamite Entertainment"x4; ComicInfo Web: "1177767"x1
+   CV local rip:   73897 "Ben 10" 2014 IDW Publishing 1 issue 452864 (via our own name without the filing suffix "Ben 10") · 69352 "Ben 10" 2013 IDW Publishing 4 (via our own name without the filing suffix "Ben 10") · 95838 "Ben 10" 2010 El País 10 (via our own name without the filing suffix "Ben 10")   (rip lookup)
+   GCD dump:       236768 "Ben 10" 2026-? Dynamite Entertainment [] 1 (via our own name without the filing suffix "Ben 10") · 218548 "Ben 10" 2014-2014 IDW [] 1 (via our own name without the filing suffix "Ben 10") · 77773 "Ben 10" 2013-2014 IDW [] 4 (via our own name without the filing suffix "Ben 10") · 117899 "Ben 10 Комикси" [bg] 2010-2010 Егмонт България [Egmont Bulgaria] [] 2 (via our own name without the filing suffix "Ben 10") · 118514 "Ben 10" [bg] 2010-2012 Егмонт България [Egmont Bulgaria] [] 28 (via our own name without the filing suffix "Ben 10") · 221493 "Ben 10" [hu] 2010-2010 Egmont Hungary [] 2 (via our own name without the filing suffix "Ben 10")   (dump lookup)
+
+== S105395 Black Star (2026)  [tier D]   keys: Black Star (2026)  years 2026-2026  3 files / 0 collections
+   folders: [3] Titan Comics\Black Star (2026)
+   files:   [248392] Black Star 001 (2026) (Digital) (Mephisto-Empire).cbr (31pp) | [248393] Black Star 002 (2026) (Digital) (Mephisto-Empire).cbr (33pp)
+            [248394] Black Star 003 (2026) (Digital) (Mephisto-Empire).cbr (32pp)
+   ours:    ladder 1-3
+   CV local rip:   162849 "Black Star" 2025 Alien Books 1 issue 1099468 (via our own name without the filing suffix "Black Star") · 135957 "Black Star" 2021 Harry N. Abrams 1 issue 847970 (via our own name without the filing suffix "Black Star")   (rip lookup)
+   GCD dump:       222090 "Black Star" 2025-2025 Alien Books [] 1 (via our own name without the filing suffix "Black Star") · 207216 "Black Star" [nl] 2023-? Arboris [] 1 (via our own name without the filing suffix "Black Star") · 207217 "Black Star" [nl] 2023-? Arboris [] 1 (via our own name without the filing suffix "Black Star") · 189811 "Black Star" 2022-2022 Harry N. Abrams [] 1 (via our own name without the filing suffix "Black Star") · 172404 "Black Star" 2021-2021 Harry N. Abrams [] 1 (via our own name without the filing suffix "Black Star")   (dump lookup)
+
+== S105397 Concrete: Stars Over Sand (2026)  [tier D]   keys: Concrete: Stars Over Sand (2026)  years 2026-2026  1 files / 0 collections
+   folders: [1] Dark Horse\Concrete (1986)\Concrete - Stars Over Sand (2026)
+   files:   [248765] Concrete - Stars Over Sand 03 (of 05) (2026) (digital) (Son of Ultron-Empire).cbr (26pp)
+   ours:    ladder 3; ComicInfo Series: "Concrete"x1; ComicInfo Publisher: "Dark Horse Comics"x1
+
+== S105398 Dead Man (Hideshi Hino)  [tier D]   keys: Dead Man (Hideshi Hino)  years 1988-1988  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [246373] Dead Man (1988) (Hideshi Hino) (tunafan).cbr (187pp)
+
+== S105399 Death Vigil (2026)  [tier D]   keys: Death Vigil (2026)  years 2026-2026  2 files / 0 collections
+   folders: [2] Image\Death Vigil\Death Vigil (2026)
+   files:   [249183] Death Vigil 001 (2026) (digital) (Son of Ultron-Empire).cbr (59pp) | [249184] Death Vigil 002 (2026) (digital) (Son of Ultron-Empire).cbr (35pp)
+   ours:    ladder 1-2
+   CV local rip:   85283 "Death Vigil" 2015 Image 1 issue 502897 (via our own name without the filing suffix "Death Vigil") · 75560 "Death Vigil" 2014 Image 8 (via our own name without the filing suffix "Death Vigil")   (rip lookup)
+   GCD dump:       224196 "Death Vigil" 2015-2015 Image [] 1 (via our own name without the filing suffix "Death Vigil") · 81675 "Death Vigil" 2014-2015 Image [] 8 (via our own name without the filing suffix "Death Vigil")   (dump lookup)
+
+== S105401 Godzilla (Kai-Sei Era) (2025)  [tier D]   keys: Godzilla (Kai-Sei Era) (2025)  years 2026-2026  3 files / 0 collections
+   folders: [3] IDW\Godzilla\Godzilla (Kai-Sei Era)\Godzilla (Kai-Sei Era) (2025)
+   files:   [249905] Godzilla (Kai-Sei Era) 006 (2026) (digital) (Knight Ripper-Empire).cbr (27pp) | [249906] Godzilla (Kai-Sei Era) 007 (2026) (digital) (Knight Ripper-Empire).cbr (29pp)
+            [249907] Godzilla (Kai-Sei Era) 008 (2026) (digital) (Knight Ripper-Empire).cbr (30pp)
+   ours:    ladder 6-8
+   CV local rip:   165718 "Godzilla: Kai-Sei Era" 2025 IDW Publishing 4 (via our own name without the filing suffix "Godzilla (Kai-Sei Era)")   (rip lookup)
+   GCD dump:       226226 "Godzilla (Kai-Sei Era)" 2025-? IDW [] 10 (via our own name without the filing suffix "Godzilla (Kai-Sei Era)")   (dump lookup)
+
+== S105402 Grendel: Devil's Crucible - Sedition (2026)  [tier D]   keys: Grendel: Devil's Crucible - Sedition (2026)  years 2026-2026  1 files / 0 collections
+   folders: [1] Dark Horse\Grendel (1983)\Grendel - Devil's Crucible - Sedition (2026)
+   files:   [248762] Grendel - Devil's Crucible - Sedition 02 (of 04) (2026) (digial) (Son of Ultron-Empire).cbr (26pp)
+   ours:    ladder 2; ComicInfo Series: "Grendel"x1; ComicInfo Publisher: "Dark Horse Comics"x1
+
+== S105403 He-Man and the Masters of the Universe (2026)  [tier D]   keys: He-Man and the Masters of the Universe (2026)  years 2026-2026  3 files / 1 collections
+   folders: [3] Dark Horse\Masters of the Universe\He-Man and the Masters of the Universe (2026)
+   files:   [248770] He-Man and the Masters of the Universe 005 (2026) (digital) (Son of Ultron-Empire).cbr (26pp)
+            [248771] He-Man and the Masters of the Universe 006 (2026) (digital) (Son of Ultron-Empire).cbr (26pp)
+            [248772] COL He-Man and the Masters of the Universe Vol. 01 - The Sword of Flaws (2026) (digital) (Son of Ultron-Empire).cbr (112pp)
+   ours:    ladder 5-6; ComicInfo Series: "He-Man and the Masters of the Universe"x1; ComicInfo Publisher: "Dark Horse Comics"x1
+   CV local rip:   130860 "He-Man and the Masters of the Universe" 2020 DC Comics 1 issue 806727 (via our own name without the filing suffix "He-Man and the Masters of the Universe") · 59980 "He-Man and the Masters of the Universe" 2013 DC Comics 19 (via our own name without the filing suffix "He-Man and the Masters of the Universe") · 65194 "He-Man and the Masters of the Universe" 2013 DC Comics 2 (via our own name without the filing suffix "He-Man and the Masters of the Universe") · 50154 "He-Man and the Masters of the Universe" 2012 DC Comics 6 (via our own name without the filing suffix "He-Man and the Masters of the Universe") · 150305 "He-Man and the Masters of the Universe" 2011 DC Comics 8 (via our own name without the filing suffix "He-Man and the Masters of the Universe")   (rip lookup)
+   GCD dump:       227931 "He-Man and the Masters of the Universe" 2025-? Dark Horse [] 5 (via our own name without the filing suffix "He-Man and the Masters of the Universe") · 73684 "He-Man and the Masters of the Universe" 2013-2015 DC [] 19 (via our own name without the filing suffix "He-Man and the Masters of the Universe") · 90301 "He-Man and the Masters of the Universe" 2013-2015 DC [] 5 (via our own name without the filing suffix "He-Man and the Masters of the Universe") · 66586 "He-Man and the Masters of the Universe" 2012-2013 DC [] 6 (via our own name without the filing suffix "He-Man and the Masters of the Universe") · 172713 "He-Man and the Masters of the Universe" 2012-2016 DC [] 5 (via our own name without the filing suffix "He-Man and the Masters of the Universe") · 172714 "He-Man and the Masters of the Universe" 2011-2012 Dark Horse [] 3 (via our own name without the filing suffix "He-Man and the Masters of the Universe")   (dump lookup)
+
+== S105404 Hellraiser Facsimile Edition (2026)  [tier D]   keys: Hellraiser Facsimile Edition (2026)  years 2026-2026  1 files / 0 collections
+   folders: [1] Boom Studios\Clive Barker\Clive Barker's Hellraiser (2011)
+   files:   [246679] Hellraiser 001 (Facsimile Edition) (2026) (Digital Rip) (Hourman-DCP).cbr (44pp)
+   ours:    ladder 1
+
+== S105405 King Tank Girl  [tier D]   keys: King Tank Girl  years 2022-2022  1 files / 0 collections
+   folders: [1] Titan Comics\Tank Girl
+   files:   [246590] King Tank Girl (2022) (Digital) (XRA-Empire).cbz (132pp)
+   ours:    ComicInfo Series: "Tank Girl"x1; ComicInfo Publisher: "Titan Comics"x1
+   CV local rip:   151531 "King Tank Girl" 2022 Titan Comics 1 issue 996085 · 131364 "King Tank Girl" 2020 Exploding Albatross Funnybooks 5   (rip lookup)
+   GCD dump:       172431 "King Tank Girl" 2020-? Albatross [] 5 · 209101 "King Tank Girl" [de] 2024-2024 Kult Comics [] 1   (dump lookup)
+
+== S105406 Lady Death: Blasphemy Anthem  [tier D]   keys: Lady Death: Blasphemy Anthem  years 2019-2019  1 files / 0 collections
+   folders: [1] Coffin Comics\Lady Death
+   files:   [247095] Lady Death (Chapter 10) - Blasphemy Anthem 001 (2019) (Digital) (DR & Quinch-Empire).cbr (56pp)
+   ours:    ladder 1; ComicInfo Series: "Lady Death"x1; ComicInfo Publisher: "Coffin Comics"x1
+   CV local rip:   122868 "Lady Death: Blasphemy Anthem" 2019 Coffin Comics 1 issue 727776   (rip lookup)
+   GCD dump:       155966 "Lady Death: Blasphemy Anthem" 2019-? Coffin Comics [] 1 · 167432 "Lady Death: Blasphemy Anthem" 2020-? Coffin Comics [] 2   (dump lookup)
+
+== S105407 Lady Death: Malevolent Decimation  [tier D]   keys: Lady Death: Malevolent Decimation  years 2020-2020  1 files / 0 collections
+   folders: [1] Coffin Comics\Lady Death
+   files:   [247096] Lady Death (Chapter 11) - Malevolent Decimation 001 (2020) (Digital) (DR & Quinch-Empire).cbr (47pp)
+   ours:    ladder 1; ComicInfo Series: "Lady Death"x1; ComicInfo Publisher: "Coffin Comics"x1
+   CV local rip:   127689 "Lady Death: Malevolent Decimation" 2020 Coffin Comics 1 issue 766897 · 135108 "Lady Death: Malevolent Decimation" 2021 Coffin Comics 2   (rip lookup)
+   GCD dump:       171399 "Lady Death: Malevolent Decimation" 2021-? Coffin Comics [] 2   (dump lookup)
+
+== S105408 Lady Death: Scorched Earth  [tier D]   keys: Lady Death: Scorched Earth  years 2019-2019  1 files / 0 collections
+   folders: [1] Coffin Comics\Lady Death
+   files:   [247094] Lady Death (Chapter 09) - Scorched Earth 001 (2019) (Digital) (DR & Quinch-Empire).cbr (49pp)
+   ours:    ladder 1; ComicInfo Series: "Lady Death"x1; ComicInfo Publisher: "Coffin Comics"x1
+   CV local rip:   123060 "Lady Death: Scorched Earth" 2019 Coffin Comics 1 issue 728762 · 125330 "Lady Death: Scorched Earth" 2020 Coffin Comics 2   (rip lookup)
+   GCD dump:       147427 "Lady Death: Scorched Earth" 2019-? Coffin Comics [] 2   (dump lookup)
+
+== S105409 Lady Death: Treacherous Infamy  [tier D]   keys: Lady Death: Treacherous Infamy  years 2020-2020  1 files / 0 collections
+   folders: [1] Coffin Comics\Lady Death
+   files:   [247097] Lady Death (Chapter 12) - Treacherous Infamy 001 (2020) (Digital) (DR & Quinch-Empire).cbr (48pp)
+   ours:    ladder 1; ComicInfo Series: "Lady Death"x1; ComicInfo Publisher: "Coffin Comics"x1
+   CV local rip:   137956 "Lady Death: Treacherous Infamy" 2021 Coffin Comics 2 · 138481 "Lady Death: Treacherous Infamy" 2021 Coffin Comics 1 issue 881539   (rip lookup)
+   GCD dump:       174389 "Lady Death: Treacherous Infamy" 2021-? Coffin Comics [] 2   (dump lookup)
+
+== S105411 Metal Hurlant (2025)  [tier D]   keys: Metal Hurlant (2025)  years 2025-2025  3 files / 1 collections
+   folders: [3] Heavy Metal\Metal Hurlant (2025)
+   files:   [247285] Metal Hurlant 001 - Old Dreams, Young Visions (2025) (digital) (DrVink-HD-DCP).cbz (274pp)
+            [247286] Metal Hurlant 002 - Space Stares Back (2025) (Digital-HD) (LeDuch).cbz (276pp)
+            [247287] COL Metal Hurlant 003 - The Monster Within (2025) (Humanoids) (Digital) (LeDuch-DCP).cbz (275pp)
+   ours:    ladder 1-2; ComicInfo Series: "Metal Hurlant"x2; ComicInfo Volume: "2025"x2; ComicInfo Publisher: "Humanoids"x2; ComicInfo Web: "1161931"x1
+   CV local rip:   136375 "Metal Hurlant" 2008 Printmedia 1 issue 855298 (via our own name without the filing suffix "Metal Hurlant") · 20527 "Metal Hurlant" 2002 Humanoids 14 (via our own name without the filing suffix "Metal Hurlant") · 127046 "Metal Hurlant" 1981 Eurocomic 47 (via our own name without the filing suffix "Metal Hurlant") · 129269 "Metal Hurlant" 1981 Edizioni Nuova Frontiera 12 (via our own name without the filing suffix "Metal Hurlant") · 30007 "Metal Hurlant" 1974 Les Humanoïdes Associés 166 (via our own name without the filing suffix "Metal Hurlant")   (rip lookup)
+   GCD dump:       157498 "Metal Hurlant" 2011-2011 Humanoids [] 2 (via our own name without the filing suffix "Metal Hurlant") · 17214 "Metal Hurlant" 2002-2004 Humanoids [] 14 (via our own name without the filing suffix "Metal Hurlant")   (dump lookup)
+
+== S105412 Monolith (2025)  [tier D]   keys: Monolith (2025)  years 2025-2025  1 files / 0 collections
+   folders: [1] Image\Monolith (2025) (Spawn's Universe)
+   files:   [247556] Monolith (2025) (digital) (Son of Ultron-Empire).cbr (80pp)
+   CV local rip:   165170 "Monolith" 2025 Image 1 issue 1116881 (via our own name without the filing suffix "Monolith") · 158163 "Monolith" 2024 Image 3 (via our own name without the filing suffix "Monolith") · 137143 "Monolith" 2021 Magnetic Press 4 (via our own name without the filing suffix "Monolith") · 138307 "Monolith" 2021 Magnetic Press 1 issue 880285 (via our own name without the filing suffix "Monolith") · 50775 "The Monolith" 2012 Image 1 issue 347322 (via our own name without the filing suffix "Monolith") · 11254 "The Monolith" 2004 DC Comics 12 (via our own name without the filing suffix "Monolith")   (rip lookup)
+   GCD dump:       223010 "Monolith" 2025-2025 Image [] 1 (via our own name without the filing suffix "Monolith") · 212221 "Monolith" 2024-? Image [] 3 (via our own name without the filing suffix "Monolith") · 176732 "Monolith" 2021-2021 Magnetic Press Inc. [] 1 (via our own name without the filing suffix "Monolith") · 195780 "Monolith" [pt-br] 2020-2020 Panini Brasil [] 1 (via our own name without the filing suffix "Monolith") · 179316 "Monolith" [fr] 2019-2019 Editions du Long Bec [] 2 (via our own name without the filing suffix "Monolith") · 121525 "Monolith" [fr] 2013-2013 Delcourt [] 1 (via our own name without the filing suffix "Monolith")   (dump lookup)
+
+== S105413 Nobody (2026)  [tier D]   keys: Nobody (2026)  years 2026-2026  1 files / 1 collections
+   folders: [1] Europe Comics\Nobody (2026)
+   files:   [247234] COL Nobody (2026) (Graphic Novel) (Europe Comics) (Digital) (LeDuch-DCP).cbz (94pp)
+   ours:    ComicInfo Series: "Nobody"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Europe Comics"x1
+   CV local rip:   61658 "The Nobody" 2013 Panini Verlag 1 issue 404000 (via our own name without the filing suffix "Nobody") · 27000 "The Nobody" 2009 DC Comics 1 issue 163249 (via our own name without the filing suffix "Nobody") · 48640 "Nobody" 2000 AiT/Planet Lar 1 issue 334557 (via our own name without the filing suffix "Nobody") · 27355 "Nobody" 1998 Oni Press 4 (via our own name without the filing suffix "Nobody")   (rip lookup)
+   GCD dump:       76688 "The Nobody" [de] 2013-2013 Panini Deutschland [] 1 (via our own name without the filing suffix "Nobody") · 48918 "The Nobody" 2010-2010 DC [] 1 (via our own name without the filing suffix "Nobody") · 41108 "The Nobody" 2009-2009 DC [] 1 (via our own name without the filing suffix "Nobody") · 209170 "Nobody" 2000-2000 AiT/Planet Lar [] 1 (via our own name without the filing suffix "Nobody")   (dump lookup)
+
+== S105414 Pop Kill v2 (2025)  [tier D]   keys: Pop Kill v2 (2025)  years 2025-2025  1 files / 0 collections
+   folders: [1] MadCave (and Maverick)\Pop Kill (2019)\Pop Kill v2 (2025) (MadCave)
+   files:   [249438] Pop Kill (2025) (digital) (Knight Ripper-Empire).cbr (158pp)
+   CV local rip:   162533 "Pop Kill" 2025 Mad Cave Studios 4 (via our own name without the filing suffix "Pop Kill") · 139742 "Pop Kill" 2020 Paper Films 4 (via our own name without the filing suffix "Pop Kill")   (rip lookup)
+   GCD dump:       235754 "Pop Kill" 2025-2025 Mad Cave Studios [] 4 (via our own name without the filing suffix "Pop Kill") · 235755 "Pop Kill" 2025-2025 Mad Cave Studios [] 1 (via our own name without the filing suffix "Pop Kill") · 214686 "Pop Kill" 2020-? PaperFilms [] 4 (via our own name without the filing suffix "Pop Kill")   (dump lookup)
+
+== S105415 Royals (2026)  [tier D]   keys: Royals (2026)  years 2026-2026  6 files / 0 collections
+   folders: [6] Image\Royals (2026)
+   files:   [247484] Royals 001 (2026) (Digital) (Zone-Empire).cbr (45pp) | [247485] Royals 002 (2026) (Digial) (Zone-Empire).cbr (45pp) | [247486] Royals 003 (2026) (Digital) (Zone-Empire).cbr (45pp)
+            [247487] Royals 004 (2026) (Digital) (Zone-Empire).cbr (37pp) | [247488] Royals 005 (2026) (Digital) (Zone-Empire).cbr (45pp)
+            [247489] Royals 006 (2026) (Digital) (Zone-Empire).cbr (44pp)
+   ours:    ladder 1-6
+   CV local rip:   100590 "Royals" 2017 Marvel 12 (via our own name without the filing suffix "Royals")   (rip lookup)
+   GCD dump:       235809 "Royals" 2026-? Image [] 2 (via our own name without the filing suffix "Royals") · 113194 "Royals" 2017-2018 Marvel [] 12 (via our own name without the filing suffix "Royals") · 120515 "Royals" 2017-2018 Marvel [] 2 (via our own name without the filing suffix "Royals")   (dump lookup)
+
+== S105416 Savage Tales (2025)  [tier D]   keys: Savage Tales (2025)  years 2025-2025  1 files / 0 collections
+   folders: [1] Dynamite\Savage Tales\Savage Tales (2025)
+   files:   [248859] Savage Tales 001 (2025) (4 covers) (digital) (Son of Ultron-Empire).cbr (44pp)
+   ours:    ladder 1
+   CV local rip:   162330 "Savage Tales" 2025 Dynamite Entertainment 1 issue 1094650 (via our own name without the filing suffix "Savage Tales") · 19056 "Savage Tales" 2007 Dynamite Entertainment 10 (via our own name without the filing suffix "Savage Tales") · 3505 "Savage Tales" 1985 Marvel 8 (via our own name without the filing suffix "Savage Tales") · 155562 "Savage Tales" 1972 Murray Comics 18 (via our own name without the filing suffix "Savage Tales") · 2519 "Savage Tales" 1971 Marvel 11 (via our own name without the filing suffix "Savage Tales")   (rip lookup)
+   GCD dump:       220821 "Savage Tales" 2025-2025 Dynamite Entertainment [] 1 (via our own name without the filing suffix "Savage Tales") · 26012 "Savage Tales" 2007-2008 Dynamite Entertainment [] 10 (via our own name without the filing suffix "Savage Tales") · 3044 "Savage Tales" 1985-1986 Marvel [] 8 (via our own name without the filing suffix "Savage Tales") · 58663 "Savage Tales" [en-au] 1983-1986 Federal [] 8 (via our own name without the filing suffix "Savage Tales") · 86937 "Savage Tales" [en-au] 1982-1986 K. G. Murray [] 10 (via our own name without the filing suffix "Savage Tales") · 73461 "Savage Tales" [en-au] 1972-1980 K. G. Murray [] 18 (via our own name without the filing suffix "Savage Tales")   (dump lookup)
+
+== S105417 Shaolin Cowboy: Staying A.I. Live (2026)  [tier D]   keys: Shaolin Cowboy: Staying A.I. Live (2026)  years 2026-2026  1 files / 0 collections
+   folders: [1] Dark Horse\Shaolin Cowboy\Shaolin Cowboy - Staying A.I. Live (2026)
+   files:   [248779] Shaolin Cowboy - Staying A.I. Live 002 (2026) (digital) (Son of Ultron-Empire).cbr (35pp)
+   ours:    ladder 2; ComicInfo Series: "Shaolin Cowboy"x1; ComicInfo Publisher: "Dark Horse Comics"x1
+
+== S105419 Space Ghost v1 (2024)  [tier D]   keys: Space Ghost v1 (2024)  years 2024-2025  2 files / 2 collections
+   folders: [2] Dynamite\Space Ghost\Space Ghost v1 (2024)
+   files:   [248860] COL Space Ghost Vol. 01 - With Only Ghosts to Comfort Us (2024) (Digital) (dekabro-Empire).cbz (158pp)
+            [248861] COL Space Ghost Vol. 02 - Beware The Council of Doom (2025) (Collection) (Dynamite Entertainment) (Digital) (LeDuch-DCP).cbz (192pp)
+   ours:    ComicInfo Series: "Space Ghost Vol. 1: With Only Ghosts to Comfort Us"x1, "Space Ghost"x1; ComicInfo Volume: "2025"x1; ComicInfo Publisher: "Dynamite Entertainment"x1
+   CV local rip:   157974 "Space Ghost" 2024 Dynamite Entertainment 12 (via our own name without the filing suffix "Space Ghost") · 166218 "Space Ghost" 2025 Dynamite Entertainment 5 (via our own name without the filing suffix "Space Ghost") · 42912 "Space Ghost" 2006 Panini Brasil 3 (via our own name without the filing suffix "Space Ghost") · 20311 "Space Ghost" 2005 DC Comics 6 (via our own name without the filing suffix "Space Ghost") · 140518 "Space Ghost" 2005 DC Comics 1 issue 899098 (via our own name without the filing suffix "Space Ghost") · 19464 "Space Ghost" 1987 Comico 1 issue 116485 (via our own name without the filing suffix "Space Ghost")   (rip lookup)
+   GCD dump:       211792 "Space Ghost" 2024-2025 Dynamite Entertainment [] 12 (via our own name without the filing suffix "Space Ghost") · 224335 "Space Ghost" 2025-? Dynamite Entertainment [] 11 (via our own name without the filing suffix "Space Ghost") · 110845 "Space Ghost" 2016-2016 DC [] 1 (via our own name without the filing suffix "Space Ghost") · 41021 "Space Ghost" [pt-br] 2006-2006 Panini Brasil [] 3 (via our own name without the filing suffix "Space Ghost") · 17252 "Space Ghost" 2005-2005 DC [] 6 (via our own name without the filing suffix "Space Ghost") · 24667 "Space Ghost" 2005-2005 DC [] 1 (via our own name without the filing suffix "Space Ghost")   (dump lookup)
+
+== S105420 Space Ghost v2 (2025)  [tier D]   keys: Space Ghost v2 (2025)  years 2025-2026  12 files / 0 collections
+   folders: [12] Dynamite\Space Ghost\Space Ghost v2 (2025)
+   files:   Space Ghost 001 (2025) (6 covers) (Digital) (dekabro-Empire).cbz … Space Ghost 012 (2026) (4 covers) (Digital) (dekabro-Empire).cbz  (12 files, pp 29-35)
+   ours:    ladder 1-12; ComicInfo Series: "Space Ghost"x12
+   CV local rip:   166218 "Space Ghost" 2025 Dynamite Entertainment 5 (via our own name without the filing suffix "Space Ghost") · 157974 "Space Ghost" 2024 Dynamite Entertainment 12 (via our own name without the filing suffix "Space Ghost") · 42912 "Space Ghost" 2006 Panini Brasil 3 (via our own name without the filing suffix "Space Ghost") · 20311 "Space Ghost" 2005 DC Comics 6 (via our own name without the filing suffix "Space Ghost") · 140518 "Space Ghost" 2005 DC Comics 1 issue 899098 (via our own name without the filing suffix "Space Ghost") · 19464 "Space Ghost" 1987 Comico 1 issue 116485 (via our own name without the filing suffix "Space Ghost")   (rip lookup)
+   GCD dump:       224335 "Space Ghost" 2025-? Dynamite Entertainment [] 11 (via our own name without the filing suffix "Space Ghost") · 211792 "Space Ghost" 2024-2025 Dynamite Entertainment [] 12 (via our own name without the filing suffix "Space Ghost") · 110845 "Space Ghost" 2016-2016 DC [] 1 (via our own name without the filing suffix "Space Ghost") · 41021 "Space Ghost" [pt-br] 2006-2006 Panini Brasil [] 3 (via our own name without the filing suffix "Space Ghost") · 17252 "Space Ghost" 2005-2005 DC [] 6 (via our own name without the filing suffix "Space Ghost") · 24667 "Space Ghost" 2005-2005 DC [] 1 (via our own name without the filing suffix "Space Ghost")   (dump lookup)
+
+== S105421 Spawn - The Dark Ages (2025)  [tier D]   keys: Spawn - The Dark Ages (2025)  years 2025-2026  6 files / 0 collections
+   folders: [6] Image\Spawn\Spawn - The Dark Ages (2025)
+   files:   Spawn - The Dark Ages 001 (2025) (3 covers) (Digital-Empire).cbr … Spawn - The Dark Ages 006 (2026) (2 covers) (Digital-Empire).cbr  (6 files, pp 24-29)
+   ours:    ladder 1-6
+   CV local rip:   168598 "Spawn: The Dark Ages" 2025 Image 1 issue 1144264 (via our own name without the filing suffix "Spawn - The Dark Ages") · 134622 "Spawn: The Dark Ages" 2001 Planeta DeAgostini 3 (via our own name without the filing suffix "Spawn - The Dark Ages") · 20618 "Spawn: The Dark Ages" 1999 Image 28 (via our own name without the filing suffix "Spawn - The Dark Ages")   (rip lookup)
+   GCD dump:       229840 "Spawn: The Dark Ages" 2025-? Image [] 6 (via our own name without the filing suffix "Spawn - The Dark Ages") · 208154 "Spawn - The Dark Ages" [fr] 2017-2018 Delcourt [] 2 (via our own name without the filing suffix "Spawn - The Dark Ages") · 53310 "Spawn - The Dark Ages" [de] 2000-2002 Infinity Verlag [] 14 (via our own name without the filing suffix "Spawn - The Dark Ages") · 165835 "Spawn - The Dark Ages" [fr] 2000-2002 Semic S.A. [] 9 (via our own name without the filing suffix "Spawn - The Dark Ages") · 6224 "Spawn: The Dark Ages" 1999-2001 Image [] 28 (via our own name without the filing suffix "Spawn - The Dark Ages")   (dump lookup)
+
+== S105422 Star Trek (2026)  [tier D]   keys: Star Trek (2026)  years 2026-2026  1 files / 0 collections
+   folders: [1] IDW\Star Trek\Star Trek (2026)
+   files:   [249074] Star Trek (2026) 001 (2026) (digital) (The Seeker-Empire).cbr (41pp)
+   ours:    ladder 1
+   CV local rip:   157009 "Star Trek" 2023 IDW Publishing 3 (via our own name without the filing suffix "Star Trek") · 145706 "Star Trek" 2022 IDW Publishing 32 (via our own name without the filing suffix "Star Trek") · 145850 "Star Trek" 2022 IDW Publishing 2 (via our own name without the filing suffix "Star Trek") · 53942 "Star Trek" 2012 IDW Publishing 13 (via our own name without the filing suffix "Star Trek") · 42972 "Star Trek" 2011 IDW Publishing 60 (via our own name without the filing suffix "Star Trek") · 53605 "Star Trek" 2000 Dino Comics 9 (via our own name without the filing suffix "Star Trek")   (rip lookup)
+   GCD dump:       215254 "Star Trek" 2024-? IDW [] 5 (via our own name without the filing suffix "Star Trek") · 202292 "Star Trek" 2023-? IDW [] 2 (via our own name without the filing suffix "Star Trek") · 191349 "Star Trek" 2022-2025 IDW [] 32 (via our own name without the filing suffix "Star Trek") · 212022 "Star Trek" [nl-be] 2016-2016 Mediageuzen [] ? (via our own name without the filing suffix "Star Trek") · 72872 "Star Trek" 2012-2016 IDW [] 13 (via our own name without the filing suffix "Star Trek") · 61079 "Star Trek" 2011-2016 IDW [] 60 (via our own name without the filing suffix "Star Trek")   (dump lookup)
+
+== S105424 The Beauty (2025)  [tier D]   keys: The Beauty (2025)  years 2026-2026  6 files / 1 collections
+   folders: [6] Ignition\The Beauty (2025)
+   files:   [247375] The Beauty 003 (2026) (digital) (DR & Quinch-Empire).cbr (36pp) | [247376] The Beauty 004 (2026) (digital) (DR & Quinch-Empire).cbr (36pp)
+            [247377] The Beauty 005 (2026) (digital) (DR & Quinch-Empire).cbr (36pp) | [247378] The Beauty 006 (2026) (digital) (DR & Quinch-Empire).cbr (36pp)
+            [247379] The Beauty 007 (2026) (digital) (DR & Quinch-Empire).cbr (36pp) | [247380] COL The Beauty Book 01 (2026) (Digital) (DR & Quinch-Empire).cbr (288pp)
+   ours:    ladder 3-7
+   CV local rip:   109816 "The Beauty" 2018 Éditions Glénat 1 issue 666049 (via our own name without the filing suffix "The Beauty") · 88915 "The Beauty" 2016 Image 6 (via our own name without the filing suffix "The Beauty") · 83799 "The Beauty" 2015 Image 29 (via our own name without the filing suffix "The Beauty") · 77464 "Beauty" 2014 NBM 1 issue 467757 (via our own name without the filing suffix "The Beauty") · 162351 "Beauty" 2008 Panini France 6 (via our own name without the filing suffix "The Beauty") · 170259 "The Beauty" ? Ignition Press 3 (via our own name without the filing suffix "The Beauty")   (rip lookup)
+   GCD dump:       210179 "Beauty" 2023-2023 NBM [] 1 (via our own name without the filing suffix "The Beauty") · 125923 "The Beauty" 2016-2022 Image [] 6 (via our own name without the filing suffix "The Beauty") · 91787 "The Beauty" 2015-2019 Image [] 29 (via our own name without the filing suffix "The Beauty") · 210178 "Beauty" 2014-2014 NBM [] 1 (via our own name without the filing suffix "The Beauty")   (dump lookup)
+
+== S105425 The Legend of Kamui (1964)  [tier D]   keys: The Legend of Kamui (1964)  years 2025-2025  1 files / 1 collections
+   folders: [1] Manga\The Legend of Kamui (1964)
+   files:   [248216] COL The Legend of Kamui v01 (2025) (c2c) (Trite).cbr (610pp)
+   CV local rip:   162178 "The Legend of Kamui" 2025 Drawn & Quarterly 1 issue 1092765 (via our own name without the filing suffix "The Legend of Kamui") · 35676 "The Legend of Kamui" 1987 Eclipse 37 (via our own name without the filing suffix "The Legend of Kamui")   (rip lookup)
+   GCD dump:       220538 "The Legend of Kamui" [en-ca] 2025-? Drawn & Quarterly [] 3 (via our own name without the filing suffix "The Legend of Kamui") · 16817 "The Legend of Kamui" 1987-1988 Eclipse; Viz [] 36 (via our own name without the filing suffix "The Legend of Kamui")   (dump lookup)
+
+== S105426 Twilight Zone (2025)  [tier D]   keys: Twilight Zone (2025)  years 2026-2026  6 files / 1 collections
+   folders: [6] IDW\Twilight Zone (2025)
+   files:   [247304] COL The Twilight Zone Vol. 01- Stories from the Fifth Dimension (2026) (Digital) (DR & Quinch-Empire).cbr (128pp)
+            [247305] Twilight Zone 006 (2026) (Digital) (DR & Quinch-Empire).cbr (32pp) | [247306] Twilight Zone 007 (2026) (Digital) (DR & Quinch-Empire).cbr (33pp)
+            [247307] Twilight Zone 008 (2026) (Digital) (DR & Quinch-Empire).cbr (34pp) | [247308] Twilight Zone 009 (2026) (Digital) (DR & Quinch-Empire).cbr (35pp)
+            [247309] Twilight Zone 010 (2026) (Digital) (DR & Quinch-Empire).cbr (32pp)
+   ours:    ladder 6-10
+   CV local rip:   167197 "The Twilight Zone" 2025 IDW Publishing 2 (via our own name without the filing suffix "Twilight Zone") · 70526 "The Twilight Zone" 2013 Dynamite Entertainment 13 (via our own name without the filing suffix "Twilight Zone") · 26614 "Twilight Zone" 1993 Now Comics 4 (via our own name without the filing suffix "Twilight Zone") · 26608 "Twilight Zone" 1991 Now Comics 11 (via our own name without the filing suffix "Twilight Zone") · 74235 "Twilight Zone" 1990 Now Comics 1 issue 453737 (via our own name without the filing suffix "Twilight Zone") · 49662 "Twilight Zone" 1976 Western Publishing 1 issue 340183 (via our own name without the filing suffix "Twilight Zone")   (rip lookup)
+   GCD dump:       228046 "Twilight Zone" 2025-? IDW [] 6 (via our own name without the filing suffix "Twilight Zone") · 97490 "The Twilight Zone" 2016-2016 Dynamite Entertainment [] 1 (via our own name without the filing suffix "Twilight Zone") · 87723 "The Twilight Zone" 2014-2015 Dynamite Entertainment [] 3 (via our own name without the filing suffix "Twilight Zone") · 78266 "The Twilight Zone" 2013-2015 Dynamite Entertainment [] 12 (via our own name without the filing suffix "Twilight Zone") · 21429 "The Twilight Zone" 1993-1993 Now [] 4 (via our own name without the filing suffix "Twilight Zone") · 21428 "The Twilight Zone" 1991-1992 Now [] 12 (via our own name without the filing suffix "Twilight Zone")   (dump lookup)
+
+== S105427 Zorro v1 (2026)  [tier D]   keys: Zorro v1 (2026)  years 2026-2026  3 files / 0 collections
+   folders: [3] Alien Books\Zorro\Zorro v1 (2026)
+   files:   [248499] Zorro 01 (of 03) (2026) (digital) (Son of Ultron-Empire).cbr (32pp) | [248500] Zorro 02 (of 03) (2026) (digital) (Son of Ultron-Empire).cbr (32pp)
+            [248501] Zorro 03 (of 03) (2026) (digital) (Son of Ultron-Empire).cbr (33pp)
+   ours:    ladder 1-3
+   CV local rip:   21119 "Zorro" 2008 Dynamite Entertainment 20 (via our own name without the filing suffix "Zorro") · 27634 "Zorro" 2005 NBM 6 (via our own name without the filing suffix "Zorro") · 5190 "Zorro" 1993 Topps Comics 12 (via our own name without the filing suffix "Zorro") · 127545 "Zorro" 1991 JuniorPress BV 4 (via our own name without the filing suffix "Zorro") · 4429 "Zorro" 1990 Marvel 12 (via our own name without the filing suffix "Zorro") · 136891 "Zorro" 1980 Egmont Publishing A/S 11 (via our own name without the filing suffix "Zorro")   (rip lookup)
+   GCD dump:       237617 "Zorro" 2026-? Alien Books [] 1 (via our own name without the filing suffix "Zorro") · 183041 "Zorro" [nl] 2022-? Dark Dragon Books [] 2 (via our own name without the filing suffix "Zorro") · 204755 "Zorro" [fr] 2016-2018 Varou [] 2 (via our own name without the filing suffix "Zorro") · 62627 "Zorro" 2009-2011 Dynamite Entertainment [] 3 (via our own name without the filing suffix "Zorro") · 62628 "Zorro" 2009-2010 Dynamite Entertainment [] 2 (via our own name without the filing suffix "Zorro") · 29709 "Zorro" 2008-2010 Dynamite Entertainment [] 20 (via our own name without the filing suffix "Zorro")   (dump lookup)
+
+== S105428 mono (2017)  [tier D]   keys: mono (2017)  years 2024-2025  2 files / 2 collections
+   folders: [2] Manga\mono (2017)
+   files:   [248179] COL mono v01 (2024) (Digital) (LuCaZ).cbz (127pp) | [248180] COL mono v02 (2025) (Digital) (LuCaZ).cbz (137pp)
+   CV local rip:   164423 "Mono" 2024 Yen Press 3 (via our own name without the filing suffix "mono") · 158533 "Mono" 2018 Houbunsha 4 (via our own name without the filing suffix "mono") · 85124 "Mono" 2015 Titan Comics 1 issue 502228 (via our own name without the filing suffix "mono") · 78907 "Mono" 2014 Titan Comics 4 (via our own name without the filing suffix "mono") · 54820 "Mono" 2012 Madefire 3 (via our own name without the filing suffix "mono")   (rip lookup)
+   GCD dump:       218495 "Mono" 2024-? Yen Press [] 4 (via our own name without the filing suffix "mono") · 218496 "Mono" [ja-jp] 2018-? 芳文社 [Houbunsha] [] 5 (via our own name without the filing suffix "mono") · 85291 "Mono" [en-gb] 2015-2015 Titan [] 4 (via our own name without the filing suffix "mono") · 87877 "Mono" [de] 2002-2002 Reprodukt [] 1 (via our own name without the filing suffix "mono")   (dump lookup)

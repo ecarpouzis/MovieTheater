@@ -1,0 +1,312 @@
+## Conventions for this batch (34 shown of 67 matched; 419 in LEDGER.md; 13 shelf/shelves: pub:dynamite ×5 · kind:new ×4 · folder:vn-year ×2 · kind:trade-only ×2 · kind:collected-line ×2 · folder:sequel-subfolder ×1 · pub:image ×1 · pub:valiant ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-013] (13 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (13 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-043] (13 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (13 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (13 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (13 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (13 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (13 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (13 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (13 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (13 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (13 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (13 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (13 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (13 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (13 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (13 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (13 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (13 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (13 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (13 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (13 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (13 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (13 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (13 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (13 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
+[L-064] (4 shelf/shelves) pass:item sig:twin
+- GCD indexes PRINTINGS: the S line takes the first edition both legs agree on; the `I` line takes the printing
+  we hold (page counts match the edition's row). GCD issue ids for books come from `gcd_issue` — prefer the
+  issue id to the `s<series>` form; use `s<series>` only for twin/variant rows.
+[L-085] (4 shelf/shelves) sig:barcode sig:trade-link sig:twin
+- `gcd_issue` carries the trade's page count AND ISBN: it matched our rips within ±10pp on 100+ books and told
+  two same-title count-1 rows apart (an 8pp ashcan is not a twin of the trade).
+[L-101] (4 shelf/shelves) sig:twin
+- Page count tells GCD twins apart (a 32pp sampler vs the 256pp anthology); a count-0 GCD row (236534 "Cells at
+  Work! Lady") is an empty stub, not a leg.
+[L-124] (2 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-135] (2 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-164] (2 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (2 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-191] (2 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+
++33 more matched entries not shown: L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-272, L-275, L-279, L-281, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-310, L-314, L-060, L-070, L-153, L-156, L-166, L-227, L-229, L-298, L-318, L-340, L-359, L-412, L-290 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S104900 Red Sonja - She-Devil with a Sword  [split]  7 files / 2 collections  decided in R-193 (R)
+   decided: R 104900 | Red Sonja - She-Devil with a Sword: two co-equal comics on one shelf — (a) items 249852/249853, Dynamite's 2006-07 trades "She-Devil With a Sword v01" (192pp) and "v02 - Arrowsmith" (139pp) of the 2005 Red Sonja run, and (b) items 249855-249859, Red Sonja: She-Devil with a Sword #1-5 (2026 relaunch); one key cannot hold both
+   F 104900 split-needed | (a) the two trades join the 2005 Red Sonja run S14480 (CV 18439 / GCD 14205; trade line CV 39671, GCD 89044); (b) the 2026 run #1-5 keys "Red Sonja: She-Devil with a Sword (2026)" = GCD 236770 (cv none)
+   named: S14480 Red Sonja  14 files  keys: "Red Sonja" | "Red Sonja v1 (2005)" | "Red Sonja: She-Devil With A Sword" | "Red Sonja: She-Devil With a Sword"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Red Sonja - She-Devil with a Sword" x5 · "Red Sonja - She-Devil With a Sword" x2
+   groups (title x folder): 2
+   G1 "Red Sonja - She-Devil With a Sword" in Dynamite\Red Sonja\Red Sonja - She-Devil with a Sword\Red Sonja - She-Devil With a Sword v1 (2006) — 2 file(s), 2 COL, pp 139-192; cv per-file 39671x2; gcd per-file 89044x2; key 'Red Sonja - She-Devil With a Sword'
+      [249852] COL Red Sonja - She-Devil With a Sword v01 (2006) (Digital) (F) (DR & Quinch-Empire).cbr (192pp)
+         own record cv 39671 / gcd s89044 "Red Sonja" (issue 1352441) COLLECTS: gcd=14205 Red Sonja (2005) #0-6
+      [249853] COL Red Sonja - She-Devil With a Sword v02 - Arrowsmith (2007) (Digital) (F) (DR & Quinch-Empire).cbr (139pp)
+         own record cv 39671 / gcd s89044 "Red Sonja" (issue 1352442) COLLECTS: gcd=14205 Red Sonja (2005) #8-12
+   G2 "Red Sonja - She-Devil with a Sword" in Dynamite\Red Sonja\Red Sonja - She-Devil with a Sword\Red Sonja - She-Devil with a Sword v2 (2026) — 5 file(s), numbers 1-5, pp 29-32; key 'Red Sonja - She-Devil with a Sword'
+      e.g. Red Sonja - She-Devil with a Sword 001 (2026) (5 covers) (digital) (The Seeker-Empire).cbr
+        249855 #1 2026 32pp · 249856 #2 2026 31pp · 249857 #3 2026 31pp · 249858 #4 2026 29pp · 249859 #5 2026 30pp
+
+== S104277 13 Thundercats X Silverhawks - Thunderhawks  [split]  1 files / 0 collections  decided in R-193 (S)
+   decided: S 104277 cv=- gcd=235441 0.9 | "13 Thundercats X Silverhawks - Thunderhawks 004" (2026): #4 of ThunderCats x SilverHawks: ThunderHawks, GCD 235441; "13" is reading order; no CV record
+   F 104277 split-needed | join S104272: ThunderHawks #4 and #3 are one run (GCD 235441) with no CV record, so the books move by the split lane with a lead-approved join to S104272
+   named: S104272 10 Thundercats X Silverhawks - Thunderhawks  1 files  keys: "10 Thundercats X Silverhawks - Thunderhawks"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S104279 "16 Thundercats X Silverhawks - Thunderhawks" 1f [shares gcd=235441 — S gcd=235441 (R-193 0.9)] keys: "16 Thundercats X Silverhawks - Thunderhawks"
+   keys now: "13 Thundercats X Silverhawks - Thunderhawks" x1
+   groups (title x folder): 1
+   G1 "Thundercats X Silverhawks - Thunderhawks" in Dynamite\Thundercats\Thundercats X Silverhawks (2026) — 1 file(s), numbers 4, pp 30-30; key '13 Thundercats X Silverhawks - Thunderhawks'
+      [248910] 13 Thundercats X Silverhawks - Thunderhawks 004 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (30pp)
+
+== S104278 15 Mumm-Ra the Ever-Living  [split]  1 files / 0 collections  decided in R-193 (S)
+   decided: S 104278 cv=- gcd=235054 0.9 | "15 Mumm-Ra the Ever-Living 005" (2026, (F) fixed rip): #5 of Mumm-Ra the Ever-Living, GCD 235054; "15" is reading order; no CV record
+   F 104278 split-needed | join S104275: Mumm-Ra the Ever-Living #5 and #4 are one run (GCD 235054) with no CV record, so the books move by the split lane with a lead-approved join to S104275
+   named: S104275 12 Mumm-Ra the Ever-Living  1 files  keys: "12 Mumm-Ra the Ever-Living"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "15 Mumm-Ra the Ever-Living" x1
+   groups (title x folder): 1
+   G1 "Mumm-Ra the Ever-Living" in Dynamite\Thundercats\Thundercats X Silverhawks (2026) — 1 file(s), numbers 5, pp 28-28; key '15 Mumm-Ra the Ever-Living'
+      [248911] 15 Mumm-Ra the Ever-Living 005 (2026) (4 Covers) (Digital) (F) (Shan-Empire).cbz (28pp)
+
+== S104279 16 Thundercats X Silverhawks - Thunderhawks  [split]  1 files / 0 collections  decided in R-193 (S)
+   decided: S 104279 cv=- gcd=235441 0.9 | "16 Thundercats X Silverhawks - Thunderhawks 005" (2026): #5 of ThunderCats x SilverHawks: ThunderHawks, GCD 235441; "16" is reading order; no CV record
+   F 104279 split-needed | join S104272: ThunderHawks #5 and #3 are one run (GCD 235441) with no CV record, so the books move by the split lane with a lead-approved join to S104272
+   named: S104272 10 Thundercats X Silverhawks - Thunderhawks  1 files  keys: "10 Thundercats X Silverhawks - Thunderhawks"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S104277 "13 Thundercats X Silverhawks - Thunderhawks" 1f [shares gcd=235441 — S gcd=235441 (R-193 0.9)] keys: "13 Thundercats X Silverhawks - Thunderhawks"
+   keys now: "16 Thundercats X Silverhawks - Thunderhawks" x1
+   groups (title x folder): 1
+   G1 "Thundercats X Silverhawks - Thunderhawks" in Dynamite\Thundercats\Thundercats X Silverhawks (2026) — 1 file(s), numbers 5, pp 29-29; key '16 Thundercats X Silverhawks - Thunderhawks'
+      [248912] 16 Thundercats X Silverhawks - Thunderhawks 005 (2026) (Digital) (Shan-Empire).cbz (29pp)
+
+== S105200 Thundercats X Silverhawks  [split]  9 files / 0 collections  decided in R-193 (R)
+   decided: R 105200 | "Thundercats X Silverhawks (2026)" folder, 9 files prefixed 01-09: a reading order over FOUR separately published runs (L-095) — Road to War one-shot (GCD 234035), ThunderCats x SilverHawks #1-3 (GCD 234887), Mumm-Ra the Ever-Living #1-3 (GCD 235054), ThunderCats x SilverHawks: ThunderHawks #1-2 (GCD 235441); no record spans them
+   F 105200 split-needed | 248898 -> ThunderCats x SilverHawks: Road to War (2026) gcd 234035; 248899/248902/248905 -> ThunderCats x SilverHawks (2026) gcd 234887 (with S104274); 248900/248903/248906 -> Mumm-Ra the Ever-Living (2026) gcd 235054 (with S104275, S104278); 248901/248904 -> ThunderCats x SilverHawks: ThunderHawks (2026) gcd 235441 (with S104272, S104277, S104279)
+   named: S104274 11 ThunderCats x SilverHawks  1 files  keys: "11 ThunderCats x SilverHawks"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S104275 12 Mumm-Ra the Ever-Living  1 files  keys: "12 Mumm-Ra the Ever-Living"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S104278 15 Mumm-Ra the Ever-Living  1 files  keys: "15 Mumm-Ra the Ever-Living"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S104272 10 Thundercats X Silverhawks - Thunderhawks  1 files  keys: "10 Thundercats X Silverhawks - Thunderhawks"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S104277 13 Thundercats X Silverhawks - Thunderhawks  1 files  keys: "13 Thundercats X Silverhawks - Thunderhawks"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S104279 16 Thundercats X Silverhawks - Thunderhawks  1 files  keys: "16 Thundercats X Silverhawks - Thunderhawks"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Thundercats X Silverhawks" x9
+   groups (title x folder): 5
+   G1 "Mumm-Ra the Ever-Living" in Dynamite\Thundercats\Thundercats X Silverhawks (2026) — 3 file(s), numbers 3, 6, 9, pp 29-34; key 'Thundercats X Silverhawks'
+      [248900] 03 Mumm-Ra the Ever-Living 001 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (34pp)
+      [248903] 06 Mumm-Ra the Ever-Living 002 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (29pp)
+      [248906] 09 Mumm-Ra the Ever-Living 003 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (29pp)
+   G2 "ThunderCats X Silverhawks" in Dynamite\Thundercats\Thundercats X Silverhawks (2026) — 1 file(s), numbers 2, pp 42-42; key 'Thundercats X Silverhawks'
+      [248899] 02 ThunderCats X Silverhawks 001 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (42pp)
+   G3 "ThunderCats x SilverHawks" in Dynamite\Thundercats\Thundercats X Silverhawks (2026) — 2 file(s), numbers 5, 8, pp 25-30; key 'Thundercats X Silverhawks'
+      [248902] 05 ThunderCats x SilverHawks 002 (2026) (Digital) (Shan-Empire).cbz (25pp)
+      [248905] 08 ThunderCats x SilverHawks 003 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (30pp)
+   G4 "Thundercats X Silverhawks - Road To War" in Dynamite\Thundercats\Thundercats X Silverhawks (2026) — 1 file(s), numbers 1, pp 41-41; key 'Thundercats X Silverhawks'
+      [248898] 01 Thundercats X Silverhawks - Road To War 001 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (41pp)
+   G5 "Thundercats X Silverhawks - Thunderhawks" in Dynamite\Thundercats\Thundercats X Silverhawks (2026) — 2 file(s), numbers 4, 7, pp 25-34; key 'Thundercats X Silverhawks'
+      [248901] 04 Thundercats X Silverhawks - Thunderhawks 001 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (34pp)
+      [248904] 07 Thundercats X Silverhawks - Thunderhawks 002 (2026) (5 Covers) (Digital) (Shan-Empire).cbz (25pp)
+
+== S104580 Geeksville  [split]  8 files / 5 collections  decided in R-195 (R)
+   decided: R 104580 | this shelf is two runs that share a numbering: "02 Geeksville v1 (1999) (3 Finger Prints)" #1-3 = CV 35521 / GCD 97268 (3 Finger Prints 1999, 3 issues) and "03 Geeksville v2 (2000) (Image)" #0-4 = CV 35522 / GCD 46230 (Image 2000-2001, 7 issues) — whole issues of both, co-equal runs
+   F 104580 split-needed | proposed runs: Geeksville v1 (1999) items 249242-249244 → CV 35521 / GCD 97268; Geeksville v2 (2000) items 249245-249249 → CV 35522 / GCD 46230
+   keys now: "Geeksville" x8
+   groups (title x folder): 2
+   G1 "Geeksville" in Image\3 Geels + Geeksville\02 Geeksville v1 (1999) (3 Finger Prints) — 3 file(s), numbers 1-3, pp 37-45; key 'Geeksville'
+      [249242] Geeksville 001 (1999) (3 Finger Prints) (c2c) (Ignatz-DCP).cbz (37pp)
+      [249243] Geeksville 002 (1999) (3 Finger Prints) (c2c) (YZ1).cbr (37pp)
+      [249244] Geeksville 003 (1999) (3 Finger Prints) (c2c) (F) (Ignatz-DCP).cbz (45pp)
+   G2 "Geeksville" in Image\3 Geels + Geeksville\03 Geeksville v2 (2000) (Image) — 5 file(s), 5 COL, pp 36-52; key 'Geeksville'
+      [249245] COL Geeksville v2 000 (2000) (Image) (YZ1).cbr (37pp)
+      [249246] COL Geeksville v2 001 (2000) (c2c) [YZ1].cbr (36pp)
+      [249247] COL Geeksville v2 002 (2000) (c2c) [YZ1].cbr (36pp)
+      [249248] COL Geeksville v2 003 (2000) (c2c) (Pyramid).cbz (52pp)
+      [249249] COL Geeksville v2 004 (2000) (c2c) (Pyramid).cbz (36pp)
+
+== S104708 Knights of the Dinner Table - Everknights -01  [split]  1 files / 0 collections  decided in R-196 (S)
+   decided: S 104708 cv=- gcd=18405 0.9 | "Knights of the Dinner Table - Everknights -01 (2002)" 28pp, in the Everknights folder beside S104707's #01 — the same series (GCD 18405), a second rip named with a dash
+   F 104708 split-needed | a second rip of Everknights #1; cv=- on both shelves, so it moves by a GCD-only split-lane join (L-377): join S104707
+   named: S104707 Knights of the Dinner Table - Everknights  14 files  keys: "Knights of the Dinner Table - Everknights"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S104709 "Knights of the Dinner Table - Everknights -02" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -02"
+   nearby: S104710 "Knights of the Dinner Table - Everknights -03" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -03"
+   nearby: S104711 "Knights of the Dinner Table - Everknights -04" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -04"
+   nearby: S104712 "Knights of the Dinner Table - Everknights -05" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -05"
+   nearby: S104713 "Knights of the Dinner Table - Everknights Special" 1f [title+1] keys: "Knights of the Dinner Table - Everknights Special"
+   keys now: "Knights of the Dinner Table - Everknights -01" x1
+   groups (title x folder): 1
+   G1 "Knights of the Dinner Table - Everknights -01 (2002) (digital) (Lusiphur-DCP)" in Indies\Knights of the Dinner Table (1994)\Knights of the Dinner Table - Everknights (2002) — 1 file(s), numbers 1, pp 28-28; key 'Knights of the Dinner Table - Everknights -01'
+      [249380] Knights of the Dinner Table - Everknights -01 (2002) (digital) (Lusiphur-DCP).cbz (28pp)
+
+== S104709 Knights of the Dinner Table - Everknights -02  [split]  1 files / 0 collections  decided in R-196 (S)
+   decided: S 104709 cv=- gcd=18405 0.9 | "Knights of the Dinner Table - Everknights -02 (2002)" 28pp = GCD 18405 #2 (2002-09, 28pp), a second rip beside S104707's #02
+   F 104709 split-needed | a second rip of Everknights #2; cv=- on both shelves, so it moves by a GCD-only split-lane join (L-377): join S104707
+   named: S104707 Knights of the Dinner Table - Everknights  14 files  keys: "Knights of the Dinner Table - Everknights"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S104708 "Knights of the Dinner Table - Everknights -01" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -01"
+   nearby: S104710 "Knights of the Dinner Table - Everknights -03" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -03"
+   nearby: S104711 "Knights of the Dinner Table - Everknights -04" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -04"
+   nearby: S104712 "Knights of the Dinner Table - Everknights -05" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -05"
+   nearby: S104713 "Knights of the Dinner Table - Everknights Special" 1f [title+1] keys: "Knights of the Dinner Table - Everknights Special"
+   keys now: "Knights of the Dinner Table - Everknights -02" x1
+   groups (title x folder): 1
+   G1 "Knights of the Dinner Table - Everknights -02 (2002) (digital) (Lusiphur-DCP)" in Indies\Knights of the Dinner Table (1994)\Knights of the Dinner Table - Everknights (2002) — 1 file(s), numbers 2, pp 28-28; key 'Knights of the Dinner Table - Everknights -02'
+      [249381] Knights of the Dinner Table - Everknights -02 (2002) (digital) (Lusiphur-DCP).cbz (28pp)
+
+== S104710 Knights of the Dinner Table - Everknights -03  [split]  1 files / 0 collections  decided in R-196 (S)
+   decided: S 104710 cv=- gcd=18405 0.9 | "Knights of the Dinner Table - Everknights -03 (2002)" 28pp = GCD 18405 #3 (2002-11, 28pp), a second rip beside S104707's #03
+   F 104710 split-needed | a second rip of Everknights #3; cv=- on both shelves, so it moves by a GCD-only split-lane join (L-377): join S104707
+   named: S104707 Knights of the Dinner Table - Everknights  14 files  keys: "Knights of the Dinner Table - Everknights"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S104708 "Knights of the Dinner Table - Everknights -01" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -01"
+   nearby: S104709 "Knights of the Dinner Table - Everknights -02" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -02"
+   nearby: S104711 "Knights of the Dinner Table - Everknights -04" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -04"
+   nearby: S104712 "Knights of the Dinner Table - Everknights -05" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -05"
+   nearby: S104713 "Knights of the Dinner Table - Everknights Special" 1f [title+1] keys: "Knights of the Dinner Table - Everknights Special"
+   keys now: "Knights of the Dinner Table - Everknights -03" x1
+   groups (title x folder): 1
+   G1 "Knights of the Dinner Table - Everknights -03 (2002) (digital) (Lusiphur-DCP)" in Indies\Knights of the Dinner Table (1994)\Knights of the Dinner Table - Everknights (2002) — 1 file(s), numbers 3, pp 28-28; key 'Knights of the Dinner Table - Everknights -03'
+      [249382] Knights of the Dinner Table - Everknights -03 (2002) (digital) (Lusiphur-DCP).cbz (28pp)
+
+== S104711 Knights of the Dinner Table - Everknights -04  [split]  1 files / 0 collections  decided in R-196 (S)
+   decided: S 104711 cv=- gcd=18405 0.9 | "Knights of the Dinner Table - Everknights -04" 28pp = GCD 18405 #4 (28pp), a second rip beside S104707's #04
+   F 104711 split-needed | a second rip of Everknights #4; cv=- on both shelves, so it moves by a GCD-only split-lane join (L-377): join S104707
+   named: S104707 Knights of the Dinner Table - Everknights  14 files  keys: "Knights of the Dinner Table - Everknights"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S104708 "Knights of the Dinner Table - Everknights -01" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -01"
+   nearby: S104709 "Knights of the Dinner Table - Everknights -02" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -02"
+   nearby: S104710 "Knights of the Dinner Table - Everknights -03" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -03"
+   nearby: S104712 "Knights of the Dinner Table - Everknights -05" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -05"
+   nearby: S104713 "Knights of the Dinner Table - Everknights Special" 1f [title+1] keys: "Knights of the Dinner Table - Everknights Special"
+   keys now: "Knights of the Dinner Table - Everknights -04" x1
+   groups (title x folder): 1
+   G1 "Knights of the Dinner Table - Everknights -04 (2002) (digital) (Lusiphur-DCP)" in Indies\Knights of the Dinner Table (1994)\Knights of the Dinner Table - Everknights (2002) — 1 file(s), numbers 4, pp 28-28; key 'Knights of the Dinner Table - Everknights -04'
+      [249383] Knights of the Dinner Table - Everknights -04 (2002) (digital) (Lusiphur-DCP).cbz (28pp)
+
+== S104712 Knights of the Dinner Table - Everknights -05  [split]  1 files / 0 collections  decided in R-196 (S)
+   decided: S 104712 cv=- gcd=18405 0.9 | "Knights of the Dinner Table - Everknights -05" 28pp = GCD 18405 #5 (28pp), a second rip beside S104707's #05
+   F 104712 split-needed | a second rip of Everknights #5; cv=- on both shelves, so it moves by a GCD-only split-lane join (L-377): join S104707
+   named: S104707 Knights of the Dinner Table - Everknights  14 files  keys: "Knights of the Dinner Table - Everknights"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S104708 "Knights of the Dinner Table - Everknights -01" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -01"
+   nearby: S104709 "Knights of the Dinner Table - Everknights -02" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -02"
+   nearby: S104710 "Knights of the Dinner Table - Everknights -03" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -03"
+   nearby: S104711 "Knights of the Dinner Table - Everknights -04" 1f [shares gcd=18405 (R clause) — S gcd=18405 (R-196 0.9)] keys: "Knights of the Dinner Table - Everknights -04"
+   nearby: S104713 "Knights of the Dinner Table - Everknights Special" 1f [title+1] keys: "Knights of the Dinner Table - Everknights Special"
+   keys now: "Knights of the Dinner Table - Everknights -05" x1
+   groups (title x folder): 1
+   G1 "Knights of the Dinner Table - Everknights -05 (2002) (digital) (Lusiphur-DCP)" in Indies\Knights of the Dinner Table (1994)\Knights of the Dinner Table - Everknights (2002) — 1 file(s), numbers 5, pp 28-28; key 'Knights of the Dinner Table - Everknights -05'
+      [249384] Knights of the Dinner Table - Everknights -05 (2002) (digital) (Lusiphur-DCP).cbz (28pp)
+
+== S105244 Valiant Masters - Harbinger  [split]  2 files / 2 collections  decided in R-199 (R)
+   decided: R 105244 | "COL 01 Valiant Masters Harbinger v01 - Children of the Eighth Day (2015)" 225pp and "COL 02 Valiant Masters H.A.R.D. Corps v01 - Search and Destroy (2014)" 214pp are two different books with their own records (CV 80600 / GCD 114630 and CV 74114 / GCD 114661); the "01"/"02" are reading-order slots — two co-equal titles, no spanning record
+   F 105244 split-needed | proposed: item 249788 → Valiant Masters Harbinger (CV 80600 / GCD 114630); item 249789 → Valiant Masters H.A.R.D. Corps (CV 74114 / GCD 114661)
+   nearby: S8317 "Harbinger" 47f [shares gcd=4492 (collected by item 249788) — S cv=4827 gcd=4492 (R-178 0.95)] keys: "Harbinger" | "The Harbinger"
+   nearby: S8233 "The H.A.R.D. Corps" 30f [shares gcd=4491 (collected by item 249789) — S cv=4826 gcd=4491 (C-062 0.95)] keys: "H.A.R.D. Corps"
+   keys now: "Valiant Masters - Harbinger" x2
+   groups (title x folder): 2
+   G1 "Valiant Masters H.A.R.D. Corps" in Valiant\Harbinger\Valiant Masters - Harbinger (2015) — 1 file(s), 1 COL, pp 214-214; cv per-file 74114x1; gcd per-file 114661x1; key 'Valiant Masters - Harbinger'
+      [249789] COL 02 Valiant Masters H.A.R.D. Corps v01 - Search and Destroy (2014) (digital) (Son of Ultron-Empire).cbr (214pp)
+         own record cv 74114 / gcd s114661 "Valiant Masters H.A.R.D. Corps" (issue 1712334) COLLECTS: gcd=4491 The H.A.R.D. Corps (1992) #1-6 · gcd=4492 Harbinger (1992) #10-11
+   G2 "Valiant Masters Harbinger" in Valiant\Harbinger\Valiant Masters - Harbinger (2015) — 1 file(s), 1 COL, pp 225-225; cv per-file 80600x1; gcd per-file 114630x1; key 'Valiant Masters - Harbinger'
+      [249788] COL 01 Valiant Masters Harbinger v01 - Children of the Eighth Day (2015) (Digital) (F) (Zone-Empire).cbr (225pp)
+         own record cv 80600 / gcd s114630 "Valiant Masters Harbinger" (issue 1712335) COLLECTS: gcd=4492 Harbinger (1992) #0-7
+
+== S105123 The Marvel Comics Encyclopedia  [split]  6 files / 6 collections  decided in R-199 (R)
+   decided: R 105123 | "COL The Marvel Comics Encyclopedia Vol. 01-06" holds two different reference lines: Vol. 01 (2006) 345pp and Vol. 02 (2009) 363pp are DK's "The Marvel Encyclopedia" (CV 33436 #1 2006-10 / #2 2009-10), while Vol. 03 Hulk, Vol. 04 Spider-Man (2003), Vol. 05 Marvel Knights (2004) and Vol. 06 Fantastic Four are Marvel's own "Marvel Encyclopedia" (CV 18366 / GCD 16023, #3-#6) — co-equal lines, no spanning record
+   F 105123 split-needed | proposed: items 246972-246973 → The Marvel Encyclopedia (DK 2006, CV 33436); items 246974-246977 → Marvel Encyclopedia (Marvel 2002, CV 18366 / GCD 16023)
+   keys now: "The Marvel Comics Encyclopedia" x6
+   groups (title x folder): 1
+   G1 "The Marvel Comics Encyclopedia" in _Books on Comics — 6 file(s), 6 COL, pp 201-363; cv per-file 18366x4, 33436x2; gcd per-file 16023x4; key 'The Marvel Comics Encyclopedia'
+      [246972] COL The Marvel Comics Encyclopedia Vol. 01 (2006).cbr (345pp)
+      [246973] COL The Marvel Comics Encyclopedia Vol. 02 (2009) (bZc-DCP).cbr (363pp)
+      [246974] COL The Marvel Comics Encyclopedia Vol. 03 - Hulk.cbr (201pp)
+      [246975] COL The Marvel Comics Encyclopedia Vol. 04 - Spider-Man (2003).cbr (242pp)
+      [246976] COL The Marvel Comics Encyclopedia Vol. 05 - Marvel Knights (2004).cbr (243pp)
+      [246977] COL The Marvel Comics Encyclopedia Vol. 06 - Fantastic Four (c2c) (Mal32 & Aquila-DCP).cbr (243pp)

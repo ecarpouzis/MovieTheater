@@ -1,0 +1,17 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S14480	Red Sonja v1 (2005)	run={"cv": 18439, "gcd": 14205}	P-082.jsonl	new	pair=104900
+S104272	10 Thundercats X Silverhawks - Thunderhawks	run=-	P-082.jsonl	new	pair=101949
+S104275	12 Mumm-Ra the Ever-Living	run=-	P-082.jsonl	new	pair=10289
+S104274	11 ThunderCats x SilverHawks	run=-	P-082.jsonl	new	pair=105200
+S105387	Geeksville (1999)	run={"cv": 35521, "gcd": 97268}	P-082.jsonl	new	pair=104580
+S104707	Knights of the Dinner Table - Everknights	run=-	P-082.jsonl	new	pair=104708
+S105390	Valiant Masters H.A.R.D. Corps (2014)	run={"cv": 74114, "gcd": 114661}	P-082.jsonl	new	pair=105244
+S105389	The Marvel Encyclopedia (2006)	run={"cv": 33436}	P-082.jsonl	new	pair=105123
+S104900	moved out -> S14480 "Red Sonja v1 (2005)"	run=-	P-082.jsonl	kept	pair=104900	moved_cv=18439
+S105200	moved out -> S104272 "10 Thundercats X Silverhawks - Thunderhawks"; S104275 "12 Mumm-Ra the Ever-Living"; S104274 "11 ThunderCats x SilverHawks"	run=-	P-082.jsonl	kept	pair=105200
+S104580	moved out -> S105387 "Geeksville (1999)"	run=-	P-082.jsonl	kept	pair=104580	moved_cv=35521
+S105244	moved out -> S105390 "Valiant Masters H.A.R.D. Corps (2014)"	run=-	P-082.jsonl	kept	pair=105244	moved_cv=74114
+S105123	moved out -> S105389 "The Marvel Encyclopedia (2006)"	run=-	P-082.jsonl	kept	pair=105123	moved_cv=33436
