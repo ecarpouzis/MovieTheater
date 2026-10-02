@@ -1,0 +1,885 @@
+## Conventions for this batch (34 shown of 81 matched; 419 in LEDGER.md; 120 shelf/shelves: kind:new ×88 · pub:image ×84 · kind:collected-line ×21 · kind:trade-only ×20 · folder:vn-year ×10 · pub:mad-cave ×10 · folder:bucket ×9 · folder:variant-covers ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-087] (84 shelf/shelves) pub:cinebook pub:idw pub:image sig:collision
+- The Cinebook shape (one GCD series, a CV volume per book) recurs inside IDW/Image (Godzilla Rivals, Obscure
+  Cities, MLP Annual, Cyberforce Origins, Hinges, Image+, Bloodstrike, X-Files specials): siblings take
+  `merge-with`; where CV has no series-level volume the S line is `cv=-`.
+[L-013] (120 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (120 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-030] (120 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-043] (120 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (120 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (120 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (120 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (120 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (120 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (120 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (120 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (120 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-151] (120 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-157] (120 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (120 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-160] (120 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-163] (120 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (120 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (120 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (120 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (120 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (120 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (120 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (120 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (120 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (120 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (120 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (120 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (120 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
+[L-135] (21 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-164] (21 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (21 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-244] (21 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+
++47 more matched entries not shown: L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-124, L-281, L-090, L-060, L-026, L-064, L-085, L-101, L-302, L-310, L-382, L-383, L-411, L-191, L-029, L-047, L-357, L-376, L-272, L-007, L-175, L-217, L-182, L-016, L-032, L-113, L-114, L-092, L-321, L-361, L-290 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S104587 Gi Joe A Real American Hero Silent Missions Edition  [tier D]   keys: Gi Joe A Real American Hero Silent Missions Edition  years 2025-2025  4 files / 0 collections
+   folders: [4] Image\G.I. Joe - A Real American Hero v1 (2023)\Silent Missions (2025)\Variant Covers
+   files:   [249991] Gi Joe A Real American Hero Silent Missions Edition 021 (2025) (1-in-10 Andy Kubert B&W Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [249992] Gi Joe A Real American Hero Silent Missions Edition 021 (2025) (1-in-25 Ed Hannigan & Klaus Janson Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [249993] Gi Joe A Real American Hero Silent Missions Edition 021 (2025) (Andy Kubert & Laura Martin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [249994] Gi Joe A Real American Hero Silent Missions Edition 021 (2025) (Blank Sketch Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 21; 1 number(s) name more than one file: 21
+
+== S104588 Gi Joe A Real American Hero Spirit  [tier D]   keys: Gi Joe A Real American Hero Spirit  years 2025-2025  3 files / 0 collections
+   folders: [3] Image\G.I. Joe - A Real American Hero v1 (2023)\Silent Missions (2025)\Variant Covers
+   files:   [249995] Gi Joe A Real American Hero Spirit 001 (2025) (1-in-10 Leonardo Romero B&W Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [249996] Gi Joe A Real American Hero Spirit 001 (2025) (1-in-25 Jorges Fornes Foil Letter Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [249997] Gi Joe A Real American Hero Spirit 001 (2025) (Jorge Fornes Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 1; 1 number(s) name more than one file: 1
+
+== S104564 G.I. Joe A Real American Hero Duke  [tier D]   keys: G.I. Joe A Real American Hero Duke  years 2025-2025  2 files / 0 collections
+   folders: [2] Image\G.I. Joe - A Real American Hero v1 (2023)\Variant Covers
+   files:   [246017] G.I. Joe A Real American Hero Duke 001 (2025) (1-in-10 Wes Craig B&W Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [246018] G.I. Joe A Real American Hero Duke 001 (2025) (Jorge Fornes Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 1; 1 number(s) name more than one file: 1
+   CV local rip:   164026 "G.I. Joe: A Real American Hero - Duke" 2025 Image 1 issue 1107352   (rip lookup)
+   GCD dump:       222923 "G.I. Joe: A Real American Hero – Duke" 2025-2025 Image [] 1   (dump lookup)
+
+== S104560 G.I. Joe - A Real American Hero Compendium  [tier D]   keys: G.I. Joe - A Real American Hero Compendium  years 2024-2024  1 files / 0 collections
+   folders: [1] Image\G.I. Joe - A Real American Hero v1 (2023)\_Compendium Editions (Marvel Series)
+   files:   [249200] G.I. Joe - A Real American Hero Compendium 01 (2024) (digital) (Knight Ripper-Empire).cbr (4pp)
+   ours:    ladder 1
+   CV local rip:   161015 "G.I. Joe: A Real American Hero Compendium" 2024 Image 2   (rip lookup)
+   GCD dump:       216356 "G.I. Joe: A Real American Hero Compendium" 2024-? Image [] 3   (dump lookup)
+
+== S104582 Ghost Machine - The Official Guidebook  [tier D]   keys: Ghost Machine - The Official Guidebook  years 2026-2026  5 files / 0 collections
+   folders: [5] Image\Ghost Machine - The Official Guidebook (2026)
+   files:   [247453] Ghost Machine - The Official Guidebook 01 (of 05) (2026) (Digital) (DR & Quinch-Empire).cbr (23pp)
+            [247454] Ghost Machine - The Official Guidebook 02 (of 05) (2026) (Digital) (DR & Quinch-Empire).cbr (25pp)
+            [247455] Ghost Machine - The Official Guidebook 03 (of 05) (2026) (Digital) (DR & Quinch-Empire).cbr (31pp)
+            [247456] Ghost Machine - The Official Guidebook 04 (of 05) (2026) (Digital) (DR & Quinch-Empire).cbr (27pp)
+            [247457] Ghost Machine - The Official Guidebook 05 (of 05) (2026) (Digital) (DR & Quinch-Empire).cbr (28pp)
+   ours:    ladder 1-5
+   GCD dump:       235808 "Ghost Machine: The Official Guidebook" 2026-? Image [] 2   (dump lookup)
+
+== S104583 Ghost Pepper  [tier D]   keys: Ghost Pepper  years 2026-2026  5 files / 2 collections
+   folders: [5] Image\Ghost Pepper (2025)
+   files:   [247533] Ghost Pepper 013 (2026) (Digital) (Zone-Empire).cbr (33pp) | [247534] Ghost Pepper 014 (2026) (Digital) (Zone-Empire).cbr (31pp)
+            [247535] Ghost Pepper 015 (2026) (Digital) (Zone-Empire).cbr (31pp) | [247536] COL Ghost Pepper Vol. 01 - Flavors of Ash (2026) (Digital) (DR & Quinch-Empire).cbr (164pp)
+            [247537] COL Ghost Pepper Vol. 02 - Taste of Cinders (2026) (Digital-Empire).cbz (169pp)
+   ours:    ladder 13-15
+   CV local rip:   165542 "Ghost Pepper" 2025 Image 5   (rip lookup)
+   GCD dump:       232263 "Ghost Pepper" 2026-? Image [] 1 · 226062 "Ghost Pepper" 2025-? Image [] 11   (dump lookup)
+
+== S104612 Good as Dead  [tier D]   keys: Good as Dead  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\Good as Dead (2025)
+   files:   [247538] Good as Dead (2026) (Digital) (DR & Quinch-Empire).cbr (251pp)
+   CV local rip:   167090 "Good as Dead" 2025 Image 3   (rip lookup)
+   GCD dump:       227868 "Good as Dead" 2025-? Image [] 6   (dump lookup)
+
+== S104623 Gunpowder Prophets  [tier D]   keys: Gunpowder Prophets  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\Gunpowder Prophets (2025)
+   files:   [247586] Gunpowder Prophets (2026) (digital) (Knight Ripper-Empire).cbr (128pp)
+   CV local rip:   167321 "Gunpowder Prophets" 2025 Mad Cave Studios 2   (rip lookup)
+   GCD dump:       236016 "Gunpowder Prophets" 2026-2026 Mad Cave Studios [] 1 · 231135 "Gunpowder Prophets" 2025-2026 Mad Cave Studios [] 5   (dump lookup)
+
+== S104627 Hammerfist  [tier D]   keys: Hammerfist  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\Hammerfist (Remmender, Epting) (2026)
+   files:   [247539] Hammerfist 001 (2026) (Digital) (Zone-Empire).cbr (48pp)
+   ours:    ladder 1
+
+== S104665 I Was a Fashion School Serial Killer  [tier D]   keys: I Was a Fashion School Serial Killer  years 2025-2025  5 files / 0 collections
+   folders: [5] Image\I Was a Fashion School Serial Killer (2025)
+   files:   [247587] I Was a Fashion School Serial Killer 001 (2025) (Digital) (Mephisto-Empire).cbr (32pp)
+            [247588] I Was a Fashion School Serial Killer 002 (2025) (Digital) (Mephisto-Empire).cbr (32pp)
+            [247589] I Was a Fashion School Serial Killer 003 (2025) (Digital) (Mephisto-Empire).cbr (32pp)
+            [247590] I Was a Fashion School Serial Killer 004 (2025) (Digital) (Mephisto-Empire).cbr (31pp)
+            [247591] I Was a Fashion School Serial Killer 005 (2025) (Digital) (Mephisto-Empire).cbr (32pp)
+   ours:    ladder 1-5
+   CV local rip:   163157 "I Was a Fashion School Serial Killer" 2025 Image 5   (rip lookup)
+   GCD dump:       222468 "I Was a Fashion School Serial Killer" 2025-2025 Image [] 5 · 230360 "I Was a Fashion School Serial Killer" 2025-2025 Image [] 1   (dump lookup)
+
+== S104667 Ice Cream Man - The Mortal Coil Shuffle  [tier D]   keys: Ice Cream Man - The Mortal Coil Shuffle  years 2025-2025  1 files / 0 collections
+   folders: [1] Image\Ice Cream Man (2018)
+   files:   [245935] Ice Cream Man - The Mortal Coil Shuffle (2025) (c2c) (Mark Bowen).cbz (58pp)
+   GCD dump:       231309 "Ice Cream Man: The Mortal Coil Shuffle" 2025-2025 Image [] 1   (dump lookup)
+
+== S104669 Iceman: Omega  [tier D]   keys: Iceman: Omega  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\Ice Cream Man (2018)
+   files:   [245939] Iceman - Omega 001 (2026) (Digital) (Kileko-Empire).cbz (55pp)
+   ours:    ladder 1; ComicInfo Series: "Iceman: Omega"x1
+   GCD dump:       232910 "Iceman: Omega" 2026-2026 Marvel [] 1   (dump lookup)
+
+== S104670 If Destruction Be Our Lot  [tier D]   keys: If Destruction Be Our Lot  years 2026-2026  4 files / 0 collections
+   folders: [4] Image\If Destruction Be Our Lot (2026)
+   files:   [247540] If Destruction Be Our Lot 001 (2026) (Digial) (Zone-Empire).cbr (52pp) | [247541] If Destruction Be Our Lot 002 (2026) (Digial) (Zone-Empire).cbr (29pp)
+            [247542] If Destruction Be Our Lot 003 (2026) (Digial) (Zone-Empire).cbr (29pp) | [247543] If Destruction Be Our Lot 004 (2026) (Digial) (Zone-Empire).cbr (28pp)
+   ours:    ladder 1-4
+   GCD dump:       236774 "If Destruction Be Our Lot" 2026-? Image [] 1   (dump lookup)
+
+== S104671 In Your Skin  [tier D]   keys: In Your Skin  years 2026-2026  4 files / 0 collections
+   folders: [4] Image\In Your Skin (2026)
+   files:   [247544] In Your Skin 001 (2026) (Digital) (Zone-Empire).cbr (45pp) | [247545] In Your Skin 002 (2026) (Digital) (Zone-Empire).cbr (44pp)
+            [247546] In Your Skin 003 (2026) (Digital) (Zone-Empire).cbr (37pp) | [247547] In Your Skin 004 (2026) (Digital) (Zone-Empire).cbr (36pp)
+   ours:    ladder 1-4
+   GCD dump:       236319 "In Your Skin" 2026-? Image [] 2   (dump lookup)
+
+== S104680 Invincible Universe - Battle Beast  [tier D]   keys: Invincible Universe - Battle Beast  years 2025-2026  7 files / 1 collections
+   folders: [7] Image\Invincible (2003)\Invincible Universe - Battle Beast (2025)
+   files:   Invincible Universe - Battle Beast 007 (2026) (Digital) (Zone-Empire).cbr … Invincible Universe - Battle Beast 012 (2026) (Digital) (Zone-Empire).cbr  (6 files, pp 26-37)
+            [249191] COL Invincible Universe - Battle Beast Vol. 01 - Heart of Glory (2025) (Digital) (DR & Quinch-Empire).cbr (160pp)
+   ours:    ladder 7-12
+   CV local rip:   164334 "Invincible Universe: Battle Beast" 2025 Image 6 · 168410 "Invincible Universe: Battle Beast" 2025 Image 1 issue 1143286   (rip lookup)
+   GCD dump:       223763 "Invincible Universe: Battle Beast" 2025-? Image [] 9 · 229606 "Invincible Universe: Battle Beast" 2025-? Image [] 1   (dump lookup)
+
+== S104687 Jumpscare  [tier D]   keys: Jumpscare  years 2025-2025  1 files / 0 collections
+   folders: [1] Image\Jumpscare (2025)
+   files:   [247459] Jumpscare (2025) (digital) (Son of Ultron-Empire).cbr (96pp)
+   CV local rip:   162532 "Jumpscare" 2025 Dark Horse Comics 4   (rip lookup)
+   GCD dump:       221499 "Jumpscare" 2025-2025 Dark Horse [] 4 · 228929 "Jumpscare" 2025-2025 Dark Horse [] 1   (dump lookup)
+
+== S104701 Kill Or Be Killed - Compendium  [tier D]   keys: Kill Or Be Killed - Compendium  years 2025-2025  1 files / 1 collections
+   folders: [1] Image\Kill or Be Killed (2016)\Compendium Edition
+   files:   [249182] COL Kill Or Be Killed - Compendium (2025) (Digital) (DR & Quinch-Empire).cbr (531pp)
+   GCD dump:       221083 "Kill or Be Killed Compendium" 2025-2025 Image [] 1   (dump lookup)
+
+== S104730 Lego Ninjago - Dark Island Trilogy  [tier D]   keys: Lego Ninjago - Dark Island Trilogy  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\Lego Ninjago (2022)\Lego Ninjago - Dark Island Trilogy (2026)
+   files:   [249201] Lego Ninjago - Dark Island Trilogy (2026) (digital) (Salem-Empire).cbr (144pp)
+   CV local rip:   92376 "LEGO Ninjago: Dark Island Trilogy" 2016 Little, Brown & Co. 3   (rip lookup)
+
+== S104736 Los Monstruos  [tier D]   keys: Los Monstruos  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\Los Monstruos (2025)
+   files:   [247593] Los Monstruos (2026) (digital) (Son of Ultron-Empire).cbr (117pp)
+   CV local rip:   164200 "Los Monstruos" 2025 Dark Horse Comics 4   (rip lookup)
+   GCD dump:       231971 "Los Monstruos" 2026-2026 Dark Horse [] 1 · 223478 "Los Monstruos" 2025-2025 Dark Horse [] 4   (dump lookup)
+
+== S104737 Lost Fantasy  [tier D]   keys: Lost Fantasy  years 2025-2026  8 files / 2 collections
+   folders: [8] Image\Lost Fantasy (2025)
+   files:   Lost Fantasy 007 (2026) (Digital) (Mephisto-Empire).cbr … Lost Fantasy 012 (2026) (Digital) (Mephisto-Empire).cbr  (6 files, pp 46-60)
+            [247466] COL Lost Fantasy v01 - A World Beneath (2025) (Digital) (DR & Quinch-Empire).cbr (146pp)
+            [247467] COL Lost Fantasy v02 - A World Beyond (2026) (Digital) (DR & Quinch-Empire).cbr (156pp)
+   ours:    ladder 7-12
+   CV local rip:   164032 "Lost Fantasy" 2025 Image 5   (rip lookup)
+   GCD dump:       223271 "Lost Fantasy" 2025-? Image [] 10 · 229839 "Lost Fantasy" 2025-? Image [] 2   (dump lookup)
+
+== S105382 Doll Parts: A Lovesick Tale  [tier D]   keys: Doll Parts: A Lovesick Tale  years 2025-2025  1 files / 0 collections
+   folders: [1] Image\Lovesick (2022)
+   files:   [246033] 02 Doll Parts - A Lovesick Tale (2025) (Digital) (DR & Quinch-Empire).cbr (155pp)
+   ours:    ladder 2
+   CV local rip:   161628 "Doll Parts: A Lovesick Tale" 2024 Image 4   (rip lookup)
+   GCD dump:       226060 "Doll Parts: A Lovesick Tale" 2025-2025 Image [] 1 · 218591 "Doll Parts: A Lovesick Tale" 2024-? Image [] 4   (dump lookup)
+
+== S104747 M.A.S.K.  [tier D]   keys: M.A.S.K.  years 2026-2026  4 files / 0 collections
+   folders: [4] Image\M.A.S.K. (2026)
+   files:   [247548] M.A.S.K. 001 (2026) (digital) (Knight Ripper-Empire).cbr (40pp) | [247549] M.A.S.K. 002 (2026) (digital) (Knight Ripper-Empire).cbr (35pp)
+            [247550] M.A.S.K. 003 (2026) (digital) (Knight Ripper-Empire).cbr (31pp) | [247551] M.A.S.K. 004 (2026) (digital) (Knight Ripper-Empire).cbr (32pp)
+   ours:    ladder 1-4
+   GCD dump:       236828 "M.A.S.K." 2026-? Image [] ?   (dump lookup)
+
+== S104748 M.A.S.K. Origins  [tier D]   keys: M.A.S.K. Origins  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\M.A.S.K. (2026)\M.A.S.K. Origins (2026)
+   files:   [249277] M.A.S.K. Origins 001 (2026) (digital) (Knight Ripper-Empire).cbr (44pp)
+   ours:    ladder 1
+
+== S104749 M1 - Monster Racing League  [tier D]   keys: M1 - Monster Racing League  years 2026-2026  4 files / 0 collections
+   folders: [4] Image\M1 - Monster Racing League (2026)
+   files:   [247552] M1 - Monster Racing League 001 (2026) (Digital) (Zone-Empire).cbr (27pp) | [247553] M1 - Monster Racing League 002 (2026) (Digital) (Zone-Empire).cbr (23pp)
+            [247554] M1 - Monster Racing League 003 (2026) (Digital) (Zone-Empire).cbr (23pp) | [247555] M1 - Monster Racing League 004 (2026) (Digital) (Zone-Empire).cbr (21pp)
+   ours:    ladder 1-4
+
+== S104755 Malevolent  [tier D]   keys: Malevolent  years 2026-2026  6 files / 0 collections
+   folders: [6] Image\Malevolent (2026)
+   files:   Malevolent 001 (2026) (Digital) (Zone-Empire).cbr … Malevolent 006 (2026) (Digital) (Zone-Empire).cbr  (6 files, pp 31-33)
+   ours:    ladder 1-6
+   GCD dump:       232791 "Malevolent" 2026-? Image [] 4   (dump lookup)
+
+== S104756 Man-Eaters - Tomorrow Belongs To You  [tier D]   keys: Man-Eaters - Tomorrow Belongs To You  years 2020-2020  1 files / 0 collections
+   folders: [1] Image\Man-Eaters (2018)
+   files:   [245928] Man-Eaters - Tomorrow Belongs To You (2020) (Digital) (Mephisto-Empire).cbr (27pp)
+   CV local rip:   125460 "Man-Eaters: Tomorrow Belongs To You!" 2020 Image 1 issue 739523   (rip lookup)
+   GCD dump:       156887 "Man-Eaters: Tomorrow Belongs to You!" 2020-2020 Image [] 1   (dump lookup)
+
+== S104830 News from the Fallout  [tier D]   keys: News From the Fallout | News from the Fallout  years 2025-2025  6 files / 0 collections
+   folders: [6] Image\News from the Fallout (2025)
+   files:   [247599] News From the Fallout 006 (2025) (Digital) (Zone-Empire).cbr (33pp) | [247594] News from the Fallout 001 (2025) (Digital) (Zone-Empire).cbr (32pp)
+            [247595] News from the Fallout 002 (2025) (Digital) (Zone-Empire).cbr (33pp) | [247596] News from the Fallout 003 (2025) (Digital) (Zone-Empire).cbr (32pp)
+            [247597] News from the Fallout 004 (2025) (Digital) (Zone-Empire).cbr (33pp) | [247598] News from the Fallout 005 (2025) (Digital) (Zone-Empire).cbr (33pp)
+   ours:    ladder 1-6
+   CV local rip:   165177 "News from the Fallout" 2025 Image 6   (rip lookup)
+   GCD dump:       225339 "News from the Fallout" 2025-? Image [] 6 · 234809 "News from the Fallout" 2026-2026 Image [] 1   (dump lookup)
+
+== S104837 Odin  [tier D]   keys: Odin  years 2026-2026  4 files / 0 collections
+   folders: [4] Image\Odin (2026)
+   files:   [247474] Odin 001 (2026) (Digital) (Zone-Empire).cbr (39pp) | [247475] Odin 002 (2026) (Digital) (Zone-Empire).cbr (27pp) | [247476] Odin 003 (2026) (Digital) (Zone-Empire).cbr (26pp)
+            [247477] Odin 004 (2026) (Digital) (Zone-Empire).cbr (27pp)
+   ours:    ladder 1-4
+   CV local rip:   56595 "Odin" 2011 Egmont Ehapa Verlag 2   (rip lookup)
+   GCD dump:       237291 "Odin" 2026-? Image [] 1 · 100256 "Odin" [de] 2011-2012 Egmont Ehapa [] 2 · 125196 "Odin" [fr] 2010-2012 Soleil [] 2   (dump lookup)
+
+== S104840 Of the Earth  [tier D]   keys: Of The Earth | Of the Earth  years 2026-2026  5 files / 0 collections
+   folders: [5] Image\Of the Earth (2026)
+   files:   [247478] Of the Earth 01 (of 04) (2026) (Digital) (Zone-Empire).cbr (41pp) | [247479] Of the Earth 02 (of 04) (2026) (Digital) (Zone-Empire).cbr (33pp)
+            [247480] Of the Earth 03 (of 06) (2026) (Digital) (Zone-Empire).cbr (33pp) | [247481] Of the Earth 04 (of 06) (2026) (Digital) (Zone-Empire).cbr (32pp)
+            [247482] Of the Earth 05 (of 06) (2026) (Limited Series) (Image Comics) (Digital) (LeDuch-DCP).cbz (31pp)
+   ours:    ladder 1-5; ComicInfo Series: "Of The Earth"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "6"x1; ComicInfo Publisher: "Image Comics"x1
+   GCD dump:       237292 "Of the Earth" 2026-? Image [] 1   (dump lookup)
+
+== S104841 Ofiusa  [tier D]   keys: Ofiusa  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\Ofiusa (2026)
+   files:   [247483] Ofiusa 001 (2026) (Digital) (Zone-Empire).cbr (39pp)
+   ours:    ladder 1
+
+== S104892 ROM Special  [tier D]   keys: ROM Special  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\ROM (2026)
+   files:   [247564] ROM Special 001 (2026) (digital) (Knight Ripper-Empire).cbr (32pp)
+   ours:    ladder 1
+
+== S104894 Radiant Black and White  [tier D]   keys: Radiant Black and White  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\Radiant Black + Massiveverse (2021)\Radiant Black v1 (2021)\Annuals and Specials
+   files:   [249998] Radiant Black and White 001 (2026) (Digital) (DR & Quinch-Empire).cbr (47pp)
+   ours:    ladder 1
+   GCD dump:       233553 "Radiant Black and White" 2026-2026 Image [] 1   (dump lookup)
+
+== S104897 Red Roots  [tier D]   keys: Red Roots  years 2026-2026  5 files / 0 collections
+   folders: [5] Image\Red Roots (2026)
+   files:   [247557] Red Roots 001 (2026) (Digital) (Mephisto-Empire).cbr (49pp) | [247558] Red Roots 002 (2026) (Digital) (Mephisto-Empire).cbr (24pp)
+            [247559] Red Roots 003 (2026) (Digital) (Mephisto-Empire).cbr (24pp) | [247560] Red Roots 004 (2026) (Digital) (Mephisto-Empire).cbr (24pp)
+            [247561] Red Roots 005 (2026) (Digital) (Mephisto-Empire).cbr (33pp)
+   ours:    ladder 1-5
+   GCD dump:       236561 "Red Roots" 2026-? Image [] 2   (dump lookup)
+
+== S104904 Regicide  [tier D]   keys: Regicide  years 2026-2026  2 files / 0 collections
+   folders: [2] Image\Regicide (2026)
+   files:   [247562] Regicide 002 (2026) (digital) (Goobadaddy-Empire).cbz (29pp) | [247563] Regicide 01 (2026) (digital) (Goobadaddy-Empire).cbz (30pp)
+   ours:    ladder 1-2
+
+== S104590 Giant Size Kung Fu Bible Stories  [tier D]   keys: Giant Size Kung Fu Bible Stories  years 2014-2014  1 files / 0 collections
+   folders: [1] Image\Savage Dragon (1993)\_Minis and one-shots
+   files:   [249176] Giant Size Kung Fu Bible Stories 001 (2014) (Digital) (F).cbr (63pp)
+   ours:    ladder 1
+   CV local rip:   76746 "Giant-Size Kung Fu Bible Stories" 2014 Image 1 issue 464030   (rip lookup)
+   GCD dump:       85561 "Giant Size Kung Fu Bible Stories" 2014-2014 Image [] 1   (dump lookup)
+
+== S104779 Mighty Man  [tier D]   keys: Mighty Man  years 2017-2017  1 files / 0 collections
+   folders: [1] Image\Savage Dragon (1993)\_Minis and one-shots
+   files:   [249177] Mighty Man 001 (2017) (Digital) (Zone-Empire).cbr (30pp)
+   ours:    ladder 1
+   CV local rip:   100586 "Mighty Man" 2017 Image 1 issue 590824 · 34070 "Mighty Man" 2004 Image 1 issue 222115 · 47838 "Mighty Man" 1975 Afri-Comics 17   (rip lookup)
+   GCD dump:       113312 "Mighty Man" 2017-2017 Image [] 1 · 59247 "Mighty Man" 2004-2004 Image [] 1 · 124283 "Mighty Man" [en-za] 1976-1978 Afri-Comics / Xanap [] 17   (dump lookup)
+
+== S104819 Nancy In Hell - A Dragon in Hell  [tier D]   keys: Nancy In Hell - A Dragon in Hell  years 2014-2014  1 files / 0 collections
+   folders: [1] Image\Savage Dragon (1993)\_Minis and one-shots
+   files:   [249178] Nancy In Hell - A Dragon in Hell 001 (2014) (Monafekk-Empire).cbr (33pp)
+   ours:    ladder 1
+   CV local rip:   71817 "Nancy In Hell: A Dragon In Hell" 2014 Amigo Comics 1 issue 445887   (rip lookup)
+   GCD dump:       79305 "Nancy in Hell: A Dragon in Hell" [en-es] 2014-2014 Amigo [] 1   (dump lookup)
+
+== S104922 Savage Dragon - Legacy  [tier D]   keys: Savage Dragon - Legacy  years 1993-1993  1 files / 0 collections
+   folders: [1] Image\Savage Dragon (1993)\_Minis and one-shots
+   files:   [249180] Savage Dragon - Legacy 001 (FCBD 2015) (digital) (Minutemen-Faessla).cbz (31pp)
+   ours:    ladder 1
+   CV local rip:   96305 "Savage Dragon: Legacy" 2016 Image 1 issue 563755   (rip lookup)
+
+== S104924 Savage Dragon and Destroyer Duck  [tier D]   keys: Savage Dragon and Destroyer Duck  years 1996-1996  1 files / 0 collections
+   folders: [1] Image\Savage Dragon (1993)\_Minis and one-shots\Savage Dragon & Destroyer Duck (1996)
+   files:   [249972] Savage Dragon & Destroyer Duck 001 (1996).cbr (46pp)
+   ours:    ladder 1
+   CV local rip:   23628 "Savage Dragon / Destroyer Duck" 1996 Image 1 issue 141628 (via our own name without the filing suffix "Savage Dragon & Destroyer Duck")   (rip lookup)
+   GCD dump:       5654 "The Savage Dragon / Destroyer Duck" 1996-1996 Image [] 1 (via our own name without the filing suffix "Savage Dragon & Destroyer Duck")   (dump lookup)
+
+== S104921 Savage Dragon - Blood and Guts  [tier D]   keys: Savage Dragon - Blood and Guts  years 1995-1995  3 files / 0 collections
+   folders: [3] Image\Savage Dragon (1993)\_Minis and one-shots\Savage Dragon - Blood & Guts (1995)
+   files:   [249973] Savage Dragon - Blood & Guts 01 (of 03) (1995) (oogla-HaCsA).cbr (31pp) | [249974] Savage Dragon - Blood & Guts 02 (of 03) (1995) (oogla-HaCsA).cbr (31pp)
+            [249975] Savage Dragon - Blood & Guts 03 (of 03) (1995) (oogla-HaCsA).cbr (30pp)
+   ours:    ladder 1-3
+
+== S104923 Savage Dragon - Red Horizon  [tier D]   keys: Savage Dragon - Red Horizon  years 1997-1997  3 files / 0 collections
+   folders: [3] Image\Savage Dragon (1993)\_Minis and one-shots\Savage Dragon - Red Horizon (1997)
+   files:   [249976] Savage Dragon - Red Horizon 001 (1997).cbr (32pp) | [249977] Savage Dragon - Red Horizon 002 (1997).cbr (27pp) | [249978] Savage Dragon - Red Horizon 003 (1997).cbz (30pp)
+   ours:    ladder 1-3
+   CV local rip:   38172 "Savage Dragon: Red Horizon" 1997 Image 3   (rip lookup)
+   GCD dump:       39090 "The Savage Dragon: Red Horizon" 1997-1997 Image [] 3   (dump lookup)
+
+== S104775 Medieval Spawn  [tier D]   keys: Medieval Spawn  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\Spawn\Medieval Spawn
+   files:   [249282] Medieval Spawn (2026) (digital) (Son of Ultron-Empire).cbr (116pp)
+   CV local rip:   163804 "Medieval Spawn" 2025 Image 4   (rip lookup)
+   GCD dump:       223009 "Medieval Spawn" 2025-? Image [] 4   (dump lookup)
+
+== S104938 She-Spawn  [tier D]   keys: She-Spawn  years 2026-2026  5 files / 0 collections
+   folders: [5] Image\Spawn\She-Spawn (2026)
+   files:   [249283] She-Spawn 001 (2026) (7 covers) (Digital-Empire).cbr (31pp) | [249284] She-Spawn 002 (2026) (2 covers) (Digital-Empire).cbr (27pp)
+            [249285] She-Spawn 003 (2026) (2 covers) (Digital-Empire).cbr (27pp) | [249286] She-Spawn 004 (2026) (2 covers) (Digital-Empire).cbr (26pp)
+            [249287] She-Spawn 005 (2026) (2 covers) (Digital-Empire).cbr (27pp)
+   ours:    ladder 1-5
+   GCD dump:       236777 "She-Spawn" 2026-? Image [] 1   (dump lookup)
+
+== S104972 Spawn '77  [tier D]   keys: Spawn '77  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\Spawn\Spawn '77 (2026)
+   files:   [249288] Spawn '77 01 (of 03) (2026) (8 covers) (Digital-Empire).cbr (65pp)
+   ours:    ladder 1
+
+== S104973 Spawn - Battle for the Throne - Part  [tier D]   keys: Spawn - Battle for the Throne - Part  years 2025-2026  2 files / 0 collections
+   folders: [2] Image\Spawn\Spawn (1992)\Trades
+   files:   [246794] Spawn (338-343) - Battle for the Throne - Part 1 (2025) (digital) (Son of Ultron-Empire).cbr (139pp)
+            [246795] Spawn (338-343) - Battle for the Throne - Part 2 (2026) (digital) (Son of Ultron-Empire).cbr (155pp)
+   ours:    ladder 338; 1 number(s) name more than one file: 338
+
+== S104976 Spawn - Sinn's War  [tier D]   keys: Spawn - Sinn's War  years 2025-2025  1 files / 0 collections
+   folders: [1] Image\Spawn\Spawn (1992)\Trades
+   files:   [246793] Spawn (331-337) - Sinn's War (2025) (digital) (Son of Ultron-Empire).cbr (166pp)
+   ours:    ladder 331
+   CV local rip:   162512 "Spawn: Sinn's War" 2025 Image 1 issue 1096758   (rip lookup)
+   GCD dump:       221280 "Spawn: Sinn's War" 2025-2025 Image [] 1   (dump lookup)
+
+== S104975 Spawn - Shadows of Spawn  [tier D]   keys: Spawn - Shadows of Spawn  years 2025-2025  1 files / 1 collections
+   folders: [1] Image\Spawn\_Trades, Minis and One-shots
+   files:   [246797] COL Spawn - Shadows of Spawn Complete Collection (2025) (digital) (Son of Ultron-Empire).cbr (569pp)
+   CV local rip:   163064 "Spawn: Shadows of Spawn" 2006 Image 1 issue 762343   (rip lookup)
+
+== S104977 Spawn Kills Everyone Too  [tier D]   keys: Spawn Kills Everyone Too  years 2018-2019  4 files / 0 collections
+   folders: [4] Image\Spawn\_Trades, Minis and One-shots\Spawn Kills Every Spawn (2018)\Spawn Kills Everyone Too v1 (2018)
+   files:   [250075] Spawn Kills Everyone Too 001 (2018) (Digital-Empire).cbr (29pp) | [250076] Spawn Kills Everyone Too 002 (2019) (digital-Empire).cbr (28pp)
+            [250077] Spawn Kills Everyone Too 003 (2019) (digital-Empire).cbr (31pp) | [250078] Spawn Kills Everyone Too 004 (2019) (digital-Empire).cbr (30pp)
+   ours:    ladder 1-4
+   CV local rip:   115907 "Spawn Kills Everyone Too" 2018 Image 4   (rip lookup)
+   GCD dump:       135700 "Spawn Kills Everyone Too" 2018-2019 Image [] 4   (dump lookup)
+
+== S104999 Starhenge Book Two - a Kiss for Atticus  [tier D]   keys: Starhenge Book Two - A Kiss for Atticus | Starhenge Book Two - a Kiss for Atticus  years 2026-2026  3 files / 0 collections
+   folders: [3] Image\Starhenge (2022)\Starhenge Book 02 - A Kiss For Atticus (2026)
+   files:   [249215] Starhenge Book Two - A Kiss for Atticus 03 (2026) (digital) (Goobadaddy-Empire).cbz (27pp)
+            [249213] Starhenge Book Two - a Kiss for Atticus 01 (2026) (digital) (Goobadaddy-Empire).cbz (35pp)
+            [249214] Starhenge Book Two - a Kiss for Atticus 02 (2026) (digital) (Goobadaddy-Empire).cbz (35pp)
+   ours:    ladder 1-3
+
+== S105003 Stillwater the Escape  [tier D]   keys: Stillwater the Escape  years 2022-2022  1 files / 0 collections
+   folders: [1] Image\Stillwater (2020)\Annuals and Specials
+   files:   [249216] Stillwater the Escape 001 (2022) (Digital) (Zone-Empire).cbr (40pp)
+   ours:    ladder 1
+   CV local rip:   141926 "Stillwater: The Escape" 2022 Image 1 issue 911625   (rip lookup)
+   GCD dump:       182841 "Stillwater The Escape" 2022-2022 Image [] 1   (dump lookup)
+
+== S105030 Syphon Vol. 2  [tier D]   keys: Syphon Vol. 2  years 2024-2024  1 files / 0 collections
+   folders: [1] Image\Syphon (2023)\Syphon v2 (2023)
+   files:   [249220] Syphon 004 (2024) (Digital) (Zone-Empire).cbr (30pp)
+   ours:    ladder 4; ComicInfo Series: "Syphon Vol. 2"x1; ComicInfo Publisher: "Image - Top Cow"x1
+
+== S105034 Tales of Wonder  [tier D]   keys: Tales of Wonder  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\Tales of Wonder (2026)
+   files:   [247565] Tales of Wonder 001 (2026) (Digital) (Zone-Empire).cbr (31pp)
+   ours:    ladder 1
+   CV local rip:   101338 "Tales of Wonder" 1997 Pet Shop Comics 2   (rip lookup)
+   GCD dump:       108591 "Tales of Wonder" 1997-? Pet Shop Comics [] 2   (dump lookup)
+
+== S105060 Term Life  [tier D]   keys: Term Life  years 2011-2011  1 files / 0 collections
+   folders: [1] Image\Term Life (2011)
+   files:   [247600] Term Life (2011) (Image) (Digital-Empire).cbz (155pp)
+   CV local rip:   52745 "Term Life" 2011 Image 1 issue 360308   (rip lookup)
+   GCD dump:       162235 "Term Life" 2011-2011 Image [] 1   (dump lookup)
+
+== S105061 Terminal  [tier D]   keys: Terminal  years 2026-2026  6 files / 0 collections
+   folders: [3] Image\Terminal (Robert Kirkman) (2026)\Annuals and Specials · [3] Image\Terminal (Robert Kirkman) (2026)
+   files:   [249278] Terminal 002 (Blind Bag) (2026).cbz (36pp) | [249279] Terminal 007 (Blind Bag) (2026) (Image) (c2c) (Ignatz-DCP).cbz (35pp) | [249280] Terminal 010 (Blind Bag) (2026).cbz (36pp)
+            [247566] Terminal 001 (2026) (digital) (Knight Ripper-Empire).cbr (44pp) | [247567] Terminal 002 (2026) (digital) (Knight Ripper-Empire).cbr (36pp)
+            [247568] Terminal 003 (2026) (digital) (Knight Ripper-Empire).cbr (34pp)
+   ours:    ladder 1-3, 7, 10; 1 number(s) name more than one file: 2
+   CV local rip:   130825 "Terminal" 2020 Foreign Press Comics 1 issue 805495   (rip lookup)
+
+== S105066 The Author Immortal  [tier D]   keys: The Author Immortal  years 2025-2026  5 files / 0 collections
+   folders: [5] Image\The Author Immortal (2025)
+   files:   [247494] The Author Immortal 001 (2025) (Digital) (Zone-Empire).cbr (48pp) | [247495] The Author Immortal 002 (2025) (Digital) (Zone-Empire).cbr (32pp)
+            [247496] The Author Immortal 003 (2025) (Digital) (Zone-Empire).cbr (33pp) | [247497] The Author Immortal 004 (2026) (Digital) (Zone-Empire).cbr (32pp)
+            [247498] The Author Immortal 005 (2026) (Digital) (Zone-Empire).cbr (33pp)
+   ours:    ladder 1-5
+   CV local rip:   167316 "The Author Immortal" 2025 Image 2   (rip lookup)
+   GCD dump:       228241 "The Author Immortal" 2025-? Image [] 5   (dump lookup)
+
+== S105079 The Curse of Sherlee Johnson  [tier D]   keys: The Curse of Sherlee Johnson  years 2025-2026  7 files / 0 collections
+   folders: [7] Image\The Curse of Sherlee Johnson (2025) (Spawn's Universe)
+   files:   The Curse of Sherlee Johnson 001 (2025) (3 covers) (Digital-Empire).cbr … The Curse of Sherlee Johnson 007 (2026) (3 covers) (Digital-Empire).cbr  (7 files, pp 25-47)
+   ours:    ladder 1-7
+   CV local rip:   164475 "The Curse of Sherlee Johnson" 2025 Image 3   (rip lookup)
+   GCD dump:       224106 "The Curse of Sherlee Johnson" 2025-? Image [] 5   (dump lookup)
+
+== S105080 The Cutting Garden  [tier D]   keys: The Cutting Garden  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\The Cutting Garden (2026)
+   files:   [247576] The Cutting Garden (2026) (Digital) (DR & Quinch-Empire).cbr (127pp)
+
+== S105107 The Karman Blade  [tier D]   keys: The Karman Blade  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\The Karman Blade (2026)
+   files:   [247578] The Karman Blade 001 (2026) (digital) (Goobadaddy-Empire).cbz (31pp)
+   ours:    ladder 1
+
+== S105110 The Last Driver  [tier D]   keys: The Last Driver  years 2026-2026  2 files / 0 collections
+   folders: [2] Image\The Last Driver (Sean Gordon Murphy) (2026)
+   files:   [247499] The Last Driver 001 (2026) (digital) (Goobadaddy-Empire).cbz (28pp) | [247500] The Last Driver 002 (2026) (digital) (Goobadaddy-Empire).cbz (28pp)
+   ours:    ladder 1-2
+
+== S105121 The Man Who Dreamt the Impossible - A Tribute to Jack Kirby  [tier D]   keys: The Man Who Dreamt the Impossible - A Tribute to Jack Kirby  years 2025-2025  1 files / 0 collections
+   folders: [1] Image\The Man Who Dreamt the Impossible - A Tribute to Jack Kirby (2025)
+   files:   [247579] The Man Who Dreamt the Impossible - A Tribute to Jack Kirby (Treasury Edition) (2025) (Image) (Digital) (Zone-Empire).cbr (30pp)
+   CV local rip:   166459 "The Man Who Dreamt the Impossible: A Tribute to Jack Kirby" 2025 Image 1 issue 1128964   (rip lookup)
+
+== S105159 The Thing on the Doorstep  [tier D]   keys: The Thing on the Doorstep  years 2026-2026  1 files / 1 collections
+   folders: [1] Image\The Thing on the Doorstep (2026)
+   files:   [247580] COL The Thing on the Doorstep Vol. 01 (2026) (Digital) (DR & Quinch-Empire).cbr (146pp)
+   GCD dump:       233554 "The Thing on the Doorstep" 2026-? Image [] 4   (dump lookup)
+
+== S105171 The Trillion Dollar Kid  [tier D]   keys: The Trillion Dollar Kid  years 2026-2026  2 files / 0 collections
+   folders: [2] Image\The Trillion Dollar Kid (2026)
+   files:   [247502] The Trillion Dollar Kid 001 (2026) (Digital) (DR & Quinch-Empire).cbr (36pp) | [247503] The Trillion Dollar Kid 002 (2026) (Digital) (DR & Quinch-Empire).cbr (33pp)
+   ours:    ladder 1-2
+
+== S105173 The Voice Said Kill  [tier D]   keys: The Voice Said Kill  years 2025-2025  4 files / 0 collections
+   folders: [4] Image\The Voice Said Kill (2025)
+   files:   [247510] The Voice Said Kill 001 (2025) (Digital) (Mephisto-Empire).cbr (37pp) | [247511] The Voice Said Kill 002 (2025) (Digital) (Mephisto-Empire).cbr (37pp)
+            [247512] The Voice Said Kill 003 (2025) (Digital) (Mephisto-Empire).cbr (35pp) | [247513] The Voice Said Kill 004 (2025) (Digital) (Mephisto-Empire).cbr (37pp)
+   ours:    ladder 1-4
+   CV local rip:   165723 "The Voice Said Kill" 2025 Image 3   (rip lookup)
+   GCD dump:       226221 "The Voice Said Kill" 2025-? Image [] 4 · 235530 "The Voice Said Kill" 2026-2026 Image [] 1   (dump lookup)
+
+== S105174 The Walking Dead Deluxe  [tier C] · 145 files  keys: The Walking Dead Deluxe  years 2020-2026  145 files / 0 collections
+   folders: [145] Image\The Walking Dead (2003)\The Walking Dead Deluxe (2020)
+   files:   The Walking Dead Deluxe 001 (2020) (Digital) (Zone-Empire).cbr … The Walking Dead Deluxe 135 (2026) (Digital) (Zone-Empire).cbr  (135 files, pp 31-60)
+            [246580] The Walking Dead Deluxe 136 (2026) (Digial) (Zone-Empire).cbr (37pp)
+            The Walking Dead Deluxe 137 (2026) (Digital) (Zone-Empire).cbr … The Walking Dead Deluxe 145 (2026) (Digital) (Zone-Empire).cbr  (9 files, pp 34-37)
+   ours:    ladder 1-145; ComicInfo Series: "The Walking Dead Deluxe"x69; ComicInfo Publisher: "Image"x47, "Image - Skybound"x22
+   CV local rip:   130977 "The Walking Dead Deluxe" 2020 Image 125   (rip lookup)
+   GCD dump:       164809 "The Walking Dead Deluxe" 2020-? Image [] 137   (dump lookup)
+
+== S105182 This Ends Tonight  [tier D]   keys: This Ends Tonight  years 2025-2025  1 files / 0 collections
+   folders: [1] Image\This Ends Tonight (2025)
+   files:   [247514] This Ends Tonight (2025) (Digital) (DR & Quinch-Empire).cbr (105pp)
+   CV local rip:   165547 "This Ends Tonight" 2025 Image 3   (rip lookup)
+   GCD dump:       226064 "This Ends Tonight" 2025-? Image [] 3 · 231230 "This Ends Tonight" 2025-2025 Image [] 1   (dump lookup)
+
+== S105201 Tigress Island  [tier D]   keys: Tigress Island  years 2026-2026  5 files / 0 collections
+   folders: [5] Image\Tigress Island (2026)
+   files:   [247515] Tigress Island 001 (2026) (Digital) (Zone-Empire).cbr (30pp) | [247516] Tigress Island 002 (2026) (Digital) (Zone-Empire).cbr (32pp)
+            [247517] Tigress Island 003 (2026) (Digital) (Zone-Empire).cbr (31pp) | [247518] Tigress Island 004 (2026) (Digital) (Zone-Empire).cbr (31pp)
+            [247519] Tigress Island 005 (2026) (Digital) (Zone-Empire).cbr (30pp)
+   ours:    ladder 1-5
+   GCD dump:       234973 "Tigress Island" 2026-? Image [] 3   (dump lookup)
+
+== S105168 The Transformers - The Movie  [tier D]   keys: The Transformers - The Movie  years 2026-2026  3 files / 0 collections
+   folders: [3] Image\Transformers Misc\The Transformers - The Movie 40th Anniversary Edition (2026)
+   files:   [249295] The Transformers - The Movie 001 40th Anniversary Edition (2026) (digital) (Knight Ripper-Empire).cbr (28pp)
+            [249296] The Transformers - The Movie 002 40th Anniversary Edition (2026) (digital) (Knight Ripper-Empire).cbr (28pp)
+            [249297] The Transformers - The Movie 003 40th Anniversary Edition (2026) (digital) (Knight Ripper-Empire).cbr (28pp)
+   ours:    ladder 1-3
+   CV local rip:   3655 "Transformers: The Movie" 1986 Marvel 3   (rip lookup)
+   GCD dump:       3207 "Transformers: The Movie" 1986-1987 Marvel [] 3 · 108497 "Transformers the Movie" [en-gb] 1986-1986 Marvel UK [] 1   (dump lookup)
+
+== S105213 Transformers - Worst Bot Ever - Bot Swap!  [tier D]   keys: Transformers - Worst Bot Ever - Bot Swap!  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\Transformers Misc\Transformers - Worst Bot Ever (2025)
+   files:   [249298] Transformers - Worst Bot Ever - Bot Swap! (2026) (digital) (Knight Ripper-Empire).cbr (109pp)
+
+== S105214 Transformers - Worst Bot Ever - Meet Ballpoint!  [tier D]   keys: Transformers - Worst Bot Ever - Meet Ballpoint!  years 2025-2025  1 files / 0 collections
+   folders: [1] Image\Transformers Misc\Transformers - Worst Bot Ever (2025)
+   files:   [249299] Transformers - Worst Bot Ever - Meet Ballpoint! (2025) (digital) (Knight Ripper-Empire).cbr (110pp)
+   CV local rip:   166044 "Transformers: Worst Bot Ever - Meet Ballpoint!" ? Image 1 issue 1123505   (rip lookup)
+   GCD dump:       225917 "Transformers: Worst Bot Ever - Meet Ballpoint!" 2025-2025 Image [] 1   (dump lookup)
+
+== S105215 Transformers Worst Bot Ever  [tier D]   keys: Transformers Worst Bot Ever  years 2025-2025  1 files / 0 collections
+   folders: [1] Image\Transformers Misc\Transformers - Worst Bot Ever (2025)
+   files:   [249300] Transformers Worst Bot Ever 001 (FCBD) (2025) (Physical).cbr (32pp)
+   ours:    ladder 1
+
+== S105169 The Transformers - Til All Are One Compendium  [tier D]   keys: The Transformers - Til All Are One Compendium  years 2025-2025  3 files / 3 collections
+   folders: [3] Image\Transformers Misc\Transformers v1 (1984, 2024)
+   files:   [246833] COL The Transformers - Til All Are One Compendium 02 (2025) (Kickstarter-digital) (Minutemen-Phantasm).cbz (1252pp)
+            [246834] COL The Transformers - Til All Are One Compendium 03 (2025) (Kickstarter-digital) (Minutemen-Phantasm).cbz (88pp)
+            [246835] COL The Transformers - Til All Are One Compendium 04 (2025) (Kickstarter-digital) (Minutemen-Phantasm).cbz (1168pp)
+   GCD dump:       227943 "The Transformers Til All Are One Compendium" 2025-2025 Image [] ?   (dump lookup)
+
+== S105170 The Transformers Compendium  [tier D]   keys: The Transformers Compendium  years 2025-2025  2 files / 2 collections
+   folders: [2] Image\Transformers Misc\Transformers v1 (1984, 2024)
+   files:   [246836] COL The Transformers Compendium Book 01 (2025) (digital) (Knight Ripper-Empire).cbr (1204pp)
+            [246837] COL The Transformers Compendium Book 02 (2025) (F) (Collection) (Image) (Digital-HD) (LeDuch).cbz (1172pp)
+   ours:    ComicInfo Series: "The Transformers Compendium"x1; ComicInfo Volume: "2025"x1; ComicInfo Publisher: "Image"x1; ComicInfo Web: "1137187"x1
+   CV local rip:   164654 "The Transformers Compendium" 2025 Image 2   (rip lookup)
+   GCD dump:       224380 "Transformers Compendium" 2025-? Image [] 2   (dump lookup)
+
+== S105225 Universal Monsters - Blood of the Wolf Man  [tier D]   keys: Universal Monsters - Blood of the Wolf Man  years 2026-2026  4 files / 0 collections
+   folders: [4] Image\Universal Monsters\Universal Monsters - Blood of the Wolf Man (2026)
+   files:   [249222] Universal Monsters - Blood of the Wolf Man 001 (2026) (Digital) (Zone-Empire).cbr (34pp)
+            [249223] Universal Monsters - Blood of the Wolf Man 002 (2026) (Digital) (Zone-Empire).cbr (35pp)
+            [249224] Universal Monsters - Blood of the Wolf Man 003 (2026) (Digital) (Zone-Empire).cbr (36pp)
+            [249225] Universal Monsters - Blood of the Wolf Man 004 (2026) (Digital) (Zone-Empire).cbr (33pp)
+   ours:    ladder 1-4
+
+== S105226 Universal Monsters - Dracula Black and White Special  [tier D]   keys: Universal Monsters - Dracula Black and White Special  years 2025-2025  1 files / 0 collections
+   folders: [1] Image\Universal Monsters\Universal Monsters - Dracula (2023)
+   files:   [246838] Universal Monsters - Dracula Black & White Special 001 (2025) (Digital) (Zone-Empire).cbr (57pp)
+   ours:    ladder 1
+   CV local rip:   168054 "Universal Monsters: Dracula Black & White Special" 2025 Image 2 (via our own name without the filing suffix "Universal Monsters - Dracula Black & White Special")   (rip lookup)
+   GCD dump:       229174 "Universal Monsters: Dracula Black & White Special" 2025-? Image [] 2 (via our own name without the filing suffix "Universal Monsters - Dracula Black & White Special")   (dump lookup)
+
+== S105227 Universal Monsters - Invisible Man  [tier D]   keys: Universal Monsters - Invisible Man  years 2025-2025  4 files / 0 collections
+   folders: [4] Image\Universal Monsters\Universal Monsters - Invisible Man (2025)
+   files:   [249226] Universal Monsters - Invisible Man 001 (2025) (Digital) (Zone-Empire).cbr (36pp) | [249227] Universal Monsters - Invisible Man 002 (2025) (Digital) (Zone-Empire).cbr (35pp)
+            [249228] Universal Monsters - Invisible Man 003 (2025) (Digital) (Zone-Empire).cbr (35pp) | [249229] Universal Monsters - Invisible Man 004 (2025) (Digital) (Zone-Empire).cbr (35pp)
+   ours:    ladder 1-4
+
+== S105228 Universal Monsters - Phantom of the Opera  [tier D]   keys: Universal Monsters - Phantom of the Opera  years 2026-2026  4 files / 0 collections
+   folders: [4] Image\Universal Monsters\Universal Monsters - Phantom of the Opera (2026)
+   files:   [249230] Universal Monsters - Phantom of the Opera 001 (2026) (Digital) (Zone-Empire).cbr (36pp)
+            [249231] Universal Monsters - Phantom of the Opera 002 (2026) (Digital) (Zone-Empire).cbr (33pp)
+            [249232] Universal Monsters - Phantom of the Opera 003 (2026) (Digital) (Zone-Empire).cbr (33pp)
+            [249233] Universal Monsters - Phantom of the Opera 004 (2026) (Digital) (Zone-Empire).cbr (33pp)
+   ours:    ladder 1-4
+   GCD dump:       234390 "Universal Monsters: Phantom of the Opera" 2026-? Image [] 4   (dump lookup)
+
+== S105255 Viking Moon  [tier D]   keys: Viking Moon  years 2025-2026  4 files / 0 collections
+   folders: [4] Image\Viking Moon (2025)
+   files:   [247581] Viking Moon 001 (2025) (Digital) (Zone-Empire).cbr (33pp) | [247582] Viking Moon 002 (2025) (Digital) (Zone-Empire).cbr (33pp)
+            [247583] Viking Moon 003 (2026) (Digial) (Zone-Empire).cbr (33pp) | [247584] Viking Moon 004 (2026) (Digial) (Zone-Empire).cbr (31pp)
+   ours:    ladder 1-4
+   CV local rip:   167200 "Viking Moon" 2025 Image 2   (rip lookup)
+   GCD dump:       228079 "Viking Moon" 2025-? Image [] 3   (dump lookup)
+
+== S105288 We're Taking Everyone Down With Us  [tier D]   keys: We're Taking Everyone Down With Us  years 2025-2025  1 files / 1 collections
+   folders: [1] Image\We're Taking Everyone Down With Us (2025)
+   files:   [247585] COL We're Taking Everyone Down With Us Vol. 01 (2025) (Digital) (DR & Quinch-Empire).cbr (258pp)
+   CV local rip:   163027 "We're Taking Everyone Down with Us" 2025 Image 6   (rip lookup)
+   GCD dump:       222289 "We're Taking Everyone Down with Us" 2025-2025 Image [] 6 · 231231 "We're Taking Everyone Down with Us" 2025-2025 Image [] 1   (dump lookup)
+
+== S105296 White Sky  [tier D]   keys: White Sky  years 2026-2026  5 files / 0 collections
+   folders: [5] Image\White Sky (2026)
+   files:   [247520] White Sky 001 (2026) (Digital) (Mephisto-Empire).cbr (33pp) | [247521] White Sky 002 (2026) (Digital) (Mephisto-Empire).cbr (32pp)
+            [247522] White Sky 003 (2026) (Digital) (Mephisto-Empire).cbr (32pp) | [247523] White Sky 004 (2026) (Digital) (Mephisto-Empire).cbr (24pp)
+            [247524] White Sky 005 (2026) (Digital) (Mephisto-Empire).cbr (31pp)
+   ours:    ladder 1-5
+   GCD dump:       234046 "White Sky" 2026-? Image [] 3   (dump lookup)
+
+== S105309 Witchblade - Vampirella  [tier D]   keys: Witchblade - Vampirella  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\Witchblade
+   files:   [245943] Witchblade - Vampirella 001 (2026) (digital) (Son of Ultron-Empire).cbr (47pp)
+   ours:    ladder 1
+
+== S105310 Witchblade Annual  [tier D]   keys: Witchblade Annual  years 2026-2026  1 files / 0 collections
+   folders: [1] Image\Witchblade\Witchblade v3 (2024)\Annuals and Specials
+   files:   [249979] Witchblade Annual (2026) (digital) (Son of Ultron-Empire).cbr (49pp)
+   CV local rip:   26330 "Witchblade Annual" 2009 Image 2   (rip lookup)
+   GCD dump:       233556 "Witchblade Annual" 2026-? Image [] 1 · 36656 "Witchblade Annual" 2009-2010 Image [] 2   (dump lookup)
+
+== S105333 You'll Do Bad Things  [tier D]   keys: You'll Do Bad Things  years 2025-2025  6 files / 0 collections
+   folders: [6] Image\You'll Do Bad Things (Tiny Onion) (2025)
+   files:   You'll Do Bad Things 001 (2025) (Digital) (Zone-Empire).cbr … You'll Do Bad Things 006 (2025) (Digital) (Zone-Empire).cbr  (6 files, pp 31-38)
+   ours:    ladder 1-6
+   CV local rip:   163028 "You'll Do Bad Things" 2025 Image 6 · 169131 "You'll Do Bad Things" 2025 Image 1 issue 1147733   (rip lookup)
+   GCD dump:       222288 "You'll Do Bad Things" 2025-? Image [] 6 · 230680 "You'll Do Bad Things" 2025-2025 Image [] 1   (dump lookup)
+
+== S105335 Yumi - 00-EX  [tier D]   keys: Yumi - 00-EX  years 2026-2026  2 files / 0 collections
+   folders: [2] Image\Yumi - 00-EX (2026)
+   files:   [247531] Yumi - 00-EX 001 (2026) (Digital) (Zone-Empire).cbr (33pp) | [247532] Yumi - 00-EX 002 (2026) (Digital) (Zone-Empire).cbr (33pp)
+   ours:    ladder 0; 1 number(s) name more than one file: 0
+
+== S105358 w0rldtr33 - The Upgraded Edition  [tier D]   keys: w0rldtr33 - The Upgraded Edition  years 2026-2026  1 files / 1 collections
+   folders: [1] Image\w0rldtr33 (2023)\Deluxe Edition
+   files:   [249234] COL w0rldtr33 - The Upgraded Edition Book 01 (2026) (Digital) (DR & Quinch-Empire).cbr (516pp)
+
+== S104283 20th Century Eightball  [tier D]   keys: 20th Century Eightball  years 1989-1989  1 files / 0 collections
+   folders: [1] Indies\Eightball (1989) (Daniel Clowes)
+   files:   [247619] 20th Century Eightball [Counterpaul].cbr (103pp)
+
+== S104715 Knights of the Dinner Table 130  [tier D]   keys: Knights of the Dinner Table 130  years 1994-1994  1 files / 0 collections
+   folders: [1] Indies\Knights of the Dinner Table (1994)
+   files:   [247858] Knights of the Dinner Table 130 - 300 (+1).cbr (83pp)
+   ours:    ladder 300
+
+== S104716 Knights of the Dinner Table 162 - SpaceHack  [tier D]   keys: Knights of the Dinner Table 162 - SpaceHack  years 1994-1994  1 files / 0 collections
+   folders: [1] Indies\Knights of the Dinner Table (1994)
+   files:   [247886] Knights of the Dinner Table 162 - SpaceHack 3000.cbz (84pp)
+   ours:    ladder 3000
+
+== S104717 Knights of the Dinner Table 179 - Party Like It's  [tier D]   keys: Knights of the Dinner Table 179 - Party Like It's  years 2011-2011  1 files / 0 collections
+   folders: [1] Indies\Knights of the Dinner Table (1994)
+   files:   [247828] Knights of the Dinner Table 179 - Party Like It's 1979 (2011) (Digital) (Monafekk-Empire).cbr (73pp)
+   ours:    ladder 179
+
+== S104706 Knights Of The Dinner Table-Special Edition  [tier D]   keys: Knights Of The Dinner Table-Special Edition  years 1994-1994  3 files / 0 collections
+   folders: [3] Indies\Knights of the Dinner Table (1994)\Extras
+   files:   [249367] Knights Of The Dinner Table-Special Edition 1.pdf (37pp) | [249368] Knights Of The Dinner Table-Special Edition 2.pdf (37pp)
+            [249369] Knights Of The Dinner Table-Special Edition 3.pdf (37pp)
+   ours:    ladder 1-3
+   CV candidates:  9179 "Knights of the Dinner Table" 1994 Kenzer and Company 320 s54 · 46158 "Knights of the Dinner Table Special" 2003 Kenzer and Company 3 s13 · 46157 "Knights of the Dinner Table Origins Special" 2003 Kenzer and Company 2 s5 · 46156 "Knights of the Dinner Table: Black Hands" 2003 Kenzer and Company 2 s5 · 36220 "Knights of the Dinner Table: Black Hands 2010 Special" 2010 Kenzer and Company 2 s3 · 46155 "Knights of the Dinner Table Special" 2008 Kenzer and Company 1 issue 317660 s1   (v1 search)
+   CV local rip:   9179 "Knights of the Dinner Table" 1994 Kenzer and Company 310 (via CV candidate name "Knights of the Dinner Table") · 46158 "Knights of the Dinner Table Special" 2003 Kenzer and Company 3 (via CV candidate name "Knights of the Dinner Table Special") · 46155 "Knights of the Dinner Table Special" 2008 Kenzer and Company 1 issue 317660 (via CV candidate name "Knights of the Dinner Table Special") · 46157 "Knights of the Dinner Table Origins Special" 2003 Kenzer and Company 2 (via CV candidate name "Knights of the Dinner Table Origins Special")   (rip lookup)
+   GCD dump:       151357 "Knights of the Dinner Table Special Edition" 2003-2003 Kenzer and Company [] 3 · 14445 "Knights of the Dinner Table" 1994-1995 Alderac Group [] 3 (via CV candidate name "Knights of the Dinner Table") · 9923 "Knights of the Dinner Table" 1997-? Kenzer and Company [] 318 (via CV candidate name "Knights of the Dinner Table") · 116845 "Knights of the Dinner Table" [de] 2003-2003 Erbstößer & Holzer [] 2 (via CV candidate name "Knights of the Dinner Table")   (dump lookup)
+
+== S104707 Knights of the Dinner Table - Everknights  [tier D]   keys: Knights of the Dinner Table - Everknights  years 2002-2004  14 files / 0 collections
+   folders: [14] Indies\Knights of the Dinner Table (1994)\Knights of the Dinner Table - Everknights (2002)
+   files:   Knights of the Dinner Table - Everknights 01 (2002) (digital) (Lusiphur-DCP).cbz … Knights of the Dinner Table - Everknights 14 (2004) (digital) (Lusiphur-DCP).cbz  (14 files, pp 28-32)
+   ours:    ladder 1-14
+   GCD dump:       18405 "Knights of the Dinner Table Everknights" 2002-2004 Kenzer and Company [] 14   (dump lookup)
+
+== S104708 Knights of the Dinner Table - Everknights -01  [tier D]   keys: Knights of the Dinner Table - Everknights -01  years 2002-2002  1 files / 0 collections
+   folders: [1] Indies\Knights of the Dinner Table (1994)\Knights of the Dinner Table - Everknights (2002)
+   files:   [249380] Knights of the Dinner Table - Everknights -01 (2002) (digital) (Lusiphur-DCP).cbz (28pp)
+   ours:    ladder 1
+
+== S104709 Knights of the Dinner Table - Everknights -02  [tier D]   keys: Knights of the Dinner Table - Everknights -02  years 2002-2002  1 files / 0 collections
+   folders: [1] Indies\Knights of the Dinner Table (1994)\Knights of the Dinner Table - Everknights (2002)
+   files:   [249381] Knights of the Dinner Table - Everknights -02 (2002) (digital) (Lusiphur-DCP).cbz (28pp)
+   ours:    ladder 2
+
+== S104710 Knights of the Dinner Table - Everknights -03  [tier D]   keys: Knights of the Dinner Table - Everknights -03  years 2002-2002  1 files / 0 collections
+   folders: [1] Indies\Knights of the Dinner Table (1994)\Knights of the Dinner Table - Everknights (2002)
+   files:   [249382] Knights of the Dinner Table - Everknights -03 (2002) (digital) (Lusiphur-DCP).cbz (28pp)
+   ours:    ladder 3
+
+== S104711 Knights of the Dinner Table - Everknights -04  [tier D]   keys: Knights of the Dinner Table - Everknights -04  years 2002-2002  1 files / 0 collections
+   folders: [1] Indies\Knights of the Dinner Table (1994)\Knights of the Dinner Table - Everknights (2002)
+   files:   [249383] Knights of the Dinner Table - Everknights -04 (2002) (digital) (Lusiphur-DCP).cbz (28pp)
+   ours:    ladder 4
+
+== S104712 Knights of the Dinner Table - Everknights -05  [tier D]   keys: Knights of the Dinner Table - Everknights -05  years 2002-2002  1 files / 0 collections
+   folders: [1] Indies\Knights of the Dinner Table (1994)\Knights of the Dinner Table - Everknights (2002)
+   files:   [249384] Knights of the Dinner Table - Everknights -05 (2002) (digital) (Lusiphur-DCP).cbz (28pp)
+   ours:    ladder 5
+
+== S104713 Knights of the Dinner Table - Everknights Special  [tier D]   keys: Knights of the Dinner Table - Everknights Special  years 2004-2004  1 files / 0 collections
+   folders: [1] Indies\Knights of the Dinner Table (1994)\Knights of the Dinner Table - Everknights (2002)
+   files:   [249399] Knights of the Dinner Table - Everknights Special (2004) (digital) (Lusiphur-DCP).cbz (28pp)
+
+== S104714 Knights of the Dinner Table - Hackmasters of Everknight  [tier D]   keys: Knights of the Dinner Table - Hackmasters of Everknight  years 2000-2001  10 files / 0 collections
+   folders: [10] Indies\Knights of the Dinner Table (1994)\Knights of the Dinner Table - Hackmasters Of Everknight (2000)
+   files:   [249400] Knights of the Dinner Table - Hackmasters of Everknight 001 (2000) (Ogg).cbr (35pp) | [249401] Knights of the Dinner Table - Hackmasters of Everknight 002 (2000) (ogg).cbr (31pp)
+            [249402] Knights of the Dinner Table - Hackmasters of Everknight 003 (2000) (digital) (Lusiphur-DCP).cbz (36pp)
+            [249403] Knights of the Dinner Table - Hackmasters of Everknight 004 (2000) (digital) (Lusiphur-DCP).cbz (36pp)
+            [249404] Knights of the Dinner Table - Hackmasters of Everknight 005 (2001) (digital) (Lusiphur-DCP).cbz (36pp)
+            [249405] Knights of the Dinner Table - Hackmasters of Everknight 006 (2001) (digital) (Lusiphur-DCP).cbz (36pp)
+            [249406] Knights of the Dinner Table - Hackmasters of Everknight 007 (2001) (digital) (Lusiphur-DCP).cbz (36pp)
+            [249407] Knights of the Dinner Table - Hackmasters of Everknight 008 (2001).cbz (36pp)
+            [249408] Knights of the Dinner Table - Hackmasters of Everknight 009 (2001) (digital) (Lusiphur-DCP).cbz (36pp)
+            [249409] Knights of the Dinner Table - Hackmasters of Everknight 010 (2001) (digital) (Lusiphur-DCP).cbz (36pp)
+   ours:    ladder 1-10
+
+== S104721 Knights of the Dinner Table Illustrated  [tier D]   keys: Knights of the Dinner Table Illustrated  years 2002-2024  31 files / 2 collections
+   folders: [29] Indies\Knights of the Dinner Table (1994)\Knights of the Dinner Table Illustrated (2002) · [2] Indies\Knights of the Dinner Table (1994)\Knights of the Dinner Table Illustrated (2002)\Trades
+   files:   Knights of the Dinner Table Illustrated 013 (2002) (digital) (Lusiphur-DCP).cbz … Knights of the Dinner Table Illustrated 041 (2004) (digital) (Lusiphur-DCP).cbz  (29 files, pp 28-28)
+            [250006] COL Knights of the Dinner Table Illustrated - Book 01 (2024).cbz (152pp) | [250007] COL Knights of the Dinner Table Illustrated - Book 02 (2024).cbz (154pp)
+   ours:    ladder 13-41
+   CV local rip:   31213 "Knights of the Dinner Table: Illustrated" 2000 Kenzer and Company 18   (rip lookup)
+   GCD dump:       18404 "Knights of the Dinner Table Illustrated" 2000-2002 Kenzer and Company [] 41   (dump lookup)
+
+== S104718 Knights of the Dinner Table Compilation - Knights of the Dinner Table Illustrated  [tier D]   keys: Knights of the Dinner Table Compilation - Knights of the Dinner Table Illustrated  years 1994-1994  2 files / 2 collections
+   folders: [2] Indies\Knights of the Dinner Table (1994)\_Collections
+   files:   [249346] COL Knights of the Dinner Table Compilation - Knights of the Dinner Table Illustrated TPB - Book 01.cbz (152pp)
+            [249347] COL Knights of the Dinner Table Compilation - Knights of the Dinner Table Illustrated TPB - Book 02.cbz (154pp)
+
+== S104719 Knights of the Dinner Table Compilation - Midnight Special  [tier D]   keys: Knights of the Dinner Table Compilation - Midnight Special  years 1994-1994  1 files / 0 collections
+   folders: [1] Indies\Knights of the Dinner Table (1994)\_Collections
+   files:   [249348] Knights of the Dinner Table Compilation - Midnight Special.cbz (130pp)
+
+== S104720 Knights of the Dinner Table Compilation - Tales Outta Crime Nation  [tier D]   keys: Knights of the Dinner Table Compilation - Tales Outta Crime Nation  years 1994-1994  1 files / 0 collections
+   folders: [1] Indies\Knights of the Dinner Table (1994)\_Collections
+   files:   [249349] Knights of the Dinner Table Compilation - Tales Outta Crime Nation.cbz (71pp)
+
+== S104776 Megaton Man - Weekly Serials In Color  [tier D]   keys: Megaton Man - Weekly Serials In Color  years 2026-2026  1 files / 1 collections
+   folders: [1] Indies\Megaton Man
+   files:   [247969] COL Megaton Man - Weekly Serials In Color 1996-2001 (2026) (TPB) (F) (Digital) (Poplan-ASO) (Fiasco Books).cbz (116pp)
+
+== S104369 Ben Died of a Train  [tier D]   keys: Ben Died of a Train  years 2011-2011  1 files / 0 collections
+   folders: [1] Indies\_Box Brown Zines
+   files:   [247970] Ben Died of a Train (Box Brown) (2011) (c2c) (Pyramid).cbz (25pp)
+
+== S104629 Hans Rickheit - MADAM MOLLUSK  [tier D]   keys: Hans Rickheit - MADAM MOLLUSK  years 2004-2004  1 files / 0 collections
+   folders: [1] Indies\_Hans Rickheit
+   files:   [247971] Hans Rickheit - MADAM MOLLUSK [CHROME FETUS mini-comic #5] (2004) (web rip) (TheKhan-DCP).cbz (6pp)
+   ours:    ladder 5
+
+== S104630 Hans Rickheit - PRONG and PREEN  [tier D]   keys: Hans Rickheit - PRONG and PREEN  years 2026-2026  1 files / 0 collections
+   folders: [1] Indies\_Hans Rickheit
+   files:   [247972] Hans Rickheit - PRONG & PREEN 03 (2026) (F) (web rip) (TheKhan-DCP).cbz (12pp)
+   ours:    ladder 3
+
+== S104631 Hans Rickheit - PROOG and PREEN  [tier D]   keys: Hans Rickheit - PROOG and PREEN  years 2026-2026  1 files / 0 collections
+   folders: [1] Indies\_Hans Rickheit
+   files:   [247973] Hans Rickheit - PROOG & PREEN 02 (2026) (web rip) (Thekhan-DCP).cbz (14pp)
+   ours:    ladder 2
+
+== S104944 Sigmund Freud  [tier D]   keys: Sigmund Freud  years 2002-2002  1 files / 0 collections
+   folders: [1] Indies\_Hans Rickheit
+   files:   [247974] Sigmund Freud (2002) (Hans Rickheit) (web rip) (TheKhan-DCP).cbz (18pp)
+   GCD dump:       85681 "Sigmund Freud" 1998-1998 Chrome Fetus Comix [] 1   (dump lookup)
+
+== S105166 The Tourist  [tier D]   keys: The Tourist  years 2026-2026  1 files / 0 collections
+   folders: [1] Indies\_Hans Rickheit
+   files:   [247975] The Tourist (2026) (Hans Rickheit short 7 pages story) (digital web rip) (The Khan-DCP).cbz (7pp)
+   CV local rip:   23187 "The Tourist" 2006 Image 1 issue 139564   (rip lookup)
+   GCD dump:       17728 "The Tourist" 2006-2006 Image [] 1   (dump lookup)
+
+== S104879 Powers 25  [tier D]   keys: Powers 25  years 2025-2026  11 files / 0 collections
+   folders: [11] Jinxworld (Dark Horse)\Powers (2000)\06 Powers 25 (DH) (2025)
+   files:   Powers 25 001 (2025) (digital) (Son of Ultron-Empire).cbr … Powers 25 011 (2026) (digital) (Son of Ultron-Empire).cbr  (11 files, pp 23-30)
+   ours:    ladder 1-11
+   CV local rip:   166903 "Powers 25" 2025 Dark Horse Comics 3   (rip lookup)
+   GCD dump:       227628 "Powers 25" 2025-? Dark Horse [] 9   (dump lookup)
+
+== S105217 Trick 'r Treat: Witching Hours  [tier D]   keys: Trick 'r Treat: Witching Hours  years 2026-2026  1 files / 1 collections
+   folders: [1] Legendary Comics
+   files:   [246135] COL Trick 'r Treat - Witching Hours (2026) (Graphic Novel) (Legendary) (Digital) (LeDuch-DCP).cbz (168pp)
+   ours:    ComicInfo Series: "Trick 'r Treat: Witching Hours"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Legendary"x1
+
+== S104541 Fate The Winx Saga  [tier D]   keys: Fate The Winx Saga  years 2024-2024  1 files / 1 collections
+   folders: [1] MadCave (and Maverick)
+   files:   [246138] COL Fate - The Winx Saga v01 Dark Destiny (2024) (Graphic Novel) (Mad Cave Studios) (Digital-HD) (LeDuch).cbz (114pp)
+   ours:    ComicInfo Series: "Fate The Winx Saga"x1; ComicInfo Volume: "2024"x1; ComicInfo Publisher: "Mad Cave Studios"x1
+
+== S104666 I'm A Mess  [tier D]   keys: I'm A Mess  years 2024-2024  1 files / 1 collections
+   folders: [1] MadCave (and Maverick)
+   files:   [246142] COL I'm A Mess (2024) (Graphic Novel) (Mad Cave Studios) (Digital-HD) (LeDuch).cbz (115pp)
+   ours:    ComicInfo Series: "I'm A Mess"x1; ComicInfo Volume: "2024"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Mad Cave Studios"x1
+
+== S104742 Lower Your Sights  [tier D]   keys: Lower Your Sights  years 2022-2022  1 files / 1 collections
+   folders: [1] MadCave (and Maverick)
+   files:   [246143] COL Lower Your Sights (2022) (Graphic Novel) (Mad Cave Studios) (Digital-HD) (LeDuch).cbz (129pp)
+   ours:    ComicInfo Series: "Lower Your Sights"x1; ComicInfo Volume: "2022"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Mad Cave Studios"x1; ComicInfo Web: "968414"x1
+   CV local rip:   147985 "Lower Your Sights" 2022 Mad Cave Studios 1 issue 968414   (rip lookup)
+
+== S104823 Navigating With You  [tier D]   keys: Navigating With You  years 2024-2024  1 files / 1 collections
+   folders: [1] MadCave (and Maverick)
+   files:   [246147] COL Navigating With You (2024) (Graphic Novel) (Mad Cave Studios) (Digital-HD) (LeDuch).cbz (232pp)
+   ours:    ComicInfo Series: "Navigating With You"x1; ComicInfo Volume: "2024"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Mad Cave Studios"x1
+
+== S104838 Of Her Own Design  [tier D]   keys: Of Her Own Design  years 2024-2024  1 files / 1 collections
+   folders: [1] MadCave (and Maverick)
+   files:   [246148] COL Of Her Own Design (2024) (Graphic Novel) (Mad Cave Studios) (Digital-HD) (LeDuch).cbz (210pp)
+   ours:    ComicInfo Series: "Of Her Own Design"x1; ComicInfo Volume: "2024"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Mad Cave Studios"x1
+
+== S104847 One Path  [tier D]   keys: One Path  years 2025-2025  1 files / 1 collections
+   folders: [1] MadCave (and Maverick)
+   files:   [246149] COL One Path (2025) (Graphic Novel) (Mad Cave Studios) (Digital-HD) (LeDuch).cbz (202pp)
+   ours:    ComicInfo Series: "One Path"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Mad Cave Studios"x1
+   GCD dump:       233039 "One Path" 2025-2025 Mad Cave Studios [] 1   (dump lookup)
+
+== S104886 Princess Gwenevere And The Jewel Riders  [tier D]   keys: Princess Gwenevere And The Jewel Riders  years 2024-2024  1 files / 1 collections
+   folders: [1] MadCave (and Maverick)
+   files:   [246152] COL Princess Gwenevere and the Jewel Riders (2024) (Graphic Novel) (Mad Cave Studios) (Digital-HD) (LeDuch).cbz (127pp)
+   ours:    ComicInfo Series: "Princess Gwenevere And The Jewel Riders"x1; ComicInfo Volume: "2024"x1; ComicInfo Publisher: "Mad Cave Studios"x1
+
+== S104920 Savage Bastards  [tier D]   keys: Savage Bastards  years 2020-2020  1 files / 1 collections
+   folders: [1] MadCave (and Maverick)
+   files:   [246154] COL Savage Bastards (2020) (Collection) (Mad Cave Studios) (Digital-HD) (LeDuch).cbz (123pp)
+   ours:    ComicInfo Series: "Savage Bastards"x1; ComicInfo Volume: "2020"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Mad Cave Studios"x1; ComicInfo Web: "815326"x1
+   CV local rip:   125172 "Savage Bastards" 2020 Mad Cave Studios 5 · 131569 "Savage Bastards" 2020 Mad Cave Studios 1 issue 815326   (rip lookup)
+   GCD dump:       158758 "Savage Bastards" 2020-2020 Mad Cave Studios [] 5 · 178899 "Savage Bastards" 2020-2020 Mad Cave Studios [] 1   (dump lookup)
+
+== S104941 Show's End: The Second Coming  [tier D]   keys: Show's End: The Second Coming  years 2023-2023  1 files / 1 collections
+   folders: [1] MadCave (and Maverick)
+   files:   [246155] COL Show's End Vol. 02 - The Second Coming (2023) (Collection) (Mad Cave Studios) (Digital-HD) (LeDuch).cbz (124pp)
+   ours:    ComicInfo Series: "Show's End: The Second Coming"x1; ComicInfo Volume: "2023"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Mad Cave Studios"x1
+   CV local rip:   148232 "Show's End: The Second Coming" 2022 Mad Cave Studios 1 issue 970839   (rip lookup)
+
+== S104984 Speed Republic  [tier D]   keys: Speed Republic  years 2022-2022  1 files / 1 collections
+   folders: [1] MadCave (and Maverick)
+   files:   [246158] COL Speed Republic (2022) (Graphic Novel) (Mad Cave Studios) (Digital-HD) (LeDuch).cbz (136pp)
+   ours:    ComicInfo Series: "Speed Republic"x1; ComicInfo Volume: "2022"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Mad Cave Studios"x1; ComicInfo Web: "979075"x1
+   CV local rip:   148244 "Speed Republic" 2022 Mad Cave Studios 1 issue 979075   (rip lookup)
+   GCD dump:       192051 "Speed Republic" 2022-2022 Mad Cave Studios [] 5 · 232709 "Speed Republic" 2022-2022 Mad Cave Studios [] 1   (dump lookup)

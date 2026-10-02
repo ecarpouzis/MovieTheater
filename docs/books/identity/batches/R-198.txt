@@ -1,0 +1,808 @@
+## Conventions for this batch (35 shown of 90 matched; 419 in LEDGER.md; 120 shelf/shelves: kind:new ×65 · kind:manga ×63 · pub:oni ×40 · kind:collected-line ×37 · kind:trade-only ×37 · pub:titan ×15 · folder:vn-year ×6 · folder:sequel-subfolder ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-289] (83 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-098] (63 shelf/shelves) kind:manga sig:probe
+- GCD hides English manga behind a LONGER title far more than a shorter one ("Oishinbo a la Carte", "Neon
+  Genesis Evangelion 3-in-1 Edition", "Fairy Tail S: Tales from Fairy Tail") and occasionally a typo ("Fairy Tale:
+  Fairy Girls"); the mirror exists too (no ComicVine Viz volume for JoJo Parts 1-3 while GCD has all six → `cv=-`).
+[L-100] (63 shelf/shelves) kind:manga
+- A publisher change mid-line (Vertical → Kodansha USA) splits the GCD leg while CV keeps one volume (Ajin, CITY,
+  Miss Nagatoro): one S line, the GCD row that holds the wider span, `N` naming the other.
+[L-274] (63 shelf/shelves) kind:foreign kind:manga pass:item sig:twin
+- ITEM PASS (X-019..X-021, manga): the per-file GCD pick reuses volume 1's title-only id across EVERY book of a
+  manga shelf whose header already lists N numbered rows (A Bride's Story 12/12, Ajin 17/17, Assassination Classroom
+  21/21) — match the header pool by ordinal, ignore the pick. Per-file CV lands on a foreign twin of the same
+  title even more often (Milky Way, Egmont Ehapa, Glénat, Panini España, Carlsen, Altraverse, the Shogakukan
+  original) — the shelf's identity is the ENGLISH edition; use the header's cv-issues pool.
+[L-276] (63 shelf/shelves) kind:manga
+- GCD splits one manga line into a second publisher-branded series for its LAST volumes (Ajin v17, APOSIMZ v07-09:
+  Vertical → Kodansha USA); `SELECT id, number, page_count, isbn, title FROM gcd_issue WHERE series_id=?` on the
+  dump recovers the rows the header pool lacks.
+[L-277] (63 shelf/shelves) kind:manga pass:item sig:stamp
+- ITEM PASS (X-022..X-024, manga): the reused per-file stamp is not always volume 1's id — it can jump to a new
+  wrong series partway through a shelf (Berserk: three wrong series across v02-v41; Bleach cycles four before
+  settling) — always re-derive from the header pool by `#N`, never from a plausible-looking pick.
+[L-278] (63 shelf/shelves) kind:manga
+- Two parallel rip sets of one manga (Berserk .cbz + .cbr) take IDENTICAL per-volume ids from the same ordinal pool.
+[L-280] (63 shelf/shelves) kind:manga pass:item sig:probe
+- ITEM PASS (X-025..X-027, manga): when GCD splits a line in two (an earlier series for v1-N, a later one
+  continuing: Blood on the Tracks 156521 / 171046, CITY 123267 / 172756, Nagatoro 152847 / 171408) the packet's
+  header pool shows only the shelf's STORED series — find the other with `lookup.py --contains` and pull its issues
+  with `gcd_issue WHERE series_id=?`.
+[L-283] (63 shelf/shelves) kind:digital kind:manga pass:item
+- A manga whose only catalog runs are indexed by tankōbon VOLUME cannot take a chapter-count `C` range (Dragon Ball
+  Full Color: judged #1-17 are chapters) — `N no-record`, never an invented mapping.
+[L-284] (63 shelf/shelves) kind:manga pass:item
+- ITEM PASS (X-028..X-030): a manga tankōbon line that GCD tags [Collected Editions] (Food Wars! GCD 95211) has no
+  chapter-indexed run in either catalog — the `C OWED` marker is satisfied by `N no chapter-run`, the Dragon Ball
+  Full Color ruling; the books ARE the run. Our single volumes against GCD's "two-in-one" record have no safe 1:1
+  mapping → `gcd=s<series>` (Erased 118174), never an invented pairing.
+[L-288] (63 shelf/shelves) kind:foreign kind:manga pass:item sig:stamp
+- ITEM PASS (X-034..X-036): the reused stamp can jump FOUR times over one shelf (My Hero Academia: 105138 → 204933
+  → 236032 → 228276 over 38 books, CV pinned on foreign 166768 throughout); a shelf can carry NO gcd pick at all
+  (Muhyo & Roji's ×18). The header ladder by ordinal is the only source on manga — no exceptions found in 400 books.
+[L-293] (63 shelf/shelves) kind:foreign kind:manga pass:item sig:stamp
+- ITEM PASS (X-043..X-045, ~30 manga shelves): not one case where the per-file pick was right and the header pool
+  wrong. A foreign GCD leg that undershoots by one (Twin Star Exorcists, 26 vs 27) → the last book takes gcd=-;
+  a Vertical → Kodansha USA imprint split duplicate-stamps the later imprint's id onto the earlier book
+  (Weathering with You) — reject the duplicate, keep it on its own volume.
+[L-304] (63 shelf/shelves) kind:manga pass:item
+- On a 60-volume manga run the `I` lines map the shelf's own file order onto the CV/GCD issue-list order (ordinal);
+  that is the accepted precision at this scale — the item pass verified it held on 400+ books.
+[L-344] (63 shelf/shelves) kind:manga
+- Manga (Yen Press / Seven Seas / Kodansha / Viz): the fixed CV index now reaches the count-1 ENGLISH volumes that
+  D-012/D-013 called provider-missing; an English CV record replaces a third-territory GCD licence (a German / French
+  row) as the identity (R-067).
+[L-013] (120 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (120 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-030] (120 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-043] (120 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (120 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (120 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (120 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (120 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (120 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (120 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (120 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (120 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-143] (40 shelf/shelves) kind:kids pub:boom pub:idw pub:oni pub:scout sig:trade-link
+- Oni Press and Scout Comics are the IDW/BOOM count-1-trade shape at full strength: 31 shelves in B-064..066 carried
+  the stored link to the same-title count-1 collected record instead of the run (Alabaster Shadows, Blood Feud, Cemetery
+  Kids, Cult of the Lamb, Princess Ugg, Terrible Lizard, Black Cotton, Canopus, Smoketown, Stabbity Bunny, White Ash …).
+[L-151] (120 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-157] (120 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (120 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-160] (120 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-163] (120 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (120 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (120 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (120 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+
++55 more matched entries not shown: L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-358, L-375, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-291, L-309, L-314, L-152, L-158, L-168, L-359, L-064, L-085, L-101, L-310, L-191, L-124, L-272, L-281, L-290, L-068, L-104, L-105, L-139, L-321, L-383, L-385, L-386, L-016, L-032, L-113, L-114 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S105321 Y-M Yagyuu Ninpouchou c093  [tier D]   keys: Y-M Yagyuu Ninpouchou c093  years 2016-2016  1 files / 1 collections
+   folders: [1] Manga\Yagyu Ninja Scrolls (2016)
+   files:   [141119] COL Y-M Yagyuu Ninpouchou v11 c093[Pythong].rar (?pp)
+
+== S105322 Y-M Yagyuu Ninpouchou c094  [tier D]   keys: Y-M Yagyuu Ninpouchou c094  years 2016-2016  1 files / 1 collections
+   folders: [1] Manga\Yagyu Ninja Scrolls (2016)
+   files:   [141120] COL Y-M Yagyuu Ninpouchou v11 c094[Pythong].rar (?pp)
+
+== S105323 Y-M Yagyuu Ninpouchou c095  [tier D]   keys: Y-M Yagyuu Ninpouchou c095  years 2016-2016  1 files / 1 collections
+   folders: [1] Manga\Yagyu Ninja Scrolls (2016)
+   files:   [141121] COL Y-M Yagyuu Ninpouchou v11 c095[Pythong].rar (?pp)
+
+== S105324 Y-M Yagyuu Ninpouchou c096  [tier D]   keys: Y-M Yagyuu Ninpouchou c096  years 2016-2016  1 files / 1 collections
+   folders: [1] Manga\Yagyu Ninja Scrolls (2016)
+   files:   [141122] COL Y-M Yagyuu Ninpouchou v11 c096[Pythong].rar (?pp)
+
+== S105325 Y-M Yagyuu Ninpouchou c097  [tier D]   keys: Y-M Yagyuu Ninpouchou c097  years 2016-2016  1 files / 1 collections
+   folders: [1] Manga\Yagyu Ninja Scrolls (2016)
+   files:   [141123] COL Y-M Yagyuu Ninpouchou v11 c097[Pythong].rar (?pp)
+
+== S105326 Y-M Yagyuu Ninpouchou c098  [tier D]   keys: Y-M Yagyuu Ninpouchou c098  years 2016-2016  1 files / 1 collections
+   folders: [1] Manga\Yagyu Ninja Scrolls (2016)
+   files:   [141124] COL Y-M Yagyuu Ninpouchou v11 c098[Pythong].rar (?pp)
+
+== S105327 Y-M Yagyuu Ninpouchou c099  [tier D]   keys: Y-M Yagyuu Ninpouchou c099  years 2016-2016  1 files / 1 collections
+   folders: [1] Manga\Yagyu Ninja Scrolls (2016)
+   files:   [141125] COL Y-M Yagyuu Ninpouchou v11 c099[Pythong].zip (?pp)
+
+== S105328 Y-M Yagyuu Ninpouchou c100  [tier D]   keys: Y-M Yagyuu Ninpouchou c100  years 2016-2016  1 files / 1 collections
+   folders: [1] Manga\Yagyu Ninja Scrolls (2016)
+   files:   [141126] COL Y-M Yagyuu Ninpouchou v11 c100[Pythong].zip (?pp)
+
+== S105339 Zom  [tier D]   keys: Zom  years 2021-2025  20 files / 17 collections
+   folders: [20] Manga\Zom 100 - Bucket List of the Dead (Digital) (LuCaZ)
+   files:   [248083] Zom 100 - Bucket List of the Dead 066.1 (2024) (Digital) (LuCaZ).cbz (17pp) | [248084] Zom 100 - Bucket List of the Dead 066.2 (2024) (Digital) (LuCaZ).cbz (25pp)
+            [248093] Zom 100 - Bucket List of the Dead 074.2 (2025) (Digital) (LuCaZ).cbz (24pp) | [248096] COL Zom 100 - Bucket List of the Dead v01 (2021) (Digital) (LuCaZ).cbz (150pp)
+            [248097] COL Zom 100 - Bucket List of the Dead v02 (2021) (Digital) (LuCaZ).cbz (151pp) | [248098] COL Zom 100 - Bucket List of the Dead v03 (2021) (Digital) (LuCaZ).cbz (152pp)
+            [248099] COL Zom 100 - Bucket List of the Dead v04 (2021) (Digital) (LuCaZ).cbz (148pp) | [248100] COL Zom 100 - Bucket List of the Dead v05 (2022) (Digital) (LuCaZ).cbz (170pp)
+            [248101] COL Zom 100 - Bucket List of the Dead v06 (2022) (Digital) (LuCaZ).cbz (150pp) | [248102] COL Zom 100 - Bucket List of the Dead v07 (2022) (Digital) (LuCaZ).cbz (167pp)
+            [248103] COL Zom 100 - Bucket List of the Dead v08 (2022) (Digital) (LuCaZ).cbz (152pp) | [248104] COL Zom 100 - Bucket List of the Dead v09 (2023) (Digital) (F) (LuCaZ).cbz (169pp)
+            [248105] COL Zom 100 - Bucket List of the Dead v10 (2023) (Digital) (LuCaZ).cbz (152pp) | [248106] COL Zom 100 - Bucket List of the Dead v11 (2023) (Digital) (LuCaZ).cbz (154pp)
+            [248107] COL Zom 100 - Bucket List of the Dead v12 (2023) (Digital) (LuCaZ).cbz (152pp) | [248108] COL Zom 100 - Bucket List of the Dead v13 (2024) (Digital) (LuCaZ).cbz (156pp)
+            [248109] COL Zom 100 - Bucket List of the Dead v14 (2024) (Digital) (LuCaZ).cbz (152pp) | [248110] COL Zom 100 - Bucket List of the Dead v15 (2024) (Digital) (LuCaZ).cbz (153pp)
+            [248111] COL Zom 100 - Bucket List of the Dead v16 (2024) (Digital) (LuCaZ).cbz (166pp) | [248112] COL Zom 100 - Bucket List of the Dead v17 (2025) (Digital) (LuCaZ).cbz (153pp)
+   ours:    ladder 66, 74; 1 number(s) name more than one file: 66
+
+== S105340 Zom 100 - Bucket List of the Dead  [tier D]   keys: Zom 100 - Bucket List of the Dead  years 2024-2025  10 files / 0 collections
+   folders: [10] Manga\Zom 100 - Bucket List of the Dead (Digital) (LuCaZ)
+   files:   [248085] Zom 100 - Bucket List of the Dead 067 (2024) (Digital) (LuCaZ).cbz (45pp) | [248086] Zom 100 - Bucket List of the Dead 068 (2024) (Digital) (LuCaZ).cbz (31pp)
+            [248087] Zom 100 - Bucket List of the Dead 069 (2024) (Digital) (LuCaZ).cbz (31pp) | [248088] Zom 100 - Bucket List of the Dead 070 (2024) (Digital) (LuCaZ).cbz (39pp)
+            [248089] Zom 100 - Bucket List of the Dead 071 (2024) (Digital) (LuCaZ).cbz (43pp) | [248090] Zom 100 - Bucket List of the Dead 072 (2024) (Digital) (LuCaZ).cbz (41pp)
+            [248091] Zom 100 - Bucket List of the Dead 073 (2025) (Digital) (LuCaZ).cbz (26pp) | [248092] Zom 100 - Bucket List of the Dead 074 (2025) (Digital) (LuCaZ).cbz (19pp)
+            [248094] Zom 100 - Bucket List of the Dead 075 (2025) (Digital) (LuCaZ).cbz (39pp) | [248095] Zom 100 - Bucket List of the Dead 076 (2025) (Digital) (LuCaZ).cbz (38pp)
+   ours:    ladder 67-76
+   CV local rip:   133844 "Zom 100: Bucket List of the Dead" 2021 Viz 17   (rip lookup)
+   GCD dump:       169739 "Zom 100: Bucket List of the Dead" 2021-? Viz [] 19   (dump lookup)
+
+== S104302 A Drifting Life  [tier D]   keys: A Drifting Life  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo
+   files:   [248113] A Drifting Life [D&G] (KickTheKitty) (Sherlock).cbz (848pp)
+   CV local rip:   50086 "A Drifting Life" 2009 Drawn & Quarterly 1 issue 343465   (rip lookup)
+   GCD dump:       44072 "A Drifting Life" [en-ca] 2009-2009 Drawn & Quarterly [] 1 · 236134 "A Drifting Life" [en-ca] 2025-2025 Drawn & Quarterly [] 1   (dump lookup)
+
+== S104308 A Worthless Person  [tier D]   keys: A Worthless Person  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo
+   files:   [248114] A Worthless Person [wonderprojectj+Habanero Scans].cbr (216pp)
+
+== S104309 AX - Alternative Manga  [tier D]   keys: AX - Alternative Manga  years 2010-2010  1 files / 0 collections
+   folders: [1] Manga\_Garo
+   files:   [248116] AX - Alternative Manga (2010) [Top Shelf Productions].cbz (397pp)
+   CV local rip:   53132 "AX Alternative Manga" 2010 Top Shelf 1 issue 362303   (rip lookup)
+   GCD dump:       52610 "AX alternative manga" 2010-? Top Shelf [] 1   (dump lookup)
+
+== S104310 Abandon The Old In Tokyo  [tier D]   keys: Abandon The Old In Tokyo  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo
+   files:   [248115] Abandon The Old In Tokyo.cbz (204pp)
+   CV local rip:   22742 "Abandon the Old in Tokyo" 2006 Drawn & Quarterly 1 issue 136387   (rip lookup)
+   GCD dump:       84735 "Abandon the Old in Tokyo" [en-ca] 2006-2006 Drawn & Quarterly [] 1 · 84736 "Abandon the Old in Tokyo" [en-ca] 2012-2012 Drawn & Quarterly [] 1   (dump lookup)
+
+== S104473 Daiba Electroplating Company  [tier D]   keys: Daiba Electroplating Company  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo
+   files:   [248118] Daiba Electroplating Company (oneshot).cbr (25pp)
+
+== S104538 Fallen Words  [tier D]   keys: Fallen Words  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo
+   files:   [248119] Fallen Words [kickthekitty][anonymous].cbz (270pp)
+   CV local rip:   54392 "Fallen Words" 2012 Drawn & Quarterly 1 issue 370937   (rip lookup)
+   GCD dump:       66442 "Fallen Words" [en-ca] 2012-2012 Drawn & Quarterly [] 1   (dump lookup)
+
+== S104570 Garo  [tier D]   keys: Garo  years 1982-1982  1 files / 0 collections
+   folders: [1] Manga\_Garo
+   files:   [248123] Garo 1982-07-01 [oneshot-Exquisite Corpse].cbr (17pp)
+   ours:    ladder 1
+   GCD dump:       84227 "ガロ [Garo]" [ja-jp] 1964-2002 靑林堂 [Seirindō] [] 424   (dump lookup)
+
+== S104571 Garo '66  [tier D]   keys: Garo '66  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo
+   files:   [248120] Garo '66.cbr (37pp)
+   ours:    ladder 66
+
+== S104572 Garo '67  [tier D]   keys: Garo '67  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo
+   files:   [248121] Garo '67.cbr (44pp)
+   ours:    ladder 67
+
+== S104573 Garo '68  [tier D]   keys: Garo '68  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo
+   files:   [248122] Garo '68.cbr (2pp)
+   ours:    ladder 68
+
+== S104777 Midnight Fishermen  [tier D]   keys: Midnight Fishermen  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo
+   files:   [248124] Midnight Fishermen (Yoshihiro Tatsumi) [Landmark Books].zip (?pp)
+
+== S104826 Nejishiki  [tier D]   keys: Nejishiki  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo
+   files:   [248125] Nejishiki (random chaps).cbr (103pp)
+   CV local rip:   153920 "Nejishiki" 2023 Drawn & Quarterly 1 issue 1020821   (rip lookup)
+
+== S104896 Red Colored Elegy  [tier D]   keys: Red Colored Elegy  years ?-?  2 files / 0 collections
+   folders: [1] Manga\_Garo · [1] Manga\_Garo\[Avant-garde] Seiichi Hayashi
+   files:   [248126] Red Colored Elegy [D&G].cbz (229pp) | [249588] Red Colored Elegy [D&G].cbz (229pp)
+   CV local rip:   56287 "Red Colored Elegy" 2008 Drawn & Quarterly 1 issue 382186   (rip lookup)
+   GCD dump:       37219 "Red Colored Elegy" [en-ca] 2008-2008 Drawn & Quarterly [] 1 · 122483 "Red Colored Elegy" [en-ca] 2018-2018 Drawn & Quarterly [] 1   (dump lookup)
+
+== S104917 Roz & The Big Mag  [tier D]   keys: Roz & The Big Mag  years 2024-2024  1 files / 1 collections
+   folders: [1] Manga\_Garo
+   files:   [248127] COL Roz & The Big Mag (2024) (Graphic Novel) (Self Published) (Digital-HD) (LeDuch).cbz (140pp)
+   ours:    ComicInfo Series: "Roz & The Big Mag"x1; ComicInfo Volume: "2024"x1; ComicInfo Publisher: "Self Published"x1
+
+== S105086 The Deadly Dried Squid Technique  [tier D]   keys: The Deadly Dried Squid Technique  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo
+   files:   [248129] The Deadly Dried Squid Technique (oneshot).cbr (17pp)
+
+== S105122 The Man Who Saw Hell  [tier D]   keys: The Man Who Saw Hell  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo
+   files:   [248130] The Man Who Saw Hell.cbr (31pp)
+
+== S105138 The Push Man and Other Stories  [tier D]   keys: The Push Man and Other Stories  years 2005-2005  1 files / 0 collections
+   folders: [1] Manga\_Garo
+   files:   [248131] The Push Man and Other Stories [Drawn & Quarterly] (2005).cbz (207pp)
+   CV local rip:   55265 "The Push Man and Other Stories" 2007 Drawn & Quarterly 1 issue 376435   (rip lookup)
+   GCD dump:       18527 "The Push Man and Other Stories" [en-ca] 2005-2005 Drawn & Quarterly [] 1 · 87453 "The Push Man and Other Stories" [en-ca] 2012-2012 Drawn & Quarterly [] 1   (dump lookup)
+
+== S105204 Tonari no Onna  [tier D]   keys: Tonari no Onna  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo
+   files:   [248132] Tonari no Onna (chpt.02).cbr (25pp)
+
+== S105330 Yoshibo’s Crime  [tier D]   keys: Yoshibo’s Crime  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo
+   files:   [248133] Yoshibo’s Crime (oneshot).cbr (10pp)
+
+== S104686 Jukai Shounen Zu-ichi  [tier D]   keys: Jukai Shounen Zu-ichi  years ?-?  1 files / 1 collections
+   folders: [1] Manga\_Garo\[Alternative] (Garo) Man Gatarou
+   files:   [249580] COL Jukai Shounen Zu-ichi v01 (ch01).cbr (35pp)
+
+== S104758 Manyuuki - Babaa to Awarenage Bokutachi  [tier D]   keys: Manyuuki - Babaa to Awarenage Bokutachi  years ?-?  1 files / 1 collections
+   folders: [1] Manga\_Garo\[Alternative] (Garo) Man Gatarou
+   files:   [249581] COL Manyuuki - Babaa to Awarenage Bokutachi v01.cbr (205pp)
+
+== S105284 Waratte Goran  [tier D]   keys: Waratte Goran  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo\[Alternative] (Garo) Man Gatarou
+   files:   [249582] Waratte Goran.cbr (100pp)
+   CV local rip:   105001 "Waratte Goran" 2004 Shueisha 1 issue 628748   (rip lookup)
+
+== S104759 Maps and Shapes  [tier D]   keys: Maps and Shapes  years 1982-1982  1 files / 0 collections
+   folders: [1] Manga\_Garo\[Avant-garde] Okudaira Yla
+   files:   [249583] Maps and Shapes [oneshot] (1982).cbr (16pp)
+
+== S104799 Modern Lovers  [tier D]   keys: Modern Lovers  years 1979-1979  1 files / 0 collections
+   folders: [1] Manga\_Garo\[Avant-garde] Okudaira Yla
+   files:   [249584] Modern Lovers [ch01] (1979).cbr (16pp)
+
+== S104800 Modern Lovers JPG  [tier D]   keys: Modern Lovers JPG  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo\[Avant-garde] Okudaira Yla
+   files:   [249585] Modern Lovers [Raw] (uncropped) JPG.rar (?pp)
+
+== S104552 Flowering Harbour  [tier D]   keys: Flowering Harbour  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo\[Avant-garde] Seiichi Hayashi
+   files:   [249586] Flowering Harbour (oneshot) [Breakdown Press] (Torakyo).cbz (36pp)
+   CV local rip:   140106 "Flowering Harbour" 2014 Breakdown Press 1 issue 894247   (rip lookup)
+   GCD dump:       84659 "Flowering Harbour" [en-gb] 2014-2014 Breakdown Press [] 1   (dump lookup)
+
+== S104611 Gold Pollen and other Stories  [tier D]   keys: Gold Pollen and other Stories  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo\[Avant-garde] Seiichi Hayashi
+   files:   [249587] Gold Pollen and other Stories [PictureBox].cbz (210pp)
+   GCD dump:       77744 "Gold Pollen and Other Stories" 2013-2013 PictureBox [] 1   (dump lookup)
+
+== S104940 Shinya Shokudou  [tier D]   keys: Shinya Shokudou  years ?-?  3 files / 3 collections
+   folders: [3] Manga\_Garo\[contemporary culture] Abe Yarou
+   files:   [249589] COL Shinya Shokudou v01.cbr (163pp) | [249590] COL Shinya Shokudou v02.cbr (154pp) | [249591] COL Shinya Shokudou v03.cbr (156pp)
+
+== S105329 Yamamoto's Ear Cleaning Shop  [tier D]   keys: Yamamoto's Ear Cleaning Shop  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Garo\[contemporary culture] Abe Yarou
+   files:   [249592] Yamamoto's Ear Cleaning Shop.cbr (34pp)
+
+== S104625 H.P. Lovecraft's The Colour out of Space  [tier D]   keys: H.P. Lovecraft's The Colour out of Space  years 2025-2025  1 files / 0 collections
+   folders: [1] Manga\_Gou Tanabe
+   files:   [246371] H.P. Lovecraft's The Colour out of Space (Gou Tanabe) (2025) (Digital) (XRA-Empire).cbz (196pp)
+   ours:    ComicInfo Series: "H.P. Lovecraft's The Colour out of Space"x1; ComicInfo Publisher: "Dark Horse Comics"x1
+   CV local rip:   165281 "H.P. Lovecraft's The Colour Out of Space" 2025 Dark Horse Comics 1 issue 1117892   (rip lookup)
+   GCD dump:       225611 "H.P. Lovecraft's The Colour Out of Space" 2025-2025 Dark Horse [] 1   (dump lookup)
+
+== S104398 Bloody Mansion  [tier D]   keys: Bloody Mansion  years 1988-1988  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [246372] Bloody Mansion (1988) (Hideshi Hino) (tunafan).cbr (192pp)
+
+== S104485 Demon Child  [tier D]   keys: Demon Child  years 1989-1989  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [246374] Demon Child (1989) (Hideshi Hino) (tunafan).cbr (161pp)
+
+== S104591 Go Home  [tier D]   keys: Go Home  years 2002-2002  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [246375] Go Home (2002) (Hideshi Hino) (tunafan).cbr (240pp)
+   CV local rip:   95862 "Go Home" 2016 Alterna Comics 1 issue 559107   (rip lookup)
+
+== S104610 Gogora Dodora - 4th Dimension Mystery  [tier D]   keys: Gogora Dodora - 4th Dimension Mystery  years 1981-1981  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [246376] Gogora Dodora - 4th Dimension Mystery (1981) (Hideshi Hino) (tunafan).cbr (174pp)
+
+== S104649 Hideshi Hino's Best Works  [tier D]   keys: Hideshi Hino's Best Works  years 2023-2023  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [246377] Hideshi Hino's Best Works (2023) (caterpillar-tunafan).cbr (352pp)
+
+== S104650 Hideshi Hino's Great Works  [tier D]   keys: Hideshi Hino's Great Works  years 2024-2024  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [246378] Hideshi Hino's Great Works (2024) (caterpillar-tunafan).cbr (339pp)
+
+== S104815 My Devil Comes  [tier D]   keys: My Devil Comes  years 1991-1991  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [246379] My Devil Comes (1991) (Hideshi Hino) (tunafan).cbr (184pp)
+
+== S104842 Old Woman Girl  [tier D]   keys: Old Woman Girl  years 1996-1996  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [246380] Old Woman Girl (1996) (Hideshi Hino) (tunafan).cbr (242pp)
+
+== S104888 Psychic Girl Mako  [tier D]   keys: Psychic Girl Mako  years 1984-1984  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [246381] Psychic Girl Mako (1984) (Hideshi Hino) (tunafan).cbr (175pp)
+
+== S105063 Terror Train  [tier D]   keys: Terror Train  years 1982-1982  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [246382] Terror Train (1982) (Hideshi Hino) (tunafan).cbr (250pp)
+
+== S105104 The Hideshi Hino You Don't Know - Bizarre Manga Collection  [tier D]   keys: The Hideshi Hino You Don't Know - Bizarre Manga Collection  years 2021-2021  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [246383] The Hideshi Hino You Don't Know - Bizarre Manga Collection (2021) (tunafan-caterpillar).cbr (354pp)
+
+== S104949 Sky Hawk  [tier D]   keys: Sky Hawk  years 2019-2019  1 files / 0 collections
+   folders: [1] Manga\_Jiro Taniguchi
+   files:   [246384] Sky Hawk (Jiro Taniguchi) (2019) (c2c) (Trite).cbr (290pp)
+   CV local rip:   120805 "Sky Hawk" 2019 Fanfare/Ponent Mon 1 issue 716938   (rip lookup)
+   GCD dump:       149746 "Sky Hawk" [en-gb] 2019-2019 Fanfare [] 1 · 96198 "Sky Hawk" [de] 2010-2010 Schreiber & Leser [] 1 · 128687 "Sky Hawk" [fr-be] 2009-2009 Casterman [] 1 · 77634 "Sky Hawk" [en-au] 1955-? Southdown Press [] 12   (dump lookup)
+
+== S105175 The Walking Man  [tier D]   keys: The Walking Man  years 2019-2019  1 files / 0 collections
+   folders: [1] Manga\_Jiro Taniguchi
+   files:   [246385] The Walking Man (Expanded Edition) (Jiro Taniguchi) (2019) (c2c) (Trite).cbr (235pp)
+   CV local rip:   79399 "The Walking Man" 2006 Fanfare/Ponent Mon 1 issue 475859   (rip lookup)
+   GCD dump:       93393 "The Walking Man" [en-gb] 2014-2014 Fanfare [] 1   (dump lookup)
+
+== S105252 Venice  [tier D]   keys: Venice  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Jiro Taniguchi
+   files:   [246386] Venice [TANIGUCHI Jiro] (Multilingual).cbz (125pp)
+   CV local rip:   69231 "Venice" 2013 TidalWave Productions 1 issue 433447 · 103851 "Venice" 2017 Fanfare/Ponent Mon 1 issue 617923   (rip lookup)
+   GCD dump:       108597 "Venice" 2013-2013 Bluewater / Storm / Stormfront / Tidalwave [] 1 · 187282 "Venice" [en-gb] 2017-2017 Fanfare [] 1   (dump lookup)
+
+== S105116 The Liminal Zone  [tier D]   keys: The Liminal Zone  years 2022-2025  2 files / 2 collections
+   folders: [2] Manga\_Junji Ito\The Liminal Zone (2022)
+   files:   [249571] COL The Liminal Zone v01 (2022) (Digital) (LuCaZ).cbz (215pp) | [249572] COL The Liminal Zone v02 (2025) (Digital) (LuCaZ).cbz (224pp)
+   CV local rip:   144261 "The Liminal Zone" 2022 Viz 2   (rip lookup)
+   GCD dump:       187612 "The Liminal Zone" 2022-? Viz [] 2 · 211651 "The Liminal Zone" [de] 2024-? Carlsen Comics [DE] [] 2   (dump lookup)
+
+== S104827 Neo Faust  [tier D]   keys: Neo Faust  years 2025-2025  1 files / 0 collections
+   folders: [1] Manga\_Osamu Tezuka
+   files:   [246267] Neo Faust (Osamu Tezuka) (2025) (Digital) (XRA-Empire).cbz (412pp)
+   ours:    ComicInfo Series: "Neo Faust"x1; ComicInfo Publisher: "Ablaze"x1
+   CV local rip:   144657 "Neo Faust" 2019 Edizioni BD 1 issue 943205 · 134340 "Neo Faust" 2011 Kodansha 1 issue 937626 · 137660 "Neo Faust" 1995 Kodansha 2   (rip lookup)
+
+== S104355 Bartkira  [tier D]   keys: Bartkira  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Otomo
+   files:   [248134] Bartkira.cbz (?pp)
+   CV local rip:   76239 "Bartkira" 2014 self published 6   (rip lookup)
+
+== S105202 Tokyo Metro Explorers  [tier D]   keys: Tokyo Metro Explorers  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Otomo
+   files:   [248136] Tokyo_Metro_Explorers_(Katsuhiro.Otomo)[Kotonoha].cbz (33pp)
+
+== S105354 v01 c001 World Apartment Horror  [tier D]   keys: v01 c001 World Apartment Horror  years ?-?  1 files / 1 collections
+   folders: [1] Manga\_Satoshi Kon\World Apartment Horror
+   files:   [249575] COL v01 c001 World Apartment Horror.cbz (109pp)
+
+== S105355 v01 c002 Visitors  [tier D]   keys: v01 c002 Visitors  years ?-?  1 files / 1 collections
+   folders: [1] Manga\_Satoshi Kon\World Apartment Horror
+   files:   [249576] COL v01 c002 Visitors.cbz (38pp)
+
+== S105356 v01 c003 Waira  [tier D]   keys: v01 c003 Waira  years ?-?  1 files / 1 collections
+   folders: [1] Manga\_Satoshi Kon\World Apartment Horror
+   files:   [249577] COL v01 c003 Waira.cbz (62pp)
+
+== S105357 v01 c004 Joyful Bell  [tier D]   keys: v01 c004 Joyful Bell  years ?-?  1 files / 1 collections
+   folders: [1] Manga\_Satoshi Kon\World Apartment Horror
+   files:   [249578] COL v01 c004 Joyful Bell.cbz (26pp)
+
+== S105087 The Definitive Yokai Field Guide  [tier D]   keys: The Definitive Yokai Field Guide  years 2026-2026  1 files / 0 collections
+   folders: [1] Manga\_Shigeru Mizuki
+   files:   [246390] The Definitive Yokai Field Guide (Shigeru Mizuki) (2026) (D&Q) (Digital) (XRA-Empire).cbz (147pp)
+
+== S104303 A Ghost Arm Made of Angry Ghosts  [tier D]   keys: A Ghost Arm Made of Angry Ghosts  years 2026-2026  1 files / 0 collections
+   folders: [1] Oni Press\A Ghost Arm Made of Angry Ghosts (2026)
+   files:   [248226] A Ghost Arm Made of Angry Ghosts (2026) (Oni) (Digital Rip) (Hourman-DCP).cbr (195pp)
+
+== S104312 Adventure Time - Quadruple Feature  [tier D]   keys: Adventure Time - Quadruple Feature  years 2026-2026  3 files / 0 collections
+   folders: [3] Oni Press\Adventure Time\Adventure Time - Quadruple Feature (2026)
+   files:   [249640] Adventure Time - Quadruple Feature 01 (of 04) (2026) (Digital Rip) (Hourman-DCP).cbr (27pp)
+            [249641] Adventure Time - Quadruple Feature 02 (of 04) (2026) (Digital Rip) (Hourman-DCP).cbr (31pp)
+            [249642] Adventure Time - Quadruple Feature 03 (of 04) (2026) (Digital Rip) (Hourman-DCP).cbr (31pp)
+   ours:    ladder 1-3
+
+== S104314 Adventure Time Compact Edition: Down Memory Lane  [tier D]   keys: Adventure Time Compact Edition: Down Memory Lane  years 2025-2025  1 files / 1 collections
+   folders: [1] Oni Press\Adventure Time\Adventure Time Compact Edition
+   files:   [249643] COL Adventure Time Compact Edition - Down Memory Lane (2025) (Collection) (Oni Press) (Digital) (LeDuch-DCP).cbz (274pp)
+   ours:    ComicInfo Series: "Adventure Time Compact Edition: Down Memory Lane"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Oni Press"x1
+
+== S104315 Adventure Time Compact Edition: Princess Power!!!  [tier D]   keys: Adventure Time Compact Edition: Princess Power!!!  years 2026-2026  1 files / 1 collections
+   folders: [1] Oni Press\Adventure Time\Adventure Time Compact Edition
+   files:   [249644] COL Adventure Time Compact Edition - Princess Power!!! (2026) (Collection) (Adventure Time) (Digital) (LeDuch-DCP).cbz (276pp)
+   ours:    ComicInfo Series: "Adventure Time Compact Edition: Princess Power!!!"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Adventure Time"x1
+
+== S104316 Adventure Time Compendium  [tier D]   keys: Adventure Time Compendium  years 2024-2025  3 files / 3 collections
+   folders: [3] Oni Press\Adventure Time\Adventure Time Compendium (2024)
+   files:   [249645] COL Adventure Time Compendium v01 (2024) (Collection) (Oni Press) (Digital-HD) (LeDuch).cbz (690pp)
+            [249646] COL Adventure Time Compendium v02 (2025) (Collection) (Oni Press) (Digital-HD) (LeDuch).cbz (578pp)
+            [249647] COL Adventure Time Compendium v03 (2025) (Collection) (Oni Press) (Digital) (LeDuch-DCP).cbz (644pp)
+   ours:    ComicInfo Series: "Adventure Time Compendium"x3; ComicInfo Volume: "2024"x2, "2025"x1; ComicInfo Count: "2"x2; ComicInfo Publisher: "Oni Press"x3
+   CV local rip:   169674 " Adventure Time Compendium" 2024 Oni Press 3   (rip lookup)
+
+== S104313 Adventure Time : The Bubbline College Special  [tier D]   keys: Adventure Time : The Bubbline College Special  years 2025-2025  1 files / 0 collections
+   folders: [1] Oni Press\Adventure Time\Adventure Time v2 (2025)\Annuals and Specials
+   files:   [250058] Adventure Time - The Bubbline College Special 001 (2025) (digital) (Bean-Empire).cbz (56pp)
+   ours:    ladder 1; ComicInfo Series: "Adventure Time : The Bubbline College Special "x1; ComicInfo Publisher: "Oni Press"x1
+   CV local rip:   167314 "Adventure Time: The Bubbline College Special" 2025 Oni Press 1 issue 1136074   (rip lookup)
+   GCD dump:       228316 "Adventure Time: The Bubbline College Special" 2025-2025 Oni Press [] 1   (dump lookup)
+
+== S104317 Adventure Time Pride Special - PB and Marcy's Infinite Mixtape  [tier D]   keys: Adventure Time Pride Special - PB and Marcy's Infinite Mixtape  years 2026-2026  1 files / 0 collections
+   folders: [1] Oni Press\Adventure Time\Adventure Time v2 (2025)\Annuals and Specials
+   files:   [250059] Adventure Time Pride Special - PB & Marcy's Infinite Mixtape 01 (OS) (2026) (Digital Rip) (Hourman-DCP).cbr (49pp)
+   ours:    ladder 1
+
+== S104426 Cindy and Biscuit  [tier D]   keys: Cindy and Biscuit  years 2025-2025  1 files / 1 collections
+   folders: [1] Oni Press\Adventure Time\OGNs
+   files:   [249658] COL Cindy and Biscuit (2025) (Graphic Novel) (Oni Press) (Digital) (LeDuch-DCP).cbz (178pp)
+   ours:    ComicInfo Series: "Cindy and Biscuit"x1; ComicInfo Volume: "2024"x1; ComicInfo Publisher: "Oni Press"x1
+
+== S104370 Benjamin  [tier D]   keys: Benjamin  years 2025-2026  4 files / 1 collections
+   folders: [3] Oni Press\Benjamin (2025) · [1] Oni Press\Benjamin (2026)
+   files:   [248227] Benjamin 001 (2025) (Digital) (Mephisto-Empire).cbr (37pp) | [248228] Benjamin 002 (2025) (Digital) (Mephisto-Empire).cbr (36pp)
+            [248229] Benjamin 003 (2025) (Digital) (Mephisto-Empire).cbr (35pp) | [248230] COL Benjamin (2026) (Collection) (Oni Press) (Digital) (LeDuch-DCP).cbz (108pp)
+   ours:    ladder 1-3; ComicInfo Series: "Benjamin"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Oni Press"x1
+   CV local rip:   165099 "Benjamin" 2025 Oni Press 3 · 114121 "Benjamin" 2011 Splitter 3   (rip lookup)
+   GCD dump:       212687 "Benjamin" [fi] 2017-2017 Otava [] 1 · 88228 "Benjamin" [de] 2011-? Splitter Verlag [] 3   (dump lookup)
+
+== S104420 Cave Grave: Wild West Tales  [tier D]   keys: Cave Grave: Wild West Tales  years 2026-2026  1 files / 1 collections
+   folders: [1] Oni Press\Cave Grave - Wild West Tales (2026)
+   files:   [248231] COL Cave Grave - Wild West Tales (2026) (Graphic Novel) (Oni Press) (Digital) (LeDuch-DCP).cbz (164pp)
+   ours:    ComicInfo Series: "Cave Grave: Wild West Tales"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Oni Press"x1
+
+== S104421 Cemetery Kids Run Rabid  [tier D]   keys: Cemetery Kids Run Rabid  years 2025-2025  4 files / 0 collections
+   folders: [4] Oni Press\Cemetery Kids ... (2024)\02 Cemetery Kids Run Rabid (2025)
+   files:   [249659] Cemetery Kids Run Rabid 001 (2025) (digital) (Son of Ultron-Empire).cbr (28pp) | [249660] Cemetery Kids Run Rabid 002 (2025) (digital) (Son of Ultron-Empire).cbr (27pp)
+            [249661] Cemetery Kids Run Rabid 003 (2025) (Digital Rip) (Hourman-DCP).cbr (26pp) | [249662] Cemetery Kids Run Rabid 004 (2025) (Digital Rip) (Hourman-DCP).cbr (25pp)
+   ours:    ladder 1-4
+   CV local rip:   166211 "Cemetery Kids Run Rabid" 2025 Oni Press 4   (rip lookup)
+   GCD dump:       227572 "Cemetery Kids Run Rabid" 2025-? Oni Press [] 1   (dump lookup)
+
+== S104457 Crownsville  [tier D]   keys: Crownsville  years 2025-2026  5 files / 0 collections
+   folders: [5] Oni Press\Crownsville (2025)
+   files:   [248232] Crownsville 01 (of 05) (2025) (Digital) (Mephisto-Empire).cbr (48pp) | [248233] Crownsville 02 (of 05) (2025) (Digital) (Mephisto-Empire).cbr (26pp)
+            [248234] Crownsville 03 (of 05) (2026) (Digital) (Mephisto-Empire).cbr (24pp) | [248235] Crownsville 04 (of 05) (2026) (Digital) (Mephisto-Empire).cbr (24pp)
+            [248236] Crownsville 05 (of 05) (2026) (Digital) (Mephisto-Empire).cbr (25pp)
+   ours:    ladder 1-5
+   CV local rip:   168209 "Crownsville" 2025 Oni Press 1 issue 1141991   (rip lookup)
+   GCD dump:       230700 "Crownsville" 2025-2026 Oni Press [] 5   (dump lookup)
+
+== S104480 Dead Teenagers  [tier D]   keys: Dead Teenagers  years 2026-2026  4 files / 0 collections
+   folders: [4] Oni Press\Dead Teenagers (2026)
+   files:   [248237] Dead Teenagers 001 (2026) (digial) (Son of Ultron-Empire).cbr (26pp) | [248238] Dead Teenagers 002 (2026) (digial) (Son of Ultron-Empire).cbr (26pp)
+            [248239] Dead Teenagers 003 (2026) (digial) (Son of Ultron-Empire).cbr (26pp) | [248240] Dead Teenagers 004 (2026) (digial) (Son of Ultron-Empire).cbr (25pp)
+   ours:    ladder 1-4
+   GCD dump:       235739 "Dead Teenagers" 2026-? Oni Press [] 1   (dump lookup)
+
+== S104507 Dwellings - All Hallows' Eve Special  [tier D]   keys: Dwellings - All Hallows' Eve Special  years 2024-2024  1 files / 0 collections
+   folders: [1] Oni Press\Dwellings (2023)\Annuals and Specials
+   files:   [249663] Dwellings - All Hallows' Eve Special 01 (2024) (Digital Rip) (Hourman-DCP).cbr (45pp)
+   ours:    ladder 1
+   CV local rip:   160698 "Dwellings: All Hallows' Eve Special" 2024 Oni Press 1 issue 1075743   (rip lookup)
+   GCD dump:       232643 "Dwellings: All Hallows' Eve Special" 2024-2024 Oni Press [] 1   (dump lookup)
+
+== S104517 Estuary - A Ghost Story  [tier D]   keys: Estuary - A Ghost Story | Estuary: A Ghost Story  years 2026-2026  4 files / 0 collections
+   folders: [4] Oni Press\Estuary - A Ghost Story (2026)
+   files:   [248241] Estuary - A Ghost Story 01 (of 04) (2026) (Digital Rip) (Hourman-DCP).cbr (31pp) | [248242] Estuary - A Ghost Story 02 (of 04) (2026) (Digital Rip) (Hourman-DCP).cbr (26pp)
+            [248243] Estuary - A Ghost Story 03 (of 04) (2026) (Digital Rip) (Hourman-DCP).cbr (26pp)
+            [248244] Estuary - A Ghost Story 04 (of 04) (2026) (Limited Series) (Oni Press) (Digital) (LeDuch-DCP).cbz (24pp)
+   ours:    ladder 1-4; ComicInfo Series: "Estuary: A Ghost Story"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "4"x1; ComicInfo Publisher: "Oni Press"x1; ComicInfo Web: "1181759"x1
+   GCD dump:       236870 "Estuary: A Ghost Story" 2026-2026 Oni Press [] 1   (dump lookup)
+
+== S104536 Faceless and the Family - Maze of the Mechanical Aliens  [tier D]   keys: Faceless and the Family - Maze of the Mechanical Aliens  years 2026-2026  3 files / 0 collections
+   folders: [3] Oni Press\Faceless and the Family (2023)\Faceless and the Family v2 - Maze of the Mechanical Aliens (2026)
+   files:   [249664] Faceless and the Family - Maze of the Mechanical Aliens 01 (of 04) (2026) (Digital Rip) (Hourman-DCP).cbr (38pp)
+            [249665] Faceless and the Family - Maze of the Mechanical Aliens 02 (of 04) (2026) (Digital Rip) (Hourman-DCP).cbr (29pp)
+            [249666] Faceless and the Family - Maze of the Mechanical Aliens 03 (of 04) (2026) (Digital Rip) (Hourman-DCP).cbr (29pp)
+   ours:    ladder 1-3
+
+== S104639 Heaven. West Virginia  [tier D]   keys: Heaven. West Virginia  years 2025-2025  1 files / 1 collections
+   folders: [1] Oni Press\Heaven. West Virginia (2025)
+   files:   [248245] COL Heaven. West Virginia (2025) (Graphic Novel) (Oni Press) (Digital) (LeDuch-DCP).cbz (140pp)
+   ours:    ComicInfo Series: "Heaven. West Virginia"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Oni Press"x1
+
+== S104651 High Strangeness Deluxe Edition  [tier D]   keys: High Strangeness Deluxe Edition  years 2026-2026  1 files / 1 collections
+   folders: [1] Oni Press\High Strangeness (2025)
+   files:   [248246] COL High Strangeness Deluxe Edition v01 (2026) (Collection) (Oni Press) (Digital) (LeDuch-DCP).cbz (228pp)
+   ours:    ComicInfo Series: "High Strangeness Deluxe Edition"x1; ComicInfo Volume: "2026"x1; ComicInfo Publisher: "Oni Press"x1
+
+== S104674 Indoor Kid  [tier D]   keys: Indoor Kid  years 2025-2025  1 files / 1 collections
+   folders: [1] Oni Press\Indoor Kid (2025)
+   files:   [248247] COL Indoor Kid (2025) (Graphic Novel) (Oni Press) (Digital) (LeDuch-DCP).cbz (178pp)
+   ours:    ComicInfo Series: "Indoor Kid"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Oni Press"x1
+
+== S104745 Lucky Penny: Color Edition  [tier D]   keys: Lucky Penny: Color Edition  years 2022-2022  1 files / 1 collections
+   folders: [1] Oni Press\Lucky Penny (2016)
+   files:   [248249] COL Lucky Penny - Color Edition (2022) (Graphic Novel) (Oni Press) (Digital) (LeDuch-DCP).cbz (210pp)
+   ours:    ComicInfo Series: "Lucky Penny: Color Edition"x1; ComicInfo Volume: "2022"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Oni Press"x1
+   CV local rip:   149017 "Lucky Penny: Color Edition" 2022 Oni Press 1 issue 979026   (rip lookup)
+
+== S104791 Mika And the Chiller  [tier D]   keys: Mika And the Chiller  years 2025-2025  1 files / 0 collections
+   folders: [1] Oni Press\Mika And the Chiller (2025)
+   files:   [248250] Mika And the Chiller (2025) (One Shot) (Oni Press) (Digital) (LeDuch-DCP).cbz (36pp)
+   ours:    ladder 1; ComicInfo Series: "Mika And the Chiller"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Oni Press"x1
+
+== S104794 Mine is a Long, Lonesome Grave  [tier D]   keys: Mine is a Long, Lonesome Grave  years 2025-2025  4 files / 0 collections
+   folders: [4] Oni Press\Mine is a Long, Lonesome Grave (2025)
+   files:   [248251] Mine is a Long, Lonesome Grave 01 (of 04) (2025) (digital) (Son of Ultron-Empire).cbr (26pp)
+            [248252] Mine is a Long, Lonesome Grave 02 (of 04) (2025) (Digital) (DR-TLB).cbr (24pp) | [248253] Mine is a Long, Lonesome Grave 03 (of 04) (2025) (Digital) (DR-TLB).cbr (25pp)
+            [248254] Mine is a Long, Lonesome Grave 04 (of 04) (2025) (Digital) (DR-TLB).cbr (24pp)
+   ours:    ladder 1-4
+   CV local rip:   162418 "Mine is a Long Lonesome Grave" 2025 Oni Press 4   (rip lookup)
+   GCD dump:       221540 "Mine Is a Long, Lonesome Grave" 2025-? Oni Press [] 1   (dump lookup)
+
+== S104810 Murder Drones  [tier D]   keys: Murder Drones  years 2026-2026  6 files / 0 collections
+   folders: [6] Oni Press\Murder Drones (2026)
+   files:   Murder Drones 01 (of 06) (2026) (Digital Rip) (Hourman-DCP).cbr … Murder Drones 06 (of 06) (2026) (Digital Rip) (Hourman-DCP).cbr  (6 files, pp 33-37)
+   ours:    ladder 1-6
+
+== S104811 Murder Drones - Home  [tier D]   keys: Murder Drones - Home  years 2026-2026  1 files / 0 collections
+   folders: [1] Oni Press\Murder Drones (2026)\Annuals and Specials
+   files:   [249667] Murder Drones - Home 001 (OS) (2026) (Digital Rip) (Hourman-DCP).cbr (45pp)
+   ours:    ladder 1
+
+== S104854 Out of Alcatraz  [tier D]   keys: Out of Alcatraz  years 2025-2025  1 files / 1 collections
+   folders: [1] Oni Press\Out of Alcatraz (2025)
+   files:   [248261] COL Out of Alcatraz (2025) (Collection) (Oni Press) (Digital) (LeDuch-DCP).cbz (180pp)
+   ours:    ComicInfo Series: "Out of Alcatraz"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Oni Press"x1
+   CV local rip:   162860 "Out of Alcatraz" 2025 Oni Press 5   (rip lookup)
+   GCD dump:       222532 "Out of Alcatraz" 2025-? Oni Press [] 5   (dump lookup)
+
+== S104856 Outline  [tier D]   keys: Outline  years 2026-2026  1 files / 0 collections
+   folders: [1] Oni Press\Outline (2026)
+   files:   [248262] Outline (2026) (Oni) (webrip) (MagicMan-DCP).cbr (209pp)
+   CV local rip:   56596 "Outline" 2007 TheNextArt Verlag 2   (rip lookup)
+   GCD dump:       236821 "Outline" [de] 2026-2026 Reprodukt [] 1 · 215799 "Outline" [de] 2024-2024 Reprodukt [] 1 · 103800 "Outline" [de] 2007-2008 TheNextArt Verlag [] 2   (dump lookup)
+
+== S104869 Plague House  [tier D]   keys: Plague House  years 2025-2025  4 files / 0 collections
+   folders: [4] Oni Press\Plague House (2025)
+   files:   [248263] Plague House 01 (of 04) (2025) (digital) (Son of Ultron-Empire).cbr (25pp) | [248264] Plague House 02 (of 04) (2025) (digital) (Son of Ultron-Empire).cbr (25pp)
+            [248265] Plague House 03 (of 04) (2025) (digital) (Son of Ultron-Empire).cbr (26pp) | [248266] Plague House 04 (of 04) (2025) (digital) (Son of Ultron-Empire).cbr (23pp)
+   ours:    ladder 1-4
+   CV local rip:   163160 "Plague House" 2025 Oni Press 4   (rip lookup)
+   GCD dump:       222615 "Plague House" 2025-2025 Oni Press [] 4   (dump lookup)
+
+== S104909 Rick And Morty 10th Anniversary Omnibus  [tier D]   keys: Rick And Morty 10th Anniversary Omnibus  years 2025-2026  4 files / 4 collections
+   folders: [4] Oni Press\Rick and Morty\Omnibus Edition
+   files:   [249668] COL Rick and Morty 10th Anniversary Omnibus v01 (2025) (Collection) (Digital) (LeDuch-DCP).cbz (500pp)
+            [249669] COL Rick and Morty 10th Anniversary Omnibus v02 (2026) (Collection) (Oni Press) (Digital) (LeDuch-DCP).cbz (484pp)
+            [249670] COL Rick and Morty 10th Anniversary Omnibus v03 (2026) (Collection) (Oni Press) (Digital) (LeDuch-DCP).cbz (524pp)
+            [249671] COL Rick and Morty 10th Anniversary Omnibus v04 (2026) (Collection) (Oni Press) (Digital) (LeDuch-DCP).cbz (564pp)
+   ours:    ComicInfo Series: "Rick And Morty 10th Anniversary Omnibus"x4; ComicInfo Volume: "2025"x4; ComicInfo Publisher: "Oni Press"x3
+   GCD dump:       230847 "Rick and Morty 10th Anniversary Omnibus" 2025-? Oni Press [] 5   (dump lookup)
+
+== S104933 Sesame Street: The Amaing Mumford's Card Trick  [tier D]   keys: Sesame Street: The Amaing Mumford's Card Trick  years 2025-2025  1 files / 0 collections
+   folders: [1] Oni Press\Sesame Street (2024)
+   files:   [246412] Sesame Street - The Amazing Mumford's Card Trick (2025) (One Shot) (Oni Press) (Digital) (LeDuch-DCP).cbz (26pp)
+   ours:    ladder 1; ComicInfo Series: "Sesame Street: The Amaing Mumford's Card Trick"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Oni Press"x1
+
+== S105010 Super Mondo Mega Mutts  [tier D]   keys: Super Mondo Mega Mutts  years 2026-2026  2 files / 0 collections
+   folders: [2] Oni Press\Super Mondo Mega Mutts (2026)
+   files:   [248268] Super Mondo Mega Mutts 01 (of 04) (2026) (Digital Rip) (Hourman-DCP).cbr (40pp) | [248269] Super Mondo Mega Mutts 02 (of 04) (2026) (Digital Rip) (Hourman-DCP).cbr (26pp)
+   ours:    ladder 1-2
+
+== S105029 Superpunk  [tier D]   keys: Superpunk  years 2026-2026  1 files / 1 collections
+   folders: [1] Oni Press\Superpunk (2026)
+   files:   [248270] COL Superpunk (2026) (Graphic Novel) (Oni Press) (Digital) (LeDuch-DCP).cbz (152pp)
+   ours:    ComicInfo Series: "Superpunk"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Oni Press"x1
+
+== S105067 The Autumn Kingdom - The Wraithbound Queen  [tier D]   keys: The Autumn Kingdom - The Wraithbound Queen  years 2026-2026  2 files / 0 collections
+   folders: [2] Oni Press\The Autumn Kingdom (2024)\The Autumn Kingdom v2 - The Wraithbound Queen (2026)
+   files:   [249672] The Autumn Kingdom - The Wraithbound Queen 001 (2026) (Digital) (Mephisto-Empire).cbr (24pp)
+            [249673] The Autumn Kingdom - The Wraithbound Queen 002 (2026) (Digital) (Mephisto-Empire).cbr (25pp)
+   ours:    ladder 1-2
+
+== S105088 The Demon of Beausoleil  [tier D]   keys: The Demon of Beausoleil  years 2026-2026  1 files / 1 collections
+   folders: [1] Oni Press\The Demon of Beausoleil (2026)
+   files:   [248271] COL The Demon of Beausoleil (2026) (Graphic Novel) (Oni Press) (Digital) (LeDuch-DCP).cbz (315pp)
+   ours:    ComicInfo Series: "The Demon of Beausoleil"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Oni Press"x1
+
+== S105097 The Forever Home  [tier D]   keys: The Forever Home  years 2026-2026  1 files / 0 collections
+   folders: [1] Oni Press\The Forever Home (2026)
+   files:   [248272] The Forever Home 001 (2026) (Digital) (Mephisto-Empire).cbr (23pp)
+   ours:    ladder 1
+   CV local rip:   133877 "Forever Home" 2021 Boom! Studios 1 issue 828805   (rip lookup)
+   GCD dump:       169469 "Forever Home" 2021-2021 Boom! Studios [] 1   (dump lookup)
+
+== S105153 The Sixth Gun - Road to the Sixth  [tier D]   keys: The Sixth Gun - Road to the Sixth  years 2025-2025  1 files / 0 collections
+   folders: [1] Oni Press\The Sixth Gun (2010)\14 The Sixth Gun v6 - Road to the Sixth (2025)
+   files:   [249674] The Sixth Gun - Road to the Sixth 000 (2025) (digital) (Son of Ultron-Empire).cbr (32pp)
+   ours:    ladder 0
+
+== S105152 The Sixth Gun - Battle for the Six  [tier D]   keys: The Sixth Gun - Battle for the Six  years 2025-2025  3 files / 0 collections
+   folders: [3] Oni Press\The Sixth Gun (2010)\15 The Sixth Gun v7 - Battle for the Six (2025)
+   files:   [249675] The Sixth Gun - Battle for the Six 001 (2025) (digital) (Son of Ultron-Empire).cbr (36pp)
+            [249676] The Sixth Gun - Battle for the Six 002 (2025) (digital) (Son of Ultron-Empire).cbr (35pp)
+            [249677] The Sixth Gun - Battle for the Six 003 (2025) (digital) (Son of Ultron-Empire).cbr (35pp)
+   ours:    ladder 1-3
+   CV local rip:   165720 "The Sixth Gun: Battle for the Six" 2025 Oni Press 3   (rip lookup)
+
+== S104375 Biker Mice From Mars  [tier D]   keys: Biker Mice From Mars  years 2026-2026  1 files / 1 collections
+   folders: [1] Oni Press\_Nacelleverse
+   files:   [248273] COL Biker Mice from Mars v02 (2026) (Collection) (Oni Press) (Digital) (LeDuch-DCP).cbz (108pp)
+   ours:    ComicInfo Series: "Biker Mice From Mars"x1; ComicInfo Volume: "2025"x1; ComicInfo Publisher: "Oni Press"x1
+   CV local rip:   165172 "Biker Mice from Mars" 2025 Oni Press 6 · 158893 "Biker Mice from Mars" 2024 Oni Press 3 · 4987 "Biker Mice from Mars" 1993 Marvel 3   (rip lookup)
+   GCD dump:       216297 "Biker Mice from Mars" 2024-2024 Oni Press [] 3 · 66477 "Biker Mice from Mars" [de-gb] 1994-1995 Marvel UK [] 7 · 154929 "Biker Mice from Mars" [en-gb] 1994-1995 Marvel UK [] 7 · 4669 "Biker Mice from Mars" 1993-1994 Marvel [] 3   (dump lookup)
+
+== S104818 Nacelleverse  [tier D]   keys: Nacelleverse  years 2025-2025  2 files / 2 collections
+   folders: [2] Oni Press\_Nacelleverse
+   files:   [248274] COL Nacelleverse v01 - Biker Mice from Mars & RoboForce (2025) (digital) (Knight Ripper-Empire).cbr (215pp)
+            [248275] COL Nacelleverse v02 (2025) (Collection) (Oni Press) (Digital) (LeDuch-DCP).cbz (212pp)
+   ours:    ComicInfo Series: "Nacelleverse"x1; ComicInfo Volume: "2025"x1; ComicInfo Publisher: "Oni Press"x1
+   CV local rip:   157359 "Nacelleverse" 2024 Oni Press 1 issue 1048961   (rip lookup)
+   GCD dump:       210546 "Nacelleverse" 2024-2024 Oni Press [] 1   (dump lookup)
+
+== S105300 Wild West C.O.W.-Boys of Moo Mesa  [tier D]   keys: Wild West C.O.W.-Boys of Moo Mesa  years 2026-2026  1 files / 1 collections
+   folders: [1] Oni Press\_Nacelleverse
+   files:   [248276] COL Wild West C.O.W.-Boys of Moo Mesa (2026) (Collection) (Oni Press) (Digital) (LeDuch-DCP).cbz (116pp)
+   ours:    ComicInfo Series: "Wild West C.O.W.-Boys of Moo Mesa"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Oni Press"x1
+   CV local rip:   167100 "Wild West C.O.W.-Boys of Moo Mesa" 2025 Oni Press 3 · 24372 "Wild West C.O.W.-Boys Of Moo Mesa" 1993 Archie Comics 3 · 24371 "Wild West C.O.W.-Boys Of Moo Mesa" 1992 Archie Comics 3   (rip lookup)
+   GCD dump:       227932 "Wild West C.O.W.-Boys of Moo Mesa" 2025-? Oni Press [] 4 · 16978 "The Wild West C.O.W.-Boys of Moo Mesa" 1993-1993 Archie [] 3 · 16977 "The Wild West C.O.W.-Boys of Moo Mesa" 1992-1993 Archie [] 3   (dump lookup)
+
+== S104376 Biker Mice from Mars - Scorch  [tier D]   keys: Biker Mice from Mars - Scorch  years 2026-2026  2 files / 0 collections
+   folders: [2] Oni Press\_Nacelleverse\Biker Mice from Mars - Scorch (2026)
+   files:   [249678] Biker Mice from Mars - Scorch 01 (of 04) (2026) (Digital Rip) (Hourman-DCP).cbr (27pp)
+            [249679] Biker Mice from Mars - Scorch 02 (of 04) (2026) (Digital Rip) (Hourman-DCP).cbr (24pp)
+   ours:    ladder 1-2
+
+== S104368 Beelzebabes  [tier D]   keys: Beelzebabes  years 2026-2026  1 files / 0 collections
+   folders: [1] Paganini Stories
+   files:   [246881] Beelzebabes 001 (2026) (Series) (Paganini Stories) (Digital) (LeDuch-DCP).cbz (26pp)
+   ours:    ladder 1; ComicInfo Series: "Beelzebabes"x1; ComicInfo Volume: "2026"x1; ComicInfo Publisher: "Paganini Stories"x1
+
+== S105068 The Beano  [tier C] · 154 files  keys: The Beano  years 2023-2026  154 files / 0 collections
+   folders: [50] The Beano\2024 · [48] The Beano\2025 · [39] The Beano · [17] The Beano\2023
+   files:   The Beano 4200 (2023) (Random Stranger-DCP).cbr … The Beano 4355 (2026) (Random Stranger-DCP).cbr  (154 files, pp 32-47)
+   ours:    ladder 4200-4303, 4305-4306, 4308-4355
+   CV local rip:   26847 "The Beano" 1938 D.C. Thomson & Co. 3833   (rip lookup)
+   GCD dump:       11285 "The Beano" [en-gb] 1950-? D.C. Thomson [] 3926   (dump lookup)
+
+== S104392 Blade Runner Black Lotus - Las Vegas  [tier D]   keys: Blade Runner Black Lotus - Las Vegas | Blade Runner: Black Lotus - Las Vegas  years 2025-2026  4 files / 0 collections
+   folders: [4] Titan Comics\Blade Runner\Blade Runner - Black Lotus (2022)\Blade Runner Black Lotus - Las Vegas (2025)
+   files:   [250060] Blade Runner - Black Lotus - Las Vegas 004 (2026) (Limited Series) (Titan Comics) (Digital) (LeDuch).cbz (32pp)
+            [250061] Blade Runner Black Lotus - Las Vegas 001 (2025) (5 covers) (digital) (Son of Ultron-Empire).cbr (36pp)
+            [250062] Blade Runner Black Lotus - Las Vegas 002 (2025) (4 covers) (digital) (Son of Ultron-Empire).cbr (35pp)
+            [250063] Blade Runner Black Lotus - Las Vegas 003 (2026) (3 covers) (digital) (Son of Ultron-Empire).cbr (33pp)
+   ours:    ladder 1-4; ComicInfo Series: "Blade Runner: Black Lotus - Las Vegas"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "4"x1; ComicInfo Publisher: "Titan Comics"x1; ComicInfo Web: "1148710"x1
+   CV local rip:   167083 "Blade Runner: Black Lotus - Las Vegas" 2025 Titan Comics 2   (rip lookup)
+   GCD dump:       229376 "Blade Runner Black Lotus: Las Vegas" [en-gb] 2025-? Titan [] 4   (dump lookup)
+
+== S104389 Blade Runner - Tokyo Nexus - To Lose is to Win  [tier D]   keys: Blade Runner - Tokyo Nexus - To Lose is to Win  years 2026-2026  4 files / 0 collections
+   folders: [4] Titan Comics\Blade Runner\Blade Runner - Tokyo Nexus - To Lose is to Win (2026)
+   files:   [249680] Blade Runner - Tokyo Nexus - To Lose is to Win 01 (of 04) (2026) (2025) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [249681] Blade Runner - Tokyo Nexus - To Lose is to Win 02 (of 04) (2026) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [249682] Blade Runner - Tokyo Nexus - To Lose is to Win 03 (of 04) (2026) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [249683] Blade Runner - Tokyo Nexus - To Lose is to Win 04 (of 04) (2026) (digital) (Son of Ultron-Empire).cbr (33pp)
+   ours:    ladder 1-4
+   GCD dump:       237601 "Blade Runner: Tokyo Nexus: To Lose Is To Win" [en-gb] 2026-? Titan [] 1   (dump lookup)
+
+== S104390 Blade Runner 2029: The Complete Series Omnibus  [tier D]   keys: Blade Runner 2029: The Complete Series Omnibus  years 2025-2025  1 files / 1 collections
+   folders: [1] Titan Comics\Blade Runner\Blade Runner 2029 (2021)\Omnibus Edition
+   files:   [250064] COL Blade Runner 2029 - The Complete Series Omnibus (2025) (Titan Comics) (Digital-HD) (LeDuch).cbz (327pp)
+   ours:    ComicInfo Series: "Blade Runner 2029: The Complete Series Omnibus"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Titan Comics"x1
+
+== S104391 Blade Runner 2039: The Complete Series Omnibus  [tier D]   keys: Blade Runner 2039: The Complete Series Omnibus  years 2025-2025  1 files / 1 collections
+   folders: [1] Titan Comics\Blade Runner\Blade Runner 2039 (2023)\Omnibus Edition
+   files:   [250065] COL Blade Runner 2039 - The Complete Series Omnibus (2025) (Collection) (Titan Comics) (Digital-HD) (LeDuch).cbz (326pp)
+   ours:    ComicInfo Series: "Blade Runner 2039: The Complete Series Omnibus"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Titan Comics"x1
+   GCD dump:       231216 "Blade Runner 2039: The Complete Series Omnibus" [en-gb] 2025-2025 Titan [] 1   (dump lookup)
+
+== S104437 Conan and Dragonero  [tier D]   keys: Conan and Dragonero  years 2026-2026  5 files / 0 collections
+   folders: [5] Titan Comics\Conan\Conan & Dragonero (2026)
+   files:   [249684] Conan & Dragonero 001 (2026) (Digital) (Mephisto-Empire).cbr (29pp) | [249685] Conan & Dragonero 002 (2026) (Digital) (Mephisto-Empire).cbr (30pp)
+            [249686] Conan & Dragonero 003 (2026) (Digital) (Mephisto-Empire).cbr (30pp) | [249687] Conan & Dragonero 004 (2026) (Digital) (Mephisto-Empire).cbr (31pp)
+            [249688] Conan & Dragonero 005 (2026) (Digital) (Mephisto-Empire).cbr (30pp)
+   ours:    ladder 1-5
+   GCD dump:       237472 "Conan & Dragonero" [en-gb] 2026-? Titan [] 1 (via our own name without the filing suffix "Conan & Dragonero")   (dump lookup)
+
+== S104441 Conan the Barbarian FCBD 2026: The Tide of the Tyrant King  [tier D]   keys: Conan the Barbarian FCBD 2026: The Tide of the Tyrant King  years 2026-2026  1 files / 0 collections
+   folders: [1] Titan Comics\Conan\Conan the Barbarian (2023)\Annuals and Specials
+   files:   [250071] Conan the Barbarian FCBD 2026 - The Tide of the Tyrant King (2026) (Digital) (dekabro-Empire).cbz (21pp)
+   ours:    ladder 0; ComicInfo Series: "Conan the Barbarian FCBD 2026: The Tide of the Tyrant King"x1; ComicInfo Publisher: "Titan Comics"x1
+
+== S104442 Conan: The Tower of the Elephant  [tier D]   keys: Conan: The Tower of the Elephant  years 2025-2025  1 files / 0 collections
+   folders: [1] Titan Comics\Conan\Conan the Barbarian (2023)\Annuals and Specials
+   files:   [250066] Conan - The Tower of the Elephant (2025) (One Shot) (Titan Comics) (Digital-HD) (LeDuch).cbz (38pp)
+   ours:    ladder 1; ComicInfo Series: "Conan: The Tower of the Elephant"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Titan Comics"x1
+
+== S104434 Conan The Barbarian :Bound in Black Stone: Deluxe Edition  [tier D]   keys: Conan The Barbarian :Bound in Black Stone: Deluxe Edition  years 2025-2025  1 files / 1 collections
+   folders: [1] Titan Comics\Conan\Conan the Barbarian (2023)\Deluxe Editions
+   files:   [250072] COL Conan the Barbarian - Bound in Black Stone - Deluxe Edition Vol. 01 (2025) (Collection) (Titan Books) (Digital-HD) (LeDuch).cbz (140pp)
+   ours:    ComicInfo Series: "Conan The Barbarian :Bound in Black Stone: Deluxe Edition"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Titan Books"x1
+
+== S104438 Conan the Barbarian - Eastern Horizons  [tier D]   keys: Conan the Barbarian - Eastern Horizons  years 2025-2025  1 files / 0 collections
+   folders: [1] Titan Comics\Conan\Conan the Barbarian - Eastern Horizons (2025)
+   files:   [249718] Conan the Barbarian - Eastern Horizons 001 (2025) (2 covers) (Digital) (Mephisto-Empire).cbr (28pp)
+   ours:    ladder 1
+   CV local rip:   164645 "Conan the Barbarian: Eastern Horizons" 2025 Titan Comics 1 issue 1112963   (rip lookup)
+
+== S104439 Conan the Barbarian - Scourge of the Serpent  [tier D]   keys: Conan the Barbarian - Scourge of the Serpent  years 2025-2026  4 files / 0 collections
+   folders: [4] Titan Comics\Conan\Conan the Barbarian - Scourge of the Serpent (2025)
+   files:   [249719] Conan the Barbarian - Scourge of the Serpent 001 (2025) (5 covers) (Digital) (Mephisto-Empire).cbr (48pp)
+            [249720] Conan the Barbarian - Scourge of the Serpent 002 (2025) (4 covers) (Digital) (Mephisto-Empire).cbr (34pp)
+            [249721] Conan the Barbarian - Scourge of the Serpent 003 (2025) (4 covers) (Digital) (Mephisto-Empire).cbr (35pp)
+            [249722] Conan the Barbarian - Scourge of the Serpent 004 (2026) (Digital) (Mephisto-Empire).cbr (30pp)
+   ours:    ladder 1-4
+   CV local rip:   167190 "Conan the Barbarian: Scourge of the Serpent" 2025 Titan Comics 3   (rip lookup)
+   GCD dump:       228740 "Conan the Barbarian: Scourge of the Serpent" [en-gb] 2025-2026 Titan [] 4   (dump lookup)
+
+== S104440 Conan the Barbarian - Tides of the Tyrant-King  [tier D]   keys: Conan the Barbarian - Tides of the Tyrant-King  years 2026-2026  1 files / 0 collections
+   folders: [1] Titan Comics\Conan\Conan the Barbarian - Tides of the Tyrant-King (2026)
+   files:   [249723] Conan the Barbarian - Tides of the Tyrant-King 001 (2026) (Digital) (Mephisto-Empire).cbr (33pp)
+   ours:    ladder 1
+
+== S105074 The Cimmerian - Xuthal of the Dusk  [tier D]   keys: The Cimmerian - Xuthal of the Dusk  years 2026-2026  1 files / 0 collections
+   folders: [1] Titan Comics\Conan\The Cimmerian - Xuthal of the Dusk (2026)
+   files:   [249724] The Cimmerian - Xuthal of the Dusk 001 (2026) (Digital) (Mephisto-Empire).cbr (34pp)
+   ours:    ladder 1
+
+== S105147 The Savage Sword of Conan  [tier D]   keys: The Savage Sword of Conan  years 2024-2026  16 files / 0 collections
+   folders: [16] Titan Comics\Conan\The Savage Sword of Conan (2024)
+   files:   [249725] The Savage Sword of Conan 001 (2024) (3 covers) (Digital) (F) (Mephisto-Empire).cbr (81pp)
+            The Savage Sword of Conan 002 (2024) (2 covers) (Digital) (Mephisto-Empire).cbr … The Savage Sword of Conan 011 (2025) (2 covers) (Digital) (Mephisto-Empire).cbr  (10 files, pp 64-84)
+            [249736] The Savage Sword of Conan 012 (2026) (Digital) (Mephisto-Empire).cbr (69pp) | [249737] The Savage Sword of Conan 013 (2026) (Digital) (Mephisto-Empire).cbr (69pp)
+            [249738] The Savage Sword of Conan 014 (2026) (Digital) (Mephisto-Empire).cbr (68pp) | [249739] The Savage Sword of Conan 015 (2026) (Digital) (Mephisto-Empire).cbr (66pp)
+            [249740] The Savage Sword of Conan 016 (2026) (Digital) (Mephisto-Empire).cbr (66pp)
+   ours:    ladder 1-16
+   CV candidates:  117080 "The Savage Sword of Conan" 2019 Marvel ? s30 · 2701 "The Savage Sword of Conan" 1974 Marvel ? s30 · 21975 "The Savage Sword of Conan" 2007 Dark Horse Comics ? s30 · 20391 "The Savage Sword of Conan" 1975 Marvel UK/Panini UK ? s30 · 157073 "The Savage Sword of Conan" 2024 Titan Comics ? s30 · 133866 "The Savage Sword of Conan the Barbarian" 1974 Yaffa / Page ? s18   (v1 search)
+   CV local rip:   157073 "The Savage Sword of Conan" 2024 Titan Comics 11 · 117080 "The Savage Sword of Conan" 2019 Marvel 12 · 133719 "Savage Sword of Conan" 2019 Panini Verlag 2 · 120279 "The Savage Sword Of Conan " 2017 Hachette 4 · 21975 "The Savage Sword of Conan" 2007 Dark Horse Comics 22 · 47760 "Savage Sword of Conan" 1977 Marvel UK/Panini UK 93   (rip lookup)
+   GCD dump:       209652 "The Savage Sword of Conan" [en-gb] 2024-? Titan [] 13 · 220419 "The Savage Sword of Conan" [en-gb] 2025-? Titan [] 2 · 228635 "The savage Sword of Conan" [fr] 2025-? Panini France [] 2 · 140323 "Savage Sword of Conan" 2019-2020 Marvel [] 12 · 150308 "Savage Sword of Conan" [de] 2019-2020 Panini Deutschland [] 2 · 28720 "Savage Sword of Conan" 2007-2016 Dark Horse [] 22   (dump lookup)
+
+== S105148 The Savage Sword of Conan Reforged  [tier D]   keys: The Savage Sword of Conan Reforged | The Savage Sword of Conan: Reforged  years 2025-2026  4 files / 0 collections
+   folders: [4] Titan Comics\Conan\The Savage Sword of Conan Reforged (2025)
+   files:   [249741] The Savage Sword of Conan Reforged 001 (2025) (2 covers) (digital) (Bean-Empire).cbz (67pp)
+            [249742] The Savage Sword of Conan Reforged 002 (2026) (2 covers) (digital) (Bean-Empire).cbz (53pp)
+            [249743] The Savage Sword of Conan Reforged 003 (2026) (digital) (Bean-Empire).cbz (52pp) | [249744] The Savage Sword of Conan Reforged 004 (2026) (digital) (Bean-Empire).cbz (51pp)
+   ours:    ladder 1-4; ComicInfo Series: "The Savage Sword of Conan Reforged "x2, "The Savage Sword of Conan: Reforged "x2
+   CV local rip:   167814 "The Savage Sword of Conan: Reforged" 2025 Titan Comics 1 issue 1139166   (rip lookup)
+   GCD dump:       229479 "The Savage Sword of Conan: Reforged" [en-gb] 2025-? Titan [] 4   (dump lookup)
+
+== S104477 Dark Souls: Mother of Mourning  [tier D]   keys: Dark Souls: Mother of Mourning  years 2026-2026  1 files / 1 collections
+   folders: [1] Titan Comics\Dark Souls
+   files:   [246880] COL Dark Souls - Mother of Mourning (2026) (Collection) (Titan Comics) (Digital) (LeDuch-DCP).cbz (116pp)
+   ours:    ComicInfo Series: "Dark Souls: Mother of Mourning"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Titan Comics"x1
+   CV local rip:   168950 "Dark Souls: Mother of Mourning" 2025 Titan Comics 1 issue 1146758   (rip lookup)

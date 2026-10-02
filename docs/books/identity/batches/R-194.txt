@@ -1,0 +1,804 @@
+## Conventions for this batch (34 shown of 88 matched; 419 in LEDGER.md; 120 shelf/shelves: folder:graphic-novels ×76 · kind:new ×68 · kind:collected-line ×42 · kind:trade-only ×42 · pub:small-press ×25 · pub:trade-house ×22 · pub:idw ×17 · pub:first-second ×16)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-013] (120 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (120 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-030] (120 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-043] (120 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (120 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (120 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (120 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (120 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (120 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (120 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (120 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (120 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-151] (120 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-157] (120 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (120 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-160] (120 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-163] (120 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (120 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (120 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (120 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (120 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (120 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (120 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (120 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (120 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (120 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (120 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (120 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (120 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
+[L-135] (42 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-164] (42 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (42 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-244] (42 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (42 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+
++54 more matched entries not shown: L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-046, L-051, L-055, L-139, L-140, L-148, L-240, L-271, L-321, L-126, L-241, L-322, L-325, L-087, L-378, L-071, L-064, L-085, L-101, L-310, L-021, L-342, L-375, L-383, L-323, L-381, L-016, L-032, L-113, L-114, L-302, L-374, L-376, L-382, L-124, L-191, L-272, L-281, L-343 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S105092 The End of the Fucking World  [tier D]   keys: The End of the Fucking World  years 2017-2017  1 files / 0 collections
+   folders: [1] Fantagraphics\_Charles Forsman
+   files:   [246698] The End of the Fucking World (Charles Forsman) (2017) (Fantagraphics) (digital) (Mr Norrell-Empire).cbr (177pp)
+   GCD dump:       115759 "The End of the Fucking World" 2017-2017 Fantagraphics [] 1 · 126928 "The end of the fucking world" [es] 2018-2018 Roca Libros [] 1 · 158346 "The End of the Fucking World" [en-gb] 2018-2018 Faber & Faber [] 1 · 93230 "The end of the fucking world" [fr-be] 2013-2013 L'employé du Moi [] 1 · 93223 "The End of the Fucking World" 2011-2013 Oily Comics [] 16   (dump lookup)
+
+== S105218 Turn Loose Our Death Rays and Kill Them All! - The Complete Works of Fletcher Hanks  [tier D]   keys: Turn Loose Our Death Rays and Kill Them All! - The Complete Works of Fletcher Hanks  years ?-?  1 files / 0 collections
+   folders: [1] Fantagraphics\_Fletcher Hanks
+   files:   [247243] Turn Loose Our Death Rays and Kill Them All! - The Complete Works of Fletcher Hanks (2025, 2nd print) (Fantagraphics) (digital) (Mr Norrell-Empire).cbr (382pp)
+   CV local rip:   96180 "Turn Loose Our Death Rays and Kill Them All!: The Complete Works of Fletcher Hanks" 2016 Fantagraphics 1 issue 562776   (rip lookup)
+   GCD dump:       109651 "Turn Loose Our Death Rays and Kill Them All: The Complete Works of Fletcher Hanks" 2016-2016 Fantagraphics [] 1 · 229371 "Turn Loose Our Death Rays and Kill Them All!: The Complete Works of Fletcher Hanks" 2025-2025 Fantagraphics [] 1   (dump lookup)
+
+== S104890 Quacky  [tier D]   keys: Quacky  years 2026-2026  1 files / 0 collections
+   folders: [1] Fantagraphics\_Jim Woodring
+   files:   [245788] Quacky (Jim Woodring) (2026) (Fantagraphics) (digital) (Mr Norrell-Empire).cbr (298pp)
+
+== S104412 Bumf  [tier D]   keys: Bumf  years 2014-2014  1 files / 1 collections
+   folders: [1] Fantagraphics\_Joe Sacco
+   files:   [245789] COL Bumf Vol. 01 (Joe Sacco) (2014) (Fantagraphics) (tunafan).cbr (120pp)
+   CV local rip:   77606 "Bumf" 2014 Fantagraphics 1 issue 468178 · 142567 "Bumf" 2015 Penguin Random House Grupo Editorial 1 issue 919229   (rip lookup)
+   GCD dump:       84951 "Bumf" 2014-? Fantagraphics [] 1 · 85201 "Bumf" [en-gb] 2014-2014 Jonathan Cape [] 1 · 89850 "Bumf" [fr] 2015-? Futuropolis [] 1 · 96032 "Bumf" [de-ch] 2016-2016 Edition Moderne [] 1   (dump lookup)
+
+== S104386 Black Is the Color  [tier D]   keys: Black Is the Color  years 2013-2013  1 files / 0 collections
+   folders: [1] Fantagraphics\_Julia Gfrorer
+   files:   [247244] Black Is the Color (Julia Gfrorer) (2013) (Fantagraphics) (Digital) (phillywilly-Empire).cbr (74pp)
+   CV local rip:   69706 "Black is the Color" 2013 Fantagraphics 1 issue 435667   (rip lookup)
+   GCD dump:       78272 "Black Is the Color" 2013-2013 Fantagraphics [] 1   (dump lookup)
+
+== S105315 World Within the World  [tier D]   keys: World Within the World  years 2025-2025  1 files / 0 collections
+   folders: [1] Fantagraphics\_Julia Gfrorer
+   files:   [247246] World Within the World (Julia Gfrorer) (2025) (Fantagraphics) (Digital) (Dipole-Empire).cbz (319pp)
+
+== S104638 Heaven  [tier D]   keys: Heaven  years 2026-2026  1 files / 0 collections
+   folders: [1] Fantagraphics\_Katie Skelly
+   files:   [247248] Heaven (Katie Skelly) (2026) (Fantagraphics) (digital) (Mr Norrell-Empire).cbr (105pp)
+   CV local rip:   36745 "Heaven!!" 2007 Tokyopop 3   (rip lookup)
+
+== S104336 Arsene Schrauwen  [tier D]   keys: Arsene Schrauwen  years 2014-2014  1 files / 0 collections
+   folders: [1] Fantagraphics\_Olivier Schrauwen
+   files:   [246699] Arsene Schrauwen (2014) (digital-Empire).cbz (248pp)
+   GCD dump:       87320 "Arsene Schrauwen" [nl-be] 2015-2015 Bries [] 1   (dump lookup)
+
+== S104653 Home to Stay! The Complete Ray Bradbury EC Stories  [tier D]   keys: Home to Stay! The Complete Ray Bradbury EC Stories  years 2023-2023  1 files / 0 collections
+   folders: [1] Fantagraphics\_Ray Bradbury
+   files:   [247247] Home to Stay! The Complete Ray Bradbury EC Stories (2023) (digital) (Mr Norrell-Empire).cbr (329pp)
+   CV local rip:   152240 "Home to Stay!: The Complete Ray Bradbury EC Stories" 2023 Fantagraphics 1 issue 1001489   (rip lookup)
+
+== S104339 As I Dream of You  [tier D]   keys: As I Dream of You  years 2026-2026  1 files / 0 collections
+   folders: [1] FirstSecond & 23rd St. Books
+   files:   [246700] As I Dream of You (2026) (FirstSecond) (Digital) (XRA-Empire).cbz (352pp)
+   ours:    ComicInfo Series: "As I Dream of You"x1; ComicInfo Publisher: "First Second"x1
+
+== S104417 Bunt! - Striking Out on Financial Aid  [tier D]   keys: Bunt! - Striking Out on Financial Aid  years 2024-2024  1 files / 0 collections
+   folders: [1] FirstSecond & 23rd St. Books
+   files:   [246701] Bunt! (2024) (FirstSecond) (Digital) (XRA-Empire).cbz (288pp)
+   ours:    ComicInfo Series: "Bunt! - Striking Out on Financial Aid"x1; ComicInfo Publisher: "First Second"x1
+   GCD dump:       214557 "Bunt! Striking Out on Financial Aid" 2024-2024 First Second [] 1   (dump lookup)
+
+== S104451 Corpse de Ballet  [tier D]   keys: Corpse de Ballet  years 2026-2026  1 files / 0 collections
+   folders: [1] FirstSecond & 23rd St. Books
+   files:   [246702] Corpse de Ballet (Megan Kearny) (2026) (FirstSecond) (Digital) (XRA-Empire).cbz (336pp)
+   ours:    ComicInfo Series: "Corpse de Ballet"x1; ComicInfo Publisher: "First Second"x1
+
+== S104500 Drome  [tier D]   keys: Drome  years 2025-2025  1 files / 0 collections
+   folders: [1] FirstSecond & 23rd St. Books
+   files:   [246703] Drome (Jesse Lonergan) (2025) (23rd Street Books) (Digital) (XRA-Empire).cbz (320pp)
+   ours:    ComicInfo Series: "Drome"x1; ComicInfo Publisher: "23rd St"x1
+   CV local rip:   169447 "Drome" 2025 Roaring Brook Press 1 issue 1149270   (rip lookup)
+
+== S104524 Everything in Color  [tier D]   keys: Everything in Color  years 2026-2026  1 files / 0 collections
+   folders: [1] FirstSecond & 23rd St. Books
+   files:   [246704] Everything in Color (2026) (23rd St.) (Digital) (XRA-Empire).cbz (528pp)
+   ours:    ComicInfo Series: "Everything in Color"x1; ComicInfo Publisher: "23rd Street"x1
+
+== S104530 Exposure: A Story About Life with OCD and the Power of Facing Your Fears  [tier D]   keys: Exposure: A Story About Life with OCD and the Power of Facing Your Fears  years 2026-2026  1 files / 0 collections
+   folders: [1] FirstSecond & 23rd St. Books
+   files:   [246705] Exposures (2026) (FirstSecond) (Digital) (XRA-Empire).cbz (352pp)
+   ours:    ComicInfo Series: "Exposure: A Story About Life with OCD and the Power of Facing Your Fears"x1; ComicInfo Publisher: "First Second"x1
+
+== S104544 Finish Lines  [tier D]   keys: Finish Lines  years 2026-2026  1 files / 0 collections
+   folders: [1] FirstSecond & 23rd St. Books
+   files:   [246706] Finish Lines (2026) (FirstSecond) (Digital) (XRA-Empire).cbz (352pp)
+   ours:    ComicInfo Series: "Finish Lines"x1; ComicInfo Publisher: "First Second"x1
+
+== S104628 Hand-Me-Down - A Graphic Memoir  [tier D]   keys: Hand-Me-Down - A Graphic Memoir  years 2026-2026  1 files / 0 collections
+   folders: [1] FirstSecond & 23rd St. Books
+   files:   [246707] Hand-Me-Down - A Graphic Memoir (2026) (FirstSecond) (Digital) (XRA-Empire).cbz (224pp)
+   ours:    ComicInfo Series: "Hand-Me-Down - A Graphic Memoir"x1; ComicInfo Publisher: "First Second"x1
+
+== S104685 Journey to Tomioka  [tier D]   keys: Journey to Tomioka  years 2026-2026  1 files / 0 collections
+   folders: [1] FirstSecond & 23rd St. Books
+   files:   [246708] Journey to Tomioka (2026) (FirstSecond) (Digital) (XRA-Empire).cbz (114pp)
+   ours:    ComicInfo Series: "Journey to Tomioka"x1; ComicInfo Publisher: "First Second"x1
+
+== S104744 Lucas Wars  [tier D]   keys: Lucas Wars  years 2025-2025  1 files / 0 collections
+   folders: [1] FirstSecond & 23rd St. Books
+   files:   [246709] Lucas Wars (2025) (digital).cbz (211pp)
+   GCD dump:       228317 "Lucas Wars" 2025-? 23rd Street [] 1 · 223444 "Lucas' Wars" [nl-be] 2023-2023 Standaard Uitgeverij [] 1   (dump lookup)
+
+== S104882 President of the Anime Club  [tier D]   keys: President of the Anime Club  years 2026-2026  1 files / 0 collections
+   folders: [1] FirstSecond & 23rd St. Books
+   files:   [246710] President of the Anime Club (2026) (FirstSecond) (Digital) (XRA-Empire).cbz (272pp)
+   ours:    ComicInfo Series: "President of the Anime Club"x1; ComicInfo Publisher: "First Second"x1
+
+== S105099 The Giant - Orson Welles, the Artist and the Shadow  [tier D]   keys: The Giant - Orson Welles, the Artist and the Shadow  years 2025-2025  1 files / 0 collections
+   folders: [1] FirstSecond & 23rd St. Books
+   files:   [246711] The Giant - Orson Welles, the Artist and the Shadow (2025) (23rd Street) (Digital) (XRA-Empire).cbz (272pp)
+   ours:    ComicInfo Series: "The Giant - Orson Welles, the Artist and the Shadow"x1; ComicInfo Publisher: "23rd Street"x1
+
+== S105229 Until We Meet Again - A Graphic Memoir  [tier D]   keys: Until We Meet Again - A Graphic Memoir  years 2026-2026  1 files / 0 collections
+   folders: [1] FirstSecond & 23rd St. Books
+   files:   [246713] Until We Meet Again (Lily Kim Qian) (2026) (FirstSecond) (Digital) (XRA-Empire).cbz (224pp)
+   ours:    ComicInfo Series: "Until We Meet Again - A Graphic Memoir"x1; ComicInfo Publisher: "First Second"x1
+
+== S105332 You Belong Here  [tier D]   keys: You Belong Here  years 2025-2025  1 files / 0 collections
+   folders: [1] FirstSecond & 23rd St. Books
+   files:   [246714] You Belong Here (2025) (FirstSecond) (Digital) (XRA-Empire).cbz (256pp)
+   ours:    ComicInfo Series: "You Belong Here"x1; ComicInfo Publisher: "First Second"x1
+
+== S105207 Total THB  [tier D]   keys: Total THB  years 2025-2026  2 files / 2 collections
+   folders: [2] FirstSecond & 23rd St. Books\Total THB (2025)
+   files:   [247272] COL Total THB Book 01 (Paul Pope) (2025) (23rd St Books-FirstSecond) (Digital-Empire).cbz (210pp)
+            [247273] COL Total THB Book 02 (Paul Pope) (2026) (23rd St Books-FirstSecond) (Digital) (XRA-Empire).cbz (230pp)
+   ours:    ComicInfo Series: "Total THB"x2; ComicInfo Publisher: "23rd Street"x1, "23rd Street Books"x1
+   CV local rip:   168561 "Total THB" 2025 First Second Books 1 issue 1144033   (rip lookup)
+
+== S104672 Inbetweens  [tier D]   keys: Inbetweens  years 2026-2026  1 files / 0 collections
+   folders: [1] FirstSecond & 23rd St. Books\_Faith Erin Hicks
+   files:   [246716] Inbetweens (Faith Erin Hicks) (2026) (FirstSecond) (Digital) (XRA-Empire).cbz (240pp)
+   ours:    ComicInfo Series: "Inbetweens"x1; ComicInfo Publisher: "First Second"x1
+
+== S104287 23rd Century Dreamers  [tier D]   keys: 23rd Century Dreamers  years 2016-2016  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [245792] 23rd Century Dreamers (2016) (digital) (d'argh-Empire).cbr (34pp)
+   CV local rip:   94360 "23rd Century Dreamers" 2016 215 INK 1 issue 550904   (rip lookup)
+
+== S104553 Four Faces of the Moon  [tier D]   keys: Four Faces of the Moon  years 2021-2021  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [245793] Four Faces of the Moon (Amanda Strong) (2021) (Annick Press) (Digital) (XRA-Empire).cbz (210pp)
+   ours:    ComicInfo Series: "Four Faces of the Moon"x1; ComicInfo Publisher: "Annick Press"x1
+
+== S104814 Mutton Chops  [tier D]   keys: Mutton Chops  years 2021-2021  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [245799] Mutton Chops (Olivia Sullivan) (2021) (A Pocket Chiller) (digital) (Ignatz-DCP).cbz (16pp)
+   ours:    ComicInfo Series: "Mutton Chops"x1; ComicInfo Publisher: "Strip For Me"x1
+   CV local rip:   137024 "Mutton Chops" 2021 Strip For Me 1 issue 862892   (rip lookup)
+
+== S105077 The Complete Jack Survives  [tier D]   keys: The Complete Jack Survives  years 2009-2009  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [245794] The Complete Jack Survives (Jerry Moriarity) (2009) (Buenaventura Press) (c2c) (Pyramid).cbz (88pp)
+   GCD dump:       97537 "The Complete Jack Survives" 2009-2009 Buenaventura Press [] 1   (dump lookup)
+
+== S105118 The Little Red Lighthouse and the Great Gray Bridge  [tier D]   keys: The Little Red Lighthouse and the Great Gray Bridge  years ?-?  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [245795] The Little Red Lighthouse and the Great Gray Bridge (Hildegard H. Swift, Lynd Ward) (1942, 1970) (Clarion Books) (c2c) (Ignatz-DCP).cbz (63pp)
+
+== S105181 This Beautiful, Ridiculous City  [tier D]   keys: This Beautiful, Ridiculous City  years 2025-2025  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [245797] This Beautiful, Ridiculous City (Kay Sohini) (2025) (Ten Speed Graphic) (digital) (Ignatz-DCP).cbz (121pp)
+   ours:    ComicInfo Series: "This Beautiful, Ridiculous City"x1; ComicInfo Publisher: "Clarkson Potter/Ten Speed"x1
+
+== S105303 Will Eisner's Lost Work  [tier D]   keys: Will Eisner's Lost Work  years 2016-2016  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [245798] Will Eisner's Lost Work (2016) (Locust Moon Press) (c2c) (Ignatz-DCP).cbz (79pp)
+
+== S104540 Faster  [tier D]   keys: Faster  years 2021-2021  1 files / 0 collections
+   folders: [1] Graphic Novels\Jesse Lonergan
+   files:   [247283] Faster (Version 2) by Jesse Lonergan (2021) (Bulgilhan Press) (c2c) (JeffAlbertson-DCP).cbz (39pp)
+   ours:    ladder 2
+
+== S104792 Milo Manara - Bonus - Planches Originales Jour de Colère  [tier D]   keys: Milo Manara - Bonus - Planches Originales Jour de Colère  years ?-?  1 files / 0 collections
+   folders: [1] Graphic Novels\Milo Manara
+   files:   [141107] Milo Manara - Bonus - Planches Originales Jour de Colère.rar (?pp)
+
+== S104793 Milo Manara - Planches Originales - El gaucho  [tier D]   keys: Milo Manara - Planches Originales - El gaucho  years ?-?  1 files / 0 collections
+   folders: [1] Graphic Novels\Milo Manara
+   files:   [141108] Milo Manara - Planches Originales - El gaucho.rar (?pp)
+
+== S104863 Penguin Picnic  [tier D]   keys: Penguin Picnic  years 2026-2026  1 files / 1 collections
+   folders: [1] Graphic Novels\_Abrams ComicArts (and Kana, Megaforce, etc)
+   files:   [247274] COL Penguin Picnic (2026) (Graphic Novel) (Abrams Fanfare) (Digital) (LeDuch-DCP).cbz (44pp)
+   ours:    ComicInfo Series: "Penguin Picnic"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Abrams"x1
+
+== S105090 The Dissidents  [tier D]   keys: The Dissidents  years 2026-2026  1 files / 1 collections
+   folders: [1] Graphic Novels\_Abrams ComicArts (and Kana, Megaforce, etc)
+   files:   [247275] COL The Dissidents (Derf Backderf) (2026) (Graphic Novel) (Abrams ComicArts) (Digital) (LeDuch-DCP).cbz (344pp)
+   ours:    ComicInfo Series: "The Dissidents"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Abrams ComicArts"x1
+
+== S105206 Too Hot To Tango  [tier D]   keys: Too Hot To Tango  years 2026-2026  1 files / 1 collections
+   folders: [1] Graphic Novels\_Abrams ComicArts (and Kana, Megaforce, etc)
+   files:   [247276] COL Too Hot To Tango (2026) (Graphic Novel) (Abrams Fanfare) (Digital) (LeDuch-DCP).cbz (191pp)
+   ours:    ComicInfo Series: "Too Hot To Tango"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Abrams"x1
+
+== S104661 Human Nature  [tier D]   keys: Human Nature  years 2026-2026  1 files / 1 collections
+   folders: [1] Graphic Novels\_Abrams ComicArts (and Kana, Megaforce, etc)\Human Nature (2026)
+   files:   [248979] COL Human Nature Book 01 (2026) (Graphic Novel) (Abrams ComicArts) (Digital) (LeDuch).cbz (110pp)
+   ours:    ComicInfo Series: "Human Nature"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Abrams ComicArts"x1
+
+== S104662 Human Nature Book Two  [tier D]   keys: Human Nature Book Two  years 2026-2026  1 files / 1 collections
+   folders: [1] Graphic Novels\_Abrams ComicArts (and Kana, Megaforce, etc)\Human Nature (2026)
+   files:   [248980] COL Human Nature Book 02 (2026) (Graphic Novel) (Abrams ComicArts) (Digital) (LeDuch-DCP).cbz (144pp)
+   ours:    ComicInfo Series: "Human Nature Book Two"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Abrams"x1
+
+== S104866 Phenomena  [tier D]   keys: Phenomena  years 2025-2025  1 files / 1 collections
+   folders: [1] Graphic Novels\_Abrams ComicArts (and Kana, Megaforce, etc)\Phenomena (Bendis) (2022) (Abrams ComicArts)
+   files:   [248983] COL Phenomena Book 03 - The Secret (2025) (Abrams ComicArts) (Digital-SD) (XRA-Empire).cbz (152pp)
+   ours:    ComicInfo Series: "Phenomena"x1; ComicInfo Publisher: "Abrams"x1
+   CV local rip:   163672 "Phenomena" 2023 Norma Editorial 2   (rip lookup)
+   GCD dump:       189810 "Phenomena" 2022-? Harry N. Abrams [] 2   (dump lookup)
+
+== S104489 Detective Beans & the Map of Mystery  [tier D]   keys: Detective Beans & the Map of Mystery  years 2026-2026  1 files / 1 collections
+   folders: [1] Graphic Novels\_Andrews McMeel
+   files:   [245800] COL Detective Beans & the Map of Mystery (2026) (Graphic Novel) (Andrews McMeel Publishing) (Digital) (LeDuch-DCP).cbz (209pp)
+   ours:    ComicInfo Series: "Detective Beans & the Map of Mystery"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Andrews McMeel Publishing"x1
+
+== S104816 My Perfectly Imperfect Body  [tier D]   keys: My Perfectly Imperfect Body  years 2025-2025  1 files / 1 collections
+   folders: [1] Graphic Novels\_Andrews McMeel
+   files:   [245801] COL My Perfectly Imperfect Body (2025) (Graphic Novel) (Andrews McMeel Publishing) (Digital-HD) (LeDuch).cbz (204pp)
+   ours:    ComicInfo Series: "My Perfectly Imperfect Body"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Andrews McMeel Publishing"x1
+
+== S104346 Aurora  [tier D]   keys: Aurora  years 2025-2026  2 files / 2 collections
+   folders: [2] Graphic Novels\_Andrews McMeel\Aurora (2025)
+   files:   [248954] COL Aurora v01 (2025) (Collection) (Andrews McMeel) (Digital) (LeDuch-DCP).cbz (381pp)
+            [248955] COL Aurora v02 (2026) (Graphic Novel) (Andrews McMeel) (Digital) (LeDuch-DCP).cbz (433pp)
+   ours:    ComicInfo Series: "Aurora"x2; ComicInfo Volume: "2025"x2; ComicInfo Publisher: "Andrews McMeel"x2
+   CV local rip:   74396 "Aurora" 2014 Idyl King Entertainment 1 issue 454322   (rip lookup)
+   GCD dump:       227433 "Aurora" [fr] 2023-? Soleil [] 2 · 120612 "Aurora" [it] 1978-1978 Dalla Parte Delle Bambine [] 1   (dump lookup)
+
+== S104617 Groucho The Grouchy Groundhog  [tier D]   keys: Groucho The Grouchy Groundhog  years 2025-2026  2 files / 2 collections
+   folders: [2] Graphic Novels\_Andrews McMeel\Groucho The Grouchy Groundhog (2025)
+   files:   [248956] COL Groucho The Grouchy Groundhog v01 (2025) (Graphic Novel) (Andrews McMeel) (Digital) (LeDuch-DCP).cbz (81pp)
+            [248957] COL Groucho The Grouchy Groundhog v02 (2026) (Graphic Novel) (Andrews McMeel) (Digital) (LeDuch-DCP).cbz (81pp)
+   ours:    ComicInfo Series: "Groucho The Grouchy Groundhog"x2; ComicInfo Volume: "2025"x2; ComicInfo Publisher: "Andrews McMeel"x2
+
+== S104733 Lindsey Cheng Dates a White Boy  [tier D]   keys: Lindsey Cheng Dates a White Boy  years 2026-2026  1 files / 1 collections
+   folders: [1] Graphic Novels\_Andrews McMeel\Lindsey Cheng Dates a White Boy (2026)
+   files:   [248958] COL Lindsey Cheng Dates a White Boy (2026) (Graphic Novel) (Andrews McMeel) (Digital) (LeDuch-DCP).cbz (209pp)
+   ours:    ComicInfo Series: "Lindsey Cheng Dates a White Boy"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Andrews McMeel"x1
+
+== S104763 Marty Milagros DOOMS the Earth  [tier D]   keys: Marty Milagros DOOMS the Earth  years 2026-2026  1 files / 1 collections
+   folders: [1] Graphic Novels\_Andrews McMeel\Marty Milagros DOOMS the Earth (A Star League Story) (2026)
+   files:   [248959] COL Marty Milagros DOOMS the Earth (A Star League Story) (2026) (Graphic Novel) (Andrews McMeel) (Digital) (LeDuch-DCP).cbz (252pp)
+   ours:    ComicInfo Series: "Marty Milagros DOOMS the Earth"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Andrews McMeel"x1
+
+== S105106 The Joy of Snacking: A Graphic Memoir about Food, Love, And Family  [tier D]   keys: The Joy of Snacking: A Graphic Memoir about Food, Love, And Family  years 2025-2025  1 files / 1 collections
+   folders: [1] Graphic Novels\_Andrews McMeel\The Joy of Snacking - A Graphic Memoir about Food, Love, And Family (2025)
+   files:   [248960] COL The Joy of Snacking - A Graphic Memoir about Food, Love, And Family (2025) (Graphic Novel) (Andrews McMeel) (Digital) (LeDuch-DCP).cbz (384pp)
+   ours:    ComicInfo Series: "The Joy of Snacking: A Graphic Memoir about Food, Love, And Family"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Andrews McMeel"x1
+   GCD dump:       235295 "The Joy of Snacking: A Graphic Memoir About Food, Love & Family" 2025-2025 Andrews McMeel [] 1 (via our own name without the filing suffix "The Joy of Snacking: A Graphic Memoir about Food, Love, & Family")   (dump lookup)
+
+== S104953 Snug Harbor Stories: A Wallace the Brave Collection  [tier D]   keys: Snug Harbor Stories: A Wallace the Brave Collection  years 2019-2019  1 files / 1 collections
+   folders: [1] Graphic Novels\_Andrews McMeel\Wallace the Brave (2017)
+   files:   [248962] COL Wallace the Brave v02 - Snug Harbor Stories (2019) (Collection) (Andrews McMeel Publishing) (Digital-HD) (LeDuch).cbz (174pp)
+   ours:    ComicInfo Series: "Snug Harbor Stories: A Wallace the Brave Collection"x1; ComicInfo Volume: "2019"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Andrews McMeel Publishing"x1; ComicInfo Web: "719885"x1
+   CV local rip:   121520 "Snug Harbor Stories: A Wallace the Brave Collection" 2019 Andrews McMeel Publishing 1 issue 719885   (rip lookup)
+
+== S105291 Welcome to the Forest: The Harvest Party  [tier D]   keys: Welcome to the Forest: The Harvest Party  years 2025-2025  1 files / 1 collections
+   folders: [1] Graphic Novels\_Andrews McMeel\Welcome to the Forest  (2025)
+   files:   [248964] COL 02 Welcome to the Forest - The Harvest Party (2025) (Graphic Novel) (Andrews McMeel) (Digital) (LeDuch-DCP).cbz (81pp)
+   ours:    ComicInfo Series: "Welcome to the Forest: The Harvest Party"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Andrews McMeel"x1
+
+== S105292 Welcome to the Forest: The Lake Trip  [tier D]   keys: Welcome to the Forest: The Lake Trip  years 2026-2026  1 files / 1 collections
+   folders: [1] Graphic Novels\_Andrews McMeel\Welcome to the Forest  (2025)
+   files:   [248963] COL 01 Welcome to the Forest - The Lake Trip (2026) (Graphic Novel) (Andrews McMeel Publishing) (Digital) (LeDuch-DCP).cbz (69pp)
+   ours:    ComicInfo Series: "Welcome to the Forest: The Lake Trip"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Andrews McMeel Publishing"x1
+
+== S104280 17 Dance Like Everybody's Watching!  [tier D]   keys: 17 Dance Like Everybody's Watching!  years 2018-2018  1 files / 0 collections
+   folders: [1] Graphic Novels\_Andrews McMeel\Zits (1997)
+   files:   [248969] 17 Dance Like Everybody's Watching! (2018) (digital) (Salem-Empire).cbr (204pp)
+   ours:    ladder 17
+
+== S104281 19 Zits - Screentime  [tier D]   keys: 19 Zits - Screentime  years 2020-2020  1 files / 0 collections
+   folders: [1] Graphic Novels\_Andrews McMeel\Zits (1997)
+   files:   [248971] 19 Zits - Screentime (2020).cbz (212pp)
+   ours:    ladder 19
+
+== S104399 Blowing up The Complete 2024 Zits Collection  [tier D]   keys: Blowing up The Complete 2024 Zits Collection  years 2026-2026  1 files / 1 collections
+   folders: [1] Graphic Novels\_Andrews McMeel\Zits (1997)
+   files:   [248972] COL Blowing up - The Complete 2024 Zits Collection (2026) (Collection) (Andrews McMeel) (Digital) (LeDuch-DCP).cbz (205pp)
+   ours:    ComicInfo Series: "Blowing up The Complete 2024 Zits Collection"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Andrews McMeel"x1
+
+== S104534 Extra Cheesy Zits: A Zits Treasury  [tier D]   keys: Extra Cheesy Zits: A Zits Treasury  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Andrews McMeel\Zits (1997)
+   files:   [248968] 15 Extra Cheesy Zits - A Zits Treasury (2016) (Digital-Empire).cbz (205pp)
+   ours:    ladder 15; ComicInfo Series: "Extra Cheesy Zits: A Zits Treasury"x1; ComicInfo Publisher: "Andrews McMeel Publishing, LLC"x1
+   GCD dump:       137119 "Extra Cheesy Zits [A Zits Treasury]" 2016-2016 Andrews McMeel [] 1   (dump lookup)
+
+== S104836 Not Sparking Joy: A Zits Treasury  [tier D]   keys: Not Sparking Joy: A Zits Treasury  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Andrews McMeel\Zits (1997)
+   files:   [248970] 18 Not Sparking Joy - A Zits Treasury (2019) (Digital-Empire).cbz (208pp)
+   ours:    ladder 18; ComicInfo Series: "Not Sparking Joy: A Zits Treasury"x1; ComicInfo Publisher: "Andrews McMeel Publishing, LLC"x1
+   CV local rip:   122188 "Not Sparking Joy: A Zits Treasury" 2019 Andrews McMeel Publishing 1 issue 723749   (rip lookup)
+   GCD dump:       151454 "Not Sparking Joy [A Zits Treasury]" 2019-2019 Andrews McMeel [] 1   (dump lookup)
+
+== S104862 Peace, Love & Wi-Fi: A ZITS Treasury  [tier D]   keys: Peace, Love & Wi-Fi: A ZITS Treasury  years 2014-2014  1 files / 0 collections
+   folders: [1] Graphic Novels\_Andrews McMeel\Zits (1997)
+   files:   [248966] 13 Peace, Love & Wi-Fi - A Zits Treasury (2014) (Digital-Empire).cbz (202pp)
+   ours:    ladder 13; ComicInfo Series: "Peace, Love & Wi-Fi: A ZITS Treasury"x1; ComicInfo Publisher: "Andrews McMeel Publishing"x1
+   GCD dump:       137120 "Peace, Love, & Wi-Fi [A Zits Treasury]" 2014-2014 Andrews McMeel [] 1   (dump lookup)
+
+== S105336 Zits  [tier D]   keys: Zits  years 1997-1997  1 files / 0 collections
+   folders: [1] Graphic Novels\_Andrews McMeel\Zits (1997)
+   files:   [248965] 01 Humongous Zits - A Zits Treasury.cbr (240pp)
+   CV local rip:   90594 "Zits" 1999 Hjemmet 9 · 142509 "Zits" 2000 Norma Editorial 2 · 90560 "Zits" 2007 Egmont Comics 4 · 90499 "Zits" 2015 Hjemmet 1 issue 530520   (rip lookup)
+   GCD dump:       44335 "Zits" [sv-se] 1999-2005 Egmont [] 2 · 49259 "Zits" [no] 1999-2013 Hjemmet / Egmont [] 10 · 97905 "Zits" [de] 1999-2011 Achterbahn [] 10 · 142496 "Zits" [fr] 2001-2001 Rackham [] 1 · 115069 "Zits" [da-dk] 2006-2009 Egmont [] 4 · 21576 "Zits" [no] 2007-2007 Hjemmet / Egmont [] 6   (dump lookup)
+
+== S105337 Zits - Sketchbook  [tier D]   keys: Zits - Sketchbook  years 1997-1997  1 files / 0 collections
+   folders: [1] Graphic Novels\_Andrews McMeel\Zits (1997)
+   files:   [248973] Zits - Sketchbook 1 (Andrews McMeel 1998).cbr (132pp)
+   ours:    ladder 1
+   CV local rip:   65355 "Zits Sketchbook" 1998 Andrews McMeel Publishing 14   (rip lookup)
+   GCD dump:       56623 "Zits Sketchbook" 1998-2012 Andrews McMeel [] 15   (dump lookup)
+
+== S105338 Zits Apocalypse: Are You Ready?  [tier D]   keys: Zits Apocalypse: Are You Ready?  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels\_Andrews McMeel\Zits (1997)
+   files:   [248967] 14 Zits Apocalypse - Are You Ready (2015) (Digital-Empire).cbz (207pp)
+   ours:    ladder 14; ComicInfo Series: "Zits Apocalypse: Are You Ready?"x1; ComicInfo Publisher: "Andrews McMeel Publishing, LLC"x1
+   CV local rip:   85796 "Zits Apocalypse: Are You Ready?" 2015 Andrews McMeel Publishing 1 issue 504894   (rip lookup)
+
+== S104305 A Projection  [tier D]   keys: A Projection  years 2018-2018  1 files / 0 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245802] A Projection (2018) (One Shot) (Avery Hill) (Digital-HD) (LeDuch).cbz (39pp)
+   ours:    ladder 1; ComicInfo Series: "A Projection"x1; ComicInfo Volume: "2018"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill"x1
+   GCD dump:       137183 "A Projection" [en-gb] 2018-2018 Avery Hill [] 1   (dump lookup)
+
+== S104311 Acid Box  [tier D]   keys: Acid Box  years 2025-2025  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245803] COL Acid Box (2025) (Graphic Novel) (Avery Hill Publishing) (Digital-HD) (LeDuch).cbz (201pp)
+   ours:    ComicInfo Series: "Acid Box"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill Publishing"x1
+
+== S104338 Artificial Flowers  [tier D]   keys: Artificial Flowers  years 2016-2016  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245804] COL Artificial Flowers (2016) (Graphic Novel) (Avery Hill Publishing) (Digital-HD) (LeDuch).cbz (88pp)
+   ours:    ComicInfo Series: "Artificial Flowers"x1; ComicInfo Volume: "2016"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill Publishing"x1; ComicInfo Web: "548061"x1
+   CV local rip:   93811 "Artificial Flowers" 2016 Avery Hill Publishing 1 issue 548061   (rip lookup)
+   GCD dump:       137192 "Artificial Flowers" [en-gb] 2016-2016 Avery Hill [] 1   (dump lookup)
+
+== S104373 Between the Billboards & The Authoring of Architecture  [tier D]   keys: Between the Billboards & The Authoring of Architecture  years 2015-2015  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245805] COL Between the Billboards & The Authoring of Architecture v01 (2015) (Collection) (Avery Hill) (Digital-HD) (LeDuch).cbz (128pp)
+   ours:    ComicInfo Series: "Between the Billboards & The Authoring of Architecture"x1; ComicInfo Volume: "2015"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill"x1
+   GCD dump:       137198 "Between the Billboards & The Authoring of Architecture" [en-gb] 2015-2015 Avery Hill [] 1   (dump lookup)
+
+== S104430 Comic Book Slumber Party Presents - Escape From Bitch Mountain  [tier D]   keys: Comic Book Slumber Party Presents - Escape From Bitch Mountain  years 2019-2019  1 files / 0 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245806] Comic Book Slumber Party Presents - Escape From Bitch Mountain (2018) (digital) (DrVink).cbz (108pp)
+   ours:    ComicInfo Publisher: "Avery Hill Publishing"x1
+
+== S104484 Deep Space Canine  [tier D]   keys: Deep Space Canine  years 2019-2019  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245807] COL Deep Space Canine (2019) (Graphic Novel) (Avery Hill Publishing) (Digital-HD) (LeDuch).cbz (72pp)
+   ours:    ComicInfo Series: "Deep Space Canine"x1; ComicInfo Volume: "2019"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill Publishing"x1; ComicInfo Web: "703781"x1
+   CV local rip:   117718 "Deep Space Canine" 2019 Avery Hill Publishing 1 issue 703781   (rip lookup)
+   GCD dump:       143176 "Deep Space Canine" [en-gb] 2019-2019 Avery Hill [] 1   (dump lookup)
+
+== S104487 Desolation Wilderness  [tier D]   keys: Desolation Wilderness  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245808] Desolation Wilderness (2023) (One Shot) (Avery Hill Publishing) (Digital-HD) (LeDuch).cbz (32pp)
+   ours:    ladder 1; ComicInfo Series: "Desolation Wilderness"x1; ComicInfo Volume: "2023"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill Publishing"x1
+
+== S104761 Marble Cake  [tier D]   keys: Marble Cake  years 2019-2019  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245809] COL Marble Cake (2019) (Graphic Novel) (Avery Hill) (Digital-HD) (LeDuch).cbz (119pp)
+   ours:    ComicInfo Series: "Marble Cake"x1; ComicInfo Volume: "2019"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill"x1
+   CV local rip:   119992 "Marble Cake" 2019 Avery Hill Publishing 1 issue 712898   (rip lookup)
+   GCD dump:       148614 "Marble Cake" [en-gb] 2019-2019 Avery Hill [] 1   (dump lookup)
+
+== S104852 Orlando  [tier D]   keys: Orlando  years 2026-2026  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245810] COL Orlando (2026) (Graphic Novel) (Avery Hill Publishing) (Digital) (LeDuch-DCP).cbz (148pp)
+   ours:    ComicInfo Series: "Orlando"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill Publishing"x1
+   GCD dump:       234217 "Orlando" [de-ch] 2025-2025 Helvetiq [] 1 · 132458 "Orlando" [fr] 2017-2018 Dargaud [] 2 · 155742 "Orlando" [fr] 2013-2013 Misma Éditions [] 1   (dump lookup)
+
+== S104855 Outer Wilderness  [tier D]   keys: Outer Wilderness  years 2022-2022  1 files / 0 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245811] Outer Wilderness (2022) (One Shot) (Avery Hill Publishing) (Digital-HD) (LeDuch).cbz (32pp)
+   ours:    ladder 1; ComicInfo Series: "Outer Wilderness"x1; ComicInfo Volume: "2022"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill Publishing"x1
+
+== S104907 Retrograde Orbit  [tier D]   keys: Retrograde Orbit  years 2018-2018  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245812] COL Retrograde Orbit (2018) (Graphic Novel) (Avery Hill Publishing) (Digital-HD) (LeDuch).cbz (108pp)
+   ours:    ComicInfo Series: "Retrograde Orbit"x1; ComicInfo Volume: "2018"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill Publishing"x1; ComicInfo Web: "691931"x1
+   CV local rip:   115233 "Retrograde Orbit" 2018 Avery Hill Publishing 1 issue 691931   (rip lookup)
+   GCD dump:       137178 "Retrograde Orbit" [en-gb] 2018-2018 Avery Hill [] 1   (dump lookup)
+
+== S104931 Second Shift  [tier D]   keys: Second Shift  years 2025-2025  1 files / 0 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245813] Second Shift (Kit Anderson) (2025) (Avery Hill) (Digital) (XRA-Empire).cbz (164pp)
+   ours:    ComicInfo Series: "Second Shift"x1; ComicInfo Publisher: "Avery Hill"x1
+
+== S104932 Sennen  [tier D]   keys: Sennen  years 2022-2022  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245814] COL Sennen (2022) (Graphic Novel) (Avery Hill) (Digital-HD) (LeDuch).cbz (108pp)
+   ours:    ComicInfo Series: "Sennen"x1; ComicInfo Volume: "2022"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill"x1
+   GCD dump:       192349 "Sennen" [en-gb] 2022-2022 Avery Hill [] 1   (dump lookup)
+
+== S104969 Sour Pickles  [tier D]   keys: Sour Pickles  years 2021-2021  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245815] COL Sour Pickles (2021) (Graphic Novel) (Avery Hill) (Digital-HD) (LeDuch).cbz (84pp)
+   ours:    ComicInfo Series: "Sour Pickles"x1; ComicInfo Volume: "2021"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill"x1
+   GCD dump:       179537 "Sour Pickles" [en-gb] 2021-2021 Avery Hill [] 1   (dump lookup)
+
+== S105078 The Corus Wave  [tier D]   keys: The Corus Wave  years 2025-2025  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245816] COL The Corus Wave (2025) (Graphic Novel) (Avery Hill Publishing) (Digital-HD) (LeDuch).cbz (148pp)
+   ours:    ComicInfo Series: "The Corus Wave"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill Publishing"x1
+
+== S105096 The Flood That Did Come  [tier D]   keys: The Flood That Did Come  years 2020-2020  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245817] COL The Flood That Did Come (2020) (Graphic Novel) (Avery Hill Publishing) (Digital-HD) (LeDuch).cbz (76pp)
+   ours:    ComicInfo Series: "The Flood That Did Come"x1; ComicInfo Volume: "2020"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill Publishing"x1
+
+== S105139 The Rabbit  [tier D]   keys: The Rabbit  years 2015-2015  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245818] COL The Rabbit (2015) (Graphic Novel) (Avery Hill) (Digital-HD) (LeDuch).cbz (146pp)
+   ours:    ComicInfo Series: "The Rabbit"x1; ComicInfo Volume: "2015"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill"x1
+   CV local rip:   123758 "Rabbit" 2019 MSP 3   (rip lookup)
+   GCD dump:       92553 "The Rabbit" [en-gb] 2015-2015 Avery Hill [] 1 · 125916 "Rabbit" 1999-1999 Sharkbait Press [] 2   (dump lookup)
+
+== S105177 The Witch's Egg  [tier D]   keys: The Witch's Egg  years 2025-2025  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245819] COL The Witch's Egg (2025) (Graphic Novel) (Avery Hill Publishing) (Digital-HD) (LeDuch).cbz (188pp)
+   ours:    ComicInfo Series: "The Witch's Egg"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill Publishing"x1
+
+== S105287 Was That Normal?  [tier D]   keys: Was That Normal?  years 2026-2026  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245820] COL Was That Normal (2026) (Graphic Novel) (Avery Hill Publishing) (Digital) (LeDuch-DCP).cbz (212pp)
+   ours:    ComicInfo Series: "Was That Normal?"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill Publishing"x1
+
+== S105295 What We Don't Talk About  [tier D]   keys: What We Don't Talk About  years 2020-2020  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [245821] COL What We Don't Talk About (2020) (Graphic Novel) (Avery Hill Publishing) (Digital-HD) (LeDuch).cbz (99pp)
+   ours:    ComicInfo Series: "What We Don't Talk About"x1; ComicInfo Volume: "2020"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill Publishing"x1; ComicInfo Web: "799625"x1
+   CV local rip:   130336 "What We Don't Talk About" 2020 Avery Hill Publishing 1 issue 799625   (rip lookup)
+
+== S104285 2120  [tier D]   keys: 2120  years 2022-2022  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill\George Wylesole
+   files:   [248974] COL 2120 (George Wylesol) (2022) (Graphic Novel) (Avery Hill) (Digital-HD) (LeDuch).cbz (500pp)
+   ours:    ComicInfo Series: "2120"x1; ComicInfo Volume: "2022"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill"x1
+   GCD dump:       187661 "2120" [en-gb] 2022-2022 Avery Hill [] 1 · 187748 "2120" [en-gb] 2022-2022 Avery Hill [] 1   (dump lookup)
+
+== S104405 Breakwater  [tier D]   keys: Breakwater  years 2020-2020  1 files / 0 collections
+   folders: [1] Graphic Novels\_Avery Hill\Kat Chapman
+   files:   [248977] Breakwater (Kat Chapman) (2020) (Avery Hill) (Digital) (XRA-Empire).cbz (164pp)
+   ours:    ComicInfo Series: "Breakwater"x1; ComicInfo Publisher: "Avery Hill Publishing"x1
+   CV local rip:   131845 "Breakwater" 2020 Avery Hill Publishing 1 issue 817545   (rip lookup)
+   GCD dump:       166737 "Breakwater" [en-gb] 2020-2020 Avery Hill [] 1 · 227583 "Breakwater" [fr] 2022-2022 Futuropolis [] 1   (dump lookup)
+
+== S105102 The Hard Switch  [tier D]   keys: The Hard Switch  years 2023-2023  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill\Owen D. Pomery
+   files:   [245824] COL The Hard Switch (Owen D. Pomery) (2023) (Graphic Novel) (Digital-HD) (LeDuch).cbz (106pp)
+   ours:    ComicInfo Series: "The Hard Switch"x1; ComicInfo Volume: "2023"x1; ComicInfo Publisher: "Avery Hill Publishing"x1
+   GCD dump:       213052 "The Hard Switch" [en-gb] 2023-2023 Avery Hill [] 1 · 213053 "The Hard Switch" [en-gb] 2024-2024 Avery Hill [] 1   (dump lookup)
+
+== S105254 Victory Point  [tier D]   keys: Victory Point  years 2020-2020  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill\Owen D. Pomery
+   files:   [245825] COL Victory Point (2020) (Graphic Novel) (Avery Hill Publishing) (Digital-HD) (LeDuch).cbz (79pp)
+   ours:    ComicInfo Series: "Victory Point"x1; ComicInfo Volume: "2020"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill Publishing"x1; ComicInfo Web: "799674"x1
+   CV local rip:   130337 "Victory Point" 2020 Avery Hill Publishing 1 issue 799674   (rip lookup)
+   GCD dump:       213057 "Victory Point" [en-gb] 2020-2020 Avery Hill [] 1 · 213058 "Victory Point" [en-gb] 2024-2024 Avery Hill [] 1   (dump lookup)
+
+== S105290 Wednesday  [tier D]   keys: Wednesday  years 2021-2021  1 files / 0 collections
+   folders: [1] Graphic Novels\_Avery Hill\Tim Bird
+   files:   [245823] Wednesday (Tim Bird) (2021) (Avery Hill) (digital-sd) (JeffAlbertson-DCP).cbz (82pp)
+   CV local rip:   79107 "Wednesday" 2014 Stompbox13 1 issue 474846   (rip lookup)
+
+== S104846 One Crazy Summer: The Graphic Novel  [tier D]   keys: One Crazy Summer: The Graphic Novel  years 2025-2025  1 files / 0 collections
+   folders: [1] Graphic Novels\_Harper Alley
+   files:   [247277] One Crazy Summer (2025) (Harper Alley) (Digital) (XRA-Empire).cbz (301pp)
+   ours:    ComicInfo Series: "One Crazy Summer: The Graphic Novel"x1; ComicInfo Publisher: "HarperCollins"x1
+
+== S104542 Filth and Grammar  [tier D]   keys: Filth and Grammar  years 2021-2021  1 files / 0 collections
+   folders: [1] Graphic Novels\_Off Register Press
+   files:   [247278] Filth and Grammar (Shelly Bond) (2021) (Off Register Press) (digital) (JeffAlbertson-DCP).cbz (141pp)
+
+== S104581 Geezer  [tier D]   keys: Geezer  years 2022-2023  2 files / 0 collections
+   folders: [2] Graphic Novels\_Off Register Press
+   files:   [247279] Geezer 001 (2022) (Off Register Press) (digital) (JeffAlbertson-DCP).cbz (42pp) | [247280] Geezer 002 (2023) (Off Register Press) (digital) (JeffAlbertson-DCP).cbz (42pp)
+   ours:    ladder 1-2
+   GCD dump:       188161 "Geezer" 2022-? Off Register Press [] 3   (dump lookup)
+
+== S104525 Everything is Teeth  [tier D]   keys: Everything is Teeth  years 2016-2016  1 files / 0 collections
+   folders: [1] Graphic Novels\_Pantheon Graphic Library
+   files:   [246717] Everything is Teeth (Evie Wyld) (2016)  (Pantheon) (Digital) (antimist).cbz (129pp)
+   CV local rip:   90405 "Everything Is Teeth" 2016 Pantheon Books 1 issue 529727   (rip lookup)
+
+== S105065 The Adventures of Alexander Von Humboldt  [tier D]   keys: The Adventures of Alexander Von Humboldt  years 2019-2019  1 files / 0 collections
+   folders: [1] Graphic Novels\_Pantheon Graphic Library
+   files:   [246719] The Adventures of Alexander Von Humboldt (2019) (Pantheon) (digital+) (fylgja).cbz (219pp)
+   CV local rip:   118083 "The Adventures of Alexander Von Humboldt" 2019 Pantheon Books 1 issue 705276   (rip lookup)
+   GCD dump:       143546 "The Adventures of Alexander Von Humboldt" 2019-2019 Pantheon [] 1   (dump lookup)
+
+== S104404 Breakdowns - Portrait of the Artist as a Young %@&#!  [tier D]   keys: Breakdowns - Portrait of the Artist as a Young %@&#!  years 2022-2022  1 files / 0 collections
+   folders: [1] Graphic Novels\_Pantheon Graphic Library\Art Spiegelman
+   files:   [248986] Breakdowns - Portrait of the Artist as a Young %@&#! (Art Spiegelman) (2022) (Pantheon Books) (c2c) (Ignatz-DCP).cbz (85pp)
+   CV local rip:   37286 "Breakdowns: Portrait of the Artist as a Young %@&*!" 2008 Pantheon Books 1 issue 248223   (rip lookup)
+   GCD dump:       194144 "Breakdowns: Portrait of the Artist as a Young %@?*!" 2022-2022 Pantheon [] 1 · 41111 "Breakdowns Portrait of the Artist as a Young %@?*!" 2008-2008 Pantheon [] 1   (dump lookup)
+
+== S104773 Maus Now  [tier D]   keys: Maus Now  years 2022-2022  1 files / 0 collections
+   folders: [1] Graphic Novels\_Pantheon Graphic Library\Art Spiegelman
+   files:   [248987] Maus Now (2022) (Pantheon) (digital) (Ignatz-DCP).cbz (504pp)
+
+== S104424 Chicken With Plums  [tier D]   keys: Chicken With Plums  years 2006-2006  1 files / 0 collections
+   folders: [1] Graphic Novels\_Pantheon Graphic Library\Marjane Satrapi
+   files:   [246720] Chicken With Plums (Marjane Satrapi) (2006) (Pantheon) (Minutemen-DTs).cbz (98pp)
+   CV local rip:   26478 "Chicken With Plums" 2006 Pantheon Books 1 issue 158046   (rip lookup)
+   GCD dump:       55173 "Chicken with Plums" 2006-2006 Pantheon [] 1   (dump lookup)
+
+== S105205 Tongues, Volume 1  [tier D]   keys: Tongues, Volume 1  years 2025-2025  1 files / 1 collections
+   folders: [1] Graphic Novels\_Pantheon Graphic Library\Tongues (Anders Nilsen) (2025)
+   files:   [248990] COL Tongues v01 (Anders Nilsen) (2025) (Pantheon) (Digital) (XRA-Empire).cbz (386pp)
+   ours:    ComicInfo Series: "Tongues, Volume 1"x1; ComicInfo Publisher: "Knopf Doubleday Publishing Group"x1
+
+== S104834 No Rules Tonight  [tier D]   keys: No Rules Tonight  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Penguin
+   files:   [247281] No Rules Tonight (2024) (Penguin Workshop) (Digital) (XRA-Empire).cbz (216pp)
+   ours:    ComicInfo Series: "No Rules Tonight"x1; ComicInfo Publisher: "Penguin Young Readers Group"x1
+
+== S105172 The Troll Book  [tier D]   keys: The Troll Book  years 1980-1980  1 files / 0 collections
+   folders: [1] Graphic Novels\_Random House
+   files:   [246723] The Troll Book (Michael Berenstain) (1980) (Random House) (c2c) (Ignatz-DCP).cbz (55pp)
+
+== S104844 On an Even Moon  [tier D]   keys: On an Even Moon  years 2025-2025  1 files / 0 collections
+   folders: [1] Graphic Novels\_Shortbox
+   files:   [246724] On an Even Moon (B. Mure) (2025) (ShortBox) (WebRip) (Ignatz-DCP).cbz (31pp)
+
+== S105179 The Worst  [tier D]   keys: The Worst  years 2018-2018  1 files / 0 collections
+   folders: [1] Graphic Novels\_Shortbox
+   files:   [246725] The Worst (Molly Mendoza) (2018) (ShortBox) (digital) (JeffAlbertson-DCP).cbz (41pp)
+   CV local rip:   47172 "Worst" 2004 Digital Manga Publishing 3 · 44223 "Worst" 2002 Akita Shoten 33 · 93830 "Worst" 1970 Shueisha 4   (rip lookup)
+   GCD dump:       158855 "The Worst" [en-gb] 2017-2017 Shortbox [] 1   (dump lookup)
+
+== S104301 A Contract With God - Centennial Edition  [tier D]   keys: A Contract With God - Centennial Edition  years ?-?  1 files / 0 collections
+   folders: [1] Graphic Novels\_W. W.  Norton (and Liveright)
+   files:   [247282] A Contract With God - Centennial Edition (Will Eisner) (1978, 2017) (W. W. Norton) (c2c) (Ignatz-DCP).cbz (223pp)
+
+== S104699 Kill My Mother II - Cousin Joseph  [tier D]   keys: Kill My Mother II - Cousin Joseph  years 2016-2016  1 files / 0 collections
+   folders: [1] Graphic Novels\_W. W.  Norton (and Liveright)\Kill My Mother Trilogy (Jules Feiffer) (2014)
+   files:   [248992] Kill My Mother II - Cousin Joseph (Jules Feiffer) (2016) (Liveright) (digital+) (fylgja).cbz (131pp)
+
+== S104700 Kill My Mother III - The Ghost Script  [tier D]   keys: Kill My Mother III - The Ghost Script  years 2018-2018  1 files / 0 collections
+   folders: [1] Graphic Novels\_W. W.  Norton (and Liveright)\Kill My Mother Trilogy (Jules Feiffer) (2014)
+   files:   [248993] Kill My Mother III - The Ghost Script (Jules Feiffer) (2018) (Liveright) (digital+) (fylgja).cbz (167pp)
+
+== S104470 DC x Sonic the Hedgehog  [tier D]   keys: DC x Sonic the Hedgehog  years 2025-2025  1 files / 0 collections
+   folders: [1] Hanna-Barbera & Licenses\DC x Sonic the Hedgehog (2025)
+   files:   [247284] DC x Sonic the Hedgehog (2025) (digital) (Son of Ultron-Empire).cbr (122pp)
+   CV local rip:   162851 "DC x Sonic the Hedgehog" 2025 DC Comics 5 · 169132 "DC x Sonic the Hedgehog" 2025 Urban Comics 1 issue 1147735 · 168994 "DC x Sonic the Hedgehog" ? DC Comics 1 issue 1147062   (rip lookup)
+   GCD dump:       221922 "DC x Sonic the Hedgehog" 2025-2025 DC [] 5 · 227150 "DC x Sonic the Hedgehog" [de] 2025-2025 Panini Deutschland [] 2 · 228906 "DC x Sonic the Hedgehog" 2025-2025 DC [] 1 · 236128 "DC x Sonic the Hedgehog" [fr] 2025-2025 Urban Comics [] 1   (dump lookup)
+
+== S104471 DC x Sonic the Hedgehog - Metal Legion  [tier D]   keys: DC x Sonic the Hedgehog - Metal Legion  years 2026-2026  5 files / 0 collections
+   folders: [5] Hanna-Barbera & Licenses\DC x Sonic the Hedgehog (2025)\DC x Sonic the Hedgehog v2 - Metal Legion (2026)
+   files:   [248994] DC x Sonic the Hedgehog - Metal Legion 01 (of 05) (2026) (digital) (Son of Ultron-Empire).cbr (28pp)
+            [248995] DC x Sonic the Hedgehog - Metal Legion 02 (of 05) (2026) (digital) (Son of Ultron-Empire).cbr (28pp)
+            [248996] DC x Sonic the Hedgehog - Metal Legion 03 (of 05) (2026) (digital) (Son of Ultron-Empire).cbr (26pp)
+            [248997] DC x Sonic the Hedgehog - Metal Legion 04 (of 05) (2026) (digital) (Son of Ultron-Empire).cbr (26pp)
+            [248998] DC x Sonic the Hedgehog - Metal Legion 05 (of 05) (2026) (digital) (Son of Ultron-Empire).cbr (30pp)
+   ours:    ladder 1-5
+   GCD dump:       235839 "DC x Sonic the Hedgehog: Metal Legion" 2026-? DC [] 2   (dump lookup)
+
+== S105048 Teenage Mutant Ninja Turtles - The Last Ronin - The Lost Day Special  [tier D]   keys: Teenage Mutant Ninja Turtles - The Last Ronin - The Lost Day Special  years 2023-2023  1 files / 0 collections
+   folders: [1] IDW Hasbro\TMNT - The Last Ronin - The Lost Years (2023)\Annuals and Specials
+   files:   [249175] Teenage Mutant Ninja Turtles - The Last Ronin - The Lost Day Special (2023) (Digital) (Li'l-Empire).cbr (50pp)
+
+== S105043 Teenage Mutant Ninja Turtles - Casey Jones  [tier D]   keys: Teenage Mutant Ninja Turtles - Casey Jones  years 2026-2026  1 files / 0 collections
+   folders: [1] IDW Hasbro\Teenage Mutant Ninja Turtles (2024)\2025.09.15 - TMNT - Casey Jones
+   files:   [249105] Teenage Mutant Ninja Turtles - Casey Jones (2026) (digital) (Raphael-Empire).cbr (171pp)
+   CV local rip:   167098 "Teenage Mutant Ninja Turtles: Casey Jones" 2025 IDW Publishing 2   (rip lookup)
+   GCD dump:       227691 "Teenage Mutant Ninja Turtles: Casey Jones" 2025-2026 IDW [] 6   (dump lookup)
+
+== S105031 TMNT - Journeys  [tier D]   keys: TMNT - Journeys  years 2026-2026  9 files / 1 collections
+   folders: [5] IDW Hasbro\Teenage Mutant Ninja Turtles (2024)\2026.01.12 - TMNT - Journeys Vol. 02 · [3] IDW Hasbro\Teenage Mutant Ninja Turtles (2024)\2026.06.29 - TMNT - Journeys Vol. 03 · [1] IDW Hasbro\Teenage Mutant Ninja Turtles (2024)\2025.09.00 - TMNT - Journeys Vol. 01
+   files:   [249104] COL TMNT - Journeys v01 (2026) (digital) (Raphael-Empire).cbr (200pp)
+            TMNT - Journeys 006 (2026) (digital) (Raphael-Empire).cbr … TMNT - Journeys 013 (2026) (digital) (Raphael-Empire).cbr  (8 files, pp 33-64)
+   ours:    ladder 6-13
+   CV local rip:   166323 "TMNT: Journeys" 2025 IDW Publishing 3   (rip lookup)
+   GCD dump:       227027 "TMNT: Journeys" 2025-? IDW [] 10   (dump lookup)
+
+== S105046 Teenage Mutant Ninja Turtles - Shredder  [tier D]   keys: Teenage Mutant Ninja Turtles - Shredder  years 2026-2026  7 files / 1 collections
+   folders: [6] IDW Hasbro\Teenage Mutant Ninja Turtles (2024)\2026.04.13 - Shredder Vol. 02 · [1] IDW Hasbro\Teenage Mutant Ninja Turtles (2024)\2025.05.08 - Shredder Vol. 01
+   files:   [249103] COL Teenage Mutant Ninja Turtles - Shredder v01 (2026) (digital) (Raphael-Empire).cbr (163pp)
+            Teenage Mutant Ninja Turtles - Shredder 007 (2026) (digital) (Raphael-Empire).cbr … Teenage Mutant Ninja Turtles - Shredder 012 (2026) (digital) (Raphael-Empire).cbr  (6 files, pp 29-32)
+   ours:    ladder 7-12
+   CV local rip:   166458 "Teenage Mutant Ninja Turtles: Shredder" 2025 IDW Publishing 3   (rip lookup)
+   GCD dump:       227078 "Teenage Mutant Ninja Turtles: Shredder" 2025-? IDW [] 8   (dump lookup)
+
+== S105042 Teenage Mutant Ninja Turtles - Bebop and Rocksteady Destroy Everything  [tier D]   keys: Teenage Mutant Ninja Turtles - Bebop and Rocksteady Destroy Everything  years 2016-2016  1 files / 0 collections
+   folders: [1] IDW Hasbro\Teenage Mutant Ninja Turtles Misc\Bebop & Rocksteady
+   files:   [249130] 01 Teenage Mutant Ninja Turtles - Bebop & Rocksteady Destroy Everything (2016) (Digital) (Raphael-Empire).cbr (133pp)
+   ours:    ladder 1
+   CV local rip:   90857 "Teenage Mutant Ninja Turtles Bebop & Rocksteady Destroy Everything" 2016 IDW Publishing 5 (via our own name without the filing suffix "Teenage Mutant Ninja Turtles - Bebop & Rocksteady Destroy Everything") · 94318 "Teenage Mutant Ninja Turtles: Bebop & Rocksteady Destroy Everything" 2016 IDW Publishing 1 issue 550402 (via our own name without the filing suffix "Teenage Mutant Ninja Turtles - Bebop & Rocksteady Destroy Everything")   (rip lookup)
+   GCD dump:       102908 "Teenage Mutant Ninja Turtles: Bebop & Rocksteady Destroy Everything" 2016-2016 IDW [] 5 (via our own name without the filing suffix "Teenage Mutant Ninja Turtles - Bebop & Rocksteady Destroy Everything") · 210143 "Teenage Mutant Ninja Turtles: Bebop & Rocksteady Destroy Everything" 2016-2016 IDW [] 1 (via our own name without the filing suffix "Teenage Mutant Ninja Turtles - Bebop & Rocksteady Destroy Everything")   (dump lookup)
+
+== S105057 Teenage Mutant Ninja Turtles: Bebop & Rocksteady Hit the Road  [tier D]   keys: Teenage Mutant Ninja Turtles: Bebop & Rocksteady Hit the Road  years 2019-2019  1 files / 0 collections
+   folders: [1] IDW Hasbro\Teenage Mutant Ninja Turtles Misc\Bebop & Rocksteady
+   files:   [249131] 02 Teenage Mutant Ninja Turtles - Bebop & Rocksteady Hit the Road (2019) (digital) (Raphael-Empire).cbr (126pp)
+   ours:    ladder 2; ComicInfo Series: "Teenage Mutant Ninja Turtles: Bebop & Rocksteady Hit the Road"x1; ComicInfo Publisher: "IDW"x1
+   CV local rip:   116928 "Teenage Mutant Ninja Turtles: Bebop & Rocksteady Hit the Road" 2019 IDW Publishing 1 issue 699940 · 112560 "Teenage Mutant Ninja Turtles: Bebop & Rocksteady Hit the Road" 2018 IDW Publishing 5   (rip lookup)
+   GCD dump:       140075 "Teenage Mutant Ninja Turtles: Bebop & Rocksteady Hit the Road" 2019-2019 IDW [] 1 · 140074 "Teenage Mutant Ninja Turtles: Bebop & Rocksteady Hit the Road" 2018-2018 IDW [] 5   (dump lookup)
+
+== S17460 TMNT - Saturday Morning Adventures  [tier D]   keys: TMNT - Saturday Morning Adventures  years 2024-2026  16 files / 6 collections
+   folders: [16] IDW Hasbro\Teenage Mutant Ninja Turtles Misc\TMNT - Saturday Morning Adventures (2023)
+   files:   TMNT - Saturday Morning Adventures 032 (2025) (digital) (Raphael-Empire).cbr … TMNT - Saturday Morning Adventures 041 (2026) (digital) (Raphael-Empire).cbr  (10 files, pp 28-41)
+            [249168] COL TMNT - Saturday Morning Adventures Vol. 02 (2024) (digital) (Raphael-Empire).cbr (131pp)
+            [249169] COL TMNT - Saturday Morning Adventures Vol. 03 (2024) (digital) (Raphael-Empire).cbr (131pp)
+            [249171] COL TMNT - Saturday Morning Adventures Vol. 05 (2025) (digital) (Raphael-Empire).cbr (121pp)
+            [249172] COL TMNT - Saturday Morning Adventures Vol. 06 (2025) (digital) (Raphael-Empire).cbr (121pp)
+            [249173] COL TMNT - Saturday Morning Adventures Vol. 07 (2026) (digital) (Raphael-Empire).cbr (121pp)
+            [249174] COL TMNT - Saturday Morning Adventures Vol. 08 (2026) (digital) (Raphael-Empire).cbr (121pp)
+   ours:    ladder 32-41
+
+== S105032 TMNT - Saturday Morning Adventures (Raphael-Empire  [tier D]   keys: TMNT - Saturday Morning Adventures (Raphael-Empire  years 2025-2025  1 files / 1 collections
+   folders: [1] IDW Hasbro\Teenage Mutant Ninja Turtles Misc\TMNT - Saturday Morning Adventures (2023)
+   files:   [249170] COL TMNT - Saturday Morning Adventures Vol. 04 (2025) (digital) (Raphael-Empire.cbr (128pp)
+
+== S105035 Tales of the Teenage Mutant Ninja Turtles - Coastal Chaos  [tier D]   keys: Tales of the Teenage Mutant Ninja Turtles - Coastal Chaos  years 2026-2026  1 files / 0 collections
+   folders: [1] IDW Hasbro\Teenage Mutant Ninja Turtles Misc\Tales of the Teenage Mutant Ninja Turtles - Coastal Chaos v1 (2026)
+   files:   [249132] Tales of the Teenage Mutant Ninja Turtles - Coastal Chaos 001 (2026) (digital) (Raphael-Empire).cbr (29pp)
+   ours:    ladder 1
+
+== S105045 Teenage Mutant Ninja Turtles - Ghostbusters I  [tier D]   keys: Teenage Mutant Ninja Turtles - Ghostbusters I  years 2015-2015  1 files / 0 collections
+   folders: [1] IDW Hasbro\Teenage Mutant Ninja Turtles Misc\Teenage Mutant Ninja Turtles - Ghostbusters
+   files:   [249133] Teenage Mutant Ninja Turtles - Ghostbusters I (2015) (digital) (Raphael-Empire).cbr (104pp)
+
+== S105056 Teenage Mutant Ninja Turtles-Ghostbusters II  [tier D]   keys: Teenage Mutant Ninja Turtles-Ghostbusters II  years 2017-2017  5 files / 0 collections
+   folders: [5] IDW Hasbro\Teenage Mutant Ninja Turtles Misc\Teenage Mutant Ninja Turtles - Ghostbusters\Teenage Mutant Ninja Turtles-Ghostbusters II (2017)
+   files:   [249965] Teenage Mutant Ninja Turtles-Ghostbusters II 001 (2017) (Digital) (danke-Empire).cbz (24pp)
+            [249966] Teenage Mutant Ninja Turtles-Ghostbusters II 002 (2017) (Digital) (danke-Empire).cbz (32pp)
+            [249967] Teenage Mutant Ninja Turtles-Ghostbusters II 003 (2017) (Digital) (danke-Empire).cbz (32pp)
+            [249968] Teenage Mutant Ninja Turtles-Ghostbusters II 004 (2017) (Digital) (danke-Empire).cbz (32pp)
+            [249969] Teenage Mutant Ninja Turtles-Ghostbusters II 005 (2017) (Digital) (danke-Empire).cbz (32pp)
+   ours:    ladder 1-5
+
+== S105049 Teenage Mutant Ninja Turtles - The Ultimate B&W Collection  [tier D]   keys: Teenage Mutant Ninja Turtles - The Ultimate B&W Collection  years 2014-2016  6 files / 6 collections
+   folders: [6] IDW Hasbro\Teenage Mutant Ninja Turtles Misc\Teenage Mutant Ninja Turtles - The Ultimate B&W Collection (2014)
+   files:   [249134] COL Teenage Mutant Ninja Turtles - The Ultimate B&W Collection v01 (2014) (Digital) (danke).cbz (312pp)
+            [249135] COL Teenage Mutant Ninja Turtles - The Ultimate B&W Collection v02 (2014) (Digital) (danke).cbz (268pp)
+            [249136] COL Teenage Mutant Ninja Turtles - The Ultimate B&W Collection v03 (2014) (Digital) (danke).cbz (269pp)
+            [249137] COL Teenage Mutant Ninja Turtles - The Ultimate B&W Collection v04 (2014) (Digital) (danke).cbz (240pp)
+            [249138] COL Teenage Mutant Ninja Turtles - The Ultimate B&W Collection v05 (2014) (Digital) (danke).cbz (182pp)
+            [249139] COL Teenage Mutant Ninja Turtles - The Ultimate B&W Collection v06 (2016) (Digital) (danke).cbz (253pp)
+
+== S105050 Teenage Mutant Ninja Turtles - Turtles in Time  [tier D]   keys: Teenage Mutant Ninja Turtles - Turtles in Time  years 2014-2014  1 files / 0 collections
+   folders: [1] IDW Hasbro\Teenage Mutant Ninja Turtles Misc\Teenage Mutant Ninja Turtles - Turtles in Time (2014)
+   files:   [249142] Teenage Mutant Ninja Turtles - Turtles in Time (2014) (Digital) (Raphael-Empire).cbr (105pp)
+   CV local rip:   74899 "Teenage Mutant Ninja Turtles: Turtles In Time" 2014 IDW Publishing 4 · 78726 "Teenage Mutant Ninja Turtles: Turtles In Time" 2014 IDW Publishing 1 issue 472949   (rip lookup)
+   GCD dump:       81960 "Teenage Mutant Ninja Turtles: Turtles in Time" 2014-2014 IDW [] 4 · 90164 "Teenage Mutant Ninja Turtles: Turtles in Time" 2014-2014 IDW [] 1   (dump lookup)
+
+== S105051 Teenage Mutant Ninja Turtles - Utrom Empire  [tier D]   keys: Teenage Mutant Ninja Turtles - Utrom Empire  years 2014-2014  1 files / 0 collections
+   folders: [1] IDW Hasbro\Teenage Mutant Ninja Turtles Misc\Teenage Mutant Ninja Turtles - Utrom Empire (2014)
+   files:   [249145] Teenage Mutant Ninja Turtles - Utrom Empire (2014) (Digital) (Raphael-Empire).cbr (111pp)
+   CV local rip:   71075 "Teenage Mutant Ninja Turtles: Utrom Empire" 2014 IDW Publishing 3 · 75880 "Teenage Mutant Ninja Turtles: Utrom Empire" 2014 IDW Publishing 1 issue 460336   (rip lookup)
+   GCD dump:       78701 "Teenage Mutant Ninja Turtles: Utrom Empire" 2014-2014 IDW [] 3 · 211452 "Teenage Mutant Ninja Turtles: Utrom Empire" 2014-2014 IDW [] 1   (dump lookup)
+
+== S105052 Teenage Mutant Ninja Turtles Black and White Classics  [tier D]   keys: Teenage Mutant Ninja Turtles Black and White Classics  years 2012-2012  4 files / 4 collections
+   folders: [4] IDW Hasbro\Teenage Mutant Ninja Turtles Misc\Teenage Mutant Ninja Turtles Black & White Classics (2012)
+   files:   [249146] COL Teenage Mutant Ninja Turtles Black & White Classics v01 (2012) (digital-Empire).cbz (143pp)
+            [249147] COL Teenage Mutant Ninja Turtles Black & White Classics v02 (2012) (digital-Empire).cbz (149pp)
+            [249148] COL Teenage Mutant Ninja Turtles Black & White Classics v03 (2012) (digital-Empire).cbz (94pp)
+            [249149] COL Teenage Mutant Ninja Turtles Black & White Classics v04 (2012) (digital-Empire).cbz (108pp)
+   CV local rip:   73026 "Teenage Mutant Ninja Turtles: Black & White Classics" 2012 IDW Publishing 4 (via our own name without the filing suffix "Teenage Mutant Ninja Turtles Black & White Classics")   (rip lookup)
+
+== S105054 Teenage Mutant Ninja Turtles Universe  [tier D]   keys: Teenage Mutant Ninja Turtles Universe  years 2017-2018  5 files / 5 collections
+   folders: [5] IDW Hasbro\Teenage Mutant Ninja Turtles Misc\Teenage Mutant Ninja Turtles Universe (2016)
+   files:   [249151] COL Teenage Mutant Ninja Turtles Universe v01 - The War to Come (2017) (Digital) (Raphael-Empire).cbr (149pp)
+            [249152] COL Teenage Mutant Ninja Turtles Universe v02 - The New Strangeness (2017) (Digital) (Raphael-Empire).cbr (145pp)
+            [249153] COL Teenage Mutant Ninja Turtles Universe v03 - Karai's Path (2018) (digital) (Raphael-Empire).cbr (144pp)
+            [249154] COL Teenage Mutant Ninja Turtles Universe v04 - Home (2018) (digital) (Raphael-Empire).cbr (147pp)
+            [249155] COL Teenage Mutant Ninja Turtles Universe v05 - The Coming Doom (2018) (digital) (Raphael-Empire).cbr (147pp)
+   ours:    ComicInfo Series: "Teenage Mutant Ninja Turtles Universe"x2; ComicInfo Publisher: "IDW"x2
+   CV local rip:   101154 "Teenage Mutant Ninja Turtles Universe" 2017 IDW Publishing 5 · 93638 "Teenage Mutant Ninja Turtles Universe" 2016 IDW Publishing 25   (rip lookup)
+   GCD dump:       117481 "Teenage Mutant Ninja Turtles: Universe" 2017-2018 IDW [] 5 · 105889 "Teenage Mutant Ninja Turtles Universe" 2016-2018 IDW [] 25   (dump lookup)
+
+== S105055 Teenage Mutant Ninja Turtles x Godzilla  [tier D]   keys: Teenage Mutant Ninja Turtles x Godzilla  years 2026-2026  1 files / 0 collections
+   folders: [1] IDW Hasbro\Teenage Mutant Ninja Turtles Misc\Teenage Mutant Ninja Turtles x Godzilla v1 (2025)
+   files:   [249156] Teenage Mutant Ninja Turtles x Godzilla (2026) (digital) (Raphael-Empire).cbr (155pp)
+   CV local rip:   168415 "Teenage Mutant Ninja Turtles x Godzilla" 2025 IDW Publishing 1 issue 1143318   (rip lookup)

@@ -85,18 +85,22 @@ class Checker:
                 self._runs[i].add((leg_of.get(p, f"provider{p}"), str(k)))
         return self._runs.get(iid, set())
 
+    # A book whose FILE went missing after it was read is still a known item: a rescan marks a replaced file
+    # `missing` and keeps the row (and its decided lines) so a returning file is whole again. Only an exclusion for
+    # any OTHER reason (a dedup loser, a hand exclusion) makes the id unknown. (2026-10-02 comics rescan.)
+    LIVE_OR_MISSING = """SELECT i.Id{cols} FROM Item i LEFT JOIN ItemState st ON st.ItemId = i.Id
+        WHERE i.Kind = 0 AND (coalesce(i.IsExcluded,0) = 0 OR coalesce(st.ExclusionReason,'') = 'missing')"""
+
     def item_exists(self, iid):
         if self.items is None:
-            self.items = {r[0] for r in self.con.execute(
-                "SELECT Id FROM Item WHERE Kind = 0 AND coalesce(IsExcluded,0) = 0")}
+            self.items = {r[0] for r in self.con.execute(self.LIVE_OR_MISSING.format(cols=""))}
         return iid in self.items
 
     def item_shelf(self, iid):
         """The shelf a book sits on — a `C` line's range is judged on ITS shelf, so the file that decides
         that shelf is the file allowed to say what the book collects."""
         if getattr(self, "_item_shelf", None) is None:
-            self._item_shelf = {r[0]: r[1] for r in self.con.execute(
-                "SELECT Id, SeriesId FROM Item WHERE Kind = 0 AND coalesce(IsExcluded,0) = 0")}
+            self._item_shelf = {r[0]: r[1] for r in self.con.execute(self.LIVE_OR_MISSING.format(cols=", i.SeriesId"))}
         return self._item_shelf.get(iid)
 
     def mu_series_exists(self, mid):

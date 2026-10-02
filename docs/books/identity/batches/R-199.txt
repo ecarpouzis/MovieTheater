@@ -1,0 +1,758 @@
+## Conventions for this batch (33 shown of 89 matched; 419 in LEDGER.md; 120 shelf/shelves: kind:new ×33 · folder:vn-year ×16 · pub:valiant ×15 · kind:collected-line ×11 · kind:trade-only ×11 · pub:titan ×10 · pub:dc ×9 · pub:small-press ×6)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-013] (120 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (120 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-030] (120 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-043] (120 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (120 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (120 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (120 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (120 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (120 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (120 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (120 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (120 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-151] (120 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-157] (120 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (120 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-160] (120 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-163] (120 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (120 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (120 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (120 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (120 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (120 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (120 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (120 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (120 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (120 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (120 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (120 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (120 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
+[L-359] (25 shelf/shelves) kind:strip pub:titan pub:valiant sig:probe
+- Titan: licensed runs can be filed under a SHORTENED name on both legs ("Templars" = Assassin's Creed: Templars,
+  "Tekken: Blood Feud") — probe the title's last word with --contains. Acclaim / Valiant: GCD spells "&" ("Captain
+  Johner & the Aliens") and drops the franchise word ("X-O Database"). Strips: Penny Arcade, Wallace the Brave and
+  Prince Valiant pair with their own BOOK lines at 0.9, like Rip Kirby (L-355) — the year-file shelf merges into the
+  book-line shelf. ASM Omnibus Book 01 (2022) is GCD 58631's "#1 [Fifth Edition]" row. A split key must differ
+  from the files' current key AFTER normalisation (L-336) (R-089/R-090).
+[L-153] (15 shelf/shelves) pub:valiant
+- Valiant's GCD rows count DOUBLE because GCD indexes every issue's "Pre-Order Edition" as its own row (Doctor Tomorrow
+  10 for 5, Fallen World 10 for 5, X-O Manowar 16 for 8) — exactly twice ComicVine's count is that artefact; caps at 0.9.
+[L-156] (15 shelf/shelves) pub:archie pub:valiant
+- Acclaim's Eternal Warriors is the Archie-holiday split with ComicVine on the spanning side: CV 26146 count 6 vs six
+  separate GCD one-shot series (15146, 21569-21572, 21589).
+[L-166] (15 shelf/shelves) pub:valiant
+- Valiant's GCD pre-order doubling confirmed again: GCD 153708 "The Visitor" count 12 = six issues each indexed twice.
+
++56 more matched entries not shown: L-298, L-318, L-412, L-124, L-191, L-272, L-281, L-152, L-158, L-168, L-212, L-222, L-237, L-245, L-364, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-046, L-051, L-055, L-139, L-140, L-148, L-271, L-064, L-085, L-101, L-310, L-211, L-197, L-299, L-348, L-360, L-365, L-016, L-032, L-113, L-114 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S105124 The Michael Moorcock Library Elric: The Balance Lost  [tier D]   keys: The Michael Moorcock Library Elric: The Balance Lost  years 2025-2025  2 files / 2 collections
+   folders: [2] Titan Comics\Elric
+   files:   [246421] COL The Michael Moorcock Library Elric - The Balance Lost Vol. 01 (2025) (Collection) (Titan Comics) (Digital-HD) (LeDuch).cbz (152pp)
+            [246422] COL The Michael Moorcock Library Elric - The Balance Lost Vol. 02 (2025) (Collection) (Titan Comics) (Digital-HD) (LeDuch).cbz (138pp)
+   ours:    ComicInfo Series: "The Michael Moorcock Library Elric: The Balance Lost"x2; ComicInfo Volume: "2025"x2; ComicInfo Publisher: "Titan Comics"x2
+
+== S105371 Heat Seeker: Exposed  [tier D]   keys: Heat Seeker: Exposed  years 2026-2026  1 files / 1 collections
+   folders: [1] Titan Comics\Gun Honey (2021)
+   files:   [246425] COL Heat Seeker v03 - Exposed - A Gun Honey Series (2026) (Titan) (Digital) (XRA-Empire).cbz (112pp)
+   ours:    ComicInfo Series: "Heat Seeker - A Gun Honey Series"x1; ComicInfo Publisher: "Titan Comics"x1
+
+== S104620 Gun Honey Doubles Down  [tier D]   keys: Gun Honey Doubles Down | Gun Honey: Doubles Down  years 2026-2026  4 files / 0 collections
+   folders: [4] Titan Comics\Gun Honey (2021)\Gun Honey Doubles Down (2026)
+   files:   [249745] Gun Honey - Doubles Down 01 (of 04) (2026) (Limited Series) (Titan Comics) (Digital) (LeDuch-DCP).cbz (32pp)
+            [249746] Gun Honey - Doubles Down 02 (of 04) (2026) (Limited Series) (Titan Comics) (Digital) (LeDuch-DCP).cbz (32pp)
+            [249747] Gun Honey - Doubles Down 03 (of 04) (2026) (Limited Series) (Titan Comics) (Digital) (LeDuch-DCP).cbz (32pp)
+            [249748] Gun Honey Doubles Down 04 (of 04) (2026) (Limited Series) (Titan Comics) (Digital) (LeDuch-DCP).cbz (32pp)
+   ours:    ladder 1-4; ComicInfo Series: "Gun Honey Doubles Down"x2, "Gun Honey: Doubles Down"x2; ComicInfo Volume: "2026"x4; ComicInfo Count: "4"x3, "2"x1; ComicInfo Publisher: "Titan Comics"x4; ComicInfo Web: "1171988"x1, "1181772"x1
+
+== S104734 Little Nightmares: Descent to Nowhere  [tier D]   keys: Little Nightmares: Descent to Nowhere  years 2026-2026  1 files / 1 collections
+   folders: [1] Titan Comics\Little Nightmares (2017)
+   files:   [246432] COL Little Nightmares - Descent to Nowhere (2026) (Collection) (Titan) (Digital) (LeDuch-DCP).cbz (116pp)
+   ours:    ComicInfo Series: "Little Nightmares: Descent to Nowhere"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Titan"x1
+   CV local rip:   167504 "Little Nightmares: Descent to Nowhere" 2025 Titan Comics 2   (rip lookup)
+
+== S104955 Solomon Kane - The Lion Errant  [tier D]   keys: Solomon Kane - The Lion Errant  years 2026-2026  3 files / 0 collections
+   folders: [3] Titan Comics\Solomon Kane\Solomon Kane - The Lion Errant (2026)
+   files:   [249749] Solomon Kane - The Lion Errant 001 (2026) (Digital) (Mephisto-Empire).cbr (33pp) | [249750] Solomon Kane - The Lion Errant 002 (2026) (Digital) (Mephisto-Empire).cbr (33pp)
+            [249751] Solomon Kane - The Lion Errant 003 (2026) (Digital) (Mephisto-Empire).cbr (33pp)
+   ours:    ladder 1-3
+
+== S104978 Spectors  [tier D]   keys: Spectors  years 2026-2026  1 files / 1 collections
+   folders: [1] Titan Comics\Spectors (2026)
+   files:   [248396] COL Spectors (2026) (Graphic Novel) (Titan-Monster Forge) (Digital) (LeDuch-DCP).cbz (116pp)
+   ours:    ComicInfo Series: "Spectors"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Titan/Monster Forge"x1
+
+== S105038 Tank Girl - Blue Helmet  [tier D]   keys: Tank Girl - Blue Helmet  years 2026-2026  1 files / 0 collections
+   folders: [1] Titan Comics\Tank Girl\Tank Girl - Blue Helmet (2026)
+   files:   [249752] Tank Girl - Blue Helmet 001 (2026) (Digital) (Mephisto-Empire).cbr (25pp)
+   ours:    ladder 1
+
+== S105039 Tank Girl - Colour Classics  [tier D]   keys: Tank Girl - Colour Classics  years 2018-2018  1 files / 1 collections
+   folders: [1] Titan Comics\Tank Girl\Tank Girl - Colour Classics (2018)
+   files:   [249753] COL Tank Girl - Colour Classics Book 01 - 1988-1990 (2018) (Digital) (Mephisto-Empire).cbr (143pp)
+   GCD dump:       172946 "Tank Girl Colour Classics" [de] 2021-? Kult Comics [] 3   (dump lookup)
+
+== S105220 UFO Robot Grendizer  [tier D]   keys: UFO Robot Grendizer  years 2026-2026  1 files / 0 collections
+   folders: [1] Titan Comics\UFO Robot Grendizier (2026)
+   files:   [248397] UFO Robot Grendizer 02 (of 04) (2026) (Limited Series) (Titan Comics) (Digital) (LeDuch-DCP).cbz (32pp)
+   ours:    ladder 2; ComicInfo Series: "UFO Robot Grendizer"x1; ComicInfo Volume: "2026"x1; ComicInfo Count: "4"x1; ComicInfo Publisher: "Titan Comics"x1; ComicInfo Web: "1191060"x1
+   CV local rip:   168815 "UFO Robot Grendizer" 2023 MangaLine Ediciones 1 issue 1145970   (rip lookup)
+   GCD dump:       234947 "UFO Robot Grendizer" [fr] 2025-2025 Isan Manga [] 1   (dump lookup)
+
+== S105221 UFO Robot Grendizier  [tier D]   keys: UFO Robot Grendizier  years 2026-2026  1 files / 0 collections
+   folders: [1] Titan Comics\UFO Robot Grendizier (2026)
+   files:   [248398] UFO Robot Grendizier 01 (of 04) (2026) (Series) (Titan Comics) (Digital) (LeDuch-DCP).cbz (56pp)
+   ours:    ladder 1; ComicInfo Series: "UFO Robot Grendizier"x1; ComicInfo Volume: "2026"x1; ComicInfo Publisher: "Titan Comics"x1
+
+== S105297 White Trash  [tier D]   keys: White Trash  years 1992-1992  4 files / 0 collections
+   folders: [4] Tundra\White Trash
+   files:   [248399] White Trash 01 (1992) (JackFrost23).cbz (32pp) | [248400] White Trash 02 (1992) (JackFrost23).cbz (31pp) | [248401] White Trash 03 (1992) (JackFrost23).cbz (31pp)
+            [248402] White Trash 04 (1992) (JackFrost23).cbz (30pp)
+   ours:    ladder 1-4
+   CV local rip:   39866 "White Trash" 1992 Tundra 4 · 81619 "White Trash" 2015 Titan Comics 1 issue 487283   (rip lookup)
+   GCD dump:       47374 "White Trash" [en-gb] 1992-1992 Tundra UK [] 4 · 147658 "White Trash" [fr] 2016-2016 Ankama [] 1   (dump lookup)
+
+== S105238 Valiant Beyond - Preview Edition  [tier D]   keys: Valiant Beyond - Preview Edition  years 2025-2025  1 files / 0 collections
+   folders: [1] Valiant
+   files:   [246428] Valiant Beyond - Preview Edition (2025) (digital) (Son of Ultron-Empire).cbr (31pp)
+
+== S104332 Archer and Armstrong - Revival Classic Collection  [tier D]   keys: Archer and Armstrong - Revival Classic Collection  years 2024-2024  1 files / 0 collections
+   folders: [1] Valiant\Archer & Armstrong\A & A Classics
+   files:   [246429] Archer & Armstrong - Revival Classic Collection (2024) (digital) (Son of Ultron-Empire).cbr (333pp)
+
+== S105235 Valiant Beyond - Bloodshot  [tier D]   keys: Valiant Beyond - Bloodshot  years 2025-2025  3 files / 0 collections
+   folders: [3] Valiant\Bloodshot\Valiant Beyond - Bloodshot v1 (2025)
+   files:   [249770] Valiant Beyond - Bloodshot 001 (2025) (digital) (Son of Ultron-Empire).cbr (33pp) | [249771] Valiant Beyond - Bloodshot 002 (2025) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [249772] Valiant Beyond - Bloodshot 003 (2025) (digital) (Son of Ultron-Empire).cbr (32pp)
+   ours:    ladder 1-3
+   CV local rip:   166219 "Valiant Beyond: Bloodshot" 2025 Alien Books 2   (rip lookup)
+   GCD dump:       229189 "Valiant Beyond: Bloodshot" 2025-? Alien Books [] 2   (dump lookup)
+
+== S105237 Valiant Beyond - Bloodshot - Special  [tier D]   keys: Valiant Beyond - Bloodshot - Special  years 2026-2026  1 files / 0 collections
+   folders: [1] Valiant\Bloodshot\Valiant Beyond - Bloodshot v1 (2025)\Annuals and Specials
+   files:   [250073] Valiant Beyond - Bloodshot - Special (2026) (digital) (Son of Ultron-Empire).cbr (49pp)
+
+== S105236 Valiant Beyond - Bloodshot - Man Made Hell  [tier D]   keys: Valiant Beyond - Bloodshot - Man Made Hell  years 2026-2026  2 files / 0 collections
+   folders: [2] Valiant\Bloodshot\Valiant Beyond - Bloodshot v2 - Man Made Hell (2026)
+   files:   [249773] Valiant Beyond - Bloodshot - Man Made Hell 01 (of 03) (2026) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [249774] Valiant Beyond - Bloodshot - Man Made Hell 02 (of 03) (2026) (digital) (Son of Ultron-Empire).cbr (32pp)
+   ours:    ladder 1-2
+
+== S104632 Harbinger Classic  [tier D]   keys: Harbinger Classic  years 2025-2025  1 files / 1 collections
+   folders: [1] Valiant\Harbinger\Harbinger Classic Omnibus (2025)
+   files:   [249775] COL Harbinger Classic Omnibus Book 01 (2025) (digital) (Son of Ultron-Empire).cbr (1162pp)
+
+== S105232 Valiant Beyond - All-New Harbinger  [tier D]   keys: Valiant Beyond - All-New Harbinger  years 2025-2025  3 files / 0 collections
+   folders: [3] Valiant\Harbinger\Valiant Beyond - All-New Harbinger v1 (2025)
+   files:   [249781] Valiant Beyond - All-New Harbinger 001 (2025) (digital) (Son of Ultron-Empire).cbr (32pp)
+            [249782] Valiant Beyond - All-New Harbinger 002 (2025) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [249783] Valiant Beyond - All-New Harbinger 003 (2025) (digital) (Son of Ultron-Empire).cbr (31pp)
+   ours:    ladder 1-3
+   CV local rip:   166909 "Valiant Beyond: All-New Harbinger" 2025 Alien Books 3   (rip lookup)
+
+== S105233 Valiant Beyond - All-New Harbinger - It Never Stops  [tier D]   keys: Valiant Beyond - All-New Harbinger - It Never Stops  years 2026-2026  2 files / 0 collections
+   folders: [2] Valiant\Harbinger\Valiant Beyond - All-New Harbinger v2 - It Never Stops (2026)
+   files:   [249784] Valiant Beyond - All-New Harbinger - It Never Stops 01 (of 03) (2026) (digital) (Son of Ultron-Empire).cbr (32pp)
+            [249785] Valiant Beyond - All-New Harbinger - It Never Stops 02 (of 03) (2026) (digital) (Son of Ultron-Empire).cbr (33pp)
+   ours:    ladder 1-2
+
+== S105234 Valiant Beyond - All-New Harbinger - Risen  [tier D]   keys: Valiant Beyond - All-New Harbinger - Risen  years 2026-2026  2 files / 0 collections
+   folders: [2] Valiant\Harbinger\Valiant Beyond - All-New Harbinger v3 - Risen (2026)
+   files:   [249786] Valiant Beyond - All-New Harbinger - Risen 01 (of 02) (2026) (digital) (Son of Ultron-Empire).cbr (32pp)
+            [249787] Valiant Beyond - All-New Harbinger - Risen 02 (of 02) (2026) (digital) (Son of Ultron-Empire).cbr (32pp)
+   ours:    ladder 1-2
+
+== S105244 Valiant Masters - Harbinger  [tier D]   keys: Valiant Masters - Harbinger  years 2014-2015  2 files / 2 collections
+   folders: [2] Valiant\Harbinger\Valiant Masters - Harbinger (2015)
+   files:   [249788] COL 01 Valiant Masters Harbinger v01 - Children of the Eighth Day (2015) (Digital) (F) (Zone-Empire).cbr (225pp)
+            [249789] COL 02 Valiant Masters H.A.R.D. Corps v01 - Search and Destroy (2014) (digital) (Son of Ultron-Empire).cbr (214pp)
+   GCD dump:       114630 "Valiant Masters Harbinger" 2015-? Valiant Entertainment [] 1   (dump lookup)
+
+== S105239 Valiant Beyond - Tales of the Shadowman  [tier D]   keys: Valiant Beyond - Tales of the Shadowman  years 2025-2025  3 files / 0 collections
+   folders: [3] Valiant\Shadowman\Valiant Beyond - Tales of the Shadowman v1 (2025)
+   files:   [249790] Valiant Beyond - Tales of the Shadowman 001 (2025) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [249791] Valiant Beyond - Tales of the Shadowman 002 (2025) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [249792] Valiant Beyond - Tales of the Shadowman 003 (2025) (digital) (Son of Ultron-Empire).cbr (33pp)
+   ours:    ladder 1-3
+   CV local rip:   166321 "Valiant Beyond: Tales of the Shadowman" 2025 Alien Books 3   (rip lookup)
+
+== S105240 Valiant Beyond - Tales of the Shadowman - Ghosts of the Bayou  [tier D]   keys: Valiant Beyond - Tales of the Shadowman - Ghosts of the Bayou  years 2025-2026  3 files / 0 collections
+   folders: [3] Valiant\Shadowman\Valiant Beyond - Tales of the Shadowman v2 - Ghosts of the Bayou (2025)
+   files:   [249793] Valiant Beyond - Tales of the Shadowman - Ghosts of the Bayou 01 (of 03) (2025) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [249794] Valiant Beyond - Tales of the Shadowman - Ghosts of the Bayou 02 (of 03) (2026) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [249795] Valiant Beyond - Tales of the Shadowman - Ghosts of the Bayou 03 (of 03) (2026) (digital) (Son of Ultron-Empire).cbr (33pp)
+   ours:    ladder 1-3
+   CV local rip:   169078 "Valiant Beyond: Tales of the Shadowman - Ghosts of the Bayou" 2025 Alien Books 1 issue 1146789   (rip lookup)
+
+== S105241 Valiant Beyond - Tales of the Shadowman - Legacy of LeRoi  [tier D]   keys: Valiant Beyond - Tales of the Shadowman - Legacy of LeRoi  years 2026-2026  2 files / 0 collections
+   folders: [2] Valiant\Shadowman\Valiant Beyond - Tales of the Shadowman v3 - Legacy of LeRoi (2026)
+   files:   [249796] Valiant Beyond - Tales of the Shadowman - Legacy of LeRoi 01 (of 02) (2026) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [249797] Valiant Beyond - Tales of the Shadowman - Legacy of LeRoi 02 (of 02) (2026) (digital) (Son of Ultron-Empire).cbr (33pp)
+   ours:    ladder 1-2
+
+== S105242 Valiant Beyond - The X-O Manowar  [tier D]   keys: Valiant Beyond - The X-O Manowar  years 2025-2025  4 files / 0 collections
+   folders: [4] Valiant\X-O Manowar\Valiant Beyond - The X-O Manowar v1 (2025)
+   files:   [249798] Valiant Beyond - The X-O Manowar 001 (2025) (digital) (Son of Ultron-Empire).cbr (32pp)
+            [249799] Valiant Beyond - The X-O Manowar 002 (2025) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [249800] Valiant Beyond - The X-O Manowar 003 (2025) (digital) (Son of Ultron-Empire).cbr (31pp)
+            [249801] Valiant Beyond - The X-O Manowar 004 (2025) (digital) (Son of Ultron-Empire).cbr (33pp)
+   ours:    ladder 1-4
+
+== S105243 Valiant Beyond - The X-O Manowar - The God Hunt  [tier D]   keys: Valiant Beyond - The X-O Manowar - The God Hunt  years 2026-2026  2 files / 0 collections
+   folders: [2] Valiant\X-O Manowar\Valiant Beyond - The X-O Manowar v2 - The God Hunt (2026)
+   files:   [249802] Valiant Beyond - The X-O Manowar - The God Hunt 01 (of 04) (2026) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [249803] Valiant Beyond - The X-O Manowar - The God Hunt 02 (of 04) (2026) (digital) (Son of Ultron-Empire).cbr (33pp)
+   ours:    ladder 1-2
+
+== S104478 Dead Acre  [tier D]   keys: Dead Acre  years 2025-2025  1 files / 1 collections
+   folders: [1] Vault\Dead Acre - Black Badge (2025)
+   files:   [248404] COL Dead Acre v01 - Black Badge (2025) (digital) (Son of Ultron-Empire).cbr (147pp)
+
+== S104479 Dead Acre - Black Badge  [tier D]   keys: Dead Acre - Black Badge  years 2026-2026  2 files / 0 collections
+   folders: [2] Vault\Dead Acre - Black Badge (2025)\Dead Acre - Black Badge v2 (2026)
+   files:   [249804] Dead Acre - Black Badge 002 (2026) (digital) (Son of Ultron-Empire).cbr (37pp) | [249805] Dead Acre - Black Badge 003 (2026) (digital) (Son of Ultron-Empire).cbr (45pp)
+   ours:    ladder 2-3
+
+== S104528 Excommunicated  [tier D]   keys: Excommunicated  years 2026-2026  1 files / 1 collections
+   folders: [1] Vault\Excommunicated (2026)
+   files:   [248405] COL Excommunicated v01 (2026) (Vault) (digital) (Son of Ultron-Empire).cbr (119pp)
+   GCD dump:       237568 "Excommunicated" 2026-? Vault [] 1   (dump lookup)
+
+== S104801 Money Shot - The F- Offs  [tier D]   keys: Money Shot - The F- Offs  years 2026-2026  1 files / 0 collections
+   folders: [1] Vault\Money Shot (2019)\Money Shot v3 - The F- Offs (2026)
+   files:   [249806] Money Shot - The F- Offs 001 (2026) (digital) (Son of Ultron-Empire).cbr (27pp)
+   ours:    ladder 1
+
+== S104887 Project Perseus  [tier D]   keys: Project Perseus  years 2026-2026  1 files / 0 collections
+   folders: [1] Vault\Project Perseus (2026)
+   files:   [248406] Project Perseus 001 (2026) (Digital) (Mephisto-Empire).cbr (41pp)
+   ours:    ladder 1
+
+== S104273 100 Bullets - The US of ANGER  [tier D]   keys: 100 Bullets - The US of ANGER  years 2026-2026  3 files / 0 collections
+   folders: [3] Vertigo\100 Bullets (1999)\100 Bullets - The US of ANGER v1 (2026)
+   files:   [249807] 100 Bullets - The US of ANGER 001 (2026) (digital) (Son of Ultron-Empire).cbr (37pp)
+            [249808] 100 Bullets - The US of ANGER 002 (2026) (digital) (Son of Ultron-Empire).cbr (28pp) | [249809] 100 Bullets - The US of ANGER 003 (2026) (digital) (Pyrate-DCP).cbz (27pp)
+   ours:    ladder 1-3
+
+== S104387 Black Tower - The Raven Conspiracy  [tier D]   keys: Black Tower - The Raven Conspiracy  years 2026-2026  2 files / 0 collections
+   folders: [2] Vertigo\Black Tower - The Raven Conspiracy (2026)
+   files:   [248407] Black Tower - The Raven Conspiracy 001 (2026) (digital) (Son of Ultron-Empire).cbr (36pp)
+            [248408] Black Tower - The Raven Conspiracy 002 (2026) (digital) (Pyrate-DCP).cbz (27pp)
+   ours:    ladder 1-2
+
+== S104394 Bleeding Hearts  [tier D]   keys: Bleeding Hearts  years 2026-2026  7 files / 0 collections
+   folders: [7] Vertigo\Bleeding Hearts (2026)
+   files:   Bleeding Hearts 001 (2026) (digital) (Son of Ultron-Empire).cbr … Bleeding Hearts 007 (2026) (digital) (Son of Ultron-Empire).cbr  (7 files, pp 26-38)
+   ours:    ladder 1-7
+   GCD dump:       233344 "Bleeding Hearts" 2026-? DC [] 4   (dump lookup)
+
+== S104512 End of Life  [tier D]   keys: End of Life  years 2026-2026  8 files / 0 collections
+   folders: [8] Vertigo\End of Life v1 (2026)
+   files:   End of Life 001 (2026) (digital) (Son of Ultron-Empire).cbr … End of Life 007 (2026) (digital) (Son of Ultron-Empire).cbr  (7 files, pp 28-36)
+            [248423] End of Life 008 (2026) (digital) (Pyrate-DCP).cbz (28pp)
+   ours:    ladder 1-8
+   GCD dump:       233792 "End of Life" 2026-? DC [] 4   (dump lookup)
+
+== S105135 The Peril of the Brutal Dark - An Ezra Cain Mystery  [tier D]   keys: The Peril of the Brutal Dark - An Ezra Cain Mystery  years 2026-2026  6 files / 0 collections
+   folders: [6] Vertigo\Ezra Cain\The Peril of the Brutal Dark - An Ezra Cain Mystery v1 (2026)
+   files:   The Peril of the Brutal Dark - An Ezra Cain Mystery 001 (2026) (digital) (Son of Ultron-Empire).cbr … The Peril of the Brutal Dark - An Ezra Cain Mystery 006 (2026) (digital) (Son of Ultron-Empire).cbr  (6 files, pp 29-38)
+   ours:    ladder 1-6
+   GCD dump:       234243 "The Peril of the Brutal Dark: An Ezra Cain Mystery" 2026-? DC [] 4   (dump lookup)
+
+== S104469 DC Comics Presents - Jack Cross  [tier D]   keys: DC Comics Presents - Jack Cross  years 2010-2010  1 files / 0 collections
+   folders: [1] Vertigo\Jack Cross (2010)
+   files:   [248424] DC Comics Presents - Jack Cross 001 (2010) (HD) (digital-Empire).cbr (90pp)
+   ours:    ladder 1
+   CV local rip:   35928 "DC Comics Presents Jack Cross" 2010 DC Comics 1 issue 237540   (rip lookup)
+   GCD dump:       60905 "DC Comics Presents: Jack Cross" 2010-2010 DC [] 1   (dump lookup)
+
+== S104880 Preacher-AMC Edition  [tier D]   keys: Preacher-AMC Edition  years 2016-2016  1 files / 0 collections
+   folders: [1] Vertigo\Preacher (1995)
+   files:   [246434] Preacher-AMC Edition 01 (2016) (digital-SD) (Minutemen-Thoth).cbz (51pp)
+   ours:    ladder 1
+
+== S104935 Shadows Fall  [tier D]   keys: Shadows Fall  years 1994-1995  6 files / 0 collections
+   folders: [6] Vertigo\Shadows Fall (1994)
+   files:   Shadows Fall 01 (of 6) (1994) (Treebeard).cbr … Shadows Fall 06 (of 6) (1995) (Treebeard).cbr  (6 files, pp 34-34)
+   ours:    ladder 1-6
+   CV local rip:   5255 "Shadows Fall" 1994 DC Comics 6   (rip lookup)
+   GCD dump:       4966 "Shadows Fall" 1994-1995 DC [] 6   (dump lookup)
+
+== S104833 No Hero Sketchbook  [tier D]   keys: No Hero Sketchbook  years 2008-2008  1 files / 0 collections
+   folders: [1] Warren Ellis\No Hero
+   files:   [246441] No Hero Sketchbook (2008) (Minutemen-Shaky & The Saint).cbr (20pp)
+   CV local rip:   67097 "No Hero Sketchbook" 2008 Avatar Press 1 issue 134744   (rip lookup)
+   GCD dump:       55497 "No Hero Sketchbook" 2008-2008 Avatar Press [] 1   (dump lookup)
+
+== S105026 Supernatural - Rising Son  [tier D]   keys: Supernatural - Rising Son  years 2008-2008  6 files / 0 collections
+   folders: [6] Wildstorm\Supernatural - Rising Son (2008)
+   files:   Supernatural - Rising Son 001 (2008) (Digital -) (Kileko-Empire).cbr … Supernatural - Rising Son 006 (2008) (Digital -) (Kileko-Empire).cbr  (6 files, pp 23-24)
+   ours:    ladder 1-6
+   CV local rip:   22493 "Supernatural: Rising Son" 2008 DC Comics 6 · 130456 "Supernatural: Rising Son" ? ? 1 issue 802377   (rip lookup)
+   GCD dump:       30516 "Supernatural: Rising Son" 2008-2008 DC [] 6   (dump lookup)
+
+== S104271 1,000 Comic Books You Must Read - Tony Isabella  [tier D]   keys: 1,000 Comic Books You Must Read - Tony Isabella  years 2009-2009  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246921] 1,000 Comic Books You Must Read - Tony Isabella.epub (15pp)
+   ours:    ladder 0; ComicInfo Publisher: "F+W Media, Inc."x1
+
+== S104318 Ages of the Avengers Essays on the Earth's Mightienging Times, The - Joseph J. Darowski and Mark Edlitz  [tier D]   keys: Ages of the Avengers Essays on the Earth's Mightienging Times, The - Joseph J. Darowski and Mark Edlitz  years 2014-2014  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246922] Ages of the Avengers_ Essays on the Earth's Mightienging Times, The - Joseph J. Darowski & Mark Edlitz.epub (2pp)
+   ours:    ComicInfo Publisher: "McFarland"x1
+
+== S104319 Ages of the X-Men, The - Joseph J. Darowski  [tier D]   keys: Ages of the X-Men, The - Joseph J. Darowski  years 2014-2014  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246923] Ages of the X-Men, The - Joseph J. Darowski.epub (2pp)
+   ours:    ComicInfo Publisher: "McFarland"x1
+
+== S104323 Alan Moore's Writing for Comics  [tier D]   keys: Alan Moore's Writing for Comics  years ?-?  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246924] Alan Moore's Writing for Comics #1.cbr (51pp)
+   ours:    ladder 1
+   CV local rip:   25823 "Alan Moore's Writing For Comics" 2003 Avatar Press 1 issue 152436   (rip lookup)
+
+== S104344 Astro Boy Essays Osamu Tezuka, Mighty Atom, and the Manga Anime Revolution, The - Frederik L. Schodt  [tier D]   keys: Astro Boy Essays Osamu Tezuka, Mighty Atom, and the Manga Anime Revolution, The - Frederik L. Schodt  years 2007-2007  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246925] Astro Boy Essays_ Osamu Tezuka, Mighty Atom, and the Manga_Anime Revolution, The - Frederik L. Schodt.epub (18pp)
+   ours:    ComicInfo Publisher: "Stone Bridge Press"x1
+
+== S104361 Batman and Philosophy The Dark Knight of the Soul - Mark D. White and Robert Arp  [tier D]   keys: Batman and Philosophy The Dark Knight of the Soul - Mark D. White and Robert Arp  years ?-?  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246926] Batman and Philosophy_ The Dark Knight of the Soul - Mark D. White & Robert Arp.mobi (2pp)
+
+== S104403 Brad Ricca - Super Boys - The Amazing Adventures of Jerry Siegel and Joe Shuster  [tier D]   keys: Brad Ricca - Super Boys - The Amazing Adventures of Jerry Siegel and Joe Shuster  years ?-?  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246927] Brad Ricca - Super Boys - The Amazing Adventures of Jerry Siegel and Joe Shuster.epub (67pp)
+   ours:    ComicInfo Publisher: "St. Martin's Press"x1
+
+== S104429 Comic Book Lettering The Comicraft Way  [tier D]   keys: Comic Book Lettering The Comicraft Way  years 2003-2003  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246928] Comic Book Lettering The Comicraft Way (2003).cbz (68pp)
+   CV local rip:   62280 "Comic Book Lettering the Comicraft Way" 2003 Active Images 1 issue 406709   (rip lookup)
+
+== S104431 Comic-Con and the Business of Pop Culture - Rob Salkowitz  [tier D]   keys: Comic-Con and the Business of Pop Culture - Rob Salkowitz  years 2012-2012  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246929] Comic-Con and the Business of Pop Culture - Rob Salkowitz.epub (11pp)
+   ours:    ComicInfo Publisher: "McGraw-Hill Education"x1
+
+== S104432 Comics and Narration - Thierry Groensteen  [tier D]   keys: Comics and Narration - Thierry Groensteen  years 2015-2015  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246930] Comics and Narration - Thierry Groensteen.epub (9pp)
+   ours:    ComicInfo Publisher: "University Press of Mississippi"x1
+
+== S104433 Comix a History of Comic Books In America By Les Daniels  [tier D]   keys: Comix a History of Comic Books In America By Les Daniels  years ?-?  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246931] Comix a History of Comic Books In America By Les Daniels.cbr (222pp)
+
+== S104463 DC Comics Anatomy of a Superhuman  [tier D]   keys: DC Comics Anatomy of a Superhuman  years ?-?  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246937] DC Comics_ Anatomy of a Superhuman.pdf (161pp)
+
+== S104464 DC Comics Guide to Creating Comics Inside the Art of Visual Storytelling, The - Carl Potts  [tier D]   keys: DC Comics Guide to Creating Comics Inside the Art of Visual Storytelling, The - Carl Potts  years 2013-2013  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246932] DC Comics Guide to Creating Comics_ Inside the Art of Visual Storytelling, The - Carl Potts.epub (187pp)
+   ours:    ComicInfo Publisher: "Ten Speed Press"x1
+
+== S104465 DC Comics Guide to Digitally Drawing Comics, The - Freddie E. Williams II  [tier D]   keys: DC Comics Guide to Digitally Drawing Comics, The - Freddie E. Williams II  years 2013-2013  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246933] DC Comics Guide to Digitally Drawing Comics, The - Freddie E. Williams II.epub (16pp)
+   ours:    ComicInfo Publisher: "Random House LLC"x1
+
+== S104466 DC Comics Guide to Inking Comics, The - Klaus Janson  [tier D]   keys: DC Comics Guide to Inking Comics, The - Klaus Janson  years 2013-2013  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246934] DC Comics Guide to Inking Comics, The - Klaus Janson.epub (21pp)
+   ours:    ComicInfo Publisher: "Crown Publishing Group"x1
+
+== S104467 DC Comics Guide to Pencilling Comics, The - Klaus Janson  [tier D]   keys: DC Comics Guide to Pencilling Comics, The - Klaus Janson  years 2013-2013  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246935] DC Comics Guide to Pencilling Comics, The - Klaus Janson.epub (23pp)
+   ours:    ComicInfo Publisher: "Crown Publishing Group"x1
+
+== S104468 DC Comics Guide to Writing Comics, The - Dennis O'Neil  [tier D]   keys: DC Comics Guide to Writing Comics, The - Dennis O'Neil  years 2013-2013  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246936] DC Comics Guide to Writing Comics, The - Dennis O'Neil.epub (26pp)
+   ours:    ComicInfo Publisher: "Crown Publishing Group"x1
+
+== S104481 Deadpool - The Encyclopedia Deadpoolica  [tier D]   keys: Deadpool - The Encyclopedia Deadpoolica  years ?-?  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246938] Deadpool - The Encyclopedia Deadpoolica.cbz (31pp)
+
+== S104523 Everything Guide to Writing Graphic Novels From Suc Works , The - Melissa Martin-Ellis  [tier D]   keys: Everything Guide to Writing Graphic Novels From Suc Works , The - Melissa Martin-Ellis  years 2008-2008  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246939] Everything Guide to Writing Graphic Novels_ From Suc Works (Everything(r)), The - Melissa Martin-Ellis.epub (22pp)
+   ours:    ComicInfo Publisher: "Adams Media"x1
+
+== S104535 Extraordinary Works of Alan Moore  [tier D]   keys: Extraordinary Works of Alan Moore  years 2003-2003  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246940] Extraordinary Works of Alan Moore (2003).cbr (227pp)
+   CV local rip:   29557 "The Extraordinary Works of Alan Moore" 2003 TwoMorrows Publishing 1 issue 182182   (rip lookup)
+   GCD dump:       171729 "The Extraordinary Works of Alan Moore" 2003-2003 TwoMorrows Publishing [] 1   (dump lookup)
+
+== S104574 Gary Martin and Steve Rude - The Art of Comic Book Inking  [tier D]   keys: Gary Martin and Steve Rude - The Art of Comic Book Inking  years ?-?  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246941] Gary Martin & Steve Rude - The Art of Comic Book Inking.cbz (194pp)
+
+== S104646 Heroines of Comic Books and Literature - Maja Bajac-Carter  [tier D]   keys: Heroines of Comic Books and Literature - Maja Bajac-Carter  years 2012-2012  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246942] Heroines of Comic Books and Literature - Maja Bajac-Carter.epub (2pp)
+   ours:    ComicInfo Publisher: "Rowman & Littlefield Publishers"x1
+
+== S104658 How to Be a Heroine Or, What I've Learned - Samantha Ellis  [tier D]   keys: How to Be a Heroine Or, What I've Learned - Samantha Ellis  years ?-?  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246943] How to Be a Heroine_ Or, What I've Learned - Samantha Ellis.azw3 (1pp)
+
+== S104659 How to Draw Comics the Marvel Way  [tier D]   keys: How to Draw Comics the Marvel Way  years ?-?  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246944] How to Draw Comics the Marvel Way.cbr (138pp)
+   CV local rip:   63038 "How to Draw Comics the Marvel Way" 1978 Simon and Schuster 1 issue 409449   (rip lookup)
+   GCD dump:       206405 "How to Draw Comics the Marvel Way" 1978-1978 Simon and Schuster [] 1 · 206429 "How to Draw Comics the Marvel Way" [en-gb] 1986-1986 Titan [] 1   (dump lookup)
+
+== S104677 Insider's Guide to Creating Comics and Graphic Novels, The - Andy Schmidt  [tier D]   keys: Insider's Guide to Creating Comics and Graphic Novels, The - Andy Schmidt  years 2009-2009  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246945] Insider's Guide to Creating Comics and Graphic Novels, The - Andy Schmidt.epub (67pp)
+   ours:    ComicInfo Publisher: "IMPACT"x1
+
+== S104679 Inventing Iron Man - E. Paul Zehr  [tier D]   keys: Inventing Iron Man - E. Paul Zehr  years 2011-2011  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246946] Inventing Iron Man - E. Paul Zehr.epub (11pp)
+   ours:    ComicInfo Publisher: "Johns Hopkins University Press"x1
+
+== S104681 Jill Lepore - The Secret History of Wonder Woman  [tier D]   keys: Jill Lepore - The Secret History of Wonder Woman  years 2014-2014  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246947] Jill Lepore - The Secret History of Wonder Woman.epub (40pp)
+   ours:    ComicInfo Publisher: "Random House Digital"x1
+
+== S104703 Kimota! The Miracleman Companion  [tier D]   keys: Kimota! The Miracleman Companion  years 2001-2001  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246948] Kimota! The Miracleman Companion (2001).cbr (146pp)
+   CV local rip:   58586 "Kimota! The Miracleman Companion" 2001 TwoMorrows Publishing 1 issue 391180   (rip lookup)
+   GCD dump:       220231 "Kimota! The Miracleman Companion" 2001-2001 TwoMorrows Publishing [] 1   (dump lookup)
+
+== S104729 League of Regrettable Superheroes Half-Baked Heroes From Comic Book History, The - Jon Morris  [tier D]   keys: League of Regrettable Superheroes Half-Baked Heroes From Comic Book History, The - Jon Morris  years 2015-2015  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246949] League of Regrettable Superheroes_ Half-Baked Heroes From Comic Book History, The - Jon Morris.epub (108pp)
+   ours:    ComicInfo Publisher: "Quirk Books"x1
+
+== S104765 Marvel - Five Fabulous Decades of the World's Greatest Comics  [tier D]   keys: Marvel - Five Fabulous Decades of the World's Greatest Comics  years 1991-1991  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246950] Marvel - Five Fabulous Decades  of the World's Greatest Comics (1991).cbr (286pp)
+   CV local rip:   33854 "Marvel: Five Fabulous Decades of the World’s Greatest Comics" 1991 Marvel 1 issue 220984   (rip lookup)
+   GCD dump:       81895 "Marvel: Five Fabulous Decades of the World's Greatest Comics" 1991-1991 Harry N. Abrams [] 1   (dump lookup)
+
+== S104768 Marvel Comics in the 1960s  [tier D]   keys: Marvel Comics in the 1960s  years ?-?  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246951] Marvel Comics in the 1960s.cbr (229pp)
+   CV local rip:   56586 "Marvel Comics in the 1960s" 2009 TwoMorrows Publishing 1 issue 384099   (rip lookup)
+   GCD dump:       229618 "Marvel Comics in the 1960s" 2009-2009 TwoMorrows Publishing [] 1   (dump lookup)
+
+== S104769 Marvel Comics in the 1970s  [tier D]   keys: Marvel Comics in the 1970s  years 2011-2011  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246952] Marvel Comics in the 1970s (2011).cbr (229pp)
+   CV local rip:   56587 "Marvel Comics in the 1970s" 2011 TwoMorrows Publishing 1 issue 384100   (rip lookup)
+   GCD dump:       171759 "Marvel Comics in the 1970s" 2021-2021 TwoMorrows Publishing [] 1   (dump lookup)
+
+== S104825 Neil Cohn - The Visual Language of Comics  [tier D]   keys: Neil Cohn - The Visual Language of Comics  years ?-?  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246953] Neil Cohn - The Visual Language of Comics.pdf (240pp)
+
+== S104954 So, You Want to Be a Comic Book Artist - Philip Amara  [tier D]   keys: So, You Want to Be a Comic Book Artist - Philip Amara  years 2012-2012  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246955] So, You Want to Be a Comic Book Artist_ - Philip Amara.epub (28pp)
+   ours:    ComicInfo Publisher: "Turtleback"x1
+
+== S104989 Stan Lee's How to Draw Comics - Stan Lee  [tier D]   keys: Stan Lee's How to Draw Comics - Stan Lee  years 2011-2011  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246956] Stan Lee's How to Draw Comics - Stan Lee.epub (21pp)
+   ours:    ComicInfo Publisher: "Ten Speed Press"x1
+
+== S104990 Stan Lee's How to Draw Superheroes - Stan Lee  [tier D]   keys: Stan Lee's How to Draw Superheroes - Stan Lee  years 2013-2013  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246957] Stan Lee's How to Draw Superheroes - Stan Lee.epub (21pp)
+   ours:    ComicInfo Publisher: "Ten Speed Press"x1
+
+== S104991 Stan Lee's How to Write Comics From the Legendary ulk, Fantastic Four, X-Men, and Iron Man - Stan Lee  [tier D]   keys: Stan Lee's How to Write Comics From the Legendary ulk, Fantastic Four, X-Men, and Iron Man - Stan Lee  years 2011-2011  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246958] Stan Lee's How to Write Comics_ From the Legendary ulk, Fantastic Four, X-Men, and Iron Man - Stan Lee.epub (22pp)
+   ours:    ComicInfo Publisher: "Watson-Guptill"x1
+
+== S105011 Super-History  [tier D]   keys: Super-History  years ?-?  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246959] Super-History.pdf (231pp)
+
+== S105012 Superfolks - Robert Mayer  [tier D]   keys: Superfolks - Robert Mayer  years ?-?  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246960] Superfolks - Robert Mayer.mobi (1pp)
+
+== S105013 Supergods What Masked Vigilantes, Miraculous Mutanlle Can Teach Us About Being Human - Grant Morrison  [tier D]   keys: Supergods What Masked Vigilantes, Miraculous Mutanlle Can Teach Us About Being Human - Grant Morrison  years 2011-2011  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246961] Supergods_ What Masked Vigilantes, Miraculous Mutanlle Can Teach Us About Being Human - Grant Morrison.epub (39pp)
+   ours:    ComicInfo Publisher: "Spiegel & Grau"x1
+
+== S105014 Superheroes! - Laurence Maslon  [tier D]   keys: Superheroes! - Laurence Maslon  years 2013-2013  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246962] Superheroes! - Laurence Maslon.epub (17pp)
+   ours:    ComicInfo Publisher: "Crown Publishing Group"x1
+
+== S105020 Superman The High Flying Biography of America's Most Enduring Hero - Larry Tye  [tier D]   keys: Superman The High Flying Biography of America's Most Enduring Hero - Larry Tye  years 2012-2012  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246965] Superman_ The High Flying Biography of America's Most Enduring Hero - Larry Tye.epub (4pp)
+   ours:    ComicInfo Publisher: "Random House Publishing Group"x1
+
+== S105021 Superman versus the Ku Klux Klan - Richard Bowers  [tier D]   keys: Superman versus the Ku Klux Klan - Richard Bowers  years 2012-2012  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246963] Superman versus the Ku Klux Klan - Richard Bowers.epub (26pp)
+   ours:    ComicInfo Publisher: "National Geographic Society"x1
+
+== S105022 Superman vs. Hollywood How Fiendish Producers, Devded an American Icon - Jake Rossen  [tier D]   keys: Superman vs. Hollywood How Fiendish Producers, Devded an American Icon - Jake Rossen  years 2008-2008  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246964] Superman vs. Hollywood_ How Fiendish Producers, Devded an American Icon (Cappella Books) - Jake Rossen.epub (6pp)
+   ours:    ComicInfo Publisher: "Chicago Review Press"x1
+
+== S105081 The DC Comics Encyclopedia  [tier D]   keys: The DC Comics Encyclopedia  years 2004-2008  3 files / 3 collections
+   folders: [3] _Books on Comics
+   files:   [246967] COL The DC Comics Encyclopedia Vol. 01 (2004).cbr (356pp) | [246968] COL The DC Comics Encyclopedia Vol. 02 (2008) (c2c) (bZc-DCP).cbr (394pp)
+            [246969] COL The DC Comics Encyclopedia Vol. 03 (2008).cbr (394pp)
+   CV local rip:   20244 "The DC Comics Encyclopedia" 2004 DK Publishing 4   (rip lookup)
+
+== S105082 The DC Comics Guide to Coloring and Lettering  [tier D]   keys: The DC Comics Guide to Coloring and Lettering  years ?-?  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246970] The DC Comics Guide to Coloring and Lettering.cbr (143pp)
+
+== S105083 The Dark Age - Grim, Great and Gimmicky Post-Modern Comics  [tier D]   keys: The Dark Age - Grim, Great and Gimmicky Post-Modern Comics  years 2006-2006  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246966] The Dark Age - Grim, Great & Gimmicky Post-Modern Comics (2006).cbr (162pp)
+
+== S105093 The Essential Batman Encyclopedia  [tier D]   keys: The Essential Batman Encyclopedia  years 2008-2008  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246971] The Essential Batman Encyclopedia (Greenberger, Robert) (2008) (inc pdf).cbr (1pp)
+   CV local rip:   43756 "The Essential Batman Encyclopedia" 2005 Random House 1 issue 126897   (rip lookup)
+
+== S105123 The Marvel Comics Encyclopedia  [tier D]   keys: The Marvel Comics Encyclopedia  years 2003-2009  6 files / 6 collections
+   folders: [6] _Books on Comics
+   files:   [246972] COL The Marvel Comics Encyclopedia Vol. 01 (2006).cbr (345pp) | [246973] COL The Marvel Comics Encyclopedia Vol. 02 (2009) (bZc-DCP).cbr (363pp)
+            [246974] COL The Marvel Comics Encyclopedia Vol. 03 - Hulk.cbr (201pp) | [246975] COL The Marvel Comics Encyclopedia Vol. 04 - Spider-Man (2003).cbr (242pp)
+            [246976] COL The Marvel Comics Encyclopedia Vol. 05 - Marvel Knights (2004).cbr (243pp)
+            [246977] COL The Marvel Comics Encyclopedia Vol. 06 - Fantastic Four (c2c) (Mal32 & Aquila-DCP).cbr (243pp)
+
+== S105131 The Origins of Comics - From William Hogarth to Winsor McCay  [tier D]   keys: The Origins of Comics - From William Hogarth to Winsor McCay  years ?-?  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246978] The Origins of Comics - From William Hogarth to Winsor McCay.pdf (175pp)
+   GCD dump:       148857 "The Origins of Comics: From William Hogarth to Winsor McCay" 2014-2014 University Press of Mississippi [] 1   (dump lookup)
+
+== S105150 The Sequential Artists Workshop Guide to Creating Professional Comic Strips  [tier D]   keys: The Sequential Artists Workshop Guide to Creating Professional Comic Strips  years 2016-2016  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246979] The Sequential Artists Workshop Guide to Creating Professional Comic Strips (2016) (digital-Empire).cbz (84pp)
+
+== S105155 The Stan Lee Universe  [tier D]   keys: The Stan Lee Universe  years ?-?  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246980] The Stan Lee Universe.cbr (200pp)
+   CV local rip:   64175 "The Stan Lee Universe" 2011 TwoMorrows Publishing 1 issue 413418   (rip lookup)
+
+== S105157 The Supergirls - Mike Madrid  [tier D]   keys: The Supergirls - Mike Madrid  years 2010-2010  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246981] The Supergirls - Mike Madrid.epub (18pp)
+   ours:    ComicInfo Publisher: "Exterminating Angel Press"x1
+
+== S105158 The Ten-Cent Plague - David Hajdu  [tier D]   keys: The Ten-Cent Plague - David Hajdu  years 2011-2011  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246982] The Ten-Cent Plague - David Hajdu.epub (4pp)
+   ours:    ComicInfo Publisher: "Farrar, Straus and Giroux"x1
+
+== S105180 Thin Black Line Perspectives on Vince Colletta  [tier D]   keys: Thin Black Line Perspectives on Vince Colletta  years 2010-2010  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246983] Thin Black Line Perspectives on Vince Colletta (2010).cbr (132pp)
+   CV local rip:   64455 "Thin Black Line Perspectives on Vince Colletta" 2010 TwoMorrows Publishing 1 issue 414200   (rip lookup)
+
+== S105224 Understanding Comics-Scott McCloud  [tier D]   keys: Understanding Comics-Scott McCloud  years 1999-1999  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246984] Understanding Comics-Scott McCloud (1999).cbr (222pp)
+
+== S105253 Vertigo Encyclopedia  [tier D]   keys: Vertigo Encyclopedia  years 2008-2008  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246985] Vertigo Encyclopedia (2008) (c2c) (bZc-DCP).cbr (242pp)
+   CV local rip:   27716 "The Vertigo Encyclopedia" 2008 DK Publishing 1 issue 169573   (rip lookup)
+
+== S105286 Was Superman a Spy - Brian Cronin  [tier D]   keys: Was Superman a Spy - Brian Cronin  years 2009-2009  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246986] Was Superman a Spy_ - Brian Cronin.epub (15pp)
+   ours:    ComicInfo Publisher: "Plume"x1
+
+== S105302 Will Eisner A Dreamer's Life in Comics - Michael Schumacher  [tier D]   keys: Will Eisner A Dreamer's Life in Comics - Michael Schumacher  years 2010-2010  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246987] Will Eisner_ A Dreamer's Life in Comics - Michael Schumacher.epub (18pp)
+   ours:    ComicInfo Publisher: "Bloomsbury USA"x1
+
+== S105313 Wonder Woman Unbound - Tim Hanley  [tier D]   keys: Wonder Woman Unbound - Tim Hanley  years 2014-2014  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246988] Wonder Woman Unbound - Tim Hanley.epub (10pp)
+   ours:    ComicInfo Publisher: "Chicago Review Press"x1
+
+== S105314 Words for Pictures - Brian Michael Bendis  [tier D]   keys: Words for Pictures - Brian Michael Bendis  years 2014-2014  1 files / 0 collections
+   folders: [1] _Books on Comics
+   files:   [246989] Words for Pictures - Brian Michael Bendis.epub (18pp)
+   ours:    ComicInfo Publisher: "Ten Speed Press"x1
+
+== S104767 Marvel Comics The Untold Story - Sean Howe  [tier D]   keys: Marvel Comics The Untold Story - Sean Howe  years 2012-2012  2 files / 0 collections
+   folders: [2] _Books on Comics\Marvel Comics - The Untold Story - Sean Howe
+   files:   [248442] Marvel Comics_ The Untold Story - Sean Howe.epub (4pp) | [248443] Marvel Comics_ The Untold Story - Sean Howe.mobi (3pp)
+   ours:    ComicInfo Publisher: "Harper"x1
+
+== S15632 Silver Surfer  [tier D]   keys: Silver Surfer  years 1968-1968  1 files / 0 collections
+   folders: [1] _Comics Screenplays
+   files:   [247007] Silver Surfer (Turman - 1994.08.24 Draft) (Unproduced).pdf (115pp)
+   CV local rip:   2411 "The Silver Surfer" 1968 Marvel 18 · 20444 "The Silver Surfer" 1978 Simon and Schuster 1 issue 122392 · 22808 "Silver Surfer" 1982 Marvel 1 issue 136832 · 3857 "Silver Surfer" 1987 Marvel 148 · 4070 "The Silver Surfer" 1988 Marvel 2 · 4343 "Silver Surfer" 1989 Play Press 50   (rip lookup)
+   GCD dump:       1872 "The Silver Surfer" 1968-1970 Marvel [] 18 · 75722 "The Silver Surfer" [en-au] 1975-1976 Newton Comics [] 6 · 2473 "The Silver Surfer" 1978-1978 Simon and Schuster [] 1 · 137589 "The Silver Surfer" 1978-1978 Simon and Schuster [] 1 · 83865 "シルバーサーファー [Silver Surfer]" [ja-jp] 1979-1979 光文社 [Kobunsha] [] 2 · 2663 "Silver Surfer" 1982-1982 Marvel [] 1   (dump lookup)
+
+== S104321 Akira, Part  [tier D]   keys: Akira, Part  years ?-?  1 files / 0 collections
+   folders: [1] _Comics Screenplays
+   files:   [246990] Akira, Part 1 (Whitta - 2008.07.30 Draft).pdf (122pp)
+   ours:    ladder 1
+
+== S104444 Constantine - 1x01 - Pilot  [tier D]   keys: Constantine - 1x01 - Pilot  years ?-?  1 files / 0 collections
+   folders: [1] _Comics Screenplays
+   files:   [246992] Constantine - 1x01 - Pilot.pdf (62pp)
+
+== S104448 Coraline  [tier D]   keys: Coraline  years ?-?  1 files / 0 collections
+   folders: [1] _Comics Screenplays
+   files:   [246993] Coraline (Selick - Undated Draft).pdf (115pp)
+   CV local rip:   25509 "Coraline" 2008 HarperCollins 1 issue 150417   (rip lookup)
+   GCD dump:       67313 "Coraline" [fr] 2009-2009 Au Diable Vauvert [] 1 · 81036 "Coraline" [de] 2009-2009 Panini Deutschland [] 1 · 111959 "Coraline" 2008-2008 HarperCollins [] 1 · 196076 "Coraline" [fr] 2018-2018 Delcourt [] 1   (dump lookup)
+
+== S104614 Green Arrow - Escape from Supermax  [tier D]   keys: Green Arrow - Escape from Supermax  years ?-?  1 files / 0 collections
+   folders: [1] _Comics Screenplays
+   files:   [246995] Green Arrow - Escape from Supermax (03.05.08 Draft).pdf (116pp)
+
+== S104673 Incredible Hulk, The  [tier D]   keys: Incredible Hulk, The  years ?-?  1 files / 0 collections
+   folders: [1] _Comics Screenplays
+   files:   [247000] Incredible Hulk, The (Ed Norton - 2007.05.12 Draft).pdf (117pp)
+
+== S104697 Kick-Ass  [tier D]   keys: Kick-Ass  years ?-?  1 files / 0 collections
+   folders: [1] _Comics Screenplays
+   files:   [247002] Kick-Ass (Goldman, Vaughan - Undated Second Draft).pdf (105pp)
+   CV local rip:   20680 "Kick-Ass" 2008 Marvel 8 · 32190 "Kick-Ass" 2010 Marvel 1 issue 202009 · 33036 "Kick-Ass" 2010 Titan Comics 1 issue 212791 · 42483 "Kick-Ass" 2010 Panini España 1 issue 290412 · 61776 "Kick-Ass" 2010 Panini Verlag 2 · 108738 "Kick-Ass" 2018 Image 18   (rip lookup)
+   GCD dump:       29792 "Kick-Ass" 2008-2010 Marvel [] 9 · 45631 "Kick-Ass" [es] 2010-2010 Panini España [] 1 · 54125 "Kick-Ass" 2010-2010 Marvel [] 1 · 56163 "Kick-Ass" [de] 2010-2010 Panini Deutschland [] 2 · 63222 "Kick-Ass" [fr] 2010-2010 Panini France [] 2 · 95786 "Kick-Ass" [en-gb] 2010-2010 Titan [] 1   (dump lookup)
+
+== S104929 Scott Pilgrim vs. The World  [tier D]   keys: Scott Pilgrim vs. The World  years 2006-2006  1 files / 0 collections
+   folders: [1] _Comics Screenplays
+   files:   [247006] Scott Pilgrim vs. The World (2009) (aka Scott Pilgrim's Little Life) [Undated] [Scan] [BL'06].pdf (126pp)
+
+== S104358 Batman - Year One  [tier D]   keys: Batman - Year One  years ?-?  1 files / 0 collections
+   folders: [1] _Comics Screenplays\Batman
+   files:   [248444] Batman - Year One (Miller + Aronofsky).pdf (131pp)
+   CV local rip:   18960 "Batman: Year One" 1988 DC Comics 1 issue 112492   (rip lookup)
+   GCD dump:       14212 "Batman: Year One" 1988-1988 DC [] 1 · 25730 "Batman: Year One" 1988-1988 DC [] 1 · 51320 "Batman: Year One" 1988-1988 Warner Books [] 1 · 92430 "Batman: Year One" 2007-2007 DC [] 1 · 161831 "Batman: Year One" [en-gb] 1988-1988 Titan [] 1 · 196963 "Batman : Year One" [fr] 2010-2010 Panini France [] 1   (dump lookup)
+
+== S104359 Batman Begins  [tier D]   keys: Batman Begins  years ?-?  1 files / 0 collections
+   folders: [1] _Comics Screenplays\Batman
+   files:   [248445] Batman Begins (Goyer - Undated Draft).pdf (150pp)
+   CV local rip:   89901 "Batman Begins" 2005 Planeta DeAgostini 1 issue 527046   (rip lookup)
+   GCD dump:       41318 "Batman Begins" [es] 2005-2005 Planeta DeAgostini [] 1   (dump lookup)
+
+== S104360 Batman Forever  [tier D]   keys: Batman Forever  years ?-?  1 files / 0 collections
+   folders: [1] _Comics Screenplays\Batman
+   files:   [248446] Batman Forever (Goldsman, Batchler, Batchler - Undated Draft).pdf (115pp)
+   CV local rip:   92984 "Batman Forever" 1995 Bastei Verlag 1 issue 543688 · 92996 "Batman Forever" 1995 Play Press 1 issue 543842 · 93040 "Batman Forever" 1995 Semic Press AB 1 issue 544113 · 104375 "Batman Forever" 1995 Ediciones Zinco 1 issue 622249   (rip lookup)
+   GCD dump:       38639 "Batman Forever" [de] 1995-1995 Bastei Verlag [] 1 · 39463 "Batman Forever" [es] 1995-1995 Zinco [] 1 · 104258 "Batman forever" [it] 1995-1995 Play Press [] 1 · 106950 "Batman Forever" [de] 1995-? Bastei Verlag [] 1 · 185390 "Batman Forever" [en-za] 1996-1996 Battleaxe Press [] 2   (dump lookup)
+
+== S104475 Dark Knight, The  [tier D]   keys: Dark Knight, The  years ?-?  1 files / 0 collections
+   folders: [1] _Comics Screenplays\Batman
+   files:   [248447] Dark Knight, The (Undated Draft).pdf (167pp)
+
+== S104345 Asylum aka Superman and Batman  [tier D]   keys: Asylum aka Superman and Batman  years ?-?  1 files / 0 collections
+   folders: [1] _Comics Screenplays\Superman
+   files:   [248448] Asylum aka Superman and Batman (Walker, Goldsman - 06.21.02 Revision).pdf (121pp)
+
+== S105019 Superman Lives  [tier D]   keys: Superman Lives  years ?-?  2 files / 0 collections
+   folders: [2] _Comics Screenplays\Superman
+   files:   [248453] Superman Lives (Kevin Smith - 1997.01.31 Draft).pdf (128pp) | [248454] Superman Lives (Kevin Smith - 1997.03.27 Draft).pdf (119pp)
+
+== S105312 Wolverine, The  [tier D]   keys: Wolverine, The  years ?-?  1 files / 0 collections
+   folders: [1] _Comics Screenplays\X-Men
+   files:   [248459] Wolverine, The (McQuarrie - Undated Draft).pdf (128pp)
+
+== S104423 Chandler - Red Tide  [tier D]   keys: Chandler - Red Tide  years 1976-1976  1 files / 0 collections
+   folders: [1] _HPJ Essentials
+   files:   [247018] Chandler - Red Tide (1976).cbr (130pp)
+
+== S104640 Heavy Metal - Outland  [tier D]   keys: Heavy Metal - Outland  years 1981-1981  1 files / 0 collections
+   folders: [1] _HPJ Essentials
+   files:   [247019] Heavy Metal - Outland (1981).cbr (39pp)

@@ -60,6 +60,18 @@ from idbase import Evidence
 import identity_packet
 import ledger
 
+
+def next_r_name(st):
+    """The next free R- batch name. The counter alone (1 + len(revisits)) is not enough: batches emitted with
+    `--out` are deliberately left out of state.json, and R-184..R-191 were emitted that way on 2026-09-26 and
+    LANDED — so on 2026-10-02 the counter handed those names out again and overwrote their tracked .ids files.
+    A name whose batch or decision file already exists on disk is skipped."""
+    n = 1 + len(st.get("revisits", []))
+    while any(os.path.exists(os.path.join(idbase.ROOT, d, f"R-{n:03d}{ext}"))
+              for d in ("batches", "decisions") for ext in (".txt", ".ids")):
+        n += 1
+    return f"R-{n:03d}"
+
 # B was 100 when a packet was 12 lines. Compaction put a clean one-leg shelf at 5-8, so 100 shelves no
 # longer fills a batch and the reader pays a round trip for half a workload.
 CEILING = {"A": 150, "B": 150, "C": 60, "D": 120}
@@ -317,7 +329,7 @@ if opt.get("s2-file"):
         print({"batch": None, "shelves": 0, "remaining": 0, "gone since triage": gone})
         raise SystemExit(0)
     take, blocks = pack(todo, int(opt.get("shelves") or S2_CEILING))
-    name = f"R-{1 + len(st['revisits']):03d}"
+    name = next_r_name(st)
     n = write_batch(name, blocks, take, kind="S2")
     note = opt.get("note") or f"S.2: 0.9 shelves carrying a triage signal (source: {os.path.basename(rf)})"
     st["revisits"].append({"batch": name, "ids": take, "lines": n, "note": note, "source": os.path.basename(rf),
@@ -514,7 +526,7 @@ if revisit or revisit_files:
     note = opt.get("note") or f"re-read after a sharpened ruling (source: {source})"
     emitted = []
     for bl in batches:
-        name = f"R-{1 + len(st['revisits']):03d}"
+        name = next_r_name(st)
         bids = [s for s, _b in bl]
         n = write_batch(name, [b for _s, b in bl], bids, kind="R")
         rec = {"batch": name, "ids": bids, "lines": n, "note": note, "source": source,
