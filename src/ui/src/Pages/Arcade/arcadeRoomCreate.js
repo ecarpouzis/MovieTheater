@@ -65,14 +65,53 @@ const flags = (r) => (r ? `${r.supported ? "S" : "-"}${r.smooth ? "s" : "-"}${r.
  * refused. The probe can't see that — a tablet's Chrome reports software AV1 as `smooth` — so when the probe
  * lands on the avoided codec and the browser supports the other one, the other one wins (`hint=avoid-av1`).
  */
+// ── The probe is a SNAPSHOT of the browser's own capability report, and that report can be late ─────────────
+// Firefox's GPU process works out hardware decode support on a background task after it starts (GPUParent::RecvInit
+// -> MCSInfo::GetSupportFromFactory) and again on every gfxVar update (RecvUpdateVar force-refreshes); until that
+// report lands, decodingInfo(type:"webrtc") answers from an empty set, and Firefox treats a failed/empty platform
+// answer as "software only" (WebrtcVideoDecoderFactory::SupportsCodec). So an early probe on a hardware machine can
+// say "software" — never the reverse: a false "hardware" cannot happen. Hence: probe as soon as the lobby mounts,
+// probe again at Play, and keep the MOST capable answer seen this page session. If both codecs still read
+// software-only after a single probe, re-probe once after PROBE_RETRY_MS before deciding.
+const PROBE_RETRY_MS = 1500;
+let bestProbe = null; // { av1, h264, h265 } — field-wise most capable answers seen
+let probesRun = 0;
+
+function mergeAnswer(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  return { supported: a.supported || b.supported, smooth: a.smooth || b.smooth, powerEfficient: a.powerEfficient || b.powerEfficient };
+}
+
+async function probeOnce() {
+  const probe = (contentType) => navigator.mediaCapabilities.decodingInfo({ type: "webrtc", video: { contentType, ...PROBE_FRAME } });
+  const [av1, h264, h265] = await Promise.all([
+    probe('video/AV1; codecs="av01.0.08M.08"'), probe("video/H264"), probe("video/H265").catch(() => null),
+  ]);
+  probesRun++;
+  bestProbe = bestProbe
+    ? { av1: mergeAnswer(bestProbe.av1, av1), h264: mergeAnswer(bestProbe.h264, h264), h265: mergeAnswer(bestProbe.h265, h265) }
+    : { av1, h264, h265 };
+  return bestProbe;
+}
+
+/** Start a capability probe early (the lobby calls this on mount) so a late browser report is already in by Play. */
+export function primeCodecProbe() {
+  try { if (navigator?.mediaCapabilities?.decodingInfo) probeOnce().catch(() => {}); } catch { /* no API */ }
+}
+
+/** Test seam: forget the page-session memory. */
+export function resetCodecProbeMemory() { bestProbe = null; probesRun = 0; }
+
 export async function decideAutoCodec(avoid = null) {
   const mobile = isMobileDevice();
   let av1 = null, h264 = null, h265 = null, codec;
   try {
-    const probe = (contentType) => navigator.mediaCapabilities.decodingInfo({ type: "webrtc", video: { contentType, ...PROBE_FRAME } });
-    [av1, h264, h265] = await Promise.all([
-      probe('video/AV1; codecs="av01.0.08M.08"'), probe("video/H264"), probe("video/H265").catch(() => null),
-    ]);
+    ({ av1, h264, h265 } = await probeOnce());
+    if (probesRun < 2 && !av1.powerEfficient && !h264.powerEfficient) {
+      await new Promise((r) => setTimeout(r, PROBE_RETRY_MS));
+      ({ av1, h264, h265 } = await probeOnce());
+    }
     if (av1.supported && av1.powerEfficient) codec = "av1";
     else if (h264.supported && h264.powerEfficient) codec = "h264";
     else codec = h264.supported ? "h264" : "av1";

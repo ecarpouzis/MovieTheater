@@ -8,8 +8,43 @@ import {
   encodeMouseMove, encodeMouseButtons, systemUsesMouse,
   mouseGainFor, mouseMaxStepFor, systemUsesKeyboard, retroKeyFor, encodeKey, profileFor,
   encodeViewerReport,
-  classifyNoVideo, videoCodecFromWsUrl,
+  classifyNoVideo, videoCodecFromWsUrl, estimateRefreshHz,
 } from "./cloudRetroClient";
+
+// The display cap's input. A busy page only ever LENGTHENS rAF intervals, so the screen's period is read from the
+// fast end; the old median read 55 Hz on a 240 Hz screen (2026-10-03) and capped a 70 fps room to 55.
+describe("estimateRefreshHz", () => {
+  // Deterministic jitter so the tests are stable.
+  const seq = (n, f) => { const s = [0]; for (let i = 1; i <= n; i++) s.push(s[i - 1] + f(i)); return s; };
+  const jit = (i) => ((i * 7919) % 11 - 5) * 0.03; // +/-0.15 ms
+
+  it("reads a clean 240 Hz screen as 240", () => {
+    expect(estimateRefreshHz(seq(60, (i) => 1000 / 240 + jit(i)))).toBe(240);
+  });
+  it("reads a clean 60 Hz screen as 60", () => {
+    expect(estimateRefreshHz(seq(60, (i) => 1000 / 60 + jit(i)))).toBe(60);
+  });
+  it("still reads 240 when a busy page skips vsyncs on most frames (the old median read ~55)", () => {
+    // 60% of frames late by 2-4 vsyncs, 40% on cadence.
+    const s = seq(60, (i) => (i % 5 < 2 ? 1000 / 240 : (1000 / 240) * (2 + (i % 3))) + jit(i));
+    expect(estimateRefreshHz(s)).toBe(240);
+  });
+  it("reads 144 and 165 screens and snaps 59.9-ish to a standard rate", () => {
+    expect(estimateRefreshHz(seq(60, (i) => 1000 / 144 + jit(i)))).toBe(144);
+    expect(estimateRefreshHz(seq(60, (i) => 1000 / 165 + jit(i)))).toBe(165);
+    expect([59.94, 60]).toContain(estimateRefreshHz(seq(60, (i) => 16.68 + jit(i))));
+  });
+  it("returns null (unknown -> no cap) for a burst too ragged to trust", () => {
+    const chaos = seq(60, (i) => 5 + ((i * 37) % 31));
+    expect(estimateRefreshHz(chaos)).toBeNull();
+  });
+  it("returns null for too few samples", () => {
+    expect(estimateRefreshHz([0, 16, 33])).toBeNull();
+  });
+  it("cannot see past a page that NEVER gets a frame faster than 16.7 ms (documented limit: reads 60, not 240)", () => {
+    expect(estimateRefreshHz(seq(60, (i) => (i % 2 ? 1000 / 60 : 1000 / 48) + jit(i)))).toBe(60);
+  });
+});
 
 // The no-video watchdog's verdict from the receiver's own stats: nothing arriving vs arriving-but-undecodable
 // are different failures with different fixes (path/permission vs codec), and a decoding stream whose

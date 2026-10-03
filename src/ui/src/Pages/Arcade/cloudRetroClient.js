@@ -2251,9 +2251,10 @@ export function createCloudRetroSession(descriptor, opts) {
   // Spectators report too (they decode video); an input-only seat has no video and never reports.
   let viewerTimer = null;
   let viewerPrev = null;      // previous inbound-rtp video sample
-  let displayHz = null;       // last measured refresh rate (Hz), null until measured
+  let displayHz = null;       // best trusted refresh rate (Hz) of the recent readings, null = unknown
   let displayMeasuring = false;
   let displayMeasuredAt = 0;
+  const displayReadings = []; // { hz, at } — trusted readings, the last DISPLAY_READING_TTL_MS
   function measureDisplayHz() {
     if (displayMeasuring || typeof requestAnimationFrame !== "function") return;
     if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
@@ -2261,13 +2262,16 @@ export function createCloudRetroSession(descriptor, opts) {
     const stamps = [];
     const step = (t) => {
       stamps.push(t);
-      if (stamps.length < 31) { requestAnimationFrame(step); return; }
+      if (stamps.length < DISPLAY_SAMPLE_FRAMES + 1) { requestAnimationFrame(step); return; }
       displayMeasuring = false;
-      displayMeasuredAt = Date.now();
-      // Median frame interval: robust to one slow frame (GC, a busy main thread) in the burst.
-      const d = stamps.slice(1).map((v, i) => v - stamps[i]).sort((a, b) => a - b);
-      const mid = d[Math.floor(d.length / 2)];
-      if (mid > 2 && mid < 100) displayHz = 1000 / mid;
+      const now = Date.now();
+      displayMeasuredAt = now;
+      const hz = estimateRefreshHz(stamps);
+      if (hz != null) displayReadings.push({ hz, at: now });
+      while (displayReadings.length && now - displayReadings[0].at > DISPLAY_READING_TTL_MS) displayReadings.shift();
+      // The BEST recent reading: a busy page can only make a burst read slow, never fast. Unknown (null) when no
+      // recent burst was trustworthy — the worker then applies no cap, which is the safe direction.
+      displayHz = displayReadings.length ? Math.max(...displayReadings.map((r) => r.hz)) : null;
     };
     requestAnimationFrame(step);
   }
@@ -2870,6 +2874,43 @@ function numFromWsUrl(wsUrl, key) {
     const v = parseInt(new URLSearchParams(wsUrl.slice(q + 1)).get(key) || "0", 10);
     return Number.isFinite(v) && v > 0 ? v : 0;
   } catch { return 0; }
+}
+
+// ── Display refresh estimate (the 0047 display cap's input) ───────────────────────────────────────────────────
+// The worker caps a room's delivery at the fastest visible viewer's screen rate, so an UNDER-read costs real frames:
+// the old estimate (median of 30 rAF intervals) read 55 Hz — once ~44 — on a 240 Hz screen while the page was busy,
+// capping a 70 fps game to 55. rAF delays only ever LENGTHEN an interval (a busy main thread, a skipped vsync); none
+// can make one shorter than the real refresh period. So the period is read from the FAST end of the distribution
+// (DISPLAY_FAST_QUANTILE), checked for enough intervals clustered at it to be a real cadence, and snapped to a
+// standard rate. A burst too ragged to trust returns null ("unknown"), which the worker treats as no cap.
+export const DISPLAY_SAMPLE_FRAMES = 60;
+export const DISPLAY_READING_TTL_MS = 120_000;
+const DISPLAY_FAST_QUANTILE = 0.15;
+const DISPLAY_CLUSTER_TOL = 0.10;   // an interval within 10% of the fast period counts as "on cadence"
+const DISPLAY_MIN_CLUSTER = 0.30;   // at least 30% of intervals on cadence, or the burst is not trusted
+const STANDARD_REFRESH = [24, 30, 48, 50, 59.94, 60, 72, 75, 85, 90, 100, 119.88, 120, 144, 160, 165, 170, 175, 180, 200, 240, 280, 300, 360, 480, 500];
+
+/** Refresh rate (Hz) from rAF timestamps (ms), or null when the burst cannot be trusted. Pure, for tests. */
+export function estimateRefreshHz(stamps) {
+  if (!Array.isArray(stamps) || stamps.length < 12) return null;
+  const d = [];
+  for (let i = 1; i < stamps.length; i++) { const x = stamps[i] - stamps[i - 1]; if (x > 0.5 && x < 200) d.push(x); }
+  if (d.length < 10) return null;
+  const sorted = [...d].sort((a, b) => a - b);
+  const fast = sorted[Math.floor(sorted.length * DISPLAY_FAST_QUANTILE)];
+  // The period = the mean of the intervals clustered at the fast end (averages out timestamp jitter).
+  const cluster = d.filter((x) => Math.abs(x - fast) <= fast * DISPLAY_CLUSTER_TOL);
+  if (cluster.length < d.length * DISPLAY_MIN_CLUSTER) return null;
+  const period = cluster.reduce((a, b) => a + b, 0) / cluster.length;
+  const hz = 1000 / period;
+  if (hz < 20 || hz > 600) return null;
+  // The NEAREST standard rate within 4% (not the first: 60 must not snap to 59.94, nor 165 to 160).
+  let snap = null;
+  for (const r of STANDARD_REFRESH) {
+    const e = Math.abs(r - hz) / r;
+    if (e <= 0.04 && (snap == null || e < Math.abs(snap - hz) / snap)) snap = r;
+  }
+  return snap ?? Math.round(hz * 10) / 10;
 }
 
 // How long after game-start a missing first frame counts as "no video" (see armNoVideoWatchdog).

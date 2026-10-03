@@ -10,7 +10,7 @@ import LiveRooms from "./LiveRooms";
 import SavesManager from "./SavesManager";
 import ConsoleCarousel from "./ConsoleCarousel";
 import { rememberLobbySearch } from "./arcadeLobbyState";
-import { createRoomAndGo, loadQuality, saveQuality } from "./arcadeRoomCreate";
+import { createRoomAndGo, loadQuality, primeCodecProbe, saveQuality } from "./arcadeRoomCreate";
 import { hasSaveStates, QUICK_SLOT } from "./arcadeSystems";
 import { parseSystems, toggleSystem } from "./arcadeSystemFilter";
 import { ARCADE_ENTITY_PARAMS, arcadeNarrows, legacyToArcadeSearch } from "./arcadeFacetSpec";
@@ -160,6 +160,10 @@ export default function ArcadePage({ userData }) {
   const rail = useSectionRail("arcade", spec, { entityParams: ARCADE_ENTITY_PARAMS });
   const facetState = rail.state;
   const facetActions = rail.actions;
+
+  // Ask the browser for its decode capabilities NOW, not at Play: a browser's hardware-decode report can arrive
+  // late (see arcadeRoomCreate.js), and an early probe gives it the whole lobby visit to land.
+  useEffect(() => { primeCodecProbe(); }, []);
 
   // A pre-S2c lobby link (?system=&hideRegions=&players=&variant=&genre=&ra= — the old rail's Selects,
   // old bookmarks, a room's exit button from before the deploy) is rewritten ONCE into the facet form

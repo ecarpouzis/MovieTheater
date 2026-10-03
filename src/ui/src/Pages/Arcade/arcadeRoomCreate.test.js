@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { canReceiveCodec, decideAutoCodec, localNetworkPermission, resolveAutoCodec, videoProblemMessage } from "./arcadeRoomCreate";
+import { canReceiveCodec, decideAutoCodec, localNetworkPermission, primeCodecProbe, resetCodecProbeMemory, resolveAutoCodec, videoProblemMessage } from "./arcadeRoomCreate";
 
 // Answers are what each engine reported on Ziggy, 2026-10-02 (S = supported, P = powerEfficient).
 const ans = (supported, powerEfficient) => ({ supported, smooth: supported, powerEfficient });
@@ -17,7 +17,7 @@ function stubNavigator({ av1, h264, mobile = false, ua = "Mozilla/5.0 (Windows N
   });
 }
 
-afterEach(() => { vi.unstubAllGlobals(); });
+afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); resetCodecProbeMemory(); });
 
 describe("resolveAutoCodec", () => {
   it("hardware AV1 (Chrome/Edge on a modern GPU) gets av1", async () => {
@@ -159,5 +159,43 @@ describe("decideAutoCodec with a device-history hint", () => {
   it("ignores a hint about the codec it wasn't going to pick", async () => {
     stubNavigator({ av1: ans(true, true), h264: ans(true, true) });
     expect(await decideAutoCodec("h264")).toEqual({ codec: "av1", probe: "av1:SsP h264:SsP h265:SsP m0 auto=av1" });
+  });
+});
+
+// Firefox's GPU process reports hardware decode support asynchronously; before it lands, decodingInfo answers
+// "software" (never the reverse). The gate must not lock in that early answer.
+describe("a browser whose hardware report arrives late", () => {
+  function stubSequence(answers) {
+    let call = 0;
+    vi.stubGlobal("navigator", {
+      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:157.0) Gecko/20100101 Firefox/157.0", maxTouchPoints: 0,
+      mediaCapabilities: { decodingInfo: vi.fn(async ({ video }) => {
+        const a = answers[Math.min(Math.floor(call++ / 3), answers.length - 1)];
+        return /AV1/.test(video.contentType) ? a.av1 : a.h264;
+      }) },
+    });
+  }
+
+  it("re-probes once when both codecs read software-only, and takes the later hardware answer", async () => {
+    vi.useFakeTimers();
+    stubSequence([{ av1: ans(true, false), h264: ans(true, false) }, { av1: ans(true, true), h264: ans(true, true) }]);
+    const p = decideAutoCodec();
+    await vi.advanceTimersByTimeAsync(2000);
+    expect((await p).codec).toBe("av1");
+  });
+
+  it("keeps the most capable answer seen this page session (lobby probe saw hardware, Play-time probe did not)", async () => {
+    stubSequence([{ av1: ans(true, true), h264: ans(true, true) }, { av1: ans(true, false), h264: ans(true, false) }]);
+    primeCodecProbe();
+    await new Promise((r) => setTimeout(r, 0));
+    expect((await decideAutoCodec()).codec).toBe("av1");
+  });
+
+  it("a genuinely software-only browser still lands on h264 after the one retry", async () => {
+    vi.useFakeTimers();
+    stubSequence([{ av1: ans(true, false), h264: ans(true, false) }]);
+    const p = decideAutoCodec();
+    await vi.advanceTimersByTimeAsync(2000);
+    expect((await p).codec).toBe("h264");
   });
 });
