@@ -7412,7 +7412,7 @@ index 0000000..a8484f5
 +// ReportCount is how many viewer reports this peer has sent (for the close summary).
 +func (p *Peer) ReportCount() int64 { return p.reports.Load() }
 diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
-index b342b6b..fb0c2c6 100644
+index b342b6b..f5fa48b 100644
 --- a/pkg/network/webrtc/webrtc.go
 +++ b/pkg/network/webrtc/webrtc.go
 @@ -4,11 +4,15 @@ import (
@@ -8077,7 +8077,7 @@ index b342b6b..fb0c2c6 100644
  			}
  		}()
  	}
-@@ -313,3 +799,227 @@ func toJson[T any](data T) (string, error) {
+@@ -313,3 +799,244 @@ func toJson[T any](data T) (string, error) {
  	}
  	return string(b), nil
  }
@@ -8106,6 +8106,23 @@ index b342b6b..fb0c2c6 100644
 +		return 0
 +	}
 +	return bps / 1000
++}
++
++// AverageLoss is the loss controller's smoothed loss fraction (0..1) for this peer's VIDEO transport,
++// or -1 when there is no estimator. Pion's GCC estimate is min(delay-based, loss-based); the delay
++// controller decreases to beta x the received rate, the loss controller to bitrate x (1 - 0.5 x loss)
++// whenever loss exceeds 10%. ABR divides a cut's estimate by beta to read the link's capacity, which
++// is only valid for a DELAY decrease — this value tells the two apart on the cut's log line
++// (a loss-driven crater reads high here; a delay-driven overshoot reads near 0). Observability only:
++// GetStats takes the estimator's lock, so it is read once per cut, never per tick.
++func (p *Peer) AverageLoss() float64 {
++	if p == nil || p.bwe == nil {
++		return -1
++	}
++	if v, ok := p.bwe.GetStats()["averageLoss"].(float64); ok {
++		return v
++	}
++	return -1
 +}
 +
 +// SameHostLink reports whether this peer's media actually crosses a NETWORK, by inspecting the remote
@@ -9350,15 +9367,16 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..68763c0
+index 0000000..02ed53a
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,1138 @@
+@@ -0,0 +1,1468 @@
 +package worker
 +
 +import (
 +	"fmt"
 +	"math"
++	"os"
 +	"strconv"
 +	"strings"
 +	"time"
@@ -9465,6 +9483,51 @@ index 0000000..68763c0
 +	// normal ramp still runs. Net effect: collision cadence drops from every ~5s to every ~15s+, and
 +	// between tests the bitrate is flat, which is precisely when the stream feels smooth.
 +	abrCongHoldTicks = 12
++
++	// ── CONGESTION MEMORY v2 (2026-10-03) — see congMemory at the bottom of this file ──────────────────
++	// v1 above (congKbps = cur on EVERY cut, forget after abrCongClearTicks healthy ticks at the wall) has
++	// a sliding wall: each cut of a staircase re-set the wall to the rate it was cut FROM, so a descent
++	// 7939 -> 5557 -> 3889 -> 2722 left 2722 remembered on a link carrying ~12 Mbps; the creep reached it,
++	// three healthy ticks forgot it, and +15%/tick climbed straight back into the real wall (room 34MB5J,
++	// a phone on external Wi-Fi: three such collisions in three minutes, 17 cuts, 4 episodes).
++	//
++	// abrCongBetaPct: GCC's own decrease factor (pion interceptor pkg/gcc/rate_controller.go, beta =
++	// 0.85: the delay controller decreases to beta x latestReceivedRate). While we are still sending
++	// ABOVE capacity the received rate IS the capacity, so a confirmed cut's estimate / 0.85 reads what
++	// the link delivered — no matter how many decreases fired. On the 34MB5J trace: 10558/0.85 = 12421,
++	// 10117/0.85 = 11902, 11161/0.85 = 13130, 12187/0.85 = 14338 against a sustained 13108. It stops
++	// being a capacity read once we send BELOW capacity — which is exactly the staircase v2 refuses to
++	// learn from (a cut below 90% of the wall keeps the wall).
++	abrCongBetaPct = 85
++	// abrCongMinWallPct: a wall is never minted below this % of the rate cut from. When the read lands
++	// on this floor the estimate is far below what we were sending with no overshoot to explain it — a
++	// CRATER (a Wi-Fi loss/delay event: 1095 kbps read while sending 7939 on a ~12.4 Mbps link, no PLI).
++	// That is not a capacity measurement, so if a wall already exists it is KEPT.
++	abrCongMinWallPct = 50
++	// abrCongExitPct: above the wall the room creeps abrMinStepKbps per tick (the gentlest probe we have,
++	// overshooting ~500 kbps at a collision with the 2-tick lag, instead of a staircase); once that creep
++	// has carried the room to 115% of the wall with NO confirmed cut, the link has proven the wall stale
++	// and it is forgotten — +15%/tick resumes. A collision on the way re-mints the wall (cur >= wall), so
++	// the proof restarts against the new read.
++	//
++	// ⚠ NOT "the binding estimate reads >= 130% of the wall for 3 ticks" (the reviewed plan's rule). Pion's
++	// rateController.increase (interceptor v0.1.45 pkg/gcc) grows the delay target 8%/s whenever no overuse
++	// is detected — which is ALWAYS while we sit below capacity — capping it at 1.5x the received rate only
++	// while the target is still under that cap, and otherwise growing it further. So the estimate climbs
++	// past 130% of the wall while the room sits still below it: it is not a headroom measurement. In the
++	// offline simulator (abr_sim_test.go) that exit fired on steady links and +15%-leapt back into them —
++	// 2548 hard descents against v1's 2052; this climb exit, 1683 against 2052, with delivered rate +9.9%
++	// and step-up recovery 22 ticks against v1's 21. 115 not 130: at 130 recovery from a raised link took
++	// 26 ticks (v1 + 5), for 1% fewer hard descents.
++	abrCongExitPct = 115
++	// abrCongLearnGraceTicks: a peer's cuts never mint a wall during its first 10 ticks with an estimate.
++	// GetTargetBitrate returns the configured initial until the first TWCC feedback, so a late joiner
++	// reads as a ~6 Mbps peer for several seconds; a wall minted from that would cap the room on nothing.
++	abrCongLearnGraceTicks = 10
++	// abrHardDescentPct: a DESCENT (consecutive cuts with no up-step between them) whose total drop
++	// exceeds this % of where it started is a HARD descent — the blurry crash a viewer actually sees.
++	// Summary counter for both v1 and v2, so the two are comparable on the same metric.
++	abrHardDescentPct = 30
 +)
 +
 +// layerShare[codec][n][l] = the percentage of the encoder's bitrate a peer receives when it is fed
@@ -9917,6 +9980,12 @@ index 0000000..68763c0
 +	}
 +	log.Info().Msgf("abr: start %d kbps (floor %d, ceiling %d, %s temporal layers %d, base share %d%%)",
 +		cur, floor, ceilKbps, codec, layers, share[0])
++	// Congestion memory generation (see congMemory). Kill switch, read per room like CLOUD_GAME_RUNAHEAD:
++	// CLOUD_GAME_ABR_CONG_V2=0 restores the v1 bookkeeping exactly (runner env change + task restart).
++	congV2 := os.Getenv("CLOUD_GAME_ABR_CONG_V2") != "0"
++	if !congV2 {
++		log.Info().Msg("abr: congestion memory v1 (disabled v2 by CLOUD_GAME_ABR_CONG_V2=0)")
++	}
 +
 +	// The opening rate, kept separately because `cur` is about to start moving. Phase 0's whole point
 +	// is that a room's story is open -> ramp -> steady, and the opener is the number Phase 1 replaces.
@@ -9931,16 +10000,17 @@ index 0000000..68763c0
 +		// (measured: a single-tick 11000->7828 dip on an ethernet LAN with a direct host pair).
 +		// Requiring TWO consecutive low ticks makes those one-tick artifacts invisible; genuine
 +		// congestion still backs off, one second later.
-+		lowTicks := 0
++		// (The two-tick confirmation counter lives in rate.lowTicks — see abrRate.decide.)
 +		// Consecutive over-budget ticks per peer, for temporal-layer DROPS only (see below). Lives in
 +		// this goroutine, so no locking; peers that leave the room simply stop being iterated.
 +		layerDown := map[svcPeer]int{}
 +		// Consecutive STARVED ticks per peer — same idea as layerDown, for the room-cap path.
 +		starveHold := map[svcPeer]int{}
-+		// Congestion memory (see the const block): the last rate that provoked a confirmed cut
-+		// (0 = none seen), how many consecutive healthy ticks we have spent at/above it, and how many
-+		// ticks remain of the post-cut probe hold.
-+		congKbps, congClear, congHold := 0, 0, 0
++		// The rate decision: two-tick confirmation, congestion memory (the remembered wall, its probe
++		// hold, and under v2 the peer that minted it), and the descent counters. See abrRate.
++		rate := abrRate{cm: congMemory{v2: congV2}, ds: newDescentStat()}
++		// Ticks each peer has had an estimate — the learning grace (abrCongLearnGraceTicks).
++		estTicks := map[svcPeer]int{}
 +		// RTT accumulators per peer (observability only). Same lifetime rules as layerDown above: this
 +		// goroutine owns them, and a peer that leaves simply stops being iterated.
 +		rtt := map[svcPeer]*rttStat{}
@@ -9965,8 +10035,8 @@ index 0000000..68763c0
 +		rampTicks := -1     // ticks from open to the first ceiling touch; -1 = never got there
 +		cutsRamp, cutsSteady := 0, 0
 +		starvesRamp, starvesSteady := 0, 0
-+		congEpisodes := 0 // distinct congestion-memory episodes (0 -> non-zero transitions)
-+		congMaxHold := 0  // longest run of consecutive ticks a remembered wall was held
++		// congEpisodes (0 -> wall transitions) lives in rate.cm.episodes; descents in rate.ds.
++		congMaxHold := 0 // longest run of consecutive ticks a remembered wall was held
 +		congRun := 0
 +		// Derived-ceiling changes that were PROPOSED and then withdrawn before abrCeilCommitTicks
 +		// confirmed them — i.e. geometry flaps this room absorbed. Cheap, and it is the only way the
@@ -9993,15 +10063,25 @@ index 0000000..68763c0
 +				if ticks > 0 {
 +					atCeilPct = atCeilTicks * 100 / ticks
 +				}
++				rate.ds.up() // a descent still open at close counts
++				congV2Flag := 0
++				if rate.cm.v2 {
++					congV2Flag = 1
++				}
++				// congV2 says which bookkeeping produced congEpisodes/walls: under v1 every cut sets the
++				// wall (walls == cuts), under v2 only measurements mint. descents/hardDescents/overshoot
++				// are computed identically under both, so they are the A/B comparison.
 +				log.Info().Msgf(
 +					"abr: summary room=%s system=%s open=%d ceil=%d codec=%s layers=%d ticks=%d "+
 +						"rampTicks=%s atCeilPct=%d cuts=%d cutsRamp=%d cutsSteady=%d "+
 +						"starves=%d starvesRamp=%d starvesSteady=%d congEpisodes=%d congMaxHoldTicks=%d "+
-+						"geomFlapsSuppressed=%d%s",
++						"geomFlapsSuppressed=%d congV2=%d walls=%d wallExits=%d wallDeparts=%d "+
++						"descents=%d hardDescents=%d craters=%d overFirst=%d overMax=%d%s",
 +					r.Id(), system, openKbps, ceilKbps, codec, layers, ticks,
 +					ramp, atCeilPct, cutsRamp+cutsSteady, cutsRamp, cutsSteady,
-+					starvesRamp+starvesSteady, starvesRamp, starvesSteady, congEpisodes, congMaxHold,
-+					geomFlapsSuppressed, ad.summary())
++					starvesRamp+starvesSteady, starvesRamp, starvesSteady, rate.cm.episodes, congMaxHold,
++					geomFlapsSuppressed, congV2Flag, rate.cm.mints, rate.cm.forgets, rate.cm.departs,
++					rate.ds.descents, rate.ds.hard, rate.ds.craters, rate.ds.overFirst, rate.ds.overMax, ad.summary())
 +
 +				// Snapshot each peer BY VALUE before dispatching anything: the peer objects and these
 +				// maps die with this goroutine the instant it returns.
@@ -10041,7 +10121,7 @@ index 0000000..68763c0
 +							System: system, Codec: codec,
 +							CeilingKbps: ceilKbps, OpenKbps: openKbps, SustainedKbps: sp.sustainedKbps,
 +							AtCeilPct: atCeilPct, CutsSteady: cutsSteady, StarvesSteady: starvesSteady,
-+							CongEpisodes: congEpisodes,
++							CongEpisodes: rate.cm.episodes,
 +							RttMeanMs:    sp.rttMean, RttSdMs: sp.rttSd, Path: sp.path,
 +							DistressWeakTicks: sp.distress.weakTicks, DistressStrongTicks: sp.distress.strongTicks,
 +							ScaleDowns: sp.distress.scaleDowns,
@@ -10076,7 +10156,7 @@ index 0000000..68763c0
 +						log.Info().Msgf("abr: ceiling %d -> %d kbps — %s (scale step, committed immediately)", ceilKbps, c, why)
 +						ceilKbps = c
 +						floor = min(abrFloorKbps, ceilKbps)
-+						congKbps, congClear, congHold = 0, 0, 0
++						rate.cm.reset()
 +						if cur > ceilKbps {
 +							cur = ceilKbps
 +							_ = m.SetVideoBitrate(cur)
@@ -10113,7 +10193,7 @@ index 0000000..68763c0
 +					// bitrate is a different picture, so the remembered wall no longer describes this room.
 +					// Unchanged semantics — this is simply now reached once per REAL change instead of
 +					// once per flap, which is the whole point of the phase.
-+					congKbps, congClear, congHold = 0, 0, 0
++					rate.cm.reset()
 +					pendCeil, pendCeilTicks = 0, 0
 +				}
 +			} else if pendCeil != 0 {
@@ -10139,7 +10219,7 @@ index 0000000..68763c0
 +			// Longest HOLD = the longest unbroken run of ticks during which a wall was remembered.
 +			// Not the same as the post-cut probe hold (abrCongHoldTicks); this measures how long the
 +			// room's behaviour was actually shaped by congestion memory.
-+			if congKbps > 0 {
++			if rate.cm.wall > 0 {
 +				congRun++
 +				if congRun > congMaxHold {
 +					congMaxHold = congRun
@@ -10155,10 +10235,13 @@ index 0000000..68763c0
 +			// layer fits) — set to what base layer alone would need.
 +			worstServable, roomCap, peers := 0, 0, 0
 +			// bindingPeer: whichever peer's estimate ended up SETTING worstServable this tick — i.e.
-+			// the one actually constraining the room. Summary only; it feeds `sustained`, so that a
-+			// peer is credited with a rate only while it was the constraint, never while somebody
-+			// else was holding the room down.
++			// the one actually constraining the room. It feeds `sustained`, so that a peer is credited
++			// with a rate only while it was the constraint, never while somebody else was holding the
++			// room down; and under congestion memory v2 it is the peer a minted wall is attributed to.
 +			var bindingPeer svcPeer
++			// capPeer: the starved peer whose base-layer need set roomCap (the wall's attribution when
++			// the starve path, not the backoff path, produced the cut).
++			var capPeer svcPeer
 +			// How many of the estimating peers are on the worker's own host, and how many have a link
 +			// fast enough to skip the creep (same-host, or a sustained low RTT). See the fast path below.
 +			sameHostPeers, fastPeers := 0, 0
@@ -10186,6 +10269,7 @@ index 0000000..68763c0
 +					continue
 +				}
 +				peers++
++				estTicks[p]++
 +				sameHost := p.SameHostLink()
 +				if sameHost {
 +					sameHostPeers++
@@ -10319,6 +10403,7 @@ index 0000000..68763c0
 +					need := est * 100 / share[0]
 +					if roomCap == 0 || need < roomCap {
 +						roomCap = need
++						capPeer = p
 +					}
 +					continue
 +				}
@@ -10357,7 +10442,6 @@ index 0000000..68763c0
 +				}
 +			}
 +
-+			next := cur
 +			// SAME-HOST ROOMS DO NOT ADAPT. When every estimating peer is this machine, the media never
 +			// crosses a network — loopback or our own NIC — so GCC is not measuring a link, it is
 +			// measuring our own encoder and CPU. Feeding that back into a bandwidth decision is what
@@ -10368,97 +10452,61 @@ index 0000000..68763c0
 +			// saturate, and its estimate is meaningful. RTT classification stays observability only (the
 +			// `fast` count in the log line) until there is a design that earns more.
 +			sameHostRoom := peers > 0 && sameHostPeers == peers
-+			switch {
-+			case sameHostRoom:
-+				lowTicks = 0
-+				next = ceilKbps
-+			case worstServable > 0 && worstServable*100 < cur*abrBackoffPct:
-+				lowTicks++
-+				if lowTicks >= 2 { // confirmed congestion
-+					next = worstServable
-+				}
-+			case worstServable > 0 && worstServable*100 >= cur*abrHealthyPct && cur < ceilKbps:
-+				lowTicks = 0
-+				step := max(abrMinStepKbps, cur*abrRampPct/100) // healthy: probe upward
-+				// FAST-LINK PATH. The opener is deliberately conservative (min(6000, ceiling*60%)) and
-+				// then creeps +15%/tick, which is right when an opening burst can overrun a radio queue.
-+				// It is pure waste when the player IS this machine: measured on Ziggy, every room crept
-+				// 6000 -> 6900 -> 7935 -> 9125 -> 10493 -> 12066 -> 13875 -> 15956 over ~35s with `cong 0`
-+				// and `starved-cap 0` the entire way — nothing was ever congested, and every new room paid
-+				// it again. Eric's report was "it looked like a low quality stream repeatedly", which is
-+				// exactly what 35 seconds of ramp looks like on a link that was never the constraint.
-+				//
-+				// So: when EVERY estimating peer is same-host and we hold no congestion memory, go to the
-+				// ceiling in one step. Same-host has no queue to overrun, and the guards all still apply —
-+				// this only replaces the size of an upward probe. If the estimate later disagrees, the
-+				// two-tick backoff, the 70% cut clamp and congestion memory handle it exactly as before,
-+				// and once a wall is remembered (congKbps > 0) this path switches itself off.
-+				//
-+				// Deliberately NOT applied to the opener: at startRoomAbr no peer has connected yet, so
-+				// there is no candidate pair to classify. One tick of ramp is the cost of measuring.
-+				// ACTIVATED 2026-07-30 against measured hardware, having shipped inert for one session
-+				// while the bitrate work was in flight (two behaviour changes competing for blame is how
-+				// you learn nothing from a test). Confirming numbers, same LAN, same game:
-+				//   wired PC  mean 0.90ms sd 0.48  -> qualifies, and spent 15s creeping 6000 -> 19328
-+				//   tablet    mean 3.86ms sd 1.50  -> excluded, best single sample 1.59ms
-+				// NOTE: there is deliberately NO "fast link" step multiplier here. Two attempts failed
-+				// for the same measured reason (2026-07-30): the +15%/tick creep is not a conservative
-+				// choice, it is approximately GCC'S OWN MAXIMUM TRACKING RATE. The estimate can only rise
-+				// as we send more, so ANY larger step is judged against an estimate taken at the old rate
-+				// and reads as congestion:
-+				//   leap 6000 -> 19328 : servable 6861 -> cut to 13529 two ticks later, then a 250/tick crawl
-+				//   double 6000 -> 12000: servable 6805 -> cut to 8400 two ticks later, same crawl
-+				// Both left the room WORSE than the creep. A faster ramp cannot come from a bigger step;
-+				// it can only come from not consulting the estimator at all, which is defensible in
-+				// exactly one case — see the same-host branch above the switch.
-+				if congKbps > 0 {
-+					// Holding at/above the remembered wall and still healthy: count toward forgetting
-+					// it. Enough proof and probing goes back to full speed.
-+					if cur >= congKbps {
-+						congClear++
-+						if congClear >= abrCongClearTicks {
-+							congKbps, congClear = 0, 0
-+						}
-+					} else {
-+						congClear = 0
-+					}
-+					// Approaching (or passing) a wall we still remember: creep, don't leap. An
-+					// abrMinStepKbps overshoot starves gently and reconfirms the wall; a 15% leap
-+					// re-creates the crash we remember.
-+					if congKbps > 0 && cur+step >= congKbps*abrCongProbePct/100 {
-+						// Fresh off a cut that confirmed this wall: don't probe into it at all yet.
-+						// Hold the settled rate — flat bitrate is exactly what plays smoothly.
-+						if congHold > 0 {
-+							congHold--
-+							step = 0
-+						} else {
-+							step = abrMinStepKbps
-+						}
++			// FAST-LINK PATH (history; the healthy branch lives in abrRate.decide). The opener is
++			// deliberately conservative (min(6000, ceiling*60%)) and then creeps +15%/tick, which is right
++			// when an opening burst can overrun a radio queue. It is pure waste when the player IS this
++			// machine: measured on Ziggy, every room crept 6000 -> 6900 -> 7935 -> 9125 -> 10493 -> 12066 ->
++			// 13875 -> 15956 over ~35s with `cong 0` and `starved-cap 0` the entire way — nothing was ever
++			// congested, and every new room paid it again. That is what the same-host branch fixes.
++			// ACTIVATED 2026-07-30 against measured hardware. Confirming numbers, same LAN, same game:
++			//   wired PC  mean 0.90ms sd 0.48  -> qualifies, and spent 15s creeping 6000 -> 19328
++			//   tablet    mean 3.86ms sd 1.50  -> excluded, best single sample 1.59ms
++			// NOTE: there is deliberately NO "fast link" step multiplier. Two attempts failed for the same
++			// measured reason (2026-07-30): the +15%/tick creep is not a conservative choice, it is
++			// approximately GCC'S OWN MAXIMUM TRACKING RATE. The estimate can only rise as we send more, so
++			// ANY larger step is judged against an estimate taken at the old rate and reads as congestion:
++			//   leap 6000 -> 19328 : servable 6861 -> cut to 13529 two ticks later, then a 250/tick crawl
++			//   double 6000 -> 12000: servable 6805 -> cut to 8400 two ticks later, same crawl
++			// Both left the room WORSE than the creep. A faster ramp cannot come from a bigger step; it can
++			// only come from not consulting the estimator at all, which is defensible in exactly one case —
++			// the same-host branch.
++			in := abrTickIn{
++				cur: cur, ceil: ceilKbps, floor: floor,
++				servable: worstServable, roomCap: roomCap, sameHostRoom: sameHostRoom,
++				bindingGrace: bindingPeer != nil && estTicks[bindingPeer] <= abrCongLearnGraceTicks,
++				capGrace:     capPeer != nil && estTicks[capPeer] <= abrCongLearnGraceTicks,
++			}
++			// Interface-typed nils must stay plain nil in `any`, or the wall would record a typed nil.
++			if bindingPeer != nil {
++				in.binding = bindingPeer
++			}
++			if capPeer != nil {
++				in.capPeer = capPeer
++			}
++			// Is the peer that minted the wall still here? (v2 clears the wall when it leaves: one weak
++			// viewer departing must not leave the room creeping under a wall nobody has.)
++			if w := rate.cm.peer; w != nil {
++				for u := range r.Users().Values() {
++					if p, ok := u.Session.(svcPeer); ok && any(p) == w {
++						in.minterPresent = true
++						break
 +					}
 +				}
-+				next = cur + step
-+			default:
-+				lowTicks = 0
 +			}
-+			// A starved peer's base-layer requirement is a hard ceiling on the room.
-+			if roomCap > 0 {
-+				next = min(next, roomCap)
++			wallBefore := rate.cm.wall
++			out := rate.decide(in)
++			if out.forgot != "" {
++				log.Info().Msgf("abr: wall %d forgotten (%s; servable %d, cur %d)", wallBefore, out.forgot, worstServable, cur)
 +			}
-+			// Descend by steps, never off a cliff: successive ticks compound (3 ticks reach ~34% of
-+			// where we started), so real congestion is still met quickly, while a single bad reading
-+			// costs one 30% rung instead of the whole room. The floor still applies underneath.
-+			if next < cur {
-+				next = max(next, cur*abrMaxCutPct/100)
-+			}
-+			next = min(max(next, floor), ceilKbps)
-+
-+			if next == cur || abs(next-cur) < abrMinStepKbps {
++			next := out.next
++			if next == cur {
 +				continue
 +			}
 +			// Any confirmed cut marks where it hurt: the rate we are leaving was too high for the
-+			// link. Both the backoff and starve-cap paths funnel through here. The hold starts now —
-+			// the wall was just (re)confirmed, so probing into it again immediately is pointless.
-+			if next < cur {
++			// link. Both the backoff and starve-cap paths funnel through abrRate.decide, which updated
++			// the congestion memory and the descent counters; what is left here is the summary split.
++			cutInfo := ""
++			if out.cut {
 +				// Summary: a CONFIRMED cut, split on whether the room had reached its ceiling yet.
 +				// cutsRamp is the probe finding the wall on the way up; cutsSteady is the room losing
 +				// ground it had already held, which is the one that indicates a real problem.
@@ -10467,20 +10515,23 @@ index 0000000..68763c0
 +				} else {
 +					cutsRamp++
 +				}
-+				// A new congestion EPISODE is a transition from "no wall remembered" to a wall. A cut
-+				// that re-confirms a wall we already remember extends the episode, it does not start
-+				// a new one.
-+				if congKbps == 0 {
-+					congEpisodes++
++				// avgLoss tells a loss-driven crater (the link) from a delay-driven overshoot (us):
++				// est/0.85 is a capacity read only for the latter. -1 = no estimator stats.
++				avgLoss := -1.0
++				if lp, ok := out.minter.(interface{ AverageLoss() float64 }); ok {
++					avgLoss = lp.AverageLoss()
 +				}
-+				congKbps, congClear, congHold = cur, 0, abrCongHoldTicks
++				cutInfo = fmt.Sprintf(" target=%d over=%d avgLoss=%.3f mem=%s", out.target, out.over, avgLoss, out.act)
 +			}
 +			if err := m.SetVideoBitrate(next); err != nil {
 +				log.Warn().Err(err).Msgf("abr: failed to set %d kbps", next)
 +				continue
 +			}
-+			log.Info().Msgf("abr: %d -> %d kbps (servable %d, starved-cap %d, ceiling %d, peers %d, samehost %d, fast %d, cong %d)",
-+				cur, next, worstServable, roomCap, ceilKbps, peers, sameHostPeers, fastPeers, congKbps)
++			// `cong N` is the remembered wall after this tick (v1 and v2 alike); `hold` the probe-hold
++			// ticks left; on a cut, `mem=` says what the cut did to it (v1 | mint | keep-fade |
++			// keep-crater | grace | ceiling).
++			log.Info().Msgf("abr: %d -> %d kbps (servable %d, starved-cap %d, ceiling %d, peers %d, samehost %d, fast %d, cong %d) hold=%d%s",
++				cur, next, worstServable, roomCap, ceilKbps, peers, sameHostPeers, fastPeers, rate.cm.wall, rate.cm.hold, cutInfo)
 +			cur = next
 +		}
 +	}()
@@ -10491,6 +10542,956 @@ index 0000000..68763c0
 +		return -n
 +	}
 +	return n
++}
++
++// ── Congestion memory ─────────────────────────────────────────────────────────────────────────────────
++//
++// congMemory is the room's remembered wall, extracted from the tick loop so both generations can be
++// unit-tested and replayed against a real trace (abr_sim_test.go). The tick loop owns it; no locking.
++//
++// v1 (CLOUD_GAME_ABR_CONG_V2=0, the pre-2026-10-03 behaviour, kept bit-for-bit): every confirmed cut
++// sets wall = the rate cut FROM; inside abrCongProbePct of it the healthy branch holds abrCongHoldTicks
++// then creeps abrMinStepKbps; abrCongClearTicks healthy ticks at/above it forget it.
++//
++// v2 (default):
++//  1. A confirmed cut whose pre-clamp target is below cur:
++//     - no wall, or the room was PROBING the wall — sending at/above it, or creeping in the probe zone
++//     (>= abrCongProbePct of it) after the hold ran out — so the estimate re-measures it:
++//     w = clamp(target*100/abrCongBetaPct, cur*abrCongMinWallPct/100, cur). If the 50% floor bound AND
++//     a wall exists, the read is a crater: KEEP the old wall. Otherwise wall = max(w, floor) and the
++//     peer that produced the target is recorded.
++//     - below the zone (a fade, the staircase under a known wall), or parked in the hold below the
++//     wall: keep the wall.
++//     - either way the probe hold restarts. A peer in its first abrCongLearnGraceTicks never mints.
++//  2. A healthy tick: below the probe zone +15% (unchanged); in the zone hold, then creep; ABOVE the
++//     wall (reachable after a 70%-clamped cut leaves cur over a freshly minted wall — v1 could never be
++//     there) the same hold-then-creep. No forgetting by tick count: the wall is forgotten only when the
++//     creep has carried the room to abrCongExitPct of it with no confirmed cut.
++//  3. Clear: a ceiling commit (the loop calls reset), or the peer that minted the wall left the room.
++type congMemory struct {
++	v2 bool
++
++	wall  int // remembered wall in room kbps; 0 = none
++	hold  int // remaining probe-hold ticks
++	clear int // v1 only: consecutive healthy ticks at/above the wall
++	peer  any // v2 only: identity of the peer whose estimate minted the wall (nil = none recorded)
++
++	// Summary counters (observability only).
++	episodes int // 0 -> wall transitions (v1's congEpisodes meaning; under v2 a wall BIRTH)
++	mints    int // walls minted, re-mints included (v1: every cut sets the wall, so every cut counts)
++	forgets  int // v2: walls dropped by the climb exit
++	departs  int // v2: walls dropped because the minting peer left
++}
++
++// reset clears the wall and everything about it (a ceiling commit: the wall was learned against a
++// different frame size, so it no longer describes this room). Counters are kept.
++func (c *congMemory) reset() {
++	c.wall, c.hold, c.clear, c.peer = 0, 0, 0, nil
++}
++
++// observe runs once per tick that has estimating peers, BEFORE the rate decision. v2 only: drops the
++// wall when the minting peer is gone, or when the room's own creep has proven it stale (cur at
++// abrCongExitPct of it — every tick getting there was a tick without a confirmed cut, since a cut at or
++// above the wall re-mints it). Returns "departed"/"exit" when it forgot the wall, "" otherwise.
++func (c *congMemory) observe(cur int, minterPresent bool) string {
++	if !c.v2 || c.wall == 0 {
++		return ""
++	}
++	if c.peer != nil && !minterPresent {
++		c.reset()
++		c.departs++
++		return "departed"
++	}
++	if cur*100 >= c.wall*abrCongExitPct {
++		c.reset()
++		c.forgets++
++		return "exit"
++	}
++	return ""
++}
++
++// healthyStep adjusts the healthy branch's upward step for the remembered wall.
++func (c *congMemory) healthyStep(cur, step int) int {
++	if !c.v2 {
++		// v1, verbatim.
++		if c.wall > 0 {
++			// Holding at/above the remembered wall and still healthy: count toward forgetting
++			// it. Enough proof and probing goes back to full speed.
++			if cur >= c.wall {
++				c.clear++
++				if c.clear >= abrCongClearTicks {
++					c.wall, c.clear = 0, 0
++				}
++			} else {
++				c.clear = 0
++			}
++			// Approaching (or passing) a wall we still remember: creep, don't leap. An
++			// abrMinStepKbps overshoot starves gently and reconfirms the wall; a 15% leap
++			// re-creates the crash we remember.
++			if c.wall > 0 && cur+step >= c.wall*abrCongProbePct/100 {
++				// Fresh off a cut that confirmed this wall: don't probe into it at all yet.
++				// Hold the settled rate — flat bitrate is exactly what plays smoothly.
++				if c.hold > 0 {
++					c.hold--
++					step = 0
++				} else {
++					step = abrMinStepKbps
++				}
++			}
++		}
++		return step
++	}
++	// v2: the zone test is v1's (it already covers "above the wall"); only the forgetting moved out.
++	if c.wall > 0 && cur+step >= c.wall*abrCongProbePct/100 {
++		if c.hold > 0 {
++			c.hold--
++			return 0
++		}
++		return abrMinStepKbps
++	}
++	return step
++}
++
++// onCut records a confirmed cut from cur. target is the pre-clamp target (the binding servable, or a
++// starved peer's roomCap), minter the peer that produced it, grace whether that peer is still in its
++// first abrCongLearnGraceTicks. Returns what happened to the wall, for the log line.
++func (c *congMemory) onCut(cur, target, floor int, minter any, grace bool) string {
++	if !c.v2 {
++		if c.wall == 0 {
++			c.episodes++
++		}
++		c.mints++
++		c.wall, c.clear, c.hold = cur, 0, abrCongHoldTicks
++		return "v1"
++	}
++	if target >= cur {
++		// Not a congestion cut: the rate fell only because the ceiling narrowed (a geometry commit
++		// below cur). Nothing about the link was learned. (v1 minted a wall at cur here.)
++		return "ceiling"
++	}
++	held := c.hold > 0 // the hold the cut lands in (it restarts below either way)
++	c.hold = abrCongHoldTicks
++	if grace {
++		return "grace"
++	}
++	// Re-measure only when we were PROBING the wall: sending at/above it (a staircase that started above
++	// a freshly minted wall, 17392 over 12423 — the second read, 13435, is as good as the first), or
++	// creeping inside the probe zone after the hold ran out. A room parked in the hold below the wall is
++	// not probing, so a collapse there is the link moving, not a measurement: 34MB5J sat at 12174 (90.6%
++	// of 13435) in the hold when GCC read 6899, and minting from that read would have dropped the wall
++	// to 8116 on a ~13 Mbps link.
++	if c.wall > 0 && cur < c.wall && (held || cur*100 < c.wall*abrCongProbePct) {
++		return "keep-fade"
++	}
++	lo := cur * abrCongMinWallPct / 100
++	w := target * 100 / abrCongBetaPct
++	if w <= lo {
++		if c.wall > 0 {
++			return "keep-crater"
++		}
++		w = lo
++	}
++	w = max(min(w, cur), floor)
++	if c.wall == 0 {
++		c.episodes++
++	}
++	c.mints++
++	c.wall, c.peer = w, minter
++	return "mint"
++}
++
++// isCrater reports whether a cut's read is a crater (estimate/beta at or under the 50% floor) rather
++// than a capacity measurement — the same test onCut applies.
++func isCrater(cur, target int) bool {
++	return target*100/abrCongBetaPct <= cur*abrCongMinWallPct/100
++}
++
++// descentStat tracks DESCENTS — runs of confirmed cuts with no up-step between them — for the summary.
++// Observability only, identical under v1 and v2 so the two can be compared on one metric.
++type descentStat struct {
++	in         bool
++	start, low int
++	descents   int
++	hard       int
++	craters    int // descents whose FIRST cut read a crater (excluded from the overshoot figures)
++	overFirst  int // overshoot (cur - target/beta) at the first cut of the room's first descent; -1 = none
++	overMax    int // max overshoot at the first cut of every LATER non-crater descent; -1 = none
++	firstDone  bool
++}
++
++func newDescentStat() descentStat { return descentStat{overFirst: -1, overMax: -1} }
++
++// cut records a cut cur -> next with pre-clamp target; returns the overshoot it measured (-1 when the
++// cut is not the first of a descent, or reads a crater).
++func (d *descentStat) cut(cur, next, target int) int {
++	over := -1
++	if !d.in {
++		d.in, d.start = true, cur
++		if isCrater(cur, target) {
++			d.craters++
++		} else {
++			over = cur - target*100/abrCongBetaPct
++			if !d.firstDone {
++				d.overFirst = over
++			} else if over > d.overMax {
++				d.overMax = over
++			}
++		}
++		d.firstDone = true
++	}
++	d.low = next
++	return over
++}
++
++// up closes an open descent (on an up-step, and at room close).
++func (d *descentStat) up() {
++	if !d.in {
++		return
++	}
++	d.in = false
++	d.descents++
++	if (d.start-d.low)*100 > d.start*abrHardDescentPct {
++		d.hard++
++	}
++}
++
++// abrRate is the room-rate decision for one tick: the switch the loop used to carry inline, plus the
++// congestion memory and the descent counters. Pure (no I/O), so the trace replay drives exactly the code
++// the loop runs.
++type abrRate struct {
++	lowTicks int
++	cm       congMemory
++	ds       descentStat
++}
++
++// abrTickIn is everything one tick's rate decision reads.
++type abrTickIn struct {
++	cur, ceil, floor  int
++	servable, roomCap int
++	sameHostRoom      bool
++	// Who produced servable (binding) and roomCap (capPeer), whether each is still in its learning
++	// grace, and whether the peer that minted the current wall is still in the room.
++	binding, capPeer       any
++	bindingGrace, capGrace bool
++	minterPresent          bool
++}
++
++// abrTickOut is the decision. next == cur means "no change this tick" (the caller logs nothing).
++type abrTickOut struct {
++	next, target int
++	cut          bool
++	act          string // onCut's verdict on a cut
++	forgot       string // observe's verdict ("exit"/"departed") when the wall was dropped this tick
++	over         int    // overshoot measured at the first cut of a descent, else -1
++	minter       any    // the peer the cut was attributed to
++}
++
++func (a *abrRate) decide(in abrTickIn) abrTickOut {
++	out := abrTickOut{over: -1}
++	out.forgot = a.cm.observe(in.cur, in.minterPresent)
++	cur := in.cur
++	next := cur
++	switch {
++	case in.sameHostRoom:
++		// SAME-HOST ROOMS DO NOT ADAPT — see the loop.
++		a.lowTicks = 0
++		next = in.ceil
++	case in.servable > 0 && in.servable*100 < cur*abrBackoffPct:
++		a.lowTicks++
++		if a.lowTicks >= 2 { // confirmed congestion
++			next = in.servable
++		}
++	case in.servable > 0 && in.servable*100 >= cur*abrHealthyPct && cur < in.ceil:
++		a.lowTicks = 0
++		// Healthy: probe upward. +15%/tick is GCC's own tracking rate — see the loop's FAST-LINK note
++		// for the two failed attempts at anything bigger.
++		step := max(abrMinStepKbps, cur*abrRampPct/100)
++		next = cur + a.cm.healthyStep(cur, step)
++	default:
++		a.lowTicks = 0
++	}
++	// A starved peer's base-layer requirement is a hard ceiling on the room.
++	minter, grace := in.binding, in.bindingGrace
++	if in.roomCap > 0 && in.roomCap < next {
++		next = in.roomCap
++		minter, grace = in.capPeer, in.capGrace
++	}
++	out.target = next
++	// Descend by steps, never off a cliff: successive ticks compound (3 ticks reach ~34% of where we
++	// started), so real congestion is still met quickly, while a single bad reading costs one 30% rung
++	// instead of the whole room. The floor still applies underneath.
++	if next < cur {
++		next = max(next, cur*abrMaxCutPct/100)
++	}
++	next = min(max(next, in.floor), in.ceil)
++	if next == cur || abs(next-cur) < abrMinStepKbps {
++		out.next = cur
++		return out
++	}
++	out.next = next
++	if next < cur {
++		// Any confirmed cut marks where it hurt. Both the backoff and starve-cap paths funnel here.
++		out.cut, out.minter = true, minter
++		out.over = a.ds.cut(cur, next, out.target)
++		out.act = a.cm.onCut(cur, out.target, in.floor, minter, grace)
++	} else {
++		a.ds.up()
++	}
++	return out
++}
+diff --git a/pkg/worker/abr_sim_test.go b/pkg/worker/abr_sim_test.go
+new file mode 100644
+index 0000000..06dbcef
+--- /dev/null
++++ b/pkg/worker/abr_sim_test.go
+@@ -0,0 +1,648 @@
++package worker
++
++import (
++	"fmt"
++	"math"
++	"math/rand"
++	"sort"
++	"testing"
++)
++
++// ── Congestion memory v2: trace replay, rule tests, kill-switch parity, offline simulator ──────────────
++//
++// Run: go test ./pkg/worker -run Cong -v
++
++// ---------------------------------------------------------------------------------------------------
++// The 34MB5J trace (worker 2, 2026-10-03, a phone on external Wi-Fi, Sonic 2, Auto). Every per-tick
++// `abr: CUR -> NEXT kbps (servable S, …)` line from 17:58:18 to 18:01:16. The room opened at 17:58:17.55
++// with a warm start of 7065 against a 26507 ceiling; the ceiling committed to 38657 at 17:58:22 (that
++// commit resets congestion memory — harmless, nothing was remembered yet); the room closed after tick
++// 179 (18:01:17). Columns: ABR tick number (= seconds after 17:58:17), logged cur, logged next, logged
++// servable. Five PLIs landed at 18:00:43, :46, :52, :58 and 18:01:05 (ticks 146, 149, 155, 161, 168).
++var trace34MB5J = []struct{ tick, cur, next, servable int }{
++	{1, 7065, 8124, 7967}, {2, 8124, 9342, 8650}, {3, 9342, 10743, 9294}, {5, 10743, 12354, 10787},
++	{7, 12354, 14207, 12557}, {9, 14207, 16338, 14656}, {10, 16338, 18788, 15661}, {12, 18788, 21606, 18219},
++	{14, 21606, 24846, 21472}, {16, 24846, 17392, 10558}, {17, 17392, 12174, 11420}, {18, 12174, 14000, 12244},
++	{20, 14000, 9800, 6899}, {21, 9800, 6904, 6904}, {22, 6904, 7939, 6976}, {27, 7939, 5557, 1095},
++	{28, 5557, 3889, 1398}, {29, 3889, 2722, 1699}, {30, 2722, 2169, 2169}, {45, 2169, 2419, 2251},
++	{46, 2419, 2669, 2318}, {50, 2669, 2919, 2598}, {52, 2919, 3169, 2808}, {54, 3169, 3419, 3162},
++	{55, 3419, 3931, 3416}, {57, 3931, 4520, 3959}, {58, 4520, 5198, 4298}, {60, 5198, 5977, 5043},
++	{62, 5977, 6873, 5842}, {64, 6873, 7903, 6772}, {66, 7903, 9088, 7940}, {67, 9088, 10451, 9355},
++	{76, 10451, 12018, 9982}, {78, 12018, 10117, 10117}, {86, 10117, 7081, 4366}, {87, 7081, 4956, 4579},
++	{89, 4956, 5699, 4735}, {107, 5699, 5949, 6163}, {108, 5949, 6199, 6163}, {109, 6199, 6449, 6757},
++	{110, 6449, 6699, 7693}, {111, 6699, 6949, 6492}, {112, 6949, 7199, 6723}, {113, 7199, 7449, 7133},
++	{115, 7449, 7699, 7077}, {116, 7699, 8853, 7549}, {118, 8853, 10180, 8751}, {120, 10180, 11707, 10125},
++	{122, 11707, 13463, 11732}, {124, 13463, 11161, 11161}, {142, 11161, 11411, 12167}, {143, 11411, 11661, 12360},
++	{144, 11661, 11911, 12659}, {146, 11911, 12161, 12545}, {147, 12161, 12411, 14131}, {149, 12411, 12661, 12848},
++	{150, 12661, 12911, 15279}, {151, 12911, 13161, 15370}, {152, 13161, 13411, 15670}, {153, 13411, 13661, 16205},
++	{154, 13661, 13911, 16292}, {156, 13911, 14161, 15000}, {157, 14161, 16285, 16119}, {158, 16285, 18727, 17285},
++	{162, 18727, 13108, 12187}, {163, 13108, 15074, 14814}, {174, 15074, 10551, 3938}, {175, 10551, 7385, 3882},
++	{176, 7385, 5169, 4543}, {179, 5169, 3618, 2408},
++}
++
++const (
++	traceLastTick   = 179
++	traceCeilCommit = 5 // 17:58:22: 26507 -> 38657
++)
++
++// traceTick converts a 17:58:17-relative clock "hh:mm:ss" to the tick number.
++func traceTick(clock string) int {
++	var h, m, s int
++	fmt.Sscanf(clock, "%d:%d:%d", &h, &m, &s)
++	return h*3600 + m*60 + s - (17*3600 + 58*60 + 17)
++}
++
++func traceClock(tick int) string {
++	s := 17*3600 + 58*60 + 17 + tick
++	return fmt.Sprintf("%02d:%02d:%02d", s/3600, s/60%60, s%60)
++}
++
++type replayTick struct {
++	tick, cur, next, wall, servable int
++	act, forgot                     string
++}
++
++// replay34MB5J drives abrRate.decide — the exact code the loop runs — through the trace, as a solo room
++// with one peer and no starve cap.
++//
++// What each tick feeds as the servable (the choice that makes replaying a log possible, stated plainly):
++//   - A LOGGED tick feeds the logged servable, as an absolute number, whatever rate the replay is at.
++//   - A SILENT tick (no line: nothing changed) immediately before a logged CUT feeds that cut's servable.
++//     The loop logs nothing on the first low tick of the two-tick confirmation (lowTicks=1), so that
++//     silent tick WAS low; feeding it anything else would make every logged cut unconfirmable.
++//   - Every other SILENT tick feeds 90% of the replay's OWN current rate: the 85–95% dead band, the
++//     branch in which the loop changes nothing. Never interpolated between logged ticks — that invents
++//     estimates the link never reported. Side effect: a silent tick never counts the probe hold down
++//     (only healthy ticks do), so the replay holds somewhat longer than the live room did.
++//
++// Limitation: the servables are what GCC reported while v1 sent v1's rates. When v2 sends something else
++// the replay still feeds v1's readings — including collapses v1's own overshoots caused (17:58:37's 6899
++// followed v1's 12174 -> 14000 bump, which v2 does not make). The simulator below is the causal model.
++func replay34MB5J(v2 bool) ([]replayTick, descentStat) {
++	logged := map[int]int{}
++	cutAt := map[int]bool{}
++	for _, l := range trace34MB5J {
++		logged[l.tick] = l.servable
++		if l.next < l.cur {
++			cutAt[l.tick] = true
++		}
++	}
++	a := abrRate{cm: congMemory{v2: v2}, ds: newDescentStat()}
++	cur, ceil, floor := 7065, 26507, 1500
++	var out []replayTick
++	for tick := 1; tick <= traceLastTick; tick++ {
++		if tick == traceCeilCommit {
++			ceil = 38657
++			a.cm.reset() // the loop's ceiling-commit reset
++		}
++		servable, ok := logged[tick]
++		if !ok {
++			if cutAt[tick+1] {
++				servable = logged[tick+1]
++			} else {
++				servable = cur * 90 / 100
++			}
++		}
++		o := a.decide(abrTickIn{
++			cur: cur, ceil: ceil, floor: floor, servable: servable,
++			binding: "phone", bindingGrace: tick <= abrCongLearnGraceTicks, minterPresent: true,
++		})
++		out = append(out, replayTick{tick: tick, cur: cur, next: o.next, wall: a.cm.wall, servable: servable,
++			act: o.act, forgot: o.forgot})
++		cur = o.next
++	}
++	a.ds.up()
++	return out, a.ds
++}
++
++// loggedDescents runs the descent counter over the ACTUAL logged trajectory (v1, live): the honest
++// baseline, since the v1 replay diverges from the log as soon as its rate does.
++func loggedDescents() descentStat {
++	ds := newDescentStat()
++	for _, l := range trace34MB5J {
++		switch {
++		case l.next < l.cur:
++			ds.cut(l.cur, l.next, l.servable)
++		case l.next > l.cur:
++			ds.up()
++		}
++	}
++	ds.up()
++	return ds
++}
++
++// collisionHard counts hard descents whose FIRST cut was a measurement (not a crater) — the descents a
++// rate rule can prevent. A crater (estimate/beta under half of what we sent) is the link dropping out.
++func collisionHard(ticks []replayTick) (hard int, starts []string) {
++	in, start, crater := false, 0, false
++	closeD := func(low int) {
++		if in && !crater && (start-low)*100 > start*abrHardDescentPct {
++			hard++
++		}
++		in = false
++	}
++	low := 0
++	for _, r := range ticks {
++		switch {
++		case r.next < r.cur:
++			if !in {
++				in, start, crater = true, r.cur, isCrater(r.cur, r.servable)
++				starts = append(starts, fmt.Sprintf("%s(%d->,%s)", traceClock(r.tick), r.cur,
++					map[bool]string{true: "crater", false: "collision"}[crater]))
++			}
++			low = r.next
++		case r.next > r.cur:
++			closeD(low)
++		}
++	}
++	closeD(low)
++	return
++}
++
++func TestCongReplay34MB5J(t *testing.T) {
++	v1, ds1 := replay34MB5J(false)
++	v2, ds2 := replay34MB5J(true)
++	live := loggedDescents()
++
++	for _, r := range v2 {
++		if r.next != r.cur || r.forgot != "" {
++			t.Logf("v2 %s t%-3d %6d -> %6d servable %6d wall %6d %s%s", traceClock(r.tick), r.tick, r.cur, r.next,
++				r.servable, r.wall, r.act, r.forgot)
++		}
++	}
++	h1, s1 := collisionHard(v1)
++	h2, s2 := collisionHard(v2)
++	t.Logf("live log (v1): descents=%d hard=%d craters=%d overFirst=%d overMax=%d", live.descents, live.hard,
++		live.craters, live.overFirst, live.overMax)
++	t.Logf("v1 replay:     descents=%d hard=%d craters=%d overFirst=%d overMax=%d collisionHard=%d %v",
++		ds1.descents, ds1.hard, ds1.craters, ds1.overFirst, ds1.overMax, h1, s1)
++	t.Logf("v2 replay:     descents=%d hard=%d craters=%d overFirst=%d overMax=%d collisionHard=%d %v",
++		ds2.descents, ds2.hard, ds2.craters, ds2.overFirst, ds2.overMax, h2, s2)
++
++	from, end := traceTick("17:58:33"), traceLastTick
++	// 1. The episode-1 wall (12423 at the first cut, 13435 at the second) survives the rest of the room:
++	//    the crater at 17:58:44 (1095 read while sending 7939) and the fades never drag it down.
++	for _, r := range v2 {
++		if r.tick >= from && r.tick <= end && r.wall < 12000 {
++			t.Fatalf("v2 wall %d < 12000 at %s (tick %d, %s)", r.wall, traceClock(r.tick), r.tick, r.act)
++		}
++	}
++	// 2. Inside episode 1's descent (17:58:33–17:58:47) nothing probes back INTO the wall — v1's
++	//    12174 -> 14000 bump at 17:58:35 is held. (Recovery steps far below the probe zone stay full-speed
++	//    by design: the replay feeds v1's 17:58:37 collapse even though v2 never made the bump that caused
++	//    it, and v2 then recovers 6904 -> 7939 at 17:58:39 exactly as v1 did.)
++	for _, r := range v2 {
++		if r.tick >= from && r.tick <= traceTick("17:58:47") && r.next > r.cur && r.next*100 >= r.wall*abrCongProbePct {
++			t.Fatalf("v2 probed into the wall during the descent: %s %d -> %d (wall %d)", traceClock(r.tick), r.cur, r.next, r.wall)
++		}
++	}
++	if r := v2[traceTick("17:58:35")-1]; r.next != r.cur {
++		t.Fatalf("v2 moved at 17:58:35 (%d -> %d); the bump must be held", r.cur, r.next)
++	}
++	// 3. Between 17:59:12 and 18:00:21 (v1 forgot its 2722 wall and +15%-leapt into collisions at 17:59:35
++	//    and 18:00:21) no step lands above wall - 250.
++	for _, r := range v2 {
++		if r.tick >= traceTick("17:59:12") && r.tick <= traceTick("18:00:21") && r.next > r.cur && r.next > r.wall-abrMinStepKbps {
++			t.Fatalf("v2 stepped above wall-250 at %s: %d -> %d (wall %d)", traceClock(r.tick), r.cur, r.next, r.wall)
++		}
++	}
++	// v2 makes neither of v1's later collisions (no cut at 17:59:35 or 18:00:21).
++	for _, c := range []string{"17:59:35", "18:00:21"} {
++		if r := v2[traceTick(c)-1]; r.next < r.cur {
++			t.Fatalf("v2 cut at %s (%d -> %d) — v1's collision", c, r.cur, r.next)
++		}
++	}
++	// 4. At most one COLLISION hard descent after the first (the ramp). Crater descents are the link
++	//    dropping out — the replay feeds them as absolute numbers at whatever rate v2 is at, and no rate
++	//    rule can prevent them — so they are reported above, not gated.
++	if h2 > 2 {
++		t.Fatalf("v2 collision hard descents = %d (%v), want <= 2 (the ramp + at most one)", h2, s2)
++	}
++	if h2 > h1 {
++		t.Fatalf("v2 collision hard descents %d > v1 %d", h2, h1)
++	}
++	// 5. Max overshoot at the first cut of every later non-crater descent ≤ 1000 kbps.
++	if ds2.overMax > 1000 {
++		t.Fatalf("v2 overshoot after the first descent = %d kbps, want <= 1000", ds2.overMax)
++	}
++}
++
++// ---------------------------------------------------------------------------------------------------
++// Rule tests.
++
++func v2Mem() congMemory { return congMemory{v2: true} }
++
++// The 17:58:44 crater: a wall exists, we were probing it, and GCC reads a fraction of what we sent with
++// no overshoot to explain it. The read lands on the 50% floor => KEEP the wall.
++func TestCongCraterKeepsWall(t *testing.T) {
++	c := v2Mem()
++	c.onCut(24846, 10558, abrFloorKbps, "p", false) // mint 12423
++	c.hold = 0
++	w := c.wall
++	if act := c.onCut(12300, 1095, abrFloorKbps, "p", false); act != "keep-crater" || c.wall != w {
++		t.Fatalf("crater: act %q wall %d, want keep-crater wall %d", act, c.wall, w)
++	}
++	if c.hold != abrCongHoldTicks {
++		t.Fatalf("a crater cut must still restart the hold, hold = %d", c.hold)
++	}
++	// No wall yet: the floor itself is the wall (cur/2), never the crater's read.
++	n := v2Mem()
++	if act := n.onCut(7939, 1095, abrFloorKbps, "p", false); act != "mint" || n.wall != 7939/2 {
++		t.Fatalf("first-ever crater: act %q wall %d, want mint %d", act, n.wall, 7939/2)
++	}
++}
++
++// A cut below 90% of the wall (the staircase under a known wall, or a dip) keeps it; so does a cut from
++// inside the zone while the post-cut hold is running (parked, not probing).
++func TestCongFadeKeepsWall(t *testing.T) {
++	c := v2Mem()
++	c.onCut(24846, 10558, abrFloorKbps, "p", false) // 12423
++	c.onCut(17392, 11420, abrFloorKbps, "p", false) // above the wall: re-mint 13435
++	if c.wall != 13435 {
++		t.Fatalf("second staircase read from above the wall: wall %d, want 13435", c.wall)
++	}
++	if act := c.onCut(12174, 6899, abrFloorKbps, "p", false); act != "keep-fade" || c.wall != 13435 {
++		t.Fatalf("parked in the hold at 90.6%%: act %q wall %d, want keep-fade 13435", act, c.wall)
++	}
++	if act := c.onCut(7939, 5000, abrFloorKbps, "p", false); act != "keep-fade" || c.wall != 13435 {
++		t.Fatalf("fade: act %q wall %d, want keep-fade 13435", act, c.wall)
++	}
++	// Hold expired and creeping in the zone: a collision there re-measures the wall.
++	c.hold = 0
++	if act := c.onCut(12841, 9800, abrFloorKbps, "p", false); act != "mint" || c.wall != 9800*100/85 {
++		t.Fatalf("probing collision: act %q wall %d, want mint %d", act, c.wall, 9800*100/85)
++	}
++}
++
++// A peer's first abrCongLearnGraceTicks never mint (a late joiner reads the 6 Mbps initial).
++func TestCongGrace(t *testing.T) {
++	a := abrRate{cm: v2Mem(), ds: newDescentStat()}
++	cur := 14000
++	for tick := 1; tick <= 3; tick++ { // two low ticks confirm, the third cuts again
++		o := a.decide(abrTickIn{cur: cur, ceil: 38657, floor: abrFloorKbps, servable: 6000,
++			binding: "joiner", bindingGrace: true, minterPresent: true})
++		if o.cut && o.act != "grace" {
++			t.Fatalf("tick %d: grace peer's cut act %q", tick, o.act)
++		}
++		cur = o.next
++	}
++	if a.cm.wall != 0 {
++		t.Fatalf("a grace peer minted wall %d", a.cm.wall)
++	}
++	// After the grace the same read mints.
++	a.decide(abrTickIn{cur: cur, ceil: 38657, floor: abrFloorKbps, servable: 3000, binding: "joiner", minterPresent: true})
++	if a.cm.wall == 0 {
++		t.Fatal("no wall after the grace")
++	}
++}
++
++// The peer that minted the wall leaves: memory clears that tick.
++func TestCongBindingPeerDeparture(t *testing.T) {
++	c := v2Mem()
++	c.onCut(12000, 8500, abrFloorKbps, "weak", false)
++	if c.wall == 0 {
++		t.Fatal("no wall")
++	}
++	if got := c.observe(9000, true); got != "" || c.wall == 0 {
++		t.Fatalf("present minter: %q wall %d", got, c.wall)
++	}
++	if got := c.observe(9000, false); got != "departed" || c.wall != 0 || c.hold != 0 {
++		t.Fatalf("departed minter: %q wall %d hold %d", got, c.wall, c.hold)
++	}
++}
++
++// The climb exit: the creep above the wall reaching abrCongExitPct of it (with no confirmed cut on the
++// way — a cut there re-mints) forgets the wall and +15% resumes. A high ESTIMATE alone never does: pion's
++// delay target keeps growing while the room sits still below the wall.
++func TestCongClimbExit(t *testing.T) {
++	a := abrRate{cm: v2Mem(), ds: newDescentStat()}
++	a.cm.onCut(15000, 10200, abrFloorKbps, "p", false) // wall 12000
++	a.cm.hold = 0
++	w := a.cm.wall
++	cur := 11000
++	// Sitting below the wall with GCC reading 2x the wall: creep, never exit.
++	for i := 0; i < 3; i++ {
++		o := a.decide(abrTickIn{cur: cur, ceil: 38657, floor: abrFloorKbps, servable: 2 * w, binding: "p", minterPresent: true})
++		if o.forgot != "" || o.next-cur != abrMinStepKbps {
++			t.Fatalf("tick %d below the wall: next %d forgot %q", i, o.next, o.forgot)
++		}
++		cur = o.next
++	}
++	// Creep all the way: every tick until 115% is a 250 step, then the wall goes and the step is +15%.
++	for cur*100 < w*abrCongExitPct {
++		o := a.decide(abrTickIn{cur: cur, ceil: 38657, floor: abrFloorKbps, servable: cur, binding: "p", minterPresent: true})
++		if o.forgot != "" || o.next-cur != abrMinStepKbps {
++			t.Fatalf("creep at %d: next %d forgot %q", cur, o.next, o.forgot)
++		}
++		cur = o.next
++	}
++	o := a.decide(abrTickIn{cur: cur, ceil: 38657, floor: abrFloorKbps, servable: cur, binding: "p", minterPresent: true})
++	if o.forgot != "exit" || a.cm.wall != 0 || o.next != cur+cur*abrRampPct/100 {
++		t.Fatalf("at %d (%d%% of %d): forgot %q wall %d next %d, want exit and +15%%", cur, cur*100/w, w, o.forgot, a.cm.wall, o.next)
++	}
++}
++
++// Above the wall (after a 70%-clamped cut left cur over a fresh wall): hold, then creep 250 — never
++// forget by tick count, never +15%.
++func TestCongAboveWallCreeps(t *testing.T) {
++	c := v2Mem()
++	c.onCut(24846, 10558, abrFloorKbps, "p", false) // wall 12423; cur goes to 17392 (70% clamp)
++	for i := 0; i < abrCongHoldTicks; i++ {
++		if s := c.healthyStep(17392, 2608); s != 0 {
++			t.Fatalf("hold tick %d: step %d", i, s)
++		}
++	}
++	for i := 0; i < 20; i++ {
++		if s := c.healthyStep(17392+i*250, 2608); s != abrMinStepKbps {
++			t.Fatalf("creep tick %d: step %d, want %d", i, s, abrMinStepKbps)
++		}
++	}
++	if c.wall != 12423 {
++		t.Fatalf("v2 forgot the wall by tick count (wall %d)", c.wall)
++	}
++}
++
++// A rate drop caused only by a narrower ceiling (geometry commit below cur) is not congestion.
++func TestCongCeilingDropIsNotAWall(t *testing.T) {
++	a := abrRate{cm: v2Mem(), ds: newDescentStat()}
++	o := a.decide(abrTickIn{cur: 20000, ceil: 12000, floor: abrFloorKbps, servable: 20000, binding: "p", minterPresent: true})
++	if !o.cut || o.act != "ceiling" || a.cm.wall != 0 {
++		t.Fatalf("ceiling drop: cut %v act %q wall %d", o.cut, o.act, a.cm.wall)
++	}
++}
++
++// ---------------------------------------------------------------------------------------------------
++// Kill switch: v1 bookkeeping must be bit-for-bit what the loop did before congMemory existed. v1Ref is
++// the pre-2026-10-03 inline code, copied verbatim (renamed variables only).
++
++type v1Ref struct{ lowTicks, congKbps, congClear, congHold int }
++
++func (s *v1Ref) tick(cur, ceilKbps, floor, worstServable, roomCap int, sameHostRoom bool) int {
++	next := cur
++	switch {
++	case sameHostRoom:
++		s.lowTicks = 0
++		next = ceilKbps
++	case worstServable > 0 && worstServable*100 < cur*abrBackoffPct:
++		s.lowTicks++
++		if s.lowTicks >= 2 {
++			next = worstServable
++		}
++	case worstServable > 0 && worstServable*100 >= cur*abrHealthyPct && cur < ceilKbps:
++		s.lowTicks = 0
++		step := max(abrMinStepKbps, cur*abrRampPct/100)
++		if s.congKbps > 0 {
++			if cur >= s.congKbps {
++				s.congClear++
++				if s.congClear >= abrCongClearTicks {
++					s.congKbps, s.congClear = 0, 0
++				}
++			} else {
++				s.congClear = 0
++			}
++			if s.congKbps > 0 && cur+step >= s.congKbps*abrCongProbePct/100 {
++				if s.congHold > 0 {
++					s.congHold--
++					step = 0
++				} else {
++					step = abrMinStepKbps
++				}
++			}
++		}
++		next = cur + step
++	default:
++		s.lowTicks = 0
++	}
++	if roomCap > 0 {
++		next = min(next, roomCap)
++	}
++	if next < cur {
++		next = max(next, cur*abrMaxCutPct/100)
++	}
++	next = min(max(next, floor), ceilKbps)
++	if next == cur || abs(next-cur) < abrMinStepKbps {
++		return cur
++	}
++	if next < cur {
++		s.congKbps, s.congClear, s.congHold = cur, 0, abrCongHoldTicks
++	}
++	return next
++}
++
++func TestCongKillSwitchParity(t *testing.T) {
++	for seed := int64(1); seed <= 50; seed++ {
++		rng := rand.New(rand.NewSource(seed))
++		ref := v1Ref{}
++		a := abrRate{cm: congMemory{v2: false}, ds: newDescentStat()}
++		curR, curA, ceil := 6000, 6000, 20000
++		for tick := 0; tick < 4000; tick++ {
++			if rng.Intn(200) == 0 { // a ceiling commit
++				ceil = 5000 + rng.Intn(35000)
++				ref.congKbps, ref.congClear, ref.congHold = 0, 0, 0
++				a.cm.reset()
++			}
++			// Servable as a ratio of cur spanning every branch, now and then absolute nonsense.
++			ratios := []float64{0.2, 0.5, 0.8, 0.84, 0.86, 0.9, 0.94, 0.95, 0.97, 1.0, 1.1, 1.3, 1.5}
++			sv := int(float64(curR) * ratios[rng.Intn(len(ratios))])
++			if rng.Intn(25) == 0 {
++				sv = rng.Intn(30000)
++			}
++			rc := 0
++			if rng.Intn(15) == 0 {
++				rc = rng.Intn(curR + 2000)
++			}
++			sh := rng.Intn(60) == 0
++			nr := ref.tick(curR, ceil, abrFloorKbps, sv, rc, sh)
++			o := a.decide(abrTickIn{cur: curA, ceil: ceil, floor: abrFloorKbps, servable: sv, roomCap: rc,
++				sameHostRoom: sh, binding: "p", capPeer: "q", minterPresent: rng.Intn(3) != 0})
++			if nr != o.next || ref.congKbps != a.cm.wall || ref.congHold != a.cm.hold ||
++				ref.congClear != a.cm.clear || ref.lowTicks != a.lowTicks {
++				t.Fatalf("seed %d tick %d: v1 diverged: ref next %d wall %d hold %d clear %d low %d; got next %d wall %d hold %d clear %d low %d",
++					seed, tick, nr, ref.congKbps, ref.congHold, ref.congClear, ref.lowTicks,
++					o.next, a.cm.wall, a.cm.hold, a.cm.clear, a.lowTicks)
++			}
++			curR, curA = nr, o.next
++		}
++	}
++}
++
++// ---------------------------------------------------------------------------------------------------
++// Offline link simulator, v1 vs v2. DIRECTIONAL evidence only — the model is a simplification of pion
++// interceptor v0.1.45 pkg/gcc, one step per ABR tick:
++//
++//   - Capacity C(t) (kbps). A queue (kbit) grows by (sent - C) each tick and drains by (C - sent).
++//     DEEP BUFFER: the delay detector reads overuse only once the queue holds > 200 ms (0.2·C), so a
++//     5–15% overshoot takes 2+ ticks to show and GCC keeps certifying meanwhile. Past 2 s the radio drops
++//     the excess (a loss tick, and the loss controller cuts).
++//   - Delay controller (rate_controller.go): on overuse target = beta (0.85) x received, and the received
++//     rate joins an EMA of decrease rates (alpha 0.95, pion's variance formula). Otherwise it increases:
++//     ADDITIVELY (~40 kbps/tick, a packet per update) while the received rate sits within ±3σ of that EMA
++//     — GCC's own near-convergence mode, why the live estimate plateaus ~1.2x near a known wall — else
++//     multiplicatively 8%/tick, capped at 1.5x received only when that cap is above the target.
++//   - Loss controller (loss_based_bwe.go): estimate = min(delay, loss). On loss the loss target cuts to
++//     x(1 - 0.5·loss); clean, it recovers 1.05 per 200 ms (~1.28x/tick) back up to the delay target.
++//   - Received-rate measurements carry ±3% noise (without it the EMA's σ is 0 and pion's band is empty).
++//   - Craters: at a steady random rate (~1 per 45 s) the loss leg reads 8–30% of capacity for 2–3 ticks
++//     (interference that has nothing to do with what we send). Fades: ±20% sinusoidal swings.
++//     Step-up: capacity jumps 8 -> 18 Mbps at t=100.
++
++type simCase struct {
++	name     string
++	capacity func(t int) float64
++	craters  bool
++}
++
++type simResult struct {
++	hard, descents, lossTicks int
++	delivered                 float64
++	stepUpTicks               int // ticks after the step-up until cur >= 90% of the new capacity; -1 never
++}
++
++type simGCC struct {
++	delay, loss    float64
++	decAvg, decVar float64
++}
++
++func (g *simGCC) decrease(received float64) {
++	g.delay = 0.85 * received
++	if g.decAvg == 0 {
++		g.decAvg = received
++		return
++	}
++	x := received - g.decAvg
++	g.decAvg += 0.95 * x
++	g.decVar = (1 - 0.95) * (g.decVar + 0.95*x*x)
++}
++
++func (g *simGCC) increase(received float64) {
++	sd := math.Sqrt(g.decVar)
++	if g.decAvg > 0 && received > g.decAvg-3*sd && received < g.decAvg+3*sd {
++		g.delay = math.Min(g.delay+40, 1.5*received)
++		return
++	}
++	rate := 1.08 * g.delay
++	if r15 := 1.5 * received; rate > r15 && r15 > g.delay {
++		rate = r15
++	}
++	g.delay = math.Max(rate, g.delay)
++}
++
++func simulate(v2 bool, sc simCase, seed int64, ticks int) simResult {
++	rng := rand.New(rand.NewSource(seed))
++	a := abrRate{cm: congMemory{v2: v2}, ds: newDescentStat()}
++	cur, ceil, floor := 6000, 38657, abrFloorKbps
++	g := simGCC{delay: 6000, loss: 6000}
++	queue := 0.0
++	crater, craterF := 0, 0.0
++	res := simResult{stepUpTicks: -1}
++	stepUp := sc.capacity(100) < sc.capacity(101)
++	for t := 1; t <= ticks; t++ {
++		c := sc.capacity(t)
++		sent := float64(cur)
++		queue = math.Max(0, queue+sent-c)
++		lossFrac := 0.0
++		if queue > 2*c { // 2 s of buffer: the radio drops the rest
++			lossFrac = (queue - 2*c) / sent
++			queue = 2 * c
++			res.lossTicks++
++		}
++		received := math.Min(sent, c) * (1 + 0.03*rng.NormFloat64())
++		if queue > 0.2*c {
++			g.decrease(received)
++		} else {
++			g.increase(received)
++		}
++		if sc.craters && crater == 0 && rng.Intn(45) == 0 {
++			crater, craterF = 2+rng.Intn(2), 0.08+rng.Float64()*0.22
++		}
++		switch {
++		case crater > 0:
++			g.loss = math.Min(g.loss, c*craterF)
++			crater--
++		case lossFrac > 0.1:
++			g.loss *= 1 - 0.5*lossFrac
++		default:
++			g.loss *= 1.28
++		}
++		g.loss = math.Min(g.loss, g.delay)
++		est := math.Min(g.delay, g.loss)
++		res.delivered += math.Min(sent, c)
++		o := a.decide(abrTickIn{cur: cur, ceil: ceil, floor: floor, servable: int(est),
++			binding: "p", bindingGrace: t <= abrCongLearnGraceTicks, minterPresent: true})
++		cur = o.next
++		if stepUp && t > 100 && res.stepUpTicks < 0 && float64(cur) >= 0.9*sc.capacity(t) {
++			res.stepUpTicks = t - 100
++		}
++	}
++	a.ds.up()
++	res.hard, res.descents = a.ds.hard, a.ds.descents
++	return res
++}
++
++func TestCongSimulator(t *testing.T) {
++	fade := func(base float64, period int) func(int) float64 {
++		return func(t int) float64 { return base * (1 + 0.2*math.Sin(2*math.Pi*float64(t)/float64(period))) }
++	}
++	cases := []simCase{
++		{"8M steady", func(int) float64 { return 8000 }, false},
++		{"13M steady", func(int) float64 { return 13000 }, false},
++		{"18M steady", func(int) float64 { return 18000 }, false},
++		{"8M fades+craters", fade(8000, 70), true},
++		{"13M fades+craters", fade(13000, 70), true},
++		{"18M fades+craters", fade(18000, 70), true},
++		{"13M craters", func(int) float64 { return 13000 }, true},
++		{"13M fades", fade(13000, 70), false},
++		{"13M slow fades", fade(13000, 240), false},
++		{"step-up 8->18M", func(t int) float64 {
++			if t > 100 {
++				return 18000
++			}
++			return 8000
++		}, false},
++	}
++	const seeds, ticks = 30, 300
++	var tot1, tot2 simResult
++	for _, sc := range cases {
++		var r1, r2 simResult
++		var up1, up2 []int
++		for s := int64(1); s <= seeds; s++ {
++			a, b := simulate(false, sc, s, ticks), simulate(true, sc, s, ticks)
++			r1.hard += a.hard
++			r2.hard += b.hard
++			r1.descents += a.descents
++			r2.descents += b.descents
++			r1.lossTicks += a.lossTicks
++			r2.lossTicks += b.lossTicks
++			r1.delivered += a.delivered
++			r2.delivered += b.delivered
++			up1 = append(up1, a.stepUpTicks)
++			up2 = append(up2, b.stepUpTicks)
++		}
++		t.Logf("%-18s v1 hard %4d desc %4d loss %4d deliv %7.0f | v2 hard %4d desc %4d loss %4d deliv %7.0f (%+.1f%%)",
++			sc.name, r1.hard, r1.descents, r1.lossTicks, r1.delivered/seeds, r2.hard, r2.descents, r2.lossTicks,
++			r2.delivered/seeds, 100*(r2.delivered-r1.delivered)/r1.delivered)
++		if sc.name == "step-up 8->18M" {
++			sort.Ints(up1)
++			sort.Ints(up2)
++			m1, m2 := up1[len(up1)/2], up2[len(up2)/2]
++			t.Logf("%-18s median ticks to 90%% of the new capacity: v1 %d, v2 %d", sc.name, m1, m2)
++			if m1 < 0 || m2 < 0 || m2 > m1+5 {
++				t.Errorf("step-up recovery: v2 %d ticks vs v1 %d, want within 5", m2, m1)
++			}
++		}
++		tot1.hard += r1.hard
++		tot2.hard += r2.hard
++		tot1.delivered += r1.delivered
++		tot2.delivered += r2.delivered
++		tot1.lossTicks += r1.lossTicks
++		tot2.lossTicks += r2.lossTicks
++	}
++	t.Logf("TOTAL v1 hard %d loss %d deliv %.0f | v2 hard %d loss %d deliv %.0f (%+.2f%%)", tot1.hard, tot1.lossTicks,
++		tot1.delivered, tot2.hard, tot2.lossTicks, tot2.delivered, 100*(tot2.delivered-tot1.delivered)/tot1.delivered)
++	if tot2.hard >= tot1.hard {
++		t.Errorf("v2 hard descents %d, not fewer than v1 %d", tot2.hard, tot1.hard)
++	}
++	if tot2.delivered < tot1.delivered*0.99 {
++		t.Errorf("v2 delivered %.0f, more than 1%% below v1 %.0f", tot2.delivered, tot1.delivered)
++	}
 +}
 diff --git a/pkg/worker/abr_test.go b/pkg/worker/abr_test.go
 new file mode 100644

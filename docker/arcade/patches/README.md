@@ -1080,3 +1080,72 @@ comment-only):
 to `addCandidate`, whose JSON parse error reaches the room page's `onError` — only on a mismatch, which is
 already a failure, but the right message comes from the 0048 shim. A pre-0048 site ignores the extra LinkStat
 fields.
+
+## 0049-congestion-memory-v2 (2026-10-03): a measured wall that survives the descent
+
+(Fork commit `61c5e5e`. Plans: `inherited-crunching-quiche` + its review `glowing-eagle`. Worker-only — nothing new
+goes over the wire, no coordinator rebuild. Kill switch: `CLOUD_GAME_ABR_CONG_V2=0` in the runner env + a task
+restart restores v1 bit-for-bit; or rename `bin\worker.pre-congv2.exe` back.)
+
+**The bug — a sliding wall.** v1 set `congKbps = cur` on EVERY confirmed cut, so each step of a staircase re-set the
+remembered wall to the rate it was cut FROM. Room 34MB5J (a phone on external Wi-Fi, Sonic 2, Auto, warm start 7065,
+ceiling 38657): 7939 -> 5557 -> 3889 -> 2722 left **2722** remembered on a link carrying ~12-13 Mbps; the 250/tick
+creep reached it, three healthy ticks forgot it (`cong 0` at 17:59:12), and +15%/tick climbed straight back into the
+real wall — collisions at 17:59:35, 18:00:21 and 18:00:54. 17 cuts, 4 episodes, sustained 13108, 5 PLIs.
+
+**The wall is GCC's own capacity read.** Pion's delay controller decreases to `beta (0.85) x latestReceivedRate`
+(interceptor v0.1.45 `pkg/gcc/rate_controller.go`). While we are still sending above capacity the received rate IS
+the capacity, so a confirmed cut's target / 0.85 reads what the link delivered: 10558/0.85 = 12421, 10117/0.85 =
+11902, 11161/0.85 = 13130, 12187/0.85 = 14338 against the sustained 13108. v2 (`congMemory` in `pkg/worker/abr.go`,
+driven by `abrRate.decide` — the old inline switch, extracted unchanged):
+- **Mint** `clamp(target*100/85, cur/2, cur)` only when there is no wall or the room was PROBING it (sending at/above
+  it, or creeping in the 90% zone after the probe hold ran out). Record the peer that produced the read.
+- **Crater** — the read lands on the 50% floor and a wall exists: keep the wall (17:58:44 read 1095 while sending 7939:
+  a Wi-Fi event, not our overshoot). **Fade** — a cut below the zone, or from a rate parked in the hold: keep the wall.
+- **Above the wall**: hold, then creep 250/tick; no forgetting by tick count. **Forget** when that creep reaches
+  **115%** of the wall with no confirmed cut (a collision on the way re-mints instead), when the minting peer leaves
+  the room, or on a ceiling commit. A rate drop caused only by a narrower ceiling no longer mints a wall.
+- **Join grace** (separate behaviour change): a peer's first 10 ticks with an estimate never mint — a late joiner
+  reports the configured 6 Mbps initial until TWCC feedback arrives.
+
+**Two deviations from the reviewed plan, both forced by evidence:**
+1. The exit is our own creep reaching 115%, NOT "the binding estimate reads >= 130% of the wall for 3 ticks". Pion's
+   `rateController.increase` grows the delay target 8%/s whenever no overuse is detected — i.e. always while the room
+   sits below capacity — capping it at 1.5x received only while the target is still under that cap. The estimate
+   therefore crosses 130% of the wall without the link having any headroom. Offline simulator (below): that exit made
+   **2548 hard descents vs v1's 2052**; the climb exit **1709**, delivered rate **+9.95%**, step-up recovery 20 ticks
+   vs v1's 21. (130% instead of 115%: 1% fewer hard descents, step-up 26 ticks = v1 + 5.)
+2. Minting from inside the zone below the wall also requires the hold to have run out. Without it the replay re-minted
+   the wall 13435 -> **8116** at 17:58:37: GCC read 6899 while v2 sat flat at 12174 (90.6% of the wall) in the hold.
+   Minting on the first cut of every descent instead (the original plan's episode rule) was tried in the simulator:
+   no better, and it broke the replay.
+
+**Tests** (`pkg/worker/abr_sim_test.go`, `go test ./pkg/worker -run Cong -v`):
+- Replay of the 34MB5J trace through `abrRate.decide` (logged servables as absolute numbers; a silent tick before a
+  logged cut is that cut's first low tick; other silent ticks sit in the 85-95% dead band — documented in the test).
+  v2: wall >= 12000 from 17:58:33 to the end (12423, then 13435 throughout); the 17:58:35 12174 -> 14000 bump held;
+  no step above wall-250 from 17:59:12 to 18:00:21; no cut at v1's 17:59:35 / 18:00:21 collisions; collision hard
+  descents 0 (v1 replay 1); overshoot at later descents 728 kbps. Hard descents counting craters are 4 in both the v1
+  and v2 replays (the live log: 6) — a replay feeds the link's craters as absolute numbers and no rate rule can
+  prevent those; the simulator is the causal model.
+- Rule tests: crater, fade/hold, grace, minting-peer departure, climb exit (a high estimate alone never exits),
+  above-the-wall creep, ceiling-drop. Kill-switch parity: v1 against a verbatim copy of the old inline code, 200k
+  random ticks.
+- Offline simulator, a model of pion GCC per tick: deep buffer (overuse only past 200 ms of queue), the
+  near-convergence additive band (±3σ of the decrease-rate EMA), multiplicative 8%/tick otherwise, the loss leg
+  (min(delay, loss), cut on loss, +28%/tick recovery), ±3% receive noise, random craters, ±20% fades, a step-up
+  8 -> 18 Mbps. 30 seeds x 10 cases x 300 ticks. v2 wins on steady links (13M: hard 157 -> 75) and step-up; it
+  LOSES slightly on fades+craters (8M 281 -> 318, 13M 266 -> 290, 18M 254 -> 271 hard) while delivering +21-26% —
+  it sits higher, so a crater from there is a longer staircase. Directional evidence only.
+
+**Observability.** Per-tick `abr:` line: `cong N` is still the wall (both generations), plus `hold=`; a cut adds
+`target= over= avgLoss= mem=v1|mint|keep-fade|keep-crater|grace|ceiling`. `abr: wall N forgotten (exit|departed …)`.
+Summary adds `congV2= walls= wallExits= wallDeparts= descents= hardDescents= craters= overFirst= overMax=`;
+descents / hardDescents (> 30% total drop) / overshoot (cur - target/0.85 at a descent's first non-crater cut) are
+computed identically under v1 and v2, so they are the A/B metric. `avgLoss` = `webrtc.Peer.AverageLoss()`, the loss
+controller's `averageLoss` from `SendSideBWE.GetStats()`, read once per cut: high = a loss-driven crater (the link),
+~0 = a delay-driven overshoot (us).
+
+**Deployed 2026-10-03** to all three workers, sha md5 `3C8FA5C6F1A9F9891499D740C1E24453` (backups
+`worker.pre-congv2.exe`, md5 `19D4ED78…` = fork `81cc148`): GL 1 and GL 2 each closed a harness room with
+`congV2=1`; capture recycled clean (no capture room run). Owed: the phone A/B on real Wi-Fi.
