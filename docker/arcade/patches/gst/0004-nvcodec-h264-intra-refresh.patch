@@ -1,0 +1,110 @@
+--- a/sys/nvcodec/gstnvh264encoder.cpp
++++ b/sys/nvcodec/gstnvh264encoder.cpp
+@@ -90,6 +90,8 @@
+   /* encoding config */
+   PROP_GOP_SIZE,
+   PROP_TEMPORAL_LAYERS,
++  PROP_INTRA_REFRESH_PERIOD,
++  PROP_INTRA_REFRESH_COUNT,
+   PROP_B_FRAMES,
+ 
+   /* rate-control params */
+@@ -139,6 +141,8 @@
+ #define DEFAULT_WEIGHTED_PRED     FALSE
+ #define DEFAULT_GOP_SIZE          75
+ #define DEFAULT_TEMPORAL_LAYERS   1
++#define DEFAULT_INTRA_REFRESH_PERIOD 0
++#define DEFAULT_INTRA_REFRESH_COUNT 0
+ #define DEFAULT_B_FRAMES          0
+ #define DEFAULT_RATE_CONTROL      GST_NV_ENCODER_RC_MODE_DEFAULT
+ #define DEFAULT_QP                -1
+@@ -186,6 +190,8 @@
+ 
+   gint gop_size;
+   guint temporal_layers;
++  guint intra_refresh_period;
++  guint intra_refresh_count;
+   guint bframes;
+ 
+   GstNvEncoderRCMode rc_mode;
+@@ -402,6 +408,21 @@
+           "odd frames). Frames above the base are not referenced by it, so a sender may drop "
+           "them per-receiver to halve the frame rate without breaking the reference chain",
+           1, 2, DEFAULT_TEMPORAL_LAYERS, param_flags));
++  /* Intra refresh (gradual decoder refresh), as on nvav1enc (patch 0002): instead of a periodic IDR —
++   * one frame several times the per-frame budget, followed by reference frames re-spending bits to win
++   * the quality back (measured on real Genesis frames at 20 Mbps: a 89 KB IDR then ~6 frames of
++   * 34-77 KB, every 2 s, against a 41 KB/frame budget) — a column of intra blocks sweeps the picture over
++   * intra-refresh-count frames. Use with gop-size=-1. Ignored with B-frames. */
++  g_object_class_install_property (object_class, PROP_INTRA_REFRESH_PERIOD,
++      g_param_spec_uint ("intra-refresh-period", "Intra Refresh Period",
++          "Interval in frames between successive intra-refresh waves "
++          "(0 = disabled). Use with an infinite GOP for keyframe-free streams",
++          0, G_MAXINT, DEFAULT_INTRA_REFRESH_PERIOD, param_flags));
++  g_object_class_install_property (object_class, PROP_INTRA_REFRESH_COUNT,
++      g_param_spec_uint ("intra-refresh-count", "Intra Refresh Count",
++          "Length of an intra-refresh wave in frames "
++          "(must be smaller than intra-refresh-period)",
++          0, G_MAXINT, DEFAULT_INTRA_REFRESH_COUNT, param_flags));
+   if (dev_caps->max_bframes > 0) {
+     /**
+      * GstNvD3D11H264Enc:bframes:
+@@ -719,6 +740,8 @@
+   self->weighted_pred = DEFAULT_WEIGHTED_PRED;
+   self->gop_size = DEFAULT_GOP_SIZE;
+   self->temporal_layers = DEFAULT_TEMPORAL_LAYERS;
++  self->intra_refresh_period = DEFAULT_INTRA_REFRESH_PERIOD;
++  self->intra_refresh_count = DEFAULT_INTRA_REFRESH_COUNT;
+   self->bframes = DEFAULT_B_FRAMES;
+   self->rc_mode = DEFAULT_RATE_CONTROL;
+   self->qp_const = DEFAULT_QP;
+@@ -946,6 +969,12 @@
+     case PROP_TEMPORAL_LAYERS:
+       update_uint (self, &self->temporal_layers, value, UPDATE_INIT_PARAM);
+       break;
++    case PROP_INTRA_REFRESH_PERIOD:
++      update_uint (self, &self->intra_refresh_period, value, UPDATE_INIT_PARAM);
++      break;
++    case PROP_INTRA_REFRESH_COUNT:
++      update_uint (self, &self->intra_refresh_count, value, UPDATE_INIT_PARAM);
++      break;
+     case PROP_B_FRAMES:
+       update_uint (self, &self->bframes, value, UPDATE_INIT_PARAM);
+       break;
+@@ -1085,6 +1114,12 @@
+     case PROP_TEMPORAL_LAYERS:
+       g_value_set_uint (value, self->temporal_layers);
+       break;
++    case PROP_INTRA_REFRESH_PERIOD:
++      g_value_set_uint (value, self->intra_refresh_period);
++      break;
++    case PROP_INTRA_REFRESH_COUNT:
++      g_value_set_uint (value, self->intra_refresh_count);
++      break;
+     case PROP_B_FRAMES:
+       g_value_set_uint (value, self->bframes);
+       break;
+@@ -1725,6 +1760,23 @@
+     h264_config->sliceModeData = self->num_slices;
+   }
+ 
++  /* Intra refresh (see the property). singleSliceIntraRefresh keeps a one-slice stream one slice during
++   * the wave (otherwise NVENC may split refresh frames into slices); NVENC ignores it on hardware without
++   * NV_ENC_CAPS_SINGLE_SLICE_INTRA_REFRESH. */
++  if (self->intra_refresh_period > 0) {
++    if (config->frameIntervalP > 1) {
++      GST_WARNING_OBJECT (self,
++          "intra-refresh-period=%u ignored: NVENC disables intra refresh with bframes=%u",
++          self->intra_refresh_period, self->bframes);
++    } else {
++      h264_config->enableIntraRefresh = 1;
++      h264_config->intraRefreshPeriod = self->intra_refresh_period;
++      h264_config->intraRefreshCnt = self->intra_refresh_count;
++      if (self->num_slices == 0)
++        h264_config->singleSliceIntraRefresh = 1;
++    }
++  }
++
+   GstVideoColorimetry cinfo;
+   switch (GST_VIDEO_INFO_FORMAT (info)) {
+     case GST_VIDEO_FORMAT_NV12:

@@ -55,9 +55,11 @@ $ErrorActionPreference = "Stop"
 $env:Path = "$Ucrt64\bin;$env:Path"
 
 $repo   = Split-Path $PSScriptRoot -Parent
-# Applied IN ORDER. 0003 (strict-refs) is deliberately absent — see the help text above.
+# Applied IN ORDER. 0003 (strict-refs) is deliberately absent — see the help text above. 0004 adds
+# intra-refresh-period/count to nvh264enc (inert at their default 0 — the h264 params decide).
 $patches = @(
-    (Join-Path $repo "docker\arcade\patches\gst\0002-nvcodec-temporal-svc.patch")
+    (Join-Path $repo "docker\arcade\patches\gst\0002-nvcodec-temporal-svc.patch"),
+    (Join-Path $repo "docker\arcade\patches\gst\0004-nvcodec-h264-intra-refresh.patch")
 )
 $target = Join-Path $Ucrt64 "lib\gstreamer-1.0\libgstnvcodec.dll"
 foreach ($p in $patches) { if (-not (Test-Path $p)) { throw "patch not found: $p" } }
@@ -133,5 +135,10 @@ $props = & "$Ucrt64\bin\gst-inspect-1.0.exe" nvav1enc
 foreach ($p in @("temporal-layers", "intra-refresh-period", "intra-refresh-count")) {
     if ($props -match [regex]::Escape($p)) { Write-Host "  verified: $p" }
     else { throw "installed plugin does NOT expose $p — the build or install did not take" }
+}
+$h264props = & "$Ucrt64\bin\gst-inspect-1.0.exe" nvh264enc
+foreach ($p in @("temporal-layers", "intra-refresh-period", "intra-refresh-count")) {
+    if ($h264props -match [regex]::Escape($p)) { Write-Host "  verified (h264): $p" }
+    else { throw "installed plugin's nvh264enc does NOT expose $p — the build or install did not take" }
 }
 Write-Host "OK — patched nvcodec installed and verified."
