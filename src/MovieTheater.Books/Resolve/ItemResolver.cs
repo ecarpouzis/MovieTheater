@@ -117,6 +117,11 @@ SELECT i.Id, i.Kind, i.Title, i.SeriesId, i.PublisherId,
        (SELECT group_concat(c.Name, ', ')
           FROM (SELECT Name FROM ItemCredit
                  WHERE ItemId = i.Id AND Role = 'Author' ORDER BY Ordinal) c) AS CreditAuthors,
+       -- ComicVine's own per-issue writers (scripts/books/cv_credits_import.py, landed only where the issue's
+       -- volume IS the shelf's identity): the issue's real credit, ahead of the shelf-level AI author.
+       (SELECT group_concat(c.Name, ', ')
+          FROM (SELECT Name FROM ItemCredit
+                 WHERE ItemId = i.Id AND Source = 1 AND Role = 'Writer' ORDER BY Ordinal) c) AS CvWriters,
        (SELECT group_concat(t.Value, char(31)) FROM ItemTag t WHERE t.ItemId = i.Id AND t.Category IN ('genre','tag')) AS ItemTags,
        (SELECT group_concat(t.Value, char(31)) FROM SeriesTag t WHERE t.SeriesId = i.SeriesId AND t.Category = 'tag') AS SeriesTags
 FROM Item i
@@ -170,10 +175,11 @@ WHERE i.Id > $after ORDER BY i.Id LIMIT $n";
                 var aiSynopsis = isBook ? r.S("BookAiSynopsis") : r.S("SeriesAiSynopsis");
                 var synopsis = SynopsisRules.ResolveItem(r.S("CvDescription"), isBook ? r.S("BookDescription") : r.S("Summary"), r.S("LocgDescription"), r.S("ExtDescription"), r.S("MuDescription"), r.S("CvDeck"), aiSynopsis);
                 // For a BOOK the Calibre credit is the best source there is — it came from the
-                // library's own metadata — so it leads. A comic keeps its existing order.
+                // library's own metadata — so it leads. A comic: its file's ComicInfo, then ComicVine's credit for
+                // that issue, then the external work and the shelf's AI author.
                 var authors = isBook
                     ? FirstNonEmpty(r.S("CreditAuthors"), r.S("Writers"), r.S("ExtAuthors"), r.S("BookAiAuthor"))
-                    : FirstNonEmpty(r.S("Writers"), r.S("ExtAuthors"), r.S("AiAuthor"));
+                    : FirstNonEmpty(r.S("Writers"), r.S("CvWriters"), r.S("ExtAuthors"), r.S("AiAuthor"));
                 string? title;
                 if (isBook)
                 {
