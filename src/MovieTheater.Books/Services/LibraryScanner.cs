@@ -372,7 +372,9 @@ namespace MovieTheater.Books.Services
         /// </summary>
         private async Task<bool> IndexFileAsync(BooksDb db, Item item, string filePath, string ext, LibraryRoot? root, IReadOnlyList<string> rootPaths, CancellationToken ct, bool keepIdentity = false)
         {
-            var reader = readers.FirstOrDefault(r => r.CanHandle(ext));
+            // Routed by the real container, never by extension (ArchiveReaderSelection.ForFile): picking by
+            // extension left every .7z comic (and any misnamed archive) with no reader, so 0 pages — 2026-10-02.
+            var reader = readers.ForFile(filePath, ext);
             ArchiveMetadata? meta = null;
             string? brokenReason = null;
             var pageCount = 0;

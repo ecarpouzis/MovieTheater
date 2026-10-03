@@ -25,9 +25,13 @@ namespace MovieTheater.Books.Archives
         /// EPUBs under the wrong name — a real <c>mimetype</c> and <c>META-INF/container.xml</c> inside — which
         /// is precisely the case the exclusion above warns about. So a ZIP is separated by its CONTENT before
         /// it is routed, rather than sent wholesale to the comic reader.</para>
+        ///
+        /// <para><c>.7z</c> joined the list on 2026-10-02: the scanner indexes it (<c>LibraryScanner.SupportedExtensions</c>)
+        /// but no reader claims the extension, so all 24 volumes of JoJo Part 7 (intact 7-Zip archives) failed with
+        /// "No archive reader for extension '.7z'". Sniffed, they route to the <c>.cbr</c> reader, which opens 7-Zip.</para>
         /// </summary>
         private static readonly HashSet<string> GenericArchiveExtensions =
-            new(StringComparer.OrdinalIgnoreCase) { ".cbz", ".cbr", ".cb7", ".cbt", ".zip", ".rar" };
+            new(StringComparer.OrdinalIgnoreCase) { ".cbz", ".cbr", ".cb7", ".cbt", ".zip", ".rar", ".7z" };
 
         public enum Container { Unknown, Zip, Rar, SevenZip }
 

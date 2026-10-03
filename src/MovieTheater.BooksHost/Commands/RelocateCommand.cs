@@ -28,6 +28,7 @@ namespace MovieTheater.BooksHost.Commands
         [CommandOption("max-batches", Description = "Stop after this many batches (0 = until done).")] public int MaxBatches { get; set; }
         [CommandOption("report", Description = "Write refused / would-do lines here (TSV).")] public string? Report { get; set; }
         [CommandOption("journal", Description = "Append applied moves here (TSV, the undo record). Required with --apply.")] public string? Journal { get; set; }
+        [CommandOption("refresh", Description = "Re-read each listed file in place even when its size and mtime are unchanged (page count, ComicInfo facts, thumbnail error) — for a reader fix; NewPath = the current path. Curated identity is kept.")] public bool Refresh { get; set; }
         [CommandOption("apply", Description = "Actually write.")] public bool Apply { get; set; }
 
         public async ValueTask ExecuteAsync(IConsole console)
@@ -56,7 +57,7 @@ namespace MovieTheater.BooksHost.Commands
             {
                 while (MaxBatches <= 0 || batches < MaxBatches)
                 {
-                    var r = await svc.RunBatchAsync(db, In, BatchSize, Apply, after, report, journal);
+                    var r = await svc.RunBatchAsync(db, In, BatchSize, Apply, after, report, journal, default, Refresh);
                     if (r.Done) break;
                     batches++;
                     moved += r.Moved; refreshed += r.Refreshed; unchanged += r.Unchanged; refused += r.Refused; folders += r.FoldersCreated;

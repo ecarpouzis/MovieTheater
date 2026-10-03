@@ -108,6 +108,42 @@ namespace MovieTheater.Books.Tests
         }
 
         [Fact]
+        public async Task Refresh_rereads_an_unchanged_file_in_place_and_keeps_its_curated_detail()
+        {
+            using var fx = new ScanFixture();
+            await fx.ScanAsync(rootId: 1);
+            var path = Path.Combine(fx.ComicsRoot, "Rebellion", "2000AD (1977)", "2000 AD 0001 (1977).cbz");
+            int id;
+            await using (var db = fx.Db())
+            {
+                var item = await db.Items.SingleAsync(i => i.Path == path);
+                id = item.Id;
+                item.PageCount = 0;   // what a reader that could not open the file left behind
+                var st = await db.ItemStates.SingleOrDefaultAsync(s => s.ItemId == id);
+                if (st == null) db.ItemStates.Add(st = new ItemState { ItemId = id });
+                st.ThumbnailError = "No archive reader for extension '.7z'";
+                await db.SaveChangesAsync();
+            }
+            await Curate(fx, id);
+            var tsv = Tsv(fx, (id, Path.GetRelativePath(fx.ComicsRoot, path)));
+            var svc = Relocator(fx);
+
+            var plain = await Run(fx, svc, tsv, apply: true);
+            Assert.Equal(1, plain.Unchanged);   // without --refresh an unchanged file is left alone
+
+            await using (var db = fx.Db())
+            {
+                var r = await svc.RunBatchAsync(db, tsv, 100, true, 0, forceRefresh: true);
+                Assert.Equal(1, r.Refreshed);
+                Assert.Equal(0, r.Moved);
+            }
+            await using var check = fx.Db();
+            Assert.True((await check.Items.SingleAsync(i => i.Id == id)).PageCount > 0);
+            Assert.Null((await check.ItemStates.SingleAsync(s => s.ItemId == id)).ThumbnailError);
+            Assert.Equal("curated split key", (await check.ComicDetails.SingleAsync(x => x.ItemId == id)).ParsedSeriesKey);
+        }
+
+        [Fact]
         public async Task A_new_rip_of_the_same_book_refreshes_file_facts_and_drops_the_cover()
         {
             using var fx = new ScanFixture();

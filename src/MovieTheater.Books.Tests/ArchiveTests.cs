@@ -325,6 +325,26 @@ namespace MovieTheater.Books.Tests
         }
 
         /// <summary>
+        /// A <c>.7z</c> is sniffed and reaches the reader that opens 7-Zip. The scanner always indexed the
+        /// extension, but no reader claimed it, so 24 intact 7-Zip comics (JoJo Part 7) had no cover and would not
+        /// open: "No archive reader for extension '.7z'".
+        /// </summary>
+        [Fact]
+        public void A_7z_reaches_the_reader_that_opens_7zip()
+        {
+            var path = Path.Combine(Path.GetTempPath(), $"mt-sniff-{Guid.NewGuid():N}.7z");
+            File.WriteAllBytes(path, [(byte)'7', (byte)'z', 0xBC, 0xAF, 0x27, 0x1C, 0, 4, 0, 0, 0, 0]);
+            try
+            {
+                Assert.Equal(ArchiveFormatSniffer.Container.SevenZip, ArchiveFormatSniffer.Detect(path));
+                Assert.Equal(".cbr", ArchiveFormatSniffer.ResolveReaderExtension(path, ".7z"));
+                // A ZIP saved as .7z is routed by its content, like every other generic extension.
+                Assert.Equal(".cbz", ArchiveFormatSniffer.ResolveReaderExtension(fixture.MisnamedCbrPath, ".7z"));
+            }
+            finally { File.Delete(path); }
+        }
+
+        /// <summary>
         /// The container probe answers about the BYTES, not the parser — the distinction that decides whether an
         /// item gets the broken flag. Intact ⇒ true, truncated ⇒ false, not-a-sniffable-container ⇒ no opinion.
         /// </summary>

@@ -63,7 +63,7 @@ namespace MovieTheater.Books.Services
         public const string JournalHeader = "ItemId\tOldPath\tOldFolderId\tOldSize\tOldMtime\tNewPath\tNewFolderId\tNewSize\tNewMtime\tRefreshed";
 
         public async Task<RelocationBatchResult> RunBatchAsync(BooksDb db, string tsvPath, int batchSize, bool apply, long after,
-            TextWriter? report = null, TextWriter? journal = null, CancellationToken ct = default)
+            TextWriter? report = null, TextWriter? journal = null, CancellationToken ct = default, bool forceRefresh = false)
         {
             batchSize = Math.Clamp(batchSize, 1, 5_000);
             var lines = await File.ReadAllLinesAsync(tsvPath, ct);
@@ -119,7 +119,9 @@ namespace MovieTheater.Books.Services
                 var (size, mtime) = Fs.FileInfo(newPath);
                 var samePath = string.Equals(item.Path, newPath, StringComparison.Ordinal);
 
-                if (samePath && item.FileSize == size && item.FileModifiedAt == mtime) { unchanged++; continue; }
+                // --refresh re-reads an unchanged file in place: a reader fix (e.g. .7z routing, 2026-10-02) makes old
+                // page counts and thumbnail errors stale without the bytes changing.
+                if (!forceRefresh && samePath && item.FileSize == size && item.FileModifiedAt == mtime) { unchanged++; continue; }
                 if (!string.Equals(item.Path, newPath, StringComparison.OrdinalIgnoreCase) && Fs.FileExists(item.Path))
                 { Refuse("old file still exists (a copy, not a move)"); continue; }
 
@@ -133,7 +135,7 @@ namespace MovieTheater.Books.Services
                 foldersCreated += created;
                 if (folder == null) { Refuse("could not place the new folder under the root"); continue; }
 
-                var bytesChanged = item.FileSize != size || item.FileModifiedAt != mtime;
+                var bytesChanged = forceRefresh || item.FileSize != size || item.FileModifiedAt != mtime;
                 var old = (item.Path, item.FolderId, item.FileSize, item.FileModifiedAt);
                 moved += samePath ? 0 : 1;
                 if (!apply)
