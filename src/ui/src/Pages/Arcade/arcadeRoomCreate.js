@@ -71,11 +71,14 @@ const flags = (r) => (r ? `${r.supported ? "S" : "-"}${r.smooth ? "s" : "-"}${r.
 // report lands, decodingInfo(type:"webrtc") answers from an empty set, and Firefox treats a failed/empty platform
 // answer as "software only" (WebrtcVideoDecoderFactory::SupportsCodec). So an early probe on a hardware machine can
 // say "software" — never the reverse: a false "hardware" cannot happen. Hence: probe as soon as the lobby mounts,
-// probe again at Play, and keep the MOST capable answer seen this page session. If both codecs still read
-// software-only after a single probe, re-probe once after PROBE_RETRY_MS before deciding.
-const PROBE_RETRY_MS = 1500;
-let bestProbe = null; // { av1, h264, h265 } — field-wise most capable answers seen
-let probesRun = 0;
+// probe again at Play, and keep the MOST capable answer seen recently (PROBE_MEMORY_MS — hardware decode CAN go
+// away mid-session, e.g. after a GPU-process crash, so the memory expires). If both codecs read software-only and
+// the first probe is younger than PROBE_SETTLE_MS, wait out the rest and probe again: the rule is time since the
+// FIRST probe, so a lobby probe and an immediate Play click both landing before the report still get a retry.
+const PROBE_SETTLE_MS = 2000;
+const PROBE_MEMORY_MS = 10 * 60_000;
+let bestProbe = null;   // { av1, h264, h265 } — field-wise most capable answers seen
+let firstProbeAt = 0;   // when the remembered window opened (Date.now ms)
 
 function mergeAnswer(a, b) {
   if (!a) return b;
@@ -84,11 +87,12 @@ function mergeAnswer(a, b) {
 }
 
 async function probeOnce() {
+  if (bestProbe && Date.now() - firstProbeAt > PROBE_MEMORY_MS) bestProbe = null;
+  if (!bestProbe) firstProbeAt = Date.now();
   const probe = (contentType) => navigator.mediaCapabilities.decodingInfo({ type: "webrtc", video: { contentType, ...PROBE_FRAME } });
   const [av1, h264, h265] = await Promise.all([
     probe('video/AV1; codecs="av01.0.08M.08"'), probe("video/H264"), probe("video/H265").catch(() => null),
   ]);
-  probesRun++;
   bestProbe = bestProbe
     ? { av1: mergeAnswer(bestProbe.av1, av1), h264: mergeAnswer(bestProbe.h264, h264), h265: mergeAnswer(bestProbe.h265, h265) }
     : { av1, h264, h265 };
@@ -101,15 +105,16 @@ export function primeCodecProbe() {
 }
 
 /** Test seam: forget the page-session memory. */
-export function resetCodecProbeMemory() { bestProbe = null; probesRun = 0; }
+export function resetCodecProbeMemory() { bestProbe = null; firstProbeAt = 0; }
 
 export async function decideAutoCodec(avoid = null) {
   const mobile = isMobileDevice();
   let av1 = null, h264 = null, h265 = null, codec;
   try {
     ({ av1, h264, h265 } = await probeOnce());
-    if (probesRun < 2 && !av1.powerEfficient && !h264.powerEfficient) {
-      await new Promise((r) => setTimeout(r, PROBE_RETRY_MS));
+    const sinceFirst = Date.now() - firstProbeAt;
+    if (!av1.powerEfficient && !h264.powerEfficient && sinceFirst < PROBE_SETTLE_MS) {
+      await new Promise((r) => setTimeout(r, PROBE_SETTLE_MS - sinceFirst));
       ({ av1, h264, h265 } = await probeOnce());
     }
     if (av1.supported && av1.powerEfficient) codec = "av1";

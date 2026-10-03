@@ -191,6 +191,27 @@ describe("a browser whose hardware report arrives late", () => {
     expect((await decideAutoCodec()).codec).toBe("av1");
   });
 
+  it("still retries when the lobby probe AND an immediate Play probe both land before the report", async () => {
+    vi.useFakeTimers();
+    stubSequence([{ av1: ans(true, false), h264: ans(true, false) }, { av1: ans(true, false), h264: ans(true, false) },
+      { av1: ans(true, true), h264: ans(true, true) }]);
+    primeCodecProbe();
+    await vi.advanceTimersByTimeAsync(100);
+    const p = decideAutoCodec();
+    await vi.advanceTimersByTimeAsync(2500);
+    expect((await p).codec).toBe("av1");
+  });
+
+  it("forgets a hardware answer after the memory window (hardware decode can go away mid-session)", async () => {
+    vi.useFakeTimers();
+    stubSequence([{ av1: ans(true, true), h264: ans(true, true) }, { av1: ans(true, false), h264: ans(true, false) }]);
+    primeCodecProbe();
+    await vi.advanceTimersByTimeAsync(11 * 60_000);
+    const p = decideAutoCodec();
+    await vi.advanceTimersByTimeAsync(2500);
+    expect((await p).codec).toBe("h264");
+  });
+
   it("a genuinely software-only browser still lands on h264 after the one retry", async () => {
     vi.useFakeTimers();
     stubSequence([{ av1: ans(true, false), h264: ans(true, false) }]);
