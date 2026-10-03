@@ -1757,7 +1757,7 @@ export default function ArcadeRoomPage() {
         // so mount it there (and its Select popups with it, via the ConfigProvider below).
         getContainer={() => fullscreenElement() || document.body}
       >
-        <ConfigProvider getPopupContainer={(node) => node?.closest?.(".ant-modal-wrap") || fullscreenElement() || document.body}>
+        <ConfigProvider getPopupContainer={() => fullscreenElement() || document.body}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
           <Text style={{ flex: 1 }}>⌨️ Keyboard &amp; mouse</Text>
           <Text type="secondary">P{(yourSlot ?? 0) + 1} — you</Text>

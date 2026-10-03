@@ -234,10 +234,25 @@ export default function TouchControls({ layout, size, onFrame, onAction, actionA
     push();
   };
 
-  // A layout change (edited/switched) or a resize mid-touch: drop every finger rather than reinterpret it.
+  // A new layout object mid-touch: release only fingers (and toggles) on controls that no longer exist.
+  // Releasing ALL of them was wrong: a default layout is regenerated whenever the screen's aspect changes,
+  // and on an iPhone in pseudo-fullscreen the Safari toolbar showing/hiding does exactly that — every held
+  // button would let go mid-game. A finger on a control that survived keeps pressing it at its new spot.
+  const prevLayoutRef = useRef(layout);
   useLayoutEffect(() => {
-    releaseAll();
-    // releaseAll reads everything through refs; only a new layout should re-run this.
+    const ids = new Set(layout.controls.map((c) => c.id));
+    const st = stateRef.current;
+    for (const [pid, f] of st.fingers) {
+      if (ids.has(f.controlId)) continue;
+      st.fingers.delete(pid);
+      // A held hold-action (⏪/⏩) whose control vanished still owes the worker its release.
+      const gone = prevLayoutRef.current.controls.find((c) => c.id === f.controlId);
+      if (gone?.kind === "action") live.current.onAction(gone.action, false);
+    }
+    for (const id of st.toggled) if (!ids.has(id)) st.toggled.delete(id);
+    prevLayoutRef.current = layout;
+    push(true);
+    // push reads everything through refs; only a new layout should re-run this.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layout]);
 

@@ -85,6 +85,20 @@ describe("TouchControls", () => {
     expect(onFrame.mock.calls.at(-1)).toEqual([0, [0, 0, 0, 0]]);
   });
 
+  it("keeps a held button pressed when the layout is regenerated (a resize), releases one whose control is gone", () => {
+    const { ctl, lastFrame, rerender, onFrame, onAction } = setup();
+    fireEvent.pointerDown(ctl("a"), { pointerId: 1, clientX: 900, clientY: 250 });
+    fireEvent.pointerDown(ctl("rw"), { pointerId: 2, clientX: 500, clientY: 50 });
+    const props = { size, onFrame, onAction, actionAllowed: () => true };
+    // Same controls, new object, nudged positions — what a default layout looks like after a resize.
+    rerender(<TouchControls {...props} layout={{ ...layout, controls: layout.controls.map((c) => ({ ...c, y: c.y + 0.01 })) }} />);
+    expect(lastFrame()[0]).toBe(bit("A"));
+    // A layout without A or the rewind button: both fingers are released, rewind's release is sent.
+    rerender(<TouchControls {...props} layout={{ ...layout, controls: layout.controls.filter((c) => c.id !== "a" && c.id !== "rw") }} />);
+    expect(lastFrame()[0]).toBe(0);
+    expect(onAction.mock.calls.at(-1)).toEqual(["rewind", false]);
+  });
+
   it("marks every control so the room's chrome-reveal ignores presses on it", () => {
     const { container } = setup();
     for (const el of container.querySelectorAll(".tc")) expect(el.hasAttribute("data-touch-control")).toBe(true);

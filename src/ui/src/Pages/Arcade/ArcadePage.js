@@ -444,7 +444,10 @@ export default function ArcadePage({ userData }) {
   function doCreateRoom(versionId, opts) {
     // The room-start itself (stored quality, network unbundling, codec resolution, the POST and the
     // push into the room) lives in arcadeRoomCreate — the saves page starts rooms from a save too.
-    return createRoomAndGo(versionId, opts, history).finally(() => setCreating(0));
+    // The game modal stays open (Start spinning) until this navigates; drop its ?game= param from the
+    // lobby entry at that moment, so Back past the room lands on the lobby, not under the modal again.
+    const go = { push: (loc) => { closeGame(); history.push(loc); } };
+    return createRoomAndGo(versionId, opts, go).finally(() => setCreating(0));
   }
 
   const joinRoom = (roomCode) => history.push(`/arcade/room/${roomCode}`);
