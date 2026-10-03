@@ -112,6 +112,17 @@ $CATALOGUE = @(
        provenance='CUSTOM PSP build: docker/arcade/ppsspp-custom-core.patch (patched MachineContext AV-rescue handler; permits real JIT + fastmem).'
        rebuild='docker/arcade/ppsspp-build-core.bat (MSVC + libretro/Makefile; NEVER MinGW for PPSSPP)' },
 
+    # GStreamer plugins under MSYS2. stockName=$true: the mingw-w64-ucrt-x86_64-gst-plugins-bad package ships these
+    # exact filenames, so ANY `pacman -Syu` that touches GStreamer silently overwrites them with stock - the same
+    # silent-revert class as the cores. Every worker loads them at start.
+    @{ id='gst-nvcodec'; file='libgstnvcodec.dll'; roots=@('D:\msys64\ucrt64\lib\gstreamer-1.0'); stockName=$true
+       provenance='PATCHED nvcodec (GStreamer 1.28.4): patches/gst 0002 (SDK 13 header, AV1 intra-refresh + temporal SVC, H.264 temporal SVC) + 0004 (H.264 intra-refresh). 0003 strict-refs deliberately NOT applied. Stock = no intra-refresh (periodic keyframe bursts) and no SVC layer dropping.'
+       rebuild='scripts/build-gst-nvcodec-patched.ps1 (workers stopped to install; needs a patch.exe on PATH, e.g. Git usr/bin)' },
+
+    @{ id='gst-d3d12'; file='libgstd3d12.dll'; roots=@('D:\msys64\ucrt64\lib\gstreamer-1.0'); stockName=$true
+       provenance='PATCHED d3d12 (GStreamer 1.28.4): patches/gst 0001 fixes the monochrome-cursor OOB in dxgi capture. Stock = fullscreen capture-lane titles crash 0xC0000409 10-30 s in.'
+       rebuild='scripts/build-gst-d3d12-patched.ps1' },
+
     @{ id='jellyfin-api'; file='Jellyfin.Api.dll'; roots=@('C:\Program Files\Jellyfin\Server'); stockName=$true
        provenance='PATCHED Jellyfin 10.11.11: exact per-keyframe HLS copy segmentation + POST /Videos/{itemId}/ExtractKeyframes. Binding identity MUST stay 12.0.0.0.'
        rebuild='.claude/skills/hls-copy-freeze/tools/build-jellyfin-patch.ps1 then deploy-jellyfin-patch.ps1 (elevated)' },

@@ -142,3 +142,6 @@ foreach ($p in @("temporal-layers", "intra-refresh-period", "intra-refresh-count
     else { throw "installed plugin's nvh264enc does NOT expose $p — the build or install did not take" }
 }
 Write-Host "OK — patched nvcodec installed and verified."
+# The drift tripwire (scripts/verify-patched-artifacts.ps1, watchdog check H) tracks this DLL by hash: an
+# intentional rebuild must be re-snapshotted, or the watchdog will (rightly) report it as DRIFT.
+Write-Host "NEXT: scriptserify-patched-artifacts.ps1 -Snapshot   (records the new bytes + vaults them)"

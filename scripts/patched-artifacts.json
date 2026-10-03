@@ -1,5 +1,5 @@
 {
-  "generatedUtc": "2026-09-04T02:30:02.0065738Z",
+  "generatedUtc": "2026-10-03T14:26:49.7620232Z",
   "note": "Expected bytes for every patched/pinned binary. Regenerate ONLY after an intentional rebuild (verify-patched-artifacts.ps1 -Snapshot). Never regenerate to silence an unexplained finding.",
   "artifacts": [
     {
@@ -115,6 +115,32 @@
       "vault": "D:\\ArcadeStorage\\patched-vault\\core-ppsspp-custom__ppsspp_custom_libretro.dll",
       "provenance": "CUSTOM PSP build: docker/arcade/ppsspp-custom-core.patch (patched MachineContext AV-rescue handler; permits real JIT + fastmem).",
       "rebuild": "docker/arcade/ppsspp-build-core.bat (MSVC + libretro/Makefile; NEVER MinGW for PPSSPP)"
+    },
+    {
+      "id": "gst-nvcodec",
+      "file": "libgstnvcodec.dll",
+      "stockName": true,
+      "sha256": "89F7B4C15DE3EF3683A201CE049E9077406D4D10C1DB24EAAEBF69A03ECAF2A3",
+      "size": 1478541,
+      "locations": [
+        "D:\\msys64\\ucrt64\\lib\\gstreamer-1.0\\libgstnvcodec.dll"
+      ],
+      "vault": "D:\\ArcadeStorage\\patched-vault\\gst-nvcodec__libgstnvcodec.dll",
+      "provenance": "PATCHED nvcodec (GStreamer 1.28.4): patches/gst 0002 (SDK 13 header, AV1 intra-refresh + temporal SVC, H.264 temporal SVC) + 0004 (H.264 intra-refresh). 0003 strict-refs deliberately NOT applied. Stock = no intra-refresh (periodic keyframe bursts) and no SVC layer dropping.",
+      "rebuild": "scripts/build-gst-nvcodec-patched.ps1 (workers stopped to install; needs a patch.exe on PATH, e.g. Git usr/bin)"
+    },
+    {
+      "id": "gst-d3d12",
+      "file": "libgstd3d12.dll",
+      "stockName": true,
+      "sha256": "ECE2641B0CEADF4545E71B137CC36AC732B7C0A40496DDA48E10D39E0E164EA6",
+      "size": 1756644,
+      "locations": [
+        "D:\\msys64\\ucrt64\\lib\\gstreamer-1.0\\libgstd3d12.dll"
+      ],
+      "vault": "D:\\ArcadeStorage\\patched-vault\\gst-d3d12__libgstd3d12.dll",
+      "provenance": "PATCHED d3d12 (GStreamer 1.28.4): patches/gst 0001 fixes the monochrome-cursor OOB in dxgi capture. Stock = fullscreen capture-lane titles crash 0xC0000409 10-30 s in.",
+      "rebuild": "scripts/build-gst-d3d12-patched.ps1"
     },
     {
       "id": "jellyfin-api",
