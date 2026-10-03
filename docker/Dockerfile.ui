@@ -8,6 +8,15 @@ WORKDIR /build
 COPY src/ui/package.json .
 COPY src/ui/package-lock.json .
 RUN npm install
+# npm SILENTLY skips an optional dependency it fails to fetch, and the per-platform native binaries are optional
+# dependencies — so a fresh `npm install` (a cache miss) can finish "successfully" without lightningcss's Linux
+# binary, and the build then dies in Vite's CSS minifier ("Cannot find module '../lightningcss.linux-x64-gnu.node'",
+# 2026-10-03 run 37102181478). Check that it loads; if not, install the exact version the lockfile pins, then insist.
+RUN node -e "require('lightningcss')" 2>/dev/null || ( \
+      v=$(node -p "require('./package-lock.json').packages['node_modules/lightningcss-linux-x64-gnu'].version") && \
+      echo "lightningcss native binary missing after npm install - installing lightningcss-linux-x64-gnu@$v" && \
+      npm install --no-save "lightningcss-linux-x64-gnu@$v" && \
+      node -e "require('lightningcss')" )
 COPY src/ui/ .
 # The commit being built, for index.html's mt-build marker. Declared HERE, after `npm install`, so a
 # new SHA invalidates only the build layer and never the dependency layer. There is no .git in this
