@@ -1212,11 +1212,17 @@ function arcadeHeartbeat(code, ttffMs) {
   return fetch(`/API/Arcade/Room/${encodeURIComponent(code)}/Heartbeat${q}`, { method: "post" }).catch(() => {});
 }
 
-// This device's codec history for the Auto choice: { avoid: "av1" | "h264" | null }. Never throws — no hint is
-// the old behaviour, so any failure resolves to { avoid: null }.
+// This device's codec history for the Auto choice: { avoid: "av1" | "h264" | null }. Never throws and never waits
+// long — it sits on the Play path, and no hint is the old behaviour — so a failure or a 1.5 s stall resolves to
+// { avoid: null }.
 function getArcadeCodecHint(deviceId = "") {
   const q = deviceId ? `?deviceId=${encodeURIComponent(deviceId)}` : "";
-  return fetch(`/API/Arcade/CodecHint${q}`).then((r) => (r.ok ? r.json() : { avoid: null })).catch(() => ({ avoid: null }));
+  const ctl = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timer = ctl ? setTimeout(() => ctl.abort(), 1500) : null;
+  return fetch(`/API/Arcade/CodecHint${q}`, ctl ? { signal: ctl.signal } : undefined)
+    .then((r) => (r.ok ? r.json() : { avoid: null }))
+    .catch(() => ({ avoid: null }))
+    .finally(() => { if (timer) clearTimeout(timer); });
 }
 // A joiner whose browser can't receive the room's codec (refused client-side before connecting). Recorded per
 // user + device so the codec program can see how often mixed rooms actually happen. Fire-and-forget.

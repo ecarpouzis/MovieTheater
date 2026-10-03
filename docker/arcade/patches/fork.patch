@@ -5973,10 +5973,10 @@ index 99e02b8..812afba 100644
  func filterIP(i net.IP, filter []string) bool {
 diff --git a/pkg/network/webrtc/pacer.go b/pkg/network/webrtc/pacer.go
 new file mode 100644
-index 0000000..b0b93fd
+index 0000000..a0f45d9
 --- /dev/null
 +++ b/pkg/network/webrtc/pacer.go
-@@ -0,0 +1,131 @@
+@@ -0,0 +1,162 @@
 +// In-frame packet pacing (patch 0028). The stack deliberately runs GCC with a NoOpPacer — a
 +// leaky-bucket pacer queues and re-times RTP, which is exactly the latency this project exists to
 +// avoid, and on an idle LAN wire-speed bursts are harmless. But off-LAN they are not: each encoded
@@ -5995,6 +5995,7 @@ index 0000000..b0b93fd
 +
 +import (
 +	"strings"
++	"sync"
 +	"sync/atomic"
 +	"time"
 +
@@ -6038,6 +6039,17 @@ index 0000000..b0b93fd
 +// loss. From config (webrtc.lossPacingMs); process-global like paceSleeps.
 +func SetLossPacing(ms int) { lossPaceMs.Store(int32(min(max(ms, 0), 20))) }
 +
++// LossPacingMs is the configured loss window (0 = loss pacing off).
++func LossPacingMs() int { return int(lossPaceMs.Load()) }
++
++// A viewer is judged lossy on SUSTAINED loss, not one stray NACK — a Wi-Fi viewer may well NACK once at start,
++// and pacing costs it 11-50 ms of jitter buffer for the rest of its session (measured). lossNackTrigger NACK
++// packets inside lossNackWindow arm it.
++const (
++	lossNackTrigger = 3
++	lossNackWindow  = 5 * time.Second
++)
++
 +type pacerFactory struct{}
 +
 +func (pacerFactory) NewInterceptor(_ string) (interceptor.Interceptor, error) {
@@ -6049,6 +6061,23 @@ index 0000000..b0b93fd
 +type pacer struct {
 +	interceptor.NoOp
 +	lossy atomic.Bool
++	// NACK arrival times inside the trigger window (RTCP is read on one goroutine per sender; mu guards it).
++	mu    sync.Mutex
++	nacks []time.Time
++}
++
++// sawNack records one NACK and reports whether the viewer has now shown sustained loss.
++func (p *pacer) sawNack(now time.Time) bool {
++	p.mu.Lock()
++	defer p.mu.Unlock()
++	keep := p.nacks[:0]
++	for _, t := range p.nacks {
++		if now.Sub(t) <= lossNackWindow {
++			keep = append(keep, t)
++		}
++	}
++	p.nacks = append(keep, now)
++	return len(p.nacks) >= lossNackTrigger
 +}
 +
 +func (p *pacer) BindRTCPReader(reader interceptor.RTCPReader) interceptor.RTCPReader {
@@ -6058,7 +6087,9 @@ index 0000000..b0b93fd
 +			if pkts, perr := rtcp.Unmarshal(b[:n]); perr == nil {
 +				for _, pkt := range pkts {
 +					if _, ok := pkt.(*rtcp.TransportLayerNack); ok {
-+						p.lossy.Store(true)
++						if p.sawNack(time.Now()) {
++							p.lossy.Store(true)
++						}
 +						break
 +					}
 +				}
@@ -6110,14 +6141,15 @@ index 0000000..b0b93fd
 +}
 diff --git a/pkg/network/webrtc/pacer_loss_test.go b/pkg/network/webrtc/pacer_loss_test.go
 new file mode 100644
-index 0000000..684a14e
+index 0000000..b57c9a1
 --- /dev/null
 +++ b/pkg/network/webrtc/pacer_loss_test.go
-@@ -0,0 +1,65 @@
+@@ -0,0 +1,88 @@
 +package webrtc
 +
 +import (
 +	"testing"
++	"time"
 +
 +	"github.com/pion/interceptor"
 +	"github.com/pion/rtcp"
@@ -6155,7 +6187,13 @@ index 0000000..684a14e
 +	if c := w.paceCap(); c != 0 {
 +		t.Fatalf("a receiver report is not loss, got cap %d", c)
 +	}
-+	feed(&rtcp.TransportLayerNack{SenderSSRC: 1, MediaSSRC: 2, Nacks: []rtcp.NackPair{{PacketID: 100}}})
++	nack := &rtcp.TransportLayerNack{SenderSSRC: 1, MediaSSRC: 2, Nacks: []rtcp.NackPair{{PacketID: 100}}}
++	feed(nack)
++	if c := w.paceCap(); c != 0 {
++		t.Fatalf("one NACK is not sustained loss, got cap %d", c)
++	}
++	feed(nack)
++	feed(nack)
 +	if c := w.paceCap(); c != 8 {
 +		t.Fatalf("after this viewer's NACK it must be paced at the loss window, got cap %d", c)
 +	}
@@ -6177,6 +6215,22 @@ index 0000000..684a14e
 +	SetLossPacing(0)
 +	if c := w.paceCap(); c != 0 {
 +		t.Fatalf("loss pacing disabled must not pace, got %d", c)
++	}
++}
++
++// One stray NACK (a Wi-Fi viewer at start) must not pace a viewer for its whole session; sustained loss must.
++func TestLossPacing_NeedsSustainedLoss(t *testing.T) {
++	p := &pacer{}
++	t0 := time.Unix(1000, 0)
++	if p.sawNack(t0) || p.sawNack(t0.Add(10*time.Second)) || p.sawNack(t0.Add(20*time.Second)) {
++		t.Fatal("isolated NACKs, 10 s apart, armed loss pacing")
++	}
++	q := &pacer{}
++	if q.sawNack(t0) || q.sawNack(t0.Add(time.Second)) {
++		t.Fatal("armed before the trigger count")
++	}
++	if !q.sawNack(t0.Add(2 * time.Second)) {
++		t.Fatal("three NACKs inside the window must arm loss pacing")
 +	}
 +}
 diff --git a/pkg/network/webrtc/playoutdelay.go b/pkg/network/webrtc/playoutdelay.go
@@ -10341,10 +10395,10 @@ index 0000000..a78e01a
 +}
 diff --git a/pkg/worker/adaptive.go b/pkg/worker/adaptive.go
 new file mode 100644
-index 0000000..e4c1055
+index 0000000..7252395
 --- /dev/null
 +++ b/pkg/worker/adaptive.go
-@@ -0,0 +1,532 @@
+@@ -0,0 +1,545 @@
 +package worker
 +
 +import (
@@ -10477,6 +10531,7 @@ index 0000000..e4c1055
 +	pliHist     [adaptPliWindow + 1]int64 // ring of cumulative PLI counts, one per tick
 +	nackHist    [adaptPliWindow + 1]int64 // ring of cumulative NACK counts, same ticks
 +	nackWin     int64                     // NACKs in the last window (for the distress log line)
++	lossNoted   bool                      // the same-host-loss handoff to the pacer was logged once
 +	histN       int
 +	deficit     int // consecutive decode-deficit ticks
 +	layerCapped bool
@@ -10664,6 +10719,18 @@ index 0000000..e4c1055
 +			unreported++ // reported, but cannot measure its display: treat as unknown (no cap)
 +		}
 +		weak, strong := st.distress(st.pliTotal, p.NackCount(), rep, has, tp.sameHost)
++		// LOSS on the viewer's own machine (same-host, NACKing, no decode deficit) is a receive-path problem whose
++		// remedy is pacing THAT viewer (pacer.go, webrtc.lossPacingMs) — not halving its frame rate and deduping
++		// the room, which is what the rungs below do and which left a real Firefox at ~5 fps (2026-10-03). With
++		// loss pacing on, such a viewer is left to the pacer; the rungs stay for decoders and for remote links.
++		if weak && !strong && tp.sameHost && st.nackWin > 0 && webrtc.LossPacingMs() > 0 {
++			if !st.lossNoted {
++				st.lossNoted = true
++				a.log.Info().Msgf("abr: same-host packet loss dev=%s nack=%d pli=%d/%ds — pacing this viewer, no layer cap or dedup",
++					peerDesc(p), st.nackWin, st.pliWindow(), adaptPliWindow)
++			}
++			weak = false
++		}
 +		if weak {
 +			anyDistress = true
 +			a.histFor(p).weakTicks++
@@ -10879,10 +10946,10 @@ index 0000000..e4c1055
 +}
 diff --git a/pkg/worker/adaptive_test.go b/pkg/worker/adaptive_test.go
 new file mode 100644
-index 0000000..655318d
+index 0000000..ae315ea
 --- /dev/null
 +++ b/pkg/worker/adaptive_test.go
-@@ -0,0 +1,501 @@
+@@ -0,0 +1,532 @@
 +package worker
 +
 +import (
@@ -11382,6 +11449,37 @@ index 0000000..655318d
 +	}
 +	if st := ctl.peers[ff]; st == nil || !st.layerCapped {
 +		t.Fatal("the lossy viewer should still get the per-viewer layer cap (fewer packets for it alone)")
++	}
++}
++
++// With loss pacing on, a same-host viewer whose only trouble is packet loss is handed to the pacer: no layer cap
++// (which left a real Firefox at ~5 fps) and no room-wide dedup. A decode deficit still takes the rungs.
++func TestAdaptiveRoom_SameHostLossGoesToThePacer(t *testing.T) {
++	webrtc.SetLossPacing(8)
++	t.Cleanup(func() { webrtc.SetLossPacing(0) })
++	app := &fakeApp{base: 3}
++	ctl := newTestCtl(app, allOn, false)
++	ff := &fakeViewer{}
++	ff.report(60, 75, 75, false)
++	peers := []adaptTickPeer{{p: ff, sameHost: true}}
++	for now := 1; now <= 30; now++ {
++		ff.pli += 1
++		ff.nack += 6
++		ctl.tick(now, peers)
++	}
++	if st := ctl.peers[ff]; st == nil || st.layerCapped {
++		t.Fatal("a loss-only same-host viewer must not be layer-capped when loss pacing is on")
++	}
++	if app.dedup || app.rebuilds != 0 {
++		t.Fatalf("loss-only viewer turned on dedup=%v or rescaled (rebuilds=%d)", app.dedup, app.rebuilds)
++	}
++	// The same viewer with a real decode deficit still gets the decoder remedies.
++	ff.report(60, 60, 30, false)
++	for now := 31; now <= 40; now++ {
++		ctl.tick(now, peers)
++	}
++	if !app.dedup {
++		t.Fatal("a decode deficit must still take the distress rungs")
 +	}
 +}
 diff --git a/pkg/worker/caged/app/app.go b/pkg/worker/caged/app/app.go

@@ -32,6 +32,10 @@ const STATUS_TEXT = {
 // The two statuses that mean "media is flowing" — both must kick autoplay, or a spectator stares at a
 // frozen first frame behind the "Tap to start" overlay.
 const LIVE_STATUS = ["playing", "spectating"];
+// How long a room may sit at "connecting" (ROM-status poll + signaling socket not yet open) before the player is told
+// why. A healthy start leaves "connecting" in well under a second once the ROM is staged; staging itself reports
+// progress through the same poll, which a blocked browser never completes.
+const CONNECT_STALL_MS = 10000;
 
 // ── Input tape (inputTape.js) ────────────────────────────────────────────────────────────────────
 // A developer affordance, off for everyone by default: record every pad frame this seat sends (plus
@@ -125,6 +129,17 @@ export default function ArcadeRoomPage() {
   const [romPercent, setRomPercent] = useState(null);
   const statusRef = useRef(status);
   statusRef.current = status;
+  // The pre-connection stall watchdog (see the start effect) — cleared, with its warning, once the status moves on.
+  const stallTimerRef = useRef(null);
+  // Set when the game server answered ANY request (the ROM-status poll): it is reachable, so a long "connecting"
+  // is ROM staging (with its own progress), never a blocked browser.
+  const gatewayAnsweredRef = useRef(false);
+  useEffect(() => {
+    if (status === "connecting") return;
+    if (stallTimerRef.current) { clearTimeout(stallTimerRef.current); stallTimerRef.current = null; }
+    message.destroy("arcade-no-video");
+  }, [status]);
+  useEffect(() => () => { if (stallTimerRef.current) clearTimeout(stallTimerRef.current); message.destroy("arcade-no-video"); }, []);
   // States where our session is over — no presence to assert. Beating from these would resurrect
   // the room server-side (heartbeats are the rehydration proof-of-life) and hold a dead room in
   // the lobby rail / concurrency cap. "failed" is WebRTC's other dead connectionState (the shim
@@ -311,6 +326,7 @@ export default function ArcadeRoomPage() {
       let s;
       try {
         const res = await fetch(`${g.base}/rom-status/${g.token}`);
+        gatewayAnsweredRef.current = true;
         if (!res.ok) return true;
         s = await res.json();
       } catch {
@@ -362,6 +378,18 @@ export default function ArcadeRoomPage() {
       // Connecting first and hoping meant the player watched "Connecting…" while the gateway worked,
       // and if they gave up, the aborted request CANCELLED the extraction — so the next attempt began
       // at zero and could never finish either. Ask, show progress, connect when it says ready.
+      // Stall watchdog for the whole pre-connection phase. On the home network the game server resolves to a
+      // PRIVATE address; a browser enforcing Local Network Access holds every request to it (the ROM-status poll
+      // below, then the signaling socket) PENDING behind a permission prompt — no error, so the room read
+      // "Connecting…" forever (reproduced 2026-10-03, Chrome 154). If nothing has advanced past "connecting"
+      // after STALL_MS, say why (soft: cleared as soon as the status moves on).
+      const stallTimer = setTimeout(async () => {
+        if (cancelled || statusRef.current !== "connecting" || gatewayAnsweredRef.current) return;
+        const lna = await localNetworkPermission();
+        if (cancelled || statusRef.current !== "connecting") return;
+        message.warning({ key: "arcade-no-video", content: videoProblemMessage({ kind: "no-connection" }, lna), duration: 0 });
+      }, CONNECT_STALL_MS);
+      stallTimerRef.current = stallTimer;
       if (!(await waitForRom(descriptor, (pct) => { if (!cancelled) setRomPercent(pct); }))) {
         if (!cancelled) setFatal("Couldn't prepare this game's ROM.");
         return;
@@ -378,9 +406,16 @@ export default function ArcadeRoomPage() {
         onTtff: (t) => { if (!cancelled && t && t.totalMs > 0) ttffPendingRef.current = t.totalMs; },
         // The game started but no picture ever presented (codec this browser can't decode, a blocked
         // local-network connection, or a dead path) — a dead end, so end the session and say which.
+        // Hard verdicts (the worker refused/mis-negotiated this peer) end the session; the shim's own watchdog
+        // inference only WARNS and is withdrawn if a frame turns up — it must never kill a slow-but-healthy room.
         onVideoProblem: async (problem) => {
-          const lna = problem.kind === "no-media" ? await localNetworkPermission() : null;
+          if (problem.kind === "recovered") { message.destroy("arcade-no-video"); return; }
+          const lna = problem.kind === "no-media" || problem.kind === "no-connection" ? await localNetworkPermission() : null;
           if (cancelled) return;
+          if (problem.soft) {
+            message.warning({ key: "arcade-no-video", content: videoProblemMessage(problem, lna), duration: 0 });
+            return;
+          }
           if (problem.kind === "codec") MovieAPI.reportArcadeCodecRefusal(code, problem.codec, arcadeDeviceId());
           sessionRef.current?.close?.();
           setFatal(videoProblemMessage(problem, lna));

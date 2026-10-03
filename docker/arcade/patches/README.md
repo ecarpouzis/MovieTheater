@@ -1036,7 +1036,14 @@ Playwright's patched Firefox reports different decoder capabilities and is not e
 `test-roms/codec-matrix.mjs`: unpaced, Chrome/Edge lose nothing (jitter buffer ~10 ms) while Firefox loses
 84-118 packets per 40 s with 4 PLIs every run; room-wide 8 ms pacing cures Firefox but costs every browser
 21-61 ms of jitter buffer. So the pacer interceptor (per PeerConnection) reads that viewer's RTCP and paces
-only a viewer that has sent a NACK, for the rest of its session.
+only a viewer that has shown SUSTAINED loss (3 NACKs inside 5 s — one stray Wi-Fi NACK must not cost a viewer
+11-50 ms of jitter buffer for its whole session), for the rest of its session. With it on, same-host loss is handed
+to the pacer instead of the weak rungs: the deployed build without this capped a real Firefox to its base temporal
+layer + room-wide dedup, ~5 fps. **Verified live 2026-10-03 with `lossPacingMs: 8`** (fork `f12f9ad`, all three
+workers): Firefox 157 x3 at 75 fps, full 1920 every run (29-86 packets lost before the trigger arms); Chrome 154 x2
+and Edge 154 x2 untouched — 0 lost, no NACKs, jitter buffer 10-12 ms (one Edge 25.7 ms outlier with 0 NACKs, so
+not pacing). The `codec-error:` path was verified live too (`test-roms/codec-error-probe.mjs`: a Chrome whose offer
+omits AV1 gets "this browser can't play AV1 video" within 2 s; worker logs the refusal and closes the peer).
 
 **Deploy order.** DB (done) → site → workers. The SITE must ship first: a pre-0048 shim hands the two envelopes
 to `addCandidate`, whose JSON parse error reaches the room page's `onError` — only on a mismatch, which is

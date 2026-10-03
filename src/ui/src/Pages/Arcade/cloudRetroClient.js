@@ -1052,6 +1052,7 @@ export function createCloudRetroSession(descriptor, opts) {
     if (!ttff.t0 || ttff.marks[name] != null) return;
     ttff.marks[name] = Math.round(nowMs() - ttff.t0);
     if (name !== "first-frame") return;
+    videoRecovered();
     const m = ttff.marks;
     const v = (k) => (m[k] == null ? "-" : m[k]);
     try {
@@ -2112,25 +2113,36 @@ export function createCloudRetroSession(descriptor, opts) {
   // running) is the right clock — boot time varies by tens of seconds per system, but once the game has
   // started the first keyframe reaches the decoder in ~1-2 s (ttff first-frame − game-start). If no frame
   // has presented NO_VIDEO_MS later, ask getStats which of the two failures it is and tell the room page.
-  let videoProblemReported = false;
-  function reportVideoProblem(kind, codec) {
-    if (videoProblemReported || closed) return;
-    videoProblemReported = true;
-    status("no-video");
-    try { onVideoProblem && onVideoProblem({ kind, codec: codec || strFromWsUrl(descriptor.wsUrl, "codec") || "" }); } catch { /* observer */ }
+  // Two strengths of verdict. The worker's "codec-error:"/"codec-mismatch:" envelopes are FACTS (the peer was
+  // refused or mis-negotiated) — hard, the room page ends the session. The watchdog's reading of getStats is an
+  // INFERENCE — soft: the page warns but keeps the session, and a frame arriving later withdraws the warning
+  // ({ kind: "recovered" }), so a slow-but-healthy start can never be killed by it.
+  let videoProblemReported = false; // a hard verdict was delivered
+  let softProblem = false;          // a watchdog warning is up
+  function reportVideoProblem(kind, codec, soft = false) {
+    if (videoProblemReported || closed || (soft && softProblem)) return;
+    if (soft) softProblem = true; else { videoProblemReported = true; status("no-video"); }
+    try { onVideoProblem && onVideoProblem({ kind, soft, codec: codec || strFromWsUrl(descriptor.wsUrl, "codec") || "" }); } catch { /* observer */ }
   }
-  function armNoVideoWatchdog() {
+  function videoRecovered() {
+    if (!softProblem || videoProblemReported) return;
+    softProblem = false;
+    try { onVideoProblem && onVideoProblem({ kind: "recovered", soft: true }); } catch { /* observer */ }
+  }
+  function armNoVideoWatchdog(delay = NO_VIDEO_MS) {
     if (inputOnly) return; // an input-only seat never receives video
     setTimeout(async () => {
       if (closed || videoProblemReported || ttff.marks["first-frame"] != null) return;
+      // A hidden tab may not decode or present at all — that says nothing about the stream. Judge it once the
+      // player is looking at it again.
+      if (typeof document !== "undefined" && document.hidden) { armNoVideoWatchdog(2000); return; }
       let rtp = null;
       try { for (const r of (await pc.getStats()).values()) if (r.type === "inbound-rtp" && r.kind === "video") rtp = r; } catch { /* no pc */ }
       if (ttff.marks["first-frame"] != null) return; // raced the stats read
       const kind = classifyNoVideo(rtp);
-      // Frames ARE decoding, the presentation callback just hasn't fired (a background tab never runs rVFC):
-      // that is not a failure.
-      if (kind !== "late") reportVideoProblem(kind);
-    }, NO_VIDEO_MS);
+      // Frames ARE decoding, the presentation callback just hasn't fired: not a failure.
+      if (kind !== "late") reportVideoProblem(kind, "", true);
+    }, delay);
   }
 
   function onGameStarted(p) {
@@ -2208,7 +2220,15 @@ export function createCloudRetroSession(descriptor, opts) {
     ttff.t0 = nowMs();
     status("connecting");
     ws = new WebSocket(descriptor.wsUrl);
-    ws.onopen = () => { ttffMark("ws-open"); status("signalling"); };
+    ws.onopen = () => { ttffMark("ws-open"); status("signalling"); videoRecovered(); };
+    // Connect watchdog: the game server's socket normally opens in well under a second (ttff ws-open ~60 ms).
+    // On the home network that server resolves to a PRIVATE address, and a browser enforcing Local Network
+    // Access holds the socket PENDING behind a permission prompt — the room then reads "Connecting…" forever
+    // with no error at all (reproduced 2026-10-03 on Chrome 154). Say so after NO_CONNECT_MS (soft: withdrawn
+    // the moment the socket opens, e.g. after the player clicks Allow).
+    setTimeout(() => {
+      if (!closed && ttff.marks["ws-open"] == null) reportVideoProblem("no-connection", "", true);
+    }, NO_CONNECT_MS);
     ws.onmessage = (e) => handle(e.data);
     // Don't cry "connection failed" when WE closed it (session teardown / React StrictMode's throwaway
     // first mount) — only a genuine, still-open failure should surface to the user.
@@ -2854,6 +2874,8 @@ function numFromWsUrl(wsUrl, key) {
 
 // How long after game-start a missing first frame counts as "no video" (see armNoVideoWatchdog).
 export const NO_VIDEO_MS = 10000;
+// How long the game server's socket may stay unopened before the player is told why (see connect()).
+export const NO_CONNECT_MS = 8000;
 
 // Which no-video failure an inbound-rtp video stat (or its absence) describes:
 //   "no-media"     — nothing is arriving (no stream, or zero bytes): the sender, or the network path to it

@@ -187,7 +187,19 @@ const CODEC_NAME = { av1: "AV1", h264: "H.264" };
 
 /** What to tell a player whose room started but never showed a picture (cloudRetroClient's watchdog). */
 export function videoProblemMessage({ kind, codec } = {}, lnaState = null) {
+  codec = codec || "av1"; // a room with no recorded codec runs the worker default, AV1
   const name = CODEC_NAME[codec] || "this room's";
+  if (kind === "no-connection") {
+    if (lnaState === "prompt") {
+      return "Your browser is asking permission to reach the game server on your home network. Look for the prompt "
+        + "by the address bar and choose Allow — the game starts as soon as you do.";
+    }
+    if (lnaState === "denied") {
+      return "Your browser is blocking the game server on your home network. Allow \"local network access\" for this "
+        + "site (the icon at the left of the address bar), then rejoin.";
+    }
+    return "Can't reach the game server yet. If this doesn't clear in a few seconds, this network may be blocking it.";
+  }
   if (kind === "mismatch") {
     return "This room's video settings changed while you were joining. Go back and join the room again.";
   }

@@ -113,6 +113,16 @@ describe("videoProblemMessage", () => {
     expect(videoProblemMessage({ kind: "no-media", codec: "av1" }, "denied")).toMatch(/local network access/);
   });
 
+  it("treats a room with no recorded codec as the worker default (AV1), never advising the codec it already runs", () => {
+    expect(videoProblemMessage({ kind: "not-decoding", codec: "" })).toMatch(/can't play AV1.*Codec: H\.264/);
+  });
+
+  it("explains a stalled connection by the browser's local-network permission", () => {
+    expect(videoProblemMessage({ kind: "no-connection" }, "prompt")).toMatch(/asking permission.*choose Allow/);
+    expect(videoProblemMessage({ kind: "no-connection" }, "denied")).toMatch(/blocking the game server/);
+    expect(videoProblemMessage({ kind: "no-connection" }, null)).toMatch(/Can't reach the game server/);
+  });
+
   it("tells a mismatched joiner to rejoin, not to change browsers", () => {
     expect(videoProblemMessage({ kind: "mismatch", codec: "h264" })).toMatch(/join the room again/);
   });
