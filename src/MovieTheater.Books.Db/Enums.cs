@@ -42,6 +42,11 @@ namespace MovieTheater.Books.Db
     /// <summary>Stored as int. Vocabulary from v2-mapping.json enums["Item.ResolvedSynopsisSource"].</summary>
     public enum SynopsisSource { None = 0, Cv = 1, Embedded = 2, Locg = 3, External = 4, Mu = 5, CvDeck = 6, AI = 7 }
 
+    /// <summary>A run's PUBLICATION status (books-run-status, from GCD + ComicVine + the files' "(of N)"): Completed = a planned
+    /// limited run that reached its planned length; Ended = an open-ended series that stopped (GCD "was ongoing"); Cancelled =
+    /// stopped short of its planned length, or a source says cancelled.</summary>
+    public enum RunStatus { Unknown = 0, Ongoing = 1, Completed = 2, Ended = 3, Cancelled = 4 }
+
     /// <summary>
     /// Which link statuses a CONSUMER may believe, stated once.
     ///

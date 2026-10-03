@@ -24,6 +24,71 @@ namespace MovieTheater.Books.Providers
                 $"{{ processed: {Processed}, remaining: {Remaining}, nextCursor: \"{NextCursor}\", written: {Written}, skipped: {Skipped} }}";
         }
 
+        // ── GCD series (run status) ───────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// One page of the GCD series the identity pass LINKED (<paramref name="ids"/>, ascending) → legs `GcdSeries`,
+        /// read from the local GCD dump. The v1→v2 migration carried 17k rows and nothing refreshed them, and none
+        /// carried GCD's <c>is_current</c>; books-run-status needs both. Upsert, so a re-run refreshes in place.
+        /// </summary>
+        public static ImportResult ImportGcdSeries(SqliteConnection gcd, SqliteConnection legs, IReadOnlyList<int> ids, long after, int batchSize)
+        {
+            batchSize = Math.Clamp(batchSize, 1, 900);   // SQLite's variable cap: one IN-list per page
+            var page = ids.Where(x => x > after).Take(batchSize).ToList();
+            if (page.Count == 0) return new ImportResult(0, 0, null, 0, 0);
+
+            var rows = new List<object?[]>();
+            using (var cmd = gcd.CreateCommand())
+            {
+                var names = page.Select((_, i) => "$p" + i).ToList();
+                cmd.CommandText = $@"SELECT s.id, s.name, s.sort_name, s.year_began, s.year_ended, p.name, coalesce(nullif(trim(s.publishing_format), ''), nullif(trim(s.format), '')), s.issue_count,
+       s.has_isbn, s.has_barcode, s.binding, s.notes, s.is_current, s.publication_dates, s.tracking_notes
+FROM gcd_series s LEFT JOIN gcd_publisher p ON p.id = s.publisher_id
+WHERE s.deleted = 0 AND s.id IN ({string.Join(",", names)})";
+                for (var i = 0; i < page.Count; i++) cmd.Parameters.AddWithValue(names[i], page[i]);
+                using var rd = cmd.ExecuteReader();
+                while (rd.Read())
+                {
+                    var r = new object?[15];
+                    for (var k = 0; k < 15; k++) r[k] = rd.IsDBNull(k) ? null : rd.GetValue(k);
+                    rows.Add(r);
+                }
+            }
+
+            int written = 0;
+            using (var tx = legs.BeginTransaction())
+            using (var cmd = legs.CreateCommand())
+            {
+                cmd.Transaction = tx;
+                cmd.CommandText = @"INSERT INTO GcdSeries (GcdSeriesId, Name, SortName, YearBegan, YearEnded, Publisher, Format, IssueCount,
+    HasIsbn, HasBarcode, Binding, Notes, IsCurrent, PublicationDates, TrackingNotes, ImportedAt)
+VALUES ($id, $name, $sort, $yb, $ye, $pub, $fmt, $n, $isbn, $bar, $bind, $notes, $cur, $dates, $track, $at)
+ON CONFLICT(GcdSeriesId) DO UPDATE SET Name = excluded.Name, SortName = excluded.SortName, YearBegan = excluded.YearBegan,
+    YearEnded = excluded.YearEnded, Publisher = excluded.Publisher, Format = excluded.Format, IssueCount = excluded.IssueCount,
+    HasIsbn = excluded.HasIsbn, HasBarcode = excluded.HasBarcode, Binding = excluded.Binding, Notes = excluded.Notes,
+    IsCurrent = excluded.IsCurrent, PublicationDates = excluded.PublicationDates, TrackingNotes = excluded.TrackingNotes,
+    ImportedAt = excluded.ImportedAt";
+                string[] keys = ["$id", "$name", "$sort", "$yb", "$ye", "$pub", "$fmt", "$n", "$isbn", "$bar", "$bind", "$notes", "$cur", "$dates", "$track"];
+                var ps = keys.Select(k => cmd.Parameters.Add(k, SqliteType.Text)).ToArray();
+                var pAt = cmd.Parameters.Add("$at", SqliteType.Text);
+                var now = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+                foreach (var r in rows)
+                {
+                    for (var k = 0; k < keys.Length; k++) ps[k].Value = r[k] ?? DBNull.Value;
+                    // the dump's integer flags arrive as long; keep them integers, and an absent issue_count as 0 (NOT NULL)
+                    ps[7].Value = r[7] ?? 0L;
+                    ps[8].Value = r[8] ?? 0L;
+                    ps[9].Value = r[9] ?? 0L;
+                    pAt.Value = now;
+                    cmd.ExecuteNonQuery();
+                    written++;
+                }
+                tx.Commit();
+            }
+            var next = page[^1];
+            return new ImportResult(page.Count, ids.Count(x => x > next), next, written, page.Count - written);
+        }
+
         // ── ComicVine volume descriptions ───────────────────────────────────────────────────────────────
 
         /// <summary>

@@ -570,6 +570,12 @@ namespace MovieTheater.Books.Controllers
                     .ThenBy(r => r.Item.Year ?? int.MaxValue)
                     .ThenBy(r => r.Item.Id)
                     .ToList();
+
+            // The run's publication status and how much of it we hold (books-run-status). Comics only — a book series
+            // has no publication schedule — and null when the job has never reached this series.
+            var run = itemKind == ItemKind.Book ? null : await db.Series.AsNoTracking().Where(s => s.Id == seriesId && s.RunStatusBasis != null)
+                .Select(s => new { status = s.RunStatus.ToString(), planned = s.RunPlanned, published = s.RunPublished, held = s.RunHeld, basis = s.RunStatusBasis })
+                .FirstOrDefaultAsync(ct);
             return Ok(new
             {
                 seriesId,
@@ -577,6 +583,7 @@ namespace MovieTheater.Books.Controllers
                 kind = itemKind == ItemKind.Book ? "book" : "comic",
                 total = rows.Count,
                 items = rows,
+                run,
             });
         }
 

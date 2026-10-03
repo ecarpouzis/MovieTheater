@@ -120,6 +120,10 @@ namespace MovieTheater.Books.Db
         public bool HasBarcode { get; set; }
         public string? Binding { get; set; }
         public string? Notes { get; set; }
+        /// <summary>GCD's is_current — the series is still being published (books-gcd-series-import).</summary>
+        public bool? IsCurrent { get; set; }
+        public string? PublicationDates { get; set; }
+        public string? TrackingNotes { get; set; }
         public DateTime? ImportedAt { get; set; }
     }
 

@@ -12,6 +12,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { hueOf } from "../../catalog/sources/hue";
+import { runBadge } from "./runStatus";
 import { fetchGroups, fetchItem, fetchSeriesLibraryRating, fetchSeriesProgress, fetchSeriesRun, putGroupMark, type GroupUserMark, type SeriesRunRow } from "./booksApi";
 import { clampAspect, plural, runLabel, seriesSynopsisFor, stripHtml } from "./booksFormat";
 import { directoryHref, facetHref, novelsSeriesHref } from "./booksLinks";
@@ -79,7 +80,9 @@ export default function SeriesModal({ seriesId, isKid = false }: SeriesModalProp
   const agg = useMemo(() => aggregate(rows), [rows]);
   const detail = group?.groupDetail ?? null;
   const about = seriesSynopsisFor(firstDetail.data ?? null, detail?.aiSynopsis);
-  const yearSpan = runLabel(rows[0]?.item.seriesYearStart ?? agg.yearMin, rows[0]?.item.seriesYearEnd ?? agg.yearMax, rows[0]?.item.seriesIsOngoing);
+  const badge = runBadge(run.data?.run);
+  // the run status, when known, decides "–present" — the recency flag alone would call a run that ended last year ongoing
+  const yearSpan = runLabel(rows[0]?.item.seriesYearStart ?? agg.yearMin, rows[0]?.item.seriesYearEnd ?? agg.yearMax, badge ? badge.status === "Ongoing" : rows[0]?.item.seriesIsOngoing);
   const publisherHue = hueOf(agg.publishers[0] ?? label);
   const tagsByCategory = useMemo(() => {
     const acc: Record<string, string[]> = {};
@@ -129,6 +132,8 @@ export default function SeriesModal({ seriesId, isKid = false }: SeriesModalProp
             <div className="cm-kindrow">
               <span className="cm-kind cm-kind-series" style={{ background: `oklch(0.56 0.16 ${publisherHue})` }}><Icon d={ICON.layers} /> Series</span>
               <span className="cm-kind-count">{plural(total, "book")}{yearSpan ? ` · ${yearSpan}` : ""}</span>
+              {badge && <span className={`cm-run cm-run-${badge.status}`} title={badge.title}>{badge.label}</span>}
+              {badge?.held && <span className={`cm-run-held${badge.complete ? " cm-run-held-complete" : ""}`}>{badge.held}</span>}
             </div>
             <h2 className="cm-title">{label}</h2>
 

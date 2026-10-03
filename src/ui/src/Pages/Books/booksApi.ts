@@ -106,7 +106,7 @@ export interface CollectionBlock {
   containsCount: number; parentItemId: number | null; spanSource: string; spanLabel: string | null;
 }
 export interface SeriesRunRow { item: ItemSummary; readingOrder: ReadingOrderBlock | null; collection: CollectionBlock | null }
-export interface SeriesRun { seriesId: number; total: number; items: SeriesRunRow[] }
+export interface SeriesRun { seriesId: number; total: number; items: SeriesRunRow[]; run?: import("./runStatus").SeriesRunStatus | null }
 
 export interface CreditRow { source: TagSource; ordinal: number; role: string | null; name: string | null }
 export interface TagRow { source: TagSource; category: string; value: string }

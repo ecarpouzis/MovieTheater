@@ -202,6 +202,16 @@ namespace MovieTheater.Books.Db
         public int? YearStart { get; set; }
         public int? YearEnd { get; set; }
         public bool IsOngoing { get; set; }
+        /// <summary>DERIVED by books-run-status: the run's publication status and the counts behind it.</summary>
+        public RunStatus RunStatus { get; set; }
+        /// <summary>The planned length of a limited run ("(of 6)", a GCD/ComicVine limited-series count), when there is one.</summary>
+        public int? RunPlanned { get; set; }
+        /// <summary>Issues published in the run (GCD's issue count, else ComicVine's).</summary>
+        public int? RunPublished { get; set; }
+        /// <summary>Of the run's published issue numbers, how many we hold — as an issue file or inside a judged collected-edition range.</summary>
+        public int? RunHeld { get; set; }
+        /// <summary>Which evidence decided <see cref="RunStatus"/> (e.g. "gcd:current", "gcd:limited 6/6", "files:of 4", "cv:cancelled").</summary>
+        public string? RunStatusBasis { get; set; }
         public string? Franchise { get; set; }
         /// <summary>The TITLE these runs belong to (<see cref="SeriesTitle"/>), or null when it stands alone.</summary>
         public int? TitleId { get; set; }

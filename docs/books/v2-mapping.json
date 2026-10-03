@@ -109,7 +109,7 @@
     "Id"
    ],
    "purpose": "DERIVED canonical series (ids preserved) + the series-scoped facts every issue used to carry; rebuilt by books-resolve-series from ComicDetail.ParsedSeriesKey + SeriesKeyLink",
-   "cols": "Id INTEGER, ParsedKey TEXT, CanonicalKey TEXT UNIQUE, Name TEXT, DisplayNameOverride TEXT, IssueCount INTEGER, YearStart INTEGER, YearEnd INTEGER, IsOngoing INTEGER, Franchise TEXT, TitleId INTEGER FK SeriesTitle NULL, PublisherId INTEGER NULL, CvVolumeId INTEGER NULL, ExternalWorkId INTEGER NULL, MuSeriesId INTEGER NULL, ResolvedSynopsisSource INTEGER, ResolvedRating INTEGER, ResolvedAt TEXT",
+   "cols": "Id INTEGER, ParsedKey TEXT, CanonicalKey TEXT UNIQUE, Name TEXT, DisplayNameOverride TEXT, IssueCount INTEGER, YearStart INTEGER, YearEnd INTEGER, IsOngoing INTEGER, RunStatus INTEGER, RunPlanned INTEGER NULL, RunPublished INTEGER NULL, RunHeld INTEGER NULL, RunStatusBasis TEXT NULL, Franchise TEXT, TitleId INTEGER FK SeriesTitle NULL, PublisherId INTEGER NULL, CvVolumeId INTEGER NULL, ExternalWorkId INTEGER NULL, MuSeriesId INTEGER NULL, ResolvedSynopsisSource INTEGER, ResolvedRating INTEGER, ResolvedAt TEXT",
    "idx": [
     "(Name, Id)",
     "(ParsedKey)",
@@ -581,7 +581,7 @@
     "GcdSeriesId"
    ],
    "purpose": "GCD series",
-   "cols": "GcdSeriesId INTEGER, Name TEXT, SortName TEXT, YearBegan INTEGER, YearEnded INTEGER, Publisher TEXT, Format TEXT, IssueCount INTEGER, HasIsbn INTEGER, HasBarcode INTEGER, Binding TEXT, Notes TEXT, ImportedAt TEXT"
+   "cols": "GcdSeriesId INTEGER, Name TEXT, SortName TEXT, YearBegan INTEGER, YearEnded INTEGER, Publisher TEXT, Format TEXT, IssueCount INTEGER, HasIsbn INTEGER, HasBarcode INTEGER, Binding TEXT, Notes TEXT, IsCurrent INTEGER NULL, PublicationDates TEXT NULL, TrackingNotes TEXT NULL, ImportedAt TEXT"
   },
   "OpenLibraryEdition": {
    "file": "legs",

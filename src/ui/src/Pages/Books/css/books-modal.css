@@ -257,6 +257,14 @@
 .cm-lvl-Volume { background: oklch(0.6 0.13 250); }
 .cm-lvl-Book { background: oklch(0.58 0.15 300); }
 .cm-lvl-Omnibus { background: oklch(0.56 0.17 30); }
+/* run status (books-run-status): the same chip shape as the level chips, one hue per status */
+.cm-run { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; color: var(--bg); white-space: nowrap; }
+.cm-run-Ongoing { background: oklch(0.6 0.14 150); }
+.cm-run-Completed { background: oklch(0.58 0.12 250); }
+.cm-run-Ended { background: color-mix(in oklab, var(--ink) 50%, transparent); }
+.cm-run-Cancelled { background: oklch(0.58 0.17 25); }
+.cm-run-held { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .03em; color: var(--sub); white-space: nowrap; }
+.cm-run-held-complete { color: oklch(0.62 0.14 150); }
 .cm-colls { display: flex; flex-direction: column; margin-top: 4px; }
 .cm-coll { border-bottom: 1px solid var(--line); }
 .cm-coll:last-child { border-bottom: 0; }

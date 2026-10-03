@@ -92,7 +92,9 @@ LOCAL ComicVine rip), and the held trades' own judged spans in `CollectedEdition
     (the verb's own snapshot step runs only inside wave_land), an R- batch for the shelves it created, `wave_land.ps1`,
     then `wave_fix.ps1` when check_decisions stops on origin lines (`retire_moved_lines` runs only there).
     A new shelf whose cv= is a stored link on an EMPTY row needs `F <sid> merge-with=<row>`; a cv= another shelf holds
-    for the same comic is a merge-with too.
+    for the same comic is a merge-with too. **Check GCD twins as well as CV collisions**: a second rip decided with a
+    different CV volume than the earlier copy's shelf (Lady Death: Scorched Earth — CV 123060 vs 125330, both GCD
+    147427) slips past the CV check and leaves one book on two shelves (R-207 merged three such twins).
 20. Ranges for the rest: `tools/containment_priority.py` (which unranged collections sit on shelves with live issues) →
     `tools/range_evidence.py` (stored links' collects clauses) → `tools/trade_probe.py` (the TRADE's own GCD/ComicVine
     record found by title + volume number) and `tools/gcd_series_reprints.py` (a GCD collected series' reprint
