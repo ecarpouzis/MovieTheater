@@ -6239,10 +6239,10 @@ index 0000000..b57c9a1
 +}
 diff --git a/pkg/network/webrtc/playoutdelay.go b/pkg/network/webrtc/playoutdelay.go
 new file mode 100644
-index 0000000..766dc34
+index 0000000..715e6c4
 --- /dev/null
 +++ b/pkg/network/webrtc/playoutdelay.go
-@@ -0,0 +1,158 @@
+@@ -0,0 +1,175 @@
 +// Playout-delay RTP header extension (arcade codec program B4, 2026-10-02/03).
 +//
 +// Chromium (Chrome, Edge) and Firefox 157 all negotiate http://www.webrtc.org/experiments/rtp-hdrext/playout-delay:
@@ -6283,6 +6283,7 @@ index 0000000..766dc34
 +// playoutDelayFactory stamps outgoing VIDEO packets with a fixed [min, max] playout delay (ms).
 +type playoutDelayFactory struct {
 +	payload     []byte
++	release     []byte  // Chrome's own default [0, 10 s] — stamped to LEAVE the fast path (see BindLocalStream)
 +	maxJitterMs float64 // 0 = stamp always (no gate)
 +	logf        func(format string, args ...any)
 +}
@@ -6297,13 +6298,18 @@ index 0000000..766dc34
 +	if logf == nil {
 +		logf = func(string, ...any) {}
 +	}
-+	return &playoutDelayFactory{payload: b, maxJitterMs: float64(max(maxJitterMs, 0)), logf: logf}, nil
++	rel, err := rtp.PlayoutDelayExtension{MinDelay: 0, MaxDelay: 1000}.Marshal() // 10 s = libwebrtc's default max
++	if err != nil {
++		return nil, err
++	}
++	return &playoutDelayFactory{payload: b, release: rel, maxJitterMs: float64(max(maxJitterMs, 0)), logf: logf}, nil
 +}
 +
 +func (f *playoutDelayFactory) NewInterceptor(_ string) (interceptor.Interceptor, error) {
-+	p := &playoutDelay{payload: f.payload, maxJitterMs: f.maxJitterMs, logf: f.logf}
++	p := &playoutDelay{payload: f.payload, release: f.release, maxJitterMs: f.maxJitterMs, logf: f.logf}
 +	if f.maxJitterMs == 0 {
 +		p.clean.Store(true)
++		p.everOn.Store(true)
 +	}
 +	return p, nil
 +}
@@ -6311,10 +6317,12 @@ index 0000000..766dc34
 +type playoutDelay struct {
 +	interceptor.NoOp
 +	payload     []byte
++	release     []byte
 +	maxJitterMs float64
 +	logf        func(string, ...any)
 +
-+	clean     atomic.Bool   // stamp while true
++	clean     atomic.Bool   // stamp the fast path while true
++	everOn    atomic.Bool   // the fast path was stamped at least once (so leaving it must be stamped too)
 +	videoSSRC atomic.Uint32 // the bound video stream (receiver reports also cover audio when it shares the PC)
 +
 +	mu        sync.Mutex
@@ -6351,6 +6359,7 @@ index 0000000..766dc34
 +					bad(fmt.Sprintf("interarrival jitter %.1f ms", jit))
 +				case jit <= p.maxJitterMs && now.Sub(p.lastBad) >= playoutHoldAfterBad:
 +					if p.cleanRuns++; p.cleanRuns >= playoutCleanReports && !p.clean.Swap(true) {
++						p.everOn.Store(true)
 +						p.logf("rtc: playout fast path ON for ssrc %d — interarrival jitter %.1f ms, no loss", ssrc, jit)
 +					}
 +				case jit > p.maxJitterMs:
@@ -6383,8 +6392,16 @@ index 0000000..766dc34
 +	}
 +	p.videoSSRC.Store(info.SSRC)
 +	return interceptor.RTPWriterFunc(func(h *rtp.Header, payload []byte, a interceptor.Attributes) (int, error) {
-+		if p.clean.Load() {
++		// Leaving the fast path must be SAID: libwebrtc takes a frame's playout delay from the extension when present
++		// and keeps the last one otherwise, so merely ceasing to stamp would leave a viewer on [0, 0] after its link
++		// went bad. Once a viewer has been on it, the off state stamps libwebrtc's default [0, 10 s].
++		switch {
++		case p.clean.Load():
 +			if err := h.SetExtension(uint8(id), p.payload); err != nil {
++				return 0, err
++			}
++		case p.everOn.Load():
++			if err := h.SetExtension(uint8(id), p.release); err != nil {
 +				return 0, err
 +			}
 +		}
@@ -6403,10 +6420,10 @@ index 0000000..766dc34
 +}
 diff --git a/pkg/network/webrtc/playoutdelay_test.go b/pkg/network/webrtc/playoutdelay_test.go
 new file mode 100644
-index 0000000..8883a34
+index 0000000..28aebfc
 --- /dev/null
 +++ b/pkg/network/webrtc/playoutdelay_test.go
-@@ -0,0 +1,213 @@
+@@ -0,0 +1,258 @@
 +package webrtc
 +
 +import (
@@ -6618,6 +6635,51 @@ index 0000000..8883a34
 +	}
 +	if len(logs) < 3 {
 +		t.Fatalf("transitions should be logged, got %v", logs)
++	}
++}
++
++// What the writer stamps across the gate's states: nothing before the link is proven (Chrome stays on its own
++// default), the fast path while clean, and — after it has been on — an explicit release to Chrome's default when
++// the gate turns off, because libwebrtc keeps the last playout delay it saw.
++func TestPlayoutDelay_WriterStampsReleaseAfterOff(t *testing.T) {
++	f, err := newPlayoutDelayFactory(0, 0, 2, nil)
++	if err != nil {
++		t.Fatal(err)
++	}
++	ic, _ := f.NewInterceptor("")
++	p := ic.(*playoutDelay)
++	var last []byte
++	w := p.BindLocalStream(&interceptor.StreamInfo{MimeType: "video/AV1", SSRC: 42,
++		RTPHeaderExtensions: []interceptor.RTPHeaderExtension{{URI: PlayoutDelayURI, ID: 5}}},
++		interceptor.RTPWriterFunc(func(h *rtp.Header, _ []byte, _ interceptor.Attributes) (int, error) {
++			last = h.GetExtension(5)
++			return 0, nil
++		}))
++	send := func() rtp.PlayoutDelayExtension {
++		last = nil
++		_, _ = w.Write(&rtp.Header{}, nil, nil)
++		var e rtp.PlayoutDelayExtension
++		if last != nil {
++			_ = e.Unmarshal(last)
++		} else {
++			e.MaxDelay = 9999 // sentinel: no extension at all
++		}
++		return e
++	}
++	if e := send(); e.MaxDelay != 9999 {
++		t.Fatalf("before the link is proven nothing may be stamped, got %+v", e)
++	}
++	t0 := time.Unix(9000, 0)
++	rr := []rtcp.Packet{&rtcp.ReceiverReport{Reports: []rtcp.ReceptionReport{{SSRC: 42, Jitter: 45}}}}
++	for i := 0; i < 3; i++ {
++		p.observe(rr, t0.Add(time.Duration(i)*time.Second))
++	}
++	if e := send(); e.MinDelay != 0 || e.MaxDelay != 0 {
++		t.Fatalf("clean link must stamp the fast path [0,0], got %+v", e)
++	}
++	p.observe([]rtcp.Packet{&rtcp.TransportLayerNack{MediaSSRC: 42, Nacks: []rtcp.NackPair{{PacketID: 1}}}}, t0.Add(4*time.Second))
++	if e := send(); e.MinDelay != 0 || e.MaxDelay != 1000 {
++		t.Fatalf("after leaving the fast path the release [0, 10 s] must be stamped, got %+v", e)
 +	}
 +}
 diff --git a/pkg/network/webrtc/plikeyframe.go b/pkg/network/webrtc/plikeyframe.go

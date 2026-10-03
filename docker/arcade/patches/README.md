@@ -1061,6 +1061,21 @@ comment-only):
   lost similar packets (gop120 96/246, IR 224/178) but sent 7/7 PLIs with IR vs 1/3 with gop120 (no periodic IDR
   to recover on), one IR run had a 1-fps second. Switching is the owner's call, after a real tablet.
 
+**2026-10-03 (day) — H.264 intra-refresh ON; playout release fix** (workers sha `95620E3E` = fork `81cc148`):
+- h264 params in both lanes: `gop-size=600 intra-refresh-period=120 intra-refresh-count=15` — the 2-s IDR bursts
+  become 15-frame refresh waves, with a SAFETY IDR every 10 s so a decoder that falls behind (the 2026-07 tablet
+  incident's failure mode) is still bounded; NVENC honours both together (offline: IDR at 0/300, decoders clean).
+  Live: Chrome/Edge clean (0 lost, full fps, keyframes = startup + safety). Firefox same-host H.264 A/B (it loses
+  packets on this host with either setting): IR+safety x6 lost 1-989 (median ~300), PLIs 1-24; gop-size=120 x4
+  lost 375-795 (median ~440), PLIs 4-8; low-fps runs 2/6 vs 2/4 — not worse.
+- Review fix (`81cc148`): leaving the playout fast path is STAMPED ([0, 10 s] = libwebrtc's default) once a viewer
+  has been on it — libwebrtc keeps the last playout delay it saw, so merely stopping would have left a viewer on
+  [0, 0] after its link went bad. Live: gate ON at 0.5-1.7 ms jitter, OFF on NACK, rooms healthy.
+- Observed, pre-existing (0047): the display cap trusts the viewer's measured refresh rate, which read 55 Hz (and
+  once ~44) for a headed Chrome on the busy host, capping that room below the screen's real rate.
+- Real Firefox 157's decodingInfo answer varies between launches (SsP both codecs in one run, Ss- in another), so
+  Auto gives it AV1 or H.264 accordingly; both verified working.
+
 **Deploy order.** DB (done) → site → workers. The SITE must ship first: a pre-0048 shim hands the two envelopes
 to `addCandidate`, whose JSON parse error reaches the room page's `onError` — only on a mismatch, which is
 already a failure, but the right message comes from the 0048 shim. A pre-0048 site ignores the extra LinkStat
