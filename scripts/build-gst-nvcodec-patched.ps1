@@ -24,14 +24,12 @@
     from the header; with a <13.0 driver the encoder would reject every config. Check with
     NvEncodeAPIGetMaxSupportedVersion (596.21 reports 13.0).
 
-      3. Reference discipline (`strict-refs`, patch 0003, default ON). Upstream leaves the DPB at the
-         driver's default and the forward-ref count at AUTOSELECT, so under our infinite GOP a
-         reference slot can hold one picture for the whole life of a room — and a frame predicted
-         from it with a null residual decodes to that picture, PRISTINE, with a brand-new timestamp.
-         That is the stale-frame artefact the 2026-08-08 spectator reels caught nine times. 0003
-         pins the DPB to the temporal ladder's depth, numFwdRefs/numRefL0 to 1, and LTR off, for
-         BOTH codecs. Verified: the AV1 tid histogram (75/75/150) and the H.264 nal_ref_idc
-         alternation (150 ref / 150 non-ref) are unchanged, so neither ladder is harmed.
+      (patch 0003 `strict-refs` is NOT applied — SET ASIDE 2026-08-08. It pinned the DPB on the theory
+      that a long-lived reference slot caused the Stuntman stale frame; deployed live, the stale frame
+      persisted (docs/arcade-stuntman-level4-plan.md "STRICT-REFS DID NOT FIX THE STALE FRAME" — the real
+      cause was a zero-copy slot handed to the encoder before its blit landed), and the live DLL went
+      back to the 0002-only build. This script used to keep applying it and REQUIRE it at install, so a
+      rebuild would have silently installed the set-aside build. The patch file stays for the record.)
 
     ⚠ RE-RUN AFTER ANY `pacman -Syu` THAT TOUCHES GSTREAMER — the upgrade silently restores the stock
     DLL and both features vanish (SVC rooms then fall back to plain 60fps for everyone; intra-refresh
@@ -57,10 +55,9 @@ $ErrorActionPreference = "Stop"
 $env:Path = "$Ucrt64\bin;$env:Path"
 
 $repo   = Split-Path $PSScriptRoot -Parent
-# Applied IN ORDER. 0003 depends on 0002 — it extends the same property tables.
+# Applied IN ORDER. 0003 (strict-refs) is deliberately absent — see the help text above.
 $patches = @(
-    (Join-Path $repo "docker\arcade\patches\gst\0002-nvcodec-temporal-svc.patch"),
-    (Join-Path $repo "docker\arcade\patches\gst\0003-nvcodec-strict-refs.patch")
+    (Join-Path $repo "docker\arcade\patches\gst\0002-nvcodec-temporal-svc.patch")
 )
 $target = Join-Path $Ucrt64 "lib\gstreamer-1.0\libgstnvcodec.dll"
 foreach ($p in $patches) { if (-not (Test-Path $p)) { throw "patch not found: $p" } }
@@ -133,7 +130,7 @@ Write-Host "installed: $target"
 
 # Prove BOTH features are actually exposed — a silently-stock DLL is the failure mode this guards.
 $props = & "$Ucrt64\bin\gst-inspect-1.0.exe" nvav1enc
-foreach ($p in @("temporal-layers", "intra-refresh-period", "intra-refresh-count", "strict-refs")) {
+foreach ($p in @("temporal-layers", "intra-refresh-period", "intra-refresh-count")) {
     if ($props -match [regex]::Escape($p)) { Write-Host "  verified: $p" }
     else { throw "installed plugin does NOT expose $p — the build or install did not take" }
 }
