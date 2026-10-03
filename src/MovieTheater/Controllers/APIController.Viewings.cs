@@ -388,7 +388,35 @@ namespace MovieTheater.Controllers
             "FavoriteChannels",
             // Books kids skin (pop | bubble) is the user's own choice; the grant and the ceiling are NOT here.
             MovieTheater.Books.BooksAccessGate.KidsStyleKey,
+            // The arcade's on-screen touch controls: one JSON blob of layouts keyed by system/game and
+            // screen shape (src/ui/src/Pages/Arcade/touch/touchLayout.ts). Read back via /API/MySetting
+            // by the room page only, so it doesn't ride every /API/Me.
+            ArcadeTouchLayoutsKey,
         };
+
+        public const string ArcadeTouchLayoutsKey = "ArcadeTouchLayouts";
+
+        // Self-service values are user-authored blobs stored verbatim. Cap them so one account can't park
+        // megabytes in UserSettings; the largest legitimate value (a full set of touch layouts) is ~10 KB.
+        public const int MaxSelfServiceSettingChars = 64 * 1024;
+
+        // Read one of the caller's own self-service settings. Same allow-list as the write: a key that
+        // can't be self-set (the access grants) can't be self-read here either — /API/Me surfaces those.
+        [HttpGet("/API/MySetting")]
+        public async Task<IActionResult> GetMySetting([FromQuery] string key)
+        {
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue)
+                return Unauthorized(new { Success = false, Message = "Not logged in." });
+            if (string.IsNullOrEmpty(key) || !SelfServiceSettingKeys.Contains(key))
+                return Forbid();
+
+            var value = await movieDb.UserSettings
+                .Where(u => u.UserID == currentUserId.Value && u.SettingKey == key)
+                .Select(u => u.SettingValue)
+                .FirstOrDefaultAsync();
+            return Ok(new { key, value });
+        }
 
         [HttpPost("/API/SetUserSetting")]
         public async Task<IActionResult> SetUserSetting([FromBody] UserSettingRequest request)
@@ -402,6 +430,9 @@ namespace MovieTheater.Controllers
 
             if (!SelfServiceSettingKeys.Contains(request.SettingKey))
                 return Forbid();
+
+            if (request.SettingValue != null && request.SettingValue.Length > MaxSelfServiceSettingChars)
+                return BadRequest(new { Success = false, Message = "Setting value is too large." });
 
             var existing = await movieDb.UserSettings
                 .FirstOrDefaultAsync(u => u.UserID == currentUserId.Value && u.SettingKey == request.SettingKey);

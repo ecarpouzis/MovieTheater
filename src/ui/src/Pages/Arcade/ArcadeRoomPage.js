@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
-import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox } from "antd";
+import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox, ConfigProvider } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import { createCloudRetroSession, arcadeDeviceId, arcadeInputHint, rotatedVideoSize, videoTransform, systemUsesMouse, findNewPad, pickAutoBindPads, livePads, getFaceSwapMode, setFaceSwapMode, getPadFaceSwapOverride, setPadFaceSwapOverride, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, getRightStickSwapX, setRightStickSwapX, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl, videoCodecFromWsUrl } from "./cloudRetroClient";
 import { canReceiveCodec, localNetworkPermission, videoProblemMessage } from "./arcadeRoomCreate";
@@ -15,6 +15,13 @@ import "../../Components/SheetModal.css";
 import "./ArcadeRoomPage.css";
 import { copyLink } from "../../utils/clipboard";
 import { SHEET_Z } from "../../Components/sheetModal";
+import useTouchDevice from "../../hooks/useTouchDevice";
+import useMediaQuery from "../../hooks/useMediaQuery";
+import { roomActionAvailability, refusalMessage, HOLD_ACTIONS } from "./roomActions";
+import TouchLayer from "./touch/TouchLayer";
+import RoomOverlay from "./touch/RoomOverlay";
+import useTouchLayouts, { readTouchPref, writeTouchPref } from "./touch/useTouchLayouts";
+import { touchSpecFor } from "./touch/touchSystems";
 
 const { Title, Text } = Typography;
 
@@ -94,6 +101,31 @@ const MAPPABLE_SYSTEM_OPTIONS = Object.keys(SYSTEM_LABEL)
   .filter((s) => !NOT_REMAPPED_SYSTEMS.has(s))
   .map((s) => ({ value: s, label: systemLabel(s) }))
   .sort((a, b) => a.label.localeCompare(b.label));
+
+// The core's own aspect WINS when it reports one (av.a). Every libretro core fills
+// retro_get_system_av_info's geometry.aspect_ratio; <= 0 means "unspecified", and only then
+// does this table apply. Getting this from the core is what makes per-GAME aspect correct:
+// ps2/gc/dc titles ship both 4:3 and 16:9, and no per-system constant can be right for both.
+//
+// The old code hardcoded 4/3 for everything except gb/gbc/gba, and since the <video> uses
+// objectFit:"fill" that DISTORTS rather than letterboxes — PSP's 16:9 was squeezed into 4:3.
+// The fallbacks below are the true native panel ratios, for cores that report nothing.
+const FALLBACK_AR = {
+  gb: 10 / 9, gbc: 10 / 9,   // 160x144
+  gba: 3 / 2,                // 240x160
+  gg: 10 / 9,                // 160x144
+  psp: 16 / 9,               // 480x272
+  wsc: 224 / 144,            // ~14:9
+  ngpc: 160 / 152,           // ~1.05 — was rendered at 1.33
+  lynx: 160 / 102,
+  vb: 384 / 224,
+  nds: 256 / 384,            // W10: top-bottom dual-screen composite (two 256x192 stacked) = 2:3 PORTRAIT
+  capture: 16 / 9,           // browser capture lane — 1080p desktop; never fall back to 4:3 (R3)
+};
+
+// The element showing the room in REAL fullscreen, if any (the webkit variant is older Safari/iPadOS).
+const fullscreenElement = () =>
+  (typeof document !== "undefined" && (document.fullscreenElement || document.webkitFullscreenElement)) || null;
 
 // Friendly names for the chord-bindable actions, used to render the "Quick actions" caption from
 // DEFAULT_CHORDS itself so it can't drift out of sync with what's actually bound.
@@ -282,9 +314,30 @@ export default function ArcadeRoomPage() {
   const [discCount, setDiscCount] = useState(location.state?.descriptor?.discCount ?? 0);
   const [disc, setDisc] = useState(0);
   const [isFs, setIsFs] = useState(false);
-  // Whether the fullscreen overlay controls (the exit ✕) are currently shown — see the auto-hide
-  // effect below. Irrelevant while windowed.
+  // PSEUDO-fullscreen: the player pinned over the whole viewport with CSS. Used where the element
+  // Fullscreen API doesn't exist — iPhone Safari, whose only "fullscreen" is the native video player,
+  // which can draw none of our overlay (no touch pad, no menu, no ✕). Everything that keys off
+  // fullscreen keys off `immersive` = real OR pseudo.
+  const [pseudoFs, setPseudoFs] = useState(false);
+  const immersive = isFs || pseudoFs;
+  // Whether the fullscreen overlay controls (the exit ✕ and the ☰ menu) are currently shown — see the
+  // auto-hide effect below. Irrelevant while windowed.
   const [fsUiVisible, setFsUiVisible] = useState(true);
+  // ── Touch pad + the in-player overlay menu (touch/) ────────────────────────────────────────────
+  const touchDevice = useTouchDevice();
+  const portraitScreen = useMediaQuery("(orientation: portrait)");
+  const [overlayOpen, setOverlayOpen] = useState(false);
+  const [editingTouch, setEditingTouch] = useState(false);
+  // Per-device show/hide preference: "auto" = on a touch screen while no physical pad is in use.
+  const [touchPref, setTouchPrefState] = useState(readTouchPref);
+  // Latched when a physical controller is used in "auto" mode: the pad hides and STAYS hidden (a
+  // controller left idle through a cutscene must not make the pad pop back over the game) until the
+  // player touches the screen again.
+  const [padInUse, setPadInUse] = useState(false);
+  const padInUseRef = useRef(false);
+  padInUseRef.current = padInUse;
+  const { store: touchStore, save: saveTouchLayout } = useTouchLayouts();
+  const setTouchPref = (v) => { writeTouchPref(v); setTouchPrefState(v); if (v !== "off") setPadInUse(false); };
   // The core's OWN display aspect, reported via the GAME_START `av` payload (and any later t=150).
   // null until it arrives / when the core doesn't specify one — then the per-system table below wins.
   const [coreAspect, setCoreAspect] = useState(null);
@@ -471,52 +524,10 @@ export default function ArcadeRoomPage() {
           if (descriptor.isCreator) MovieAPI.bindArcadeRoom(code, roomId).catch(() => {});
         },
         onError: (err) => { if (!cancelled) message.error(err.message || "Connection problem."); },
+        // Pad chords go through the same gate as every other route to these actions (runRoomAction).
+        // Through a ref: this callback is captured once, at session open.
         onChordAction: (action, engaged = true) => {
-          if (cancelled) return;
-          const sys = String(descriptor.system || "").toLowerCase();
-          // Hold-type chords: engaged=true on press, false on release — both must reach the wire.
-          // Competitive rooms block both (rewind IS save-scumming; fast-forward is the time
-          // manipulation the leaderboards exist to keep out), mirroring the hidden save buttons.
-          if (action === "fastForward" || action === "rewind") {
-            // Rewind is answered by the SERVER (descriptor.canRewind), never guessed from the system:
-            // the worker arms the ring per CORE, and which core a room booted is decided server-side
-            // from the play-button pick / saved profile / resume slot. Fast-forward is pacing-only, so
-            // every libretro-lane system has it; the heavy lane streams a native app with no retro_run.
-            const supported = action === "fastForward"
-              ? !HEAVY_LANE_SYSTEMS.has(sys)
-              : !!descriptor.canRewind;
-            if (competitiveRef.current || !supported) {
-              if (engaged) {
-                message.info(competitiveRef.current
-                  ? "Competitive room — time controls are off."
-                  : `${action === "rewind" ? "Rewind" : "Fast-forward"} isn't available for this system.`);
-              }
-              return;
-            }
-            if (action === "fastForward") sessionRef.current?.fastForward?.(engaged);
-            else sessionRef.current?.rewind?.(engaged);
-            return;
-          }
-          if (!engaged) return; // one-shot chords act on engage only
-          // A core with no save-state can't honour these at all (psp returns ErrNoSaveStates;
-          // ScummVM's retro_serialize_size is 0). The buttons are hidden for those systems, so say
-          // why rather than let the pad chord fail silently.
-          if ((action === "quickSave" || action === "quickLoad") && !hasSaveStates(descriptorRef.current?.system)) {
-            message.info("This system has no save states — your progress saves inside the game itself.");
-            return;
-          }
-          // quickSave/quickLoad already report their own success/failure via message.* — no need
-          // to add a second toast on top of theirs.
-          if (action === "quickSave") { quickSave(); return; }
-          if (action === "quickLoad") { quickLoad(); return; }
-          if (action === "reset") {
-            // Owner-only: mirrors the existing owner-only gate on the (less disruptive) named
-            // snapshot actions below — an unrecoverable reset in a shared room is at least as
-            // disruptive, so a non-owner's chord no-ops instead of firing.
-            if (yourSlotRef.current !== 0) { message.info("Only the room owner can reset."); return; }
-            sessionRef.current?.reset?.();
-            message.success("Game reset");
-          }
+          if (!cancelled) runRoomActionRef.current(action, engaged);
         },
         onAchievement: (a) => {
           if (cancelled || !a) return;
@@ -746,27 +757,42 @@ export default function ArcadeRoomPage() {
   // screen, and a phone has no Esc key — Android's back gesture works but is invisible, so a touch
   // player had no way OUT they could see. Show a ✕ in the corner, fading it out after a few seconds
   // of no input so it isn't parked over the game, and bringing it back on the next touch/move.
+  //
+  // A press on the TOUCH PAD must not reveal it: otherwise every button press during play would park
+  // the ✕/☰ back over the game. Only a touch on empty space (or the pad's ☰ action) brings them back.
   useEffect(() => {
-    if (!isFs) return;
+    if (!immersive) return;
     const el = playerRef.current;
     if (!el) return;
     let timer;
-    const reveal = () => {
+    const reveal = (e) => {
+      if (e && e.target && typeof e.target.closest === "function" && e.target.closest(".tc, .tle")) return;
       setFsUiVisible(true);
       clearTimeout(timer);
       timer = setTimeout(() => setFsUiVisible(false), 3000);
     };
     reveal();
-    el.addEventListener("pointermove", reveal);
+    // A mouse moving reveals; a FINGER only reveals on a tap (a touch "pointermove" is a drag on the pad).
+    const onMove = (e) => { if (e.pointerType === "mouse") reveal(e); };
+    el.addEventListener("pointermove", onMove);
     el.addEventListener("pointerdown", reveal);
-    el.addEventListener("touchstart", reveal, { passive: true });
     return () => {
       clearTimeout(timer);
-      el.removeEventListener("pointermove", reveal);
+      el.removeEventListener("pointermove", onMove);
       el.removeEventListener("pointerdown", reveal);
-      el.removeEventListener("touchstart", reveal);
     };
-  }, [isFs]);
+  }, [immersive]);
+
+  // Pseudo-fullscreen housekeeping: the page behind mustn't scroll under the pinned player, and Escape
+  // leaves it the way it leaves real fullscreen.
+  useEffect(() => {
+    if (!pseudoFs) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e) => { if (e.key === "Escape" && !editingTouch) setPseudoFs(false); };
+    window.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
+  }, [pseudoFs, editingTouch]);
 
   function tryPlayVideo() {
     const v = videoRef.current;
@@ -774,20 +800,64 @@ export default function ArcadeRoomPage() {
     v.play().then(() => setNeedsTap(false)).catch(() => setNeedsTap(true));
   }
 
+  // A landscape game on a phone held upright wastes most of the screen; ask the browser to turn it.
+  // Best effort: only Android Chrome honours lock(), and only while really fullscreen.
+  function lockLandscapeIfWide() {
+    const ar = coreAspect || FALLBACK_AR[system] || 4 / 3;
+    if (ar < 1 || !touchDevice) return;
+    try { screen.orientation?.lock?.("landscape")?.catch?.(() => {}); } catch { /* unsupported */ }
+  }
+
   function goFullscreen() {
-    const el = playerRef.current || videoRef.current;
+    const el = playerRef.current;
     const req = el && (el.requestFullscreen || el.webkitRequestFullscreen);
-    if (req) { req.call(el); return; }
-    // iOS Safari can't fullscreen an arbitrary element — only the <video>, through its own native
-    // player. That player carries a Done button (and never fires fullscreenchange), so our overlay
-    // isn't involved there; without this fallback the button simply did nothing on an iPhone.
-    videoRef.current?.webkitEnterFullscreen?.();
+    // iPhone Safari can fullscreen only a <video>, through its own native player — which can draw none
+    // of the overlay (no touch pad, no menu). Pin the player over the viewport instead.
+    if (!req) { setPseudoFs(true); return; }
+    try {
+      Promise.resolve(req.call(el)).then(lockLandscapeIfWide, () => setPseudoFs(true));
+    } catch { setPseudoFs(true); }
   }
 
   function exitFullscreen() {
+    if (pseudoFs) { setPseudoFs(false); return; }
+    try { screen.orientation?.unlock?.(); } catch { /* unsupported */ }
     const exit = document.exitFullscreen || document.webkitExitFullscreen;
     exit?.call(document);
   }
+
+  // Physical controller in use → the auto-shown touch pad steps aside (and says so, once). Polled: the
+  // shim owns the Gamepad API and already answers "is a pad actively driving this seat?".
+  const touchSpec = touchSpecFor(effectiveInputSystem(system, gameKey, controllerScheme));
+  const touchShown = !spectator && LIVE_STATUS.includes(status) && (
+    touchPref === "on" || (touchPref === "auto" && touchDevice && !padInUse && !touchSpec.noAutoShow));
+  // Edge-triggered on time: the pad hides when a controller is used AFTER the last screen touch, so a
+  // touch that brings the pad back isn't immediately undone by a controller pressed seconds ago.
+  const lastScreenTouchRef = useRef(0);
+  useEffect(() => {
+    if (touchPref !== "auto" || spectator || !LIVE_STATUS.includes(status)) return undefined;
+    const t = setInterval(() => {
+      if (padInUseRef.current) return;
+      const padAt = sessionRef.current?.getLastPadActiveAt?.() ?? 0;
+      if (padAt > lastScreenTouchRef.current) {
+        setPadInUse(true);
+        if (touchDevice) message.info("Controller detected — touch controls hidden. ☰ brings them back.");
+      }
+    }, 500);
+    return () => clearInterval(t);
+  }, [touchPref, spectator, status, touchDevice]);
+  // …and a finger on the screen brings them back.
+  useEffect(() => {
+    const el = playerRef.current;
+    if (!el) return undefined;
+    const onDown = (e) => {
+      if (e.pointerType !== "touch") return;
+      lastScreenTouchRef.current = Date.now();
+      if (padInUseRef.current) setPadInUse(false);
+    };
+    el.addEventListener("pointerdown", onDown);
+    return () => el.removeEventListener("pointerdown", onDown);
+  }, []);
 
   const copyInvite = () => copyLink(`${window.location.origin}/arcade/room/${code}`);
 
@@ -1047,6 +1117,55 @@ export default function ArcadeRoomPage() {
       message.info("Loading your quicksave…");
     } catch { message.error("Couldn't load your quicksave."); }
   }
+
+  // ── Room actions: ONE gate for chords, buttons, the touch pad and the overlay menu ──────────────
+  // roomActions.js decides what this seat may do; this dispatches it. Reads refs only (the chord
+  // callback that calls it was captured at session open), so a refusal is always judged on the room's
+  // CURRENT seat/competitive state.
+  function currentAvailability() {
+    const d = descriptorRef.current || {};
+    return roomActionAvailability({
+      system: d.system ?? system,
+      competitive: competitiveRef.current,
+      spectator: yourSlotRef.current != null && yourSlotRef.current < 0,
+      canRewind: !!d.canRewind,
+      slot: yourSlotRef.current,
+    });
+  }
+  function runRoomAction(action, engaged = true) {
+    if (action === "menu") { if (engaged) setOverlayOpen((o) => !o); return; }
+    const avail = currentAvailability();
+    if (!avail[action]) {
+      // Say why on the press (a hold's release is silent) — a chord or a touch that fails silently
+      // reads as a broken button.
+      if (engaged) {
+        const d = descriptorRef.current || {};
+        const why = refusalMessage(action, {
+          system: d.system ?? system, competitive: competitiveRef.current,
+          spectator: yourSlotRef.current != null && yourSlotRef.current < 0, slot: yourSlotRef.current,
+        });
+        if (why) message.info(why);
+      } else if (HOLD_ACTIONS.has(action)) {
+        // Released after the gate closed mid-hold: still release it on the worker.
+        if (action === "fastForward") sessionRef.current?.fastForward?.(false);
+        else sessionRef.current?.rewind?.(false);
+      }
+      return;
+    }
+    // Hold actions: engaged=true on press, false on release — both must reach the wire.
+    if (action === "fastForward") { sessionRef.current?.fastForward?.(engaged); return; }
+    if (action === "rewind") { sessionRef.current?.rewind?.(engaged); return; }
+    if (!engaged) return; // one-shots act on the press only
+    // quickSave/quickLoad report their own success/failure via message.* — no second toast here.
+    if (action === "quickSave") { quickSave(); return; }
+    if (action === "quickLoad") { quickLoad(); return; }
+    if (action === "reset") {
+      sessionRef.current?.reset?.();
+      message.success("Game reset");
+    }
+  }
+  const runRoomActionRef = useRef(runRoomAction);
+  runRoomActionRef.current = runRoomAction;
 
   // ── Input tape: record / replay ────────────────────────────────────────────────────────────────
   // The provenance a replay has to match to mean anything. coreKey/coreOptions/cheats are in here
@@ -1374,27 +1493,6 @@ export default function ArcadeRoomPage() {
           display aspect, and object-fit:fill lives INSIDE it. In fullscreen the inner box is sized to the
           largest aspect-correct rectangle that fits the screen via min(100% width, height-driven width). */}
       {(() => {
-        // The core's own aspect WINS when it reports one (av.a). Every libretro core fills
-        // retro_get_system_av_info's geometry.aspect_ratio; <= 0 means "unspecified", and only then
-        // does this table apply. Getting this from the core is what makes per-GAME aspect correct:
-        // ps2/gc/dc titles ship both 4:3 and 16:9, and no per-system constant can be right for both.
-        //
-        // The old code hardcoded 4/3 for everything except gb/gbc/gba, and since the <video> uses
-        // objectFit:"fill" that DISTORTS rather than letterboxes — PSP's 16:9 was squeezed into 4:3.
-        // The fallbacks below are the true native panel ratios, for cores that report nothing.
-        const FALLBACK_AR = {
-          gb: 10 / 9, gbc: 10 / 9,   // 160x144
-          gba: 3 / 2,                // 240x160
-          gg: 10 / 9,                // 160x144
-          psp: 16 / 9,               // 480x272
-          wsc: 224 / 144,            // ~14:9
-          ngpc: 160 / 152,           // ~1.05 — was rendered at 1.33
-          lynx: 160 / 102,
-          vb: 384 / 224,
-          nds: 256 / 384,            // W10: top-bottom dual-screen composite (two 256x192 stacked) = 2:3 PORTRAIT
-          capture: 16 / 9,           // browser capture lane — 1080p desktop; never fall back to 4:3 (R3)
-        };
-        const ar = coreAspect || FALLBACK_AR[system] || 4 / 3;
         // A quarter-turn swaps the element's axes. The box is `ar` wide-over-tall; for the rotated video
         // to fill it, the element must be as wide as the box is TALL and as tall as the box is WIDE:
         //   width  = boxH = boxW / ar  →  calc(100% / ar)   (100% of width  = boxW)
@@ -1405,21 +1503,35 @@ export default function ArcadeRoomPage() {
         // ABSOLUTE position, so the game already draws a cursor exactly where the real one would be,
         // and showing both just stacks two arrows on the same pixel. Every other system keeps it —
         // there is no in-game cursor there for it to duplicate.
+        const ar = coreAspect || FALLBACK_AR[system] || 4 / 3;
         const videoStyle = { position: "absolute", top: "50%", left: "50%", objectFit: "fill",
                              display: "block", transform: videoTransform(coreRot, coreFlip),
                              ...(systemUsesMouse(system) ? { cursor: "none" } : null),
                              ...rotatedVideoSize(ar, coreRot) };
+        // A phone held upright with the touch pad up: the picture goes to the TOP so the pad has the
+        // bottom of the screen to itself, instead of both fighting over the middle.
+        const padBelow = immersive && touchShown && portraitScreen;
+        const fsSurface = { background: "#000", display: "flex", alignItems: padBelow ? "flex-start" : "center", justifyContent: "center" };
         const outerStyle = isFs
-          ? { position: "relative", background: "#000", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }
-          : { position: "relative", background: "#000" };
+          ? { position: "relative", width: "100%", height: "100%", ...fsSurface }
+          : pseudoFs
+            // Pinned over the viewport, above the site's bars (phone top bar 1300) and below sheets/popups
+            // (1500+) so the Controllers sheet still opens over it.
+            ? { position: "fixed", inset: 0, zIndex: 1400, width: "100vw", height: "100dvh", boxSizing: "border-box", ...fsSurface,
+                paddingTop: padBelow ? "env(safe-area-inset-top)" : undefined }
+            : { position: "relative", background: "#000" };
         // Portrait content (ar < 1, e.g. the DS top-bottom composite) would blow up vertically at
         // width:100% in the landscape page, so size it by HEIGHT and center it (letterboxed left/right).
         const portrait = ar < 1;
-        const innerStyle = isFs
-          ? { position: "relative", aspectRatio: ar, width: `min(100%, calc(100vh * ${ar}))`, maxHeight: "100%", margin: "0 auto" }
+        const innerStyle = immersive
+          ? { position: "relative", aspectRatio: ar, width: `min(100%, calc(100dvh * ${ar}))`, maxHeight: "100%", margin: padBelow ? "0 auto auto" : "0 auto" }
           : portrait
             ? { position: "relative", aspectRatio: ar, height: "min(74vh, 760px)", maxWidth: "100%", margin: "0 auto" }
             : { position: "relative", aspectRatio: ar, width: "100%" };
+        const inputSystem = effectiveInputSystem(system, gameKey, controllerScheme);
+        const avail = roomActionAvailability({ system, competitive, spectator, canRewind, slot: yourSlot });
+        // The ☰ is for anyone who might be without the button bar: fullscreen, or a touch screen.
+        const showMenu = !spectator && LIVE_STATUS.includes(status) ? (immersive || touchDevice || touchShown) : immersive;
         return (
           <div ref={playerRef} style={outerStyle}>
             <div style={innerStyle}>
@@ -1438,18 +1550,70 @@ export default function ArcadeRoomPage() {
                 </button>
               )}
             </div>
+            {/* The touch pad + its editor. On the OUTER box (the whole screen in fullscreen), so thumbs
+                can use the black margins beside a 4:3 picture. Popups from the editor's antd controls must
+                render inside the player, or fullscreen hides them. */}
+            {!spectator && (
+              <ConfigProvider getPopupContainer={() => playerRef.current || document.body}>
+                <TouchLayer
+                  shown={touchShown}
+                  editing={editingTouch}
+                  onEditDone={() => setEditingTouch(false)}
+                  system={String(system || "")}
+                  inputSystem={String(inputSystem || system || "")}
+                  gameKey={gameKey}
+                  gameTitle={gameKey}
+                  systemName={systemLabel(String(inputSystem || system || ""))}
+                  store={touchStore}
+                  save={saveTouchLayout}
+                  onFrame={(mask, axes) => sessionRef.current?.setVirtualInput?.(mask, axes)}
+                  onAction={(action, engaged) => runRoomActionRef.current(action, engaged)}
+                  actionAllowed={(action) => action === "menu" || !!avail[action]}
+                />
+              </ConfigProvider>
+            )}
             {/* Sits on the OUTER (fullscreen) box, not the aspect box, so it stays in the corner of
                 the screen rather than of a letterboxed 4:3 picture. */}
-            {isFs && (
+            {immersive && !editingTouch && (
               <button
                 className="arcade-room-page__exit-fs"
                 onClick={exitFullscreen}
                 aria-label="Exit fullscreen"
                 title="Exit fullscreen"
+                data-touch-control=""
                 style={{ opacity: fsUiVisible ? 1 : 0, pointerEvents: fsUiVisible ? "auto" : "none" }}
               >
                 ✕
               </button>
+            )}
+            {showMenu && !editingTouch && (
+              <RoomOverlay
+                open={overlayOpen}
+                setOpen={setOverlayOpen}
+                chromeVisible={!immersive || fsUiVisible}
+                immersive={immersive}
+                spectator={spectator}
+                touchPref={touchPref}
+                touchShown={touchShown}
+                onTouchPref={setTouchPref}
+                onEditTouch={() => { setOverlayOpen(false); setEditingTouch(true); }}
+                allowed={avail}
+                onAction={(action, engaged) => runRoomActionRef.current(action, engaged)}
+                onControllers={() => setShowControllers(true)}
+                onFullscreen={goFullscreen}
+                onExitFullscreen={exitFullscreen}
+                onLeave={() => history.replace(lobbyPath())}
+              >
+                {discCount > 1 && !spectator && (
+                  <section>
+                    <h4>Disc {disc + 1} of {discCount}</h4>
+                    <div className="room-overlay__grid">
+                      <button type="button" disabled={disc <= 0} onClick={() => swapDisc(disc - 1)}>◀ Disc {disc}</button>
+                      <button type="button" disabled={disc >= discCount - 1} onClick={() => swapDisc(disc + 1)}>Disc {disc + 2} ▶</button>
+                    </div>
+                  </section>
+                )}
+              </RoomOverlay>
             )}
           </div>
         );
@@ -1523,10 +1687,10 @@ export default function ArcadeRoomPage() {
           {!competitive && !spectator && canRewind && (
             <Tooltip title="Hold to rewind — or hold Select + the West face button on your pad">
               <Button
-                onPointerDown={() => sessionRef.current?.rewind?.(true)}
-                onPointerUp={() => sessionRef.current?.rewind?.(false)}
-                onPointerLeave={() => sessionRef.current?.rewind?.(false)}
-                onPointerCancel={() => sessionRef.current?.rewind?.(false)}
+                onPointerDown={() => runRoomAction("rewind", true)}
+                onPointerUp={() => runRoomAction("rewind", false)}
+                onPointerLeave={() => runRoomAction("rewind", false)}
+                onPointerCancel={() => runRoomAction("rewind", false)}
               >
                 ⏪ Rewind
               </Button>
@@ -1535,10 +1699,10 @@ export default function ArcadeRoomPage() {
           {!competitive && !spectator && !HEAVY_LANE_SYSTEMS.has(String(system || "").toLowerCase()) && (
             <Tooltip title="Hold to fast-forward (4x) — or hold Select + the East face button on your pad">
               <Button
-                onPointerDown={() => sessionRef.current?.fastForward?.(true)}
-                onPointerUp={() => sessionRef.current?.fastForward?.(false)}
-                onPointerLeave={() => sessionRef.current?.fastForward?.(false)}
-                onPointerCancel={() => sessionRef.current?.fastForward?.(false)}
+                onPointerDown={() => runRoomAction("fastForward", true)}
+                onPointerUp={() => runRoomAction("fastForward", false)}
+                onPointerLeave={() => runRoomAction("fastForward", false)}
+                onPointerCancel={() => runRoomAction("fastForward", false)}
               >
                 ⏩ Fast-forward
               </Button>
@@ -1589,7 +1753,11 @@ export default function ArcadeRoomPage() {
         // this panel is the longest list in the room and the one most often opened mid-game on a phone.
         zIndex={SHEET_Z}
         wrapClassName="sheet-modal"
+        // Opened from the in-player ☰ menu too — in REAL fullscreen only the fullscreen element paints,
+        // so mount it there (and its Select popups with it, via the ConfigProvider below).
+        getContainer={() => fullscreenElement() || document.body}
       >
+        <ConfigProvider getPopupContainer={(node) => node?.closest?.(".ant-modal-wrap") || fullscreenElement() || document.body}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
           <Text style={{ flex: 1 }}>⌨️ Keyboard &amp; mouse</Text>
           <Text type="secondary">P{(yourSlot ?? 0) + 1} — you</Text>
@@ -1875,6 +2043,7 @@ export default function ArcadeRoomPage() {
           extra players sitting next to you. A controller drives one player; assigning it elsewhere
           frees its old seat's controls.
         </Text>
+        </ConfigProvider>
       </Modal>
     </div>
   );

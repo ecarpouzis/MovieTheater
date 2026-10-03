@@ -932,6 +932,13 @@ function axisToInt16(v) {
   return Math.trunc(Math.max(-1, Math.min(1, v)) * 32767);
 }
 
+// An already-int16 axis from a caller (the touch pad): truncate and clamp to ±32767 (never -32768, so the
+// right-stick X mirror can negate it safely).
+function clampAxis(v) {
+  const n = Math.trunc(Number(v) || 0);
+  return Math.max(-32767, Math.min(32767, n));
+}
+
 function packet(t, p, id) {
   return JSON.stringify(id !== undefined ? { id, t, p } : { t, p });
 }
@@ -1193,6 +1200,10 @@ export function createCloudRetroSession(descriptor, opts) {
   const lKeys = { up: false, down: false, left: false, right: false };
   // Right-stick direction held via the keyboard (N64 C-buttons), when the profile maps them.
   const rKeys = { up: false, down: false, left: false, right: false };
+  // The on-screen touch pad (touch/TouchControls). ABSOLUTE state set by setVirtualInput: buttons OR in
+  // like any other source (so a touched Select+Y fires the rewind chord), axes compete with the pad's
+  // by magnitude. Owned by the primary session only — spectators and input-only seats never take it.
+  const virtual = { mask: 0, axes: [0, 0, 0, 0] };
   // Keyboard edges go out on the EVENT, not on the next poll tick (perf program P2, 2026-09-05): the poll
   // used to be the only sender, so a keypress waited up to a full 16 ms interval before it left the browser
   // — on top of the worker's own once-per-tick sampling. onKeyState mutates the live state exactly as
@@ -1470,7 +1481,7 @@ export function createCloudRetroSession(descriptor, opts) {
   // events instead would re-run all of this logic and could drift from what was recorded.
   function readLiveInput() {
     const gp = readGamepad();
-    let mask = keyMask.value | gp.mask;
+    let mask = keyMask.value | gp.mask | virtual.mask;
     // Keyboard arrows fold into the d-pad only where that's correct for the system (see
     // keyboardArrowsDriveDpad): on for 2D + d-pad-movement consoles, OFF for n64/gc/wii so an arrow
     // key doesn't press the d-pad AND deflect the stick (the keyboard twin of the Goldeneye/Smash
@@ -1501,6 +1512,13 @@ export function createCloudRetroSession(descriptor, opts) {
       if (!rx) rx = rKeys.left ? -32767 : rKeys.right ? 32767 : 0;
       if (!ry) ry = rKeys.up ? -32767 : rKeys.down ? 32767 : 0;
     }
+    // The touch pad's sticks: the larger deflection wins per axis, so a real stick being pushed still
+    // beats a resting thumb on the screen and vice versa.
+    const v = virtual.axes;
+    if (Math.abs(v[0]) > Math.abs(ax)) ax = v[0];
+    if (Math.abs(v[1]) > Math.abs(ay)) ay = v[1];
+    if (Math.abs(v[2]) > Math.abs(rx)) rx = v[2];
+    if (Math.abs(v[3]) > Math.abs(ry)) ry = v[3];
     // Mirror right-stick left/right last, so it covers the keyboard's synthetic deflection too — the
     // player's "left" must mean the same thing on both inputs. Safe to negate: axisToInt16 clamps to
     // ±32767, never int16's -32768.
@@ -1557,6 +1575,8 @@ export function createCloudRetroSession(descriptor, opts) {
     keyMask.value = 0;
     lKeys.up = lKeys.down = lKeys.left = lKeys.right = false;
     rKeys.up = rKeys.down = rKeys.left = rKeys.right = false;
+    virtual.mask = 0;
+    virtual.axes = [0, 0, 0, 0];
     last = null;
   };
   const onWindowFocus = () => {
@@ -2755,6 +2775,9 @@ export function createCloudRetroSession(descriptor, opts) {
     // shadow the idle pad it passively latched.
     getActivePadIndex: () =>
       (pinnedPad >= 0 ? pinnedPad : (inputOnly || Date.now() - lastPadActiveAt >= 10_000 ? -1 : activePadIndex)),
+    // When a physical pad last drove this seat (ms epoch, 0 = never). The touch pad steps aside when a
+    // controller is used AFTER the player last touched the screen — an edge, not "active in the last 10 s".
+    getLastPadActiveAt: () => lastPadActiveAt,
     // Freeze/unfreeze the primary's fluid pad adoption — the room page holds it while listening for
     // a new controller's button press, so the primary can't steal (and thereby hide) that pad.
     setAdoptionHeld: (held) => { adoptionHeld = !!held; },
@@ -2788,6 +2811,16 @@ export function createCloudRetroSession(descriptor, opts) {
     // Rebuild the chord watcher from the current custom binds (controller tool "Quick actions" rebind),
     // so a changed chord fires immediately without restarting the room. No-op for non-primary sessions.
     reloadChords: () => { if (onChordAction) chordWatcher = createChordWatcher(onChordAction, resolveChords(customChordBinds)); },
+    // The on-screen touch pad's ABSOLUTE state: `mask` = RetroPad bits held, `axes` = [lx, ly, rx, ry]
+    // in ±32767. Edges are pumped immediately (like a key edge) instead of waiting for the 8 ms poll.
+    // Spectators and input-only seats ignore it: the touch pad drives the primary seat only.
+    setVirtualInput: (mask, axes) => {
+      if (spectator || inputOnly) return;
+      virtual.mask = mask | 0;
+      const a = Array.isArray(axes) ? axes : [0, 0, 0, 0];
+      virtual.axes = [clampAxis(a[0]), clampAxis(a[1]), clampAxis(a[2]), clampAxis(a[3])];
+      if (!replaySource) pumpInput();
+    },
     // ── Input tape (inputTape.js) ─────────────────────────────────────────────────────────────
     // Record what this seat sends, so a run can be replayed later. `meta` is provenance written into
     // the tape header (game/system/room/anchor). trace=false skips the per-frame video thumbprint

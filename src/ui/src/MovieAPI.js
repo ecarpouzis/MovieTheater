@@ -633,6 +633,23 @@ function setUserSetting(key, value) {
   });
 }
 
+// Read back one of the caller's own self-service settings (same allow-list as setUserSetting).
+// Resolves to the raw string value, or null when unset; rejects on a network/HTTP failure.
+async function getMySetting(key) {
+  const res = await fetch(`/API/MySetting?key=${encodeURIComponent(key)}`);
+  if (!res.ok) throw new Error(`MySetting ${res.status}`);
+  const j = await res.json();
+  return j && typeof j.value === "string" ? j.value : null;
+}
+
+// The arcade's touch-control layouts (Pages/Arcade/touch). One JSON blob per account.
+function getArcadeTouchLayouts() {
+  return getMySetting("ArcadeTouchLayouts");
+}
+function setArcadeTouchLayouts(json) {
+  return setUserSetting("ArcadeTouchLayouts", json);
+}
+
 // Upsert the current user's own 0–100 ratings. items: [{ id, kind, value }] where value is 0..100, or
 // null to clear (remove the row). Bounded per call — the server caps at 200, so the Rate page sends
 // capped chunks and drives the loop. Returns the raw fetch promise ({ success, updated, skipped, deleted }).
@@ -1891,6 +1908,9 @@ const MovieAPI = {
   toggleChannelPlayPause,
   seekChannel,
   setFavoriteChannels,
+  getMySetting,
+  getArcadeTouchLayouts,
+  setArcadeTouchLayouts,
   createPlaylist,
   getMyPlaylists,
   getPlaylistItems,
