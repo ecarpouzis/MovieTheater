@@ -221,3 +221,11 @@ storage:
 # same-host room start. 2 = webrtc.DTLSRoleClient (1 auto, 3 server).
 webrtc:
   dtlsRole: 2
+  # Playout-delay RTP header extension (codec program B4, 2026-10-02): Chrome renders a frame on decode
+  # (minMs) and caps its jitter-buffer delay (maxMs). Chrome offers it (extmap playout-delay); Firefox does
+  # not, and is untouched. OFF until a HEADED A/B on real displays (arcade-latency.mjs input-to-photon +
+  # timeline-probe.mjs pacing, wired and Wi-Fi) picks [min, max]; registering it changes nothing until then.
+  playoutDelay:
+    enabled: false
+    minMs: 0
+    maxMs: 100

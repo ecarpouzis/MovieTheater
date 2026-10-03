@@ -3311,6 +3311,43 @@ index baf701e..9d401fd 100644
  func (e Emulator) GetSupportedExtensions() []string {
  	var extensions []string
  	for _, core := range e.Libretro.Cores.List {
+diff --git a/pkg/config/glnv12_bind_test.go b/pkg/config/glnv12_bind_test.go
+new file mode 100644
+index 0000000..8665465
+--- /dev/null
++++ b/pkg/config/glnv12_bind_test.go
+@@ -0,0 +1,31 @@
++package config
++
++import (
++	"os"
++	"path/filepath"
++	"testing"
++)
++
++// encoder.video.glNv12 must bind from YAML: a silently ignored key would leave hardware-core rooms on the
++// limited-range RGBA head while the config claims otherwise — indistinguishable from "the fix didn't help".
++// (Only keys the embedded defaults don't set can be asserted here: LoadConfig also loads "./config.yaml",
++// and a test's working directory is this package — the defaults file itself — which wins over the temp dir.)
++func TestGlNv12Binds(t *testing.T) {
++	dir := t.TempDir()
++	yml := `
++encoder:
++  video:
++    codec: av1
++    glNv12: true
++`
++	if err := os.WriteFile(filepath.Join(dir, "config.yaml"), []byte(yml), 0644); err != nil {
++		t.Fatal(err)
++	}
++	var conf struct{ Encoder Encoder }
++	if _, err := LoadConfig(&conf, dir); err != nil {
++		t.Fatal(err)
++	}
++	if !conf.Encoder.Video.GlNv12 {
++		t.Fatal("encoder.video.glNv12 did not bind")
++	}
++}
 diff --git a/pkg/config/shared.go b/pkg/config/shared.go
 index 9e70576..5f5c29f 100644
 --- a/pkg/config/shared.go
@@ -3328,8 +3365,27 @@ index 9e70576..5f5c29f 100644
  }
  
  func (l Library) GetSupportedExtensions() []string { return l.Supported }
+diff --git a/pkg/config/webrtc.go b/pkg/config/webrtc.go
+index 007983f..b606968 100644
+--- a/pkg/config/webrtc.go
++++ b/pkg/config/webrtc.go
+@@ -15,6 +15,14 @@ type Webrtc struct {
+ 	IncludeLoopbackCandidate bool
+ 	SinglePort               int
+ 	LogLevel                 int
++	// PlayoutDelay (yaml playoutDelay): stamp the playout-delay RTP header extension on video so Chrome
++	// renders on decode (minMs) with a bounded jitter-buffer delay (maxMs). Off by default — unmeasured
++	// here; see pkg/network/webrtc/playoutdelay.go.
++	PlayoutDelay struct {
++		Enabled bool
++		MinMs   int
++		MaxMs   int
++	}
+ }
+ 
+ type IceServer struct {
 diff --git a/pkg/config/worker.go b/pkg/config/worker.go
-index be5ac42..05ec401 100644
+index be5ac42..1580e54 100644
 --- a/pkg/config/worker.go
 +++ b/pkg/config/worker.go
 @@ -6,20 +6,149 @@ import (
@@ -3490,7 +3546,21 @@ index be5ac42..05ec401 100644
  }
  
  type Storage struct {
-@@ -86,6 +215,111 @@ type CodecSettings struct {
+@@ -78,6 +207,13 @@ type Video struct {
+ 	KeyframeInterval int
+ 	Threads          int
+ 	Colorimetry      string
++	// GlNv12 (yaml glNv12): the GL zero-copy head converts RGBA -> NV12 on the GPU (glcolorconvert) with
++	// Colorimetry in the caps, instead of handing NVENC RGBA. NVENC's own RGB->YUV conversion picks BT.709
++	// LIMITED range and never sees Colorimetry, so every hardware-core room (n64/gc/ps2/psp/dc) shipped
++	// limited range while the CPU head shipped full (measured 2026-10-02: decoded VideoFrame fullRange false
++	// vs true). glcolorconvert was proven offline to emit exact BT.709 full-range values with no transfer
++	// (gamma) conversion. NVENC encoders only; off = the previous RGBA chain.
++	GlNv12 bool
+ }
+ 
+ type CodecSettings struct {
+@@ -86,6 +222,111 @@ type CodecSettings struct {
  	Caps    string
  }
  
@@ -5193,8 +5263,238 @@ index 0000000..6e43bfa
 +		}
 +	}
 +}
+diff --git a/pkg/network/webrtc/codecmatch.go b/pkg/network/webrtc/codecmatch.go
+new file mode 100644
+index 0000000..6ec5eaa
+--- /dev/null
++++ b/pkg/network/webrtc/codecmatch.go
+@@ -0,0 +1,47 @@
++package webrtc
++
++import (
++	"errors"
++	"strings"
++
++	"github.com/pion/webrtc/v4"
++)
++
++// ── Codec-mismatch signalling (arcade codec program, 2026-10-02) ─────────────────────────────────────
++// A room streams ONE codec. A browser that cannot receive it fails inside Pion — the track's Bind finds no
++// matching remote codec (ErrUnsupportedCodec) — and before this, nothing reached the browser: the worker
++// logged a line and returned an empty init response, the coordinator dropped that as malformed, and the
++// player stared at a black screen forever. These envelopes ride the ICE relay, which the coordinator passes
++// through verbatim (the same channel "aux-sdp:" uses), so no protocol change is needed anywhere.
++const (
++	// CodecErrorPrefix: this browser cannot receive the room's codec ("codec-error:av1"). The browser says
++	// which codec and how to fix it (the host restarts with the other one).
++	CodecErrorPrefix = "codec-error:"
++	// CodecMismatchPrefix: the browser negotiated a different codec than the room's encoder emits — its join
++	// descriptor carried the wrong codec (a site restart lost it). Rejoining fixes it.
++	CodecMismatchPrefix = "codec-mismatch:"
++)
++
++// IsCodecMismatch reports whether err is Pion refusing to bind our track to anything the remote offered or
++// answered. The string test is the fallback for a wrapped error that lost the sentinel.
++func IsCodecMismatch(err error) bool {
++	if err == nil {
++		return false
++	}
++	return errors.Is(err, webrtc.ErrUnsupportedCodec) || strings.Contains(err.Error(), "codec is not supported by remote")
++}
++
++// CodecName maps a track mime ("video/AV1") to the encoder.list key the rest of the worker uses ("av1").
++func CodecName(mime string) string {
++	_, name, _ := strings.Cut(mime, "/")
++	return strings.ToLower(name)
++}
++
++// VideoCodecName is the codec this peer's video track was created with ("" = no video track, e.g. an
++// input-only seat).
++func (p *Peer) VideoCodecName() string {
++	if p == nil || p.v == nil {
++		return ""
++	}
++	return CodecName(p.v.Codec().MimeType)
++}
+diff --git a/pkg/network/webrtc/codecmatch_test.go b/pkg/network/webrtc/codecmatch_test.go
+new file mode 100644
+index 0000000..c45dcce
+--- /dev/null
++++ b/pkg/network/webrtc/codecmatch_test.go
+@@ -0,0 +1,171 @@
++package webrtc
++
++import (
++	"fmt"
++	"strings"
++	"testing"
++	"time"
++
++	"github.com/pion/webrtc/v4"
++	"github.com/pion/webrtc/v4/pkg/media"
++)
++
++// negotiate runs the browser-offer flow in-process: a "browser" whose decoder list is exactly `codecs`
++// offers recvonly video (as the arcade shim does), the worker side — default codecs, as NewApiFactory
++// registers them — answers with one sendonly track of `codec`. It returns the answer-side error (where
++// Pion's Bind fails), and otherwise the codec the browser actually RECEIVES (its OnTrack codec), which is
++// the only honest read of what Bind chose: GetParameters lists every negotiated codec, not the bound one.
++func negotiate(t *testing.T, codec string, codecs ...webrtc.RTPCodecParameters) (webrtc.RTPCodecParameters, error) {
++	t.Helper()
++	bm := &webrtc.MediaEngine{}
++	for _, c := range codecs {
++		if err := bm.RegisterCodec(c, webrtc.RTPCodecTypeVideo); err != nil {
++			t.Fatal(err)
++		}
++	}
++	browser, err := webrtc.NewAPI(webrtc.WithMediaEngine(bm)).NewPeerConnection(webrtc.Configuration{})
++	if err != nil {
++		t.Fatal(err)
++	}
++	t.Cleanup(func() { _ = browser.Close() })
++	if _, err = browser.AddTransceiverFromKind(webrtc.RTPCodecTypeVideo,
++		webrtc.RTPTransceiverInit{Direction: webrtc.RTPTransceiverDirectionRecvonly}); err != nil {
++		t.Fatal(err)
++	}
++	got := make(chan webrtc.RTPCodecParameters, 1)
++	browser.OnTrack(func(tr *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
++		select {
++		case got <- tr.Codec():
++		default:
++		}
++	})
++
++	wm := &webrtc.MediaEngine{}
++	if err = wm.RegisterDefaultCodecs(); err != nil {
++		t.Fatal(err)
++	}
++	worker, err := webrtc.NewAPI(webrtc.WithMediaEngine(wm)).NewPeerConnection(webrtc.Configuration{})
++	if err != nil {
++		t.Fatal(err)
++	}
++	t.Cleanup(func() { _ = worker.Close() })
++	track, err := newTrack("video", "video", codec)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if _, err = worker.AddTransceiverFromTrack(track, webrtc.RTPTransceiverInit{Direction: webrtc.RTPTransceiverDirectionSendonly}); err != nil {
++		t.Fatal(err)
++	}
++
++	offer, _ := browser.CreateOffer(nil)
++	bDone := webrtc.GatheringCompletePromise(browser)
++	if err = browser.SetLocalDescription(offer); err != nil {
++		t.Fatal(err)
++	}
++	<-bDone
++	if err = worker.SetRemoteDescription(*browser.LocalDescription()); err != nil {
++		t.Fatal(err)
++	}
++	answer, err := worker.CreateAnswer(nil)
++	if err != nil {
++		return webrtc.RTPCodecParameters{}, err
++	}
++	wDone := webrtc.GatheringCompletePromise(worker)
++	if err = worker.SetLocalDescription(answer); err != nil {
++		return webrtc.RTPCodecParameters{}, err
++	}
++	<-wDone
++	if err = browser.SetRemoteDescription(*worker.LocalDescription()); err != nil {
++		t.Fatal(err)
++	}
++
++	frame := []byte{0, 0, 0, 1, 0x65, 0x88, 0x84, 0x00, 0x33} // an IDR-looking NAL; the payload is irrelevant
++	if codec == "av1" {
++		frame = []byte{0x12, 0x00, 0x0a, 0x0b, 0x00, 0x00, 0x00, 0x24, 0xcf, 0x7f, 0x0d, 0xbf, 0xff, 0x30, 0x08}
++	}
++	deadline := time.After(10 * time.Second)
++	tick := time.NewTicker(20 * time.Millisecond)
++	defer tick.Stop()
++	for {
++		select {
++		case c := <-got:
++			return c, nil
++		case <-tick.C:
++			_ = track.WriteSample(media.Sample{Data: frame, Duration: 20 * time.Millisecond})
++		case <-deadline:
++			t.Fatal("the browser never received the track")
++		}
++	}
++}
++
++func h264(fmtp string, pt webrtc.PayloadType) webrtc.RTPCodecParameters {
++	return webrtc.RTPCodecParameters{
++		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeH264, ClockRate: 90000, SDPFmtpLine: fmtp},
++		PayloadType:        pt,
++	}
++}
++
++var av1 = webrtc.RTPCodecParameters{
++	RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeAV1, ClockRate: 90000},
++	PayloadType:        45,
++}
++
++// An AV1 room and a browser that offers only H.264 (older Safari): Pion refuses to bind, and that refusal
++// must be recognisable — it is what the worker turns into the "codec-error:" verdict for the browser.
++func TestCodecMismatch_AV1TrackH264OnlyBrowser(t *testing.T) {
++	_, err := negotiate(t, "av1", h264("level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f", 102))
++	if err == nil {
++		t.Fatal("an AV1 track bound to an H.264-only offer")
++	}
++	if !IsCodecMismatch(err) {
++		t.Fatalf("Pion's refusal was not recognised as a codec mismatch: %v", err)
++	}
++}
++
++// The explicit Constrained Baseline fmtp picks the exact packetization-mode 1 line even when the browser
++// lists a mode-0 line FIRST (the payloader always fragments with FU-A, which mode 0 forbids).
++func TestH264Track_BindsExactBaselineLine(t *testing.T) {
++	c, err := negotiate(t, "h264",
++		h264("level-asymmetry-allowed=1;packetization-mode=0;profile-level-id=42e01f", 104),
++		h264("level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f", 102),
++	)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if c.PayloadType != 102 || !strings.Contains(c.SDPFmtpLine, "packetization-mode=1") {
++		t.Fatalf("browser received PT %d %q, want PT 102 (packetization-mode=1)", c.PayloadType, c.SDPFmtpLine)
++	}
++}
++
++// A browser with no exact Constrained Baseline line (only 42001f) must still bind — the fmtp is a
++// preference, never a new way to lose a match.
++func TestH264Track_StillBindsWithoutExactLine(t *testing.T) {
++	if _, err := negotiate(t, "h264", h264("level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f", 102)); err != nil {
++		t.Fatalf("H.264 track failed to bind a 42001f-only browser: %v", err)
++	}
++}
++
++// AV1 rooms are untouched: an AV1-capable browser binds as before.
++func TestAV1Track_Binds(t *testing.T) {
++	c, err := negotiate(t, "av1", av1, h264("level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f", 102))
++	if err != nil {
++		t.Fatal(err)
++	}
++	if CodecName(c.MimeType) != "av1" {
++		t.Fatalf("browser received %s", c.MimeType)
++	}
++}
++
++func TestCodecName(t *testing.T) {
++	for mime, want := range map[string]string{"video/AV1": "av1", "video/H264": "h264", "video/VP8": "vp8", "": ""} {
++		if got := CodecName(mime); got != want {
++			t.Errorf("CodecName(%q) = %q, want %q", mime, got, want)
++		}
++	}
++	if IsCodecMismatch(nil) || IsCodecMismatch(fmt.Errorf("ice failed")) {
++		t.Error("unrelated errors read as codec mismatches")
++	}
++	if !IsCodecMismatch(fmt.Errorf("start: %w", webrtc.ErrUnsupportedCodec)) {
++		t.Error("a wrapped ErrUnsupportedCodec was missed")
++	}
++}
 diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
-index 99e02b8..d9f39db 100644
+index 99e02b8..5760f9a 100644
 --- a/pkg/network/webrtc/factory.go
 +++ b/pkg/network/webrtc/factory.go
 @@ -3,19 +3,51 @@ package webrtc
@@ -5249,7 +5549,7 @@ index 99e02b8..d9f39db 100644
  }
  
  type ModApiFun func(m *webrtc.MediaEngine, i *interceptor.Registry, s *webrtc.SettingEngine)
-@@ -27,6 +59,55 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -27,6 +59,68 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	}
  	i := &interceptor.Registry{}
  
@@ -5297,6 +5597,19 @@ index 99e02b8..d9f39db 100644
 +	// In-frame packet pacing (patch 0028): always registered, no-op until a room arms it via
 +	// SetPacing (lobby Network profile Remote/5G). See pacer.go for why grouping, not a pacer.
 +	i.Add(pacerFactory{})
++	// Playout-delay (codec program B4): registered only when enabled, so a disabled worker's SDP is unchanged.
++	if conf.PlayoutDelay.Enabled {
++		if err = m.RegisterHeaderExtension(webrtc.RTPHeaderExtensionCapability{URI: PlayoutDelayURI}, webrtc.RTPCodecTypeVideo); err != nil {
++			return
++		}
++		pd, pdErr := newPlayoutDelayFactory(conf.PlayoutDelay.MinMs, conf.PlayoutDelay.MaxMs)
++		if pdErr != nil {
++			return nil, pdErr
++		}
++		i.Add(pd)
++		log.Info().Msgf("rtc: playout-delay extension ON (min %d ms, max %d ms) — Chrome renders on decode",
++			conf.PlayoutDelay.MinMs, conf.PlayoutDelay.MaxMs)
++	}
 +	m.RegisterFeedback(webrtc.RTCPFeedback{Type: webrtc.TypeRTCPFBTransportCC}, webrtc.RTPCodecTypeVideo)
 +	if err = webrtc.ConfigureTWCCHeaderExtensionSender(m, i); err != nil {
 +		return
@@ -5305,7 +5618,7 @@ index 99e02b8..d9f39db 100644
  	if conf.DisableDefaultInterceptors {
  		sender, err := report.NewSenderInterceptor()
  		if err != nil {
-@@ -49,6 +130,7 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -49,6 +143,7 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	if conf.IceLite {
  		s.SetLite(conf.IceLite)
  	}
@@ -5313,7 +5626,7 @@ index 99e02b8..d9f39db 100644
  	if conf.HasPortRange() {
  		if err = s.SetEphemeralUDPPortRange(conf.IcePorts.Min, conf.IcePorts.Max); err != nil {
  			return
-@@ -56,57 +138,314 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -56,57 +151,314 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	}
  	if conf.HasSinglePort() {
  		var l any
@@ -5737,6 +6050,244 @@ index 0000000..4f15d8f
 +		}
 +	}
 +	return w.next.Write(header, payload, attributes)
++}
+diff --git a/pkg/network/webrtc/playoutdelay.go b/pkg/network/webrtc/playoutdelay.go
+new file mode 100644
+index 0000000..a0bf812
+--- /dev/null
++++ b/pkg/network/webrtc/playoutdelay.go
+@@ -0,0 +1,68 @@
++// Playout-delay RTP header extension (arcade codec program B4, 2026-10-02).
++//
++// Chrome honours http://www.webrtc.org/experiments/rtp-hdrext/playout-delay: a sender-declared [min, max]
++// render delay for the frames it carries. min=0 lets Chrome render a frame as soon as it is decoded instead
++// of on its smoothed render clock; max bounds how much delay its jitter buffer may add. Cloud-gaming
++// senders use it so the receiver stops trading latency for smoothness. Firefox does not negotiate it, so it
++// is a Chrome-only lever — and an UNMEASURED one here: zero smoothing can show as judder on a jittery Wi-Fi
++// link, which is why it ships OFF (webrtc.playoutDelay.enabled) until a headed A/B on real displays says
++// which [min, max] lowers input-to-photon without hurting frame pacing.
++package webrtc
++
++import (
++	"strings"
++
++	"github.com/pion/interceptor"
++	"github.com/pion/rtp"
++)
++
++// PlayoutDelayURI is the extension's SDP extmap URI.
++const PlayoutDelayURI = "http://www.webrtc.org/experiments/rtp-hdrext/playout-delay"
++
++// playoutDelayFactory stamps every outgoing VIDEO packet with a fixed [min, max] playout delay (ms).
++type playoutDelayFactory struct{ payload []byte }
++
++// newPlayoutDelayFactory builds the stamp once (10 ms units, 12 bits each: 0..40950 ms).
++func newPlayoutDelayFactory(minMs, maxMs int) (*playoutDelayFactory, error) {
++	clamp := func(ms int) uint16 { return uint16(min(max(ms, 0), 40950) / 10) }
++	b, err := rtp.PlayoutDelayExtension{MinDelay: clamp(minMs), MaxDelay: clamp(maxMs)}.Marshal()
++	if err != nil {
++		return nil, err
++	}
++	return &playoutDelayFactory{payload: b}, nil
++}
++
++func (f *playoutDelayFactory) NewInterceptor(_ string) (interceptor.Interceptor, error) {
++	return &playoutDelay{payload: f.payload}, nil
++}
++
++type playoutDelay struct {
++	interceptor.NoOp
++	payload []byte
++}
++
++func (p *playoutDelay) BindLocalStream(info *interceptor.StreamInfo, writer interceptor.RTPWriter) interceptor.RTPWriter {
++	if !strings.HasPrefix(info.MimeType, "video/") {
++		return writer
++	}
++	id := playoutDelayID(info.RTPHeaderExtensions)
++	if id == 0 {
++		return writer // not negotiated (Firefox, or an older Chrome): send exactly as before
++	}
++	return interceptor.RTPWriterFunc(func(h *rtp.Header, payload []byte, a interceptor.Attributes) (int, error) {
++		if err := h.SetExtension(uint8(id), p.payload); err != nil {
++			return 0, err
++		}
++		return writer.Write(h, payload, a)
++	})
++}
++
++// playoutDelayID is the negotiated extmap id for the extension, 0 when the remote did not accept it.
++func playoutDelayID(exts []interceptor.RTPHeaderExtension) int {
++	for _, e := range exts {
++		if e.URI == PlayoutDelayURI {
++			return e.ID
++		}
++	}
++	return 0
++}
+diff --git a/pkg/network/webrtc/playoutdelay_test.go b/pkg/network/webrtc/playoutdelay_test.go
+new file mode 100644
+index 0000000..277039b
+--- /dev/null
++++ b/pkg/network/webrtc/playoutdelay_test.go
+@@ -0,0 +1,158 @@
++package webrtc
++
++import (
++	"testing"
++	"time"
++
++	"github.com/pion/interceptor"
++	"github.com/pion/rtp"
++	"github.com/pion/webrtc/v4"
++	"github.com/pion/webrtc/v4/pkg/media"
++)
++
++// playoutDelaySeen connects a "browser" (which does or does not negotiate the extension, like Chrome vs
++// Firefox) to a worker-side PeerConnection carrying the playout-delay interceptor, sends video, and returns
++// the extension the browser received on its first packet (ok=false when the packet carried none).
++func playoutDelaySeen(t *testing.T, browserAccepts bool, minMs, maxMs int) (rtp.PlayoutDelayExtension, bool) {
++	t.Helper()
++	bm := &webrtc.MediaEngine{}
++	if err := bm.RegisterDefaultCodecs(); err != nil {
++		t.Fatal(err)
++	}
++	if browserAccepts {
++		if err := bm.RegisterHeaderExtension(webrtc.RTPHeaderExtensionCapability{URI: PlayoutDelayURI}, webrtc.RTPCodecTypeVideo); err != nil {
++			t.Fatal(err)
++		}
++	}
++	browser, err := webrtc.NewAPI(webrtc.WithMediaEngine(bm)).NewPeerConnection(webrtc.Configuration{})
++	if err != nil {
++		t.Fatal(err)
++	}
++	t.Cleanup(func() { _ = browser.Close() })
++	if _, err = browser.AddTransceiverFromKind(webrtc.RTPCodecTypeVideo,
++		webrtc.RTPTransceiverInit{Direction: webrtc.RTPTransceiverDirectionRecvonly}); err != nil {
++		t.Fatal(err)
++	}
++	type seen struct {
++		ext rtp.PlayoutDelayExtension
++		ok  bool
++	}
++	got := make(chan seen, 1)
++	browser.OnTrack(func(tr *webrtc.TrackRemote, rcv *webrtc.RTPReceiver) {
++		id := 0
++		for _, h := range rcv.GetParameters().HeaderExtensions {
++			if h.URI == PlayoutDelayURI {
++				id = h.ID
++			}
++		}
++		pkt, _, err := tr.ReadRTP()
++		if err != nil {
++			return
++		}
++		var s seen
++		if id != 0 {
++			if raw := pkt.Header.GetExtension(uint8(id)); raw != nil {
++				s.ok = s.ext.Unmarshal(raw) == nil
++			}
++		}
++		select {
++		case got <- s:
++		default:
++		}
++	})
++
++	wm := &webrtc.MediaEngine{}
++	if err = wm.RegisterDefaultCodecs(); err != nil {
++		t.Fatal(err)
++	}
++	if err = wm.RegisterHeaderExtension(webrtc.RTPHeaderExtensionCapability{URI: PlayoutDelayURI}, webrtc.RTPCodecTypeVideo); err != nil {
++		t.Fatal(err)
++	}
++	reg := &interceptor.Registry{}
++	pd, err := newPlayoutDelayFactory(minMs, maxMs)
++	if err != nil {
++		t.Fatal(err)
++	}
++	reg.Add(pd)
++	worker, err := webrtc.NewAPI(webrtc.WithMediaEngine(wm), webrtc.WithInterceptorRegistry(reg)).NewPeerConnection(webrtc.Configuration{})
++	if err != nil {
++		t.Fatal(err)
++	}
++	t.Cleanup(func() { _ = worker.Close() })
++	track, err := newTrack("video", "video", "h264")
++	if err != nil {
++		t.Fatal(err)
++	}
++	if _, err = worker.AddTransceiverFromTrack(track, webrtc.RTPTransceiverInit{Direction: webrtc.RTPTransceiverDirectionSendonly}); err != nil {
++		t.Fatal(err)
++	}
++
++	offer, _ := browser.CreateOffer(nil)
++	bDone := webrtc.GatheringCompletePromise(browser)
++	if err = browser.SetLocalDescription(offer); err != nil {
++		t.Fatal(err)
++	}
++	<-bDone
++	if err = worker.SetRemoteDescription(*browser.LocalDescription()); err != nil {
++		t.Fatal(err)
++	}
++	answer, err := worker.CreateAnswer(nil)
++	if err != nil {
++		t.Fatal(err)
++	}
++	wDone := webrtc.GatheringCompletePromise(worker)
++	if err = worker.SetLocalDescription(answer); err != nil {
++		t.Fatal(err)
++	}
++	<-wDone
++	if err = browser.SetRemoteDescription(*worker.LocalDescription()); err != nil {
++		t.Fatal(err)
++	}
++
++	frame := []byte{0, 0, 0, 1, 0x65, 0x88, 0x84, 0x00, 0x33}
++	deadline := time.After(10 * time.Second)
++	tick := time.NewTicker(20 * time.Millisecond)
++	defer tick.Stop()
++	for {
++		select {
++		case s := <-got:
++			return s.ext, s.ok
++		case <-tick.C:
++			_ = track.WriteSample(media.Sample{Data: frame, Duration: 20 * time.Millisecond})
++		case <-deadline:
++			t.Fatal("the browser never received video")
++		}
++	}
++}
++
++// A browser that negotiates the extension (Chrome) receives the configured delay on its video packets.
++func TestPlayoutDelay_StampedWhenNegotiated(t *testing.T) {
++	ext, ok := playoutDelaySeen(t, true, 0, 100)
++	if !ok {
++		t.Fatal("no playout-delay extension on the video packet")
++	}
++	if ext.MinDelay != 0 || ext.MaxDelay != 10 { // 10 ms units
++		t.Fatalf("got min %d max %d (10 ms units), want 0 / 10", ext.MinDelay, ext.MaxDelay)
++	}
++}
++
++// A browser that does not negotiate it (Firefox) gets packets exactly as before — no extension.
++func TestPlayoutDelay_AbsentWhenNotNegotiated(t *testing.T) {
++	if _, ok := playoutDelaySeen(t, false, 0, 0); ok {
++		t.Fatal("stamped an extension the browser never negotiated")
++	}
++}
++
++func TestPlayoutDelay_ClampsToTheWireRange(t *testing.T) {
++	f, err := newPlayoutDelayFactory(-5, 999999)
++	if err != nil {
++		t.Fatal(err)
++	}
++	var ext rtp.PlayoutDelayExtension
++	if err = ext.Unmarshal(f.payload); err != nil {
++		t.Fatal(err)
++	}
++	if ext.MinDelay != 0 || ext.MaxDelay != 4095 {
++		t.Fatalf("got %d / %d, want 0 / 4095", ext.MinDelay, ext.MaxDelay)
++	}
 +}
 diff --git a/pkg/network/webrtc/plikeyframe.go b/pkg/network/webrtc/plikeyframe.go
 new file mode 100644
@@ -6465,7 +7016,7 @@ index 0000000..29a6017
 +// ReportCount is how many viewer reports this peer has sent (for the close summary).
 +func (p *Peer) ReportCount() int64 { return p.reports.Load() }
 diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
-index b342b6b..9dd986f 100644
+index b342b6b..0d5183e 100644
 --- a/pkg/network/webrtc/webrtc.go
 +++ b/pkg/network/webrtc/webrtc.go
 @@ -4,11 +4,15 @@ import (
@@ -6836,7 +7387,31 @@ index b342b6b..9dd986f 100644
  		answer, err := fromJson[webrtc.SessionDescription](*sdp)
  		if err != nil {
  			return err
-@@ -176,6 +447,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
+@@ -163,6 +434,9 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
+ 	return nil
+ }
+ 
++// H264BaselineFmtp is the fmtp the h264 track declares: Constrained Baseline level 3.1, packetization-mode 1.
++const H264BaselineFmtp = "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f"
++
+ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSample, error) {
+ 	codec = strings.ToLower(codec)
+ 	var mime string
+@@ -171,11 +445,26 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
+ 	case "audio/opus":
+ 		mime = webrtc.MimeTypeOpus
+ 	case "video/h264":
+-		mime = webrtc.MimeTypeH264
++		// Explicit Constrained Baseline, packetization-mode 1 — what the encoder emits and what the payloader
++		// (FU-A) speaks. Without an fmtp the track bound to whichever H.264 line the browser listed FIRST,
++		// which could be a packetization-mode=0 line (no FU-A allowed). With it, Pion binds the exact line when
++		// offered and still falls back to the first H.264 otherwise, so no browser loses a match it had.
++		return webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{
++			MimeType:    webrtc.MimeTypeH264,
++			ClockRate:   90000,
++			SDPFmtpLine: H264BaselineFmtp,
++		}, id, label)
+ 	case "video/vpx", "video/vp8":
  		mime = webrtc.MimeTypeVP8
  	case "video/vp9":
  		mime = webrtc.MimeTypeVP9
@@ -6850,7 +7425,7 @@ index b342b6b..9dd986f 100644
  	default:
  		return nil, fmt.Errorf("unsupported codec %s:%s", id, codec)
  	}
-@@ -221,17 +499,131 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
+@@ -221,17 +510,131 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
  }
  
  func (p *Peer) SendAudio(dat []byte, dur time.Duration) {
@@ -6891,9 +7466,9 @@ index b342b6b..9dd986f 100644
 +			p.vLogged.Store(n)
 +			p.log.Warn().Msgf("peer is behind: dropped %v video frames to keep the room's encoder free", n)
 +		}
- 	}
- }
- 
++	}
++}
++
 +func (p *Peer) startVideoSender() {
 +	p.vqOnce.Do(func() {
 +		p.vq = make(chan vFrame, vQueueDepth)
@@ -6971,9 +7546,9 @@ index b342b6b..9dd986f 100644
 +				}
 +			}
 +		}
-+	}
-+}
-+
+ 	}
+ }
+ 
 +// SetMaxTemporalLayer caps which temporal layers this peer is fed (0 = base only). Called by the ABR
 +// loop from its own goroutine.
 +func (p *Peer) SetMaxTemporalLayer(l int) { p.maxLayer.Store(int32(l)) }
@@ -6984,7 +7559,7 @@ index b342b6b..9dd986f 100644
  func (p *Peer) SendData(data []byte) { _ = p.d.Send(data) }
  
  func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) error) error {
-@@ -249,7 +641,47 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
+@@ -249,7 +652,47 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
  	return nil
  }
  
@@ -7032,7 +7607,7 @@ index b342b6b..9dd986f 100644
  	if p.c == nil {
  		return
  	}
-@@ -261,6 +693,15 @@ func (p *Peer) Disconnect() {
+@@ -261,6 +704,15 @@ func (p *Peer) Disconnect() {
  }
  
  func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
@@ -7048,7 +7623,7 @@ index b342b6b..9dd986f 100644
  	if p.v, err = newTrack("video", "video", vCodec); err != nil {
  		return err
  	}
-@@ -274,20 +715,49 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
+@@ -274,20 +726,49 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
  	if _, err = p.c.AddTransceiverFromTrack(p.v, sendOnly); err != nil {
  		return err
  	}
@@ -7101,7 +7676,7 @@ index b342b6b..9dd986f 100644
  			}
  		}()
  	}
-@@ -313,3 +783,227 @@ func toJson[T any](data T) (string, error) {
+@@ -313,3 +794,227 @@ func toJson[T any](data T) (string, error) {
  	}
  	return string(b), nil
  }
@@ -8374,10 +8949,10 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..735a43c
+index 0000000..68763c0
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,1135 @@
+@@ -0,0 +1,1138 @@
 +package worker
 +
 +import (
@@ -8652,6 +9227,7 @@ index 0000000..735a43c
 +	sameHost           bool
 +	rttMean, rttSd     float64
 +	adaptive           string // patch 0047 per-peer fields (pli=, reports=, hiddenTicks=), preformatted
++	distress           adaptPeerHist // the same viewer's distress record, by value, for the link-stat row
 +}
 +
 +const (
@@ -9033,7 +9609,7 @@ index 0000000..735a43c
 +					sp := abrSummaryPeer{
 +						dev: st.dev, path: st.path, deviceId: st.deviceId, username: st.username,
 +						sustainedKbps: st.sustainedKbps, sameHost: st.path == "samehost",
-+						adaptive: ad.peerSummary(p),
++						adaptive: ad.peerSummary(p), distress: ad.peerVerdict(p),
 +					}
 +					if s := rtt[p]; s != nil {
 +						sp.rttMean, sp.rttSd = s.mean, s.sd()
@@ -9066,6 +9642,8 @@ index 0000000..735a43c
 +							AtCeilPct: atCeilPct, CutsSteady: cutsSteady, StarvesSteady: starvesSteady,
 +							CongEpisodes: congEpisodes,
 +							RttMeanMs:    sp.rttMean, RttSdMs: sp.rttSd, Path: sp.path,
++							DistressWeakTicks: sp.distress.weakTicks, DistressStrongTicks: sp.distress.strongTicks,
++							ScaleDowns: sp.distress.scaleDowns,
 +						}
 +						if rampTicks >= 0 {
 +							rt := rampTicks
@@ -9627,10 +10205,10 @@ index 0000000..a78e01a
 +}
 diff --git a/pkg/worker/adaptive.go b/pkg/worker/adaptive.go
 new file mode 100644
-index 0000000..b85e0a1
+index 0000000..95738b4
 --- /dev/null
 +++ b/pkg/worker/adaptive.go
-@@ -0,0 +1,482 @@
+@@ -0,0 +1,522 @@
 +package worker
 +
 +import (
@@ -9725,6 +10303,37 @@ index 0000000..b85e0a1
 +	// summary
 +	scaleSteps, heldTicks int
 +	scaleMin              float64
++	// hist is each viewer's decoder-distress record for the WHOLE room — unlike peers, never forgotten when
++	// the viewer leaves, because the close row (abr.go -> ArcadeLinkStat) is written for every peer the room
++	// ever had. It is what lets the site learn "this device drowns on this codec" and pick the other next time.
++	hist map[adaptivePeer]*adaptPeerHist
++}
++
++// adaptPeerHist: one viewer's distress over the room. Ticks are seconds (one ABR tick each).
++type adaptPeerHist struct {
++	weakTicks, strongTicks int
++	scaleDowns             int // room scale-downs this viewer's strong distress caused
++}
++
++func (a *adaptiveCtl) histFor(p adaptivePeer) *adaptPeerHist {
++	h := a.hist[p]
++	if h == nil {
++		h = &adaptPeerHist{}
++		a.hist[p] = h
++	}
++	return h
++}
++
++// peerVerdict is a viewer's distress record for the close row (zeros for a nil controller or a non-viewer).
++func (a *adaptiveCtl) peerVerdict(p any) adaptPeerHist {
++	ap, ok := p.(adaptivePeer)
++	if a == nil || !ok {
++		return adaptPeerHist{}
++	}
++	if h := a.hist[ap]; h != nil {
++		return *h
++	}
++	return adaptPeerHist{}
 +}
 +
 +type adaptPeerState struct {
@@ -9748,6 +10357,7 @@ index 0000000..b85e0a1
 +	s, _ := app.BaseScale()
 +	return &adaptiveCtl{cfg: cfg, app: app, rebuild: rebuild, zeroCopy: zeroCopy, floor: scaleFloor,
 +		coreFps: coreFps, log: log, peers: map[adaptivePeer]*adaptPeerState{}, causers: map[adaptivePeer]bool{},
++		hist: map[adaptivePeer]*adaptPeerHist{},
 +		scaleMin: s, lastRebuild: -adaptRebuildGap}
 +}
 +
@@ -9910,6 +10520,10 @@ index 0000000..b85e0a1
 +		weak, strong := st.distress(st.pliTotal, rep, has, tp.sameHost)
 +		if weak {
 +			anyDistress = true
++			a.histFor(p).weakTicks++
++		}
++		if strong {
++			a.histFor(p).strongTicks++
 +		}
 +
 +		// ── Layer rung (per viewer) ──
@@ -10002,6 +10616,7 @@ index 0000000..b85e0a1
 +		}
 +		for _, p := range strongPeers {
 +			a.causers[p] = true
++			a.histFor(p).scaleDowns++
 +		}
 +		a.app.SetScaleCap(next)
 +		a.rebuild()
@@ -10110,15 +10725,18 @@ index 0000000..b85e0a1
 +		if st := a.peers[ap]; st != nil {
 +			s += " hiddenTicks=" + strconv.Itoa(st.hiddenTicks)
 +		}
++		if h := a.hist[ap]; h != nil {
++			s += fmt.Sprintf(" distressWeak=%d distressStrong=%d scaleDowns=%d", h.weakTicks, h.strongTicks, h.scaleDowns)
++		}
 +	}
 +	return s
 +}
 diff --git a/pkg/worker/adaptive_test.go b/pkg/worker/adaptive_test.go
 new file mode 100644
-index 0000000..9215376
+index 0000000..ce15ca9
 --- /dev/null
 +++ b/pkg/worker/adaptive_test.go
-@@ -0,0 +1,435 @@
+@@ -0,0 +1,468 @@
 +package worker
 +
 +import (
@@ -10552,6 +11170,39 @@ index 0000000..9215376
 +	pad := make([]byte, 10)
 +	if webrtc.IsViewerReport(pad) {
 +		t.Fatal("a pad frame is not a report")
++	}
++}
++
++// The close row (ArcadeLinkStat) is written for every peer the room ever had, so a viewer's distress record
++// must survive it LEAVING — that record is what teaches the site's Auto codec choice which device drowns on
++// which codec. A healthy viewer's record stays all zeros.
++func TestAdaptiveRoom_DistressRecordOutlivesTheViewer(t *testing.T) {
++	app := &fakeApp{base: 3}
++	ctl := newTestCtl(app, allOn, false)
++	ff, ok := &fakeViewer{}, &fakeViewer{}
++	ff.report(60, 60, 40, false) // drowning: decoded 40 of 60
++	ok.report(60, 60, 60, false)
++	peers := []adaptTickPeer{{p: ff, sameHost: true}, {p: ok}}
++	now := 0
++	for i := 0; i < 8; i++ {
++		now++
++		ctl.tick(now, peers)
++	}
++	peers = []adaptTickPeer{{p: ok}} // the drowning viewer leaves
++	for i := 0; i < 5; i++ {
++		now++
++		ctl.tick(now, peers)
++	}
++	got := ctl.peerVerdict(ff)
++	if got.strongTicks == 0 || got.weakTicks < got.strongTicks || got.scaleDowns != 1 {
++		t.Fatalf("drowning viewer's record lost or wrong after it left: %+v", got)
++	}
++	if h := ctl.peerVerdict(ok); h != (adaptPeerHist{}) {
++		t.Fatalf("a healthy viewer must have an empty record: %+v", h)
++	}
++	var nilCtl *adaptiveCtl
++	if h := nilCtl.peerVerdict(ff); h != (adaptPeerHist{}) {
++		t.Fatal("a room without a controller reports no distress")
 +	}
 +}
 diff --git a/pkg/worker/caged/app/app.go b/pkg/worker/caged/app/app.go
@@ -94058,346 +94709,35 @@ index 2840a0e..aa70436 100644
  			c.log.Warn().Msgf("unhandled packet type %v", x.T)
  		}
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..dc89981 100644
+index 6972cc7..455e574 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,820 @@
--package worker
--
--import (
--	"encoding/json"
--
--	"github.com/giongto35/cloud-game/v3/pkg/api"
--	"github.com/giongto35/cloud-game/v3/pkg/com"
--	"github.com/giongto35/cloud-game/v3/pkg/config"
--	"github.com/giongto35/cloud-game/v3/pkg/games"
--	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
--	"github.com/giongto35/cloud-game/v3/pkg/worker/caged"
--	"github.com/giongto35/cloud-game/v3/pkg/worker/media"
--	"github.com/giongto35/cloud-game/v3/pkg/worker/room"
--)
--
--// buildConnQuery builds initial connection data query to a coordinator.
--func buildConnQuery(id com.Uid, conf config.Worker, address string) (string, error) {
--	addr := conf.GetPingAddr(address)
--	return toJson(api.ConnectionRequest[com.Uid]{
--		Addr:    addr.Hostname(),
--		Id:      id,
--		IsHTTPS: conf.Server.Https,
--		PingURL: addr.String(),
--		Port:    conf.GetPort(address),
--		Tag:     conf.Tag,
--		Zone:    conf.Network.Zone,
--	})
--}
--
--func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *Worker, factory *webrtc.ApiFactory) api.Out {
--	var err error
--	defer func() {
--		if err != nil {
--			c.log.Error().Err(err).Str("peer", rq.Id).Msg("")
--		}
--	}()
--
--	peer := webrtc.New(c.log, factory)
--	codec := w.conf.Encoder.Video.Codec
--
--	if err = peer.NewConnection(codec, func(ice *string) { c.IceCandidate(*ice, rq.Id) }); err != nil {
--		return api.EmptyPacket
--	}
--
--	if rq.Initiator {
--		if err = peer.HandleSignal(nil, &rq.Sdp); err != nil {
--			return api.EmptyPacket
--		}
--	}
--
--	var sdp string
--	sdp, err = peer.OfferAnswer(!rq.Initiator)
--	if err != nil {
--		return api.EmptyPacket
--	}
--
--	user := room.NewGameSession(rq.Id, peer) // use user uid from the coordinator
--	c.log.Info().Msgf("Peer connection: %s", user.Id())
--	w.router.AddUser(user)
--
--	return api.Out{Payload: sdp}
--}
--
--func (c *coordinator) HandleWebrtcSignal(rq api.WebrtcSignalRequest, w *Worker) {
--	user := w.router.FindUser(rq.Id)
--	if user == nil {
--		return
--	}
--
--	if webrtc := room.WithWebRTC(user.Session); webrtc != nil {
--		if err := webrtc.HandleSignal(rq.Ice, rq.Sdp); err != nil {
--			c.log.Error().Err(err).Msgf("cannot handle the signal from [%v]", rq.Id)
--		}
--	}
--}
--
--func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Out {
--	user := w.router.FindUser(rq.Id)
--	if user == nil {
--		c.log.Error().Msgf("no user [%v]", rq.Id)
--		return api.EmptyPacket
--	}
--	user.Index = rq.PlayerIndex
--
--	r := w.router.FindRoom(rq.Rid)
--
--	// +injects game data into the original game request
--	// the name of the game either in the `room id` field or
--	// it's in the initial request
--	gameName := rq.Game
--	if rq.Rid != "" {
--		name := w.launcher.ExtractAppNameFromUrl(rq.Rid)
--		if name == "" {
--			c.log.Warn().Msg("couldn't decode game name from the room id")
--			return api.EmptyPacket
--		}
--		gameName = name
--	}
--
--	gameInfo, err := w.launcher.FindAppByName(gameName)
--	if err != nil {
--		c.log.Error().Err(err).Send()
--		return api.EmptyPacket
--	}
--
--	if r == nil { // new room
--		uid := rq.Rid
--		if uid == "" {
--			uid = games.GenerateRoomID(gameName)
--		}
--		game := games.GameMetadata(gameInfo)
--
--		r = room.NewRoom(uid, nil, w.router.Users(), nil)
--		r.HandleClose = func() {
--			c.CloseRoom(uid)
--			c.log.Debug().Msgf("room close request %v sent", uid)
--		}
--
--		if other := w.router.Room(); other != nil {
--			c.log.Error().Msgf("concurrent room creation: %v / %v", uid, w.router.Room().Id())
--			return api.EmptyPacket
--		}
--
--		w.router.SetRoom(r)
--		c.log.Info().Str("room", r.Id()).Str("game", game.Name).Msg("New room")
--
--		// start the emulator
--		app := room.WithEmulator(w.mana.Get(caged.Libretro))
--		app.ReloadFrontend()
--		app.SetSessionId(uid)
--		app.SetSaveOnClose(true)
--		app.EnableCloudStorage(uid, w.storage)
--		app.EnableRecording(rq.Record, rq.RecordUser, gameName)
--
--		r.SetApp(app)
--
--		m := media.NewGstreamer(w.conf.Encoder, w.log)
--
--		// recreate the video encoder
--		app.VideoChangeCb(func() {
--			app.ViewportRecalculate()
--			m.VideoW, m.VideoH = app.ViewportSize()
--			m.VideoScale, m.ScaleMethod = app.Scale()
--
--			if err := m.Reinit(); err != nil {
--				c.log.Error().Err(err).Msgf("reinit fail")
--			}
--
--			data, err := api.Wrap(api.Out{
--				T: uint8(api.AppVideoChange),
--				Payload: api.AppVideoInfo{
--					W:    m.VideoW,
--					H:    m.VideoH,
--					A:    app.AspectRatio(),
--					S:    int(m.VideoScale),
--					SM:   m.ScaleMethod,
--					Flip: app.Flipped(),
--					Rot:  app.Rotation(),
--				}})
--			if err != nil {
--				c.log.Error().Err(err).Msgf("wrap")
--			}
--			r.Send(data)
--		})
--
--		w.log.Info().Msgf("Starting the game: %v", gameName)
--		if err := app.Load(game, w.conf.Library.BasePath); err != nil {
--			c.log.Error().Err(err).Msgf("couldn't load the game %v", game)
--			r.Close()
--			w.router.SetRoom(nil)
--			return api.EmptyPacket
--		}
--
--		m.AudioSrcHz = app.AudioSampleRate()
--		m.VideoW, m.VideoH = app.ViewportSize()
--		m.VideoScale, m.ScaleMethod = app.Scale()
--		coreConf := w.conf.Emulator.GetLibretroCoreConfig(game.System)
--		m.MaxThreads = coreConf.MaxThreads
--		m.VideoFPS = app.FPS()
--		m.VideoVFR = coreConf.VFR
--
--		m.SetPixFmt(app.PixFormat())
--		m.SetRot(app.Rotation())
--
--		r.SetMedia(m)
--
--		if err := m.Init(); err != nil {
--			c.log.Error().Err(err).Msgf("couldn't init the media")
--			r.Close()
--			w.router.SetRoom(nil)
--			return api.EmptyPacket
--		}
--
--		r.InitMedia()
--		r.StartApp()
--	}
--
--	needsKbMouse := r.App().KbMouseSupport()
--
--	s := room.WithWebRTC(user.Session)
--	s.OnMessage(func(data []byte) { r.App().Input(user.Index, byte(caged.RetroPad), data) })
--	if needsKbMouse {
--		_, _ = s.Channel("keyboard", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Keyboard), data) })
--		_, _ = s.Channel("mouse", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Mouse), data) })
--	}
--
--	c.RegisterRoom(r.Id())
--
--	response := api.StartGameResponse{
--		Room:    api.Room{Rid: r.Id()},
--		Record:  w.conf.Recording.Enabled,
--		KbMouse: needsKbMouse,
--	}
--
--	if r.App().AspectEnabled() {
--		ww, hh := r.App().ViewportSize()
--		scale, scaleM := r.App().Scale()
--		response.AV = &api.AppVideoInfo{
--			W:    ww,
--			H:    hh,
--			A:    r.App().AspectRatio(),
--			S:    int(scale),
--			SM:   scaleM,
--			Flip: r.App().Flipped(),
--			Rot:  r.App().Rotation(),
--		}
--	}
--
--	return api.Out{Payload: response}
--}
--
--// HandleTerminateSession handles cases when a user has been disconnected from the websocket of coordinator.
--func (c *coordinator) HandleTerminateSession(rq api.TerminateSessionRequest, w *Worker) {
--	if user := w.router.FindUser(rq.Id); user != nil {
--		w.router.Remove(user)
--		user.Disconnect()
--	}
--}
--
--// HandleQuitGame handles cases when a user manually exits the game.
--func (c *coordinator) HandleQuitGame(rq api.GameQuitRequest, w *Worker) {
--	if user := w.router.FindUser(rq.Id); user != nil {
--		w.router.Remove(user)
--	}
--}
--
--func (c *coordinator) HandleResetGame(rq api.ResetGameRequest, w *Worker) api.Out {
--	if r := w.router.FindRoom(rq.Rid); r != nil {
--		room.WithEmulator(r.App()).Reset()
--		return api.OkPacket
--	}
--	return api.ErrPacket
--}
--
--func (c *coordinator) HandleSaveGame(rq api.SaveGameRequest, w *Worker) api.Out {
--	r := w.router.FindRoom(rq.Rid)
--	if r == nil {
--		return api.ErrPacket
--	}
--	if err := room.WithEmulator(r.App()).SaveGameState(); err != nil {
--		c.log.Error().Err(err).Msg("cannot save game state")
--		return api.ErrPacket
--	}
--	return api.OkPacket
--}
--
--func (c *coordinator) HandleLoadGame(rq api.LoadGameRequest, w *Worker) api.Out {
--	r := w.router.FindRoom(rq.Rid)
--	if r == nil {
--		return api.ErrPacket
--	}
--	if err := room.WithEmulator(r.App()).RestoreGameState(); err != nil {
--		c.log.Error().Err(err).Msg("cannot load game state")
--		return api.ErrPacket
--	}
--	return api.OkPacket
--}
--
--func (c *coordinator) HandleChangePlayer(rq api.ChangePlayerRequest, w *Worker) api.Out {
--	user := w.router.FindUser(rq.Id)
--	if user == nil || w.router.FindRoom(rq.Rid) == nil {
--		return api.Out{Payload: -1} // semi-predicates
--	}
--	user.Index = rq.Index
--	w.log.Info().Msgf("Updated player index to: %d", rq.Index)
--	return api.Out{Payload: rq.Index}
--}
--
--func (c *coordinator) HandleRecordGame(rq api.RecordGameRequest, w *Worker) api.Out {
--	if !w.conf.Recording.Enabled {
--		return api.ErrPacket
--	}
--	r := w.router.FindRoom(rq.Rid)
--	if r == nil {
--		return api.ErrPacket
--	}
--	room.WithRecorder(r.App()).ToggleRecording(rq.Active, rq.User)
--	return api.OkPacket
--}
--
--func toJson(data any) (string, error) {
--	if data == nil {
--		return "", nil
--	}
--	b, err := json.Marshal(data)
--	if err != nil {
--		return "", err
--	}
--	return string(b), nil
--}
-+package worker
-+
-+import (
-+	"encoding/json"
+@@ -2,17 +2,43 @@ package worker
+ 
+ import (
+ 	"encoding/json"
 +	"fmt"
 +	"os"
 +	"strings"
 +	"sync"
 +	"time"
-+
-+	"github.com/giongto35/cloud-game/v3/pkg/api"
+ 
+ 	"github.com/giongto35/cloud-game/v3/pkg/api"
 +	// Aliased: this file already imports stdlib "os" for file work, and the project's own os package
 +	// carries the process-level helpers (HardExit, crash forensics).
 +	gos "github.com/giongto35/cloud-game/v3/pkg/os"
-+	"github.com/giongto35/cloud-game/v3/pkg/com"
-+	"github.com/giongto35/cloud-game/v3/pkg/config"
-+	"github.com/giongto35/cloud-game/v3/pkg/games"
-+	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
-+	"github.com/giongto35/cloud-game/v3/pkg/worker/caged"
+ 	"github.com/giongto35/cloud-game/v3/pkg/com"
+ 	"github.com/giongto35/cloud-game/v3/pkg/config"
+ 	"github.com/giongto35/cloud-game/v3/pkg/games"
+ 	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc"
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/caged"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/capture"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro"
 +	"github.com/giongto35/cloud-game/v3/pkg/worker/caged/libretro/nanoarch"
-+	"github.com/giongto35/cloud-game/v3/pkg/worker/media"
-+	"github.com/giongto35/cloud-game/v3/pkg/worker/room"
-+)
-+
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/media"
+ 	"github.com/giongto35/cloud-game/v3/pkg/worker/room"
+ )
+ 
 +// roomVideoCodec sanitizes a client-requested per-room video codec (patch 0036): lowercase, must
 +// have an encoder.list entry, else the config default. Never trust the wire value — an unknown
 +// codec would fail the pipeline build after the peer was already created.
@@ -94413,30 +94753,18 @@ index 6972cc7..dc89981 100644
 +	return c
 +}
 +
-+// buildConnQuery builds initial connection data query to a coordinator.
-+func buildConnQuery(id com.Uid, conf config.Worker, address string) (string, error) {
-+	addr := conf.GetPingAddr(address)
-+	return toJson(api.ConnectionRequest[com.Uid]{
-+		Addr:    addr.Hostname(),
-+		Id:      id,
-+		IsHTTPS: conf.Server.Https,
-+		PingURL: addr.String(),
-+		Port:    conf.GetPort(address),
-+		Tag:     conf.Tag,
-+		Zone:    conf.Network.Zone,
-+	})
-+}
-+
-+func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *Worker, factory *webrtc.ApiFactory) api.Out {
-+	var err error
-+	defer func() {
-+		if err != nil {
-+			c.log.Error().Err(err).Str("peer", rq.Id).Msg("")
-+		}
-+	}()
-+
+ // buildConnQuery builds initial connection data query to a coordinator.
+ func buildConnQuery(id com.Uid, conf config.Worker, address string) (string, error) {
+ 	addr := conf.GetPingAddr(address)
+@@ -35,12 +61,54 @@ func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *
+ 		}
+ 	}()
+ 
 +	t0 := time.Now() // P13: the client saw ~800 ms between sending INIT_WEBRTC and receiving the offer
-+	peer := webrtc.New(c.log, factory)
+ 	peer := webrtc.New(c.log, factory)
+-	codec := w.conf.Encoder.Video.Codec
+-
+-	if err = peer.NewConnection(codec, func(ice *string) { c.IceCandidate(*ice, rq.Id) }); err != nil {
 +	peer.SetWarmKbps(rq.WarmKbps) // before NewConnection: the estimator is constructed inside it (P10)
 +	// Per-room codec (patch 0036): the site's join descriptor hands every client of a room the
 +	// creator's codec choice, and each client echoes it here — so this peer's track mime matches
@@ -94460,27 +94788,36 @@ index 6972cc7..dc89981 100644
 +	inputOnly := !rq.Initiator && rq.Sdp == "input-only"
 +
 +	if err = peer.NewConnection(codec, splitAudio, inputOnly, func(ice *string) { c.IceCandidate(*ice, rq.Id) }); err != nil {
-+		return api.EmptyPacket
-+	}
+ 		return api.EmptyPacket
+ 	}
 +	tPC := time.Since(t0)
++	// Every failure after this point used to leak the PeerConnection (and its estimator/goroutines): the
++	// peer never reached the router, so nothing ever closed it. A codec this browser cannot receive is the
++	// common case, and it is also the one the browser must be TOLD about — the empty init response below
++	// is dropped by the coordinator, so the ICE relay carries the verdict instead.
++	defer func() {
++		if err == nil {
++			return
++		}
++		if webrtc.IsCodecMismatch(err) {
++			c.log.Warn().Str("peer", rq.Id).Msgf("rtc: browser cannot receive this room's %s video — told it, closing the peer", codec)
++			c.IceCandidate(webrtc.CodecErrorPrefix+codec, rq.Id)
++		}
++		peer.Disconnect()
++	}()
 +
 +	// Who this peer is, for the ABR link-stat mirror (Phase 0). Set before the peer joins the room, so
 +	// the ABR goroutine never observes a half-identified peer. Untrusted browser input — SetIdentity
 +	// sanitises the device id and the site validates the username. Empty from an older client, which
 +	// simply means this peer's session is not mirrored.
 +	peer.SetIdentity(rq.DeviceId, rq.Username)
-+
-+	if rq.Initiator {
-+		if err = peer.HandleSignal(nil, &rq.Sdp); err != nil {
-+			return api.EmptyPacket
-+		}
-+	}
-+
-+	var sdp string
-+	sdp, err = peer.OfferAnswer(!rq.Initiator)
-+	if err != nil {
-+		return api.EmptyPacket
-+	}
+ 
+ 	if rq.Initiator {
+ 		if err = peer.HandleSignal(nil, &rq.Sdp); err != nil {
+@@ -53,6 +121,34 @@ func (c *coordinator) HandleInitWebrtcStream(rq api.InitWebrtcStreamRequest, w *
+ 	if err != nil {
+ 		return api.EmptyPacket
+ 	}
 +	tOffer := time.Since(t0)
 +	defer func(start time.Time) {
 +		c.log.Info().Msgf("rtc: init-webrtc handled in %dms (new-pc %dms, offer %dms, total incl. aux %dms) peer=%s",
@@ -94509,66 +94846,53 @@ index 6972cc7..dc89981 100644
 +			c.IceCandidate("aux-sdp:"+auxSdp, rq.Id)
 +		}
 +	}
-+
-+	user := room.NewGameSession(rq.Id, peer) // use user uid from the coordinator
-+	c.log.Info().Msgf("Peer connection: %s", user.Id())
-+	w.router.AddUser(user)
-+
-+	return api.Out{Payload: sdp}
-+}
-+
-+func (c *coordinator) HandleWebrtcSignal(rq api.WebrtcSignalRequest, w *Worker) {
-+	user := w.router.FindUser(rq.Id)
-+	if user == nil {
-+		return
-+	}
-+
-+	if webrtc := room.WithWebRTC(user.Session); webrtc != nil {
-+		if err := webrtc.HandleSignal(rq.Ice, rq.Sdp); err != nil {
-+			c.log.Error().Err(err).Msgf("cannot handle the signal from [%v]", rq.Id)
-+		}
-+	}
-+}
-+
-+func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Out {
-+	user := w.router.FindUser(rq.Id)
-+	if user == nil {
-+		c.log.Error().Msgf("no user [%v]", rq.Id)
-+		return api.EmptyPacket
-+	}
-+	user.Index = rq.PlayerIndex
-+
-+	r := w.router.FindRoom(rq.Rid)
-+
-+	// +injects game data into the original game request
-+	// the name of the game either in the `room id` field or
-+	// it's in the initial request
-+	gameName := rq.Game
+ 
+ 	user := room.NewGameSession(rq.Id, peer) // use user uid from the coordinator
+ 	c.log.Info().Msgf("Peer connection: %s", user.Id())
+@@ -67,9 +163,15 @@ func (c *coordinator) HandleWebrtcSignal(rq api.WebrtcSignalRequest, w *Worker)
+ 		return
+ 	}
+ 
+-	if webrtc := room.WithWebRTC(user.Session); webrtc != nil {
+-		if err := webrtc.HandleSignal(rq.Ice, rq.Sdp); err != nil {
++	if peer := room.WithWebRTC(user.Session); peer != nil {
++		if err := peer.HandleSignal(rq.Ice, rq.Sdp); err != nil {
+ 			c.log.Error().Err(err).Msgf("cannot handle the signal from [%v]", rq.Id)
++			// Worker-offer mode (Firefox/Safari): the browser's ANSWER is where a codec it cannot receive
++			// surfaces. Notify has no reply path, so the verdict rides the ICE relay like the init case;
++			// the browser ends the session, which tears this peer down through the normal leave path.
++			if webrtc.IsCodecMismatch(err) {
++				c.IceCandidate(webrtc.CodecErrorPrefix+peer.VideoCodecName(), rq.Id)
++			}
+ 		}
+ 	}
+ }
+@@ -88,6 +190,9 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+ 	// the name of the game either in the `room id` field or
+ 	// it's in the initial request
+ 	gameName := rq.Game
 +	// The room id also carries the SYSTEM the room was minted for, which is what keeps the lookup
 +	// on the right ROM when the same game name exists in several systems (it does, 1352 times).
 +	system := ""
-+	if rq.Rid != "" {
-+		name := w.launcher.ExtractAppNameFromUrl(rq.Rid)
-+		if name == "" {
-+			c.log.Warn().Msg("couldn't decode game name from the room id")
-+			return api.EmptyPacket
-+		}
-+		gameName = name
+ 	if rq.Rid != "" {
+ 		name := w.launcher.ExtractAppNameFromUrl(rq.Rid)
+ 		if name == "" {
+@@ -95,9 +200,10 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+ 			return api.EmptyPacket
+ 		}
+ 		gameName = name
 +		system = w.launcher.ExtractSystemFromUrl(rq.Rid)
-+	}
-+
+ 	}
+ 
+-	gameInfo, err := w.launcher.FindAppByName(gameName)
 +	gameInfo, err := w.launcher.FindApp(system, gameName)
-+	if err != nil {
-+		c.log.Error().Err(err).Send()
-+		return api.EmptyPacket
-+	}
-+
-+	if r == nil { // new room
-+		uid := rq.Rid
-+		if uid == "" {
-+			uid = games.GenerateRoomID(gameName)
-+		}
-+		game := games.GameMetadata(gameInfo)
+ 	if err != nil {
+ 		c.log.Error().Err(err).Send()
+ 		return api.EmptyPacket
+@@ -109,6 +215,24 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+ 			uid = games.GenerateRoomID(gameName)
+ 		}
+ 		game := games.GameMetadata(gameInfo)
 +		// The room's serialized video rebuild (set in the libretro branch below; nil for the capture lane). The
 +		// adaptive controller (patch 0047) drives it for scale steps.
 +		var rebuildVideo func()
@@ -94587,21 +94911,22 @@ index 6972cc7..dc89981 100644
 +				c.log.Warn().Msgf("ignoring unknown per-room core override %q (keeping %q)", rq.Core, game.System)
 +			}
 +		}
-+
-+		r = room.NewRoom(uid, nil, w.router.Users(), nil)
-+		r.HandleClose = func() {
-+			c.CloseRoom(uid)
-+			c.log.Debug().Msgf("room close request %v sent", uid)
-+		}
-+
-+		if other := w.router.Room(); other != nil {
-+			c.log.Error().Msgf("concurrent room creation: %v / %v", uid, w.router.Room().Id())
-+			return api.EmptyPacket
-+		}
-+
-+		w.router.SetRoom(r)
-+		c.log.Info().Str("room", r.Id()).Str("game", game.Name).Msg("New room")
-+
+ 
+ 		r = room.NewRoom(uid, nil, w.router.Users(), nil)
+ 		r.HandleClose = func() {
+@@ -124,63 +248,355 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+ 		w.router.SetRoom(r)
+ 		c.log.Info().Str("room", r.Id()).Str("game", game.Name).Msg("New room")
+ 
+-		// start the emulator
+-		app := room.WithEmulator(w.mana.Get(caged.Libretro))
+-		app.ReloadFrontend()
+-		app.SetSessionId(uid)
+-		app.SetSaveOnClose(true)
+-		app.EnableCloudStorage(uid, w.storage)
+-		app.EnableRecording(rq.Record, rq.RecordUser, gameName)
+-
+-		r.SetApp(app)
 +		// Per-room encoder quality (arcade per-room bitrate/FEC) — SHARED by both lanes. The creator's
 +		// t=104 carries an optional video bitrate (kbps) + opus FEC + codec. WithOverrides applies them
 +		// to a per-room COPY of the encoder config (deep-copies the codec map, never mutating the shared
@@ -94642,7 +94967,8 @@ index 6972cc7..dc89981 100644
 +				"but NO peer's frames are ever skipped, so ABR has only its bitrate lever and a weak peer " +
 +				"drags the room again. Diagnostic only; unset it and recycle this worker")
 +		}
-+
+ 
+-		m := media.NewGstreamer(w.conf.Encoder, w.log)
 +		if gameInfo.System == caged.CaptureSystem {
 +			// Heavy browser lane (capture mod): launch a native program + capture the desktop through
 +			// the gateway heavy contract. No libretro frontend/cheats/cloud-save/VideoChangeCb — the
@@ -94696,7 +95022,12 @@ index 6972cc7..dc89981 100644
 +			if len(rq.CoreOptions) > 0 || len(rq.Cheats) > 0 {
 +				w.log.Info().Msgf("Per-room cheats: %d core option(s), %d code(s)", len(rq.CoreOptions), len(rq.Cheats))
 +			}
-+
+ 
+-		// recreate the video encoder
+-		app.VideoChangeCb(func() {
+-			app.ViewportRecalculate()
+-			m.VideoW, m.VideoH = app.ViewportSize()
+-			m.VideoScale, m.ScaleMethod = app.Scale()
 +			// RetroAchievements (arcade RA feature): the worker runs a SINGLE site service account as the
 +			// scoring engine for EVERY room (config RetroAchievements.SiteUser/SiteToken), in spectator mode
 +			// (never submits to RA) + hardcore-on (so leaderboards fire in every room). It fetches each
@@ -94715,7 +95046,9 @@ index 6972cc7..dc89981 100644
 +				app.SetRetroAchievements(raCfg.SiteUser, raCfg.SiteToken, game.System, rq.RaHash, rq.Hardcore, len(rq.Cheats) > 0, rq.SeedExplicit, handlers)
 +				w.log.Info().Msgf("RetroAchievements: engine active for room %q (competitive=%v)", uid, rq.Hardcore)
 +			}
-+
+ 
+-			if err := m.Reinit(); err != nil {
+-				c.log.Error().Err(err).Msgf("reinit fail")
 +			// Per-room Wii controller-scheme override (site: creator's room-create choice) for the
 +			// GC-controller-native BrawlEx mods. Unlike HwContext this needs no precedence resolution
 +			// against a DB pin/renderer inference: an empty/unrecognized value just leaves nanoarch's
@@ -94728,8 +95061,21 @@ index 6972cc7..dc89981 100644
 +				w.log.Info().Msgf("Per-room controller scheme: %q for %q", rq.ControllerScheme, gameName)
 +			default:
 +				nanoarch.Nan0.ControllerSchemeOverride = "" // unconditional clear, like HwContextOverride
-+			}
-+
+ 			}
+ 
+-			data, err := api.Wrap(api.Out{
+-				T: uint8(api.AppVideoChange),
+-				Payload: api.AppVideoInfo{
+-					W:    m.VideoW,
+-					H:    m.VideoH,
+-					A:    app.AspectRatio(),
+-					S:    int(m.VideoScale),
+-					SM:   m.ScaleMethod,
+-					Flip: app.Flipped(),
+-					Rot:  app.Rotation(),
+-				}})
+-			if err != nil {
+-				c.log.Error().Err(err).Msgf("wrap")
 +			r.SetApp(app)
 +
 +			// GL ZERO-COPY — ARMED HERE, BEFORE app.Load, AND THAT IS THE WHOLE POINT.
@@ -94859,8 +95205,16 @@ index 6972cc7..dc89981 100644
 +			}
 +			if glZC {
 +				w.log.Info().Msgf("GL zero-copy armed for %s (no glReadPixels)", game.System)
-+			}
-+
+ 			}
+-			r.Send(data)
+-		})
+ 
+-		w.log.Info().Msgf("Starting the game: %v", gameName)
+-		if err := app.Load(game, w.conf.Library.BasePath); err != nil {
+-			c.log.Error().Err(err).Msgf("couldn't load the game %v", game)
+-			r.Close()
+-			w.router.SetRoom(nil)
+-			return api.EmptyPacket
 +			// recreate the video encoder when the core's frame size changes at runtime
 +			// Rumble (P11): the core's per-port state goes to the ONE connection holding that port — never
 +			// the room broadcast (a spectator's phone must not buzz for player 1's explosion). Input routes
@@ -94933,8 +95287,12 @@ index 6972cc7..dc89981 100644
 +				w.router.SetRoom(nil)
 +				return api.EmptyPacket
 +			}
-+		}
-+
+ 		}
+ 
+-		m.AudioSrcHz = app.AudioSampleRate()
+-		m.VideoW, m.VideoH = app.ViewportSize()
+-		m.VideoScale, m.ScaleMethod = app.Scale()
+-		coreConf := w.conf.Emulator.GetLibretroCoreConfig(game.System)
 +		// Media finalize — SHARED by both lanes, read through the app.App interface. FPS() is not on
 +		// the interface (concrete on both apps), so it's fetched via a tiny local interface.
 +		ap := r.App()
@@ -94942,27 +95300,25 @@ index 6972cc7..dc89981 100644
 +		m.VideoW, m.VideoH = ap.ViewportSize()
 +		m.VideoScale, m.ScaleMethod = ap.Scale()
 +		coreConf := w.conf.Emulator.GetLibretroCoreConfig(game.System) // zero-value for "capture"
-+		m.MaxThreads = coreConf.MaxThreads
+ 		m.MaxThreads = coreConf.MaxThreads
+-		m.VideoFPS = app.FPS()
 +		m.BppTarget = coreConf.BppTarget
 +		if f, ok := ap.(interface{ FPS() float64 }); ok {
 +			m.VideoFPS = f.FPS()
 +		}
-+		m.VideoVFR = coreConf.VFR
-+
+ 		m.VideoVFR = coreConf.VFR
+ 
+-		m.SetPixFmt(app.PixFormat())
+-		m.SetRot(app.Rotation())
 +		m.SetPixFmt(ap.PixFormat())
 +		m.SetRot(ap.Rotation())
-+
-+		r.SetMedia(m)
-+
-+		if err := m.Init(); err != nil {
-+			c.log.Error().Err(err).Msgf("couldn't init the media")
-+			r.Close()
-+			w.router.SetRoom(nil)
-+			return api.EmptyPacket
-+		}
-+
-+		r.InitMedia()
-+		r.StartApp()
+ 
+ 		r.SetMedia(m)
+ 
+@@ -193,15 +609,78 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+ 
+ 		r.InitMedia()
+ 		r.StartApp()
 +
 +		// Adaptive bitrate (patch 0021). The room's chosen quality becomes the CEILING; ABR moves the
 +		// encoder between a floor and that ceiling from the worst peer's send-side estimate. Costs one
@@ -95003,13 +95359,22 @@ index 6972cc7..dc89981 100644
 +		}
 +		startRoomAbr(w.log, r, m, ceilFn,
 +			linkStatConfig{baseURL: raCfg.MirrorURL, secret: raCfg.Secret}, game.System, warmKbps, ad)
+ 	}
+ 
+ 	needsKbMouse := r.App().KbMouseSupport()
+ 
+ 	s := room.WithWebRTC(user.Session)
++	// Backstop: this peer's track must carry the codec the room's ONE encoder emits. A join descriptor that
++	// lost the room's codec (the site forgot it across a restart) negotiates the config default instead — the
++	// track binds, the browser decodes the wrong bitstream, and nothing errors. Tell the browser to rejoin.
++	if want, got := webrtc.VideoCodec(), s.VideoCodecName(); want != "" && got != "" && want != got {
++		w.log.Warn().Msgf("rtc: peer %s negotiated %s but this room encodes %s — asking it to rejoin", rq.Id, got, want)
++		c.IceCandidate(webrtc.CodecMismatchPrefix+want, rq.Id)
 +	}
-+
-+	needsKbMouse := r.App().KbMouseSupport()
-+
-+	s := room.WithWebRTC(user.Session)
-+	s.OnMessage(func(data []byte) { r.App().Input(user.Index, byte(caged.RetroPad), data) })
-+	if needsKbMouse {
+ 	s.OnMessage(func(data []byte) { r.App().Input(user.Index, byte(caged.RetroPad), data) })
+ 	if needsKbMouse {
+-		_, _ = s.Channel("keyboard", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Keyboard), data) })
+-		_, _ = s.Channel("mouse", nil, func(data []byte) { r.App().Input(user.Index, byte(caged.Mouse), data) })
 +		// Keyboard and mouse both carry RELATIVE/EDGE-TRIGGERED state, not a resendable snapshot, so
 +		// neither may ride the default unreliable channel (Ordered:false, MaxRetransmits:0) the RetroPad
 +		// uses. That default is right for the pad — a frame is a FULL button snapshot, so a lost one is
@@ -95028,47 +95393,21 @@ index 6972cc7..dc89981 100644
 +				disc.RequestDisk(int(data[0]))
 +			}
 +		})
-+	}
-+
-+	c.RegisterRoom(r.Id())
-+
-+	response := api.StartGameResponse{
-+		Room:    api.Room{Rid: r.Id()},
-+		Record:  w.conf.Recording.Enabled,
-+		KbMouse: needsKbMouse,
-+	}
-+
-+	if r.App().AspectEnabled() {
-+		ww, hh := r.App().ViewportSize()
-+		scale, scaleM := r.App().Scale()
-+		response.AV = &api.AppVideoInfo{
-+			W:    ww,
-+			H:    hh,
-+			A:    r.App().AspectRatio(),
-+			S:    int(scale),
-+			SM:   scaleM,
-+			Flip: r.App().Flipped(),
-+			Rot:  r.App().Rotation(),
-+		}
-+	}
-+
-+	return api.Out{Payload: response}
-+}
-+
-+// HandleTerminateSession handles cases when a user has been disconnected from the websocket of coordinator.
-+func (c *coordinator) HandleTerminateSession(rq api.TerminateSessionRequest, w *Worker) {
-+	if user := w.router.FindUser(rq.Id); user != nil {
-+		w.router.Remove(user)
-+		user.Disconnect()
-+	}
+ 	}
+ 
+ 	c.RegisterRoom(r.Id())
+@@ -235,6 +714,7 @@ func (c *coordinator) HandleTerminateSession(rq api.TerminateSessionRequest, w *
+ 		w.router.Remove(user)
+ 		user.Disconnect()
+ 	}
 +	releaseTimeWarp(w)
-+}
-+
-+// HandleQuitGame handles cases when a user manually exits the game.
-+func (c *coordinator) HandleQuitGame(rq api.GameQuitRequest, w *Worker) {
-+	if user := w.router.FindUser(rq.Id); user != nil {
-+		w.router.Remove(user)
-+	}
+ }
+ 
+ // HandleQuitGame handles cases when a user manually exits the game.
+@@ -242,16 +722,61 @@ func (c *coordinator) HandleQuitGame(rq api.GameQuitRequest, w *Worker) {
+ 	if user := w.router.FindUser(rq.Id); user != nil {
+ 		w.router.Remove(user)
+ 	}
 +	releaseTimeWarp(w)
 +}
 +
@@ -95083,20 +95422,21 @@ index 6972cc7..dc89981 100644
 +			emu.SetRewind(false)
 +		}
 +	}
-+}
-+
-+func (c *coordinator) HandleResetGame(rq api.ResetGameRequest, w *Worker) api.Out {
-+	if r := w.router.FindRoom(rq.Rid); r != nil {
+ }
+ 
+ func (c *coordinator) HandleResetGame(rq api.ResetGameRequest, w *Worker) api.Out {
+ 	if r := w.router.FindRoom(rq.Rid); r != nil {
+-		room.WithEmulator(r.App()).Reset()
 +		emu := room.WithEmulator(r.App())
 +		emu.Reset()
 +		// A hard reset restores RA hardcore eligibility (RA's own rule), so clear the mid-run save-scum /
 +		// time-manipulation taints — a clean run started after this is legit again.
 +		emu.NotifyReset()
-+		return api.OkPacket
-+	}
-+	return api.ErrPacket
-+}
-+
+ 		return api.OkPacket
+ 	}
+ 	return api.ErrPacket
+ }
+ 
 +// HandleFastForwardGame / HandleRewindGame toggle the room's time manipulation (t=114/115).
 +// Checked cast, unlike the save/reset handlers above: a capture-lane room's App is a
 +// *capture.App, not a *libretro.Caged, and a stray packet there must no-op, not panic the
@@ -95124,28 +95464,19 @@ index 6972cc7..dc89981 100644
 +	}
 +}
 +
-+func (c *coordinator) HandleSaveGame(rq api.SaveGameRequest, w *Worker) api.Out {
-+	r := w.router.FindRoom(rq.Rid)
-+	if r == nil {
-+		return api.ErrPacket
-+	}
-+	if err := room.WithEmulator(r.App()).SaveGameState(); err != nil {
-+		c.log.Error().Err(err).Msg("cannot save game state")
-+		return api.ErrPacket
-+	}
-+	return api.OkPacket
-+}
-+
-+func (c *coordinator) HandleLoadGame(rq api.LoadGameRequest, w *Worker) api.Out {
-+	r := w.router.FindRoom(rq.Rid)
-+	if r == nil {
-+		return api.ErrPacket
-+	}
+ func (c *coordinator) HandleSaveGame(rq api.SaveGameRequest, w *Worker) api.Out {
+ 	r := w.router.FindRoom(rq.Rid)
+ 	if r == nil {
+@@ -269,10 +794,22 @@ func (c *coordinator) HandleLoadGame(rq api.LoadGameRequest, w *Worker) api.Out
+ 	if r == nil {
+ 		return api.ErrPacket
+ 	}
+-	if err := room.WithEmulator(r.App()).RestoreGameState(); err != nil {
 +	emu := room.WithEmulator(r.App())
 +	if err := emu.RestoreGameState(); err != nil {
-+		c.log.Error().Err(err).Msg("cannot load game state")
-+		return api.ErrPacket
-+	}
+ 		c.log.Error().Err(err).Msg("cannot load game state")
+ 		return api.ErrPacket
+ 	}
 +	// The player loaded a save-STATE mid-run — tag every subsequent RA unlock/leaderboard this session as
 +	// save-scummed (until a reset). This is the explicit Load press, NOT the gateway's boot-time seed
 +	// (which restores through Frontend.Load directly and never hits this handler), so it can't false-taint
@@ -95157,47 +95488,15 @@ index 6972cc7..dc89981 100644
 +	// (Frontend.Save) now keeps the .dat bytes intact so the second press works. Delaying a restore
 +	// onto a player who has meanwhile started playing is the one outcome worth avoiding — see the
 +	// "ONE mechanism" note in frontend.go.
-+	return api.OkPacket
-+}
-+
-+func (c *coordinator) HandleChangePlayer(rq api.ChangePlayerRequest, w *Worker) api.Out {
-+	user := w.router.FindUser(rq.Id)
-+	if user == nil || w.router.FindRoom(rq.Rid) == nil {
-+		return api.Out{Payload: -1} // semi-predicates
-+	}
-+	user.Index = rq.Index
-+	w.log.Info().Msgf("Updated player index to: %d", rq.Index)
-+	return api.Out{Payload: rq.Index}
-+}
-+
-+func (c *coordinator) HandleRecordGame(rq api.RecordGameRequest, w *Worker) api.Out {
-+	if !w.conf.Recording.Enabled {
-+		return api.ErrPacket
-+	}
-+	r := w.router.FindRoom(rq.Rid)
-+	if r == nil {
-+		return api.ErrPacket
-+	}
-+	room.WithRecorder(r.App()).ToggleRecording(rq.Active, rq.User)
-+	return api.OkPacket
-+}
-+
-+func toJson(data any) (string, error) {
-+	if data == nil {
-+		return "", nil
-+	}
-+	b, err := json.Marshal(data)
-+	if err != nil {
-+		return "", err
-+	}
-+	return string(b), nil
-+}
+ 	return api.OkPacket
+ }
+ 
 diff --git a/pkg/worker/linkstat.go b/pkg/worker/linkstat.go
 new file mode 100644
-index 0000000..a98cd97
+index 0000000..80eaa43
 --- /dev/null
 +++ b/pkg/worker/linkstat.go
-@@ -0,0 +1,100 @@
+@@ -0,0 +1,106 @@
 +package worker
 +
 +// Session-close link statistics mirrored to the site (Phase 0 of the ABR quality plan).
@@ -95262,6 +95561,12 @@ index 0000000..a98cd97
 +	RttMeanMs     float64 `json:"rttMeanMs"`
 +	RttSdMs       float64 `json:"rttSdMs"`
 +	Path          string  `json:"path"`
++	// Decoder distress over the room (patch 0047's verdicts, adaptive.go adaptPeerHist): seconds this viewer
++	// was in weak / strong distress, and the room scale-downs its strong distress caused. The per-device codec
++	// history the site's Auto codec choice learns from — a device that drowns on one codec tries the other.
++	DistressWeakTicks   int `json:"distressWeakTicks"`
++	DistressStrongTicks int `json:"distressStrongTicks"`
++	ScaleDowns          int `json:"scaleDowns"`
 +}
 +
 +// post ships one row. Call it from a goroutine: the only caller is the ABR loop's room-close branch,
@@ -96027,631 +96332,35 @@ index 0000000..923f87c
 +	}
 +}
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..4609d60 100644
+index 4a6171f..06c6be8 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
-@@ -1,579 +1,1260 @@
--package media
--
--import (
--	"cmp"
--	"fmt"
--	"runtime"
--	"strings"
--	"sync"
--	"sync/atomic"
--	"time"
--	"unsafe"
--
--	"github.com/giongto35/cloud-game/v3/pkg/config"
--	"github.com/giongto35/cloud-game/v3/pkg/logger"
--	"github.com/go-gst/go-gst/gst"
--	"github.com/go-gst/go-gst/gst/app"
--	"github.com/klauspost/cpuid/v2"
--)
--
--/*
--#cgo pkg-config: gstreamer-video-1.0 gstreamer-app-1.0
--#include <gst/gst.h>
--#include <gst/video/gstvideometa.h>
--#include <gst/app/gstappsrc.h>
--#include <gst/app/gstappsink.h>
--
--static inline GstVideoFormat gstVideoFormatFromString(const gchar *s) {
--	return gst_video_format_from_string(s);
--}
--
--static inline void doubleToFraction(const gdouble src, gint *num, gint *den) {
--	gst_util_double_to_fraction(src, num, den);
--}
--
--// pushVideoBuf wraps frame memory directly.
--static inline void pushVideoBuf(GstAppSrc *src, void *data, gsize len,
--                                GstVideoFormat fmt, guint w, guint h, gint stride) {
--	GstBuffer *buf = gst_buffer_new_wrapped_full(
--		GST_MEMORY_FLAG_READONLY, data, len, 0, len, NULL, NULL);
--	if (!buf) return;
--	if (stride != 0) {
--		gsize offset[GST_VIDEO_MAX_PLANES] = {0};
--		gint strides[GST_VIDEO_MAX_PLANES] = {stride};
--		gst_buffer_add_video_meta_full(buf, GST_VIDEO_FRAME_FLAG_NONE, fmt, w, h, 1, offset, strides);
--	}
--	gst_app_src_push_buffer(src, buf);
--}
--
--// pushAudioBuf copies audio data into a new buffer.
--static inline void pushAudioBuf(GstAppSrc *src, void *data, gsize len) {
--	GstBuffer *buf = gst_buffer_new_allocate(NULL, len, NULL);
--	if (!buf) return;
--	gst_buffer_fill(buf, 0, data, len);
--	gst_app_src_push_buffer(src, buf);
--}
--
--// pullMappedBuffer pulls a sample from the appsink, gets its buffer,
--// and maps it for reading. Returns the buffer (with ref held) on success,
--// or NULL if no sample/buffer is available.
--// The caller must call unmapAndUnref to release.
--static inline GstBuffer* pullMappedBuffer(GstAppSink *sink, GstMapInfo *mapInfo) {
--	GstSample *sample = gst_app_sink_pull_sample(sink);
--	if (!sample) return NULL;
--	GstBuffer *buffer = gst_sample_get_buffer(sample);
--	if (buffer) gst_buffer_ref(buffer);
--	gst_sample_unref(sample);
--	if (!buffer) return NULL;
--	if (!gst_buffer_map(buffer, mapInfo, GST_MAP_READ)) {
--		gst_buffer_unref(buffer);
--		return NULL;
--	}
--	return buffer;
--}
--
--static inline void unmapAndUnref(GstBuffer *buffer, GstMapInfo *mapInfo) {
--	gst_buffer_unmap(buffer, mapInfo);
--	gst_buffer_unref(buffer);
--}
--*/
--import "C"
--
--const (
--	pixFmtBGRx  uint32 = 0
--	pixFmtBGRA  uint32 = 1
--	pixFmtRGB16 uint32 = 2
--
--	defaultAudioFrameMs = 20 * time.Millisecond
--
--	maxForcedKeyframes = 3
--)
--
--var forceKeyframeEvent *gst.Event
--var cachedSegment *gst.Segment
--var cpuCores int
--var pixFmtToGst = map[uint32]string{
--	pixFmtBGRx:  "BGRx",
--	pixFmtBGRA:  "BGRA",
--	pixFmtRGB16: "RGB16",
--}
--var pixFmtCache = map[string]uint32{}
--
--func init() {
--	gst.Init(nil)
--
--	s := gst.NewStructure("GstForceKeyUnit")
--	s.SetValue("all-headers", true)
--	forceKeyframeEvent = gst.NewCustomEvent(gst.EventTypeCustomDownstream, s)
--
--	cpuCores = cmp.Or(cpuid.CPU.PhysicalCores, 4) - 1
--
--	cachedSegment = gst.NewSegment()
--	cachedSegment.Init(gst.FormatTime)
--}
--
--// GstMediaPipe a video and audio pipline based on GStreamer.
--// Very unsafe.
--//
--// Video encoding is done in a single goroutine to avoid races.
--// Audio is pulled from the appsink on GStreamer's own audio thread.
--//
--// Goroutines (3):
--//   - video worker x1 (push+pull loop for video encoding)
--//   - bus messages x2 (one per pipeline, bus message logging)
--type GstMediaPipe struct {
--	a, v *pipe
--
--	onAudio func([]byte, time.Duration)
--
--	conf config.Encoder
--
--	pixFmt uint32
--
--	VideoW, VideoH int
--	VideoScale     float64
--	ScaleMethod    string
--	MaxThreads     int
--	AudioSrcHz     int
--	VideoVFR       bool
--	VideoFPS       float64
--
--	oldPf  uint32
--	oldRot uint
--	bpp    int
--	vidFmt uint32 // cached GstVideoFormat enum
--
--	frameI   int  // for forced keyframes
--	keyI     int  // periodic keyframe counter
--	kfi      int  // 0=GStreamer auto, >0=force keyframe every N frames
--	aSegSent bool // for Opusenc bug
--
--	// used for reinit
--	videoCh   chan videoJob
--	videoDone chan struct{}
--	reinit    atomic.Bool
--	mu        sync.Mutex
--
--	log *logger.Logger
--}
--
--type videoJob struct {
--	data         []byte
--	w, h, stride int
--	dur          time.Duration
--	cb           func([]byte, time.Duration)
--}
--
--type Video struct {
--	Frame    RawFrame
--	Duration time.Duration
--}
--
--type RawFrame struct {
--	Data   []byte
--	Stride int
--	W, H   int
--}
--
--type pipe struct {
--	pipeline *gst.Pipeline
--	source   *app.Source
--	sink     *app.Sink
--	srcPad   *gst.Pad
--	frameDur time.Duration
--	stale    atomic.Bool
--}
--
--func (p *pipe) src() *C.GstAppSrc      { return (*C.GstAppSrc)(unsafe.Pointer(p.source.Instance())) }
--func (p *pipe) sinkPtr() *C.GstAppSink { return (*C.GstAppSink)(unsafe.Pointer(p.sink.Instance())) }
--func (p *pipe) stop() {
--	if p != nil && p.pipeline != nil {
--		p.pipeline.SetState(gst.StateNull)
--	}
--}
--
--func (p *pipe) destroy() {
--	if p == nil {
--		return
--	}
--	if p.pipeline != nil {
--		p.pipeline.GetPipelineBus().Post(gst.NewEOSMessage(p.pipeline))
--		p.pipeline.SetState(gst.StateNull)
--		p.pipeline = nil
--	}
--	p.sink = nil
--	p.source = nil
--}
--
--type builder struct{ strings.Builder }
--
--func (b *builder) write(s string)               { b.Builder.WriteString(s) }
--func (b *builder) writef(s string, args ...any) { fmt.Fprintf(&b.Builder, s, args...) }
--func (b *builder) writeIfSet(s string) {
--	if s != "" {
--		b.write(s)
--	}
--}
--
--func NewGstreamer(conf config.Encoder, log *logger.Logger) *GstMediaPipe {
--	return &GstMediaPipe{conf: conf, bpp: 4, vidFmt: gstVideoFormat("BGRx"), log: log}
--}
--
--func (g *GstMediaPipe) Init() error {
--	if err := g.initVideo(); err != nil {
--		return fmt.Errorf("gst video init: %w", err)
--	}
--	if err := g.initAudio(); err != nil {
--		return fmt.Errorf("gst audio init: %w", err)
--	}
--	return nil
--}
--
--func (g *GstMediaPipe) initAudio() (err error) {
--	srcHz := g.AudioSrcHz
--	g.a, err = buildAudioPipeline(srcHz, g.conf, g.log)
--	if err != nil {
--		return
--	}
--	g.a.sink.SetCallbacks(&app.SinkCallbacks{NewSampleFunc: g.pullAudio})
--	return g.a.pipeline.SetState(gst.StatePlaying)
--}
--
--func (g *GstMediaPipe) initVideo() (err error) {
--	w, h, scale := g.VideoW, g.VideoH, g.VideoScale
--	sw, sh := round(w, scale), round(h, scale)
--	if g.oldRot%180 != 0 {
--		w, h = h, w
--	}
--	g.v, err = buildVideoPipeline(w, h, sw, sh, g.pixFmt, g.ScaleMethod, g.MaxThreads, g.conf,
--		g.log, g.VideoFPS, g.VideoVFR)
--	if err != nil {
--		return
--	}
--
--	// if params contain keyframe-mode=disabled, we force periodic keyframes
--	// ourselves instead of relying on GStreamer's auto mode
--	if opts, _ := g.conf.VideoSettings(); opts != nil && strings.Contains(opts.Params, "keyframe-mode=disabled") {
--		g.kfi = cmp.Or(g.conf.Video.KeyframeInterval, 120)
--	} else {
--		g.kfi = 0
--	}
--
--	p := g.v
--	fmt := g.vidFmt
--	g.videoCh = make(chan videoJob, 3)
--	g.videoDone = make(chan struct{})
--	go g.videoWorker(p, fmt, g.videoCh, g.videoDone)
--
--	return p.pipeline.SetState(gst.StatePlaying)
--}
--
--func (g *GstMediaPipe) SetPixFmt(f uint32) {
--	g.oldPf, g.pixFmt = f, f
--	g.vidFmt = gstVideoFormat(cmp.Or(pixFmtToGst[f], "RGBA"))
--	if f == pixFmtRGB16 {
--		g.bpp = 2
--	} else {
--		g.bpp = 4
--	}
--}
--func (g *GstMediaPipe) SetRot(r uint) { g.oldRot = r }
--
--func (g *GstMediaPipe) Destroy() {
--	g.mu.Lock()
--	defer g.mu.Unlock()
--
--	g.reinit.Store(true)
--
--	if g.videoCh != nil {
--		g.v.stop()
--		close(g.videoCh)
--		<-g.videoDone
--	}
--
--	g.v.destroy()
--	g.a.destroy()
--	g.aSegSent = false
--	g.keyI = 0
--}
--
--func (g *GstMediaPipe) ProcessAudio(audio []byte, cb func([]byte, time.Duration)) {
--	g.onAudio = cb
--	if !g.aSegSent {
--		g.aSegSent = true
--		g.a.srcPad.PushEvent(gst.NewSegmentEvent(cachedSegment))
--	}
--	C.pushAudioBuf(g.a.src(), unsafe.Pointer(&audio[0]), C.gsize(len(audio)))
--}
--
--// pullAudio pulls audio buffers from the appsink when they are available.
--func (g *GstMediaPipe) pullAudio(_ *app.Sink) gst.FlowReturn {
--	var mapInfo C.GstMapInfo
--	buf := C.pullMappedBuffer(g.a.sinkPtr(), &mapInfo)
--	if buf == nil {
--		return gst.FlowEOS
--	}
--	defer C.unmapAndUnref(buf, &mapInfo)
--	if g.onAudio != nil {
--		g.onAudio(unsafe.Slice((*byte)(unsafe.Pointer(mapInfo.data)), int(mapInfo.size)), g.a.frameDur)
--	}
--	return gst.FlowOK
--}
--
--// videoWorker is the single goroutine that does push+pull for video.
--func (g *GstMediaPipe) videoWorker(v *pipe, vidFmt uint32, ch <-chan videoJob, done chan<- struct{}) {
--	defer close(done)
--	for job := range ch {
--		if v.stale.Load() {
--			continue
--		}
--		C.pushVideoBuf(v.src(),
--			unsafe.Pointer(&job.data[0]), C.gsize(len(job.data)),
--			C.GstVideoFormat(vidFmt), C.guint(job.w), C.guint(job.h), C.gint(job.stride))
--
--		var mi C.GstMapInfo
--		buf := C.pullMappedBuffer(v.sinkPtr(), &mi)
--		if buf == nil {
--			continue
--		}
--		data := unsafe.Slice((*byte)(unsafe.Pointer(mi.data)), int(mi.size))
--		job.cb(data, job.dur)
--		C.unmapAndUnref(buf, &mi)
--	}
--}
--
--func (g *GstMediaPipe) ProcessVideo(v Video, cb func([]byte, time.Duration)) {
--	if g.reinit.Load() {
--		return
--	}
--
--	// when someone starts watching, force the first few keyframes to avoid stalling
--	// and if scene-change detection is disabled (kfi > 0)
--	if g.frameI < maxForcedKeyframes || (g.kfi > 0 && g.keyI%g.kfi == 0) {
--		g.v.srcPad.PushEvent(forceKeyframeEvent)
--		if g.frameI < maxForcedKeyframes {
--			g.frameI++
--		}
--	}
--	g.keyI++
--
--	w, h := v.Frame.W, v.Frame.H
--	stride := v.Frame.Stride
--
--	data := v.Frame.Data[:stride*h]
--	if stride == w*g.bpp {
--		stride = 0
--	}
--
--	select {
--	case g.videoCh <- videoJob{data: data, w: w, h: h, stride: stride, dur: v.Duration, cb: cb}:
--	default:
--		// if busy the frame is dropped
--		// or maybe handle it with gst?
--	}
--}
--
--func (g *GstMediaPipe) Reinit() error {
--	// prevent concurrent reinits
--	g.mu.Lock()
--	defer g.mu.Unlock()
--
--	if g.v == nil {
--		return nil
--	}
--
--	g.reinit.Store(true)
--	defer g.reinit.Store(false)
--
--	// drop stale frames (for the new pipe)
--	g.v.stale.Store(true)
--
--	// stop the video worker
--	if g.videoCh != nil {
--		g.v.stop()
--		close(g.videoCh)
--		<-g.videoDone
--	}
--
--	// we rebuild new pipeline every time because
--	// changing the piplne parts proves to be unreliable
--	g.v.destroy()
--	if err := g.initVideo(); err != nil {
--		return fmt.Errorf("gst video reinit: %w", err)
--	}
--
--	g.keyI = 0
--	return nil
--}
--
--func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod string,
--	maxThreads int, conf config.Encoder, log *logger.Logger, fps float64, vfr bool) (*pipe, error) {
--	format := cmp.Or(pixFmtToGst[pixFmt], "RGBA")
--	kfi := cmp.Or(conf.Video.KeyframeInterval, 120)
--	opts, codec := conf.VideoSettings()
--	if opts == nil {
--		return nil, fmt.Errorf("unsupported codec: %s", conf.Video.Codec)
--	}
--
--	build := builder{}
--	build.Grow(512)
--	build.write("appsrc name=video_src is-live=true ")
--	var fn, fd C.gint
--	C.doubleToFraction(C.gdouble(fps), &fn, &fd)
--	if vfr {
--		build.writef(`caps="video/x-raw,format=%s,width=%d,height=%d,framerate=0/1,max-framerate=%d/%d" `, format, w, h, int(fn), int(fd))
--	} else {
--		build.writef(`caps="video/x-raw,format=%s,width=%d,height=%d,framerate=%d/%d" `, format, w, h, int(fn), int(fd))
--	}
--	build.writef("! videoconvertscale name=video_scale chroma-resampler=cubic method=%s n-threads=2 ", cmp.Or(scaleMethod, "nearest-neighbour"))
--	build.write("! queue name=video_q max-size-buffers=1 ")
--	build.writef("! capsfilter name=video_caps caps=\"video/x-raw,format=I420,color-range=0_255,width=%d,height=%d ", scaledW, scaledH)
--	if conf.Video.Colorimetry != "" {
--		build.writef(",colorimetry=%s", conf.Video.Colorimetry)
--	}
--	build.write("\" ")
--	build.write("! ")
--	switch codec {
--	// h264 - requires gstreamer1.0-plugins-ugly + x264 (GPL)
--	// case "h264":
--	// 	return fmt.Sprintf("%s threads=%d key-int-max=%d",
--	// 		cmp.Or(gst.Encoder, "x264enc"),
--	// 		cmp.Or(conf.Video.Threads, 0),
--	// 		kfi,
--	// 	)
--	case "vp8", "vp9":
--		encoder := cmp.Or(opts.Encoder, fmt.Sprintf("vp%cenc", codec[len(codec)-1]))
--		threads := cmp.Or(conf.Video.Threads, cpuCores)
--		if maxThreads > 0 && threads > maxThreads {
--			threads = maxThreads
--		}
--		build.writef("%s name=video_enc threads=%d keyframe-max-dist=%d ", encoder, threads, kfi)
--	}
--	build.writeIfSet(opts.Params)
--	if opts.Caps != "" {
--		build.write(" ! " + opts.Caps)
--	}
--	build.write(" ! queue name=video_q2 max-size-buffers=1 ")
--	build.write("! appsink name=video_sink sync=false max-buffers=1 drop=true")
--
--	pipeDef := build.String()
--
--	log.Debug().Msgf("Gstreamer [video]: %s", pipeDef)
--
--	pipeline, err := gst.NewPipelineFromString(pipeDef)
--	if err != nil {
--		return nil, err
--	}
--	srcEl, err := pipeline.GetElementByName("video_src")
--	if err != nil {
--		return nil, err
--	}
--	sinkEl, err := pipeline.GetElementByName("video_sink")
--	if err != nil {
--		return nil, err
--	}
--	go watchBus(pipeline, log)
--	return &pipe{
--		pipeline: pipeline,
--		source:   app.SrcFromElement(srcEl),
--		sink:     app.SinkFromElement(sinkEl),
--		srcPad:   srcEl.GetStaticPad("src"),
--	}, nil
--}
--
--func buildAudioPipeline(srcHz int, conf config.Encoder, log *logger.Logger) (*pipe, error) {
--	opts := conf.AudioSettings()
--	if opts == nil {
--		return nil, fmt.Errorf("unsupported audio codec: %s", conf.Audio.Codec)
--	}
--
--	build := builder{}
--	build.Grow(384)
--	build.write("appsrc name=audio_src is-live=true ")
--	build.writef("caps=audio/x-raw,format=S16LE,rate=%d,channels=2,layout=interleaved ", srcHz)
--	if srcHz != 48_000 {
--		m, q := "kaiser", 10
--		switch conf.Audio.Resampler {
--		case 0:
--			m, q = "nearest", 0
--		case 1:
--			m, q = "linear", 4
--		}
--		build.write("! audioresample sinc-filter-mode=full ")
--		build.writef("resample-method=%s quality=%d ! audio/x-raw,rate=48000 ", m, q)
--	}
--	build.writef("! %s name=audio_enc %s ", cmp.Or(opts.Encoder, "opusenc"), opts.Params)
--	build.write("! queue name=audio_q max-size-buffers=1 ")
--	build.write("! appsink name=audio_sink sync=false max-buffers=1 drop=true")
--
--	pipeDef := build.String()
--	log.Debug().Msgf("Gstreamer [audio]: %s", pipeDef)
--
--	pipeline, err := gst.NewPipelineFromString(pipeDef)
--	if err != nil {
--		return nil, err
--	}
--	srcEl, _ := pipeline.GetElementByName("audio_src")
--	sinkEl, _ := pipeline.GetElementByName("audio_sink")
--	encEl, _ := pipeline.GetElementByName("audio_enc")
--
--	frameMs := defaultAudioFrameMs
--	if encEl != nil {
--		if v, e := encEl.GetProperty("frame-size"); e == nil {
--			if ms := v.(int); ms > 0 {
--				frameMs = time.Duration(ms) * time.Millisecond
--			}
--		}
--	}
--
--	go watchBus(pipeline, log)
--	return &pipe{
--		pipeline: pipeline,
--		source:   app.SrcFromElement(srcEl),
--		sink:     app.SinkFromElement(sinkEl),
--		srcPad:   srcEl.GetStaticPad("src"),
--		frameDur: frameMs,
--	}, nil
--}
--
--func gstVideoFormat(format string) uint32 {
--	if v, ok := pixFmtCache[format]; ok {
--		return v
--	}
--	pix := unsafe.Pointer(unsafe.StringData(format + "\x00"))
--	var p runtime.Pinner
--	p.Pin(pix)
--	defer p.Unpin()
--	v := uint32(C.gstVideoFormatFromString((*C.gchar)(pix)))
--	pixFmtCache[format] = v
--	return v
--}
--
--func round(x int, scale float64) int { return (int(float64(x)*scale) + 1) &^ 1 }
--
--func watchBus(pipeline *gst.Pipeline, log *logger.Logger) {
--	bus := pipeline.GetPipelineBus()
--
--	for {
--		msg := bus.TimedPop(gst.ClockTimeNone)
--		if msg == nil {
--			return
--		}
--		switch msg.Type() {
--		case gst.MessageError:
--			gerr := msg.ParseError()
--			log.Error().Str("debug", gerr.DebugString()).Err(gerr).Msg("gst pipeline error")
--		case gst.MessageWarning:
--			gerr := msg.ParseWarning()
--			if strings.Contains(gerr.Error(), "invalid video buffer") {
--				log.Debug().Str("debug", gerr.DebugString()).Err(gerr).Msg("gst pipeline warning")
--			} else {
--				log.Warn().Str("debug", gerr.DebugString()).Err(gerr).Msg("gst pipeline warning")
--			}
--		case gst.MessageEOS:
--			return
--		default:
--			// log.Debug().Msg("gst pipeline message: " + msg.String())
--		}
--	}
--}
-+package media
-+
-+import (
-+	"cmp"
-+	"fmt"
-+	"runtime"
+@@ -4,9 +4,11 @@ import (
+ 	"cmp"
+ 	"fmt"
+ 	"runtime"
 +	"strconv"
-+	"strings"
-+	"sync"
-+	"sync/atomic"
+ 	"strings"
+ 	"sync"
+ 	"sync/atomic"
 +	"syscall"
-+	"time"
-+	"unsafe"
-+
-+	"github.com/giongto35/cloud-game/v3/pkg/config"
-+	"github.com/giongto35/cloud-game/v3/pkg/logger"
-+	"github.com/go-gst/go-gst/gst"
-+	"github.com/go-gst/go-gst/gst/app"
-+	"github.com/klauspost/cpuid/v2"
-+)
-+
-+/*
-+#cgo pkg-config: gstreamer-video-1.0 gstreamer-app-1.0
-+#include <gst/gst.h>
-+#include <gst/video/gstvideometa.h>
-+#include <gst/app/gstappsrc.h>
-+#include <gst/app/gstappsink.h>
-+
-+static inline GstVideoFormat gstVideoFormatFromString(const gchar *s) {
-+	return gst_video_format_from_string(s);
-+}
-+
-+static inline void doubleToFraction(const gdouble src, gint *num, gint *den) {
-+	gst_util_double_to_fraction(src, num, den);
-+}
-+
+ 	"time"
+ 	"unsafe"
+ 
+@@ -32,12 +34,45 @@ static inline void doubleToFraction(const gdouble src, gint *num, gint *den) {
+ 	gst_util_double_to_fraction(src, num, den);
+ }
+ 
+-// pushVideoBuf wraps frame memory directly.
 +// pushVideoBuf COPIES the frame into a new buffer (MovieTheater patch 0004; was zero-copy wrap).
 +// The copy frees the emulator's frame memory immediately, so the pusher never has to wait for the
 +// encoder before accepting the next frame — throughput is no longer capped at 1/encode-round-trip
 +// (which quantized to ~55fps on WSL2 and silently dropped the rest). ~74MB/s at 640x480x60 — noise.
 +// The frame duration rides on the GstBuffer so the pull side can restore it for RTP timestamps.
-+static inline void pushVideoBuf(GstAppSrc *src, void *data, gsize len,
+ static inline void pushVideoBuf(GstAppSrc *src, void *data, gsize len,
+-                                GstVideoFormat fmt, guint w, guint h, gint stride) {
+-	GstBuffer *buf = gst_buffer_new_wrapped_full(
+-		GST_MEMORY_FLAG_READONLY, data, len, 0, len, NULL, NULL);
 +                                GstVideoFormat fmt, guint w, guint h, gint stride, guint64 durNs) {
 +	// Drop degenerate frames. paraLLEl-RDP (N64, v1 Vulkan) emits a 1x1 frame during its async shader
 +	// warmup; renegotiating the appsrc caps to 1x1 and pushing it makes GStreamer error the ENTIRE
@@ -96682,17 +96391,16 @@ index 4a6171f..4609d60 100644
 +		gst_caps_unref(cur);
 +	}
 +	GstBuffer *buf = gst_buffer_new_allocate(NULL, len, NULL);
-+	if (!buf) return;
+ 	if (!buf) return;
 +	gst_buffer_fill(buf, 0, data, len);
 +	GST_BUFFER_DURATION(buf) = durNs;
-+	if (stride != 0) {
-+		gsize offset[GST_VIDEO_MAX_PLANES] = {0};
-+		gint strides[GST_VIDEO_MAX_PLANES] = {stride};
-+		gst_buffer_add_video_meta_full(buf, GST_VIDEO_FRAME_FLAG_NONE, fmt, w, h, 1, offset, strides);
-+	}
-+	gst_app_src_push_buffer(src, buf);
-+}
-+
+ 	if (stride != 0) {
+ 		gsize offset[GST_VIDEO_MAX_PLANES] = {0};
+ 		gint strides[GST_VIDEO_MAX_PLANES] = {stride};
+@@ -46,6 +81,19 @@ static inline void pushVideoBuf(GstAppSrc *src, void *data, gsize len,
+ 	gst_app_src_push_buffer(src, buf);
+ }
+ 
 +// bufDuration returns the encoded frame's duration, or 0 when the encoder left it unset.
 +//
 +// The bare GST_BUFFER_DURATION was a live trap: an unset duration is GST_CLOCK_TIME_NONE
@@ -96706,14 +96414,13 @@ index 4a6171f..4609d60 100644
 +	return GST_CLOCK_TIME_IS_VALID(d) ? d : 0;
 +}
 +
-+// pushAudioBuf copies audio data into a new buffer.
-+static inline void pushAudioBuf(GstAppSrc *src, void *data, gsize len) {
-+	GstBuffer *buf = gst_buffer_new_allocate(NULL, len, NULL);
-+	if (!buf) return;
-+	gst_buffer_fill(buf, 0, data, len);
-+	gst_app_src_push_buffer(src, buf);
-+}
-+
+ // pushAudioBuf copies audio data into a new buffer.
+ static inline void pushAudioBuf(GstAppSrc *src, void *data, gsize len) {
+ 	GstBuffer *buf = gst_buffer_new_allocate(NULL, len, NULL);
+@@ -54,6 +102,29 @@ static inline void pushAudioBuf(GstAppSrc *src, void *data, gsize len) {
+ 	gst_app_src_push_buffer(src, buf);
+ }
+ 
 +// reconfAudioCaps re-caps the audio appsrc when the core changes its sample rate mid-session
 +// (SET_SYSTEM_AV_INFO). The appsrc caps + the audioresample ratio are fixed at pipeline build time, so
 +// an unhandled rate change feeds e.g. 32029-rate PCM through a 44100->48000 resampler = a ~27% audio
@@ -96737,39 +96444,13 @@ index 4a6171f..4609d60 100644
 +	}
 +}
 +
-+// pullMappedBuffer pulls a sample from the appsink, gets its buffer,
-+// and maps it for reading. Returns the buffer (with ref held) on success,
-+// or NULL if no sample/buffer is available.
-+// The caller must call unmapAndUnref to release.
-+static inline GstBuffer* pullMappedBuffer(GstAppSink *sink, GstMapInfo *mapInfo) {
-+	GstSample *sample = gst_app_sink_pull_sample(sink);
-+	if (!sample) return NULL;
-+	GstBuffer *buffer = gst_sample_get_buffer(sample);
-+	if (buffer) gst_buffer_ref(buffer);
-+	gst_sample_unref(sample);
-+	if (!buffer) return NULL;
-+	if (!gst_buffer_map(buffer, mapInfo, GST_MAP_READ)) {
-+		gst_buffer_unref(buffer);
-+		return NULL;
-+	}
-+	return buffer;
-+}
-+
-+static inline void unmapAndUnref(GstBuffer *buffer, GstMapInfo *mapInfo) {
-+	gst_buffer_unmap(buffer, mapInfo);
-+	gst_buffer_unref(buffer);
-+}
-+*/
-+import "C"
-+
-+const (
-+	pixFmtBGRx  uint32 = 0
-+	pixFmtBGRA  uint32 = 1
-+	pixFmtRGB16 uint32 = 2
-+
-+	defaultAudioFrameMs = 20 * time.Millisecond
-+
-+	maxForcedKeyframes = 3
+ // pullMappedBuffer pulls a sample from the appsink, gets its buffer,
+ // and maps it for reading. Returns the buffer (with ref held) on success,
+ // or NULL if no sample/buffer is available.
+@@ -87,6 +158,18 @@ const (
+ 	defaultAudioFrameMs = 20 * time.Millisecond
+ 
+ 	maxForcedKeyframes = 3
 +	// On a NEW viewer joining we can't know the exact moment their WebRTC track is ready to decode,
 +	// so we force a keyframe every kfJoinSpacing frames for kfJoinWindow frames after the join — a
 +	// spaced burst that covers ICE/DTLS setup. This lets us run an effectively infinite GOP (no
@@ -96782,44 +96463,13 @@ index 4a6171f..4609d60 100644
 +	// kfOnceMax bounds owed single keyframes: PLIs from several peers inside one 500 ms limiter window
 +	// collapse to a couple of IDRs, never a stack.
 +	kfOnceMax = 2
-+)
-+
-+var forceKeyframeEvent *gst.Event
-+var cachedSegment *gst.Segment
-+var cpuCores int
-+var pixFmtToGst = map[uint32]string{
-+	pixFmtBGRx:  "BGRx",
-+	pixFmtBGRA:  "BGRA",
-+	pixFmtRGB16: "RGB16",
-+}
-+var pixFmtCache = map[string]uint32{}
-+
-+func init() {
-+	gst.Init(nil)
-+
-+	s := gst.NewStructure("GstForceKeyUnit")
-+	s.SetValue("all-headers", true)
-+	forceKeyframeEvent = gst.NewCustomEvent(gst.EventTypeCustomDownstream, s)
-+
-+	cpuCores = cmp.Or(cpuid.CPU.PhysicalCores, 4) - 1
-+
-+	cachedSegment = gst.NewSegment()
-+	cachedSegment.Init(gst.FormatTime)
-+}
-+
-+// GstMediaPipe a video and audio pipline based on GStreamer.
-+// Very unsafe.
-+//
-+// Video encoding is done in a single goroutine to avoid races.
-+// Audio is pulled from the appsink on GStreamer's own audio thread.
-+//
-+// Goroutines (3):
-+//   - video worker x1 (push+pull loop for video encoding)
-+//   - bus messages x2 (one per pipeline, bus message logging)
-+type GstMediaPipe struct {
-+	a, v *pipe
-+
-+	onAudio func([]byte, time.Duration)
+ )
+ 
+ var forceKeyframeEvent *gst.Event
+@@ -125,6 +208,13 @@ type GstMediaPipe struct {
+ 	a, v *pipe
+ 
+ 	onAudio func([]byte, time.Duration)
 +	onVideo func([]byte, time.Duration)
 +
 +	vDrops atomic.Int64 // frames dropped because the video channel was full (patch 0004)
@@ -96827,29 +96477,27 @@ index 4a6171f..4609d60 100644
 +	// Current ABR target (kbps, 0 = never set). Re-applied after every Reinit, because a video
 +	// geometry change destroys and rebuilds the pipeline — and with it the encoder element.
 +	vBitrate atomic.Int64
-+
-+	conf config.Encoder
-+
-+	pixFmt uint32
-+
-+	VideoW, VideoH int
-+	VideoScale     float64
-+	ScaleMethod    string
-+	MaxThreads     int
+ 
+ 	conf config.Encoder
+ 
+@@ -134,25 +224,74 @@ type GstMediaPipe struct {
+ 	VideoScale     float64
+ 	ScaleMethod    string
+ 	MaxThreads     int
 +	// BppTarget: per-core override for the derived bitrate ceiling's bits-per-pixel-per-frame target
 +	// (worker abr.go autoCeilingKbps). 0 = infer the class from the scale method. Carried here with the
 +	// other core-derived encode inputs (VideoScale/ScaleMethod/MaxThreads) because that is where the
 +	// ceiling calculation already reads its geometry from.
 +	BppTarget      float64
-+	AudioSrcHz     int
+ 	AudioSrcHz     int
 +	// audioBuiltHz: the rate the audio pipeline was actually built at (initAudio). A live re-cap
 +	// (ReconfigureAudio) is only valid when a resampler is present, i.e. the room was built at a
 +	// non-48000 rate. Crossing the 48000 boundary in either direction changes whether the resampler
 +	// stage exists at all, so that case REBUILDS instead of re-capping — see ReconfigureAudio.
 +	audioBuiltHz   int
-+	VideoVFR       bool
-+	VideoFPS       float64
-+
+ 	VideoVFR       bool
+ 	VideoFPS       float64
+ 
 +	// VideoSrcChain (P4 zero-copy, capture lane only): a GStreamer fragment that REPLACES the
 +	// appsrc head — capture source → convert → NV12 in GPU memory, linked straight into the encoder.
 +	// Empty (the default, and every libretro room) keeps the appsrc path exactly as it was.
@@ -96876,11 +96524,15 @@ index 4a6171f..4609d60 100644
 +	// teardown AND again from Room.Close(). Guarded by mu.
 +	destroyed bool
 +
-+	oldPf  uint32
-+	oldRot uint
-+	bpp    int
-+	vidFmt uint32 // cached GstVideoFormat enum
-+
+ 	oldPf  uint32
+ 	oldRot uint
+ 	bpp    int
+ 	vidFmt uint32 // cached GstVideoFormat enum
+ 
+-	frameI   int  // for forced keyframes
+-	keyI     int  // periodic keyframe counter
+-	kfi      int  // 0=GStreamer auto, >0=force keyframe every N frames
+-	aSegSent bool // for Opusenc bug
 +	encFrames  atomic.Uint64 // encoded frames out of the appsink (zero-copy: the only observable rate)
 +	lastEncLog time.Time     // touched only from the appsink's streaming thread
 +
@@ -96892,71 +96544,60 @@ index 4a6171f..4609d60 100644
 +	// Per-room keyframe accounting by reason (logged at teardown; the P5 verification reads these).
 +	kfStartup, kfJoin, kfPli atomic.Int32
 +	aSegSent bool         // for Opusenc bug
-+
-+	// used for reinit
-+	videoCh   chan videoJob
-+	videoDone chan struct{}
-+	reinit    atomic.Bool
-+	mu        sync.Mutex
+ 
+ 	// used for reinit
+ 	videoCh   chan videoJob
+ 	videoDone chan struct{}
+ 	reinit    atomic.Bool
+ 	mu        sync.Mutex
 +	// chMu guards videoCh against the close in Reinit/destroySync. ProcessVideo (emulator thread) used to
 +	// check `reinit` and then send — a check-then-act window in which Reinit could close the channel and the
 +	// send panic (a select with default STILL panics on a closed channel). Latent while rebuilds were rare;
 +	// the adaptive scale rung (patch 0047) makes them a routine event. ProcessVideo takes it with TryRLock, so
 +	// the emulator thread never waits on a rebuild — it drops that frame, exactly as the reinit flag intends.
 +	chMu sync.RWMutex
-+
-+	log *logger.Logger
-+}
-+
-+type videoJob struct {
-+	data         []byte
-+	w, h, stride int
-+	dur          time.Duration
-+}
-+
-+type Video struct {
-+	Frame    RawFrame
-+	Duration time.Duration
-+}
-+
-+type RawFrame struct {
+ 
+ 	log *logger.Logger
+ }
+@@ -161,7 +300,6 @@ type videoJob struct {
+ 	data         []byte
+ 	w, h, stride int
+ 	dur          time.Duration
+-	cb           func([]byte, time.Duration)
+ }
+ 
+ type Video struct {
+@@ -170,6 +308,8 @@ type Video struct {
+ }
+ 
+ type RawFrame struct {
 +	// Tex: GL zero-copy (HW cores). Non-zero => the frame is a GL texture, Data is nil.
 +	Tex    uint32
-+	Data   []byte
-+	Stride int
-+	W, H   int
-+}
-+
-+type pipe struct {
-+	pipeline *gst.Pipeline
-+	source   *app.Source
-+	sink     *app.Sink
-+	srcPad   *gst.Pad
+ 	Data   []byte
+ 	Stride int
+ 	W, H   int
+@@ -180,8 +320,15 @@ type pipe struct {
+ 	source   *app.Source
+ 	sink     *app.Sink
+ 	srcPad   *gst.Pad
 +	enc      *gst.Element // video encoder, kept for live bitrate changes (arcade ABR, patch 0021)
-+	frameDur time.Duration
-+	stale    atomic.Bool
+ 	frameDur time.Duration
+ 	stale    atomic.Bool
 +
 +	// P4 zero-copy (capture lane): the head is a live capture element, not an appsrc, so `source`
 +	// and `srcPad` are nil and no frame ever crosses into Go. `valve` gates desktop frames at the
 +	// pipeline instead of at the Go callback (privacy — see SetVideoValveDrop).
 +	zeroCopy bool
 +	valve    *gst.Element
-+}
-+
-+func (p *pipe) src() *C.GstAppSrc      { return (*C.GstAppSrc)(unsafe.Pointer(p.source.Instance())) }
-+func (p *pipe) sinkPtr() *C.GstAppSink { return (*C.GstAppSink)(unsafe.Pointer(p.sink.Instance())) }
-+func (p *pipe) stop() {
-+	if p != nil && p.pipeline != nil {
-+		p.pipeline.SetState(gst.StateNull)
-+	}
-+}
-+
-+func (p *pipe) destroy() {
-+	if p == nil {
-+		return
-+	}
-+	if p.pipeline != nil {
-+		p.pipeline.GetPipelineBus().Post(gst.NewEOSMessage(p.pipeline))
+ }
+ 
+ func (p *pipe) src() *C.GstAppSrc      { return (*C.GstAppSrc)(unsafe.Pointer(p.source.Instance())) }
+@@ -198,8 +345,29 @@ func (p *pipe) destroy() {
+ 	}
+ 	if p.pipeline != nil {
+ 		p.pipeline.GetPipelineBus().Post(gst.NewEOSMessage(p.pipeline))
+-		p.pipeline.SetState(gst.StateNull)
+-		p.pipeline = nil
 +		if p.zeroCopy {
 +			// The d3d12/d3d11 screen-capture element lives in THIS pipeline now, and an async
 +			// SetState(NULL) returns before its WGC capture session is actually freed — the next
@@ -96980,21 +96621,13 @@ index 4a6171f..4609d60 100644
 +			p.pipeline.SetState(gst.StateNull)
 +			p.pipeline = nil
 +		}
-+	}
-+	p.sink = nil
-+	p.source = nil
-+}
-+
-+type builder struct{ strings.Builder }
-+
-+func (b *builder) write(s string)               { b.Builder.WriteString(s) }
-+func (b *builder) writef(s string, args ...any) { fmt.Fprintf(&b.Builder, s, args...) }
-+func (b *builder) writeIfSet(s string) {
-+	if s != "" {
-+		b.write(s)
-+	}
-+}
-+
+ 	}
+ 	p.sink = nil
+ 	p.source = nil
+@@ -215,6 +383,42 @@ func (b *builder) writeIfSet(s string) {
+ 	}
+ }
+ 
 +// TemporalLayers reports how many temporal SVC layers the configured encoder will emit, read from the
 +// encoder's own params string (`temporal-layers=N` on nvav1enc — our patched nvcodec plugin).
 +//
@@ -97031,20 +96664,13 @@ index 4a6171f..4609d60 100644
 +	return codec
 +}
 +
-+func NewGstreamer(conf config.Encoder, log *logger.Logger) *GstMediaPipe {
-+	return &GstMediaPipe{conf: conf, bpp: 4, vidFmt: gstVideoFormat("BGRx"), log: log}
-+}
-+
-+func (g *GstMediaPipe) Init() error {
-+	if err := g.initVideo(); err != nil {
-+		return fmt.Errorf("gst video init: %w", err)
-+	}
-+	if err := g.initAudio(); err != nil {
-+		return fmt.Errorf("gst audio init: %w", err)
-+	}
-+	return nil
-+}
-+
+ func NewGstreamer(conf config.Encoder, log *logger.Logger) *GstMediaPipe {
+ 	return &GstMediaPipe{conf: conf, bpp: 4, vidFmt: gstVideoFormat("BGRx"), log: log}
+ }
+@@ -229,8 +433,49 @@ func (g *GstMediaPipe) Init() error {
+ 	return nil
+ }
+ 
 +// ReconfigureAudio re-caps the audio appsrc when the core changes its sample rate mid-session
 +// (SET_SYSTEM_AV_INFO). Without it the appsrc caps + audioresample ratio stay pinned to the room-start
 +// rate, drifting the audio timeline (gc 32029 vs 44100 class = a latent standing/growing lag). Called
@@ -97085,28 +96711,21 @@ index 4a6171f..4609d60 100644
 +	C.reconfAudioCaps(g.a.src(), C.gint(hz))
 +}
 +
-+func (g *GstMediaPipe) initAudio() (err error) {
-+	srcHz := g.AudioSrcHz
+ func (g *GstMediaPipe) initAudio() (err error) {
+ 	srcHz := g.AudioSrcHz
 +	g.audioBuiltHz = srcHz
-+	g.a, err = buildAudioPipeline(srcHz, g.conf, g.log)
-+	if err != nil {
-+		return
-+	}
-+	g.a.sink.SetCallbacks(&app.SinkCallbacks{NewSampleFunc: g.pullAudio})
-+	return g.a.pipeline.SetState(gst.StatePlaying)
-+}
-+
-+func (g *GstMediaPipe) initVideo() (err error) {
-+	w, h, scale := g.VideoW, g.VideoH, g.VideoScale
-+	sw, sh := round(w, scale), round(h, scale)
-+	if g.oldRot%180 != 0 {
-+		w, h = h, w
-+	}
-+	g.v, err = buildVideoPipeline(w, h, sw, sh, g.pixFmt, g.ScaleMethod, g.MaxThreads, g.conf,
+ 	g.a, err = buildAudioPipeline(srcHz, g.conf, g.log)
+ 	if err != nil {
+ 		return
+@@ -246,10 +491,17 @@ func (g *GstMediaPipe) initVideo() (err error) {
+ 		w, h = h, w
+ 	}
+ 	g.v, err = buildVideoPipeline(w, h, sw, sh, g.pixFmt, g.ScaleMethod, g.MaxThreads, g.conf,
+-		g.log, g.VideoFPS, g.VideoVFR)
 +		g.log, g.VideoFPS, g.VideoVFR, g.VideoSrcChain, g.GLZeroCopy, g.D3D11ZeroCopy)
-+	if err != nil {
-+		return
-+	}
+ 	if err != nil {
+ 		return
+ 	}
 +	// A geometry change rebuilds the pipeline (and the encoder element), so an ABR target set on the
 +	// old encoder would silently revert to the config bitrate. Re-apply it to the new one.
 +	if kbps := g.vBitrate.Load(); kbps > 0 {
@@ -97114,17 +96733,16 @@ index 4a6171f..4609d60 100644
 +			g.log.Warn().Err(e).Msgf("abr: could not re-apply %d kbps after reinit", kbps)
 +		}
 +	}
-+
-+	// if params contain keyframe-mode=disabled, we force periodic keyframes
-+	// ourselves instead of relying on GStreamer's auto mode
-+	if opts, _ := g.conf.VideoSettings(); opts != nil && strings.Contains(opts.Params, "keyframe-mode=disabled") {
-+		g.kfi = cmp.Or(g.conf.Video.KeyframeInterval, 120)
-+	} else {
-+		g.kfi = 0
-+	}
-+
-+	p := g.v
-+	fmt := g.vidFmt
+ 
+ 	// if params contain keyframe-mode=disabled, we force periodic keyframes
+ 	// ourselves instead of relying on GStreamer's auto mode
+@@ -261,9 +513,18 @@ func (g *GstMediaPipe) initVideo() (err error) {
+ 
+ 	p := g.v
+ 	fmt := g.vidFmt
+-	g.videoCh = make(chan videoJob, 3)
+-	g.videoDone = make(chan struct{})
+-	go g.videoWorker(p, fmt, g.videoCh, g.videoDone)
 +	// Patch 0004: the sink delivers encoded frames via GStreamer's own streaming thread (like the
 +	// audio path always did) instead of a synchronous pull after each push — encode latency no
 +	// longer gates input throughput. Channel deepened 3→8: frames are now COPIED at push, so a
@@ -97137,21 +96755,13 @@ index 4a6171f..4609d60 100644
 +		g.videoDone = make(chan struct{})
 +		go g.videoWorker(p, fmt, g.videoCh, g.videoDone)
 +	}
-+
-+	return p.pipeline.SetState(gst.StatePlaying)
-+}
-+
-+func (g *GstMediaPipe) SetPixFmt(f uint32) {
-+	g.oldPf, g.pixFmt = f, f
-+	g.vidFmt = gstVideoFormat(cmp.Or(pixFmtToGst[f], "RGBA"))
-+	if f == pixFmtRGB16 {
-+		g.bpp = 2
-+	} else {
-+		g.bpp = 4
-+	}
-+}
-+func (g *GstMediaPipe) SetRot(r uint) { g.oldRot = r }
-+
+ 
+ 	return p.pipeline.SetState(gst.StatePlaying)
+ }
+@@ -279,18 +540,57 @@ func (g *GstMediaPipe) SetPixFmt(f uint32) {
+ }
+ func (g *GstMediaPipe) SetRot(r uint) { g.oldRot = r }
+ 
 +// Destroy tears the pipelines down, guarded by a hard timeout (MovieTheater patch 0017).
 +// gst_element_set_state(NULL) can HANG FOREVER inside libgstnvcodec (observed live: a goroutine
 +// parked in the plugin's cond wait, captured in a full dump) — and Destroy runs SYNCHRONOUSLY on
@@ -97160,7 +96770,7 @@ index 4a6171f..4609d60 100644
 +// ("no free workers" → every create t=112 "arcade is full"), yet the process never exited, so the
 +// runner's restart loop never fired. On timeout we log and EXIT: one room per worker means nothing
 +// else lives here, and the runner respawns a clean worker in ~4 s (vs a 60-90 s watchdog window).
-+func (g *GstMediaPipe) Destroy() {
+ func (g *GstMediaPipe) Destroy() {
 +	done := make(chan struct{})
 +	go func() { defer close(done); g.destroySync() }()
 +	select {
@@ -97177,9 +96787,9 @@ index 4a6171f..4609d60 100644
 +}
 +
 +func (g *GstMediaPipe) destroySync() {
-+	g.mu.Lock()
-+	defer g.mu.Unlock()
-+
+ 	g.mu.Lock()
+ 	defer g.mu.Unlock()
+ 
 +	// Idempotent: GL zero-copy tears the pipeline down from inside the CORE's teardown (the encoder's
 +	// GL context is shared with the core's and must not outlive it), and Room.Close() then calls
 +	// Destroy() again on its way out. The second call used to panic on the already-closed video channel
@@ -97189,69 +96799,59 @@ index 4a6171f..4609d60 100644
 +	}
 +	g.destroyed = true
 +
-+	g.reinit.Store(true)
-+
-+	if g.videoCh != nil {
-+		g.v.stop()
+ 	g.reinit.Store(true)
+ 
+ 	if g.videoCh != nil {
+ 		g.v.stop()
 +		g.chMu.Lock()
-+		close(g.videoCh)
+ 		close(g.videoCh)
 +		g.videoCh = nil
 +		g.chMu.Unlock()
-+		<-g.videoDone
-+	}
-+
+ 		<-g.videoDone
+ 	}
+ 
 +	st, jn, pl := g.KeyframeStats()
 +	g.log.Info().Msgf("keyframes forced this room: startup=%d join=%d pli=%d", st, jn, pl)
 +
-+	g.v.destroy()
-+	g.a.destroy()
-+	g.aSegSent = false
-+	g.keyI = 0
-+}
-+
-+func (g *GstMediaPipe) ProcessAudio(audio []byte, cb func([]byte, time.Duration)) {
-+	g.onAudio = cb
+ 	g.v.destroy()
+ 	g.a.destroy()
+ 	g.aSegSent = false
+@@ -299,6 +599,11 @@ func (g *GstMediaPipe) Destroy() {
+ 
+ func (g *GstMediaPipe) ProcessAudio(audio []byte, cb func([]byte, time.Duration)) {
+ 	g.onAudio = cb
 +	// PPSSPP emits a zero-length audio batch at gameplay start; &audio[0] below panics on an empty
 +	// slice (index out of range [0] with length 0) → the worker crashed the instant PSP gameplay began.
 +	if len(audio) == 0 {
 +		return
 +	}
-+	if !g.aSegSent {
-+		g.aSegSent = true
-+		g.a.srcPad.PushEvent(gst.NewSegmentEvent(cachedSegment))
-+	}
-+	C.pushAudioBuf(g.a.src(), unsafe.Pointer(&audio[0]), C.gsize(len(audio)))
-+}
-+
-+// pullAudio pulls audio buffers from the appsink when they are available.
-+func (g *GstMediaPipe) pullAudio(_ *app.Sink) gst.FlowReturn {
-+	var mapInfo C.GstMapInfo
-+	buf := C.pullMappedBuffer(g.a.sinkPtr(), &mapInfo)
-+	if buf == nil {
-+		return gst.FlowEOS
-+	}
-+	defer C.unmapAndUnref(buf, &mapInfo)
-+	if g.onAudio != nil {
-+		g.onAudio(unsafe.Slice((*byte)(unsafe.Pointer(mapInfo.data)), int(mapInfo.size)), g.a.frameDur)
-+	}
-+	return gst.FlowOK
-+}
-+
+ 	if !g.aSegSent {
+ 		g.aSegSent = true
+ 		g.a.srcPad.PushEvent(gst.NewSegmentEvent(cachedSegment))
+@@ -320,7 +625,8 @@ func (g *GstMediaPipe) pullAudio(_ *app.Sink) gst.FlowReturn {
+ 	return gst.FlowOK
+ }
+ 
+-// videoWorker is the single goroutine that does push+pull for video.
 +// videoWorker is the single goroutine pushing frames into the pipeline (patch 0004: pull moved to
 +// the appsink callback — see pullVideo — so a slow encode round trip can't cap input throughput).
-+func (g *GstMediaPipe) videoWorker(v *pipe, vidFmt uint32, ch <-chan videoJob, done chan<- struct{}) {
-+	defer close(done)
-+	for job := range ch {
-+		if v.stale.Load() {
-+			continue
-+		}
-+		C.pushVideoBuf(v.src(),
-+			unsafe.Pointer(&job.data[0]), C.gsize(len(job.data)),
+ func (g *GstMediaPipe) videoWorker(v *pipe, vidFmt uint32, ch <-chan videoJob, done chan<- struct{}) {
+ 	defer close(done)
+ 	for job := range ch {
+@@ -329,33 +635,178 @@ func (g *GstMediaPipe) videoWorker(v *pipe, vidFmt uint32, ch <-chan videoJob, d
+ 		}
+ 		C.pushVideoBuf(v.src(),
+ 			unsafe.Pointer(&job.data[0]), C.gsize(len(job.data)),
+-			C.GstVideoFormat(vidFmt), C.guint(job.w), C.guint(job.h), C.gint(job.stride))
 +			C.GstVideoFormat(vidFmt), C.guint(job.w), C.guint(job.h), C.gint(job.stride),
 +			C.guint64(job.dur))
 +	}
 +}
-+
+ 
+-		var mi C.GstMapInfo
+-		buf := C.pullMappedBuffer(v.sinkPtr(), &mi)
+-		if buf == nil {
+-			continue
 +// pullVideo delivers encoded frames from the appsink's own streaming thread (patch 0004).
 +// The frame duration was stamped on the buffer at push time — restore it for RTP timestamps.
 +// The pipe is captured at registration so a late callback can't touch a successor pipeline.
@@ -97277,15 +96877,20 @@ index 4a6171f..4609d60 100644
 +					n, 300/now.Sub(prev).Seconds())
 +			}
 +			g.lastEncLog = now
-+		}
+ 		}
 +	}
 +	if g.onVideo != nil && !p.stale.Load() {
-+		data := unsafe.Slice((*byte)(unsafe.Pointer(mi.data)), int(mi.size))
+ 		data := unsafe.Slice((*byte)(unsafe.Pointer(mi.data)), int(mi.size))
+-		job.cb(data, job.dur)
+-		C.unmapAndUnref(buf, &mi)
 +		g.onVideo(data, time.Duration(C.bufDuration(buf)))
-+	}
+ 	}
 +	return gst.FlowOK
-+}
-+
+ }
+ 
+-func (g *GstMediaPipe) ProcessVideo(v Video, cb func([]byte, time.Duration)) {
+-	if g.reinit.Load() {
+-		return
 +// SetVideoSink wires the callback that ships encoded frames to the peers. ProcessVideo assigns it per
 +// frame on the appsrc path; zero-copy has no ProcessVideo, so it must be handed over up front or the
 +// encoder encodes into a nil callback.
@@ -97302,9 +96907,13 @@ index 4a6171f..4609d60 100644
 +		if c >= kfOnceMax || g.kfOnce.CompareAndSwap(c, c+1) {
 +			return
 +		}
-+	}
+ 	}
 +}
-+
+ 
+-	// when someone starts watching, force the first few keyframes to avoid stalling
+-	// and if scene-change detection is disabled (kfi > 0)
+-	if g.frameI < maxForcedKeyframes || (g.kfi > 0 && g.keyI%g.kfi == 0) {
+-		g.v.srcPad.PushEvent(forceKeyframeEvent)
 +// RequestJoinKeyframes opens the spaced post-join keyframe window (kfJoinWindow frames, one IDR every
 +// kfJoinSpacing) so a NEW viewer syncs even though we run an effectively infinite GOP — we cannot know
 +// the exact moment their track is ready to decode. Called from room.Router.AddUser.
@@ -97362,14 +96971,14 @@ index 4a6171f..4609d60 100644
 +		} else {
 +			p.srcPad.PushEvent(forceKeyframeEvent)
 +		}
-+		if g.frameI < maxForcedKeyframes {
-+			g.frameI++
-+		}
-+	}
+ 		if g.frameI < maxForcedKeyframes {
+ 			g.frameI++
+ 		}
+ 	}
 +	if kf > 0 {
 +		g.forceKf.Add(-1)
 +	}
-+	g.keyI++
+ 	g.keyI++
 +}
 +
 +// SetVideoValveDrop gates live desktop frames at the PIPELINE (P4 zero-copy). Design-A gated them in
@@ -97419,15 +97028,13 @@ index 4a6171f..4609d60 100644
 +		g.pushGLTexture(v.Frame.Tex, v.Frame.W, v.Frame.H, uint64(v.Duration.Nanoseconds()))
 +		return
 +	}
-+
-+	w, h := v.Frame.W, v.Frame.H
-+	stride := v.Frame.Stride
-+
-+	data := v.Frame.Data[:stride*h]
-+	if stride == w*g.bpp {
-+		stride = 0
-+	}
-+
+ 
+ 	w, h := v.Frame.W, v.Frame.H
+ 	stride := v.Frame.Stride
+@@ -365,11 +816,24 @@ func (g *GstMediaPipe) ProcessVideo(v Video, cb func([]byte, time.Duration)) {
+ 		stride = 0
+ 	}
+ 
 +	g.onVideo = cb
 +
 +	// See chMu: never wait on a rebuild from the emulator thread, and never send on a channel it closed.
@@ -97438,67 +97045,62 @@ index 4a6171f..4609d60 100644
 +	if g.videoCh == nil {
 +		return
 +	}
-+	select {
+ 	select {
+-	case g.videoCh <- videoJob{data: data, w: w, h: h, stride: stride, dur: v.Duration, cb: cb}:
 +	case g.videoCh <- videoJob{data: data, w: w, h: h, stride: stride, dur: v.Duration}:
-+	default:
+ 	default:
+-		// if busy the frame is dropped
+-		// or maybe handle it with gst?
 +		// Patch 0004: never drop silently — this is a real signal (the pipeline fell a full
 +		// channel behind), and the invisible version of it cost a night of diagnosis.
 +		if n := g.vDrops.Add(1); n%60 == 1 {
 +			g.log.Warn().Msgf("video pipeline overloaded: %d frames dropped so far", n)
 +		}
-+	}
-+}
-+
-+func (g *GstMediaPipe) Reinit() error {
-+	// prevent concurrent reinits
-+	g.mu.Lock()
-+	defer g.mu.Unlock()
-+
+ 	}
+ }
+ 
+@@ -378,7 +842,10 @@ func (g *GstMediaPipe) Reinit() error {
+ 	g.mu.Lock()
+ 	defer g.mu.Unlock()
+ 
+-	if g.v == nil {
 +	// A destroyed pipe stays destroyed: the adaptive scale rung (patch 0047) rebuilds from the ABR goroutine,
 +	// which can tick in the same instant the room closes — rebuilding then would start an encoder pipeline
 +	// nothing ever tears down (a leaked NVENC session on a free worker).
 +	if g.v == nil || g.destroyed {
-+		return nil
-+	}
-+
-+	g.reinit.Store(true)
-+	defer g.reinit.Store(false)
-+
-+	// drop stale frames (for the new pipe)
-+	g.v.stale.Store(true)
-+
+ 		return nil
+ 	}
+ 
+@@ -388,10 +855,15 @@ func (g *GstMediaPipe) Reinit() error {
+ 	// drop stale frames (for the new pipe)
+ 	g.v.stale.Store(true)
+ 
+-	// stop the video worker
 +	// stop the video worker. chMu is held across the close AND the rebuild (initVideo assigns a new videoCh),
 +	// so ProcessVideo can neither send on the closed channel nor read the field mid-swap; it drops frames
 +	// (TryRLock fails) until the new pipeline is up.
 +	g.chMu.Lock()
 +	defer g.chMu.Unlock()
-+	if g.videoCh != nil {
-+		g.v.stop()
-+		close(g.videoCh)
+ 	if g.videoCh != nil {
+ 		g.v.stop()
+ 		close(g.videoCh)
 +		g.videoCh = nil
-+		<-g.videoDone
-+	}
-+
-+	// we rebuild new pipeline every time because
-+	// changing the piplne parts proves to be unreliable
-+	g.v.destroy()
-+	if err := g.initVideo(); err != nil {
-+		return fmt.Errorf("gst video reinit: %w", err)
-+	}
-+
-+	g.keyI = 0
-+	return nil
-+}
-+
-+func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod string,
+ 		<-g.videoDone
+ 	}
+ 
+@@ -407,40 +879,156 @@ func (g *GstMediaPipe) Reinit() error {
+ }
+ 
+ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod string,
+-	maxThreads int, conf config.Encoder, log *logger.Logger, fps float64, vfr bool) (*pipe, error) {
 +	maxThreads int, conf config.Encoder, log *logger.Logger, fps float64, vfr bool,
 +	srcChain string, glZeroCopy bool, d3d11ZeroCopy bool) (*pipe, error) {
-+	format := cmp.Or(pixFmtToGst[pixFmt], "RGBA")
-+	kfi := cmp.Or(conf.Video.KeyframeInterval, 120)
-+	opts, codec := conf.VideoSettings()
-+	if opts == nil {
-+		return nil, fmt.Errorf("unsupported codec: %s", conf.Video.Codec)
-+	}
+ 	format := cmp.Or(pixFmtToGst[pixFmt], "RGBA")
+ 	kfi := cmp.Or(conf.Video.KeyframeInterval, 120)
+ 	opts, codec := conf.VideoSettings()
+ 	if opts == nil {
+ 		return nil, fmt.Errorf("unsupported codec: %s", conf.Video.Codec)
+ 	}
 +	zeroCopy := srcChain != ""
 +	// The I420-CPU head needs a videoconvert to reach NVENC's NV12-only sink; the GPU head already
 +	// hands the encoder NV12 in D3D12Memory (which nvh264enc/nvav1enc accept directly), and putting a
@@ -97526,9 +97128,14 @@ index 4a6171f..4609d60 100644
 +		// path already did the BGRA->NV12 GPU convert in its own head below).
 +		conv = ""
 +	}
-+
-+	build := builder{}
-+	build.Grow(512)
+ 
+ 	build := builder{}
+ 	build.Grow(512)
+-	build.write("appsrc name=video_src is-live=true ")
+-	var fn, fd C.gint
+-	C.doubleToFraction(C.gdouble(fps), &fn, &fd)
+-	if vfr {
+-		build.writef(`caps="video/x-raw,format=%s,width=%d,height=%d,framerate=0/1,max-framerate=%d/%d" `, format, w, h, int(fn), int(fd))
 +	if zeroCopy {
 +		// P4: the caller's chain already ends in NV12 GPU memory at the encode geometry (it does the
 +		// convert/scale/colorimetry on the GPU, because doing any of it here would mean a download).
@@ -97558,9 +97165,22 @@ index 4a6171f..4609d60 100644
 +			build.writef(`caps="video/x-raw(memory:GLMemory),format=RGBA,width=%d,height=%d,framerate=%d/%d" `, w, h, int(fn), int(fd))
 +		}
 +		build.write("! glcolorscale name=video_scale ")
-+		build.write("! queue name=video_q max-size-buffers=1 ")
-+		build.writef("! capsfilter name=video_caps caps=\"video/x-raw(memory:GLMemory),format=RGBA,width=%d,height=%d\" ", scaledW, scaledH)
-+		build.write("! ")
++		if conf.Video.GlNv12 && nvEnc {
++			// RGBA -> NV12 on the GPU, with the configured colorimetry in the caps (encoder.video.glNv12).
++			// Without it NVENC converts RGBA itself, at BT.709 LIMITED range, and Colorimetry never reaches
++			// it — so these rooms shipped limited range while the CPU head shipped full.
++			build.write("! glcolorconvert name=video_conv ")
++			build.write("! queue name=video_q max-size-buffers=1 ")
++			build.writef("! capsfilter name=video_caps caps=\"video/x-raw(memory:GLMemory),format=NV12,width=%d,height=%d", scaledW, scaledH)
++			if conf.Video.Colorimetry != "" {
++				build.writef(",colorimetry=%s", conf.Video.Colorimetry)
++			}
++			build.write("\" ! ")
++		} else {
++			build.write("! queue name=video_q max-size-buffers=1 ")
++			build.writef("! capsfilter name=video_caps caps=\"video/x-raw(memory:GLMemory),format=RGBA,width=%d,height=%d\" ", scaledW, scaledH)
++			build.write("! ")
++		}
 +	} else if d3d11ZeroCopy {
 +		// CAPTURE LANE v2 (window mode) D3D11 ZERO-COPY head. The appsrc carries BGRA D3D11Memory frames
 +		// the worker GPU-copied out of the helper's keyed-mutex SHARED textures (d3d11zerocopy.go) — no
@@ -97589,7 +97209,14 @@ index 4a6171f..4609d60 100644
 +			build.writef(",colorimetry=%s", conf.Video.Colorimetry)
 +		}
 +		build.write("\" ! ")
-+	} else {
+ 	} else {
+-		build.writef(`caps="video/x-raw,format=%s,width=%d,height=%d,framerate=%d/%d" `, format, w, h, int(fn), int(fd))
+-	}
+-	build.writef("! videoconvertscale name=video_scale chroma-resampler=cubic method=%s n-threads=2 ", cmp.Or(scaleMethod, "nearest-neighbour"))
+-	build.write("! queue name=video_q max-size-buffers=1 ")
+-	build.writef("! capsfilter name=video_caps caps=\"video/x-raw,format=I420,color-range=0_255,width=%d,height=%d ", scaledW, scaledH)
+-	if conf.Video.Colorimetry != "" {
+-		build.writef(",colorimetry=%s", conf.Video.Colorimetry)
 +		build.write("appsrc name=video_src is-live=true ")
 +		var fn, fd C.gint
 +		C.doubleToFraction(C.gdouble(fps), &fn, &fd)
@@ -97606,8 +97233,17 @@ index 4a6171f..4609d60 100644
 +		}
 +		build.write("\" ")
 +		build.write("! ")
-+	}
-+	switch codec {
+ 	}
+-	build.write("\" ")
+-	build.write("! ")
+ 	switch codec {
+-	// h264 - requires gstreamer1.0-plugins-ugly + x264 (GPL)
+-	// case "h264":
+-	// 	return fmt.Sprintf("%s threads=%d key-int-max=%d",
+-	// 		cmp.Or(gst.Encoder, "x264enc"),
+-	// 		cmp.Or(conf.Video.Threads, 0),
+-	// 		kfi,
+-	// 	)
 +	// h264 (MovieTheater patch): the encoder element + all tuning come from encoder.list
 +	// (e.g. nvh264enc for NVENC — keyframe cadence via gop-size in params, since the vpx
 +	// keyframe-mode=disabled force-keyframe path below doesn't apply to h264). The videoconvert
@@ -97628,32 +97264,29 @@ index 4a6171f..4609d60 100644
 +			enc = "nvautogpuav1enc" // takes D3D11Memory on its sink; same param set (verified gst-launch)
 +		}
 +		build.writef("%s%s name=video_enc ", conv, enc)
-+	case "vp8", "vp9":
-+		encoder := cmp.Or(opts.Encoder, fmt.Sprintf("vp%cenc", codec[len(codec)-1]))
-+		threads := cmp.Or(conf.Video.Threads, cpuCores)
-+		if maxThreads > 0 && threads > maxThreads {
-+			threads = maxThreads
-+		}
-+		build.writef("%s name=video_enc threads=%d keyframe-max-dist=%d ", encoder, threads, kfi)
-+	}
-+	build.writeIfSet(opts.Params)
-+	if opts.Caps != "" {
-+		build.write(" ! " + opts.Caps)
-+	}
+ 	case "vp8", "vp9":
+ 		encoder := cmp.Or(opts.Encoder, fmt.Sprintf("vp%cenc", codec[len(codec)-1]))
+ 		threads := cmp.Or(conf.Video.Threads, cpuCores)
+@@ -453,8 +1041,11 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
+ 	if opts.Caps != "" {
+ 		build.write(" ! " + opts.Caps)
+ 	}
 +	// max-buffers raised 1→4 (patch 0004): with 1, any WriteSample stall >1 frame period silently
 +	// killed a frame at the sink (~5fps of steady loss measured). 4 absorbs the stalls; drop=true
 +	// still bounds worst-case latency to 4 frames under sustained overload.
-+	build.write(" ! queue name=video_q2 max-size-buffers=1 ")
+ 	build.write(" ! queue name=video_q2 max-size-buffers=1 ")
+-	build.write("! appsink name=video_sink sync=false max-buffers=1 drop=true")
 +	build.write("! appsink name=video_sink sync=false max-buffers=4 drop=true")
-+
-+	pipeDef := build.String()
-+
-+	log.Debug().Msgf("Gstreamer [video]: %s", pipeDef)
-+
-+	pipeline, err := gst.NewPipelineFromString(pipeDef)
-+	if err != nil {
-+		return nil, err
-+	}
+ 
+ 	pipeDef := build.String()
+ 
+@@ -464,21 +1055,54 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
+ 	if err != nil {
+ 		return nil, err
+ 	}
+-	srcEl, err := pipeline.GetElementByName("video_src")
+-	if err != nil {
+-		return nil, err
 +	if glZeroCopy {
 +		// Hand the pipeline the core's GL display + context BEFORE it goes to PLAYING. Without this its
 +		// GL elements would create their own, isolated context — and the texture ids we push would be
@@ -97665,17 +97298,22 @@ index 4a6171f..4609d60 100644
 +		// d3d11convert + nvautogpu*enc use it instead of creating their own device (a different device
 +		// couldn't read our shared-pool textures). See d3d11zerocopy.go d11_set_context.
 +		attachD3D11Context(pipeline)
-+	}
-+	sinkEl, err := pipeline.GetElementByName("video_sink")
-+	if err != nil {
-+		return nil, err
-+	}
+ 	}
+ 	sinkEl, err := pipeline.GetElementByName("video_sink")
+ 	if err != nil {
+ 		return nil, err
+ 	}
+-	go watchBus(pipeline, log)
+-	return &pipe{
 +	// Not fatal when absent: ABR simply stays off for that pipeline.
 +	encEl, _ := pipeline.GetElementByName("video_enc")
 +
 +	p := &pipe{
-+		pipeline: pipeline,
-+		sink:     app.SinkFromElement(sinkEl),
+ 		pipeline: pipeline,
+-		source:   app.SrcFromElement(srcEl),
+ 		sink:     app.SinkFromElement(sinkEl),
+-		srcPad:   srcEl.GetStaticPad("src"),
+-	}, nil
 +		enc:      encEl,
 +		zeroCopy: zeroCopy,
 +	}
@@ -97702,18 +97340,13 @@ index 4a6171f..4609d60 100644
 +
 +	go watchBus(pipeline, log)
 +	return p, nil
-+}
-+
-+func buildAudioPipeline(srcHz int, conf config.Encoder, log *logger.Logger) (*pipe, error) {
-+	opts := conf.AudioSettings()
-+	if opts == nil {
-+		return nil, fmt.Errorf("unsupported audio codec: %s", conf.Audio.Codec)
-+	}
-+
-+	build := builder{}
-+	build.Grow(384)
-+	build.write("appsrc name=audio_src is-live=true ")
-+	build.writef("caps=audio/x-raw,format=S16LE,rate=%d,channels=2,layout=interleaved ", srcHz)
+ }
+ 
+ func buildAudioPipeline(srcHz int, conf config.Encoder, log *logger.Logger) (*pipe, error) {
+@@ -491,6 +1115,13 @@ func buildAudioPipeline(srcHz int, conf config.Encoder, log *logger.Logger) (*pi
+ 	build.Grow(384)
+ 	build.write("appsrc name=audio_src is-live=true ")
+ 	build.writef("caps=audio/x-raw,format=S16LE,rate=%d,channels=2,layout=interleaved ", srcHz)
 +	// The resampler is inserted ONLY when the rate differs from opus's 48000.
 +	//
 +	// Making it unconditional was tried first (it would have made the appsrc rate freely re-cappable)
@@ -97721,18 +97354,15 @@ index 4a6171f..4609d60 100644
 +	// holds samples back for its filter kernel even at a 1:1 ratio. That is real added latency on every
 +	// honest 48000 core to buy flexibility only a mis-clocking core needs. The 48000 case gets that
 +	// flexibility from ReconfigureAudio's rebuild instead.
-+	if srcHz != 48_000 {
-+		m, q := "kaiser", 10
-+		switch conf.Audio.Resampler {
-+		case 0:
-+			m, q = "nearest", 0
-+		case 1:
-+			m, q = "linear", 4
-+		}
-+		build.write("! audioresample sinc-filter-mode=full ")
-+		build.writef("resample-method=%s quality=%d ! audio/x-raw,rate=48000 ", m, q)
-+	}
-+	build.writef("! %s name=audio_enc %s ", cmp.Or(opts.Encoder, "opusenc"), opts.Params)
+ 	if srcHz != 48_000 {
+ 		m, q := "kaiser", 10
+ 		switch conf.Audio.Resampler {
+@@ -503,8 +1134,27 @@ func buildAudioPipeline(srcHz int, conf config.Encoder, log *logger.Logger) (*pi
+ 		build.writef("resample-method=%s quality=%d ! audio/x-raw,rate=48000 ", m, q)
+ 	}
+ 	build.writef("! %s name=audio_enc %s ", cmp.Or(opts.Encoder, "opusenc"), opts.Params)
+-	build.write("! queue name=audio_q max-size-buffers=1 ")
+-	build.write("! appsink name=audio_sink sync=false max-buffers=1 drop=true")
 +	// AUDIO SLACK (2026-07-29). This used to be `queue max-size-buffers=1` into
 +	// `appsink max-buffers=1 drop=true` — copied from the VIDEO path, where dropping a late frame is
 +	// correct because a stale frame is worse than none. For AUDIO that reasoning is inverted: a dropped
@@ -97754,78 +97384,13 @@ index 4a6171f..4609d60 100644
 +	// already holds an 80 ms jitter buffer by default (cloudRetroClient.js AUDIO_JITTER_DEFAULT_MS).
 +	build.write("! queue name=audio_q max-size-buffers=0 max-size-bytes=0 max-size-time=200000000 ")
 +	build.write("! appsink name=audio_sink sync=false max-buffers=8 drop=false")
-+
-+	pipeDef := build.String()
-+	log.Debug().Msgf("Gstreamer [audio]: %s", pipeDef)
-+
-+	pipeline, err := gst.NewPipelineFromString(pipeDef)
-+	if err != nil {
-+		return nil, err
-+	}
-+	srcEl, _ := pipeline.GetElementByName("audio_src")
-+	sinkEl, _ := pipeline.GetElementByName("audio_sink")
-+	encEl, _ := pipeline.GetElementByName("audio_enc")
-+
-+	frameMs := defaultAudioFrameMs
-+	if encEl != nil {
-+		if v, e := encEl.GetProperty("frame-size"); e == nil {
-+			if ms := v.(int); ms > 0 {
-+				frameMs = time.Duration(ms) * time.Millisecond
-+			}
-+		}
-+	}
-+
-+	go watchBus(pipeline, log)
-+	return &pipe{
-+		pipeline: pipeline,
-+		source:   app.SrcFromElement(srcEl),
-+		sink:     app.SinkFromElement(sinkEl),
-+		srcPad:   srcEl.GetStaticPad("src"),
-+		frameDur: frameMs,
-+	}, nil
-+}
-+
-+func gstVideoFormat(format string) uint32 {
-+	if v, ok := pixFmtCache[format]; ok {
-+		return v
-+	}
-+	pix := unsafe.Pointer(unsafe.StringData(format + "\x00"))
-+	var p runtime.Pinner
-+	p.Pin(pix)
-+	defer p.Unpin()
-+	v := uint32(C.gstVideoFormatFromString((*C.gchar)(pix)))
-+	pixFmtCache[format] = v
-+	return v
-+}
-+
-+func round(x int, scale float64) int { return (int(float64(x)*scale) + 1) &^ 1 }
-+
-+func watchBus(pipeline *gst.Pipeline, log *logger.Logger) {
-+	bus := pipeline.GetPipelineBus()
-+
-+	for {
-+		msg := bus.TimedPop(gst.ClockTimeNone)
-+		if msg == nil {
-+			return
-+		}
-+		switch msg.Type() {
-+		case gst.MessageError:
-+			gerr := msg.ParseError()
-+			log.Error().Str("debug", gerr.DebugString()).Err(gerr).Msg("gst pipeline error")
-+		case gst.MessageWarning:
-+			gerr := msg.ParseWarning()
-+			if strings.Contains(gerr.Error(), "invalid video buffer") {
-+				log.Debug().Str("debug", gerr.DebugString()).Err(gerr).Msg("gst pipeline warning")
-+			} else {
-+				log.Warn().Str("debug", gerr.DebugString()).Err(gerr).Msg("gst pipeline warning")
-+			}
-+		case gst.MessageEOS:
-+			return
-+		default:
-+			// log.Debug().Msg("gst pipeline message: " + msg.String())
-+		}
-+	}
-+}
+ 
+ 	pipeDef := build.String()
+ 	log.Debug().Msgf("Gstreamer [audio]: %s", pipeDef)
+@@ -577,3 +1227,47 @@ func watchBus(pipeline *gst.Pipeline, log *logger.Logger) {
+ 		}
+ 	}
+ }
 +
 +// SetVideoBitrate live-sets the video encoder's target bitrate. This is the whole reason ABR is cheap
 +// here: the NVENC encoders — nvav1enc (the DEFAULT codec) and nvh264enc, plus x264enc — expose

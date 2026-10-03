@@ -980,3 +980,49 @@ through a `getStats` override, `mixed-probe.mjs`, `timeline-probe.mjs`):
 
 **Deploy-order hazard.** A pre-0047 worker reads a `0xF1` report as pad buttons. Deploy workers before
 the site shim. The shim only sends reports for `zone=main` and never from input-only seats.
+
+## 0048-codec-program (2026-10-02): honest codec mismatches, exact H.264 fmtp, GL full range, playout-delay, distress rows
+
+(Fork commits `07ffe2a`, `e419ef2`, `9d70442`, `1f2266a`. Plan: the arcade codec program; site half in
+`arcadeRoomCreate.js` / `ArcadeController`.)
+
+**Codec mismatches are told, not swallowed.** A browser that cannot receive the room's codec used to fail
+inside Pion (`Bind` → `ErrUnsupportedCodec`), the init handler returned an empty packet the coordinator drops
+as malformed, the PeerConnection leaked, and the player watched black. Now `codec-error:<codec>` rides the ICE
+relay (verbatim through the coordinator, exactly like `aux-sdp:` — no protocol change, no coordinator rebuild)
+from both the init (browser-offer) and `HandleWebrtcSignal` (worker-offer: Firefox/Safari) paths, and every
+failure after `NewConnection` closes the peer. At game start a peer whose track codec differs from the room
+encoder's gets `codec-mismatch:<codec>` (its join descriptor carried the wrong codec — the site restart case).
+`pkg/network/webrtc/codecmatch.go`; tests negotiate real Pion connections in-process.
+
+**Exact H.264 fmtp.** The h264 track declares Constrained Baseline packetization-mode 1 (`42e01f`). Without an
+fmtp Pion bound the FIRST H.264 line the browser listed — a mode-0 line if listed first, where FU-A is not
+allowed. Proven both ways in-process: PT 104 (mode 0) without, PT 102 (mode 1) with. No exact line → Pion's
+partial match still binds, so no browser loses a match. **Pion's partial match is also why a High-profile
+room must never be built without a profile guard:** a CB-only browser (Firefox) would partial-bind a High
+track and decode garbage.
+
+**`encoder.video.glNv12` (default OFF).** The GL/Vulkan zero-copy head handed NVENC RGBA, and NVENC's own
+RGB→YUV picks BT.709 LIMITED range and never sees `colorimetry` — every hardware-core room shipped limited
+range (decoded `VideoFrame.colorSpace.fullRange` false on n64, true on genesis's CPU head). With the flag the
+head runs `glcolorconvert` to `GLMemory NV12,colorimetry=<conf>`. Proven offline: exact BT.709 full-range
+values (red Y54/U99/V255; mid-grey stays 128 — no transfer conversion); through the production nvav1enc params
+the bitstream signals `1:3:5:1` instead of `bt709`. Cost (latency tracer, 1920x1584 → 1280x960 @60): +0.25 ms
+median, +0.45 ms p95. Flip in BOTH GL ConfDirs together, after live rooms confirm `fullRange:true` and 0047
+`zeroCopyScale` rebuilds.
+
+**`webrtc.playoutDelay` (default OFF).** Registers the playout-delay header extension and stamps video packets
+with `[minMs, maxMs]` via an interceptor that reads the negotiated extmap id — Chrome offers it, Firefox does
+not (its packets are byte-identical). min=0 = Chrome renders on decode. Needs a HEADED A/B on real displays
+before it is turned on.
+
+**Distress on the link-stat row.** The adaptive controller keeps a per-viewer record for the whole room
+(seconds of weak/strong distress, scale-downs caused) that survives the viewer leaving; it is appended to
+`abr: summary-peer` and sent as `distressWeakTicks / distressStrongTicks / scaleDowns` on the ArcadeLinkStat
+mirror. The site turns it into a per-device codec hint for Auto (`ArcadeCodecHint`). Older sites ignore the
+fields; the columns were applied to the live DB before any of this ships.
+
+**Deploy order.** DB (done) → site → workers. The SITE must ship first: a pre-0048 shim hands the two envelopes
+to `addCandidate`, whose JSON parse error reaches the room page's `onError` — only on a mismatch, which is
+already a failure, but the right message comes from the 0048 shim. A pre-0048 site ignores the extra LinkStat
+fields.

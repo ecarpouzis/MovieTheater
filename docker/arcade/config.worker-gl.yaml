@@ -2204,6 +2204,15 @@ encoder:
     # honours the flag in both browsers, and WebRTC is the only path this stream ever takes. Never trust
     # the file path as a proxy for the WebRTC path again.
     colorimetry: "1:3:5:1"
+    # glNv12 (2026-10-02, codec program B3): the GL/Vulkan zero-copy head (every hardware-core room: n64, gc,
+    # wii, ps2, psp, dc...) converts RGBA -> NV12 ON THE GPU (glcolorconvert) with the colorimetry above in the
+    # caps. Without it NVENC converts the RGBA itself at BT.709 LIMITED range and never sees this colorimetry —
+    # measured: decoded VideoFrame fullRange=false on n64 vs true on genesis (CPU head); a red test frame
+    # signalled bt709 and decoded Y63/U102/V240 (limited) vs 1:3:5:1 and Y54/U99/V255 (full) with the flag.
+    # glcolorconvert proven to apply no gamma conversion (mid-grey stays 128). Cost: latency tracer
+    # 1920x1584 -> 1280x960 @60, +0.25 ms median / +0.45 ms p95. OFF until verified in live rooms on both
+    # GL ConfDirs (and with 0047 zeroCopyScale rebuilds); flip in BOTH worker-gl and worker-gl-2 together.
+    glNv12: false
   list:
     # AV1 (patch 0024) — THE DEFAULT since 2026-07-09 (see encoder.video.codec above; h264 below is the
     # kept fallback for instant rollback / any future Safari need).
@@ -2366,3 +2375,11 @@ storage:
 # same-host room start. 2 = webrtc.DTLSRoleClient (1 auto, 3 server).
 webrtc:
   dtlsRole: 2
+  # Playout-delay RTP header extension (codec program B4, 2026-10-02): Chrome renders a frame on decode
+  # (minMs) and caps its jitter-buffer delay (maxMs). Chrome offers it (extmap playout-delay); Firefox does
+  # not, and is untouched. OFF until a HEADED A/B on real displays (arcade-latency.mjs input-to-photon +
+  # timeline-probe.mjs pacing, wired and Wi-Fi) picks [min, max]; registering it changes nothing until then.
+  playoutDelay:
+    enabled: false
+    minMs: 0
+    maxMs: 100
