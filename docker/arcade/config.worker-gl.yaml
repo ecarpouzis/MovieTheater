@@ -2379,6 +2379,12 @@ webrtc:
   # (minMs) and caps its jitter-buffer delay (maxMs). Chrome offers it (extmap playout-delay); Firefox does
   # not, and is untouched. OFF until a HEADED A/B on real displays (arcade-latency.mjs input-to-photon +
   # timeline-probe.mjs pacing, wired and Wi-Fi) picks [min, max]; registering it changes nothing until then.
+  # Loss-triggered pacing (2026-10-03): a viewer's video is paced with this window (ms) once THAT viewer reports
+  # packet loss (RTCP NACK); viewers that never lose packets stay unpaced. Measured on real Chrome 154 / Edge 154
+  # / Firefox 157, same-host DOS room at the 40 Mbps ceiling: unpaced, Firefox lost 84-118 packets per 40 s (Chrome
+  # and Edge 0); room-wide 8 ms pacing cured it but raised EVERY browser's jitter buffer from ~10 ms to 21-61 ms.
+  # 0 = off until the per-viewer version is verified live (test-roms/codec-matrix.mjs); 8 is the measured cure.
+  lossPacingMs: 0
   playoutDelay:
     enabled: false
     minMs: 0

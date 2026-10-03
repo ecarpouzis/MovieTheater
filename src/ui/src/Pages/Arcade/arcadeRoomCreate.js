@@ -28,14 +28,11 @@ export const NETWORK_PROFILES = {
 // BOTH codecs are probed and a hardware decoder wins: hardware AV1 first, else hardware H.264 (the
 // tablet case: software dav1d on a tablet CPU can't keep up with 1280x1056@60, MediaCodec H.264 can).
 //
-// When NEITHER is hardware the tie goes to H.264 — desktop Firefox on every machine is this case (its
-// WebRTC decodes AV1 with dav1d and H.264 with OpenH264, both software, and reports both supported+smooth,
-// !powerEfficient). MEASURED 2026-10-03, Firefox 153, DOS room 1920x1440 @~75 fps, pointer moving, paced,
-// three runs per codec: OpenH264 0.44-0.47 ms/frame steady (p90 0.50), 76-78 fps, full size every run;
-// dav1d 3.6-5.9 ms median, p90 up to 13.5 ms, and 2 of 3 runs shrank to 1280. (A single earlier 1.45 ms
-// AV1 reading was not representative.) What looked like Firefox "drowning" on H.264 was PACKET LOSS:
-// unpaced same-host bursts at the 40 Mbps ceiling overflow Firefox's receive path (175-800 packets lost
-// in 40 s, Chrome 0), each loss costs a keyframe request, and the room shrank — not the decoder.
+// When NEITHER is hardware the tie goes to H.264 (the rule since Phase 4): a software H.264 decoder is the
+// lighter one per pixel, and the tablet failure that created Auto was software AV1. Which browsers land here
+// is a property of the browser BUILD, not the brand — the installed Firefox 157 on the arcade host reports
+// both codecs powerEfficient and takes the hardware-AV1 branch, while Playwright's patched Firefox build
+// reports both as software. Probe the real browser before reasoning about one.
 // The exception: a browser that can't decode H.264 at all (Firefox without the OpenH264 plugin) gets AV1
 // rather than no video.
 //

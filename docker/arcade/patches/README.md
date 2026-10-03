@@ -1022,6 +1022,22 @@ before it is turned on.
 mirror. The site turns it into a per-device codec hint for Auto (`ArcadeCodecHint`). Older sites ignore the
 fields; the columns were applied to the live DB before any of this ships.
 
+**Same-host packet loss is not decoder distress** (fork `4aebce6`, 2026-10-03). 0047 counted a same-host
+viewer's PLIs as STRONG on their own ("no network to blame") and stepped the room's scale down. Firefox on the
+worker's own machine loses unpaced bursts at the room ceiling on its receive path — measured on a DOS room,
+175-800 packets lost in 40 s with 100% of arrivals decoded (Chrome: 0 lost) — and each loss costs a PLI. That,
+not OpenH264, was the "Firefox drowning on H.264": steady-state OpenH264 measured 0.44-0.47 ms/frame vs dav1d
+3.6-5.9 ms in the same rooms. The peer now counts RTCP NACKs; same-host PLIs are strong only with ZERO NACKs in
+the window, otherwise weak (that viewer's layer cap + dedup, no room rescale). The distress line shows `nack=`.
+
+**Loss-triggered pacing, per viewer** (fork commit after `4aebce6`, `webrtc.lossPacingMs`, 0 = off). The
+generic fix, measured on REAL stable builds (Chrome 154, Edge 154, Firefox 157 driven via WebDriver BiDi —
+Playwright's patched Firefox reports different decoder capabilities and is not evidence), 3 runs per cell,
+`test-roms/codec-matrix.mjs`: unpaced, Chrome/Edge lose nothing (jitter buffer ~10 ms) while Firefox loses
+84-118 packets per 40 s with 4 PLIs every run; room-wide 8 ms pacing cures Firefox but costs every browser
+21-61 ms of jitter buffer. So the pacer interceptor (per PeerConnection) reads that viewer's RTCP and paces
+only a viewer that has sent a NACK, for the rest of its session.
+
 **Deploy order.** DB (done) → site → workers. The SITE must ship first: a pre-0048 shim hands the two envelopes
 to `addCandidate`, whose JSON parse error reaches the room page's `onError` — only on a mismatch, which is
 already a failure, but the right message comes from the 0048 shim. A pre-0048 site ignores the extra LinkStat

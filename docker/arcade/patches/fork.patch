@@ -3366,16 +3366,20 @@ index 9e70576..5f5c29f 100644
  
  func (l Library) GetSupportedExtensions() []string { return l.Supported }
 diff --git a/pkg/config/webrtc.go b/pkg/config/webrtc.go
-index 007983f..b606968 100644
+index 007983f..5b506ae 100644
 --- a/pkg/config/webrtc.go
 +++ b/pkg/config/webrtc.go
-@@ -15,6 +15,14 @@ type Webrtc struct {
+@@ -15,6 +15,18 @@ type Webrtc struct {
  	IncludeLoopbackCandidate bool
  	SinglePort               int
  	LogLevel                 int
 +	// PlayoutDelay (yaml playoutDelay): stamp the playout-delay RTP header extension on video so Chrome
 +	// renders on decode (minMs) with a bounded jitter-buffer delay (maxMs). Off by default — unmeasured
 +	// here; see pkg/network/webrtc/playoutdelay.go.
++	// LossPacingMs (yaml lossPacingMs): once a viewer reports packet loss (RTCP NACK), its video is paced
++	// with this window for the rest of its session; viewers that never lose packets stay unpaced. 0 = off.
++	// See pkg/network/webrtc/pacer.go.
++	LossPacingMs int
 +	PlayoutDelay struct {
 +		Enabled bool
 +		MinMs   int
@@ -5494,7 +5498,7 @@ index 0000000..c45dcce
 +	}
 +}
 diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
-index 99e02b8..5760f9a 100644
+index 99e02b8..812afba 100644
 --- a/pkg/network/webrtc/factory.go
 +++ b/pkg/network/webrtc/factory.go
 @@ -3,19 +3,51 @@ package webrtc
@@ -5549,7 +5553,7 @@ index 99e02b8..5760f9a 100644
  }
  
  type ModApiFun func(m *webrtc.MediaEngine, i *interceptor.Registry, s *webrtc.SettingEngine)
-@@ -27,6 +59,68 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -27,6 +59,72 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	}
  	i := &interceptor.Registry{}
  
@@ -5597,6 +5601,10 @@ index 99e02b8..5760f9a 100644
 +	// In-frame packet pacing (patch 0028): always registered, no-op until a room arms it via
 +	// SetPacing (lobby Network profile Remote/5G). See pacer.go for why grouping, not a pacer.
 +	i.Add(pacerFactory{})
++	SetLossPacing(conf.LossPacingMs)
++	if conf.LossPacingMs > 0 {
++		log.Info().Msgf("rtc: loss-triggered pacing ON — a viewer that reports packet loss is paced at %d ms", conf.LossPacingMs)
++	}
 +	// Playout-delay (codec program B4): registered only when enabled, so a disabled worker's SDP is unchanged.
 +	if conf.PlayoutDelay.Enabled {
 +		if err = m.RegisterHeaderExtension(webrtc.RTPHeaderExtensionCapability{URI: PlayoutDelayURI}, webrtc.RTPCodecTypeVideo); err != nil {
@@ -5618,7 +5626,7 @@ index 99e02b8..5760f9a 100644
  	if conf.DisableDefaultInterceptors {
  		sender, err := report.NewSenderInterceptor()
  		if err != nil {
-@@ -49,6 +143,7 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -49,6 +147,7 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	if conf.IceLite {
  		s.SetLite(conf.IceLite)
  	}
@@ -5626,7 +5634,7 @@ index 99e02b8..5760f9a 100644
  	if conf.HasPortRange() {
  		if err = s.SetEphemeralUDPPortRange(conf.IcePorts.Min, conf.IcePorts.Max); err != nil {
  			return
-@@ -56,57 +151,314 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -56,57 +155,314 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	}
  	if conf.HasSinglePort() {
  		var l any
@@ -5965,10 +5973,10 @@ index 99e02b8..5760f9a 100644
  func filterIP(i net.IP, filter []string) bool {
 diff --git a/pkg/network/webrtc/pacer.go b/pkg/network/webrtc/pacer.go
 new file mode 100644
-index 0000000..4f15d8f
+index 0000000..b0b93fd
 --- /dev/null
 +++ b/pkg/network/webrtc/pacer.go
-@@ -0,0 +1,82 @@
+@@ -0,0 +1,131 @@
 +// In-frame packet pacing (patch 0028). The stack deliberately runs GCC with a NoOpPacer — a
 +// leaky-bucket pacer queues and re-times RTP, which is exactly the latency this project exists to
 +// avoid, and on an idle LAN wire-speed bursts are harmless. But off-LAN they are not: each encoded
@@ -5991,6 +5999,7 @@ index 0000000..4f15d8f
 +	"time"
 +
 +	"github.com/pion/interceptor"
++	"github.com/pion/rtcp"
 +	"github.com/pion/rtp"
 +)
 +
@@ -6014,32 +6023,80 @@ index 0000000..4f15d8f
 +// ~1200-byte payloads, i.e. the largest remaining burst a paced stream presents to a queue.
 +const pacePktGroup = 8
 +
++// ── Loss-triggered pacing, per viewer (2026-10-03) ──────────────────────────────────────────────────
++// Room-wide pacing costs EVERY viewer latency: measured on a DOS room at the 40 Mbps ceiling, an 8 ms
++// window raised the receive jitter buffer from ~10 ms to 26 (Chrome) / 60 (Edge) / 42 ms (Firefox 157).
++// Unpaced, Chrome and Edge lost nothing while Firefox 157 lost ~120 packets in 40 s on the same machine
++// (its receive path overflows on wire-speed bursts), each loss costing a keyframe request. So pacing is a
++// per-viewer remedy, not a room setting: a viewer's stream goes out unpaced until THAT viewer reports
++// packet loss (an RTCP NACK on its PeerConnection), then it is paced for the rest of its session — the
++// receive path's capacity is a property of the device, and releasing it on a timer would just oscillate
++// (unpace → lose → re-pace). The room's own `pace` still applies on top (the larger window wins).
++var lossPaceMs atomic.Int32
++
++// SetLossPacing sets the window (ms, 0 = off) a viewer's stream is paced with once it has reported packet
++// loss. From config (webrtc.lossPacingMs); process-global like paceSleeps.
++func SetLossPacing(ms int) { lossPaceMs.Store(int32(min(max(ms, 0), 20))) }
++
 +type pacerFactory struct{}
 +
 +func (pacerFactory) NewInterceptor(_ string) (interceptor.Interceptor, error) {
 +	return &pacer{}, nil
 +}
 +
-+type pacer struct{ interceptor.NoOp }
++// pacer is one PeerConnection's (= one viewer's) interceptor: it sees that viewer's RTCP, so it can tell
++// when THIS viewer starts losing packets.
++type pacer struct {
++	interceptor.NoOp
++	lossy atomic.Bool
++}
++
++func (p *pacer) BindRTCPReader(reader interceptor.RTCPReader) interceptor.RTCPReader {
++	return interceptor.RTCPReaderFunc(func(b []byte, a interceptor.Attributes) (int, interceptor.Attributes, error) {
++		n, attr, err := reader.Read(b, a)
++		if err == nil && !p.lossy.Load() && lossPaceMs.Load() > 0 {
++			if pkts, perr := rtcp.Unmarshal(b[:n]); perr == nil {
++				for _, pkt := range pkts {
++					if _, ok := pkt.(*rtcp.TransportLayerNack); ok {
++						p.lossy.Store(true)
++						break
++					}
++				}
++			}
++		}
++		return n, attr, err
++	})
++}
 +
 +func (p *pacer) BindLocalStream(info *interceptor.StreamInfo, writer interceptor.RTPWriter) interceptor.RTPWriter {
 +	// Video only: audio is 1 small packet per 10 ms frame and rides its own PeerConnection.
 +	if !strings.HasPrefix(info.MimeType, "video/") {
 +		return writer
 +	}
-+	return &pacedWriter{next: writer}
++	return &pacedWriter{next: writer, lossy: &p.lossy}
 +}
 +
 +// pacedWriter spaces one bound stream's packets. Per-peer state is correct: each viewer's stream
 +// is bound (and therefore paced) independently.
 +type pacedWriter struct {
-+	next interceptor.RTPWriter
-+	pkts int // packets sent in the current frame's burst
-+	naps int // pauses taken in the current frame's burst
++	next  interceptor.RTPWriter
++	lossy *atomic.Bool // this viewer has reported packet loss (see pacer.BindRTCPReader)
++	pkts  int          // packets sent in the current frame's burst
++	naps  int          // pauses taken in the current frame's burst
++}
++
++// paceCap is the pause budget for this viewer's next frame: the room's window, or the loss window once this
++// viewer has reported loss, whichever is larger.
++func (w *pacedWriter) paceCap() int {
++	c := int(paceSleeps.Load())
++	if w.lossy != nil && w.lossy.Load() {
++		c = max(c, int(lossPaceMs.Load()))
++	}
++	return c
 +}
 +
 +func (w *pacedWriter) Write(header *rtp.Header, payload []byte, attributes interceptor.Attributes) (int, error) {
-+	if cap := int(paceSleeps.Load()); cap > 0 {
++	if cap := w.paceCap(); cap > 0 {
 +		if w.pkts > 0 && w.pkts%pacePktGroup == 0 && w.naps < cap {
 +			time.Sleep(time.Millisecond)
 +			w.naps++
@@ -6050,6 +6107,77 @@ index 0000000..4f15d8f
 +		}
 +	}
 +	return w.next.Write(header, payload, attributes)
++}
+diff --git a/pkg/network/webrtc/pacer_loss_test.go b/pkg/network/webrtc/pacer_loss_test.go
+new file mode 100644
+index 0000000..684a14e
+--- /dev/null
++++ b/pkg/network/webrtc/pacer_loss_test.go
+@@ -0,0 +1,65 @@
++package webrtc
++
++import (
++	"testing"
++
++	"github.com/pion/interceptor"
++	"github.com/pion/rtcp"
++)
++
++// A viewer is paced only after IT reports packet loss: the room's window still applies to everyone, the loss
++// window only to a viewer whose PeerConnection has sent a NACK — Chrome/Edge viewers that never lose packets
++// must keep the unpaced (lowest-latency) stream.
++func TestLossPacing_OnlyAfterThisViewersNack(t *testing.T) {
++	t.Cleanup(func() { SetPacing(0); SetLossPacing(0) })
++	SetPacing(0)
++	SetLossPacing(8)
++
++	p := &pacer{}
++	w := p.BindLocalStream(&interceptor.StreamInfo{MimeType: "video/AV1"}, interceptor.RTPWriterFunc(nil)).(*pacedWriter)
++	if c := w.paceCap(); c != 0 {
++		t.Fatalf("a viewer with no loss must be unpaced, got cap %d", c)
++	}
++
++	// Feed this viewer's RTCP a receiver report (not loss), then a NACK.
++	feed := func(pkt rtcp.Packet) {
++		raw, err := rtcp.Marshal([]rtcp.Packet{pkt})
++		if err != nil {
++			t.Fatal(err)
++		}
++		r := p.BindRTCPReader(interceptor.RTCPReaderFunc(func(b []byte, a interceptor.Attributes) (int, interceptor.Attributes, error) {
++			return copy(b, raw), a, nil
++		}))
++		buf := make([]byte, 1500)
++		if _, _, err := r.Read(buf, nil); err != nil {
++			t.Fatal(err)
++		}
++	}
++	feed(&rtcp.ReceiverReport{SSRC: 1})
++	if c := w.paceCap(); c != 0 {
++		t.Fatalf("a receiver report is not loss, got cap %d", c)
++	}
++	feed(&rtcp.TransportLayerNack{SenderSSRC: 1, MediaSSRC: 2, Nacks: []rtcp.NackPair{{PacketID: 100}}})
++	if c := w.paceCap(); c != 8 {
++		t.Fatalf("after this viewer's NACK it must be paced at the loss window, got cap %d", c)
++	}
++
++	// Another viewer (another PeerConnection's pacer) is untouched.
++	other := (&pacer{}).BindLocalStream(&interceptor.StreamInfo{MimeType: "video/AV1"}, interceptor.RTPWriterFunc(nil)).(*pacedWriter)
++	if c := other.paceCap(); c != 0 {
++		t.Fatalf("one viewer's loss paced another viewer, cap %d", c)
++	}
++
++	// The room's own window still wins when it is larger.
++	SetPacing(12)
++	if c := w.paceCap(); c != 12 {
++		t.Fatalf("room window 12 must win over loss window 8, got %d", c)
++	}
++
++	// Off means off.
++	SetPacing(0)
++	SetLossPacing(0)
++	if c := w.paceCap(); c != 0 {
++		t.Fatalf("loss pacing disabled must not pace, got %d", c)
++	}
 +}
 diff --git a/pkg/network/webrtc/playoutdelay.go b/pkg/network/webrtc/playoutdelay.go
 new file mode 100644
@@ -6903,10 +7031,10 @@ index 0000000..53b1fd8
 +}
 diff --git a/pkg/network/webrtc/viewer.go b/pkg/network/webrtc/viewer.go
 new file mode 100644
-index 0000000..29a6017
+index 0000000..a8484f5
 --- /dev/null
 +++ b/pkg/network/webrtc/viewer.go
-@@ -0,0 +1,108 @@
+@@ -0,0 +1,111 @@
 +package webrtc
 +
 +import (
@@ -7010,13 +7138,16 @@ index 0000000..29a6017
 +// so it can neither size the storm nor name the peer.
 +func (p *Peer) PliCount() int64 { return p.pliRecv.Load() }
 +
++// NackCount is the number of RTCP NACK packets this peer has sent (packet loss it asked to be repaired).
++func (p *Peer) NackCount() int64 { return p.nackRecv.Load() }
++
 +// InputOnly reports a local co-op controller seat: no video track, so not a viewer.
 +func (p *Peer) InputOnly() bool { return p.inputOnly }
 +
 +// ReportCount is how many viewer reports this peer has sent (for the close summary).
 +func (p *Peer) ReportCount() int64 { return p.reports.Load() }
 diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
-index b342b6b..0d5183e 100644
+index b342b6b..fb0c2c6 100644
 --- a/pkg/network/webrtc/webrtc.go
 +++ b/pkg/network/webrtc/webrtc.go
 @@ -4,11 +4,15 @@ import (
@@ -7035,7 +7166,7 @@ index b342b6b..0d5183e 100644
  	"github.com/pion/webrtc/v4"
  	"github.com/pion/webrtc/v4/pkg/media"
  )
-@@ -16,21 +20,145 @@ import (
+@@ -16,21 +20,148 @@ import (
  type Peer struct {
  	api *ApiFactory
  	c   *webrtc.PeerConnection
@@ -7090,6 +7221,9 @@ index b342b6b..0d5183e 100644
 +	// Patch 0047 (viewer-driven delivery): raw PLI/FIR count (before the room-wide limiter), the latest
 +	// viewer report, and how many reports arrived. See viewer.go.
 +	pliRecv atomic.Int64
++	// nackRecv: RTCP NACK packets this peer sent — its browser saying "I am missing packets". Read by the
++	// adaptive controller to tell a LOSS-driven keyframe request from a decoder-driven one (see adaptive.go).
++	nackRecv atomic.Int64
 +	viewer  atomic.Pointer[ViewerReport]
 +	reports atomic.Int64
 +	// pendingNanos is the summed duration of the frames we dropped for this peer since its last sent
@@ -7181,7 +7315,7 @@ index b342b6b..0d5183e 100644
  var DefaultDataChannelParams = webrtc.DataChannelInit{
  	ID:             new(uint16),
  	Negotiated:     new(true),
-@@ -45,23 +173,29 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
+@@ -45,23 +176,29 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
  			Str(logger.DirectionField, "").
  			Str(logger.ClientField, ""),
  	)
@@ -7214,7 +7348,7 @@ index b342b6b..0d5183e 100644
  		return
  	}
  
-@@ -69,6 +203,9 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+@@ -69,6 +206,9 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
  		p.log.Debug().Str("state", pcs.String()).Msg("rtc [connection] state change")
  		if pcs == webrtc.PeerConnectionStateConnected {
  			p.log.Info().Str(logger.DirectionField, "rtc").Str(logger.ClientField, "").Msg("(connected)")
@@ -7224,7 +7358,7 @@ index b342b6b..0d5183e 100644
  		}
  	})
  	p.c.OnICECandidate(func(ice *webrtc.ICECandidate) {
-@@ -96,12 +233,50 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+@@ -96,12 +236,50 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
  
  	p.c.OnDataChannel(func(ch *webrtc.DataChannel) { p.log.Debug().Msgf("rtc [chan] [%s] remote", ch.Label()) })
  
@@ -7275,7 +7409,7 @@ index b342b6b..0d5183e 100644
  		if len(data) != 0 && p.onMessage != nil {
  			p.onMessage(data)
  		}
-@@ -143,8 +318,93 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
+@@ -143,8 +321,93 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
  	return encoded, nil
  }
  
@@ -7369,7 +7503,7 @@ index b342b6b..0d5183e 100644
  		candidate, err := fromJson[webrtc.ICECandidateInit](*ice)
  		if err != nil {
  			return err
-@@ -153,6 +413,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
+@@ -153,6 +416,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
  		return p.c.AddICECandidate(candidate)
  	}
  	if sdp != nil {
@@ -7387,7 +7521,7 @@ index b342b6b..0d5183e 100644
  		answer, err := fromJson[webrtc.SessionDescription](*sdp)
  		if err != nil {
  			return err
-@@ -163,6 +434,9 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
+@@ -163,6 +437,9 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
  	return nil
  }
  
@@ -7397,7 +7531,7 @@ index b342b6b..0d5183e 100644
  func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSample, error) {
  	codec = strings.ToLower(codec)
  	var mime string
-@@ -171,11 +445,26 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
+@@ -171,11 +448,26 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
  	case "audio/opus":
  		mime = webrtc.MimeTypeOpus
  	case "video/h264":
@@ -7425,7 +7559,7 @@ index b342b6b..0d5183e 100644
  	default:
  		return nil, fmt.Errorf("unsupported codec %s:%s", id, codec)
  	}
-@@ -221,17 +510,131 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
+@@ -221,17 +513,131 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
  }
  
  func (p *Peer) SendAudio(dat []byte, dur time.Duration) {
@@ -7559,7 +7693,7 @@ index b342b6b..0d5183e 100644
  func (p *Peer) SendData(data []byte) { _ = p.d.Send(data) }
  
  func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) error) error {
-@@ -249,7 +652,47 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
+@@ -249,7 +655,47 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
  	return nil
  }
  
@@ -7607,7 +7741,7 @@ index b342b6b..0d5183e 100644
  	if p.c == nil {
  		return
  	}
-@@ -261,6 +704,15 @@ func (p *Peer) Disconnect() {
+@@ -261,6 +707,15 @@ func (p *Peer) Disconnect() {
  }
  
  func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
@@ -7623,7 +7757,7 @@ index b342b6b..0d5183e 100644
  	if p.v, err = newTrack("video", "video", vCodec); err != nil {
  		return err
  	}
-@@ -274,20 +726,49 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
+@@ -274,20 +729,51 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
  	if _, err = p.c.AddTransceiverFromTrack(p.v, sendOnly); err != nil {
  		return err
  	}
@@ -7666,6 +7800,8 @@ index b342b6b..0d5183e 100644
 +				}
 +				for _, pkt := range pkts {
 +					switch pkt.(type) {
++					case *rtcp.TransportLayerNack:
++						p.nackRecv.Add(1)
 +					case *rtcp.PictureLossIndication, *rtcp.FullIntraRequest:
 +						p.pliRecv.Add(1) // per peer, before the room-wide limiter (patch 0047)
 +						if n := requestKeyframeRateLimited(); n > 0 {
@@ -7676,7 +7812,7 @@ index b342b6b..0d5183e 100644
  			}
  		}()
  	}
-@@ -313,3 +794,227 @@ func toJson[T any](data T) (string, error) {
+@@ -313,3 +799,227 @@ func toJson[T any](data T) (string, error) {
  	}
  	return string(b), nil
  }
@@ -10205,10 +10341,10 @@ index 0000000..a78e01a
 +}
 diff --git a/pkg/worker/adaptive.go b/pkg/worker/adaptive.go
 new file mode 100644
-index 0000000..95738b4
+index 0000000..e4c1055
 --- /dev/null
 +++ b/pkg/worker/adaptive.go
-@@ -0,0 +1,522 @@
+@@ -0,0 +1,532 @@
 +package worker
 +
 +import (
@@ -10276,6 +10412,7 @@ index 0000000..95738b4
 +// adaptivePeer is the slice of a WebRTC peer the controller reads (svcPeer embeds it).
 +type adaptivePeer interface {
 +	PliCount() int64
++	NackCount() int64
 +	Viewer() (webrtc.ViewerReport, bool)
 +	LastViewer() (r webrtc.ViewerReport, fresh, ok bool)
 +	InputOnly() bool
@@ -10338,6 +10475,8 @@ index 0000000..95738b4
 +
 +type adaptPeerState struct {
 +	pliHist     [adaptPliWindow + 1]int64 // ring of cumulative PLI counts, one per tick
++	nackHist    [adaptPliWindow + 1]int64 // ring of cumulative NACK counts, same ticks
++	nackWin     int64                     // NACKs in the last window (for the distress log line)
 +	histN       int
 +	deficit     int // consecutive decode-deficit ticks
 +	layerCapped bool
@@ -10362,23 +10501,30 @@ index 0000000..95738b4
 +}
 +
 +// distress classifies one viewer this tick (pure apart from st's counters). sameHost: no network between us.
-+func (st *adaptPeerState) distress(pliNow int64, rep webrtc.ViewerReport, hasRep, sameHost bool) (weak, strong bool) {
-+	// PLI window: cumulative count now minus the count adaptPliWindow ticks ago.
++func (st *adaptPeerState) distress(pliNow, nackNow int64, rep webrtc.ViewerReport, hasRep, sameHost bool) (weak, strong bool) {
++	// PLI and NACK windows: cumulative count now minus the count adaptPliWindow ticks ago.
 +	idx := st.histN % len(st.pliHist)
 +	st.pliHist[idx] = pliNow
++	st.nackHist[idx] = nackNow
 +	st.histN++
-+	old := st.pliHist[st.histN%len(st.pliHist)]
++	old, oldNack := st.pliHist[st.histN%len(st.pliHist)], st.nackHist[st.histN%len(st.nackHist)]
 +	if st.histN <= adaptPliWindow {
-+		old = st.pliHist[0]
++		old, oldNack = st.pliHist[0], st.nackHist[0]
 +	}
 +	pliWin := pliNow - old
++	st.nackWin = nackNow - oldNack
 +	if hasRep && rep.HasFps && rep.RecvFps >= adaptMinRecvFps && rep.DecodedFps < rep.RecvFps*adaptDecodeFrac {
 +		st.deficit++
 +	} else {
 +		st.deficit = 0
 +	}
 +	weak = pliWin >= adaptPliWeak
-+	strong = st.deficit >= adaptDeficitTicks || (weak && sameHost)
++	// A same-host viewer's keyframe requests used to be strong on their own ("there is no network to blame").
++	// There is a receive path, though: Firefox drops unpaced same-host bursts at the room ceiling (measured
++	// 2026-10-03: 175-800 packets lost in 40 s, Chrome 0, decoded 100% of what arrived), and every loss costs
++	// a keyframe request — so same-host PLIs shrank the room for everyone over packet loss. They count as the
++	// DECODER's distress only when the viewer asked for no retransmissions in the same window.
++	strong = st.deficit >= adaptDeficitTicks || (weak && sameHost && st.nackWin == 0)
 +	return weak || strong, strong
 +}
 +
@@ -10506,7 +10652,7 @@ index 0000000..95738b4
 +			// Hidden: no vote on the cap, no distress. Keep the PLI history moving so a return to the tab
 +			// does not read the whole hidden period's PLIs as one fresh burst.
 +			st.hiddenTicks++
-+			st.distress(st.pliTotal, webrtc.ViewerReport{}, false, false)
++			st.distress(st.pliTotal, p.NackCount(), webrtc.ViewerReport{}, false, false)
 +			st.deficit = 0
 +			continue
 +		}
@@ -10517,7 +10663,7 @@ index 0000000..95738b4
 +		} else {
 +			unreported++ // reported, but cannot measure its display: treat as unknown (no cap)
 +		}
-+		weak, strong := st.distress(st.pliTotal, rep, has, tp.sameHost)
++		weak, strong := st.distress(st.pliTotal, p.NackCount(), rep, has, tp.sameHost)
 +		if weak {
 +			anyDistress = true
 +			a.histFor(p).weakTicks++
@@ -10534,8 +10680,8 @@ index 0000000..95738b4
 +				if st.restoredAt > 0 && now-st.restoredAt <= adaptLayerRepin {
 +					st.pinned = true
 +				}
-+				a.log.Info().Msgf("abr: distress kind=%s dev=%s pli=%d/%ds decoded=%s hidden=false (rung: layer cap%s)",
-+					map[bool]string{true: "strong", false: "weak"}[strong], peerDesc(p), st.pliWindow(), adaptPliWindow,
++				a.log.Info().Msgf("abr: distress kind=%s dev=%s pli=%d/%ds nack=%d decoded=%s hidden=false (rung: layer cap%s)",
++					map[bool]string{true: "strong", false: "weak"}[strong], peerDesc(p), st.pliWindow(), adaptPliWindow, st.nackWin,
 +					decodedPct(rep, has), map[bool]string{true: ", pinned for the room", false: ""}[st.pinned])
 +			case weak:
 +				st.layerClean = 0
@@ -10733,10 +10879,10 @@ index 0000000..95738b4
 +}
 diff --git a/pkg/worker/adaptive_test.go b/pkg/worker/adaptive_test.go
 new file mode 100644
-index 0000000..ce15ca9
+index 0000000..655318d
 --- /dev/null
 +++ b/pkg/worker/adaptive_test.go
-@@ -0,0 +1,468 @@
+@@ -0,0 +1,501 @@
 +package worker
 +
 +import (
@@ -10835,23 +10981,33 @@ index 0000000..ce15ca9
 +	st := &adaptPeerState{}
 +	var weak, strong bool
 +	for i := int64(0); i <= 10; i++ {
-+		weak, strong = st.distress(i, rep(60, 60), true, false)
++		weak, strong = st.distress(i, 0, rep(60, 60), true, false)
 +	}
 +	if !weak || strong {
 +		t.Fatalf("remote PLI storm without deficit: weak=%v strong=%v, want weak only", weak, strong)
 +	}
-+	// The same storm from a SAME-HOST viewer is strong: there is no network to blame.
++	// The same storm from a SAME-HOST viewer that asked for no retransmissions is strong: nothing was lost,
++	// so the decoder is asking.
 +	st = &adaptPeerState{}
 +	for i := int64(0); i <= 10; i++ {
-+		weak, strong = st.distress(i, webrtc.ViewerReport{}, false, true)
++		weak, strong = st.distress(i, 0, webrtc.ViewerReport{}, false, true)
 +	}
 +	if !strong {
-+		t.Fatal("same-host PLI storm must be strong")
++		t.Fatal("same-host PLI storm with no packet loss must be strong")
++	}
++	// ...but a same-host storm that comes WITH NACKs is packet loss on the viewer's receive path (Firefox drops
++	// unpaced same-host bursts) — weak, so it can never shrink the room for everyone.
++	st = &adaptPeerState{}
++	for i := int64(0); i <= 10; i++ {
++		weak, strong = st.distress(i, i*5, rep(60, 60), true, true)
++	}
++	if !weak || strong {
++		t.Fatalf("same-host PLIs with NACKs: weak=%v strong=%v, want weak only", weak, strong)
 +	}
 +	// A decode deficit for 3 ticks is strong even with no PLIs.
 +	st = &adaptPeerState{}
 +	for i := 0; i < 3; i++ {
-+		_, strong = st.distress(0, rep(60, 30), true, false)
++		_, strong = st.distress(0, 0, rep(60, 30), true, false)
 +	}
 +	if !strong {
 +		t.Fatal("3 ticks decoding half of what arrives must be strong")
@@ -10859,7 +11015,7 @@ index 0000000..ce15ca9
 +	// A static, deduped screen receives ~2 fps: the ratio is noise there and must not count.
 +	st = &adaptPeerState{}
 +	for i := 0; i < 5; i++ {
-+		weak, strong = st.distress(0, rep(2, 1), true, false)
++		weak, strong = st.distress(0, 0, rep(2, 1), true, false)
 +	}
 +	if weak || strong {
 +		t.Fatal("a near-idle stream is not distress")
@@ -10870,13 +11026,15 @@ index 0000000..ce15ca9
 +
 +type fakeViewer struct {
 +	pli       int64
++	nack      int64
 +	rep       webrtc.ViewerReport
 +	hasRep    bool
 +	inputOnly bool
 +	stale     bool // the report exists but is older than the TTL (a throttled hidden tab)
 +}
 +
-+func (f *fakeViewer) PliCount() int64 { return f.pli }
++func (f *fakeViewer) PliCount() int64  { return f.pli }
++func (f *fakeViewer) NackCount() int64 { return f.nack }
 +func (f *fakeViewer) Viewer() (webrtc.ViewerReport, bool) {
 +	if f.stale {
 +		return webrtc.ViewerReport{}, false
@@ -11203,6 +11361,27 @@ index 0000000..ce15ca9
 +	var nilCtl *adaptiveCtl
 +	if h := nilCtl.peerVerdict(ff); h != (adaptPeerHist{}) {
 +		t.Fatal("a room without a controller reports no distress")
++	}
++}
++
++// The live failure this guards (2026-10-03): Firefox on the worker's own machine loses unpaced packets, asks
++// for keyframes, and decodes 100% of what arrives — the room must not shrink for that.
++func TestAdaptiveRoom_SameHostPacketLossNeverRescales(t *testing.T) {
++	app := &fakeApp{base: 3}
++	ctl := newTestCtl(app, allOn, false)
++	ff := &fakeViewer{}
++	ff.report(60, 75, 75, false)
++	peers := []adaptTickPeer{{p: ff, sameHost: true}}
++	for now := 1; now <= 40; now++ {
++		ff.pli += 1
++		ff.nack += 6
++		ctl.tick(now, peers)
++	}
++	if app.rebuilds != 0 || app.cap != 0 {
++		t.Fatalf("loss-driven keyframe requests rescaled the room: cap=%v rebuilds=%d", app.cap, app.rebuilds)
++	}
++	if st := ctl.peers[ff]; st == nil || !st.layerCapped {
++		t.Fatal("the lossy viewer should still get the per-viewer layer cap (fewer packets for it alone)")
 +	}
 +}
 diff --git a/pkg/worker/caged/app/app.go b/pkg/worker/caged/app/app.go
