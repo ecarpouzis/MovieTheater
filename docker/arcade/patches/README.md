@@ -1149,3 +1149,12 @@ controller's `averageLoss` from `SendSideBWE.GetStats()`, read once per cut: hig
 **Deployed 2026-10-03** to all three workers, sha md5 `3C8FA5C6F1A9F9891499D740C1E24453` (backups
 `worker.pre-congv2.exe`, md5 `19D4ED78…` = fork `81cc148`): GL 1 and GL 2 each closed a harness room with
 `congV2=1`; capture recycled clean (no capture room run). Owed: the phone A/B on real Wi-Fi.
+
+**r2 the same evening (fork `e4920b2`, md5 `CB51607331DA602A87351164D9453199`, all three workers recycled; the r1
+image is kept as `worker.congv2-candidate.exe` in the GL bin and `worker.congv2-r1.exe` in the capture bin).** Review
+finding: the climb exit tested `cur` alone, so a 70%-clamped cut that landed above 115% of the wall it had just
+minted (24846 -> 17392 over 12423 = 140%) forgot that wall on the next tick as a phantom "exit" unless a further cut
+re-minted it first — the replay passed only because the staircase did. The exit now requires `rose` (the last rate
+change was an up-step, cleared by every cut): after a clamped cut the room holds, creeps once, and only then may
+exit. Test `TestCongClampedCutAboveExitLineKeepsWall`. Reading rule: a `wallExits=` count on a room that never crept
+above its wall is this bug, not the link.

@@ -9367,10 +9367,10 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..02ed53a
+index 0000000..410698d
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,1468 @@
+@@ -0,0 +1,1477 @@
 +package worker
 +
 +import (
@@ -10575,6 +10575,11 @@ index 0000000..02ed53a
 +	hold  int // remaining probe-hold ticks
 +	clear int // v1 only: consecutive healthy ticks at/above the wall
 +	peer  any // v2 only: identity of the peer whose estimate minted the wall (nil = none recorded)
++	// v2 only: the last rate change was an UP-step. The climb exit requires it: a 70%-clamped cut can
++	// leave cur above abrCongExitPct of a freshly minted wall (24846 cut to 17392 over a 12423 wall),
++	// and that is the wall's first measurement, not proof it is stale. Only the room's own creep
++	// carrying it to the exit line counts. Cleared by every cut.
++	rose bool
 +
 +	// Summary counters (observability only).
 +	episodes int // 0 -> wall transitions (v1's congEpisodes meaning; under v2 a wall BIRTH)
@@ -10586,13 +10591,15 @@ index 0000000..02ed53a
 +// reset clears the wall and everything about it (a ceiling commit: the wall was learned against a
 +// different frame size, so it no longer describes this room). Counters are kept.
 +func (c *congMemory) reset() {
-+	c.wall, c.hold, c.clear, c.peer = 0, 0, 0, nil
++	c.wall, c.hold, c.clear, c.peer, c.rose = 0, 0, 0, nil, false
 +}
 +
 +// observe runs once per tick that has estimating peers, BEFORE the rate decision. v2 only: drops the
 +// wall when the minting peer is gone, or when the room's own creep has proven it stale (cur at
-+// abrCongExitPct of it — every tick getting there was a tick without a confirmed cut, since a cut at or
-+// above the wall re-mints it). Returns "departed"/"exit" when it forgot the wall, "" otherwise.
++// abrCongExitPct of it, reached by an UP-step — every tick getting there was a tick without a confirmed
++// cut, since a cut at or above the wall re-mints it, and a cut clears `rose`). A clamped cut that lands
++// cur above the exit line does NOT exit: the wall was just measured. Returns "departed"/"exit" when it
++// forgot the wall, "" otherwise.
 +func (c *congMemory) observe(cur int, minterPresent bool) string {
 +	if !c.v2 || c.wall == 0 {
 +		return ""
@@ -10602,7 +10609,7 @@ index 0000000..02ed53a
 +		c.departs++
 +		return "departed"
 +	}
-+	if cur*100 >= c.wall*abrCongExitPct {
++	if c.rose && cur*100 >= c.wall*abrCongExitPct {
 +		c.reset()
 +		c.forgets++
 +		return "exit"
@@ -10671,6 +10678,7 @@ index 0000000..02ed53a
 +	}
 +	held := c.hold > 0 // the hold the cut lands in (it restarts below either way)
 +	c.hold = abrCongHoldTicks
++	c.rose = false // whatever the wall is after this cut, the room has not climbed to it yet
 +	if grace {
 +		return "grace"
 +	}
@@ -10836,15 +10844,16 @@ index 0000000..02ed53a
 +		out.act = a.cm.onCut(cur, out.target, in.floor, minter, grace)
 +	} else {
 +		a.ds.up()
++		a.cm.rose = true // an up-step: the climb exit may now count this rate (observe, next tick)
 +	}
 +	return out
 +}
 diff --git a/pkg/worker/abr_sim_test.go b/pkg/worker/abr_sim_test.go
 new file mode 100644
-index 0000000..06dbcef
+index 0000000..d655541
 --- /dev/null
 +++ b/pkg/worker/abr_sim_test.go
-@@ -0,0 +1,648 @@
+@@ -0,0 +1,683 @@
 +package worker
 +
 +import (
@@ -11186,6 +11195,41 @@ index 0000000..06dbcef
 +	o := a.decide(abrTickIn{cur: cur, ceil: 38657, floor: abrFloorKbps, servable: cur, binding: "p", minterPresent: true})
 +	if o.forgot != "exit" || a.cm.wall != 0 || o.next != cur+cur*abrRampPct/100 {
 +		t.Fatalf("at %d (%d%% of %d): forgot %q wall %d next %d, want exit and +15%%", cur, cur*100/w, w, o.forgot, a.cm.wall, o.next)
++	}
++}
++
++// A 70%-clamped cut can leave cur ABOVE the exit line of the wall it just minted (24846 -> 17392 over
++// 12423: 140%). That is the wall's first measurement, not proof it is stale: the next tick must keep it.
++// Only the room's own creep reaching the line (an up-step) may exit — and a later cut re-arms that.
++func TestCongClampedCutAboveExitLineKeepsWall(t *testing.T) {
++	a := abrRate{cm: v2Mem(), ds: newDescentStat()}
++	o := a.decide(abrTickIn{cur: 24846, ceil: 38657, floor: abrFloorKbps, servable: 10558, binding: "p", minterPresent: true})
++	a.lowTicks = 2 // the tick above was the second low tick
++	o = a.decide(abrTickIn{cur: 24846, ceil: 38657, floor: abrFloorKbps, servable: 10558, binding: "p", minterPresent: true})
++	// 10558/0.85 = 12421 sits a hair under the 50% floor (12423), so the floor is what is minted.
++	const wall = 24846 * abrCongMinWallPct / 100
++	if !o.cut || o.next != 17392 || a.cm.wall != wall {
++		t.Fatalf("clamped cut: next %d wall %d act %q", o.next, a.cm.wall, o.act)
++	}
++	// Dead-band tick at 17392 (140% of the wall): the wall must survive.
++	o = a.decide(abrTickIn{cur: 17392, ceil: 38657, floor: abrFloorKbps, servable: 15500, binding: "p", minterPresent: true})
++	if o.forgot != "" || a.cm.wall != wall {
++		t.Fatalf("dead band above the exit line: forgot %q wall %d", o.forgot, a.cm.wall)
++	}
++	// Healthy ticks: hold (no change), then one 250 creep, and only THEN the exit.
++	for i := 0; i < abrCongHoldTicks; i++ {
++		o = a.decide(abrTickIn{cur: 17392, ceil: 38657, floor: abrFloorKbps, servable: 17392, binding: "p", minterPresent: true})
++		if o.forgot != "" || o.next != 17392 {
++			t.Fatalf("hold tick %d: forgot %q next %d", i, o.forgot, o.next)
++		}
++	}
++	o = a.decide(abrTickIn{cur: 17392, ceil: 38657, floor: abrFloorKbps, servable: 17392, binding: "p", minterPresent: true})
++	if o.forgot != "" || o.next != 17392+abrMinStepKbps {
++		t.Fatalf("first creep: forgot %q next %d", o.forgot, o.next)
++	}
++	o = a.decide(abrTickIn{cur: o.next, ceil: 38657, floor: abrFloorKbps, servable: o.next, binding: "p", minterPresent: true})
++	if o.forgot != "exit" || a.cm.wall != 0 {
++		t.Fatalf("after the creep: forgot %q wall %d", o.forgot, a.cm.wall)
 +	}
 +}
 +
