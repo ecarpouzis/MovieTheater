@@ -113,6 +113,10 @@ describe("videoProblemMessage", () => {
     expect(videoProblemMessage({ kind: "no-media", codec: "av1" }, "denied")).toMatch(/local network access/);
   });
 
+  it("tells a mismatched joiner to rejoin, not to change browsers", () => {
+    expect(videoProblemMessage({ kind: "mismatch", codec: "h264" })).toMatch(/join the room again/);
+  });
+
   it("falls back to a generic path message", () => {
     expect(videoProblemMessage({ kind: "no-media" }, "granted")).toMatch(/no picture is reaching this browser/);
   });

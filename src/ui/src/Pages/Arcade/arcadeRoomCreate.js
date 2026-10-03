@@ -177,6 +177,9 @@ const CODEC_NAME = { av1: "AV1", h264: "H.264" };
 /** What to tell a player whose room started but never showed a picture (cloudRetroClient's watchdog). */
 export function videoProblemMessage({ kind, codec } = {}, lnaState = null) {
   const name = CODEC_NAME[codec] || "this room's";
+  if (kind === "mismatch") {
+    return "This room's video settings changed while you were joining. Go back and join the room again.";
+  }
   if (kind === "codec" || kind === "not-decoding") {
     const other = codec === "av1" ? "H.264" : "AV1";
     return `The game is running, but this browser can't play ${name} video. Ask the host to restart the game with Codec: ${other}.`;

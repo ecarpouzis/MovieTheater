@@ -1966,6 +1966,9 @@ export function createCloudRetroSession(descriptor, opts) {
         // "codec-error:<codec>" (worker): this browser can't receive the room's codec — the peer was closed
         // worker-side, so say so instead of waiting on a frame that will never come.
         if (p.ice.startsWith("codec-error:")) { reportVideoProblem("codec", p.ice.slice(12)); return; }
+        // "codec-mismatch:<codec>" (worker): we negotiated a different codec than the room encodes — our join
+        // descriptor carried the wrong one. Rejoining fetches the right one.
+        if (p.ice.startsWith("codec-mismatch:")) { reportVideoProblem("mismatch", p.ice.slice(15)); return; }
         if (p.ice.startsWith("aux-sdp:")) await onAuxOffer(p.ice.slice(8));
         else if (p.ice.startsWith("aux-ice:")) await addAuxCandidate(p.ice.slice(8));
         else await addCandidate(p.ice);
