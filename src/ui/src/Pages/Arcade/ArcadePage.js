@@ -356,6 +356,8 @@ export default function ArcadePage({ userData }) {
         // A couple of snapshots read fine as rows; a pile becomes a searchable dropdown so the
         // right one is findable without scanning a long list.
         const useSnapPicker = snaps.length > 3;
+        // The game modal held its Start spinner until now; it gives way to the confirm.
+        closeGame();
         const modal = Modal.confirm({
           title: "How do you want to start?",
           icon: null,
@@ -567,14 +569,13 @@ export default function ArcadePage({ userData }) {
           renderers={renderers[modalCard.game.system] || []}
           initialVersionId={modalVersionId}
           onClose={closeGame}
-          // Both actions leave the browse tile: close the game modal first so the follow-on surface
-          // (the Continue/New-game confirm, or the saves manager) isn't stranded behind it at a lower
-          // z-index. This restores the exact pre-modal flow those surfaces were built for.
+          // Start keeps the modal OPEN, its Start button spinning (`creating`), until the next surface is
+          // ready: createRoom closes it the moment the Continue/Clean Start confirm opens (which would
+          // otherwise be stranded behind it at a lower z-index), and a direct start navigates into the
+          // room, which unmounts it. Closing on the tap left a phone staring at the bare lobby for the
+          // seconds the saves list (or the codec probe + POST) took — no sign anything was happening.
           onStart={(versionId, title, cheats, hwContext, controllerScheme, renderProfile, competitive) => {
-            // Grab the system BEFORE clearing the modal — the start-choice prompt needs it to know
-            // whether this core even has save-states to offer (psp/scummvm don't).
             const sys = modalCard?.game?.system;
-            closeGame();
             createRoom(versionId, title, cheats, hwContext, controllerScheme, renderProfile, competitive, sys);
           }}
           onManageSaves={(gameId, title) => { closeGame(); setManageSaves({ gameId, title }); }}
