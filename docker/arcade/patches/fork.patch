@@ -3366,10 +3366,10 @@ index 9e70576..5f5c29f 100644
  
  func (l Library) GetSupportedExtensions() []string { return l.Supported }
 diff --git a/pkg/config/webrtc.go b/pkg/config/webrtc.go
-index 007983f..5b506ae 100644
+index 007983f..5847137 100644
 --- a/pkg/config/webrtc.go
 +++ b/pkg/config/webrtc.go
-@@ -15,6 +15,18 @@ type Webrtc struct {
+@@ -15,6 +15,21 @@ type Webrtc struct {
  	IncludeLoopbackCandidate bool
  	SinglePort               int
  	LogLevel                 int
@@ -3384,6 +3384,9 @@ index 007983f..5b506ae 100644
 +		Enabled bool
 +		MinMs   int
 +		MaxMs   int
++		// MaxJitterMs: stamp only for a viewer whose receiver reports show interarrival jitter at most this (and
++		// no NACKs) — the per-viewer gate in playoutdelay.go. 0 = stamp every negotiating viewer.
++		MaxJitterMs int
 +	}
  }
  
@@ -5498,7 +5501,7 @@ index 0000000..c45dcce
 +	}
 +}
 diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
-index 99e02b8..812afba 100644
+index 99e02b8..7650ab7 100644
 --- a/pkg/network/webrtc/factory.go
 +++ b/pkg/network/webrtc/factory.go
 @@ -3,19 +3,51 @@ package webrtc
@@ -5553,7 +5556,7 @@ index 99e02b8..812afba 100644
  }
  
  type ModApiFun func(m *webrtc.MediaEngine, i *interceptor.Registry, s *webrtc.SettingEngine)
-@@ -27,6 +59,72 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -27,6 +59,73 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	}
  	i := &interceptor.Registry{}
  
@@ -5610,13 +5613,14 @@ index 99e02b8..812afba 100644
 +		if err = m.RegisterHeaderExtension(webrtc.RTPHeaderExtensionCapability{URI: PlayoutDelayURI}, webrtc.RTPCodecTypeVideo); err != nil {
 +			return
 +		}
-+		pd, pdErr := newPlayoutDelayFactory(conf.PlayoutDelay.MinMs, conf.PlayoutDelay.MaxMs)
++		pd, pdErr := newPlayoutDelayFactory(conf.PlayoutDelay.MinMs, conf.PlayoutDelay.MaxMs, conf.PlayoutDelay.MaxJitterMs,
++			func(f string, a ...any) { log.Info().Msgf(f, a...) })
 +		if pdErr != nil {
 +			return nil, pdErr
 +		}
 +		i.Add(pd)
-+		log.Info().Msgf("rtc: playout-delay extension ON (min %d ms, max %d ms) — Chrome renders on decode",
-+			conf.PlayoutDelay.MinMs, conf.PlayoutDelay.MaxMs)
++		log.Info().Msgf("rtc: playout-delay extension ON (min %d ms, max %d ms, per-viewer gate: jitter <= %d ms, 0 = none)",
++			conf.PlayoutDelay.MinMs, conf.PlayoutDelay.MaxMs, conf.PlayoutDelay.MaxJitterMs)
 +	}
 +	m.RegisterFeedback(webrtc.RTCPFeedback{Type: webrtc.TypeRTCPFBTransportCC}, webrtc.RTPCodecTypeVideo)
 +	if err = webrtc.ConfigureTWCCHeaderExtensionSender(m, i); err != nil {
@@ -5626,7 +5630,7 @@ index 99e02b8..812afba 100644
  	if conf.DisableDefaultInterceptors {
  		sender, err := report.NewSenderInterceptor()
  		if err != nil {
-@@ -49,6 +147,7 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -49,6 +148,7 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	if conf.IceLite {
  		s.SetLite(conf.IceLite)
  	}
@@ -5634,7 +5638,7 @@ index 99e02b8..812afba 100644
  	if conf.HasPortRange() {
  		if err = s.SetEphemeralUDPPortRange(conf.IcePorts.Min, conf.IcePorts.Max); err != nil {
  			return
-@@ -56,57 +155,314 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -56,57 +156,314 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	}
  	if conf.HasSinglePort() {
  		var l any
@@ -6235,51 +6239,138 @@ index 0000000..b57c9a1
 +}
 diff --git a/pkg/network/webrtc/playoutdelay.go b/pkg/network/webrtc/playoutdelay.go
 new file mode 100644
-index 0000000..a0bf812
+index 0000000..766dc34
 --- /dev/null
 +++ b/pkg/network/webrtc/playoutdelay.go
-@@ -0,0 +1,68 @@
-+// Playout-delay RTP header extension (arcade codec program B4, 2026-10-02).
+@@ -0,0 +1,158 @@
++// Playout-delay RTP header extension (arcade codec program B4, 2026-10-02/03).
 +//
-+// Chrome honours http://www.webrtc.org/experiments/rtp-hdrext/playout-delay: a sender-declared [min, max]
-+// render delay for the frames it carries. min=0 lets Chrome render a frame as soon as it is decoded instead
-+// of on its smoothed render clock; max bounds how much delay its jitter buffer may add. Cloud-gaming
-+// senders use it so the receiver stops trading latency for smoothness. Firefox does not negotiate it, so it
-+// is a Chrome-only lever — and an UNMEASURED one here: zero smoothing can show as judder on a jittery Wi-Fi
-+// link, which is why it ships OFF (webrtc.playoutDelay.enabled) until a headed A/B on real displays says
-+// which [min, max] lowers input-to-photon without hurting frame pacing.
++// Chromium (Chrome, Edge) and Firefox 157 all negotiate http://www.webrtc.org/experiments/rtp-hdrext/playout-delay:
++// a sender-declared [min, max] render delay for the frames it carries. min=max=0 puts Chrome on its fast path
++// (render on decode, no jitter buffer). Because that also removes all smoothing, it is stamped PER VIEWER, only while
++// that viewer's own receiver reports show a clean link (see the gate below); a viewer that never negotiates it is
++// sent exactly what it was before.
 +package webrtc
 +
 +import (
++	"fmt"
 +	"strings"
++	"sync"
++	"sync/atomic"
++	"time"
 +
 +	"github.com/pion/interceptor"
++	"github.com/pion/rtcp"
 +	"github.com/pion/rtp"
 +)
 +
 +// PlayoutDelayURI is the extension's SDP extmap URI.
 +const PlayoutDelayURI = "http://www.webrtc.org/experiments/rtp-hdrext/playout-delay"
 +
-+// playoutDelayFactory stamps every outgoing VIDEO packet with a fixed [min, max] playout delay (ms).
-+type playoutDelayFactory struct{ payload []byte }
++// ── Per-viewer gate (2026-10-03) ─────────────────────────────────────────────────────────────────
++// Measured on Chrome 154, same-host NES room: min=max=0 cut input-to-photon from ~29-43 ms to 16-19 ms (4 runs each)
++// and Chrome's jitter buffer from ~10 ms to 0.5 ms; max=100 did NOT engage the fast path. The cost: no jitter
++// buffer at all — 2-4 late frames per 1800 even on a clean link, and on a jittery (Wi-Fi/remote) link every jitter
++// spike and every retransmission it can no longer wait for would show as a stutter. So the extension is stamped
++// per viewer, only while THAT viewer's own receiver reports say its link is clean: interarrival jitter at most
++// maxJitterMs for playoutCleanReports reports in a row and no NACK for playoutHoldAfterBad. A NACK or jitter above
++// twice the threshold stops it at once, and Chrome is back on its ordinary smoothed path from the next packet.
++const (
++	playoutCleanReports = 3
++	playoutHoldAfterBad = 10 * time.Second
++)
++
++// playoutDelayFactory stamps outgoing VIDEO packets with a fixed [min, max] playout delay (ms).
++type playoutDelayFactory struct {
++	payload     []byte
++	maxJitterMs float64 // 0 = stamp always (no gate)
++	logf        func(format string, args ...any)
++}
 +
 +// newPlayoutDelayFactory builds the stamp once (10 ms units, 12 bits each: 0..40950 ms).
-+func newPlayoutDelayFactory(minMs, maxMs int) (*playoutDelayFactory, error) {
++func newPlayoutDelayFactory(minMs, maxMs, maxJitterMs int, logf func(string, ...any)) (*playoutDelayFactory, error) {
 +	clamp := func(ms int) uint16 { return uint16(min(max(ms, 0), 40950) / 10) }
 +	b, err := rtp.PlayoutDelayExtension{MinDelay: clamp(minMs), MaxDelay: clamp(maxMs)}.Marshal()
 +	if err != nil {
 +		return nil, err
 +	}
-+	return &playoutDelayFactory{payload: b}, nil
++	if logf == nil {
++		logf = func(string, ...any) {}
++	}
++	return &playoutDelayFactory{payload: b, maxJitterMs: float64(max(maxJitterMs, 0)), logf: logf}, nil
 +}
 +
 +func (f *playoutDelayFactory) NewInterceptor(_ string) (interceptor.Interceptor, error) {
-+	return &playoutDelay{payload: f.payload}, nil
++	p := &playoutDelay{payload: f.payload, maxJitterMs: f.maxJitterMs, logf: f.logf}
++	if f.maxJitterMs == 0 {
++		p.clean.Store(true)
++	}
++	return p, nil
 +}
 +
 +type playoutDelay struct {
 +	interceptor.NoOp
-+	payload []byte
++	payload     []byte
++	maxJitterMs float64
++	logf        func(string, ...any)
++
++	clean     atomic.Bool   // stamp while true
++	videoSSRC atomic.Uint32 // the bound video stream (receiver reports also cover audio when it shares the PC)
++
++	mu        sync.Mutex
++	cleanRuns int
++	lastBad   time.Time
++}
++
++// observe feeds one RTCP compound from this viewer into the gate.
++func (p *playoutDelay) observe(pkts []rtcp.Packet, now time.Time) {
++	if p.maxJitterMs == 0 {
++		return
++	}
++	ssrc := p.videoSSRC.Load()
++	p.mu.Lock()
++	defer p.mu.Unlock()
++	bad := func(why string) {
++		p.cleanRuns, p.lastBad = 0, now
++		if p.clean.Swap(false) {
++			p.logf("rtc: playout fast path OFF for ssrc %d — %s", ssrc, why)
++		}
++	}
++	for _, pkt := range pkts {
++		switch r := pkt.(type) {
++		case *rtcp.TransportLayerNack:
++			bad("the viewer is retransmitting (NACK)")
++		case *rtcp.ReceiverReport:
++			for _, rep := range r.Reports {
++				if ssrc == 0 || rep.SSRC != ssrc {
++					continue
++				}
++				jit := float64(rep.Jitter) / 90 // video RTP clock 90 kHz -> ms
++				switch {
++				case jit > 2*p.maxJitterMs:
++					bad(fmt.Sprintf("interarrival jitter %.1f ms", jit))
++				case jit <= p.maxJitterMs && now.Sub(p.lastBad) >= playoutHoldAfterBad:
++					if p.cleanRuns++; p.cleanRuns >= playoutCleanReports && !p.clean.Swap(true) {
++						p.logf("rtc: playout fast path ON for ssrc %d — interarrival jitter %.1f ms, no loss", ssrc, jit)
++					}
++				case jit > p.maxJitterMs:
++					p.cleanRuns = 0
++				}
++			}
++		}
++	}
++}
++
++func (p *playoutDelay) BindRTCPReader(reader interceptor.RTCPReader) interceptor.RTCPReader {
++	return interceptor.RTCPReaderFunc(func(b []byte, a interceptor.Attributes) (int, interceptor.Attributes, error) {
++		n, attr, err := reader.Read(b, a)
++		if err == nil && p.maxJitterMs > 0 {
++			if pkts, perr := rtcp.Unmarshal(b[:n]); perr == nil {
++				p.observe(pkts, time.Now())
++			}
++		}
++		return n, attr, err
++	})
 +}
 +
 +func (p *playoutDelay) BindLocalStream(info *interceptor.StreamInfo, writer interceptor.RTPWriter) interceptor.RTPWriter {
@@ -6288,11 +6379,14 @@ index 0000000..a0bf812
 +	}
 +	id := playoutDelayID(info.RTPHeaderExtensions)
 +	if id == 0 {
-+		return writer // not negotiated (Firefox, or an older Chrome): send exactly as before
++		return writer // not negotiated (an older browser): send exactly as before
 +	}
++	p.videoSSRC.Store(info.SSRC)
 +	return interceptor.RTPWriterFunc(func(h *rtp.Header, payload []byte, a interceptor.Attributes) (int, error) {
-+		if err := h.SetExtension(uint8(id), p.payload); err != nil {
-+			return 0, err
++		if p.clean.Load() {
++			if err := h.SetExtension(uint8(id), p.payload); err != nil {
++				return 0, err
++			}
 +		}
 +		return writer.Write(h, payload, a)
 +	})
@@ -6309,17 +6403,19 @@ index 0000000..a0bf812
 +}
 diff --git a/pkg/network/webrtc/playoutdelay_test.go b/pkg/network/webrtc/playoutdelay_test.go
 new file mode 100644
-index 0000000..277039b
+index 0000000..8883a34
 --- /dev/null
 +++ b/pkg/network/webrtc/playoutdelay_test.go
-@@ -0,0 +1,158 @@
+@@ -0,0 +1,213 @@
 +package webrtc
 +
 +import (
++	"fmt"
 +	"testing"
 +	"time"
 +
 +	"github.com/pion/interceptor"
++	"github.com/pion/rtcp"
 +	"github.com/pion/rtp"
 +	"github.com/pion/webrtc/v4"
 +	"github.com/pion/webrtc/v4/pkg/media"
@@ -6384,7 +6480,7 @@ index 0000000..277039b
 +		t.Fatal(err)
 +	}
 +	reg := &interceptor.Registry{}
-+	pd, err := newPlayoutDelayFactory(minMs, maxMs)
++	pd, err := newPlayoutDelayFactory(minMs, maxMs, 0, nil)
 +	if err != nil {
 +		t.Fatal(err)
 +	}
@@ -6459,7 +6555,7 @@ index 0000000..277039b
 +}
 +
 +func TestPlayoutDelay_ClampsToTheWireRange(t *testing.T) {
-+	f, err := newPlayoutDelayFactory(-5, 999999)
++	f, err := newPlayoutDelayFactory(-5, 999999, 0, nil)
 +	if err != nil {
 +		t.Fatal(err)
 +	}
@@ -6469,6 +6565,59 @@ index 0000000..277039b
 +	}
 +	if ext.MinDelay != 0 || ext.MaxDelay != 4095 {
 +		t.Fatalf("got %d / %d, want 0 / 4095", ext.MinDelay, ext.MaxDelay)
++	}
++}
++
++// The per-viewer gate: stamp only after clean receiver reports, stop at once on a NACK or a jitter spike, and only
++// re-arm after the hold. Reports for another SSRC (audio sharing the PC) are ignored.
++func TestPlayoutDelay_GateFollowsTheViewersLink(t *testing.T) {
++	var logs []string
++	f, err := newPlayoutDelayFactory(0, 0, 2, func(fm string, a ...any) { logs = append(logs, fmt.Sprintf(fm, a...)) })
++	if err != nil {
++		t.Fatal(err)
++	}
++	ic, _ := f.NewInterceptor("")
++	p := ic.(*playoutDelay)
++	p.videoSSRC.Store(42)
++	rr := func(ssrc uint32, jitterMs float64) []rtcp.Packet {
++		return []rtcp.Packet{&rtcp.ReceiverReport{Reports: []rtcp.ReceptionReport{{SSRC: ssrc, Jitter: uint32(jitterMs * 90)}}}}
++	}
++	t0 := time.Unix(5000, 0)
++	if p.clean.Load() {
++		t.Fatal("must start unstamped until the link is proven clean")
++	}
++	p.observe(rr(42, 0.5), t0)
++	p.observe(rr(42, 0.5), t0.Add(time.Second))
++	if p.clean.Load() {
++		t.Fatal("armed before 3 clean reports")
++	}
++	p.observe(rr(7, 50), t0.Add(1500*time.Millisecond)) // audio SSRC: ignored
++	p.observe(rr(42, 0.5), t0.Add(2*time.Second))
++	if !p.clean.Load() {
++		t.Fatal("3 clean reports must arm the fast path")
++	}
++	p.observe([]rtcp.Packet{&rtcp.TransportLayerNack{MediaSSRC: 42, Nacks: []rtcp.NackPair{{PacketID: 1}}}}, t0.Add(3*time.Second))
++	if p.clean.Load() {
++		t.Fatal("a NACK must stop stamping at once")
++	}
++	for i := 4; i < 10; i++ { // clean again, but inside the hold
++		p.observe(rr(42, 0.5), t0.Add(time.Duration(i)*time.Second))
++	}
++	if p.clean.Load() {
++		t.Fatal("re-armed inside the hold after a NACK")
++	}
++	for i := 14; i < 17; i++ {
++		p.observe(rr(42, 0.5), t0.Add(time.Duration(i)*time.Second))
++	}
++	if !p.clean.Load() {
++		t.Fatal("clean reports after the hold must re-arm")
++	}
++	p.observe(rr(42, 9), t0.Add(18*time.Second)) // jitter spike > 2x threshold
++	if p.clean.Load() {
++		t.Fatal("a jitter spike must stop stamping")
++	}
++	if len(logs) < 3 {
++		t.Fatalf("transitions should be logged, got %v", logs)
 +	}
 +}
 diff --git a/pkg/network/webrtc/plikeyframe.go b/pkg/network/webrtc/plikeyframe.go

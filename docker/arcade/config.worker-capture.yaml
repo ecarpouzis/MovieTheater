@@ -232,7 +232,13 @@ webrtc:
   # (minMs) and caps its jitter-buffer delay (maxMs). Chrome offers it (extmap playout-delay); Firefox does
   # not, and is untouched. OFF until a HEADED A/B on real displays (arcade-latency.mjs input-to-photon +
   # timeline-probe.mjs pacing, wired and Wi-Fi) picks [min, max]; registering it changes nothing until then.
+  # MEASURED 2026-10-03 (Chrome 154, same host): min=max=0 cut input-to-photon 29-43 -> 16-19 ms and the jitter
+  # buffer 10 -> 0.5 ms; max=100 does NOT engage Chrome's fast path. With no jitter buffer a jittery link would
+  # stutter, so it is stamped PER VIEWER only while that viewer's receiver reports show jitter <= maxJitterMs and
+  # no NACKs (pkg/network/webrtc/playoutdelay.go). Chrome, Edge and Firefox 157 all negotiate it (verified live:
+  # the gate armed at 0.5-1.0 ms jitter for each, and disarmed for Firefox on its first NACK).
   playoutDelay:
-    enabled: false
+    enabled: true
     minMs: 0
-    maxMs: 100
+    maxMs: 0
+    maxJitterMs: 2

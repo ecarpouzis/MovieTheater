@@ -2212,7 +2212,7 @@ encoder:
     # glcolorconvert proven to apply no gamma conversion (mid-grey stays 128). Cost: latency tracer
     # 1920x1584 -> 1280x960 @60, +0.25 ms median / +0.45 ms p95. OFF until verified in live rooms on both
     # GL ConfDirs (and with 0047 zeroCopyScale rebuilds); flip in BOTH worker-gl and worker-gl-2 together.
-    glNv12: false
+    glNv12: true
   list:
     # AV1 (patch 0024) — THE DEFAULT since 2026-07-09 (see encoder.video.codec above; h264 below is the
     # kept fallback for instant rollback / any future Safari need).
@@ -2386,7 +2386,13 @@ webrtc:
   # (minMs) and caps its jitter-buffer delay (maxMs). Chrome offers it (extmap playout-delay); Firefox does
   # not, and is untouched. OFF until a HEADED A/B on real displays (arcade-latency.mjs input-to-photon +
   # timeline-probe.mjs pacing, wired and Wi-Fi) picks [min, max]; registering it changes nothing until then.
+  # MEASURED 2026-10-03 (Chrome 154, same host): min=max=0 cut input-to-photon 29-43 -> 16-19 ms and the jitter
+  # buffer 10 -> 0.5 ms; max=100 does NOT engage Chrome's fast path. With no jitter buffer a jittery link would
+  # stutter, so it is stamped PER VIEWER only while that viewer's receiver reports show jitter <= maxJitterMs and
+  # no NACKs (pkg/network/webrtc/playoutdelay.go). Chrome, Edge and Firefox 157 all negotiate it (verified live:
+  # the gate armed at 0.5-1.0 ms jitter for each, and disarmed for Firefox on its first NACK).
   playoutDelay:
-    enabled: false
+    enabled: true
     minMs: 0
-    maxMs: 100
+    maxMs: 0
+    maxJitterMs: 2

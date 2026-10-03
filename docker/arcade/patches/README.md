@@ -1045,6 +1045,22 @@ and Edge 154 x2 untouched — 0 lost, no NACKs, jitter buffer 10-12 ms (one Edge
 not pacing). The `codec-error:` path was verified live too (`test-roms/codec-error-probe.mjs`: a Chrome whose offer
 omits AV1 gets "this browser can't play AV1 video" within 2 s; worker logs the refusal and closes the peer).
 
+**Night of 2026-10-03 — what went ON, measured live** (workers sha `0638E437` = fork `70c2a0e`; `535919c` is
+comment-only):
+- `encoder.video.glNv12: true` — decoded `fullRange` true on n64 / gc / ps2 / dc / psp, still true after live 0047
+  `zeroCopyScale` rebuilds (n64 1280x960→640x480, gc →640x528, ps2 →512x448), no pipeline errors; genesis (CPU head)
+  unchanged. `test-roms/colour-probe.mjs`.
+- `webrtc.playoutDelay {enabled, 0, 0, maxJitterMs 2}` with the per-viewer gate (`70c2a0e`). Kensa cart,
+  arcade-latency, 4 runs each: off 29.2/29.2/41.5/42.7 ms median; 0/0 ungated 16.4/19.4/18.2/16.3; 0/100
+  18.6/45.2/43.7/39.2 (max>0 does NOT engage Chrome's fast path); gated 19.7/22.2 (the first seconds are
+  unstamped until 3 clean reports). Cost (smoothness-probe, Sonic, 1800 frames): off 0% late frames / 21 ms worst,
+  ungated 0/0 0.11-0.22% / 25-33 ms — the gate keeps jittery or lossy viewers off it. Chrome, Edge AND Firefox 157
+  negotiate it; live logs show the gate arming at 0.5-1.0 ms jitter and disarming for Firefox on its first NACK.
+- nvcodec patch 0004 INSTALLED (`libgstnvcodec.dll` 1,478,541 B; backup `.pre-h264ir-20261003`), inert: the h264
+  params stay `gop-size=120`. Live intra-refresh A/B (lan, 2 runs each): Chrome/Edge clean either way; Firefox
+  lost similar packets (gop120 96/246, IR 224/178) but sent 7/7 PLIs with IR vs 1/3 with gop120 (no periodic IDR
+  to recover on), one IR run had a 1-fps second. Switching is the owner's call, after a real tablet.
+
 **Deploy order.** DB (done) → site → workers. The SITE must ship first: a pre-0048 shim hands the two envelopes
 to `addCandidate`, whose JSON parse error reaches the room page's `onError` — only on a mismatch, which is
 already a failure, but the right message comes from the 0048 shim. A pre-0048 site ignores the extra LinkStat
