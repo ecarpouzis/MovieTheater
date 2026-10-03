@@ -70,5 +70,28 @@ namespace MovieTheater.Db
         /// Observability only.
         /// </summary>
         public int? TtffMs { get; set; }
+
+        /// <summary>
+        /// The room's per-room video codec ("av1"/"h264"; null = worker config default), written at create.
+        /// Durable because the live copy in <c>ArcadeRoomService</c> is wiped by a pod restart, and a
+        /// rehydrated room that forgot it handed joiners the DEFAULT codec — an AV1 track on an H.264
+        /// encoder, which binds fine and shows nothing.
+        /// </summary>
+        [MaxLength(20)]
+        public string? VideoCodec { get; set; }
+
+        /// <summary>The room's Wii controller scheme ("gc"/"wiimote"; null = worker default). Durable for the
+        /// same restart reason as <see cref="VideoCodec"/> — it decides what button bits joiners send.</summary>
+        [MaxLength(20)]
+        public string? ControllerScheme { get; set; }
+
+        /// <summary>
+        /// What the creator's browser reported when Auto picked the codec, e.g. <c>"av1:Ss- h264:SsP h265:SsP
+        /// m0 auto=h264"</c> (S/s/P = MediaCapabilities supported/smooth/powerEfficient, m = mobile). Null =
+        /// a deliberate pick or an older client. Observability only — the device/codec population data the
+        /// evidence-gated codec work (second encoder, HEVC tier) waits on.
+        /// </summary>
+        [MaxLength(80)]
+        public string? CodecProbe { get; set; }
     }
 }

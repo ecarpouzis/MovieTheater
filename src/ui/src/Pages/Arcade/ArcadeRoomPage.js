@@ -2,7 +2,8 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
 import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeDeviceId, arcadeInputHint, rotatedVideoSize, videoTransform, systemUsesMouse, findNewPad, pickAutoBindPads, livePads, getFaceSwapMode, setFaceSwapMode, getPadFaceSwapOverride, setPadFaceSwapOverride, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, getRightStickSwapX, setRightStickSwapX, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeDeviceId, arcadeInputHint, rotatedVideoSize, videoTransform, systemUsesMouse, findNewPad, pickAutoBindPads, livePads, getFaceSwapMode, setFaceSwapMode, getPadFaceSwapOverride, setPadFaceSwapOverride, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, getRightStickSwapX, setRightStickSwapX, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl, videoCodecFromWsUrl } from "./cloudRetroClient";
+import { canReceiveCodec, localNetworkPermission, videoProblemMessage } from "./arcadeRoomCreate";
 import { DEFAULT_CHORDS, resolveChords } from "./controllerChords";
 import { SYSTEM_LABEL, systemLabel, NO_SAVE_STATE_SYSTEMS, HEAVY_LANE_SYSTEMS, QUICK_SLOT, hasSaveStates } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
@@ -26,6 +27,7 @@ const STATUS_TEXT = {
   // audio kept playing on the aux PC, and the player came back to a room they couldn't control.
   failed: "Connection failed", "input-lost": "Controls lost — refresh to rejoin",
   "arcade-full": "The arcade is full", "seat-rejected": "Seat unavailable",
+  "no-video": "No picture",
 };
 // The two statuses that mean "media is flowing" — both must kick autoplay, or a spectator stares at a
 // frozen first frame behind the "Tap to start" overlay.
@@ -334,6 +336,18 @@ export default function ArcadeRoomPage() {
         return;
       }
       if (cancelled) return;
+      // A room streams ONE codec (the creator's). A browser that can't receive it negotiates nothing and
+      // just shows black, so say so up front and give the seat back. Unknown (no capability API, or a room
+      // with no recorded codec) always proceeds.
+      const roomCodec = videoCodecFromWsUrl(descriptor.wsUrl);
+      if (canReceiveCodec(roomCodec) === false) {
+        MovieAPI.reportArcadeCodecRefusal(code, roomCodec, arcadeDeviceId());
+        MovieAPI.leaveArcadeRoom(code);
+        setFatal(roomCodec === "av1"
+          ? "This room streams AV1 video, which this browser can't play. Ask the host to restart the game with Codec: H.264, or join from Chrome, Edge or Firefox."
+          : "This room streams H.264 video, which this browser can't play. Ask the host to restart the game with Codec: AV1.");
+        return;
+      }
       setYourSlot(descriptor.playerSlot);
       setSystem(descriptor.system ?? null);
       setGameKey(descriptor.gameKey ?? null);
@@ -362,6 +376,15 @@ export default function ArcadeRoomPage() {
         // Time-to-first-frame (perf program P1): the shim reports it once; the next heartbeat carries it
         // to the server (one beat, then cleared) so the session row keeps the number.
         onTtff: (t) => { if (!cancelled && t && t.totalMs > 0) ttffPendingRef.current = t.totalMs; },
+        // The game started but no picture ever presented (codec this browser can't decode, a blocked
+        // local-network connection, or a dead path) — a dead end, so end the session and say which.
+        onVideoProblem: async (problem) => {
+          const lna = problem.kind === "no-media" ? await localNetworkPermission() : null;
+          if (cancelled) return;
+          if (problem.kind === "codec") MovieAPI.reportArcadeCodecRefusal(code, problem.codec, arcadeDeviceId());
+          sessionRef.current?.close?.();
+          setFatal(videoProblemMessage(problem, lna));
+        },
         onStatus: (s) => {
           if (cancelled) return;
           setStatus(s);

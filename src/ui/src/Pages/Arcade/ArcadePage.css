@@ -738,10 +738,16 @@
   gap: 8px;
   flex-wrap: wrap;
 }
-.arcade-room__meta .arcade-chip--system {
+.arcade-room__meta .arcade-chip--system,
+.arcade-room__meta .arcade-chip--codec {
   font-size: 11px;
   border-radius: 5px;
   padding: 1px 8px;
+}
+/* The room's video codec — informational, quieter than the system chip. */
+.arcade-room__meta .arcade-chip--codec {
+  background: transparent;
+  color: var(--text-secondary);
 }
 .arcade-room__status {
   font-size: 12px;

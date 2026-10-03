@@ -655,6 +655,9 @@ namespace MovieTheater.Controllers
                     spectators = r.SpectatorUserIds.Select(id => names.GetValueOrDefault(id) ?? "Someone").ToList(),
                     spectatorSeatsFree = Math.Max(0, ArcadeRoomService.SpectatorSeats - r.SpectatorUserIds.Count),
                     starting = !r.Bound,
+                    // The room's one codec ("" = worker default, AV1): the card says it, and a browser that
+                    // can't receive it is told before it tries — a codec mismatch is otherwise a black screen.
+                    codec = rooms.RoomVideoCodec(r.RoomCode),
                 });
             }
             return Json(result);
@@ -700,6 +703,11 @@ namespace MovieTheater.Controllers
             /// intra-refresh stream then accumulates UNBOUNDED video delay (2026-07-10 tablet incident).
             /// Room-wide (one encoder per room), so it also rides every joiner's descriptor.</summary>
             public string? VideoCodec { get; set; }
+
+            /// <summary>What the creator's browser reported when Auto chose <see cref="VideoCodec"/>
+            /// (<c>resolveAutoCodec</c>'s probe summary). Stored on the session for codec-population evidence;
+            /// sanitised to a short token string. Null for a deliberate pick.</summary>
+            public string? CodecProbe { get; set; }
 
             /// <summary>The creator's device id (the same localStorage GUID the shim sends on INIT_WEBRTC),
             /// so the descriptor can carry that device's warm-start hint (perf program P10). Optional.</summary>
@@ -1539,17 +1547,6 @@ namespace MovieTheater.Controllers
             // session row so joiners (and a post-restart rehydrate) can read how the room runs from the DB.
             var competitive = request.Competitive && !isCapture;
 
-            var session = new ArcadeSession
-            {
-                ArcadeGameId = game.Id,
-                RoomCode = roomCode,
-                CreatedByUserId = userId.Value,
-                IsCompetitive = competitive,
-                CreatedUtc = DateTime.UtcNow,
-            };
-            movieDb.ArcadeSessions.Add(session);
-            await movieDb.SaveChangesAsync();
-
             // Per-room codec (worker patch 0036): allowlist hard — this string reaches the worker's
             // encoder selection, never forward a free-form value. "" = worker config default (AV1).
             var codec = request.VideoCodec?.Trim().ToLowerInvariant() switch
@@ -1566,6 +1563,23 @@ namespace MovieTheater.Controllers
             var ctrlScheme = CloudRetroHost.SupportsControllerScheme(game.System)
                 ? request.ControllerScheme?.Trim().ToLowerInvariant() switch { "wiimote" => "wiimote", "gc" => "gc", _ => "" }
                 : "";
+
+            // Codec and scheme go on the durable row too: the live registry forgets them on a pod restart, and
+            // the heartbeat rehydrate restores them from here (a joiner of a rehydrated H.264 room used to get
+            // the default AV1 track — it binds and shows nothing).
+            var session = new ArcadeSession
+            {
+                ArcadeGameId = game.Id,
+                RoomCode = roomCode,
+                CreatedByUserId = userId.Value,
+                IsCompetitive = competitive,
+                CreatedUtc = DateTime.UtcNow,
+                VideoCodec = codec == "" ? null : codec,
+                ControllerScheme = ctrlScheme == "" ? null : ctrlScheme,
+                CodecProbe = ArcadeRoomService.SanitizeCodecProbe(request.CodecProbe),
+            };
+            movieDb.ArcadeSessions.Add(session);
+            await movieDb.SaveChangesAsync();
 
             // Register live state with the creator in seat 0. The CloudRetro room isn't created yet — the
             // creator's browser does that (empty room_id) and then calls Bind (§8 steps 2–3).
@@ -3421,7 +3435,8 @@ namespace MovieTheater.Controllers
                 if (session == null || game == null)
                     return NotFound(new { message = "Room not found." });
 
-                rooms.Rehydrate(code, game.Id, game.MaxPlayers, session.CreatedByUserId, session.CloudRetroRoomId!);
+                rooms.Rehydrate(code, game.Id, game.MaxPlayers, session.CreatedByUserId, session.CloudRetroRoomId!,
+                    session.VideoCodec ?? "", session.ControllerScheme ?? "");
                 rooms.TryJoin(code, userId.Value); // re-seat the heartbeater (their live session already has a slot)
                 logger.LogInformation("Arcade room {Code} rehydrated from DB after registry loss (user {User})", code, userId.Value);
                 status = rooms.Heartbeat(code, userId.Value);
@@ -3500,6 +3515,57 @@ namespace MovieTheater.Controllers
                 youAreSpectator = status.YouAreSpectator,
                 saveToken,
             });
+        }
+
+        public sealed class CodecRefusalRequest
+        {
+            public string? Codec { get; set; }
+            public string? DeviceId { get; set; }
+        }
+
+        /// <summary>
+        /// A joiner's browser refused to connect because it cannot receive the room's codec (checked client-side
+        /// against its RTP capabilities before any WebRTC is attempted). Stored as an <see cref="ArcadeLinkStat"/>
+        /// row with <c>Path = "refused"</c>: that table is the per-user, per-device codec history, and a refusal is
+        /// exactly such a fact. Warm start reads only <c>"direct"</c> rows, so these never become a bitrate hint.
+        /// It is the evidence that decides whether mixed rooms happen often enough to justify a second encoder.
+        /// One row per user + device + codec per 10 minutes (a reloading tab must not flood it).
+        /// </summary>
+        [HttpPost("/API/Arcade/Room/{code}/CodecRefusal")]
+        public async Task<IActionResult> CodecRefusal(string code, [FromBody] CodecRefusalRequest req)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+            var codec = req?.Codec?.Trim().ToLowerInvariant() switch { "av1" => "av1", "h264" => "h264", _ => null };
+            var deviceId = SanitizeDeviceId(req?.DeviceId);
+            if (codec == null || string.IsNullOrEmpty(deviceId))
+                return NoContent();
+
+            var since = DateTime.UtcNow.AddMinutes(-10);
+            var recent = await movieDb.ArcadeLinkStats.AnyAsync(r => r.UserId == userId.Value && r.DeviceId == deviceId
+                && r.Codec == codec && r.Path == "refused" && r.CreatedUtc >= since);
+            if (recent)
+                return NoContent();
+
+            var system = await movieDb.ArcadeSessions
+                .Where(s => s.RoomCode == code)
+                .OrderByDescending(s => s.CreatedUtc)
+                .Select(s => s.ArcadeGame!.System)
+                .FirstOrDefaultAsync();
+            movieDb.ArcadeLinkStats.Add(new ArcadeLinkStat
+            {
+                UserId = userId.Value,
+                DeviceId = deviceId,
+                System = system is { Length: > 40 } ? system[..40] : system,
+                Codec = codec,
+                Path = "refused",
+                CreatedUtc = DateTime.UtcNow,
+            });
+            await movieDb.SaveChangesAsync();
+            logger.LogInformation("Arcade codec refusal: room {Code} streams {Codec}; user {User} device {Device} can't receive it",
+                code, codec, userId.Value, deviceId);
+            return NoContent();
         }
 
         [HttpPost("/API/Arcade/Room/{code}/Leave")]

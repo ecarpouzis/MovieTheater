@@ -641,6 +641,14 @@ namespace MovieTheater.Db.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
 
+                    b.Property<string>("CodecProbe")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("ControllerScheme")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<int>("CreatedByUserId")
                         .HasColumnType("int");
 
@@ -663,6 +671,10 @@ namespace MovieTheater.Db.Migrations
 
                     b.Property<int?>("TtffMs")
                         .HasColumnType("int");
+
+                    b.Property<string>("VideoCodec")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("Id");
 

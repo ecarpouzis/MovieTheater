@@ -104,7 +104,9 @@ namespace MovieTheater.Db
         public double RttSdMs { get; set; }
 
         /// <summary>ICE path class: <c>direct</c> or <c>relay</c>. (<c>samehost</c> is never stored — those
-        /// sessions bypass ABR and measure our own hardware.) A stored rate is only valid within its class.</summary>
+        /// sessions bypass ABR and measure our own hardware.) A stored rate is only valid within its class.
+        /// <c>refused</c> = not a session at all: this device declined to join a room because it cannot receive
+        /// <see cref="Codec"/> (every rate is 0). Codec-history evidence only; warm start reads <c>direct</c> rows.</summary>
         [MaxLength(20)]
         public string? Path { get; set; }
 

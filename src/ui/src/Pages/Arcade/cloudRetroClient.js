@@ -311,6 +311,13 @@ export function controllerSchemeFromWsUrl(wsUrl) {
   return strFromWsUrl(wsUrl, "ctrlscheme");
 }
 
+// The room's per-room codec ("av1"/"h264"; "" = none recorded → the worker's default), read off a descriptor
+// the same way setupPeer() does. ArcadeRoomPage.js checks it against what this browser can receive BEFORE
+// connecting: a codec the browser can't receive fails silently inside WebRTC (no frame, no error).
+export function videoCodecFromWsUrl(wsUrl) {
+  return strFromWsUrl(wsUrl, "codec");
+}
+
 // ── Local multiplayer: pad ownership across sessions ─────────────────────────────────────────────
 // One browser can hold SEVERAL CloudRetro connections (the primary + one input-only session per extra
 // local controller — the wire protocol routes input by connection, so an extra pad needs an extra
@@ -991,7 +998,7 @@ export function videoTransform(rot, flip) {
 }
 
 export function createCloudRetroSession(descriptor, opts) {
-  const { videoEl, onRoomId, onStatus, onError, onSeat, onAspect, onChordAction, onAchievement, onTtff, customGamepadProfile: customGamepadProfileOverride } = opts || {};
+  const { videoEl, onRoomId, onStatus, onError, onSeat, onAspect, onChordAction, onAchievement, onTtff, onVideoProblem, customGamepadProfile: customGamepadProfileOverride } = opts || {};
   const status = (s) => onStatus && onStatus(s);
   // Watch-only seat. Trust the explicit flag, but fall back to the slot itself so an older descriptor
   // (or a hand-built one in a test) can't accidentally hand a watcher a controller.
@@ -1956,6 +1963,9 @@ export function createCloudRetroSession(descriptor, opts) {
     try {
       if (p.sdp) await onSdp(p.sdp);
       if (p.ice) {
+        // "codec-error:<codec>" (worker): this browser can't receive the room's codec — the peer was closed
+        // worker-side, so say so instead of waiting on a frame that will never come.
+        if (p.ice.startsWith("codec-error:")) { reportVideoProblem("codec", p.ice.slice(12)); return; }
         if (p.ice.startsWith("aux-sdp:")) await onAuxOffer(p.ice.slice(8));
         else if (p.ice.startsWith("aux-ice:")) await addAuxCandidate(p.ice.slice(8));
         else await addCandidate(p.ice);
@@ -2093,8 +2103,36 @@ export function createCloudRetroSession(descriptor, opts) {
     } catch { /* a pad without rumble, or a browser without the API */ }
   }
 
+  // ── No-video watchdog ──────────────────────────────────────────────────────────────────────────
+  // A codec this browser can't receive, a blocked local-network request, or a stalled sender all look the
+  // same from the page: connected, game running, black <video>. game-start (t=104 answered: the emulator is
+  // running) is the right clock — boot time varies by tens of seconds per system, but once the game has
+  // started the first keyframe reaches the decoder in ~1-2 s (ttff first-frame − game-start). If no frame
+  // has presented NO_VIDEO_MS later, ask getStats which of the two failures it is and tell the room page.
+  let videoProblemReported = false;
+  function reportVideoProblem(kind, codec) {
+    if (videoProblemReported || closed) return;
+    videoProblemReported = true;
+    status("no-video");
+    try { onVideoProblem && onVideoProblem({ kind, codec: codec || strFromWsUrl(descriptor.wsUrl, "codec") || "" }); } catch { /* observer */ }
+  }
+  function armNoVideoWatchdog() {
+    if (inputOnly) return; // an input-only seat never receives video
+    setTimeout(async () => {
+      if (closed || videoProblemReported || ttff.marks["first-frame"] != null) return;
+      let rtp = null;
+      try { for (const r of (await pc.getStats()).values()) if (r.type === "inbound-rtp" && r.kind === "video") rtp = r; } catch { /* no pc */ }
+      if (ttff.marks["first-frame"] != null) return; // raced the stats read
+      const kind = classifyNoVideo(rtp);
+      // Frames ARE decoding, the presentation callback just hasn't fired (a background tab never runs rVFC):
+      // that is not a failure.
+      if (kind !== "late") reportVideoProblem(kind);
+    }, NO_VIDEO_MS);
+  }
+
   function onGameStarted(p) {
     ttffMark("game-start");
+    armNoVideoWatchdog();
     const roomId = p && (p.roomId || p.room_id);
     if (descriptor.isCreator && roomId) onRoomId && onRoomId(roomId);
     if (p && p.av) applyVideoTransform(p.av);
@@ -2809,6 +2847,20 @@ function numFromWsUrl(wsUrl, key) {
     const v = parseInt(new URLSearchParams(wsUrl.slice(q + 1)).get(key) || "0", 10);
     return Number.isFinite(v) && v > 0 ? v : 0;
   } catch { return 0; }
+}
+
+// How long after game-start a missing first frame counts as "no video" (see armNoVideoWatchdog).
+export const NO_VIDEO_MS = 10000;
+
+// Which no-video failure an inbound-rtp video stat (or its absence) describes:
+//   "no-media"     — nothing is arriving (no stream, or zero bytes): the sender, or the network path to it
+//                    (a blocked local-network request on the LAN, a dead relay);
+//   "not-decoding" — packets arrive but no frame decodes: almost always a codec/profile this decoder
+//                    can't handle.
+//   "late"         — frames decode; only the presentation mark is missing (e.g. a background tab). Not a failure.
+export function classifyNoVideo(rtp) {
+  if (!rtp || !(rtp.bytesReceived > 0)) return "no-media";
+  return (rtp.framesDecoded | 0) > 0 ? "late" : "not-decoding";
 }
 
 // A string query param off the gateway WS URL (per-room codec: ?codec=av1|h264, worker patch 0036).

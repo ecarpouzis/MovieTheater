@@ -85,10 +85,14 @@ function v6ProbeUrl(mediaBase) {
 }
 
 /**
- * @returns {"checking"|"ok"|"ok-v4"|"unreachable"|"unknown"}
- *  ok          — media reachable, and the visitor has working IPv6 (direct path)
- *  ok-v4       — media reachable, but only over IPv4: they are riding the relay
- *  unreachable — media host unreachable on ANY route: nothing will play
+ * @returns {"checking"|"ok"|"ok-v4"|"blocked-local"|"unreachable"|"unknown"}
+ *  ok            — media reachable, and the visitor has working IPv6 (direct path)
+ *  ok-v4         — media reachable, but only over IPv4: they are riding the relay
+ *  blocked-local — the media host answers on its public IPv6 name, but its own name is refused: on the home
+ *                  network that name resolves to a PRIVATE address, and the browser's Local Network Access
+ *                  protection blocks (or is still asking about) public-page → private-address requests.
+ *                  The fix is the browser permission, not the network.
+ *  unreachable   — media host unreachable on ANY route: nothing will play
  *  unknown     — no gateway configured (dev), or the app itself is unreachable
  */
 export default function useMediaReachable() {
@@ -96,7 +100,7 @@ export default function useMediaReachable() {
     // A cached "unreachable" (including one written by an older bundle) is never trusted on
     // mount — it re-probes instead, so the warning can only exist alongside a live failing probe.
     const cached = readVerdict();
-    return cached && cached !== "unreachable" ? cached : "checking";
+    return cached && cached !== "unreachable" && cached !== "blocked-local" ? cached : "checking";
   });
 
   useEffect(() => {
@@ -110,9 +114,9 @@ export default function useMediaReachable() {
     };
     // "unreachable" is shown but NEVER cached, and re-probes on a timer: a captive portal clicked
     // through after first load must clear the warning in the same tab, not at the next one.
-    const settleUnreachable = () => {
+    const settleUnreachable = (verdict = "unreachable") => {
       if (!alive) return;
-      setState("unreachable");
+      setState(verdict);
       retry = setTimeout(() => { if (alive) setState("checking"); }, UNREACHABLE_RETRY_MS);
     };
 
@@ -129,9 +133,15 @@ export default function useMediaReachable() {
       }
       if (!base) return settle("unknown"); // no gateway configured (dev): nothing to warn about
 
-      if ((await probe(`${base}/`, PROBE_TIMEOUT_MS)) !== "yes") return settleUnreachable();
-
       const v6 = v6ProbeUrl(base);
+      if ((await probe(`${base}/`, PROBE_TIMEOUT_MS)) !== "yes") {
+        // Same host, public name: if THAT answers, the network is fine and the browser refused the private
+        // address the media name resolves to on the LAN. Re-probed on the same timer as "unreachable" — a
+        // permission granted from the prompt must clear the banner in this tab.
+        if (v6 && (await probe(v6, V6_PROBE_TIMEOUT_MS)) === "yes") return settleUnreachable("blocked-local");
+        return settleUnreachable();
+      }
+
       if (!v6) return settle("ok");
       // Only an outright rejection means "no IPv6"; a timeout is ambiguity and stays silent.
       settle((await probe(v6, V6_PROBE_TIMEOUT_MS)) === "no" ? "ok-v4" : "ok");

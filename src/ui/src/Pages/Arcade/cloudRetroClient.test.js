@@ -8,7 +8,32 @@ import {
   encodeMouseMove, encodeMouseButtons, systemUsesMouse,
   mouseGainFor, mouseMaxStepFor, systemUsesKeyboard, retroKeyFor, encodeKey, profileFor,
   encodeViewerReport,
+  classifyNoVideo, videoCodecFromWsUrl,
 } from "./cloudRetroClient";
+
+// The no-video watchdog's verdict from the receiver's own stats: nothing arriving vs arriving-but-undecodable
+// are different failures with different fixes (path/permission vs codec), and a decoding stream whose
+// presentation mark is merely missing (a background tab) must not be called a failure at all.
+describe("classifyNoVideo", () => {
+  it("no stream or zero bytes = nothing arriving", () => {
+    expect(classifyNoVideo(null)).toBe("no-media");
+    expect(classifyNoVideo({ bytesReceived: 0, framesDecoded: 0 })).toBe("no-media");
+  });
+  it("bytes but no decoded frame = a codec the decoder can't handle", () => {
+    expect(classifyNoVideo({ bytesReceived: 50000, framesDecoded: 0 })).toBe("not-decoding");
+  });
+  it("decoded frames = late presentation, not a failure", () => {
+    expect(classifyNoVideo({ bytesReceived: 50000, framesDecoded: 12 })).toBe("late");
+  });
+});
+
+describe("videoCodecFromWsUrl", () => {
+  it("reads the room codec and treats its absence as unknown", () => {
+    expect(videoCodecFromWsUrl("wss://x/ws?a=1&codec=h264")).toBe("h264");
+    expect(videoCodecFromWsUrl("wss://x/ws?a=1")).toBe("");
+    expect(videoCodecFromWsUrl("not a url")).toBe("");
+  });
+});
 
 // Viewer report (patch 0047): the CONTRACT with the worker's webrtc.ParseViewerReport — 13 bytes, tag 0xF1,
 // version 1, little-endian, values x10, 0xFFFF = absent. A wrong length is not a report on the worker side,

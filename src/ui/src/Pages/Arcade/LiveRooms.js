@@ -1,5 +1,6 @@
 import GameCover from "./GameCover";
 import { systemLabel } from "./arcadeSystems";
+import { canReceiveCodec } from "./arcadeRoomCreate";
 
 // The host's initial in a gradient avatar, matching the sidebar's account chip.
 function Avatar({ name, size }) {
@@ -32,6 +33,9 @@ function RoomCard({ room, onJoin }) {
   // Player seats gone but the watch-only seat is open → you can still drop in, just not with a controller.
   const watchOnly = seatsFree === 0 && (room.spectatorSeatsFree ?? 0) > 0;
   const full = seatsFree === 0 && !watchOnly;
+  // One codec per room. "" = none recorded → the worker default, AV1. Unknown capability (null) never blocks.
+  const codec = room.codec || "av1";
+  const unplayable = canReceiveCodec(codec) === false;
   return (
     <div className="arcade-room">
       <GameCover game={{ ...room.game, hasBoxArt: true }} artId={room.game.id} height={64} className="arcade-room__art" />
@@ -40,6 +44,7 @@ function RoomCard({ room, onJoin }) {
         <div className="arcade-room__title" title={room.game.title}>{room.game.title}</div>
         <div className="arcade-room__meta">
           <span className="arcade-chip arcade-chip--system">{systemLabel(room.game.system)}</span>
+          <span className="arcade-chip arcade-chip--codec" title="The video codec this room streams">{codec === "h264" ? "H.264" : "AV1"}</span>
           <span className="arcade-room__status">
             {room.players.length} playing
             {room.starting ? " · starting…" : ` · ${seatsFree} seat${seatsFree === 1 ? "" : "s"} free`}
@@ -59,10 +64,11 @@ function RoomCard({ room, onJoin }) {
         <button
           type="button"
           className="arcade-btn arcade-btn--join"
-          disabled={full}
+          disabled={full || unplayable}
+          title={unplayable ? `This room streams ${codec === "h264" ? "H.264" : "AV1"}, which this browser can't play` : undefined}
           onClick={() => onJoin(room.roomCode)}
         >
-          {full ? "Room full" : watchOnly ? "Watch" : "Join room"}
+          {full ? "Room full" : unplayable ? "Can't play here" : watchOnly ? "Watch" : "Join room"}
         </button>
       </div>
     </div>

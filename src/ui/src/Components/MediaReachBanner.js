@@ -1,4 +1,5 @@
 import { Alert } from "antd";
+import { useLocation } from "react-router-dom";
 import useMediaReachable from "../hooks/useMediaReachable";
 
 /**
@@ -13,6 +14,11 @@ import useMediaReachable from "../hooks/useMediaReachable";
  * Not closable because it is not an announcement; it is the reason the thing they came to do will
  * not work. It clears itself the moment a probe succeeds (a new tab re-probes).
  *
+ * "blocked-local" (warning, NOT closable): the media host answers on its public name but its own name is
+ * refused — on the home network that name is a private address, and the browser's Local Network Access
+ * protection blocks it until the visitor allows it. Same voice as "unreachable", different (and simpler) fix.
+ * None of these show on /arcade: the arcade's video never comes from the media host.
+ *
  * "ok-v4" (info, closable): everything works, but over IPv4 via the relay — a small detour for
  * them, and relay bandwidth for us, which a watch party multiplies. The fix really is usually one
  * router setting (IPv6 is widely supported and just switched off), so the banner says that.
@@ -21,6 +27,27 @@ import useMediaReachable from "../hooks/useMediaReachable";
  */
 export default function MediaReachBanner() {
   const reachable = useMediaReachable();
+  // The arcade never touches the media host — its video is WebRTC from the game server — so a verdict about
+  // the media host says nothing true there ("nothing will play" over a room that is playing).
+  const { pathname } = useLocation();
+  if (pathname.startsWith("/arcade")) return null;
+
+  if (reachable === "blocked-local") {
+    return (
+      <Alert
+        className="media-reach-banner"
+        type="warning"
+        showIcon
+        message="Your browser is blocking the media server on this network"
+        description={
+          "On this home network the media server has a local address, and the browser asks before a website "
+          + "may connect to local devices. Allow \"local network access\" for this site (the icon at the left "
+          + "of the address bar, or the prompt if one is showing) and playback will work — this message clears "
+          + "itself once it does."
+        }
+      />
+    );
+  }
 
   if (reachable === "unreachable") {
     return (

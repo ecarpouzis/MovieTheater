@@ -50,9 +50,9 @@ namespace MovieTheater.Arcade
             public string? CloudRetroRoomId;                            // null until the creator Binds (§8)
             /// <summary>Per-room video codec the creator chose ("av1"/"h264"; "" = worker config default).
             /// Every join descriptor must carry it — each peer's WebRTC track mime is fixed at INIT time
-            /// and must match the room's one encoder. In-memory only: after a pod-restart Rehydrate it is
-            /// lost ("" = default), so a post-restart JOINER of a codec-overridden room would get a
-            /// mismatched track (video broken for them only) — accepted rare-edge for v1.</summary>
+            /// and must match the room's one encoder. Mirrored on ArcadeSession.VideoCodec, which the
+            /// pod-restart Rehydrate restores it from — losing it handed joiners the default codec's track
+            /// (it binds, then shows nothing).</summary>
             public string VideoCodec = "";
             /// <summary>Per-room Wii controller-scheme the creator chose ("gc"/"wiimote"; "" = worker
             /// default). Unlike hwctx/bitrate this changes what BUTTON BITS every player's client must
@@ -119,8 +119,10 @@ namespace MovieTheater.Arcade
         /// a heartbeat is proof a player's page is actually in the room, so we never resurrect a corpse
         /// from a stale DB row. Recreates the state already BOUND (the id survived in ArcadeSession); the
         /// heartbeater re-seats via TryJoin right after. No-op if the room exists (raced rehydration).
+        /// The codec and controller scheme come back from the session row (older rows: "" = defaults).
         /// </summary>
-        public void Rehydrate(string roomCode, int gameId, int maxPlayers, int creatorUserId, string cloudRetroRoomId)
+        public void Rehydrate(string roomCode, int gameId, int maxPlayers, int creatorUserId, string cloudRetroRoomId,
+            string videoCodec = "", string controllerScheme = "")
         {
             lock (gate)
             {
@@ -132,8 +134,22 @@ namespace MovieTheater.Arcade
                     CreatorUserId = creatorUserId,
                     CloudRetroRoomId = cloudRetroRoomId,
                     CreatedUtc = DateTime.UtcNow,
+                    // From the durable row: both decide what every JOINER's client must negotiate/send.
+                    VideoCodec = videoCodec ?? "",
+                    ControllerScheme = controllerScheme ?? "",
                 };
             }
+        }
+
+        /// <summary>The creator browser's Auto-codec probe summary (ArcadeSession.CodecProbe) is browser-supplied
+        /// text bound for a column: keep only token characters (ASCII letters/digits, ':', '=', '-', '.', space),
+        /// cap at the column's 80. Empty → null.</summary>
+        public static string? SanitizeCodecProbe(string? probe)
+        {
+            if (string.IsNullOrWhiteSpace(probe)) return null;
+            var kept = new string(probe.Where(ch => char.IsAsciiLetterOrDigit(ch) || ch is ':' or '=' or '-' or '.' or ' ').ToArray()).Trim();
+            if (kept.Length == 0) return null;
+            return kept.Length > 80 ? kept[..80] : kept;
         }
 
         /// <summary>The room's per-room video codec ("" = worker config default / room unknown). Joiners'

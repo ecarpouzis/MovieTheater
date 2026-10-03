@@ -24,20 +24,72 @@ export const NETWORK_PROFILES = {
   "5g": { audioFec: 1, paceMs: 8 },
 };
 
-// Resolve "auto" to a concrete codec for THIS device. powerEfficient is the hardware-decode signal —
-// smooth-but-software (dav1d on a big desktop) still reports smooth:true, and software AV1 is exactly
-// the tablet failure mode Auto exists to dodge, so the bar is powerEfficient. 1920x1080@60 is the
-// worst frame any lane sends today (capture); retro encodes larger canvases but at the same or lower
-// pixel rate. Any probe failure (old browser, Firefox without webrtc-type support) falls back to av1
-// — the status-quo default, so Auto can never be WORSE than before it existed.
-export async function resolveAutoCodec() {
+// Resolve "auto" to a concrete codec for THIS device. powerEfficient is the hardware-decode signal, so
+// BOTH codecs are probed and a hardware decoder wins: hardware AV1 first, else hardware H.264 (the
+// tablet case: software dav1d on a tablet CPU can't keep up with 1280x1056@60, MediaCodec H.264 can).
+//
+// When NEITHER is hardware the tie goes to AV1 on a desktop. That is desktop Firefox on every machine:
+// its WebRTC decodes AV1 with dav1d and H.264 with OpenH264, both software, and it reports both as
+// supported+smooth, not powerEfficient. Measured 2026-10-02 on a DOS room (1920x1440 @70, pointer
+// moving): dav1d 1.45 ms/frame, 77 fps, pli 0; OpenH264 drowned during boot and patch 0047 shrank the
+// room to 1280x960 + dedup (10 fps, 46 ms jitter buffer). The old rule (AV1 only if powerEfficient)
+// sent every desktop Firefox to the decoder that drowns. A phone/tablet with no hardware decoder for
+// either keeps H.264 (lighter per pixel on a small CPU, and IDRs bound any backlog).
+//
+// 1920x1080@60 is the probe frame; the contentType carries no H.264 fmtp because Firefox answers
+// "unsupported" for a parameterised H.264 type it decodes fine. Any probe failure falls back to the
+// receiver's RTP capabilities: AV1 when the browser can receive it at all, else H.264.
+const PROBE_FRAME = { width: 1920, height: 1080, bitrate: 12_000_000, framerate: 60 };
+
+function isMobileDevice() {
+  const nav = typeof navigator !== "undefined" ? navigator : {};
+  if (typeof nav.userAgentData?.mobile === "boolean") return nav.userAgentData.mobile;
+  // iPadOS reports a desktop Mac UA; touch points are the only tell.
+  return /Android|Mobi|iPhone|iPad/i.test(nav.userAgent || "") || (/Macintosh/.test(nav.userAgent || "") && nav.maxTouchPoints > 1);
+}
+
+function canReceive(mime) {
+  try { return RTCRtpReceiver.getCapabilities("video").codecs.some((c) => c.mimeType.toLowerCase() === mime); }
+  catch { return null; }
+}
+
+// "SsP" = supported / smooth / powerEfficient, "-" where false; "?" when the probe itself failed.
+const flags = (r) => (r ? `${r.supported ? "S" : "-"}${r.smooth ? "s" : "-"}${r.powerEfficient ? "P" : "-"}` : "?");
+
+/**
+ * The Auto decision plus a one-line summary of what this browser reported — e.g.
+ * `"av1:Ss- h264:SsP h265:SsP m0 auto=h264"` — which the server keeps on the session row as codec-population
+ * evidence (H.265 is probed for that evidence only; Auto never picks it).
+ */
+export async function decideAutoCodec() {
+  const mobile = isMobileDevice();
+  let av1 = null, h264 = null, h265 = null, codec;
   try {
-    const info = await navigator.mediaCapabilities.decodingInfo({
-      type: "webrtc",
-      video: { contentType: 'video/AV1; codecs="av01.0.08M.08"', width: 1920, height: 1080, bitrate: 12_000_000, framerate: 60 },
-    });
-    return info.supported && info.powerEfficient ? "av1" : "h264";
-  } catch { return "av1"; }
+    const probe = (contentType) => navigator.mediaCapabilities.decodingInfo({ type: "webrtc", video: { contentType, ...PROBE_FRAME } });
+    [av1, h264, h265] = await Promise.all([
+      probe('video/AV1; codecs="av01.0.08M.08"'), probe("video/H264"), probe("video/H265").catch(() => null),
+    ]);
+    if (av1.supported && av1.powerEfficient) codec = "av1";
+    else if (h264.supported && h264.powerEfficient) codec = "h264";
+    else if (av1.supported && (!h264.supported || !mobile)) codec = "av1";
+    else codec = h264.supported ? "h264" : "av1";
+  } catch {
+    codec = canReceive("video/av1") === false ? "h264" : "av1";
+  }
+  return { codec, probe: `av1:${flags(av1)} h264:${flags(h264)} h265:${flags(h265)} m${mobile ? 1 : 0} auto=${codec}` };
+}
+
+export async function resolveAutoCodec() {
+  return (await decideAutoCodec()).codec;
+}
+
+/**
+ * Can this browser receive a room's codec at all? `null` = unknown (no RTP capability API) — callers must
+ * then proceed, never refuse. A room with no recorded codec ("") is unknown too: it runs the worker default.
+ */
+export function canReceiveCodec(codec) {
+  if (codec !== "av1" && codec !== "h264") return null;
+  return canReceive(codec === "av1" ? "video/av1" : "video/h264");
 }
 export function loadQuality() {
   try {
@@ -90,8 +142,10 @@ export function createRoomAndGo(gameId, opts, history) {
   const q = loadQuality();
   const net = NETWORK_PROFILES[q.network] || NETWORK_PROFILES.lan;
   const netParams = q.networkChosen ? net : { audioFec: net.audioFec };
-  return Promise.resolve(q.codec === "auto" ? resolveAutoCodec() : q.codec)
-    .then((codec) => MovieAPI.createArcadeRoom(gameId, { ...opts, videoBitrateKbps: q.videoBitrateKbps, ...netParams, videoCodec: codec, deviceId: arcadeDeviceId() }))
+  return Promise.resolve(q.codec === "auto" ? decideAutoCodec() : { codec: q.codec, probe: undefined })
+    .then(({ codec, probe }) => MovieAPI.createArcadeRoom(gameId, {
+      ...opts, videoBitrateKbps: q.videoBitrateKbps, ...netParams, videoCodec: codec, codecProbe: probe, deviceId: arcadeDeviceId(),
+    }))
     .then(async (r) => {
       if (r.status === 503) { message.warning("The arcade is full — every machine is in use. Try again shortly."); return null; }
       if (!r.ok) { message.error("Couldn't start that game."); return null; }
@@ -102,4 +156,35 @@ export function createRoomAndGo(gameId, opts, history) {
       return descriptor || null;
     })
     .catch(() => { message.error("Couldn't start that game."); return null; });
+}
+
+/**
+ * Chromium's Local Network Access permission for this site: "granted" / "prompt" / "denied", or null where the
+ * browser has no such permission (or names it differently — the name has changed across Chromium versions, and
+ * an unknown name throws). On the home network the arcade/media hosts resolve to a private address, so a
+ * browser that hasn't granted it never connects — and looks exactly like a dead room.
+ */
+export async function localNetworkPermission() {
+  if (typeof navigator === "undefined" || !navigator.permissions?.query) return null;
+  for (const name of ["local-network-access", "local-network"]) {
+    try { return (await navigator.permissions.query({ name })).state; } catch { /* unknown name here */ }
+  }
+  return null;
+}
+
+const CODEC_NAME = { av1: "AV1", h264: "H.264" };
+
+/** What to tell a player whose room started but never showed a picture (cloudRetroClient's watchdog). */
+export function videoProblemMessage({ kind, codec } = {}, lnaState = null) {
+  const name = CODEC_NAME[codec] || "this room's";
+  if (kind === "codec" || kind === "not-decoding") {
+    const other = codec === "av1" ? "H.264" : "AV1";
+    return `The game is running, but this browser can't play ${name} video. Ask the host to restart the game with Codec: ${other}.`;
+  }
+  if (lnaState === "denied" || lnaState === "prompt") {
+    return "The game is running, but this browser is blocking the connection to the game server on your home network. "
+      + "Allow \"local network access\" for this site (the icon at the left of the address bar), then rejoin.";
+  }
+  return "The game is running, but no picture is reaching this browser. Rejoin the room; if it keeps happening, "
+    + "this network may be blocking the stream.";
 }

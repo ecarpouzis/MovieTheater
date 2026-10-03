@@ -1013,11 +1013,11 @@ function prewarmArcadeGame(gameId) {
   return fetch(`/API/Arcade/Game/${encodeURIComponent(gameId)}/Prewarm`, { method: "post" }).catch(() => {});
 }
 
-function createArcadeRoom(gameId, { newGame = false, seedSlot = 0, videoBitrateKbps = 0, audioFec = 0, paceMs = null, cheats = [], videoCodec = "", hwContext = "", renderProfile = "", controllerScheme = "", competitive = false, deviceId = "" } = {}) {
+function createArcadeRoom(gameId, { newGame = false, seedSlot = 0, videoBitrateKbps = 0, audioFec = 0, paceMs = null, cheats = [], videoCodec = "", codecProbe = undefined, hwContext = "", renderProfile = "", controllerScheme = "", competitive = false, deviceId = "" } = {}) {
   return fetch("/API/Arcade/Room", {
     method: "post",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ gameId, newGame, seedSlot, videoBitrateKbps, audioFec, paceMs, cheats, videoCodec, hwContext, renderProfile, controllerScheme, competitive, deviceId }),
+    body: JSON.stringify({ gameId, newGame, seedSlot, videoBitrateKbps, audioFec, paceMs, cheats, videoCodec, codecProbe, hwContext, renderProfile, controllerScheme, competitive, deviceId }),
   });
 }
 
@@ -1212,6 +1212,16 @@ function arcadeHeartbeat(code, ttffMs) {
   return fetch(`/API/Arcade/Room/${encodeURIComponent(code)}/Heartbeat${q}`, { method: "post" }).catch(() => {});
 }
 
+// A joiner whose browser can't receive the room's codec (refused client-side before connecting). Recorded per
+// user + device so the codec program can see how often mixed rooms actually happen. Fire-and-forget.
+function reportArcadeCodecRefusal(code, codec, deviceId = "") {
+  return fetch(`/API/Arcade/Room/${encodeURIComponent(code)}/CodecRefusal`, {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ codec, deviceId }),
+    keepalive: true,
+  }).catch(() => {});
+}
 function leaveArcadeRoom(code) {
   return fetch(`/API/Arcade/Room/${encodeURIComponent(code)}/Leave`, { method: "post", keepalive: true }).catch(() => {});
 }
@@ -1914,6 +1924,7 @@ const MovieAPI = {
   importArcadeSave,
   bindArcadeRoom,
   joinArcadeRoom,
+  reportArcadeCodecRefusal,
   claimArcadeSeat,
   releaseArcadeSeat,
   arcadeHeartbeat,
