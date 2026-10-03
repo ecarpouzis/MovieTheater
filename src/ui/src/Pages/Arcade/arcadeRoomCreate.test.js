@@ -25,9 +25,9 @@ describe("resolveAutoCodec", () => {
     expect(await resolveAutoCodec()).toBe("av1");
   });
 
-  it("desktop Firefox (both software) gets av1 — dav1d keeps up where OpenH264 drowned", async () => {
+  it("desktop Firefox (both software) gets h264 — OpenH264 measured ~10x cheaper than dav1d", async () => {
     stubNavigator({ av1: ans(true, false), h264: ans(true, false), mobile: null, ua: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:157.0) Gecko/20100101 Firefox/157.0" });
-    expect(await resolveAutoCodec()).toBe("av1");
+    expect(await resolveAutoCodec()).toBe("h264");
   });
 
   it("a tablet with hardware H.264 only gets h264", async () => {
@@ -137,8 +137,8 @@ describe("localNetworkPermission", () => {
 
 describe("decideAutoCodec with a device-history hint", () => {
   it("switches away from a codec this device drowned on, when the other is supported", async () => {
-    stubNavigator({ av1: ans(true, false), h264: ans(true, false) }); // desktop, both software → av1
-    expect(await decideAutoCodec("av1")).toEqual({ codec: "h264", probe: "av1:Ss- h264:Ss- h265:Ss- m0 auto=h264 hint=avoid-av1" });
+    stubNavigator({ av1: ans(true, true), h264: ans(true, false) }); // hardware AV1 → av1, but this device drowned on it
+    expect(await decideAutoCodec("av1")).toEqual({ codec: "h264", probe: "av1:SsP h264:Ss- h265:Ss- m0 auto=h264 hint=avoid-av1" });
   });
 
   it("never switches to a codec the browser can't decode", async () => {

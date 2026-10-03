@@ -28,13 +28,16 @@ export const NETWORK_PROFILES = {
 // BOTH codecs are probed and a hardware decoder wins: hardware AV1 first, else hardware H.264 (the
 // tablet case: software dav1d on a tablet CPU can't keep up with 1280x1056@60, MediaCodec H.264 can).
 //
-// When NEITHER is hardware the tie goes to AV1 on a desktop. That is desktop Firefox on every machine:
-// its WebRTC decodes AV1 with dav1d and H.264 with OpenH264, both software, and it reports both as
-// supported+smooth, not powerEfficient. Measured 2026-10-02 on a DOS room (1920x1440 @70, pointer
-// moving): dav1d 1.45 ms/frame, 77 fps, pli 0; OpenH264 drowned during boot and patch 0047 shrank the
-// room to 1280x960 + dedup (10 fps, 46 ms jitter buffer). The old rule (AV1 only if powerEfficient)
-// sent every desktop Firefox to the decoder that drowns. A phone/tablet with no hardware decoder for
-// either keeps H.264 (lighter per pixel on a small CPU, and IDRs bound any backlog).
+// When NEITHER is hardware the tie goes to H.264 — desktop Firefox on every machine is this case (its
+// WebRTC decodes AV1 with dav1d and H.264 with OpenH264, both software, and reports both supported+smooth,
+// !powerEfficient). MEASURED 2026-10-03, Firefox 153, DOS room 1920x1440 @~75 fps, pointer moving, paced,
+// three runs per codec: OpenH264 0.44-0.47 ms/frame steady (p90 0.50), 76-78 fps, full size every run;
+// dav1d 3.6-5.9 ms median, p90 up to 13.5 ms, and 2 of 3 runs shrank to 1280. (A single earlier 1.45 ms
+// AV1 reading was not representative.) What looked like Firefox "drowning" on H.264 was PACKET LOSS:
+// unpaced same-host bursts at the 40 Mbps ceiling overflow Firefox's receive path (175-800 packets lost
+// in 40 s, Chrome 0), each loss costs a keyframe request, and the room shrank — not the decoder.
+// The exception: a browser that can't decode H.264 at all (Firefox without the OpenH264 plugin) gets AV1
+// rather than no video.
 //
 // 1920x1080@60 is the probe frame; the contentType carries no H.264 fmtp because Firefox answers
 // "unsupported" for a parameterised H.264 type it decodes fine. Any probe failure falls back to the
@@ -75,7 +78,6 @@ export async function decideAutoCodec(avoid = null) {
     ]);
     if (av1.supported && av1.powerEfficient) codec = "av1";
     else if (h264.supported && h264.powerEfficient) codec = "h264";
-    else if (av1.supported && (!h264.supported || !mobile)) codec = "av1";
     else codec = h264.supported ? "h264" : "av1";
   } catch {
     codec = canReceive("video/av1") === false ? "h264" : "av1";
