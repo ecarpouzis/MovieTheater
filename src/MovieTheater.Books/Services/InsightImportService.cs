@@ -58,7 +58,12 @@ namespace MovieTheater.Books.Services
         /// <summary>One parsed line, validated. <see cref="Error"/> set means the line is invalid and is skipped with a reason.</summary>
         public sealed record Parsed(SubjectKind Kind, int SubjectId, string ModelId, Confidence Confidence, bool Recognized,
             int? Rating, string? Synopsis, string? Author, string? Artist, int? YearBegin, int? YearEnd, int? Maturity,
-            string SourceKey, List<(string Category, string Value)> Tags, string? Error);
+            string SourceKey, List<(string Category, string Value)> Tags, string? Error, bool Supersedes = false);
+
+        /// <summary>The <see cref="Insight.ReviewFlag"/> prefix that drops a row below every other row of its subject in
+        /// <see cref="Resolve.InsightCurrency"/> — set by a <c>"supersedes": true</c> line on the subject's EARLIER rows,
+        /// so a correction wins even when the row it corrects claimed a higher confidence. The row is kept (append-only).</summary>
+        public const string SupersededFlag = "superseded";
 
         public async Task<InsightImportBatchResult> RunBatchAsync(BooksDb db, string path, int batchSize, bool apply, long after,
             TextWriter? report = null, CancellationToken ct = default)
@@ -98,6 +103,17 @@ namespace MovieTheater.Books.Services
 
                 if (apply)
                 {
+                    if (p.Supersedes)
+                    {
+                        var kind = p.Kind; var subject = p.SubjectId;
+                        await db.Insights.Where(n => n.SubjectKind == kind && n.SubjectId == subject
+                                && (n.ReviewFlag == null || !n.ReviewFlag.StartsWith(SupersededFlag)))
+                            .ExecuteUpdateAsync(s => s.SetProperty(n => n.ReviewFlag,
+                                n => n.ReviewFlag == null ? SupersededFlag : SupersededFlag + " | " + n.ReviewFlag), ct);
+                        foreach (var pending in db.Insights.Local.Where(n => n.SubjectKind == kind && n.SubjectId == subject
+                                     && (n.ReviewFlag == null || !n.ReviewFlag.StartsWith(SupersededFlag))))   // earlier lines of this batch
+                            pending.ReviewFlag = pending.ReviewFlag == null ? SupersededFlag : SupersededFlag + " | " + pending.ReviewFlag;
+                    }
                     db.Insights.Add(new Insight
                     {
                         Id = id,
@@ -197,7 +213,7 @@ namespace MovieTheater.Books.Services
                 var sourceKey = Str(r, "sourceKey");
                 return new Parsed(kind.Value, id.Value, model.Trim(), confidence, Bool(r, "recognized") ?? true,
                     rating, Blank(Str(r, "synopsis")), Blank(Str(r, "author")), Blank(Str(r, "artist")), yearBegin, yearEnd, maturity,
-                    string.IsNullOrWhiteSpace(sourceKey) ? defaultSourceKey : sourceKey.Trim(), tags, null);
+                    string.IsNullOrWhiteSpace(sourceKey) ? defaultSourceKey : sourceKey.Trim(), tags, null, Bool(r, "supersedes") ?? false);
             }
         }
 

@@ -216,6 +216,39 @@ namespace MovieTheater.Books.Tests
             }
         }
 
+        [Fact]
+        public async Task A_superseding_correction_becomes_current_over_a_higher_confidence_row_which_is_kept()
+        {
+            using var f = Migrated();
+            var path = Path.Combine(f.WorkDir, "corr.jsonl");
+            int series;
+            await using (var db = f.HotDb())
+            {
+                series = await db.Series.AsNoTracking().Select(s => s.Id).OrderBy(id => id).FirstAsync();
+                await File.WriteAllLinesAsync(path, new[]
+                {
+                    "{\"subject\":\"series\",\"id\":" + series + ",\"model\":\"claude-opus-4-8\",\"confidence\":\"High\",\"rating\":85,\"sourceKey\":\"wrong\"}",
+                    "{\"subject\":\"series\",\"id\":" + series + ",\"model\":\"claude-opus-5-5\",\"confidence\":\"Medium\",\"rating\":50,\"sourceKey\":\"fix\",\"supersedes\":true}",
+                    "{\"subject\":\"series\",\"id\":" + series + ",\"model\":\"claude-opus-4-8\",\"confidence\":\"High\",\"rating\":90,\"sourceKey\":\"later\"}",
+                });
+            }
+            var service = new InsightImportService(NullLogger<InsightImportService>.Instance);
+            await using (var db = f.HotDb())
+            {
+                await service.RunBatchAsync(db, path, 1, apply: true, after: 0);   // one line per batch: the flag hits a SAVED row
+                await service.RunBatchAsync(db, path, 1, apply: true, after: 1);
+                await db.Database.ExecuteSqlRawAsync(InsightCurrency.Sql);
+                var rows = await db.Insights.AsNoTracking().Where(n => n.SubjectKind == SubjectKind.Series && n.SubjectId == series).ToListAsync();
+                Assert.Equal("fix", rows.Single(n => n.IsCurrent).SourceKey);
+                Assert.StartsWith(InsightImportService.SupersededFlag, rows.Single(n => n.SourceKey == "wrong").ReviewFlag);
+
+                // a LATER ordinary row competes normally with the correction (the flag only buried what came before)
+                await service.RunBatchAsync(db, path, 1, apply: true, after: 2);
+                await db.Database.ExecuteSqlRawAsync(InsightCurrency.Sql);
+                Assert.Equal("later", (await db.Insights.AsNoTracking().SingleAsync(n => n.SubjectKind == SubjectKind.Series && n.SubjectId == series && n.IsCurrent)).SourceKey);
+            }
+        }
+
         // ── the curation lane ────────────────────────────────────────────────────────────────────────────
 
         [Fact]
