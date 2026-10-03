@@ -110,6 +110,19 @@ namespace MovieTheater.Db
         [MaxLength(20)]
         public string? Path { get; set; }
 
+        /// <summary>Seconds this peer's decoder was in WEAK distress (repeated keyframe requests, or a decode
+        /// deficit) during the room — the worker's patch-0047 verdict, recorded per peer for the whole room.
+        /// 0 for rows from before the column (2026-10-02) and for healthy sessions alike.</summary>
+        public int DistressWeakTicks { get; set; }
+
+        /// <summary>Seconds this peer's decoder was in STRONG distress (a measured decode deficit — the device
+        /// could not decode <see cref="Codec"/> at the room's size and rate). The per-device codec history the
+        /// Auto codec choice learns from.</summary>
+        public int DistressStrongTicks { get; set; }
+
+        /// <summary>Room scale-downs this peer's strong distress caused.</summary>
+        public int ScaleDowns { get; set; }
+
         public DateTime CreatedUtc { get; set; }
     }
 }

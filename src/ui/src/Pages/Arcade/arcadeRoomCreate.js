@@ -60,8 +60,12 @@ const flags = (r) => (r ? `${r.supported ? "S" : "-"}${r.smooth ? "s" : "-"}${r.
  * The Auto decision plus a one-line summary of what this browser reported — e.g.
  * `"av1:Ss- h264:SsP h265:SsP m0 auto=h264"` — which the server keeps on the session row as codec-population
  * evidence (H.265 is probed for that evidence only; Auto never picks it).
+ *
+ * `avoid` is this device's own history (server `/API/Arcade/CodecHint`): a codec it recently drowned on or
+ * refused. The probe can't see that — a tablet's Chrome reports software AV1 as `smooth` — so when the probe
+ * lands on the avoided codec and the browser supports the other one, the other one wins (`hint=avoid-av1`).
  */
-export async function decideAutoCodec() {
+export async function decideAutoCodec(avoid = null) {
   const mobile = isMobileDevice();
   let av1 = null, h264 = null, h265 = null, codec;
   try {
@@ -76,7 +80,14 @@ export async function decideAutoCodec() {
   } catch {
     codec = canReceive("video/av1") === false ? "h264" : "av1";
   }
-  return { codec, probe: `av1:${flags(av1)} h264:${flags(h264)} h265:${flags(h265)} m${mobile ? 1 : 0} auto=${codec}` };
+  let hinted = "";
+  if (avoid && avoid === codec) {
+    const other = codec === "av1" ? "h264" : "av1";
+    const otherProbe = other === "av1" ? av1 : h264;
+    const otherOk = otherProbe ? otherProbe.supported : canReceive(`video/${other}`) !== false;
+    if (otherOk) { codec = other; hinted = ` hint=avoid-${avoid}`; }
+  }
+  return { codec, probe: `av1:${flags(av1)} h264:${flags(h264)} h265:${flags(h265)} m${mobile ? 1 : 0} auto=${codec}${hinted}` };
 }
 
 export async function resolveAutoCodec() {
@@ -142,7 +153,8 @@ export function createRoomAndGo(gameId, opts, history) {
   const q = loadQuality();
   const net = NETWORK_PROFILES[q.network] || NETWORK_PROFILES.lan;
   const netParams = q.networkChosen ? net : { audioFec: net.audioFec };
-  return Promise.resolve(q.codec === "auto" ? decideAutoCodec() : { codec: q.codec, probe: undefined })
+  const auto = () => MovieAPI.getArcadeCodecHint(arcadeDeviceId()).then((h) => decideAutoCodec(h && h.avoid));
+  return Promise.resolve(q.codec === "auto" ? auto() : { codec: q.codec, probe: undefined })
     .then(({ codec, probe }) => MovieAPI.createArcadeRoom(gameId, {
       ...opts, videoBitrateKbps: q.videoBitrateKbps, ...netParams, videoCodec: codec, codecProbe: probe, deviceId: arcadeDeviceId(),
     }))

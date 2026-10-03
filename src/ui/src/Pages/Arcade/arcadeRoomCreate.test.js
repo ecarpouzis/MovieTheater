@@ -134,3 +134,20 @@ describe("localNetworkPermission", () => {
     expect(await localNetworkPermission()).toBe("prompt");
   });
 });
+
+describe("decideAutoCodec with a device-history hint", () => {
+  it("switches away from a codec this device drowned on, when the other is supported", async () => {
+    stubNavigator({ av1: ans(true, false), h264: ans(true, false) }); // desktop, both software → av1
+    expect(await decideAutoCodec("av1")).toEqual({ codec: "h264", probe: "av1:Ss- h264:Ss- h265:Ss- m0 auto=h264 hint=avoid-av1" });
+  });
+
+  it("never switches to a codec the browser can't decode", async () => {
+    stubNavigator({ av1: ans(true, false), h264: ans(false, false) }); // Firefox without OpenH264
+    expect((await decideAutoCodec("av1")).codec).toBe("av1");
+  });
+
+  it("ignores a hint about the codec it wasn't going to pick", async () => {
+    stubNavigator({ av1: ans(true, true), h264: ans(true, true) });
+    expect(await decideAutoCodec("h264")).toEqual({ codec: "av1", probe: "av1:SsP h264:SsP h265:SsP m0 auto=av1" });
+  });
+});

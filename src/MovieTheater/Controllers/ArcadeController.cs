@@ -2149,6 +2149,11 @@ namespace MovieTheater.Controllers
             public double RttMeanMs { get; set; }
             public double RttSdMs { get; set; }
             public string? Path { get; set; }
+            /// <summary>The peer's decoder-distress record for the room (worker patch 0047): seconds in weak /
+            /// strong distress and the room scale-downs it caused. Absent from older workers (= 0).</summary>
+            public int DistressWeakTicks { get; set; }
+            public int DistressStrongTicks { get; set; }
+            public int ScaleDowns { get; set; }
         }
 
         /// <summary>Record one peer's session link measurement from the CloudRetro worker at room close
@@ -2205,6 +2210,9 @@ namespace MovieTheater.Controllers
                 RttMeanMs = SaneMs(req.RttMeanMs),
                 RttSdMs = SaneMs(req.RttSdMs),
                 Path = path,
+                DistressWeakTicks = Math.Clamp(req.DistressWeakTicks, 0, 100000),
+                DistressStrongTicks = Math.Clamp(req.DistressStrongTicks, 0, 100000),
+                ScaleDowns = Math.Clamp(req.ScaleDowns, 0, 1000),
                 CreatedUtc = DateTime.UtcNow,
             });
             await movieDb.SaveChangesAsync();
@@ -3515,6 +3523,28 @@ namespace MovieTheater.Controllers
                 youAreSpectator = status.YouAreSpectator,
                 saveToken,
             });
+        }
+
+        // Per-device codec hint (codec program B5): what this device's own ArcadeLinkStat history says about the
+        // two codecs, for the creator's Auto choice. The rule lives in ArcadeCodecHint.
+        [HttpGet("/API/Arcade/CodecHint")]
+        public async Task<IActionResult> CodecHint([FromQuery] string? deviceId)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+            var dev = SanitizeDeviceId(deviceId);
+            if (string.IsNullOrEmpty(dev))
+                return Json(new { avoid = (string?)null });
+            var since = DateTime.UtcNow - ArcadeCodecHint.Window;
+            var rows = await movieDb.ArcadeLinkStats
+                .Where(r => r.UserId == userId.Value && r.DeviceId == dev && r.CreatedUtc >= since)
+                .OrderByDescending(r => r.CreatedUtc)
+                .Take(30)
+                .Select(r => new { r.Codec, r.Path, r.DistressStrongTicks, r.ScaleDowns })
+                .ToListAsync();
+            var avoid = ArcadeCodecHint.CodecToAvoid(rows.Select(r => (r.Codec, r.Path, r.DistressStrongTicks, r.ScaleDowns)));
+            return Json(new { avoid });
         }
 
         public sealed class CodecRefusalRequest

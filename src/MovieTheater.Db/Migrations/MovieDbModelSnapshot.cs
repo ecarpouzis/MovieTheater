@@ -482,6 +482,12 @@ namespace MovieTheater.Db.Migrations
                     b.Property<int>("CutsSteady")
                         .HasColumnType("int");
 
+                    b.Property<int>("DistressStrongTicks")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DistressWeakTicks")
+                        .HasColumnType("int");
+
                     b.Property<string>("DeviceId")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -502,6 +508,9 @@ namespace MovieTheater.Db.Migrations
 
                     b.Property<double>("RttSdMs")
                         .HasColumnType("float");
+
+                    b.Property<int>("ScaleDowns")
+                        .HasColumnType("int");
 
                     b.Property<int>("StarvesSteady")
                         .HasColumnType("int");
