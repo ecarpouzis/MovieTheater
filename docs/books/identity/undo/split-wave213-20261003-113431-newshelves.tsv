@@ -1,0 +1,15 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S105441	Fury (2023)	run={"cv": 150604, "gcd": 200943}	P-083.jsonl	new	pair=7055
+S17870	The 06 Protocol	run={"cv": 145036, "gcd": 189398}	P-083.jsonl	new	pair=17868
+S105447	The Book of Hope (2015)	run=-	P-083.jsonl	new	pair=17868
+S105443	The 500 Years of Resistance Comic Book (2010)	run=-	P-083.jsonl	new	pair=17868
+S105446	The Book of Forks (2019)	run=-	P-083.jsonl	new	pair=17868
+S105448	The Book of Human Insects (2017)	run=-	P-083.jsonl	new	pair=17868
+S105444	The Book About What's Inside the Box (2012)	run=-	P-083.jsonl	new	pair=17868
+S105449	The Book of Mr. Natural (1997)	run=-	P-083.jsonl	new	pair=17868
+S105445	The Book Tour (2020)	run=-	P-083.jsonl	new	pair=17868
+S7055	moved out -> S105441 "Fury (2023)"	run=-	P-083.jsonl	kept	pair=7055	moved_cv=150604
+S17868	moved out -> S17870 "The 06 Protocol"; S105447 "The Book of Hope (2015)"; S105443 "The 500 Years of Resistance Comic Book (2010)"; S105446 "The Book of Forks (2019)"; S105448 "The Book of Human Insects (2017)"; S105444 "The Book About What's Inside the Box (2012)"; S105449 "The Book of Mr. Natural (1997)"; S105445 "The Book Tour (2020)"	run=-	P-083.jsonl	kept	pair=17868	moved_cv=145036

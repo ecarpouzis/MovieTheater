@@ -1,0 +1,163 @@
+## Conventions for this batch (24 shown of 99 matched; 419 in LEDGER.md; 2 shelf/shelves: pub:marvel ×2 · folder:sequel-subfolder ×1 · folder:vn-year ×1 · folder:graphic-novels ×1 · pub:top-shelf ×1 · pub:aftershock ×1 · pub:fantagraphics ×1 · kind:manga ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-112] (2 shelf/shelves) pub:dark-horse pub:marvel pub:star-wars sig:trade-link
+- Episodes IV/V film adaptations have no series record of their own (they sit INSIDE Star Wars 1977); the 2015
+  collected record carries them with an `N`. Episodes I/II/III/VI take the Dark Horse / 1983 Marvel original.
+[L-127] (2 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-136] (2 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-388] (2 shelf/shelves) pub:marvel sig:split
+- R-134 (wave 128, lead ruling): RESIDUE vs co-equal — two or more whole trades of another run are a co-equal run (R +
+  split-needed) only when that run has NO shelf of its own; when its run or line already has a shelf, they are misfiled
+  books: S + `F split-needed | items -> join S<home>` (L-368; X-Factor 2024 S66336's two Peter David omnibuses -> S22172).
+  `#MARVEL CURRENT ONGOING TITLES`: Marika / MikeNY76 ComicInfo Web ids and "cvv<id>" Series strings name the stored CV
+  volume (1.0 evidence). From the Ashes "Variant Covers" folders hold the PREVIOUS run's finale covers (X-Men v6 #35 in
+  the v7 folder). "_X-Men Complete Chronology V2\NNNN <event>" annuals are event-chapter excerpts = partial rips. A
+  ripper's "Omnibus Book 01" in a run's folder can be that run's first omnibus, not the line's Vol. 1 (page count decides).
+  CV mints one count-1 volume per Venom by Ewing trade; GCD keeps two lines (183532 Vols 1-4, 208820 Vols 5-8).
+[L-021] (1 shelf/shelves) pub:dark-horse pub:disney pub:dstlry pub:dynamite pub:fantagraphics pub:idw
+- The Disney folder is publisher-agnostic (Joe Books, Dark Horse, IDW, Dynamite, Fantagraphics, Yen Press on one
+  shelf) — the provider's publisher column is the only test. DSTLRY filenames' "(N covers)" is a cover count.
+[L-046] (1 shelf/shelves) pub:action-lab pub:aftershock pub:small-press sig:probe
+- Small-press American floppies (Action Lab, Aftershock minis, Behemoth) are thin in GCD → `provider-missing` on
+  the GCD side is common and honest.
+[L-060] (1 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-104] (1 shelf/shelves) kind:manga pub:dark-horse pub:marvel pub:star-wars sig:probe
+- Star Wars manga needs BOTH spellings: ComicVine files Dark Horse's 1999 adaptations as "Manga Star Wars:
+  <Film>", GCD as "Star Wars: … — Manga"; neither probe finds the other.
+[L-106] (1 shelf/shelves) pub:marvel pub:star-wars sig:trade-link
+- The count-1-trade-as-stored-link artefact runs at Marvel too (14 Star Wars shelves in one batch); a collected
+  series whose count equals exactly our two books is the matches-our-holdings trap.
+[L-111] (1 shelf/shelves) pub:marvel pub:star-wars sig:trade-link
+- Star Wars "Marvel Edition" digital trades (Kileko/Zone/Shan-Empire): both providers mint a same-title count-1
+  record the year the trade shipped beside the 4-6 issue run; the stored link is the trade on 36 of 150 shelves.
+[L-116] (1 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-138] (1 shelf/shelves) pub:marvel sig:trade-link sig:twin
+- GCD mints TWIN count-1 rows for Marvel digital trades far more often than expected (14 pairs in three batches:
+  192062/192065, 233265/233608, 234147/234148, 218420/218632 …); a twin caps the line at 0.9 and blocks a GCD issue-level `I` id.
+[L-154] (1 shelf/shelves) pub:idw pub:top-shelf
+- Top Shelf is an IDW imprint: GCD files every post-2016 Top Shelf book under publisher "IDW" while ComicVine says
+  "Top Shelf" — the publisher columns disagree by imprint, not by comic (40 clean 0.95 pairs in B-068).
+[L-170] (1 shelf/shelves) pub:marvel sig:barcode
+- Modern Marvel tie-in collections are 116pp almost without exception (a 3-issue mini) and 124pp for a 4-issue one;
+  `gcd_issue` page+ISBN places every such trade within 3-20pp of our rip.
+[L-187] (1 shelf/shelves) pub:marvel sig:trade-link
+- A plain "<Title>" 2015 count-4/5 CV/GCD record IS the Secret Wars Warzones mini; the "<Title>: Warzones!" /
+  "Battleworld" count-1 records are the 2016+ collected repackagings — the mini's record wins, the trade goes on `I`.
+[L-296] (1 shelf/shelves) kind:collected-line kind:magazine kind:manga pass:item pub:marvel
+- A magazine whose files carry only a ripper-assigned continuous "Vol. NNN" (Weekly Shonen Jump: CV numbers by
+  cover date, no page counts, no GCD leg) is unmappable → `N no-record` per book. An Epic Collection whose judged
+  ranges are a CUMULATIVE count across several volumes (Doctor Strange: Strange Tales + two later volumes) has no
+  single run id → `N` explaining the cumulative numbering.
+[L-301] (1 shelf/shelves) pass:item pub:image pub:marvel
+- Locke & Key is six separately numbered 6-issue seasons with a distinct count-6 record each (not arcs of one
+  ongoing); Criminal's Image 2015-16 volumes are reprint PRINTINGS of the Icon originals (GCD 86891 title-matches,
+  the first editions are CV 39022 / 39023 / 39025). A CV VOLUME id in `cv=` on an `I` line and a raw GCD SERIES id
+  in `gcd=` (instead of `gcd=s<series>`) are the two commonest checker-caught slips — the `I` wants the issue row.
+[L-315] (1 shelf/shelves) pub:marvel sig:trade-link
+- C-055..C-057 (Marvel V-X): "Flashback -1" (1997) and "AU" (2013 Age of Ultron) tie-ins are the host ongoing's OWN
+  numbering (GCD has literal "-1" rows), never a separate volume. Modern "Vol. NN - Subtitle" trades often have
+  their own count-1 CV volume with no GCD row — honest gcd=-. `F wrong-cv-link` is its own line, never text inside
+  the S clause (the checker rejects it).
+[L-321] (1 shelf/shelves) kind:foreign kind:new pub:dark-horse pub:drawn-quarterly pub:fantagraphics pub:first-second sig:probe sig:split tier:D
+- TIER D (D-004..D-006): one CV volume per LINE vs one GCD row per BOOK is what cuts a tier-D folder into shelves
+  (Maakies, Black Moon Chronicles, Wunderwaffen, Ekho, Moebius Library) — `--issues <line volume>` resolves the whole
+  folder by subtitle; the reverse (GCD keeps the line, CV per book: Don Rosa Library, Complete Crepax, History
+  Comics) → cv=- on the S, per-book CV issues on the I. 2022-25 Fantagraphics / D&Q / First Second / Dark Horse
+  singletons are past the rip's horizon → GCD-only cv=- + provider-missing (~150 of 360). A GCD row with count 0 and a
+  "do not add issues" note naming its constituents IS the finding (R + split with those ids); a GCD row with zero
+  indexed issues but the right title still carries the S, the I takes `gcd=s<series>`. GCD splits a run at a mid-run
+  trademark retitle (Tommy Gun: Wizards 149904 / Machine Gun: Wizards 153050 vs CV's one 120928). LEAD RULING: when
+  the ONLY catalog record of a comic is a third-territory licence (a German Splitter edition of a French album whose
+  original is in neither catalog) link it at 0.7 + provider-missing — the review queue, not an applied identity —
+  so the web lane gets a concrete question instead of a refusal.
+[L-325] (1 shelf/shelves) kind:archive kind:kids kind:strip pass:item pub:idw pub:papercutz-nbm pub:top-shelf pub:trade-house sig:barcode sig:collision sig:gcd-notes sig:probe tier:D
+- TIER D (D-016..D-018): a ripper's per-issue suffix gives every issue of one LINE its own shelf (61 Garfield shelves
+  = one Ballantine line CV 39429 / GCD 70018) — survivor takes the S, the rest merge-with. On small-press
+  singletons the PUBLISHER LIST beats every name probe (`gcd_series WHERE publisher_id=?` + `cv_vol.publisherName`);
+  GCD's first-printing page count pins an unlabelled album rip; `gcd_series.notes` can name the shelf outright —
+  read notes before refusing on a title mismatch. Top Shelf post-2016 is filed under IDW in GCD (ISBN 1-60309) and
+  absent from ComicVine. Year-by-year web-strip archives are provider-missing however famous (the catalogs hold the
+  strip's BOOKS). Papercutz / NBM kids lines span in both legs under NBM — probe the LINE. A barcode UPC core shared
+  by every file identifies the SERIES (1.0 on the S, `gcd=s<series>` on the I). A book whose only record is a
+  volume-level CV row with no cached issue and no GCD series is covered by `N <item> no-record` naming the volume.
+[L-334] (1 shelf/shelves) pub:aftershock pub:boom sig:probe
+- AfterShock / AMP / Aspen / Boom sequel minis: GCD often DROPS the article or files by ordinal, licensor/creator
+  prefix or the first book's subtitle ("Maniac of New York: Volume 2", "Edgar Rice Burroughs' the Moon Maid…",
+  "Michael Turner's Soulfire Core") — probe `--contains` on a fragment and `--gcd-series` before provider-missing.
+[L-342] (1 shelf/shelves) pub:fantagraphics
+- Fantagraphics singletons are often ONE numbered row of a GCD line (EC Artists' Library, Freak Brothers Follies) while
+  CV mints a volume per book — probe the LINE name before provider-missing. A line spanning several works keeps its
+  own identity; a one-volume edition / omnibus of ONE run on its own shelf is a merge into the live run shelf (Bone,
+  Mask of Fudo, Tenement — R-065).
+[L-356] (1 shelf/shelves) kind:manga pub:marvel sig:probe
+- Marvel: CV sometimes mints a floppy one-shot as "Marvel Voices: X" (no 's), separate from the "Marvel's Voices: X" TPB
+  — probe both. Manga scanlations of UNTRANSLATED work: the Japanese-original row exists when the English title returns
+  nothing (CV "Kizuoibito" = Wounded Man, GCD "Nanbā Faibu" = No. 5) — probe the romanised Japanese title. Titan Star
+  Wars Insider specials are in the CV rip under their subtitle. A packet's `--id` can show a BLANK CV volume name
+  (2909) while `--issues` reveals the real one — check before writing needs-web (R-084).
+[L-371] (1 shelf/shelves) pub:marvel sig:split
+- A split F line's "new key" can already be a LIVE shelf's key (a trade-only shelf of the same run, e.g. Superboy v6
+  (2011) = S100132's key) — check `nearby:` / `lookup.py --shelf` and write it as an explicit join. Stored GCD rows on
+  Marvel 2022+ trades can be the PANINI FRANCE edition — `--collects` on the English row confirms the right one.
+  Digital rips of Marvel trades run ~88-92% of GCD's printed page count — a usable per-book fit when the filename year is
+  the digital release date (R-111).
+
++75 more matched entries not shown: L-375, L-378, L-383, L-386, L-387, L-389, L-390, L-391, L-393, L-395, L-396, L-402, L-403, L-013, L-014, L-016, L-032, L-043, L-050, L-072, L-085, L-088, L-089, L-095, L-096, L-098, L-100, L-113, L-114, L-118, L-124, L-125, L-157, L-159, L-163, L-177, L-191, L-193, L-204, L-253, L-264, L-267, L-272, L-273, L-274, L-276, L-277, L-278, L-280, L-281, L-283, L-284, L-288, L-289, L-290, L-292, L-293, L-294, L-304, L-341, L-344, L-346, L-347, L-041, L-064, L-074, L-083, L-101, L-123, L-128, L-150, L-181, L-192, L-250, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S7055 Fury  [split]  2 files / 0 collections  decided in R-208 (R)
+   decided: R 7055 | two different one-shots share the bare title: "Fury (1994)" (67pp, S.H.I.E.L.D + Nick Fury\04 Fury (1994)) = CV 25997 / GCD 15497 (Marvel 1994, 1, 68pp), and "Fury 001 (2023)" (41pp, Fury v3 (2023)) = CV 150604 / GCD 200943 (Marvel 2023, 1); one shelf cannot carry both
+   F 7055 split-needed | Fury (1994) item 93174 → CV 25997 / GCD 15497; Fury (2023) item 47998 → CV 150604 / GCD 200943, each its own one-shot shelf
+   nearby: S15411 "Sgt. Fury" 15f [title+1 — S cv=6724 gcd=7233 (C-049 0.9)] keys: "Marvel Masterworks - Sgt. Fury" | "Sgt. Fury" | "Sgt. Fury Annual" | "Sgt. Fury Epic Collection"
+   nearby: S14453 "Red Fury" 9f [title+1 — S cv=85900 (B-064 0.9)] keys: "Red Fury" · S7056 "Fury: Peacemaker" 6f [title+1 — S cv=18538 gcd=17595 (A-025 0.95)] keys: "Fury - Peacemaker"
+   nearby: S12202 "Miss Fury" 6f [title+1 — S cv=59519 gcd=73395 (C-028 0.9)] keys: "Miss Fury" | "Miss Fury v1 (2013)" · S98546 "Miss Fury" 5f [title+1 — S cv=89376 gcd=99350 (C-024 0.95)] keys: "Miss Fury v2 (2016)"
+   nearby: S7057 "Fury Max" 2f [title+1 — S cv=48584 gcd=65466 (A-025 0.95)] keys: "Fury MAX - My War Gone By" · S7409 "Get Fury" 2f [title+1 — S cv=157941 gcd=211729 (C-049 0.9)] keys: "Get Fury"
+   nearby: S12904 "Nick Fury" 1f [title+1 — S cv=100830 gcd=113548 (B-058 0.95)] keys: "Nick Fury - Deep-Cover Capers"
+   keys now: "Fury" x2
+   groups (title x folder): 2
+   G1 "Fury" in Marvel\#MARVEL CURRENT ONGOING TITLES\Fury v3 (2023) — 1 file(s), numbers 1, pp 41-41; cv per-file 150604x1; gcd per-file 200943x1; key 'Fury'
+      [47998] Fury 001 (2023) (Digital) (Zone-Empire).cbr (41pp)
+   G2 "Fury (1994) (Digital) (Shadowcat-Empire)" in Marvel\_S.H.I.E.L.D + Nick Fury\04 Fury (1994) — 1 file(s), pp 67-67; cv per-file 25997x1; gcd per-file 15497x1; key 'Fury'
+      [93174] Fury (1994) (Digital) (Shadowcat-Empire).cbz (67pp)
+
+== S17868 The  [split]  14 files / 0 collections  decided in R-208 (R)
+   decided: R 17868 | a parse fault: every "The …" filename was cut to the key "The", so this shelf is a heap of unrelated books — The Book of Lost Souls 01-06 (Icon/Marvel 2005-2006, CV 23355 / GCD 13729), The 06 Protocol 001 (AfterShock 2022, CV 145036 / GCD 189398), The Book of Hope, The 500 Years of Resistance Comic Book, The Book of Forks, The Book of Human Insects (Tezuka), The Book About What's Inside the Box (Chris Ware), The Book of Mr. Natural (Crumb), The Book Tour
+   F 17868 split-needed | each title is its own shelf: The Book of Lost Souls 30220-30225 → CV 23355 / GCD 13729; The 06 Protocol 6346 → CV 145036 / GCD 189398; the rest one-book shelves by their full titles
+   nearby: S17870 "The 06 Protocol" 2f [shares cv=145036, shares gcd=189398 — S cv=145036 gcd=189398 (A-003 0.95)] keys: "The 06 Protocol"
+   nearby: S6233 "Eternals: The 500 Year War: Infinity Comic" 7f [title+1 — S cv=141397 (R-067 0.9)] keys: "Eternals - The"
+   nearby: S21543 "What The--?!" 7f [title+1 — S cv=4079 gcd=3675 (C-040 0.95)] keys: "What The!" | "What The--?!" | "What the-- !"
+   nearby: S14153 "Protocol: Orphans" 4f [title+1 — S cv=69178 gcd=78034 (A-006 0.95)] keys: "Protocol - Orphans" · S105312 "Wolverine, The" 1f [title+1] keys: "Wolverine, The"
+   keys now: "The" x14
+   groups (title x folder): 9
+   G1 "The 06 Protocol" in Aftershock\The 06 Protocol (2022) — 1 file(s), numbers 1, pp 36-36; cv per-file 23355x1; gcd per-file 189398x1; key 'The'
+      [6346] The 06 Protocol 001 (2022) (digital) (Son of Ultron-Empire).cbr (36pp)
+   G2 "The Book of Hope (2015) (digital) (Mr Norrell-Empire)" in Fantagraphics — 1 file(s), pp 208-208; cv per-file 23355x1; key 'The'
+      [24222] The Book of Hope (2015) (digital) (Mr Norrell-Empire).cbr (208pp)
+   G3 "The 500 Years of Resistance Comic Book (2010) (hybrid-SD) (squeak the mouse)" in Graphic Novels — 1 file(s), numbers 500, pp 91-91; cv per-file 23355x1; key 'The'
+      [27496] The 500 Years of Resistance Comic Book (2010) (hybrid-SD) (squeak the mouse).cbz (91pp)
+   G4 "The Book of Forks (2019) (Digital) (XRA-Empire)" in Graphic Novels\_Self Made Hero\The Motherless Oven Trilogy (2014) — 1 file(s), numbers 3, pp 196-196; cv per-file 23355x1; key 'The'
+      [27029] 03 The Book of Forks (2019) (Digital) (XRA-Empire).cbz (196pp)
+   G5 "The Book of Lost Souls" in Icon\The Book of Lost Souls — 6 file(s), numbers 1-6, pp 23-26; cv per-file 23355x6; key 'The'
+      e.g. The Book of Lost Souls 01.cbr
+        30220 #1 23pp · 30221 #2 23pp · 30222 #3 2006 24pp · 30223 #4 2006 25pp · 30224 #5 2006 24pp · 30225 #6 2006 26pp
+   G6 "The Book of Human Insects (2017) (digital) (DrVink)" in Manga\_Osamu Tezuka — 1 file(s), pp 368-368; cv per-file 23355x1; key 'The'
+      [42931] The Book of Human Insects (2017) (digital) (DrVink).cbz (368pp)
+   G7 "The Book About What's Inside The Box" in Misc\Building Stories - Chris Ware\The Book About What's Inside The Box — 1 file(s), pp 13-13; cv per-file 23355x1; key 'The'
+      [105968] The Book About What's Inside The Box.cbz (13pp)
+   G8 "The Book Of Mr. Natural" in Misc\R. Crumb — 1 file(s), pp 129-129; cv per-file 23355x1; key 'The'
+      [107150] The Book Of Mr. Natural (1997).cbr (129pp)
+   G9 "The Book Tour (2020) (Digital) (XRA-Empire)" in Top Shelf — 1 file(s), pp 273-273; cv per-file 23355x1; key 'The'
+      [110728] The Book Tour (2020) (Digital) (XRA-Empire).cbz (273pp)

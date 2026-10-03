@@ -1,0 +1,230 @@
+## Conventions for this batch (32 shown of 84 matched; 419 in LEDGER.md; 11 shelf/shelves: pub:marvel ×3 · folder:graphic-novels ×2 · folder:vn-year ×1 · kind:new ×1 · folder:sequel-subfolder ×1 · pub:aftershock ×1 · pub:fantagraphics ×1 · kind:manga ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-014] (11 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-030] (11 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-151] (11 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (11 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-193] (11 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-013] (10 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-043] (10 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (10 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (10 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (10 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (10 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (10 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (10 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (10 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (10 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (10 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (10 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (10 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (10 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-204] (10 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (10 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (10 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (10 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (10 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (10 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (10 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (10 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (10 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (10 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
+[L-033] (3 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (3 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-378] (3 shelf/shelves) pub:gold-key-dell pub:idw pub:marvel sig:collision sig:split
+- PUBLISHER-CHANGE chains (lead ruling 2026-09-24; Bugs Bunny Dell #28-85 -> Gold Key #86+, Felix Toby -> Harvey, G.I. Joe
+  ARAH Marvel #1-155 -> IDW #156+): numbering that continues across a publisher change is ONE run (one shelf, L-212), but
+  the shelf STORES THE ERA WITH THE WIDEST SPAN, not the chain's first record. L-369's first-record rule is for retitle
+  chains where a catalogue keeps one record across the retitle; on a publisher change both catalogues split by era, so no
+  first record covers the chain (precedents: L-039 DV8, L-100 manga publisher moves, L-242 Dell -> Gold Key funny animals).
+  The other eras' records go on N lines; each book's own era record goes on its I line. A first record that covers a
+  fraction of the shelf fails the ladder test anyway.
+
++52 more matched entries not shown: L-016, L-032, L-113, L-114, L-191, L-021, L-046, L-060, L-116, L-127, L-136, L-154, L-301, L-306, L-321, L-325, L-334, L-342, L-375, L-383, L-388, L-098, L-100, L-124, L-272, L-274, L-276, L-277, L-278, L-280, L-281, L-283, L-284, L-288, L-289, L-290, L-293, L-304, L-344, L-064, L-065, L-074, L-083, L-085, L-099, L-101, L-123, L-150, L-194, L-250, L-262, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S105441 Fury (2023)  [tier D]   keys: Fury (2023)  years 2023-2023  1 files / 0 collections
+   split run: "Fury (2023)" run={"cv": 150604, "gcd": 200943} (new shelf from P-083) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\#MARVEL CURRENT ONGOING TITLES\Fury v3 (2023)
+   files:   [47998] Fury 001 (2023) (Digital) (Zone-Empire).cbr (41pp)
+   ours:    ladder 1; ComicInfo Series: "Fury"x1; ComicInfo Publisher: "Marvel"x1
+   CV local rip:   150604 "Fury" 2023 Marvel 1 issue 991066 (via our own name without the filing suffix "Fury") · 166277 "Fury" 2005 Mandragora 6 (via our own name without the filing suffix "Fury") · 9108 "Fury" 2001 Marvel 6 (via our own name without the filing suffix "Fury") · 25997 "Fury" 1994 Marvel 1 issue 153656 (via our own name without the filing suffix "Fury") · 47401 "Fury" 1977 Marvel UK/Panini UK 25 (via our own name without the filing suffix "Fury") · 30134 "Fury" 1962 Western Publishing 1 issue 185495 (via our own name without the filing suffix "Fury")   (rip lookup)
+   GCD dump:       200943 "Fury" 2023-2023 Marvel [] 1 (via our own name without the filing suffix "Fury") · 60617 "Fury" [de] 2002-2002 Panini Deutschland [] 3 (via our own name without the filing suffix "Fury") · 175485 "Fury" [fr] 2002-2002 Panini France [] 1 (via our own name without the filing suffix "Fury") · 183865 "Fury" 2002-2002 Marvel [] 1 (via our own name without the filing suffix "Fury") · 9840 "Fury" 2001-2002 Marvel [] 6 (via our own name without the filing suffix "Fury") · 15497 "Fury" 1994-1994 Marvel [] 1 (via our own name without the filing suffix "Fury")   (dump lookup)
+
+== S7055 Fury  [tier B]   keys: Fury  years 1994-1994  1 files / 0 collections
+   split: the KEPT half of the P-083 split — moved out -> S105441 "Fury (2023)"; re-identify what stayed
+   folders: [1] Marvel\_S.H.I.E.L.D + Nick Fury\04 Fury (1994)
+   files:   [93174] Fury (1994) (Digital) (Shadowcat-Empire).cbz (67pp)
+   CV linked:      vol 25997 "Fury" 1994 Marvel 1 issues issue 153656; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 47401 "Fury" 1977 Marvel UK/Panini UK 25 s97 · 30134 "Fury" 1962 Western Publishing 1 issue 185495 s85 · 150604 "Fury" 2023 Marvel 1 issue 991066 s58 · 9108 "Fury" 2001 Marvel 6 s53 · 56671 "1994 Marvel Comics Publishing Plan" 1993 Marvel 2 s42 · 59101 "Marvel Masterworks: Sgt. Fury" 2006 Marvel 4 s40   (v1 search)
+   CV local rip:   (= linked) · 9108 "Fury" 2001 Marvel 6 · 166277 "Fury" 2005 Mandragora 6 · 47401 "Fury" 1977 Marvel UK/Panini UK 25 · 150604 "Fury" 2023 Marvel 1 issue 991066 · 30134 "Fury" 1962 Western Publishing 1 issue 185495   (rip lookup)
+   GCD dump:       15497 "Fury" 1994-1994 Marvel [] 1 · 9840 "Fury" 2001-2002 Marvel [] 6 · 60617 "Fury" [de] 2002-2002 Panini Deutschland [] 3 · 175485 "Fury" [fr] 2002-2002 Panini France [] 1 · 183865 "Fury" 2002-2002 Marvel [] 1 · 164316 "Fury" [fr] 1978-1978 Sage - Sagédition [] 1   (dump lookup)
+
+== S17870 The 06 Protocol  [tier C] · gap 17  keys: The 06 Protocol  years 2005-2023  3 files / 0 collections
+   split run: "The 06 Protocol" run={"cv": 145036, "gcd": 189398} (new shelf from P-083) — seed the S line from these ids, then verify them
+   folders: [3] Aftershock\The 06 Protocol (2022)
+   files:   [6346] The 06 Protocol 001 (2022) (digital) (Son of Ultron-Empire).cbr (36pp) | [6347] The 06 Protocol 002 (2022) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [6348] The 06 Protocol 003 (2023) (digital) (Son of Ultron-Empire).cbr (35pp)
+   ours:    ladder 1-3; ComicInfo Series: "06 Protocol"x2; ComicInfo Publisher: "Aftershock Comics"x2
+   CV linked:      vol 145036 "The 06 Protocol" 2022 Aftershock Comics 3 issues; cached #1-3 (3); yearΔ 17; ratio 3/3 = 1.00; no judged range
+   CV per-file (v1): vol 145036 "The 06 Protocol" 2022 Aftershock Comics 3 on 2/3 files · vol 23355 "The Book of Lost Souls" 2005 Marvel 6 on 1/3 files
+   CV local rip:   (= linked) · 29509 "The Book Of Lost Souls" 1991 Leadbelly Publications 1 issue 181942 (via CV name "The Book of Lost Souls")   (rip lookup)
+   GCD per-file:   methods numx2 · round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 189398 "The 06 Protocol" 2022-2023 AfterShock [limited series] 3 on 3/3 files
+   GCD dump:       (= per-file) · 13729 "Book of Lost Souls" 2005-2006 Marvel [] 6 (via CV name "The Book of Lost Souls") · 26161 "The Book of Lost Souls" 1991-1991 Leadbelly Productions [] 1 (via CV name "The Book of Lost Souls")   (dump lookup)
+   bridges:        gcd 189398 -> LOCG 159554 "The 06 Protocol" support 3
+
+== S105447 The Book of Hope (2015)  [tier B]   keys: The Book of Hope (2015)  years 2015-2015  1 files / 0 collections
+   split run: "The Book of Hope (2015)" run=- (new shelf from P-083) — seed the S line from these ids, then verify them
+   folders: [1] Fantagraphics
+   files:   [24222] The Book of Hope (2015) (digital) (Mr Norrell-Empire).cbr (208pp)
+   CV per-file (v1): vol 23355 "The Book of Lost Souls" 2005 Marvel 6 on 1/1 files
+   CV local rip:   (= per-file) · 87427 "The Book of Hope" 2016 Fantagraphics 1 issue 511580 (via our own name without the filing suffix "The Book of Hope") · 29509 "The Book Of Lost Souls" 1991 Leadbelly Publications 1 issue 181942 (via CV name "The Book of Lost Souls")   (rip lookup)
+   GCD dump:       95677 "Book of Hope" 2016-2016 Fantagraphics [] 1 (via our own name without the filing suffix "The Book of Hope") · 13729 "Book of Lost Souls" 2005-2006 Marvel [] 6 (via CV name "The Book of Lost Souls") · 26161 "The Book of Lost Souls" 1991-1991 Leadbelly Productions [] 1 (via CV name "The Book of Lost Souls")   (dump lookup)
+
+== S105443 The 500 Years of Resistance Comic Book (2010)  [tier B]   keys: The 500 Years of Resistance Comic Book (2010)  years 2010-2010  1 files / 0 collections
+   split run: "The 500 Years of Resistance Comic Book (2010)" run=- (new shelf from P-083) — seed the S line from these ids, then verify them
+   folders: [1] Graphic Novels
+   files:   [27496] The 500 Years of Resistance Comic Book (2010) (hybrid-SD) (squeak the mouse).cbz (91pp)
+   ours:    ladder 500; barcode item 27496 [{"type": "EAN13", "data": "9781551523606", "page": "0 Years
+   CV per-file (v1): vol 23355 "The Book of Lost Souls" 2005 Marvel 6 on 1/1 files
+   CV local rip:   (= per-file) · 36374 "500 Years of Resistance Comic Book" 2010 Arsenal Pulp Press 1 issue 240130 (via our own name without the filing suffix "The 500 Years of Resistance Comic Book") · 29509 "The Book Of Lost Souls" 1991 Leadbelly Publications 1 issue 181942 (via CV name "The Book of Lost Souls")   (rip lookup)
+   GCD dump:       115764 "The 500 Years of Resistance Comic Book" [en-ca] 2010-2016 Arsenal Pulp Press [] 1 (via our own name without the filing suffix "The 500 Years of Resistance Comic Book") · 13729 "Book of Lost Souls" 2005-2006 Marvel [] 6 (via CV name "The Book of Lost Souls") · 26161 "The Book of Lost Souls" 1991-1991 Leadbelly Productions [] 1 (via CV name "The Book of Lost Souls")   (dump lookup)
+
+== S105446 The Book of Forks (2019)  [tier B]   keys: The Book of Forks (2019)  years 2006-2006  1 files / 0 collections
+   split run: "The Book of Forks (2019)" run=- (new shelf from P-083) — seed the S line from these ids, then verify them
+   folders: [1] Graphic Novels\_Self Made Hero\The Motherless Oven Trilogy (2014)
+   files:   [27029] 03 The Book of Forks (2019) (Digital) (XRA-Empire).cbz (196pp)
+   ours:    ladder 3; ComicInfo Series: "The Book of Forks"x1; ComicInfo Publisher: "SelfMadeHero"x1
+   CV per-file (v1): vol 23355 "The Book of Lost Souls" 2005 Marvel 6 on 1/1 files
+   CV local rip:   (= per-file) · 125609 "The Book of Forks" 2020 SelfMadeHero 1 issue 740164 (via our own name without the filing suffix "The Book of Forks") · 29509 "The Book Of Lost Souls" 1991 Leadbelly Publications 1 issue 181942 (via CV name "The Book of Lost Souls")   (rip lookup)
+   GCD dump:       157486 "The Book of Forks" [en-gb] 2019-2019 SelfMadeHero [] 1 (via our own name without the filing suffix "The Book of Forks") · 13729 "Book of Lost Souls" 2005-2006 Marvel [] 6 (via CV name "The Book of Lost Souls") · 26161 "The Book of Lost Souls" 1991-1991 Leadbelly Productions [] 1 (via CV name "The Book of Lost Souls")   (dump lookup)
+
+== S105448 The Book of Human Insects (2017)  [tier B]   keys: The Book of Human Insects (2017)  years 2017-2017  1 files / 0 collections
+   split run: "The Book of Human Insects (2017)" run=- (new shelf from P-083) — seed the S line from these ids, then verify them
+   folders: [1] Manga\_Osamu Tezuka
+   files:   [42931] The Book of Human Insects (2017) (digital) (DrVink).cbz (368pp)
+   ours:    ComicInfo Publisher: "Vertical Comics"x1
+   CV per-file (v1): vol 23355 "The Book of Lost Souls" 2005 Marvel 6 on 1/1 files
+   CV local rip:   (= per-file) · 46460 "The Book of Human Insects" 2011 Vertical Inc. 1 issue 320063 (via our own name without the filing suffix "The Book of Human Insects") · 29509 "The Book Of Lost Souls" 1991 Leadbelly Publications 1 issue 181942 (via CV name "The Book of Lost Souls")   (rip lookup)
+   GCD dump:       61828 "The Book of Human Insects" 2011-2011 Vertical [] 1 (via our own name without the filing suffix "The Book of Human Insects") · 13729 "Book of Lost Souls" 2005-2006 Marvel [] 6 (via CV name "The Book of Lost Souls") · 26161 "The Book of Lost Souls" 1991-1991 Leadbelly Productions [] 1 (via CV name "The Book of Lost Souls")   (dump lookup)
+
+== S105444 The Book About What's Inside the Box (2012)  [tier B]   keys: The Book About What's Inside the Box (2012)  years ?-?  1 files / 0 collections
+   split run: "The Book About What's Inside the Box (2012)" run=- (new shelf from P-083) — seed the S line from these ids, then verify them
+   folders: [1] Misc\Building Stories - Chris Ware\The Book About What's Inside The Box
+   files:   [105968] The Book About What's Inside The Box.cbz (13pp)
+   CV per-file (v1): vol 23355 "The Book of Lost Souls" 2005 Marvel 6 on 1/1 files
+   CV local rip:   (= per-file) · 29509 "The Book Of Lost Souls" 1991 Leadbelly Publications 1 issue 181942 (via CV name "The Book of Lost Souls")   (rip lookup)
+   GCD dump:       13729 "Book of Lost Souls" 2005-2006 Marvel [] 6 (via CV name "The Book of Lost Souls") · 26161 "The Book of Lost Souls" 1991-1991 Leadbelly Productions [] 1 (via CV name "The Book of Lost Souls")   (dump lookup)
+
+== S105449 The Book of Mr. Natural (1997)  [tier B]   keys: The Book of Mr. Natural (1997)  years 1997-1997  1 files / 0 collections
+   split run: "The Book of Mr. Natural (1997)" run=- (new shelf from P-083) — seed the S line from these ids, then verify them
+   folders: [1] Misc\R. Crumb
+   files:   [107150] The Book Of Mr. Natural (1997).cbr (129pp)
+   CV per-file (v1): vol 23355 "The Book of Lost Souls" 2005 Marvel 6 on 1/1 files
+   CV local rip:   (= per-file) · 49274 "Book of Mr. Natural" 1995 Fantagraphics 1 issue 337066 (via our own name without the filing suffix "The Book of Mr. Natural") · 39525 "Book of Mr. Natural" 2010 Fantagraphics 1 issue 267194 (via our own name without the filing suffix "The Book of Mr. Natural") · 29509 "The Book Of Lost Souls" 1991 Leadbelly Publications 1 issue 181942 (via CV name "The Book of Lost Souls")   (rip lookup)
+   GCD dump:       50624 "The Book of Mr. Natural" 1995-1995 Fantagraphics [] 1 (via our own name without the filing suffix "The Book of Mr. Natural") · 56280 "The Book of Mr. Natural" 2010-2010 Fantagraphics [] 1 (via our own name without the filing suffix "The Book of Mr. Natural") · 232770 "The Book of Mr. Natural" 2022-2022 Fantagraphics [] 1 (via our own name without the filing suffix "The Book of Mr. Natural") · 26161 "The Book of Lost Souls" 1991-1991 Leadbelly Productions [] 1 (via CV name "The Book of Lost Souls") · 13729 "Book of Lost Souls" 2005-2006 Marvel [] 6 (via CV name "The Book of Lost Souls")   (dump lookup)
+
+== S105445 The Book Tour (2020)  [tier B]   keys: The Book Tour (2020)  years 2020-2020  1 files / 0 collections
+   split run: "The Book Tour (2020)" run=- (new shelf from P-083) — seed the S line from these ids, then verify them
+   folders: [1] Top Shelf
+   files:   [110728] The Book Tour (2020) (Digital) (XRA-Empire).cbz (273pp)
+   ours:    ComicInfo Series: "The Book Tour"x1; ComicInfo Publisher: "Top Shelf Productions"x1
+   CV per-file (v1): vol 23355 "The Book of Lost Souls" 2005 Marvel 6 on 1/1 files
+   CV local rip:   (= per-file) · 132108 "The Book Tour" 2020 Top Shelf 1 issue 819040 (via our own name without the filing suffix "The Book Tour") · 29509 "The Book Of Lost Souls" 1991 Leadbelly Publications 1 issue 181942 (via CV name "The Book of Lost Souls")   (rip lookup)
+   GCD dump:       166748 "The Book Tour" 2020-2020 IDW [] 1 (via our own name without the filing suffix "The Book Tour") · 13729 "Book of Lost Souls" 2005-2006 Marvel [] 6 (via CV name "The Book of Lost Souls") · 26161 "The Book of Lost Souls" 1991-1991 Leadbelly Productions [] 1 (via CV name "The Book of Lost Souls")   (dump lookup)
+
+== S17868 The  [tier B]   keys: The  years 2005-2006  6 files / 0 collections
+   split: the KEPT half of the P-083 split — moved out -> S17870 "The 06 Protocol"; S105447 "The Book of Hope (2015)"; S105443 "The 500 Years of Resistance Comic Book (2010)"; S105446 "The Book of Forks (2019)"; S105448 "The Book of Human Insects (2017)"; S105444 "The Book About What's Inside the Box (2012)"; S105449 "The Book of Mr. Natural (1997)"; S105445 "The Book Tour (2020)"; re-identify what stayed
+   folders: [6] Icon\The Book of Lost Souls
+   files:   [30220] The Book of Lost Souls 01.cbr (23pp) | [30221] The Book of Lost Souls 02.cbr (23pp) | [30222] The Book of Lost Souls 03 (2006) (BigBlue-DCP).cbr (24pp)
+            [30223] The Book of Lost Souls 04 (2006) (BigBlue-DCP).cbr (25pp) | [30224] The Book of Lost Souls 05 (2006) (VortexFX-DCP).cbr (24pp)
+            [30225] The Book of Lost Souls 06 (2006) (Kryptonia-DCP).cbr (26pp)
+   ours:    ladder 1-6
+   CV per-file (v1): vol 23355 "The Book of Lost Souls" 2005 Marvel 6 on 6/6 files
+   CV candidates:  140456 "AfterShock Triple-Play " 2021 Aftershock Comics 1 issue 898518 s35 · 90092 "Aftershock Genesis" 2016 Aftershock Comics 1 issue 528584 s33 · 88276 "2016 Aftershock Retailer Preview" 2016 Aftershock Comics 1 issue 516294 s33 · 119142 "Godzilla: Aftershock" 2019 Legendary Comics 1 issue 709235 s19 · 100379 "Saban's Power Rangers: Aftershock" 2017 Boom! Studios 1 issue 589868 s19 · 53277 "Space: 1999 - Aftershock" 2012 Archaia 3 s17   (v1 search)
+   CV local rip:   (= per-file) · 88276 "2016 Aftershock Retailer Preview" 2016 Aftershock Comics 1 issue 516294 (via CV candidate name "2016 Aftershock Retailer Preview") · 90092 "Aftershock Genesis" 2016 Aftershock Comics 1 issue 528584 (via CV candidate name "Aftershock Genesis") · 29509 "The Book Of Lost Souls" 1991 Leadbelly Publications 1 issue 181942 (via CV name "The Book of Lost Souls") · 140456 "AfterShock Triple-Play " 2021 Aftershock Comics 1 issue 898518 (via CV candidate name "AfterShock Triple-Play ")   (rip lookup)
+   GCD dump:       13729 "Book of Lost Souls" 2005-2006 Marvel [] 6 (via CV name "The Book of Lost Souls") · 101005 "Aftershock Genesis" 2016-2016 AfterShock [] 1 (via CV candidate name "Aftershock Genesis") · 26161 "The Book of Lost Souls" 1991-1991 Leadbelly Productions [] 1 (via CV name "The Book of Lost Souls") · 179593 "Aftershock Triple Play" 2021-2021 AfterShock [] 1 (via CV candidate name "AfterShock Triple-Play ")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.4230769230769231
