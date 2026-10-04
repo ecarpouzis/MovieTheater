@@ -9378,10 +9378,10 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..31aa946
+index 0000000..a6304e3
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,1722 @@
+@@ -0,0 +1,1726 @@
 +package worker
 +
 +import (
@@ -9967,6 +9967,10 @@ index 0000000..31aa946
 +	ceilKbps := ceilFn()
 +	if ceilKbps <= 0 {
 +		return
++	}
++	// The viewer-driven controller's only lever for a WEDGED decoder (frames arrive, none decode): one IDR.
++	if ad != nil && ad.keyframe == nil {
++		ad.keyframe = m.RequestKeyframe
 +	}
 +	floor := min(abrFloorKbps, ceilKbps)
 +	// Open at the SMALLER of the fixed opener and a fraction of this room's ceiling, so a low-ceiling
@@ -12110,15 +12114,16 @@ index 0000000..a78e01a
 +}
 diff --git a/pkg/worker/adaptive.go b/pkg/worker/adaptive.go
 new file mode 100644
-index 0000000..7252395
+index 0000000..647c853
 --- /dev/null
 +++ b/pkg/worker/adaptive.go
-@@ -0,0 +1,545 @@
+@@ -0,0 +1,651 @@
 +package worker
 +
 +import (
 +	"fmt"
 +	"math"
++	"os"
 +	"strconv"
 +	"strings"
 +
@@ -12162,6 +12167,21 @@ index 0000000..7252395
 +	adaptLayerRepin   = 30   // distress within this many ticks of a restore pins the layer for the room
 +	adaptRebuildGap   = 10   // minimum ticks between two scale rebuilds
 +	adaptScaleClean   = 60   // clean ticks (no causer present, no strong distress) before a climb
++
++	// ── Ladder v2 (2026-10-04) ───────────────────────────────────────────────────────────────────────
++	// The header above describes a LADDER (layer rung, then scale rungs), but a strong signal took every
++	// rung in the same tick: layer cap + dedup + a room-wide scale step that then HOLDS while the viewer
++	// stays. Measured 2026-10-03 on a same-host Edge: one stumble 6 s into the room (a single PLI, arrival
++	// jitter 46 ms, decoded 50 % for 3 ticks) and the room ran at 2x scale and ~18 delivered fps for the
++	// rest of its life; the other two Edge runs were clean. And a phone whose H.264 decoder DIED (frames
++	// arriving, decoded 0 %, no PLI) was "relieved" with a layer cap, dedup and a scale step — none of
++	// which can help a decoder that decodes nothing. v2, behind CLOUD_GAME_ADAPT_V2 (=0 restores v1):
++	adaptLayerSettle     = 4  // a first-offence scale step needs strong distress to PERSIST this long under the layer cap
++	adaptLayerFirstClean = 15 // clean ticks before a FIRST layer cap lifts (repeat offences keep adaptLayerClean)
++	adaptPliDeficitGrace = 2  // deficit ticks after an ISOLATED PLI are a keyframe wait, not proof of a slow decoder
++	adaptWedgeTicks      = 2  // ticks of "frames arrive, none decode" before the viewer is treated as WEDGED
++	adaptWedgeKfEvery    = 3  // ...then a keyframe is forced this often
++	adaptWedgeKfMax      = 5  // ...at most this many times per episode
 +)
 +
 +// adaptiveApp is what the controller drives on the libretro frontend. The capture lane does not implement
@@ -12206,6 +12226,10 @@ index 0000000..7252395
 +	scaleClean  int
 +	dedupActive bool // the duplicate skip is on because of distress (not DedupAlways)
 +	dedupClean  int
++	// Ladder v2 (see the const block). keyframe forces one IDR on the room's encoder (set by startRoomAbr;
++	// nil in tests that do not care) — the only thing the server can do for a wedged decoder.
++	v2       bool
++	keyframe func()
 +	// summary
 +	scaleSteps, heldTicks int
 +	scaleMin              float64
@@ -12219,6 +12243,7 @@ index 0000000..7252395
 +type adaptPeerHist struct {
 +	weakTicks, strongTicks int
 +	scaleDowns             int // room scale-downs this viewer's strong distress caused
++	wedgedTicks            int // ticks its decoder decoded NOTHING while frames arrived (also counted as strong)
 +}
 +
 +func (a *adaptiveCtl) histFor(p adaptivePeer) *adaptPeerHist {
@@ -12256,6 +12281,15 @@ index 0000000..7252395
 +	hiddenTicks int
 +	pliTotal    int64
 +	sameHost    bool
++	// Ladder v2.
++	v2         bool
++	cappedAt   int   // tick the current layer cap was applied
++	caps       int   // layer caps this viewer has had in this room (1 = first offence)
++	prevPli    int64 // cumulative PLI count at the previous tick
++	pliGrace   int   // deficit ticks still excused as a keyframe wait
++	wedged     int   // consecutive ticks of "frames arrive, none decode"
++	wedgeKf    int   // keyframes forced for the current wedge
++	wedgeNoted bool
 +}
 +
 +func newAdaptiveCtl(cfg config.AdaptiveConfig, app adaptiveApp, rebuild func(), zeroCopy bool,
@@ -12267,7 +12301,8 @@ index 0000000..7252395
 +	return &adaptiveCtl{cfg: cfg, app: app, rebuild: rebuild, zeroCopy: zeroCopy, floor: scaleFloor,
 +		coreFps: coreFps, log: log, peers: map[adaptivePeer]*adaptPeerState{}, causers: map[adaptivePeer]bool{},
 +		hist: map[adaptivePeer]*adaptPeerHist{},
-+		scaleMin: s, lastRebuild: -adaptRebuildGap}
++		scaleMin: s, lastRebuild: -adaptRebuildGap,
++		v2: os.Getenv("CLOUD_GAME_ADAPT_V2") != "0"}
 +}
 +
 +// distress classifies one viewer this tick (pure apart from st's counters). sameHost: no network between us.
@@ -12283,10 +12318,26 @@ index 0000000..7252395
 +	}
 +	pliWin := pliNow - old
 +	st.nackWin = nackNow - oldNack
-+	if hasRep && rep.HasFps && rep.RecvFps >= adaptMinRecvFps && rep.DecodedFps < rep.RecvFps*adaptDecodeFrac {
-+		st.deficit++
-+	} else {
++	// v2: a decode deficit in the tick or two after an ISOLATED keyframe request is the decoder waiting for
++	// that keyframe (frames arrive, none can be decoded until it lands) — neither proof nor disproof of a slow
++	// decoder, so it does not count and does not reset. A PLI STORM (>= adaptPliWeak in the window) gets no
++	// grace: that is what a drowning decoder looks like (26 PLIs a minute, measured), and it must still count.
++	pliRose := st.histN > 1 && pliNow > st.prevPli
++	st.prevPli = pliNow
++	if st.v2 && pliRose && pliWin < adaptPliWeak {
++		st.pliGrace = adaptPliDeficitGrace
++	}
++	deficitNow := hasRep && rep.HasFps && rep.RecvFps >= adaptMinRecvFps && rep.DecodedFps < rep.RecvFps*adaptDecodeFrac
++	switch {
++	case !deficitNow:
 +		st.deficit = 0
++	case st.v2 && st.pliGrace > 0:
++		// a keyframe wait
++	default:
++		st.deficit++
++	}
++	if st.pliGrace > 0 {
++		st.pliGrace--
 +	}
 +	weak = pliWin >= adaptPliWeak
 +	// A same-host viewer's keyframe requests used to be strong on their own ("there is no network to blame").
@@ -12400,7 +12451,8 @@ index 0000000..7252395
 +	var visibleHz []float64
 +	unreported := 0
 +	anyStrong, anyDistress := false, false
-+	var strongPeers []adaptivePeer
++	anyCapped := false             // v2: some viewer is layer-capped this tick (dedup stays on for it)
++	var strongPeers []adaptivePeer // viewers whose strong distress may take a room-wide scale step
 +	for _, tp := range peers {
 +		p := tp.p
 +		if p.InputOnly() {
@@ -12409,7 +12461,7 @@ index 0000000..7252395
 +		present[p] = true
 +		st := a.peers[p]
 +		if st == nil {
-+			st = &adaptPeerState{}
++			st = &adaptPeerState{v2: a.v2}
 +			a.peers[p] = st
 +		}
 +		st.sameHost = tp.sameHost
@@ -12446,6 +12498,33 @@ index 0000000..7252395
 +			}
 +			weak = false
 +		}
++		// v2 — WEDGED, not drowning: frames arrive and NOTHING decodes (measured 2026-10-03: a phone's H.264
++		// decoder at decoded=0 % for 114 s, no PLI, never revived by the safety IDRs). Halving that viewer's
++		// frame rate, deduping and shrinking the room cannot help a decoder that decodes nothing, and they
++		// degrade the room for everyone else. The one thing the server can do is hand it a keyframe; the rest
++		// is the client's job (rejoin). Still recorded as strong distress so the site learns this device could
++		// not decode this codec.
++		if a.v2 && has && rep.HasFps && rep.RecvFps >= adaptMinRecvFps && rep.DecodedFps <= 0 {
++			st.wedged++
++		} else {
++			st.wedged, st.wedgeKf, st.wedgeNoted = 0, 0, false
++		}
++		if st.wedged >= adaptWedgeTicks {
++			h := a.histFor(p)
++			h.strongTicks++
++			h.wedgedTicks++
++			if !st.wedgeNoted {
++				st.wedgeNoted = true
++				a.log.Info().Msgf("abr: viewer decoder WEDGED dev=%s (%.0f fps arriving, 0 decoded, pli=%d/%ds) — forcing keyframes; no layer cap, dedup or scale step",
++					peerDesc(p), rep.RecvFps, st.pliWindow(), adaptPliWindow)
++			}
++			if a.keyframe != nil && st.wedgeKf < adaptWedgeKfMax && (st.wedged-adaptWedgeTicks)%adaptWedgeKfEvery == 0 {
++				st.wedgeKf++
++				a.keyframe()
++			}
++			weak, strong = false, false
++			st.deficit = 0
++		}
 +		if weak {
 +			anyDistress = true
 +			a.histFor(p).weakTicks++
@@ -12459,24 +12538,49 @@ index 0000000..7252395
 +			switch {
 +			case weak && !st.layerCapped:
 +				st.layerCapped, st.layerClean = true, 0
++				st.cappedAt, st.caps = now, st.caps+1
 +				if st.restoredAt > 0 && now-st.restoredAt <= adaptLayerRepin {
 +					st.pinned = true
 +				}
 +				a.log.Info().Msgf("abr: distress kind=%s dev=%s pli=%d/%ds nack=%d decoded=%s hidden=false (rung: layer cap%s)",
 +					map[bool]string{true: "strong", false: "weak"}[strong], peerDesc(p), st.pliWindow(), adaptPliWindow, st.nackWin,
 +					decodedPct(rep, has), map[bool]string{true: ", pinned for the room", false: ""}[st.pinned])
++				if a.v2 {
++					// The scale rung needs proof gathered UNDER this cap: forget the deficit and the PLIs
++					// that led to it (the same reset a scale step does for the whole room).
++					st.deficit = 0
++					for i := range st.pliHist {
++						st.pliHist[i] = st.pliTotal
++					}
++				}
 +			case weak:
 +				st.layerClean = 0
 +			case st.layerCapped && !st.pinned:
-+				if st.layerClean++; st.layerClean >= adaptLayerClean {
++				// v2: a FIRST offence lifts after adaptLayerFirstClean clean ticks — one stumble should not
++				// cost a minute at a quarter of the frame rate. A repeat keeps the full adaptLayerClean, and
++				// distress within adaptLayerRepin of a restore pins it, exactly as before.
++				need := adaptLayerClean
++				if a.v2 && st.caps <= 1 {
++					need = adaptLayerFirstClean
++				}
++				if st.layerClean++; st.layerClean >= need {
 +					st.layerCapped, st.restoredAt = false, now
-+					a.log.Info().Msgf("abr: layer cap lifted dev=%s (%d s clean)", peerDesc(p), adaptLayerClean)
++					a.log.Info().Msgf("abr: layer cap lifted dev=%s (%d s clean)", peerDesc(p), need)
 +				}
 +			}
 +		}
++		if st.layerCapped {
++			anyCapped = true
++		}
 +		if strong {
 +			anyStrong = true
-+			strongPeers = append(strongPeers, p)
++			// v2 — the ladder is a LADDER: the room-wide scale step (a pipeline rebuild that then holds while
++			// this viewer stays) needs the distress to persist UNDER the per-viewer layer cap for
++			// adaptLayerSettle ticks, or to be a repeat offence (the cap already failed once). v1 took the
++			// layer cap, dedup and the scale step in the same tick.
++			if !a.v2 || !a.cfg.LayerRung || st.caps >= 2 || (st.layerCapped && now-st.cappedAt >= adaptLayerSettle) {
++				strongPeers = append(strongPeers, p)
++			}
 +		}
 +	}
 +	// ── Dedup rung (room-wide, the cheapest relief) ──
@@ -12490,11 +12594,17 @@ index 0000000..7252395
 +			a.log.Info().Msg("abr: dedup on (a viewer is in decoder distress — skip duplicate frames room-wide)")
 +		case anyDistress:
 +			a.dedupClean = 0
++		case a.dedupActive && a.v2 && anyCapped:
++			a.dedupClean = 0 // v2: the capped viewer is who the dedup is for; count clean time after it lifts
 +		case a.dedupActive:
-+			if a.dedupClean++; a.dedupClean >= adaptLayerClean && len(a.causers) == 0 {
++			need := adaptLayerClean
++			if a.v2 {
++				need = adaptLayerFirstClean
++			}
++			if a.dedupClean++; a.dedupClean >= need && len(a.causers) == 0 {
 +				a.dedupActive = false
 +				a.app.SetDedup(false)
-+				a.log.Info().Msgf("abr: dedup off (%d s with no viewer in distress)", adaptLayerClean)
++				a.log.Info().Msgf("abr: dedup off (%d s with no viewer in distress)", need)
 +			}
 +		}
 +	}
@@ -12536,7 +12646,7 @@ index 0000000..7252395
 +	cur, _ := a.app.Scale()
 +	rungs := scaleRungs(base, method, a.floor)
 +	switch {
-+	case anyStrong && now-a.lastRebuild >= adaptRebuildGap:
++	case len(strongPeers) > 0 && now-a.lastRebuild >= adaptRebuildGap:
 +		a.scaleClean = 0
 +		next, ok := nextRung(rungs, cur, -1)
 +		if !ok {
@@ -12654,17 +12764,17 @@ index 0000000..7252395
 +			s += " hiddenTicks=" + strconv.Itoa(st.hiddenTicks)
 +		}
 +		if h := a.hist[ap]; h != nil {
-+			s += fmt.Sprintf(" distressWeak=%d distressStrong=%d scaleDowns=%d", h.weakTicks, h.strongTicks, h.scaleDowns)
++			s += fmt.Sprintf(" distressWeak=%d distressStrong=%d scaleDowns=%d wedgedTicks=%d", h.weakTicks, h.strongTicks, h.scaleDowns, h.wedgedTicks)
 +		}
 +	}
 +	return s
 +}
 diff --git a/pkg/worker/adaptive_test.go b/pkg/worker/adaptive_test.go
 new file mode 100644
-index 0000000..ae315ea
+index 0000000..6c17113
 --- /dev/null
 +++ b/pkg/worker/adaptive_test.go
-@@ -0,0 +1,532 @@
+@@ -0,0 +1,545 @@
 +package worker
 +
 +import (
@@ -12917,11 +13027,17 @@ index 0000000..ae315ea
 +	if app.dispCap != 60 || app.rebuilds != 0 || ctl.layerCapped(nil) {
 +		t.Fatalf("healthy: dispCap=%v rebuilds=%d", app.dispCap, app.rebuilds)
 +	}
-+	// The decoder starts drowning: decoded 40 of 60.
++	// The decoder starts drowning: decoded 40 of 60 — and keeps drowning under the layer cap, so the ladder
++	// climbs to the scale rung (v2: after adaptLayerSettle ticks under the cap, not in the same tick).
 +	ff.report(60, 60, 40, false)
 +	stepped := false
-+	for i := 0; i < 5 && !stepped; i++ {
++	for i := 0; i < 12 && !stepped; i++ {
 +		stepped = tick()
++		if !stepped && app.rebuilds == 0 && i == 3 {
++			if st := ctl.peers[ff]; st == nil || !st.layerCapped {
++				t.Fatal("v2: the per-viewer layer cap must come BEFORE the room-wide scale step")
++			}
++		}
 +	}
 +	if !stepped || app.cap != 2 || app.rebuilds != 1 {
 +		t.Fatalf("strong distress must step 3 -> 2 once: stepped=%v cap=%v rebuilds=%d", stepped, app.cap, app.rebuilds)
@@ -13035,7 +13151,9 @@ index 0000000..ae315ea
 +	v.report(60, 60, 60, false)
 +	peers := []adaptTickPeer{{p: v, sameHost: true}}
 +	now := 0
-+	for i := 0; i < 4; i++ { // a same-host PLI storm: strong
++	// A same-host PLI storm with no retransmission requests: strong. v2: it must PERSIST under the layer cap
++	// before the room steps, so the storm runs until the step lands (and stops there).
++	for i := 0; i < 12 && app.rebuilds == 0; i++ {
 +		now++
 +		v.pli += 2
 +		ctl.tick(now, peers)
@@ -13084,12 +13202,17 @@ index 0000000..ae315ea
 +	if !st.layerCapped {
 +		t.Fatal("weak distress should cap the layer")
 +	}
-+	for i := 0; i < adaptLayerClean+adaptPliWindow+1; i++ {
++	// v2: a FIRST offence lifts after adaptLayerFirstClean clean ticks, not a full minute.
++	waited := 0
++	for ; st.layerCapped && waited < adaptLayerClean+adaptPliWindow+1; waited++ {
 +		now++
 +		ctl.tick(now, peers)
 +	}
 +	if st.layerCapped {
-+		t.Fatal("clean for adaptLayerClean ticks: the cap should lift")
++		t.Fatal("clean ticks: the cap should lift")
++	}
++	if waited > adaptLayerFirstClean+adaptPliWindow+1 {
++		t.Fatalf("a first-offence cap took %d ticks to lift, want <= %d", waited, adaptLayerFirstClean+adaptPliWindow+1)
 +	}
 +	burst() // right after the restore
 +	if !st.layerCapped || !st.pinned {
@@ -13195,6 +13318,224 @@ index 0000000..ae315ea
 +	}
 +	if !app.dedup {
 +		t.Fatal("a decode deficit must still take the distress rungs")
++	}
++}
+diff --git a/pkg/worker/adaptive_v2_test.go b/pkg/worker/adaptive_v2_test.go
+new file mode 100644
+index 0000000..80b34a4
+--- /dev/null
++++ b/pkg/worker/adaptive_v2_test.go
+@@ -0,0 +1,212 @@
++package worker
++
++import "testing"
++
++// The measured case (2026-10-03, same-host Edge, room YIK547): one keyframe request 6 s into the room and a
++// decode deficit for the three ticks around it. v1 took the layer cap, dedup AND a room-wide scale step in
++// one tick and held the scale for the rest of the room. v2: a deficit right after an isolated PLI is a
++// keyframe wait, so a stumble of this size never reaches the ladder at all.
++func TestAdaptiveV2_OneStumbleDoesNotShrinkTheRoom(t *testing.T) {
++	app := &fakeApp{base: 3}
++	ctl := newTestCtl(app, allOn, false)
++	v := &fakeViewer{}
++	peers := []adaptTickPeer{{p: v, sameHost: true}}
++	now := 0
++	tick := func() { now++; ctl.tick(now, peers) }
++
++	v.report(60, 70, 70, false)
++	for i := 0; i < 6; i++ {
++		tick()
++	}
++	v.pli++ // the one PLI...
++	v.nack = 0
++	v.report(60, 70, 35, false) // ...and decoded 50 % while the keyframe is on its way
++	for i := 0; i < 3; i++ {
++		tick()
++	}
++	v.report(60, 70, 70, false)
++	for i := 0; i < 40; i++ {
++		tick()
++	}
++	if app.rebuilds != 0 || app.cap != 0 {
++		t.Fatalf("one stumble must not shrink the room: rebuilds=%d cap=%v", app.rebuilds, app.cap)
++	}
++	if st := ctl.peers[v]; st.layerCapped || st.caps != 0 {
++		t.Fatalf("a keyframe wait must not cap the viewer: capped=%v caps=%d", st.layerCapped, st.caps)
++	}
++	if app.dedup {
++		t.Fatal("no distress: dedup must be off")
++	}
++}
++
++// A deficit that outlasts the keyframe wait IS distress — but the first answer is the per-viewer layer cap,
++// and when that fixes it (the viewer decodes everything at the lower frame rate) the room is never rebuilt
++// and the cap lifts after adaptLayerFirstClean clean ticks.
++func TestAdaptiveV2_LayerCapThatWorksNeverShrinksTheRoom(t *testing.T) {
++	app := &fakeApp{base: 3}
++	ctl := newTestCtl(app, allOn, false)
++	v := &fakeViewer{}
++	peers := []adaptTickPeer{{p: v}}
++	now := 0
++	tick := func() { now++; ctl.tick(now, peers) }
++
++	v.report(60, 70, 40, false) // drowning at the full rate
++	for i := 0; i < adaptDeficitTicks; i++ {
++		tick()
++	}
++	st := ctl.peers[v]
++	if !st.layerCapped {
++		t.Fatal("a persistent deficit must cap the viewer's layer")
++	}
++	v.report(60, 18, 18, false) // on the base layer it keeps up
++	lifted := 0
++	for i := 1; i <= 60 && lifted == 0; i++ {
++		tick()
++		if !st.layerCapped {
++			lifted = i
++		}
++	}
++	if app.rebuilds != 0 {
++		t.Fatalf("the layer cap fixed it: the room must not be rebuilt (rebuilds=%d)", app.rebuilds)
++	}
++	if lifted == 0 || lifted > adaptLayerFirstClean+1 {
++		t.Fatalf("a first-offence cap should lift after %d clean ticks, took %d", adaptLayerFirstClean, lifted)
++	}
++}
++
++// A repeat offender skips the wait: the cap already failed to keep it out of trouble once, so strong distress
++// may take the scale step straight away (and the returning distress pins the layer, as before).
++func TestAdaptiveV2_RepeatOffenderStepsWithoutWaiting(t *testing.T) {
++	app := &fakeApp{base: 3}
++	ctl := newTestCtl(app, allOn, false)
++	v := &fakeViewer{}
++	peers := []adaptTickPeer{{p: v}}
++	now := 0
++	tick := func() bool { now++; return ctl.tick(now, peers) }
++
++	v.report(60, 70, 40, false)
++	for i := 0; i < 4; i++ {
++		tick()
++	}
++	st := ctl.peers[v]
++	v.report(60, 18, 18, false)
++	for i := 0; i < adaptLayerFirstClean+2; i++ {
++		tick()
++	}
++	if st.layerCapped || st.caps != 1 || app.rebuilds != 0 {
++		t.Fatalf("setup: capped=%v caps=%d rebuilds=%d", st.layerCapped, st.caps, app.rebuilds)
++	}
++	v.report(60, 70, 40, false) // it drowns again as soon as the full rate is back
++	stepped := 0
++	for i := 1; i <= 6 && stepped == 0; i++ {
++		if tick() {
++			stepped = i
++		}
++	}
++	if stepped == 0 || stepped > adaptDeficitTicks {
++		t.Fatalf("a repeat offender must step as soon as the deficit is confirmed (%d ticks), got %d", adaptDeficitTicks, stepped)
++	}
++	if !st.pinned {
++		t.Fatal("distress right after a restore must pin the layer")
++	}
++}
++
++// WEDGED, not drowning (measured 2026-10-03: a phone's H.264 decoder at decoded=0 % for 114 s, no PLI). The
++// ladder cannot help a decoder that decodes nothing, so the room is left alone and the encoder is asked for
++// a bounded number of keyframes. The ticks still count as strong distress for the site's codec record.
++func TestAdaptiveV2_WedgedDecoderGetsKeyframesNotALadder(t *testing.T) {
++	app := &fakeApp{base: 3}
++	ctl := newTestCtl(app, allOn, false)
++	kfs := 0
++	ctl.keyframe = func() { kfs++ }
++	v := &fakeViewer{}
++	peers := []adaptTickPeer{{p: v}}
++	v.report(60, 60, 60, false)
++	now := 0
++	for i := 0; i < 5; i++ {
++		now++
++		ctl.tick(now, peers)
++	}
++	v.report(60, 60, 0, false) // frames arrive, none decode
++	for i := 0; i < 120; i++ {
++		now++
++		ctl.tick(now, peers)
++	}
++	st := ctl.peers[v]
++	if app.rebuilds != 0 || app.cap != 0 || st.layerCapped || app.dedup {
++		t.Fatalf("a wedged decoder must not be laddered: rebuilds=%d cap=%v capped=%v dedup=%v", app.rebuilds, app.cap, st.layerCapped, app.dedup)
++	}
++	if kfs != adaptWedgeKfMax {
++		t.Fatalf("keyframes forced = %d, want exactly %d (bounded)", kfs, adaptWedgeKfMax)
++	}
++	h := ctl.peerVerdict(v)
++	if h.wedgedTicks < 100 || h.strongTicks < 100 || h.scaleDowns != 0 {
++		t.Fatalf("the wedge must be recorded as strong distress with no scale-down: %+v", h)
++	}
++	// It comes back (the client rejoined): the episode ends and a later wedge gets its own keyframes.
++	v.report(60, 60, 60, false)
++	now++
++	ctl.tick(now, peers)
++	v.report(60, 60, 0, false)
++	for i := 0; i < 4; i++ {
++		now++
++		ctl.tick(now, peers)
++	}
++	if kfs <= adaptWedgeKfMax {
++		t.Fatalf("a new wedge episode must force keyframes again (total %d)", kfs)
++	}
++}
++
++// A PLI STORM gets no keyframe-wait grace: that is what a drowning decoder looks like, and the original
++// case (26 PLIs a minute with a decode deficit) must still reach the scale rung.
++func TestAdaptiveV2_PliStormWithDeficitStillSteps(t *testing.T) {
++	app := &fakeApp{base: 3}
++	ctl := newTestCtl(app, allOn, false)
++	v := &fakeViewer{}
++	peers := []adaptTickPeer{{p: v}}
++	v.report(60, 60, 30, false)
++	stepped := 0
++	for now := 1; now <= 20 && stepped == 0; now++ {
++		v.pli++ // a keyframe request every tick
++		if ctl.tick(now, peers) {
++			stepped = now
++		}
++	}
++	if stepped == 0 {
++		t.Fatal("a PLI storm with a persistent decode deficit must still step the room's scale")
++	}
++}
++
++// CLOUD_GAME_ADAPT_V2=0: the v1 ladder, unchanged — every rung in the tick the strong signal lands.
++func TestAdaptiveV1_SwitchRestoresTheOldLadder(t *testing.T) {
++	app := &fakeApp{base: 3}
++	ctl := newTestCtl(app, allOn, false)
++	ctl.v2 = false
++	v := &fakeViewer{}
++	peers := []adaptTickPeer{{p: v, sameHost: true}}
++	v.report(60, 60, 40, false)
++	stepped := 0
++	for now := 1; now <= 5 && stepped == 0; now++ {
++		if ctl.tick(now, peers) {
++			stepped = now
++		}
++	}
++	if stepped != adaptDeficitTicks || app.cap != 2 || !ctl.peers[v].layerCapped || !app.dedup {
++		t.Fatalf("v1: layer cap + dedup + scale step together at tick %d; got step=%d cap=%v capped=%v dedup=%v",
++			adaptDeficitTicks, stepped, app.cap, ctl.peers[v].layerCapped, app.dedup)
++	}
++	// v1 treats a dead decoder as a drowning one.
++	app2 := &fakeApp{base: 3}
++	ctl2 := newTestCtl(app2, allOn, false)
++	ctl2.v2 = false
++	kfs := 0
++	ctl2.keyframe = func() { kfs++ }
++	w := &fakeViewer{}
++	w.report(60, 60, 0, false)
++	for now := 1; now <= 6; now++ {
++		ctl2.tick(now, []adaptTickPeer{{p: w}})
++	}
++	if app2.rebuilds != 1 || kfs != 0 {
++		t.Fatalf("v1: a wedged decoder is laddered and gets no keyframe (rebuilds=%d kfs=%d)", app2.rebuilds, kfs)
 +	}
 +}
 diff --git a/pkg/worker/caged/app/app.go b/pkg/worker/caged/app/app.go
@@ -98395,7 +98736,7 @@ index 0000000..923f87c
 +	}
 +}
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..15445b9 100644
+index 4a6171f..73e2db4 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
 @@ -3,10 +3,13 @@ package media
@@ -98531,7 +98872,7 @@ index 4a6171f..15445b9 100644
  )
  
  var forceKeyframeEvent *gst.Event
-@@ -125,6 +209,33 @@ type GstMediaPipe struct {
+@@ -125,6 +209,34 @@ type GstMediaPipe struct {
  	a, v *pipe
  
  	onAudio func([]byte, time.Duration)
@@ -98562,10 +98903,11 @@ index 4a6171f..15445b9 100644
 +	rateSetFull  atomic.Bool // the last rate change rewrote the VBV (full reconfigure)
 +	rateGaps     atomic.Int64
 +	rateGapMaxMs atomic.Int64
++	rateGapFor   atomic.Int64 // the rate change (rateSetNs) whose gap was already logged
  
  	conf config.Encoder
  
-@@ -134,25 +245,74 @@ type GstMediaPipe struct {
+@@ -134,25 +246,74 @@ type GstMediaPipe struct {
  	VideoScale     float64
  	ScaleMethod    string
  	MaxThreads     int
@@ -98644,7 +98986,7 @@ index 4a6171f..15445b9 100644
  
  	log *logger.Logger
  }
-@@ -161,7 +321,6 @@ type videoJob struct {
+@@ -161,7 +322,6 @@ type videoJob struct {
  	data         []byte
  	w, h, stride int
  	dur          time.Duration
@@ -98652,7 +98994,7 @@ index 4a6171f..15445b9 100644
  }
  
  type Video struct {
-@@ -170,6 +329,8 @@ type Video struct {
+@@ -170,6 +330,8 @@ type Video struct {
  }
  
  type RawFrame struct {
@@ -98661,7 +99003,7 @@ index 4a6171f..15445b9 100644
  	Data   []byte
  	Stride int
  	W, H   int
-@@ -180,8 +341,15 @@ type pipe struct {
+@@ -180,8 +342,15 @@ type pipe struct {
  	source   *app.Source
  	sink     *app.Sink
  	srcPad   *gst.Pad
@@ -98677,7 +99019,7 @@ index 4a6171f..15445b9 100644
  }
  
  func (p *pipe) src() *C.GstAppSrc      { return (*C.GstAppSrc)(unsafe.Pointer(p.source.Instance())) }
-@@ -198,8 +366,29 @@ func (p *pipe) destroy() {
+@@ -198,8 +367,29 @@ func (p *pipe) destroy() {
  	}
  	if p.pipeline != nil {
  		p.pipeline.GetPipelineBus().Post(gst.NewEOSMessage(p.pipeline))
@@ -98709,7 +99051,7 @@ index 4a6171f..15445b9 100644
  	}
  	p.sink = nil
  	p.source = nil
-@@ -215,6 +404,42 @@ func (b *builder) writeIfSet(s string) {
+@@ -215,6 +405,42 @@ func (b *builder) writeIfSet(s string) {
  	}
  }
  
@@ -98752,7 +99094,7 @@ index 4a6171f..15445b9 100644
  func NewGstreamer(conf config.Encoder, log *logger.Logger) *GstMediaPipe {
  	return &GstMediaPipe{conf: conf, bpp: 4, vidFmt: gstVideoFormat("BGRx"), log: log}
  }
-@@ -229,8 +454,49 @@ func (g *GstMediaPipe) Init() error {
+@@ -229,8 +455,49 @@ func (g *GstMediaPipe) Init() error {
  	return nil
  }
  
@@ -98802,7 +99144,7 @@ index 4a6171f..15445b9 100644
  	g.a, err = buildAudioPipeline(srcHz, g.conf, g.log)
  	if err != nil {
  		return
-@@ -246,10 +512,20 @@ func (g *GstMediaPipe) initVideo() (err error) {
+@@ -246,10 +513,20 @@ func (g *GstMediaPipe) initVideo() (err error) {
  		w, h = h, w
  	}
  	g.v, err = buildVideoPipeline(w, h, sw, sh, g.pixFmt, g.ScaleMethod, g.MaxThreads, g.conf,
@@ -98824,7 +99166,7 @@ index 4a6171f..15445b9 100644
  
  	// if params contain keyframe-mode=disabled, we force periodic keyframes
  	// ourselves instead of relying on GStreamer's auto mode
-@@ -261,9 +537,18 @@ func (g *GstMediaPipe) initVideo() (err error) {
+@@ -261,9 +538,18 @@ func (g *GstMediaPipe) initVideo() (err error) {
  
  	p := g.v
  	fmt := g.vidFmt
@@ -98846,7 +99188,7 @@ index 4a6171f..15445b9 100644
  
  	return p.pipeline.SetState(gst.StatePlaying)
  }
-@@ -279,18 +564,57 @@ func (g *GstMediaPipe) SetPixFmt(f uint32) {
+@@ -279,18 +565,57 @@ func (g *GstMediaPipe) SetPixFmt(f uint32) {
  }
  func (g *GstMediaPipe) SetRot(r uint) { g.oldRot = r }
  
@@ -98904,7 +99246,7 @@ index 4a6171f..15445b9 100644
  	g.v.destroy()
  	g.a.destroy()
  	g.aSegSent = false
-@@ -299,6 +623,11 @@ func (g *GstMediaPipe) Destroy() {
+@@ -299,6 +624,11 @@ func (g *GstMediaPipe) Destroy() {
  
  func (g *GstMediaPipe) ProcessAudio(audio []byte, cb func([]byte, time.Duration)) {
  	g.onAudio = cb
@@ -98916,7 +99258,7 @@ index 4a6171f..15445b9 100644
  	if !g.aSegSent {
  		g.aSegSent = true
  		g.a.srcPad.PushEvent(gst.NewSegmentEvent(cachedSegment))
-@@ -320,7 +649,8 @@ func (g *GstMediaPipe) pullAudio(_ *app.Sink) gst.FlowReturn {
+@@ -320,7 +650,8 @@ func (g *GstMediaPipe) pullAudio(_ *app.Sink) gst.FlowReturn {
  	return gst.FlowOK
  }
  
@@ -98926,7 +99268,7 @@ index 4a6171f..15445b9 100644
  func (g *GstMediaPipe) videoWorker(v *pipe, vidFmt uint32, ch <-chan videoJob, done chan<- struct{}) {
  	defer close(done)
  	for job := range ch {
-@@ -329,33 +659,197 @@ func (g *GstMediaPipe) videoWorker(v *pipe, vidFmt uint32, ch <-chan videoJob, d
+@@ -329,33 +660,200 @@ func (g *GstMediaPipe) videoWorker(v *pipe, vidFmt uint32, ch <-chan videoJob, d
  		}
  		C.pushVideoBuf(v.src(),
  			unsafe.Pointer(&job.data[0]), C.gsize(len(job.data)),
@@ -98956,7 +99298,10 @@ index 4a6171f..15445b9 100644
 +	g.encBytes.Add(int64(mi.size))
 +	if prev := g.lastPullNs.Swap(nowNs); prev != 0 {
 +		if gapMs := (nowNs - prev) / 1e6; gapMs > encGapLogMs {
-+			if set := g.rateSetNs.Load(); set != 0 && nowNs-set <= int64(time.Second)+(nowNs-prev) {
++			// Only the FIRST gap after a rate change is the reconfigure; later ones inside the same second are
++			// usually the duplicate-frame skip (a deduped static screen has 50+ ms between frames by design).
++			if set := g.rateSetNs.Load(); set != 0 && nowNs-set <= int64(time.Second)+(nowNs-prev) &&
++				g.rateGapFor.Swap(set) != set {
 +				g.rateGaps.Add(1)
 +				for {
 +					m := g.rateGapMaxMs.Load()
@@ -99138,7 +99483,7 @@ index 4a6171f..15445b9 100644
  
  	w, h := v.Frame.W, v.Frame.H
  	stride := v.Frame.Stride
-@@ -365,11 +859,24 @@ func (g *GstMediaPipe) ProcessVideo(v Video, cb func([]byte, time.Duration)) {
+@@ -365,11 +863,24 @@ func (g *GstMediaPipe) ProcessVideo(v Video, cb func([]byte, time.Duration)) {
  		stride = 0
  	}
  
@@ -99166,7 +99511,7 @@ index 4a6171f..15445b9 100644
  	}
  }
  
-@@ -378,7 +885,10 @@ func (g *GstMediaPipe) Reinit() error {
+@@ -378,7 +889,10 @@ func (g *GstMediaPipe) Reinit() error {
  	g.mu.Lock()
  	defer g.mu.Unlock()
  
@@ -99178,7 +99523,7 @@ index 4a6171f..15445b9 100644
  		return nil
  	}
  
-@@ -388,10 +898,15 @@ func (g *GstMediaPipe) Reinit() error {
+@@ -388,10 +902,15 @@ func (g *GstMediaPipe) Reinit() error {
  	// drop stale frames (for the new pipe)
  	g.v.stale.Store(true)
  
@@ -99195,7 +99540,7 @@ index 4a6171f..15445b9 100644
  		<-g.videoDone
  	}
  
-@@ -407,40 +922,156 @@ func (g *GstMediaPipe) Reinit() error {
+@@ -407,40 +926,156 @@ func (g *GstMediaPipe) Reinit() error {
  }
  
  func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod string,
@@ -99374,7 +99719,7 @@ index 4a6171f..15445b9 100644
  	case "vp8", "vp9":
  		encoder := cmp.Or(opts.Encoder, fmt.Sprintf("vp%cenc", codec[len(codec)-1]))
  		threads := cmp.Or(conf.Video.Threads, cpuCores)
-@@ -453,8 +1084,11 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
+@@ -453,8 +1088,11 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
  	if opts.Caps != "" {
  		build.write(" ! " + opts.Caps)
  	}
@@ -99387,7 +99732,7 @@ index 4a6171f..15445b9 100644
  
  	pipeDef := build.String()
  
-@@ -464,21 +1098,54 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
+@@ -464,21 +1102,54 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
  	if err != nil {
  		return nil, err
  	}
@@ -99450,7 +99795,7 @@ index 4a6171f..15445b9 100644
  }
  
  func buildAudioPipeline(srcHz int, conf config.Encoder, log *logger.Logger) (*pipe, error) {
-@@ -491,6 +1158,13 @@ func buildAudioPipeline(srcHz int, conf config.Encoder, log *logger.Logger) (*pi
+@@ -491,6 +1162,13 @@ func buildAudioPipeline(srcHz int, conf config.Encoder, log *logger.Logger) (*pi
  	build.Grow(384)
  	build.write("appsrc name=audio_src is-live=true ")
  	build.writef("caps=audio/x-raw,format=S16LE,rate=%d,channels=2,layout=interleaved ", srcHz)
@@ -99464,7 +99809,7 @@ index 4a6171f..15445b9 100644
  	if srcHz != 48_000 {
  		m, q := "kaiser", 10
  		switch conf.Audio.Resampler {
-@@ -503,8 +1177,27 @@ func buildAudioPipeline(srcHz int, conf config.Encoder, log *logger.Logger) (*pi
+@@ -503,8 +1181,27 @@ func buildAudioPipeline(srcHz int, conf config.Encoder, log *logger.Logger) (*pi
  		build.writef("resample-method=%s quality=%d ! audio/x-raw,rate=48000 ", m, q)
  	}
  	build.writef("! %s name=audio_enc %s ", cmp.Or(opts.Encoder, "opusenc"), opts.Params)
@@ -99494,7 +99839,7 @@ index 4a6171f..15445b9 100644
  
  	pipeDef := build.String()
  	log.Debug().Msgf("Gstreamer [audio]: %s", pipeDef)
-@@ -577,3 +1270,110 @@ func watchBus(pipeline *gst.Pipeline, log *logger.Logger) {
+@@ -577,3 +1274,110 @@ func watchBus(pipeline *gst.Pipeline, log *logger.Logger) {
  		}
  	}
  }

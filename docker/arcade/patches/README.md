@@ -1263,3 +1263,41 @@ rebuilds; no `enc:` gap after a bitrate-only step; no hitch on a step).
 **What this contaminated — re-test before trusting:** the 2026-07-30 failed-ramp verdicts ("any larger step reads as
 congestion"), the "250 kbps creep starves gently" claim, and every wall / capacity reading taken while a keyframe burst
 followed each step.
+
+## 0052-adaptive-ladder-v2 (2026-10-04): the decoder-distress ladder is a ladder; a dead decoder is not a drowning one
+
+(Fork commit `2575190`. Worker-only. LIVE 2026-10-04 00:17 on all three workers, md5 `7A8C9AEE03E553FFE1B2591708FF4F89`;
+rollback `worker.pre-ladderv2.exe` beside each = the 0051 build. Switch: `CLOUD_GAME_ADAPT_V2=0` restores the 0047
+ladder exactly.)
+
+**What was wrong.** 0047's header describes a ladder — a per-viewer layer cap, THEN room-wide scale rungs — but a
+strong signal took the layer cap, dedup and a scale step in the same tick, and the scale then HOLDS while that viewer
+stays. Measured 2026-10-03, same-host Edge, room YIK547: one keyframe request 6 s into the room, arrival jitter 46 ms,
+`decoded=50%` for three ticks -> scale 3 -> 2, layer 0, dedup, ~18 delivered fps for the rest of the room (the two
+other Edge runs were clean). The same night a phone's H.264 decoder DIED (frames arriving, `decoded=0%`, `pli=0`, 114
+s) and got all three rungs — none can help a decoder that decodes nothing, and they degrade the room for everyone else.
+
+**Ladder v2** (`adaptive.go`):
+- **Staged escalation.** The scale step needs strong distress to persist UNDER the layer cap for `adaptLayerSettle`
+  (4) ticks, on evidence gathered under the cap (the deficit count and the PLI window reset when the cap lands), or to
+  be a repeat offence (`caps >= 2`: the cap already failed once). A cap that works never rebuilds the room.
+- **A keyframe wait is not a slow decoder.** Deficit ticks in the two ticks after an ISOLATED PLI neither count nor
+  reset. A PLI storm (>= `adaptPliWeak` in the window) gets no grace, so the original drowning-Firefox case (26 PLIs a
+  minute with a deficit) still reaches the scale rung.
+- **First-offence hold 15 s** (`adaptLayerFirstClean`) instead of 60; a repeat keeps 60 and distress within 30 ticks of
+  a restore still pins. Dedup stays while a viewer is capped and goes 15 clean ticks after.
+- **WEDGED** (frames arrive, 0 decoded, 2 ticks): no layer cap, no dedup, no scale step; the encoder is asked for a
+  keyframe every 3 ticks, at most 5 per episode — `abr: viewer decoder WEDGED dev=… — forcing keyframes; no layer cap,
+  dedup or scale step`. Still counted as strong distress (the site's codec record keeps learning) plus `wedgedTicks=` on
+  `abr: summary-peer`. `startRoomAbr` hands the controller the room's `RequestKeyframe`. The server cannot revive a
+  wedged decoder that ignores keyframes (the phone ignored ten); the client-side rejoin is still owed.
+- The 0051 `enc:` gap line now prints once per rate change (it repeated while dedup was on).
+
+**Tests.** `adaptive_v2_test.go`: the Edge stumble (no cap, no rebuild, no dedup), a cap that works (no rebuild, lifts
+in 15), a repeat offender (steps as soon as the deficit is confirmed, pins), the wedge (exactly 5 keyframes, no ladder,
+recorded), a PLI storm with a deficit (still steps), and v1 parity by switch. Three 0047 tests whose timing this
+intentionally changes were updated.
+
+**Verified live** (installed browsers, same-host DOS rooms at the 40 Mbps ceiling, on this build): Chrome 76 / 76 fps,
+Edge 75 / 76 / 76, Firefox 76 (min 75, 23 packets lost, 0 PLIs) — no distress event in any of the six rooms, no failed
+room start. Baseline the morning of 10-03: Chrome 76, Edge 76, Firefox 5 fps.
