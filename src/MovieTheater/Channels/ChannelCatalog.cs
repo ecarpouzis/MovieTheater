@@ -389,7 +389,10 @@ namespace MovieTheater.Channels
                 // so it read as a duplicate rail rather than a station. Its judged tags stay on the titles.
 
                 // ── Seasonal (date-windowed; the 2x2: family x adult, October x December) ──
-                D("spooky-season","Spooky Season","The Halloween mood — spooky, not just gory","Seasonal").In(MT).Judged().Season(10,1,11,1),
+                // The FAMILY half of October (2026-10 Eric: "mostly family-friendly, the harder stuff goes to
+                // witching-hour"). The PG-13 cap is the guarantee — judged membership alone let 250 R titles in —
+                // and it also sets the channel's age ceiling, so kids' accounts can see it at all.
+                D("spooky-season","Spooky Season","Halloween for the whole family — monsters, witches, no nightmares","Seasonal").In(MT).Mpaa(3).Judged().Season(10,1,11,1),
                 D("witching-hour","The Witching Hour","October, after the kids are asleep","Seasonal").In(M).Judged().Season(10,1,11,1),
                 D("holiday-cheer","Holiday Cheer","Actually-Christmas movies — the Rudolf rule","Seasonal").In(MT).Judged().Season(12,1,1,2),
                 D("naughty-list","The Naughty List","Christmas after bedtime — tinsel & whiskey","Seasonal").In(M).Judged().Season(12,1,1,2),

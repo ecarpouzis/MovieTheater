@@ -56,11 +56,17 @@ Naughty List added.
 **Never airs:** films merely *set at* Christmas (Gremlins — currently airing here; the bug that started all this).
 **Bench:** ~74 today, honest membership probably ~60 — small and correct beats big and wrong.
 
-### 5. Spooky Season — `spooky-season` · Seasonal (BROAD)
-**Promise:** the October feeling. A seasonal *mood*, deliberately generous — Gremlins in October is right.
-**Airs:** monsters, witches, haunted houses, Halloween specials, kid-safe through grown-up.
-**Never airs:** nothing on strictness grounds; membership is "does it feel like October."
-**Bench:** ~300.
+### 5. Spooky Season — `spooky-season` · Seasonal (BROAD mood, FAMILY-SAFE)
+**Promise:** the October feeling for the whole family. A seasonal *mood*, generous on mood — Gremlins in October is right.
+**Airs:** monsters, witches, haunted houses, Halloween specials, Universal classics, Scooby-Doo, Hocus Pocus, Coraline.
+**Never airs:** anything you wouldn't put on with a ten-year-old in the room — R/unrated (mechanical `.Mpaa(3)` cap),
+and the PG/PG-13 titles that are still nightmares or not for kids (Poltergeist, Salem's Lot, Happy Death Day,
+the bloodier/sexier Hammer, J-horror). The grown-up October is The Witching Hour's.
+**2026-10-04 re-judge (Eric: "I don't think either is family friendly"):** the v4 rubric said "kid-safe through
+grown-up", so 250 of 544 members were R and the channel's age ceiling was R. Cut 379 → 165 titles
+(`data/channel-tags/spooky-family-remove-20261004.json`, undo alongside); 5 clearly-seasonal R cuts moved to
+Witching Hour (Rocky Horror, Bubba Ho-Tep, Grim Prairie Tales, Frankenstein and the Monster from Hell,
+The Paloni Show! Halloween Special!).
 
 ### 6. [adult swim] — `adult-swim` · Animation Hall of Fame *(conversion — identity restore)*
 **Promise:** the actual network. If it aired in the Williams Street block, it lives here.
