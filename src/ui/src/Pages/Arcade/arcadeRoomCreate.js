@@ -247,6 +247,12 @@ export function videoProblemMessage({ kind, codec } = {}, lnaState = null) {
   if (kind === "mismatch") {
     return "This room's video settings changed while you were joining. Go back and join the room again.";
   }
+  if (kind === "decoder-wedged") {
+    // decoderWedge.js gave up: this device's decoder stopped mid-room and two reconnects did not bring it back.
+    const other = codec === "av1" ? "H.264" : "AV1";
+    return `The picture keeps freezing on this device — its ${name} video decoder stopped, and reconnecting didn't bring it `
+      + `back. Leave the room and start the game again with Codec: ${other} (or ask the host to).`;
+  }
   if (kind === "codec" || kind === "not-decoding") {
     const other = codec === "av1" ? "H.264" : "AV1";
     return `The game is running, but this browser can't play ${name} video. Ask the host to restart the game with Codec: ${other}.`;

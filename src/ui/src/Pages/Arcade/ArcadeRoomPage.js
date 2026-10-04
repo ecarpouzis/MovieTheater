@@ -4,6 +4,7 @@ import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkb
 import { MovieAPI } from "../../MovieAPI";
 import { createCloudRetroSession, arcadeDeviceId, arcadeInputHint, rotatedVideoSize, videoTransform, systemUsesMouse, findNewPad, pickAutoBindPads, livePads, getFaceSwapMode, setFaceSwapMode, getPadFaceSwapOverride, setPadFaceSwapOverride, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, getRightStickSwapX, setRightStickSwapX, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl, videoCodecFromWsUrl } from "./cloudRetroClient";
 import { canReceiveCodec, localNetworkPermission, videoProblemMessage } from "./arcadeRoomCreate";
+import { createWedgeRecovery } from "./decoderWedge";
 import { DEFAULT_CHORDS, resolveChords } from "./controllerChords";
 import { SYSTEM_LABEL, systemLabel, NO_SAVE_STATE_SYSTEMS, HEAVY_LANE_SYSTEMS, QUICK_SLOT, hasSaveStates } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
@@ -153,6 +154,8 @@ export default function ArcadeRoomPage() {
   const videoRef = useRef(null);
   const playerRef = useRef(null);
   const sessionRef = useRef(null);
+  // A decoder-wedge recovery's replacement session while it joins (before it becomes sessionRef's).
+  const candidateRef = useRef(null);
   const descriptorRef = useRef(location.state?.descriptor ?? null);
   const [snapping, setSnapping] = useState(false);
 
@@ -451,7 +454,9 @@ export default function ArcadeRoomPage() {
       setRomPercent(null);
 
       descriptorRef.current = descriptor;
-      sessionRef.current = createCloudRetroSession(descriptor, {
+      // The page's handlers for THE session. openSession (below) routes a session's events here only while it is
+      // the current one — a decoder-wedge recovery briefly runs two sessions into the same room.
+      const handlers = {
         videoEl: videoRef.current,
         customGamepadProfile: customGamepadProfile,
         // Time-to-first-frame (perf program P1): the shim reports it once; the next heartbeat carries it
@@ -533,7 +538,122 @@ export default function ArcadeRoomPage() {
           if (cancelled || !a) return;
           pushAchievementToast(a);
         },
+      };
+
+      // ── Decoder-wedge recovery (decoderWedge.js has the detection rule, the bound and the evidence) ──────────
+      // A browser whose video decoder dies mid-room (frames arrive, none decode — Eric's phone, 2026-10-03) is
+      // beyond any server fix, so the shim's watchdog fires and this page REJOINS the room on a fresh connection,
+      // make-before-break. Why not something smaller:
+      //  - rebuild only the video PeerConnection: the worker cannot renegotiate a live peer (Peer.HandleSignal only
+      //    applies the browser's answer; a second INIT_WEBRTC builds a new peer that is not in the room until its
+      //    own t=104), and the input DataChannel rides that same PeerConnection;
+      //  - re-attach the MediaStream (the refocus rekick below): resets the element's pipeline, not the WebRTC
+      //    receiver's decoder, which is the thing that stopped (framesDecoded is counted before the element);
+      //  - close, then reconnect: a room whose last user leaves is CLOSED by the worker (Router.Remove), so a solo
+      //    player would lose the game.
+      // So: fetch a fresh join descriptor (Join answers an already-seated user with the SAME seat and a fresh
+      // token), open a second session into the same room on the same <video> (its track takes the element over),
+      // and close the wedged session only once the new one is in the room. A failed attempt closes the
+      // replacement and hands the element back. At most MAX_VIDEO_RECOVERIES per room; then the player is told.
+      // The codec-hint mechanism is deliberately NOT fed: its only client write (CodecRefusal, Path "refused")
+      // means "this device cannot receive the codec", which a decoder that played for minutes and then died is not.
+      const wedgeRecovery = createWedgeRecovery({
+        attempt: ({ done }) => {
+          const old = sessionRef.current;
+          let candidate = null;
+          let promoted = false;
+          let framed = false;
+          let aborted = false;
+          const hooks = {
+            onLive: () => {
+              if (promoted || aborted || cancelled || !candidate) return;
+              promoted = true;
+              sessionRef.current = candidate;
+              candidateRef.current = null;
+              old?.close?.(); // after the swap, so its "closed" status is no longer the page's
+              if (framed) done(true);
+            },
+            onFrame: () => { framed = true; if (promoted) done(true); },
+            onFail: (why) => { if (!promoted) done(false, why); },
+            isPromoted: () => promoted,
+          };
+          (async () => {
+            let desc = null;
+            try {
+              const res = await MovieAPI.joinArcadeRoom(code, arcadeDeviceId());
+              if (res.ok) desc = await res.json();
+            } catch { /* network */ }
+            if (aborted || cancelled) return;
+            if (!desc || !desc.wsUrl) { done(false, "join"); return; }
+            candidate = openSession(desc, hooks);
+            candidateRef.current = candidate;
+          })();
+          return () => {
+            aborted = true;
+            if (!promoted && candidate) {
+              candidate.close();
+              if (candidateRef.current === candidate) candidateRef.current = null;
+              old?.reattachVideo?.();
+            }
+          };
+        },
+        onUi: (e) => {
+          if (cancelled) return;
+          const key = "arcade-video-wedge";
+          if (e.kind === "recovering") message.loading({ key, content: "Video stalled — reconnecting…", duration: 0 });
+          else if (e.kind === "recovered") message.success({ key, content: "Video is back.", duration: 3 });
+          else if (e.kind === "failed") message.warning({ key, content: "Couldn't restart the video. Will try once more if it stays frozen.", duration: 6 });
+          else if (e.kind === "gave-up") {
+            message.warning({ key, content: videoProblemMessage({ kind: "decoder-wedged", codec: e.codec || videoCodecFromWsUrl(descriptor.wsUrl) }), duration: 0 });
+          }
+        },
       });
+
+      // `hooks` is set only for a recovery's replacement: until it is promoted its events belong to the recovery,
+      // after promotion it is THE session. A demoted (wedged, closing) session is neither — everything it says
+      // is ignored, including the "closed" its own close() reports.
+      const CANDIDATE_DEAD = ["disconnected", "failed", "input-lost", "closed", "arcade-full", "seat-rejected", "no-video"];
+      function openSession(desc, hooks = null) {
+        let self = null;
+        const isCurrent = () => !cancelled && self != null && sessionRef.current === self;
+        const pending = () => !cancelled && hooks != null && !hooks.isPromoted();
+        self = createCloudRetroSession(desc, {
+          videoEl: handlers.videoEl,
+          customGamepadProfile: handlers.customGamepadProfile,
+          getRecoveryCount: () => wedgeRecovery.count(),
+          onDecoderWedge: (info) => { if (isCurrent()) wedgeRecovery.onWedge(info); },
+          // A replacement's OWN decoder producing frames is the recovery's proof that decoding resumed (its first
+          // presented frame on the shared <video> is weaker evidence, and its time-to-first-frame is not a TTFF).
+          onDecoding: () => { if (hooks && !cancelled) hooks.onFrame(); },
+          onTtff: (t) => { if (!hooks && isCurrent()) handlers.onTtff(t); },
+          onVideoProblem: (problem) => {
+            if (pending()) { if (!problem.soft) hooks.onFail("video-problem"); return; }
+            if (isCurrent()) handlers.onVideoProblem(problem);
+          },
+          onStatus: (s) => {
+            if (pending()) {
+              if (CANDIDATE_DEAD.includes(s)) { hooks.onFail(s); return; }
+              if (LIVE_STATUS.includes(s)) hooks.onLive(); // promotes: falls through as THE session
+            }
+            if (isCurrent()) handlers.onStatus(s);
+          },
+          onSeat: (idx) => {
+            if (pending()) { self?.resyncInput?.(); return; }
+            if (isCurrent()) handlers.onSeat(idx);
+          },
+          onAspect: (a) => { if (isCurrent() || pending()) handlers.onAspect(a); },
+          onRoomId: (roomId) => { if (isCurrent()) handlers.onRoomId(roomId); },
+          onError: (err) => {
+            if (pending()) { hooks.onFail("error"); return; }
+            if (isCurrent()) handlers.onError(err);
+          },
+          onChordAction: (action, engaged = true) => { if (isCurrent()) handlers.onChordAction(action, engaged); },
+          onAchievement: (a) => { if (isCurrent()) handlers.onAchievement(a); },
+        });
+        return self;
+      }
+
+      sessionRef.current = openSession(descriptor);
     }, 0);
 
     return () => {
@@ -542,6 +662,8 @@ export default function ArcadeRoomPage() {
       const hadSession = !!sessionRef.current;
       sessionRef.current?.close?.();
       sessionRef.current = null;
+      candidateRef.current?.close?.(); // a decoder-wedge recovery's replacement still joining
+      candidateRef.current = null;
       // Local players ride along: close their input sessions too. Their seats are freed server-side
       // by the Leave below (it releases EVERY seat the user holds), so no per-seat Release here.
       addingLocalRef.current = false;

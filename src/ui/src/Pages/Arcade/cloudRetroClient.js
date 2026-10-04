@@ -15,6 +15,7 @@
 import { effectiveFaceSwap } from "./controllerIdentity";
 import { createChordWatcher, resolveChords } from "./controllerChords";
 import { createInputTape, createTapePlayer, THUMB_W, THUMB_H } from "./inputTape";
+import { createWedgeDetector, createFrameGapMeter } from "./decoderWedge";
 
 // Packet types (Appendix A2).
 const T = {
@@ -894,6 +895,30 @@ export function encodeViewerReport({ hidden, displayHz, recvFps, decodedFps, dro
   return buf;
 }
 
+// Viewer report v2 (worker viewer.go "Viewer report v2") — sent BESIDE the v1 report each second, never instead of
+// it: the same 13-byte, tag-0xF1 shape under version 2, carrying only the new measurements. A worker that predates
+// v2 diverts every 13-byte 0xF1 message to its report path and drops a version it does not know; a LONGER message
+// would fall through to input dispatch there and read as pressed buttons. 0xFFFF / 0xFF = "cannot measure it".
+//   [tag:1=0xF1][ver:1=2][flags:1 bit0=hidden][maxFrameGapMs][jitterBufferMs×10][presentedFps×10][stalledMs]
+//   [recoveries:u8][freezes:u8]
+export function encodeViewerReportV2({ hidden, maxGapMs, jitterBufferMs, presentedFps, stalledMs, recoveries, freezes }) {
+  const buf = new ArrayBuffer(13);
+  const dv = new DataView(buf);
+  const ok = (v) => v != null && Number.isFinite(v) && v >= 0;
+  const u16 = (off, v, scale) => dv.setUint16(off, ok(v) ? Math.min(0xfffe, Math.round(v * scale)) : 0xffff, true);
+  const u8 = (off, v) => dv.setUint8(off, ok(v) ? Math.min(0xfe, Math.round(v)) : 0xff);
+  dv.setUint8(0, 0xf1);
+  dv.setUint8(1, 2);
+  dv.setUint8(2, hidden ? 1 : 0);
+  u16(3, maxGapMs, 1);
+  u16(5, jitterBufferMs, 10);
+  u16(7, presentedFps, 10);
+  u16(9, stalledMs, 1);
+  u8(11, recoveries);
+  u8(12, freezes);
+  return buf;
+}
+
 // Relative-mouse wire packets (RETRO_DEVICE_MOUSE), on the worker's own dedicated "mouse" DataChannel —
 // this is STOCK CloudRetro's own protocol (pkg/worker/coordinatorhandlers.go `s.Channel("mouse", ...)`
 // → InputMouse → MouseState.ShiftPos/SetButtons), never previously wired into this shim.
@@ -1005,7 +1030,7 @@ export function videoTransform(rot, flip) {
 }
 
 export function createCloudRetroSession(descriptor, opts) {
-  const { videoEl, onRoomId, onStatus, onError, onSeat, onAspect, onChordAction, onAchievement, onTtff, onVideoProblem, customGamepadProfile: customGamepadProfileOverride } = opts || {};
+  const { videoEl, onRoomId, onStatus, onError, onSeat, onAspect, onChordAction, onAchievement, onTtff, onVideoProblem, onDecoderWedge, onDecoding, getRecoveryCount, customGamepadProfile: customGamepadProfileOverride } = opts || {};
   const status = (s) => onStatus && onStatus(s);
   // Watch-only seat. Trust the explicit flag, but fall back to the slot itself so an older descriptor
   // (or a hand-built one in a test) can't accidentally hand a watcher a controller.
@@ -1819,16 +1844,6 @@ export function createCloudRetroSession(descriptor, opts) {
   }
 
   function onInboundTrack(e) {
-    // TTFF: the first PRESENTED frame is the end of the start path. rVFC fires once per presented frame,
-    // so a one-shot registration on the video track's attach marks it (ttffMark dedupes a re-attach).
-    if (e.track && e.track.kind === "video" && videoEl) {
-      if (videoEl.requestVideoFrameCallback) {
-        try { videoEl.requestVideoFrameCallback(() => ttffMark("first-frame")); } catch { /* older browsers */ }
-      } else {
-        // No rVFC (Safari, older Firefox): the element's first "playing" is the closest thing to a presented frame.
-        try { videoEl.addEventListener("playing", () => ttffMark("first-frame"), { once: true }); } catch { /* not an element */ }
-      }
-    }
     const jbMs = e.track && e.track.kind === "audio" ? AUDIO_JITTER_MS : 0;
     try { e.receiver.jitterBufferTarget = jbMs; } catch { /* older browsers */ }
     try { e.receiver.playoutDelayHint = jbMs / 1000; } catch { /* non-Chrome */ }
@@ -1844,6 +1859,18 @@ export function createCloudRetroSession(descriptor, opts) {
     if (videoEl && videoEl.srcObject !== inboundStream) {
       videoEl.srcObject = inboundStream;
       videoEl.play?.().catch(() => {});
+    }
+    // TTFF: the first PRESENTED frame is the end of the start path. rVFC fires once per presented frame,
+    // so a one-shot registration on the video track's attach marks it (ttffMark dedupes a re-attach).
+    // Registered AFTER this session's stream owns the element: during a decoder-wedge recovery the element was
+    // still presenting the replaced session's stream, whose next frame is not this session's first.
+    if (e.track && e.track.kind === "video" && videoEl) {
+      if (videoEl.requestVideoFrameCallback) {
+        try { videoEl.requestVideoFrameCallback(() => ttffMark("first-frame")); } catch { /* older browsers */ }
+      } else {
+        // No rVFC (Safari, older Firefox): the element's first "playing" is the closest thing to a presented frame.
+        try { videoEl.addEventListener("playing", () => ttffMark("first-frame"), { once: true }); } catch { /* not an element */ }
+      }
     }
     // The geometry (flip/rotation) message can land before OR after the track — re-assert it now
     // that the element is live so a GL core's frame isn't left upside down.
@@ -2137,6 +2164,7 @@ export function createCloudRetroSession(descriptor, opts) {
   // refused or mis-negotiated) — hard, the room page ends the session. The watchdog's reading of getStats is an
   // INFERENCE — soft: the page warns but keeps the session, and a frame arriving later withdraws the warning
   // ({ kind: "recovered" }), so a slow-but-healthy start can never be killed by it.
+  let sessionLive = false;          // GAME_START seen (the room is playing for this session)
   let videoProblemReported = false; // a hard verdict was delivered
   let softProblem = false;          // a watchdog warning is up
   function reportVideoProblem(kind, codec, soft = false) {
@@ -2167,6 +2195,7 @@ export function createCloudRetroSession(descriptor, opts) {
 
   function onGameStarted(p) {
     ttffMark("game-start");
+    sessionLive = true; // the decoder-wedge watchdog's "room is playing" (and the start of its grace period)
     armNoVideoWatchdog();
     const roomId = p && (p.roomId || p.room_id);
     if (descriptor.isCreator && roomId) onRoomId && onRoomId(roomId);
@@ -2295,8 +2324,35 @@ export function createCloudRetroSession(descriptor, opts) {
     };
     requestAnimationFrame(step);
   }
+  // The same once-a-second sample also feeds the decoder-wedge watchdog (decoderWedge.js has the rule) and the v2
+  // report's presentation meter. The watchdog runs in EVERY zone; only the reports are main-pool-only (below).
+  const wedge = createWedgeDetector();
+  const gapMeter = createFrameGapMeter();
+  // The rVFC chain can die without a word (installed Firefox, 2026-10-04: a chain went silent for good across the
+  // decoder-wedge recovery's srcObject swap while 70 fps decoded). So each report re-arms a chain that has gone a
+  // second without a callback, under a new generation — a stale chain that wakes up later stops itself, so at most
+  // one chain ever counts frames. (Firefox ALSO has spells of presenting nothing while decoding, in the deployed
+  // build too; those read as real gaps here, which is what they are to the player.)
+  let gapGen = 0;
+  let gapLastCbAt = 0;
+  function startGapLoop() {
+    if (!videoEl || typeof videoEl.requestVideoFrameCallback !== "function") return;
+    if (gapGen && performance.now() - gapLastCbAt < 1000) return; // the chain is alive
+    const gen = ++gapGen;
+    gapLastCbAt = performance.now();
+    const step = (now) => {
+      if (gen !== gapGen || !viewerTimer || closed) return;
+      gapLastCbAt = performance.now();
+      gapMeter.onFrame(now);
+      try { videoEl.requestVideoFrameCallback(step); } catch { /* element gone */ }
+    };
+    try { videoEl.requestVideoFrameCallback(step); } catch { /* element gone */ }
+  }
+  let reportsToWorker = false; // set by startViewerReports: the 0xF1 packets go only to the main GL pool
+  let lastWedgeStalledMs = 0;
+  let decodingReported = false;
   async function sendViewerReport() {
-    if (closed || !dc || dc.readyState !== "open" || !pc || typeof pc.getStats !== "function") return;
+    if (closed || !pc || typeof pc.getStats !== "function") return;
     const hidden = typeof document !== "undefined" && document.visibilityState !== "visible";
     if (!hidden && (displayHz == null || Date.now() - displayMeasuredAt > 30_000)) measureDisplayHz();
     let cur = null;
@@ -2306,9 +2362,28 @@ export function createCloudRetroSession(descriptor, opts) {
         if (r.type === "inbound-rtp" && (r.kind === "video" || r.mediaType === "video")) cur = r;
       });
     } catch { return; }
-    if (!cur) return;
+    if (!cur || closed) return;
+    // Decoder-wedge watchdog: frames arriving, none decoding, tab visible, room playing.
+    const w = wedge.observe({ t: cur.timestamp, framesReceived: cur.framesReceived, framesDecoded: cur.framesDecoded,
+      bytesReceived: cur.bytesReceived, hidden, live: sessionLive });
+    lastWedgeStalledMs = w.stalledMs;
+    // This session's OWN decoder has produced a frame — the proof a decoder-wedge recovery waits for (a presented
+    // frame on the shared <video> could still be the replaced session's).
+    if (!decodingReported && cur.framesDecoded > 0) {
+      decodingReported = true;
+      try { onDecoding && onDecoding({ framesDecoded: cur.framesDecoded }); } catch { /* observer */ }
+    }
+    if (w.fire) {
+      try {
+        onDecoderWedge && onDecoderWedge({ stalledMs: w.stalledMs, framesReceived: cur.framesReceived, framesDecoded: cur.framesDecoded,
+          codec: strFromWsUrl(descriptor.wsUrl, "codec") || "" });
+      } catch { /* observer */ }
+    }
+    if (!reportsToWorker || !dc || dc.readyState !== "open") { viewerPrev = null; return; }
+    if (hidden) gapMeter.reset(); else startGapLoop(); // rVFC stops in a hidden tab; never report the hidden span as a freeze
     const prev = viewerPrev;
-    viewerPrev = { t: cur.timestamp, recv: cur.framesReceived, dec: cur.framesDecoded, drop: cur.framesDropped, dTime: cur.totalDecodeTime };
+    viewerPrev = { t: cur.timestamp, recv: cur.framesReceived, dec: cur.framesDecoded, drop: cur.framesDropped, dTime: cur.totalDecodeTime,
+      jb: cur.jitterBufferDelay, jbe: cur.jitterBufferEmittedCount, frz: cur.freezeCount };
     if (!prev || !(cur.timestamp > prev.t)) return; // need two samples for rates
     const sec = (cur.timestamp - prev.t) / 1000;
     const rate = (a, b) => (a != null && b != null && a >= b ? (a - b) / sec : null);
@@ -2324,14 +2399,28 @@ export function createCloudRetroSession(descriptor, opts) {
       decodeMs,
     };
     try { dc.send(encodeViewerReport(report)); } catch { /* channel closing */ }
+    // v2 beside it (encodeViewerReportV2 has the compatibility argument).
+    const gap = hidden ? { gapMs: null, presented: null } : gapMeter.take(performance.now());
+    const jbN = cur.jitterBufferEmittedCount != null && prev.jbe != null ? cur.jitterBufferEmittedCount - prev.jbe : null;
+    const v2 = {
+      hidden,
+      maxGapMs: gap.gapMs,
+      jitterBufferMs: jbN > 0 && cur.jitterBufferDelay != null && prev.jb != null ? ((cur.jitterBufferDelay - prev.jb) * 1000) / jbN : null,
+      presentedFps: gap.presented != null ? gap.presented / sec : null,
+      stalledMs: lastWedgeStalledMs,
+      recoveries: typeof getRecoveryCount === "function" ? getRecoveryCount() : 0,
+      freezes: cur.freezeCount != null && prev.frz != null ? Math.max(0, cur.freezeCount - prev.frz) : null,
+    };
+    try { dc.send(encodeViewerReportV2(v2)); } catch { /* channel closing */ }
   }
   function startViewerReports() {
     if (inputOnly || viewerTimer) return;
-    // ⚠ Only to the main GL pool. A worker that predates patch 0047 does not intercept the 0xF1 packet and
-    // reads it as a PAD FRAME — its first bytes are pressed buttons (B, Select, Start …). The capture lane
+    // ⚠ Reports go only to the main GL pool. A worker that predates patch 0047 does not intercept the 0xF1 packet
+    // and reads it as a PAD FRAME — its first bytes are pressed buttons (B, Select, Start …). The capture lane
     // runs its own worker binary and is out of the adaptive scope, so it never gets one; the main pool's
     // binary must be deployed BEFORE a site build carrying this ships (zone is always on the join URL).
-    if (strFromWsUrl(descriptor.wsUrl, "zone") !== "main") return;
+    // The SAMPLING runs everywhere: the decoder-wedge watchdog reads the same stats and needs no worker.
+    reportsToWorker = strFromWsUrl(descriptor.wsUrl, "zone") === "main";
     viewerTimer = setInterval(sendViewerReport, 1000);
   }
   function stopViewerReports() {
@@ -2361,7 +2450,17 @@ export function createCloudRetroSession(descriptor, opts) {
     try { pc && pc.close(); } catch { /* */ }
     try { apc && apc.close(); } catch { /* */ }
     try { ws && ws.close(); } catch { /* */ }
-    if (videoEl) videoEl.srcObject = null;
+    // Only detach OUR stream: during a decoder-wedge recovery the replacement session shares this element and has
+    // already attached its own (the room page closes the wedged session after the new one is in the room).
+    if (videoEl && videoEl.srcObject === inboundStream) videoEl.srcObject = null;
+  }
+
+  // Put this session's stream back on the element (a failed recovery attempt's session took it, then closed).
+  function reattachVideo() {
+    if (closed || !videoEl || videoEl.srcObject === inboundStream || !inboundStream.getTracks().length) return;
+    videoEl.srcObject = inboundStream;
+    videoEl.play?.().catch(() => {});
+    applyVideoTransform(null);
   }
 
   // ── Touch pointer (W10 stylus/touch) ───────────────────────────────────────────────────────────
@@ -2769,6 +2868,7 @@ export function createCloudRetroSession(descriptor, opts) {
 
   return {
     close,
+    reattachVideo,
     // The pad this seat is ACTIVELY using — the pin when one is set; for a fluid primary, the latched
     // pad only while it has shown input in the last 10 s (-1 otherwise). The room page excludes it
     // when listening for a NEW controller's button press, and a keyboard-only primary must not
