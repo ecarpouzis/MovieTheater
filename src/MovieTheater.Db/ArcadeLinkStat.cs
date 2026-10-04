@@ -123,6 +123,37 @@ namespace MovieTheater.Db
         /// <summary>Room scale-downs this peer's strong distress caused.</summary>
         public int ScaleDowns { get; set; }
 
+        // ── Congestion memory (worker patches 0049/0050) ──────────────────────────────────────────────
+        // ROOM-level counters (every peer row of one room carries the same values) plus this peer's PLIs:
+        // the A/B columns that judge an ABR change on hard descents + overshoot without scraping logs.
+        // Rows from before the columns (2026-10-03) and from older workers read 0 / -1.
+
+        /// <summary>Descents: runs of confirmed cuts with no up-step between them.</summary>
+        public int Descents { get; set; }
+
+        /// <summary>Descents whose total drop exceeded 30% of where they started — the blurry crash a viewer sees.</summary>
+        public int HardDescents { get; set; }
+
+        /// <summary>Descents whose first cut read a crater (estimate/0.85 at or under half the send rate): the link
+        /// dropping out, not our overshoot. Excluded from the overshoot columns.</summary>
+        public int Craters { get; set; }
+
+        /// <summary>Congestion walls forgotten by the climb exit (the room's own creep reaching 115% of the wall).</summary>
+        public int WallExits { get; set; }
+
+        /// <summary>Times a device-history hint (the LinkWall lookup) became the room's wall.</summary>
+        public int WallSeeds { get; set; }
+
+        /// <summary>Overshoot (send rate − estimate/0.85) at the first cut of the room's first non-crater descent,
+        /// kbps. -1 = no such descent.</summary>
+        public int OverFirstKbps { get; set; } = -1;
+
+        /// <summary>Worst overshoot at the first cut of any LATER non-crater descent, kbps. -1 = none.</summary>
+        public int OverMaxKbps { get; set; } = -1;
+
+        /// <summary>This peer's keyframe requests (PLIs) over the room (the worker's summary-peer <c>pli=</c>).</summary>
+        public int Plis { get; set; }
+
         public DateTime CreatedUtc { get; set; }
     }
 }

@@ -2154,6 +2154,18 @@ namespace MovieTheater.Controllers
             public int DistressWeakTicks { get; set; }
             public int DistressStrongTicks { get; set; }
             public int ScaleDowns { get; set; }
+            /// <summary>Congestion memory (worker patches 0049/0050): the room's descent counters, walls
+            /// forgotten by the climb exit, device hints that became the wall, the overshoots (-1 = none) and
+            /// this peer's PLI count. An older worker omits them: the counters then read 0 and the overshoots
+            /// -1 (the initializers), never a fabricated 0-kbps overshoot.</summary>
+            public int Descents { get; set; }
+            public int HardDescents { get; set; }
+            public int Craters { get; set; }
+            public int WallExits { get; set; }
+            public int WallSeeds { get; set; }
+            public int OverFirstKbps { get; set; } = -1;
+            public int OverMaxKbps { get; set; } = -1;
+            public int Plis { get; set; }
         }
 
         /// <summary>Record one peer's session link measurement from the CloudRetro worker at room close
@@ -2213,6 +2225,14 @@ namespace MovieTheater.Controllers
                 DistressWeakTicks = Math.Clamp(req.DistressWeakTicks, 0, 100000),
                 DistressStrongTicks = Math.Clamp(req.DistressStrongTicks, 0, 100000),
                 ScaleDowns = Math.Clamp(req.ScaleDowns, 0, 1000),
+                Descents = Math.Clamp(req.Descents, 0, 100000),
+                HardDescents = Math.Clamp(req.HardDescents, 0, 100000),
+                Craters = Math.Clamp(req.Craters, 0, 100000),
+                WallExits = Math.Clamp(req.WallExits, 0, 100000),
+                WallSeeds = Math.Clamp(req.WallSeeds, 0, 100000),
+                OverFirstKbps = Math.Clamp(req.OverFirstKbps, -1, 100000),
+                OverMaxKbps = Math.Clamp(req.OverMaxKbps, -1, 100000),
+                Plis = Math.Clamp(req.Plis, 0, 1000000),
                 CreatedUtc = DateTime.UtcNow,
             });
             await movieDb.SaveChangesAsync();
@@ -2223,6 +2243,50 @@ namespace MovieTheater.Controllers
             static string? Clamp20(string? s) => Clamp(s, 20);
             static double SaneMs(double v) =>
                 double.IsNaN(v) || double.IsInfinity(v) ? 0 : Math.Clamp(v, 0, 600000);
+        }
+
+        public sealed class LinkWallRequest
+        {
+            /// <summary>Site login the peer authenticated as. UNTRUSTED (browser → worker); resolved or 0.</summary>
+            public string? Username { get; set; }
+            public string? DeviceId { get; set; }
+            public string? Codec { get; set; }
+            /// <summary>The room's system. Accepted for the log/contract but deliberately NOT a filter: the wall
+            /// is a property of the device's link (kbps it delivered), not of the game — warm start doesn't
+            /// filter on it either.</summary>
+            public string? System { get; set; }
+        }
+
+        // ── Wall seed (worker patch 0050, 2026-10-03) ──────────────────────────────────────────────
+        // Sibling of warm start (ComputeWarmKbpsAsync). Warm start raises the OPENER from the min of recent
+        // sessions; this gives the worker's congestion memory a WALL before the room has measured one, so the
+        // cold ramp creeps into the device's known capacity instead of overshooting it (34MB5J: 24846 sent on a
+        // ~12.4 Mbps link). The rule and its reasons live in ArcadeLinkWall.
+
+        /// <summary>The worker's wall-seed lookup (patch 0050). Secret-gated server-to-server exactly like
+        /// <see cref="LinkStat"/>. One query: user resolution and the max are a single join, seeking the
+        /// (UserId, DeviceId, CreatedUtc) index. Always 200 <c>{ wallKbps }</c> for an authorized caller —
+        /// 0 for an unknown user/device or no history — so the worker never treats "no data" as a fault.</summary>
+        [AllowAnonymous]
+        [HttpPost("/API/Arcade/Internal/LinkWall")]
+        public async Task<IActionResult> LinkWall([FromBody] LinkWallRequest req)
+        {
+            if (!IsInternalCallerAuthorized()) return Unauthorized();
+            if (req == null) return BadRequest();
+            var deviceId = SanitizeDeviceId(req.DeviceId);
+            var username = req.Username?.Trim();
+            var codec = string.IsNullOrWhiteSpace(req.Codec) ? "av1" : req.Codec!.Trim();
+            if (string.IsNullOrEmpty(deviceId) || string.IsNullOrEmpty(username))
+                return Json(new { wallKbps = 0 });
+            var since = DateTime.UtcNow - ArcadeLinkWall.Ttl;
+            var best = await (
+                    from s in movieDb.ArcadeLinkStats
+                    join u in movieDb.Users on s.UserId equals u.UserID
+                    where u.Username == username && s.DeviceId == deviceId && s.CreatedUtc >= since
+                          && s.Path == "direct" && s.Codec == codec && s.SustainedKbps > 0
+                    select (int?)s.SustainedKbps)
+                .MaxAsync();
+            return Json(new { wallKbps = ArcadeLinkWall.FromSustained(best) });
         }
 
         /// <summary>Reduce a client-supplied device id to the opaque key we actually store: [A-Za-z0-9-],

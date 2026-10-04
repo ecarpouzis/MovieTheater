@@ -9367,10 +9367,10 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..410698d
+index 0000000..276b3e7
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,1477 @@
+@@ -0,0 +1,1642 @@
 +package worker
 +
 +import (
@@ -9692,6 +9692,15 @@ index 0000000..410698d
 +	rttMean, rttSd     float64
 +	adaptive           string // patch 0047 per-peer fields (pli=, reports=, hiddenTicks=), preformatted
 +	distress           adaptPeerHist // the same viewer's distress record, by value, for the link-stat row
++	plis               int64         // the viewer's PLI count (summary-peer pli=), for the link-stat row
++}
++
++// wallHint is one site answer for the wall seed (patch 0050), delivered to the ABR loop goroutine.
++type wallHint struct {
++	peer svcPeer
++	dev  string
++	kbps int
++	err  error
 +}
 +
 +const (
@@ -9986,6 +9995,13 @@ index 0000000..410698d
 +	if !congV2 {
 +		log.Info().Msg("abr: congestion memory v1 (disabled v2 by CLOUD_GAME_ABR_CONG_V2=0)")
 +	}
++	// Wall seed (patch 0050, congMemory.seed): ask the site for each direct peer's device-history wall.
++	// Kill switch CLOUD_GAME_ABR_WALL_SEED=0 (same posture as CLOUD_GAME_ABR_CONG_V2); it needs v2 and a
++	// configured site mirror, and does nothing otherwise.
++	wallSeed := congV2 && mirror.enabled() && os.Getenv("CLOUD_GAME_ABR_WALL_SEED") != "0"
++	if congV2 && os.Getenv("CLOUD_GAME_ABR_WALL_SEED") == "0" {
++		log.Info().Msg("abr: wall seed disabled by CLOUD_GAME_ABR_WALL_SEED=0")
++	}
 +
 +	// The opening rate, kept separately because `cur` is about to start moving. Phase 0's whole point
 +	// is that a room's story is open -> ramp -> steady, and the opener is the number Phase 1 replaces.
@@ -10009,6 +10025,12 @@ index 0000000..410698d
 +		// The rate decision: two-tick confirmation, congestion memory (the remembered wall, its probe
 +		// hold, and under v2 the peer that minted it), and the descent counters. See abrRate.
 +		rate := abrRate{cm: congMemory{v2: congV2}, ds: newDescentStat()}
++		// Wall-seed hints (patch 0050): one site fetch per direct peer, fired from its own goroutine; the
++		// result comes back over this channel and is applied HERE, on the loop goroutine that owns all ABR
++		// state. Buffered + non-blocking send, so a fetch that completes after the room closed (nobody
++		// draining) just drops its result instead of leaking a goroutine.
++		hints := make(chan wallHint, 8)
++		hintAsked := map[svcPeer]bool{}
 +		// Ticks each peer has had an estimate — the learning grace (abrCongLearnGraceTicks).
 +		estTicks := map[svcPeer]int{}
 +		// RTT accumulators per peer (observability only). Same lifetime rules as layerDown above: this
@@ -10076,12 +10098,13 @@ index 0000000..410698d
 +						"rampTicks=%s atCeilPct=%d cuts=%d cutsRamp=%d cutsSteady=%d "+
 +						"starves=%d starvesRamp=%d starvesSteady=%d congEpisodes=%d congMaxHoldTicks=%d "+
 +						"geomFlapsSuppressed=%d congV2=%d walls=%d wallExits=%d wallDeparts=%d "+
-+						"descents=%d hardDescents=%d craters=%d overFirst=%d overMax=%d%s",
++						"descents=%d hardDescents=%d craters=%d overFirst=%d overMax=%d wallSeeds=%d%s",
 +					r.Id(), system, openKbps, ceilKbps, codec, layers, ticks,
 +					ramp, atCeilPct, cutsRamp+cutsSteady, cutsRamp, cutsSteady,
 +					starvesRamp+starvesSteady, starvesRamp, starvesSteady, rate.cm.episodes, congMaxHold,
 +					geomFlapsSuppressed, congV2Flag, rate.cm.mints, rate.cm.forgets, rate.cm.departs,
-+					rate.ds.descents, rate.ds.hard, rate.ds.craters, rate.ds.overFirst, rate.ds.overMax, ad.summary())
++					rate.ds.descents, rate.ds.hard, rate.ds.craters, rate.ds.overFirst, rate.ds.overMax,
++					rate.cm.seeds, ad.summary())
 +
 +				// Snapshot each peer BY VALUE before dispatching anything: the peer objects and these
 +				// maps die with this goroutine the instant it returns.
@@ -10090,7 +10113,7 @@ index 0000000..410698d
 +					sp := abrSummaryPeer{
 +						dev: st.dev, path: st.path, deviceId: st.deviceId, username: st.username,
 +						sustainedKbps: st.sustainedKbps, sameHost: st.path == "samehost",
-+						adaptive: ad.peerSummary(p), distress: ad.peerVerdict(p),
++						adaptive: ad.peerSummary(p), distress: ad.peerVerdict(p), plis: p.PliCount(),
 +					}
 +					if s := rtt[p]; s != nil {
 +						sp.rttMean, sp.rttSd = s.mean, s.sd()
@@ -10125,6 +10148,13 @@ index 0000000..410698d
 +							RttMeanMs:    sp.rttMean, RttSdMs: sp.rttSd, Path: sp.path,
 +							DistressWeakTicks: sp.distress.weakTicks, DistressStrongTicks: sp.distress.strongTicks,
 +							ScaleDowns: sp.distress.scaleDowns,
++							// Patch 0050: the room's congestion-memory story (room-level, same on every
++							// peer's row) and this peer's PLIs — the A/B columns, so a week of rooms can be
++							// judged on hard descents + overshoot without scraping logs.
++							Descents: rate.ds.descents, HardDescents: rate.ds.hard, Craters: rate.ds.craters,
++							WallExits: rate.cm.forgets, WallSeeds: rate.cm.seeds,
++							OverFirstKbps: rate.ds.overFirst, OverMaxKbps: rate.ds.overMax,
++							Plis: int(min(sp.plis, int64(math.MaxInt32))),
 +						}
 +						if rampTicks >= 0 {
 +							rt := rampTicks
@@ -10161,6 +10191,9 @@ index 0000000..410698d
 +							cur = ceilKbps
 +							_ = m.SetVideoBitrate(cur)
 +						}
++						if rate.cm.rearm(cur) {
++							log.Info().Msgf("abr: wall re-seeded %d kbps (device hint kept across the scale step, cur %d)", rate.cm.wall, cur)
++						}
 +					}
 +					pendCeil, pendCeilTicks = 0, 0
 +				}
@@ -10194,6 +10227,9 @@ index 0000000..410698d
 +					// Unchanged semantics — this is simply now reached once per REAL change instead of
 +					// once per flap, which is the whole point of the phase.
 +					rate.cm.reset()
++					if rate.cm.rearm(cur) {
++						log.Info().Msgf("abr: wall re-seeded %d kbps (device hint kept across the ceiling commit, cur %d)", rate.cm.wall, cur)
++					}
 +					pendCeil, pendCeilTicks = 0, 0
 +				}
 +			} else if pendCeil != 0 {
@@ -10287,6 +10323,20 @@ index 0000000..410698d
 +					if d := p.LinkDesc(); d != "unknown" {
 +						st.dev, st.path = d, p.LinkPath()
 +					}
++				}
++				// Wall seed (patch 0050): the first tick this peer is known to be on a DIRECT path with an
++				// identity, ask the site once for its device-history wall. Direct only: the history is
++				// direct-path rows, and a relay session's capacity describes the relay (the table's rule —
++				// classes are never mixed). Same-host peers never bind the room, so they never ask.
++				if wallSeed && !hintAsked[p] && st.path == "direct" && st.deviceId != "" && st.username != "" {
++					hintAsked[p] = true
++					go func(p svcPeer, user, dev string) {
++						kbps, err := mirror.fetchWall(user, dev, codec, system)
++						select {
++						case hints <- wallHint{peer: p, dev: dev, kbps: kbps, err: err}:
++						default:
++						}
++					}(p, st.username, st.deviceId)
 +				}
 +				if ms, ok := p.LinkRttMs(); ok {
 +					s := rtt[p]
@@ -10470,6 +10520,44 @@ index 0000000..410698d
 +			// Both left the room WORSE than the creep. A faster ramp cannot come from a bigger step; it can
 +			// only come from not consulting the estimator at all, which is defensible in exactly one case —
 +			// the same-host branch.
++			// Apply any wall-seed answers that arrived since the last tick (patch 0050). Here, on the loop
++			// goroutine, before this tick's decision — congMemory is never touched from anywhere else.
++			for drained := false; !drained; {
++				select {
++				case h := <-hints:
++					switch {
++					case h.err != nil:
++						log.Warn().Err(h.err).Msgf("abr: wall hint fetch failed for %s — no seed", h.dev)
++						continue
++					case h.kbps <= 0:
++						log.Info().Msgf("abr: no wall hint for %s (no direct history on %s in 24 h)", h.dev, codec)
++						continue
++					}
++					present := false
++					for u := range r.Users().Values() {
++						if p, ok := u.Session.(svcPeer); ok && p == h.peer {
++							present = true
++							break
++						}
++					}
++					prev := rate.cm.wall
++					switch v := rate.cm.seed(h.kbps, cur, h.peer, present); v {
++					case "seeded":
++						if prev > 0 {
++							log.Info().Msgf("abr: wall seeded %d kbps (device hint for %s, cur %d; replaces the seeded %d)", h.kbps, h.dev, cur, prev)
++						} else {
++							log.Info().Msgf("abr: wall seeded %d kbps (device hint for %s, cur %d)", h.kbps, h.dev, cur)
++						}
++					case "late":
++						log.Info().Msgf("abr: wall hint %d kbps for %s arrived late (cur %d already at/above it) — ignored", h.kbps, h.dev, cur)
++					default:
++						log.Info().Msgf("abr: wall hint %d kbps for %s ignored (%s; wall %d, cur %d)", h.kbps, h.dev, v, prev, cur)
++					}
++				default:
++					drained = true
++				}
++			}
++
 +			in := abrTickIn{
 +				cur: cur, ceil: ceilKbps, floor: floor,
 +				servable: worstServable, roomCap: roomCap, sameHostRoom: sameHostRoom,
@@ -10568,6 +10656,9 @@ index 0000000..410698d
 +//     there) the same hold-then-creep. No forgetting by tick count: the wall is forgotten only when the
 +//     creep has carried the room to abrCongExitPct of it with no confirmed cut.
 +//  3. Clear: a ceiling commit (the loop calls reset), or the peer that minted the wall left the room.
++//  4. Seed (patch 0050, CLOUD_GAME_ABR_WALL_SEED): a device-history hint from the site may become the wall
++//     before anything is measured — see seed. A seeded wall is replaced by any measured cut (not only one
++//     taken while probing it), survives a ceiling commit (rearm), and is never placed over a minted wall.
 +type congMemory struct {
 +	v2 bool
 +
@@ -10581,17 +10672,81 @@ index 0000000..410698d
 +	// carrying it to the exit line counts. Cleared by every cut.
 +	rose bool
 +
++	// v2 + wall seed only (patch 0050, see seed). seeded: the current wall is a DEVICE-HISTORY hint the
++	// room has not measured yet. hint/hintPeer: that hint, kept across a ceiling-commit reset so rearm can
++	// restore it (an Auto room commits its derived ceiling ~5 s in — a hint that arrived at tick 2 would
++	// otherwise be thrown away before the ramp it exists for). Cleared by any mint, exit or departure.
++	seeded   bool
++	hint     int
++	hintPeer any
++
 +	// Summary counters (observability only).
-+	episodes int // 0 -> wall transitions (v1's congEpisodes meaning; under v2 a wall BIRTH)
++	episodes int // 0 -> wall transitions (v1's congEpisodes meaning; under v2 a MEASURED wall birth)
 +	mints    int // walls minted, re-mints included (v1: every cut sets the wall, so every cut counts)
 +	forgets  int // v2: walls dropped by the climb exit
 +	departs  int // v2: walls dropped because the minting peer left
++	seeds    int // v2: times a device hint became the wall (first seed, a lower replacement, a re-arm)
 +}
 +
 +// reset clears the wall and everything about it (a ceiling commit: the wall was learned against a
-+// different frame size, so it no longer describes this room). Counters are kept.
++// different frame size, so it no longer describes this room). Counters are kept, and so is a device hint
++// (hint/hintPeer): it describes the link, not the frame — the loop calls rearm right after.
 +func (c *congMemory) reset() {
-+	c.wall, c.hold, c.clear, c.peer, c.rose = 0, 0, 0, nil, false
++	c.wall, c.hold, c.clear, c.peer, c.rose, c.seeded = 0, 0, 0, nil, false, false
++}
++
++// dropHint forgets the device hint (a measurement superseded it, the room climbed past it, or its peer
++// left).
++func (c *congMemory) dropHint() {
++	c.hint, c.hintPeer = 0, nil
++}
++
++// seed applies a device-history wall hint (patch 0050: the site's max SustainedKbps of this device's
++// direct rows on this codec in the last 24 h x 1.15). The first collision of every Wi-Fi room is the cold
++// ramp overshooting the real wall (34MB5J: 24846 sent on a ~12.4 Mbps link) and no in-room rule can see
++// that wall before hitting it; a hint can. Rules:
++//   - only under v2 (v1 stays bit-for-bit), only for a peer still in the room, only when cur < hint (a
++//     hint that arrives after the room already climbed past it is late: the room is its own evidence);
++//   - never over a MINTED wall (a measurement beats history); a LOWER hint replaces a seeded one (a
++//     multi-peer room takes the min of its hints);
++//   - the seeded wall gets hold 0 — nothing was cut, so the climb creeps into the zone at once — and
++//     then behaves like a minted wall, except that any measured cut replaces it (see onCut).
++//
++// Returns "seeded" or why it was ignored ("v1", "none", "departed", "minted", "higher", "late").
++func (c *congMemory) seed(hint, cur int, peer any, present bool) string {
++	switch {
++	case !c.v2:
++		return "v1"
++	case hint <= 0:
++		return "none"
++	case !present:
++		return "departed"
++	case c.wall > 0 && !c.seeded:
++		return "minted"
++	case c.wall > 0 && hint >= c.wall:
++		return "higher"
++	case cur >= hint:
++		return "late"
++	}
++	c.wall, c.peer, c.hold, c.clear, c.rose, c.seeded = hint, peer, 0, 0, false, true
++	c.hint, c.hintPeer = hint, peer
++	c.seeds++
++	return "seeded"
++}
++
++// rearm restores a retained device hint after a reset (ceiling commit / scale step), when the room is
++// still below it. Reports whether it did.
++func (c *congMemory) rearm(cur int) bool {
++	if !c.v2 || c.hint <= 0 || c.wall > 0 {
++		return false
++	}
++	if cur >= c.hint {
++		c.dropHint()
++		return false
++	}
++	c.wall, c.peer, c.hold, c.clear, c.rose, c.seeded = c.hint, c.hintPeer, 0, 0, false, true
++	c.seeds++
++	return true
 +}
 +
 +// observe runs once per tick that has estimating peers, BEFORE the rate decision. v2 only: drops the
@@ -10606,11 +10761,13 @@ index 0000000..410698d
 +	}
 +	if c.peer != nil && !minterPresent {
 +		c.reset()
++		c.dropHint()
 +		c.departs++
 +		return "departed"
 +	}
 +	if c.rose && cur*100 >= c.wall*abrCongExitPct {
 +		c.reset()
++		c.dropHint()
 +		c.forgets++
 +		return "exit"
 +	}
@@ -10688,7 +10845,14 @@ index 0000000..410698d
 +	// not probing, so a collapse there is the link moving, not a measurement: 34MB5J sat at 12174 (90.6%
 +	// of 13435) in the hold when GCC read 6899, and minting from that read would have dropped the wall
 +	// to 8116 on a ~13 Mbps link.
-+	if c.wall > 0 && cur < c.wall && (held || cur*100 < c.wall*abrCongProbePct) {
++	//
++	// A SEEDED wall (a device hint, patch 0050) is not a measurement, so the fade rule does not protect it:
++	// a collision below it during the ramp IS this room's capacity read and replaces the hint. Keeping the
++	// hint there would bring the v1 sawtooth back whenever the history is too high (the device moved to a
++	// worse network): every collision under 90% of a stale hint would keep-fade, nothing would be learned,
++	// and +15% would climb back into the real wall each time. Only a crater keeps it (below).
++	measured := c.wall > 0 && !c.seeded
++	if measured && cur < c.wall && (held || cur*100 < c.wall*abrCongProbePct) {
 +		return "keep-fade"
 +	}
 +	lo := cur * abrCongMinWallPct / 100
@@ -10700,11 +10864,12 @@ index 0000000..410698d
 +		w = lo
 +	}
 +	w = max(min(w, cur), floor)
-+	if c.wall == 0 {
++	if !measured {
 +		c.episodes++
 +	}
 +	c.mints++
-+	c.wall, c.peer = w, minter
++	c.wall, c.peer, c.seeded = w, minter, false
++	c.dropHint() // a measurement supersedes the device's history for the rest of the room
 +	return "mint"
 +}
 +
@@ -10850,16 +11015,19 @@ index 0000000..410698d
 +}
 diff --git a/pkg/worker/abr_sim_test.go b/pkg/worker/abr_sim_test.go
 new file mode 100644
-index 0000000..d655541
+index 0000000..feb5bac
 --- /dev/null
 +++ b/pkg/worker/abr_sim_test.go
-@@ -0,0 +1,683 @@
+@@ -0,0 +1,886 @@
 +package worker
 +
 +import (
++	"encoding/json"
 +	"fmt"
 +	"math"
 +	"math/rand"
++	"net/http"
++	"net/http/httptest"
 +	"sort"
 +	"testing"
 +)
@@ -10934,7 +11102,12 @@ index 0000000..d655541
 +// Limitation: the servables are what GCC reported while v1 sent v1's rates. When v2 sends something else
 +// the replay still feeds v1's readings — including collapses v1's own overshoots caused (17:58:37's 6899
 +// followed v1's 12174 -> 14000 bump, which v2 does not make). The simulator below is the causal model.
-+func replay34MB5J(v2 bool) ([]replayTick, descentStat) {
++func replay34MB5J(v2 bool) ([]replayTick, descentStat) { return replay34MB5JSeeded(v2, 0, 0) }
++
++// replay34MB5JSeeded is the same replay with a wall-seed hint (patch 0050) delivered at seedTick (0 = no
++// hint), the way the loop applies one: congMemory.seed before that tick's decision, and rearm after the
++// ceiling-commit reset.
++func replay34MB5JSeeded(v2 bool, seed, seedTick int) ([]replayTick, descentStat) {
 +	logged := map[int]int{}
 +	cutAt := map[int]bool{}
 +	for _, l := range trace34MB5J {
@@ -10950,6 +11123,10 @@ index 0000000..d655541
 +		if tick == traceCeilCommit {
 +			ceil = 38657
 +			a.cm.reset() // the loop's ceiling-commit reset
++			a.cm.rearm(cur)
++		}
++		if seed > 0 && tick == seedTick {
++			a.cm.seed(seed, cur, "phone", true)
 +		}
 +		servable, ok := logged[tick]
 +		if !ok {
@@ -11259,6 +11436,197 @@ index 0000000..d655541
 +	o := a.decide(abrTickIn{cur: 20000, ceil: 12000, floor: abrFloorKbps, servable: 20000, binding: "p", minterPresent: true})
 +	if !o.cut || o.act != "ceiling" || a.cm.wall != 0 {
 +		t.Fatalf("ceiling drop: cut %v act %q wall %d", o.cut, o.act, a.cm.wall)
++	}
++}
++
++// ---------------------------------------------------------------------------------------------------
++// Wall seed (patch 0050): a device-history hint from the site becomes the wall before anything is measured.
++
++// The site's hint for 34MB5J's phone: its sustained 13108 x 1.15.
++const seed34MB5J = 13108 * 115 / 100 // 15074
++
++func TestCongSeedAppliesBelowCur(t *testing.T) {
++	c := v2Mem()
++	if v := c.seed(seed34MB5J, 7065, "p", true); v != "seeded" || c.wall != seed34MB5J || c.hold != 0 || !c.seeded || c.peer != "p" {
++		t.Fatalf("seed below cur: %q wall %d hold %d seeded %v peer %v", v, c.wall, c.hold, c.seeded, c.peer)
++	}
++	if c.seeds != 1 || c.episodes != 0 || c.mints != 0 {
++		t.Fatalf("a seed is not a measurement: seeds %d episodes %d mints %d", c.seeds, c.episodes, c.mints)
++	}
++	// Below the zone: full +15%. In the zone: creep at once (hold 0 — nothing was cut).
++	if s := c.healthyStep(7065, 1059); s != 1059 {
++		t.Fatalf("below the zone: step %d, want 1059", s)
++	}
++	if s := c.healthyStep(13000, 1950); s != abrMinStepKbps {
++		t.Fatalf("in the zone: step %d, want %d", s, abrMinStepKbps)
++	}
++}
++
++func TestCongSeedLateIgnored(t *testing.T) {
++	c := v2Mem()
++	if v := c.seed(seed34MB5J, 16000, "p", true); v != "late" || c.wall != 0 || c.seeds != 0 || c.hint != 0 {
++		t.Fatalf("late hint: %q wall %d seeds %d hint %d", v, c.wall, c.seeds, c.hint)
++	}
++	if v := c.seed(seed34MB5J, seed34MB5J, "p", true); v != "late" {
++		t.Fatalf("hint == cur: %q, want late", v)
++	}
++}
++
++func TestCongSeedLowerHintReplaces(t *testing.T) {
++	c := v2Mem()
++	c.seed(20000, 7000, "a", true)
++	if v := c.seed(15000, 8000, "b", true); v != "seeded" || c.wall != 15000 || c.peer != "b" {
++		t.Fatalf("lower hint: %q wall %d peer %v", v, c.wall, c.peer)
++	}
++	if v := c.seed(18000, 8000, "a", true); v != "higher" || c.wall != 15000 {
++		t.Fatalf("higher hint: %q wall %d", v, c.wall)
++	}
++	if v := c.seed(9000, 8000, "c", false); v != "departed" || c.wall != 15000 {
++		t.Fatalf("hint for a departed peer: %q wall %d", v, c.wall)
++	}
++	if c.seeds != 2 {
++		t.Fatalf("seeds %d, want 2", c.seeds)
++	}
++}
++
++func TestCongSeedNeverReplacesMintedWall(t *testing.T) {
++	c := v2Mem()
++	c.onCut(24846, 10558, abrFloorKbps, "p", false) // minted 12423
++	w := c.wall
++	if v := c.seed(9000, 8000, "p", true); v != "minted" || c.wall != w || c.seeded {
++		t.Fatalf("hint over a minted wall: %q wall %d seeded %v", v, c.wall, c.seeded)
++	}
++}
++
++func TestCongSeedDepartureClears(t *testing.T) {
++	c := v2Mem()
++	c.seed(seed34MB5J, 7065, "phone", true)
++	if got := c.observe(9000, false); got != "departed" || c.wall != 0 || c.seeded || c.hint != 0 {
++		t.Fatalf("seeding peer left: %q wall %d seeded %v hint %d", got, c.wall, c.seeded, c.hint)
++	}
++	if c.rearm(9000) {
++		t.Fatal("a departed peer's hint re-armed")
++	}
++}
++
++// A measured cut replaces a seeded wall even from below its zone (a stale, too-high hint must not turn
++// every collision into keep-fade); a crater keeps it (a crater is not a measurement).
++func TestCongSeedReplacedByMeasurement(t *testing.T) {
++	c := v2Mem()
++	c.seed(20000, 7000, "p", true)
++	if act := c.onCut(12000, 1500, abrFloorKbps, "p", false); act != "keep-crater" || c.wall != 20000 || !c.seeded {
++		t.Fatalf("crater under a seed: %q wall %d seeded %v", act, c.wall, c.seeded)
++	}
++	c.hold = 0
++	if act := c.onCut(12000, 8500, abrFloorKbps, "p", false); act != "mint" || c.wall != 10000 || c.seeded || c.hint != 0 {
++		t.Fatalf("collision at 60%% of a seed: %q wall %d seeded %v hint %d", act, c.wall, c.seeded, c.hint)
++	}
++	if c.episodes != 1 {
++		t.Fatalf("the first measured wall is an episode: episodes %d", c.episodes)
++	}
++	if act := c.onCut(9000, 6000, abrFloorKbps, "p", false); act != "keep-fade" {
++		t.Fatalf("after the mint the wall is measured, fades keep it: %q", act)
++	}
++}
++
++// A ceiling commit resets the wall; the retained hint re-arms it while the room is still below it.
++func TestCongSeedRearmsAfterCeilingCommit(t *testing.T) {
++	c := v2Mem()
++	c.seed(seed34MB5J, 8124, "phone", true)
++	c.reset()
++	if c.wall != 0 {
++		t.Fatal("reset kept the wall")
++	}
++	if !c.rearm(10743) || c.wall != seed34MB5J || !c.seeded || c.peer != "phone" || c.seeds != 2 {
++		t.Fatalf("rearm: wall %d seeded %v peer %v seeds %d", c.wall, c.seeded, c.peer, c.seeds)
++	}
++	c.reset()
++	if c.rearm(16000) || c.wall != 0 || c.hint != 0 {
++		t.Fatalf("rearm above the hint: wall %d hint %d", c.wall, c.hint)
++	}
++}
++
++func TestCongSeedIgnoredUnderV1(t *testing.T) {
++	c := congMemory{v2: false}
++	if v := c.seed(seed34MB5J, 7065, "p", true); v != "v1" || c.wall != 0 {
++		t.Fatalf("v1: %q wall %d", v, c.wall)
++	}
++}
++
++// The 34MB5J trace with the site's hint (15074) delivered at tick 2 (a fetch fired on the first tick the
++// pair is known): the first collision happens at/under ~16000 instead of v2's 24846.
++func TestCongSeedReplay34MB5J(t *testing.T) {
++	firstCut := func(ticks []replayTick) replayTick {
++		for _, r := range ticks {
++			if r.next < r.cur {
++				return r
++			}
++		}
++		return replayTick{}
++	}
++	plain, dsPlain := replay34MB5J(true)
++	seeded, dsSeed := replay34MB5JSeeded(true, seed34MB5J, 2)
++	for _, r := range seeded {
++		if r.tick <= 40 && (r.next != r.cur || r.forgot != "") {
++			t.Logf("seeded %s t%-3d %6d -> %6d servable %6d wall %6d %s%s", traceClock(r.tick), r.tick, r.cur, r.next,
++				r.servable, r.wall, r.act, r.forgot)
++		}
++	}
++	p, s := firstCut(plain), firstCut(seeded)
++	t.Logf("first collision: unseeded v2 %d -> %d at %s; seeded v2 %d -> %d at %s (wall after %d, %s)",
++		p.cur, p.next, traceClock(p.tick), s.cur, s.next, traceClock(s.tick), s.wall, s.act)
++	t.Logf("unseeded: descents=%d hard=%d overFirst=%d | seeded: descents=%d hard=%d overFirst=%d",
++		dsPlain.descents, dsPlain.hard, dsPlain.overFirst, dsSeed.descents, dsSeed.hard, dsSeed.overFirst)
++	if p.cur != 24846 {
++		t.Fatalf("unseeded first collision %d, want the live 24846", p.cur)
++	}
++	if s.cur == 0 || s.cur > 16000 {
++		t.Fatalf("seeded first collision at %d, want <= 16000", s.cur)
++	}
++	// The seed survived the 17:58:22 ceiling commit (tick 5) and was the wall until the first cut.
++	for _, r := range seeded {
++		if r.tick >= 2 && r.tick < s.tick && r.wall != seed34MB5J {
++			t.Fatalf("tick %d: wall %d before the first cut, want the seed %d", r.tick, r.wall, seed34MB5J)
++		}
++	}
++}
++
++// fetchWall: path, secret header, body, and the [5000, 40000] clamp; a non-2xx is an error, 0 is no seed.
++func TestFetchWall(t *testing.T) {
++	var got linkWallRequest
++	reply := 3000
++	status := http.StatusOK
++	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
++		if r.URL.Path != "/API/Arcade/Internal/LinkWall" || r.Header.Get("X-Arcade-Internal-Secret") != "s3" || r.Method != http.MethodPost {
++			w.WriteHeader(http.StatusTeapot)
++			return
++		}
++		_ = json.NewDecoder(r.Body).Decode(&got)
++		w.WriteHeader(status)
++		_, _ = fmt.Fprintf(w, `{"wallKbps":%d}`, reply)
++	}))
++	defer srv.Close()
++	c := linkStatConfig{baseURL: srv.URL + "/", secret: "s3"}
++	if k, err := c.fetchWall("eve", "dev-1", "av1", "md"); err != nil || k != 5000 {
++		t.Fatalf("clamp low: %d %v", k, err)
++	}
++	if got != (linkWallRequest{Username: "eve", DeviceId: "dev-1", Codec: "av1", System: "md"}) {
++		t.Fatalf("request body %+v", got)
++	}
++	reply = 90000
++	if k, _ := c.fetchWall("eve", "dev-1", "av1", "md"); k != 40000 {
++		t.Fatalf("clamp high: %d", k)
++	}
++	reply = 0
++	if k, err := c.fetchWall("eve", "dev-1", "av1", "md"); k != 0 || err != nil {
++		t.Fatalf("no history: %d %v", k, err)
++	}
++	status = http.StatusNotFound
++	if k, err := c.fetchWall("eve", "dev-1", "av1", "md"); k != 0 || err == nil {
++		t.Fatalf("404: %d %v", k, err)
++	}
++	if k, err := (linkStatConfig{}).fetchWall("eve", "dev-1", "av1", "md"); k != 0 || err != nil {
++		t.Fatalf("unconfigured: %d %v", k, err)
 +	}
 +}
 +
@@ -97026,10 +97394,10 @@ index 6972cc7..455e574 100644
  
 diff --git a/pkg/worker/linkstat.go b/pkg/worker/linkstat.go
 new file mode 100644
-index 0000000..80eaa43
+index 0000000..97796b8
 --- /dev/null
 +++ b/pkg/worker/linkstat.go
-@@ -0,0 +1,106 @@
+@@ -0,0 +1,177 @@
 +package worker
 +
 +// Session-close link statistics mirrored to the site (Phase 0 of the ABR quality plan).
@@ -97040,14 +97408,16 @@ index 0000000..80eaa43
 +// the 17–35s ramp Eric sees as "low-quality YouTube" at the start of every session. Storing the
 +// measurement is what later lets a room open at a rate this device has already proven.
 +//
-+// This file is the WRITE half only, and it is deliberately inert: nothing here feeds back into any
-+// ABR decision. It rides the same worker->site trust path as the RetroAchievements mirror
++// post (the write half) is deliberately inert: nothing it sends feeds back into any ABR decision within
++// the room. fetchWall (patch 0050) is the one read: the device's learned congestion wall, which the ABR
++// loop may seed congestion memory with (congMemory.seed). Both ride the same worker->site trust path as the RetroAchievements mirror
 +// (racheevos.go) — same base URL, same X-Arcade-Internal-Secret header, same fire-and-forget
 +// posture — so there is exactly one such transport to reason about, not two.
 +
 +import (
 +	"bytes"
 +	"encoding/json"
++	"fmt"
 +	"io"
 +	"net/http"
 +	"strings"
@@ -97100,6 +97470,75 @@ index 0000000..80eaa43
 +	DistressWeakTicks   int `json:"distressWeakTicks"`
 +	DistressStrongTicks int `json:"distressStrongTicks"`
 +	ScaleDowns          int `json:"scaleDowns"`
++	// Congestion memory (patches 0049/0050), room-level: descents / hard descents (> 30% total drop) /
++	// crater-first descents, walls forgotten by the climb exit, device hints that became the wall, and the
++	// overshoot (cur - target/0.85) at the first descent and the worst later one (-1 = none). Plis is this
++	// peer's PLI count (the summary-peer pli= field).
++	Descents      int `json:"descents"`
++	HardDescents  int `json:"hardDescents"`
++	Craters       int `json:"craters"`
++	WallExits     int `json:"wallExits"`
++	WallSeeds     int `json:"wallSeeds"`
++	OverFirstKbps int `json:"overFirstKbps"`
++	OverMaxKbps   int `json:"overMaxKbps"`
++	Plis          int `json:"plis"`
++}
++
++// linkWallRequest / linkWallResponse: the wall-seed lookup (patch 0050). Field names match the site's
++// LinkWallRequest.
++type linkWallRequest struct {
++	Username string `json:"username"`
++	DeviceId string `json:"deviceId"`
++	Codec    string `json:"codec"`
++	System   string `json:"system"`
++}
++
++type linkWallResponse struct {
++	WallKbps int `json:"wallKbps"`
++}
++
++// linkWallClient: the lookup runs while the room is ramping, and an answer after ~2 s is mostly late
++// anyway (the ramp is ~14 ticks to its first collision), so it gets a short timeout of its own.
++var linkWallClient = &http.Client{Timeout: 2 * time.Second}
++
++// fetchWall asks the site for this device's learned congestion wall (0 = no history). Same base URL and
++// X-Arcade-Internal-Secret header as post. Call it from a goroutine — it blocks on the network.
++func (c linkStatConfig) fetchWall(username, deviceId, codec, system string) (int, error) {
++	if !c.enabled() {
++		return 0, nil
++	}
++	buf, err := json.Marshal(linkWallRequest{Username: username, DeviceId: deviceId, Codec: codec, System: system})
++	if err != nil {
++		return 0, err
++	}
++	req, err := http.NewRequest(http.MethodPost,
++		strings.TrimRight(c.baseURL, "/")+"/API/Arcade/Internal/LinkWall", bytes.NewReader(buf))
++	if err != nil {
++		return 0, err
++	}
++	req.Header.Set("Content-Type", "application/json")
++	req.Header.Set("X-Arcade-Internal-Secret", c.secret)
++	resp, err := linkWallClient.Do(req)
++	if err != nil {
++		return 0, err
++	}
++	defer func() {
++		_, _ = io.Copy(io.Discard, resp.Body)
++		_ = resp.Body.Close()
++	}()
++	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
++		// A site without the endpoint yet (404) or a rotated secret (401): no seed, said out loud.
++		return 0, fmt.Errorf("link-wall lookup rejected: %s", resp.Status)
++	}
++	var out linkWallResponse
++	if err := json.NewDecoder(io.LimitReader(resp.Body, 4096)).Decode(&out); err != nil {
++		return 0, err
++	}
++	// The site clamps to [5000, 40000]; enforce it here too so neither end has to trust the other.
++	if out.WallKbps <= 0 {
++		return 0, nil
++	}
++	return min(max(out.WallKbps, 5000), 40000), nil
 +}
 +
 +// post ships one row. Call it from a goroutine: the only caller is the ABR loop's room-close branch,

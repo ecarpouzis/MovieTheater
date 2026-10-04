@@ -1158,3 +1158,58 @@ re-minted it first — the replay passed only because the staircase did. The exi
 change was an up-step, cleared by every cut): after a clamped cut the room holds, creeps once, and only then may
 exit. Test `TestCongClampedCutAboveExitLineKeepsWall`. Reading rule: a `wallExits=` count on a room that never crept
 above its wall is this bug, not the link.
+
+## 0050-congestion-wall-seed (2026-10-03): the device's history seeds the wall; the counters reach ArcadeLinkStat
+
+**BUILT, NOT DEPLOYED.** Fork commit `41aba18` (on `e4920b2`), binary `bin\worker.wallseed.exe` md5
+`B4809CF4CBC33F7A636FEC4338F1B192` (the live `bin\worker.exe` is untouched). Site half: `LinkWall` endpoint + the
+ArcadeLinkStat columns; migration `sql/AddArcadeLinkStatCongestion.sql` NOT applied. No wire-protocol change, no
+coordinator rebuild. Deploy order: migration -> site -> fork push -> worker swap.
+
+**A. Wall seed.** The first collision of every Wi-Fi room is the cold ramp overshooting the real wall (34MB5J: 24846
+sent on a ~12.4 Mbps link, GCC certified 21 Mbps on a deep buffer) — no in-room rule can see a wall before hitting
+it. The site now remembers one per device:
+- **Site** `POST /API/Arcade/Internal/LinkWall` (`ArcadeController.LinkWall`, arithmetic in `ArcadeLinkWall`), same
+  `X-Arcade-Internal-Secret` gate as `/API/Arcade/Internal/LinkStat`. Body `{username, deviceId, codec, system}`;
+  answer `{wallKbps}` = max(SustainedKbps) over that user+device's **direct** rows on that codec in the last 24 h,
+  x 1.15, clamped [5000, 40000]; 0 = no rows (always 200 for an authorized caller). `system` is accepted, not a
+  filter (the wall is the link's, like warm start). One join query seeking the existing (UserId, DeviceId,
+  CreatedUtc) index — no new index.
+- **Worker** (`pkg/worker/abr.go`): the first tick a peer is known to be on a **direct** pair with a device id and
+  username, one goroutine calls `linkStatConfig.fetchWall` (`linkstat.go`, 2 s timeout); the answer comes back over
+  a buffered channel and `congMemory.seed` applies it on the loop goroutine before that tick's decision. Rules:
+  v2 only; the peer must still be in the room; `cur < hint` (else `late`, ignored); never over a MINTED wall; a
+  LOWER hint replaces a seeded one (multi-peer min); seeded wall gets `hold = 0` and the peer recorded, then
+  creeps from 90% and exits at 115% like a minted wall, and clears on departure. Kill switch
+  `CLOUD_GAME_ABR_WALL_SEED=0` (needs `CLOUD_GAME_ABR_CONG_V2` on; does nothing without a site mirror).
+- Log: `abr: wall seeded N kbps (device hint for <dev>, cur M)`, `abr: wall hint N kbps for <dev> arrived late …`,
+  `… ignored (minted|higher|departed …)`, `abr: no wall hint for <dev> …`, `abr: wall hint fetch failed …`,
+  `abr: wall re-seeded N kbps (device hint kept across the ceiling commit|scale step …)`. Summary `wallSeeds=`.
+
+**Three deviations from the brief, each forced by the trace or the table's rules:**
+1. **A seeded wall is replaced by ANY measured (non-crater, non-grace) cut**, not only one taken while probing it.
+   With the minted-wall fade rule a stale too-high hint (the device moved to a worse network inside 24 h — the
+   lookup takes the MAX) would turn every collision under 90% of it into `keep-fade`: nothing learned, +15% back
+   into the real wall each time — the v1 sawtooth. A crater still keeps the seed.
+2. **The hint survives a ceiling commit / scale step** (`congMemory.rearm`; the wall itself is still reset). Auto
+   rooms commit their derived ceiling ~5 s in (34MB5J: tick 5), after a hint fetched at tick ~2 — clearing it there
+   would discard the seed before the ramp it exists for. Re-armed only while `cur` is still below it; any mint,
+   exit or departure drops it.
+3. **Direct peers only ask** (brief: non-samehost). The history is direct rows only, and the table's rule is that a
+   relay session's capacity is never mixed with a direct one.
+
+**Tests** (`go test ./pkg/worker -run 'CongSeed|FetchWall' -v`): seed applies below cur, ignored above (late),
+replaced by a lower hint, never replaces a minted wall, departure clears it, a measured cut replaces it (crater
+keeps it), re-arm across a ceiling commit, ignored under v1, `fetchWall` path/header/body/clamp/404. **34MB5J replay
+with the hint 15074 (13108 x 1.15) delivered at tick 2: first collision at 13604 (-> 10558, a 22% cut, overshoot
+1183) instead of 24846; the seed survives the tick-5 ceiling commit; hard descents 4 -> 3.** The replay still feeds
+v1's absolute servables (10558 at 17:58:33 was read after v1's 24846 overshoot), so the live cut should be milder.
+Site: `ArcadeLinkWallTests`.
+
+**B. Counters mirrored.** `ArcadeLinkStat` gains `Descents`, `HardDescents`, `Craters`, `WallExits`, `WallSeeds`,
+`Plis` (int NOT NULL DEFAULT 0) and `OverFirstKbps`, `OverMaxKbps` (int NOT NULL DEFAULT -1 = none). The worker's
+`linkStatRow` carries them (room-level, the same on every peer row of a room, plus that peer's `PliCount()`); the
+ingest clamps them and defaults an older worker's missing fields to 0 / -1. Migration
+`src/MovieTheater.Db/Migrations/20261003230000_AddArcadeLinkStatCongestion.cs` + idempotent
+`sql/AddArcadeLinkStatCongestion.sql` — **must run before the site deploy** (EF inserts every mapped column, so the
+new site's LinkStat ingest would fail without them; the defaults keep the current site working once it runs).

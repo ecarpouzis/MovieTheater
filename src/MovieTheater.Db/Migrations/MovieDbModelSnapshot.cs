@@ -476,6 +476,9 @@ namespace MovieTheater.Db.Migrations
                     b.Property<int>("CongEpisodes")
                         .HasColumnType("int");
 
+                    b.Property<int>("Craters")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("datetime2");
 
@@ -488,12 +491,27 @@ namespace MovieTheater.Db.Migrations
                     b.Property<int>("DistressWeakTicks")
                         .HasColumnType("int");
 
+                    b.Property<int>("Descents")
+                        .HasColumnType("int");
+
                     b.Property<string>("DeviceId")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
+                    b.Property<int>("HardDescents")
+                        .HasColumnType("int");
+
                     b.Property<int>("OpenKbps")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OverFirstKbps")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OverMaxKbps")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Plis")
                         .HasColumnType("int");
 
                     b.Property<string>("Path")
@@ -523,6 +541,12 @@ namespace MovieTheater.Db.Migrations
                         .HasColumnType("nvarchar(40)");
 
                     b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WallExits")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WallSeeds")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
