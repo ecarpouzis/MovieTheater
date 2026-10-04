@@ -2389,7 +2389,16 @@ webrtc:
   # and Edge 0); room-wide 8 ms pacing cured it but raised EVERY browser's jitter buffer from ~10 ms to 21-61 ms.
   # A viewer is judged lossy on SUSTAINED loss (3 NACKs inside 5 s), and with this on, same-host loss is handed to
   # the pacer instead of the layer-cap/dedup rungs. 8 = the measured cure.
-  lossPacingMs: 8
+  #
+  # OFF since 2026-10-04 (0 = off). The measurement above was taken while NO lost packet was ever retransmitted
+  # (worker patch 0054 fixed that): each loss then cost a keyframe, so avoiding loss was worth any latency. With
+  # repair working, real Firefox 157 on the same machine, three runs each: paced jitter buffer 17.8 / 19.5 /
+  # 28.2 ms, unpaced 12.8 / 13.2 / 13.4 ms, no stalls and pli=0 either way. Same-host loss is no longer a
+  # distress rung with pacing off either (adaptive.go). The lobby's Network profile (room-wide pacing) and the
+  # capture lane's own default are separate and unchanged. To re-arm: 8. Watch `nack=` / `rtx=` on the
+  # `abr: tick` line and the room's `viewer-gaps` — a phone A/B (paced 2026-10-04 16:38: jb 30 ms,
+  # rtxSent=706 in 191 s, longest gap 60 ms) decides whether Wi-Fi viewers want it back.
+  lossPacingMs: 0
   # Playout-delay RTP header extension (codec program B4, 2026-10-02): Chrome renders a frame on decode
   # (minMs) and caps its jitter-buffer delay (maxMs). Chrome offers it (extmap playout-delay); Firefox does
   # not, and is untouched. OFF until a HEADED A/B on real displays (arcade-latency.mjs input-to-photon +

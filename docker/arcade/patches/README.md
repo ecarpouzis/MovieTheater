@@ -1464,7 +1464,13 @@ Gecko's. Log: `rtc: playout fast path never used for this viewer — Firefox dec
 - `abr: tick` adds `nack=` (NACK packets from the first viewer that second), `rtx=` (retransmissions sent to it) and
   `paced=1` on the tick loss pacing arms. `viewer-gaps` counts a report once even when it outlives its second.
 
-**Measured and NOT changed: loss pacing (`webrtc.lossPacingMs: 8`, patch 0048).** It was built when every lost packet cost
-a keyframe. With repair working, Firefox on Ziggy without it: jitter buffer 12.8 / 13.2 / 13.4 ms against 17.8 / 19.5 / 28.2
-with it, no stalls, `pli=0` either way. A 5-15 ms gain on one desktop browser; the phone's first smooth room (2026-10-04
-16:38, `rtxSent=706`) ran WITH pacing armed and has not been measured without. Decide on a phone A/B, not on this.
+**Loss pacing is OFF on the retro lane since 2026-10-04 18:47 (`webrtc.lossPacingMs: 0` in `config.worker-gl.yaml`; fork
+commit `800a71d`, workers md5 `9F68B8F1F0BC28836CDA19A6E398A6A5`).** Patch 0048's per-viewer pacing was built when
+every lost packet cost a keyframe. With repair working, real Firefox 157 on Ziggy, three runs each: paced jitter buffer
+17.8 / 19.5 / 28.2 ms, unpaced 12.8 / 13.2 / 13.4 ms, no stalls and `pli=0` either way. The owner's call: off, and test on
+the phone. `adaptive.go`: same-host packet loss (NACKing, no decode deficit) is no longer a distress rung whether pacing is
+on or off — it used to be excused only with pacing on, so turning pacing off would have brought back the layer cap that
+left Firefox at ~5 fps. NOT changed: the lobby's Network profile (room-wide pacing) and the capture lane
+(`config.worker-capture.yaml` keeps `lossPacingMs: 8`; its rooms default to room-wide 8 ms pacing anyway).
+**To compare on the phone:** the paced baseline is the 2026-10-04 16:38 room — jitter buffer 30 ms, `rtxSent=706` in
+191 s, longest gap 60 ms; read `nack=` / `rtx=` / `jb=` on the tick line and `viewer-gaps` at close. To re-arm: `8`.

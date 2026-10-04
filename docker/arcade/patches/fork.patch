@@ -19724,10 +19724,10 @@ index 0000000..a78e01a
 +}
 diff --git a/pkg/worker/adaptive.go b/pkg/worker/adaptive.go
 new file mode 100644
-index 0000000..647c853
+index 0000000..60ef568
 --- /dev/null
 +++ b/pkg/worker/adaptive.go
-@@ -0,0 +1,651 @@
+@@ -0,0 +1,657 @@
 +package worker
 +
 +import (
@@ -20096,15 +20096,21 @@ index 0000000..647c853
 +			unreported++ // reported, but cannot measure its display: treat as unknown (no cap)
 +		}
 +		weak, strong := st.distress(st.pliTotal, p.NackCount(), rep, has, tp.sameHost)
-+		// LOSS on the viewer's own machine (same-host, NACKing, no decode deficit) is a receive-path problem whose
-+		// remedy is pacing THAT viewer (pacer.go, webrtc.lossPacingMs) — not halving its frame rate and deduping
-+		// the room, which is what the rungs below do and which left a real Firefox at ~5 fps (2026-10-03). With
-+		// loss pacing on, such a viewer is left to the pacer; the rungs stay for decoders and for remote links.
-+		if weak && !strong && tp.sameHost && st.nackWin > 0 && webrtc.LossPacingMs() > 0 {
++		// LOSS on the viewer's own machine (same-host, NACKing, no decode deficit) is a receive-path problem, not a
++		// drowning decoder: halving its frame rate and deduping the room — what the rungs below do — left a real
++		// Firefox at ~5 fps (2026-10-03). Its remedy is retransmission (working since patch 0054) and, when
++		// webrtc.lossPacingMs is on, pacing that viewer (pacer.go). Since 2026-10-04 this no longer depends on
++		// pacing being enabled: with pacing off the loss is still loss. The rungs stay for decoders and for
++		// remote links.
++		if weak && !strong && tp.sameHost && st.nackWin > 0 {
 +			if !st.lossNoted {
 +				st.lossNoted = true
-+				a.log.Info().Msgf("abr: same-host packet loss dev=%s nack=%d pli=%d/%ds — pacing this viewer, no layer cap or dedup",
-+					peerDesc(p), st.nackWin, st.pliWindow(), adaptPliWindow)
++				remedy := "repaired by retransmission"
++				if webrtc.LossPacingMs() > 0 {
++					remedy = "pacing this viewer"
++				}
++				a.log.Info().Msgf("abr: same-host packet loss dev=%s nack=%d pli=%d/%ds — %s, no layer cap or dedup",
++					peerDesc(p), st.nackWin, st.pliWindow(), adaptPliWindow, remedy)
 +			}
 +			weak = false
 +		}
@@ -20381,13 +20387,14 @@ index 0000000..647c853
 +}
 diff --git a/pkg/worker/adaptive_test.go b/pkg/worker/adaptive_test.go
 new file mode 100644
-index 0000000..6c17113
+index 0000000..6608d20
 --- /dev/null
 +++ b/pkg/worker/adaptive_test.go
-@@ -0,0 +1,545 @@
+@@ -0,0 +1,555 @@
 +package worker
 +
 +import (
++	"fmt"
 +	"math"
 +	"testing"
 +	"time"
@@ -20895,15 +20902,24 @@ index 0000000..6c17113
 +	if app.rebuilds != 0 || app.cap != 0 {
 +		t.Fatalf("loss-driven keyframe requests rescaled the room: cap=%v rebuilds=%d", app.cap, app.rebuilds)
 +	}
-+	if st := ctl.peers[ff]; st == nil || !st.layerCapped {
-+		t.Fatal("the lossy viewer should still get the per-viewer layer cap (fewer packets for it alone)")
++	// Since 2026-10-04 (loss is repaired by retransmission, patch 0054) the viewer is not layer-capped either,
++	// with loss pacing off as here: halving its frame rate over loss is what left a real Firefox at ~5 fps.
++	if st := ctl.peers[ff]; st == nil || st.layerCapped {
++		t.Fatal("a loss-only same-host viewer must not be layer-capped, with or without loss pacing")
 +	}
 +}
 +
-+// With loss pacing on, a same-host viewer whose only trouble is packet loss is handed to the pacer: no layer cap
-+// (which left a real Firefox at ~5 fps) and no room-wide dedup. A decode deficit still takes the rungs.
++// A same-host viewer whose only trouble is packet loss is left to retransmission (and to the pacer, when loss
++// pacing is on): no layer cap (which left a real Firefox at ~5 fps) and no room-wide dedup — whether loss pacing
++// is on or off. A decode deficit still takes the rungs.
 +func TestAdaptiveRoom_SameHostLossGoesToThePacer(t *testing.T) {
-+	webrtc.SetLossPacing(8)
++	for _, paceMs := range []int{8, 0} {
++		t.Run(fmt.Sprintf("lossPacingMs=%d", paceMs), func(t *testing.T) { sameHostLossIsNotDistress(t, paceMs) })
++	}
++}
++
++func sameHostLossIsNotDistress(t *testing.T, paceMs int) {
++	webrtc.SetLossPacing(paceMs)
 +	t.Cleanup(func() { webrtc.SetLossPacing(0) })
 +	app := &fakeApp{base: 3}
 +	ctl := newTestCtl(app, allOn, false)
@@ -20916,7 +20932,7 @@ index 0000000..6c17113
 +		ctl.tick(now, peers)
 +	}
 +	if st := ctl.peers[ff]; st == nil || st.layerCapped {
-+		t.Fatal("a loss-only same-host viewer must not be layer-capped when loss pacing is on")
++		t.Fatal("a loss-only same-host viewer must not be layer-capped")
 +	}
 +	if app.dedup || app.rebuilds != 0 {
 +		t.Fatalf("loss-only viewer turned on dedup=%v or rescaled (rebuilds=%d)", app.dedup, app.rebuilds)
