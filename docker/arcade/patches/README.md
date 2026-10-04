@@ -1161,10 +1161,15 @@ above its wall is this bug, not the link.
 
 ## 0050-congestion-wall-seed (2026-10-03): the device's history seeds the wall; the counters reach ArcadeLinkStat
 
-**BUILT, NOT DEPLOYED.** Fork commit `41aba18` (on `e4920b2`), binary `bin\worker.wallseed.exe` md5
-`B4809CF4CBC33F7A636FEC4338F1B192` (the live `bin\worker.exe` is untouched). Site half: `LinkWall` endpoint + the
-ArcadeLinkStat columns; migration `sql/AddArcadeLinkStatCongestion.sql` NOT applied. No wire-protocol change, no
-coordinator rebuild. Deploy order: migration -> site -> fork push -> worker swap.
+**LIVE 2026-10-03 ~20:25.** Fork commit `41aba18` (on `e4920b2`, pushed), binary md5
+`B4809CF4CBC33F7A636FEC4338F1B192` on all three workers (rollback `worker.pre-wallseed.exe` beside each = the 0049
+r2 build). Site half: `LinkWall` endpoint + the ArcadeLinkStat columns, site `e63f036f`; migration
+`sql/AddArcadeLinkStatCongestion.sql` applied first (8 columns + history row). No wire-protocol change, no coordinator
+rebuild. Deploy notes: the UI marker showed `e63f036f` at 20:20 while `POST …/Internal/LinkWall` still returned the
+SPA page — the API image rolled ~3 min later (the two are separate jobs; a secret-less POST turning 401 is the API
+tell). A harness room (2XBB2Q) closed with `wallSeeds=0` on the new build; same-host peers never ask for a hint and
+their rows are never stored, so the seed's live proof is a real remote room: `abr: wall seeded …` early, `wallSeeds=`
+on the summary, the new columns on its LinkStat row.
 
 **A. Wall seed.** The first collision of every Wi-Fi room is the cold ramp overshooting the real wall (34MB5J: 24846
 sent on a ~12.4 Mbps link, GCC certified 21 Mbps on a deep buffer) — no in-room rule can see a wall before hitting
