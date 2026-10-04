@@ -7412,7 +7412,7 @@ index 0000000..a8484f5
 +// ReportCount is how many viewer reports this peer has sent (for the close summary).
 +func (p *Peer) ReportCount() int64 { return p.reports.Load() }
 diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
-index b342b6b..f5fa48b 100644
+index b342b6b..4d40bd0 100644
 --- a/pkg/network/webrtc/webrtc.go
 +++ b/pkg/network/webrtc/webrtc.go
 @@ -4,11 +4,15 @@ import (
@@ -7865,9 +7865,9 @@ index b342b6b..f5fa48b 100644
 +			p.vLogged.Store(n)
 +			p.log.Warn().Msgf("peer is behind: dropped %v video frames to keep the room's encoder free", n)
 +		}
-+	}
-+}
-+
+ 	}
+ }
+ 
 +func (p *Peer) startVideoSender() {
 +	p.vqOnce.Do(func() {
 +		p.vq = make(chan vFrame, vQueueDepth)
@@ -7945,9 +7945,9 @@ index b342b6b..f5fa48b 100644
 +				}
 +			}
 +		}
- 	}
- }
- 
++	}
++}
++
 +// SetMaxTemporalLayer caps which temporal layers this peer is fed (0 = base only). Called by the ABR
 +// loop from its own goroutine.
 +func (p *Peer) SetMaxTemporalLayer(l int) { p.maxLayer.Store(int32(l)) }
@@ -8077,7 +8077,7 @@ index b342b6b..f5fa48b 100644
  			}
  		}()
  	}
-@@ -313,3 +799,244 @@ func toJson[T any](data T) (string, error) {
+@@ -313,3 +799,255 @@ func toJson[T any](data T) (string, error) {
  	}
  	return string(b), nil
  }
@@ -8123,6 +8123,17 @@ index b342b6b..f5fa48b 100644
 +		return v
 +	}
 +	return -1
++}
++
++// EstimatorStats is a snapshot of this peer's GCC estimator internals (pion SendSideBWE.GetStats:
++// delayTargetBitrate, lossTargetBitrate, averageLoss, delayMeasurement/Estimate/Threshold in ms, usage,
++// state), or nil without an estimator. Observability only — the ABR tick trace. It takes the estimator's
++// lock, so it is read at most once a second per room.
++func (p *Peer) EstimatorStats() map[string]any {
++	if p == nil || p.bwe == nil {
++		return nil
++	}
++	return p.bwe.GetStats()
 +}
 +
 +// SameHostLink reports whether this peer's media actually crosses a NETWORK, by inspecting the remote
@@ -9367,10 +9378,10 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..276b3e7
+index 0000000..31aa946
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,1642 @@
+@@ -0,0 +1,1722 @@
 +package worker
 +
 +import (
@@ -10065,6 +10076,17 @@ index 0000000..276b3e7
 +		// hysteresis is visible from a log: a suppressed flap by construction emits nothing else.
 +		// A Stuntman-class flapper scores one per oscillation; a stable room scores 0.
 +		geomFlapsSuppressed := 0
++		// ── Stage-0 instrumentation (2026-10-03, observability only; nothing here feeds a decision) ──
++		// `cur` is a PERMISSION: NVENC's CBR does not pad, so the encoder emits what the picture needs,
++		// usually far less (measured: 2730 kbps of a 13000 target on scrolling Sonic, ~535 static). Pion's
++		// estimate snaps to 0.85 x what ARRIVED in the last 500 ms on any overuse signal, and this loop
++		// compares it with `cur`. These counters say how often the room was under-sending, how long it sat
++		// at the floor, and how many cuts were taken while under-sending. The 1 Hz `abr: tick` trace is on
++		// unless CLOUD_GAME_ABR_TRACE=0.
++		abrTrace := os.Getenv("CLOUD_GAME_ABR_TRACE") != "0"
++		firstEncBytes, _, _, _ := m.EncStats()
++		lastEncBytes := firstEncBytes
++		sentKbps, appLimTicks, floorTicks, cutsAppLim := 0, 0, 0, 0
 +		for range t.C {
 +			if r.Closed() {
 +				// Final RTT summary per peer BEFORE returning — a short session may never reach a
@@ -10098,13 +10120,16 @@ index 0000000..276b3e7
 +						"rampTicks=%s atCeilPct=%d cuts=%d cutsRamp=%d cutsSteady=%d "+
 +						"starves=%d starvesRamp=%d starvesSteady=%d congEpisodes=%d congMaxHoldTicks=%d "+
 +						"geomFlapsSuppressed=%d congV2=%d walls=%d wallExits=%d wallDeparts=%d "+
-+						"descents=%d hardDescents=%d craters=%d overFirst=%d overMax=%d wallSeeds=%d%s",
++						"descents=%d hardDescents=%d craters=%d overFirst=%d overMax=%d wallSeeds=%d "+
++						"sentAvg=%d appLimTicks=%d floorTicks=%d cutsAppLim=%d vbvMode=%s vbvRebuilds=%d encGaps=%d encGapMaxMs=%d%s",
 +					r.Id(), system, openKbps, ceilKbps, codec, layers, ticks,
 +					ramp, atCeilPct, cutsRamp+cutsSteady, cutsRamp, cutsSteady,
 +					starvesRamp+starvesSteady, starvesRamp, starvesSteady, rate.cm.episodes, congMaxHold,
 +					geomFlapsSuppressed, congV2Flag, rate.cm.mints, rate.cm.forgets, rate.cm.departs,
 +					rate.ds.descents, rate.ds.hard, rate.ds.craters, rate.ds.overFirst, rate.ds.overMax,
-+					rate.cm.seeds, ad.summary())
++					rate.cm.seeds,
++					sentAvgKbps(firstEncBytes, m, ticks), appLimTicks, floorTicks, cutsAppLim, media.VbvMode(),
++					encStat(m, 1), encStat(m, 2), encStat(m, 3), ad.summary())
 +
 +				// Snapshot each peer BY VALUE before dispatching anything: the peer objects and these
 +				// maps die with this goroutine the instant it returns.
@@ -10169,6 +10194,13 @@ index 0000000..276b3e7
 +				return
 +			}
 +			ticks++
++			// What the encoder actually emitted over the last tick (1 s), room-wide. Sampled every tick,
++			// including ticks that bail out early, so the delta always spans exactly one tick.
++			{
++				b, _, _, _ := m.EncStats()
++				sentKbps = int((b - lastEncBytes) * 8 / 1000)
++				lastEncBytes = b
++			}
 +			// Viewer-driven delivery (patch 0047, adaptive.go): display cap, per-viewer layer cap, and at most
 +			// one scale step. Runs FIRST so a scale step it takes is committed right here — the K-tick flap
 +			// hysteresis below exists for geometry changes the CORE makes, not for a move the room made itself
@@ -10470,6 +10502,14 @@ index 0000000..276b3e7
 +			if peers == 0 {
 +				continue // hold: nobody has told us anything yet
 +			}
++			// Under-sending this tick? (sentKbps was sampled at the top of the tick.)
++			appLimited := sentKbps*100 < cur*abrAppLimitedPct
++			if appLimited {
++				appLimTicks++
++			}
++			if cur <= floor {
++				floorTicks++
++			}
 +
 +			// A tick is HEALTHY for summary purposes when nobody is starved and the binding estimate
 +			// is keeping up with what we send. Deliberately computed from the same quantities the
@@ -10581,6 +10621,19 @@ index 0000000..276b3e7
 +					}
 +				}
 +			}
++			if abrTrace {
++				es := ""
++				if sp, ok := any(bindingPeer).(interface{ EstimatorStats() map[string]any }); ok {
++					if st := sp.EstimatorStats(); st != nil {
++						es = fmt.Sprintf(" delayT=%d lossT=%d usage=%v state=%v dEst=%.2f dThr=%.2f dMeas=%.2f avgLoss=%.3f",
++							statKbps(st["delayTargetBitrate"]), statKbps(st["lossTargetBitrate"]), st["usage"], st["state"],
++							statFloat(st["delayEstimate"]), statFloat(st["delayThreshold"]), statFloat(st["delayMeasurement"]),
++							statFloat(st["averageLoss"]))
++					}
++				}
++				log.Info().Msgf("abr: tick cur=%d sent=%d est=%d cap=%d peers=%d wall=%d hold=%d low=%d%s",
++					cur, sentKbps, worstServable, roomCap, peers, rate.cm.wall, rate.cm.hold, rate.lowTicks, es)
++			}
 +			wallBefore := rate.cm.wall
 +			out := rate.decide(in)
 +			if out.forgot != "" {
@@ -10609,7 +10662,10 @@ index 0000000..276b3e7
 +				if lp, ok := out.minter.(interface{ AverageLoss() float64 }); ok {
 +					avgLoss = lp.AverageLoss()
 +				}
-+				cutInfo = fmt.Sprintf(" target=%d over=%d avgLoss=%.3f mem=%s", out.target, out.over, avgLoss, out.act)
++				if appLimited {
++					cutsAppLim++
++				}
++				cutInfo = fmt.Sprintf(" target=%d over=%d avgLoss=%.3f mem=%s sent=%d", out.target, out.over, avgLoss, out.act, sentKbps)
 +			}
 +			if err := m.SetVideoBitrate(next); err != nil {
 +				log.Warn().Err(err).Msgf("abr: failed to set %d kbps", next)
@@ -10623,6 +10679,41 @@ index 0000000..276b3e7
 +			cur = next
 +		}
 +	}()
++}
++
++// abrAppLimitedPct: the encoder emitted less than this % of the target this tick = the stream was
++// content-limited ("under-sending"), so an estimate snapped to what arrived says nothing about the link.
++// Observability only (the summary's appLimTicks / cutsAppLim).
++const abrAppLimitedPct = 70
++
++// encStat picks one of EncStats' later fields (1 vbvRebuilds, 2 rateGaps, 3 rateGapMaxMs).
++func encStat(m *media.GstMediaPipe, i int) int64 {
++	_, a, b, c := m.EncStats()
++	return [...]int64{0, a, b, c}[i]
++}
++
++// sentAvgKbps is the encoder's mean output over the room's ABR ticks (1 tick = 1 s).
++func sentAvgKbps(firstBytes int64, m *media.GstMediaPipe, ticks int) int64 {
++	if ticks <= 0 {
++		return 0
++	}
++	b, _, _, _ := m.EncStats()
++	return (b - firstBytes) * 8 / 1000 / int64(ticks)
++}
++
++// statKbps / statFloat read pion's GetStats values (bit/s ints, ms floats); -1 when absent.
++func statKbps(v any) int {
++	if i, ok := v.(int); ok {
++		return i / 1000
++	}
++	return -1
++}
++
++func statFloat(v any) float64 {
++	if f, ok := v.(float64); ok {
++		return f
++	}
++	return -1
 +}
 +
 +func abs(n int) int {
@@ -98304,12 +98395,14 @@ index 0000000..923f87c
 +	}
 +}
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..06c6be8 100644
+index 4a6171f..15445b9 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
-@@ -4,9 +4,11 @@ import (
+@@ -3,10 +3,13 @@ package media
+ import (
  	"cmp"
  	"fmt"
++	"os"
  	"runtime"
 +	"strconv"
  	"strings"
@@ -98319,7 +98412,7 @@ index 4a6171f..06c6be8 100644
  	"time"
  	"unsafe"
  
-@@ -32,12 +34,45 @@ static inline void doubleToFraction(const gdouble src, gint *num, gint *den) {
+@@ -32,12 +35,45 @@ static inline void doubleToFraction(const gdouble src, gint *num, gint *den) {
  	gst_util_double_to_fraction(src, num, den);
  }
  
@@ -98369,7 +98462,7 @@ index 4a6171f..06c6be8 100644
  	if (stride != 0) {
  		gsize offset[GST_VIDEO_MAX_PLANES] = {0};
  		gint strides[GST_VIDEO_MAX_PLANES] = {stride};
-@@ -46,6 +81,19 @@ static inline void pushVideoBuf(GstAppSrc *src, void *data, gsize len,
+@@ -46,6 +82,19 @@ static inline void pushVideoBuf(GstAppSrc *src, void *data, gsize len,
  	gst_app_src_push_buffer(src, buf);
  }
  
@@ -98389,7 +98482,7 @@ index 4a6171f..06c6be8 100644
  // pushAudioBuf copies audio data into a new buffer.
  static inline void pushAudioBuf(GstAppSrc *src, void *data, gsize len) {
  	GstBuffer *buf = gst_buffer_new_allocate(NULL, len, NULL);
-@@ -54,6 +102,29 @@ static inline void pushAudioBuf(GstAppSrc *src, void *data, gsize len) {
+@@ -54,6 +103,29 @@ static inline void pushAudioBuf(GstAppSrc *src, void *data, gsize len) {
  	gst_app_src_push_buffer(src, buf);
  }
  
@@ -98419,7 +98512,7 @@ index 4a6171f..06c6be8 100644
  // pullMappedBuffer pulls a sample from the appsink, gets its buffer,
  // and maps it for reading. Returns the buffer (with ref held) on success,
  // or NULL if no sample/buffer is available.
-@@ -87,6 +158,18 @@ const (
+@@ -87,6 +159,18 @@ const (
  	defaultAudioFrameMs = 20 * time.Millisecond
  
  	maxForcedKeyframes = 3
@@ -98438,7 +98531,7 @@ index 4a6171f..06c6be8 100644
  )
  
  var forceKeyframeEvent *gst.Event
-@@ -125,6 +208,13 @@ type GstMediaPipe struct {
+@@ -125,6 +209,33 @@ type GstMediaPipe struct {
  	a, v *pipe
  
  	onAudio func([]byte, time.Duration)
@@ -98449,10 +98542,30 @@ index 4a6171f..06c6be8 100644
 +	// Current ABR target (kbps, 0 = never set). Re-applied after every Reinit, because a video
 +	// geometry change destroys and rebuilds the pipeline — and with it the encoder element.
 +	vBitrate atomic.Int64
++
++	// VBV bookkeeping (2026-10-03). Writing `vbv-buffer-size` on a PLAYING nvenc element is NOT a soft
++	// change: gst nvcodec files it under rate-control params (gstnvav1encoder.cpp / gstnvh264encoder.cpp:
++	// PROP_VBV_BUFFER_SIZE -> UPDATE_RC_PARAM), and any RC-param change takes RECONFIGURE_FULL — drain,
++	// then a NEW encoder session — which costs a keyframe and a 100-121 ms gap in encoded output
++	// (measured with these exact params on both codecs, even for a +250 kbps step; `bitrate` alone: no
++	// keyframe, no gap). The ABR loop steps the rate every second or two, so every step was a hitch:
++	// 425 steps / 437 keyframes handed to the viewer in one 19-minute room. The VBV is therefore written
++	// when the encoder element is fresh and when the rate has left a 2x band around the rate it was last
++	// written for (vbvWriteNeeded). vbvFor is that rate; 0 = not yet written on this element.
++	vbvFor      atomic.Int64
++	vbvRebuilds atomic.Int64 // VBV writes on an element that already had one (each = a session rebuild)
++	// Encoder output accounting (observability only): bytes out of the encoder, when the last encoded
++	// frame and the last rate change happened, and gaps in encoded output that follow a rate change.
++	encBytes     atomic.Int64
++	lastPullNs   atomic.Int64
++	rateSetNs    atomic.Int64
++	rateSetFull  atomic.Bool // the last rate change rewrote the VBV (full reconfigure)
++	rateGaps     atomic.Int64
++	rateGapMaxMs atomic.Int64
  
  	conf config.Encoder
  
-@@ -134,25 +224,74 @@ type GstMediaPipe struct {
+@@ -134,25 +245,74 @@ type GstMediaPipe struct {
  	VideoScale     float64
  	ScaleMethod    string
  	MaxThreads     int
@@ -98531,7 +98644,7 @@ index 4a6171f..06c6be8 100644
  
  	log *logger.Logger
  }
-@@ -161,7 +300,6 @@ type videoJob struct {
+@@ -161,7 +321,6 @@ type videoJob struct {
  	data         []byte
  	w, h, stride int
  	dur          time.Duration
@@ -98539,7 +98652,7 @@ index 4a6171f..06c6be8 100644
  }
  
  type Video struct {
-@@ -170,6 +308,8 @@ type Video struct {
+@@ -170,6 +329,8 @@ type Video struct {
  }
  
  type RawFrame struct {
@@ -98548,7 +98661,7 @@ index 4a6171f..06c6be8 100644
  	Data   []byte
  	Stride int
  	W, H   int
-@@ -180,8 +320,15 @@ type pipe struct {
+@@ -180,8 +341,15 @@ type pipe struct {
  	source   *app.Source
  	sink     *app.Sink
  	srcPad   *gst.Pad
@@ -98564,7 +98677,7 @@ index 4a6171f..06c6be8 100644
  }
  
  func (p *pipe) src() *C.GstAppSrc      { return (*C.GstAppSrc)(unsafe.Pointer(p.source.Instance())) }
-@@ -198,8 +345,29 @@ func (p *pipe) destroy() {
+@@ -198,8 +366,29 @@ func (p *pipe) destroy() {
  	}
  	if p.pipeline != nil {
  		p.pipeline.GetPipelineBus().Post(gst.NewEOSMessage(p.pipeline))
@@ -98596,7 +98709,7 @@ index 4a6171f..06c6be8 100644
  	}
  	p.sink = nil
  	p.source = nil
-@@ -215,6 +383,42 @@ func (b *builder) writeIfSet(s string) {
+@@ -215,6 +404,42 @@ func (b *builder) writeIfSet(s string) {
  	}
  }
  
@@ -98639,7 +98752,7 @@ index 4a6171f..06c6be8 100644
  func NewGstreamer(conf config.Encoder, log *logger.Logger) *GstMediaPipe {
  	return &GstMediaPipe{conf: conf, bpp: 4, vidFmt: gstVideoFormat("BGRx"), log: log}
  }
-@@ -229,8 +433,49 @@ func (g *GstMediaPipe) Init() error {
+@@ -229,8 +454,49 @@ func (g *GstMediaPipe) Init() error {
  	return nil
  }
  
@@ -98689,7 +98802,7 @@ index 4a6171f..06c6be8 100644
  	g.a, err = buildAudioPipeline(srcHz, g.conf, g.log)
  	if err != nil {
  		return
-@@ -246,10 +491,17 @@ func (g *GstMediaPipe) initVideo() (err error) {
+@@ -246,10 +512,20 @@ func (g *GstMediaPipe) initVideo() (err error) {
  		w, h = h, w
  	}
  	g.v, err = buildVideoPipeline(w, h, sw, sh, g.pixFmt, g.ScaleMethod, g.MaxThreads, g.conf,
@@ -98700,6 +98813,9 @@ index 4a6171f..06c6be8 100644
  	}
 +	// A geometry change rebuilds the pipeline (and the encoder element), so an ABR target set on the
 +	// old encoder would silently revert to the config bitrate. Re-apply it to the new one.
++	// The element is new, so its VBV has not been written and the output clock starts over.
++	g.vbvFor.Store(0)
++	g.lastPullNs.Store(0)
 +	if kbps := g.vBitrate.Load(); kbps > 0 {
 +		if e := g.SetVideoBitrate(int(kbps)); e != nil {
 +			g.log.Warn().Err(e).Msgf("abr: could not re-apply %d kbps after reinit", kbps)
@@ -98708,7 +98824,7 @@ index 4a6171f..06c6be8 100644
  
  	// if params contain keyframe-mode=disabled, we force periodic keyframes
  	// ourselves instead of relying on GStreamer's auto mode
-@@ -261,9 +513,18 @@ func (g *GstMediaPipe) initVideo() (err error) {
+@@ -261,9 +537,18 @@ func (g *GstMediaPipe) initVideo() (err error) {
  
  	p := g.v
  	fmt := g.vidFmt
@@ -98730,7 +98846,7 @@ index 4a6171f..06c6be8 100644
  
  	return p.pipeline.SetState(gst.StatePlaying)
  }
-@@ -279,18 +540,57 @@ func (g *GstMediaPipe) SetPixFmt(f uint32) {
+@@ -279,18 +564,57 @@ func (g *GstMediaPipe) SetPixFmt(f uint32) {
  }
  func (g *GstMediaPipe) SetRot(r uint) { g.oldRot = r }
  
@@ -98788,7 +98904,7 @@ index 4a6171f..06c6be8 100644
  	g.v.destroy()
  	g.a.destroy()
  	g.aSegSent = false
-@@ -299,6 +599,11 @@ func (g *GstMediaPipe) Destroy() {
+@@ -299,6 +623,11 @@ func (g *GstMediaPipe) Destroy() {
  
  func (g *GstMediaPipe) ProcessAudio(audio []byte, cb func([]byte, time.Duration)) {
  	g.onAudio = cb
@@ -98800,7 +98916,7 @@ index 4a6171f..06c6be8 100644
  	if !g.aSegSent {
  		g.aSegSent = true
  		g.a.srcPad.PushEvent(gst.NewSegmentEvent(cachedSegment))
-@@ -320,7 +625,8 @@ func (g *GstMediaPipe) pullAudio(_ *app.Sink) gst.FlowReturn {
+@@ -320,7 +649,8 @@ func (g *GstMediaPipe) pullAudio(_ *app.Sink) gst.FlowReturn {
  	return gst.FlowOK
  }
  
@@ -98810,7 +98926,7 @@ index 4a6171f..06c6be8 100644
  func (g *GstMediaPipe) videoWorker(v *pipe, vidFmt uint32, ch <-chan videoJob, done chan<- struct{}) {
  	defer close(done)
  	for job := range ch {
-@@ -329,33 +635,178 @@ func (g *GstMediaPipe) videoWorker(v *pipe, vidFmt uint32, ch <-chan videoJob, d
+@@ -329,33 +659,197 @@ func (g *GstMediaPipe) videoWorker(v *pipe, vidFmt uint32, ch <-chan videoJob, d
  		}
  		C.pushVideoBuf(v.src(),
  			unsafe.Pointer(&job.data[0]), C.gsize(len(job.data)),
@@ -98834,6 +98950,25 @@ index 4a6171f..06c6be8 100644
 +		return gst.FlowEOS
 +	}
 +	defer C.unmapAndUnref(buf, &mi)
++	// Output accounting (observability only): what the encoder actually emits, and whether a rate change
++	// was followed by a hole in its output (a full reconfigure drains and rebuilds the session).
++	nowNs := time.Now().UnixNano()
++	g.encBytes.Add(int64(mi.size))
++	if prev := g.lastPullNs.Swap(nowNs); prev != 0 {
++		if gapMs := (nowNs - prev) / 1e6; gapMs > encGapLogMs {
++			if set := g.rateSetNs.Load(); set != 0 && nowNs-set <= int64(time.Second)+(nowNs-prev) {
++				g.rateGaps.Add(1)
++				for {
++					m := g.rateGapMaxMs.Load()
++					if gapMs <= m || g.rateGapMaxMs.CompareAndSwap(m, gapMs) {
++						break
++					}
++				}
++				g.log.Info().Msgf("enc: %d ms gap in encoded video, ending %d ms after a rate change (reconfig=%s)",
++					gapMs, (nowNs-set)/1e6, map[bool]string{true: "full", false: "bitrate"}[g.rateSetFull.Load()])
++			}
++		}
++	}
 +	if p.zeroCopy {
 +		// The encoded frame IS the frame clock here — nothing arrives on the input side to count.
 +		g.maybeForceKeyframe(p)
@@ -99003,7 +99138,7 @@ index 4a6171f..06c6be8 100644
  
  	w, h := v.Frame.W, v.Frame.H
  	stride := v.Frame.Stride
-@@ -365,11 +816,24 @@ func (g *GstMediaPipe) ProcessVideo(v Video, cb func([]byte, time.Duration)) {
+@@ -365,11 +859,24 @@ func (g *GstMediaPipe) ProcessVideo(v Video, cb func([]byte, time.Duration)) {
  		stride = 0
  	}
  
@@ -99031,7 +99166,7 @@ index 4a6171f..06c6be8 100644
  	}
  }
  
-@@ -378,7 +842,10 @@ func (g *GstMediaPipe) Reinit() error {
+@@ -378,7 +885,10 @@ func (g *GstMediaPipe) Reinit() error {
  	g.mu.Lock()
  	defer g.mu.Unlock()
  
@@ -99043,7 +99178,7 @@ index 4a6171f..06c6be8 100644
  		return nil
  	}
  
-@@ -388,10 +855,15 @@ func (g *GstMediaPipe) Reinit() error {
+@@ -388,10 +898,15 @@ func (g *GstMediaPipe) Reinit() error {
  	// drop stale frames (for the new pipe)
  	g.v.stale.Store(true)
  
@@ -99060,7 +99195,7 @@ index 4a6171f..06c6be8 100644
  		<-g.videoDone
  	}
  
-@@ -407,40 +879,156 @@ func (g *GstMediaPipe) Reinit() error {
+@@ -407,40 +922,156 @@ func (g *GstMediaPipe) Reinit() error {
  }
  
  func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod string,
@@ -99239,7 +99374,7 @@ index 4a6171f..06c6be8 100644
  	case "vp8", "vp9":
  		encoder := cmp.Or(opts.Encoder, fmt.Sprintf("vp%cenc", codec[len(codec)-1]))
  		threads := cmp.Or(conf.Video.Threads, cpuCores)
-@@ -453,8 +1041,11 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
+@@ -453,8 +1084,11 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
  	if opts.Caps != "" {
  		build.write(" ! " + opts.Caps)
  	}
@@ -99252,7 +99387,7 @@ index 4a6171f..06c6be8 100644
  
  	pipeDef := build.String()
  
-@@ -464,21 +1055,54 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
+@@ -464,21 +1098,54 @@ func buildVideoPipeline(w, h, scaledW, scaledH int, pixFmt uint32, scaleMethod s
  	if err != nil {
  		return nil, err
  	}
@@ -99315,7 +99450,7 @@ index 4a6171f..06c6be8 100644
  }
  
  func buildAudioPipeline(srcHz int, conf config.Encoder, log *logger.Logger) (*pipe, error) {
-@@ -491,6 +1115,13 @@ func buildAudioPipeline(srcHz int, conf config.Encoder, log *logger.Logger) (*pi
+@@ -491,6 +1158,13 @@ func buildAudioPipeline(srcHz int, conf config.Encoder, log *logger.Logger) (*pi
  	build.Grow(384)
  	build.write("appsrc name=audio_src is-live=true ")
  	build.writef("caps=audio/x-raw,format=S16LE,rate=%d,channels=2,layout=interleaved ", srcHz)
@@ -99329,7 +99464,7 @@ index 4a6171f..06c6be8 100644
  	if srcHz != 48_000 {
  		m, q := "kaiser", 10
  		switch conf.Audio.Resampler {
-@@ -503,8 +1134,27 @@ func buildAudioPipeline(srcHz int, conf config.Encoder, log *logger.Logger) (*pi
+@@ -503,8 +1177,27 @@ func buildAudioPipeline(srcHz int, conf config.Encoder, log *logger.Logger) (*pi
  		build.writef("resample-method=%s quality=%d ! audio/x-raw,rate=48000 ", m, q)
  	}
  	build.writef("! %s name=audio_enc %s ", cmp.Or(opts.Encoder, "opusenc"), opts.Params)
@@ -99359,7 +99494,7 @@ index 4a6171f..06c6be8 100644
  
  	pipeDef := build.String()
  	log.Debug().Msgf("Gstreamer [audio]: %s", pipeDef)
-@@ -577,3 +1227,47 @@ func watchBus(pipeline *gst.Pipeline, log *logger.Logger) {
+@@ -577,3 +1270,110 @@ func watchBus(pipeline *gst.Pipeline, log *logger.Logger) {
  		}
  	}
  }
@@ -99399,11 +99534,74 @@ index 4a6171f..06c6be8 100644
 +		// docs/arcade-quality-plan.md §17. nvh264enc property, live-changeable; x264enc names its
 +		// equivalent differently, so this is best-effort by design (a failed set must never kill
 +		// the bitrate rung that just succeeded).
-+		if err := v.enc.SetProperty("vbv-buffer-size", uint(max(kbps/20, 100))); err != nil {
-+			g.log.Debug().Err(err).Msg("vbv-buffer-size not settable on this encoder")
++		//
++		// ⚠ NOT on every rung (2026-10-03): a VBV write is a full encoder-session rebuild — see the
++		// vbvFor field. Written when the element is fresh, and when the rate leaves the 2x band around
++		// the rate it was last written for; a bitrate-only step is the soft, invisible path.
++		prev := int(g.vbvFor.Load())
++		full := vbvWriteNeeded(vbvMode, prev, kbps)
++		g.rateSetFull.Store(full)
++		g.rateSetNs.Store(time.Now().UnixNano())
++		if full {
++			if err := v.enc.SetProperty("vbv-buffer-size", uint(max(kbps/20, 100))); err != nil {
++				g.log.Debug().Err(err).Msg("vbv-buffer-size not settable on this encoder")
++				return nil
++			}
++			g.vbvFor.Store(int64(kbps))
++			if prev > 0 {
++				n := g.vbvRebuilds.Add(1)
++				if vbvMode != "live" { // in live mode this is every rung; the summary counts it
++					g.log.Info().Msgf("enc: vbv %d kbit for %d kbps (was sized for %d) — encoder session rebuilt, one keyframe (#%d this room)",
++						max(kbps/20, 100), kbps, prev, n)
++				}
++			}
 +		}
 +		return nil
 +	}
++}
++
++// vbvMode is CLOUD_GAME_ENC_VBV_MODE: "band" (default — rewrite the VBV only when the rate leaves a 2x
++// band), "live" (the pre-2026-10-03 behaviour: rewrite on EVERY rate change, for A/B), "init" (write it
++// once per encoder element and never again).
++var vbvMode = func() string {
++	switch m := strings.ToLower(strings.TrimSpace(os.Getenv("CLOUD_GAME_ENC_VBV_MODE"))); m {
++	case "live", "init":
++		return m
++	default:
++		return "band"
++	}
++}()
++
++// VbvMode reports the active VBV policy, for the room summary.
++func VbvMode() string { return vbvMode }
++
++// vbvWriteNeeded says whether a rate change to kbps must also rewrite the VBV (pure). vbvFor is the rate
++// the VBV on this encoder element was last written for (0 = never). Each rewrite on a live encoder is a
++// session rebuild, so the default policy rewrites only when the rate has doubled or halved since — the
++// buffer then stays within 1.5-6 frame budgets instead of the 3 it is sized to, and a room that climbs
++// from 6 to 38 Mbps pays two rebuilds instead of one per step.
++func vbvWriteNeeded(mode string, vbvFor, kbps int) bool {
++	if vbvFor <= 0 {
++		return true
++	}
++	switch mode {
++	case "live":
++		return true
++	case "init":
++		return false
++	default:
++		return kbps >= vbvFor*2 || kbps*2 <= vbvFor
++	}
++}
++
++// encGapLogMs: a gap between encoded frames longer than this, within a second of a rate change, is
++// logged and counted (60 fps = 16.7 ms; the steady-state worst case measured ~40 ms).
++const encGapLogMs = 50
++
++// EncStats is the encoder's output accounting for the ABR trace and room summary: bytes emitted so far,
++// VBV rewrites that rebuilt the session, and the gaps in encoded output that followed a rate change.
++func (g *GstMediaPipe) EncStats() (bytes, vbvRebuilds, rateGaps, rateGapMaxMs int64) {
++	return g.encBytes.Load(), g.vbvRebuilds.Load(), g.rateGaps.Load(), g.rateGapMaxMs.Load()
 +}
 +
 +// VideoBitrate is the ABR target currently applied (kbps), or 0 if ABR never set one.
@@ -99947,6 +100145,70 @@ index f3e898f..f18e810 100644
 +	case <-done:
 +	case <-time.After(5 * time.Second):
 +		t.Fatal("timed out waiting for encoded video after reinit")
++	}
++}
+diff --git a/pkg/worker/media/vbv_test.go b/pkg/worker/media/vbv_test.go
+new file mode 100644
+index 0000000..3218ef9
+--- /dev/null
++++ b/pkg/worker/media/vbv_test.go
+@@ -0,0 +1,58 @@
++package media
++
++import "testing"
++
++// A VBV write on a live NVENC element rebuilds the encoder session (a keyframe + a ~110 ms hole in the
++// encoded output, measured 2026-10-03). The default policy must therefore write it once when the element
++// is fresh and then only when the rate leaves a 2x band — never on an ordinary ABR step.
++func TestVbvWriteNeeded(t *testing.T) {
++	tests := []struct {
++		name         string
++		mode         string
++		vbvFor, kbps int
++		want         bool
++	}{
++		{"fresh element always writes (band)", "band", 0, 6000, true},
++		{"fresh element always writes (init)", "init", 0, 6000, true},
++		{"fresh element always writes (live)", "live", 0, 6000, true},
++
++		// The ABR loop's ordinary moves: +15 % ramp, +250 creep, a 30 % cut. None may rebuild.
++		{"+15% ramp step", "band", 6000, 6900, false},
++		{"+250 creep step", "band", 13000, 13250, false},
++		{"30% cut", "band", 13000, 9100, false},
++		{"just under double", "band", 6000, 11999, false},
++		{"just over half", "band", 6000, 3001, false},
++
++		// Leaving the band: one rebuild, after which the band re-centres on the new rate.
++		{"doubled", "band", 6000, 12000, true},
++		{"halved", "band", 6000, 3000, true},
++		{"same-host jump to the ceiling", "band", 6000, 40000, true},
++		{"collapse to the floor", "band", 13000, 1500, true},
++
++		// A/B and rollback modes.
++		{"live rewrites on every step (old behaviour)", "live", 6000, 6900, true},
++		{"init never rewrites", "init", 6000, 40000, false},
++	}
++	for _, tc := range tests {
++		if got := vbvWriteNeeded(tc.mode, tc.vbvFor, tc.kbps); got != tc.want {
++			t.Errorf("%s: vbvWriteNeeded(%q, %d, %d) = %v, want %v", tc.name, tc.mode, tc.vbvFor, tc.kbps, got, tc.want)
++		}
++	}
++}
++
++// A room climbing 6000 -> 38657 at +15 %/tick must cost two rebuilds (crossing 12000 and 24000), not one
++// per step (it was 14).
++func TestVbvRebuildsOnARamp(t *testing.T) {
++	vbvFor, rebuilds, steps := 6000, 0, 0
++	for cur := 6000; cur < 38657; {
++		cur = min(cur+cur*15/100, 38657)
++		steps++
++		if vbvWriteNeeded("band", vbvFor, cur) {
++			rebuilds++
++			vbvFor = cur
++		}
++	}
++	if rebuilds != 2 {
++		t.Fatalf("ramp took %d steps and %d rebuilds, want 2 rebuilds", steps, rebuilds)
 +	}
 +}
 diff --git a/pkg/worker/racheevos.go b/pkg/worker/racheevos.go

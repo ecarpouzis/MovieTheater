@@ -1218,3 +1218,48 @@ ingest clamps them and defaults an older worker's missing fields to 0 / -1. Migr
 `src/MovieTheater.Db/Migrations/20261003230000_AddArcadeLinkStatCongestion.cs` + idempotent
 `sql/AddArcadeLinkStatCongestion.sql` — **must run before the site deploy** (EF inserts every mapped column, so the
 new site's LinkStat ingest would fail without them; the defaults keep the current site working once it runs).
+
+## 0051-vbv-band + abr trace (2026-10-03): an ABR step no longer rebuilds the encoder session
+
+(Fork commit `ca74364`. Worker-only. LIVE 2026-10-03 22:51 on all three workers, md5 `41030DF7525A6E26ACF01798DBFAECD9`;
+rollback `worker.pre-vbvband.exe` beside each = the 0050 build. Switches: `CLOUD_GAME_ENC_VBV_MODE=band|live|init`
+(`live` = the old behaviour, for A/B), `CLOUD_GAME_ABR_TRACE=0` silences the tick trace. Plan + evidence:
+`~/.claude/plans/arcade-estimate-collapse-plan.md`.)
+
+**The defect.** `SetVideoBitrate` wrote `vbv-buffer-size` with every `bitrate`. In gst nvcodec that is a rate-control
+parameter (`gstnvav1encoder.cpp` / `gstnvh264encoder.cpp`: `PROP_VBV_BUFFER_SIZE -> UPDATE_RC_PARAM`), and any RC-param
+change takes `RECONFIGURE_FULL` (`gstnvencoder.cpp`): drain, then a NEW encoder session. Measured with the production
+params on live test video, both codecs (`reconf.c`): bitrate alone = no keyframe, 31-41 ms max gap between encoded
+frames; bitrate + vbv = one keyframe EVERY time and a **100-121 ms hole** in the encoded output, even for a +250 kbps
+creep step. The ABR loop steps every second or two, so every step was a hitch — the "freezing and teleporting" on a
+phone beside the router: **425 rate changes -> 437 keyframes handed** in one 19-minute AV1 room (27 were startup + PLI),
+70 -> 76 in the afternoon room, 4-5 in same-host rooms that change rate once. Patch 0025's "a rung is free" was true
+for `bitrate` and false for the VBV it added. Congestion memory v2 (0049) creeps in more, smaller steps and so made
+MORE rebuilds.
+
+**The fix.** The VBV is written when the encoder element is fresh and when the rate has left a 2x band around the
+rate it was last written for (`vbvWriteNeeded`, `GstMediaPipe.vbvFor`). A +15 % step, a 250 creep and a 30 % cut cost
+nothing; a 6000 -> 38657 ramp costs two rebuilds instead of fourteen. The buffer stays within 1.5-6 frame budgets
+instead of exactly 3. Each rebuild that does happen logs `enc: vbv N kbit for R kbps (was sized for P) — encoder session
+rebuilt, one keyframe (#n this room)`.
+
+**Instrumentation (no decision reads it).**
+- `enc: N ms gap in encoded video, ending M ms after a rate change (reconfig=full|bitrate)` — any hole > 50 ms within a
+  second of a rate change.
+- `abr: tick cur= sent= est= cap= peers= wall= hold= low=` + the binding peer's estimator internals
+  (`delayT= lossT= usage= state= dEst= dThr= dMeas= avgLoss=`), 1 Hz. **`sent` is what the encoder actually emitted that
+  second.** `cur` is a permission: NVENC CBR does not pad — measured offline, the production AV1 params emit 2730 kbps of
+  a 13000 target on scrolling Sonic frames and ~535 kbps on a static screen; the canary room read `sentAvg=271` against a
+  33177 target. Pion's estimate snaps to 0.85 x what ARRIVED in the last 500 ms on any overuse signal, and the loop
+  compares it with `cur` — the open second half of this problem (the estimate-collapse plan, stages 2-3).
+- Cut lines gain `sent=`; the summary gains `sentAvg= appLimTicks= floorTicks= cutsAppLim= vbvMode= vbvRebuilds=
+  encGaps= encGapMaxMs=`.
+
+**Verified live.** Canary harness room 3MJQ46 on GL 1: 4 keyframes of 1829 frames, `vbvRebuilds=2` (the room-start
+6000 write and the same-host jump to the ceiling), and the jump logged `enc: 99 ms gap … (reconfig=full)` — the stall,
+caught in the real worker. Owed: Eric's phone room (pass = keyframes handed minus startup/join/PLI <= the logged
+rebuilds; no `enc:` gap after a bitrate-only step; no hitch on a step).
+
+**What this contaminated — re-test before trusting:** the 2026-07-30 failed-ramp verdicts ("any larger step reads as
+congestion"), the "250 kbps creep starves gently" claim, and every wall / capacity reading taken while a keyframe burst
+followed each step.
