@@ -1301,3 +1301,77 @@ intentionally changes were updated.
 **Verified live** (installed browsers, same-host DOS rooms at the 40 Mbps ceiling, on this build): Chrome 76 / 76 fps,
 Edge 75 / 76 / 76, Firefox 76 (min 75, 23 packets lost, 0 PLIs) — no distress event in any of the six rooms, no failed
 room start. Baseline the morning of 10-03: Chrome 76, Edge 76, Firefox 5 fps.
+
+## 0053-estimate-ratchet (2026-10-04): the bitrate is a permission; an under-sending stream is not congestion; the estimator stops lying
+
+(Fork commits `c109d3f`..`04d4d8c`. LIVE 2026-10-04 03:33 on all three workers, md5 `62B6077A81562799FE154CF5ED285910`;
+rollback `worker.pre-stage3.exe` beside each = the 0052 build. Plan, evidence and the two-blind-plans diff:
+`~/.claude/plans/arcade-estimate-collapse-plan.md`. The site half of this program — the client decoder-wedge rejoin and
+viewer report v2 — is site commit `a4447f12`.)
+
+**The defects (all measured, see the plan's evidence table).**
+1. NVENC CBR does not pad: the encoder emits what the picture needs (offline, production AV1 params: 2730 kbps of a 13000
+   target on scrolling Sonic, ~535 static). Pion's estimate grew 8 %/s WITHOUT BOUND while nothing went wrong and snapped to
+   0.85 x what ARRIVED in the last 500 ms on any delay blip. The loop compared that with the encoder TARGET, read the gap as
+   congestion and cut 30 % a tick; each cut lowered what was sent, so the next blip read lower — a ratchet to the 1500 floor
+   on a perfect link (phone beside the router: 41 cuts / 11 hard descents in 12 minutes after 0051).
+2. Pion remembered only the last 250 packets sent (`newFeedbackHistory(250)`): past that, acknowledgments came back empty,
+   the delay controller heard nothing and the loss controller could not act — the estimate FROZE on a genuinely congested
+   link (lab: stuck at 29558 while 33 Mbps went into a 20 Mbps link at 40 % loss), and evicted packets counted as losses.
+3. The rate calculator divided by a zero window (`int(+Inf)` -> a decrease clamps to the 500 kbps minimum); the rate
+   controller never held after a decrease (the overuse detector always wrote State 0).
+
+**The fix.**
+- **In-tree estimator** `pkg/network/webrtc/gcc/` — a copy of pion interceptor v0.1.45 `pkg/gcc` + `internal/cc` (MIT
+  notices kept, README records the upstream version), built through one function in `factory.go`.
+  `CLOUD_GAME_GCC_IMPL=stock` restores upstream pion exactly. Fixes, each with its own switch (`=0` = upstream for that
+  piece): `CLOUD_GAME_GCC_FIX_RATECALC` (no rate from a zero window), `CLOUD_GAME_GCC_FIX_HISTORY` (a 16384-slot ring
+  keyed by transport sequence; an unmatched acknowledgment is ignored, its arrival delta still consumed),
+  `CLOUD_GAME_GCC_ALR` (default 1: an overuse while the path delivered >= 90 % of a MATCHED-packet sent rate, loss < 2 % and
+  the sender is under 65 % of the target keeps the target — counted as `guarded`; growth capped at max(current, 1.5 x
+  received)), `CLOUD_GAME_GCC_FIX_HOLD` (hold after a decrease). `CLOUD_GAME_GCC_FIX_NOISE` (the Kalman noise-term units
+  error) stays OFF: it takes clean-link overuse from 3.69 to 0.11 per minute but every capacity-limited scenario regresses.
+- **The loop** (`abr.go`, `CLOUD_GAME_ABR_APPLIMITED`, `=0` = the previous decisions exactly, randomized parity test):
+  a tick is under-sending when the encoder emitted < 70 % of the target. On such a tick the target takes the normal +15 %
+  step whatever the estimate says (it is a permission and sizes the VBV) — but never probes a remembered wall — and may be
+  cut only on EVIDENCE: the estimator's received < 90 % of sent over its window, or loss > 2 %. A wall is minted from the
+  binding peer's delivered rate on such a cut and only a capacity read lowers a wall; the 115 % climb exit counts only steps
+  taken while really sending at the wall's rate (a quiet period can no longer forget a wall). `sustainedKbps` — the input
+  of warm start and the wall seed — is recorded only from ticks sending near the target. `floorTicks` counts
+  `cur < floor + 250`.
+- **Catch-up hold, bounded** (`abrCatchUpMaxTicks = 6`): a low but rising estimate on a tick sending near the target, with
+  no delivery shortfall, does not count toward a cut — for at most six ticks in a row. Unbounded it held a room at 27 Mbps
+  on a path that delays instead of dropping (measured on the real stack through the TURN-over-TLS relay).
+- **`CLOUD_GAME_ABR_FAST_READ` ships OFF** (`=1` enables): the lab likes a single-tick cut when delivery falls short
+  (10 Mbps + content: 2513 packets lost against 3376) but has no radio stalls; on a real radio one 60 ms hiccup would be a
+  30 % cut plus a wall a light-content room can never prove its way back above.
+
+**Lab** (`pkg/worker/abr_gccsim_test.go`, pion's real estimator + the real `abrRate.decide` in virtual time, 20 seeds;
+`CLOUD_GAME_ABR_LAB=1` for the matrix). Stock -> production config:
+
+| Scenario | Cuts per room | Under-sending cuts | Packets lost | Note |
+|---|---|---|---|---|
+| Clean link, H.264 phone trace | 65.8 -> 0.1 | 34.7 -> 0 | 0 | target mean 16034 -> 37800 |
+| Clean link, AV1 static | 19.9 -> 0 | 18.1 -> 0 | 0 | floor seconds 192.7 -> 0; reaches 90 % of the ceiling at tick 13 |
+| 20 Mbps link, constant demand | 12.0 -> 5.5 | 0 | 52716 -> 2429 | the freeze, gone |
+| 10 Mbps + content | 64.7 -> 19.5 | 16.1 -> 0.1 | 11528 -> 3385 | the wall holds <= 1.25 x capacity after the first collision |
+| Step-down 20 -> 6 Mbps | | | 169925 -> 6744 | followed within 10 ticks: 8/20 seeds -> 20/20 |
+| Cellular 10 Mbps, 1 % loss | 20.9 -> 10.0 | 7.8 -> 0.9 | 2095 -> 2849 | delivered 5804 -> 6678; one first collision at the first heavy scene |
+
+Not solved: capacity links do not settle "for good" (the 115 % probe into a shallow buffer) — measured, not regressed; the
+first collision on an UNKNOWN constrained link after a quiet start costs up to 3.9 x capacity for 4 s (stock lost more in
+total); a returning device's seeded wall bounds it to ~1.2 x.
+
+**Real stack** (TURN relay room = a non-same-host path with no real network, `.claude/skills/test-roms/relay-room.mjs`):
+static NES screen, 0052 build: 13875 -> 1631 in six ticks and pinned; this build: 6000 -> 33177 (the ceiling) in 13 ticks,
+0 cuts, the one overuse logged `guarded=1`, the browser's longest presented-frame gap 67 ms. Installed-browser matrix:
+Chrome 76 fps, Edge 76, Firefox 76. ⚠ The relay path itself (TURN over TLS = TCP) stalls the picture for 1-3 s even at
+0-7 Mbps and fails to connect for a few minutes after a worker recycle — it is a rough instrument, not a model of a
+viewer's link.
+
+**New log fields.** `abr: tick` adds `recv= sentWin= decs= guarded=` (in-tree estimator), `under=1 net=cut|none`, and the
+viewer's own `gap= pres= jb= stall= rec=` (report v2: longest presented-frame gap in ms, presented fps, jitter buffer ms,
+client-watchdog stall ms, client recoveries). Summary adds `appGate= appLimSkips= underWallHolds= catchUpHolds= decreases=
+guardedDecreases= histOverflows=`. Cut verdicts add `applim` and `keep-noread`. At room close:
+`abr: viewer-gaps reported= maxMs= over100= over250=` — seconds in which the picture hung, measured in the browser.
+Worker start: `rtc: bandwidth estimator: in-tree GCC (...), fixes ratecalc=1 history=1 alr=1 hold=1 noise=0`.
