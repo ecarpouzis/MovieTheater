@@ -113,6 +113,11 @@ the relay, that 5349 still answers, and that arcade `/healthz` is 200. Any failu
    worker/Ziggy addresses (`-allowed-peers`, default `192.168.68.69` — the old WAN entry died with
    the 2026-09-01 CGNAT cutover) and denies
    everything else — otherwise a credential holder could relay into the LAN.
+   - Enforced on every relay **socket** (`allowlistConn` in main.go): datagrams to or from a non-listed
+     IP are dropped there, whatever the permission layer said. Since 2026-10-04 the default
+     `-deny-mode blackhole` *grants* the TURN permission for a non-listed peer and lets the socket drop
+     its traffic, instead of answering 403 — see "Relay defects of 2026-10-04" for why a 403 broke
+     rooms. `-deny-mode reject` restores the old 403. Verified both ways with `turnprobe -inbound-from`.
    - **Residual risk (accepted):** TURN permissions can't be scoped to a *port*, so allowing
      `192.168.68.69` technically lets a credentialed user relay UDP to any UDP port on Ziggy. Blast
      radius is limited to authenticated arcade users reaching Ziggy's own UDP ports; the coordinator
@@ -215,10 +220,98 @@ End-to-end verification needs the **isolated device** (the relay is skipped when
 exists, so you can't prove it from Ziggy or a normal LAN client):
 
 1. Put the phone back on the **guest SSID** and launch a game — it should now connect instead of hanging.
-2. In the relay log (`D:\ArcadeStorage\logs\turn.log`) you should see auth succeed and **no**
-   `perm: deny` lines for the worker IP. `perm: deny` for other IPs is the allowlist doing its job.
+2. In the relay log (`D:\ArcadeStorage\logs\turn.log`) you should see `alloc: +`, `perm: + 192.168.68.69`
+   and `chan: + … -> 192.168.68.69:844x` for the room, and **no** `perm: blackhole`/`perm: deny` line for
+   the worker IP. `perm: blackhole` (or, in reject mode, `perm: deny`) for the worker's OTHER candidate
+   addresses (10.9.0.2, 100.100.38.103, its CGNAT srflx) is the allowlist doing its job.
 3. Direct networks (main SSID, cellular) should behave exactly as before — confirm one still connects
    directly (they will not appear in the relay log at all).
+
+## Relay defects of 2026-10-04 (both root-caused and fixed in main.go)
+
+### 1. Picture stalls of 1-3 s on the relay path = keyframe bursts dropped at the relay's UDP socket
+
+pion/turn reads each allocation's UDP relay socket in ONE goroutine (`internal/allocation`
+`Allocation.packetHandler`) and writes every datagram synchronously into the client's TLS stream before
+reading the next. A video keyframe leaves the worker as a back-to-back burst of 100-300+ KB; the socket's
+OS-default receive buffer (64 KiB on Windows) overflows and the rest of the burst is silently dropped.
+The browser NACKs the holes, the retransmissions arrive as another burst and are dropped the same way,
+libwebrtc sits out its 3 s frame-wait and sends a PLI, and the worker answers with another big keyframe.
+That is the 1 s / 2 s / 3 s gap ladder and the keyframe-request storm. It is NOT congestion, TCP RTOs,
+Caddy, the hairpin or the VPS: every one of those paths measured clean (below). Static content (the NES
+test cart, keyframes under 64 KB) never showed it, which is why it looked game-dependent.
+
+Fix: `bufferedRelayGenerator` sets `SO_RCVBUF` on every relay socket (`-relay-rcvbuf`, default 4 MiB).
+
+Probe (`turnprobe`, frames pattern, "worker→browser" direction, relay instances side by side on Ziggy):
+
+| relay build | 64 KB burst after idle | 128 KB | 300 KB | 600 KB | 16 Mbps + 300 KB kf/s | 30 Mbps even |
+|---|---|---|---|---|---|---|
+| live binary (pion v4.0.2) | 0 % loss | 26 % | 45 % | 60 % | 6.6 % | 0.06 % |
+| repo before fix (v4.1.4) | 0 % | 10 % | 35 % | 46 % | 6.4 % | 0 % |
+| fixed, 1 MiB | 0 % | 0 % | 0 % | 0 % | 0 % | 0 % |
+| fixed, 4 MiB (default) | 0 % | 0 % | 0 % | 0 % | 0 % | 0 % |
+
+(p99 one-way delay stayed 3-15 ms in every row.) Same browser, same game (Sonic 2, h264), relay-only
+room pointed at the lab instance — worker log before → after:
+`viewer-gaps maxMs=3017 over100=18 over250=13`, `pli=6`, `atCeilPct=24 cuts=3`, `sustained=0`, Chrome
+`freezes=5 (9.0 s) nack=162 lost=123` → `viewer-gaps maxMs=50 over100=0 over250=0`, `pli=0`,
+`atCeilPct=81 cuts=0`, `sustained=34048`, Chrome `freezes=0 nack=0 lost=0`. (A second 80 s room on the
+final build: `maxMs=67 over100=0`, `pli=0`.)
+
+The paths themselves, live relay, 2/8/16 Mbps even pacing, both directions — all clean, max gap < 100 ms:
+v6 hairpin `[…:1876]:5349`, Caddy `[…:1876]:443`, VPS `149.28.32.123:5349` and `:443` (~4 ms p50, ≤1.9 %
+loss at 16 Mbps — the only path that is not a localhost hop). Headless Chrome on Ziggy only ever
+allocated over IPv6 (the turn log shows `[…:1876]` and `127.0.0.1` = Caddy), never via the VPS.
+
+### 2. Relay rooms that "never connect" = the room page's crash-loop guard firing on a 403 race
+
+The worker advertises candidates the relay must never reach: its WireGuard `10.9.0.2`, its Tailscale
+`100.100.38.103` and its CGNAT srflx — and it advertises them BEFORE `192.168.68.69`. The relay used to
+403 those CreatePermissions. Chrome turns a 403 into an **instantly failed** candidate pair, so whenever
+the browser's TURN allocations finished before the worker's LAN candidate was added, every pair the
+PeerConnection had was failed for a few milliseconds and `connectionState` went `connecting → failed`
+— once per refused candidate, i.e. twice. `ArcadeRoomPage`'s `countCrash()` counts each
+`failed`/`disconnected` status inside 25 s, and at 2 it closes the session (`t=105`) and shows "This game
+keeps crashing right after launch". The worker never refused anything (`Peer connection` +
+`init-webrtc handled`, then silence, because the client quit). It is a timing race, hence intermittent.
+Reproduced 6/7 on the live relay; with the instrumented harness: reject mode 3/4 rooms killed, each with
+exactly 2 `pc0 CONN=failed` and `arcade-crashloop-<code> = 2` in sessionStorage; blackhole mode 0 flaps,
+every attempt that reached the relay connected (the misses were site 503s — the harness's ghost rooms
+hitting `ArcadeMaxConcurrentRooms`, not the relay).
+
+Fix: `-deny-mode blackhole` (default) — grant the permission, drop the traffic at the socket. Those pairs
+then time out quietly instead of failing instantly. Two follow-ups OUTSIDE this binary close it for good:
+the room page should not count `failed`/`disconnected` before the PeerConnection has ever connected, and
+the worker should stop advertising its Tailscale/WireGuard addresses (pion's single-port `UDPMuxDefault`
+enumerates interfaces with nil filters, so `SetInterfaceFilter`/`SetIPFilter` never apply to mux host
+candidates).
+
+The 5-minute coincidence: none. Permission lifetime (5 min) and allocation lifetime play no part; every
+failing room died within ~100 ms of its candidates arriving.
+
+### Verification recipe
+
+```powershell
+# 1. Build the probe and the candidate relay (module cache is enough: $env:GOPROXY='off').
+cd F:\Work\MovieTheater\docker\arcade\turn
+go build -o $env:TEMP\turnlab\turnprobe.exe ./turnprobe
+go build -o $env:TEMP\turnlab\arcade-turn.fixed.exe .
+# 2. Run the candidate on a spare port with the live cert/key/secret (secret via env, never argv/echo).
+$env:TURN_SECRET = (Get-Content D:\ArcadeStorage\turn\secret.txt -Raw).Trim()
+& $env:TEMP\turnlab\arcade-turn.fixed.exe -listen :5350 -cert D:\ArcadeStorage\turn\turn.crt `
+    -key D:\ArcadeStorage\turn\turn.key   # leave it running in its own window
+# 3. Burst-after-idle loss (the defect-1 reproducer) — expect lossPct 0 at every size:
+foreach ($kb in 64,128,300,600) { turnprobe -dial 127.0.0.1:5350 -dirs down -rates 0.3 -pattern frames -kf ($kb*1000) -kfevery 1s -secs 6 }
+#    Paths (live relay): -dial "[2607:2040:110:19ff:1ec2:1284:b022:1876]:443" / 149.28.32.123:5349 / :443
+# 4. Allowlist still holds — expect "0 of 20" for 10.9.0.2 and "20 of 20" for 192.168.68.69:
+turnprobe -dial 127.0.0.1:5350 -inbound-from 10.9.0.2
+turnprobe -dial 127.0.0.1:5350 -peer 10.9.0.2            # expect "peer never heard from the relay"
+# 5. A real relay room against the candidate, only when every worker is free (curl -s localhost:8000/status):
+node .claude\skills\test-roms\relay-lab.mjs --game "Sonic & Knuckles + Sonic The Hedgehog 2" --system genesis --secs 70 --turn-port 5350
+#    (rewrites the offered turns: URLs to the port; prints all candidates/pairs, CONN= flaps, NACK/PLI/freezes)
+#    then read the worker's `abr: viewer-gaps` / `summary-peer … pli=` lines for that room.
+```
 
 ## Rollback
 
