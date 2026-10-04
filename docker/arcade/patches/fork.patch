@@ -5803,10 +5803,10 @@ index 0000000..c45dcce
 +	}
 +}
 diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
-index 99e02b8..3ace312 100644
+index 99e02b8..ab95615 100644
 --- a/pkg/network/webrtc/factory.go
 +++ b/pkg/network/webrtc/factory.go
-@@ -3,19 +3,129 @@ package webrtc
+@@ -3,19 +3,133 @@ package webrtc
  import (
  	"fmt"
  	"net"
@@ -5928,6 +5928,10 @@ index 99e02b8..3ace312 100644
 +	// caller receives provably belongs to the PeerConnection it just created.
 +	bweMu   sync.Mutex
 +	bweChan chan cc.BandwidthEstimator
++	// pd is the playout-delay interceptor factory (nil when the extension is off); pdByPC maps each
++	// PeerConnection newPeer created to its own gate until the Peer takes it (PlayoutGate).
++	pd     *playoutDelayFactory
++	pdByPC sync.Map
 +	// warmInit (P10 warm start): the initial bitrate the NEXT estimator is built with, in bit/s; 0 =
 +	// bweInitialBps. Set under bweMu by newPeer right before NewPeerConnection — the cc interceptor
 +	// builds the estimator synchronously inside that call, so the value provably reaches the peer
@@ -5936,7 +5940,7 @@ index 99e02b8..3ace312 100644
  }
  
  type ModApiFun func(m *webrtc.MediaEngine, i *interceptor.Registry, s *webrtc.SettingEngine)
-@@ -27,15 +137,82 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -27,16 +141,89 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	}
  	i := &interceptor.Registry{}
  
@@ -5952,6 +5956,7 @@ index 99e02b8..3ace312 100644
 +	//      ConfigureTWCCHeaderExtensionSender, which nothing in the default set installs.
 +	// The cc interceptor then feeds each PeerConnection's GCC estimator from the TWCC RTCP that comes
 +	// back. RegisterHeaderExtension dedupes by URI, so the double registration below is safe.
++	var pdFactory *playoutDelayFactory
 +	bweChan := make(chan cc.BandwidthEstimator, 4)
 +	warmInit := new(atomic.Int64)
 +	gccImpl, gccFixes := gccImplFromEnv(os.Getenv), vgcc.FixesFromEnv(os.Getenv)
@@ -5997,6 +6002,7 @@ index 99e02b8..3ace312 100644
 +			return nil, pdErr
 +		}
 +		i.Add(pd)
++		pdFactory = pd
 +		log.Info().Msgf("rtc: playout-delay extension ON (min %d ms, max %d ms, per-viewer gate: jitter <= %d ms, 0 = none)",
 +			conf.PlayoutDelay.MinMs, conf.PlayoutDelay.MaxMs, conf.PlayoutDelay.MaxJitterMs)
 +	}
@@ -6005,6 +6011,7 @@ index 99e02b8..3ace312 100644
 +		return
 +	}
 +
++	customLogger := NewPionLogger(log, conf.LogLevel)
  	if conf.DisableDefaultInterceptors {
  		sender, err := report.NewSenderInterceptor()
  		if err != nil {
@@ -6013,14 +6020,19 @@ index 99e02b8..3ace312 100644
  		i.Add(sender)
 -	} else if err = webrtc.RegisterDefaultInterceptors(m, i); err != nil {
 +	} else if err = webrtc.RegisterDefaultInterceptorsWithOptions(m, i,
++		// The interceptors log through the worker's logger. Without this they use pion's default factory,
++		// which shows ERRORS only: the NACK responder's "failed resending nacked packet" is a Warn, and it
++		// fired on every retransmission for as long as the estimator refused the RTX SSRC (patch 0054).
++		webrtc.WithInterceptorLoggerFactory(customLogger),
 +		webrtc.WithNackResponderOptions(nack.ResponderSize(nackBufferFromEnv(os.Getenv)))); err != nil {
  		return
  	}
+-	customLogger := NewPionLogger(log, conf.LogLevel)
 +	log.Info().Msgf("rtc: NACK retransmission buffer %d packets per stream (CLOUD_GAME_NACK_BUFFER)", nackBufferFromEnv(os.Getenv))
- 	customLogger := NewPionLogger(log, conf.LogLevel)
  	s := webrtc.SettingEngine{LoggerFactory: customLogger}
  	s.SetIncludeLoopbackCandidate(conf.IncludeLoopbackCandidate)
-@@ -49,6 +226,7 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+ 	if conf.HasDtlsRole() {
+@@ -49,6 +236,7 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	if conf.IceLite {
  		s.SetLite(conf.IceLite)
  	}
@@ -6028,7 +6040,7 @@ index 99e02b8..3ace312 100644
  	if conf.HasPortRange() {
  		if err = s.SetEphemeralUDPPortRange(conf.IcePorts.Min, conf.IcePorts.Max); err != nil {
  			return
-@@ -56,57 +234,314 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -56,57 +244,336 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	}
  	if conf.HasSinglePort() {
  		var l any
@@ -6228,6 +6240,7 @@ index 99e02b8..3ace312 100644
 +		udpConn: udpConn,
 +		bweChan: bweChan,
 +		warmInit: warmInit,
++		pd:       pdFactory,
  	}, err
  }
  
@@ -6273,9 +6286,17 @@ index 99e02b8..3ace312 100644
 +		}
 +	}
 +
++	if a.pd != nil {
++		a.pd.last.Store(nil)
++	}
 +	pc, err := a.api.NewPeerConnection(a.conf)
 +	if err != nil {
 +		return nil, nil, err
++	}
++	if a.pd != nil {
++		if g := a.pd.last.Swap(nil); g != nil {
++			a.pdByPC.Store(pc, g)
++		}
 +	}
 +	// The callback fires synchronously during NewPeerConnection; the timeout is a belt-and-braces
 +	// guard so a future Pion change can never deadlock peer creation.
@@ -6285,6 +6306,19 @@ index 99e02b8..3ace312 100644
 +	case <-time.After(250 * time.Millisecond):
 +		return pc, nil, nil
 +	}
++}
++
++// PlayoutGate hands a PeerConnection's playout-delay gate to its Peer (once; nil when the extension is off or
++// the connection was not built by this factory). The Peer calls Block on it for a browser that must never be
++// on the fast path.
++func (a *ApiFactory) PlayoutGate(pc *webrtc.PeerConnection) *playoutDelay {
++	if a == nil || pc == nil {
++		return nil
++	}
++	if g, ok := a.pdByPC.LoadAndDelete(pc); ok {
++		return g.(*playoutDelay)
++	}
++	return nil
 +}
 +
 +// isLocalInterfaceIP reports whether ip is assigned to one of THIS host's own network interfaces.
@@ -10676,10 +10710,10 @@ index 0000000..d7291fe
 +}
 diff --git a/pkg/network/webrtc/pacer.go b/pkg/network/webrtc/pacer.go
 new file mode 100644
-index 0000000..5d01b1c
+index 0000000..a5df62c
 --- /dev/null
 +++ b/pkg/network/webrtc/pacer.go
-@@ -0,0 +1,168 @@
+@@ -0,0 +1,176 @@
 +// In-frame packet pacing (patch 0028). The stack deliberately runs GCC with a NoOpPacer — a
 +// leaky-bucket pacer queues and re-times RTP, which is exactly the latency this project exists to
 +// avoid, and on an idle LAN wire-speed bursts are harmless. But off-LAN they are not: each encoded
@@ -10742,6 +10776,13 @@ index 0000000..5d01b1c
 +// loss. From config (webrtc.lossPacingMs); process-global like paceSleeps.
 +func SetLossPacing(ms int) { lossPaceMs.Store(int32(min(max(ms, 0), 20))) }
 +
++// lossPaceArms counts viewers loss pacing has armed for since the worker started (observability: the ABR
++// trace prints the tick it happens on).
++var lossPaceArms atomic.Int64
++
++// LossPaceArms is the number of viewers loss pacing has armed for since the worker started.
++func LossPaceArms() int64 { return lossPaceArms.Load() }
++
 +// LossPacingMs is the configured loss window (0 = loss pacing off).
 +func LossPacingMs() int { return int(lossPaceMs.Load()) }
 +
@@ -10792,6 +10833,7 @@ index 0000000..5d01b1c
 +					if _, ok := pkt.(*rtcp.TransportLayerNack); ok {
 +						if p.sawNack(time.Now()) {
 +							p.lossy.Store(true)
++							lossPaceArms.Add(1)
 +						}
 +						break
 +					}
@@ -10944,10 +10986,10 @@ index 0000000..b57c9a1
 +}
 diff --git a/pkg/network/webrtc/playoutdelay.go b/pkg/network/webrtc/playoutdelay.go
 new file mode 100644
-index 0000000..715e6c4
+index 0000000..1d19e21
 --- /dev/null
 +++ b/pkg/network/webrtc/playoutdelay.go
-@@ -0,0 +1,175 @@
+@@ -0,0 +1,212 @@
 +// Playout-delay RTP header extension (arcade codec program B4, 2026-10-02/03).
 +//
 +// Chromium (Chrome, Edge) and Firefox 157 all negotiate http://www.webrtc.org/experiments/rtp-hdrext/playout-delay:
@@ -10987,6 +11029,10 @@ index 0000000..715e6c4
 +
 +// playoutDelayFactory stamps outgoing VIDEO packets with a fixed [min, max] playout delay (ms).
 +type playoutDelayFactory struct {
++	// last is the interceptor NewInterceptor built most recently. ApiFactory.newPeer serialises peer creation,
++	// clears it before NewPeerConnection and takes it after, so a Peer can reach ITS OWN gate (Block).
++	last atomic.Pointer[playoutDelay]
++
 +	payload     []byte
 +	release     []byte  // Chrome's own default [0, 10 s] — stamped to LEAVE the fast path (see BindLocalStream)
 +	maxJitterMs float64 // 0 = stamp always (no gate)
@@ -11016,6 +11062,7 @@ index 0000000..715e6c4
 +		p.clean.Store(true)
 +		p.everOn.Store(true)
 +	}
++	f.last.Store(p)
 +	return p, nil
 +}
 +
@@ -11026,6 +11073,8 @@ index 0000000..715e6c4
 +	maxJitterMs float64
 +	logf        func(string, ...any)
 +
++	// blocked: this viewer must never be put on the fast path (Block). Checked before anything turns it on.
++	blocked   atomic.Bool
 +	clean     atomic.Bool   // stamp the fast path while true
 +	everOn    atomic.Bool   // the fast path was stamped at least once (so leaving it must be stamped too)
 +	videoSSRC atomic.Uint32 // the bound video stream (receiver reports also cover audio when it shares the PC)
@@ -11035,9 +11084,39 @@ index 0000000..715e6c4
 +	lastBad   time.Time
 +}
 +
++// ── Firefox must never be on the fast path (2026-10-04) ───────────────────────────────────────────────
++// Firefox negotiates the extension, and under [0, 0] it keeps DECODING every frame and PAINTS NONE. Measured on
++// Firefox 157 (real build, same-host AV1 room, .claude/skills/test-roms/present-probe.mjs): the second the gate
++// turned the fast path on, requestVideoFrameCallback, mozPaintedFrames and a pixel sample of the <video> all
++// stopped while framesDecoded ran on at 77 fps and the jitter buffer read 0; the picture came back the second a
++// NACK turned the gate off — after 4.6 s in one room, 24 s in another, never in a third (29 s, the whole room).
++// A viewer on a clean wired link may never NACK, so its picture froze for good a few seconds in, with audio
++// playing. The 2026-10-03 "verified live" check read decoded fps, which cannot see this.
++//
++// Block is called by the Peer when the browser's answer shows it is Gecko. It is permanent for the connection.
++func (p *playoutDelay) Block(why string) {
++	if p == nil || p.blocked.Swap(true) {
++		return
++	}
++	p.mu.Lock()
++	p.cleanRuns = 0
++	p.mu.Unlock()
++	if p.clean.Swap(false) {
++		p.logf("rtc: playout fast path OFF for ssrc %d — %s", p.videoSSRC.Load(), why)
++	} else {
++		p.logf("rtc: playout fast path never used for this viewer — %s", why)
++	}
++}
++
++// IsGeckoSDP reports whether a session description was written by Firefox (any platform): Gecko's SDP engine
++// signs the origin line "o=mozilla...THIS_IS_SDPARTA-<version>".
++func IsGeckoSDP(sdp string) bool {
++	return strings.Contains(sdp, "THIS_IS_SDPARTA") || strings.Contains(sdp, "o=mozilla")
++}
++
 +// observe feeds one RTCP compound from this viewer into the gate.
 +func (p *playoutDelay) observe(pkts []rtcp.Packet, now time.Time) {
-+	if p.maxJitterMs == 0 {
++	if p.maxJitterMs == 0 || p.blocked.Load() {
 +		return
 +	}
 +	ssrc := p.videoSSRC.Load()
@@ -11122,6 +11201,89 @@ index 0000000..715e6c4
 +		}
 +	}
 +	return 0
++}
+diff --git a/pkg/network/webrtc/playoutdelay_block_test.go b/pkg/network/webrtc/playoutdelay_block_test.go
+new file mode 100644
+index 0000000..01de128
+--- /dev/null
++++ b/pkg/network/webrtc/playoutdelay_block_test.go
+@@ -0,0 +1,77 @@
++package webrtc
++
++import (
++	"testing"
++	"time"
++
++	"github.com/pion/rtcp"
++)
++
++// A blocked gate (Firefox) never turns the fast path on, however clean its receiver reports are, and a gate
++// that was already on turns off and stays off.
++func TestPlayoutGateBlock(t *testing.T) {
++	clean := func(ssrc uint32) []rtcp.Packet {
++		return []rtcp.Packet{&rtcp.ReceiverReport{Reports: []rtcp.ReceptionReport{{SSRC: ssrc, Jitter: 45}}}} // 0.5 ms
++	}
++	f, err := newPlayoutDelayFactory(0, 0, 2, nil)
++	if err != nil {
++		t.Fatal(err)
++	}
++	mk := func() *playoutDelay {
++		i, _ := f.NewInterceptor("")
++		p := i.(*playoutDelay)
++		p.videoSSRC.Store(7)
++		return p
++	}
++	now := time.Now()
++
++	// Control: three clean reports arm an unblocked gate.
++	p := mk()
++	for i := 0; i < playoutCleanReports; i++ {
++		p.observe(clean(7), now.Add(time.Duration(i)*time.Second))
++	}
++	if !p.clean.Load() {
++		t.Fatal("control: three clean reports should turn the fast path on")
++	}
++	// Blocking a gate that is on turns it off, and no report turns it back on.
++	p.Block("test")
++	if p.clean.Load() {
++		t.Fatal("Block must turn the fast path off")
++	}
++	for i := 0; i < 10; i++ {
++		p.observe(clean(7), now.Add(time.Duration(20+i)*time.Second))
++	}
++	if p.clean.Load() {
++		t.Fatal("a blocked gate must never turn the fast path on again")
++	}
++	if !p.everOn.Load() {
++		t.Fatal("a gate that was on must keep stamping the release value")
++	}
++
++	// Blocked before any report (the production order: the answer arrives before media): never on.
++	q := mk()
++	q.Block("test")
++	for i := 0; i < 10; i++ {
++		q.observe(clean(7), now.Add(time.Duration(i)*time.Second))
++	}
++	if q.clean.Load() || q.everOn.Load() {
++		t.Fatal("a gate blocked from the start must never stamp anything")
++	}
++
++	// The factory remembers the interceptor it built last (how a Peer finds its own gate).
++	if f.last.Load() != q {
++		t.Fatal("factory.last should be the most recently built interceptor")
++	}
++}
++
++func TestIsGeckoSDP(t *testing.T) {
++	for sdp, want := range map[string]bool{
++		"v=0\r\no=mozilla...THIS_IS_SDPARTA-131.0 4962303333179871722 0 IN IP4 0.0.0.0\r\n": true,
++		"v=0\r\no=- 5177733341234567890 2 IN IP4 127.0.0.1\r\ns=-\r\n":                     false,
++		"": false,
++	} {
++		if got := IsGeckoSDP(sdp); got != want {
++			t.Errorf("IsGeckoSDP(%q) = %v, want %v", sdp, got, want)
++		}
++	}
 +}
 diff --git a/pkg/network/webrtc/playoutdelay_test.go b/pkg/network/webrtc/playoutdelay_test.go
 new file mode 100644
@@ -12441,7 +12603,7 @@ index 0000000..cdeefd8
 +	}
 +}
 diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
-index b342b6b..1ca51b5 100644
+index b342b6b..7081577 100644
 --- a/pkg/network/webrtc/webrtc.go
 +++ b/pkg/network/webrtc/webrtc.go
 @@ -4,11 +4,15 @@ import (
@@ -12460,7 +12622,7 @@ index b342b6b..1ca51b5 100644
  	"github.com/pion/webrtc/v4"
  	"github.com/pion/webrtc/v4/pkg/media"
  )
-@@ -16,21 +20,148 @@ import (
+@@ -16,21 +20,151 @@ import (
  type Peer struct {
  	api *ApiFactory
  	c   *webrtc.PeerConnection
@@ -12479,6 +12641,9 @@ index b342b6b..1ca51b5 100644
 +	// congestion control is unavailable, which simply means this peer contributes no ABR opinion.
 +	// Audio rides its own PC (ac) and is never rate-adapted: it is ~96 kbps and must not be starved.
 +	bwe cc.BandwidthEstimator
++	// playout is this viewer's playout-delay gate (nil when the extension is off): blocked for a browser that
++	// must never be on the fast path (playoutdelay.go Block).
++	playout *playoutDelay
 +
 +	// Cached locality of the selected ICE candidate pair (see SameHostLink): 0 = not classified yet,
 +	// 1 = same host, 2 = off host. Cached because the classification costs a net.InterfaceAddrs()
@@ -12609,7 +12774,7 @@ index b342b6b..1ca51b5 100644
  var DefaultDataChannelParams = webrtc.DataChannelInit{
  	ID:             new(uint16),
  	Negotiated:     new(true),
-@@ -45,23 +176,29 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
+@@ -45,30 +179,40 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
  			Str(logger.DirectionField, "").
  			Str(logger.ClientField, ""),
  	)
@@ -12641,8 +12806,9 @@ index b342b6b..1ca51b5 100644
 +	if p.c, p.bwe, err = p.api.NewPeerBwe(p.warmKbps * 1000); err != nil {
  		return
  	}
++	p.playout = p.api.PlayoutGate(p.c)
  
-@@ -69,6 +206,9 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+ 	p.c.OnConnectionStateChange(func(pcs webrtc.PeerConnectionState) {
  		p.log.Debug().Str("state", pcs.String()).Msg("rtc [connection] state change")
  		if pcs == webrtc.PeerConnectionStateConnected {
  			p.log.Info().Str(logger.DirectionField, "rtc").Str(logger.ClientField, "").Msg("(connected)")
@@ -12652,7 +12818,7 @@ index b342b6b..1ca51b5 100644
  		}
  	})
  	p.c.OnICECandidate(func(ice *webrtc.ICECandidate) {
-@@ -96,12 +236,47 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+@@ -96,12 +240,48 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
  
  	p.c.OnDataChannel(func(ch *webrtc.DataChannel) { p.log.Debug().Msgf("rtc [chan] [%s] remote", ch.Label()) })
  
@@ -12660,6 +12826,7 @@ index b342b6b..1ca51b5 100644
 +		if p.ac, err = p.api.NewPeer(); err != nil {
 +			return
 +		}
++		p.api.PlayoutGate(p.ac) // audio-only connection: nothing is stamped on it; drop its gate
 +		p.ac.OnICECandidate(func(ice *webrtc.ICECandidate) {
 +			// No end-of-candidates sentinel for aux (the main PC's suffices; an enveloped empty
 +			// string would only be JSON-parse noise on the browser side).
@@ -12700,7 +12867,7 @@ index b342b6b..1ca51b5 100644
  		if len(data) != 0 && p.onMessage != nil {
  			p.onMessage(data)
  		}
-@@ -143,8 +318,93 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
+@@ -143,8 +323,93 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
  	return encoded, nil
  }
  
@@ -12794,7 +12961,7 @@ index b342b6b..1ca51b5 100644
  		candidate, err := fromJson[webrtc.ICECandidateInit](*ice)
  		if err != nil {
  			return err
-@@ -153,6 +413,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
+@@ -153,16 +418,33 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
  		return p.c.AddICECandidate(candidate)
  	}
  	if sdp != nil {
@@ -12812,7 +12979,13 @@ index b342b6b..1ca51b5 100644
  		answer, err := fromJson[webrtc.SessionDescription](*sdp)
  		if err != nil {
  			return err
-@@ -163,6 +434,9 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
+ 		}
+ 		p.log.Debug().Str("type", answer.Type.String()).Msg("rtc [sdp] (remote)")
++		if p.playout != nil && IsGeckoSDP(answer.SDP) {
++			p.playout.Block("Firefox decodes but does not paint under playout-delay [0, 0]")
++		}
+ 		return p.c.SetRemoteDescription(answer)
+ 	}
  	return nil
  }
  
@@ -12822,7 +12995,7 @@ index b342b6b..1ca51b5 100644
  func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSample, error) {
  	codec = strings.ToLower(codec)
  	var mime string
-@@ -171,11 +445,26 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
+@@ -171,11 +453,26 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
  	case "audio/opus":
  		mime = webrtc.MimeTypeOpus
  	case "video/h264":
@@ -12850,7 +13023,7 @@ index b342b6b..1ca51b5 100644
  	default:
  		return nil, fmt.Errorf("unsupported codec %s:%s", id, codec)
  	}
-@@ -221,17 +510,131 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
+@@ -221,17 +518,131 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
  }
  
  func (p *Peer) SendAudio(dat []byte, dur time.Duration) {
@@ -12891,9 +13064,9 @@ index b342b6b..1ca51b5 100644
 +			p.vLogged.Store(n)
 +			p.log.Warn().Msgf("peer is behind: dropped %v video frames to keep the room's encoder free", n)
 +		}
-+	}
-+}
-+
+ 	}
+ }
+ 
 +func (p *Peer) startVideoSender() {
 +	p.vqOnce.Do(func() {
 +		p.vq = make(chan vFrame, vQueueDepth)
@@ -12971,9 +13144,9 @@ index b342b6b..1ca51b5 100644
 +				}
 +			}
 +		}
- 	}
- }
- 
++	}
++}
++
 +// SetMaxTemporalLayer caps which temporal layers this peer is fed (0 = base only). Called by the ABR
 +// loop from its own goroutine.
 +func (p *Peer) SetMaxTemporalLayer(l int) { p.maxLayer.Store(int32(l)) }
@@ -12984,7 +13157,7 @@ index b342b6b..1ca51b5 100644
  func (p *Peer) SendData(data []byte) { _ = p.d.Send(data) }
  
  func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) error) error {
-@@ -249,7 +652,47 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
+@@ -249,7 +660,47 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
  	return nil
  }
  
@@ -13032,7 +13205,7 @@ index b342b6b..1ca51b5 100644
  	if p.c == nil {
  		return
  	}
-@@ -261,6 +704,15 @@ func (p *Peer) Disconnect() {
+@@ -261,6 +712,15 @@ func (p *Peer) Disconnect() {
  }
  
  func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
@@ -13048,7 +13221,7 @@ index b342b6b..1ca51b5 100644
  	if p.v, err = newTrack("video", "video", vCodec); err != nil {
  		return err
  	}
-@@ -274,20 +726,51 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
+@@ -274,20 +734,51 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
  	if _, err = p.c.AddTransceiverFromTrack(p.v, sendOnly); err != nil {
  		return err
  	}
@@ -13103,7 +13276,7 @@ index b342b6b..1ca51b5 100644
  			}
  		}()
  	}
-@@ -313,3 +796,255 @@ func toJson[T any](data T) (string, error) {
+@@ -313,3 +804,255 @@ func toJson[T any](data T) (string, error) {
  	}
  	return string(b), nil
  }
@@ -14404,10 +14577,10 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..f06d5b0
+index 0000000..c8949ba
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,2116 @@
+@@ -0,0 +1,2143 @@
 +package worker
 +
 +import (
@@ -15147,6 +15320,12 @@ index 0000000..f06d5b0
 +		// What the PLAYER saw (viewer report v2, Stage 4): the longest gap between presented frames each
 +		// second, measured in the browser. Observability only — the freeze, counted where it is seen.
 +		viewGapMax, viewGapOver100, viewGapOver250, viewGapN := 0.0, 0, 0, 0
++		// lastGapExt: the arrival time of the last v2 report counted above — a report that outlives its second
++		// (the next one was lost or late) is still shown on the tick line but counted once.
++		var lastGapExt time.Time
++		// The first viewer's cumulative NACK packets / retransmissions at its previous tick, and the worker's
++		// loss-pacing arms (trace: nack= rtx= paced=1 on the tick it arms).
++		traceNack, traceRtx, tracePeer, tracePaceArms := int64(0), 0, svcPeer(nil), webrtc.LossPaceArms()
 +		firstEncBytes, _, _, _ := m.EncStats()
 +		lastEncBytes := firstEncBytes
 +		sentKbps, appLimTicks, floorTicks, cutsAppLim := 0, 0, 0, 0
@@ -15773,6 +15952,22 @@ index 0000000..f06d5b0
 +				if !ok || vp.InputOnly() {
 +					continue
 +				}
++				// Loss and repair, per tick: NACK packets this viewer sent and retransmissions sent to it.
++				nackNow, rtxNow := vp.NackCount(), 0
++				if rp, ok := any(vp).(interface{ EstimatorRetransmits() (int, bool) }); ok {
++					rtxNow, _ = rp.EstimatorRetransmits()
++				}
++				if vp != tracePeer {
++					tracePeer, traceNack, traceRtx = vp, nackNow, rtxNow
++				}
++				if dn, dr := nackNow-traceNack, rtxNow-traceRtx; dn > 0 || dr > 0 {
++					vs = fmt.Sprintf(" nack=%d rtx=%d", dn, dr)
++				}
++				traceNack, traceRtx = nackNow, rtxNow
++				if arms := webrtc.LossPaceArms(); arms != tracePaceArms {
++					tracePaceArms = arms
++					vs += " paced=1"
++				}
 +				if rep, has := vp.Viewer(); has && !rep.Hidden && (rep.HasFrameGap || rep.HasPresented || rep.HasStalled) {
 +					or := func(v float64, ok bool) float64 {
 +						if ok {
@@ -15780,7 +15975,8 @@ index 0000000..f06d5b0
 +						}
 +						return -1
 +					}
-+					if rep.HasFrameGap {
++					if rep.HasFrameGap && !rep.ExtAt.Equal(lastGapExt) {
++						lastGapExt = rep.ExtAt
 +						viewGapN++
 +						viewGapMax = max(viewGapMax, rep.MaxFrameGapMs)
 +						if rep.MaxFrameGapMs > 100 {
@@ -15790,7 +15986,7 @@ index 0000000..f06d5b0
 +							viewGapOver250++
 +						}
 +					}
-+					vs = fmt.Sprintf(" gap=%.0f pres=%.0f jb=%.0f stall=%.0f rec=%d", or(rep.MaxFrameGapMs, rep.HasFrameGap),
++					vs += fmt.Sprintf(" gap=%.0f pres=%.0f jb=%.0f stall=%.0f rec=%d", or(rep.MaxFrameGapMs, rep.HasFrameGap),
 +						or(rep.PresentedFps, rep.HasPresented), or(rep.JitterBufferMs, rep.HasJitterBuf),
 +						or(rep.StalledMs, rep.HasStalled), rep.Recoveries)
 +				}
@@ -16407,8 +16603,12 @@ index 0000000..f06d5b0
 +	cur := in.cur
 +	next := cur
 +	under := in.appGate && abrUnderSending(in.sent, cur)
-+	// The catch-up hold below may excuse at most abrCatchUpMaxTicks low ticks in a row; the run ends only when
-+	// the estimate is no longer low (so an exhausted hold stays exhausted while the cut is being confirmed).
++	// The catch-up hold below may excuse at most abrCatchUpMaxTicks low ticks per EPISODE of a low estimate: the
++	// count ends only when the estimate is no longer low (so an exhausted hold stays exhausted while the cut is
++	// being confirmed). It is therefore cumulative across the under-sending ticks in between, not "in a row":
++	// a room whose estimate stays under 85 % of the target through quiet stretches spends its six excused
++	// ticks once, and later heavy ticks need only the usual two to cut. Lab-validated as written (20 seeds,
++	// 0.1 cuts per clean H.264 room).
 +	catchUpRun := a.catchUpRun
 +	if !(in.servable > 0 && in.servable*100 < cur*abrBackoffPct) {
 +		a.catchUpRun, catchUpRun = 0, 0

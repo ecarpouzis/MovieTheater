@@ -2278,15 +2278,21 @@ namespace MovieTheater.Controllers
             var codec = string.IsNullOrWhiteSpace(req.Codec) ? "av1" : req.Codec!.Trim();
             if (string.IsNullOrEmpty(deviceId) || string.IsNullOrEmpty(username))
                 return Json(new { wallKbps = 0 });
-            var since = DateTime.UtcNow - ArcadeLinkWall.Ttl;
-            var best = await (
+            // The window never reaches behind ArcadeLinkWall.TrustedSinceUtc, and a seed needs a HARD descent
+            // somewhere in it (ArcadeLinkWall has the reasons). A device has a handful of rows a day; the cap is
+            // a bound, not a page.
+            var since = ArcadeLinkWall.WindowStart(DateTime.UtcNow);
+            var rows = await (
                     from s in movieDb.ArcadeLinkStats
                     join u in movieDb.Users on s.UserId equals u.UserID
                     where u.Username == username && s.DeviceId == deviceId && s.CreatedUtc >= since
-                          && s.Path == "direct" && s.Codec == codec && s.SustainedKbps > 0
-                    select (int?)s.SustainedKbps)
-                .MaxAsync();
-            return Json(new { wallKbps = ArcadeLinkWall.FromSustained(best) });
+                          && s.Path == "direct" && s.Codec == codec
+                    orderby s.CreatedUtc descending
+                    select new { s.SustainedKbps, s.HardDescents })
+                .Take(200)
+                .ToListAsync();
+            int? best = rows.Count == 0 ? null : rows.Max(r => r.SustainedKbps);
+            return Json(new { wallKbps = ArcadeLinkWall.Seed(best, rows.Sum(r => r.HardDescents)) });
         }
 
         /// <summary>Reduce a client-supplied device id to the opaque key we actually store: [A-Za-z0-9-],

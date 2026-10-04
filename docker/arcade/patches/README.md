@@ -1426,3 +1426,45 @@ stream`. `histOverflows` should now read 0; anything else is a new question.
 
 **Lab blind spots this exposed** (`abr_gccsim_test.go`): its reports are run-length only (no padding), and it has no NACK /
 retransmission path at all — it could not have found either defect.
+
+## 0055-firefox-playout-gate (2026-10-04): Firefox is never put on the playout-delay fast path; the worker shows its losses
+
+(Fork commit `145089c`. LIVE 2026-10-04 17:07 on all three workers, md5 `1064250BBFC1680418EBAFE1BD0C2D1C`; rollback
+`worker.pre-padding.exe` beside each = the 0053 build. Found with 0054's new per-second trace, an hour after it went in.)
+
+**The defect.** The playout-delay extension (codec program B4, 2026-10-03) stamps `[0, 0]` per viewer once that viewer's
+receiver reports look clean (three reports with jitter <= 2 ms and no NACK) and stops on a NACK. Chrome and Edge render on
+decode under it. **Firefox negotiates it too, and under `[0, 0]` decodes every frame and PAINTS NONE**: `framesDecoded`
+runs on at full rate, the jitter buffer reads 0, and `requestVideoFrameCallback`, `mozPaintedFrames` and a pixel sample of
+the `<video>` all stop. The picture froze about three seconds into the room and came back only when the viewer happened to
+lose a packet (the NACK turned the gate off). On a clean wired link that may be never: frozen picture, audio playing.
+The 2026-10-03 "verified live" check read DECODED fps and could not see it. This — not packet loss — was the larger part of
+"Firefox is bimodal on Ziggy". It never armed for the phone (its Wi-Fi jitter is above the gate).
+
+**Measured** (real Firefox 157 via WebDriver BiDi, same-host AV1 room, `.claude/skills/test-roms/present-probe.mjs`, which
+samples what is PRESENTED each second):
+
+| | Rooms that froze | Browser-measured longest gap | Presented fps |
+|---|---|---|---|
+| Before | 3 of 4 | 4607 / 24256 / 29156 ms (the last = the whole room) | 0 for the frozen seconds |
+| After | 0 of 4 | 54 / 58 / 67 / 21 ms | 76-78 every second |
+
+The worker log shows each freeze starting and ending on the gate's `playout fast path ON` / `OFF` lines to the second.
+Chrome and Edge keep the fast path (jitter buffer 0.35 ms, 76 fps).
+
+**Fix.** `playoutdelay.go`: `playoutDelay.Block` (permanent for the connection) and `IsGeckoSDP` (Gecko signs its SDP origin
+`o=mozilla...THIS_IS_SDPARTA-<ver>`); a blocked gate never turns on. `factory.go` hands each PeerConnection's gate to its
+Peer (`ApiFactory.PlayoutGate`, taken under the peer-creation lock); `webrtc.go` blocks it when the browser's answer is
+Gecko's. Log: `rtc: playout fast path never used for this viewer — Firefox decodes but does not paint under playout-delay
+[0, 0]`.
+
+**Also in 0055 (observability, no behaviour change).**
+- The interceptors log through the worker's logger (`WithInterceptorLoggerFactory`). Pion's default factory shows errors
+  only, which is how the NACK responder's "failed resending nacked packet" Warn stayed invisible until 0054.
+- `abr: tick` adds `nack=` (NACK packets from the first viewer that second), `rtx=` (retransmissions sent to it) and
+  `paced=1` on the tick loss pacing arms. `viewer-gaps` counts a report once even when it outlives its second.
+
+**Measured and NOT changed: loss pacing (`webrtc.lossPacingMs: 8`, patch 0048).** It was built when every lost packet cost
+a keyframe. With repair working, Firefox on Ziggy without it: jitter buffer 12.8 / 13.2 / 13.4 ms against 17.8 / 19.5 / 28.2
+with it, no stalls, `pli=0` either way. A 5-15 ms gain on one desktop browser; the phone's first smooth room (2026-10-04
+16:38, `rtxSent=706`) ran WITH pacing armed and has not been measured without. Decide on a phone A/B, not on this.
