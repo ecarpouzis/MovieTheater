@@ -16,6 +16,7 @@ import { effectiveFaceSwap } from "./controllerIdentity";
 import { createChordWatcher, resolveChords } from "./controllerChords";
 import { createInputTape, createTapePlayer, THUMB_W, THUMB_H } from "./inputTape";
 import { createWedgeDetector, createFrameGapMeter } from "./decoderWedge";
+import { createConnectionStateGate } from "./connectionStateGate";
 
 // Packet types (Appendix A2).
 const T = {
@@ -1691,9 +1692,13 @@ export function createCloudRetroSession(descriptor, opts) {
     pc.onicecandidate = (e) => {
       if (e.candidate) send(T.SIGNAL, { ice: JSON.stringify(e.candidate) });
     };
+    // failed/disconnected reach the page at once only after this connection has been up; before that they
+    // must outlast a settle window (connectionStateGate.js — a not-yet-connected PeerConnection can flicker
+    // through "failed" while its candidates are still arriving, and the page counts early failures as crashes).
+    const gatedPc = pc; // the outer `pc` may be replaced or cleared before a pending verdict fires
+    const connGate = createConnectionStateGate({ report: status, current: () => gatedPc.connectionState });
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "failed" || pc.connectionState === "disconnected")
-        status(pc.connectionState);
+      connGate.onState(gatedPc.connectionState);
       if (pc.connectionState === "connected") ttffMark("pc-connected"); // ICE + DTLS up; SCTP/dc still to come
       if (pc.connectionState === "connected" && audioReceiverPc === pc) scheduleAudioJitterTiering();
     };

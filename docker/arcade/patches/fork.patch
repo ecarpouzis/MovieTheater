@@ -5495,10 +5495,10 @@ index 0000000..79b2256
 +}
 diff --git a/pkg/network/webrtc/bwe_stats.go b/pkg/network/webrtc/bwe_stats.go
 new file mode 100644
-index 0000000..cbc5224
+index 0000000..9cb9c8e
 --- /dev/null
 +++ b/pkg/network/webrtc/bwe_stats.go
-@@ -0,0 +1,45 @@
+@@ -0,0 +1,73 @@
 +package webrtc
 +
 +import vgcc "github.com/giongto35/cloud-game/v3/pkg/network/webrtc/gcc"
@@ -5543,6 +5543,34 @@ index 0000000..cbc5224
 +	}
 +	c := v.Counters()
 +	return c.Decreases, c.GuardedDecreases, c.HistoryMisses, true
++}
++
++// EstimatorPadding is the in-tree estimator's cumulative count of TWCC chunk symbols past their report's
++// packet count (vgcc.Fixes.Padding): lost = named a packet already sent (upstream reads it as a lost
++// packet), miss = named one not sent yet. ok=false under the stock estimator or without one.
++func (p *Peer) EstimatorPadding() (lost, miss int, ok bool) {
++	if p == nil || p.bwe == nil {
++		return 0, 0, false
++	}
++	v, isV := p.bwe.(vendoredBwe)
++	if !isV {
++		return 0, 0, false
++	}
++	c := v.Counters()
++	return c.PadLost, c.PadMiss, true
++}
++
++// EstimatorRetransmits is the number of packets this peer's estimator wrote on a retransmission / FEC SSRC
++// (vgcc.Fixes.RTX): NACK repairs actually sent. ok=false under the stock estimator or without one.
++func (p *Peer) EstimatorRetransmits() (n int, ok bool) {
++	if p == nil || p.bwe == nil {
++		return 0, false
++	}
++	v, isV := p.bwe.(vendoredBwe)
++	if !isV {
++		return 0, false
++	}
++	return v.Counters().Retransmits, true
 +}
 diff --git a/pkg/network/webrtc/codecmatch.go b/pkg/network/webrtc/codecmatch.go
 new file mode 100644
@@ -5775,14 +5803,15 @@ index 0000000..c45dcce
 +	}
 +}
 diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
-index 99e02b8..816744a 100644
+index 99e02b8..3ace312 100644
 --- a/pkg/network/webrtc/factory.go
 +++ b/pkg/network/webrtc/factory.go
-@@ -3,19 +3,111 @@ package webrtc
+@@ -3,19 +3,129 @@ package webrtc
  import (
  	"fmt"
  	"net"
 +	"os"
++	"strconv"
 +	"strings"
 +	"sync"
 +	"sync/atomic"
@@ -5796,6 +5825,7 @@ index 99e02b8..816744a 100644
  	"github.com/pion/interceptor"
 +	"github.com/pion/interceptor/pkg/cc"
 +	"github.com/pion/interceptor/pkg/gcc"
++	"github.com/pion/interceptor/pkg/nack"
  	"github.com/pion/interceptor/pkg/report"
  	"github.com/pion/webrtc/v4"
  )
@@ -5829,6 +5859,22 @@ index 99e02b8..816744a 100644
 +	// kill switch back to upstream pion exactly.
 +	gccImplDefault = gccImplVendored
 +)
++
++// nackBufferDefault: packets the NACK responder keeps per stream for retransmission. Pion's default is 1024 —
++// 260 ms of a 38 Mbps stream, 580 ms at 17 Mbps: a repair request that arrives later than that (a Wi-Fi stall, a
++// relay hiccup) finds nothing to resend and the viewer waits for a keyframe. 4096 packets = 1 s at 38 Mbps
++// (~6 MB per viewer). Must be a power of two.
++const nackBufferDefault = 4096
++
++// nackBufferFromEnv reads CLOUD_GAME_NACK_BUFFER (a power of two, 64..32768; anything else = the default;
++// 1024 = pion's own).
++func nackBufferFromEnv(getenv func(string) string) uint16 {
++	if n, err := strconv.Atoi(strings.TrimSpace(getenv("CLOUD_GAME_NACK_BUFFER"))); err == nil &&
++		n >= 64 && n <= 32768 && n&(n-1) == 0 {
++		return uint16(n) //nolint:gosec // G115
++	}
++	return nackBufferDefault
++}
 +
 +// gccImplFromEnv reads CLOUD_GAME_GCC_IMPL ("stock" | "vendored"; anything else = the default).
 +func gccImplFromEnv(getenv func(string) string) string {
@@ -5890,7 +5936,7 @@ index 99e02b8..816744a 100644
  }
  
  type ModApiFun func(m *webrtc.MediaEngine, i *interceptor.Registry, s *webrtc.SettingEngine)
-@@ -27,6 +119,71 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -27,15 +137,82 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	}
  	i := &interceptor.Registry{}
  
@@ -5962,7 +6008,19 @@ index 99e02b8..816744a 100644
  	if conf.DisableDefaultInterceptors {
  		sender, err := report.NewSenderInterceptor()
  		if err != nil {
-@@ -49,6 +206,7 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+ 			return nil, err
+ 		}
+ 		i.Add(sender)
+-	} else if err = webrtc.RegisterDefaultInterceptors(m, i); err != nil {
++	} else if err = webrtc.RegisterDefaultInterceptorsWithOptions(m, i,
++		webrtc.WithNackResponderOptions(nack.ResponderSize(nackBufferFromEnv(os.Getenv)))); err != nil {
+ 		return
+ 	}
++	log.Info().Msgf("rtc: NACK retransmission buffer %d packets per stream (CLOUD_GAME_NACK_BUFFER)", nackBufferFromEnv(os.Getenv))
+ 	customLogger := NewPionLogger(log, conf.LogLevel)
+ 	s := webrtc.SettingEngine{LoggerFactory: customLogger}
+ 	s.SetIncludeLoopbackCandidate(conf.IncludeLoopbackCandidate)
+@@ -49,6 +226,7 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	if conf.IceLite {
  		s.SetLite(conf.IceLite)
  	}
@@ -5970,7 +6028,7 @@ index 99e02b8..816744a 100644
  	if conf.HasPortRange() {
  		if err = s.SetEphemeralUDPPortRange(conf.IcePorts.Min, conf.IcePorts.Max); err != nil {
  			return
-@@ -56,57 +214,314 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -56,57 +234,314 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	}
  	if conf.HasSinglePort() {
  		var l any
@@ -7423,10 +7481,10 @@ index 0000000..5292ac3
 +}
 diff --git a/pkg/network/webrtc/gcc/fixes.go b/pkg/network/webrtc/gcc/fixes.go
 new file mode 100644
-index 0000000..7bc9f42
+index 0000000..8a304d3
 --- /dev/null
 +++ b/pkg/network/webrtc/gcc/fixes.go
-@@ -0,0 +1,156 @@
+@@ -0,0 +1,177 @@
 +package gcc
 +
 +import (
@@ -7461,6 +7519,17 @@ index 0000000..7bc9f42
 +	// decrease is followed by HOLD (the draft's FSM) instead of increasing on the very next update.
 +	// Upstream's overuse detector writes State 0 into every update and the controller transitions from that.
 +	Hold bool
++	// Padding (CLOUD_GAME_GCC_FIX_PADDING): a TWCC report is read up to its packet count and no further.
++	// Upstream walks every symbol of the last status-vector chunk, whose unused symbols are zero = "not
++	// received": up to 13 packets past the report are read as LOST (they are in flight; the next report
++	// acknowledges them). It happens on every report whose tail mixes statuses — a large inter-arrival gap, a
++	// reordered or lost packet — so real trouble on the path is amplified into phantom loss (the loss
++	// controller's average, and this package's sent-window loss that the ALR guard reads).
++	Padding bool
++	// RTX (CLOUD_GAME_GCC_FIX_RTX): the estimator's writer accepts a stream's retransmission (and FEC) SSRC.
++	// Upstream registers the media SSRC alone and refuses everything else with ErrUnknownStream, so with RTX
++	// negotiated (every browser) no NACK retransmission is ever sent — see SendSideBWE.AddStream.
++	RTX bool
 +	// NoiseAlpha (CLOUD_GAME_GCC_FIX_NOISE): the Kalman measurement-noise smoothing factor. 0 = upstream's
 +	// formula (a units error pins it at 1 - 6e-12). See kalman.noiseAlpha.
 +	NoiseAlpha float64
@@ -7498,7 +7567,7 @@ index 0000000..7bc9f42
 +// 3.69 -> 0.11/min but regresses every capacity-limited scenario: 20 Mbps cap converged 8/20 -> 0/20,
 +// packets lost 1808 -> 10120; 10 Mbps + phone content 0 -> 16 seeds over 13 Mbps for > 5 s).
 +func DefaultFixes() Fixes {
-+	return Fixes{RateCalc: true, History: true, ALR: alrKeepCap, Hold: true}
++	return Fixes{RateCalc: true, History: true, ALR: alrKeepCap, Hold: true, Padding: true, RTX: true}
 +}
 +
 +// FixesFromEnv reads the switches over DefaultFixes. A switch that is unset keeps the default; "0" turns the
@@ -7518,6 +7587,8 @@ index 0000000..7bc9f42
 +	f.RateCalc = onOff("CLOUD_GAME_GCC_FIX_RATECALC", f.RateCalc)
 +	f.History = onOff("CLOUD_GAME_GCC_FIX_HISTORY", f.History)
 +	f.Hold = onOff("CLOUD_GAME_GCC_FIX_HOLD", f.Hold)
++	f.Padding = onOff("CLOUD_GAME_GCC_FIX_PADDING", f.Padding)
++	f.RTX = onOff("CLOUD_GAME_GCC_FIX_RTX", f.RTX)
 +	if v := strings.TrimSpace(getenv("CLOUD_GAME_GCC_ALR")); v != "" {
 +		if n, err := strconv.Atoi(v); err == nil && n >= 0 && n < alrModes {
 +			f.ALR = n
@@ -7553,7 +7624,7 @@ index 0000000..7bc9f42
 +		n = strconv.FormatFloat(f.NoiseAlpha, 'f', -1, 64)
 +	}
 +	return "ratecalc=" + b(f.RateCalc) + " history=" + b(f.History) + " alr=" + strconv.Itoa(f.ALR) +
-+		" hold=" + b(f.Hold) + " noise=" + n
++		" hold=" + b(f.Hold) + " padding=" + b(f.Padding) + " rtx=" + b(f.RTX) + " noise=" + n
 +}
 +
 +// SendSideBWEFixes applies a fix set (in-tree copy). The zero value is upstream.
@@ -7572,6 +7643,12 @@ index 0000000..7bc9f42
 +	Decreases        int // delay-controller decreases applied
 +	GuardedDecreases int // overuse decreases the ALR guard turned away (Fixes.ALR)
 +	HistoryMisses    int // feedback entries for packets the history no longer held (evicted / never sent)
++	// PadLost / PadMiss: chunk symbols past their report's packet count (Fixes.Padding) that named a packet
++	// already sent (upstream reads it as lost) / not sent yet (upstream: a history miss). Counted with the
++	// fix on or off.
++	PadLost, PadMiss int
++	// Retransmits: packets written on a retransmission / FEC SSRC (Fixes.RTX; always 0 without it).
++	Retransmits int
 +}
 +
 +// Counters returns the cumulative counts.
@@ -7581,6 +7658,8 @@ index 0000000..7bc9f42
 +	c := Counters{Decreases: rc.decreases, GuardedDecreases: rc.guarded}
 +	rc.lock.Unlock()
 +	c.HistoryMisses = e.feedbackAdapter.Misses()
++	c.PadLost, c.PadMiss = e.feedbackAdapter.Padding()
++	c.Retransmits = int(e.retransmits.Load())
 +	return c
 +}
 diff --git a/pkg/network/webrtc/gcc/fixes_alr_test.go b/pkg/network/webrtc/gcc/fixes_alr_test.go
@@ -7717,7 +7796,7 @@ index 0000000..a28c471
 +}
 diff --git a/pkg/network/webrtc/gcc/fixes_test.go b/pkg/network/webrtc/gcc/fixes_test.go
 new file mode 100644
-index 0000000..4e54fbc
+index 0000000..1f00a34
 --- /dev/null
 +++ b/pkg/network/webrtc/gcc/fixes_test.go
 @@ -0,0 +1,156 @@
@@ -7805,17 +7884,17 @@ index 0000000..4e54fbc
 +	if FixesFromEnv(get) != DefaultFixes() {
 +		t.Fatalf("unset: %v, want defaults %v", FixesFromEnv(get), DefaultFixes())
 +	}
-+	for _, k := range []string{"CLOUD_GAME_GCC_FIX_RATECALC", "CLOUD_GAME_GCC_FIX_HISTORY", "CLOUD_GAME_GCC_FIX_HOLD", "CLOUD_GAME_GCC_ALR", "CLOUD_GAME_GCC_FIX_NOISE"} {
++	for _, k := range []string{"CLOUD_GAME_GCC_FIX_RATECALC", "CLOUD_GAME_GCC_FIX_HISTORY", "CLOUD_GAME_GCC_FIX_HOLD", "CLOUD_GAME_GCC_FIX_PADDING", "CLOUD_GAME_GCC_FIX_RTX", "CLOUD_GAME_GCC_ALR", "CLOUD_GAME_GCC_FIX_NOISE"} {
 +		env[k] = "0"
 +	}
 +	if f := FixesFromEnv(get); !f.Upstream() {
 +		t.Fatalf("all =0: %v, want upstream", f)
 +	}
-+	for _, k := range []string{"CLOUD_GAME_GCC_FIX_RATECALC", "CLOUD_GAME_GCC_FIX_HISTORY", "CLOUD_GAME_GCC_FIX_HOLD", "CLOUD_GAME_GCC_ALR", "CLOUD_GAME_GCC_FIX_NOISE"} {
++	for _, k := range []string{"CLOUD_GAME_GCC_FIX_RATECALC", "CLOUD_GAME_GCC_FIX_HISTORY", "CLOUD_GAME_GCC_FIX_HOLD", "CLOUD_GAME_GCC_FIX_PADDING", "CLOUD_GAME_GCC_FIX_RTX", "CLOUD_GAME_GCC_ALR", "CLOUD_GAME_GCC_FIX_NOISE"} {
 +		env[k] = "1"
 +	}
 +	f := FixesFromEnv(get)
-+	if !f.RateCalc || !f.History || !f.Hold || f.ALR != 1 || f.NoiseAlpha != DefaultNoiseAlpha {
++	if !f.RateCalc || !f.History || !f.Hold || !f.Padding || !f.RTX || f.ALR != 1 || f.NoiseAlpha != DefaultNoiseAlpha {
 +		t.Fatalf("all =1: %v", f)
 +	}
 +	env["CLOUD_GAME_GCC_ALR"], env["CLOUD_GAME_GCC_FIX_NOISE"] = "3", "0.995"
@@ -7949,10 +8028,10 @@ index 0000000..2601b8d
 +package cc
 diff --git a/pkg/network/webrtc/gcc/internal/cc/feedback_adapter.go b/pkg/network/webrtc/gcc/internal/cc/feedback_adapter.go
 new file mode 100644
-index 0000000..0b034a9
+index 0000000..92b0c1f
 --- /dev/null
 +++ b/pkg/network/webrtc/gcc/internal/cc/feedback_adapter.go
-@@ -0,0 +1,381 @@
+@@ -0,0 +1,436 @@
 +// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
 +// SPDX-License-Identifier: MIT
 +
@@ -7993,6 +8072,43 @@ index 0000000..0b034a9
 +	// match is DROPPED from the result (never a zero Acknowledgment) and its receive delta is still
 +	// consumed. RFC 8888 feedback keeps the LRU (the arcade never negotiates it).
 +	ring *feedbackRing
++
++	// trim (Fixes.Padding, in-tree copy): a report describes PacketStatusCount packets and no more. Its last
++	// status-VECTOR chunk always carries a full word of symbols (7 two-bit / 14 one-bit); the unused ones are
++	// zero, which is also the code for "not received" (libwebrtc TransportFeedback::LastChunk::EncodeLast
++	// writes them, and its parser stops at the count). Upstream walks every symbol, so up to 13 packets
++	// BEYOND the report are read as not received: LOST when they were already sent (they are in flight, and
++	// the next report acknowledges them), a history miss when they were not. trim stops at the count.
++	// padLost / padMiss count those symbols in either mode (what they were, or would have been).
++	trim             bool
++	padLost, padMiss int
++}
++
++// TrimPadding selects Fixes.Padding (see FeedbackAdapter.trim). Call before the adapter is used.
++func (f *FeedbackAdapter) TrimPadding(on bool) {
++	f.lock.Lock()
++	defer f.lock.Unlock()
++	f.trim = on
++}
++
++// Padding is the cumulative number of chunk symbols past their report's packet count that named a packet
++// the history held (lost: upstream reads it as a lost packet) and one it did not (miss).
++func (f *FeedbackAdapter) Padding() (lost, miss int) {
++	f.lock.Lock()
++	defer f.lock.Unlock()
++
++	return f.padLost, f.padMiss
++}
++
++// countPadding records n symbols past the report's packet count, starting at sequence number start.
++func (f *FeedbackAdapter) countPadding(start uint16, n int) {
++	for i := 0; i < n; i++ {
++		if _, ok := f.getTWCC(start + uint16(i)); ok { //nolint:gosec // G115
++			f.padLost++
++		} else {
++			f.padMiss++
++		}
++	}
 +}
 +
 +// NewFeedbackAdapterRing returns a FeedbackAdapter with the arcade's TWCC history (Fixes.History, in-tree
@@ -8070,12 +8186,19 @@ index 0000000..0b034a9
 +}
 +
 +func (f *FeedbackAdapter) unpackRunLengthChunk(
-+	start uint16, refTime time.Time, chunk *rtcp.RunLengthChunk, deltas []*rtcp.RecvDelta,
++	start uint16, refTime time.Time, chunk *rtcp.RunLengthChunk, deltas []*rtcp.RecvDelta, limit int,
 +) (consumedDeltas int, nextRef time.Time, acks []Acknowledgment, err error) {
-+	result := make([]Acknowledgment, chunk.RunLength)
++	run := chunk.RunLength
++	if pad := int(run) - limit; pad > 0 { // Fixes.Padding: statuses past the report's packet count
++		f.countPadding(start+uint16(limit), pad) //nolint:gosec // G115
++		if f.trim {
++			run = uint16(limit) //nolint:gosec // G115
++		}
++	}
++	result := make([]Acknowledgment, run)
 +	deltaIndex := 0
 +
-+	end := start + chunk.RunLength
++	end := start + run
 +	resultIndex := 0
 +	for i := start; i != end; i++ {
 +		ack, ok := f.getTWCC(i)
@@ -8108,12 +8231,19 @@ index 0000000..0b034a9
 +}
 +
 +func (f *FeedbackAdapter) unpackStatusVectorChunk(
-+	start uint16, refTime time.Time, chunk *rtcp.StatusVectorChunk, deltas []*rtcp.RecvDelta,
++	start uint16, refTime time.Time, chunk *rtcp.StatusVectorChunk, deltas []*rtcp.RecvDelta, limit int,
 +) (consumedDeltas int, nextRef time.Time, acks []Acknowledgment, err error) {
-+	result := make([]Acknowledgment, len(chunk.SymbolList))
++	symbols := chunk.SymbolList
++	if pad := len(symbols) - limit; pad > 0 { // Fixes.Padding: the word's unused symbols (see trim)
++		f.countPadding(start+uint16(limit), pad) //nolint:gosec // G115
++		if f.trim {
++			symbols = symbols[:limit]
++		}
++	}
++	result := make([]Acknowledgment, len(symbols))
 +	deltaIndex := 0
 +	resultIndex := 0
-+	for i, symbol := range chunk.SymbolList {
++	for i, symbol := range symbols {
 +		ack, ok := f.getTWCC(start + uint16(i)) //nolint:gosec // G115
 +		if !ok {
 +			f.misses++
@@ -8154,11 +8284,13 @@ index 0000000..0b034a9
 +	index := feedback.BaseSequenceNumber
 +	refTime := time.Time{}.Add(time.Duration(feedback.ReferenceTime) * 64 * time.Millisecond)
 +	recvDeltas := feedback.RecvDeltas
++	// remaining: packets the report has yet to describe (Fixes.Padding: a chunk never describes more).
++	remaining := int(feedback.PacketStatusCount)
 +
 +	for _, chunk := range feedback.PacketChunks {
 +		switch chunk := chunk.(type) {
 +		case *rtcp.RunLengthChunk:
-+			n, nextRefTime, acks, err := f.unpackRunLengthChunk(index, refTime, chunk, recvDeltas)
++			n, nextRefTime, acks, err := f.unpackRunLengthChunk(index, refTime, chunk, recvDeltas, remaining)
 +			if err != nil {
 +				return nil, err
 +			}
@@ -8166,8 +8298,9 @@ index 0000000..0b034a9
 +			result = append(result, acks...)
 +			recvDeltas = recvDeltas[n:]
 +			index = uint16(int(index) + len(acks)) //nolint:gosec // G115
++			remaining = max(remaining-len(acks), 0)
 +		case *rtcp.StatusVectorChunk:
-+			n, nextRefTime, acks, err := f.unpackStatusVectorChunk(index, refTime, chunk, recvDeltas)
++			n, nextRefTime, acks, err := f.unpackStatusVectorChunk(index, refTime, chunk, recvDeltas, remaining)
 +			if err != nil {
 +				return nil, err
 +			}
@@ -8175,6 +8308,7 @@ index 0000000..0b034a9
 +			result = append(result, acks...)
 +			recvDeltas = recvDeltas[n:]
 +			index = uint16(int(index) + len(acks)) //nolint:gosec // G115
++			remaining = max(remaining-len(acks), 0)
 +		default:
 +			return nil, errInvalidFeedback
 +		}
@@ -8333,6 +8467,181 @@ index 0000000..0b034a9
 +	}
 +
 +	return Acknowledgment{SequenceNumber: seq, Size: int(s.size), Departure: s.dep}, true
++}
+diff --git a/pkg/network/webrtc/gcc/internal/cc/feedback_padding_test.go b/pkg/network/webrtc/gcc/internal/cc/feedback_padding_test.go
+new file mode 100644
+index 0000000..de0b046
+--- /dev/null
++++ b/pkg/network/webrtc/gcc/internal/cc/feedback_padding_test.go
+@@ -0,0 +1,169 @@
++package cc
++
++import (
++	"testing"
++	"time"
++
++	"github.com/pion/rtcp"
++)
++
++// ── Fixes.Padding (arcade, 2026-10-04): a status-vector chunk's padding is not a packet status ───────
++//
++// A TWCC report says how many packets it describes (PacketStatusCount). Its last chunk, when it is a
++// status VECTOR, always carries a full word of symbols — 7 two-bit or 14 one-bit — and the unused ones are
++// zero, which is also the code for "not received". libwebrtc writes that padding (TransportFeedback::
++// LastChunk::EncodeLast) and its own parser stops at the packet count. Upstream pion walks every symbol.
++// So after any report whose tail mixes statuses (a large inter-arrival delta, a reordered or lost packet),
++// up to 13 packets BEYOND the report are read as "not received": lost, if they were already sent; a
++// history miss, if they were not.
++
++// paddedReport: n packets from base, all received (the second one with a LARGE delta, so the chunk is a
++// two-bit status vector), put through the wire format so the chunk comes back as the 7-symbol word a
++// browser sends.
++func paddedReport(t *testing.T, base uint16, n int) *rtcp.TransportLayerCC {
++	t.Helper()
++	if n < 2 || n > 7 {
++		t.Fatalf("paddedReport handles 2..7 packets, got %d", n)
++	}
++	fb := &rtcp.TransportLayerCC{
++		Header:             rtcp.Header{Count: rtcp.FormatTCC, Type: rtcp.TypeTransportSpecificFeedback},
++		MediaSSRC:          1,
++		BaseSequenceNumber: base, PacketStatusCount: uint16(n), ReferenceTime: 100,
++	}
++	ch := &rtcp.StatusVectorChunk{Type: rtcp.TypeTCCStatusVectorChunk, SymbolSize: rtcp.TypeTCCSymbolSizeTwoBit}
++	for i := 0; i < n; i++ {
++		sym := uint16(rtcp.TypeTCCPacketReceivedSmallDelta)
++		if i == 1 {
++			sym = rtcp.TypeTCCPacketReceivedLargeDelta
++		}
++		ch.SymbolList = append(ch.SymbolList, sym)
++		fb.RecvDeltas = append(fb.RecvDeltas, &rtcp.RecvDelta{Type: sym, Delta: 1000})
++	}
++	for len(ch.SymbolList) < 7 { // the wire word is always full; the rest is zero = "not received"
++		ch.SymbolList = append(ch.SymbolList, rtcp.TypeTCCPacketNotReceived)
++	}
++	fb.PacketChunks = []rtcp.PacketStatusChunk{ch}
++	fb.Header.Length = uint16(fb.MarshalSize()/4) - 1 //nolint:gosec // G115
++	raw, err := fb.Marshal()
++	if err != nil {
++		t.Fatal(err)
++	}
++	out := &rtcp.TransportLayerCC{}
++	if err := out.Unmarshal(raw); err != nil {
++		t.Fatal(err)
++	}
++	if got := len(out.PacketChunks[0].(*rtcp.StatusVectorChunk).SymbolList); got != 7 {
++		t.Fatalf("the parsed chunk should carry the full 7-symbol word, got %d", got)
++	}
++	return out
++}
++
++func TestFeedbackPaddingIsNotAPacketStatus(t *testing.T) {
++	t0 := time.Unix(1_000_000, 0)
++	for _, tc := range []struct {
++		name string
++		trim bool
++		sent int // packets sent before the report arrives (the report describes the first 3)
++		// what the adapter returns: packets with an arrival, packets "lost", and its miss counter
++		recv, lost, misses, padLost, padMiss int
++	}{
++		// Upstream walk (ring only): 4 padding symbols; the sender is 10 packets ahead, so all 4 are real
++		// packets that are still in flight — read as LOST.
++		{"untrimmed, sender ahead", false, 10, 3, 4, 0, 4, 0},
++		// ...and when the sender has sent nothing past the report, the same 4 are history misses.
++		{"untrimmed, sender not ahead", false, 3, 3, 0, 4, 0, 4},
++		// Trimmed at the packet count: exactly the 3 packets, nothing lost, nothing missed; the padding is
++		// only counted (what it WOULD have been).
++		{"trimmed, sender ahead", true, 10, 3, 0, 0, 4, 0},
++		{"trimmed, sender not ahead", true, 3, 3, 0, 0, 0, 4},
++	} {
++		f := NewFeedbackAdapterRing()
++		f.TrimPadding(tc.trim)
++		for i := 0; i < tc.sent; i++ {
++			ringSend(t, f, uint16(i), t0.Add(time.Duration(i)*100*time.Microsecond))
++		}
++		acks, err := f.OnTransportCCFeedback(t0, paddedReport(t, 0, 3))
++		if err != nil {
++			t.Fatalf("%s: %v", tc.name, err)
++		}
++		recv, lost := 0, 0
++		for _, a := range acks {
++			if a.Arrival.IsZero() {
++				lost++
++			} else {
++				recv++
++			}
++		}
++		pl, pm := f.Padding()
++		if recv != tc.recv || lost != tc.lost || f.Misses() != tc.misses || pl != tc.padLost || pm != tc.padMiss {
++			t.Errorf("%s: received %d lost %d misses %d padLost %d padMiss %d, want %d %d %d %d %d",
++				tc.name, recv, lost, f.Misses(), pl, pm, tc.recv, tc.lost, tc.misses, tc.padLost, tc.padMiss)
++		}
++	}
++}
++
++// A run-length chunk longer than the packets the report has left is cut at the count too (a well-formed
++// report never has one; a malformed one must not invent packets).
++func TestFeedbackTrimBoundsRunLength(t *testing.T) {
++	t0 := time.Unix(1_000_000, 0)
++	f := NewFeedbackAdapterRing()
++	f.TrimPadding(true)
++	for i := 0; i < 20; i++ {
++		ringSend(t, f, uint16(i), t0.Add(time.Duration(i)*100*time.Microsecond))
++	}
++	fb := &rtcp.TransportLayerCC{MediaSSRC: 1, BaseSequenceNumber: 0, PacketStatusCount: 5, ReferenceTime: 100,
++		PacketChunks: []rtcp.PacketStatusChunk{
++			&rtcp.RunLengthChunk{PacketStatusSymbol: rtcp.TypeTCCPacketReceivedSmallDelta, RunLength: 3},
++			&rtcp.RunLengthChunk{PacketStatusSymbol: rtcp.TypeTCCPacketNotReceived, RunLength: 9},
++		}}
++	for i := 0; i < 3; i++ {
++		fb.RecvDeltas = append(fb.RecvDeltas, &rtcp.RecvDelta{Type: rtcp.TypeTCCPacketReceivedSmallDelta, Delta: 1000})
++	}
++	acks, err := f.OnTransportCCFeedback(t0, fb)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if len(acks) != 5 {
++		t.Fatalf("a 5-packet report must yield 5 acknowledgments, got %d", len(acks))
++	}
++}
++
++// Several chunks: only the LAST one is cut, and the sequence index keeps advancing by what each chunk
++// really described.
++func TestFeedbackTrimKeepsSequenceAcrossChunks(t *testing.T) {
++	t0 := time.Unix(1_000_000, 0)
++	f := NewFeedbackAdapterRing()
++	f.TrimPadding(true)
++	for i := 0; i < 40; i++ {
++		ringSend(t, f, uint16(i), t0.Add(time.Duration(i)*100*time.Microsecond))
++	}
++	// 10 received (run length) + a one-bit vector describing 4 more (received, lost, received, received),
++	// padded to 14 symbols: 14 packets in all.
++	vec := &rtcp.StatusVectorChunk{Type: rtcp.TypeTCCStatusVectorChunk, SymbolSize: rtcp.TypeTCCSymbolSizeOneBit,
++		SymbolList: []uint16{1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
++	fb := &rtcp.TransportLayerCC{MediaSSRC: 1, BaseSequenceNumber: 0, PacketStatusCount: 14, ReferenceTime: 100,
++		PacketChunks: []rtcp.PacketStatusChunk{
++			&rtcp.RunLengthChunk{PacketStatusSymbol: rtcp.TypeTCCPacketReceivedSmallDelta, RunLength: 10}, vec,
++		}}
++	for i := 0; i < 13; i++ {
++		fb.RecvDeltas = append(fb.RecvDeltas, &rtcp.RecvDelta{Type: rtcp.TypeTCCPacketReceivedSmallDelta, Delta: 1000})
++	}
++	acks, err := f.OnTransportCCFeedback(t0, fb)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if len(acks) != 14 {
++		t.Fatalf("14 packets described, got %d acknowledgments", len(acks))
++	}
++	for i, a := range acks {
++		if a.SequenceNumber != uint16(i) {
++			t.Fatalf("ack %d carries sequence %d", i, a.SequenceNumber)
++		}
++		if lost := a.Arrival.IsZero(); lost != (i == 11) {
++			t.Fatalf("ack %d: lost=%v (only sequence 11 was reported lost)", i, lost)
++		}
++	}
++	if pl, pm := f.Padding(); pl != 10 || pm != 0 {
++		t.Fatalf("10 padding symbols over sent packets expected, got padLost %d padMiss %d", pl, pm)
++	}
 +}
 diff --git a/pkg/network/webrtc/gcc/internal/cc/feedback_ring_test.go b/pkg/network/webrtc/gcc/internal/cc/feedback_ring_test.go
 new file mode 100644
@@ -9673,12 +9982,63 @@ index 0000000..b5b33b6
 +func (c *rateController) alrCap() bool {
 +	return c.fixes.ALR == alrKeepCap || c.fixes.ALR == alrStepCap
 +}
+diff --git a/pkg/network/webrtc/gcc/rtx_stream_test.go b/pkg/network/webrtc/gcc/rtx_stream_test.go
+new file mode 100644
+index 0000000..d8efa70
+--- /dev/null
++++ b/pkg/network/webrtc/gcc/rtx_stream_test.go
+@@ -0,0 +1,45 @@
++package gcc
++
++import (
++	"testing"
++
++	"github.com/pion/interceptor"
++	"github.com/pion/rtp"
++)
++
++// A NACK retransmission on an RTX stream carries the stream's RETRANSMISSION SSRC (RFC 4588), and pion's NACK
++// responder writes it into the same writer chain as the media. The estimator's writer routes by SSRC and
++// only knew the media SSRC (AddStream registered info.SSRC alone), so every retransmission was refused with
++// ErrUnknownStream — after the TWCC interceptor outside it had already spent a transport sequence number on
++// it. Nothing was resent: a lost packet was never repaired, and the browser reported the spent sequence
++// number as "not received" for a packet the history never saw (the summary's histOverflows).
++func TestRetransmissionSSRCIsWritable(t *testing.T) {
++	const media, rtx = 1111, 2222
++	for _, pacer := range []struct {
++		name string
++		opt  Option
++	}{
++		{"noop pacer (production)", SendSideBWEPacer(NewNoOpPacer())},
++	} {
++		e, err := NewSendSideBWE(pacer.opt, SendSideBWEFixes(DefaultFixes()))
++		if err != nil {
++			t.Fatal(err)
++		}
++		var got []uint32
++		w := e.AddStream(&interceptor.StreamInfo{SSRC: media, SSRCRetransmission: rtx},
++			interceptor.RTPWriterFunc(func(h *rtp.Header, p []byte, _ interceptor.Attributes) (int, error) {
++				got = append(got, h.SSRC)
++				return len(p), nil
++			}))
++		if _, err := w.Write(&rtp.Header{Version: 2, SSRC: media, SequenceNumber: 1}, []byte{1, 2, 3}, nil); err != nil {
++			t.Fatalf("%s: media packet: %v", pacer.name, err)
++		}
++		if _, err := w.Write(&rtp.Header{Version: 2, SSRC: rtx, SequenceNumber: 9}, []byte{0, 1, 1, 2, 3}, nil); err != nil {
++			t.Fatalf("%s: a retransmission on the RTX SSRC must be written, got: %v", pacer.name, err)
++		}
++		if len(got) != 2 || got[0] != media || got[1] != rtx {
++			t.Fatalf("%s: wrote %v, want [%d %d]", pacer.name, got, media, rtx)
++		}
++		_ = e.Close()
++	}
++}
 diff --git a/pkg/network/webrtc/gcc/send_side_bwe.go b/pkg/network/webrtc/gcc/send_side_bwe.go
 new file mode 100644
-index 0000000..3f0d8d7
+index 0000000..a0a9f95
 --- /dev/null
 +++ b/pkg/network/webrtc/gcc/send_side_bwe.go
-@@ -0,0 +1,447 @@
+@@ -0,0 +1,469 @@
 +// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
 +// SPDX-License-Identifier: MIT
 +
@@ -9688,6 +10048,7 @@ index 0000000..3f0d8d7
 +	"errors"
 +	"math"
 +	"sync"
++	"sync/atomic"
 +	"time"
 +
 +	"github.com/giongto35/cloud-game/v3/pkg/network/webrtc/gcc/internal/cc"
@@ -9728,6 +10089,8 @@ index 0000000..3f0d8d7
 +	lossController  *lossBasedBandwidthEstimator
 +	delayController *delayController
 +	feedbackAdapter *cc.FeedbackAdapter
++	// retransmits (in-tree copy, Fixes.RTX): packets written on a stream's retransmission / FEC SSRC.
++	retransmits atomic.Int64
 +
 +	onTargetBitrateChange func(bitrate int)
 +
@@ -9863,6 +10226,7 @@ index 0000000..3f0d8d7
 +	if send.fixes.History {
 +		send.feedbackAdapter = cc.NewFeedbackAdapterRing() // Fixes.History (in-tree copy)
 +	}
++	send.feedbackAdapter.TrimPadding(send.fixes.Padding) // Fixes.Padding (in-tree copy)
 +	if send.pacer == nil {
 +		send.pacer = newLeakyBucketPacer(send.latestBitrate, send.loggerFactory)
 +	}
@@ -9898,7 +10262,8 @@ index 0000000..3f0d8d7
 +		}
 +	}
 +
-+	e.pacer.AddStream(info.SSRC, interceptor.RTPWriterFunc(
++	mediaSSRC := info.SSRC
++	streamWriter := interceptor.RTPWriterFunc(
 +		func(header *rtp.Header, payload []byte, attributes interceptor.Attributes) (int, error) {
 +			if hdrExtID != 0 {
 +				if attributes == nil {
@@ -9909,10 +10274,27 @@ index 0000000..3f0d8d7
 +			if err := e.feedbackAdapter.OnSent(e.clock(), header, len(payload), attributes); err != nil {
 +				return 0, err
 +			}
++			if header.SSRC != mediaSSRC {
++				e.retransmits.Add(1)
++			}
 +
 +			return writer.Write(header, payload, attributes)
 +		},
-+	))
++	)
++	e.pacer.AddStream(info.SSRC, streamWriter)
++	if e.fixes.RTX {
++		// Fixes.RTX (in-tree copy): the pacer routes by SSRC, and upstream registers the media SSRC alone. A
++		// NACK retransmission on an RTX stream carries the stream's RETRANSMISSION SSRC (RFC 4588; pion's NACK
++		// responder writes it into this same chain), so upstream refuses every one with ErrUnknownStream —
++		// after the TWCC interceptor outside has already spent a transport sequence number on it. Nothing is
++		// ever resent: a lost packet is not repaired and the receiver freezes until a keyframe.
++		if info.SSRCRetransmission != 0 {
++			e.pacer.AddStream(info.SSRCRetransmission, streamWriter)
++		}
++		if info.SSRCForwardErrorCorrection != 0 {
++			e.pacer.AddStream(info.SSRCForwardErrorCorrection, streamWriter)
++		}
++	}
 +
 +	return e.pacer
 +}
@@ -10294,10 +10676,10 @@ index 0000000..d7291fe
 +}
 diff --git a/pkg/network/webrtc/pacer.go b/pkg/network/webrtc/pacer.go
 new file mode 100644
-index 0000000..a0f45d9
+index 0000000..5d01b1c
 --- /dev/null
 +++ b/pkg/network/webrtc/pacer.go
-@@ -0,0 +1,162 @@
+@@ -0,0 +1,168 @@
 +// In-frame packet pacing (patch 0028). The stack deliberately runs GCC with a NoOpPacer — a
 +// leaky-bucket pacer queues and re-times RTP, which is exactly the latency this project exists to
 +// avoid, and on an idle LAN wire-speed bursts are harmless. But off-LAN they are not: each encoded
@@ -10425,7 +10807,7 @@ index 0000000..a0f45d9
 +	if !strings.HasPrefix(info.MimeType, "video/") {
 +		return writer
 +	}
-+	return &pacedWriter{next: writer, lossy: &p.lossy}
++	return &pacedWriter{next: writer, lossy: &p.lossy, ssrc: info.SSRC}
 +}
 +
 +// pacedWriter spaces one bound stream's packets. Per-peer state is correct: each viewer's stream
@@ -10433,6 +10815,7 @@ index 0000000..a0f45d9
 +type pacedWriter struct {
 +	next  interceptor.RTPWriter
 +	lossy *atomic.Bool // this viewer has reported packet loss (see pacer.BindRTCPReader)
++	ssrc  uint32       // the stream's media SSRC; anything else (a NACK retransmission on the RTX SSRC) is not paced
 +	pkts  int          // packets sent in the current frame's burst
 +	naps  int          // pauses taken in the current frame's burst
 +}
@@ -10448,6 +10831,11 @@ index 0000000..a0f45d9
 +}
 +
 +func (w *pacedWriter) Write(header *rtp.Header, payload []byte, attributes interceptor.Attributes) (int, error) {
++	// A retransmission arrives from the NACK responder's goroutine, not the video sender's: it must neither
++	// sleep in this stream's pacing nor touch the burst counters the sender goroutine owns.
++	if header.SSRC != w.ssrc {
++		return w.next.Write(header, payload, attributes)
++	}
 +	if cap := w.paceCap(); cap > 0 {
 +		if w.pkts > 0 && w.pkts%pacePktGroup == 0 && w.naps < cap {
 +			time.Sleep(time.Millisecond)
@@ -14016,10 +14404,10 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..0d0e8e8
+index 0000000..f06d5b0
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,2100 @@
+@@ -0,0 +1,2116 @@
 +package worker
 +
 +import (
@@ -14766,7 +15154,7 @@ index 0000000..0d0e8e8
 +		// in-tree estimator's decreases / ALR-guarded decreases / feedback-history misses summed over every
 +		// peer (bweLast holds each peer's last cumulative reading, so a tick sees only its own events).
 +		appLimSkips := 0
-+		type bweCounts struct{ dec, guarded, miss int }
++		type bweCounts struct{ dec, guarded, miss, padLost, padMiss, rtx int }
 +		bweLast := map[svcPeer]bweCounts{}
 +		var bweTotal bweCounts
 +		// Stage 3b: each peer's raw estimate at its previous tick (abrTickIn.estRising), and the summary's
@@ -14807,7 +15195,7 @@ index 0000000..0d0e8e8
 +						"starves=%d starvesRamp=%d starvesSteady=%d congEpisodes=%d congMaxHoldTicks=%d "+
 +						"geomFlapsSuppressed=%d congV2=%d walls=%d wallExits=%d wallDeparts=%d "+
 +						"descents=%d hardDescents=%d craters=%d overFirst=%d overMax=%d wallSeeds=%d "+
-+						"sentAvg=%d appLimTicks=%d floorTicks=%d cutsAppLim=%d appGate=%d appLimSkips=%d underWallHolds=%d catchUpHolds=%d decreases=%d guardedDecreases=%d histOverflows=%d "+
++						"sentAvg=%d appLimTicks=%d floorTicks=%d cutsAppLim=%d appGate=%d appLimSkips=%d underWallHolds=%d catchUpHolds=%d decreases=%d guardedDecreases=%d histOverflows=%d fbPadLost=%d fbPadMiss=%d rtxSent=%d "+
 +						"vbvMode=%s vbvRebuilds=%d encGaps=%d encGapMaxMs=%d%s",
 +					r.Id(), system, openKbps, ceilKbps, codec, layers, ticks,
 +					ramp, atCeilPct, cutsRamp+cutsSteady, cutsRamp, cutsSteady,
@@ -14816,7 +15204,7 @@ index 0000000..0d0e8e8
 +					rate.ds.descents, rate.ds.hard, rate.ds.craters, rate.ds.overFirst, rate.ds.overMax,
 +					rate.cm.seeds,
 +					sentAvgKbps(firstEncBytes, m, ticks), appLimTicks, floorTicks, cutsAppLim, map[bool]int{true: 1, false: 0}[appGate],
-+					appLimSkips, underWallHolds, catchUpHolds, bweTotal.dec, bweTotal.guarded, bweTotal.miss, media.VbvMode(),
++					appLimSkips, underWallHolds, catchUpHolds, bweTotal.dec, bweTotal.guarded, bweTotal.miss, bweTotal.padLost, bweTotal.padMiss, bweTotal.rtx, media.VbvMode(),
 +					encStat(m, 1), encStat(m, 2), encStat(m, 3), ad.summary())
 +
 +				// Snapshot each peer BY VALUE before dispatching anything: the peer objects and these
@@ -15237,7 +15625,23 @@ index 0000000..0d0e8e8
 +					if p == bindingPeer {
 +						tickDec, tickGuarded = d-last.dec, g-last.guarded
 +					}
-+					bweLast[p] = bweCounts{d, g, h}
++					now := bweCounts{dec: d, guarded: g, miss: h}
++					if pp, ok := any(p).(interface {
++						EstimatorPadding() (lost, miss int, ok bool)
++					}); ok {
++						if pl, pm, ok := pp.EstimatorPadding(); ok {
++							bweTotal.padLost += pl - last.padLost
++							bweTotal.padMiss += pm - last.padMiss
++							now.padLost, now.padMiss = pl, pm
++						}
++					}
++					if rp, ok := any(p).(interface{ EstimatorRetransmits() (int, bool) }); ok {
++						if n, ok := rp.EstimatorRetransmits(); ok {
++							bweTotal.rtx += n - last.rtx
++							now.rtx = n
++						}
++					}
++					bweLast[p] = now
 +				}
 +			}
 +			recvWin, sentWin, haveWin := 0, 0, false

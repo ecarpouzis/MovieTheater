@@ -159,8 +159,8 @@ func main() {
 // client's TLS/TCP stream before reading the next. The worker sends a video keyframe as a back-to-back burst
 // of 100-300+ KB, far faster than that loop drains, and the socket's OS-default receive buffer — 64 KiB on
 // Windows — overflows and silently drops the rest of the burst. Measured with the turnlab probe: a 64 KB
-// burst after idle passes 0 % loss, 128 KB loses 10 %, 300 KB loses 25 %. The browser NACKs the holes, the
-// retransmits arrive as another burst and are dropped the same way, libwebrtc waits out its 3 s
+// burst after idle passes 0 % loss, 128 KB loses 10 %, 300 KB loses 25 %. The browser NACKs the holes (and until
+// worker patch 0054 the worker never retransmitted at all), libwebrtc waits out its 3 s
 // frame-wait and asks for a keyframe — a bigger burst again. That is the 1 s/2 s/3 s gap ladder and the
 // keyframe-request storm. A buffer of a few MiB absorbs the burst and lets the loop catch up.
 //

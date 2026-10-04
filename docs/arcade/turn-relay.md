@@ -229,14 +229,21 @@ exists, so you can't prove it from Ziggy or a normal LAN client):
 
 ## Relay defects of 2026-10-04 (both root-caused and fixed in main.go)
 
+**LIVE 2026-10-04 12:29** — `D:\ArcadeStorage\turn\arcade-turn.exe` built from this source (sha256 `0F9BDB0D…B057B0E8`),
+rollback `arcade-turn.pre-20261004.exe` beside it; start line `relay-rcvbuf=4194304 deny-mode=blackhole`. First room
+through it, with worker patch 0054 also live: Sonic 2 H.264, 80 s, 0 packets lost, 0 NACKs, 0 keyframe requests, 60 fps.
+The room page's own guard against the false crash-loop is `src/ui/src/Pages/Arcade/connectionStateGate.js`.
+
 ### 1. Picture stalls of 1-3 s on the relay path = keyframe bursts dropped at the relay's UDP socket
 
 pion/turn reads each allocation's UDP relay socket in ONE goroutine (`internal/allocation`
 `Allocation.packetHandler`) and writes every datagram synchronously into the client's TLS stream before
 reading the next. A video keyframe leaves the worker as a back-to-back burst of 100-300+ KB; the socket's
 OS-default receive buffer (64 KiB on Windows) overflows and the rest of the burst is silently dropped.
-The browser NACKs the holes, the retransmissions arrive as another burst and are dropped the same way,
-libwebrtc sits out its 3 s frame-wait and sends a PLI, and the worker answers with another big keyframe.
+The browser NACKs the holes — and the worker never answered: until worker patch 0054 (the same day) no
+NACK retransmission was ever SENT (the estimator's writer refused the RTX SSRC; `docker/arcade/patches/README.md`
+"0054-nack-repair"), so a dropped packet could not be repaired on any path. libwebrtc sits out its 3 s
+frame-wait and sends a PLI, and the worker answers with another big keyframe.
 That is the 1 s / 2 s / 3 s gap ladder and the keyframe-request storm. It is NOT congestion, TCP RTOs,
 Caddy, the hairpin or the VPS: every one of those paths measured clean (below). Static content (the NES
 test cart, keyframes under 64 KB) never showed it, which is why it looked game-dependent.

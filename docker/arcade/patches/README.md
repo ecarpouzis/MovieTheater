@@ -1375,3 +1375,54 @@ client-watchdog stall ms, client recoveries). Summary adds `appGate= appLimSkips
 guardedDecreases= histOverflows=`. Cut verdicts add `applim` and `keep-noread`. At room close:
 `abr: viewer-gaps reported= maxMs= over100= over250=` — seconds in which the picture hung, measured in the browser.
 Worker start: `rtc: bandwidth estimator: in-tree GCC (...), fixes ratecalc=1 history=1 alr=1 hold=1 noise=0`.
+
+## 0054-nack-repair (2026-10-04): lost packets are retransmitted (they never were); feedback padding is not loss
+
+(Fork commits `3f133bf` + `3ba5061`. LIVE 2026-10-04 12:25 on all three workers, md5
+`D4EF5A06FF7CC9856AB3EB94BF42B67F`; rollback `worker.pre-padding.exe` beside each = the 0053 build. Found in the review
+of 0053, by chasing a counter that would not explain itself.)
+
+**Defect 1 — no NACK retransmission has ever been sent since the send-side estimator went in (patch 0021).** Pion's GCC
+routes writes by SSRC and registers the media SSRC alone (`SendSideBWE.AddStream` -> `pacer.AddStream(info.SSRC)`). Every
+browser negotiates RTX, so the NACK responder writes each retransmission on the stream's RETRANSMISSION SSRC into the same
+writer chain, where the pacer answers `ErrUnknownStream`. The responder logs that at Warn through pion's DEFAULT logger
+factory (errors only) — silent. The TWCC interceptor outside had already spent a transport sequence number on the packet;
+the browser reported it "not received" for a packet the history never saw — that was the summary's `histOverflows`, which
+therefore counted FAILED RETRANSMISSIONS (not late feedback, as 0053's notes guessed).
+
+What it cost: any lost packet froze that viewer until a keyframe. libwebrtc waits **3000 ms** for a decodable frame before
+it sends a PLI — the signature is the tick trace's `gap=` climbing +1000 per tick to ~3050 and recovering. It is also why
+"each loss costs a keyframe request" on Firefox (patch 0048's loss pacing treated the symptom) and why Firefox on Ziggy was
+bimodal.
+
+**Fix.** `gcc/send_side_bwe.go`: `AddStream` also registers `info.SSRCRetransmission` / `SSRCForwardErrorCorrection`
+(`Fixes.RTX`, `CLOUD_GAME_GCC_FIX_RTX`, default on; `=0` = upstream). `factory.go`: the NACK responder keeps **4096**
+packets per stream instead of pion's 1024 (= 260 ms at 38 Mbps; a repair request that arrives later finds nothing):
+`CLOUD_GAME_NACK_BUFFER`. `pacer.go`: a retransmission (other SSRC, the responder's goroutine) bypasses the in-frame pacer
+and the burst counters the sender goroutine owns. ⚠ `CLOUD_GAME_GCC_IMPL=stock` keeps the upstream defect.
+
+**Defect 2 — a TWCC report's chunk padding was read as packets not received.** A report describes `PacketStatusCount`
+packets; its last status-VECTOR chunk always carries a full word of symbols (7 two-bit / 14 one-bit) and the unused ones are
+zero = "not received" (libwebrtc `TransportFeedback::LastChunk::EncodeLast` writes them; its parser stops at the count).
+Pion's adapter walked every symbol: up to 13 packets past the report read as LOST (already sent) or a history miss (not
+sent yet). Fix: each chunk is bounded by the packets the report has left (`Fixes.Padding`, `CLOUD_GAME_GCC_FIX_PADDING`).
+**Measured small**: 115 padding symbols, 11 of them phantom losses, in an 80 s relay room. Correct, cheap, not the story.
+
+**Measured** (Chrome, the same Sonic 2 H.264 room through the TURN relay while the relay still dropped keyframe bursts —
+`turn/main.go` fixed that separately the same day, see `docs/arcade/turn-relay.md`):
+
+| Build | Retransmissions received | Keyframe requests | Longest picture gap | Seconds over 250 ms | `histOverflows` |
+|---|---|---|---|---|---|
+| 0053 | 0 of 34 NACKs (95 packets lost for good) | 14 | 3033 ms | 22 of 79 | 2837 |
+| 0054 | 263 (`rtxSent=397`) | 1 | 583 ms | 2 of 79 | 0 |
+
+Installed browsers, direct LAN path, AV1, 40 s (`.claude/skills/test-roms/codec-matrix.mjs`): Chrome 76 fps, Edge 76,
+Firefox 77 / 77 / 77 with `pli=0` in all three runs while it lost and repaired 136-775 packets (before: bimodal, PLI storms
+and multi-second gaps on the bad runs). With the relay fixed as well: 0 lost, 0 NACKs, 60 fps, jitter buffer 2.5 ms.
+
+**New log fields.** `abr: summary` adds `fbPadLost= fbPadMiss= rtxSent=`. Worker start:
+`fixes ratecalc=1 history=1 alr=1 hold=1 padding=1 rtx=1 noise=0` and `rtc: NACK retransmission buffer 4096 packets per
+stream`. `histOverflows` should now read 0; anything else is a new question.
+
+**Lab blind spots this exposed** (`abr_gccsim_test.go`): its reports are run-length only (no padding), and it has no NACK /
+retransmission path at all — it could not have found either defect.
