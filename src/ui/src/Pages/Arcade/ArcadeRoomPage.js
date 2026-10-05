@@ -1659,7 +1659,12 @@ export default function ArcadeRoomPage() {
         const innerStyle = immersive
           ? { position: "relative", aspectRatio: ar, width: `min(100%, calc(100dvh * ${ar}))`, maxHeight: "100%", margin: padBelow ? "0 auto auto" : "0 auto" }
           : portrait
-            ? { position: "relative", aspectRatio: ar, height: "min(74vh, 760px)", maxWidth: "100%", margin: "0 auto" }
+            // Width-driven, capped by the height budget — NOT an explicit height + maxWidth. With height
+            // fixed, a narrow phone clamped the WIDTH to 100% while the height stayed 74vh, so the box
+            // stopped being `ar` (a 3:4 cab became ~0.6) and the rotated <video>, sized for an `ar` box by
+            // rotatedVideoSize, overflowed it: vertical arcade games looked zoomed and cut off on phones
+            // held upright (Donkey Kong, 2026-10-05). The immersive branch above already sizes this way.
+            ? { position: "relative", aspectRatio: ar, width: `min(100%, calc(min(74vh, 760px) * ${ar}))`, margin: "0 auto" }
             : { position: "relative", aspectRatio: ar, width: "100%" };
         const inputSystem = effectiveInputSystem(system, gameKey, controllerScheme);
         const avail = roomActionAvailability({ system, competitive, spectator, canRewind, slot: yourSlot });
