@@ -232,7 +232,9 @@ namespace MovieTheater.Arcade
             int afterId = int.TryParse(After, out var a) ? a : 0;
             var only = Only?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var rows = await db.ArcadeGames
-                .Where(g => g.System == System && g.Notes == batchNote && !g.IsEnabled && g.Id > afterId)
+                // StartsWith: other tools APPEND breadcrumbs to Notes (arcade-boxart-source), so equality would
+                // silently drop rows from their own batch.
+                .Where(g => g.System == System && g.Notes != null && g.Notes.StartsWith(batchNote) && !g.IsEnabled && g.Id > afterId)
                 .OrderBy(g => g.Id).Take(Limit).ToListAsync();
             if (only != null) rows = rows.Where(g => only.Contains(g.CloudRetroGameKey)).ToList();
             int enabled = 0, missing = 0;
@@ -246,7 +248,7 @@ namespace MovieTheater.Arcade
             }
             if (Apply) await db.SaveChangesAsync();
             var next = rows.Count > 0 ? rows[^1].Id : afterId;
-            var remaining = await db.ArcadeGames.CountAsync(g => g.System == System && g.Notes == batchNote && !g.IsEnabled && g.Id > next);
+            var remaining = await db.ArcadeGames.CountAsync(g => g.System == System && g.Notes != null && g.Notes.StartsWith(batchNote) && !g.IsEnabled && g.Id > next);
             w.WriteLine($"{(Apply ? "enabled" : "would enable")} {enabled}, left off {missing} (batch {batchNote})");
             w.WriteLine($"{{ processed: {rows.Count}, remaining: {remaining}, nextCursor: {next} }}");
             w.WriteLine("Then run arcade-romcache-export so the gateway can stage them.");

@@ -99,6 +99,15 @@ describe("arcade presets", () => {
     expect(presetsFor("naomi").some((p) => p.id === "sf")).toBe(false);
   });
 
+  it("movement-panel presets draw one spare button, and none for a no-button cabinet", () => {
+    const spinner = presetsFor("mame", { controls: "spinner/2" }).find((p) => p.id === "spinner")!;
+    expect(spinner.spec.faceButtons.map((b) => b.bit)).toEqual(["B", "A", "Y"]);   // APB's siren is button 3
+    const marble = presetsFor("mame", { controls: "trackball/0" }).find((p) => p.id === "trackball")!;
+    expect(marble.spec.faceButtons).toHaveLength(0);
+    expect(suggestedPreset("mame", { controls: "trackball/0" })).toBe("trackball");
+    expect(presetsFor("mame", { controls: "trackball/0" }).map((p) => p.id)).not.toContain("b0");
+  });
+
   it("a game with an unusual button count gets a preset with exactly that many", () => {
     const ids = presetsFor("arcade", { controls: "joy8/5" }).map((p) => p.id);
     expect(ids).toContain("b5");

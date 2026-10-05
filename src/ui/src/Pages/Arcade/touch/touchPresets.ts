@@ -104,8 +104,10 @@ function arcadeSpec(map: ButtonMap, n: number, over: Partial<SystemTouchSpec> = 
 
 function arcadePresets(inputSystem: string, profile: ControlProfile | null, coreKey?: string | null): TouchPreset[] {
   const { map, core } = arcadeButtonMap(inputSystem, coreKey);
-  const n = profile && profile.buttons > 0 ? Math.min(profile.buttons, map.length) : 4;
-  const counts = [...new Set([1, 2, 3, 4, 6, n])].filter((c) => c <= map.length).sort((a, b) => a - b);
+  // The profile's count is HOW MANY buttons the cabinet has, not WHICH (MAME's listxml has no per-button
+  // detail). Unknown → 4, the old default; a known 0 (Marble Madness: trackball + start) → 0.
+  const n = profile ? Math.min(profile.buttons, map.length) : 4;
+  const counts = [...new Set([1, 2, 3, 4, 6, n])].filter((c) => c >= 1 && c <= map.length).sort((a, b) => a - b);
   const out: TouchPreset[] = counts.map((c) => ({
     id: `b${c}`,
     name: c === 1 ? "1 button" : `${c} buttons`,
@@ -121,7 +123,11 @@ function arcadePresets(inputSystem: string, profile: ControlProfile | null, core
       spec: arcadeSpec(FBNEO_SF, 6, { face: "rows6", palette: [] }, ["LP", "MP", "HP", "LK", "MK", "HK"]),
     });
   }
-  const m = Math.max(1, n);
+  // Movement-panel presets (4-way stick, spinner, trackball, gun) show ONE MORE button than the count: those
+  // boards are where MAME numbering skips button 1 (APB's siren + fire are buttons 2 and 3 — with exactly two
+  // buttons drawn, the siren was unreachable and the game stuck on "PRESS SIREN", found on prod 2026-10-05).
+  // A spare button costs a little space; a missing one makes the game unplayable. 0 stays 0.
+  const m = n === 0 ? 0 : Math.min(n + 1, map.length);
   out.push(
     {
       id: "joy4",
