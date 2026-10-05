@@ -9,6 +9,7 @@ import HeavyGameModal from "./HeavyGameModal";
 import LiveRooms from "./LiveRooms";
 import SavesManager from "./SavesManager";
 import ConsoleCarousel from "./ConsoleCarousel";
+import { applyGeoProbeParam } from "./RoomGeometryProbe";
 import { rememberLobbySearch } from "./arcadeLobbyState";
 import { createRoomAndGo, loadQuality, primeCodecProbe, saveQuality } from "./arcadeRoomCreate";
 import { hasSaveStates, QUICK_SLOT } from "./arcadeSystems";
@@ -106,6 +107,8 @@ const CODEC_OPTIONS = [
 export default function ArcadePage({ userData }) {
   const history = useHistory();
   const location = useLocation();
+  // `/arcade?geo=1` switches the room geometry readout on for this device (`?geo=0` off) — see RoomGeometryProbe.
+  useEffect(() => { applyGeoProbeParam(location.search); }, [location.search]);
   const isMobile = useIsMobile();
 
   // ── The catalog as SPARSE BANDS (R9 S3: the package's InfiniteBands, shared with every section) ─
