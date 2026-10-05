@@ -7,7 +7,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MovieAPI } from "../../../MovieAPI";
-import { parseStore, serializeStore, withLayout, type Layout, type LayoutStore } from "./touchLayout";
+import { fitStore, isEmptyStore, parseStore, serializeStore, withLayout, withPick, type Layout, type LayoutStore } from "./touchLayout";
 
 const MIRROR_KEY = "arcade.touchLayouts";
 
@@ -37,7 +37,7 @@ export default function useTouchLayouts() {
     // account's older copy overwrite it.
     if (readPending()) {
       const json = serializeStore(storeRef.current);
-      MovieAPI.setArcadeTouchLayouts(Object.keys(storeRef.current.layouts).length ? json : null)
+      MovieAPI.setArcadeTouchLayouts(isEmptyStore(storeRef.current) ? null : json)
         .then((res) => { if (res && res.ok) writePending(false); })
         .catch(() => { /* still offline: try again next room */ });
       return () => { cancelled = true; };
@@ -53,23 +53,44 @@ export default function useTouchLayouts() {
     return () => { cancelled = true; };
   }, []);
 
-  /** Set (or with null, delete) one layout key. Resolves true when the account copy saved. */
-  const save = useCallback(async (key: string, layout: Layout | null): Promise<boolean> => {
-    const next = withLayout(storeRef.current, key, layout);
+  // Every write goes through here: local first (the room redraws at once), then the account.
+  const commit = useCallback(async (wanted: LayoutStore): Promise<boolean> => {
+    const { store: next, json } = fitStore(wanted);
     storeRef.current = next;
     setStore(next);
-    const json = serializeStore(next);
     writeMirror(json);
     writePending(true);
     try {
-      const res = await MovieAPI.setArcadeTouchLayouts(Object.keys(next.layouts).length ? json : null);
+      const res = await MovieAPI.setArcadeTouchLayouts(isEmptyStore(next) ? null : json);
       const ok = !!res && res.ok;
       if (ok && storeRef.current === next) writePending(false); // a newer save owns the flag otherwise
       return ok;
     } catch { return false; }
   }, []);
 
-  return { store, save };
+  /**
+   * Set (or with null, delete) one layout key, plus any pick changes in the SAME write (saving an edit
+   * marks its scope "custom", so a preset picked earlier doesn't hide it). Resolves true when the account
+   * copy saved.
+   */
+  const save = useCallback((key: string, layout: Layout | null, picks: Record<string, string | null> = {}) => {
+    let next = withLayout(storeRef.current, key, layout);
+    for (const [k, v] of Object.entries(picks)) next = withPick(next, k, v);
+    return commit(next);
+  }, [commit]);
+
+  /**
+   * Pick a preset (or "custom") for a pick key — `sys:<inputSystem>` / `game:<system>/<gameKey>` — or with
+   * null, clear the pick. `alsoClear` drops other pick keys in the same write (choosing for the whole
+   * system clears this game's own pick, or the game's pick would keep winning).
+   */
+  const savePick = useCallback((key: string, presetId: string | null, alsoClear: string[] = []) => {
+    let next = withPick(storeRef.current, key, presetId);
+    for (const k of alsoClear) next = withPick(next, k, null);
+    return commit(next);
+  }, [commit]);
+
+  return { store, save, savePick };
 }
 
 // ── Show/hide preference (per DEVICE: whether this phone wants the pad is about this phone) ──────────

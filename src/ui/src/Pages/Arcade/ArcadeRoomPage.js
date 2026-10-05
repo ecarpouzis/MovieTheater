@@ -23,6 +23,9 @@ import TouchLayer from "./touch/TouchLayer";
 import RoomOverlay from "./touch/RoomOverlay";
 import useTouchLayouts, { readTouchPref, writeTouchPref } from "./touch/useTouchLayouts";
 import { touchSpecFor } from "./touch/touchSystems";
+import { defaultPickScope, presetsFor, suggestedPreset } from "./touch/touchPresets";
+import { gamePickKey, systemPickKey } from "./touch/touchLayout";
+import TouchPresetPicker from "./touch/TouchPresetPicker";
 
 const { Title, Text } = Typography;
 
@@ -339,8 +342,14 @@ export default function ArcadeRoomPage() {
   const [padInUse, setPadInUse] = useState(false);
   const padInUseRef = useRef(false);
   padInUseRef.current = padInUse;
-  const { store: touchStore, save: saveTouchLayout } = useTouchLayouts();
-  const setTouchPref = (v) => { writeTouchPref(v); setTouchPrefState(v); if (v !== "off") setPadInUse(false); };
+  const { store: touchStore, save: saveTouchLayout, savePick: saveTouchPick } = useTouchLayouts();
+  // What the touch layer is showing (preset id / edited layout), reported up for the ☰ menu's switcher.
+  const [touchResolved, setTouchResolved] = useState(null);
+  // The game's MAME control profile (ArcadeGame.Controls, e.g. "joy4/1", "joy8/6/sf") and the core the
+  // room booted: together they pick the arcade touch presets and which one a room starts on.
+  const [touchControls, setTouchControls] = useState(location.state?.descriptor?.controls ?? null);
+  const [roomCoreKey, setRoomCoreKey] = useState(location.state?.descriptor?.coreKey ?? null);
+  const setTouchPref =(v) => { writeTouchPref(v); setTouchPrefState(v); if (v !== "off") setPadInUse(false); };
   // The core's OWN display aspect, reported via the GAME_START `av` payload (and any later t=150).
   // null until it arrives / when the core doesn't specify one — then the per-system table below wins.
   const [coreAspect, setCoreAspect] = useState(null);
@@ -427,6 +436,8 @@ export default function ArcadeRoomPage() {
       setCompetitive(!!descriptor.competitive);
       competitiveRef.current = !!descriptor.competitive;
       setCanRewind(!!descriptor.canRewind);
+      setTouchControls(descriptor.controls ?? null);
+      setRoomCoreKey(descriptor.coreKey ?? null);
       setDiscCount(descriptor.discCount || 0);
 
       // A JIT game's first play may have to inflate a compressed disc image (a PSP .cso, a GameCube
@@ -1654,6 +1665,14 @@ export default function ArcadeRoomPage() {
         const avail = roomActionAvailability({ system, competitive, spectator, canRewind, slot: yourSlot });
         // The ☰ is for anyone who might be without the button bar: fullscreen, or a touch screen.
         const showMenu = !spectator && LIVE_STATUS.includes(status) ? (immersive || touchDevice || touchShown) : immersive;
+        const touchInputSystem = String(inputSystem || system || "");
+        const touchCtx = { controls: touchControls, coreKey: roomCoreKey };
+        // Picking for the whole system also clears this game's own pick, or the game's would keep winning.
+        const pickTouchPreset = (presetId, scope) => {
+          const gamePick = gameKey ? gamePickKey(String(system || ""), gameKey) : null;
+          if (scope === "game" && gamePick) saveTouchPick(gamePick, presetId);
+          else saveTouchPick(systemPickKey(touchInputSystem), presetId, gamePick ? [gamePick] : []);
+        };
         return (
           <div ref={playerRef} style={outerStyle}>
             <div style={innerStyle}>
@@ -1686,8 +1705,11 @@ export default function ArcadeRoomPage() {
                   gameKey={gameKey}
                   gameTitle={gameKey}
                   systemName={systemLabel(String(inputSystem || system || ""))}
+                  controls={touchControls}
+                  coreKey={roomCoreKey}
                   store={touchStore}
                   save={saveTouchLayout}
+                  onResolved={setTouchResolved}
                   onFrame={(mask, axes) => sessionRef.current?.setVirtualInput?.(mask, axes)}
                   onAction={(action, engaged) => runRoomActionRef.current(action, engaged)}
                   actionAllowed={(action) => action === "menu" || !!avail[action]}
@@ -1719,6 +1741,17 @@ export default function ArcadeRoomPage() {
                 touchShown={touchShown}
                 onTouchPref={setTouchPref}
                 onEditTouch={() => { setOverlayOpen(false); setEditingTouch(true); }}
+                touchLayouts={(
+                  <TouchPresetPicker
+                    presets={presetsFor(touchInputSystem, touchCtx)}
+                    suggestedId={suggestedPreset(touchInputSystem, touchCtx)}
+                    resolved={touchResolved}
+                    systemName={systemLabel(touchInputSystem)}
+                    canPickForGame={!!gameKey}
+                    defaultScope={defaultPickScope(touchInputSystem)}
+                    onPick={pickTouchPreset}
+                  />
+                )}
                 allowed={avail}
                 onAction={(action, engaged) => runRoomActionRef.current(action, engaged)}
                 onControllers={() => setShowControllers(true)}

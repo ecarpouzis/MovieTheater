@@ -309,3 +309,19 @@
   -webkit-user-select: none;
 }
 .room-overlay__grid button:active { background: var(--ro-accent); }
+
+/* Layout presets in the ☰ menu: wrapping chips, the active one filled, the suggested one starred. */
+.room-overlay__chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+.room-overlay__chips button {
+  padding: 8px 12px;
+  min-height: 36px;
+  border: 1px solid var(--ro-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ro-ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+.room-overlay__chips button.is-on { background: var(--ro-accent); border-color: var(--ro-accent); color: #fff; }
+.room-overlay__chips button .room-overlay__star { margin-left: 4px; opacity: 0.8; }
+.room-overlay__seg--small button { padding: 6px 0; font-size: 12px; }

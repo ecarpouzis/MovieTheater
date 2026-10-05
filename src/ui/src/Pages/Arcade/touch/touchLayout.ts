@@ -7,14 +7,24 @@
  * and thumb-sized on any screen shape. A layout is stored per screen-shape BUCKET (landscape /
  * portrait), because a thumb position that's right on a phone held sideways is wrong held upright.
  *
+ * Built-in layouts come in named PRESETS (touchPresets.ts): a Genesis has "3 buttons" and "6 buttons", an
+ * arcade game has one per control style. A player can PICK a preset for one game or for a whole system;
+ * picks live beside the layouts in the same blob (`picks`, keyed WITHOUT a bucket — a preset is generated
+ * for whatever shape the screen is). "custom" as a pick means "my edited layout".
+ *
  * Which layout a room shows (resolveLayout):
- *   1. game:<system>/<gameKey>|<bucket> — a per-game override (filenames repeat across systems, so the
+ *   1. the game's pick (picks["game:<system>/<gameKey>"]) — a preset, or "custom" = the edited layout;
+ *   2. game:<system>/<gameKey>|<bucket> — a per-game edited layout (filenames repeat across systems, so the
  *      system is part of the key);
- *   2. sys:<inputSystem>|<bucket>       — the player's layout for this system;
- *   3. the built-in default for that system, generated for the layer's actual aspect.
+ *   3. the system's pick (picks["sys:<inputSystem>"]) when it names a preset;
+ *   4. sys:<inputSystem>|<bucket>       — the player's edited layout for this system;
+ *   5. the SUGGESTED preset — for an arcade game, the one its MAME control profile calls for (a 4-way stick
+ *      for Pac-Man, two rows for Street Fighter, a trackball zone for Centipede); otherwise the system's
+ *      first preset — generated for the layer's actual aspect.
  */
 import { PAD } from "../cloudRetroClient";
 import { touchSpecFor, type BitName, type FaceButton, type SystemTouchSpec } from "./touchSystems";
+import type { TouchPreset } from "./touchPresets";
 
 export type Bucket = "landscape" | "portrait";
 export type StickOutput = "left" | "right" | "dpad";
@@ -27,7 +37,8 @@ export interface AxisPush { i: 0 | 1 | 2 | 3; v: -1 | 1 }
 
 interface Base { id: string; x: number; y: number; s: number; opacity?: number; label?: string }
 export interface ButtonControl extends Base { kind: "button"; bits: BitName[]; axis?: AxisPush; shape: ButtonShape; mode: ButtonMode }
-export interface DpadControl extends Base { kind: "dpad" }
+/** ways 4 = only ever one direction at a time (a 4-way joystick); absent = 8-way. */
+export interface DpadControl extends Base { kind: "dpad"; ways?: 4 }
 export interface StickControl extends Base { kind: "stick"; output: StickOutput; floating: boolean; deadzone: number }
 /** An invisible-by-default floating-stick zone: touching anywhere in it spawns a stick under the thumb. w/h are layer fractions. */
 export interface RegionControl extends Base { kind: "region"; w: number; h: number; output: StickOutput; deadzone: number }
@@ -48,7 +59,14 @@ export interface Layout {
   slide: boolean;
 }
 
-export interface LayoutStore { v: 1; layouts: Record<string, Layout> }
+/**
+ * layouts: edited layouts by `sys:…|bucket` / `game:…|bucket`. picks: the chosen preset id (or "custom")
+ * by `sys:<inputSystem>` / `game:<system>/<gameKey>` — no bucket.
+ */
+export interface LayoutStore { v: 1; layouts: Record<string, Layout>; picks?: Record<string, string> }
+
+/** The pick value meaning "my edited layout" rather than a built-in preset. */
+export const CUSTOM_PICK = "custom";
 
 export const ACTION_LABEL: Record<RoomAction, string> = {
   menu: "☰", quickSave: "Save", quickLoad: "Load", rewind: "⏪", fastForward: "⏩", reset: "Reset",
@@ -60,20 +78,58 @@ export const systemKey = (inputSystem: string, bucket: Bucket) => `sys:${String(
 export const gameKeyFor = (system: string, gameKey: string, bucket: Bucket) =>
   `game:${String(system || "").toLowerCase()}/${gameKey}|${bucket}`;
 
-export interface ResolvedLayout { layout: Layout; source: "game" | "system" | "default" }
+export const systemPickKey = (inputSystem: string) => `sys:${String(inputSystem || "").toLowerCase()}`;
+export const gamePickKey = (system: string, gameKey: string) => `game:${String(system || "").toLowerCase()}/${gameKey}`;
 
-export function resolveLayout(
-  store: LayoutStore | null | undefined,
-  { system, inputSystem, gameKey, bucket, aspect }: { system: string; inputSystem: string; gameKey?: string | null; bucket: Bucket; aspect: number },
-): ResolvedLayout {
+/**
+ * source: "game"/"system" = an edited layout at that scope; "preset" = a preset the player picked;
+ * "default" = the suggested preset nobody picked. presetId = the preset on screen (null for an edited
+ * layout). pickScope = where the deciding pick lives, if a pick decided it.
+ */
+export interface ResolvedLayout {
+  layout: Layout;
+  source: "game" | "system" | "preset" | "default";
+  presetId: string | null;
+  pickScope: "game" | "system" | null;
+}
+
+export interface ResolveArgs {
+  system: string; inputSystem: string; gameKey?: string | null; bucket: Bucket; aspect: number;
+  /** This room's presets (presetsFor) — absent = the system's built-in spec as the only preset. */
+  presets?: TouchPreset[];
+  /** Which preset to show when nothing was picked or edited. Absent/unknown = the first. */
+  suggested?: string | null;
+}
+
+export function resolveLayout(store: LayoutStore | null | undefined, a: ResolveArgs): ResolvedLayout {
+  const { system, inputSystem, gameKey, bucket, aspect } = a;
   const all = store?.layouts || {};
-  if (gameKey) {
-    const g = all[gameKeyFor(system, gameKey, bucket)];
-    if (g) return { layout: g, source: "game" };
+  const picks = store?.picks || {};
+  const presets = a.presets && a.presets.length ? a.presets : null;
+  const presetById = (id: string | null | undefined) => (id && presets ? presets.find((p) => p.id === id) || null : null);
+  const fromPreset = (p: TouchPreset, source: ResolvedLayout["source"], pickScope: ResolvedLayout["pickScope"]): ResolvedLayout =>
+    ({ layout: defaultLayout(inputSystem, bucket, aspect, p.spec), source, presetId: p.id, pickScope });
+  const gameLayout = gameKey ? all[gameKeyFor(system, gameKey, bucket)] : undefined;
+  const sysLayout = all[systemKey(inputSystem, bucket)];
+
+  const gamePick = gameKey ? picks[gamePickKey(system, gameKey)] : undefined;
+  if (gamePick === CUSTOM_PICK) {
+    if (gameLayout) return { layout: gameLayout, source: "game", presetId: null, pickScope: "game" };
+    if (sysLayout) return { layout: sysLayout, source: "system", presetId: null, pickScope: "game" };
+  } else {
+    const p = presetById(gamePick);
+    if (p) return fromPreset(p, "preset", "game");
   }
-  const s = all[systemKey(inputSystem, bucket)];
-  if (s) return { layout: s, source: "system" };
-  return { layout: defaultLayout(inputSystem, bucket, aspect), source: "default" };
+  if (gameLayout) return { layout: gameLayout, source: "game", presetId: null, pickScope: null };
+
+  const sysPick = picks[systemPickKey(inputSystem)];
+  const sp = sysPick !== CUSTOM_PICK ? presetById(sysPick) : null;
+  if (sp) return fromPreset(sp, "preset", "system");
+  if (sysLayout) return { layout: sysLayout, source: "system", presetId: null, pickScope: sysPick === CUSTOM_PICK ? "system" : null };
+
+  const suggested = presetById(a.suggested) || (presets ? presets[0] : null);
+  if (suggested) return fromPreset(suggested, "default", null);
+  return { layout: defaultLayout(inputSystem, bucket, aspect), source: "default", presetId: null, pickScope: null };
 }
 
 // ── Defaults ───────────────────────────────────────────────────────────────────────────────────────
@@ -99,11 +155,13 @@ const LANDSCAPE: Anchors = {
   shoulderS: 0.13, smallS: 0.1, menuS: 0.09,
 };
 
+// Select/Start sit up between the shoulders, not along the bottom edge: down there they landed ON the
+// secondary d-pad/stick and the N64's C-buttons (the overlap check in touchPresets.test.ts).
 const PORTRAIT: Anchors = {
-  primary: [0.22, 0.76, 0.34], secondary: [0.4, 0.92, 0.22],
-  face: [0.78, 0.76, 0.36], faceWithR: [0.78, 0.73, 0.32], rstick: [0.6, 0.92, 0.22],
+  primary: [0.22, 0.76, 0.34], secondary: [0.38, 0.93, 0.22],
+  face: [0.78, 0.76, 0.36], faceWithR: [0.78, 0.73, 0.32], rstick: [0.62, 0.93, 0.22],
   L: [0.09, 0.6], R: [0.91, 0.6], L2: [0.26, 0.6], R2: [0.74, 0.6],
-  select: [0.42, 0.95], start: [0.58, 0.95], menu: [0.5, 0.6],
+  select: [0.42, 0.66], start: [0.58, 0.66], menu: [0.5, 0.6],
   shoulderS: 0.16, smallS: 0.12, menuS: 0.1,
 };
 
@@ -120,12 +178,24 @@ function faceOffsets(arr: SystemTouchSpec["face"], count: number): { off: [numbe
   switch (arr) {
     case "one": return { off: [[0, 0]], size: 0.6 };
     case "two": return { off: [[-0.42, 0.28], [0.42, -0.28]], size: 0.5 };
-    case "three": return { off: [[-0.72, 0.3], [0, 0.05], [0.72, -0.2]], size: 0.42 };
+    case "three": return { off: [[-0.9, 0.3], [0, 0.05], [0.9, -0.2]], size: 0.42 };
     case "six": return {
       off: [[-0.72, 0.42], [0, 0.3], [0.72, 0.18], [-0.72, -0.32], [0, -0.44], [0.72, -0.56]].slice(0, count) as [number, number][],
       size: 0.38,
     };
-    case "gc": return { off: [[0, 0.05], [-0.68, 0.48], [0.68, -0.05], [-0.05, -0.68]], size: 0.42 };
+    case "gc": return { off: [[0, 0.05], [-0.8, 0.55], [0.82, -0.05], [-0.05, -0.82]], size: 0.42 };
+    // A cabinet's slightly arched rows: the middle button rides a touch higher, as under a real hand.
+    case "row3": return { off: [[-0.9, 0.1], [0, -0.06], [0.9, 0.02]], size: 0.42 };
+    case "rows6": return {
+      off: [[-0.72, -0.36], [0, -0.48], [0.72, -0.42], [-0.72, 0.42], [0, 0.3], [0.72, 0.36]].slice(0, count) as [number, number][],
+      size: 0.38,
+    };
+    case "rows8": return {
+      off: [[-0.9, -0.33], [-0.3, -0.45], [0.3, -0.42], [0.9, -0.36], [-0.9, 0.39], [-0.3, 0.27], [0.3, 0.3], [0.9, 0.36]]
+        .slice(0, count) as [number, number][],
+      size: 0.27,
+    };
+    case "arc4": return { off: [[-0.96, 0.42], [-0.32, 0.1], [0.32, -0.12], [0.96, -0.26]], size: 0.33 };
     case "n64": return { off: [[0.3, 0.38], [-0.62, -0.3]], size: 0.46 };
     case "four":
     default: return { off: [[0, 0.62], [0.62, 0], [-0.62, 0], [0, -0.62]], size: 0.38 };
@@ -138,9 +208,18 @@ export const newControlId = (prefix: string) => `${prefix}-${Date.now().toString
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
-/** The built-in layout for an input system, generated for the layer's actual aspect (w/h). */
-export function defaultLayout(inputSystem: string, bucket: Bucket, aspect: number): Layout {
-  const spec = touchSpecFor(inputSystem);
+/** Floating zones: [x, y, w, h] as layer fractions. The left zone stops short of the right-hand buttons. */
+const ZONES: Record<Bucket, { left: [number, number, number, number]; right: [number, number, number, number]; leftWide: [number, number, number, number] }> = {
+  landscape: { left: [0.2, 0.62, 0.4, 0.68], right: [0.8, 0.62, 0.4, 0.68], leftWide: [0.33, 0.62, 0.62, 0.68] },
+  portrait: { left: [0.25, 0.8, 0.5, 0.36], right: [0.75, 0.8, 0.5, 0.36], leftWide: [0.34, 0.8, 0.64, 0.36] },
+};
+
+/**
+ * The built-in layout for an input system, generated for the layer's actual aspect (w/h). `specIn` = a
+ * preset's spec (touchPresets.ts); absent = the system's standard spec.
+ */
+export function defaultLayout(inputSystem: string, bucket: Bucket, aspect: number, specIn?: SystemTouchSpec): Layout {
+  const spec = specIn || touchSpecFor(inputSystem);
   const A: Anchors = bucket === "landscape" && spec.marginsOnly ? { ...LANDSCAPE, ...LANDSCAPE_MARGINS } : bucket === "landscape" ? LANDSCAPE : PORTRAIT;
   const a = aspect > 0 ? aspect : bucket === "landscape" ? 16 / 9 : 9 / 16;
   // One min-unit as a fraction of the layer's width / height.
@@ -148,11 +227,24 @@ export function defaultLayout(inputSystem: string, bucket: Bucket, aspect: numbe
   const uy = a >= 1 ? 1 : a;
   const controls: Control[] = [];
 
-  // Movement: the primary control gets the prime spot; when both exist the other sits below/inside.
-  const stickAt = spec.primary === "stick" || !spec.dpad ? A.primary : A.secondary;
-  const dpadAt = spec.primary === "dpad" || !spec.leftStick ? A.primary : A.secondary;
-  if (spec.dpad) controls.push({ id: "dpad", kind: "dpad", x: dpadAt[0], y: dpadAt[1], s: dpadAt[2] });
-  if (spec.leftStick) controls.push({ id: "lstick", kind: "stick", x: stickAt[0], y: stickAt[1], s: stickAt[2], output: "left", floating: false, deadzone: 0.12 });
+  // Movement: the primary control gets the prime spot; when both exist the other sits below/inside. A
+  // left ZONE replaces both — it IS the movement (a paddle, a trackball, twin-stick move, gun aim).
+  const Z = ZONES[bucket];
+  if (spec.leftZone) {
+    // Nothing on the right but one or two buttons → the zone can take the wider share of the screen.
+    const wide = !spec.rightZone && !spec.rightStick && spec.faceButtons.length <= 2;
+    const [x, y, w, h] = wide ? Z.leftWide : Z.left;
+    controls.push({ id: "lzone", kind: "region", label: spec.leftZone.label, output: spec.leftZone.output, deadzone: 0.08, x, y, w, h, s: 0.2, opacity: 0.35 });
+  } else {
+    const stickAt = spec.primary === "stick" || !spec.dpad ? A.primary : A.secondary;
+    const dpadAt = spec.primary === "dpad" || !spec.leftStick ? A.primary : A.secondary;
+    if (spec.dpad) controls.push({ id: "dpad", kind: "dpad", x: dpadAt[0], y: dpadAt[1], s: dpadAt[2], ...(spec.dpadWays === 4 ? { ways: 4 as const } : null) });
+    if (spec.leftStick) controls.push({ id: "lstick", kind: "stick", x: stickAt[0], y: stickAt[1], s: stickAt[2], output: "left", floating: false, deadzone: 0.12 });
+  }
+  if (spec.rightZone) {
+    const [x, y, w, h] = Z.right;
+    controls.push({ id: "rzone", kind: "region", label: spec.rightZone.label, output: spec.rightZone.output, deadzone: 0.08, x, y, w, h, s: 0.2, opacity: 0.35 });
+  }
 
   // Right side.
   const faceAt = spec.rightStick ? A.faceWithR : A.face;
@@ -173,11 +265,17 @@ export function defaultLayout(inputSystem: string, bucket: Bucket, aspect: numbe
   }
   const { off, size } = faceOffsets(spec.face, spec.faceButtons.length);
   const half = faceAt[2] / 2;
+  // A wide cluster (a row of three, two rows of four) can poke past the right edge on a narrow screen held
+  // upright: slide the whole cluster inward until its outermost button is fully on screen.
+  const btnR = (faceAt[2] * size * ux) / 2;
+  const used = spec.faceButtons.map((_, i) => off[i] || [0, 0]);
+  const maxX = used.length ? Math.max(...used.map((o) => faceAt[0] + o[0] * half * ux)) + btnR : 0;
+  const shiftX = Math.min(0, 0.995 - maxX);
   spec.faceButtons.forEach((b, i) => {
     const o = off[i] || [0, 0];
     controls.push({
       id: `face-${b.bit}`, kind: "button", label: b.label, bits: [b.bit], shape: "circle", mode: "press",
-      x: clamp01(faceAt[0] + o[0] * half * ux), y: clamp01(faceAt[1] + o[1] * half * uy), s: faceAt[2] * size,
+      x: clamp01(faceAt[0] + shiftX + o[0] * half * ux), y: clamp01(faceAt[1] + o[1] * half * uy), s: faceAt[2] * size,
     });
   });
 
@@ -189,21 +287,32 @@ export function defaultLayout(inputSystem: string, bucket: Bucket, aspect: numbe
   }
   if (spec.select) controls.push({ id: "select", kind: "button", label: spec.select, bits: ["SELECT"], shape: "pill", mode: "press", x: A.select[0], y: A.select[1], s: A.smallS });
   if (spec.start) controls.push({ id: "start", kind: "button", label: spec.start, bits: ["START"], shape: "pill", mode: "press", x: A.start[0], y: A.start[1], s: A.smallS });
+  // Pills sit beside Select/Start, centred on them: a pad-mode switch is pressed once, so it stays out of the
+  // thumbs' way. Above them when they're on the bottom edge (landscape); below when they're up between the
+  // shoulders (portrait), where the ☰ is just above.
+  (spec.pills || []).forEach((b, i, arr) => {
+    const step = A.smallS * 1.3 * ux;
+    const cx = (A.select[0] + A.start[0]) / 2 + (i - (arr.length - 1) / 2) * step;
+    controls.push({
+      id: `pill-${b.bit}`, kind: "button", label: b.label, bits: [b.bit], shape: "pill", mode: "press",
+      x: clamp01(cx), y: clamp01(A.select[1] + (A.select[1] > 0.8 ? -1 : 1) * A.smallS * 0.9 * uy), s: A.smallS,
+    });
+  });
   controls.push({ id: "menu", kind: "action", action: "menu", x: A.menu[0], y: A.menu[1], s: A.menuS });
 
   return { v: 1, controls, opacity: 0.7, idleFade: null, haptics: true, flashOnPress: true, slide: true };
 }
 
 /** Controls the editor can add for this system: every palette/face/shoulder bit not already on the layout, plus the generic kinds. */
-export function addableButtons(inputSystem: string, layout: Layout): FaceButton[] {
-  const spec = touchSpecFor(inputSystem);
+export function addableButtons(inputSystem: string, layout: Layout, specIn?: SystemTouchSpec): FaceButton[] {
+  const spec = specIn || touchSpecFor(inputSystem);
   const placed = new Set<string>();
   for (const c of layout.controls) if (c.kind === "button" && c.bits.length === 1) placed.add(c.bits[0]);
   const all: FaceButton[] = [...spec.faceButtons];
   for (const [bit, label] of Object.entries(spec.shoulders)) all.push({ bit: bit as BitName, label: label as string });
   if (spec.select) all.push({ bit: "SELECT", label: spec.select });
   if (spec.start) all.push({ bit: "START", label: spec.start });
-  all.push(...(spec.palette || []));
+  all.push(...(spec.pills || []), ...(spec.palette || []));
   const seen = new Set<string>();
   return all.filter((b) => !placed.has(b.bit) && !seen.has(b.bit) && (seen.add(b.bit), true));
 }
@@ -240,7 +349,7 @@ function sanitizeControl(raw: any): Control | null {
         mode: raw.mode === "toggle" || raw.mode === "turbo" ? raw.mode : "press",
       };
     }
-    case "dpad": return { ...base, kind: "dpad" };
+    case "dpad": return { ...base, kind: "dpad", ...(raw.ways === 4 ? { ways: 4 as const } : null) };
     case "stick": return { ...base, kind: "stick", output, floating: !!raw.floating, deadzone: num(raw.deadzone, 0, 0.6, 0.12) };
     case "region": return { ...base, kind: "region", output, w: num(raw.w, 0.05, 1, 0.4), h: num(raw.h, 0.05, 1, 0.5), deadzone: num(raw.deadzone, 0, 0.6, 0.12) };
     case "action": return ACTIONS.has(raw.action) ? { ...base, kind: "action", action: raw.action } : null;
@@ -264,6 +373,15 @@ export function sanitizeLayout(raw: any): Layout | null {
 }
 
 const KEY_RE = /^(sys:[a-z0-9]+|game:[a-z0-9]+\/.{1,200})\|(landscape|portrait)$/;
+const PICK_KEY_RE = /^(sys:[a-z0-9]+|game:[a-z0-9]+\/.{1,200})$/;
+const PICK_VALUE_RE = /^[a-z0-9-]{1,24}$/;
+/** Arcade picks are per game, so they accumulate — keep the newest this many (insertion order = pick order). */
+export const MAX_PICKS = 300;
+/**
+ * The server stores the blob verbatim but refuses one over 64 KB (APIController MaxSelfServiceSettingChars);
+ * a refused save would leave "saved on this device only" forever. Leave headroom for the JSON envelope.
+ */
+export const MAX_STORE_CHARS = 60 * 1024;
 
 export function parseStore(json: string | null | undefined): LayoutStore {
   const empty: LayoutStore = { v: 1, layouts: {} };
@@ -278,7 +396,12 @@ export function parseStore(json: string | null | undefined): LayoutStore {
     const l = sanitizeLayout(v);
     if (l) layouts[k] = l;
   }
-  return { v: 1, layouts };
+  const picks: Record<string, string> = {};
+  if (raw.picks && typeof raw.picks === "object") {
+    const ok = Object.entries(raw.picks).filter(([k, v]) => PICK_KEY_RE.test(k) && typeof v === "string" && PICK_VALUE_RE.test(v));
+    for (const [k, v] of ok.slice(-MAX_PICKS)) picks[k] = v as string;
+  }
+  return Object.keys(picks).length ? { v: 1, layouts, picks } : { v: 1, layouts };
 }
 
 /** Round geometry to 4 places on the way out — a stored blob of 0.1300000000000001s is just bigger. */
@@ -289,5 +412,33 @@ export function serializeStore(store: LayoutStore): string {
 export function withLayout(store: LayoutStore, key: string, layout: Layout | null): LayoutStore {
   const layouts = { ...store.layouts };
   if (layout) layouts[key] = layout; else delete layouts[key];
-  return { v: 1, layouts };
+  return store.picks && Object.keys(store.picks).length ? { v: 1, layouts, picks: store.picks } : { v: 1, layouts };
 }
+
+/** Set (or with null, clear) one pick. A re-pick moves to the end, so MAX_PICKS trims the stalest. */
+export function withPick(store: LayoutStore, key: string, presetId: string | null): LayoutStore {
+  const picks = { ...(store.picks || {}) };
+  delete picks[key];
+  if (presetId) picks[key] = presetId;
+  const kept = Object.entries(picks).slice(-MAX_PICKS);
+  return kept.length ? { v: 1, layouts: store.layouts, picks: Object.fromEntries(kept) } : { v: 1, layouts: store.layouts };
+}
+
+/**
+ * Serialize, dropping the OLDEST picks (never a layout — those are the player's work) until the blob fits
+ * the server's cap. Returns the store actually written, so the caller keeps what it sent.
+ */
+export function fitStore(store: LayoutStore): { store: LayoutStore; json: string } {
+  let cur = store;
+  let json = serializeStore(cur);
+  while (json.length > MAX_STORE_CHARS && cur.picks && Object.keys(cur.picks).length) {
+    const entries = Object.entries(cur.picks);
+    const kept = entries.slice(Math.max(1, Math.ceil(entries.length / 10)));
+    cur = kept.length ? { v: 1, layouts: cur.layouts, picks: Object.fromEntries(kept) } : { v: 1, layouts: cur.layouts };
+    json = serializeStore(cur);
+  }
+  return { store: cur, json };
+}
+
+/** True when the store holds nothing at all (the account copy can be cleared). */
+export const isEmptyStore = (s: LayoutStore) => !Object.keys(s.layouts).length && !Object.keys(s.picks || {}).length;

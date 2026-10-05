@@ -231,6 +231,14 @@ namespace MovieTheater.Db
         [MaxLength(20)]
         public string? Lane { get; set; }
 
+        /// <summary>The cabinet's player-1 control panel as the touch pad reads it — <c>kind/buttons[/sf]</c>,
+        /// e.g. <c>joy4/1</c> (Pac-Man), <c>joy8/6/sf</c> (Street Fighter II), <c>trackball/1</c>. Written from
+        /// MAME's -listxml by the <c>arcade-controls</c> CLI (MovieTheater/Arcade/ArcadeControlProfile.cs) for
+        /// the MAME-shortname systems (arcade, naomi, atomiswave); null = unknown, the pad shows its standard
+        /// 4-button layout. Rides the room descriptor as <c>controls</c>.</summary>
+        [MaxLength(24)]
+        public string? Controls { get; set; }
+
         // ─── RetroAchievements support flags (arcade-ra-enrich; nullable/false = not yet checked or none).
         // Drive the card/version icons: 🏆 achievements, 🥇 high-score leaderboards, ⏱ speedrun (time)
         // leaderboards. Matched by normalized Title against RA's per-console game list, so they are

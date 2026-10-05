@@ -173,6 +173,10 @@ namespace MovieTheater.Db.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<string>("Controls")
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
                     b.Property<double?>("CommunityRating")
                         .HasColumnType("float");
 

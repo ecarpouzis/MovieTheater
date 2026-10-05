@@ -1861,7 +1861,7 @@ namespace MovieTheater.Controllers
             }
 
             var warmCodec = codec == "" ? "av1" : codec;
-            return Json(ToJson(descriptor, discCount, competitive, await ComputeWarmKbpsAsync(userId.Value, request.DeviceId, warmCodec)));
+            return Json(ToJson(descriptor, discCount, competitive, await ComputeWarmKbpsAsync(userId.Value, request.DeviceId, warmCodec), game.Controls));
         }
 
         // ── Durable saves (docs/arcade-saves-plan.md) ────────────────────────────────────────────────
@@ -3380,7 +3380,7 @@ namespace MovieTheater.Controllers
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&ctrlscheme=" + joinCtrlScheme };
 
             return Json(ToJson(descriptor, discCount, session.IsCompetitive,
-                await ComputeWarmKbpsAsync(userId.Value, deviceId, roomCodec == "" ? "av1" : roomCodec)));
+                await ComputeWarmKbpsAsync(userId.Value, deviceId, roomCodec == "" ? "av1" : roomCodec), game.Controls));
         }
 
         /// <summary>
@@ -3445,7 +3445,7 @@ namespace MovieTheater.Controllers
             if (claimCtrlScheme != "")
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&ctrlscheme=" + claimCtrlScheme };
 
-            return Json(ToJson(descriptor, discCount, session.IsCompetitive));
+            return Json(ToJson(descriptor, discCount, session.IsCompetitive, controls: game.Controls));
         }
 
         public class ReleaseSeatRequest { public int Slot { get; set; } }
@@ -3720,7 +3720,7 @@ namespace MovieTheater.Controllers
             return Math.Clamp(warm, 0, 40000);
         }
 
-        private static object ToJson(ArcadeJoinDescriptor d, int discCount = 0, bool competitive = false, int warmKbps = 0) => new
+        private static object ToJson(ArcadeJoinDescriptor d, int discCount = 0, bool competitive = false, int warmKbps = 0, string? controls = null) => new
         {
             roomCode = d.RoomCode,
             wsUrl = d.WsUrl,
@@ -3743,6 +3743,10 @@ namespace MovieTheater.Controllers
             // Whether the worker has this room's rewind ring armed. Per-CORE, so only the server can
             // answer it; the room page offers the Rewind control on this and nothing else.
             canRewind = d.CanRewind,
+            // The cabinet's control profile (ArcadeGame.Controls: "joy4/1", "joy8/6/sf", …) — the touch pad's
+            // arcade presets and which one a room starts on (src/ui/src/Pages/Arcade/touch/touchPresets.ts).
+            // Absent for consoles and for arcade games the arcade-controls CLI hasn't profiled.
+            controls = string.IsNullOrEmpty(controls) ? null : controls,
             // Warm-start hint for THIS device (P10): the shim copies it onto its INIT_WEBRTC. Absent = cold.
             warmKbps = warmKbps > 0 ? warmKbps : (int?)null,
             discCount,

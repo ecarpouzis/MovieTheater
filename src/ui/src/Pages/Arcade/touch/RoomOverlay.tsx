@@ -23,6 +23,8 @@ export interface RoomOverlayProps {
   touchShown: boolean;
   onTouchPref: (p: TouchPref) => void;
   onEditTouch: () => void;
+  /** The layout-preset switcher (TouchPresetPicker), drawn in the touch section above "Edit layout". */
+  touchLayouts?: ReactNode;
   allowed: Record<Exclude<RoomAction, "menu">, boolean>;
   onAction: (action: RoomAction, engaged: boolean) => void;
   onControllers: () => void;
@@ -87,6 +89,7 @@ export default function RoomOverlay(p: RoomOverlayProps) {
                     ? (p.touchShown ? "Shown — they hide when you pick up a controller." : "Hidden — they show on a touch screen when no controller is in use.")
                     : p.touchPref === "on" ? "Always shown." : "Never shown."}
                 </p>
+                {p.touchLayouts}
                 <button type="button" className="room-overlay__row" onClick={() => { p.setOpen(false); p.onEditTouch(); }}>
                   ✎ Edit layout — move, resize, hide, add buttons
                 </button>

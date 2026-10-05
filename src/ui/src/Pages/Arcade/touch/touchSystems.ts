@@ -15,8 +15,19 @@ import { PAD } from "../cloudRetroClient";
 
 export type BitName = keyof typeof PAD;
 
-/** How the face buttons are arranged. Offsets are in cluster units (−1..1 of the cluster's half-size). */
-export type FaceArrangement = "one" | "two" | "three" | "four" | "six" | "gc" | "n64";
+/**
+ * How the face buttons are arranged. Offsets are in cluster units (−1..1 of the cluster's half-size).
+ * "six" is the Sega order (the FIRST three are the bottom row: A B C under X Y Z); "rows6"/"rows8" are
+ * the arcade-panel order (the first half is the TOP row: punches over kicks); "row3" is a gently arched
+ * row of three; "arc4" is the Neo Geo pad's rising arc (A low-left … D high-right).
+ */
+export type FaceArrangement = "one" | "two" | "three" | "four" | "six" | "gc" | "n64" | "row3" | "rows6" | "rows8" | "arc4";
+
+/** Where a floating stick zone sends its deflection (same meaning as a stick control's output). */
+export type ZoneOutput = "left" | "right" | "dpad";
+
+/** A big floating-stick zone that replaces a fixed control: touching anywhere in it spawns a stick under the thumb. */
+export interface ZoneSpec { output: ZoneOutput; label: string }
 
 export interface FaceButton { bit: BitName; label: string }
 
@@ -35,33 +46,46 @@ export interface SystemTouchSpec {
   start?: string;
   /** Extra bits the editor offers in "+ Add" but the default layout leaves off. */
   palette?: FaceButton[];
+  /** 4 = the d-pad only ever presses one direction (Pac-Man's 4-way joystick: a sloppy diagonal can't stall a turn). */
+  dpadWays?: 4 | 8;
+  /** The left movement control is a floating zone instead (a paddle, a trackball, twin-stick movement, a light-gun aim). */
+  leftZone?: ZoneSpec;
+  /** The right side is a floating zone (twin-stick fire). */
+  rightZone?: ZoneSpec;
+  /** Small pills along the bottom centre beside Select/Start (a pad-mode switch, …). */
+  pills?: FaceButton[];
   /** Keep everything in the screen margins — the picture itself is a touchscreen (DS/3DS). */
   marginsOnly?: boolean;
   /** v1: the touch pad isn't auto-shown here (mouse/keyboard systems) — it can still be turned on. */
   noAutoShow?: boolean;
 }
 
-const fb = (bit: BitName, label: string): FaceButton => ({ bit, label });
+export const fb = (bit: BitName, label: string): FaceButton => ({ bit, label });
 
-const TWO_NINTENDO: FaceButton[] = [fb("B", "B"), fb("A", "A")];
-const FOUR_NINTENDO: FaceButton[] = [fb("B", "B"), fb("A", "A"), fb("Y", "Y"), fb("X", "X")];
-const FOUR_PLAYSTATION: FaceButton[] = [fb("B", "✕"), fb("A", "○"), fb("Y", "□"), fb("X", "△")];
-const FOUR_XBOX: FaceButton[] = [fb("B", "A"), fb("A", "B"), fb("Y", "X"), fb("X", "Y")];
-// Genesis Plus GX: Y→A, B→B, A→C; L→X, X→Y, R→Z; Select→Mode.
-const THREE_SEGA: FaceButton[] = [fb("Y", "A"), fb("B", "B"), fb("A", "C")];
-const SEGA_SIX_TOP: FaceButton[] = [fb("L", "X"), fb("X", "Y"), fb("R", "Z")];
-// FBNeo's generic order: B=1, A=2, Y=3, X=4, L=5, R=6.
-const FOUR_ARCADE: FaceButton[] = [fb("B", "1"), fb("A", "2"), fb("Y", "3"), fb("X", "4")];
-const ARCADE_56: FaceButton[] = [fb("L", "5"), fb("R", "6")];
+export const TWO_NINTENDO: FaceButton[] = [fb("B", "B"), fb("A", "A")];
+export const FOUR_NINTENDO: FaceButton[] = [fb("B", "B"), fb("A", "A"), fb("Y", "Y"), fb("X", "X")];
+export const FOUR_PLAYSTATION: FaceButton[] = [fb("B", "✕"), fb("A", "○"), fb("Y", "□"), fb("X", "△")];
+export const FOUR_XBOX: FaceButton[] = [fb("B", "A"), fb("A", "B"), fb("Y", "X"), fb("X", "Y")];
+// Genesis Plus GX: Y→A, B→B, A→C; L→X, X→Y, R→Z; Select→Mode (libretro.c, DEVICE_PAD6B — and a
+// RETRO_DEVICE_JOYPAD port is auto 2B|3B|6B, so six-button games see a six-button pad with no option set).
+export const THREE_SEGA: FaceButton[] = [fb("Y", "A"), fb("B", "B"), fb("A", "C")];
+export const SEGA_SIX_TOP: FaceButton[] = [fb("L", "X"), fb("X", "Y"), fb("R", "Z")];
+// Arcade buttons 1–6 on BOTH arcade cores we run: FBNeo's classic RetroPad (FIRE01..06 = B, A, Y, X, R, L —
+// libretro/FBNeo src/burner/libretro/retro_input.cpp, RETRO_DEVICE_ID_FIREnn under RETROPAD_CLASSIC, which is
+// what a RETRO_DEVICE_JOYPAD port becomes) and flycast's NAOMI/Atomiswave pad ("Button 5" = R, "Button 6" = L,
+// shell/libretro/libretro.cpp). Note 5 = R and 6 = L — the reverse of what you'd guess. The per-game arcade
+// presets (touchPresets.ts) carry the full map, including FBNeo's Street Fighter rows.
+export const FOUR_ARCADE: FaceButton[] = [fb("B", "1"), fb("A", "2"), fb("Y", "3"), fb("X", "4")];
+export const ARCADE_56: FaceButton[] = [fb("R", "5"), fb("L", "6")];
 
-const retro2 = (over: Partial<SystemTouchSpec> = {}): SystemTouchSpec => ({
+export const retro2 = (over: Partial<SystemTouchSpec> = {}): SystemTouchSpec => ({
   dpad: true, leftStick: false, primary: "dpad", rightStick: false,
   face: "two", faceButtons: TWO_NINTENDO, shoulders: {}, select: "Select", start: "Start", ...over,
 });
 
-const L3R3: FaceButton[] = [fb("L3", "L3"), fb("R3", "R3")];
+export const L3R3: FaceButton[] = [fb("L3", "L3"), fb("R3", "R3")];
 
-const HEAVY: SystemTouchSpec = {
+export const HEAVY: SystemTouchSpec = {
   dpad: true, leftStick: true, primary: "stick", rightStick: "stick",
   face: "four", faceButtons: FOUR_XBOX,
   shoulders: { L: "LB", R: "RB", L2: "LT", R2: "RT" }, select: "Back", start: "Start", palette: L3R3,

@@ -66,12 +66,18 @@ export function hitTest(layout: Layout, size: LayerSize, x: number, y: number, f
 const bit = (name: keyof typeof PAD) => 1 << PAD[name];
 
 /**
- * 8-way d-pad from a vector. Inside 25 % of the radius is neutral (a resting thumb presses nothing);
+ * D-pad from a vector (8-way unless `ways` = 4). Inside 25 % of the radius is neutral (a resting thumb presses nothing);
  * outside, each of the eight 45° sectors maps to its direction — so a diagonal is as easy to hit as a
  * cardinal, like a real cross pad rocked onto its corner.
  */
-export function dpadMask(dx: number, dy: number, r: number): number {
+export function dpadMask(dx: number, dy: number, r: number, ways: 4 | 8 = 8): number {
   if (Math.hypot(dx, dy) < r * 0.25) return 0;
+  // 4-way (Pac-Man, Donkey Kong): the dominant axis wins outright, so a thumb drifting off the cardinal
+  // never presses a diagonal — on a 4-way cabinet a diagonal is "no new direction", which stalls a turn.
+  if (ways === 4) {
+    if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? bit("RIGHT") : bit("LEFT");
+    return dy > 0 ? bit("DOWN") : bit("UP");
+  }
   const sector = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)); // −4..4, 0 = right, 2 = down
   switch ((sector + 8) % 8) {
     case 0: return bit("RIGHT");
@@ -134,7 +140,7 @@ export function compose(layout: Layout, size: LayerSize, state: EngineState): Fr
         break;
       case "dpad": {
         const { cx, cy, r } = geom(c, size);
-        out.mask |= dpadMask(f.x - cx, f.y - cy, r);
+        out.mask |= dpadMask(f.x - cx, f.y - cy, r, c.ways === 4 ? 4 : 8);
         break;
       }
       case "stick": {

@@ -16,7 +16,8 @@ import {
   ACTION_LABEL, addableButtons, defaultLayout, newControlId,
   type AxisPush, type Bucket, type ButtonControl, type Control, type Layout, type RoomAction, type StickOutput,
 } from "./touchLayout";
-import { bitChoicesFor, type BitName } from "./touchSystems";
+import { bitChoicesFor, type BitName, type SystemTouchSpec } from "./touchSystems";
+import type { TouchPreset } from "./touchPresets";
 import type { LayerSize } from "./touchEngine";
 import "./touch.css";
 
@@ -31,6 +32,11 @@ export interface TouchLayoutEditorProps {
   systemName: string;
   /** Present when the room has a game the layout could be saved for. */
   gameTitle?: string | null;
+  /** The room's built-in presets — "Start from" rebuilds the draft from any of them. */
+  presets: TouchPreset[];
+  startPresetId: string;
+  /** The spec whose buttons "+ Add" offers (the preset on screen: a Genesis 6-button preset offers Mode, …). */
+  paletteSpec: SystemTouchSpec;
   onSave: (layout: Layout, scope: SaveScope) => void;
   /** Delete this game's override (falls back to the system layout). */
   onUseSystemLayout?: () => void;
@@ -62,8 +68,10 @@ type Drag =
   | { kind: "resize"; id: string; pid: number; cx: number; cy: number; d0: number; s0: number; w0: number; h0: number };
 
 export default function TouchLayoutEditor({
-  initial, source, size, bucket, inputSystem, systemName, gameTitle, onSave, onUseSystemLayout, onCancel,
+  initial, source, size, bucket, inputSystem, systemName, gameTitle, presets, startPresetId, paletteSpec,
+  onSave, onUseSystemLayout, onCancel,
 }: TouchLayoutEditorProps) {
+  const [startFrom, setStartFrom] = useState(() => (presets.some((x) => x.id === startPresetId) ? startPresetId : presets[0]?.id));
   const [draft, setDraft] = useState<Layout>(() => structuredClone(initial));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [panel, setPanel] = useState<"none" | "add" | "settings" | "save">("none");
@@ -74,7 +82,7 @@ export default function TouchLayoutEditor({
 
   const selected = draft.controls.find((c) => c.id === selectedId) || null;
   const bitChoices = useMemo(() => bitChoicesFor(inputSystem), [inputSystem]);
-  const addable = useMemo(() => addableButtons(inputSystem, draft), [inputSystem, draft]);
+  const addable = useMemo(() => addableButtons(inputSystem, draft, paletteSpec), [inputSystem, draft, paletteSpec]);
 
   function update(next: Layout) { setDraft(next); setDirty(true); }
   function patchControl(id: string, patch: Partial<Control>) {
@@ -317,9 +325,17 @@ export default function TouchLayoutEditor({
           <div className="tle-row">Vibrate on press (Android)
             <Switch size="small" checked={draft.haptics} onChange={(haptics) => update({ ...draft, haptics })} />
           </div>
+          <label className="tle-row">Start over from
+            <Select size="small" value={startFrom} onChange={(v: string) => setStartFrom(v)}
+              options={presets.map((x) => ({ value: x.id, label: x.name }))} />
+          </label>
           <div className="tle-actions">
-            <Button size="small" onClick={() => { update(defaultLayout(inputSystem, bucket, size.w / Math.max(1, size.h))); setSelectedId(null); }}>
-              Reset to default
+            <Button size="small" onClick={() => {
+              const preset = presets.find((x) => x.id === startFrom);
+              update(defaultLayout(inputSystem, bucket, size.w / Math.max(1, size.h), preset?.spec));
+              setSelectedId(null);
+            }}>
+              Start over
             </Button>
             {source === "game" && onUseSystemLayout && (
               <Button size="small" onClick={onUseSystemLayout}>Use the {systemName} layout</Button>
