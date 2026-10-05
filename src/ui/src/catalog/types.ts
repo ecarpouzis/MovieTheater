@@ -77,6 +77,8 @@ export interface CardItem {
   count?: number;
   /** Set when this card is a group's REPRESENTATIVE (the flat views' "one per group" mode); opening it opens the group. */
   group?: CardGroup;
+  /** How far through the viewer is (0–100) — Explore's resume rows draw it as a bar under the cover. */
+  progress?: number;
   /** The section's own row, untouched — for the section's modal, never for the views. */
   raw: unknown;
 }
@@ -342,14 +344,59 @@ export interface CatalogSource {
   onOpenGroup?(group: CardGroup, groupBy: string): void;
 }
 
+/**
+ * The module shapes an Explore page is built from. Each has a different JOB, and a landing alternates
+ * them so no two neighbours read alike:
+ *  - `strip`   one horizontal row of covers (a shelf)
+ *  - `resume`  a strip with a progress bar under each cover (keep watching / recently played)
+ *  - `wall`    a dense mosaic, clamped to whole rows (what just arrived)
+ *  - `grid`    captioned covers, clamped to whole rows (a seeded handful)
+ *  - `ranked`  a numbered top ten — the numerals are real ranks
+ *  - `focus`   one person / franchise / console / artist: a name plate beside their works
+ *  - `columns` three short text-dense lists side by side
+ *  - `doors`   the ways into the library: tabs of facet axes, each a grid of tiles that open a browse
+ */
+export type ExploreRailKind = "strip" | "resume" | "wall" | "grid" | "ranked" | "focus" | "columns" | "doors";
+
+/** A tile on a `doors` rail: one facet value, with a few covers to show what is behind it. */
+export interface ExploreDoor {
+  key: string;
+  label: string;
+  count?: number;
+  /** The section's own browse URL with this facet applied. */
+  href: string;
+  covers: { src: string; hue?: number }[];
+}
+
+export interface ExploreDoorAxis {
+  key: string;
+  label: string;
+  /** Undefined while the axis has not loaded (the tab still draws). */
+  doors?: ExploreDoor[];
+}
+
+export interface ExploreColumn {
+  key: string;
+  title: string;
+  items: CardItem[];
+  more?: { href: string };
+}
+
 /** One rail on a section's Explore tab. */
 export interface ExploreRail {
   key: string;
   title: string;
-  kind: "strip" | "wall" | "grid";
+  kind: ExploreRailKind;
   items: CardItem[];
   /** Where "more" leads (a browse URL with the rail's filter applied). */
   more?: { href: string };
+  /** `focus`: the name plate. */
+  focus?: { name: string; kicker?: string; blurb?: string; count?: number; href?: string };
+  /** `columns`: the lists. */
+  columns?: ExploreColumn[];
+  /** `doors`: the axes, and which one is showing. */
+  axes?: ExploreDoorAxis[];
+  activeAxis?: string;
 }
 
 /** The envelope every section's Explore endpoint returns, already mapped onto cards by its source. */

@@ -1,8 +1,12 @@
 import {
   BOARDGAMES_MORE,
   BOARDGAMES_UNSEEDED_RAILS,
+  boardgameDoors,
   boardgameFacetHref,
+  boardgameHeroDetail,
   composeBoardgamesExplore,
+  pickDesigner,
+  plainDescription,
   designerShelves,
   isBaseGame,
   seededShuffle,
@@ -24,23 +28,44 @@ describe("Pages/BoardGames/boardgamesExplore — the Boardgames Explore composit
       facetsById: facets([[1, ["Reiner Knizia"]], [2, ["Reiner Knizia"]], [3, ["Uwe Rosenberg"]]]),
       seed: 9,
     });
-    expect(out.rails.map((r) => r.key)).toEqual(["top", "recent", "designers", "random"]);
+    // The fixture rows carry no player counts, play times or mechanics, so every doors axis comes up
+    // empty and the module drops rather than drawing empty tabs.
+    expect(out.rails.map((r) => r.key)).toEqual(["top", "recent", "random"]);
     expect(out.spotlight).toHaveLength(5);
+    expect(out.rails.find((r) => r.key === "top")!.kind).toBe("ranked");
+    // An empty shelf: the doors compute to nothing and drop; nothing else has anything to say.
     expect(composeBoardgamesExplore({ games: [] }).rails).toHaveLength(0);
   });
 
-  it("routes a designer GROUP card to the browse with the designer facet", () => {
-    const out = composeBoardgamesExplore({
-      games,
-      facetsById: facets([[1, ["Reiner Knizia"]], [2, ["Reiner Knizia"]]]),
-      seed: 1,
-    });
-    const card = out.rails.find((r) => r.key === "designers")!.items[0];
-    expect(card.kind).toBe("person");
-    expect(card.groupKey).toBe("Reiner Knizia");
-    expect(card.count).toBe(2);
-    expect(boardgameFacetHref("designer", card.groupKey!)).toBe("/boardgames?f=designer%3AReiner+Knizia");
+  it("a designer with three or more games gets the focus plate, linked to the designer facet", () => {
+    const fx = facets([[1, ["Reiner Knizia"]], [2, ["Reiner Knizia"]], [3, ["Reiner Knizia"]], [4, ["Uwe Rosenberg"]]]);
+    const out = composeBoardgamesExplore({ games, facetsById: fx, seed: 1 });
+    const focus = out.rails.find((r) => r.key === "designer")!;
+    expect(focus.kind).toBe("focus");
+    expect(focus.focus).toMatchObject({ name: "Reiner Knizia", count: 3, href: "/boardgames?f=designer%3AReiner+Knizia" });
+    expect(pickDesigner(games, facets([[1, ["Pair"]], [2, ["Pair"]]]), 1)).toBeNull();
     expect(BOARDGAMES_MORE.designers).toBe("/boardgames?group=designer");
+  });
+
+  it("the doors: player counts as a ladder, play-time bands as the t= range, covers never repeated", () => {
+    const table = [
+      game(1, { minPlayers: 1, maxPlayers: 4, playingTime: 20 }), game(2, { minPlayers: 2, maxPlayers: 4, playingTime: 45 }),
+      game(3, { minPlayers: 2, maxPlayers: 5, playingTime: 90 }), game(4, { minPlayers: 1, maxPlayers: 2, playingTime: 25 }),
+      game(5, { minPlayers: 3, maxPlayers: 6, playingTime: 200 }), game(6, { minPlayers: 2, maxPlayers: 4, playingTime: 30 }),
+    ];
+    const players = boardgameDoors("players", table, undefined);
+    expect(players.map((d) => d.key)).toEqual(["2", "3", "4"]);
+    expect(players[0].href).toBe("/boardgames?f=players%3A2");
+    const firstCovers = new Set(players[0].covers.map((c) => c.src));
+    expect(players[1].covers.some((c) => !firstCovers.has(c.src))).toBe(true);
+    const time = boardgameDoors("time", table, undefined);
+    expect(time[0]).toMatchObject({ key: "-30", href: "/boardgames?t=-30", count: 3 });
+  });
+
+  it("the marquee reads the BGG blurb as plain text, with players, time and weight", () => {
+    expect(plainDescription("Build a farm.&#10;&#10;Players take turns &mdash; and more text that runs past forty characters here.")).toBe("Players take turns \u2014 and more text that runs past forty characters here.");
+    const d = boardgameHeroDetail({ kind: "boardgame", id: 1, key: "boardgame:1", title: "X", aspect: 1, imageUrl: "", raw: game(1, { minPlayers: 2, maxPlayers: 4, playingTime: 60, averageWeight: 2.46 }) })!;
+    expect(d.meta).toEqual(["2011", "2\u20134 players", "60 min", "Weight 2.5 of 5"]);
   });
 
   it("a designer with one game is a credit, not a shelf", () => {

@@ -107,22 +107,23 @@ const member = { username: "reader", hasPassword: true, booksAccess: true, books
 const LONG = { timeout: 15000 };
 
 describe("Books — Explore, Shelf, Novels, Kids", () => {
-  it("/books/explore: the hero headlines the SERIES, rails map More → onto Books URLs, a series card opens the series modal, Shuffle pushes a seed", async () => {
+  it("/books/explore: the hero headlines the SERIES, rails map See all onto Books URLs, a series card opens the series modal, Shuffle pushes a seed", async () => {
     renderAt("/books/explore", member);
     expect(await screen.findByRole("heading", { level: 1 }, LONG)).toHaveTextContent("Hellboy");
     expect(screen.getByText("Dark Horse", { selector: ".xp-hero-pub" })).toBeInTheDocument();
     expect(screen.getByText("Horror")).toBeInTheDocument(); // the hero tags read off the raw tagsCsv, category stripped
     expect(screen.getByText("Highest-rated series")).toBeInTheDocument();
     expect(screen.getByText("The latest 1 arrivals")).toBeInTheDocument();
-    expect(screen.getAllByText("More →")).toHaveLength(2); // both rails map (shelf-by-series, recently added)
+    expect(screen.getAllByText("See all")).toHaveLength(2); // both rails map (shelf-by-series, recently added)
 
-    fireEvent.click(screen.getByText("Shuffle ↻"));
+    // The marquee's own Shuffle (the first on the page) re-rolls the whole payload.
+    fireEvent.click(screen.getAllByText("Shuffle")[0]);
     await waitFor(() => expect(screen.getByTestId("loc").textContent).toMatch(/\/books\/explore\?seed=\d+/));
     expect(calls.filter((c) => c.url.includes("/explore?")).length).toBe(2);
 
     fireEvent.click(await screen.findByRole("button", { name: "Hellboy" }));
     expect(screen.getByTestId("loc").textContent).toContain("series=9");
-    fireEvent.click(screen.getAllByText("More →")[1]);
+    fireEvent.click(screen.getAllByText("See all")[1]);
     expect(screen.getByTestId("loc").textContent).toBe("/books?sort=relevance");
   }, 20000);
 

@@ -15,19 +15,24 @@
  * so the modal, its Back-closes behaviour and its links are identical). A GROUP card (a franchise)
  * goes to the browse with `f=franchise:<value>` — the rail URL contract.
  */
-import { useQuery } from "@tanstack/react-query";
-import { Suspense, lazy, useCallback, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Suspense, lazy, useCallback, useMemo, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import ExploreTab from "../../catalog/explore/ExploreTab";
 import { FACET_GROUP_KINDS } from "../../catalog/explore/mapExplore";
 import { useExploreDepth } from "../../catalog/explore/useNearViewport";
 import type { CardGroup, CardItem } from "../../catalog/types";
 import useChannelLineup from "../Tv/useChannelLineup";
+import type { HeroDetail } from "../../catalog/explore/HeroSpotlight";
 import {
+  MOVIE_DOOR_AXES,
   MOVIES_MORE,
   MOVIES_UNSEEDED_RAILS,
   composeMoviesExplore,
   moviesFacetHref,
+  pickColumnDecade,
+  pickColumnMood,
+  type MovieDoorAxis,
   type ContinueRow,
   type FranchiseGroupRow,
   type FranchiseRailDto,
@@ -39,14 +44,32 @@ import type { MovieCardRow } from "../../catalog/sources/moviesSource";
 const MovieModal = lazy(() => import("./MovieModal"));
 
 const RAIL_SUBTITLES: Record<string, string> = {
-  continue: "Pick up where you stopped — on any device",
-  "now-on-tv": "The channels are running right now",
-  "for-you": "From your ratings and what you have watched",
-  suggested: "From your friends · newest first",
+  continue: "Pick up where you stopped, on any device",
+  "now-on-tv": "Every channel is playing something right now",
+  "ways-in": "Start from a feeling, a place or a decade",
+  "for-you": "Based on your ratings and what you've watched",
+  suggested: "Newest first",
   recent: "The newest arrivals on the shelf",
-  franchises: "A whole franchise, in one place",
-  random: "A shuffled handful of the library — roll again for more",
+  top: "By IMDb rating, across every film on the shelf",
+  quick: "Three short lists, rolled fresh with every shuffle",
+  franchises: "A whole franchise in one place",
+  random: "A shuffled handful of the library",
 };
+
+/** The few fields of `/API/GetMovie` / `/API/GetSeries`'s `data` the marquee reads. */
+interface TitleDetail { plot?: string | null; plotFull?: string | null; runtime?: string | null; genre?: string | null; director?: string | null; rating?: string | null; releaseDate?: string | null }
+
+/** A title's detail as the marquee's lines: the plot, the facts, the genres. */
+export function titleHeroDetail(item: CardItem, d: TitleDetail): HeroDetail {
+  // OMDB-era rows spell "unknown" as the literal "N/A" — treat it as absent, never print it.
+  const known = (v: string | null | undefined) => (v && v.trim() && v.trim().toUpperCase() !== "N/A" ? v.trim() : null);
+  const year = item.year ?? (d.releaseDate ? new Date(d.releaseDate).getFullYear() : undefined);
+  const director = known(d.director);
+  const meta = [year ? String(year) : null, known(d.runtime), known(d.rating), director ? `Directed by ${director}` : null]
+    .filter((x): x is string => !!x);
+  const tags = (known(d.genre) ?? "").split(",").map((g) => g.trim()).filter(Boolean);
+  return { synopsis: known(d.plot) || known(d.plotFull), meta, tags };
+}
 
 const TYPES = "Movies,Series";
 /** The head of the viewer's Suggested list the rail shows (the endpoint materializes every id it is given). */
@@ -82,6 +105,7 @@ export interface MoviesExplorePageProps {
 
 export default function MoviesExplorePage({ userData, setUserData }: MoviesExplorePageProps) {
   const history = useHistory();
+  const queryClient = useQueryClient();
   const location = useLocation();
   const seed = readSeed(location.search);
   const deep = useExploreDepth();
@@ -146,6 +170,86 @@ export default function MoviesExplorePage({ userData, setUserData }: MoviesExplo
     enabled: deep && !!anchor?.id,
     staleTime: 30 * 60 * 1000,
   });
+  // "Ways in": only the ACTIVE axis is fetched — each is a cached group index the warmer keeps hot.
+  const [doorAxis, setDoorAxis] = useState<MovieDoorAxis>("genre");
+  const doors = useQuery({
+    queryKey: ["movies", "explore", "doors", doorAxis],
+    queryFn: ({ signal }) => getJson<{ groups?: FranchiseGroupRow[] }>(
+      `/API/BrowseGroups?types=${TYPES}&groupBy=${doorAxis}&groupsSkip=0&groupsTop=${doorAxis === "decade" ? 12 : 30}&perGroupTop=8&sort=imdb${doorAxis === "decade" ? "" : "&headsBy=count"}`, signal),
+    enabled: deep,
+    staleTime: 30 * 60 * 1000,
+  });
+  // Every axis already fetched this visit, so flipping back to a tab draws at once.
+  const doorRows = useMemo(() => {
+    const out: Partial<Record<MovieDoorAxis, FranchiseGroupRow[]>> = {};
+    for (const a of MOVIE_DOOR_AXES) {
+      const cached = queryClient.getQueryData<{ groups?: FranchiseGroupRow[] }>(["movies", "explore", "doors", a.key]);
+      if (cached?.groups) out[a.key] = cached.groups;
+    }
+    return out;
+    // doors.data is the trigger: a new axis landing re-reads the cache.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doors.data, queryClient]);
+  const directors = useQuery({
+    queryKey: ["movies", "explore", "directors"],
+    queryFn: ({ signal }) => getJson<{ groups?: FranchiseGroupRow[] }>(
+      `/API/BrowseGroups?types=${TYPES}&groupBy=director&headsBy=count&groupsSkip=0&groupsTop=40&perGroupTop=14&sort=imdb`, signal),
+    enabled: deep,
+    staleTime: 30 * 60 * 1000,
+  });
+  const top = useQuery({
+    queryKey: ["movies", "explore", "top"],
+    queryFn: ({ signal }) => getJson<{ movies?: MovieCardRow[] }>(`/API/Browse?types=Movies&sort=imdb&page=1&pageSize=40`, signal),
+    enabled: deep,
+    staleTime: 30 * 60 * 1000,
+  });
+  const critics = useQuery({
+    queryKey: ["movies", "explore", "critics"],
+    queryFn: ({ signal }) => getJson<{ movies?: MovieCardRow[] }>(`/API/Browse?types=${TYPES}&sort=rt&page=1&pageSize=40`, signal),
+    enabled: deep,
+    staleTime: 30 * 60 * 1000,
+  });
+  const facets = useQuery({
+    queryKey: ["movies", "explore", "facets"],
+    queryFn: ({ signal }) => getJson<{ tags?: Record<string, { value: string; count: number }[]> }>(`/API/BrowseFacets?types=${TYPES}`, signal),
+    enabled: deep,
+    staleTime: 60 * 60 * 1000,
+  });
+  const decadeKey = pickColumnDecade(seed || 1);
+  const decade = useQuery({
+    queryKey: ["movies", "explore", "decade", decadeKey],
+    queryFn: ({ signal }) => getJson<{ movies?: MovieCardRow[] }>(
+      `/API/Browse?types=${TYPES}&sort=imdb&yearMin=${decadeKey}&yearMax=${Number(decadeKey) + 9}&page=1&pageSize=6`, signal),
+    enabled: deep,
+    staleTime: 30 * 60 * 1000,
+  });
+  const moodKey = pickColumnMood(facets.data?.tags?.mood, seed || 1);
+  const mood = useQuery({
+    queryKey: ["movies", "explore", "mood", moodKey],
+    queryFn: ({ signal }) => getJson<{ movies?: MovieCardRow[] }>(
+      `/API/Browse?types=${TYPES}&sort=imdb&tag=${encodeURIComponent(`mood:${moodKey}`)}&page=1&pageSize=6`, signal),
+    enabled: deep && !!moodKey,
+    staleTime: 30 * 60 * 1000,
+  });
+  // The marquee's detail (plot, runtime, director, genres) for the ONE pick that is up.
+  const [heroPick, setHeroPick] = useState<{ kind: string; id: number } | null>(null);
+  const heroInfo = useQuery({
+    queryKey: ["movies", "explore", "hero", heroPick?.kind, heroPick?.id],
+    queryFn: ({ signal }) => getJson<{ data?: TitleDetail }>(
+      heroPick!.kind === "series" ? `/API/GetSeries?id=${heroPick!.id}` : `/API/GetMovie?id=${heroPick!.id}`, signal),
+    enabled: !!heroPick && heroPick.kind !== "misc",
+    staleTime: 60 * 60 * 1000,
+  });
+  const onHeroActive = useCallback((item: CardItem) => {
+    setHeroPick((cur) => (cur && cur.id === item.id && cur.kind === item.kind ? cur : { kind: item.kind, id: item.id }));
+  }, []);
+  const heroDetail = useCallback((item: CardItem): HeroDetail | null => {
+    const d = queryClient.getQueryData<{ data?: TitleDetail }>(["movies", "explore", "hero", item.kind, item.id])?.data;
+    return d ? titleHeroDetail(item, d) : null;
+    // heroInfo.data is the trigger: the detail landing re-renders the marquee with it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heroInfo.data, queryClient]);
+
   // The homepage rail's lineup, reused verbatim (localStorage-seeded, user-independent). No poll:
   // Explore is a landing, not the guide.
   const { lineup } = useChannelLineup({ poll: false, enabled: streaming }) as { lineup: LineupChannel[] | null };
@@ -159,8 +263,16 @@ export default function MoviesExplorePage({ userData, setUserData }: MoviesExplo
     franchiseGroups: franchises.data?.groups,
     franchiseRun: franchiseRun.data,
     lineup: streaming ? lineup : null,
+    doors: doorRows,
+    doorAxis,
+    directors: directors.data?.groups,
+    top: top.data?.movies,
+    critics: critics.data?.movies,
+    decade: decade.data?.movies?.length ? { decade: decadeKey, rows: decade.data.movies } : null,
+    mood: moodKey && mood.data?.movies?.length ? { mood: moodKey, rows: mood.data.movies } : null,
     seed: seed || undefined,
-  }), [random.data, recent.data, continueWatching.data, recommendations.data, suggested.data, franchises.data, franchiseRun.data, lineup, streaming, seed]);
+  }), [random.data, recent.data, continueWatching.data, recommendations.data, suggested.data, franchises.data, franchiseRun.data, lineup, streaming, seed,
+    doorRows, doorAxis, directors.data, top.data, critics.data, decade.data, decadeKey, mood.data, moodKey]);
 
   const ready = !random.isPending || !!random.data;
   const onSeed = useCallback((next: number) => {
@@ -192,6 +304,7 @@ export default function MoviesExplorePage({ userData, setUserData }: MoviesExplo
     history.replace({ pathname: loc.pathname, search: s ? `?${s}` : "" });
   }, [history]);
 
+  const onAxis = useCallback((_rail: string, axis: string) => setDoorAxis(axis as MovieDoorAxis), []);
   const open = titleFromSearch(location.search);
   const browse = useCallback((mode: string, value: string) => {
     const href = moviesFacetHref(mode, value);
@@ -211,7 +324,10 @@ export default function MoviesExplorePage({ userData, setUserData }: MoviesExplo
         moreHref={(href) => href || null}
         unseededRails={MOVIES_UNSEEDED_RAILS}
         railSubtitle={(rail) => RAIL_SUBTITLES[rail.key]}
-        heroEyebrow="From the library"
+        heroEyebrow="Tonight's feature"
+        heroDetail={heroDetail}
+        onHeroActive={onHeroActive}
+        onAxis={onAxis}
         emptyMessage="Nothing to explore yet — the library is still being catalogued."
       />
       {/* Explore holds no list of its own, so the three list-editing hooks the browse hands the

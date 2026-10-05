@@ -78,13 +78,16 @@ namespace MovieTheater.Controllers
             string? groupBy = null, string? types = null, string? mode = null, string? value = null,
             string? sort = null, int seed = 0,
             int groupsSkip = 0, int groupsTop = 0, int perGroupTop = 0, int perGroupSkip = 0,
-            string? singleGroupKey = null, [FromQuery] BrowseFilterQuery? fq = null, [FromQuery(Name = "for")] string? forUser = null, CancellationToken ct = default)
+            string? singleGroupKey = null, string? headsBy = null, [FromQuery] BrowseFilterQuery? fq = null, [FromQuery(Name = "for")] string? forUser = null, CancellationToken ct = default)
         {
             var by = BrowseGroups.NormalizeGroupBy(groupBy);
             var scope = await ResolveGroupScopeAsync(types, mode, value, BrowseFilter.From(fq), forUser, ct);
             if (scope == null) return BadRequest(new { Message = $"Unknown title type '{types}'" });
             var index = await CachedGroupIndexAsync(scope, by, ct);
-            var heads = index.Heads;
+            // headsBy=count: the biggest groups first (Explore's "ways in" and its director spotlight want
+            // the library's heavyweights, not the first fifty names in the alphabet). Reorders the cached
+            // heads only — the index itself is shared and never mutated.
+            var heads = BrowseGroups.OrderHeads(index.Heads, headsBy);
 
             IReadOnlyList<BrowseGroups.Head> page;
             if (!string.IsNullOrWhiteSpace(singleGroupKey))

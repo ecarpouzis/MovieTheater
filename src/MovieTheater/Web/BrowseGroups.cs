@@ -147,6 +147,15 @@ namespace MovieTheater.Web
 
         public static int CapPerGroupTop(int requested) => requested <= 0 ? DefaultPerGroupTop : Math.Min(requested, MaxPerGroupTop);
 
+        /// <summary>
+        /// The heads in the order a page is cut from: the index's own order, or — <c>headsBy=count</c> —
+        /// biggest first with the label as the stable tiebreaker. A new list; the cached heads are shared.
+        /// </summary>
+        public static IReadOnlyList<Head> OrderHeads(IReadOnlyList<Head> heads, string? headsBy) =>
+            string.Equals(headsBy, "count", StringComparison.OrdinalIgnoreCase)
+                ? heads.OrderByDescending(h => h.Count).ThenBy(h => h.Label, StringComparer.OrdinalIgnoreCase).ThenBy(h => h.Key, StringComparer.Ordinal).ToList()
+                : heads;
+
         public static string DecadeKey(int year) => (year / 10 * 10).ToString();
         public static string DecadeLabel(string key) => key + "s";
 

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import type { ExploreResponse } from "../types";
 import ExploreTab from "./ExploreTab";
@@ -51,11 +51,14 @@ describe("catalog/explore/ExploreTab", () => {
     expect(screen.getByText("Fresh arrivals")).toBeInTheDocument();
     expect(screen.queryByText("Nothing")).toBeNull();
 
-    // The top-series rail: Shuffle + More; the wall: neither Shuffle (unseeded) nor More (unmapped).
-    expect(screen.getAllByText("Shuffle ↻")).toHaveLength(1);
-    fireEvent.click(screen.getByText("Shuffle ↻"));
+    // The top-series rail: Shuffle + See all; the wall: neither Shuffle (unseeded) nor See all (unmapped).
+    // (The marquee carries a Shuffle of its own.)
+    const rail = screen.getByText("Highest-rated series").closest("section")!;
+    expect(within(rail).getAllByText("Shuffle")).toHaveLength(1);
+    expect(within(screen.getByText("Fresh arrivals").closest("section")!).queryByText("Shuffle")).toBeNull();
+    fireEvent.click(within(rail).getByText("Shuffle"));
     expect(onSeed).toHaveBeenCalledWith(expect.any(Number));
-    fireEvent.click(screen.getByText("More →"));
+    fireEvent.click(screen.getByText("See all"));
     expect(screen.getByTestId("loc")).toHaveTextContent("/books?view=shelf&group=series");
 
     // A series card goes to onOpenGroup as a one-card group; an issue card to onOpen.
@@ -64,9 +67,40 @@ describe("catalog/explore/ExploreTab", () => {
     fireEvent.click(screen.getByRole("button", { name: "Hellboy #10" }));
     expect(onOpen).toHaveBeenCalledWith(expect.objectContaining({ id: 10 }));
 
-    // The hero thumb strip switches the spotlight.
+    // The marquee's Up next queue switches the spotlight.
     fireEvent.click(screen.getByRole("tab", { name: "Hellboy #8" }));
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Hellboy #8");
+  });
+
+  it("draws each module shape: ranked, focus, columns and doors (a doors tab reports the axis)", () => {
+    const onAxis = vi.fn();
+    const shapes: ExploreResponse = {
+      spotlight: [],
+      rails: [
+        { key: "top", title: "Top ten", kind: "ranked", items: [card(1), card(2)] },
+        { key: "who", title: "A closer look", kind: "focus", items: [card(3)], focus: { name: "Mike Mignola", count: 40, href: "/books?f=creator:Mignola" } },
+        { key: "quick", title: "Quick picks", kind: "columns", items: [card(4)], columns: [{ key: "a", title: "Short reads", items: [card(4)] }] },
+        { key: "ways", title: "Ways in", kind: "doors", items: [], activeAxis: "genre", axes: [
+          { key: "genre", label: "Genre", doors: [{ key: "horror", label: "Horror", count: 12, href: "/books?f=genre:Horror", covers: [{ src: "x" }] }] },
+          { key: "decade", label: "Decade" },
+        ] },
+      ],
+    };
+    render(
+      <MemoryRouter initialEntries={["/books/explore"]}>
+        <Probe />
+        <ExploreTab data={shapes} onOpen={() => {}} onAxis={onAxis} eagerRails={9} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("button", { name: "1. Hellboy #1" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Mike Mignola" })).toBeInTheDocument();
+    expect(screen.getByText("Short reads")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "Decade" }));
+    expect(onAxis).toHaveBeenCalledWith("ways", "decade");
+    fireEvent.click(screen.getByRole("button", { name: "Horror, 12 titles" }));
+    expect(screen.getByTestId("loc")).toHaveTextContent("/books?f=genre:Horror");
+    fireEvent.click(screen.getByText("See all 40"));
+    expect(screen.getByTestId("loc")).toHaveTextContent("/books?f=creator:Mignola");
   });
 
   it("shows the loading, error and empty states", () => {

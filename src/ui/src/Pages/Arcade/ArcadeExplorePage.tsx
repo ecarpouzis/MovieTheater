@@ -12,8 +12,8 @@
  * live). A LIVE ROOM card joins the room instead. A console card lands on `/arcade?f=system:<value>`,
  * which is the console carousel's own facet.
  */
-import { useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import ExploreTab from "../../catalog/explore/ExploreTab";
 import { FACET_GROUP_KINDS } from "../../catalog/explore/mapExplore";
@@ -22,10 +22,15 @@ import type { CardGroup, CardItem } from "../../catalog/types";
 import type { ArcadeGameRow } from "../../catalog/sources/arcadeSource";
 import { MovieAPI } from "../../MovieAPI";
 import {
+  ARCADE_DOOR_AXES,
   ARCADE_UNSEEDED_RAILS,
+  POCKET_SYSTEMS,
+  arcadeHeroDetail,
   arcadeSystemHref,
   composeArcadeExplore,
   pickSpinSystem,
+  type ArcadeDoorAxis,
+  type ArcadeGroupRow,
   type LiveRoomRow,
   type RecentlyPlayedRow,
   type SystemFacetRow,
@@ -34,12 +39,12 @@ import {
 import "./ArcadePage.css";
 
 const RAIL_SUBTITLES: Record<string, string> = {
-  recent: "Your own save activity — pick up where you stopped",
-  live: "Rooms open right now; a card drops you straight in",
+  recent: "Your own saves, newest first",
+  live: "Rooms open right now. A card drops you straight in",
+  "ways-in": "Start from a console, a genre or how many are playing",
   trophies: "The games you last unlocked something in",
-  systems: "Every console on the shelf",
-  top: "The best-rated games in the catalog",
-  spin: "One console, chosen by the roll — shuffle for another",
+  top: "By rating, across every console",
+  quick: "Three short lists, rolled fresh with every shuffle",
 };
 
 export function readSeed(search: string): number {
@@ -58,6 +63,7 @@ async function json<T>(res: Response, fallback: T): Promise<T> {
 
 export default function ArcadeExplorePage({ userData }: { userData?: unknown }) {
   const history = useHistory();
+  const queryClient = useQueryClient();
   const location = useLocation();
   const seed = readSeed(location.search);
   const deep = useExploreDepth();
@@ -97,6 +103,40 @@ export default function ArcadeExplorePage({ userData }: { userData?: unknown }) 
     staleTime: 30 * 60 * 1000,
   });
 
+  // "Ways in": only the ACTIVE axis is fetched (each a cached group index on the server).
+  const [doorAxis, setDoorAxis] = useState<ArcadeDoorAxis>("system");
+  const doors = useQuery({
+    queryKey: ["arcade", "explore", "doors", doorAxis],
+    queryFn: async ({ signal }) => {
+      const r = await fetch(`/API/Arcade/GameGroups?groupBy=${doorAxis}&groupsSkip=0&groupsTop=40&perGroupTop=8&sort=rating`, { signal });
+      return json<{ groups?: ArcadeGroupRow[] }>(r, {});
+    },
+    enabled: deep,
+    staleTime: 30 * 60 * 1000,
+  });
+  const doorRows = useMemo(() => {
+    const out: Partial<Record<ArcadeDoorAxis, ArcadeGroupRow[]>> = {};
+    for (const a of ARCADE_DOOR_AXES) {
+      const cached = queryClient.getQueryData<{ groups?: ArcadeGroupRow[] }>(["arcade", "explore", "doors", a.key]);
+      if (cached?.groups) out[a.key] = cached.groups;
+    }
+    return out;
+    // doors.data is the trigger: a new axis landing re-reads the cache.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doors.data, queryClient]);
+  const onAxis = useCallback((_rail: string, axis: string) => setDoorAxis(axis as ArcadeDoorAxis), []);
+
+  // The three quick-pick columns: a page of the best-rated in each slice; the seed picks six.
+  const column = (key: string, params: Record<string, string | number>) => ({
+    queryKey: ["arcade", "explore", "column", key],
+    queryFn: async ({ signal }: { signal: AbortSignal }) => json<{ games?: ArcadeGameRow[] }>(await MovieAPI.getArcadeGames({ sort: "rating", page: 1, pageSize: 30, ...params }, signal), {}),
+    enabled: deep,
+    staleTime: 30 * 60 * 1000,
+  });
+  const coop = useQuery(column("coop", { maxPlayers: 2 }));
+  const pocket = useQuery(column("pocket", { system: POCKET_SYSTEMS }));
+  const coinop = useQuery(column("coinop", { system: "arcade" }));
+
   const data = useMemo(() => composeArcadeExplore({
     recent: recent.data,
     rooms: rooms.data,
@@ -104,8 +144,13 @@ export default function ArcadeExplorePage({ userData }: { userData?: unknown }) 
     systems: filters.data?.systems,
     top: top.data?.games,
     spin: spinSystem && spin.data?.games?.length ? { system: spinSystem, games: spin.data.games } : null,
+    doors: doorRows,
+    doorAxis,
+    coop: coop.data?.games,
+    pocket: pocket.data?.games,
+    coinop: coinop.data?.games,
     seed,
-  }), [recent.data, rooms.data, trophies.data, filters.data, top.data, spin.data, spinSystem, seed]);
+  }), [recent.data, rooms.data, trophies.data, filters.data, top.data, spin.data, spinSystem, seed, doorRows, doorAxis, coop.data, pocket.data, coinop.data]);
 
   const onSeed = useCallback((next: number) => {
     const p = new URLSearchParams(location.search);
@@ -138,7 +183,9 @@ export default function ArcadeExplorePage({ userData }: { userData?: unknown }) 
         moreHref={(href) => href || null}
         unseededRails={ARCADE_UNSEEDED_RAILS}
         railSubtitle={(rail) => RAIL_SUBTITLES[rail.key]}
-        heroEyebrow="On the shelf"
+        heroEyebrow="Insert coin"
+        heroDetail={arcadeHeroDetail}
+        onAxis={onAxis}
         emptyMessage="The arcade has nothing ingested yet."
       />
     </div>

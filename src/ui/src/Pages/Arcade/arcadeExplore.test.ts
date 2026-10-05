@@ -1,6 +1,9 @@
 import {
   ARCADE_MORE,
   ARCADE_UNSEEDED_RAILS,
+  arcadeDoorHref,
+  arcadeDoors,
+  arcadeHeroDetail,
   arcadeSystemHref,
   composeArcadeExplore,
   pickSpinSystem,
@@ -9,7 +12,7 @@ import {
   toRoomCard,
   toSystemCard,
 } from "./arcadeExplore";
-import type { ArcadeGameRow } from "../../catalog/sources/arcadeSource";
+import { toArcadeCard, type ArcadeGameRow } from "../../catalog/sources/arcadeSource";
 
 const game = (over: Partial<ArcadeGameRow> = {}): ArcadeGameRow =>
   ({ key: "n64|GoldenEye", title: "007 - GoldenEye", system: "n64", year: 1997, rating: 92, hasBoxArt: true, artId: 7, versions: [{ id: 7, label: "USA" }, { id: 8, label: "Japan" }], ...over } as ArcadeGameRow);
@@ -34,11 +37,40 @@ describe("Pages/Arcade/arcadeExplore — the Arcade Explore composition (R9 S7)"
       spin: { system: "ps2", games: [game({ key: "ps2|ico", system: "ps2" })] },
       seed: 4,
     }, NOW);
-    expect(out.rails.map((r) => r.key)).toEqual(["recent", "live", "trophies", "systems", "top", "spin"]);
+    expect(out.rails.map((r) => r.key)).toEqual(["recent", "live", "ways-in", "top", "spin", "trophies"]);
     expect(out.spotlight).toHaveLength(5);
+    // The top shelf is the ranked ten; the spin is a focus plate on its console, counted from the facets.
+    expect(out.rails.find((r) => r.key === "top")!.kind).toBe("ranked");
+    const spin = out.rails.find((r) => r.key === "spin")!;
+    expect(spin.kind).toBe("focus");
+    expect(spin.focus).toMatchObject({ count: 900, href: "/arcade?f=system%3Aps2" });
+    // Cards name their console rather than printing its code.
+    expect(out.rails.find((r) => r.key === "top")!.items[0].subtitle).not.toBe("n64");
 
+    // With nothing loaded, only the doors' tabs remain (skeletons until an axis lands).
     const bare = composeArcadeExplore({});
-    expect(bare.rails).toHaveLength(0);
+    expect(bare.rails.map((r) => r.key)).toEqual(["ways-in"]);
+  });
+
+  it("the doors: consoles biggest first with their names, players kept as a ladder, each a lobby facet", () => {
+    const g = (key: string, totalItems: number) => ({ key, label: key, totalItems, items: [game({ key: `${key}|x` })] });
+    const systems = arcadeDoors("system", [g("n64", 300), g("ps2", 900), g("vb", 2)]);
+    expect(systems.map((d) => d.key)).toEqual(["ps2", "n64"]);
+    expect(systems[0].label).not.toBe("ps2");
+    expect(systems[0].href).toBe("/arcade?f=system%3Aps2");
+    expect(arcadeDoors("players", [g("1", 50), g("2", 90)]).map((d) => d.key)).toEqual(["1", "2"]);
+    expect(arcadeDoorHref("genre", "Puzzle")).toBe("/arcade?f=genre%3APuzzle");
+  });
+
+  it("the quick columns shuffle their slice by the seed, and the marquee reads the game's own blurb", () => {
+    const rows = Array.from({ length: 12 }, (_, i) => game({ key: `k${i}` }));
+    const a = composeArcadeExplore({ coop: rows, seed: 1 }).rails.find((r) => r.key === "quick")!;
+    expect(a.columns![0].items).toHaveLength(6);
+    const detail = arcadeHeroDetail({ ...toArcadeCard(game()), raw: { ...game(), summary: "A heist.\n\n* Bullet", developer: "Rare", genres: "Action; Shooter", maxPlayers: 4 } })!;
+    expect(detail.synopsis).toBe("A heist.");
+    expect(detail.tags).toEqual(["Action", "Shooter"]);
+    expect(detail.meta).toContain("Rare");
+    expect(detail.meta).toContain("Up to 4 players");
   });
 
   // ── Ported from `ArcadeBrowse.test.js`' RecentlyPlayed block, which pinned the LOBBY strip ──

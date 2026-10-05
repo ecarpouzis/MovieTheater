@@ -350,5 +350,16 @@ namespace MovieTheater.Tests
             Assert.Equal("Bond", BrowseGroups.FranchiseLabel("bond"));
             Assert.Equal("1980s", BrowseGroups.DecadeLabel(BrowseGroups.DecadeKey(1987)));
         }
+
+        [Fact]
+        public void OrderHeads_by_count_is_biggest_first_with_a_stable_tiebreak_and_leaves_the_index_alone()
+        {
+            var heads = new List<BrowseGroups.Head> { new("a", "Alpha", 2), new("c", "Charlie", 9), new("b", "Bravo", 9), new("d", "Delta", 5) };
+            var byCount = BrowseGroups.OrderHeads(heads, "count");
+            Assert.Equal(new[] { "b", "c", "d", "a" }, byCount.Select(h => h.Key));
+            Assert.Equal(new[] { "a", "c", "b", "d" }, heads.Select(h => h.Key));
+            Assert.Same(heads, BrowseGroups.OrderHeads(heads, null));
+            Assert.Same(heads, BrowseGroups.OrderHeads(heads, "alpha"));
+        }
     }
 }

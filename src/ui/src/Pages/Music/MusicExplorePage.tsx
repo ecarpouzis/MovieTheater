@@ -13,27 +13,26 @@
  * lands on `/music?f=genre:<name>`.
  */
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import ExploreTab from "../../catalog/explore/ExploreTab";
 import { FACET_GROUP_KINDS } from "../../catalog/explore/mapExplore";
 import { useExploreDepth } from "../../catalog/explore/useNearViewport";
 import type { CardGroup, CardItem } from "../../catalog/types";
 import { MovieAPI } from "../../MovieAPI";
-import { MUSIC_UNSEEDED_RAILS, composeMusicExplore, musicArtistHref, musicGenreHref, type MusicPlaylistRow } from "./musicExplore";
+import { MUSIC_UNSEEDED_RAILS, albumHeroDetail, composeMusicExplore, musicArtistHref, musicGenreHref, type MusicPlaylistRow } from "./musicExplore";
 import { useMusicShelf } from "./useMusicShelf";
 import "./MusicPage.css";
 
 const RAIL_SUBTITLES: Record<string, string> = {
+  "recently-played": "What anyone here put on last",
   favourites: "Everything you have hearted, newest first",
+  "ways-in": "Start from a sound, a decade or an artist",
   "just-added": "The most recent arrivals in the library",
-  artists: "The names with the most on the shelf",
-  genres: "What the collection is made of",
-  // Named for what each number IS. Popularity is an audience count, not a verdict, and the two
-  // rails sat under one "Best on the shelf" heading until 2026-08-31.
-  popular: "Most widely heard, well beyond this house",
-  best: "Best regarded, where anyone has said so",
-  random: "A shuffled handful — roll again for another",
+  // Named for what the number IS: popularity is an audience count, not a verdict.
+  popular: "By Last.fm listeners, well beyond this house",
+  quick: "Three short lists, rolled fresh with every shuffle",
+  random: "A shuffled handful of the shelf",
 };
 
 /**
@@ -73,12 +72,16 @@ export default function MusicExplorePage({ userData }: { userData?: { hasPasswor
     staleTime: 5 * 60 * 1000,
   });
 
+  // The doors are cut from the shelf already in memory, so a tab switch is a re-render, not a fetch.
+  const [doorAxis, setDoorAxis] = useState("genre");
+  const onAxis = useCallback((_rail: string, axis: string) => setDoorAxis(axis), []);
   const data = useMemo(() => composeMusicExplore({
     albums: shelf.albums,
     artists: shelf.artists,
     playlists: playlists.data,
+    doorAxis,
     seed,
-  }), [shelf.albums, shelf.artists, playlists.data, seed]);
+  }), [shelf.albums, shelf.artists, playlists.data, doorAxis, seed]);
 
   const onSeed = useCallback((next: number) => {
     const p = new URLSearchParams(location.search);
@@ -118,7 +121,9 @@ export default function MusicExplorePage({ userData }: { userData?: { hasPasswor
         moreHref={(href) => href || null}
         unseededRails={MUSIC_UNSEEDED_RAILS}
         railSubtitle={(rail) => RAIL_SUBTITLES[rail.key]}
-        heroEyebrow="From the library"
+        heroEyebrow="On the turntable"
+        heroDetail={albumHeroDetail}
+        onAxis={onAxis}
         emptyMessage="Nothing on the shelf yet."
       />
     </div>

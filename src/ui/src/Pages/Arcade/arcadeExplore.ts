@@ -8,12 +8,15 @@
  * | `live` "Live rooms" | `/API/Arcade/Rooms` — a card joins the room rather than opening the game |
  * | `trophies` | `/API/Arcade/Trophies/Mine` — the games you last unlocked something in |
  * | `systems` | `/API/Arcade/Filters` — GROUP cards, routed by `f=system:<value>` |
- * | spotlight + `top` | `/API/Arcade/Games?sort=rating` |
- * | `spin` | one system picked by the seed, its best games — "random system", as a shelf |
+ * | `top` (ranked ten) + spotlight | `/API/Arcade/Games?sort=rating` — the ten, then a seeded handful of the next thirty |
+ * | `ways-in` | `/API/Arcade/GameGroups?groupBy=system|genre|players&perGroupTop=3` — the active tab only |
+ * | `spin` | one system picked by the seed, its best games — a FOCUS plate on the console |
+ * | `quick` | three columns: couch co-op (`maxPlayers=2`), pocket-sized (the handhelds), coin-op (`system=arcade`) |
  */
-import { exploreRail, exploreResponse, groupCard } from "../../catalog/explore/composeExplore";
+import { exploreColumn, exploreColumns, exploreDoors, exploreFocus, exploreRail, exploreResponse, groupCard, seededShuffle, distinctCovers } from "../../catalog/explore/composeExplore";
 import { facetHref } from "../../catalog/rail/facetUrl";
-import type { CardItem, ExploreResponse } from "../../catalog/types";
+import type { CardItem, ExploreDoor, ExploreResponse } from "../../catalog/types";
+import type { HeroDetail } from "../../catalog/explore/HeroSpotlight";
 import { ARCADE_ASPECT, coverUrl, toArcadeCard, type ArcadeGameRow } from "../../catalog/sources/arcadeSource";
 import { hueOf } from "../../catalog/sources/hue";
 import { systemLabel } from "./arcadeSystems";
@@ -45,17 +48,70 @@ export interface ArcadeExploreInput {
   systems?: SystemFacetRow[];
   top?: ArcadeGameRow[];
   spin?: { system: string; games: ArcadeGameRow[] } | null;
+  /** "Ways in": each axis's groups as they load (`/API/Arcade/GameGroups`). */
+  doors?: Partial<Record<ArcadeDoorAxis, ArcadeGroupRow[]>>;
+  doorAxis?: ArcadeDoorAxis;
+  /** The quick-pick columns, each a page of the best-rated in its slice (shuffled by the seed). */
+  coop?: ArcadeGameRow[];
+  pocket?: ArcadeGameRow[];
+  coinop?: ArcadeGameRow[];
   seed?: number;
+}
+
+export interface ArcadeGroupRow { key: string; label?: string; totalItems: number; items?: ArcadeGameRow[] }
+
+export const ARCADE_DOOR_AXES = [
+  { key: "system", label: "Console" },
+  { key: "genre", label: "Genre" },
+  { key: "players", label: "Players" },
+] as const;
+export type ArcadeDoorAxis = (typeof ARCADE_DOOR_AXES)[number]["key"];
+
+/** The handhelds the "Pocket-sized" column draws from (`system=` takes a comma list). */
+export const POCKET_SYSTEMS = "gb,gbc,gba,gg,nds,psp,ngpc,lynx,wsc";
+const DOORS_TAKE = 18;
+const DOOR_MIN = 5;
+
+/** Where a door leads: the lobby with exactly that facet (the console carousel IS the system facet). */
+export function arcadeDoorHref(axis: string, key: string): string {
+  return axis === "system" ? arcadeSystemHref(key) : facetHref("/arcade", [[axis, key]]);
+}
+
+export function arcadeDoors(axis: string, rows: readonly ArcadeGroupRow[]): ExploreDoor[] {
+  const list = rows.filter((g) => g.key && (g.totalItems ?? 0) >= DOOR_MIN);
+  // Players is a ladder (1, 2, 3-4…) — keep the server's order; everything else biggest first.
+  const ordered = (axis === "players" ? list : list.slice().sort((a, b) => b.totalItems - a.totalItems)).slice(0, DOORS_TAKE);
+  const covers = distinctCovers(ordered, (g) => (g.items ?? []).map(toArcadeCard).map((c) => ({ src: c.imageThumbUrl ?? c.imageUrl, hue: c.hue })));
+  return ordered.map((g, i) => ({
+    key: g.key,
+    label: axis === "system" ? systemLabel(g.key) : (g.label || g.key),
+    count: g.totalItems,
+    href: arcadeDoorHref(axis, g.key),
+    covers: covers[i],
+  }));
+}
+
+/** A game's own row as the marquee's lines: its blurb, the console and the maker, its genres. */
+export function arcadeHeroDetail(item: CardItem): HeroDetail | null {
+  const g = (item.raw ?? null) as (ArcadeGameRow & { summary?: string | null; developer?: string | null; genres?: string | null }) | null;
+  if (!g || typeof g !== "object") return null;
+  // The LaunchBox summaries carry marketing bullet lists after the prose — the first paragraph is the blurb.
+  const synopsis = (g.summary ?? "").split(/\n\s*\n|\n\*/)[0].trim() || null;
+  const meta = [g.system ? systemLabel(g.system) : null, g.year ? String(g.year) : null, g.developer || null,
+    g.maxPlayers && g.maxPlayers > 1 ? `Up to ${g.maxPlayers} players` : null].filter((x): x is string => !!x);
+  const tags = (g.genres ?? "").split(/[;,]/).map((t) => t.trim()).filter(Boolean);
+  return { synopsis, meta, tags, subtitle: null };
 }
 
 export const ARCADE_SPOTLIGHT_SIZE = 5;
 const TROPHIES_TAKE = 12;
-const SYSTEMS_TAKE = 18;
 
 export const ARCADE_MORE = {
   live: "/arcade",
   systems: "/arcade",
   top: "/arcade?sort=rating",
+  coop: "/arcade?f=players%3A2&sort=rating",
+  pocket: "/arcade?sort=rating",
 };
 
 /** `/arcade?f=system:ps2` — the console carousel IS this facet, so the link lands exactly on it. */
@@ -85,7 +141,7 @@ export function timeAgo(iso: string | null | undefined, nowMs = Date.now()): str
  */
 export function toRecentCard(row: RecentlyPlayedRow, nowMs?: number): CardItem | null {
   if (!row?.game?.key) return null;
-  const base = toArcadeCard(row.game);
+  const base = toExploreGameCard(row.game);
   const id = row.playedVersionId ?? base.id;
   return { ...base, id, key: `game:${id}:recent`, label: timeAgo(row.lastPlayedUtc, nowMs) || base.label, raw: row.game };
 }
@@ -152,24 +208,52 @@ export function pickSpinSystem(systems: readonly SystemFacetRow[] | undefined, s
   return list[Math.abs(seed || 1) % list.length].value;
 }
 
+/** A lobby card with its console NAMED ("Super Nintendo", not "snes") — Explore is read, not scanned. */
+export function toExploreGameCard(row: ArcadeGameRow): CardItem {
+  const card = toArcadeCard(row);
+  return row.system ? { ...card, subtitle: systemLabel(row.system) } : card;
+}
+
+/** Six of a column's page, shuffled by the seed so every roll shows a different handful of the best. */
+function columnPick(rows: readonly ArcadeGameRow[] | undefined, seed: number, salt: number): CardItem[] {
+  return seededShuffle(rows ?? [], seed + salt).slice(0, 6).map(toExploreGameCard);
+}
+
 export function composeArcadeExplore(input: ArcadeExploreInput, nowMs?: number): ExploreResponse {
   const top = input.top ?? [];
-  const faces = new Map<string, ArcadeGameRow>();
-  for (const g of top) if (g.system && !faces.has(g.system)) faces.set(g.system, g);
-  const spotlight = top.slice(0, ARCADE_SPOTLIGHT_SIZE).map(toArcadeCard);
+  const seed = input.seed ?? 1;
+  // The ten are the ranked module; the marquee rotates a seeded handful of the NEXT best, so the two
+  // never show the same game and every Shuffle brings a new feature.
+  const pool = top.length >= 10 + ARCADE_SPOTLIGHT_SIZE ? top.slice(10) : top;
+  const spotlight = seededShuffle(pool, seed).slice(0, ARCADE_SPOTLIGHT_SIZE).map(toExploreGameCard);
   const spin = input.spin;
+  const spinCount = spin ? input.systems?.find((x) => x.value === spin.system)?.count : undefined;
+  const doorAxes = ARCADE_DOOR_AXES.map((a) => {
+    const rows = input.doors?.[a.key];
+    return { key: a.key, label: a.label, doors: rows ? arcadeDoors(a.key, rows) : undefined };
+  });
 
   return exploreResponse(spotlight, [
     exploreRail("recent", "Recently played", "strip", (input.recent ?? []).map((r) => toRecentCard(r, nowMs))),
     exploreRail("live", "Live rooms", "strip", (input.rooms ?? []).map(toRoomCard), ARCADE_MORE.live),
-    exploreRail("trophies", "Where you last earned something", "strip", (input.trophies ?? []).slice(0, TROPHIES_TAKE).map(toTrophyCard)),
-    exploreRail("systems", "Pick a console", "strip", (input.systems ?? []).slice(0, SYSTEMS_TAKE).map((s) => toSystemCard(s, faces)), ARCADE_MORE.systems),
-    exploreRail("top", "Best on the shelf", "grid", top.slice(ARCADE_SPOTLIGHT_SIZE).map(toArcadeCard), ARCADE_MORE.top),
+    exploreDoors("ways-in", "Ways in", doorAxes, input.doorAxis),
+    exploreRail("top", "The ten best-rated", "ranked", top.slice(0, 10).map(toExploreGameCard), ARCADE_MORE.top),
     spin
-      ? exploreRail("spin", `Spin the shelf: ${systemLabel(spin.system)}`, "grid", spin.games.map(toArcadeCard), arcadeSystemHref(spin.system))
+      ? exploreFocus(
+          "spin",
+          "Spin the shelf",
+          { name: systemLabel(spin.system), count: spinCount, blurb: "One console, chosen by the roll. Its best-rated games first.", href: arcadeSystemHref(spin.system) },
+          spin.games.map(toExploreGameCard),
+        )
       : null,
+    exploreColumns("quick", "Quick picks", [
+      exploreColumn("coop", "Couch co-op", columnPick(input.coop, seed, 3), ARCADE_MORE.coop),
+      exploreColumn("pocket", "Pocket-sized", columnPick(input.pocket, seed, 5), ARCADE_MORE.pocket),
+      exploreColumn("coinop", "Coin-op classics", columnPick(input.coinop, seed, 7), arcadeSystemHref("arcade")),
+    ]),
+    exploreRail("trophies", "Where you last earned something", "strip", (input.trophies ?? []).slice(0, TROPHIES_TAKE).map(toTrophyCard)),
   ], input.seed);
 }
 
-/** Everything here reports a CURRENT fact; only the seeded spin re-rolls. */
-export const ARCADE_UNSEEDED_RAILS: ReadonlySet<string> = new Set(["recent", "live", "trophies", "systems", "top"]);
+/** Everything here reports a CURRENT (or fixed) fact; only the spin and the quick picks re-roll. */
+export const ARCADE_UNSEEDED_RAILS: ReadonlySet<string> = new Set(["recent", "live", "trophies", "systems", "top", "ways-in"]);

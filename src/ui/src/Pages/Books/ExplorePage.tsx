@@ -6,13 +6,16 @@
  * collapse in `openEntity`); a rail's "More →" lands on the browse with that rail's filter applied.
  */
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import ExploreTab from "../../catalog/explore/ExploreTab";
 import type { HeroDetail } from "../../catalog/explore/HeroSpotlight";
 import { mapExplore } from "../../catalog/explore/mapExplore";
+import { exploreDoors } from "../../catalog/explore/composeExplore";
+import { useExploreDepth } from "../../catalog/explore/useNearViewport";
 import type { CardGroup, CardItem } from "../../catalog/types";
-import { fetchExplore, type ItemSummary } from "./booksApi";
+import { fetchExplore, fetchFacets, type ItemSummary } from "./booksApi";
+import { BOOK_DOOR_AXES, fetchBookDoors, type BookDoorAxis } from "./booksExploreDoors";
 import { exploreWithLiveArt } from "./booksExploreArt";
 import { exploreMoreHref } from "./booksExploreLinks";
 import { runLabel } from "./booksFormat";
@@ -25,6 +28,7 @@ const RAIL_SUBTITLES: Record<string, string> = {
   "collected-editions": "Omnibuses and fat trades — start a whole run in one volume",
   "top-shelf-reads": "The best-rated books on the shelf",
   suggested: "Picked from your reading history — shuffle for a fresh handful",
+  "ways-in": "Start from a publisher, a franchise or a decade",
 };
 const UNSEEDED = new Set(["fresh-arrivals"]);
 
@@ -64,7 +68,34 @@ export default function ExplorePage({ kind = "comic" as const }: { kind?: "comic
   // Covers come from the browser's live media token (the host's cached URLs can carry a dead one); the
   // token's epoch re-derives the page when it is minted or refreshed.
   const media = useMediaToken();
-  const data = useMemo(() => (query.data ? exploreWithLiveArt(mapExplore(query.data)) : null), [query.data, media.epoch]);
+  const host = useMemo(() => (query.data ? exploreWithLiveArt(mapExplore(query.data)) : null), [query.data, media.epoch]);
+
+  // "Ways in" (comics only): composed here over the browse routes, spliced in after the host's first
+  // rail. The facet lists share the browse rail's cache key; only the ACTIVE axis's doors are fetched.
+  const deep = useExploreDepth();
+  const comics = kind === "comic";
+  const [doorAxis, setDoorAxis] = useState<BookDoorAxis>("publisher");
+  const facets = useQuery({
+    queryKey: bk.facets(kind),
+    queryFn: ({ signal }) => fetchFacets(kind, signal),
+    enabled: comics && deep,
+    staleTime: 30 * 60 * 1000,
+  });
+  const doors = useQuery({
+    queryKey: ["books", "explore", "doors", doorAxis, media.epoch],
+    queryFn: ({ signal }) => fetchBookDoors(doorAxis, facets.data, signal),
+    enabled: comics && deep && (doorAxis === "decade" || !!facets.data),
+    staleTime: 30 * 60 * 1000,
+  });
+  const onAxis = useCallback((_rail: string, axis: string) => setDoorAxis(axis as BookDoorAxis), []);
+  const data = useMemo(() => {
+    if (!host || !comics) return host;
+    const rail = exploreDoors("ways-in", "Ways in", BOOK_DOOR_AXES.map((a) => ({ key: a.key, label: a.label, doors: a.key === doorAxis ? doors.data : undefined })), doorAxis);
+    if (!rail) return host;
+    const rails = host.rails.slice();
+    rails.splice(Math.min(1, rails.length), 0, rail);
+    return { ...host, rails };
+  }, [host, comics, doorAxis, doors.data]);
 
   const onSeed = useCallback((next: number) => {
     const p = new URLSearchParams(location.search);
@@ -93,6 +124,10 @@ export default function ExplorePage({ kind = "comic" as const }: { kind?: "comic
         moreHref={(href) => exploreMoreHref(href)}
         unseededRails={UNSEEDED}
         heroDetail={booksHeroDetail}
+        onAxis={onAxis}
+        // The spliced-in doors fetch nothing until the reader moves, so they do not count against the
+        // first screen's budget: the host's first two rails still mount eagerly.
+        eagerRails={comics ? 3 : 2}
         railSubtitle={(rail) => (rail.key === "fresh-arrivals" ? `The latest ${rail.items.length} arrivals` : RAIL_SUBTITLES[rail.key])}
         emptyMessage="Nothing to explore yet — the library is still being catalogued."
       />

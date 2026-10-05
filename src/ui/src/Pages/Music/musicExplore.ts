@@ -14,16 +14,21 @@
  * | `best` | the cached shelf, by `rating` — a verdict; EMPTY until a rating source answers |
  * | `most-played` | the cached shelf, by library-wide play count (R9 closing pass) |
  * | `recently-played` | the cached shelf, by when anyone here last put the record on |
+ * | `ways-in` | the cached shelf cut by genre / decade / artist — DOORS, each fanned with its best-regarded covers |
+ * | `popular` | now the RANKED ten (how widely heard) |
+ * | `artist` | one artist with four or more records, chosen by the seed — a FOCUS plate over their albums |
+ * | `quick` | three columns: best regarded, most played here, deep cuts (well regarded, little heard) |
  *
  * One honesty note, stated because it is a judgement call: **Music has no "added" stamp.**
  * `MusicAlbum` carries `Year` and nothing else about when it landed, so "Just added" orders by
  * descending id — the identity column IS the ingest order — and the rail is labelled for what that
  * actually means rather than claiming a date the data does not have.
  */
-import { exploreRail, exploreResponse, groupCard } from "../../catalog/explore/composeExplore";
+import { exploreColumn, exploreColumns, exploreDoors, exploreFocus, exploreRail, exploreResponse, distinctCovers, seededItem, seededShuffle } from "../../catalog/explore/composeExplore";
+import type { HeroDetail } from "../../catalog/explore/HeroSpotlight";
 import { facetHref } from "../../catalog/rail/facetUrl";
-import type { CardItem, ExploreResponse } from "../../catalog/types";
-import { toAlbumCard, toArtistCard, type MusicAlbumRow, type MusicArtistRow } from "../../catalog/sources/musicSource";
+import type { CardItem, ExploreDoor, ExploreResponse } from "../../catalog/types";
+import { toAlbumCard, type MusicAlbumRow, type MusicArtistRow } from "../../catalog/sources/musicSource";
 
 export interface MusicPlaylistRow {
   id: number;
@@ -37,6 +42,8 @@ export interface MusicExploreInput {
   albums?: MusicAlbumRow[];
   artists?: MusicArtistRow[];
   playlists?: MusicPlaylistRow[];
+  /** Which "Ways in" tab is showing (the doors are computed from the shelf, so every tab is free). */
+  doorAxis?: string;
   seed?: number;
 }
 
@@ -220,20 +227,6 @@ export function genreShelves(albums: readonly MusicAlbumRow[], take = GENRES_TAK
     .slice(0, take);
 }
 
-function toGenreCard(shelf: GenreShelf): CardItem {
-  const face = shelf.face ? toAlbumCard(shelf.face) : null;
-  return groupCard({
-    kind: "genre",
-    key: shelf.name,
-    title: shelf.name,
-    count: shelf.count,
-    imageUrl: face?.imageUrl,
-    imageThumbUrl: face?.imageThumbUrl,
-    aspect: 1,
-    raw: shelf,
-  });
-}
-
 /** `/music?f=genre:Post-Rock` — the genre facet takes the name, and URLSearchParams encodes it. */
 export function musicGenreHref(genre: string): string {
   return facetHref("/music", [["genre", genre]]);
@@ -246,31 +239,121 @@ export function topArtists(artists: readonly MusicArtistRow[], take = ARTISTS_TA
     .slice(0, take);
 }
 
-/** An artist card IS a group card here — `groupKey` is the id the `f=artist:` facet takes. */
-function toArtistGroupCard(a: MusicArtistRow): CardItem {
-  const card = toArtistCard(a);
-  return { ...card, groupKey: String(a.id) };
+// ── Doors, focus, columns ──────────────────────────────────────────────────────────────────────
+
+export const MUSIC_DOOR_AXES = [
+  { key: "genre", label: "Genre" },
+  { key: "decade", label: "Decade" },
+  { key: "artist", label: "Artist" },
+] as const;
+const DOORS_TAKE = 18;
+/** An artist worth a focus plate has at least this many records here. */
+export const FOCUS_ARTIST_MIN = 4;
+
+/** The best-regarded records WITH art first — a door's fan should show what the shelf sounds like. */
+function faceOrder(a: MusicAlbumRow, b: MusicAlbumRow): number {
+  return Number(!!b.hasArt) - Number(!!a.hasArt) || (b.rating ?? -1) - (a.rating ?? -1) || (b.popularity ?? -1) - (a.popularity ?? -1);
+}
+
+function coversOf(rows: readonly MusicAlbumRow[]): ExploreDoor["covers"] {
+  return rows.slice().sort(faceOrder).slice(0, 12).map(toAlbumCard).map((c) => ({ src: c.imageThumbUrl ?? c.imageUrl, hue: c.hue }));
+}
+
+/** Doors with their covers made distinct across the axis (see `distinctCovers`). */
+function spreadCovers(doors: ExploreDoor[]): ExploreDoor[] {
+  const covers = distinctCovers(doors, (d) => d.covers);
+  return doors.map((d, i) => ({ ...d, covers: covers[i] }));
+}
+
+/** The shelf cut along one axis, as doors. Genres fold their spellings the way `genreShelves` does. */
+export function musicDoors(axis: string, albums: readonly MusicAlbumRow[], artists: readonly MusicArtistRow[]): ExploreDoor[] {
+  return spreadCovers(rawMusicDoors(axis, albums, artists));
+}
+
+function rawMusicDoors(axis: string, albums: readonly MusicAlbumRow[], artists: readonly MusicArtistRow[]): ExploreDoor[] {
+  if (axis === "artist") {
+    const byArtist = new Map<number, MusicAlbumRow[]>();
+    for (const a of albums) if (a.artistId != null) (byArtist.get(a.artistId) ?? byArtist.set(a.artistId, []).get(a.artistId)!).push(a);
+    return topArtists(artists, DOORS_TAKE).filter((a) => (a.albumCount ?? 0) > 1).map((a) => ({
+      key: String(a.id), label: a.name, count: a.albumCount, href: musicArtistHref(a.id), covers: coversOf(byArtist.get(a.id) ?? []),
+    }));
+  }
+  if (axis === "decade") {
+    const byDecade = new Map<number, MusicAlbumRow[]>();
+    for (const a of albums) if (a.year && a.year > 1900) {
+      const d = Math.floor(a.year / 10) * 10;
+      (byDecade.get(d) ?? byDecade.set(d, []).get(d)!).push(a);
+    }
+    return [...byDecade.entries()].filter(([, rows]) => rows.length >= GENRE_MIN).sort((x, y) => x[0] - y[0])
+      .map(([d, rows]) => ({ key: String(d), label: `${d}s`, count: rows.length, href: `/music?y=${d}-${d + 9}`, covers: coversOf(rows) }));
+  }
+  const shelves = genreShelves(albums, DOORS_TAKE);
+  const members = new Map<string, MusicAlbumRow[]>();
+  for (const a of albums) for (const g of a.genres ?? []) {
+    const k = genreKey((g ?? "").trim());
+    if (k) (members.get(k) ?? members.set(k, []).get(k)!).push(a);
+  }
+  return shelves.map((g) => ({ key: g.name, label: g.name, count: g.count, href: musicGenreHref(g.name), covers: coversOf(members.get(genreKey(g.name)) ?? []) }));
+}
+
+/** The artist the focus plate looks at: one with a real run of records here, chosen by the seed. */
+export function pickFocusArtist(artists: readonly MusicArtistRow[], seed: number): MusicArtistRow | null {
+  const list = artists.filter((a) => (a.albumCount ?? 0) >= FOCUS_ARTIST_MIN).sort((a, b) => a.id - b.id);
+  return seededItem(list, seed, 5) ?? null;
+}
+
+/**
+ * Deep cuts: records rated well that few people have heard — the column that most rewards a browse.
+ * Of the albums rated 70 or better, the least-heard third (relative, because what counts as "obscure"
+ * depends on the shelf: a fixed popularity cut-off left this one empty).
+ */
+export function deepCuts(albums: readonly MusicAlbumRow[]): MusicAlbumRow[] {
+  const rated = albums.filter((a) => (a.rating ?? 0) >= 70 && a.popularity != null)
+    .sort((a, b) => (a.popularity ?? 0) - (b.popularity ?? 0) || a.id - b.id);
+  return rated.slice(0, Math.max(6, Math.ceil(rated.length / 3)));
+}
+
+/** An album's own row as the marquee's lines: artist, year, genres (no blurb exists for a record). */
+export function albumHeroDetail(item: CardItem): HeroDetail | null {
+  const a = (item.raw ?? null) as MusicAlbumRow | null;
+  if (!a || typeof a !== "object") return null;
+  const meta = [a.year ? String(a.year) : null, a.tag || null, a.playCount ? `${a.playCount} plays here` : null].filter((x): x is string => !!x);
+  return { meta, tags: (a.genres ?? []).slice(0, 4), subtitle: a.artistName };
 }
 
 export function composeMusicExplore(input: MusicExploreInput): ExploreResponse {
   const albums = input.albums ?? [];
-  const shuffled = seededPick(albums, input.seed ?? 1, RANDOM_TAKE);
-  const spotlight = shuffled.slice(0, MUSIC_SPOTLIGHT_SIZE).map(toAlbumCard);
+  const artists = input.artists ?? [];
+  const seed = input.seed ?? 1;
+  // The marquee wants records that LOOK like something: art first, then the seed's shuffle.
+  const shuffled = seededPick(albums, seed, RANDOM_TAKE);
+  const withArt = shuffled.filter((a) => a.hasArt);
+  const spotlight = (withArt.length >= MUSIC_SPOTLIGHT_SIZE ? withArt : shuffled).slice(0, MUSIC_SPOTLIGHT_SIZE);
+  const spotIds = new Set(spotlight.map((a) => a.id));
   // Descending id = the order music-ingest wrote them; see the note at the top of the file.
   const added = albums.slice().sort((a, b) => Number(b.id) - Number(a.id)).slice(0, ADDED_TAKE);
+  const focus = pickFocusArtist(artists, seed);
+  const focusAlbums = focus ? albums.filter((a) => a.artistId === focus.id).sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999)) : [];
+  const axis = input.doorAxis ?? "genre";
+  const doorAxes = MUSIC_DOOR_AXES.map((a) => ({ key: a.key, label: a.label, doors: musicDoors(a.key, albums, artists) }));
 
-  return exploreResponse(spotlight, [
-    exploreRail("favourites", "Your favourites", "strip", favouriteAlbums(albums, input.playlists).map(toAlbumCard), MUSIC_MORE.favourites),
-    exploreRail("just-added", "Latest on the shelf", "wall", added.map(toAlbumCard)),
-    exploreRail("popular", "Most popular", "strip", popularAlbums(albums).map(toAlbumCard), MUSIC_MORE.popular),
-    exploreRail("best", "Best on the shelf", "strip", bestAlbums(albums).map(toAlbumCard), MUSIC_MORE.best),
+  return exploreResponse(spotlight.map(toAlbumCard), [
     exploreRail("recently-played", "Recently played", "strip", recentlyPlayedAlbums(albums).map(toAlbumCard)),
-    exploreRail("most-played", "Most played", "strip", mostPlayedAlbums(albums).map(toAlbumCard), MUSIC_MORE.played),
-    exploreRail("artists", "Artists to sit with", "strip", topArtists(input.artists ?? []).map(toArtistGroupCard), MUSIC_MORE.artists),
-    exploreRail("genres", "Sounds on the shelf", "strip", genreShelves(albums).map(toGenreCard)),
-    exploreRail("random", "Reach for something", "grid", shuffled.slice(MUSIC_SPOTLIGHT_SIZE).map(toAlbumCard), MUSIC_MORE.random),
+    exploreRail("favourites", "Your favourites", "strip", favouriteAlbums(albums, input.playlists).map(toAlbumCard), MUSIC_MORE.favourites),
+    albums.length ? exploreDoors("ways-in", "Ways in", doorAxes, axis) : null,
+    exploreRail("just-added", "Latest on the shelf", "wall", added.map(toAlbumCard)),
+    exploreRail("popular", "The ten most widely heard", "ranked", popularAlbums(albums, 10).map(toAlbumCard), MUSIC_MORE.popular),
+    focus && focusAlbums.length
+      ? exploreFocus("artist", "A closer look", { name: focus.name, count: focus.albumCount, blurb: focus.yearRange ? `Records from ${focus.yearRange}, oldest first.` : "Their records, oldest first.", href: musicArtistHref(focus.id) }, focusAlbums.map(toAlbumCard))
+      : null,
+    exploreColumns("quick", "Quick picks", [
+      exploreColumn("best", "Best regarded", seededShuffle(bestAlbums(albums, 30), seed + 3).slice(0, 6).map(toAlbumCard), MUSIC_MORE.best),
+      exploreColumn("played", "Most played here", mostPlayedAlbums(albums, 6).map(toAlbumCard), MUSIC_MORE.played),
+      exploreColumn("deep", "Deep cuts", seededShuffle(deepCuts(albums), seed + 7).slice(0, 6).map(toAlbumCard)),
+    ]),
+    exploreRail("random", "Reach for something", "grid", shuffled.filter((a) => !spotIds.has(a.id)).map(toAlbumCard), MUSIC_MORE.random),
   ], input.seed);
 }
 
-/** Rails whose point is that they are CURRENT — shuffling them would be a lie. */
-export const MUSIC_UNSEEDED_RAILS: ReadonlySet<string> = new Set(["favourites", "just-added", "artists", "genres", "popular", "best", "most-played", "recently-played"]);
+/** Rails whose point is that they are CURRENT (or fixed) — shuffling them would be a lie. */
+export const MUSIC_UNSEEDED_RAILS: ReadonlySet<string> = new Set(["favourites", "just-added", "popular", "recently-played", "ways-in"]);

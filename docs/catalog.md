@@ -577,10 +577,29 @@ itself uses.
 ## The Explore kit (`catalog/explore/`) — R9 S7: every section has one
 
 `ExploreTab` renders a section's landing from data the SECTION fetches (`data / loading / error` —
-the section owns the query and its keys): a `HeroSpotlight` (a `detail()` hook lets a section
-headline a group instead of an item), `CardRow`s, a `CoverWall`, `CardGrid`s, `RowHead`s with a
-"More" link, `ScoreBadge`s. `mapExplore.ts` maps a section's rows onto `CardItem`s;
+the section owns the query and its keys). `mapExplore.ts` maps a section's rows onto `CardItem`s;
 `cards/placeholder.ts` paints hue placeholders for cards without art.
+
+### The marquee and the eight module shapes (the 2026-10-05 redesign)
+
+The landing used to be one hue-gradient carousel over a stack of identical cover strips. It is now a
+**marquee** plus a small vocabulary of module SHAPES, each with a different job, and every section
+alternates them so no two neighbours read alike (`ExploreRailKind` in `catalog/types.ts`):
+
+| Kind | Component | Job |
+|---|---|---|
+| marquee | `HeroSpotlight` | The feature lit by its OWN cover (enlarged + blurred behind a scrim — never a hue guessed from the title), its synopsis/facts/tags via the section's `heroDetail`, and the rotation listed beside it as "Up next". The advance IS the active row's CSS timer ending (`onAnimationEnd`), so hover-pause and the bar cannot disagree and reduced motion means no autoplay. `onHeroActive` lets a section fetch detail for the ONE pick that is up. The next pick's art is preloaded. |
+| `strip` / `resume` | `CardRow` | One row of covers; `resume` draws `CardItem.progress` as a bar under each cover. Every horizontal row (strips, the focus plate's works) rides `ScrollRow`: paging arrows appear only where there is somewhere to go, because a plain mouse wheel cannot scroll sideways; hidden on touch screens. |
+| `wall` / `grid` | `CoverWall` / `CardGrid` | Clamped to WHOLE rows: `useColumns` measures the column count (one ResizeObserver per module) and only `columns × rows` items are rendered, so the module never ends on a ragged row and hidden covers are never fetched. A wall of mixed orientations (photos) gets one square cell shape. |
+| `ranked` | `RankedRow` | A numbered ten — the numerals are real ranks. |
+| `focus` | `FocusBlock` | One name (director, franchise, console, artist, designer) on a plate beside their works; the plate's "See all N" is the facet browse. |
+| `columns` | `ColumnsBlock` | Two or three short text-dense lists side by side (a swipe of panels on a phone); each list has its own "See all". |
+| `doors` | `DoorsBlock` | "Ways in": tabs of facet axes, each a grid of tiles (three covers fanned, the name, the count) that land on the browse with that facet chip already on. Whole rows only — trimming drops the SMALLEST doors and keeps the axis's order (`keepLargest`). Covers are made distinct across an axis (`distinctCovers`) because the best titles fit many doors at once. With `onAxis` the section owns the active tab and loads only that axis. |
+
+The composer helpers grew to match: `exploreFocus`, `exploreColumns` + `exploreColumn`, `exploreDoors`
+(an axis whose doors are still `undefined` draws skeleton tiles; one that loaded EMPTY is dropped),
+`railHasContent`, `seededShuffle`, `seededItem(rows, seed, salt)` (independent rolls off one seed) and
+`distinctCovers`. Copy is sentence case: "See all", "Shuffle" — no arrows, no all-caps eyebrows.
 
 ### The composition contract
 
@@ -624,18 +643,23 @@ rather than five copies:
 
 | Section | Route | Rails (name → source) | Group cards | Waits for depth |
 |---|---|---|---|---|
-| Movies/TV | `/movies/explore` | spotlight + **Something else entirely** → `/API/Browse?sort=random&seed=` (one seeded page feeds both) · **Keep watching** → `/API/ContinueWatching` · **On TV right now** → the `useChannelLineup` the homepage rail builds · **Picked for you** → `/API/Recommendations` · **Suggested for you** → the head of `/API/Me`'s `moviesSuggested` (the Want rows a FRIEND placed, newest first) resolved by `POST /API/GetMoviesByIds`, order restored client-side · **Just added to the library** → `/API/Browse?sort=added` · **Whole runs to binge** → `/API/BrowseGroups?groupBy=franchise` · **The ‹X› run, in order** → `/API/GetFranchiseRail` anchored on the spotlight | franchise → `/?f=franchise:‹v›`; a person chip → `/?f=person:‹name›` | the franchise group index + the franchise run |
-| Music | `/music/explore` | spotlight + **Reach for something** → the cached shelf, seeded shuffle · **Your favourites** → `/API/Music/Playlist/Mine` (the Favorites list's album ids, resolved in the shelf) · **Latest on the shelf** → the cached shelf, descending id · **Best on the shelf** → the cached shelf by the blended 0–100, `more` = `/music?items=items&sort=rated` (R9 S10; albums with no score are dropped, so before the enrich pass the rail is empty and `exploreRail` drops it) · **Recently played** + **Most played** → the cached shelf's `lastPlayedUtc` / `playCount`, the library-wide roll-up of `MusicPlayStat` (R9 closing pass; `more` = `/music?items=items&sort=played`. Never-played albums are DROPPED, not filed last — before the beacon has ever fired every album is a real zero, so both rails are empty and `exploreRail` drops them; they appear on their own once there is something true to say) · **Artists to sit with** → the cached shelf's artists | artist → `/music?f=artist:‹id›` | the playlists read |
-| Arcade | `/arcade/explore` | **Recently played** → `/API/Arcade/RecentlyPlayed` (**moved from the lobby**) · **Live rooms** → `/API/Arcade/Rooms` · **Where you last earned something** → `/API/Arcade/Trophies/Mine` · **Pick a console** → `/API/Arcade/Filters` · spotlight + **Best on the shelf** → `/API/Arcade/Games?sort=rating` · **Spin the shelf: ‹System›** → one console picked by the seed | system → `/arcade?f=system:‹v›` | the trophy room + the spin |
+| Movies/TV | `/movies/explore` | marquee + **Something else entirely** (grid) → `/API/Browse?sort=random&seed=` (one seeded page feeds both; the marquee's detail is `/API/GetMovie`/`GetSeries` for the active pick only) · **Keep watching** (resume) → `/API/ContinueWatching` · **On TV right now** → `useChannelLineup` · **Ways in** (doors: genre / mood / subgenre / setting / decade) → `/API/BrowseGroups?groupBy=<axis>&headsBy=count&perGroupTop=8`, the active tab only · **Just added** (wall) → `/API/Browse?sort=added` · **Picked for you** → `/API/Recommendations` · **A closer look** (focus) → `/API/BrowseGroups?groupBy=director&headsBy=count`, one director by the seed · **The ten best-rated films** (ranked) → `/API/Browse?types=Movies&sort=imdb`, keeping only titles that ALSO have a Tomatometer (`rankedFilms` — a YouTube review series sat at #1 on IMDb alone) · **Quick picks** (columns) → critics' favourites (`sort=rt`, seeded six of forty) · a seeded decade (`yearMin/yearMax`) · a seeded mood (`tag=mood:`, from `/API/BrowseFacets`) · **Suggested by friends** · **Whole runs to binge** → `groupBy=franchise` · **The whole run, in order** (focus) → `/API/GetFranchiseRail` | franchise → `/?f=franchise:‹v›`; doors → `/?f=<axis>:‹v›` or `/?y=1970-1979` | everything below the first screen |
+| Music | `/music/explore` | marquee (records WITH art first) + **Reach for something** → the cached shelf, seeded · **Recently played** · **Your favourites** → `/API/Music/Playlist/Mine` · **Ways in** (doors: genre / decade / artist, all cut from the shelf in memory) · **Latest on the shelf** (wall) · **The ten most widely heard** (ranked, popularity) · **A closer look** (focus) → an artist with 4+ records, oldest first · **Quick picks** (columns) → best regarded (seeded) · most played here · deep cuts (`deepCuts`: the least-heard third of the albums rated 70+) | doors → `/music?f=genre:‹v›`, `/music?y=…`, `/music?f=artist:‹id›` | the playlists read |
+| Arcade | `/arcade/explore` | **Recently played** · **Live rooms** · **Ways in** (doors: console / genre / players) → `/API/Arcade/GameGroups?groupBy=<axis>&perGroupTop=8`, active tab only · **The ten best-rated** (ranked) → `/API/Arcade/Games?sort=rating`; the marquee rotates a seeded handful of the NEXT thirty, with the game's own summary/developer/genres · **Spin the shelf** (focus) → one console by the seed · **Quick picks** (columns) → couch co-op (`maxPlayers=2`) · pocket-sized (`POCKET_SYSTEMS`) · coin-op (`system=arcade`) · **Where you last earned something** → `/API/Arcade/Trophies/Mine`. Cards name their console (`toExploreGameCard`) | doors → `/arcade?f=system:‹v›` etc. | the trophy room, the spin, the doors, the columns |
 | Photos | `/photos/explore` | spotlight (the anniversary, else the newest) · **On this day — ‹date›** → `/API/Photos/OnThisDay` · **Latest in the album** → `/API/Photos/Browse` · **The people in the album** → the people list `PhotosPage` already holds | person → `/photos/browse?f=person:‹id›` | the recent reel |
-| Boardgames | `/boardgames/explore` | spotlight + **Best on the shelf** · **Newest on the shelf** · **Designers on the shelf** · **Pull one off the shelf** — ALL four off `useBoardgamesCatalog`, the copy the browse already holds | designer → `/boardgames?f=designer:‹name›` | nothing — the tab makes no request at all |
-| Books | `/books/explore` | the host's composed payload (`/API/Books/explore`) | series → the series modal | — |
+| Boardgames | `/boardgames/explore` | **Ways in** (doors: players / play time / mechanic / category) · **The ten best-rated** (ranked; the marquee rotates a seeded handful of the next thirty, with the BGG blurb as plain text via `plainDescription`) · **Newest on the shelf** (wall) · **A closer look** (focus) → a designer with 3+ games · **Quick picks** (columns) → quick to teach (weight ≤ 1.8) · the big table (6+ players) · brain burners (weight ≥ 3.5) · **Pull one off the shelf** — ALL off `useBoardgamesCatalog`, the copy the browse already holds | doors → `/boardgames?f=players:N`, `?t=-30`, `?f=mechanic:‹v›` | nothing — the tab makes no request at all |
+| Books | `/books/explore` | the host's composed payload (`/API/Books/explore`), plus — comics only, composed in the BROWSER so no host deploy is needed — **Ways in** (doors: publisher / franchise / decade, `booksExploreDoors.ts`) spliced in after the host's first rail: the twelve biggest publishers/franchises from `/browse/facets` (one `/browse/groups?singleGroupKey=` per door for covers, since the host's group heads are alphabetical), decades from one `/browse/groups?groupBy=decade`; covers from the live media token | series → the series modal; doors → `/books?f=publisher:‹v›`, `?y=1980-1989` | the doors (facets + the active axis) |
 | TV | — | **deliberately none.** `/channels` IS the EPG: the grid guide already draws every channel, grouped by category, with what is on NOW, and its detail panel carries the ♥. An Explore of "now + favourites" would be a second, worse copy of that one page. The lineup instead surfaces where it is NOT already visible — the **On TV right now** rail on the Movies Explore. Revisit if TV grows a second axis (per-channel "up next" shelves, playlists as cards). | — | — |
 
 Two rails carry a stated honesty note rather than a claim the data cannot support: **Music and
 Boardgames have no "added" stamp** (`MusicAlbum` has `Year`, a boardgame row has `yearPublished`,
 and neither records when it landed), so "Latest / Newest on the shelf" orders by descending id —
 the identity column IS the ingest order — and the rail is labelled for what that actually means.
+
+**`/API/BrowseGroups` grew `headsBy=count`** (2026-10-05): biggest groups first, label as the stable
+tiebreak (`BrowseGroups.OrderHeads`), reordering a copy of the cached heads — the shared index is never
+mutated. The movie doors and the director focus ask for it; the client also re-sorts by count, so an
+older server's alphabetical answer still reads right.
 
 **New endpoints are the exception, and there are three.** Every other rail rides something that
 already existed. Each is read-only, capped, and gated exactly as its section's browse is:

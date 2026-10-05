@@ -10,19 +10,20 @@
  * A card opens the section's own sheet at `/boardgames?game=<id>`; a designer card lands on
  * `/boardgames?f=designer:<name>` — the rail URL contract.
  */
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import ExploreTab from "../../catalog/explore/ExploreTab";
 import { FACET_GROUP_KINDS } from "../../catalog/explore/mapExplore";
 import type { CardGroup, CardItem } from "../../catalog/types";
 import useBoardgamesCatalog from "./useBoardgamesCatalog";
-import { BOARDGAMES_UNSEEDED_RAILS, boardgameFacetHref, composeBoardgamesExplore } from "./boardgamesExplore";
+import { BOARDGAMES_UNSEEDED_RAILS, boardgameFacetHref, boardgameHeroDetail, composeBoardgamesExplore } from "./boardgamesExplore";
 
 const RAIL_SUBTITLES: Record<string, string> = {
+  "ways-in": "Start from who's at the table, how long you have, or how it plays",
   top: "By BGG rating, best first",
   recent: "The most recent arrivals in the collection",
-  designers: "The names with more than one game here",
-  random: "A shuffled handful — roll again for another",
+  quick: "Three short lists, rolled fresh with every shuffle",
+  random: "A shuffled handful of the collection",
 };
 
 export function readSeed(search: string): number {
@@ -40,9 +41,12 @@ export default function BoardgamesExplorePage() {
   const seed = readSeed(location.search);
   const catalog = useBoardgamesCatalog();
 
+  // The doors are cut from rows already in memory, so a tab switch is a re-render, not a fetch.
+  const [doorAxis, setDoorAxis] = useState("players");
+  const onAxis = useCallback((_rail: string, axis: string) => setDoorAxis(axis), []);
   const data = useMemo(
-    () => composeBoardgamesExplore({ games: catalog.games, facetsById: catalog.facetsById, seed }),
-    [catalog.games, catalog.facetsById, seed],
+    () => composeBoardgamesExplore({ games: catalog.games, facetsById: catalog.facetsById, doorAxis, seed }),
+    [catalog.games, catalog.facetsById, doorAxis, seed],
   );
 
   const onSeed = useCallback((next: number) => {
@@ -73,7 +77,9 @@ export default function BoardgamesExplorePage() {
         moreHref={(href) => href || null}
         unseededRails={BOARDGAMES_UNSEEDED_RAILS}
         railSubtitle={(rail) => RAIL_SUBTITLES[rail.key]}
-        heroEyebrow="On the shelf"
+        heroEyebrow="Game night"
+        heroDetail={boardgameHeroDetail}
+        onAxis={onAxis}
         emptyMessage="No games in the collection yet."
       />
     </div>
