@@ -3,8 +3,10 @@
 export const SYSTEM_LABEL = {
   nes: "NES", snes: "SNES", genesis: "Genesis", gb: "Game Boy", gbc: "Game Boy Color",
   gba: "Game Boy Advance", n64: "Nintendo 64", gc: "GameCube", wii: "Wii", ps1: "PlayStation", ps2: "PlayStation 2", arcade: "Arcade",
-  // libretro MAME: the current-MAME games FBNeo doesn't run (arcade-mame-ingest), beside FBNeo's "arcade".
-  mame: "MAME",
+  // libretro MAME: the current-MAME games FBNeo doesn't run (arcade-mame-ingest). Labelled "Arcade" on
+  // purpose: which core plays a coin-op game is a detail, and the lobby folds mame into the Arcade tile
+  // (server ArcadeSystemFamilies) — a cabinet player browses ARCADE, not "MAME vs FBNeo".
+  mame: "Arcade",
   psp: "PSP", dc: "Dreamcast", naomi: "Naomi", atomiswave: "Atomiswave", saturn: "Saturn",
   sms: "Master System", gg: "Game Gear", sg1000: "SG-1000", segacd: "Sega CD",
   sega32x: "32X", pce: "TurboGrafx-16", ngpc: "Neo Geo Pocket", wsc: "WonderSwan Color",

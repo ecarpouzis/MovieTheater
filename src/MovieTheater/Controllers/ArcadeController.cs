@@ -136,11 +136,13 @@ namespace MovieTheater.Controllers
         // which is what an untouched lobby sends. The console carousel toggles several at once, so this
         // grew from a single value to a set — a bare "?system=nes" is still exactly one-element list, which
         // is what keeps every link and bookmark minted before the carousel working unchanged.
+        // "arcade" expands to the whole coin-op family (FBNeo + MAME + NAOMI + Atomiswave — ArcadeSystemFamilies),
+        // so the Arcade tile shows every arcade game whichever core plays it.
         private static List<string> ParseSystems(string system) =>
             string.IsNullOrWhiteSpace(system)
                 ? new List<string>()
-                : system.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .Select(s => s.ToLowerInvariant()).Distinct().ToList();
+                : ArcadeSystemFamilies.Expand(system.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(s => s.ToLowerInvariant()));
 
         // Our hand-curated romhack/mod pile (L:\4 - Software\Romhacks, sorted per-system — see
         // arcade-jit-ingest usage) as opposed to the tens of thousands of No-Intro/GoodTools-tagged
@@ -532,8 +534,21 @@ namespace MovieTheater.Controllers
             // groups by (System, CollapseKey), and `total` below is exactly this key count.
             var systemsQ = ApplyCardFilters(baseQ, (List<string>)null, maxPlayers, genre, search, hidden, var_, ra);
             var systemKeys = await systemsQ.Select(g => new { g.System, g.CollapseKey }).Distinct().ToListAsync();
-            var systems = systemKeys.GroupBy(k => k.System)
-                .Select(x => new { value = x.Key, count = x.Count() }).OrderByDescending(x => x.count).ToList();
+            // Folded systems (mame) get no tile; the Arcade tile counts the whole family (a union of distinct
+            // cards), matching what ?system=arcade returns.
+            var systems = systemKeys.Where(k => !ArcadeSystemFamilies.FoldedIntoArcade.Contains(k.System))
+                .GroupBy(k => k.System)
+                .Select(x => new
+                {
+                    value = x.Key,
+                    count = x.Key == ArcadeSystemFamilies.Arcade
+                        ? systemKeys.Count(k => ArcadeSystemFamilies.IsArcade(k.System))
+                        : x.Count(),
+                })
+                .ToList();
+            if (!systems.Any(s => s.value == ArcadeSystemFamilies.Arcade) && systemKeys.Any(k => ArcadeSystemFamilies.IsArcade(k.System)))
+                systems.Add(new { value = ArcadeSystemFamilies.Arcade, count = systemKeys.Count(k => ArcadeSystemFamilies.IsArcade(k.System)) });
+            systems = systems.OrderByDescending(x => x.count).ToList();
 
             // Regions facet: hide NOTHING (empty set) so the dropdown always lists every known region with its
             // full count, regardless of what's currently switched off. Unknown/NULL are dropped — they're never

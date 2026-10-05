@@ -233,7 +233,7 @@ namespace MovieTheater.Arcade
                         else if (by == "variant") Add(DefaultVariant, c);
                         break;
                     }
-                    default: Add(c.System, c); break;
+                    default: Add(ArcadeSystemFamilies.TileOf(c.System), c); break;   // MAME cards group under Arcade
                 }
             }
             IEnumerable<Head> heads = by switch
