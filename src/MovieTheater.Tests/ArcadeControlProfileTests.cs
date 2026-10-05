@@ -15,8 +15,13 @@ namespace MovieTheater.Tests
         private const string Xml = """
             <?xml version="1.0"?>
             <mame build="0.215">
-              <machine name="sf2" sourcefile="cps1.cpp">
+              <machine name="sf2" sourcefile="cps1.cpp" romof="sf2p">
+                <description>Street Fighter II: The World Warrior (World 910522)</description>
+                <year>1991</year>
+                <manufacturer>Capcom</manufacturer>
                 <rom name="x" size="1"/>
+                <disk name="sf2disk" merge="sf2pdisk" sha1="0"/>
+                <display tag="screen" type="raster"/>
                 <input players="2" coins="2" service="yes">
                   <control type="joy" player="1" buttons="6" ways="8"/>
                   <control type="joy" player="2" buttons="6" ways="8"/>
@@ -59,6 +64,10 @@ namespace MovieTheater.Tests
                 <input players="2"><control type="joy" player="1" buttons="4" ways="8"/></input>
               </machine>
               <machine name="z80" sourcefile="z80.cpp" isdevice="yes"/>
+              <machine name="slot1" sourcefile="aristmk6.cpp" ismechanical="yes" runnable="no">
+                <description>Lucky Reels</description>
+                <driver status="preliminary"/>
+              </machine>
             </mame>
             """;
 
@@ -88,6 +97,25 @@ namespace MovieTheater.Tests
         public void Classifies_the_player1_panel(string name, string expected)
         {
             Assert.Equal(expected, Load()[name].Profile);
+        }
+
+        [Fact]
+        public void Reads_every_field_the_mame_ingest_needs_without_skipping_siblings()
+        {
+            var sf2 = Load()["sf2"];
+            Assert.Equal("Street Fighter II: The World Warrior (World 910522)", sf2.Description);
+            Assert.Equal("1991", sf2.Year);
+            Assert.Equal("Capcom", sf2.Manufacturer);
+            Assert.Equal("sf2p", sf2.RomOf);
+            Assert.Equal(1, sf2.Displays);
+            Assert.Equal(2, sf2.Players);
+            Assert.Equal(new[] { ("sf2disk", (string?)"sf2pdisk") }, sf2.Disks!.ToArray());
+            Assert.Equal(new[] { "joy" }, sf2.ControlTypes!.ToArray());   // player 2's stick isn't counted
+            var slot = Load()["slot1"];
+            Assert.True(slot.IsMechanical);
+            Assert.False(slot.Runnable);
+            Assert.Equal("preliminary", slot.DriverStatus);
+            Assert.Null(slot.Profile);
         }
 
         [Fact]

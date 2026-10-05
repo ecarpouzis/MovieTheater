@@ -30,7 +30,15 @@ namespace MovieTheater.Arcade
     /// </summary>
     public static class ArcadeControlProfile
     {
-        public sealed record Machine(string Name, string? CloneOf, string? SourceFile, bool IsBios, bool IsDevice, string? Profile);
+        /// <summary>One listxml machine. <see cref="Profile"/> is null when the machine has no &lt;input&gt;. The
+        /// rest feeds the MAME ingest's selection (arcade-mame-ingest): what the set is, whether it works, and
+        /// which CHDs it needs (<see cref="Disks"/>: name + the parent disk it MERGES with, if any).</summary>
+        public sealed record Machine(
+            string Name, string? CloneOf, string? SourceFile, bool IsBios, bool IsDevice, string? Profile,
+            string Description = "", string? Year = null, string? Manufacturer = null, bool IsMechanical = false,
+            bool Runnable = true, string? DriverStatus = null, int Displays = 0, int Players = 0,
+            IReadOnlyList<(string Name, string? Merge)>? Disks = null, IReadOnlySet<string>? ControlTypes = null,
+            string? RomOf = null);
 
         /// <summary>Stream a listxml (hundreds of MB for a full set) without loading it whole.</summary>
         public static IEnumerable<Machine> Read(string path)
@@ -46,24 +54,52 @@ namespace MovieTheater.Arcade
                 var source = reader.GetAttribute("sourcefile");
                 var isBios = reader.GetAttribute("isbios") == "yes";
                 var isDevice = reader.GetAttribute("isdevice") == "yes";
+                var isMech = reader.GetAttribute("ismechanical") == "yes";
+                var runnable = reader.GetAttribute("runnable") != "no";
+                var romOf = reader.GetAttribute("romof");
                 var controls = new List<(string Type, string? Player, int Buttons, string? Ways)>();
+                var disks = new List<(string, string?)>();
+                string desc = "", status = null!;
+                string? year = null, maker = null;
+                int displays = 0, players = 0;
                 bool sawInput = false;
                 if (!reader.IsEmptyElement)
                 {
                     using var sub = reader.ReadSubtree();
-                    while (sub.Read())
+                    sub.Read();   // onto <machine> itself
+                    // ReadElementContentAsString leaves the reader ON the next node, so those branches must
+                    // not Read() again — stepping only when nothing was consumed keeps every sibling visible.
+                    while (!sub.EOF)
                     {
-                        if (sub.NodeType != XmlNodeType.Element) continue;
-                        if (sub.Name == "input") sawInput = true;
+                        if (sub.NodeType == XmlNodeType.Element && sub.Depth == 1 && sub.Name is "description" or "year" or "manufacturer")
+                        {
+                            var which = sub.Name;
+                            var text = sub.ReadElementContentAsString();
+                            if (which == "description") desc = text; else if (which == "year") year = text; else maker = text;
+                            continue;
+                        }
+                        if (sub.NodeType != XmlNodeType.Element) { sub.Read(); continue; }
+                        if (sub.Name == "input")
+                        {
+                            sawInput = true;
+                            int.TryParse(sub.GetAttribute("players"), out players);
+                        }
+                        else if (sub.Name == "display") displays++;
+                        else if (sub.Name == "driver") status = sub.GetAttribute("status")!;
+                        else if (sub.Name == "disk" && sub.GetAttribute("name") is { } dn) disks.Add((dn, sub.GetAttribute("merge")));
                         else if (sub.Name == "control")
                         {
                             int.TryParse(sub.GetAttribute("buttons"), out var b);
                             controls.Add((sub.GetAttribute("type") ?? "", sub.GetAttribute("player"), b, sub.GetAttribute("ways")));
                         }
+                        sub.Read();
                     }
                 }
                 if (string.IsNullOrEmpty(name)) continue;
-                yield return new Machine(name, cloneOf, source, isBios, isDevice, sawInput ? Classify(controls, source) : null);
+                yield return new Machine(name, cloneOf, source, isBios, isDevice, sawInput ? Classify(controls, source) : null,
+                    desc, year, maker, isMech, runnable, status, displays, players, disks,
+                    controls.Where(c => string.IsNullOrEmpty(c.Player) || c.Player == "1").Select(c => c.Type.ToLowerInvariant()).ToHashSet(),
+                    romOf);
             }
         }
 

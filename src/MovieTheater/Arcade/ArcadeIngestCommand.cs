@@ -286,6 +286,11 @@ namespace MovieTheater.Arcade
             // FBNeo loads the MAME/Neo-Geo/CPS .zip romset WHOLE (never extracted) from the core's "mame"
             // folder — so arcade materializes as a JIT-COPY into roms/mame (source ext .zip ∈ these exts).
             new("arcade",  new[] { "mame" },             new[] { ".zip" },                       4),
+            // Current MAME (libretro MAME, tracking the 0.28x romset) — the games FBNeo doesn't run. Its own
+            // worker folder "mamelr": "mame" is FBNeo's folder/core key and has been since day one. Ingested by
+            // arcade-mame-ingest (selection + CHDs), never by the generic ingest; listed here so the export
+            // and the system tables know it.
+            new("mame",    new[] { "mamelr" },           new[] { ".zip" },                       4),
 
             // ─── Systems added 2026-07 (GPU/GL 3D + 2D breadth). Codes match the config.yaml core
             // `folder` keys and the roms/ subfolders. MaxPlayers is the system capability; a title with

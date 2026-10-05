@@ -64,20 +64,20 @@ const FLYCAST: ButtonMap = ["B", "A", "Y", "X", "R", "L", "R2", "L2"];
 const MAME_LIBRETRO: ButtonMap = ["B", "A", "Y", "X", "L", "R"];
 
 /**
- * Render-profile core keys that mean libretro MAME. Empty until the 0.288 core is wired: give its
- * ArcadeGameProfile CoreKey here and every arcade preset follows its button order.
+ * Render-profile core keys that mean libretro MAME on ANOTHER system (an `arcade` game booted on MAME through a
+ * render profile). The `mame` system itself always is libretro MAME — see arcadeButtonMap.
  */
 export const MAME_LIBRETRO_CORE_KEYS = new Set<string>(["mame_libretro"]);
 
 export function arcadeButtonMap(system: string, coreKey?: string | null): { map: ButtonMap; core: "fbneo" | "flycast" | "mame" } {
   const sys = String(system || "").toLowerCase();
-  if (coreKey && MAME_LIBRETRO_CORE_KEYS.has(coreKey)) return { map: MAME_LIBRETRO, core: "mame" };
+  if (sys === "mame" || (coreKey && MAME_LIBRETRO_CORE_KEYS.has(coreKey))) return { map: MAME_LIBRETRO, core: "mame" };
   if (sys === "naomi" || sys === "atomiswave") return { map: FLYCAST, core: "flycast" };
   return { map: FBNEO, core: "fbneo" };
 }
 
 /** Systems whose touch presets come from the arcade generator. */
-const ARCADE_SYSTEMS = new Set(["arcade", "naomi", "atomiswave"]);
+const ARCADE_SYSTEMS = new Set(["arcade", "mame", "naomi", "atomiswave"]);
 export const isArcadeTouchSystem = (inputSystem: string) => ARCADE_SYSTEMS.has(String(inputSystem || "").toLowerCase());
 
 const faceForCount = (n: number): FaceArrangement =>

@@ -262,6 +262,21 @@ namespace MovieTheater.Services.LaunchBox
 
             log?.Invoke($"Parsed {games:N0} games; indexed {primaries:N0} rated titles + {aliases:N0} safe aliases "
                       + $"= {index.Count:N0} keys ({ambiguous:N0} ambiguous aliases dropped, from {rated:N0} rated rows).");
+            return AlsoIndexAs(index);
+        }
+
+        /// <summary>
+        /// Site systems that share another system's LaunchBox platform: "mame" (libretro MAME) plays the same
+        /// arcade games LaunchBox files under "Arcade", which PlatformToSystem can only map to one system code.
+        /// The index is copied under the second code so a MAME card finds its arcade entry by title.
+        /// </summary>
+        public static readonly IReadOnlyDictionary<string, string> SharedPlatformSystems =
+            new Dictionary<string, string>(StringComparer.Ordinal) { ["arcade"] = "mame" };
+
+        private static Dictionary<(string System, string Key), T> AlsoIndexAs<T>(Dictionary<(string System, string Key), T> index)
+        {
+            foreach (var ((sys, key), v) in index.ToList())
+                if (SharedPlatformSystems.TryGetValue(sys, out var also)) index.TryAdd((also, key), v);
             return index;
         }
 
@@ -365,7 +380,7 @@ namespace MovieTheater.Services.LaunchBox
 
             log?.Invoke($"Parsed {games:N0} games; indexed {primaries:N0} titles with a player count + {aliases:N0} safe aliases "
                       + $"= {index.Count:N0} keys ({ambiguous:N0} ambiguous aliases dropped, from {withSeats:N0} rows).");
-            return index;
+            return AlsoIndexAs(index);
         }
 
         /// <summary>

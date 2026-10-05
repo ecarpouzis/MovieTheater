@@ -27,6 +27,9 @@ namespace MovieTheater.Arcade
         {
             ["arcade"] = "FBNeo - Arcade Games",
             ["neogeo"] = "FBNeo - Arcade Games",
+            // libretro MAME's cards: the MAME repo is named by full machine description, which the title
+            // index's Normalize bridges the same way as FBNeo's ("Street Fighter II_ The World Warrior (World 910522)").
+            ["mame"] = "MAME",
             ["nes"] = "Nintendo - Nintendo Entertainment System",
             ["snes"] = "Nintendo - Super Nintendo Entertainment System",
             ["genesis"] = "Sega - Mega Drive - Genesis",

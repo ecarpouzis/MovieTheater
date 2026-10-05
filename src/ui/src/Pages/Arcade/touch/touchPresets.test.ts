@@ -73,6 +73,11 @@ describe("arcade presets", () => {
     expect(arcadeButtonMap("arcade").map.slice(0, 6)).toEqual(["B", "A", "Y", "X", "R", "L"]);
     expect(arcadeButtonMap("naomi").map.slice(0, 6)).toEqual(["B", "A", "Y", "X", "R", "L"]);
     expect(arcadeButtonMap("arcade", "mame_libretro").map).toEqual(["B", "A", "Y", "X", "L", "R"]);
+    expect(arcadeButtonMap("mame").map).toEqual(["B", "A", "Y", "X", "L", "R"]);
+    const mame6 = defaultLayout("mame", "landscape", 2, presetsFor("mame").find((p) => p.id === "b6")!.spec);
+    expect([bitOf(mame6, "5"), bitOf(mame6, "6")]).toEqual([["L"], ["R"]]);
+    // libretro MAME has no Street Fighter re-layout (its per-game profiles stay off): numbered rows instead.
+    expect(suggestedPreset("mame", { controls: "joy8/6/sf" })).toBe("b6");
     const b6 = presetsFor("arcade").find((p) => p.id === "b6")!;
     const l = defaultLayout("arcade", "landscape", 2, b6.spec);
     expect([bitOf(l, "5"), bitOf(l, "6")]).toEqual([["R"], ["L"]]);

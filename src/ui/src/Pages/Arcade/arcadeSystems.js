@@ -3,6 +3,8 @@
 export const SYSTEM_LABEL = {
   nes: "NES", snes: "SNES", genesis: "Genesis", gb: "Game Boy", gbc: "Game Boy Color",
   gba: "Game Boy Advance", n64: "Nintendo 64", gc: "GameCube", wii: "Wii", ps1: "PlayStation", ps2: "PlayStation 2", arcade: "Arcade",
+  // libretro MAME: the current-MAME games FBNeo doesn't run (arcade-mame-ingest), beside FBNeo's "arcade".
+  mame: "MAME",
   psp: "PSP", dc: "Dreamcast", naomi: "Naomi", atomiswave: "Atomiswave", saturn: "Saturn",
   sms: "Master System", gg: "Game Gear", sg1000: "SG-1000", segacd: "Sega CD",
   sega32x: "32X", pce: "TurboGrafx-16", ngpc: "Neo Geo Pocket", wsc: "WonderSwan Color",
@@ -52,6 +54,8 @@ export const consoleTile = (system) => TILE_BY_SYSTEM[String(system || "").toLow
 //   arcade  — 1971, Computer Space, the first coin-op video game. The platform genuinely predates
 //             every console here, so it lands at the very end of the shelf despite being one of the
 //             largest collections.
+//   mame    — the same cabinets as `arcade` (it is the other arcade core), so the same date; the label
+//             breaks the tie and the two tiles sit side by side.
 //   scummvm — 1987, Maniac Mansion: the first SCUMM game, which is what the engine is named after.
 //   dos     — 1981, the IBM PC and MS-DOS 1.0. Unlike `pc` (the heavy lane's live, evergreen PC) this is the
 //             emulated vintage machine, so it takes a real date.
@@ -73,7 +77,7 @@ export const SYSTEM_RELEASED = {
   sg1000: "1983-07-15", vectrex: "1982-11-01", coleco: "1982-08-01", dos: "1981-08-12",
   arcadia: "1982-05-01", intv: "1979-12-03",
   o2em: "1978-12-01", a2600: "1977-09-11", channelf: "1976-11-01",
-  arcade: "1971-11-15",
+  arcade: "1971-11-15", mame: "1971-11-15",
 };
 
 // Platforms that never had A release date because they never stopped having one. The PC is not a
@@ -111,7 +115,7 @@ export const ART_SYSTEMS = new Set([
   "psp", "dc", "sms", "gg", "sg1000", "segacd", "sega32x", "pce", "ngpc", "wsc",
   "a2600", "a7800", "lynx", "vb", "fds", "nds", "3ds", "dos",
   // arcade/neogeo now resolve real titles → art via libretro (neogeo) or IGDB cover (arcade).
-  "arcade", "neogeo",
+  "arcade", "neogeo", "mame",
 ]);
 
 /** True when a card should attempt /ArcadeImage rather than going straight to its placeholder. */

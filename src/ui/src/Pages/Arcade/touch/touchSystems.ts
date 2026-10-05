@@ -133,6 +133,9 @@ export const SYSTEM_TOUCH_SPECS: Record<string, SystemTouchSpec> = {
   arcadia: retro2(),
   cdi: retro2({ faceButtons: [fb("B", "1"), fb("A", "2")] }),
   arcade: retro2({ face: "four", faceButtons: FOUR_ARCADE, select: "Coin", palette: ARCADE_56 }),
+  // libretro MAME: buttons 1-6 = B A Y X L R (input_retro.cpp; its per-game re-order is behind
+  // mame_buttons_profiles, which we leave at its default, disabled). 5/6 are the reverse of FBNeo's.
+  mame: retro2({ face: "four", faceButtons: FOUR_ARCADE, select: "Coin", palette: [fb("L", "5"), fb("R", "6")] }),
   naomi: retro2({ face: "four", faceButtons: FOUR_ARCADE, select: "Coin", palette: ARCADE_56 }),
   atomiswave: retro2({ face: "four", faceButtons: FOUR_ARCADE, select: "Coin", palette: ARCADE_56 }),
   // FBNeo Neo Geo: B=A, A=B, Y=C, X=D.

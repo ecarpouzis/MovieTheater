@@ -550,6 +550,10 @@ namespace MovieTheater.Arcade
         // (RomCache tolerates an absent dep — that's an incomplete romset, surfaced by fbneo at launch).
         private static string[]? DepsFor(ArcadeGame g, FbneoDat? dat)
         {
+            // FBNeo closures only. A "mame" row (libretro MAME) is a NON-MERGED set — whole on its own — and its
+            // BIOS/device zips live on the workers (system/mame/bios); an FBNeo closure would stage FBNeo's idea
+            // of the parent next to it from a folder that may not even hold one.
+            if (g.System is not ("arcade" or "neogeo")) return null;
             if (dat == null || g.SourceArchivePath == null || !dat.Contains(g.CloudRetroGameKey)) return null;
             var closure = dat.Closure(g.CloudRetroGameKey);   // [self, dep1, dep2, ...]
             if (closure.Count <= 1) return null;

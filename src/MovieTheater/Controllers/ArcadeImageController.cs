@@ -54,7 +54,7 @@ namespace MovieTheater.Controllers
             "sega32x" => "Sega 32X", "sg1000" => "SG-1000", "dc" => "Dreamcast", "naomi" => "arcade", "atomiswave" => "arcade",
             "ps1" => "PlayStation", "ps2" => "PlayStation 2", "psp" => "PSP",
             "pce" => "TurboGrafx-16", "ngpc" => "Neo Geo Pocket", "wsc" => "WonderSwan", "neogeo" => "Neo Geo",
-            "a2600" => "Atari 2600", "a7800" => "Atari 7800", "lynx" => "Atari Lynx", "arcade" => "arcade",
+            "a2600" => "Atari 2600", "a7800" => "Atari 7800", "lynx" => "Atari Lynx", "arcade" => "arcade", "mame" => "arcade",
             _ => system,
         };
 

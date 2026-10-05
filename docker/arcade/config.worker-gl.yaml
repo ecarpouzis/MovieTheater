@@ -66,6 +66,8 @@ library:
   systemAliases:
     ps1: psx      # site "ps1"    -> roms/psx   (core key "pcsx")
     arcade: mame  # site "arcade" -> roms/mame  (core key "mame")
+    mame: mamelr  # site "mame"   -> roms/mamelr (core key "mamelr" = libretro MAME). NOT roms/mame: that
+                  # folder is FBNeo's, and the core lookup keys on folder + extension.
 
 emulator:
   # GL ZERO-COPY (3D cores only: n64/gc/ps2/psp/dc). Hand the encoder the texture the core just
@@ -231,6 +233,10 @@ emulator:
     # Glob, not a dir spec: only the loose save files move, so a subdir the core may add later is left
     # alone rather than silently vaulted.
     arcade: "save:fbneo/*"
+    # mame = libretro MAME (2026-10-05). Its nvram (high scores, operator settings, per-game NVRAM) goes to
+    # <save>/mame/nvram/<game>/ (retro_init.cpp Set_Path_Option: save dir + CORE_NAME + "nvram"). A directory
+    # spec on purpose: the whole nvram tree is this player's MAME card, every game in it, like a memory card.
+    mame: "save:mame/nvram"
     # scummvm (2026-07-27) — the fifth unvaulted system, and the one that needed its path PROVEN rather
     # than assumed. Its saves were NOT under any core dir at all: scummvm.ini carried
     # savepath=D:/ArcadeStorage/saves/scummvm, i.e. the GATEWAY's saves mount, which no card can reach
@@ -1723,6 +1729,49 @@ emulator:
           rewind: true
           options:
             fbneo-allow-depth-32: "enabled"   # same 16-bit finding as the mame entry above
+
+        # ─── CURRENT MAME: libretro MAME (2026-10-05) ─────────────────────────────────────────────────
+        # The site's "mame" system: the current-MAME (0.289) games FBNeo doesn't run, ingested by the
+        # arcade-mame-ingest CLI from a NON-MERGED romset + merged CHDs. The buildbot core tracks MAME
+        # releases (libretro/mame makefile BARE_BUILD_VERSION) — the romset version must match it.
+        # How it finds files (libretro-internal/retro_init.cpp): rompath = "<game's folder>;<system>/mame/bios;
+        # <system>/mame/roms" — so the BIOS/device zips live per worker in libretro/system/mame/bios
+        # (scripts/install-mame-system-files.ps1), and a game's CHDs ride the ROM cache as a companion
+        # folder named after the game, beside its zip (MAME looks in <rompath>/<game>/ for disks).
+        # Samples: <system>/mame/samples (same script).
+        mamelr:
+          lib: mame_libretro
+          folder: mamelr
+          roms: ["zip"]
+          # Same reasoning as FBNeo above: raw native sizes (e.g. 384x224) need integer nearest upscale for
+          # chroma; a blur filter would look "fixed" and be worse. coreAspectRatio carries the aspect AND the
+          # cabinet ROTATION to the client (vertical games rendered sideways without it on FBNeo).
+          scale: 3
+          scaleMethod: nearest-neighbour
+          coreAspectRatio: true
+          # MAME's own save states are per driver (listxml savestate="unsupported" on many) and its states are
+          # large; rewind stays off until measured per board, like every core that hasn't been.
+          rewind: false
+          options:
+            # ⚠ REQUIRED, not cosmetic: the core copies this into its argv ONLY when the frontend returns a value
+            # (libretro.cpp: sprintf(mediaType, "-%s", var.value)), and this worker returns nothing for an option
+            # the config doesn't list. Unset, mediaType stays "" ≠ "-rom", so retro_init.cpp execute_game takes
+            # the software path and launches the ROM's FOLDER name as the system: "Unknown system 'mamelr'"
+            # (first boot, 2026-10-05, Marble Madness). "rom" = the content IS the machine.
+            mame_media_type: "rom"
+            mame_softlists_enable: "disabled"       # arcade machines only — software lists are the MESS half
+            mame_softlists_auto_media: "disabled"
+            mame_read_config: "disabled"            # no cfg/ini from disk: what the site sends is what runs
+            mame_write_config: "disabled"
+            mame_mame_paths_enable: "disabled"      # paths from the frontend's system/save dirs (above)
+            mame_buttons_profiles: "disabled"       # button N = B A Y X L R everywhere — the site's touch
+                                                    # presets and gamepad maps assume exactly this order
+            mame_cheats_enable: "disabled"
+            mame_boot_to_osd: "disabled"
+            mame_boot_to_bios: "disabled"
+            mame_throttle: "disabled"               # the frontend paces frames
+            mame_rotation_mode: "libretro"          # rotation reported to the frontend (coreAspectRatio)
+            mame_lightgun_mode: "none"              # gun axes ride the analog stick (no lightgun device here)
 
         # ─── R: systems expansion (2026-07-18) — small 8-bit consoles, all pure-software cores on the
         # standard libretro buildbot, no custom build. Same safety profile as the rest of this 2D tier. ───
