@@ -116,6 +116,47 @@ namespace MovieTheater.Arcade
             return string.IsNullOrWhiteSpace(desc) ? m.Name : desc;
         }
 
+        // Hardware/port markers in a MAME description that make a set a DIFFERENT product from the arcade game
+        // of the same name: a console port in a coin-op cabinet (PlayChoice-10, Mega-Tech), a bootleg of a home
+        // version, a plug-and-play unit. Label = what the title keeps in brackets.
+        private static readonly (Regex Pattern, string Label)[] PlatformMarkers =
+        {
+            (new Regex(@"PlayChoice-10", RegexOptions.IgnoreCase), "PlayChoice-10"),
+            (new Regex(@"Mega-Tech", RegexOptions.IgnoreCase), "Mega-Tech"),
+            (new Regex(@"Mega Play", RegexOptions.IgnoreCase), "Mega Play"),
+            (new Regex(@"bootleg of (?:the )?Mega Drive", RegexOptions.IgnoreCase), "Mega Drive bootleg"),
+            (new Regex(@"bootleg of (?:the )?(?:SNES|Super Famicom)", RegexOptions.IgnoreCase), "SNES bootleg"),
+            (new Regex(@"bootleg of (?:the )?(?:NES|Famicom)", RegexOptions.IgnoreCase), "NES bootleg"),
+            (new Regex(@"Magnet System", RegexOptions.IgnoreCase), "Magnet System"),
+            (new Regex(@"Max-A-Flex", RegexOptions.IgnoreCase), "Max-A-Flex"),
+            (new Regex(@"PC Engine", RegexOptions.IgnoreCase), "PC Engine"),
+            (new Regex(@"Photon System", RegexOptions.IgnoreCase), "Photon System"),
+            (new Regex(@"JAKKS Pacific", RegexOptions.IgnoreCase), "JAKKS Pacific TV Game"),
+            (new Regex(@"M\.A\.C\.H\. 3", RegexOptions.IgnoreCase), "M.A.C.H. 3"),
+            (new Regex(@"Nintendo Super System", RegexOptions.IgnoreCase), "Nintendo Super System"),
+        };
+
+        public enum CollisionAction { Rename, SameGame }
+
+        /// <summary>
+        /// A MAME card whose title equals an enabled card on another arcade core (FBNeo, flycast) — one Arcade tile
+        /// would show two cards of the same name. Decide what it is: a different PRODUCT (a hardware/port marker in
+        /// its description → keep the marker: "1942 - PlayChoice-10"), a different GAME of the same name (a different
+        /// maker → "Star Wars - Sega"), or the SAME game in another revision (same maker → the other core already
+        /// plays it; the caller retires the MAME rows). Makers compare on their first word ("Atari Games" = "Atari").
+        /// </summary>
+        public static (CollisionAction Action, string? Suffix) DecideCollision(string mameDescription, string? mameMaker, string? otherMaker)
+        {
+            foreach (var (p, label) in PlatformMarkers)
+                if (p.IsMatch(mameDescription ?? "")) return (CollisionAction.Rename, label);
+            static string Head(string? m) => Regex.Match((m ?? "").ToLowerInvariant(), @"[a-z0-9]+").Value;
+            var mine = Head(mameMaker);
+            if (mine is "" or "unknown" or "bootleg") return (CollisionAction.Rename, string.IsNullOrEmpty(mine) || mine == "unknown" ? "MAME" : "bootleg");
+            if (Head(otherMaker) is { Length: > 0 } theirs && theirs != mine)
+                return (CollisionAction.Rename, Regex.Replace(mameMaker!.Split('/')[0].Trim(), @"\s*\(.*\)$", ""));
+            return (CollisionAction.SameGame, null);
+        }
+
         /// <summary>A MAME year ("1991", "199?", "19??") as a number when it is exact.</summary>
         public static int? YearOf(string? year) =>
             year is { Length: 4 } && int.TryParse(year, out var y) && y > 1900 ? y : null;

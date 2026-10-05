@@ -108,6 +108,26 @@ namespace MovieTheater.Tests
             finally { Directory.Delete(root, true); }
         }
 
+        [Theory]
+        [InlineData("1942 (PlayChoice-10)", "Capcom", "Capcom", "PlayChoice-10")]
+        [InlineData("Super Street Fighter II - The New Challengers (scrambled bootleg of Mega Drive version)", "bootleg / Capcom", "Capcom", "Mega Drive bootleg")]
+        [InlineData("Xain'd Sleena (SC 3.0, Magnet System)", "EFO SA / Cedar", "Technos", "Magnet System")]
+        [InlineData("Star Wars (Sega, US)", "Sega", "Atari", "Sega")]                 // a different game, same name
+        [InlineData("Freeze (Atari) (prototype)", "Atari Games", "Cinematronics", "Atari Games")]
+        [InlineData("Tetris (Korean bootleg of Mirrorsoft PC-XT Tetris)", "bootleg", "Atari Games", "bootleg")]
+        public void A_colliding_title_keeps_what_makes_it_different(string desc, string maker, string otherMaker, string suffix)
+        {
+            Assert.Equal((ArcadeMameSelection.CollisionAction.Rename, (string?)suffix), ArcadeMameSelection.DecideCollision(desc, maker, otherMaker));
+        }
+
+        [Fact]
+        public void The_same_game_from_the_same_maker_is_retired_not_renamed()
+        {
+            // "Atari Games" vs "Atari" compare on the first word: one company, one game, another revision.
+            Assert.Equal(ArcadeMameSelection.CollisionAction.SameGame,
+                ArcadeMameSelection.DecideCollision("Relief Pitcher (System 1, prototype)", "Atari Games", "Atari").Action);
+        }
+
         [Fact]
         public void Reads_progettosnaps_folder_inis()
         {

@@ -72,6 +72,9 @@ namespace MovieTheater.Arcade
         [CommandOption("enable", Description = "Instead of ingesting: ENABLE this batch's rows whose zip (and CHDs) exist. Chunked like the ingest.")]
         public bool Enable { get; set; }
 
+        [CommandOption("fix-collisions", Description = "Instead of ingesting: resolve MAME cards whose title equals an enabled card on another arcade core (rename with the hardware/maker, or retire the same game). Dry run unless --apply.")]
+        public bool FixCollisions { get; set; }
+
         [CommandOption("apply", Description = "Write changes. Omit for a dry run (default).")]
         public bool Apply { get; set; }
 
@@ -94,6 +97,7 @@ namespace MovieTheater.Arcade
         {
             var w = console.Output;
             if (Enable) { await EnableAsync(w); return; }
+            if (FixCollisions) { await FixCollisionsAsync(w); return; }
 
             XmlPath = RepoDataPath.Resolve(XmlPath);
             if (!Directory.Exists(RomsDir)) throw new CommandException($"--roms not found: {RomsDir}", 1);
@@ -220,6 +224,72 @@ namespace MovieTheater.Arcade
             w.WriteLine($"{{ processed: {processed}, remaining: {remaining}, nextCursor: {nextCursor ?? "null"} }}");
             if (!Apply) w.WriteLine("DRY RUN — nothing written. Re-run with --apply.");
             else if (remaining > 0) w.WriteLine($"More to do: re-run with --after {nextCursor}.");
+        }
+
+        /// <summary>
+        /// One Arcade tile spans FBNeo, MAME and flycast, so a MAME card titled like a card on another arcade core
+        /// shows up twice under one name. Each such MAME card (a whole System+CollapseKey group) is renamed with
+        /// what makes it different — its hardware/port ("1942 (PlayChoice-10)") or its maker ("Star Wars (Sega)") —
+        /// or, when it is the same game from the same maker, disabled with a note: the other core already plays it.
+        /// Small (dozens of cards), so not chunked; dry run unless --apply.
+        /// </summary>
+        private async Task FixCollisionsAsync(TextWriter w)
+        {
+            XmlPath = RepoDataPath.Resolve(XmlPath);
+            var all = new Dictionary<string, ArcadeControlProfile.Machine>(StringComparer.OrdinalIgnoreCase);
+            foreach (var m in ArcadeControlProfile.Read(XmlPath)) all[m.Name] = m;
+
+            await using var db = await dbFactory.CreateDbContextAsync();
+            db.Database.SetCommandTimeout(180);
+            var others = (await db.ArcadeGames
+                    .Where(g => g.IsEnabled && (g.System == "arcade" || g.System == "naomi" || g.System == "atomiswave"))
+                    .Select(g => new { g.CollapseKey, g.System, g.Title, g.CloudRetroGameKey, g.Publisher })
+                    .ToListAsync())
+                .GroupBy(g => g.CollapseKey).ToDictionary(g => g.Key, g => g.First());
+            var mameRows = await db.ArcadeGames.Where(g => g.System == System && g.IsEnabled).ToListAsync();
+            var taken = new HashSet<string>(others.Keys);
+            foreach (var k in mameRows.Select(r => r.CollapseKey)) taken.Add(k);
+
+            int renamed = 0, retired = 0;
+            foreach (var card in mameRows.GroupBy(r => r.CollapseKey).Where(c => others.ContainsKey(c.Key)).OrderBy(c => c.Key))
+            {
+                var other = others[card.Key];
+                var lead = card.OrderBy(r => all.TryGetValue(r.CloudRetroGameKey, out var lm) && lm.CloneOf == null ? 0 : 1).ThenBy(r => r.Id).First();
+                all.TryGetValue(lead.CloudRetroGameKey, out var m);
+                var desc = m == null ? lead.Title : ArcadeMameSelection.TitleSourceFor(m, all);
+                var otherMaker = all.TryGetValue(other.CloudRetroGameKey, out var om) ? om.Manufacturer : other.Publisher;
+                var (action, suffix) = ArcadeMameSelection.DecideCollision(desc, m?.Manufacturer ?? lead.Publisher, otherMaker);
+                if (action == ArcadeMameSelection.CollisionAction.SameGame)
+                {
+                    retired++;
+                    w.WriteLine($"  retire  {lead.Title,-44} same game as [{other.System}] \"{other.Title}\" ({m?.Manufacturer}) — {card.Count()} row(s)");
+                    if (Apply)
+                        foreach (var r in card)
+                        {
+                            r.IsEnabled = false;
+                            r.Notes = (r.Notes ?? "").TrimEnd() + $"\nmame-collision: same game as the {other.System} card \"{other.Title}\", which already plays it";
+                        }
+                    continue;
+                }
+                // " - " not "(...)": the card key (LaunchBoxMetadata.NormalizeTitle) DROPS bracketed text, so a
+                // bracketed marker would fold straight back onto the colliding card.
+                var title = $"{lead.Title} - {suffix}";
+                var key = ArcadeNaming.CollapseKey(title);
+                if (taken.Contains(key)) { w.WriteLine($"  SKIP    {lead.Title} → \"{title}\" also collides; left for a human"); continue; }
+                taken.Add(key);
+                renamed++;
+                w.WriteLine($"  rename  {lead.Title,-44} → \"{title}\"   (vs [{other.System}] \"{other.Title}\", {card.Count()} row(s))");
+                if (Apply)
+                    foreach (var r in card)
+                    {
+                        r.Title = title;
+                        r.SortTitle = ArcadeNaming.ArticleInvert(title);
+                        r.CollapseKey = key;
+                    }
+            }
+            if (Apply) await db.SaveChangesAsync();
+            w.WriteLine($"{{ renamed: {renamed}, retired: {retired} }}");
+            if (!Apply) w.WriteLine("DRY RUN — nothing written. Re-run with --apply.");
         }
 
         /// <summary>The deliberate go-live step: enable a reviewed batch, row by row, only where the files are

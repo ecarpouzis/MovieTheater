@@ -81,7 +81,7 @@ namespace MovieTheater.Controllers
         /// callbacks. The bytes are thumbnailed exactly like a fetched cover and written to a CONTENT-hashed
         /// file (the mount is append-only — a new image is a new name), then the card's anchor row points
         /// BoxArtPath at it, which the GET route serves at step 1. By default only a card with NO servable art
-        /// is touched (409 otherwise); <c>?overwrite=1</c> replaces. A card with BoxArtSourceUrl is refused:
+        /// is touched (409 otherwise); <c>?overwrite=true</c> replaces (a bool — "1" does not bind). A card with BoxArtSourceUrl is refused:
         /// that URL outranks any file, so the upload would never show.
         /// </summary>
         [HttpPost("/API/Arcade/Internal/CardArt/{id:int}")]
@@ -108,7 +108,7 @@ namespace MovieTheater.Controllers
                 var cardRel = generation > 0 ? $"arcade/{game.System}/{cardId}-g{generation}.png" : $"arcade/{game.System}/{cardId}.png";
                 bool HasFile(string? rel) => rel != null && ResolveUnderRoot(root, rel) is { } p && System.IO.File.Exists(p);
                 if (siblings.Any(s => HasFile(s.BoxArtPath)) || HasFile(cardRel))
-                    return Conflict(new { message = "card already has art (pass overwrite=1 to replace)" });
+                    return Conflict(new { message = "card already has art (pass overwrite=true to replace)" });
             }
 
             using var ms = new MemoryStream();
