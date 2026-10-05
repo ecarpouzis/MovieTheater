@@ -235,7 +235,14 @@ webrtc:
   # and Edge 0); room-wide 8 ms pacing cured it but raised EVERY browser's jitter buffer from ~10 ms to 21-61 ms.
   # A viewer is judged lossy on SUSTAINED loss (3 NACKs inside 5 s), and with this on, same-host loss is handed to
   # the pacer instead of the layer-cap/dedup rungs. 8 = the measured cure.
-  lossPacingMs: 8
+  #
+  # OFF since 2026-10-04 (0 = off), together with the capture lane's room-wide default of 8 ms (site,
+  # ArcadeController room create). Both were decided while NO lost packet was ever retransmitted (worker patch
+  # 0054 fixed that). With repair working the retro lane measured better unpaced: Firefox jitter buffer 18-28 ms
+  # paced against ~13 ms unpaced, and a phone on Wi-Fi 32 ms against 22 ms, no stalls and no keyframe requests
+  # either way. The lobby's Network profile (Remote 5 / 5G 8) still paces a room when deliberately chosen. To
+  # re-arm: 8 here, and the lane default in the site.
+  lossPacingMs: 0
   # Playout-delay RTP header extension (codec program B4, 2026-10-02): Chrome renders a frame on decode
   # (minMs) and caps its jitter-buffer delay (maxMs). Chrome offers it (extmap playout-delay); Firefox does
   # not, and is untouched. OFF until a HEADED A/B on real displays (arcade-latency.mjs input-to-photon +

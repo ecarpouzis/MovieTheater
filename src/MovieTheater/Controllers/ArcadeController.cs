@@ -692,9 +692,9 @@ namespace MovieTheater.Controllers
             /// <summary>In-frame packet pacing window in ms (worker patch 0028). The lobby's Network
             /// profile sets it (LAN 0, Remote 5, 5G 8); the worker spreads each encoded frame's RTP
             /// burst over this window so it doesn't slam cellular/shallow-buffer queues. Nullable on
-            /// purpose: null = no deliberate choice (lane defaults apply — capture 8, GL 0), while an
-            /// explicit 0 = pacing off, honored even on capture. The UI only sends a value when the
-            /// Network dropdown was deliberately set.</summary>
+            /// purpose: null = no deliberate choice = unpaced on both lanes (the capture lane's default of 8
+            /// was dropped 2026-10-04), while an explicit value is honored as sent. The UI only sends a
+            /// value when the Network dropdown was deliberately set.</summary>
             public int? PaceMs { get; set; }
 
             /// <summary>Per-room video codec (worker patch 0036): "av1"/"h264", null/empty = worker config
@@ -1775,13 +1775,16 @@ namespace MovieTheater.Controllers
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&vbr=" + vbr };
             if (request.AudioFec is 1 or 2)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&fec=" + request.AudioFec };
-            // In-frame packet pacing (patch 0028). Capture rooms DEFAULT it to 8 ms server-side: the
-            // capture stream is the fattest we send (~22 Mbps derived H.264, intra-refresh ⇒ every
-            // frame is sizable), and un-paced bursts on tablet WiFi queue behind each other and jitter the
-            // audio packets sharing the air, growing the browser's audio jitter buffer (plan §12C). An
-            // explicit lobby choice always wins, INCLUDING an explicit 0 (LAN on a capture room): only a
-            // null (no deliberate choice) falls to the lane default.
-            var paceMs = request.PaceMs ?? (isCapture ? 8 : 0);
+            // In-frame packet pacing (patch 0028). No lane default since 2026-10-04: a room is paced only
+            // when the lobby's Network profile was deliberately set (Remote 5, 5G 8).
+            //   Capture rooms used to DEFAULT to 8 ms: the capture stream is the fattest we send, and un-paced
+            // bursts on tablet WiFi queue behind each other and jitter the audio packets sharing the air,
+            // growing the browser's audio jitter buffer (plan §12C). That was decided while no lost packet was
+            // ever retransmitted (worker patch 0054 fixed it), and the 8 ms window measured 15-50 ms of extra
+            // video jitter buffer per browser. With repair working the retro lane ran better unpaced on the
+            // same phone (jitter buffer 32 -> 22 ms, no stalls), so the capture default is dropped too. If
+            // tablet-WiFi AUDIO roughens on capture rooms, this is the line to restore (`isCapture ? 8 : 0`).
+            var paceMs = request.PaceMs ?? 0;
             if (paceMs > 0)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&pace=" + Math.Clamp(paceMs, 1, 20) };
             // Codec rides the WS URL like vbr/fec — but unlike them it ALSO rides every joiner's URL

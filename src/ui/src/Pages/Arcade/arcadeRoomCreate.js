@@ -185,9 +185,9 @@ export function saveQuality(q) { try { localStorage.setItem(QUALITY_KEY, JSON.st
  * The creator's stored quality is read FRESH here (so a change made in the quality pills a moment
  * ago wins), the network profile is unbundled into the wire params — the server and worker stay
  * profile-agnostic — and "auto" is resolved to a concrete codec, because the room's encoder needs
- * one. `paceMs` is sent ONLY for a deliberate dropdown pick: omitting it (server null) keeps the
- * lane defaults (capture 8, GL 0), while an explicit LAN 0 must actually reach the server to beat
- * the capture default.
+ * one. `paceMs` is sent ONLY for a deliberate dropdown pick: omitting it (server null) means
+ * unpaced on both lanes (the capture lane's default of 8 was dropped 2026-10-04); an explicit pick
+ * is sent as chosen.
  *
  * Resolves to the descriptor it pushed with, or null when no room was started (the caller clears
  * its own "creating" state in a finally).
