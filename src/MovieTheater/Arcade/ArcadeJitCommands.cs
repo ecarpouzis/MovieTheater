@@ -559,7 +559,36 @@ namespace MovieTheater.Arcade
             if (closure.Count <= 1) return null;
             var dir = Path.GetDirectoryName(g.SourceArchivePath)!;
             var ext = Path.GetExtension(g.SourceArchivePath);  // ".zip"
-            return closure.Skip(1).Select(name => Path.Combine(dir, name + ext)).ToArray();
+            return closure.Skip(1).Select(name => ResolveDep(dir, name + ext)).ToArray();
+        }
+
+        // A dep (parent or BIOS zip) normally sits beside the game. A modern MAME romset splits BIOS/device sets
+        // into their OWN folder ("MAME 0.289 ROMs (bios-devices)" next to "... (non-merged)"), so when the sibling
+        // isn't there, look in any sibling folder whose name says "bios". The candidate list per source folder is
+        // computed once. Not found anywhere → the sibling path (RomCache tolerates an absent dep).
+        private static readonly Dictionary<string, string[]> BiosDirsBySource = new(StringComparer.OrdinalIgnoreCase);
+        private static string ResolveDep(string dir, string file)
+        {
+            var sibling = Path.Combine(dir, file);
+            if (!BiosDirsBySource.TryGetValue(dir, out var biosDirs))
+            {
+                try
+                {
+                    var parent = Path.GetDirectoryName(dir);
+                    biosDirs = parent == null ? Array.Empty<string>()
+                        : Directory.GetDirectories(parent).Where(d => !string.Equals(d, dir, StringComparison.OrdinalIgnoreCase)
+                            && Path.GetFileName(d).Contains("bios", StringComparison.OrdinalIgnoreCase)).ToArray();
+                }
+                catch { biosDirs = Array.Empty<string>(); }
+                BiosDirsBySource[dir] = biosDirs;
+            }
+            if (biosDirs.Length == 0 || File.Exists(sibling)) return sibling;
+            foreach (var b in biosDirs)
+            {
+                var p = Path.Combine(b, file);
+                if (File.Exists(p)) return p;
+            }
+            return sibling;
         }
 
         private sealed record Manifest(int Version, List<ManifestGame> Games);
