@@ -74,6 +74,65 @@ namespace MovieTheater.Controllers
             this.config = config;
         }
 
+        /// <summary>
+        /// Server-to-server: store a cover for a card from bytes we already hold — art the cascade can't reach
+        /// because it lives on a disk the cluster can't see (the MAME EXTRAs pack's flyers/titles/snaps on the
+        /// house NAS; `arcade-card-art` uploads them). Gated by the arcade internal secret, like the gateway's
+        /// callbacks. The bytes are thumbnailed exactly like a fetched cover and written to a CONTENT-hashed
+        /// file (the mount is append-only — a new image is a new name), then the card's anchor row points
+        /// BoxArtPath at it, which the GET route serves at step 1. By default only a card with NO servable art
+        /// is touched (409 otherwise); <c>?overwrite=1</c> replaces. A card with BoxArtSourceUrl is refused:
+        /// that URL outranks any file, so the upload would never show.
+        /// </summary>
+        [HttpPost("/API/Arcade/Internal/CardArt/{id:int}")]
+        [RequestSizeLimit(16 * 1024 * 1024)]
+        public async Task<IActionResult> UploadCardArt(int id, [FromQuery] bool overwrite = false, [FromQuery] string? source = null)
+        {
+            var secret = config.ArcadeTokenSecret;
+            if (string.IsNullOrEmpty(secret) ||
+                !string.Equals(Request.Headers["X-Arcade-Internal-Secret"].ToString(), secret, StringComparison.Ordinal))
+                return Unauthorized();
+            if (string.IsNullOrEmpty(config.MoviePostersDir)) return StatusCode(503, new { message = "no posters dir" });
+            var root = Path.GetFullPath(config.MoviePostersDir);
+
+            var game = await movieDb.ArcadeGames.FirstOrDefaultAsync(g => g.Id == id);
+            if (game == null) return NotFound();
+            var siblings = await movieDb.ArcadeGames.Where(g => g.System == game.System && g.CollapseKey == game.CollapseKey).ToListAsync();
+            var anchor = siblings.OrderBy(s => s.Id).First();
+            var cardId = anchor.Id;
+            if (siblings.Any(s => !string.IsNullOrWhiteSpace(s.BoxArtSourceUrl)))
+                return Conflict(new { message = "card has a BoxArtSourceUrl, which outranks an uploaded file" });
+            if (!overwrite)
+            {
+                var generation = siblings.Max(s => s.BoxArtGeneration);
+                var cardRel = generation > 0 ? $"arcade/{game.System}/{cardId}-g{generation}.png" : $"arcade/{game.System}/{cardId}.png";
+                bool HasFile(string? rel) => rel != null && ResolveUnderRoot(root, rel) is { } p && System.IO.File.Exists(p);
+                if (siblings.Any(s => HasFile(s.BoxArtPath)) || HasFile(cardRel))
+                    return Conflict(new { message = "card already has art (pass overwrite=1 to replace)" });
+            }
+
+            using var ms = new MemoryStream();
+            await Request.Body.CopyToAsync(ms);
+            byte[] thumb;
+            try { thumb = ArcadeBoxArt.Thumbnail(ms.ToArray(), ThumbPx); }
+            catch { return BadRequest(new { message = "not a decodable image" }); }
+            if (thumb == null || thumb.Length == 0) return BadRequest(new { message = "not a decodable image" });
+
+            var rel = $"arcade/{game.System}/{cardId}-u{ShortHash(Convert.ToHexString(System.Security.Cryptography.SHA1.HashData(thumb)))}.png";
+            var path = ResolveUnderRoot(root, rel);
+            if (path == null) return BadRequest();
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            await System.IO.File.WriteAllBytesAsync(path, thumb);
+            // Every sibling points at the new file: step 1 serves the FIRST sibling path that exists, and an older
+            // path on another version would otherwise keep winning after an overwrite.
+            foreach (var s in siblings) s.BoxArtPath = rel;
+            var crumb = $"card-art: {source ?? "upload"} {DateTime.UtcNow:yyyy-MM-dd}";
+            anchor.Notes = string.IsNullOrWhiteSpace(anchor.Notes) ? crumb : anchor.Notes.TrimEnd() + "\n" + crumb;
+            await movieDb.SaveChangesAsync();
+            NoArt.TryRemove(cardId, out _);   // the in-memory "nothing found" verdict is now wrong
+            return Ok(new { cardId, path = rel, bytes = thumb.Length });
+        }
+
         [HttpGet("/ArcadeImage/{id}")]
         public async Task<IActionResult> BoxArt(int id)
         {
