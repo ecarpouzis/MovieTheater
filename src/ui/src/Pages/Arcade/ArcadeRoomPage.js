@@ -43,6 +43,9 @@ const STATUS_TEXT = {
 // The two statuses that mean "media is flowing" — both must kick autoplay, or a spectator stares at a
 // frozen first frame behind the "Tap to start" overlay.
 const LIVE_STATUS = ["playing", "spectating"];
+/** The room's header row (Back · status · room code) plus breathing room — what a landscape game's
+ *  height budget leaves out of the viewport, so the whole picture fits on a short (sideways-phone) screen. */
+const ROOM_CHROME_PX = 84;
 // How long a room may sit at "connecting" (ROM-status poll + signaling socket not yet open) before the player is told
 // why. A healthy start leaves "connecting" in well under a second once the ROM is staged; staging itself reports
 // progress through the same poll, which a blocked browser never completes.
@@ -1665,7 +1668,12 @@ export default function ArcadeRoomPage() {
             // rotatedVideoSize, overflowed it: vertical arcade games looked zoomed and cut off on phones
             // held upright (Donkey Kong, 2026-10-05). The immersive branch above already sizes this way.
             ? { position: "relative", aspectRatio: ar, width: `min(100%, calc(min(74vh, 760px) * ${ar}))`, margin: "0 auto" }
-            : { position: "relative", aspectRatio: ar, width: "100%" };
+            // Landscape games get the same width-driven, height-capped box. A bare `width: 100%` had no
+            // height budget at all, so on a SHORT screen — a phone held sideways (844x390) — the 4:3 box
+            // came out 404 px tall under a 60 px header and the bottom of the game ran off the screen
+            // (2026-10-05). The budget is the viewport less the room's header row; on a tall screen the
+            // width still wins, so desktop and upright phones are unchanged.
+            : { position: "relative", aspectRatio: ar, width: `min(100%, calc((100dvh - ${ROOM_CHROME_PX}px) * ${ar}))`, margin: "0 auto" };
         const inputSystem = effectiveInputSystem(system, gameKey, controllerScheme);
         const avail = roomActionAvailability({ system, competitive, spectator, canRewind, slot: yourSlot });
         // The ☰ is for anyone who might be without the button bar: fullscreen, or a touch screen.
