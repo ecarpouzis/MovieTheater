@@ -10,6 +10,7 @@ import { SYSTEM_LABEL, systemLabel, NO_SAVE_STATE_SYSTEMS, HEAVY_LANE_SYSTEMS, Q
 import { lobbyPath } from "./arcadeLobbyState";
 import { installRoomKeySwallow, installBackTrap } from "./roomInputGuard";
 import { useWakeLock } from "../../useWakeLock";
+import RoomGeometryProbe from "./RoomGeometryProbe";
 import AchievementToaster from "./AchievementToast";
 import ArcadeHostBanner from "./ArcadeHostBanner";
 import "../../Components/SheetModal.css";
@@ -1695,6 +1696,10 @@ export default function ArcadeRoomPage() {
                 playsInline
                 style={videoStyle}
               />
+              {/* ?geo=1 — the on-device geometry readout (RoomGeometryProbe says why it exists). */}
+              {new URLSearchParams(location.search).get("geo") === "1" && (
+                <RoomGeometryProbe videoRef={videoRef} coreAspect={coreAspect} coreRot={coreRot} />
+              )}
               {needsTap && (
                 <button
                   onClick={tryPlayVideo}
