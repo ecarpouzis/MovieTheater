@@ -14,7 +14,7 @@ import { Button, Input, Segmented, Select, Slider, Switch } from "antd";
 import { ControlVisual, controlBox } from "./TouchControls";
 import {
   ACTION_LABEL, addableButtons, defaultLayout, newControlId,
-  type AxisPush, type Bucket, type ButtonControl, type Control, type Layout, type RoomAction, type StickOutput,
+  type AxisPush, type Bucket, type ButtonControl, type Control, type Layout, type PictureRect, type RoomAction, type StickOutput,
 } from "./touchLayout";
 import { bitChoicesFor, type BitName, type SystemTouchSpec } from "./touchSystems";
 import type { TouchPreset } from "./touchPresets";
@@ -34,6 +34,8 @@ export interface TouchLayoutEditorProps {
   gameTitle?: string | null;
   /** The room's built-in presets — "Start from" rebuilds the draft from any of them. */
   presets: TouchPreset[];
+  /** Where the game picture sits — "Start over" keeps the minor buttons off it, like the live preset. */
+  picture?: PictureRect | null;
   startPresetId: string;
   /** The spec whose buttons "+ Add" offers (the preset on screen: a Genesis 6-button preset offers Mode, …). */
   paletteSpec: SystemTouchSpec;
@@ -68,7 +70,7 @@ type Drag =
   | { kind: "resize"; id: string; pid: number; cx: number; cy: number; d0: number; s0: number; w0: number; h0: number };
 
 export default function TouchLayoutEditor({
-  initial, source, size, bucket, inputSystem, systemName, gameTitle, presets, startPresetId, paletteSpec,
+  initial, source, size, bucket, inputSystem, systemName, gameTitle, presets, picture, startPresetId, paletteSpec,
   onSave, onUseSystemLayout, onCancel,
 }: TouchLayoutEditorProps) {
   const [startFrom, setStartFrom] = useState(() => (presets.some((x) => x.id === startPresetId) ? startPresetId : presets[0]?.id));
@@ -332,7 +334,7 @@ export default function TouchLayoutEditor({
           <div className="tle-actions">
             <Button size="small" onClick={() => {
               const preset = presets.find((x) => x.id === startFrom);
-              update(defaultLayout(inputSystem, bucket, size.w / Math.max(1, size.h), preset?.spec));
+              update(defaultLayout(inputSystem, bucket, size.w / Math.max(1, size.h), preset?.spec, picture));
               setSelectedId(null);
             }}>
               Start over

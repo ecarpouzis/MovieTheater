@@ -160,6 +160,8 @@ export default function ArcadeRoomPage() {
 
   const videoRef = useRef(null);
   const playerRef = useRef(null);
+  // The aspect-correct picture box inside the player — the touch pad keeps its minor buttons off it.
+  const pictureRef = useRef(null);
   const sessionRef = useRef(null);
   // A decoder-wedge recovery's replacement session while it joins (before it becomes sessionRef's).
   const candidateRef = useRef(null);
@@ -1689,7 +1691,7 @@ export default function ArcadeRoomPage() {
         };
         return (
           <div ref={playerRef} style={outerStyle}>
-            <div style={innerStyle}>
+            <div ref={pictureRef} style={innerStyle}>
               <video
                 ref={videoRef}
                 autoPlay
@@ -1728,6 +1730,7 @@ export default function ArcadeRoomPage() {
                   store={touchStore}
                   save={saveTouchLayout}
                   onResolved={setTouchResolved}
+                  pictureRef={pictureRef}
                   onFrame={(mask, axes) => sessionRef.current?.setVirtualInput?.(mask, axes)}
                   onAction={(action, engaged) => runRoomActionRef.current(action, engaged)}
                   actionAllowed={(action) => action === "menu" || !!avail[action]}

@@ -46,7 +46,8 @@ describe("defaultLayout", () => {
           expect(c.x).toBeGreaterThanOrEqual(0); expect(c.x).toBeLessThanOrEqual(1);
           expect(c.y).toBeGreaterThanOrEqual(0); expect(c.y).toBeLessThanOrEqual(1);
         }
-        expect(l.controls.some((c) => c.kind === "action" && c.action === "menu"), `${sys} has a menu`).toBe(true);
+        // The room's own ☰ is the one menu; a second one on the pad was a duplicate parked over the game.
+        expect(l.controls.some((c) => c.kind === "action"), `${sys} has a pad action`).toBe(false);
       }
     }
   });
@@ -91,6 +92,38 @@ describe("defaultLayout", () => {
     const a = l.controls.find((c) => c.id === "face-A")!, y = l.controls.find((c) => c.id === "face-Y")!;
     const H = 100, W = H * aspect;
     expect(Math.abs((b.y - x.y) * H - (a.x - y.x) * W)).toBeLessThan(0.5);
+  });
+
+  it("puts Coin/Start below an upright arcade picture, not on it (1942 on a phone held upright)", () => {
+    // 390x844: a 3:4 picture pinned to the top fills the width and ends at 520/844.
+    const picture = { x0: 0, y0: 0, x1: 1, y1: 0.62 };
+    const l = defaultLayout("arcade", "portrait", 390 / 844, undefined, picture);
+    for (const id of ["select", "start"]) {
+      const c = l.controls.find((x) => x.id === id)!;
+      expect(c.y, `${id} at ${c.y}`).toBeGreaterThan(0.85);
+    }
+  });
+
+  it("walks Select/Start out to the side margins beside a 4:3 picture held sideways", () => {
+    // 844x390: a 4:3 picture is 520 wide, centred → x ∈ [0.19, 0.81].
+    const picture = { x0: 0.19, y0: 0, x1: 0.81, y1: 1 };
+    for (const sys of ["snes", "ps1", "genesis", "arcade", "nes"]) {
+      const l = defaultLayout(sys, "landscape", 844 / 390, undefined, picture);
+      const sel = l.controls.find((x) => x.id === "select"), sta = l.controls.find((x) => x.id === "start")!;
+      if (sel) {
+        expect(sel.x, `${sys} select at ${sel.x}`).toBeLessThan(0.19);
+        expect(sta.x, `${sys} start at ${sta.x}`).toBeGreaterThan(0.81);
+      } else {
+        expect(sta.x < 0.19 || sta.x > 0.81, `${sys} lone start at ${sta.x}`).toBe(true); // either margin will do
+      }
+    }
+  });
+
+  it("leaves the minor buttons where they were when the picture fills the screen", () => {
+    const full = { x0: 0, y0: 0, x1: 1, y1: 1 };
+    for (const [bucket, aspect] of BUCKETS) {
+      expect(defaultLayout("snes", bucket, aspect, undefined, full)).toEqual(defaultLayout("snes", bucket, aspect));
+    }
   });
 
   it("lists the palette's unplaced buttons as addable, and not the placed ones", () => {

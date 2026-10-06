@@ -99,16 +99,18 @@ export interface ResolveArgs {
   presets?: TouchPreset[];
   /** Which preset to show when nothing was picked or edited. Absent/unknown = the first. */
   suggested?: string | null;
+  /** Where the game picture sits on the layer — generated layouts keep the minor buttons off it. */
+  picture?: PictureRect | null;
 }
 
 export function resolveLayout(store: LayoutStore | null | undefined, a: ResolveArgs): ResolvedLayout {
-  const { system, inputSystem, gameKey, bucket, aspect } = a;
+  const { system, inputSystem, gameKey, bucket, aspect, picture } = a;
   const all = store?.layouts || {};
   const picks = store?.picks || {};
   const presets = a.presets && a.presets.length ? a.presets : null;
   const presetById = (id: string | null | undefined) => (id && presets ? presets.find((p) => p.id === id) || null : null);
   const fromPreset = (p: TouchPreset, source: ResolvedLayout["source"], pickScope: ResolvedLayout["pickScope"]): ResolvedLayout =>
-    ({ layout: defaultLayout(inputSystem, bucket, aspect, p.spec), source, presetId: p.id, pickScope });
+    ({ layout: defaultLayout(inputSystem, bucket, aspect, p.spec, picture), source, presetId: p.id, pickScope });
   const gameLayout = gameKey ? all[gameKeyFor(system, gameKey, bucket)] : undefined;
   const sysLayout = all[systemKey(inputSystem, bucket)];
 
@@ -129,7 +131,7 @@ export function resolveLayout(store: LayoutStore | null | undefined, a: ResolveA
 
   const suggested = presetById(a.suggested) || (presets ? presets[0] : null);
   if (suggested) return fromPreset(suggested, "default", null);
-  return { layout: defaultLayout(inputSystem, bucket, aspect), source: "default", presetId: null, pickScope: null };
+  return { layout: defaultLayout(inputSystem, bucket, aspect, undefined, picture), source: "default", presetId: null, pickScope: null };
 }
 
 // ── Defaults ───────────────────────────────────────────────────────────────────────────────────────
@@ -142,8 +144,7 @@ interface Anchors {
   faceWithR: [number, number, number]; // face cluster when a right stick/C-cluster takes the lower slot
   L: [number, number]; R: [number, number]; L2: [number, number]; R2: [number, number];
   select: [number, number]; start: [number, number];
-  menu: [number, number];
-  shoulderS: number; smallS: number; menuS: number;
+  shoulderS: number; smallS: number;
 }
 
 const LANDSCAPE: Anchors = {
@@ -151,25 +152,26 @@ const LANDSCAPE: Anchors = {
   face: [0.87, 0.6, 0.36], faceWithR: [0.87, 0.56, 0.32], rstick: [0.72, 0.85, 0.24],
   // Nothing in the top-right corner: the room's fullscreen ✕ and ☰ live there.
   L: [0.07, 0.34], R: [0.93, 0.34], L2: [0.07, 0.2], R2: [0.93, 0.2],
-  select: [0.43, 0.94], start: [0.57, 0.94], menu: [0.5, 0.06],
-  shoulderS: 0.13, smallS: 0.1, menuS: 0.09,
+  select: [0.43, 0.94], start: [0.57, 0.94],
+  shoulderS: 0.13, smallS: 0.1,
 };
 
-// Select/Start sit up between the shoulders, not along the bottom edge: down there they landed ON the
-// secondary d-pad/stick and the N64's C-buttons (the overlap check in touchPresets.test.ts).
+// Select/Start (Coin/Start) start at the bottom edge: they're pressed a few times a game, so they get the
+// space furthest from the picture and the thumbs. Where a system's secondary stick / C-buttons already
+// own the bottom edge, settle() walks them to the nearest free spot (the overlap check in touchPresets.test.ts).
 const PORTRAIT: Anchors = {
   primary: [0.22, 0.76, 0.34], secondary: [0.38, 0.93, 0.22],
   face: [0.78, 0.76, 0.36], faceWithR: [0.78, 0.73, 0.32], rstick: [0.62, 0.93, 0.22],
   L: [0.09, 0.6], R: [0.91, 0.6], L2: [0.26, 0.6], R2: [0.74, 0.6],
-  select: [0.42, 0.66], start: [0.58, 0.66], menu: [0.5, 0.6],
-  shoulderS: 0.16, smallS: 0.12, menuS: 0.1,
+  select: [0.42, 0.955], start: [0.58, 0.955],
+  shoulderS: 0.16, smallS: 0.12,
 };
 
 // The DS/3DS picture IS a touchscreen, so in landscape everything is pushed into the side margins.
 const LANDSCAPE_MARGINS: Partial<Anchors> = {
   primary: [0.11, 0.55, 0.26], secondary: [0.11, 0.85, 0.2],
   face: [0.89, 0.58, 0.28], faceWithR: [0.89, 0.58, 0.28],
-  select: [0.8, 0.93], start: [0.91, 0.93], menu: [0.06, 0.08],
+  select: [0.8, 0.93], start: [0.91, 0.93],
   L: [0.07, 0.25], R: [0.93, 0.25],
 };
 
@@ -214,11 +216,64 @@ const ZONES: Record<Bucket, { left: [number, number, number, number]; right: [nu
   portrait: { left: [0.25, 0.8, 0.5, 0.36], right: [0.75, 0.8, 0.5, 0.36], leftWide: [0.34, 0.8, 0.64, 0.36] },
 };
 
+/** The game picture's box on the layer, as fractions (x0,y0 = top-left). */
+export interface PictureRect { x0: number; y0: number; x1: number; y1: number }
+
+/**
+ * The minor buttons — shoulders, Select/Start/Coin, mode pills — aren't pinned: each settles at the spot
+ * nearest its anchor that collides with nothing already placed (nor the room's ✕/☰ corner) and, when the
+ * screen has any free space, stays OFF the picture. A shoulder may only drift a little (it's played
+ * mid-game); a Select/Start may go much further (it's pressed a few times a game). Geometry in units of
+ * the layer's height; `u` = min(w, h).
+ */
+interface SettleCtx { W: number; H: number; u: number; pic: PictureRect | null; placed: Control[] }
+const SETTLE_GAP = 0.03;   // u — clear space kept between two controls
+const SETTLE_STEP = 0.03;  // u — search grid
+const CHROME = { w: 0.3, h: 0.15 }; // u — the room's ✕ and ☰ in the top-right corner (two 44 px buttons, 12 px in)
+
+function settle(c: ButtonControl, ctx: SettleCtx, reach: number) {
+  const { W, H, u, pic } = ctx;
+  const r = (c.s * u) / 2;
+  const hw = r, hh = c.shape === "pill" ? r * 0.55 : r;
+  const hits = (x: number, y: number) => {
+    if (x - hw < 0 || x + hw > W || y - hh < 0 || y + hh > H) return true;
+    if (x + hw > W - CHROME.w * u && y - hh < CHROME.h * u) return true;
+    for (const o of ctx.placed) {
+      if (o.kind === "region") continue;
+      if (Math.hypot(x - o.x * W, y - o.y * H) < r + (o.s * u) / 2 + SETTLE_GAP * u) return true;
+    }
+    return false;
+  };
+  const onPicture = (x: number, y: number) =>
+    !!pic && x + hw > pic.x0 * W && x - hw < pic.x1 * W && y + hh > pic.y0 * H && y - hh < pic.y1 * H;
+  const x0 = c.x * W, y0 = c.y * H;
+  if (!hits(x0, y0) && !onPicture(x0, y0)) return;
+  const step = SETTLE_STEP * u;
+  const n = Math.ceil(reach / SETTLE_STEP);
+  let best: [number, number] | null = hits(x0, y0) ? null : [x0, y0];
+  let bestScore = best ? 1e6 : Infinity;
+  for (let i = -n; i <= n; i++) {
+    for (let j = -n; j <= n; j++) {
+      const d = Math.hypot(i, j);
+      if (d > n) continue;
+      const x = x0 + i * step, y = y0 + j * step;
+      const score = d * step + (onPicture(x, y) ? 1e6 : 0);
+      if (score >= bestScore || hits(x, y)) continue;
+      best = [x, y]; bestScore = score;
+    }
+  }
+  if (best && (best[0] !== x0 || best[1] !== y0)) { c.x = clamp01(best[0] / W); c.y = clamp01(best[1] / H); }
+}
+
 /**
  * The built-in layout for an input system, generated for the layer's actual aspect (w/h). `specIn` = a
- * preset's spec (touchPresets.ts); absent = the system's standard spec.
+ * preset's spec (touchPresets.ts); absent = the system's standard spec. `picture` = where the game's
+ * picture sits on the layer (absent = unknown, treated as nowhere in particular).
+ *
+ * No ☰ on the pad: the room's own ☰ (RoomOverlay, beside the fullscreen ✕) is the one menu, and a tap
+ * on empty space brings it back when it has faded. A player can still add a pad ☰ in the editor.
  */
-export function defaultLayout(inputSystem: string, bucket: Bucket, aspect: number, specIn?: SystemTouchSpec): Layout {
+export function defaultLayout(inputSystem: string, bucket: Bucket, aspect: number, specIn?: SystemTouchSpec, picture?: PictureRect | null): Layout {
   const spec = specIn || touchSpecFor(inputSystem);
   const A: Anchors = bucket === "landscape" && spec.marginsOnly ? { ...LANDSCAPE, ...LANDSCAPE_MARGINS } : bucket === "landscape" ? LANDSCAPE : PORTRAIT;
   const a = aspect > 0 ? aspect : bucket === "landscape" ? 16 / 9 : 9 / 16;
@@ -279,26 +334,31 @@ export function defaultLayout(inputSystem: string, bucket: Bucket, aspect: numbe
     });
   });
 
+  // The minor buttons, settled one at a time around what's already placed.
+  const ctx: SettleCtx = { W: a, H: 1, u: Math.min(a, 1), pic: picture || null, placed: controls };
+  const minor = (c: ButtonControl, reach: number) => { settle(c, ctx, reach); controls.push(c); };
   for (const k of ["L", "R", "L2", "R2"] as const) {
     const label = spec.shoulders[k];
     if (!label) continue;
     const [x, y] = A[k];
-    controls.push({ id: `sh-${k}`, kind: "button", label, bits: [k], shape: "pill", mode: "press", x, y, s: A.shoulderS });
+    minor({ id: `sh-${k}`, kind: "button", label, bits: [k], shape: "pill", mode: "press", x, y, s: A.shoulderS }, 0.3);
   }
-  if (spec.select) controls.push({ id: "select", kind: "button", label: spec.select, bits: ["SELECT"], shape: "pill", mode: "press", x: A.select[0], y: A.select[1], s: A.smallS });
-  if (spec.start) controls.push({ id: "start", kind: "button", label: spec.start, bits: ["START"], shape: "pill", mode: "press", x: A.start[0], y: A.start[1], s: A.smallS });
+  // A lone Start (a Genesis) takes the middle of the pair's spot.
+  const pairMid = (A.select[0] + A.start[0]) / 2;
+  if (spec.select) minor({ id: "select", kind: "button", label: spec.select, bits: ["SELECT"], shape: "pill", mode: "press", x: spec.start ? A.select[0] : pairMid, y: A.select[1], s: A.smallS }, 1.2);
+  if (spec.start) minor({ id: "start", kind: "button", label: spec.start, bits: ["START"], shape: "pill", mode: "press", x: spec.select ? A.start[0] : pairMid, y: A.start[1], s: A.smallS }, 1.2);
   // Pills sit beside Select/Start, centred on them: a pad-mode switch is pressed once, so it stays out of the
-  // thumbs' way. Above them when they're on the bottom edge (landscape); below when they're up between the
-  // shoulders (portrait), where the ☰ is just above.
+  // thumbs' way. Above them when they're in the bottom half (where they usually are); below otherwise.
+  const sel = controls.find((c) => c.id === "select"), sta = controls.find((c) => c.id === "start");
+  const rowX = sel && sta ? (sel.x + sta.x) / 2 : (sel ?? sta)?.x ?? pairMid;
+  const rowY = sel?.y ?? sta?.y ?? A.select[1];
   (spec.pills || []).forEach((b, i, arr) => {
     const step = A.smallS * 1.3 * ux;
-    const cx = (A.select[0] + A.start[0]) / 2 + (i - (arr.length - 1) / 2) * step;
-    controls.push({
+    minor({
       id: `pill-${b.bit}`, kind: "button", label: b.label, bits: [b.bit], shape: "pill", mode: "press",
-      x: clamp01(cx), y: clamp01(A.select[1] + (A.select[1] > 0.8 ? -1 : 1) * A.smallS * 0.9 * uy), s: A.smallS,
-    });
+      x: clamp01(rowX + (i - (arr.length - 1) / 2) * step), y: clamp01(rowY + (rowY > 0.5 ? -1 : 1) * A.smallS * 0.9 * uy), s: A.smallS,
+    }, 1.2);
   });
-  controls.push({ id: "menu", kind: "action", action: "menu", x: A.menu[0], y: A.menu[1], s: A.menuS });
 
   return { v: 1, controls, opacity: 0.7, idleFade: null, haptics: true, flashOnPress: true, slide: true };
 }
