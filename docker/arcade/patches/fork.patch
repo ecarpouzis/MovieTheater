@@ -10708,6 +10708,423 @@ index 0000000..d7291fe
 +		return fmt.Sprintf("invalid usage: %d", u)
 +	}
 +}
+diff --git a/pkg/network/webrtc/geckoav1.go b/pkg/network/webrtc/geckoav1.go
+new file mode 100644
+index 0000000..1137d29
+--- /dev/null
++++ b/pkg/network/webrtc/geckoav1.go
+@@ -0,0 +1,305 @@
++package webrtc
++
++import "os"
++
++// Firefox sizes its hardware AV1 decoder from the FIRST in-band sequence header — and then never
++// re-sizes what it paints (2026-10-05, Firefox 157 for Android: Donkey Kong and 1942 showed a
++// 320x180 crop of a correctly decoded 672x768 picture, magnified; H.264 was fine; desktop Firefox
++// was fine; LAN or 5G made no difference).
++//
++// Why, from Firefox 157.0.1's own source:
++//
++//   - libwebrtc opens every receive decoder at a 320x180 placeholder (video/video_receive_stream2.cc
++//     InitialDecoderResolution) and only learns a frame's size from the Dependency Descriptor
++//     extension — which Firefox does not negotiate (its video extmaps are mid, abs-send-time,
++//     toffset, transport-cc, video-orientation). H.264 escapes because its SPS is parsed on the way.
++//   - Gecko wraps the decoder in MediaChangeMonitor. Its AV1ChangeMonitor parses the first sequence
++//     header and updates the decoder's CONFIG (the decoder is created at 672x768 and decodes fine),
++//     but it only rebuilds the per-sample `mTrackInfo` — the size Android's RemoteVideoDecoder uses
++//     for every output picture — when a header DIFFERS from the previous one
++//     (dom/media/platforms/wrappers/MediaChangeMonitor.cpp, AV1ChangeMonitor::CheckForChange; the
++//     VP8/VP9 and H.264 monitors rebuild it unconditionally). So the samples keep carrying the
++//     320x180 placeholder, and dom/media/platforms/android/RemoteDataDecoder.cpp cuts a 320x180
++//     SurfaceTextureImage out of each decoded frame. Software and Windows decoders ignore that
++//     field, which is why only Android shows it.
++//
++// The fix we control: make a LATER keyframe's sequence header differ in a field no decoder uses for
++// reconstruction. Of the seven fields the monitor compares (profile, bit depth, monochrome,
++// subsampling x/y, chroma sample position, image size) exactly one is informational:
++// chroma_sample_position (AV1 spec 6.4.2 — chroma siting for display, not decoding). From the
++// second keyframe a Gecko peer receives, its copy of the header carries chroma_sample_position 2
++// (CSP_COLOCATED) instead of the encoder's 0 (CSP_UNKNOWN). Gecko sees a changed header, takes its
++// "new decoder" path (Android: the same decoder recycled with a fresh, correctly sized mTrackInfo;
++// elsewhere: a drained and re-created decoder, once), and the picture is right from then on. The
++// startup burst sends three keyframes half a second apart, so the crop lasts ~0.5 s.
++//
++// Only Gecko peers are touched (IsGeckoSDP, the same tell as the playout-delay block); every other
++// browser receives the encoder's bytes unmodified. The rewrite is a copy — the frame buffer is
++// shared by every peer's sender.
++//
++// Kill switch: CLOUD_GAME_GECKO_AV1_SIZE_KICK=0.
++
++var geckoAV1SizeKick = os.Getenv("CLOUD_GAME_GECKO_AV1_SIZE_KICK") != "0"
++
++// av1CspColocated is the chroma_sample_position value the rewritten header carries.
++const av1CspColocated = 2
++
++// av1SeqInfo is what av1ParseSeqHeader reads out of an OBU_SEQUENCE_HEADER payload — just enough to
++// locate chroma_sample_position, plus the frame size as a self-check against the encoder's log line.
++type av1SeqInfo struct {
++	profile    uint32
++	maxWidth   int
++	maxHeight  int
++	cspBit     int    // bit offset of chroma_sample_position within the payload
++	csp        uint32 // its current value
++	hasCsp     bool   // false for monochrome and 4:4:4 streams (the field does not exist)
++}
++
++type av1BitReader struct {
++	b   []byte
++	pos int
++	err bool
++}
++
++func (r *av1BitReader) bit() uint32 {
++	if r.pos >= len(r.b)*8 {
++		r.err = true
++		return 0
++	}
++	v := (r.b[r.pos>>3] >> (7 - uint(r.pos&7))) & 1
++	r.pos++
++	return uint32(v)
++}
++
++func (r *av1BitReader) bits(n int) uint32 {
++	var v uint32
++	for i := 0; i < n; i++ {
++		v = v<<1 | r.bit()
++	}
++	return v
++}
++
++// uvlc — AV1 spec 4.10.3.
++func (r *av1BitReader) uvlc() uint32 {
++	lz := 0
++	for {
++		if r.bit() == 1 {
++			break
++		}
++		lz++
++		if lz >= 32 || r.err {
++			r.err = true
++			return 0
++		}
++	}
++	return r.bits(lz) + (1<<uint(lz) - 1)
++}
++
++// av1ParseSeqHeader walks sequence_header_obu() (AV1 spec 5.5) exactly as far as color_config(),
++// mirroring Gecko's AOMDecoder::ReadSequenceHeaderInfo field for field, and reports where
++// chroma_sample_position sits. ok=false means the payload could not be parsed — the caller then
++// leaves the frame alone (the failure mode is "Firefox stays cropped", never a corrupted stream).
++func av1ParseSeqHeader(payload []byte) (info av1SeqInfo, ok bool) {
++	r := &av1BitReader{b: payload}
++	info.profile = r.bits(3)
++	_ = r.bit() // still_picture
++	reduced := r.bit()
++	if reduced == 1 {
++		r.bits(5) // seq_level_idx[0]
++	} else {
++		decoderModel := uint32(0)
++		bufDelayLen := 0
++		if r.bit() == 1 { // timing_info_present_flag
++			r.bits(32) // num_units_in_display_tick
++			r.bits(32) // time_scale
++			if r.bit() == 1 { // equal_picture_interval
++				r.uvlc() // num_ticks_per_picture_minus_1
++			}
++			decoderModel = r.bit()
++			if decoderModel == 1 {
++				bufDelayLen = int(r.bits(5)) + 1
++				r.bits(32) // num_units_in_decoding_tick
++				r.bits(5)  // buffer_removal_time_length_minus_1
++				r.bits(5)  // frame_presentation_time_length_minus_1
++			}
++		}
++		idd := r.bit() // initial_display_delay_present_flag
++		n := int(r.bits(5)) + 1
++		for i := 0; i < n; i++ {
++			r.bits(12) // operating_point_idc
++			if lvl := r.bits(5); lvl > 7 {
++				r.bit() // seq_tier
++			}
++			if decoderModel == 1 && r.bit() == 1 { // decoder_model_present_for_this_op
++				r.bits(bufDelayLen) // decoder_buffer_delay
++				r.bits(bufDelayLen) // encoder_buffer_delay
++				r.bit()             // low_delay_mode_flag
++			}
++			if idd == 1 && r.bit() == 1 { // initial_display_delay_present_for_this_op
++				r.bits(4)
++			}
++		}
++	}
++	wb := int(r.bits(4)) + 1
++	hb := int(r.bits(4)) + 1
++	info.maxWidth = int(r.bits(wb)) + 1
++	info.maxHeight = int(r.bits(hb)) + 1
++	if reduced == 0 {
++		if r.bit() == 1 { // frame_id_numbers_present_flag
++			r.bits(4) // delta_frame_id_length_minus_2
++			r.bits(3) // additional_frame_id_length_minus_1
++		}
++	}
++	r.bits(3) // use_128x128_superblock, enable_filter_intra, enable_intra_edge_filter
++	if reduced == 0 {
++		r.bits(4) // enable_interintra_compound, enable_masked_compound, enable_warped_motion, enable_dual_filter
++		orderHint := r.bit()
++		if orderHint == 1 {
++			r.bits(2) // enable_jnt_comp, enable_ref_frame_mvs
++		}
++		sct := uint32(2) // SELECT_SCREEN_CONTENT_TOOLS
++		if r.bit() == 0 { // seq_choose_screen_content_tools
++			sct = r.bit() // seq_force_screen_content_tools
++		}
++		if sct > 0 {
++			if r.bit() == 0 { // seq_choose_integer_mv
++				r.bit() // seq_force_integer_mv
++			}
++		}
++		if orderHint == 1 {
++			r.bits(3) // order_hint_bits_minus_1
++		}
++	}
++	r.bits(3) // enable_superres, enable_cdef, enable_restoration
++
++	// color_config()
++	highBitDepth := r.bit()
++	twelveBit := uint32(0)
++	if info.profile == 2 && highBitDepth == 1 {
++		twelveBit = r.bit()
++	}
++	mono := uint32(0)
++	if info.profile != 1 {
++		mono = r.bit()
++	}
++	prim, tc, mc := uint32(2), uint32(2), uint32(2)
++	if r.bit() == 1 { // color_description_present_flag
++		prim, tc, mc = r.bits(8), r.bits(8), r.bits(8)
++	}
++	if r.err {
++		return info, false
++	}
++	if mono == 1 {
++		return info, true // color_range follows; no chroma_sample_position
++	}
++	if prim == 1 && tc == 13 && mc == 0 {
++		return info, true // sRGB 4:4:4: no color_range, no chroma_sample_position
++	}
++	r.bit() // color_range
++	sx, sy := uint32(1), uint32(1)
++	switch info.profile {
++	case 0:
++		sx, sy = 1, 1
++	case 1:
++		sx, sy = 0, 0
++	default:
++		if twelveBit == 1 {
++			sx = r.bit()
++			if sx == 1 {
++				sy = r.bit()
++			} else {
++				sy = 0
++			}
++		} else {
++			sx, sy = 1, 0
++		}
++	}
++	if sx == 1 && sy == 1 {
++		info.cspBit = r.pos
++		info.csp = r.bits(2)
++		info.hasCsp = !r.err
++	}
++	return info, !r.err
++}
++
++// av1SeqHeaderPayload finds the OBU_SEQUENCE_HEADER in a temporal unit (low-overhead format, the
++// same walk as av1IsKeyframe) and returns the byte range of its payload.
++func av1SeqHeaderPayload(frame []byte) (start, end int, ok bool) {
++	for i := 0; i < len(frame); {
++		h := frame[i]
++		i++
++		obuType := (h >> 3) & 0xF
++		extFlag := (h >> 2) & 1
++		hasSize := (h >> 1) & 1
++		if extFlag == 1 {
++			i++
++		}
++		if hasSize == 0 {
++			if obuType == 1 && i <= len(frame) {
++				return i, len(frame), true
++			}
++			return 0, 0, false
++		}
++		size := 0
++		for shift := 0; ; shift += 7 {
++			if i >= len(frame) || shift > 56 {
++				return 0, 0, false
++			}
++			b := frame[i]
++			i++
++			size |= int(b&0x7F) << shift
++			if b&0x80 == 0 {
++				break
++			}
++		}
++		if i+size > len(frame) {
++			return 0, 0, false
++		}
++		if obuType == 1 {
++			return i, i + size, true
++		}
++		i += size
++	}
++	return 0, 0, false
++}
++
++// av1RewriteChromaSamplePosition returns a COPY of the temporal unit whose sequence header says
++// chroma_sample_position = av1CspColocated, with the old value; ok=false (and no copy) when the
++// frame has no sequence header, the header has no such field, or it already says so.
++func av1RewriteChromaSamplePosition(frame []byte) (out []byte, was uint32, ok bool) {
++	s, e, found := av1SeqHeaderPayload(frame)
++	if !found {
++		return nil, 0, false
++	}
++	info, parsed := av1ParseSeqHeader(frame[s:e])
++	if !parsed || !info.hasCsp || info.csp == av1CspColocated {
++		return nil, info.csp, false
++	}
++	out = make([]byte, len(frame))
++	copy(out, frame)
++	bit := s*8 + info.cspBit
++	for k := 0; k < 2; k++ { // two bits, MSB first, possibly across a byte boundary
++		idx := (bit + k) >> 3
++		mask := byte(1) << (7 - uint((bit+k)&7))
++		if (av1CspColocated>>(1-uint(k)))&1 == 1 {
++			out[idx] |= mask
++		} else {
++			out[idx] &^= mask
++		}
++	}
++	return out, info.csp, true
++}
++
++// geckoAV1Frame is the per-peer policy: the bytes to send a Gecko peer for this AV1 keyframe.
++// The first keyframe goes out as encoded (the monitor has nothing to compare it with); from the
++// second on, the header is rewritten so the monitor sees a change. n is the keyframe's ordinal for
++// this peer (1-based).
++func geckoAV1Frame(frame []byte, n int64) ([]byte, uint32, bool) {
++	if !geckoAV1SizeKick || n < 2 {
++		return frame, 0, false
++	}
++	if out, was, ok := av1RewriteChromaSamplePosition(frame); ok {
++		return out, was, true
++	}
++	return frame, 0, false
++}
+diff --git a/pkg/network/webrtc/geckoav1_test.go b/pkg/network/webrtc/geckoav1_test.go
+new file mode 100644
+index 0000000..3d8fcdf
+--- /dev/null
++++ b/pkg/network/webrtc/geckoav1_test.go
+@@ -0,0 +1,100 @@
++package webrtc
++
++import (
++	"bytes"
++	"testing"
++)
++
++// The production encoder's own sequence header (nvav1enc, 1942 at 224x256 x3 = 672x768, three temporal
++// layers), captured from a live room on 2026-10-05 through Chrome's encoded-frame tap. An independent
++// JavaScript parser put chroma_sample_position at payload bit 141 with value 0.
++var liveSeqHdr = []byte{0x00, 0x21, 0x07, 0x40, 0x40, 0xd0, 0x10, 0x14, 0x26, 0x69, 0xfb, 0xfc, 0x02, 0x19, 0x90, 0x10, 0x10, 0x18, 0x40}
++
++// A temporal unit the way pion hands it to WriteSample: TD, sequence header, a (fake) frame OBU.
++func liveKeyframe() []byte {
++	tu := []byte{0x12, 0x00}                               // OBU_TEMPORAL_DELIMITER, size 0
++	tu = append(tu, 0x0a, byte(len(liveSeqHdr)))           // OBU_SEQUENCE_HEADER, has_size
++	tu = append(tu, liveSeqHdr...)
++	tu = append(tu, 0x32, 0x04, 0x10, 0x00, 0x00, 0x00)    // OBU_FRAME, 4 bytes of nothing
++	return tu
++}
++
++func TestAV1ParseSeqHeaderMatchesTheEncoderAndTheIndependentParser(t *testing.T) {
++	info, ok := av1ParseSeqHeader(liveSeqHdr)
++	if !ok {
++		t.Fatal("parse failed")
++	}
++	if info.maxWidth != 672 || info.maxHeight != 768 {
++		t.Fatalf("size = %dx%d, want 672x768 (the worker's own 'encode 672x768' line)", info.maxWidth, info.maxHeight)
++	}
++	if !info.hasCsp || info.cspBit != 141 || info.csp != 0 {
++		t.Fatalf("chroma_sample_position: has=%v bit=%d value=%d, want has bit 141 value 0", info.hasCsp, info.cspBit, info.csp)
++	}
++}
++
++func TestAV1RewriteChromaSamplePosition(t *testing.T) {
++	frame := liveKeyframe()
++	orig := append([]byte{}, frame...)
++	out, was, ok := av1RewriteChromaSamplePosition(frame)
++	if !ok || was != 0 {
++		t.Fatalf("rewrite: ok=%v was=%d", ok, was)
++	}
++	if !bytes.Equal(frame, orig) {
++		t.Fatal("the shared frame buffer was mutated — every peer would see the rewrite")
++	}
++	if len(out) != len(frame) {
++		t.Fatalf("length changed %d -> %d (the OBU size field would lie)", len(frame), len(out))
++	}
++	// Exactly the two bits moved: 0b00 -> 0b10 at payload bit 141.
++	diff := 0
++	for i := range out {
++		if out[i] != frame[i] {
++			diff++
++		}
++	}
++	if diff != 1 {
++		t.Fatalf("%d bytes differ, want 1", diff)
++	}
++	s, e, _ := av1SeqHeaderPayload(out)
++	info, ok := av1ParseSeqHeader(out[s:e])
++	if !ok || info.csp != av1CspColocated || info.maxWidth != 672 || info.maxHeight != 768 || info.cspBit != 141 {
++		t.Fatalf("re-parse: ok=%v csp=%d size=%dx%d bit=%d", ok, info.csp, info.maxWidth, info.maxHeight, info.cspBit)
++	}
++	if !av1IsKeyframe(out) || av1TemporalID(out) != 0 {
++		t.Fatal("the rewritten unit must still read as a base-layer keyframe to the SVC filter")
++	}
++	// Idempotent on its own output: nothing to do.
++	if _, _, again := av1RewriteChromaSamplePosition(out); again {
++		t.Fatal("a header already at the target value must be left alone")
++	}
++}
++
++func TestAV1RewriteLeavesOtherFramesAlone(t *testing.T) {
++	delta := []byte{0x12, 0x00, 0x32, 0x02, 0x00, 0x00} // TD + frame, no sequence header
++	if _, _, ok := av1RewriteChromaSamplePosition(delta); ok {
++		t.Fatal("a delta frame has no header to rewrite")
++	}
++	if _, _, ok := av1RewriteChromaSamplePosition(nil); ok {
++		t.Fatal("nil")
++	}
++	// A truncated header must fail closed (parse error -> untouched), never index out of range.
++	trunc := liveKeyframe()[:12]
++	if _, _, ok := av1RewriteChromaSamplePosition(trunc); ok {
++		t.Fatal("truncated header rewritten")
++	}
++}
++
++func TestGeckoAV1FramePolicy(t *testing.T) {
++	frame := liveKeyframe()
++	if out, _, changed := geckoAV1Frame(frame, 1); changed || !bytes.Equal(out, frame) {
++		t.Fatal("the first keyframe must go out as encoded")
++	}
++	out, was, changed := geckoAV1Frame(frame, 2)
++	if !changed || was != 0 || bytes.Equal(out, frame) {
++		t.Fatal("the second keyframe must carry the rewritten header")
++	}
++	out3, _, changed3 := geckoAV1Frame(frame, 3)
++	if !changed3 || !bytes.Equal(out3, out) {
++		t.Fatal("every later keyframe carries the same rewritten header — a stable value, one change event")
++	}
++}
 diff --git a/pkg/network/webrtc/pacer.go b/pkg/network/webrtc/pacer.go
 new file mode 100644
 index 0000000..a5df62c
@@ -12603,7 +13020,7 @@ index 0000000..cdeefd8
 +	}
 +}
 diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
-index b342b6b..7081577 100644
+index b342b6b..eca60f4 100644
 --- a/pkg/network/webrtc/webrtc.go
 +++ b/pkg/network/webrtc/webrtc.go
 @@ -4,11 +4,15 @@ import (
@@ -12622,7 +13039,7 @@ index b342b6b..7081577 100644
  	"github.com/pion/webrtc/v4"
  	"github.com/pion/webrtc/v4/pkg/media"
  )
-@@ -16,21 +20,151 @@ import (
+@@ -16,21 +20,158 @@ import (
  type Peer struct {
  	api *ApiFactory
  	c   *webrtc.PeerConnection
@@ -12663,6 +13080,13 @@ index b342b6b..7081577 100644
 +	// encoder down for everyone (the "second local player halves the quality" bug). Set at NewConnection
 +	// from the init sdp marker "input-only" (mirrors the "audio-pc" split-audio marker).
 +	inputOnly bool
++
++	// Gecko peer (Firefox, any platform — from its SDP). See geckoav1.go: from its second AV1 keyframe
++	// the sequence header is rewritten so Firefox re-sizes what it paints. geckoKf counts the keyframes
++	// delivered to this peer; geckoKicked rate-limits the log line.
++	gecko       atomic.Bool
++	geckoKf     atomic.Int64
++	geckoKicked atomic.Int32
 +
 +	// Temporal SVC (see svc.go). maxLayer is the highest temporal layer THIS peer is fed; frames
 +	// above it are dropped for this peer alone. Written by the ABR loop, read on the media thread.
@@ -12774,7 +13198,7 @@ index b342b6b..7081577 100644
  var DefaultDataChannelParams = webrtc.DataChannelInit{
  	ID:             new(uint16),
  	Negotiated:     new(true),
-@@ -45,30 +179,40 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
+@@ -45,30 +186,40 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
  			Str(logger.DirectionField, "").
  			Str(logger.ClientField, ""),
  	)
@@ -12818,7 +13242,7 @@ index b342b6b..7081577 100644
  		}
  	})
  	p.c.OnICECandidate(func(ice *webrtc.ICECandidate) {
-@@ -96,12 +240,48 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+@@ -96,12 +247,48 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
  
  	p.c.OnDataChannel(func(ch *webrtc.DataChannel) { p.log.Debug().Msgf("rtc [chan] [%s] remote", ch.Label()) })
  
@@ -12867,7 +13291,7 @@ index b342b6b..7081577 100644
  		if len(data) != 0 && p.onMessage != nil {
  			p.onMessage(data)
  		}
-@@ -143,8 +323,93 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
+@@ -143,8 +330,93 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
  	return encoded, nil
  }
  
@@ -12961,7 +13385,7 @@ index b342b6b..7081577 100644
  		candidate, err := fromJson[webrtc.ICECandidateInit](*ice)
  		if err != nil {
  			return err
-@@ -153,16 +418,33 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
+@@ -153,16 +425,36 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
  		return p.c.AddICECandidate(candidate)
  	}
  	if sdp != nil {
@@ -12981,8 +13405,11 @@ index b342b6b..7081577 100644
  			return err
  		}
  		p.log.Debug().Str("type", answer.Type.String()).Msg("rtc [sdp] (remote)")
-+		if p.playout != nil && IsGeckoSDP(answer.SDP) {
-+			p.playout.Block("Firefox decodes but does not paint under playout-delay [0, 0]")
++		if IsGeckoSDP(answer.SDP) {
++			p.gecko.Store(true)
++			if p.playout != nil {
++				p.playout.Block("Firefox decodes but does not paint under playout-delay [0, 0]")
++			}
 +		}
  		return p.c.SetRemoteDescription(answer)
  	}
@@ -12995,7 +13422,7 @@ index b342b6b..7081577 100644
  func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSample, error) {
  	codec = strings.ToLower(codec)
  	var mime string
-@@ -171,11 +453,26 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
+@@ -171,11 +463,26 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
  	case "audio/opus":
  		mime = webrtc.MimeTypeOpus
  	case "video/h264":
@@ -13023,7 +13450,7 @@ index b342b6b..7081577 100644
  	default:
  		return nil, fmt.Errorf("unsupported codec %s:%s", id, codec)
  	}
-@@ -221,17 +518,131 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
+@@ -221,17 +528,144 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
  }
  
  func (p *Peer) SendAudio(dat []byte, dur time.Duration) {
@@ -13064,9 +13491,9 @@ index b342b6b..7081577 100644
 +			p.vLogged.Store(n)
 +			p.log.Warn().Msgf("peer is behind: dropped %v video frames to keep the room's encoder free", n)
 +		}
- 	}
- }
- 
++	}
++}
++
 +func (p *Peer) startVideoSender() {
 +	p.vqOnce.Do(func() {
 +		p.vq = make(chan vFrame, vQueueDepth)
@@ -13088,8 +13515,21 @@ index b342b6b..7081577 100644
 +				return
 +			}
 +			dur := f.dur
++			data := f.data
 +			if isKeyframe(VideoCodec(), f.data) {
 +				p.kfSeen.Add(1)
++				// Firefox sizes its Android AV1 decoder's output from the first in-band sequence header
++				// and never re-sizes until a header CHANGES — so a Gecko peer's second and later
++				// keyframes carry a header that differs in a decode-neutral field (geckoav1.go).
++				if p.gecko.Load() && VideoCodec() == "av1" {
++					if out, was, changed := geckoAV1Frame(f.data, p.geckoKf.Add(1)); changed {
++						data = out
++						if p.geckoKicked.Add(1) == 1 {
++							p.log.Info().Msgf("gecko: av1 sequence header chroma_sample_position %d -> %d from this peer's keyframe #%d on — Firefox re-sizes its decoder output only on a header change",
++								was, av1CspColocated, p.geckoKf.Load())
++						}
++					}
++				}
 +			}
 +			if svcLayers.Load() > 1 && !svcNoPeerDrop {
 +				maxL := p.maxLayer.Load()
@@ -13139,14 +13579,14 @@ index b342b6b..7081577 100644
 +				}
 +			}
 +			if v := p.v; v != nil {
-+				if err := p.send(f.data, dur, v.WriteSample); err != nil {
++				if err := p.send(data, dur, v.WriteSample); err != nil {
 +					p.log.Error().Err(err).Send()
 +				}
 +			}
 +		}
-+	}
-+}
-+
+ 	}
+ }
+ 
 +// SetMaxTemporalLayer caps which temporal layers this peer is fed (0 = base only). Called by the ABR
 +// loop from its own goroutine.
 +func (p *Peer) SetMaxTemporalLayer(l int) { p.maxLayer.Store(int32(l)) }
@@ -13157,7 +13597,7 @@ index b342b6b..7081577 100644
  func (p *Peer) SendData(data []byte) { _ = p.d.Send(data) }
  
  func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) error) error {
-@@ -249,7 +660,47 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
+@@ -249,7 +683,47 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
  	return nil
  }
  
@@ -13205,7 +13645,7 @@ index b342b6b..7081577 100644
  	if p.c == nil {
  		return
  	}
-@@ -261,6 +712,15 @@ func (p *Peer) Disconnect() {
+@@ -261,6 +735,15 @@ func (p *Peer) Disconnect() {
  }
  
  func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
@@ -13221,7 +13661,7 @@ index b342b6b..7081577 100644
  	if p.v, err = newTrack("video", "video", vCodec); err != nil {
  		return err
  	}
-@@ -274,20 +734,51 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
+@@ -274,20 +757,51 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
  	if _, err = p.c.AddTransceiverFromTrack(p.v, sendOnly); err != nil {
  		return err
  	}
@@ -13276,7 +13716,7 @@ index b342b6b..7081577 100644
  			}
  		}()
  	}
-@@ -313,3 +804,255 @@ func toJson[T any](data T) (string, error) {
+@@ -313,3 +827,255 @@ func toJson[T any](data T) (string, error) {
  	}
  	return string(b), nil
  }

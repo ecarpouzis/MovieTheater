@@ -1474,3 +1474,42 @@ left Firefox at ~5 fps. NOT changed: the lobby's Network profile (room-wide paci
 (`config.worker-capture.yaml` keeps `lossPacingMs: 8`; its rooms default to room-wide 8 ms pacing anyway).
 **To compare on the phone:** the paced baseline is the 2026-10-04 16:38 room — jitter buffer 30 ms, `rtxSent=706` in
 191 s, longest gap 60 ms; read `nack=` / `rtx=` / `jb=` on the tick line and `viewer-gaps` at close. To re-arm: `8`.
+
+## 0056-gecko-av1-size-kick (2026-10-05): Firefox on Android paints a 320x180 crop of every AV1 room until a sequence header CHANGES
+
+**Symptom.** Firefox 157 for Android, AV1 rooms: a magnified crop of the top-left of the picture
+(Donkey Kong, 1942 — any vertical cab made it obvious, but it is every AV1 room). H.264 fine, desktop
+Firefox fine, LAN and 5G identical. The on-device readout (`/arcade?geo=1`, `RoomGeometryProbe`) showed
+`frame: 320x180` while the worker's own line said `encode 672x768` and a tap on the encoded frames showed
+the sequence header saying 672x768. The stream was right; the phone's decoder OUTPUT was 320x180.
+
+**Mechanism (Firefox 157.0.1 source, verified line by line).** libwebrtc opens every receive decoder at
+a 320x180 placeholder (`video/video_receive_stream2.cc` `InitialDecoderResolution`) and learns a frame's
+size only from the Dependency Descriptor extension — which Firefox does not negotiate at all (its video
+extmaps: mid, abs-send-time, toffset, transport-cc, video-orientation; checked on the real desktop
+build). H.264 escapes because the SPS is parsed in the depacketizer. Gecko wraps the decoder in
+`MediaChangeMonitor`; `AV1ChangeMonitor::CheckForChange` parses the first sequence header and updates the
+config (the Android decoder IS created at 672x768 and decodes correctly) but rebuilds the per-sample
+`mTrackInfo` only on a header that DIFFERS from the last one — unlike the VP8/VP9 and H.264 monitors,
+which rebuild it unconditionally. `RemoteVideoDecoder::Decode` sizes every output picture from that
+per-sample `mTrackInfo` (`aSample->mTrackInfo ? … : &mConfig`), so Android cuts a 320x180
+`SurfaceTextureImage` out of each 672x768 frame. Software (dav1d) and Windows (WMF) decoders ignore the
+field — which is why only Android shows it. A Gecko bug; reported upstream separately.
+
+**Fix (`pkg/network/webrtc/geckoav1.go`, `webrtc.go` videoSender).** For Gecko peers (`IsGeckoSDP`,
+the 0055 tell) and AV1 only: the FIRST keyframe a peer gets goes out as encoded; from the SECOND on,
+that peer's copy of the sequence header carries `chroma_sample_position = 2` (CSP_COLOCATED) instead
+of the encoder's 0. Of the seven fields the monitor compares it is the one that is purely informational
+(AV1 spec 6.4.2: chroma siting for display, never reconstruction). Gecko sees a changed header, takes
+its "new decoder" path — Android: the same decoder recycled with a fresh, correctly sized `mTrackInfo`;
+elsewhere: one drain + re-create — and paints at the right size from then on. The startup burst's
+three keyframes are 0.5 s apart, so the crop lasts ~0.5 s. The header is parsed field-for-field as
+Gecko's `AOMDecoder::ReadSequenceHeaderInfo` does (operating points, tier, decoder model, …), the
+rewrite is a COPY (the frame buffer is shared by every peer's sender), and a parse failure leaves the
+frame alone. Every non-Gecko peer receives the encoder's bytes unmodified. `geckoav1_test.go` pins it
+on the live encoder's own header (bit 141, cross-checked by an independent JS parser).
+
+Tells: `gecko: av1 sequence header chroma_sample_position 0 -> 2 from this peer's keyframe #2 on`.
+Kill switch: `CLOUD_GAME_GECKO_AV1_SIZE_KICK=0`. Rejected on the way: Dependency Descriptor (Firefox
+ignores it); picking H.264 for Firefox Android (Eric: AV1 must work); a client-side fix (the pixels
+outside the crop never reach the page).
