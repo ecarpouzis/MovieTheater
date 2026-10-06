@@ -10710,7 +10710,7 @@ index 0000000..d7291fe
 +}
 diff --git a/pkg/network/webrtc/geckoav1.go b/pkg/network/webrtc/geckoav1.go
 new file mode 100644
-index 0000000..1137d29
+index 0000000..b4c8c36
 --- /dev/null
 +++ b/pkg/network/webrtc/geckoav1.go
 @@ -0,0 +1,305 @@
@@ -10763,12 +10763,12 @@ index 0000000..1137d29
 +// av1SeqInfo is what av1ParseSeqHeader reads out of an OBU_SEQUENCE_HEADER payload — just enough to
 +// locate chroma_sample_position, plus the frame size as a self-check against the encoder's log line.
 +type av1SeqInfo struct {
-+	profile    uint32
-+	maxWidth   int
-+	maxHeight  int
-+	cspBit     int    // bit offset of chroma_sample_position within the payload
-+	csp        uint32 // its current value
-+	hasCsp     bool   // false for monochrome and 4:4:4 streams (the field does not exist)
++	profile   uint32
++	maxWidth  int
++	maxHeight int
++	cspBit    int    // bit offset of chroma_sample_position within the payload
++	csp       uint32 // its current value
++	hasCsp    bool   // false for monochrome and 4:4:4 streams (the field does not exist)
 +}
 +
 +type av1BitReader struct {
@@ -10826,8 +10826,8 @@ index 0000000..1137d29
 +		decoderModel := uint32(0)
 +		bufDelayLen := 0
 +		if r.bit() == 1 { // timing_info_present_flag
-+			r.bits(32) // num_units_in_display_tick
-+			r.bits(32) // time_scale
++			r.bits(32)        // num_units_in_display_tick
++			r.bits(32)        // time_scale
 +			if r.bit() == 1 { // equal_picture_interval
 +				r.uvlc() // num_ticks_per_picture_minus_1
 +			}
@@ -10873,7 +10873,7 @@ index 0000000..1137d29
 +		if orderHint == 1 {
 +			r.bits(2) // enable_jnt_comp, enable_ref_frame_mvs
 +		}
-+		sct := uint32(2) // SELECT_SCREEN_CONTENT_TOOLS
++		sct := uint32(2)  // SELECT_SCREEN_CONTENT_TOOLS
 +		if r.bit() == 0 { // seq_choose_screen_content_tools
 +			sct = r.bit() // seq_force_screen_content_tools
 +		}
@@ -11021,7 +11021,7 @@ index 0000000..1137d29
 +}
 diff --git a/pkg/network/webrtc/geckoav1_test.go b/pkg/network/webrtc/geckoav1_test.go
 new file mode 100644
-index 0000000..3d8fcdf
+index 0000000..2c5c365
 --- /dev/null
 +++ b/pkg/network/webrtc/geckoav1_test.go
 @@ -0,0 +1,100 @@
@@ -11039,10 +11039,10 @@ index 0000000..3d8fcdf
 +
 +// A temporal unit the way pion hands it to WriteSample: TD, sequence header, a (fake) frame OBU.
 +func liveKeyframe() []byte {
-+	tu := []byte{0x12, 0x00}                               // OBU_TEMPORAL_DELIMITER, size 0
-+	tu = append(tu, 0x0a, byte(len(liveSeqHdr)))           // OBU_SEQUENCE_HEADER, has_size
++	tu := []byte{0x12, 0x00}                     // OBU_TEMPORAL_DELIMITER, size 0
++	tu = append(tu, 0x0a, byte(len(liveSeqHdr))) // OBU_SEQUENCE_HEADER, has_size
 +	tu = append(tu, liveSeqHdr...)
-+	tu = append(tu, 0x32, 0x04, 0x10, 0x00, 0x00, 0x00)    // OBU_FRAME, 4 bytes of nothing
++	tu = append(tu, 0x32, 0x04, 0x10, 0x00, 0x00, 0x00) // OBU_FRAME, 4 bytes of nothing
 +	return tu
 +}
 +
