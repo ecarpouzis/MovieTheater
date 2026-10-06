@@ -1513,3 +1513,16 @@ Tells: `gecko: av1 sequence header chroma_sample_position 0 -> 2 from this peer'
 Kill switch: `CLOUD_GAME_GECKO_AV1_SIZE_KICK=0`. Rejected on the way: Dependency Descriptor (Firefox
 ignores it); picking H.264 for Firefox Android (Eric: AV1 must work); a client-side fix (the pixels
 outside the crop never reach the page).
+
+**0056 addendum (same day): it re-arms, so the flip became a rule.** Rotating the phone brought the
+crop back. `WebrtcMediaDataDecoder::Decode` recreates its decoder on ANY decode error — and calls
+`CreateDecoder()` BEFORE its "disable hardware" flag takes effect, so the rebuilt decoder is hardware
+again with a fresh monitor at the placeholder. Firefox then PLIs; the one keyframe that answered already
+carried the rewritten value, the fresh monitor took it as its first header, and nothing ever differed
+again. Now the value FLIPS (2 ⇄ 1) on the 2nd keyframe a Gecko peer receives and on the 2nd keyframe
+after each PLI it sends (`geckoNextCsp`), holds otherwise (a join burst must not read as a change: a
+desktop Firefox decoder is not recyclable and would drain + re-create), and a Gecko peer's PLI owes TWO
+keyframes under one admission of the limiter (`requestKeyframesRateLimited(2)`) so the second header is
+16 ms behind the first. Tells: `video: PLI honored — forcing 2 keyframe(s)`,
+`gecko: av1 sequence header chroma_sample_position -> N on this peer's keyframe #n (#m since its last PLI)`.
+Fork `412452f`.
