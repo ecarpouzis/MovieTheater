@@ -233,6 +233,13 @@ namespace MovieTheater
             services.AddSingleton(new Web.ThumbsRecodeOptions { Enabled = !IsDevelopment });
             services.AddHostedService<Web.ThumbsRecodeService>();
 
+            // The request queue (2026-10-06): the loose resolver that proposes "this request looks added",
+            // and the half-hourly sweep that runs it over the open queue in bounded chunks. Off in
+            // Development for the same reason as the warmer — the dev connection IS the live database.
+            services.AddScoped<Requests.ContentRequestMatcher>();
+            services.AddSingleton(new Requests.ContentRequestSweepOptions { Enabled = !IsDevelopment });
+            services.AddHostedService<Requests.ContentRequestSweepService>();
+
             services.AddMvc(opts =>
                 {
                     // A request the caller abandoned closes quietly (499) instead of logging a fault:

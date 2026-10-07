@@ -110,6 +110,14 @@ export const SECTIONS: SectionDef[] = [
     ],
   },
   {
+    // The request queue (2026-10-06): one surface, so one tab. The bar still mounts for it — the
+    // phone top bar's search box is unused there, but the strip and the theme toggle are the site's.
+    key: "requests", prefixes: ["/requests"], title: "Requests", searchPlaceholder: "Filter the queue — a title, a person…",
+    tabs: [
+      { key: "queue", label: "Requests", path: "/requests", exact: true },
+    ],
+  },
+  {
     key: "movies", prefixes: [], title: "Movie Theater", searchPlaceholder: "genre:Noir, person:Pacino, or a title…",
     tabs: [
       { key: "explore", label: "Explore", path: "/movies/explore" },

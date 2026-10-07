@@ -37,6 +37,8 @@ import comicsIcon from "../assets/icons/comics.svg";
 import BooksNavContent from "./BooksNavContent";
 import arcadeIcon from "../assets/icons/joystick.svg";
 import musicIcon from "../assets/icons/music.svg";
+import requestsIcon from "../assets/icons/requests.svg";
+import RequestsNavContent from "./RequestsNavContent";
 import photosIcon from "../assets/icons/photos.svg";
 
 // Photos is the one section whose word-mark is a NODE rather than a word: "Photos" alone reads as
@@ -64,6 +66,8 @@ const SECTIONS = [
   { key: "music", prefix: "/music", icon: musicIcon, title: "Music", themeClass: " navbar-music-theme", Content: MusicNavContent },
   { key: "photos", prefix: "/photos", icon: photosIcon, title: photosWordmark, themeClass: " navbar-photos-theme", Content: PhotosNavContent },
   { key: "books", prefix: "/books", icon: comicsIcon, title: "Books", themeClass: " navbar-books-theme", siderWidth: 280, Content: BooksNavContent },
+  // The request queue (2026-10-06): the communal "please add this" list, open to every signed-in user.
+  { key: "requests", prefix: "/requests", icon: requestsIcon, title: "Requests", themeClass: " navbar-requests-theme", Content: RequestsNavContent },
   { key: "movies", icon: movieTheaterIcon, title: "Movie Theater", themeClass: "" },
 ];
 
@@ -407,6 +411,13 @@ function NavBar({
           <span className="navbar-hue-dot" style={{ background: "#D98936" }} />
         </button>
       )}
+      {/* Requests (2026-10-06): the communal wishlist for the LIBRARY — what to acquire, for any section.
+          Drawn for every visitor (the page itself asks a guest to sign in before filing), because
+          "I'm out and saw something" is the whole point and the login box is one tap away. */}
+      <button className="navbar-section-item" onClick={() => history.push("/requests")}>
+        <img className="navbar-section-icon" src={requestsIcon} alt="" /> Requests
+        <span className="navbar-hue-dot" style={{ background: "#B8742A" }} />
+      </button>
     </>
   );
 

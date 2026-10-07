@@ -259,6 +259,22 @@
   --nav-active-bg: rgba(201, 72, 79, 0.24);
 }
 
+/* The request queue (2026-10-06) — an amber "wishlist" tint, warm against every library's hue so the
+   section reads as "about what we don't have yet". Same shape as the other feature blocks. */
+:root[data-feature="requests"] {
+  --accent: #b8742a;
+  --accent-soft: rgba(184, 116, 42, 0.13);
+  --content-bg: #f7f4ef;
+  --card-border: #e8e1d6;
+  --sidebar-bg: #2a2117;
+  --sidebar-bg-elev: #362b1e;
+  --sidebar-heading: #c9a06a;
+  --sidebar-text-muted: #d4b58a;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-input-bg: #1c160f;
+  --nav-active-bg: rgba(184, 116, 42, 0.24);
+}
+
 /* Family photo album (docs/photos-plan.md §4) — "the album page".
    The section's whole job is to get out of the way of photographs, so its surface is a warm,
    slightly darkened paper rather than the movie side's cool grey: a print laid on it reads as
@@ -384,6 +400,14 @@
   --card-surface: #1a262b;
   --accent: #5cc6d8;
   --accent-soft: rgba(92, 198, 216, 0.16);
+}
+/* Requests, dark: the amber lifted off the paper tune (see the note above the movies lift). */
+:root[data-theme="dark"][data-feature="requests"] {
+  --accent: #e0a056;
+  --accent-soft: rgba(224, 160, 86, 0.16);
+  --content-bg: #1a1713;
+  --card-surface: #26211b;
+  --card-border: #3a3228;
 }
 :root[data-theme="dark"][data-feature="music"] {
   --content-bg: #1c1315;

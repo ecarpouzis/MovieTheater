@@ -1,0 +1,440 @@
+/* /requests (2026-10-06) — the communal wishlist for the library. One column, the site's content
+   width, the section's amber accent (theme.css `data-feature="requests"`). Every colour here is a
+   theme token with the section hue carried per pill as --pill-hue, so light/dark and every skin come
+   for free; nothing is hard-coded except the five section dots, which are the switcher's. */
+
+.rq-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 16px 56px;
+  color: var(--text-primary);
+}
+
+/* ── Head ───────────────────────────────────────────────────────────────────────────────────── */
+.rq-head__line {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.rq-head__title {
+  font-family: var(--vp-display, inherit);
+  font-size: var(--text-display-md);
+  margin: 0;
+  color: var(--text-primary);
+}
+.rq-head__count {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.rq-head__blurb {
+  margin: 6px 0 16px;
+  max-width: 68ch;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* ── Compose card ───────────────────────────────────────────────────────────────────────────── */
+.rq-compose {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 14px 16px 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+}
+.rq-compose__sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.rq-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px 5px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.rq-pill:hover { border-color: var(--pill-hue); color: var(--text-primary); }
+.rq-pill.on {
+  border-color: var(--pill-hue);
+  background: color-mix(in srgb, var(--pill-hue) 14%, transparent);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.rq-pill__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--pill-hue);
+  flex: none;
+}
+.rq-compose__row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.rq-compose__row--title { flex-wrap: nowrap; }
+.rq-compose__title { flex: 1 1 auto; min-width: 0; }
+.rq-compose__year { flex: 0 0 92px; }
+.rq-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.rq-field--wide { flex-basis: 100%; }
+.rq-field__label {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.rq-field__opt {
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.8;
+  margin-left: 4px;
+}
+.rq-compose__more {
+  align-self: center;
+  padding-bottom: 6px;
+}
+.rq-compose__foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.rq-compose__hint, .rq-compose__signin {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.rq-compose__signin { color: var(--text-secondary); }
+
+.rq-linkish {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.rq-linkish:disabled { color: var(--text-muted); cursor: default; text-decoration: none; }
+
+.rq-notice {
+  margin-top: 12px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--text-primary);
+}
+.rq-notice .rq-linkish { margin-left: 10px; }
+
+/* ── Banner (admin: proposals waiting) ──────────────────────────────────────────────────────── */
+.rq-banner {
+  margin: -6px 0 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  color: var(--text-primary);
+}
+
+/* ── Queue tools ────────────────────────────────────────────────────────────────────────────── */
+.rq-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.rq-seg {
+  display: inline-flex;
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 2px;
+  background: var(--card-surface);
+}
+.rq-seg__btn {
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.rq-seg__btn.on {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.rq-chip {
+  border: 1px solid var(--card-border);
+  background: var(--card-surface);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.rq-chip.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}
+.rq-filter { flex: 1 1 180px; max-width: 320px; }
+.rq-tools__count {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+}
+
+/* ── Table ──────────────────────────────────────────────────────────────────────────────────── */
+.rq-table .ant-table {
+  background: var(--card-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.rq-table .ant-table-thead > tr > th {
+  background: color-mix(in srgb, var(--card-surface) 85%, var(--content-bg));
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom-color: var(--card-border);
+}
+.rq-table .ant-table-tbody > tr > td {
+  border-bottom-color: var(--card-border);
+  vertical-align: top;
+  color: var(--text-primary);
+}
+.rq-table .ant-table-tbody > tr:last-child > td { border-bottom: 0; }
+.rq-table .ant-table-tbody > tr.rq-row:hover > td { background: color-mix(in srgb, var(--accent) 5%, var(--card-surface)); }
+.rq-table .ant-table-tbody > tr.rq-row--matched > td { background: color-mix(in srgb, var(--accent) 7%, var(--card-surface)); }
+.rq-table .ant-table-tbody > tr.rq-row--fulfilled > td .rq-title__text,
+.rq-table .ant-table-tbody > tr.rq-row--declined > td .rq-title__text,
+.rq-table .ant-table-tbody > tr.rq-row--withdrawn > td .rq-title__text { color: var(--text-secondary); }
+.rq-table .ant-table-placeholder .ant-empty-description { color: var(--text-muted); }
+
+/* ── Cells ──────────────────────────────────────────────────────────────────────────────────── */
+.rq-title__line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.rq-title__text { font-weight: 600; font-size: 14px; }
+.rq-title__year { color: var(--text-muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.rq-title__link { color: var(--accent); font-size: 12px; text-decoration: none; }
+.rq-title__detail { font-size: 12.5px; color: var(--text-secondary); margin-top: 1px; }
+.rq-title__notes { font-size: 12.5px; color: var(--text-muted); margin-top: 3px; white-space: pre-line; max-width: 60ch; }
+.rq-title__note { font-size: 12.5px; color: var(--text-muted); margin-top: 3px; font-style: italic; }
+.rq-title__open { display: inline-block; margin-top: 4px; font-size: 12.5px; color: var(--accent); }
+
+.rq-sec {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.rq-by { font-size: 13px; }
+.rq-by--me { color: var(--accent); font-weight: 600; }
+.rq-when { font-size: 12.5px; color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.rq-status {
+  display: inline-block;
+  font-size: 12px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.rq-status--open { border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent); }
+.rq-status--fulfilled { border-color: rgba(46, 158, 99, 0.5); color: #2e9e63; }
+.rq-status--declined { border-color: rgba(201, 72, 79, 0.45); color: #c9484f; }
+.rq-status--withdrawn { opacity: 0.8; }
+.rq-status__by { color: var(--text-muted); }
+
+.rq-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+/* The "me too" vote: an up-glyph and a count in one button; lit when yours is in it. */
+.rq-vote {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  min-width: 44px;
+  padding: 4px 8px 3px;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  cursor: pointer;
+  line-height: 1.1;
+}
+.rq-vote__wrap { display: inline-block; }
+.rq-vote:hover:not(:disabled) { border-color: var(--accent); color: var(--text-primary); }
+.rq-vote.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.rq-vote:disabled { cursor: default; opacity: 0.75; }
+.rq-vote__glyph { font-size: 11px; }
+.rq-vote__n { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* The matcher's proposal, under the title: lead · the library title · the two admin verbs. */
+.rq-match {
+  margin-top: 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  background: var(--accent-soft);
+  border: 1px dashed color-mix(in srgb, var(--accent) 50%, transparent);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+.rq-match__lead { color: var(--text-secondary); }
+.rq-match__title { font-weight: 600; color: var(--text-primary); }
+a.rq-match__title { color: var(--accent); }
+.rq-match__acts { display: inline-flex; gap: 6px; margin-left: auto; }
+
+.rq-more { display: flex; justify-content: center; padding: 14px 0 0; }
+.rq-empty {
+  padding: 36px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  background: var(--card-surface);
+  border: 1px dashed var(--card-border);
+  border-radius: 12px;
+}
+
+.rq-decline p { margin: 0 0 8px; font-size: 13px; color: var(--text-secondary); }
+
+/* ── antd on the section's surface ──────────────────────────────────────────────────────────────
+   The site runs antd on its light algorithm in both themes, so every antd control here is re-skinned
+   on the tokens (the Photos page's pattern) — scoped to the page root, one class above antd's
+   (0,2,0) emit so the override wins on specificity, not source order. */
+.rq-page .ant-input,
+.rq-page .ant-input-affix-wrapper,
+.rq-page .ant-input-outlined,
+.rq-page textarea.ant-input {
+  background: var(--content-bg);
+  border-color: var(--card-border);
+  color: var(--text-primary);
+}
+.rq-page .ant-input-affix-wrapper .ant-input { background: transparent; }
+.rq-page .ant-input:hover, .rq-page .ant-input:focus, .rq-page .ant-input-outlined:focus-within,
+.rq-page .ant-input-affix-wrapper:hover, .rq-page .ant-input-affix-wrapper:focus-within {
+  border-color: var(--accent);
+  box-shadow: none;
+}
+.rq-page .ant-input::placeholder, .rq-page textarea.ant-input::placeholder { color: var(--text-muted); opacity: 1; }
+.rq-page .ant-input-clear-icon { color: var(--text-muted); }
+
+/* antd's own hover rule is (0,4,0) — `.ant-btn:not(:disabled):not(.ant-btn-disabled):hover` — so the
+   hover colours are handed over through its variables rather than out-specified. */
+.rq-page .ant-btn-default {
+  background: transparent;
+  border-color: var(--card-border);
+  color: var(--text-primary);
+  --ant-btn-default-hover-bg: transparent;
+  --ant-btn-default-hover-border-color: var(--accent);
+  --ant-btn-default-hover-color: var(--accent);
+}
+.rq-page .ant-btn-default.ant-btn-dangerous { color: #c9484f; border-color: rgba(201, 72, 79, 0.5); }
+.rq-page .ant-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  --ant-btn-primary-hover-bg: color-mix(in srgb, var(--accent) 85%, #000);
+  --ant-btn-primary-hover-border-color: transparent;
+}
+/* A disabled primary used to vanish on the dark surface (ink on ink). */
+.rq-page .ant-btn-primary:disabled, .rq-page .ant-btn-primary.ant-btn-disabled {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--text-muted);
+}
+
+/* The sorted column's tint and the hover tint are antd's light greys; neither reads on a dark card. */
+.rq-table .ant-table-tbody > tr > td.ant-table-column-sort,
+.rq-table .ant-table-thead > tr > th.ant-table-column-sort { background: color-mix(in srgb, var(--accent) 6%, var(--card-surface)); }
+.rq-table .ant-table-thead > tr > th.ant-table-column-has-sorters:hover { background: color-mix(in srgb, var(--accent) 10%, var(--card-surface)); }
+.rq-table .ant-table-column-sorter, .rq-table .ant-table-filter-trigger { color: var(--text-muted); }
+.rq-table .ant-table-column-sorter-up.active, .rq-table .ant-table-column-sorter-down.active,
+.rq-table .ant-table-filter-trigger.active { color: var(--accent); }
+.rq-table .ant-table-tbody > tr.ant-table-row:hover > td,
+.rq-table .ant-table-tbody > tr > td.ant-table-cell-row-hover { background: color-mix(in srgb, var(--accent) 5%, var(--card-surface)); }
+.rq-table .ant-table-thead > tr > th::before { background: var(--card-border) !important; }
+.rq-table .ant-empty-description { color: var(--text-muted); }
+
+/* ── Phone: cards instead of the table ──────────────────────────────────────────────────────── */
+.rq-cards { display: flex; flex-direction: column; gap: 10px; }
+.rq-card {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 11px 12px 10px;
+}
+.rq-card--matched, .rq-card .rq-match { margin-top: 8px; }
+.rq-card__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.rq-card__top .rq-when { margin-left: auto; }
+.rq-card__by { font-size: 12.5px; color: var(--text-muted); margin-top: 4px; }
+.rq-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+.rq-card__foot .rq-acts { margin-top: 0; justify-content: flex-end; }
+
+@media (max-width: 640px) {
+  .rq-page { padding: 12px 16px 48px; }
+  .rq-compose { padding: 12px 12px 10px; border-radius: 12px; }
+  .rq-compose__year { flex-basis: 78px; }
+  .rq-tools__count { margin-left: 0; }
+  .rq-filter { max-width: none; }
+  .rq-match__acts { margin-left: 0; width: 100%; }
+}

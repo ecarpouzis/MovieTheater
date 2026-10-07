@@ -74,6 +74,10 @@
          Detectives, The" and no catalogue has ever heard of that, so a regression here does not
          throw — it quietly resolves nothing. -->
     <Compile Include="..\MovieTheater\Ingest\TitleNorm.cs" Link="Ingest\TitleNorm.cs" />
+    <!-- The request queue's loose resolver (2026-10-06): the normalization, the agreement rule and the
+         bounded sweep are what the tests pin; it reads MovieDb only, through the Db project reference. -->
+    <Compile Include="..\MovieTheater\Requests\ContentRequestMatcher.cs" Link="Requests\ContentRequestMatcher.cs" />
+    <Compile Include="..\MovieTheater\Controllers\RequestsController.cs" Link="Requests\RequestsController.cs" />
     <!-- The tracklist order. Compiled from source because the claim is about the SHIPPED query — a
          re-declared copy would sort a list, and the bug it fixes is a DATABASE behaviour (ORDER BY
          puts NULLs first) that only a real query can exhibit. -->

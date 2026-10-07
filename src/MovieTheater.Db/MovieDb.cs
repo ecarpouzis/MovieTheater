@@ -626,6 +626,28 @@ namespace MovieTheater.Db
             modelBuilder.Entity<VideoPlaybackIncident>()
                 .HasIndex(i => new { i.CreatedUtc, i.Kind });
 
+            // The request queue (2026-10-06). The page reads "open, newest first" and the history behind a
+            // toggle, so (Status, CreatedUtc); the sweep reads "open with no standing proposal". The
+            // requester FK Restricts — a request is attributed, and losing the account must not rewrite
+            // who asked (same stance as the other User FKs on the live DB, which are NO_ACTION anyway).
+            modelBuilder.Entity<ContentRequest>()
+                .HasIndex(r => new { r.Status, r.CreatedUtc });
+            modelBuilder.Entity<ContentRequest>()
+                .HasOne(r => r.RequestedBy)
+                .WithMany()
+                .HasForeignKey(r => r.RequestedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            // One "me too" per person per request; the votes go with their request (Cascade — a vote on
+            // a deleted request is nothing). UserId carries no FK: a vote is a tally mark, not a relation.
+            modelBuilder.Entity<ContentRequestVote>()
+                .HasIndex(v => new { v.RequestId, v.UserId })
+                .IsUnique();
+            modelBuilder.Entity<ContentRequestVote>()
+                .HasOne(v => v.Request)
+                .WithMany()
+                .HasForeignKey(v => v.RequestId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<MusicPlaylist>()
                 .HasIndex(p => p.UserId);
             // At most ONE favorites list per user. Filtered so it constrains only the flagged rows —
@@ -986,6 +1008,8 @@ namespace MovieTheater.Db
         /// <summary>The video players' self-reports (mirrors <see cref="MusicPlaybackIncidents"/>) —
         /// written only by /API/Stream/Incident, read by hand when chasing "it stopped".</summary>
         public DbSet<VideoPlaybackIncident> VideoPlaybackIncidents { get; set; }
+        public DbSet<ContentRequest> ContentRequests { get; set; }
+        public DbSet<ContentRequestVote> ContentRequestVotes { get; set; }
         public DbSet<Channel> Channels { get; set; }
         public DbSet<ChannelScheduleItem> ChannelScheduleItems { get; set; }
         public DbSet<ChannelShelf> ChannelShelves { get; set; }

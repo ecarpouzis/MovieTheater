@@ -6,6 +6,7 @@ import { BrowserRouter, Switch, Route, Redirect } from "react-router-dom";
 import NavBar from "./NavBar/NavBar";
 import SectionBar from "./catalog/bar/SectionBar";
 import PatchedArtifactAlarm from "./NavBar/PatchedArtifactAlarm";
+import RequestsAttentionToast from "./Pages/Requests/RequestsAttentionToast";
 import Browse from "./Pages/Browse/Browse";
 import { useMovieSearch } from "./hooks/useMovieSearch";
 import { useTheme } from "./hooks/useTheme";
@@ -57,6 +58,7 @@ const ArcadeSavesPage = lazy(() => import("./Pages/Arcade/ArcadeSavesPage"));
 const MusicAdminPage = lazy(() => import("./Pages/Music/MusicAdminPage"));
 const MusicRatePage = lazy(() => import("./Pages/Music/MusicRatePage"));
 const BoardgamesAdminPage = lazy(() => import("./Pages/BoardGames/BoardgamesAdminPage"));
+const RequestsPage = lazy(() => import("./Pages/Requests/RequestsPage"));
 
 // readStored, not a bare getItem: these run at MODULE SCOPE, where a storage throw (Safari
 // private mode, storage disabled) used to be a white screen before a single component mounted.
@@ -123,6 +125,9 @@ function App() {
           DLL) must alarm wherever an admin happens to be, since nothing else reports it. Renders
           null for non-admins and is inert until the watchdog reports trouble. */}
       <PatchedArtifactAlarm userData={userData} />
+      {/* The request queue's admin nudge (2026-10-06): one quiet toast per session when open requests
+          look like they have been added and want a confirm. Null for non-admins; see the component. */}
+      <RequestsAttentionToast userData={userData} />
       {/* MusicPlayerProvider mounts the app's single persistent <audio> + the bottom mini-player
           (music-plan.md §2.6): playback must survive route changes, so it lives above the Switch.
           enabled follows hasPassword — streaming is password-only (§3.1), enforced for real by the
@@ -260,6 +265,9 @@ function App() {
             {SITE_ADMIN_ALIASES.map((a) => <Redirect key={a.from} exact from={a.from} to={a.to} />)}
             <Route path="/boardgames/explore" exact>
               <BoardgamesExplorePage />
+            </Route>
+            <Route path="/requests" exact>
+              <RequestsPage userData={userData} />
             </Route>
             <Route path="/boardgames" exact>
               <BoardGames userData={userData} setUserData={setUserData} />

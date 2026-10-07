@@ -1841,6 +1841,58 @@ function ingestReviewUpdate({ id, kind, title, simpleTitle, year, imdbID, titleT
   });
 }
 
+// ── The request queue (/requests, 2026-10-06) ─────────────────────────────────────────────────
+// "Please add this to the site": any signed-in user files, votes, withdraws; admins resolve. Reads are
+// per-viewer (they carry votedByMe) and never cached. Every call returns the raw Response — the page
+// reads 401/403/409 bodies itself (409 on Create carries the duplicate request to offer a vote on).
+function getRequests({ status = "open", section = null, beforeId = null, limit = 200, signal = undefined } = {}) {
+  const q = new URLSearchParams({ status, limit: String(limit) });
+  if (section) q.set("section", section);
+  if (beforeId != null) q.set("beforeId", String(beforeId));
+  return fetch(`/API/Requests?${q}`, { cache: "no-store", signal });
+}
+
+function getRequestsSummary() {
+  return fetch("/API/Requests/Summary", { cache: "no-store" });
+}
+
+function createRequest(body) {
+  return fetch("/API/Requests", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+function voteRequest(id) {
+  return fetch(`/API/Requests/${id}/Vote`, { method: "post" });
+}
+
+function setRequestStatus(id, status, note) {
+  return fetch(`/API/Requests/${id}/Status`, {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status, note: note ?? null }),
+  });
+}
+
+function confirmRequestMatch(id) {
+  return fetch(`/API/Requests/${id}/Match/Confirm`, { method: "post" });
+}
+
+function dismissRequestMatch(id) {
+  return fetch(`/API/Requests/${id}/Match/Dismiss`, { method: "post" });
+}
+
+// One bounded chunk of the matcher's hand pass; the page drives it to nextFrom == null.
+function sweepRequests(from = 0, limit = 50) {
+  return fetch(`/API/Requests/Sweep?from=${from}&limit=${limit}`, { method: "post" });
+}
+
+function deleteRequest(id) {
+  return fetch(`/API/Requests/${id}`, { method: "delete" });
+}
+
 const MovieAPI = {
   getMoviePoster,
   getPosterThumbnail,
@@ -2072,6 +2124,15 @@ const MovieAPI = {
   getMusicShareTargets,
   getMusicFavorites,
   setMusicFavorite,
+  getRequests,
+  getRequestsSummary,
+  createRequest,
+  voteRequest,
+  setRequestStatus,
+  confirmRequestMatch,
+  dismissRequestMatch,
+  sweepRequests,
+  deleteRequest,
 };
 
 export { MovieAPI };
