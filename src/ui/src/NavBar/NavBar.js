@@ -416,7 +416,7 @@ function NavBar({
           "I'm out and saw something" is the whole point and the login box is one tap away. */}
       <button className="navbar-section-item" onClick={() => history.push("/requests")}>
         <img className="navbar-section-icon" src={requestsIcon} alt="" /> Requests
-        <span className="navbar-hue-dot" style={{ background: "#B8742A" }} />
+        <span className="navbar-hue-dot" style={{ background: "#4A6378" }} />
       </button>
     </>
   );

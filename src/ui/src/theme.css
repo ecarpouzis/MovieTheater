@@ -259,34 +259,38 @@
   --nav-active-bg: rgba(201, 72, 79, 0.24);
 }
 
-/* The request queue (2026-10-06) — an amber "wishlist" tint, warm against every library's hue so the
-   section reads as "about what we don't have yet". Same shape as the other feature blocks. */
+/* The request queue (2026-10-06) — a slate tint. It was amber at first, which sat on top of Books'
+   and Photos' warm browns (2026-10-08); slate is a quiet utility colour that competes with no
+   library's hue, fitting a page about what we DON'T have yet. Same shape as the other feature
+   blocks. #4a6378 is 6.3:1 on white, and white-on-accent clears AA too. */
 :root[data-feature="requests"] {
-  --accent: #b8742a;
-  --accent-soft: rgba(184, 116, 42, 0.13);
-  --content-bg: #f7f4ef;
-  --card-border: #e8e1d6;
-  --sidebar-bg: #2a2117;
-  --sidebar-bg-elev: #362b1e;
-  --sidebar-heading: #c9a06a;
-  --sidebar-text-muted: #d4b58a;
+  --accent: #4a6378;
+  --accent-soft: rgba(74, 99, 120, 0.12);
+  --content-bg: #f2f4f6;
+  --card-border: #dfe4e9;
+  --sidebar-bg: #1a242d;
+  --sidebar-bg-elev: #22303b;
+  --sidebar-heading: #93acc2;
+  --sidebar-text-muted: #b2c3d2;
   --sidebar-border: rgba(255, 255, 255, 0.1);
-  --sidebar-input-bg: #1c160f;
-  --nav-active-bg: rgba(184, 116, 42, 0.24);
+  --sidebar-input-bg: #121a21;
+  --nav-active-bg: rgba(74, 99, 120, 0.3);
 }
 
 /* Family photo album (docs/photos-plan.md §4) — "the album page".
    The section's whole job is to get out of the way of photographs, so its surface is a warm,
    slightly darkened paper rather than the movie side's cool grey: a print laid on it reads as
-   mounted instead of floating. The accent is the orange of the date a 90s camera burned into the
-   corner of a print — the section's one loud colour, spent on dates and active states only.
+   mounted instead of floating. The accent is moss — the section's one loud colour, spent on dates
+   and active states only. (It was the orange of a 90s camera's burned-in date until 2026-10-08,
+   which collided with Books' orange — identical in dark — while the section menu's dot had been
+   moss all along. The dot won.)
 
    These tokens live here rather than on .photos-page because the section's lightbox and modals
    PORTAL out of the page (antd renders them into <body>), and a token defined on the page root
    would never reach them. data-feature is on <html>, so it reaches everything. */
 :root[data-feature="photos"] {
-  --accent: #b3611c;
-  --accent-soft: rgba(179, 97, 28, 0.14);
+  --accent: #4f6c1c;
+  --accent-soft: rgba(79, 108, 28, 0.14);
   --content-bg: #e8e3d9;
   --card-surface: #fbf9f5;
   --card-border: #d7cfc1;
@@ -302,17 +306,18 @@
   --sidebar-heading: #a3907a;
   --sidebar-text-muted: #b0a08c;
   --sidebar-text-strong: #f4efe4;
-  --sidebar-link: #e8a35a;
+  --sidebar-link: #a9c766;
   --sidebar-border: rgba(255, 240, 220, 0.1);
   --sidebar-input-bg: #14100c;
   --sidebar-input-border: rgba(255, 240, 220, 0.14);
   --sidebar-pill-bg: rgba(255, 240, 220, 0.06);
-  --nav-active-bg: rgba(179, 97, 28, 0.2);
+  --nav-active-bg: rgba(127, 166, 72, 0.24);
 
-  /* Section-only tokens. --photos-stamp is the date-stamp orange the timeline's month headers are
-     set in; --photos-well is the recessed page a print sits on; --photos-mount is the hairline that
+  /* Section-only tokens. --photos-stamp is the moss the timeline's month headers, selections and
+     active chips are set in (a shade deeper than --accent, for text on the darkened paper);
+     --photos-well is the recessed page a print sits on; --photos-mount is the hairline that
      makes a tile read as mounted rather than cut out. */
-  --photos-stamp: #a1560f;
+  --photos-stamp: #46601a;
   --photos-rule: rgba(60, 45, 25, 0.22);
   --photos-mount: rgba(60, 45, 25, 0.18);
   --photos-well: #ded7ca;
@@ -401,13 +406,13 @@
   --accent: #5cc6d8;
   --accent-soft: rgba(92, 198, 216, 0.16);
 }
-/* Requests, dark: the amber lifted off the paper tune (see the note above the movies lift). */
+/* Requests, dark: the slate lifted off the paper tune (see the note above the movies lift). */
 :root[data-theme="dark"][data-feature="requests"] {
-  --accent: #e0a056;
-  --accent-soft: rgba(224, 160, 86, 0.16);
-  --content-bg: #1a1713;
-  --card-surface: #26211b;
-  --card-border: #3a3228;
+  --accent: #93acc2;
+  --accent-soft: rgba(147, 172, 194, 0.16);
+  --content-bg: #13171b;
+  --card-surface: #1c2228;
+  --card-border: #2c353e;
 }
 :root[data-theme="dark"][data-feature="music"] {
   --content-bg: #1c1315;
@@ -424,8 +429,8 @@
   --card-shadow: none;
   --card-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.55);
 
-  --accent: #e08a3c;
-  --accent-soft: rgba(224, 138, 60, 0.18);
+  --accent: #a3c25e;
+  --accent-soft: rgba(163, 194, 94, 0.18);
 
   --text-primary: #f4efe6;
   --text-secondary: #c3b8a8;
@@ -434,7 +439,7 @@
   --sidebar-bg: linear-gradient(180deg, #1f1913 0%, #14100c 100%);
   --sidebar-bg-elev: #2a2219;
 
-  --photos-stamp: #e8a35a;
+  --photos-stamp: #b4cf72;
   --photos-rule: rgba(255, 236, 210, 0.16);
   --photos-mount: rgba(255, 236, 210, 0.1);
   --photos-well: #1b1611;

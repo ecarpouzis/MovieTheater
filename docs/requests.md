@@ -17,7 +17,7 @@ distinct from a user's Want-to-Watch list, which is about what to watch out of w
 | Page | `src/ui/src/Pages/Requests/RequestsPage.js` (+ `.css`, `requestSections.js`) |
 | Rail | `NavBar/RequestsNavContent.js` — counted index rows that are the page's URL views |
 | Nudge | `Pages/Requests/RequestsAttentionToast.js` — one toast per session for an admin with proposals waiting |
-| Section | a row in `catalog/bar/sections.ts` (one tab), `NavBar.js` SECTIONS + switcher entry, `theme.css` `data-feature="requests"` (amber) |
+| Section | a row in `catalog/bar/sections.ts` (one tab), `NavBar.js` SECTIONS + switcher entry, `theme.css` `data-feature="requests"` (slate — amber until 2026-10-08, when it collided with Books/Photos) |
 
 ## A request
 

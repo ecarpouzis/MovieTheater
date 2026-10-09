@@ -117,7 +117,8 @@ function ComposeCard({ userData, onCreated, onDuplicate }) {
         <Input
           className="rq-compose__year"
           size="large"
-          placeholder="Year (optional)"
+          placeholder="Year"
+          aria-label="Year (optional)"
           inputMode="numeric"
           maxLength={4}
           value={year}
@@ -538,7 +539,7 @@ export default function RequestsPage({ userData }) {
           <span className="rq-tools__count">{visible.length === rows.length ? `${total}` : `${visible.length} of ${total}`}</span>
           {canResolve && (
             <Tooltip title="Re-run the library match over every open request now (it also runs on its own every half hour).">
-              <Button size="small" onClick={sweep} loading={!!sweeping}>{sweeping ? `Sweeping… ${sweeping.checked}` : "Check the library"}</Button>
+              <Button size="small" className="rq-tools__sweep" onClick={sweep} loading={!!sweeping}>{sweeping ? `Sweeping… ${sweeping.checked}` : "Check the library"}</Button>
             </Tooltip>
           )}
         </div>
