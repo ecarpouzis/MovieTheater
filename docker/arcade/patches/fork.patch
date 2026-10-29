@@ -105181,7 +105181,7 @@ index 2840a0e..aa70436 100644
  			c.log.Warn().Msgf("unhandled packet type %v", x.T)
  		}
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..455e574 100644
+index 6972cc7..b3e0be0 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
 @@ -2,17 +2,43 @@ package worker
@@ -105787,7 +105787,15 @@ index 6972cc7..455e574 100644
  
  		r.SetMedia(m)
  
-@@ -193,15 +609,78 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+@@ -188,20 +604,86 @@ func (c *coordinator) HandleGameStart(rq api.StartGameRequest, w *Worker) api.Ou
+ 			c.log.Error().Err(err).Msgf("couldn't init the media")
+ 			r.Close()
+ 			w.router.SetRoom(nil)
++			// A media init that fails is almost always the encoder refusing to open in THIS process (the
++			// 2026-10-29 'arcade is full'); the room is already lost, so recycle before the next one is.
++			w.requestRecycle(fmt.Sprintf("room media init failed: %v", err))
+ 			return api.EmptyPacket
+ 		}
  
  		r.InitMedia()
  		r.StartApp()
@@ -105868,7 +105876,7 @@ index 6972cc7..455e574 100644
  	}
  
  	c.RegisterRoom(r.Id())
-@@ -235,6 +714,7 @@ func (c *coordinator) HandleTerminateSession(rq api.TerminateSessionRequest, w *
+@@ -235,6 +717,7 @@ func (c *coordinator) HandleTerminateSession(rq api.TerminateSessionRequest, w *
  		w.router.Remove(user)
  		user.Disconnect()
  	}
@@ -105876,7 +105884,7 @@ index 6972cc7..455e574 100644
  }
  
  // HandleQuitGame handles cases when a user manually exits the game.
-@@ -242,16 +722,61 @@ func (c *coordinator) HandleQuitGame(rq api.GameQuitRequest, w *Worker) {
+@@ -242,16 +725,61 @@ func (c *coordinator) HandleQuitGame(rq api.GameQuitRequest, w *Worker) {
  	if user := w.router.FindUser(rq.Id); user != nil {
  		w.router.Remove(user)
  	}
@@ -105939,7 +105947,7 @@ index 6972cc7..455e574 100644
  func (c *coordinator) HandleSaveGame(rq api.SaveGameRequest, w *Worker) api.Out {
  	r := w.router.FindRoom(rq.Rid)
  	if r == nil {
-@@ -269,10 +794,22 @@ func (c *coordinator) HandleLoadGame(rq api.LoadGameRequest, w *Worker) api.Out
+@@ -269,10 +797,22 @@ func (c *coordinator) HandleLoadGame(rq api.LoadGameRequest, w *Worker) api.Out
  	if r == nil {
  		return api.ErrPacket
  	}
@@ -105963,6 +105971,95 @@ index 6972cc7..455e574 100644
  	return api.OkPacket
  }
  
+diff --git a/pkg/worker/encoderhealth.go b/pkg/worker/encoderhealth.go
+new file mode 100644
+index 0000000..1336d95
+--- /dev/null
++++ b/pkg/worker/encoderhealth.go
+@@ -0,0 +1,83 @@
++package worker
++
++import (
++	"fmt"
++	"os"
++	"time"
++
++	"github.com/giongto35/cloud-game/v3/pkg/worker/media"
++)
++
++// Encoder health: a worker whose hardware encoder will not open recycles ITSELF.
++//
++// 2026-10-29: both GL workers, up 9 days and idle for 5, refused a player's room twice with
++// "GstNvAv1Enc: Failed to open encoder" (browser: "the arcade is full"). NVENC had no open sessions,
++// no driver reset was logged, and a fresh process opened the same encoder at once — the broken state
++// lived in the long-lived PROCESS. Nothing in the stack watched for it: the coordinator saw a healthy,
++// free worker, and every room it was handed died at media init. Two guards, both ending in the same
++// graceful recycle the scripts use (the .stop sentinel → w.Stop → exit → the runner respawns):
++//
++//  1. While idle, the worker self-tests its encoder every encoderProbeEvery, so the broken state is
++//     caught before a player meets it.
++//  2. A room whose media init fails recycles the worker as it closes — whatever slipped past the probe
++//     costs that one launch, never the next. The room has already failed, so there is nothing to lose.
++//
++// Recycling is only ever requested while NO room is live; a probe that fails as a room starts is
++// logged and left for the next idle tick.
++
++const (
++	encoderProbeEvery   = 5 * time.Minute
++	encoderProbeTimeout = 10 * time.Second
++)
++
++func (w *Worker) runEncoderHealth(stop <-chan struct{}) {
++	t := time.NewTicker(encoderProbeEvery)
++	defer t.Stop()
++	for {
++		select {
++		case <-stop:
++			return
++		case <-t.C:
++		}
++		if w.router.HasRoom() {
++			continue
++		}
++		err := probeEncoder(w)
++		if err == nil {
++			continue
++		}
++		if w.router.HasRoom() {
++			w.log.Warn().Err(err).Msg("encoder health: self-test failed while a room was starting — rechecking at the next idle tick")
++			continue
++		}
++		w.requestRecycle(fmt.Sprintf("idle encoder self-test failed: %v", err))
++		return
++	}
++}
++
++// probeEncoder runs the self-test bounded: a wedged driver call must not hang the health loop.
++func probeEncoder(w *Worker) error {
++	res := make(chan error, 1)
++	go func() { res <- media.ProbeVideoEncoder(w.conf.Encoder, encoderProbeTimeout) }()
++	select {
++	case err := <-res:
++		return err
++	case <-time.After(encoderProbeTimeout + 5*time.Second):
++		return fmt.Errorf("encoder self-test did not return within %v", encoderProbeTimeout+5*time.Second)
++	}
++}
++
++// requestRecycle asks the runner for a fresh process through the same .stop sentinel the recycle and
++// watchdog scripts drop (CLOUD_GAME_STOP_FILE, pkg/os.ExpectTermination): a GRACEFUL stop — never a
++// self-kill mid-GPU-teardown. Without the env var (a dev run) it only logs.
++func (w *Worker) requestRecycle(reason string) {
++	stopFile := os.Getenv("CLOUD_GAME_STOP_FILE")
++	if stopFile == "" {
++		w.log.Error().Msgf("encoder health: %s — no CLOUD_GAME_STOP_FILE, so NOT recycling (restart this worker by hand)", reason)
++		return
++	}
++	w.log.Error().Msgf("encoder health: %s — recycling this worker (runner respawns it)", reason)
++	if err := os.WriteFile(stopFile, []byte("encoder health: "+reason+"\n"), 0o644); err != nil {
++		w.log.Error().Err(err).Msgf("encoder health: could not write the stop sentinel %s", stopFile)
++	}
++}
 diff --git a/pkg/worker/linkstat.go b/pkg/worker/linkstat.go
 new file mode 100644
 index 0000000..97796b8
@@ -108629,6 +108726,131 @@ index f3e898f..f18e810 100644
 +	case <-done:
 +	case <-time.After(5 * time.Second):
 +		t.Fatal("timed out waiting for encoded video after reinit")
++	}
++}
+diff --git a/pkg/worker/media/probe.go b/pkg/worker/media/probe.go
+new file mode 100644
+index 0000000..caea986
+--- /dev/null
++++ b/pkg/worker/media/probe.go
+@@ -0,0 +1,82 @@
++package media
++
++import (
++	"cmp"
++	"fmt"
++	"strings"
++	"time"
++
++	"github.com/giongto35/cloud-game/v3/pkg/config"
++	"github.com/go-gst/go-gst/gst"
++)
++
++// ProbeVideoEncoder opens the configured hardware video encoder in a throwaway pipeline and encodes a
++// handful of test frames — the same element, params and system-memory NV12 sink a 2D room's CPU head
++// feeds it. nil = the encoder opens and produces output in THIS process.
++//
++// Why it exists (2026-10-29): a GL worker that had been up for 9 days and idle for 5 refused every
++// room with "GstNvAv1Enc: Failed to open encoder" — the core loaded, the media init failed, and the
++// browser reported "the arcade is full". NVENC had 0 open sessions, no driver reset was logged, and a
++// fresh process (gst-launch, then the recycled worker) opened the same encoder fine. The state was
++// per-PROCESS, and nothing noticed until a player hit it. This is how the worker notices first.
++//
++// Software encoders (x264enc, vpx) are not probed: their failure modes are not process-state ones.
++func ProbeVideoEncoder(conf config.Encoder, timeout time.Duration) error {
++	opts, codec := conf.VideoSettings()
++	if opts == nil {
++		return fmt.Errorf("unsupported codec: %s", conf.Video.Codec)
++	}
++	var enc string
++	switch codec {
++	case "h264":
++		enc = cmp.Or(opts.Encoder, "x264enc")
++	case "av1":
++		enc = cmp.Or(opts.Encoder, "nvav1enc")
++	}
++	if !strings.HasPrefix(enc, "nv") {
++		return nil
++	}
++
++	def := fmt.Sprintf("videotestsrc num-buffers=5 ! video/x-raw,format=NV12,width=320,height=240,framerate=30/1 "+
++		"! %s name=video_enc %s ! fakesink sync=false", enc, opts.Params)
++	pipeline, err := gst.NewPipelineFromString(def)
++	if err != nil {
++		return fmt.Errorf("probe pipeline: %w", err)
++	}
++	defer pipeline.SetState(gst.StateNull)
++
++	// The broken-encoder case surfaces HERE: the room's own failure was SetState(PLAYING) erroring.
++	if err := pipeline.SetState(gst.StatePlaying); err != nil {
++		return fmt.Errorf("encoder %s: %w%s", enc, err, busError(pipeline))
++	}
++	bus := pipeline.GetPipelineBus()
++	deadline := time.Now().Add(timeout)
++	for {
++		left := time.Until(deadline)
++		if left <= 0 {
++			return fmt.Errorf("encoder %s: no output within %v", enc, timeout)
++		}
++		msg := bus.TimedPopFiltered(gst.ClockTime(left.Nanoseconds()), gst.MessageError|gst.MessageEOS)
++		if msg == nil {
++			return fmt.Errorf("encoder %s: no output within %v", enc, timeout)
++		}
++		switch msg.Type() {
++		case gst.MessageEOS:
++			return nil
++		case gst.MessageError:
++			gerr := msg.ParseError()
++			return fmt.Errorf("encoder %s: %w (%s)", enc, gerr, gerr.DebugString())
++		}
++	}
++}
++
++// busError appends the pipeline's posted error (the useful "Failed to open encoder" text) to a bare
++// state-change failure, if one is waiting.
++func busError(p *gst.Pipeline) string {
++	msg := p.GetPipelineBus().TimedPopFiltered(gst.ClockTime((200 * time.Millisecond).Nanoseconds()), gst.MessageError)
++	if msg == nil {
++		return ""
++	}
++	gerr := msg.ParseError()
++	return fmt.Sprintf(" — %v (%s)", gerr.Error(), gerr.DebugString())
++}
+diff --git a/pkg/worker/media/probe_test.go b/pkg/worker/media/probe_test.go
+new file mode 100644
+index 0000000..628042c
+--- /dev/null
++++ b/pkg/worker/media/probe_test.go
+@@ -0,0 +1,31 @@
++package media
++
++import (
++	"os"
++	"testing"
++	"time"
++
++	"github.com/giongto35/cloud-game/v3/pkg/config"
++)
++
++// Needs a real NVENC GPU: CLOUD_GAME_NVENC_TEST=1 go test -run TestProbeVideoEncoder ./pkg/worker/media/
++func TestProbeVideoEncoder(t *testing.T) {
++	if os.Getenv("CLOUD_GAME_NVENC_TEST") != "1" {
++		t.Skip("set CLOUD_GAME_NVENC_TEST=1 on a box with an NVENC GPU")
++	}
++	good := config.Encoder{List: map[string]config.CodecSettings{"av1": {Encoder: "nvav1enc"}}}
++	good.Video.Codec = "av1"
++	if err := ProbeVideoEncoder(good, 10*time.Second); err != nil {
++		t.Fatalf("a healthy nvav1enc must pass the self-test: %v", err)
++	}
++
++	// An encoder that cannot open must FAIL it — the shape of the 2026-10-29 worker. B-frames
++	// with temporal SVC is refused by NVENC itself (verified with gst-launch: "Could not encode stream").
++	bad := config.Encoder{List: map[string]config.CodecSettings{"av1": {Encoder: "nvav1enc", Params: "bframes=4 temporal-layers=3"}}}
++	bad.Video.Codec = "av1"
++	if err := ProbeVideoEncoder(bad, 10*time.Second); err == nil {
++		t.Fatal("an encoder that cannot open must fail the self-test")
++	} else {
++		t.Logf("failing encoder reported: %v", err)
 +	}
 +}
 diff --git a/pkg/worker/media/vbv_test.go b/pkg/worker/media/vbv_test.go
@@ -112163,7 +112385,7 @@ index 0000000..42a9a31
 +00:00:41 7538 4460 6618 6648 6618 normal increase 0.70 8.24 2.80 0.000
 +00:00:42 7538 4711 6682 6691 6682 normal increase 6.30 12.43 3.62 0.000
 diff --git a/pkg/worker/worker.go b/pkg/worker/worker.go
-index 856cdfa..a67112c 100644
+index 856cdfa..13b4f23 100644
 --- a/pkg/worker/worker.go
 +++ b/pkg/worker/worker.go
 @@ -10,6 +10,8 @@ import (
@@ -112183,15 +112405,17 @@ index 856cdfa..a67112c 100644
  	conf     config.WorkerConfig
  	cord     *coordinator
  	lib      games.GameLibrary
-@@ -24,6 +27,7 @@ type Worker struct {
+@@ -24,6 +27,9 @@ type Worker struct {
  	log      *logger.Logger
  	mana     *caged.Manager
  	router   *room.GameRouter
 +	sentinel *wedgeSentinel
++	// healthStop ends the idle encoder self-test loop (encoderhealth.go) on Stop.
++	healthStop chan struct{}
  	services [2]interface {
  		Run()
  		Stop() error
-@@ -36,6 +40,13 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
+@@ -36,6 +42,13 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
  	if err := manager.Load(caged.Libretro, conf); err != nil {
  		return nil, fmt.Errorf("couldn't cage libretro: %v", err)
  	}
@@ -112205,7 +112429,7 @@ index 856cdfa..a67112c 100644
  
  	library := games.NewLib(conf.Library, conf.Emulator, log)
  	library.Scan()
-@@ -47,7 +58,20 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
+@@ -47,7 +60,20 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
  		log:      log,
  		mana:     manager,
  		router:   room.NewGameRouter(),
@@ -112226,7 +112450,7 @@ index 856cdfa..a67112c 100644
  
  	h, err := httpx.NewServer(
  		conf.Worker.GetAddr(),
-@@ -77,12 +101,32 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
+@@ -77,12 +103,35 @@ func New(conf config.WorkerConfig, log *logger.Logger) (*Worker, error) {
  	}
  	worker.storage = st
  
@@ -112255,7 +112479,21 @@ index 856cdfa..a67112c 100644
  func (w *Worker) Start(done chan struct{}) {
 +	// Watch for a wedged core-load phase and self-destruct (freeing the port) if one hangs — see sentinel.go.
 +	go w.sentinel.run()
++	// Self-test the hardware encoder while idle; a broken one recycles the worker (encoderhealth.go).
++	w.healthStop = make(chan struct{})
++	go w.runEncoderHealth(w.healthStop)
 +
  	for _, s := range w.services {
  		if s != nil {
  			s.Run()
+@@ -131,6 +180,10 @@ func (w *Worker) Start(done chan struct{}) {
+ }
+ 
+ func (w *Worker) Stop() error {
++	if w.healthStop != nil {
++		close(w.healthStop)
++		w.healthStop = nil
++	}
+ 	w.Reset()
+ 	var err error
+ 	for _, s := range w.services {
