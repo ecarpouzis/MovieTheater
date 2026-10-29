@@ -392,9 +392,14 @@ namespace MovieTheater.Controllers
             // screen shape (src/ui/src/Pages/Arcade/touch/touchLayout.ts). Read back via /API/MySetting
             // by the room page only, so it doesn't ride every /API/Me.
             ArcadeTouchLayoutsKey,
+            // The controller test page (src/ui/public/padtest.html) saves what the browser actually
+            // received from the device's controls — gamepads, keys, mouse, touch, the user agent — so a
+            // Steam Deck report can be read from the DB instead of asked for in screenshots.
+            ArcadeInputDiagKey,
         };
 
         public const string ArcadeTouchLayoutsKey = "ArcadeTouchLayouts";
+        public const string ArcadeInputDiagKey = "ArcadeInputDiag";
 
         // Self-service values are user-authored blobs stored verbatim. Cap them so one account can't park
         // megabytes in UserSettings; the largest legitimate value (a full set of touch layouts) is ~10 KB.

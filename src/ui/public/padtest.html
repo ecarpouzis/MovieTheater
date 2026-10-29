@@ -19,7 +19,8 @@
 </head>
 <body>
 <main>
-  <h1>🎮 Press every button, stick and trackpad — then take a screenshot (Steam + R1)</h1>
+  <h1>🎮 Press every button, stick and trackpad. It saves to your account as you go — no screenshot needed.</h1>
+  <div id="saved" class="big" style="grid-column: 1 / -1; font-size: 20px; color: #a3a9b6">Nothing pressed yet.</div>
   <section><h2>Gamepad (what the arcade wants)</h2><div id="pad" class="big no">none seen</div><div id="padlive"></div></section>
   <section><h2>Keys</h2><ol id="keys" reversed></ol></section>
   <section><h2>Mouse / trackpad</h2><ol id="mouse" reversed></ol></section>
@@ -28,22 +29,70 @@
 </main>
 <script>
   // A diagnostic: shows exactly what a browser receives from the Deck's controls in Game Mode, so the
-  // arcade can be made to accept it. Read-only — sends nothing anywhere.
+  // arcade can be made to accept it. It also saves a running SUMMARY to the signed-in user's own
+  // UserSettings["ArcadeInputDiag"] (the self-service allow-list), so the report is read from the DB
+  // rather than relayed by hand. Nothing else is sent.
+  var report = {
+    startedUtc: new Date().toISOString(), lastUtc: null,
+    userAgent: navigator.userAgent, maxTouchPoints: navigator.maxTouchPoints,
+    screen: screen.width + "x" + screen.height, gamepadApi: !!navigator.getGamepads,
+    pads: {}, keys: {}, mouseButtons: {}, wheel: { up: 0, down: 0, left: 0, right: 0 },
+    mouseMoves: 0, pointerTypes: {}, touchStarts: 0, events: 0
+  };
+  var dirty = true, saving = false; // true: even an idle visit records the browser + device
+  function note() { report.events++; report.lastUtc = new Date().toISOString(); dirty = true; }
+  function save() {
+    if (!dirty || saving) return;
+    dirty = false; saving = true;
+    var body = JSON.stringify({ settingKey: "ArcadeInputDiag", settingValue: JSON.stringify(report) });
+    fetch("/API/SetUserSetting", { method: "POST", headers: { "Content-Type": "application/json" }, body: body, credentials: "same-origin" })
+      .then(function (r) {
+        var el = document.getElementById("saved");
+        if (r.ok) { el.textContent = "Saved ✓ (" + report.events + " inputs) — keep pressing, then just say you're done."; el.style.color = "#4caf7a"; }
+        else if (r.status === 401 || r.status === 403) { el.textContent = "Not signed in — open the arcade, log in, then come back here."; el.style.color = "#e0666d"; }
+        else { el.textContent = "Couldn't save (HTTP " + r.status + ") — still showing everything below."; el.style.color = "#e0666d"; }
+      })
+      .catch(function () { dirty = true; })
+      .then(function () { saving = false; });
+  }
+  setInterval(save, 2000);
+  addEventListener("pagehide", save);
+  function count(map, k) { map[k] = (map[k] || 0) + 1; note(); }
+
   function push(id, text) {
     var ol = document.getElementById(id), li = document.createElement("li");
     li.textContent = text;
     ol.insertBefore(li, ol.firstChild);
     while (ol.children.length > 12) ol.removeChild(ol.lastChild);
   }
-  addEventListener("keydown", function (e) { e.preventDefault(); push("keys", "down  key=" + JSON.stringify(e.key) + "  code=" + (e.code || "(none)")); });
-  addEventListener("mousedown", function (e) { push("mouse", "button " + e.button + " down"); });
+  addEventListener("keydown", function (e) {
+    e.preventDefault();
+    push("keys", "down  key=" + JSON.stringify(e.key) + "  code=" + (e.code || "(none)"));
+    count(report.keys, e.key + " / " + (e.code || "(no code)"));
+  });
+  addEventListener("mousedown", function (e) { push("mouse", "button " + e.button + " down"); count(report.mouseButtons, String(e.button)); });
   addEventListener("contextmenu", function (e) { e.preventDefault(); });
-  addEventListener("wheel", function (e) { e.preventDefault(); push("mouse", "wheel dx=" + Math.round(e.deltaX) + " dy=" + Math.round(e.deltaY)); }, { passive: false });
+  addEventListener("wheel", function (e) {
+    e.preventDefault();
+    push("mouse", "wheel dx=" + Math.round(e.deltaX) + " dy=" + Math.round(e.deltaY));
+    if (e.deltaY < 0) report.wheel.up++; else if (e.deltaY > 0) report.wheel.down++;
+    if (e.deltaX < 0) report.wheel.left++; else if (e.deltaX > 0) report.wheel.right++;
+    note();
+  }, { passive: false });
   var lastMove = 0;
-  addEventListener("mousemove", function (e) { var t = Date.now(); if (t - lastMove > 400) { lastMove = t; push("mouse", "move " + e.movementX + "," + e.movementY); } });
-  addEventListener("touchstart", function (e) { push("touch", "touchstart x" + e.touches.length); });
-  addEventListener("pointerdown", function (e) { push("touch", "pointerdown type=" + e.pointerType); });
-  addEventListener("gamepadconnected", function (e) { push("keys", "GAMEPAD CONNECTED: " + e.gamepad.id); });
+  addEventListener("mousemove", function (e) {
+    report.mouseMoves++;
+    var t = Date.now(); if (t - lastMove > 400) { lastMove = t; push("mouse", "move " + e.movementX + "," + e.movementY); note(); }
+  });
+  addEventListener("touchstart", function (e) { push("touch", "touchstart x" + e.touches.length); report.touchStarts++; note(); });
+  addEventListener("pointerdown", function (e) { push("touch", "pointerdown type=" + e.pointerType); count(report.pointerTypes, e.pointerType); });
+  addEventListener("gamepadconnected", function (e) { push("keys", "GAMEPAD CONNECTED: " + e.gamepad.id); padEntry(e.gamepad); note(); });
+
+  function padEntry(p) {
+    var k = p.index + ": " + p.id;
+    if (!report.pads[k]) report.pads[k] = { mapping: p.mapping, buttons: p.buttons.length, axes: p.axes.length, pressed: {}, moved: {} };
+    return report.pads[k];
+  }
 
   function poll() {
     var pads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -51,8 +100,9 @@
     for (var i = 0; i < pads.length; i++) {
       var p = pads[i]; if (!p) continue;
       seen.push("#" + i + " " + p.id + " (" + p.mapping + ")");
-      var b = []; for (var j = 0; j < p.buttons.length; j++) if (p.buttons[j].pressed) b.push(j);
-      var a = []; for (var k = 0; k < p.axes.length; k++) if (Math.abs(p.axes[k]) > 0.2) a.push(k + ":" + p.axes[k].toFixed(1));
+      var ent = padEntry(p);
+      var b = []; for (var j = 0; j < p.buttons.length; j++) if (p.buttons[j].pressed) { b.push(j); if (!ent.pressed[j]) { ent.pressed[j] = 1; note(); } }
+      var a = []; for (var k = 0; k < p.axes.length; k++) if (Math.abs(p.axes[k]) > 0.2) { a.push(k + ":" + p.axes[k].toFixed(1)); if (!ent.moved[k]) { ent.moved[k] = 1; note(); } }
       live.push("#" + i + " buttons [" + b.join(",") + "] axes [" + a.join(" ") + "]");
     }
     var el = document.getElementById("pad");
