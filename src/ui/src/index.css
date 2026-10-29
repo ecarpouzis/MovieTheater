@@ -379,6 +379,22 @@ img {
   padding: 2px 6px;
 }
 
+/* Drag-to-scroll surface (hooks/useDragScroll): a drag scrolls, so it must not select text or pick
+   up an image. Form fields keep their own selection. */
+.drag-scroll-surface {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.drag-scroll-surface img {
+  -webkit-user-drag: none;
+}
+
+.drag-scroll-surface :is(input, textarea, [contenteditable]) {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 /* ── Scrollbars: styled for POINTERS only ────────────────────────────────────
    Styling ::-webkit-scrollbar at all opts a surface OUT of the platform's
    transient overlay scrollbar, so on a touchscreen every scroller — the page, a
@@ -404,6 +420,18 @@ img {
 
   ::-webkit-scrollbar-thumb:hover {
     background: #666;
+  }
+
+  /* A touchscreen the browser sees as a MOUSE (Steam Deck Game Mode) still gets the pointer bar —
+     so while drag-scroll is on (hooks/useDragScroll) the bar is a finger-sized target. */
+  html.drag-scroll-on ::-webkit-scrollbar {
+    width: 18px;
+    height: 18px;
+  }
+
+  html.drag-scroll-on ::-webkit-scrollbar-thumb {
+    border-radius: 9px;
+    min-height: 48px;
   }
 
   /* Sidebar scrollbar styling */

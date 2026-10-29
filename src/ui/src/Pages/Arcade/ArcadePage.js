@@ -24,6 +24,7 @@ import { ARCADE_GRID_CELL, createArcadeSource } from "../../catalog/sources/arca
 import "./ArcadePage.css";
 import useIsMobile from "../../hooks/useIsMobile";
 import usePolling from "../../hooks/usePolling";
+import useDragScroll, { useDragScrollPreference } from "../../hooks/useDragScroll";
 
 const { Text } = Typography;
 
@@ -134,6 +135,11 @@ export default function ArcadePage({ userData }) {
   const [renderers, setRenderers] = useState({}); // system → [{id,label,isDefault}] for the launch menu
   const [modalVersionId, setModalVersionId] = useState(null); // pre-selected version (a recent tile's save)
   const [optionsOpen, setOptionsOpen] = useState(false); // mobile: reveal the room-quality pills (desktop always shows them)
+  // Drag-to-scroll: on by default with a touchscreen (the Steam Deck's arrives as a mouse in Game
+  // Mode), and the bar's ✋ button forces it either way per device.
+  const [pageEl, setPageEl] = useState(null);
+  const [dragScroll, setDragScroll] = useDragScrollPreference();
+  useDragScroll(pageEl, dragScroll);
   const [creating, setCreating] = useState(0);
   const [manageSaves, setManageSaves] = useState(null); // { gameId, title } for the My Saves modal
   // The open game modal lives in the URL (?game=<versionId> — the browse ?title= pattern): a card
@@ -491,11 +497,20 @@ export default function ArcadePage({ userData }) {
       >
         ⚡ Quality
       </button>
+      <button
+        type="button"
+        className={"bx-tool-btn" + (dragScroll ? " on" : "")}
+        aria-pressed={dragScroll}
+        title="Drag the page to scroll it — for touchscreens the browser treats as a mouse"
+        onClick={() => setDragScroll(!dragScroll)}
+      >
+        ✋ Drag scroll
+      </button>
     </>
   );
 
   return (
-    <div className="arcade-page">
+    <div className="arcade-page" ref={setPageEl}>
       <div className="arcade-page__inner">
         {surfaces}
         {/* The header and its toolbar left the page in R9 S1: the SectionBar names the section, and
