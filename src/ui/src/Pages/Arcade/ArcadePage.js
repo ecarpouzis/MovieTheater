@@ -24,7 +24,18 @@ import { ARCADE_GRID_CELL, createArcadeSource } from "../../catalog/sources/arca
 import "./ArcadePage.css";
 import useIsMobile from "../../hooks/useIsMobile";
 import usePolling from "../../hooks/usePolling";
-import useDragScroll, { useDragScrollPreference } from "../../hooks/useDragScroll";
+import useDragScroll, { hasTouchscreen, useDragScrollPreference } from "../../hooks/useDragScroll";
+
+// A Linux handheld (the Steam Deck): its browsers can't see the built-in controller out of the box,
+// so the lobby links the controller test page rather than make anyone type its address.
+const IS_LINUX_HANDHELD = (() => {
+  try {
+    const ua = navigator.userAgent;
+    return /Linux|X11/.test(ua) && !/Android/.test(ua) && hasTouchscreen();
+  } catch {
+    return false;
+  }
+})();
 
 const { Text } = Typography;
 
@@ -564,6 +575,12 @@ export default function ArcadePage({ userData }) {
             off its own screen, every room you start from here will be choppy, and that is worth
             knowing BEFORE picking a game rather than after blaming your own wifi. */}
         <ArcadeHostBanner />
+
+        {IS_LINUX_HANDHELD && (
+          <a className="arcade-deck-link" href="/padtest.html" target="_blank" rel="noopener">
+            🎮 Steam Deck controller not working? Open the controller test
+          </a>
+        )}
 
         <ConsoleCarousel
           systems={facets?.systems}

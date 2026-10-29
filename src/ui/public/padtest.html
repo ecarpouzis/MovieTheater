@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Controller test</title>
+<style>
+  body { margin: 0; background: #14161b; color: #eef0f4; font: 20px/1.4 system-ui, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+  section { background: #1f232b; border-radius: 10px; padding: 12px 14px; min-height: 120px; }
+  h1 { grid-column: 1 / -1; font-size: 24px; margin: 0; }
+  h2 { font-size: 16px; color: #a3a9b6; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .05em; }
+  .big { font-size: 28px; font-weight: 700; }
+  .yes { color: #4caf7a; } .no { color: #e0666d; }
+  ol { margin: 0; padding-left: 22px; font-family: ui-monospace, monospace; font-size: 18px; }
+  #env { grid-column: 1 / -1; font-size: 14px; color: #a3a9b6; font-family: ui-monospace, monospace; }
+  @media (max-width: 700px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>🎮 Press every button, stick and trackpad — then take a screenshot (Steam + R1)</h1>
+  <section><h2>Gamepad (what the arcade wants)</h2><div id="pad" class="big no">none seen</div><div id="padlive"></div></section>
+  <section><h2>Keys</h2><ol id="keys" reversed></ol></section>
+  <section><h2>Mouse / trackpad</h2><ol id="mouse" reversed></ol></section>
+  <section><h2>Touch</h2><ol id="touch" reversed></ol></section>
+  <div id="env"></div>
+</main>
+<script>
+  // A diagnostic: shows exactly what a browser receives from the Deck's controls in Game Mode, so the
+  // arcade can be made to accept it. Read-only — sends nothing anywhere.
+  function push(id, text) {
+    var ol = document.getElementById(id), li = document.createElement("li");
+    li.textContent = text;
+    ol.insertBefore(li, ol.firstChild);
+    while (ol.children.length > 12) ol.removeChild(ol.lastChild);
+  }
+  addEventListener("keydown", function (e) { e.preventDefault(); push("keys", "down  key=" + JSON.stringify(e.key) + "  code=" + (e.code || "(none)")); });
+  addEventListener("mousedown", function (e) { push("mouse", "button " + e.button + " down"); });
+  addEventListener("contextmenu", function (e) { e.preventDefault(); });
+  addEventListener("wheel", function (e) { e.preventDefault(); push("mouse", "wheel dx=" + Math.round(e.deltaX) + " dy=" + Math.round(e.deltaY)); }, { passive: false });
+  var lastMove = 0;
+  addEventListener("mousemove", function (e) { var t = Date.now(); if (t - lastMove > 400) { lastMove = t; push("mouse", "move " + e.movementX + "," + e.movementY); } });
+  addEventListener("touchstart", function (e) { push("touch", "touchstart x" + e.touches.length); });
+  addEventListener("pointerdown", function (e) { push("touch", "pointerdown type=" + e.pointerType); });
+  addEventListener("gamepadconnected", function (e) { push("keys", "GAMEPAD CONNECTED: " + e.gamepad.id); });
+
+  function poll() {
+    var pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    var seen = [], live = [];
+    for (var i = 0; i < pads.length; i++) {
+      var p = pads[i]; if (!p) continue;
+      seen.push("#" + i + " " + p.id + " (" + p.mapping + ")");
+      var b = []; for (var j = 0; j < p.buttons.length; j++) if (p.buttons[j].pressed) b.push(j);
+      var a = []; for (var k = 0; k < p.axes.length; k++) if (Math.abs(p.axes[k]) > 0.2) a.push(k + ":" + p.axes[k].toFixed(1));
+      live.push("#" + i + " buttons [" + b.join(",") + "] axes [" + a.join(" ") + "]");
+    }
+    var el = document.getElementById("pad");
+    el.textContent = seen.length ? seen.join(" | ") : "none seen";
+    el.className = "big " + (seen.length ? "yes" : "no");
+    document.getElementById("padlive").textContent = live.join("  ");
+    requestAnimationFrame(poll);
+  }
+  requestAnimationFrame(poll);
+  document.getElementById("env").textContent = navigator.userAgent + " | touchPoints=" + navigator.maxTouchPoints +
+    " | gamepadAPI=" + (!!navigator.getGamepads) + " | secure=" + window.isSecureContext;
+</script>
+</body>
+</html>
